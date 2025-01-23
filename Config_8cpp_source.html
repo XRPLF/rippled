@@ -990,132 +990,171 @@ $(function() {
 <div class="line"><a id="l00912" name="l00912"></a><span class="lineno">  912</span>            <span class="keywordflow">if</span> (valListKeys)</div>
 <div class="line"><a id="l00913" name="l00913"></a><span class="lineno">  913</span>                <a class="code hl_function" href="classripple_1_1BasicConfig.html#a60aca585d76b1121dd4f72b358729456">section</a>(SECTION_VALIDATOR_LIST_KEYS).<a class="code hl_function" href="classripple_1_1Section.html#aa94166c41decc5127022863dfee030b7">append</a>(*valListKeys);</div>
 <div class="line"><a id="l00914" name="l00914"></a><span class="lineno">  914</span> </div>
-<div class="line"><a id="l00915" name="l00915"></a><span class="lineno">  915</span>            <span class="keywordflow">if</span> (!entries &amp;&amp; !valKeyEntries &amp;&amp; !valListKeys)</div>
-<div class="line"><a id="l00916" name="l00916"></a><span class="lineno">  916</span>                Throw&lt;std::runtime_error&gt;(</div>
-<div class="line"><a id="l00917" name="l00917"></a><span class="lineno">  917</span>                    <span class="stringliteral">&quot;The file specified in [&quot;</span> SECTION_VALIDATORS_FILE</div>
-<div class="line"><a id="l00918" name="l00918"></a><span class="lineno">  918</span>                    <span class="stringliteral">&quot;] &quot;</span></div>
-<div class="line"><a id="l00919" name="l00919"></a><span class="lineno">  919</span>                    <span class="stringliteral">&quot;does not contain a [&quot;</span> SECTION_VALIDATORS</div>
-<div class="line"><a id="l00920" name="l00920"></a><span class="lineno">  920</span>                    <span class="stringliteral">&quot;], &quot;</span></div>
-<div class="line"><a id="l00921" name="l00921"></a><span class="lineno">  921</span>                    <span class="stringliteral">&quot;[&quot;</span> SECTION_VALIDATOR_KEYS</div>
-<div class="line"><a id="l00922" name="l00922"></a><span class="lineno">  922</span>                    <span class="stringliteral">&quot;] or &quot;</span></div>
-<div class="line"><a id="l00923" name="l00923"></a><span class="lineno">  923</span>                    <span class="stringliteral">&quot;[&quot;</span> SECTION_VALIDATOR_LIST_KEYS</div>
-<div class="line"><a id="l00924" name="l00924"></a><span class="lineno">  924</span>                    <span class="stringliteral">&quot;]&quot;</span></div>
-<div class="line"><a id="l00925" name="l00925"></a><span class="lineno">  925</span>                    <span class="stringliteral">&quot; section: &quot;</span> +</div>
-<div class="line"><a id="l00926" name="l00926"></a><span class="lineno">  926</span>                    validatorsFile.string());</div>
-<div class="line"><a id="l00927" name="l00927"></a><span class="lineno">  927</span>        }</div>
-<div class="line"><a id="l00928" name="l00928"></a><span class="lineno">  928</span> </div>
-<div class="line"><a id="l00929" name="l00929"></a><span class="lineno">  929</span>        <span class="comment">// Consolidate [validator_keys] and [validators]</span></div>
-<div class="line"><a id="l00930" name="l00930"></a><span class="lineno">  930</span>        <a class="code hl_function" href="classripple_1_1BasicConfig.html#a60aca585d76b1121dd4f72b358729456">section</a>(SECTION_VALIDATORS)</div>
-<div class="line"><a id="l00931" name="l00931"></a><span class="lineno">  931</span>            .<a class="code hl_function" href="classripple_1_1Section.html#aa94166c41decc5127022863dfee030b7">append</a>(<a class="code hl_function" href="classripple_1_1BasicConfig.html#a60aca585d76b1121dd4f72b358729456">section</a>(SECTION_VALIDATOR_KEYS).lines());</div>
-<div class="line"><a id="l00932" name="l00932"></a><span class="lineno">  932</span> </div>
-<div class="line"><a id="l00933" name="l00933"></a><span class="lineno">  933</span>        <span class="keywordflow">if</span> (!<a class="code hl_function" href="classripple_1_1BasicConfig.html#a60aca585d76b1121dd4f72b358729456">section</a>(SECTION_VALIDATOR_LIST_SITES).lines().empty() &amp;&amp;</div>
-<div class="line"><a id="l00934" name="l00934"></a><span class="lineno">  934</span>            <a class="code hl_function" href="classripple_1_1BasicConfig.html#a60aca585d76b1121dd4f72b358729456">section</a>(SECTION_VALIDATOR_LIST_KEYS).lines().empty())</div>
-<div class="line"><a id="l00935" name="l00935"></a><span class="lineno">  935</span>        {</div>
-<div class="line"><a id="l00936" name="l00936"></a><span class="lineno">  936</span>            Throw&lt;std::runtime_error&gt;(</div>
-<div class="line"><a id="l00937" name="l00937"></a><span class="lineno">  937</span>                <span class="stringliteral">&quot;[&quot;</span> + <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(SECTION_VALIDATOR_LIST_KEYS) +</div>
-<div class="line"><a id="l00938" name="l00938"></a><span class="lineno">  938</span>                <span class="stringliteral">&quot;] config section is missing&quot;</span>);</div>
-<div class="line"><a id="l00939" name="l00939"></a><span class="lineno">  939</span>        }</div>
-<div class="line"><a id="l00940" name="l00940"></a><span class="lineno">  940</span>    }</div>
-<div class="line"><a id="l00941" name="l00941"></a><span class="lineno">  941</span> </div>
-<div class="line"><a id="l00942" name="l00942"></a><span class="lineno">  942</span>    {</div>
-<div class="line"><a id="l00943" name="l00943"></a><span class="lineno">  943</span>        <span class="keyword">auto</span> <span class="keyword">const</span> part = <a class="code hl_function" href="classripple_1_1BasicConfig.html#a60aca585d76b1121dd4f72b358729456">section</a>(<span class="stringliteral">&quot;features&quot;</span>);</div>
-<div class="line"><a id="l00944" name="l00944"></a><span class="lineno">  944</span>        <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; s : part.values())</div>
-<div class="line"><a id="l00945" name="l00945"></a><span class="lineno">  945</span>        {</div>
-<div class="line"><a id="l00946" name="l00946"></a><span class="lineno">  946</span>            <span class="keywordflow">if</span> (<span class="keyword">auto</span> <span class="keyword">const</span> f = <a class="code hl_function" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(s))</div>
-<div class="line"><a id="l00947" name="l00947"></a><span class="lineno">  947</span>                <a class="code hl_variable" href="classripple_1_1Config.html#ad053293ba571075ebfa6f086ed70fdc5">features</a>.insert(*f);</div>
-<div class="line"><a id="l00948" name="l00948"></a><span class="lineno">  948</span>            <span class="keywordflow">else</span></div>
-<div class="line"><a id="l00949" name="l00949"></a><span class="lineno">  949</span>                Throw&lt;std::runtime_error&gt;(</div>
-<div class="line"><a id="l00950" name="l00950"></a><span class="lineno">  950</span>                    <span class="stringliteral">&quot;Unknown feature: &quot;</span> + s + <span class="stringliteral">&quot;  in config file.&quot;</span>);</div>
-<div class="line"><a id="l00951" name="l00951"></a><span class="lineno">  951</span>        }</div>
-<div class="line"><a id="l00952" name="l00952"></a><span class="lineno">  952</span>    }</div>
-<div class="line"><a id="l00953" name="l00953"></a><span class="lineno">  953</span> </div>
-<div class="line"><a id="l00954" name="l00954"></a><span class="lineno">  954</span>    <span class="comment">// This doesn&#39;t properly belong here, but check to make sure that the</span></div>
-<div class="line"><a id="l00955" name="l00955"></a><span class="lineno">  955</span>    <span class="comment">// value specified for network_quorum is achievable:</span></div>
-<div class="line"><a id="l00956" name="l00956"></a><span class="lineno">  956</span>    {</div>
-<div class="line"><a id="l00957" name="l00957"></a><span class="lineno">  957</span>        <span class="keyword">auto</span> pm = <a class="code hl_variable" href="classripple_1_1Config.html#affa3814314db54dc51e3f56c00ff32e7">PEERS_MAX</a>;</div>
-<div class="line"><a id="l00958" name="l00958"></a><span class="lineno">  958</span> </div>
-<div class="line"><a id="l00959" name="l00959"></a><span class="lineno">  959</span>        <span class="comment">// FIXME this apparently magic value is actually defined as a constant</span></div>
-<div class="line"><a id="l00960" name="l00960"></a><span class="lineno">  960</span>        <span class="comment">//       elsewhere (see defaultMaxPeers) but we handle this check here.</span></div>
-<div class="line"><a id="l00961" name="l00961"></a><span class="lineno">  961</span>        <span class="keywordflow">if</span> (pm == 0)</div>
-<div class="line"><a id="l00962" name="l00962"></a><span class="lineno">  962</span>            pm = 21;</div>
-<div class="line"><a id="l00963" name="l00963"></a><span class="lineno">  963</span> </div>
-<div class="line"><a id="l00964" name="l00964"></a><span class="lineno">  964</span>        <span class="keywordflow">if</span> (<a class="code hl_variable" href="classripple_1_1Config.html#a39f846fcba22b4d253f199f1fdfa8407">NETWORK_QUORUM</a> &gt; pm)</div>
-<div class="line"><a id="l00965" name="l00965"></a><span class="lineno">  965</span>        {</div>
-<div class="line"><a id="l00966" name="l00966"></a><span class="lineno">  966</span>            Throw&lt;std::runtime_error&gt;(</div>
-<div class="line"><a id="l00967" name="l00967"></a><span class="lineno">  967</span>                <span class="stringliteral">&quot;The minimum number of required peers (network_quorum) exceeds &quot;</span></div>
-<div class="line"><a id="l00968" name="l00968"></a><span class="lineno">  968</span>                <span class="stringliteral">&quot;the maximum number of allowed peers (peers_max)&quot;</span>);</div>
-<div class="line"><a id="l00969" name="l00969"></a><span class="lineno">  969</span>        }</div>
-<div class="line"><a id="l00970" name="l00970"></a><span class="lineno">  970</span>    }</div>
-<div class="line"><a id="l00971" name="l00971"></a><span class="lineno">  971</span>}</div>
-<div class="line"><a id="l00972" name="l00972"></a><span class="lineno">  972</span> </div>
-<div class="line"><a id="l00973" name="l00973"></a><span class="lineno">  973</span>boost::filesystem::path</div>
-<div class="line"><a id="l00974" name="l00974"></a><span class="lineno"><a class="line" href="classripple_1_1Config.html#a89f7a9b77a080de077563afcc893f9a8">  974</a></span><a class="code hl_function" href="classripple_1_1Config.html#a89f7a9b77a080de077563afcc893f9a8">Config::getDebugLogFile</a>()<span class="keyword"> const</span></div>
-<div class="line"><a id="l00975" name="l00975"></a><span class="lineno">  975</span><span class="keyword"></span>{</div>
-<div class="line"><a id="l00976" name="l00976"></a><span class="lineno">  976</span>    <span class="keyword">auto</span> log_file = <a class="code hl_variable" href="classripple_1_1Config.html#ac5306142108504259bb902571564a32e">DEBUG_LOGFILE</a>;</div>
-<div class="line"><a id="l00977" name="l00977"></a><span class="lineno">  977</span> </div>
-<div class="line"><a id="l00978" name="l00978"></a><span class="lineno">  978</span>    <span class="keywordflow">if</span> (!log_file.empty() &amp;&amp; !log_file.is_absolute())</div>
-<div class="line"><a id="l00979" name="l00979"></a><span class="lineno">  979</span>    {</div>
-<div class="line"><a id="l00980" name="l00980"></a><span class="lineno">  980</span>        <span class="comment">// Unless an absolute path for the log file is specified, the</span></div>
-<div class="line"><a id="l00981" name="l00981"></a><span class="lineno">  981</span>        <span class="comment">// path is relative to the config file directory.</span></div>
-<div class="line"><a id="l00982" name="l00982"></a><span class="lineno">  982</span>        log_file = boost::filesystem::absolute(log_file, <a class="code hl_variable" href="classripple_1_1Config.html#a3c804476ac537fe7d4fa3623131d4504">CONFIG_DIR</a>);</div>
-<div class="line"><a id="l00983" name="l00983"></a><span class="lineno">  983</span>    }</div>
-<div class="line"><a id="l00984" name="l00984"></a><span class="lineno">  984</span> </div>
-<div class="line"><a id="l00985" name="l00985"></a><span class="lineno">  985</span>    <span class="keywordflow">if</span> (!log_file.empty())</div>
-<div class="line"><a id="l00986" name="l00986"></a><span class="lineno">  986</span>    {</div>
-<div class="line"><a id="l00987" name="l00987"></a><span class="lineno">  987</span>        <span class="keyword">auto</span> log_dir = log_file.parent_path();</div>
-<div class="line"><a id="l00988" name="l00988"></a><span class="lineno">  988</span> </div>
-<div class="line"><a id="l00989" name="l00989"></a><span class="lineno">  989</span>        <span class="keywordflow">if</span> (!boost::filesystem::is_directory(log_dir))</div>
-<div class="line"><a id="l00990" name="l00990"></a><span class="lineno">  990</span>        {</div>
-<div class="line"><a id="l00991" name="l00991"></a><span class="lineno">  991</span>            boost::system::error_code ec;</div>
-<div class="line"><a id="l00992" name="l00992"></a><span class="lineno">  992</span>            boost::filesystem::create_directories(log_dir, ec);</div>
-<div class="line"><a id="l00993" name="l00993"></a><span class="lineno">  993</span> </div>
-<div class="line"><a id="l00994" name="l00994"></a><span class="lineno">  994</span>            <span class="comment">// If we fail, we warn but continue so that the calling code can</span></div>
-<div class="line"><a id="l00995" name="l00995"></a><span class="lineno">  995</span>            <span class="comment">// decide how to handle this situation.</span></div>
-<div class="line"><a id="l00996" name="l00996"></a><span class="lineno">  996</span>            <span class="keywordflow">if</span> (ec)</div>
-<div class="line"><a id="l00997" name="l00997"></a><span class="lineno">  997</span>            {</div>
-<div class="line"><a id="l00998" name="l00998"></a><span class="lineno">  998</span>                <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/io/cerr.html">std::cerr</a> &lt;&lt; <span class="stringliteral">&quot;Unable to create log file path &quot;</span> &lt;&lt; log_dir</div>
-<div class="line"><a id="l00999" name="l00999"></a><span class="lineno">  999</span>                          &lt;&lt; <span class="stringliteral">&quot;: &quot;</span> &lt;&lt; ec.message() &lt;&lt; <span class="charliteral">&#39;\n&#39;</span>;</div>
-<div class="line"><a id="l01000" name="l01000"></a><span class="lineno"> 1000</span>            }</div>
-<div class="line"><a id="l01001" name="l01001"></a><span class="lineno"> 1001</span>        }</div>
-<div class="line"><a id="l01002" name="l01002"></a><span class="lineno"> 1002</span>    }</div>
-<div class="line"><a id="l01003" name="l01003"></a><span class="lineno"> 1003</span> </div>
-<div class="line"><a id="l01004" name="l01004"></a><span class="lineno"> 1004</span>    <span class="keywordflow">return</span> log_file;</div>
-<div class="line"><a id="l01005" name="l01005"></a><span class="lineno"> 1005</span>}</div>
-<div class="line"><a id="l01006" name="l01006"></a><span class="lineno"> 1006</span> </div>
-<div class="line"><a id="l01007" name="l01007"></a><span class="lineno"> 1007</span><span class="keywordtype">int</span></div>
-<div class="line"><a id="l01008" name="l01008"></a><span class="lineno"><a class="line" href="classripple_1_1Config.html#abe2b226bd6705b7010feb45f66363142"> 1008</a></span><a class="code hl_function" href="classripple_1_1Config.html#abe2b226bd6705b7010feb45f66363142">Config::getValueFor</a>(<a class="code hl_enumeration" href="namespaceripple.html#a1b38e742ac7fe4c3a80a397e06b83dcb">SizedItem</a> item, <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;std::size_t&gt;</a> node)<span class="keyword"> const</span></div>
-<div class="line"><a id="l01009" name="l01009"></a><span class="lineno"> 1009</span><span class="keyword"></span>{</div>
-<div class="line"><a id="l01010" name="l01010"></a><span class="lineno"> 1010</span>    <span class="keyword">auto</span> <span class="keyword">const</span> index = <span class="keyword">static_cast&lt;</span><a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/underlying_type.html">std::underlying_type_t&lt;SizedItem&gt;</a><span class="keyword">&gt;</span>(item);</div>
-<div class="line"><a id="l01011" name="l01011"></a><span class="lineno"> 1011</span>    XRPL_ASSERT(</div>
-<div class="line"><a id="l01012" name="l01012"></a><span class="lineno"> 1012</span>        index &lt; <a class="code hl_variable" href="namespaceripple.html#af1a5dc39161a0005b4e1bb076ba1ef47">sizedItems</a>.size(),</div>
-<div class="line"><a id="l01013" name="l01013"></a><span class="lineno"> 1013</span>        <span class="stringliteral">&quot;ripple::Config::getValueFor : valid index input&quot;</span>);</div>
-<div class="line"><a id="l01014" name="l01014"></a><span class="lineno"> 1014</span>    XRPL_ASSERT(</div>
-<div class="line"><a id="l01015" name="l01015"></a><span class="lineno"> 1015</span>        !node || *node &lt;= 4,</div>
-<div class="line"><a id="l01016" name="l01016"></a><span class="lineno"> 1016</span>        <span class="stringliteral">&quot;ripple::Config::getValueFor : unset or valid node&quot;</span>);</div>
-<div class="line"><a id="l01017" name="l01017"></a><span class="lineno"> 1017</span>    <span class="keywordflow">return</span> <a class="code hl_variable" href="namespaceripple.html#af1a5dc39161a0005b4e1bb076ba1ef47">sizedItems</a>.at(index).second.at(node.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/utility/optional/value_or.html">value_or</a>(<a class="code hl_variable" href="classripple_1_1Config.html#aaae716bbe446917d6991aca218368f9d">NODE_SIZE</a>));</div>
-<div class="line"><a id="l01018" name="l01018"></a><span class="lineno"> 1018</span>}</div>
-<div class="line"><a id="l01019" name="l01019"></a><span class="lineno"> 1019</span> </div>
-<div class="line"><a id="l01020" name="l01020"></a><span class="lineno"> 1020</span><a class="code hl_struct" href="structripple_1_1FeeSetup.html">FeeSetup</a></div>
-<div class="line"><a id="l01021" name="l01021"></a><span class="lineno"><a class="line" href="namespaceripple.html#ac297eefd69dc2e30749d2446715b3f9c"> 1021</a></span><a class="code hl_function" href="namespaceripple.html#ac297eefd69dc2e30749d2446715b3f9c">setup_FeeVote</a>(<a class="code hl_class" href="classripple_1_1Section.html">Section</a> <span class="keyword">const</span>&amp; section)</div>
-<div class="line"><a id="l01022" name="l01022"></a><span class="lineno"> 1022</span>{</div>
-<div class="line"><a id="l01023" name="l01023"></a><span class="lineno"> 1023</span>    <a class="code hl_struct" href="structripple_1_1FeeSetup.html">FeeSetup</a> setup;</div>
-<div class="line"><a id="l01024" name="l01024"></a><span class="lineno"> 1024</span>    {</div>
-<div class="line"><a id="l01025" name="l01025"></a><span class="lineno"> 1025</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> temp;</div>
-<div class="line"><a id="l01026" name="l01026"></a><span class="lineno"> 1026</span>        <span class="keywordflow">if</span> (<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/set.html">set</a>(temp, <span class="stringliteral">&quot;reference_fee&quot;</span>, section) &amp;&amp;</div>
-<div class="line"><a id="l01027" name="l01027"></a><span class="lineno"> 1027</span>            temp &lt;= <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/numeric_limits.html">std::numeric_limits&lt;XRPAmount::value_type&gt;::max</a>())</div>
-<div class="line"><a id="l01028" name="l01028"></a><span class="lineno"> 1028</span>            setup.<a class="code hl_variable" href="structripple_1_1FeeSetup.html#a0eec4da1884d29e364b4475f57f1453d">reference_fee</a> = temp;</div>
-<div class="line"><a id="l01029" name="l01029"></a><span class="lineno"> 1029</span>    }</div>
-<div class="line"><a id="l01030" name="l01030"></a><span class="lineno"> 1030</span>    {</div>
-<div class="line"><a id="l01031" name="l01031"></a><span class="lineno"> 1031</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> temp;</div>
-<div class="line"><a id="l01032" name="l01032"></a><span class="lineno"> 1032</span>        <span class="keywordflow">if</span> (<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/set.html">set</a>(temp, <span class="stringliteral">&quot;account_reserve&quot;</span>, section))</div>
-<div class="line"><a id="l01033" name="l01033"></a><span class="lineno"> 1033</span>            setup.<a class="code hl_variable" href="structripple_1_1FeeSetup.html#a663fe50fc0e114c4e1d16524aa008a6c">account_reserve</a> = temp;</div>
-<div class="line"><a id="l01034" name="l01034"></a><span class="lineno"> 1034</span>        <span class="keywordflow">if</span> (<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/set.html">set</a>(temp, <span class="stringliteral">&quot;owner_reserve&quot;</span>, section))</div>
-<div class="line"><a id="l01035" name="l01035"></a><span class="lineno"> 1035</span>            setup.<a class="code hl_variable" href="structripple_1_1FeeSetup.html#a4e137c8b9cd20b448515c830fcdd417c">owner_reserve</a> = temp;</div>
-<div class="line"><a id="l01036" name="l01036"></a><span class="lineno"> 1036</span>    }</div>
-<div class="line"><a id="l01037" name="l01037"></a><span class="lineno"> 1037</span>    <span class="keywordflow">return</span> setup;</div>
-<div class="line"><a id="l01038" name="l01038"></a><span class="lineno"> 1038</span>}</div>
-<div class="line"><a id="l01039" name="l01039"></a><span class="lineno"> 1039</span> </div>
-<div class="line"><a id="l01040" name="l01040"></a><span class="lineno"> 1040</span>}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a id="l00915" name="l00915"></a><span class="lineno">  915</span>            <span class="keyword">auto</span> valListThreshold =</div>
+<div class="line"><a id="l00916" name="l00916"></a><span class="lineno">  916</span>                <a class="code hl_function" href="namespaceripple.html#a103128a951cc2a0a8477291eaea4b907">getIniFileSection</a>(iniFile, SECTION_VALIDATOR_LIST_THRESHOLD);</div>
+<div class="line"><a id="l00917" name="l00917"></a><span class="lineno">  917</span> </div>
+<div class="line"><a id="l00918" name="l00918"></a><span class="lineno">  918</span>            <span class="keywordflow">if</span> (valListThreshold)</div>
+<div class="line"><a id="l00919" name="l00919"></a><span class="lineno">  919</span>                <a class="code hl_function" href="classripple_1_1BasicConfig.html#a60aca585d76b1121dd4f72b358729456">section</a>(SECTION_VALIDATOR_LIST_THRESHOLD)</div>
+<div class="line"><a id="l00920" name="l00920"></a><span class="lineno">  920</span>                    .<a class="code hl_function" href="classripple_1_1Section.html#aa94166c41decc5127022863dfee030b7">append</a>(*valListThreshold);</div>
+<div class="line"><a id="l00921" name="l00921"></a><span class="lineno">  921</span> </div>
+<div class="line"><a id="l00922" name="l00922"></a><span class="lineno">  922</span>            <span class="keywordflow">if</span> (!entries &amp;&amp; !valKeyEntries &amp;&amp; !valListKeys)</div>
+<div class="line"><a id="l00923" name="l00923"></a><span class="lineno">  923</span>                Throw&lt;std::runtime_error&gt;(</div>
+<div class="line"><a id="l00924" name="l00924"></a><span class="lineno">  924</span>                    <span class="stringliteral">&quot;The file specified in [&quot;</span> SECTION_VALIDATORS_FILE</div>
+<div class="line"><a id="l00925" name="l00925"></a><span class="lineno">  925</span>                    <span class="stringliteral">&quot;] &quot;</span></div>
+<div class="line"><a id="l00926" name="l00926"></a><span class="lineno">  926</span>                    <span class="stringliteral">&quot;does not contain a [&quot;</span> SECTION_VALIDATORS</div>
+<div class="line"><a id="l00927" name="l00927"></a><span class="lineno">  927</span>                    <span class="stringliteral">&quot;], &quot;</span></div>
+<div class="line"><a id="l00928" name="l00928"></a><span class="lineno">  928</span>                    <span class="stringliteral">&quot;[&quot;</span> SECTION_VALIDATOR_KEYS</div>
+<div class="line"><a id="l00929" name="l00929"></a><span class="lineno">  929</span>                    <span class="stringliteral">&quot;] or &quot;</span></div>
+<div class="line"><a id="l00930" name="l00930"></a><span class="lineno">  930</span>                    <span class="stringliteral">&quot;[&quot;</span> SECTION_VALIDATOR_LIST_KEYS</div>
+<div class="line"><a id="l00931" name="l00931"></a><span class="lineno">  931</span>                    <span class="stringliteral">&quot;]&quot;</span></div>
+<div class="line"><a id="l00932" name="l00932"></a><span class="lineno">  932</span>                    <span class="stringliteral">&quot; section: &quot;</span> +</div>
+<div class="line"><a id="l00933" name="l00933"></a><span class="lineno">  933</span>                    validatorsFile.string());</div>
+<div class="line"><a id="l00934" name="l00934"></a><span class="lineno">  934</span>        }</div>
+<div class="line"><a id="l00935" name="l00935"></a><span class="lineno">  935</span> </div>
+<div class="line"><a id="l00936" name="l00936"></a><span class="lineno">  936</span>        <a class="code hl_variable" href="classripple_1_1Config.html#a72358e637bc2a2b7132d70e273126447">VALIDATOR_LIST_THRESHOLD</a> = [&amp;]() -&gt; <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;std::size_t&gt;</a> {</div>
+<div class="line"><a id="l00937" name="l00937"></a><span class="lineno">  937</span>            <span class="keyword">auto</span> <span class="keyword">const</span>&amp; listThreshold =</div>
+<div class="line"><a id="l00938" name="l00938"></a><span class="lineno">  938</span>                <a class="code hl_function" href="classripple_1_1BasicConfig.html#a60aca585d76b1121dd4f72b358729456">section</a>(SECTION_VALIDATOR_LIST_THRESHOLD);</div>
+<div class="line"><a id="l00939" name="l00939"></a><span class="lineno">  939</span>            <span class="keywordflow">if</span> (listThreshold.lines().empty())</div>
+<div class="line"><a id="l00940" name="l00940"></a><span class="lineno">  940</span>                <span class="keywordflow">return</span> std::nullopt;</div>
+<div class="line"><a id="l00941" name="l00941"></a><span class="lineno">  941</span>            <span class="keywordflow">else</span> <span class="keywordflow">if</span> (listThreshold.values().size() == 1)</div>
+<div class="line"><a id="l00942" name="l00942"></a><span class="lineno">  942</span>            {</div>
+<div class="line"><a id="l00943" name="l00943"></a><span class="lineno">  943</span>                <span class="keyword">auto</span> strTemp = listThreshold.values()[0];</div>
+<div class="line"><a id="l00944" name="l00944"></a><span class="lineno">  944</span>                <span class="keyword">auto</span> <span class="keyword">const</span> listThreshold =</div>
+<div class="line"><a id="l00945" name="l00945"></a><span class="lineno">  945</span>                    beast::lexicalCastThrow&lt;std::size_t&gt;(strTemp);</div>
+<div class="line"><a id="l00946" name="l00946"></a><span class="lineno">  946</span>                <span class="keywordflow">if</span> (listThreshold == 0)</div>
+<div class="line"><a id="l00947" name="l00947"></a><span class="lineno">  947</span>                    <span class="keywordflow">return</span> std::nullopt;  <span class="comment">// NOTE: Explicitly ask for computed</span></div>
+<div class="line"><a id="l00948" name="l00948"></a><span class="lineno">  948</span>                <span class="keywordflow">else</span> <span class="keywordflow">if</span> (</div>
+<div class="line"><a id="l00949" name="l00949"></a><span class="lineno">  949</span>                    listThreshold &gt;</div>
+<div class="line"><a id="l00950" name="l00950"></a><span class="lineno">  950</span>                    <a class="code hl_function" href="classripple_1_1BasicConfig.html#a60aca585d76b1121dd4f72b358729456">section</a>(SECTION_VALIDATOR_LIST_KEYS).values().size())</div>
+<div class="line"><a id="l00951" name="l00951"></a><span class="lineno">  951</span>                {</div>
+<div class="line"><a id="l00952" name="l00952"></a><span class="lineno">  952</span>                    Throw&lt;std::runtime_error&gt;(</div>
+<div class="line"><a id="l00953" name="l00953"></a><span class="lineno">  953</span>                        <span class="stringliteral">&quot;Value in config section &quot;</span></div>
+<div class="line"><a id="l00954" name="l00954"></a><span class="lineno">  954</span>                        <span class="stringliteral">&quot;[&quot;</span> SECTION_VALIDATOR_LIST_THRESHOLD</div>
+<div class="line"><a id="l00955" name="l00955"></a><span class="lineno">  955</span>                        <span class="stringliteral">&quot;] exceeds the number of configured list keys&quot;</span>);</div>
+<div class="line"><a id="l00956" name="l00956"></a><span class="lineno">  956</span>                }</div>
+<div class="line"><a id="l00957" name="l00957"></a><span class="lineno">  957</span>                <span class="keywordflow">return</span> listThreshold;</div>
+<div class="line"><a id="l00958" name="l00958"></a><span class="lineno">  958</span>            }</div>
+<div class="line"><a id="l00959" name="l00959"></a><span class="lineno">  959</span>            <span class="keywordflow">else</span></div>
+<div class="line"><a id="l00960" name="l00960"></a><span class="lineno">  960</span>            {</div>
+<div class="line"><a id="l00961" name="l00961"></a><span class="lineno">  961</span>                Throw&lt;std::runtime_error&gt;(</div>
+<div class="line"><a id="l00962" name="l00962"></a><span class="lineno">  962</span>                    <span class="stringliteral">&quot;Config section &quot;</span></div>
+<div class="line"><a id="l00963" name="l00963"></a><span class="lineno">  963</span>                    <span class="stringliteral">&quot;[&quot;</span> SECTION_VALIDATOR_LIST_THRESHOLD</div>
+<div class="line"><a id="l00964" name="l00964"></a><span class="lineno">  964</span>                    <span class="stringliteral">&quot;] should contain single value only&quot;</span>);</div>
+<div class="line"><a id="l00965" name="l00965"></a><span class="lineno">  965</span>            }</div>
+<div class="line"><a id="l00966" name="l00966"></a><span class="lineno">  966</span>        }();</div>
+<div class="line"><a id="l00967" name="l00967"></a><span class="lineno">  967</span> </div>
+<div class="line"><a id="l00968" name="l00968"></a><span class="lineno">  968</span>        <span class="comment">// Consolidate [validator_keys] and [validators]</span></div>
+<div class="line"><a id="l00969" name="l00969"></a><span class="lineno">  969</span>        <a class="code hl_function" href="classripple_1_1BasicConfig.html#a60aca585d76b1121dd4f72b358729456">section</a>(SECTION_VALIDATORS)</div>
+<div class="line"><a id="l00970" name="l00970"></a><span class="lineno">  970</span>            .<a class="code hl_function" href="classripple_1_1Section.html#aa94166c41decc5127022863dfee030b7">append</a>(<a class="code hl_function" href="classripple_1_1BasicConfig.html#a60aca585d76b1121dd4f72b358729456">section</a>(SECTION_VALIDATOR_KEYS).lines());</div>
+<div class="line"><a id="l00971" name="l00971"></a><span class="lineno">  971</span> </div>
+<div class="line"><a id="l00972" name="l00972"></a><span class="lineno">  972</span>        <span class="keywordflow">if</span> (!<a class="code hl_function" href="classripple_1_1BasicConfig.html#a60aca585d76b1121dd4f72b358729456">section</a>(SECTION_VALIDATOR_LIST_SITES).lines().empty() &amp;&amp;</div>
+<div class="line"><a id="l00973" name="l00973"></a><span class="lineno">  973</span>            <a class="code hl_function" href="classripple_1_1BasicConfig.html#a60aca585d76b1121dd4f72b358729456">section</a>(SECTION_VALIDATOR_LIST_KEYS).lines().empty())</div>
+<div class="line"><a id="l00974" name="l00974"></a><span class="lineno">  974</span>        {</div>
+<div class="line"><a id="l00975" name="l00975"></a><span class="lineno">  975</span>            Throw&lt;std::runtime_error&gt;(</div>
+<div class="line"><a id="l00976" name="l00976"></a><span class="lineno">  976</span>                <span class="stringliteral">&quot;[&quot;</span> + <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(SECTION_VALIDATOR_LIST_KEYS) +</div>
+<div class="line"><a id="l00977" name="l00977"></a><span class="lineno">  977</span>                <span class="stringliteral">&quot;] config section is missing&quot;</span>);</div>
+<div class="line"><a id="l00978" name="l00978"></a><span class="lineno">  978</span>        }</div>
+<div class="line"><a id="l00979" name="l00979"></a><span class="lineno">  979</span>    }</div>
+<div class="line"><a id="l00980" name="l00980"></a><span class="lineno">  980</span> </div>
+<div class="line"><a id="l00981" name="l00981"></a><span class="lineno">  981</span>    {</div>
+<div class="line"><a id="l00982" name="l00982"></a><span class="lineno">  982</span>        <span class="keyword">auto</span> <span class="keyword">const</span> part = <a class="code hl_function" href="classripple_1_1BasicConfig.html#a60aca585d76b1121dd4f72b358729456">section</a>(<span class="stringliteral">&quot;features&quot;</span>);</div>
+<div class="line"><a id="l00983" name="l00983"></a><span class="lineno">  983</span>        <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; s : part.values())</div>
+<div class="line"><a id="l00984" name="l00984"></a><span class="lineno">  984</span>        {</div>
+<div class="line"><a id="l00985" name="l00985"></a><span class="lineno">  985</span>            <span class="keywordflow">if</span> (<span class="keyword">auto</span> <span class="keyword">const</span> f = <a class="code hl_function" href="namespaceripple.html#aa3339c924836be74a553eb0fd5966a3c">getRegisteredFeature</a>(s))</div>
+<div class="line"><a id="l00986" name="l00986"></a><span class="lineno">  986</span>                <a class="code hl_variable" href="classripple_1_1Config.html#ad053293ba571075ebfa6f086ed70fdc5">features</a>.insert(*f);</div>
+<div class="line"><a id="l00987" name="l00987"></a><span class="lineno">  987</span>            <span class="keywordflow">else</span></div>
+<div class="line"><a id="l00988" name="l00988"></a><span class="lineno">  988</span>                Throw&lt;std::runtime_error&gt;(</div>
+<div class="line"><a id="l00989" name="l00989"></a><span class="lineno">  989</span>                    <span class="stringliteral">&quot;Unknown feature: &quot;</span> + s + <span class="stringliteral">&quot;  in config file.&quot;</span>);</div>
+<div class="line"><a id="l00990" name="l00990"></a><span class="lineno">  990</span>        }</div>
+<div class="line"><a id="l00991" name="l00991"></a><span class="lineno">  991</span>    }</div>
+<div class="line"><a id="l00992" name="l00992"></a><span class="lineno">  992</span> </div>
+<div class="line"><a id="l00993" name="l00993"></a><span class="lineno">  993</span>    <span class="comment">// This doesn&#39;t properly belong here, but check to make sure that the</span></div>
+<div class="line"><a id="l00994" name="l00994"></a><span class="lineno">  994</span>    <span class="comment">// value specified for network_quorum is achievable:</span></div>
+<div class="line"><a id="l00995" name="l00995"></a><span class="lineno">  995</span>    {</div>
+<div class="line"><a id="l00996" name="l00996"></a><span class="lineno">  996</span>        <span class="keyword">auto</span> pm = <a class="code hl_variable" href="classripple_1_1Config.html#affa3814314db54dc51e3f56c00ff32e7">PEERS_MAX</a>;</div>
+<div class="line"><a id="l00997" name="l00997"></a><span class="lineno">  997</span> </div>
+<div class="line"><a id="l00998" name="l00998"></a><span class="lineno">  998</span>        <span class="comment">// FIXME this apparently magic value is actually defined as a constant</span></div>
+<div class="line"><a id="l00999" name="l00999"></a><span class="lineno">  999</span>        <span class="comment">//       elsewhere (see defaultMaxPeers) but we handle this check here.</span></div>
+<div class="line"><a id="l01000" name="l01000"></a><span class="lineno"> 1000</span>        <span class="keywordflow">if</span> (pm == 0)</div>
+<div class="line"><a id="l01001" name="l01001"></a><span class="lineno"> 1001</span>            pm = 21;</div>
+<div class="line"><a id="l01002" name="l01002"></a><span class="lineno"> 1002</span> </div>
+<div class="line"><a id="l01003" name="l01003"></a><span class="lineno"> 1003</span>        <span class="keywordflow">if</span> (<a class="code hl_variable" href="classripple_1_1Config.html#a39f846fcba22b4d253f199f1fdfa8407">NETWORK_QUORUM</a> &gt; pm)</div>
+<div class="line"><a id="l01004" name="l01004"></a><span class="lineno"> 1004</span>        {</div>
+<div class="line"><a id="l01005" name="l01005"></a><span class="lineno"> 1005</span>            Throw&lt;std::runtime_error&gt;(</div>
+<div class="line"><a id="l01006" name="l01006"></a><span class="lineno"> 1006</span>                <span class="stringliteral">&quot;The minimum number of required peers (network_quorum) exceeds &quot;</span></div>
+<div class="line"><a id="l01007" name="l01007"></a><span class="lineno"> 1007</span>                <span class="stringliteral">&quot;the maximum number of allowed peers (peers_max)&quot;</span>);</div>
+<div class="line"><a id="l01008" name="l01008"></a><span class="lineno"> 1008</span>        }</div>
+<div class="line"><a id="l01009" name="l01009"></a><span class="lineno"> 1009</span>    }</div>
+<div class="line"><a id="l01010" name="l01010"></a><span class="lineno"> 1010</span>}</div>
+<div class="line"><a id="l01011" name="l01011"></a><span class="lineno"> 1011</span> </div>
+<div class="line"><a id="l01012" name="l01012"></a><span class="lineno"> 1012</span>boost::filesystem::path</div>
+<div class="line"><a id="l01013" name="l01013"></a><span class="lineno"><a class="line" href="classripple_1_1Config.html#a89f7a9b77a080de077563afcc893f9a8"> 1013</a></span><a class="code hl_function" href="classripple_1_1Config.html#a89f7a9b77a080de077563afcc893f9a8">Config::getDebugLogFile</a>()<span class="keyword"> const</span></div>
+<div class="line"><a id="l01014" name="l01014"></a><span class="lineno"> 1014</span><span class="keyword"></span>{</div>
+<div class="line"><a id="l01015" name="l01015"></a><span class="lineno"> 1015</span>    <span class="keyword">auto</span> log_file = <a class="code hl_variable" href="classripple_1_1Config.html#ac5306142108504259bb902571564a32e">DEBUG_LOGFILE</a>;</div>
+<div class="line"><a id="l01016" name="l01016"></a><span class="lineno"> 1016</span> </div>
+<div class="line"><a id="l01017" name="l01017"></a><span class="lineno"> 1017</span>    <span class="keywordflow">if</span> (!log_file.empty() &amp;&amp; !log_file.is_absolute())</div>
+<div class="line"><a id="l01018" name="l01018"></a><span class="lineno"> 1018</span>    {</div>
+<div class="line"><a id="l01019" name="l01019"></a><span class="lineno"> 1019</span>        <span class="comment">// Unless an absolute path for the log file is specified, the</span></div>
+<div class="line"><a id="l01020" name="l01020"></a><span class="lineno"> 1020</span>        <span class="comment">// path is relative to the config file directory.</span></div>
+<div class="line"><a id="l01021" name="l01021"></a><span class="lineno"> 1021</span>        log_file = boost::filesystem::absolute(log_file, <a class="code hl_variable" href="classripple_1_1Config.html#a3c804476ac537fe7d4fa3623131d4504">CONFIG_DIR</a>);</div>
+<div class="line"><a id="l01022" name="l01022"></a><span class="lineno"> 1022</span>    }</div>
+<div class="line"><a id="l01023" name="l01023"></a><span class="lineno"> 1023</span> </div>
+<div class="line"><a id="l01024" name="l01024"></a><span class="lineno"> 1024</span>    <span class="keywordflow">if</span> (!log_file.empty())</div>
+<div class="line"><a id="l01025" name="l01025"></a><span class="lineno"> 1025</span>    {</div>
+<div class="line"><a id="l01026" name="l01026"></a><span class="lineno"> 1026</span>        <span class="keyword">auto</span> log_dir = log_file.parent_path();</div>
+<div class="line"><a id="l01027" name="l01027"></a><span class="lineno"> 1027</span> </div>
+<div class="line"><a id="l01028" name="l01028"></a><span class="lineno"> 1028</span>        <span class="keywordflow">if</span> (!boost::filesystem::is_directory(log_dir))</div>
+<div class="line"><a id="l01029" name="l01029"></a><span class="lineno"> 1029</span>        {</div>
+<div class="line"><a id="l01030" name="l01030"></a><span class="lineno"> 1030</span>            boost::system::error_code ec;</div>
+<div class="line"><a id="l01031" name="l01031"></a><span class="lineno"> 1031</span>            boost::filesystem::create_directories(log_dir, ec);</div>
+<div class="line"><a id="l01032" name="l01032"></a><span class="lineno"> 1032</span> </div>
+<div class="line"><a id="l01033" name="l01033"></a><span class="lineno"> 1033</span>            <span class="comment">// If we fail, we warn but continue so that the calling code can</span></div>
+<div class="line"><a id="l01034" name="l01034"></a><span class="lineno"> 1034</span>            <span class="comment">// decide how to handle this situation.</span></div>
+<div class="line"><a id="l01035" name="l01035"></a><span class="lineno"> 1035</span>            <span class="keywordflow">if</span> (ec)</div>
+<div class="line"><a id="l01036" name="l01036"></a><span class="lineno"> 1036</span>            {</div>
+<div class="line"><a id="l01037" name="l01037"></a><span class="lineno"> 1037</span>                <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/io/cerr.html">std::cerr</a> &lt;&lt; <span class="stringliteral">&quot;Unable to create log file path &quot;</span> &lt;&lt; log_dir</div>
+<div class="line"><a id="l01038" name="l01038"></a><span class="lineno"> 1038</span>                          &lt;&lt; <span class="stringliteral">&quot;: &quot;</span> &lt;&lt; ec.message() &lt;&lt; <span class="charliteral">&#39;\n&#39;</span>;</div>
+<div class="line"><a id="l01039" name="l01039"></a><span class="lineno"> 1039</span>            }</div>
+<div class="line"><a id="l01040" name="l01040"></a><span class="lineno"> 1040</span>        }</div>
+<div class="line"><a id="l01041" name="l01041"></a><span class="lineno"> 1041</span>    }</div>
+<div class="line"><a id="l01042" name="l01042"></a><span class="lineno"> 1042</span> </div>
+<div class="line"><a id="l01043" name="l01043"></a><span class="lineno"> 1043</span>    <span class="keywordflow">return</span> log_file;</div>
+<div class="line"><a id="l01044" name="l01044"></a><span class="lineno"> 1044</span>}</div>
+<div class="line"><a id="l01045" name="l01045"></a><span class="lineno"> 1045</span> </div>
+<div class="line"><a id="l01046" name="l01046"></a><span class="lineno"> 1046</span><span class="keywordtype">int</span></div>
+<div class="line"><a id="l01047" name="l01047"></a><span class="lineno"><a class="line" href="classripple_1_1Config.html#abe2b226bd6705b7010feb45f66363142"> 1047</a></span><a class="code hl_function" href="classripple_1_1Config.html#abe2b226bd6705b7010feb45f66363142">Config::getValueFor</a>(<a class="code hl_enumeration" href="namespaceripple.html#a1b38e742ac7fe4c3a80a397e06b83dcb">SizedItem</a> item, <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;std::size_t&gt;</a> node)<span class="keyword"> const</span></div>
+<div class="line"><a id="l01048" name="l01048"></a><span class="lineno"> 1048</span><span class="keyword"></span>{</div>
+<div class="line"><a id="l01049" name="l01049"></a><span class="lineno"> 1049</span>    <span class="keyword">auto</span> <span class="keyword">const</span> index = <span class="keyword">static_cast&lt;</span><a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/underlying_type.html">std::underlying_type_t&lt;SizedItem&gt;</a><span class="keyword">&gt;</span>(item);</div>
+<div class="line"><a id="l01050" name="l01050"></a><span class="lineno"> 1050</span>    XRPL_ASSERT(</div>
+<div class="line"><a id="l01051" name="l01051"></a><span class="lineno"> 1051</span>        index &lt; <a class="code hl_variable" href="namespaceripple.html#af1a5dc39161a0005b4e1bb076ba1ef47">sizedItems</a>.size(),</div>
+<div class="line"><a id="l01052" name="l01052"></a><span class="lineno"> 1052</span>        <span class="stringliteral">&quot;ripple::Config::getValueFor : valid index input&quot;</span>);</div>
+<div class="line"><a id="l01053" name="l01053"></a><span class="lineno"> 1053</span>    XRPL_ASSERT(</div>
+<div class="line"><a id="l01054" name="l01054"></a><span class="lineno"> 1054</span>        !node || *node &lt;= 4,</div>
+<div class="line"><a id="l01055" name="l01055"></a><span class="lineno"> 1055</span>        <span class="stringliteral">&quot;ripple::Config::getValueFor : unset or valid node&quot;</span>);</div>
+<div class="line"><a id="l01056" name="l01056"></a><span class="lineno"> 1056</span>    <span class="keywordflow">return</span> <a class="code hl_variable" href="namespaceripple.html#af1a5dc39161a0005b4e1bb076ba1ef47">sizedItems</a>.at(index).second.at(node.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/utility/optional/value_or.html">value_or</a>(<a class="code hl_variable" href="classripple_1_1Config.html#aaae716bbe446917d6991aca218368f9d">NODE_SIZE</a>));</div>
+<div class="line"><a id="l01057" name="l01057"></a><span class="lineno"> 1057</span>}</div>
+<div class="line"><a id="l01058" name="l01058"></a><span class="lineno"> 1058</span> </div>
+<div class="line"><a id="l01059" name="l01059"></a><span class="lineno"> 1059</span><a class="code hl_struct" href="structripple_1_1FeeSetup.html">FeeSetup</a></div>
+<div class="line"><a id="l01060" name="l01060"></a><span class="lineno"><a class="line" href="namespaceripple.html#ac297eefd69dc2e30749d2446715b3f9c"> 1060</a></span><a class="code hl_function" href="namespaceripple.html#ac297eefd69dc2e30749d2446715b3f9c">setup_FeeVote</a>(<a class="code hl_class" href="classripple_1_1Section.html">Section</a> <span class="keyword">const</span>&amp; section)</div>
+<div class="line"><a id="l01061" name="l01061"></a><span class="lineno"> 1061</span>{</div>
+<div class="line"><a id="l01062" name="l01062"></a><span class="lineno"> 1062</span>    <a class="code hl_struct" href="structripple_1_1FeeSetup.html">FeeSetup</a> setup;</div>
+<div class="line"><a id="l01063" name="l01063"></a><span class="lineno"> 1063</span>    {</div>
+<div class="line"><a id="l01064" name="l01064"></a><span class="lineno"> 1064</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> temp;</div>
+<div class="line"><a id="l01065" name="l01065"></a><span class="lineno"> 1065</span>        <span class="keywordflow">if</span> (<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/set.html">set</a>(temp, <span class="stringliteral">&quot;reference_fee&quot;</span>, section) &amp;&amp;</div>
+<div class="line"><a id="l01066" name="l01066"></a><span class="lineno"> 1066</span>            temp &lt;= <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/numeric_limits.html">std::numeric_limits&lt;XRPAmount::value_type&gt;::max</a>())</div>
+<div class="line"><a id="l01067" name="l01067"></a><span class="lineno"> 1067</span>            setup.<a class="code hl_variable" href="structripple_1_1FeeSetup.html#a0eec4da1884d29e364b4475f57f1453d">reference_fee</a> = temp;</div>
+<div class="line"><a id="l01068" name="l01068"></a><span class="lineno"> 1068</span>    }</div>
+<div class="line"><a id="l01069" name="l01069"></a><span class="lineno"> 1069</span>    {</div>
+<div class="line"><a id="l01070" name="l01070"></a><span class="lineno"> 1070</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> temp;</div>
+<div class="line"><a id="l01071" name="l01071"></a><span class="lineno"> 1071</span>        <span class="keywordflow">if</span> (<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/set.html">set</a>(temp, <span class="stringliteral">&quot;account_reserve&quot;</span>, section))</div>
+<div class="line"><a id="l01072" name="l01072"></a><span class="lineno"> 1072</span>            setup.<a class="code hl_variable" href="structripple_1_1FeeSetup.html#a663fe50fc0e114c4e1d16524aa008a6c">account_reserve</a> = temp;</div>
+<div class="line"><a id="l01073" name="l01073"></a><span class="lineno"> 1073</span>        <span class="keywordflow">if</span> (<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/set.html">set</a>(temp, <span class="stringliteral">&quot;owner_reserve&quot;</span>, section))</div>
+<div class="line"><a id="l01074" name="l01074"></a><span class="lineno"> 1074</span>            setup.<a class="code hl_variable" href="structripple_1_1FeeSetup.html#a4e137c8b9cd20b448515c830fcdd417c">owner_reserve</a> = temp;</div>
+<div class="line"><a id="l01075" name="l01075"></a><span class="lineno"> 1075</span>    }</div>
+<div class="line"><a id="l01076" name="l01076"></a><span class="lineno"> 1076</span>    <span class="keywordflow">return</span> setup;</div>
+<div class="line"><a id="l01077" name="l01077"></a><span class="lineno"> 1077</span>}</div>
+<div class="line"><a id="l01078" name="l01078"></a><span class="lineno"> 1078</span> </div>
+<div class="line"><a id="l01079" name="l01079"></a><span class="lineno"> 1079</span>}  <span class="comment">// namespace ripple</span></div>
 <div class="ttc" id="aalgorithm_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/algorithm.html">algorithm</a></div></div>
 <div class="ttc" id="aarray_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/array.html">std::array</a></div></div>
 <div class="ttc" id="abasic_regex_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/regex/basic_regex.html">std::regex</a></div></div>
@@ -1152,11 +1191,12 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1Config_html_a60e194c37b2e6e2a6cbaab170579fd15"><div class="ttname"><a href="classripple_1_1Config.html#a60e194c37b2e6e2a6cbaab170579fd15">ripple::Config::BETA_RPC_API</a></div><div class="ttdeci">bool BETA_RPC_API</div><div class="ttdef"><b>Definition:</b> <a href="Config_8h_source.html#l00295">Config.h:295</a></div></div>
 <div class="ttc" id="aclassripple_1_1Config_html_a629e1c43b1e6d83675c0b62b33901e08"><div class="ttname"><a href="classripple_1_1Config.html#a629e1c43b1e6d83675c0b62b33901e08">ripple::Config::j_</a></div><div class="ttdeci">beast::Journal const j_</div><div class="ttdef"><b>Definition:</b> <a href="Config_8h_source.html#l00115">Config.h:115</a></div></div>
 <div class="ttc" id="aclassripple_1_1Config_html_a7174b4395af72d89dc078e64d31c769c"><div class="ttname"><a href="classripple_1_1Config.html#a7174b4395af72d89dc078e64d31c769c">ripple::Config::LEDGER_REPLAY</a></div><div class="ttdeci">bool LEDGER_REPLAY</div><div class="ttdef"><b>Definition:</b> <a href="Config_8h_source.html#l00230">Config.h:230</a></div></div>
+<div class="ttc" id="aclassripple_1_1Config_html_a72358e637bc2a2b7132d70e273126447"><div class="ttname"><a href="classripple_1_1Config.html#a72358e637bc2a2b7132d70e273126447">ripple::Config::VALIDATOR_LIST_THRESHOLD</a></div><div class="ttdeci">std::optional&lt; std::size_t &gt; VALIDATOR_LIST_THRESHOLD</div><div class="ttdef"><b>Definition:</b> <a href="Config_8h_source.html#l00308">Config.h:308</a></div></div>
 <div class="ttc" id="aclassripple_1_1Config_html_a757dbe77ad46c6e6e3a549c33fbd4f8e"><div class="ttname"><a href="classripple_1_1Config.html#a757dbe77ad46c6e6e3a549c33fbd4f8e">ripple::Config::PATH_SEARCH_MAX</a></div><div class="ttdeci">int PATH_SEARCH_MAX</div><div class="ttdef"><b>Definition:</b> <a href="Config_8h_source.html#l00205">Config.h:205</a></div></div>
 <div class="ttc" id="aclassripple_1_1Config_html_a7abcd82f19d7506fc18019df86a31984"><div class="ttname"><a href="classripple_1_1Config.html#a7abcd82f19d7506fc18019df86a31984">ripple::Config::PATH_SEARCH_FAST</a></div><div class="ttdeci">int PATH_SEARCH_FAST</div><div class="ttdef"><b>Definition:</b> <a href="Config_8h_source.html#l00204">Config.h:204</a></div></div>
 <div class="ttc" id="aclassripple_1_1Config_html_a7b8633802d7ea35cd767c2a0ab6d037e"><div class="ttname"><a href="classripple_1_1Config.html#a7b8633802d7ea35cd767c2a0ab6d037e">ripple::Config::RELAY_UNTRUSTED_PROPOSALS</a></div><div class="ttdeci">int RELAY_UNTRUSTED_PROPOSALS</div><div class="ttdef"><b>Definition:</b> <a href="Config_8h_source.html#l00177">Config.h:177</a></div></div>
 <div class="ttc" id="aclassripple_1_1Config_html_a83ff989bc69d931321cc8efaecbb1c0c"><div class="ttname"><a href="classripple_1_1Config.html#a83ff989bc69d931321cc8efaecbb1c0c">ripple::Config::TX_REDUCE_RELAY_ENABLE</a></div><div class="ttdeci">bool TX_REDUCE_RELAY_ENABLE</div><div class="ttdef"><b>Definition:</b> <a href="Config_8h_source.html#l00266">Config.h:266</a></div></div>
-<div class="ttc" id="aclassripple_1_1Config_html_a89f7a9b77a080de077563afcc893f9a8"><div class="ttname"><a href="classripple_1_1Config.html#a89f7a9b77a080de077563afcc893f9a8">ripple::Config::getDebugLogFile</a></div><div class="ttdeci">boost::filesystem::path getDebugLogFile() const</div><div class="ttdoc">Returns the full path and filename of the debug log file.</div><div class="ttdef"><b>Definition:</b> <a href="Config_8cpp_source.html#l00974">Config.cpp:974</a></div></div>
+<div class="ttc" id="aclassripple_1_1Config_html_a89f7a9b77a080de077563afcc893f9a8"><div class="ttname"><a href="classripple_1_1Config.html#a89f7a9b77a080de077563afcc893f9a8">ripple::Config::getDebugLogFile</a></div><div class="ttdeci">boost::filesystem::path getDebugLogFile() const</div><div class="ttdoc">Returns the full path and filename of the debug log file.</div><div class="ttdef"><b>Definition:</b> <a href="Config_8cpp_source.html#l01013">Config.cpp:1013</a></div></div>
 <div class="ttc" id="aclassripple_1_1Config_html_a8b89f0ab7460379ca1b8c849553eeba5"><div class="ttname"><a href="classripple_1_1Config.html#a8b89f0ab7460379ca1b8c849553eeba5">ripple::Config::load</a></div><div class="ttdeci">void load()</div><div class="ttdef"><b>Definition:</b> <a href="Config_8cpp_source.html#l00424">Config.cpp:424</a></div></div>
 <div class="ttc" id="aclassripple_1_1Config_html_a8df6fc2c4e473d354bc1ec1640294bf6"><div class="ttname"><a href="classripple_1_1Config.html#a8df6fc2c4e473d354bc1ec1640294bf6">ripple::Config::FAST_LOAD</a></div><div class="ttdeci">bool FAST_LOAD</div><div class="ttdef"><b>Definition:</b> <a href="Config_8h_source.html#l00298">Config.h:298</a></div></div>
 <div class="ttc" id="aclassripple_1_1Config_html_a9158914324dfe3d88b194a9e5dd7c940"><div class="ttname"><a href="classripple_1_1Config.html#a9158914324dfe3d88b194a9e5dd7c940">ripple::Config::WORKERS</a></div><div class="ttdeci">int WORKERS</div><div class="ttdef"><b>Definition:</b> <a href="Config_8h_source.html#l00241">Config.h:241</a></div></div>
@@ -1172,7 +1212,7 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1Config_html_ab6d562ee44093dba4b4f003a6f5a3dd1"><div class="ttname"><a href="classripple_1_1Config.html#ab6d562ee44093dba4b4f003a6f5a3dd1">ripple::Config::SSL_VERIFY</a></div><div class="ttdeci">bool SSL_VERIFY</div><div class="ttdef"><b>Definition:</b> <a href="Config_8h_source.html#l00222">Config.h:222</a></div></div>
 <div class="ttc" id="aclassripple_1_1Config_html_ab71ecdebcf4f2932a5b5114b8b958ecf"><div class="ttname"><a href="classripple_1_1Config.html#ab71ecdebcf4f2932a5b5114b8b958ecf">ripple::Config::CONFIG_FILE</a></div><div class="ttdeci">boost::filesystem::path CONFIG_FILE</div><div class="ttdef"><b>Definition:</b> <a href="Config_8h_source.html#l00105">Config.h:105</a></div></div>
 <div class="ttc" id="aclassripple_1_1Config_html_abab7a2dbd7e4c6c5e553d255cd9068c9"><div class="ttname"><a href="classripple_1_1Config.html#abab7a2dbd7e4c6c5e553d255cd9068c9">ripple::Config::USE_TX_TABLES</a></div><div class="ttdeci">bool USE_TX_TABLES</div><div class="ttdef"><b>Definition:</b> <a href="Config_8h_source.html#l00130">Config.h:130</a></div></div>
-<div class="ttc" id="aclassripple_1_1Config_html_abe2b226bd6705b7010feb45f66363142"><div class="ttname"><a href="classripple_1_1Config.html#abe2b226bd6705b7010feb45f66363142">ripple::Config::getValueFor</a></div><div class="ttdeci">int getValueFor(SizedItem item, std::optional&lt; std::size_t &gt; node=std::nullopt) const</div><div class="ttdoc">Retrieve the default value for the item at the specified node size.</div><div class="ttdef"><b>Definition:</b> <a href="Config_8cpp_source.html#l01008">Config.cpp:1008</a></div></div>
+<div class="ttc" id="aclassripple_1_1Config_html_abe2b226bd6705b7010feb45f66363142"><div class="ttname"><a href="classripple_1_1Config.html#abe2b226bd6705b7010feb45f66363142">ripple::Config::getValueFor</a></div><div class="ttdeci">int getValueFor(SizedItem item, std::optional&lt; std::size_t &gt; node=std::nullopt) const</div><div class="ttdoc">Retrieve the default value for the item at the specified node size.</div><div class="ttdef"><b>Definition:</b> <a href="Config_8cpp_source.html#l01047">Config.cpp:1047</a></div></div>
 <div class="ttc" id="aclassripple_1_1Config_html_ac186cbb607c1417144a54b8bd7280423"><div class="ttname"><a href="classripple_1_1Config.html#ac186cbb607c1417144a54b8bd7280423">ripple::Config::FEES</a></div><div class="ttdeci">FeeSetup FEES</div><div class="ttdef"><b>Definition:</b> <a href="Config_8h_source.html#l00211">Config.h:211</a></div></div>
 <div class="ttc" id="aclassripple_1_1Config_html_ac366d2c7ed574cfb6bd43e0c753e4a17"><div class="ttname"><a href="classripple_1_1Config.html#ac366d2c7ed574cfb6bd43e0c753e4a17">ripple::Config::signingEnabled_</a></div><div class="ttdeci">bool signingEnabled_</div><div class="ttdoc">Determines if the server will sign a tx, given an account's secret seed.</div><div class="ttdef"><b>Definition:</b> <a href="Config_8h_source.html#l00138">Config.h:138</a></div></div>
 <div class="ttc" id="aclassripple_1_1Config_html_ac5306142108504259bb902571564a32e"><div class="ttname"><a href="classripple_1_1Config.html#ac5306142108504259bb902571564a32e">ripple::Config::DEBUG_LOGFILE</a></div><div class="ttdeci">boost::filesystem::path DEBUG_LOGFILE</div><div class="ttdef"><b>Definition:</b> <a href="Config_8h_source.html#l00111">Config.h:111</a></div></div>
@@ -1236,7 +1276,7 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html_aad512dea42da4cc179f20c67de593c26ae3cc92c14a5e6dd1a7d94b6ff634d7fc"><div class="ttname"><a href="namespaceripple.html#aad512dea42da4cc179f20c67de593c26ae3cc92c14a5e6dd1a7d94b6ff634d7fc">ripple::AttestationMatch::match</a></div><div class="ttdeci">@ match</div></div>
 <div class="ttc" id="anamespaceripple_html_abee5b68c53e8284c704e2ea8986cc922"><div class="ttname"><a href="namespaceripple.html#abee5b68c53e8284c704e2ea8986cc922">ripple::getFileContents</a></div><div class="ttdeci">std::string getFileContents(boost::system::error_code &amp;ec, boost::filesystem::path const &amp;sourcePath, std::optional&lt; std::size_t &gt; maxSize=std::nullopt)</div><div class="ttdef"><b>Definition:</b> <a href="FileUtilities_8cpp_source.html#l00025">FileUtilities.cpp:25</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ac16c784f889217c1c11e06e0c7dd9b21"><div class="ttname"><a href="namespaceripple.html#ac16c784f889217c1c11e06e0c7dd9b21">ripple::parseIniFile</a></div><div class="ttdeci">IniFileSections parseIniFile(std::string const &amp;strInput, const bool bTrim)</div><div class="ttdef"><b>Definition:</b> <a href="Config_8cpp_source.html#l00159">Config.cpp:159</a></div></div>
-<div class="ttc" id="anamespaceripple_html_ac297eefd69dc2e30749d2446715b3f9c"><div class="ttname"><a href="namespaceripple.html#ac297eefd69dc2e30749d2446715b3f9c">ripple::setup_FeeVote</a></div><div class="ttdeci">FeeSetup setup_FeeVote(Section const &amp;section)</div><div class="ttdef"><b>Definition:</b> <a href="Config_8cpp_source.html#l01021">Config.cpp:1021</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ac297eefd69dc2e30749d2446715b3f9c"><div class="ttname"><a href="namespaceripple.html#ac297eefd69dc2e30749d2446715b3f9c">ripple::setup_FeeVote</a></div><div class="ttdeci">FeeSetup setup_FeeVote(Section const &amp;section)</div><div class="ttdef"><b>Definition:</b> <a href="Config_8cpp_source.html#l01060">Config.cpp:1060</a></div></div>
 <div class="ttc" id="anamespaceripple_html_adac14bb411c356d28732bda3dbda4f80"><div class="ttname"><a href="namespaceripple.html#adac14bb411c356d28732bda3dbda4f80">ripple::isProperlyFormedTomlDomain</a></div><div class="ttdeci">bool isProperlyFormedTomlDomain(std::string_view domain)</div><div class="ttdoc">Determines if the given string looks like a TOML-file hosting domain.</div><div class="ttdef"><b>Definition:</b> <a href="StringUtilities_8cpp_source.html#l00123">StringUtilities.cpp:123</a></div></div>
 <div class="ttc" id="anamespaceripple_html_af1a5dc39161a0005b4e1bb076ba1ef47"><div class="ttname"><a href="namespaceripple.html#af1a5dc39161a0005b4e1bb076ba1ef47">ripple::sizedItems</a></div><div class="ttdeci">constexpr std::array&lt; std::pair&lt; SizedItem, std::array&lt; int, 5 &gt; &gt;, 13 &gt; sizedItems</div><div class="ttdef"><b>Definition:</b> <a href="Config_8cpp_source.html#l00111">Config.cpp:112</a></div></div>
 <div class="ttc" id="anamespacestd_1_1chrono_html"><div class="ttname"><a href="http://en.cppreference.com/w/namespacestd_1_1chrono.html">std::chrono</a></div></div>

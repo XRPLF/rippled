@@ -1,5 +1,5 @@
 <map id="ripple::detail::RippledCfgGuard" name="ripple::detail::RippledCfgGuard">
-<area shape="rect" id="node1" title="Write a rippled config file and remove when done." alt="" coords="2192,967,2375,1007"/>
+<area shape="rect" id="node1" title="Write a rippled config file and remove when done." alt="" coords="2216,967,2399,1007"/>
 <area shape="rect" id="node2" href="$classripple_1_1test_1_1detail_1_1FileDirGuard.html" title="Write a file in a directory and remove when done." alt="" coords="1617,1001,1754,1041"/>
 <area shape="rect" id="node3" href="$classripple_1_1test_1_1detail_1_1DirGuard.html" title="Create a directory and remove it when it&#39;s done." alt="" coords="1240,820,1377,860"/>
 <area shape="rect" id="node4" href="$classbeast_1_1unit__test_1_1suite.html" title="A testsuite class." alt="" coords="861,802,1023,827"/>
@@ -7,7 +7,7 @@
 <area shape="rect" id="node15" href="$classbeast_1_1unit__test_1_1suite_1_1testcase__t.html" title=" " alt="" coords="1227,756,1390,796"/>
 <area shape="rect" id="node5" href="$classbeast_1_1unit__test_1_1runner.html" title="Unit test runner interface." alt="" coords="536,806,709,831"/>
 <area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="293,942,380,967"/>
-<area shape="rect" id="node24" href="$classripple_1_1Config.html" title=" " alt="" coords="1985,534,2093,559"/>
+<area shape="rect" id="node24" href="$classripple_1_1Config.html" title=" " alt="" coords="2009,530,2117,555"/>
 <area shape="rect" id="node26" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="1227,971,1390,1026"/>
 <area shape="rect" id="node27" href="$classripple_1_1Section.html" title="Holds a collection of configuration values." alt="" coords="885,986,999,1011"/>
 <area shape="rect" id="node28" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="541,964,704,1004"/>
