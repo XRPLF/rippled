@@ -220,11 +220,12 @@ applyCreate(
     auto const ammKeylet = keylet::amm(amount.issue(), amount2.issue());
 
     // Mitigate same account exists possibility
-    auto const maybeAccount = createPseudoAccount(sb, ammKeylet.key);
+    auto const maybeAccount =
+        createPseudoAccount(sb, ammKeylet.key, PseudoAccountOwnerType::AMM);
     // AMM account already exists (should not happen)
     if (!maybeAccount)
     {
-        JLOG(j_.error()) << "AMM Instance: AMM already exists.";
+        JLOG(j_.error()) << "AMM Instance: failed to create pseudo account.";
         return {maybeAccount.error(), false};
     }
     auto& account = *maybeAccount;
@@ -244,8 +245,6 @@ applyCreate(
     // or sending unsolicited LPTokens. This is a desired behavior.
     // A user can only receive LPTokens through affirmative action -
     // either an AMMDeposit, TrustSet, crossing an offer, etc.
-    // Link the root account and AMM object
-    account->setFieldH256(sfAMMID, ammKeylet.key);
 
     // Calculate initial LPT balance.
     auto const lpTokens = ammLPTokens(amount, amount2, lptIss);

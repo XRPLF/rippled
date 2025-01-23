@@ -893,7 +893,10 @@ dirLink(ApplyView& view, AccountID const& owner, std::shared_ptr<SLE>& object)
 }
 
 Expected<std::shared_ptr<SLE>, TER>
-createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey)
+createPseudoAccount(
+    ApplyView& view,
+    uint256 const& pseudoOwnerKey,
+    PseudoAccountOwnerType type)
 {
     AccountID accountId;
     for (auto i = 0;; ++i)
@@ -921,6 +924,13 @@ createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey)
     account->setFieldU32(
         sfFlags, lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth);
     // Link the pseudo-account with its owner object.
+    if (type == PseudoAccountOwnerType::AMM)
+        account->setFieldH256(sfAMMID, pseudoOwnerKey);
+    else if (type == PseudoAccountOwnerType::Vault)
+        account->setFieldH256(sfVaultID, pseudoOwnerKey);
+    else
+        UNREACHABLE("ripple::createPseudoAccount : unknown owner key type");
+
     // TODO: This debate is unresolved. There is allegedly a need to know
     // whether a pseudo-account belongs to an AMM specifically.
     // account->setFieldH256(sfPseudoOwner, pseudoOwnerKey);

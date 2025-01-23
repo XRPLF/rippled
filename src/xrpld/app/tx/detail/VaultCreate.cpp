@@ -120,7 +120,8 @@ VaultCreate::doApply()
     if (mPriorBalance < view().fees().accountReserve(ownerCount))
         return tecINSUFFICIENT_RESERVE;
 
-    auto maybePseudo = createPseudoAccount(view(), vault->key());
+    auto maybePseudo = createPseudoAccount(
+        view(), vault->key(), PseudoAccountOwnerType::Vault);
     if (!maybePseudo)
         return maybePseudo.error();
     auto& pseudo = *maybePseudo;
