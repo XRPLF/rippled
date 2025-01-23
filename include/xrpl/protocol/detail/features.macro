@@ -30,7 +30,7 @@
 // in include/xrpl/protocol/Feature.h.
 
 // Check flags in Credential transactions
-XRPL_FIX    (CredentialFlags,            Supported::yes, VoteBehavior::DefaultYes)
+XRPL_FIX    (TransactionFlags,           Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (FrozenLPTokenTransfer,      Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(DeepFreeze,                 Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(PermissionedDomains,        Supported::no,  VoteBehavior::DefaultNo)

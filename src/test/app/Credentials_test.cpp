@@ -1075,7 +1075,7 @@ struct Credentials_test : public beast::unit_test::suite
             env.close();
 
             {
-                bool const enabled = features[fixCredentialFlags];
+                bool const enabled = features[fixTransactionFlags];
                 testcase(
                     std::string("Test flag, fix ") +
                     (enabled ? "enabled" : "disabled"));
@@ -1106,7 +1106,7 @@ struct Credentials_test : public beast::unit_test::suite
         testAcceptFailed(all);
         testDeleteFailed(all);
         testFeatureFailed(all - featureCredentials);
-        testFlags(all - fixCredentialFlags);
+        testFlags(all - fixTransactionFlags);
         testFlags(all);
         testRPC();
     }

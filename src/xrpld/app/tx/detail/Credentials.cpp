@@ -65,7 +65,7 @@ CredentialCreate::preflight(PreflightContext const& ctx)
     auto const& tx = ctx.tx;
     auto& j = ctx.j;
 
-    if (ctx.rules.enabled(fixCredentialFlags) &&
+    if (ctx.rules.enabled(fixTransactionFlags) &&
         (tx.getFlags() & tfUniversalMask))
     {
         JLOG(ctx.j.debug()) << "CredentialCreate: invalid flags.";
@@ -216,7 +216,7 @@ CredentialDelete::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
-    if (ctx.rules.enabled(fixCredentialFlags) &&
+    if (ctx.rules.enabled(fixTransactionFlags) &&
         (ctx.tx.getFlags() & tfUniversalMask))
     {
         JLOG(ctx.j.debug()) << "CredentialDelete: invalid flags.";
@@ -303,7 +303,7 @@ CredentialAccept::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
-    if (ctx.rules.enabled(fixCredentialFlags) &&
+    if (ctx.rules.enabled(fixTransactionFlags) &&
         (ctx.tx.getFlags() & tfUniversalMask))
     {
         JLOG(ctx.j.debug()) << "CredentialAccept: invalid flags.";
