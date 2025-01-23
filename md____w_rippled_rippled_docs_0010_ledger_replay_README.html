@@ -107,10 +107,10 @@ $(function() {
 <li><code>onTimer()</code></li>
 </ol>
 <p >Each of these entry points does something unique to that entry point. They either (a) transition <code>LedgerReplayTask</code> to a terminal failed resolved state (<code>cancel()</code> and <code>onTimer()</code>) or (b) try to make progress toward the successful resolved state. <code>init()</code> and <code>updateSkipList(...)</code> call <code>trigger()</code> while <code>deltaReady(...)</code> calls <code>tryAdvance()</code>. There's a similarity between this pattern and the way coroutines are implemented, where every yield saves the spot in the code where it left off and every resume jumps back to that spot.</p>
-<h2><a class="anchor" id="autotoc_md93"></a>
+<h2><a class="anchor" id="autotoc_md132"></a>
 Sequence Diagram</h2>
 <p ><img src="./ledger_replay_sequence.png?raw=true" alt="Sequence diagram" title="A successful ledger replay" class="inline"/></p>
-<h2><a class="anchor" id="autotoc_md94"></a>
+<h2><a class="anchor" id="autotoc_md133"></a>
 Class Diagram</h2>
 <p ><img src="./ledger_replay_classes.png?raw=true" alt="Class diagram" title="Ledger replay classes" class="inline"/> </p>
 </div></div><!-- contents -->
