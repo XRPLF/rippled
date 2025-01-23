@@ -54,8 +54,9 @@ PermissionedDomainDelete::preclaim(PreclaimContext const& ctx)
     if (!sleDomain)
         return tecNO_ENTRY;
 
-    assert(
-        sleDomain->isFieldPresent(sfOwner) && ctx.tx.isFieldPresent(sfAccount));
+    XRPL_ASSERT(
+        sleDomain->isFieldPresent(sfOwner) && ctx.tx.isFieldPresent(sfAccount),
+        "ripple::PermissionedDomainDelete::preclaim : required fields present");
     if (sleDomain->getAccountID(sfOwner) != ctx.tx.getAccountID(sfAccount))
         return tecNO_PERMISSION;
 
@@ -66,7 +67,9 @@ PermissionedDomainDelete::preclaim(PreclaimContext const& ctx)
 TER
 PermissionedDomainDelete::doApply()
 {
-    assert(ctx_.tx.isFieldPresent(sfDomainID));
+    XRPL_ASSERT(
+        ctx_.tx.isFieldPresent(sfDomainID),
+        "ripple::PermissionedDomainDelete::doApply : required field present");
 
     auto const slePd =
         view().peek({ltPERMISSIONED_DOMAIN, ctx_.tx.at(sfDomainID)});
@@ -80,7 +83,9 @@ PermissionedDomainDelete::doApply()
     }
 
     auto const ownerSle = view().peek(keylet::account(account_));
-    assert(ownerSle && ownerSle->getFieldU32(sfOwnerCount) > 0);
+    XRPL_ASSERT(
+        ownerSle && ownerSle->getFieldU32(sfOwnerCount) > 0,
+        "ripple::PermissionedDomainDelete::doApply : nonzero owner count");
     adjustOwnerCount(view(), ownerSle, -1, ctx_.journal);
     view().erase(slePd);
 
