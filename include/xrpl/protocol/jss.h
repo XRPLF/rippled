@@ -665,27 +665,28 @@ JSS(validated);               // out: NetworkOPs, RPCHelpers, AccountTx*
 JSS(validator_list_expires);  // out: NetworkOps, ValidatorList
 JSS(validator_list);          // out: NetworkOps, ValidatorList
 JSS(validators);
-JSS(validated_hash);          // out: NetworkOPs
-JSS(validated_ledger);        // out: NetworkOPs
-JSS(validated_ledger_index);  // out: SubmitTransaction
-JSS(validated_ledgers);       // out: NetworkOPs
-JSS(validation_key);          // out: ValidationCreate, ValidationSeed
-JSS(validation_private_key);  // out: ValidationCreate
-JSS(validation_public_key);   // out: ValidationCreate, ValidationSeed
-JSS(validation_quorum);       // out: NetworkOPs
-JSS(validation_seed);         // out: ValidationCreate, ValidationSeed
-JSS(validations);             // out: AmendmentTableImpl
-JSS(validator_sites);         // out: ValidatorSites
-JSS(value);                   // out: STAmount
-JSS(version);                 // out: RPCVersion
-JSS(vetoed);                  // out: AmendmentTableImpl
-JSS(volume_a);                // out: BookChanges
-JSS(volume_b);                // out: BookChanges
-JSS(vote);                    // in: Feature
-JSS(vote_slots);              // out: amm_info
-JSS(vote_weight);             // out: amm_info
-JSS(warning);                 // rpc:
-JSS(warnings);                // out: server_info, server_state
+JSS(validated_hash);            // out: NetworkOPs
+JSS(validated_ledger);          // out: NetworkOPs
+JSS(validated_ledger_index);    // out: SubmitTransaction
+JSS(validated_ledgers);         // out: NetworkOPs
+JSS(validation_key);            // out: ValidationCreate, ValidationSeed
+JSS(validation_private_key);    // out: ValidationCreate
+JSS(validation_public_key);     // out: ValidationCreate, ValidationSeed
+JSS(validation_quorum);         // out: NetworkOPs
+JSS(validation_seed);           // out: ValidationCreate, ValidationSeed
+JSS(validations);               // out: AmendmentTableImpl
+JSS(validator_list_threshold);  // out: ValidatorList
+JSS(validator_sites);           // out: ValidatorSites
+JSS(value);                     // out: STAmount
+JSS(version);                   // out: RPCVersion
+JSS(vetoed);                    // out: AmendmentTableImpl
+JSS(volume_a);                  // out: BookChanges
+JSS(volume_b);                  // out: BookChanges
+JSS(vote);                      // in: Feature
+JSS(vote_slots);                // out: amm_info
+JSS(vote_weight);               // out: amm_info
+JSS(warning);                   // rpc:
+JSS(warnings);                  // out: server_info, server_state
 JSS(workers);
 JSS(write_load);              // out: GetCounts
 // clang-format on
