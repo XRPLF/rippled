@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2025 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,53 +17,43 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TEST_JTX_FEE_H_INCLUDED
-#define RIPPLE_TEST_JTX_FEE_H_INCLUDED
-
-#include <test/jtx/Env.h>
-#include <test/jtx/tags.h>
-#include <xrpl/basics/contract.h>
-#include <xrpl/protocol/STAmount.h>
-
-#include <optional>
+#include <test/jtx.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
-namespace test {
-namespace jtx {
 
-/** Set the fee on a JTx. */
-class fee
+class Connect_test : public beast::unit_test::suite
 {
-private:
-    bool manual_ = true;
-    std::optional<STAmount> amount_;
+    void
+    testErrors()
+    {
+        testcase("Errors");
+
+        using namespace test::jtx;
+
+        {
+            // standalone mode should fail
+            Env env{*this};
+            BEAST_EXPECT(env.app().config().standalone());
+
+            auto const result = env.rpc("json", "connect", "{}");
+            BEAST_EXPECT(result[jss::result][jss::status] == "error");
+            BEAST_EXPECT(result[jss::result].isMember(jss::error));
+            BEAST_EXPECT(result[jss::result][jss::error] == "notSynced");
+            BEAST_EXPECT(
+                result[jss::result][jss::error_message] ==
+                "Not synced to the network.");
+        }
+    }
 
 public:
-    explicit fee(autofill_t) : manual_(false)
-    {
-    }
-
-    explicit fee(none_t)
-    {
-    }
-
-    explicit fee(STAmount const& amount) : amount_(amount)
-    {
-        if (!isXRP(*amount_))
-            Throw<std::runtime_error>("fee: not XRP");
-    }
-
-    explicit fee(std::uint64_t amount, bool negative = false)
-        : fee{STAmount{amount, negative}}
-    {
-    }
-
     void
-    operator()(Env&, JTx& jt) const;
+    run() override
+    {
+        testErrors();
+    }
 };
 
-}  // namespace jtx
-}  // namespace test
-}  // namespace ripple
+BEAST_DEFINE_TESTSUITE(Connect, rpc, ripple);
 
-#endif
+}  // namespace ripple

@@ -19,7 +19,9 @@
 
 #include <xrpld/app/tx/detail/InvariantCheck.h>
 
+#include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
+#include <xrpld/app/tx/detail/PermissionedDomainSet.h>
 #include <xrpld/ledger/ReadView.h>
 #include <xrpld/ledger/View.h>
 #include <xrpl/basics/Log.h>
@@ -485,6 +487,7 @@ LedgerEntryTypesMatch::visitEntry(
             case ltMPTOKEN_ISSUANCE:
             case ltMPTOKEN:
             case ltCREDENTIAL:
+            case ltPERMISSIONED_DOMAIN:
                 break;
             default:
                 invalidTypeAdded_ = true;
@@ -1121,6 +1124,107 @@ ValidMPTIssuance::finalize(
 
     return mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 0 &&
         mptokensCreated_ == 0 && mptokensDeleted_ == 0;
+}
+
+//------------------------------------------------------------------------------
+
+void
+ValidPermissionedDomain::visitEntry(
+    bool,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
+{
+    if (before && before->getType() != ltPERMISSIONED_DOMAIN)
+        return;
+    if (after && after->getType() != ltPERMISSIONED_DOMAIN)
+        return;
+
+    auto check = [](SleStatus& sleStatus,
+                    std::shared_ptr<SLE const> const& sle) {
+        auto const& credentials = sle->getFieldArray(sfAcceptedCredentials);
+        sleStatus.credentialsSize_ = credentials.size();
+        auto const sorted = credentials::makeSorted(credentials);
+        sleStatus.isUnique_ = !sorted.empty();
+
+        // If array have duplicates then all the other checks are invalid
+        sleStatus.isSorted_ = false;
+
+        if (sleStatus.isUnique_)
+        {
+            unsigned i = 0;
+            for (auto const& cred : sorted)
+            {
+                auto const& credTx = credentials[i++];
+                sleStatus.isSorted_ = (cred.first == credTx[sfIssuer]) &&
+                    (cred.second == credTx[sfCredentialType]);
+                if (!sleStatus.isSorted_)
+                    break;
+            }
+        }
+    };
+
+    if (before)
+    {
+        sleStatus_[0] = SleStatus();
+        check(*sleStatus_[0], after);
+    }
+
+    if (after)
+    {
+        sleStatus_[1] = SleStatus();
+        check(*sleStatus_[1], after);
+    }
+}
+
+bool
+ValidPermissionedDomain::finalize(
+    STTx const& tx,
+    TER const result,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    if (tx.getTxnType() != ttPERMISSIONED_DOMAIN_SET || result != tesSUCCESS)
+        return true;
+
+    auto check = [](SleStatus const& sleStatus, beast::Journal const& j) {
+        if (!sleStatus.credentialsSize_)
+        {
+            JLOG(j.fatal()) << "Invariant failed: permissioned domain with "
+                               "no rules.";
+            return false;
+        }
+
+        if (sleStatus.credentialsSize_ >
+            maxPermissionedDomainCredentialsArraySize)
+        {
+            JLOG(j.fatal()) << "Invariant failed: permissioned domain bad "
+                               "credentials size "
+                            << sleStatus.credentialsSize_;
+            return false;
+        }
+
+        if (!sleStatus.isUnique_)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: permissioned domain credentials "
+                   "aren't unique";
+            return false;
+        }
+
+        if (!sleStatus.isSorted_)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: permissioned domain credentials "
+                   "aren't sorted";
+            return false;
+        }
+
+        return true;
+    };
+
+    return (sleStatus_[0] ? check(*sleStatus_[0], j) : true) &&
+        (sleStatus_[1] ? check(*sleStatus_[1], j) : true);
 }
 
 }  // namespace ripple
