@@ -341,7 +341,7 @@ verifyDomain(
     {
         auto sleCredential = view.read(keylet::credential(h));
         if (!sleCredential)
-            return tefINTERNAL;
+            continue;  // expired, i.e. deleted in credentials::removeExpired
 
         if (sleCredential->getFlags() & lsfAccepted)
             return tesSUCCESS;
