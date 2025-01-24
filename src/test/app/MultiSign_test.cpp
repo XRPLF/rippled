@@ -1673,7 +1673,7 @@ public:
     }
 
     void
-    test_SignerListSet_Flags(FeatureBitset features)
+    test_signerListSetFlags(FeatureBitset features)
     {
         using namespace test::jtx;
 
@@ -1732,8 +1732,8 @@ public:
         testAll(all - featureExpandedSignerList);
         testAll(all);
 
-        test_SignerListSet_Flags(all - fixTransactionFlags);
-        test_SignerListSet_Flags(all);
+        test_signerListSetFlags(all - fixTransactionFlags);
+        test_signerListSetFlags(all);
 
         test_amendmentTransition();
     }
