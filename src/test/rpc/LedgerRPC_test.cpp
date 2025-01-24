@@ -494,6 +494,18 @@ class LedgerRPC_test : public beast::unit_test::suite
                 "json", "ledger", "{ \"ledger_index\" : 1000000000000000 }");
             checkErrorValue(ret, "invalidParams", "Invalid parameters.");
         }
+
+        {
+            // ask for an zero index
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = "validated";
+            jvParams[jss::index] =
+                "00000000000000000000000000000000000000000000000000000000000000"
+                "0000";
+            auto const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "malformedRequest", "");
+        }
     }
 
     void
@@ -3086,6 +3098,122 @@ class LedgerRPC_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testLedgerEntryPermissionedDomain()
+    {
+        testcase("ledger_entry PermissionedDomain");
+
+        using namespace test::jtx;
+
+        Env env(*this, supported_amendments() | featurePermissionedDomains);
+        Account const issuer{"issuer"};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+
+        env.fund(XRP(5000), issuer, alice, bob);
+        env.close();
+
+        auto const seq = env.seq(alice);
+        env(pdomain::setTx(alice, {{alice, "first credential"}}));
+        env.close();
+        auto const objects = pdomain::getObjects(alice, env);
+        if (!BEAST_EXPECT(objects.size() == 1))
+            return;
+
+        {
+            // Succeed
+            Json::Value params;
+            params[jss::ledger_index] = jss::validated;
+            params[jss::permissioned_domain][jss::account] = alice.human();
+            params[jss::permissioned_domain][jss::seq] = seq;
+            auto jv = env.rpc("json", "ledger_entry", to_string(params));
+            BEAST_EXPECT(
+                jv.isObject() && jv.isMember(jss::result) &&
+                !jv[jss::result].isMember(jss::error) &&
+                jv[jss::result].isMember(jss::node) &&
+                jv[jss::result][jss::node].isMember(
+                    sfLedgerEntryType.jsonName) &&
+                jv[jss::result][jss::node][sfLedgerEntryType.jsonName] ==
+                    jss::PermissionedDomain);
+
+            std::string const pdIdx = jv[jss::result][jss::index].asString();
+            BEAST_EXPECT(
+                strHex(keylet::permissionedDomain(alice, seq).key) == pdIdx);
+
+            params.clear();
+            params[jss::ledger_index] = jss::validated;
+            params[jss::permissioned_domain] = pdIdx;
+            jv = env.rpc("json", "ledger_entry", to_string(params));
+            BEAST_EXPECT(
+                jv.isObject() && jv.isMember(jss::result) &&
+                !jv[jss::result].isMember(jss::error) &&
+                jv[jss::result].isMember(jss::node) &&
+                jv[jss::result][jss::node].isMember(
+                    sfLedgerEntryType.jsonName) &&
+                jv[jss::result][jss::node][sfLedgerEntryType.jsonName] ==
+                    jss::PermissionedDomain);
+        }
+
+        {
+            // Fail, invalid permissioned domain index
+            Json::Value params;
+            params[jss::ledger_index] = jss::validated;
+            params[jss::permissioned_domain] =
+                "12F1F1F1F180D67377B2FAB292A31C922470326268D2B9B74CD1E582645B9A"
+                "DE";
+            auto const jrr = env.rpc("json", "ledger_entry", to_string(params));
+            checkErrorValue(jrr[jss::result], "entryNotFound", "");
+        }
+
+        {
+            // Fail, invalid permissioned domain index
+            Json::Value params;
+            params[jss::ledger_index] = jss::validated;
+            params[jss::permissioned_domain] = "NotAHexString";
+            auto const jrr = env.rpc("json", "ledger_entry", to_string(params));
+            checkErrorValue(jrr[jss::result], "malformedRequest", "");
+        }
+
+        {
+            // Fail, permissioned domain is not an object
+            Json::Value params;
+            params[jss::ledger_index] = jss::validated;
+            params[jss::permissioned_domain] = 10;
+            auto const jrr = env.rpc("json", "ledger_entry", to_string(params));
+            checkErrorValue(jrr[jss::result], "malformedRequest", "");
+        }
+
+        {
+            // Fail, invalid account
+            Json::Value params;
+            params[jss::ledger_index] = jss::validated;
+            params[jss::permissioned_domain][jss::account] = 1;
+            params[jss::permissioned_domain][jss::seq] = seq;
+            auto const jrr = env.rpc("json", "ledger_entry", to_string(params));
+            checkErrorValue(jrr[jss::result], "malformedRequest", "");
+        }
+
+        {
+            // Fail, no account
+            Json::Value params;
+            params[jss::ledger_index] = jss::validated;
+            params[jss::permissioned_domain][jss::account] = "";
+            params[jss::permissioned_domain][jss::seq] = seq;
+            auto const jrr = env.rpc("json", "ledger_entry", to_string(params));
+            checkErrorValue(jrr[jss::result], "malformedAddress", "");
+        }
+
+        {
+            // Fail, invalid sequence
+            Json::Value params;
+            params[jss::ledger_index] = jss::validated;
+            params[jss::permissioned_domain][jss::account] = alice.human();
+            params[jss::permissioned_domain][jss::seq] = "12g";
+            auto const jrr = env.rpc("json", "ledger_entry", to_string(params));
+            checkErrorValue(jrr[jss::result], "malformedRequest", "");
+        }
+    }
+
 public:
     void
     run() override
@@ -3117,6 +3245,7 @@ public:
         testOracleLedgerEntry();
         testLedgerEntryMPT();
         testLedgerEntryCLI();
+        testLedgerEntryPermissionedDomain();
 
         forAllApiVersions(std::bind_front(
             &LedgerRPC_test::testLedgerEntryInvalidParams, this));
