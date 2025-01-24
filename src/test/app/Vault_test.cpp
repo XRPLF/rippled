@@ -164,7 +164,7 @@ class Vault_test : public beast::unit_test::suite
             // TODO: redeem.
 
             {
-                testcase("withdraw non-zero assets");
+                testcase(prefix + " withdraw non-zero assets");
                 auto number = asset.raw().native() ? 200 : 150;
                 auto tx = vault.withdraw(
                     {.depositor = depositor,
@@ -174,13 +174,13 @@ class Vault_test : public beast::unit_test::suite
             }
 
             {
-                testcase("fail to delete because wrong owner");
+                testcase(prefix + " fail to delete because wrong owner");
                 auto tx = vault.del({.owner = issuer, .id = keylet.key});
                 env(tx, ter(tecNO_PERMISSION));
             }
 
             {
-                testcase("delete empty vault");
+                testcase(prefix + " delete empty vault");
                 auto tx = vault.del({.owner = owner, .id = keylet.key});
                 env(tx);
                 BEAST_EXPECT(!env.le(keylet));
