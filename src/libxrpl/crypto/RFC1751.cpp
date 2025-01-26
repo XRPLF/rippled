@@ -1,6 +1,6 @@
 //------------------------------------------------------------------------------
 /*
-    This file is part of rippled: https://github.com/ripple/rippled
+ This file is part of rippled: https://github.com/ripple/rippled
     Copyright (c) 2012, 2013 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
@@ -262,9 +262,7 @@ char const* RFC1751::s_dictionary[2048] = {
 
 /* Extract 'length' bits from the char array 's'
    starting with bit 'start' */
-unsigned long
-RFC1751::extract(char const* s, int start, int length)
-{
+unsigned long RFC1751::extract(char const* s, int start, int length) {
     unsigned char cl;
     unsigned char cc;
     unsigned char cr;
@@ -278,28 +276,25 @@ RFC1751::extract(char const* s, int start, int length)
         "ripple::RFC1751::extract : maximum start + length");
 
     int const shiftR = 24 - (length + (start % 8));
-    cl = s[start / 8];  // get components
+    cl = s[start / 8];
     cc = (shiftR < 16) ? s[start / 8 + 1] : 0;
     cr = (shiftR < 8) ? s[start / 8 + 2] : 0;
 
-    x = ((long)(cl << 8 | cc) << 8 | cr);  // Put bits together
-    x = x >> shiftR;                       // Right justify number
-    x = (x & (0xffff >> (16 - length)));   // Trim extra bits.
+    x = ((long)(cl << 8 | cc) << 8 | cr);
+    x = x >> shiftR;
+    x = (x & (0xffff >> (16 - length)));
 
     return x;
 }
 
-// Encode 8 bytes in 'c' as a string of English words.
-// Returns a pointer to a static buffer
-void
-RFC1751::btoe(std::string& strHuman, std::string const& strData)
-{
-    char caBuffer[9]; /* add in room for the parity 2 bits*/
+void RFC1751::btoe(std::string& strHuman, std::string const& strData) {
+    assert(strData.size() >= 8 && "strData must be at least 8 bytes long");
+
+    char caBuffer[9];
     int p, i;
 
     memcpy(caBuffer, strData.c_str(), 8);
 
-    // compute parity: merely add groups of two bits.
     for (p = 0, i = 0; i < 64; i += 2)
         p += extract(caBuffer, i, 2);
 
@@ -313,9 +308,7 @@ RFC1751::btoe(std::string& strHuman, std::string const& strData)
         s_dictionary[extract(caBuffer, 55, 11)];
 }
 
-void
-RFC1751::insert(char* s, int x, int start, int length)
-{
+void RFC1751::insert(char* s, int x, int start, int length) {
     unsigned char cl;
     unsigned char cc;
     unsigned char cr;
@@ -329,34 +322,25 @@ RFC1751::insert(char* s, int x, int start, int length)
         start + length <= 66,
         "ripple::RFC1751::insert : maximum start + length");
 
-    shift = ((8 - ((start + length) % 8)) % 8);
-    y = (long)x << shift;
+    shift = ((8 - ((start + length) % 8)) % 8); y = (long)x << shift;
     cl = (y >> 16) & 0xff;
     cc = (y >> 8) & 0xff;
     cr = y & 0xff;
 
-    if (shift + length > 16)
-    {
+    if (shift + length > 16) {
         s[start / 8] |= cl;
         s[start / 8 + 1] |= cc;
         s[start / 8 + 2] |= cr;
-    }
-    else if (shift + length > 8)
-    {
+    } else if (shift + length > 8) {
         s[start / 8] |= cc;
         s[start / 8 + 1] |= cr;
-    }
-    else
-    {
+    } else {
         s[start / 8] |= cr;
     }
 }
 
-void
-RFC1751::standard(std::string& strWord)
-{
-    for (auto& letter : strWord)
-    {
+void RFC1751::standard(std::string& strWord) {
+    for (auto& letter : strWord) {
         if (islower(static_cast<unsigned char>(letter)))
             letter = toupper(static_cast<unsigned char>(letter));
         else if (letter == '1')
@@ -368,52 +352,33 @@ RFC1751::standard(std::string& strWord)
     }
 }
 
-// Binary search of dictionary.
-int
-RFC1751::wsrch(std::string const& strWord, int iMin, int iMax)
-{
+int RFC1751::wsrch(std::string const& strWord, int iMin, int iMax) {
     int iResult = -1;
 
-    while (iResult < 0 && iMin != iMax)
-    {
-        // Have a range to search.
+    while (iResult < 0 && iMin != iMax) {
         int iMid = iMin + (iMax - iMin) / 2;
         int iDir = strWord.compare(s_dictionary[iMid]);
 
-        if (!iDir)
-        {
-            iResult = iMid;  // Found it.
-        }
-        else if (iDir < 0)
-        {
-            iMax = iMid;  // key < middle, middle is new max.
-        }
-        else
-        {
-            iMin = iMid + 1;  // key > middle, new min is past the middle.
+        if (!iDir) {
+            iResult = iMid;
+        } else if (iDir < 0) {
+            iMax = iMid;
+        } else {
+            iMin = iMid + 1;
         }
     }
 
     return iResult;
 }
 
-// Convert 6 words to binary.
-//
-// Returns 1 OK - all good words and parity is OK
-//         0 word not in data base
-//        -1 badly formed in put ie > 4 char word
-//        -2 words OK but parity is wrong
-int
-RFC1751::etob(std::string& strData, std::vector<std::string> vsHuman)
-{
+int RFC1751::etob(std::string& strData, std::vector<std::string> vsHuman) {
     if (6 != vsHuman.size())
         return -1;
 
     int i, p = 0;
     char b[9] = {0};
 
-    for (auto& strWord : vsHuman)
-    {
+    for (auto& strWord : vsHuman) {
         int l = strWord.length();
 
         if (l > 4 || l < 1)
@@ -430,7 +395,6 @@ RFC1751::etob(std::string& strData, std::vector<std::string> vsHuman)
         p += 11;
     }
 
-    /* now check the parity of what we got */
     for (p = 0, i = 0; i < 64; i += 2)
         p += extract(b, i, 2);
 
@@ -442,17 +406,7 @@ RFC1751::etob(std::string& strData, std::vector<std::string> vsHuman)
     return 1;
 }
 
-/** Convert words separated by spaces into a 128 bit key in big-endian format.
-
-    @return
-         1 if succeeded
-         0 if word not in dictionary
-        -1 if badly formed string
-        -2 if words are okay but parity is wrong.
-*/
-int
-RFC1751::getKeyFromEnglish(std::string& strKey, std::string const& strHuman)
-{
+int RFC1751::getKeyFromEnglish(std::string& strKey, std::string const& strHuman) {
     std::vector<std::string> vWords;
     std::string strFirst, strSecond;
     int rc = 0;
@@ -475,17 +429,14 @@ RFC1751::getKeyFromEnglish(std::string& strKey, std::string const& strHuman)
     if (1 == rc)
         rc = etob(strSecond, vWords | boost::adaptors::copied(6, 12));
 
-    if (1 == rc)
-        strKey = strFirst + strSecond;
+    if (1 == rc)strKey = strFirst + strSecond;
 
     return rc;
 }
 
-/** Convert to human from a 128 bit key in big-endian format
- */
-void
-RFC1751::getEnglishFromKey(std::string& strHuman, std::string const& strKey)
-{
+void RFC1751::getEnglishFromKey(std::string& strHuman, std::string const& strKey) {
+    assert(strKey.size() >= 16 && "strKey must be at least 16 bytes long");
+
     std::string strFirst, strSecond;
 
     btoe(strFirst, strKey.substr(0, 8));
@@ -494,17 +445,11 @@ RFC1751::getEnglishFromKey(std::string& strHuman, std::string const& strKey)
     strHuman = strFirst + " " + strSecond;
 }
 
-std::string
-RFC1751::getWordFromBlob(void const* blob, size_t bytes)
-{
-    // This is a simple implementation of the Jenkins one-at-a-time hash
-    // algorithm:
-    // http://en.wikipedia.org/wiki/Jenkins_hash_function#one-at-a-time
+std::string RFC1751::getWordFromBlob(void const* blob, size_t bytes) {
     unsigned char const* data = static_cast<unsigned char const*>(blob);
     std::uint32_t hash = 0;
 
-    for (size_t i = 0; i < bytes; ++i)
-    {
+    for (size_t i = 0; i < bytes; ++i) {
         hash += data[i];
         hash += (hash << 10);
         hash ^= (hash >> 6);
@@ -514,8 +459,7 @@ RFC1751::getWordFromBlob(void const* blob, size_t bytes)
     hash ^= (hash >> 11);
     hash += (hash << 15);
 
-    return s_dictionary
-        [hash % (sizeof(s_dictionary) / sizeof(s_dictionary[0]))];
+    return s_dictionary[hash % (sizeof(s_dictionary) / sizeof(s_dictionary[0]))];
 }
 
 }  // namespace ripple
