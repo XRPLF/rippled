@@ -204,7 +204,9 @@ valid(ReadView const& view, uint256 domainID, AccountID const& subject)
         auto const sleCredential =
             view.read(keylet::credential(subject, issuer, type));
 
-        if (sleCredential && sleCredential->getFlags() & lsfAccepted)
+        // Do not check for expired credentials here, we need ApplyView& for
+        // that, to allow us to delete them (see verifyDomain below)
+        if (sleCredential && (sleCredential->getFlags() & lsfAccepted))
             return tesSUCCESS;
     }
 
@@ -300,16 +302,11 @@ checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j)
 
 TER
 verifyDomain(
-    ApplyContext& ctx,
-    AccountID const& src,
-    AccountID const& dst,
-    std::shared_ptr<SLE> const& object)
+    ApplyView& view,
+    AccountID const& account,
+    uint256 domainID,
+    beast::Journal j)
 {
-    if (!object->isFieldPresent(sfDomainID))
-        return tesSUCCESS;
-    auto const domainID = object->getFieldH256(sfDomainID);
-
-    auto& view = ctx.view();
     auto const slePD = view.read(keylet::permissionedDomain(domainID));
     if (!slePD || !slePD->isFieldPresent(sfAcceptedCredentials))
         return tefINTERNAL;
@@ -324,18 +321,13 @@ verifyDomain(
 
         auto const issuer = h.getAccountID(sfIssuer);
         auto const type = makeSlice(h.getFieldVL(sfCredentialType));
-        auto const keyletCredential = keylet::credential(dst, issuer, type);
+        auto const keyletCredential = keylet::credential(account, issuer, type);
         if (view.exists(keyletCredential))
             credentials.push_back(keyletCredential.key);
     }
 
     // Result intentionally ignored.
-    [[maybe_unused]] bool _ =
-        credentials::removeExpired(view, credentials, ctx.journal);
-
-    // Only do this check after we have removed expired credentials.
-    if (src == dst)
-        return tesSUCCESS;
+    [[maybe_unused]] bool _ = credentials::removeExpired(view, credentials, j);
 
     for (auto const& h : credentials)
     {

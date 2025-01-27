@@ -84,10 +84,10 @@ checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j);
 // object
 TER
 verifyDomain(
-    ApplyContext& ctx,
-    AccountID const& src,
-    AccountID const& dst,
-    std::shared_ptr<SLE> const& object);
+    ApplyView& view,
+    AccountID const& account,
+    uint256 domainID,
+    beast::Journal j);
 
 // Check expired credentials and for existing DepositPreauth ledger object
 TER

@@ -146,6 +146,7 @@ VaultCreate::doApply()
             .sequence = 1,
             .flags = mptFlags,
             .metadata = tx[~sfMPTokenMetadata],
+            .domainId = tx[~sfDomainID],
         });
     if (!maybeShare)
         return maybeShare.error();
@@ -156,8 +157,6 @@ VaultCreate::doApply()
     vault->at(sfOwner) = ownerId;
     vault->at(sfAccount) = pseudoId;
     vault->at(sfAsset) = tx[sfAsset];
-    if (tx.isFieldPresent(sfDomainID))
-        vault->setFieldH256(sfDomainID, tx.getFieldH256(sfDomainID));
     // Leave default values for AssetTotal and AssetAvailable, both zero.
     if (auto value = tx[~sfAssetMaximum])
         vault->at(sfAssetMaximum) = *value;

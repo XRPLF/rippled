@@ -573,26 +573,42 @@ struct TokenDescriptor
     std::shared_ptr<SLE const> issuance;
 };
 
-[[nodiscard]] Expected<TokenDescriptor, TER>
-findToken(
-    ReadView const& view,
-    MPTIssue const& mptIssue,
-    AccountID const& account);
-
 [[nodiscard]] TER
 requireAuth(ReadView const& view, Issue const& issue, AccountID const& account);
 
 /** Check if the account lacks required authorization.
+ *
  *   Return tecNO_AUTH or tecNO_LINE if it does
  *   and tesSUCCESS otherwise.
  */
 [[nodiscard]] TER
 requireAuth(ReadView const& view, Issue const& issue, AccountID const& account);
+
+/** Check if the account lacks required authorization.
+ *
+ *   Does not check for expired credentials, hence must be followed by
+ *   verifyAuth from doApply
+ */
 [[nodiscard]] TER
 requireAuth(
     ReadView const& view,
     MPTIssue const& mptIssue,
     AccountID const& account);
+
+/** Check if the account lacks required authorization.
+ *
+ *   Called from doApply - it will check for expired (and delete if found any)
+ *   credentials maching DomainID set in MPTIssuance. Must be called if
+ *   requireAuth(...MPTIssue...) check passed in preclaim. Will create MPToken
+ *   if needed, on the basis of non-expired credentals found.
+ */
+[[nodiscard]] TER
+verifyAuth(
+    ApplyView& view,
+    MPTIssue const& mptIssue,
+    AccountID const& account,
+    XRPAmount const& priorBalance,
+    beast::Journal j);
 
 /** Check if the destination account is allowed
  *  to receive MPT. Return tecNO_AUTH if it doesn't

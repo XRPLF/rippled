@@ -109,6 +109,9 @@ MPTokenIssuanceCreate::create(
         if (args.metadata)
             (*mptIssuance)[sfMPTokenMetadata] = *args.metadata;
 
+        if (args.domainId)
+            (*mptIssuance)[sfDomainID] = *args.domainId;
+
         view.insert(mptIssuance);
     }
 

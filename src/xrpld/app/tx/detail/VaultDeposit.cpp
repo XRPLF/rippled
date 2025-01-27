@@ -23,7 +23,9 @@
 #include <xrpld/app/tx/detail/MPTokenAuthorize.h>
 #include <xrpld/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -52,21 +54,20 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     if (!vault)
         return tecOBJECT_NOT_FOUND;
 
-    // Only the VaultDeposit transaction is subject to this permission check.
-    if (vault->getFlags() == tfVaultPrivate &&
-        ctx.tx[sfAccount] != vault->at(sfOwner))
+    auto const account = ctx.tx[sfAccount];
+    if (vault->getFlags() == tfVaultPrivate && account != vault->at(sfOwner))
     {
-        // Similar to credential::valid call inside Payment::prelaim (different
-        // overload), if we do not see authorised credentials in preclaim, we do
-        // not progress to doApply. This means that any expired credentials are
-        // only deleted *if* we pass this check here in preclaim.
-        if (auto const domain = vault->at(~sfVaultID))
-        {
-            if (auto const err =
-                    credentials::valid(ctx.view, *domain, ctx.tx[sfAccount]);
-                !isTesSuccess(err))
-                return err;
-        }
+        auto const err = requireAuth(
+            ctx.view, MPTIssue(vault->at(sfMPTokenIssuanceID)), account);
+        return err;
+
+        // The above will perform authorization check based on DomainID stored
+        // in MPTokenIssuance. Had this been a regular MPToken, it would also
+        // allow use of authorization granted by the issuer explicitly, but
+        // Vault does not have an MPT issuer (instead it uses pseudo-account).
+        //
+        // If we passed the above check then we also need to do similar check
+        // inside doApply(), in order to check for expired credentials.
     }
 
     return tesSUCCESS;
@@ -78,17 +79,6 @@ VaultDeposit::doApply()
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
     if (!vault)
         return tecOBJECT_NOT_FOUND;
-
-    auto const dst = ctx_.tx[sfAccount];
-    auto const src = vault->at(sfOwner);
-
-    if (vault->getFlags() & lsfVaultPrivate)
-    {
-        // TODO move DomainID from vault to MPTokenIssuance
-        if (auto const err = verifyDomain(ctx_, src, dst, vault);
-            !isTesSuccess(err))
-            return err;
-    }
 
     auto const assets = ctx_.tx[sfAmount];
     Asset const& asset = vault->at(sfAsset);
@@ -107,30 +97,17 @@ VaultDeposit::doApply()
     }
 
     // Make sure the depositor can hold shares.
-    auto share = (*vault)[sfMPTokenIssuanceID];
-    auto maybeToken = findToken(view(), MPTIssue(share), account_);
-    if (!maybeToken)
-    {
-        if (maybeToken.error() == tecNO_LINE)
-        {
-            if (auto ter = MPTokenAuthorize::authorize(
-                    view(),
-                    j_,
-                    {.priorBalance = mPriorBalance,
-                     .mptIssuanceID = share,
-                     .accountID = account_}))
-                return ter;
-        }
-        else if (maybeToken.error() != tesSUCCESS)
-        {
-            return maybeToken.error();
-        }
-    }
+    MPTIssue const mptIssue((*vault)[sfMPTokenIssuanceID]);
+    if (auto const err =
+            verifyAuth(ctx_.view(), mptIssue, account_, mPriorBalance, j_);
+        !isTesSuccess(err))
+        return err;
 
     // Compute exchange before transferring any amounts.
     auto const shares = assetsToSharesDeposit(view(), vault, assets);
     XRPL_ASSERT(
-        shares.asset() != assets.asset(), "do not mix up assets and shares");
+        shares.asset() != assets.asset(),
+        "ripple::VaultDeposit::doApply : assets are not shares");
 
     vault->at(sfAssetTotal) += assets;
     vault->at(sfAssetAvailable) += assets;
