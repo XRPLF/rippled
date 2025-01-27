@@ -536,7 +536,7 @@ NFTokenAcceptOffer::checkAcceptAsset(
     // Only valid for custom currencies
     XRPL_ASSERT(
         !isXRP(issue.currency),
-        "NFTokenAcceptOffer::checkAcceptAsset : input is not XRP");
+        "NFTokenAcceptOffer::checkAcceptAsset : input is XRP");
 
     auto const issuerAccount = view.read(keylet::account(issue.account));
 

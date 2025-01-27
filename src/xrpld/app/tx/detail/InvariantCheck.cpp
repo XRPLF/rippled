@@ -685,7 +685,7 @@ BalanceChangeNotFrozen::calculateBalanceChange(
 {
     auto getBalance = [](auto const& line, auto const& other, bool zero) {
         STAmount amt =
-            line ? line->at(sfBalance) : line->at(sfBalance).zeroed();
+            line ? line->at(sfBalance) : other->at(sfBalance).zeroed();
         return zero ? amt.zeroed() : amt;
     };
 

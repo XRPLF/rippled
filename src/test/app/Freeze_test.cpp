@@ -790,12 +790,12 @@ class Freeze_test : public beast::unit_test::suite
         env.require(offers(A2, 1), offers(A3, 1));
 
         // Checking A1 can buy from A2 by crossing it's offer
-        env(offer(A1, USD(1), XRP(2)));
+        env(offer(A1, USD(1), XRP(2)), txflags(tfFillOrKill));
         env.close();
         env.require(balance(A1, USD(1001)), balance(A2, USD(999)));
 
         // Checking A1 can sell to A3 by crossing it's offer
-        env(offer(A1, XRP(1), USD(1)));
+        env(offer(A1, XRP(1), USD(1)), txflags(tfFillOrKill));
         env.close();
         env.require(balance(A1, USD(1000)), balance(A3, USD(1)));
 
@@ -815,7 +815,7 @@ class Freeze_test : public beast::unit_test::suite
             env.close();
 
             // test: can still buy from A2
-            env(offer(A1, USD(1), XRP(2)));
+            env(offer(A1, USD(1), XRP(2)), txflags(tfFillOrKill));
             env.close();
             env.require(
                 balance(A1, USD(1001)), balance(A2, USD(998)), offers(A1, 0));
@@ -828,7 +828,9 @@ class Freeze_test : public beast::unit_test::suite
             env.require(balance(A1, USD(1001)), offers(A1, 0));
 
             // test: cannot sell to A3
-            env(offer(A1, XRP(1), USD(1)), ter(tecUNFUNDED_OFFER));
+            env(offer(A1, XRP(1), USD(1)),
+                txflags(tfFillOrKill),
+                ter(tecUNFUNDED_OFFER));
             env.close();
             env.require(balance(A1, USD(1001)), offers(A1, 0));
 
@@ -844,19 +846,27 @@ class Freeze_test : public beast::unit_test::suite
             env.close();
 
             // test: cannot create passive buy offer
-            env(offer(A1, USD(1), XRP(0.5)), ter(tecFROZEN));
+            env(offer(A1, USD(1), XRP(0.5)),
+                txflags(tfPassive),
+                ter(tecFROZEN));
             env.close();
 
             // test: cannot buy from A2
-            env(offer(A1, USD(1), XRP(2)), ter(tecFROZEN));
+            env(offer(A1, USD(1), XRP(2)),
+                txflags(tfFillOrKill),
+                ter(tecFROZEN));
             env.close();
 
             // test: cannot create passive sell offer
-            env(offer(A1, XRP(2), USD(1)), ter(tecUNFUNDED_OFFER));
+            env(offer(A1, XRP(2), USD(1)),
+                txflags(tfPassive),
+                ter(tecUNFUNDED_OFFER));
             env.close();
 
             // test: cannot sell to A3
-            env(offer(A1, XRP(1), USD(1)), ter(tecUNFUNDED_OFFER));
+            env(offer(A1, XRP(1), USD(1)),
+                txflags(tfFillOrKill),
+                ter(tecUNFUNDED_OFFER));
             env.close();
 
             env(trust(G1, A1["USD"](0), tfClearFreeze | tfClearDeepFreeze));
@@ -994,19 +1004,27 @@ class Freeze_test : public beast::unit_test::suite
             env.close();
 
             // test: A1 cannot create passive buy offer
-            env(offer(A1, USD(1), XRP(0.5)), ter(tecFROZEN));
+            env(offer(A1, USD(1), XRP(0.5)),
+                txflags(tfPassive),
+                ter(tecFROZEN));
             env.close();
 
             // test: A1 cannot buy, must fail
-            env(offer(A1, USD(1), XRP(2)), ter(tecFROZEN));
+            env(offer(A1, USD(1), XRP(2)),
+                txflags(tfFillOrKill),
+                ter(tecFROZEN));
             env.close();
 
             // test: A1 cannot create passive sell offer
-            env(offer(A1, XRP(2), USD(1)), ter(tecUNFUNDED_OFFER));
+            env(offer(A1, XRP(2), USD(1)),
+                txflags(tfPassive),
+                ter(tecUNFUNDED_OFFER));
             env.close();
 
             // test: A1 cannot sell to A3
-            env(offer(A1, XRP(1), USD(1)), ter(tecUNFUNDED_OFFER));
+            env(offer(A1, XRP(1), USD(1)),
+                txflags(tfFillOrKill),
+                ter(tecUNFUNDED_OFFER));
             env.close();
 
             env(trust(A1, limit, tfClearFreeze | tfClearDeepFreeze));

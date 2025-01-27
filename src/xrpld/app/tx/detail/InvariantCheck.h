@@ -639,6 +639,7 @@ using InvariantChecks = std::tuple<
     XRPNotCreated,
     NoXRPTrustLines,
     NoDeepFreezeTrustLinesWithoutFreeze,
+    BalanceChangeNotFrozen,
     NoBadOffers,
     NoZeroEscrow,
     ValidNewAccountRoot,
