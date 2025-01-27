@@ -270,13 +270,6 @@ SECP256K1_INLINE static int secp256k1_fe_impl_is_odd(const secp256k1_fe *a) {
     return a->n[0] & 1;
 }
 
-SECP256K1_INLINE static void secp256k1_fe_impl_clear(secp256k1_fe *a) {
-    int i;
-    for (i=0; i<10; i++) {
-        a->n[i] = 0;
-    }
-}
-
 static int secp256k1_fe_impl_cmp_var(const secp256k1_fe *a, const secp256k1_fe *b) {
     int i;
     for (i = 9; i >= 0; i--) {
@@ -344,7 +337,7 @@ static void secp256k1_fe_impl_get_b32(unsigned char *r, const secp256k1_fe *a) {
     r[31] = a->n[0] & 0xff;
 }
 
-SECP256K1_INLINE static void secp256k1_fe_impl_negate(secp256k1_fe *r, const secp256k1_fe *a, int m) {
+SECP256K1_INLINE static void secp256k1_fe_impl_negate_unchecked(secp256k1_fe *r, const secp256k1_fe *a, int m) {
     /* For all legal values of m (0..31), the following properties hold: */
     VERIFY_CHECK(0x3FFFC2FUL * 2 * (m + 1) >= 0x3FFFFFFUL * 2 * m);
     VERIFY_CHECK(0x3FFFFBFUL * 2 * (m + 1) >= 0x3FFFFFFUL * 2 * m);
@@ -365,7 +358,7 @@ SECP256K1_INLINE static void secp256k1_fe_impl_negate(secp256k1_fe *r, const sec
     r->n[9] = 0x03FFFFFUL * 2 * (m + 1) - a->n[9];
 }
 
-SECP256K1_INLINE static void secp256k1_fe_impl_mul_int(secp256k1_fe *r, int a) {
+SECP256K1_INLINE static void secp256k1_fe_impl_mul_int_unchecked(secp256k1_fe *r, int a) {
     r->n[0] *= a;
     r->n[1] *= a;
     r->n[2] *= a;
@@ -403,11 +396,7 @@ void secp256k1_fe_sqr_inner(uint32_t *r, const uint32_t *a);
 
 #else
 
-#ifdef VERIFY
 #define VERIFY_BITS(x, n) VERIFY_CHECK(((x) >> (n)) == 0)
-#else
-#define VERIFY_BITS(x, n) do { } while(0)
-#endif
 
 SECP256K1_INLINE static void secp256k1_fe_mul_inner(uint32_t *r, const uint32_t *a, const uint32_t * SECP256K1_RESTRICT b) {
     uint64_t c, d;

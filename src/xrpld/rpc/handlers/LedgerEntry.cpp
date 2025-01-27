@@ -811,22 +811,19 @@ parsePermissionedDomains(Json::Value const& pd, Json::Value& jvResult)
 {
     if (pd.isString())
     {
-        Json::Value result;
-        auto const index = parseIndex(pd, result);
-        if (!index)
-            jvResult[jss::error] = "malformedObjectId";
+        auto const index = parseIndex(pd, jvResult);
         return index;
     }
 
     if (!pd.isObject())
     {
-        jvResult[jss::error] = "malformedObject";
+        jvResult[jss::error] = "malformedRequest";
         return std::nullopt;
     }
 
     if (!pd.isMember(jss::account) || !pd[jss::account].isString())
     {
-        jvResult[jss::error] = "malformedAccount";
+        jvResult[jss::error] = "malformedRequest";
         return std::nullopt;
     }
 
@@ -834,14 +831,14 @@ parsePermissionedDomains(Json::Value const& pd, Json::Value& jvResult)
         (pd[jss::seq].isInt() && pd[jss::seq].asInt() < 0) ||
         (!pd[jss::seq].isInt() && !pd[jss::seq].isUInt()))
     {
-        jvResult[jss::error] = "malformedSequence";
+        jvResult[jss::error] = "malformedRequest";
         return std::nullopt;
     }
 
     auto const account = parseBase58<AccountID>(pd[jss::account].asString());
     if (!account)
     {
-        jvResult[jss::error] = "malformedAccount";
+        jvResult[jss::error] = "malformedAddress";
         return std::nullopt;
     }
 
