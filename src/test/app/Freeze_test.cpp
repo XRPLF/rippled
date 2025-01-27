@@ -1033,7 +1033,7 @@ class Freeze_test : public beast::unit_test::suite
     }
 
     void
-    testLongerPathsWhenFrozen(FeatureBitset features)
+    testPathsWhenFrozen(FeatureBitset features)
     {
         testcase("Longer paths payment on frozen trust lines");
         using namespace test::jtx;
@@ -1897,8 +1897,7 @@ class Freeze_test : public beast::unit_test::suite
             env(trust(A2, limit, tfSetFreeze));
             env.close();
 
-            // test: this should actually fail since the currency holder doesn't
-            // want to receive this currency.
+            // test: offer can still be accepted.
             env(token::acceptSellOffer(A1, sellOfferIndex));
             env.close();
 

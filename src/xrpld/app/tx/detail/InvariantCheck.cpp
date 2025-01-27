@@ -603,7 +603,7 @@ BalanceChangeNotFrozen::visitEntry(
     // `before` can be null in case it's a newly created trustline, but `after`
     // can't be null.
     XRPL_ASSERT(
-        after, "ripple::BalanceChangeNotFrozen::visitEntry : invalid after.");
+        after, "ripple::BalanceChangeNotFrozen::visitEntry : valid after.");
 
     if (!isValidEntry(before, after))
     {
@@ -640,7 +640,8 @@ BalanceChangeNotFrozen::finalize(
         {
             XRPL_ASSERT(
                 enforce,
-                "ripple::BalanceChangeNotFrozen::finalize : Issuer not found.");
+                "ripple::BalanceChangeNotFrozen::finalize : enforce "
+                "invariant.");
             if (enforce)
             {
                 return false;
@@ -702,8 +703,8 @@ BalanceChangeNotFrozen::recordBalance(
 {
     XRPL_ASSERT(
         change.balanceChangeSign,
-        "ripple::BalanceChangeNotFrozen::recordBalance : invalid trust "
-        "line balance sign.");
+        "ripple::BalanceChangeNotFrozen::recordBalance : valid trustline "
+        "balance sign.");
     auto& changes = balanceChanges[issuer][currency];
     if (change.balanceChangeSign < 0)
         changes.senders.emplace_back(std::move(change));
@@ -719,11 +720,13 @@ BalanceChangeNotFrozen::recordBalanceChanges(
     auto const balanceChangeSign = balanceChange.signum();
     auto const currency = after->at(sfBalance).getCurrency();
 
+    // Change from low account's perspective, which is trust line default
     recordBalance(
         after->at(sfHighLimit).getIssuer(),
         currency,
         {after, balanceChangeSign});
 
+    // Change from high account's perspective, which reverses the sign.
     recordBalance(
         after->at(sfLowLimit).getIssuer(),
         currency,
@@ -841,8 +844,8 @@ BalanceChangeNotFrozen::validateFrozenState(
                     << tx.getTransactionID();
     XRPL_ASSERT(
         enforce,
-        "ripple::BalanceChangeNotFrozen::validateFrozenState : Attempting to "
-        "move frozen funds.");
+        "ripple::BalanceChangeNotFrozen::validateFrozenState : enforce "
+        "invariant.");
 
     if (enforce)
     {

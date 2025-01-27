@@ -270,19 +270,15 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         }
 
         // Make sure that we are allowed to hold what the taker will pay us.
-        // This is the same approach taken by usual offers except we don't check
-        // trust line authorization at the moment.
-        if (ctx.view.rules().enabled(featureDeepFreeze) && !needed.native())
-        {
-            auto const result = checkAcceptAsset(
-                ctx.view,
-                ctx.flags,
-                (*so)[sfOwner],
-                ctx.j,
-                needed.asset().get<Issue>());
-            if (result != tesSUCCESS)
-                return result;
-        }
+        // This is a similar approach taken by usual offers.
+        auto const result = checkAcceptAsset(
+            ctx.view,
+            ctx.flags,
+            (*so)[sfOwner],
+            ctx.j,
+            needed.asset().get<Issue>());
+        if (result != tesSUCCESS)
+            return result;
     }
 
     // Fix a bug where the transfer of an NFToken with a transfer fee could
@@ -534,10 +530,15 @@ NFTokenAcceptOffer::checkAcceptAsset(
     Issue const& issue)
 {
     // Only valid for custom currencies
+
+    if (!view.rules().enabled(featureDeepFreeze))
+    {
+        return tesSUCCESS;
+    }
+
     XRPL_ASSERT(
         !isXRP(issue.currency),
-        "NFTokenAcceptOffer::checkAcceptAsset : input is XRP");
-
+        "NFTokenAcceptOffer::checkAcceptAsset : valid to check.");
     auto const issuerAccount = view.read(keylet::account(issue.account));
 
     if (!issuerAccount)
