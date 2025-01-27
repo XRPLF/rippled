@@ -2021,7 +2021,7 @@ public:
             testPaymentsWhenDeepFrozen(features);
             testChecksWhenFrozen(features);
             testAMMWhenFreeze(features);
-            testLongerPathsWhenFrozen(features);
+            testPathsWhenFrozen(features);
             testNFTOffersWhenFreeze(features);
         };
         using namespace test::jtx;
