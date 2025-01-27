@@ -517,7 +517,6 @@ class Invariants_test : public beast::unit_test::suite
 
         auto const A1FrozenByIssuer =
             [&](Account const& A1, Account const& A2, Env& env) {
-                // Preclose callback to establish trust lines with gateway
                 createTrustlines(A1, A2, env);
                 env(trust(G1, A1["USD"](10000), tfSetFreeze));
                 env.close();
@@ -527,7 +526,6 @@ class Invariants_test : public beast::unit_test::suite
 
         auto const A1DeepFrozenByIssuer =
             [&](Account const& A1, Account const& A2, Env& env) {
-                // Preclose callback to establish trust lines with gateway
                 A1FrozenByIssuer(A1, A2, env);
                 env(trust(G1, A1["USD"](10000), tfSetDeepFreeze));
                 env.close();
@@ -535,11 +533,11 @@ class Invariants_test : public beast::unit_test::suite
                 return true;
             };
 
-        auto const changeBalances = [](Account const& A1,
-                                       Account const& A2,
-                                       ApplyContext& ac,
-                                       int A1Balance,
-                                       int A2Balance) {
+        auto const changeBalances = [&](Account const& A1,
+                                        Account const& A2,
+                                        ApplyContext& ac,
+                                        int A1Balance,
+                                        int A2Balance) {
             auto const sleA1 = ac.view().peek(keylet::line(A1, G1["USD"]));
             auto const sleA2 = ac.view().peek(keylet::line(A2, G1["USD"]));
 
@@ -558,7 +556,7 @@ class Invariants_test : public beast::unit_test::suite
                 return true;
             },
             XRPAmount{},
-            STTx{ttACCOUNT_DELETE, [](STObject& tx) {}},
+            STTx{ttPAYMENT, [](STObject& tx) {}},
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             A1FrozenByIssuer);
 
@@ -570,7 +568,7 @@ class Invariants_test : public beast::unit_test::suite
                 return true;
             },
             XRPAmount{},
-            STTx{ttACCOUNT_DELETE, [](STObject& tx) {}},
+            STTx{ttPAYMENT, [](STObject& tx) {}},
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             A1DeepFrozenByIssuer);
 
@@ -582,7 +580,7 @@ class Invariants_test : public beast::unit_test::suite
                 return true;
             },
             XRPAmount{},
-            STTx{ttACCOUNT_DELETE, [](STObject& tx) {}},
+            STTx{ttPAYMENT, [](STObject& tx) {}},
             {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
             A1DeepFrozenByIssuer);
     }
@@ -1235,20 +1233,20 @@ public:
     void
     run() override
     {
-        // testXRPNotCreated();
-        // testAccountRootsNotRemoved();
-        // testAccountRootsDeletedClean();
-        // testTypesMatch();
-        // testNoXRPTrustLine();
-        // testNoDeepFreezeTrustLinesWithoutFreeze();
+        testXRPNotCreated();
+        testAccountRootsNotRemoved();
+        testAccountRootsDeletedClean();
+        testTypesMatch();
+        testNoXRPTrustLine();
+        testNoDeepFreezeTrustLinesWithoutFreeze();
         testBalanceChangeNotFrozen();
-        // testXRPBalanceCheck();
-        // testTransactionFeeCheck();
-        // testNoBadOffers();
-        // testNoZeroEscrow();
-        // testValidNewAccountRoot();
-        // testNFTokenPageInvariants();
-        // testPermissionedDomainInvariants();
+        testXRPBalanceCheck();
+        testTransactionFeeCheck();
+        testNoBadOffers();
+        testNoZeroEscrow();
+        testValidNewAccountRoot();
+        testNFTokenPageInvariants();
+        testPermissionedDomainInvariants();
     }
 };
 
