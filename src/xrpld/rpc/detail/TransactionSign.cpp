@@ -795,19 +795,15 @@ getCurrentNetworkFee(
         fee = std::max(fee, escalatedFee);
     }
 
-    auto const limit = [&]() {
-        // Scale fee units to drops:
-        auto const result = mulDiv(feeDefault, mult, div);
-        if (!result)
-            Throw<std::overflow_error>("mulDiv");
-        return *result;
-    }();
+    auto const limit = mulDiv(feeDefault, mult, div);
+    if (!limit)
+        Throw<std::overflow_error>("mulDiv");
 
-    if (fee > limit)
+    if (fee > *limit)
     {
         std::stringstream ss;
         ss << "Fee of " << fee << " exceeds the requested tx limit of "
-           << limit;
+           << *limit;
         return RPC::make_error(rpcHIGH_FEE, ss.str());
     }
 
@@ -876,7 +872,7 @@ checkFee(
         getCurrentNetworkFee(role, config, feeTrack, txQ, app, tx, mult, div);
     if (feeOrError.isMember(jss::error))
         return feeOrError;
-    tx[jss::Fee] = feeOrError;
+    tx[jss::Fee] = std::move(feeOrError);
     return Json::Value();
 }
 

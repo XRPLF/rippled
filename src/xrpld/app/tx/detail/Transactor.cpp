@@ -542,14 +542,14 @@ Transactor::checkSingleSign(PreclaimContext const& ctx)
 
     // Look up the account.
     auto const idAccount = ctx.tx.getAccountID(sfAccount);
-    // This ternary is only needed to handle `simulate`
-    auto const idSigner = pkSigner.empty()
-        ? idAccount
-        : calcAccountID(PublicKey(makeSlice(pkSigner)));
     auto const sleAccount = ctx.view.read(keylet::account(idAccount));
     if (!sleAccount)
         return terNO_ACCOUNT;
 
+    // This ternary is only needed to handle `simulate`
+    auto const idSigner = pkSigner.empty()
+        ? idAccount
+        : calcAccountID(PublicKey(makeSlice(pkSigner)));
     bool const isMasterDisabled = sleAccount->isFlag(lsfDisableMaster);
 
     if (ctx.view.rules().enabled(fixMasterKeyAsRegularKey))
@@ -672,7 +672,7 @@ Transactor::checkMultiSign(PreclaimContext const& ctx)
         // public key.
         auto const spk = txSigner.getFieldVL(sfSigningPubKey);
 
-        if (!publicKeyType(makeSlice(spk)))
+        if (!(ctx.flags & tapDRY_RUN) && !publicKeyType(makeSlice(spk)))
         {
             JLOG(ctx.j.trace())
                 << "checkMultiSign: signing public key type is unknown";
