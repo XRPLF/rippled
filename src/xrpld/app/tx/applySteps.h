@@ -33,7 +33,12 @@ struct ApplyResult
 {
     TER ter;
     bool applied;
-    std::optional<TxMeta> metadata = std::nullopt;
+    std::optional<TxMeta> metadata;
+
+    ApplyResult(TER t, bool a, std::optional<TxMeta> m = std::nullopt)
+        : ter(t), applied(a), metadata(std::move(m))
+    {
+    }
 };
 
 /** Return true if the transaction can claim a fee (tec),
