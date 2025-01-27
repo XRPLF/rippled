@@ -470,18 +470,7 @@ transactionPreProcessImpl(
     }
 
     {
-        Json::Value err = checkPayment(
-            params,
-            tx_json,
-            srcAddressID,
-            role,
-            app,
-            verify && signingArgs.editFields());
-
-        if (RPC::contains_error(err))
-            return err;
-
-        err = checkFee(
+        Json::Value err = checkFee(
             params,
             role,
             verify && signingArgs.editFields(),
@@ -489,6 +478,19 @@ transactionPreProcessImpl(
             app.getFeeTrack(),
             app.getTxQ(),
             app);
+
+        if (RPC::contains_error(err))
+            return err;
+    }
+
+    {
+        Json::Value err = checkPayment(
+            params,
+            tx_json,
+            srcAddressID,
+            role,
+            app,
+            verify && signingArgs.editFields());
 
         if (RPC::contains_error(err))
             return err;

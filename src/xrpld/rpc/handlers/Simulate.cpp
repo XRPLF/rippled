@@ -34,28 +34,26 @@
 namespace ripple {
 
 static Expected<std::uint32_t, Json::Value>
-getAutofillSequence(Json::Value tx_json, RPC::JsonContext& context)
+getAutofillSequence(Json::Value const& tx_json, RPC::JsonContext& context)
 {
     // autofill Sequence
     bool const hasTicketSeq = tx_json.isMember(sfTicketSequence.jsonName);
-    auto const accountStr = tx_json[jss::Account];
+    auto const& accountStr = tx_json[jss::Account];
     if (!accountStr.isString())
     {
         // sanity check, should fail earlier
         return Unexpected(
             RPC::invalid_field_error("tx.Account"));  // LCOV_EXCL_LINE
     }
-
-    auto const srcAddressID =
-        parseBase58<AccountID>(tx_json[jss::Account].asString());
+    auto const srcAddressID = parseBase58<AccountID>(accountStr.asString());
     if (!srcAddressID.has_value())
     {
         return Unexpected(RPC::make_error(
             rpcSRC_ACT_MALFORMED, RPC::invalid_field_message("tx.Account")));
     }
-
-    std::shared_ptr<SLE const> sle = context.app.openLedger().current()->read(
-        keylet::account(*srcAddressID));
+    std::shared_ptr<SLE const> const sle =
+        context.app.openLedger().current()->read(
+            keylet::account(*srcAddressID));
     if (!hasTicketSeq && !sle)
     {
         JLOG(context.app.journal("Simulate").debug())
@@ -99,7 +97,7 @@ autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
         if (!tx_json[jss::Signers].isArray())
             return RPC::invalid_field_error("tx.Signers");
         // check multisigned signers
-        for (int index = 0; index < tx_json[jss::Signers].size(); index++)
+        for (unsigned index = 0; index < tx_json[jss::Signers].size(); index++)
         {
             auto& signer = tx_json[jss::Signers][index];
             if (!signer.isObject() || !signer.isMember(jss::Signer) ||
@@ -141,45 +139,27 @@ autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
     return std::nullopt;
 }
 
-// {
-//   tx_blob: <string> XOR tx_json: <object>,
-//   binary: <bool>
-// }
-Json::Value
-doSimulate(RPC::JsonContext& context)
+static Json::Value
+getTxJsonFromParams(Json::Value const& params)
 {
-    context.loadType = Resource::feeMediumBurdenRPC;
+    Json::Value tx_json;
 
-    Json::Value jvResult;  // the returned result
-    Json::Value tx_json;   // the tx as a JSON
-
-    // check validity of `binary` param
-    if (context.params.isMember(jss::binary))
+    if (params.isMember(jss::tx_blob))
     {
-        auto const binary = context.params[jss::binary];
-        if (!binary.isBool())
-        {
-            return RPC::invalid_field_error(jss::binary);
-        }
-    }
-
-    // get JSON equivalent of transaction
-    if (context.params.isMember(jss::tx_blob))
-    {
-        if (context.params.isMember(jss::tx_json))
+        if (params.isMember(jss::tx_json))
         {
             return RPC::make_param_error(
                 "Can only include one of `tx_blob` and `tx_json`.");
         }
 
-        auto const tx_blob = context.params[jss::tx_blob];
+        auto const tx_blob = params[jss::tx_blob];
         if (!tx_blob.isString())
         {
             return RPC::invalid_field_error(jss::tx_blob);
         }
 
         auto unHexed = strUnHex(tx_blob.asString());
-        if (!unHexed || !unHexed->size())
+        if (!unHexed || unHexed->empty())
             return RPC::invalid_field_error(jss::tx_blob);
 
         try
@@ -188,14 +168,14 @@ doSimulate(RPC::JsonContext& context)
             tx_json = STObject(std::ref(sitTrans), sfGeneric)
                           .getJson(JsonOptions::none);
         }
-        catch (std::runtime_error& e)
+        catch (std::runtime_error const&)
         {
             return RPC::invalid_field_error(jss::tx_blob);
         }
     }
-    else if (context.params.isMember(jss::tx_json))
+    else if (params.isMember(jss::tx_json))
     {
-        tx_json = context.params[jss::tx_json];
+        tx_json = params[jss::tx_json];
         if (!tx_json.isObject())
         {
             return RPC::object_field_error(jss::tx_json);
@@ -218,18 +198,110 @@ doSimulate(RPC::JsonContext& context)
         return RPC::missing_field_error("tx.Account");
     }
 
+    return tx_json;
+}
+static Json::Value
+simulateTxn(RPC::JsonContext& context, std::shared_ptr<Transaction> transaction)
+{
+    Json::Value jvResult;
+    // Process the transaction
+    OpenView view = *context.app.openLedger().current();
+    auto const result = context.app.getTxQ().apply(
+        context.app,
+        view,
+        transaction->getSTransaction(),
+        tapDRY_RUN,
+        context.j);
+
+    jvResult[jss::applied] = result.applied;
+    jvResult[jss::ledger_index] = view.seq();
+
+    const bool isBinaryOutput = context.params.get(jss::binary, false).asBool();
+
+    // Convert the TER to human-readable values
+    std::string token;
+    std::string message;
+    if (transResultInfo(result.ter, token, message))
+    {
+        // Engine result
+        jvResult[jss::engine_result] = token;
+        jvResult[jss::engine_result_code] = result.ter;
+        jvResult[jss::engine_result_message] = message;
+    }
+    else
+    {
+        // shouldn't be hit
+        // LCOV_EXCL_START
+        jvResult[jss::engine_result] = "unknown";
+        jvResult[jss::engine_result_code] = result.ter;
+        jvResult[jss::engine_result_message] = "unknown";
+        // LCOV_EXCL_STOP
+    }
+
+    if (token == "tesSUCCESS")
+    {
+        jvResult[jss::engine_result_message] =
+            "The simulated transaction would have been applied.";
+    }
+
+    if (result.metadata)
+    {
+        if (isBinaryOutput)
+        {
+            auto const metaBlob =
+                result.metadata->getAsObject().getSerializer().getData();
+            jvResult[jss::meta_blob] = strHex(makeSlice(metaBlob));
+        }
+        else
+        {
+            jvResult[jss::meta] = result.metadata->getJson(JsonOptions::none);
+        }
+    }
+
+    if (isBinaryOutput)
+    {
+        auto const txBlob =
+            transaction->getSTransaction()->getSerializer().getData();
+        jvResult[jss::tx_blob] = strHex(makeSlice(txBlob));
+    }
+    else
+    {
+        jvResult[jss::tx_json] = transaction->getJson(JsonOptions::none);
+    }
+
+    return jvResult;
+}
+
+// {
+//   tx_blob: <string> XOR tx_json: <object>,
+//   binary: <bool>
+// }
+Json::Value
+doSimulate(RPC::JsonContext& context)
+{
+    context.loadType = Resource::feeMediumBurdenRPC;
+
+    Json::Value tx_json;  // the tx as a JSON
+
+    // check validity of `binary` param
+    if (context.params.isMember(jss::binary) &&
+        !context.params[jss::binary].isBool())
+    {
+        return RPC::invalid_field_error(jss::binary);
+    }
+
+    // get JSON equivalent of transaction
+    tx_json = getTxJsonFromParams(context.params);
+    if (tx_json.isMember(jss::error))
+        return tx_json;
+
     // autofill fields if they're not included (e.g. `Fee`, `Sequence`)
     if (auto error = autofillTx(tx_json, context))
         return *error;
 
     STParsedJSONObject parsed(std::string(jss::tx_json), tx_json);
     if (!parsed.object.has_value())
-    {
-        jvResult[jss::error] = parsed.error[jss::error];
-        jvResult[jss::error_code] = parsed.error[jss::error_code];
-        jvResult[jss::error_message] = parsed.error[jss::error_message];
-        return jvResult;
-    }
+        return parsed.error;
 
     std::shared_ptr<STTx const> stTx;
     try
@@ -238,96 +310,28 @@ doSimulate(RPC::JsonContext& context)
     }
     catch (std::exception& e)
     {
+        Json::Value jvResult = Json::objectValue;
         jvResult[jss::error] = "invalidTransaction";
         jvResult[jss::error_exception] = e.what();
-
         return jvResult;
     }
 
     std::string reason;
     auto transaction = std::make_shared<Transaction>(stTx, reason, context.app);
-
     // Actually run the transaction through the transaction processor
     try
     {
-        ApplyFlags flags = tapDRY_RUN;
-
-        // Process the transaction
-        OpenView view = *context.app.openLedger().current();
-        auto const result = context.app.getTxQ().apply(
-            context.app,
-            view,
-            transaction->getSTransaction(),
-            flags,
-            context.j);
-
-        jvResult[jss::applied] = result.applied;
-        jvResult[jss::ledger_index] = view.seq();
-
-        const bool isBinaryOutput =
-            context.params.get(jss::binary, false).asBool();
-
-        // Convert the TER to human-readable values
-        std::string token;
-        std::string message;
-        if (transResultInfo(result.ter, token, message))
-        {
-            // Engine result
-            jvResult[jss::engine_result] = token;
-            jvResult[jss::engine_result_code] = result.ter;
-            jvResult[jss::engine_result_message] = message;
-        }
-        else
-        {
-            // shouldn't be hit
-            // LCOV_EXCL_START
-            jvResult[jss::engine_result] = "unknown";
-            jvResult[jss::engine_result_code] = result.ter;
-            jvResult[jss::engine_result_message] = "unknown";
-            // LCOV_EXCL_STOP
-        }
-
-        if (token == "tesSUCCESS")
-        {
-            jvResult[jss::engine_result_message] =
-                "The simulated transaction would have been applied.";
-        }
-
-        if (result.metadata)
-        {
-            if (isBinaryOutput)
-            {
-                auto const metaBlob =
-                    result.metadata->getAsObject().getSerializer().getData();
-                jvResult[jss::meta_blob] = strHex(makeSlice(metaBlob));
-            }
-            else
-            {
-                jvResult[jss::meta] =
-                    result.metadata->getJson(JsonOptions::none);
-            }
-        }
-
-        if (isBinaryOutput)
-        {
-            auto const txBlob = stTx->getSerializer().getData();
-            jvResult[jss::tx_blob] = strHex(makeSlice(txBlob));
-        }
-        else
-        {
-            jvResult[jss::tx_json] = transaction->getJson(JsonOptions::none);
-        }
-
-        return jvResult;
+        return simulateTxn(context, transaction);
     }
     // LCOV_EXCL_START this is just in case, so rippled doesn't crash
-    catch (std::exception& e)
+    catch (std::exception const& e)
     {
+        Json::Value jvResult = Json::objectValue;
         jvResult[jss::error] = "internalSimulate";
         jvResult[jss::error_exception] = e.what();
         return jvResult;
-        // LCOV_EXCL_STOP
     }
+    // LCOV_EXCL_STOP
 }
 
 }  // namespace ripple
