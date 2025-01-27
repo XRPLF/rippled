@@ -1226,17 +1226,13 @@ class Freeze_test : public beast::unit_test::suite
             env.close();
 
             // test: A1 can send XRP using USD through A2 offer
-            // TODO: This might be not a correct behavior. A2 doesn't want to
-            // receive USDs.
             env(pay(A1, G1, XRP(10)),
                 path(~XRP),
                 sendmax(USD(11)),
                 txflags(tfNoRippleDirect));
             env.close();
 
-            // test: G1 cannot send XRP using USD through A2 offer
-            // TODO: This might be not a correct behavior. A2 doesn't want to
-            // receive USDs.
+            // test: G1 can send XRP using USD through A2 offer
             env(pay(G1, A1, XRP(10)),
                 path(~XRP),
                 sendmax(USD(11)),
