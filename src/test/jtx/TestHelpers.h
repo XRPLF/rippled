@@ -443,7 +443,7 @@ create(A const& account, A const& dest, STAmount const& sendMax)
     jv[sfSendMax.jsonName] = sendMax.getJson(JsonOptions::none);
     jv[sfDestination.jsonName] = to_string(dest);
     jv[sfTransactionType.jsonName] = jss::CheckCreate;
-    jv[sfFlags.jsonName] = tfUniversal;
+    jv[sfFlags.jsonName] = tfFullyCanonicalSig;
     return jv;
 }
 // clang-format on

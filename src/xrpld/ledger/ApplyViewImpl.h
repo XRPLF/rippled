@@ -53,7 +53,12 @@ public:
         destructor.
     */
     void
-    apply(OpenView& to, STTx const& tx, TER ter, beast::Journal j);
+    apply(
+        OpenView& to,
+        STTx const& tx,
+        TER ter,
+        std::optional<uint256> parentBatchId,
+        beast::Journal j);
 
     /** Set the amount of currency delivered.
 

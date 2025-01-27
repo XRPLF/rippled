@@ -31,6 +31,7 @@ namespace ripple {
 ApplyContext::ApplyContext(
     Application& app_,
     OpenView& base,
+    std::optional<uint256 const> const& parentBatchId,
     STTx const& tx_,
     TER preclaimResult_,
     XRPAmount baseFee_,
@@ -43,7 +44,11 @@ ApplyContext::ApplyContext(
     , journal(journal_)
     , base_(base)
     , flags_(flags)
+    , parentBatchId_(parentBatchId)
 {
+    XRPL_ASSERT(
+        parentBatchId.has_value() == ((flags_ & tapBATCH) == tapBATCH),
+        "Parent Batch ID should be set if batch apply flag is set");
     view_.emplace(&base_, flags_);
 }
 
@@ -56,7 +61,7 @@ ApplyContext::discard()
 void
 ApplyContext::apply(TER ter)
 {
-    view_->apply(base_, tx, ter, journal);
+    view_->apply(base_, tx, ter, parentBatchId_, journal);
 }
 
 std::size_t

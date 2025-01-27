@@ -43,6 +43,9 @@ TxMeta::TxMeta(
 
     if (obj.isFieldPresent(sfDeliveredAmount))
         setDeliveredAmount(obj.getFieldAmount(sfDeliveredAmount));
+
+    if (obj.isFieldPresent(sfParentBatchID))
+        setParentBatchId(obj.getFieldH256(sfParentBatchID));
 }
 
 TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, STObject const& obj)
@@ -63,6 +66,9 @@ TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, STObject const& obj)
 
     if (obj.isFieldPresent(sfDeliveredAmount))
         setDeliveredAmount(obj.getFieldAmount(sfDeliveredAmount));
+
+    if (obj.isFieldPresent(sfParentBatchID))
+        setParentBatchId(obj.getFieldH256(sfParentBatchID));
 }
 
 TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, Blob const& vec)
@@ -78,11 +84,15 @@ TxMeta::TxMeta(
 {
 }
 
-TxMeta::TxMeta(uint256 const& transactionID, std::uint32_t ledger)
+TxMeta::TxMeta(
+    uint256 const& transactionID,
+    std::uint32_t ledger,
+    std::optional<uint256> parentBatchId)
     : mTransactionID(transactionID)
     , mLedger(ledger)
     , mIndex(static_cast<std::uint32_t>(-1))
     , mResult(255)
+    , mParentBatchId(parentBatchId)
     , mNodes(sfAffectedNodes)
 {
     mNodes.reserve(32);
@@ -218,6 +228,10 @@ TxMeta::getAsObject() const
     metaData.emplace_back(mNodes);
     if (hasDeliveredAmount())
         metaData.setFieldAmount(sfDeliveredAmount, getDeliveredAmount());
+
+    if (hasParentBatchId())
+        metaData.setFieldH256(sfParentBatchID, getParentBatchId());
+
     return metaData;
 }
 

@@ -115,6 +115,7 @@ ApplyStateTable::apply(
     STTx const& tx,
     TER ter,
     std::optional<STAmount> const& deliver,
+    std::optional<uint256 const> const& parentBatchId,
     beast::Journal j)
 {
     // Build metadata and insert
@@ -123,9 +124,11 @@ ApplyStateTable::apply(
     std::shared_ptr<Serializer> sMeta;
     if (!to.open())
     {
-        TxMeta meta(tx.getTransactionID(), to.seq());
+        TxMeta meta(tx.getTransactionID(), to.seq(), parentBatchId);
+
         if (deliver)
             meta.setDeliveredAmount(*deliver);
+
         Mods newMod;
         for (auto& item : items_)
         {

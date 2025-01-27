@@ -70,6 +70,7 @@ public:
         STTx const& tx,
         TER ter,
         std::optional<STAmount> const& deliver,
+        std::optional<uint256 const> const& parentBatchId,
         beast::Journal j);
 
     bool

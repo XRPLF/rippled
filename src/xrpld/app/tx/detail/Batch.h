@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2019 Ripple Labs Inc.
+    Copyright (c) 2024 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,51 +17,37 @@
 */
 //==============================================================================
 
-#include <test/jtx/did.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/jss.h>
+#ifndef RIPPLE_TX_BATCH_H_INCLUDED
+#define RIPPLE_TX_BATCH_H_INCLUDED
+
+#include <xrpld/app/tx/detail/Transactor.h>
+#include <xrpld/core/Config.h>
+#include <xrpl/basics/Log.h>
+#include <xrpl/protocol/Indexes.h>
 
 namespace ripple {
-namespace test {
-namespace jtx {
 
-/** DID operations. */
-namespace did {
-
-Json::Value
-set(jtx::Account const& account)
+class Batch : public Transactor
 {
-    Json::Value jv;
-    jv[jss::TransactionType] = jss::DIDSet;
-    jv[jss::Account] = to_string(account.id());
-    jv[jss::Flags] = tfFullyCanonicalSig;
-    return jv;
-}
+public:
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
-Json::Value
-setValid(jtx::Account const& account)
-{
-    Json::Value jv;
-    jv[jss::TransactionType] = jss::DIDSet;
-    jv[jss::Account] = to_string(account.id());
-    jv[jss::Flags] = tfFullyCanonicalSig;
-    jv[sfURI.jsonName] = strHex(std::string{"uri"});
-    return jv;
-}
+    explicit Batch(ApplyContext& ctx) : Transactor(ctx)
+    {
+    }
 
-Json::Value
-del(jtx::Account const& account)
-{
-    Json::Value jv;
-    jv[jss::TransactionType] = jss::DIDDelete;
-    jv[jss::Account] = to_string(account.id());
-    jv[jss::Flags] = tfFullyCanonicalSig;
-    return jv;
-}
+    static XRPAmount
+    calculateBaseFee(ReadView const& view, STTx const& tx);
 
-}  // namespace did
+    static NotTEC
+    preflight(PreflightContext const& ctx);
 
-}  // namespace jtx
+    TER
+    doApply() override;
+};
 
-}  // namespace test
+using Batch = Batch;
+
 }  // namespace ripple
+
+#endif

@@ -84,7 +84,7 @@ bridge_create(
             minAccountCreate->getJson(JsonOptions::none);
 
     jv[jss::TransactionType] = jss::XChainCreateBridge;
-    jv[jss::Flags] = tfUniversal;
+    jv[jss::Flags] = tfFullyCanonicalSig;
     return jv;
 }
 
@@ -107,7 +107,7 @@ bridge_modify(
             minAccountCreate->getJson(JsonOptions::none);
 
     jv[jss::TransactionType] = jss::XChainModifyBridge;
-    jv[jss::Flags] = tfUniversal;
+    jv[jss::Flags] = tfFullyCanonicalSig;
     return jv;
 }
 
@@ -126,7 +126,7 @@ xchain_create_claim_id(
     jv[sfOtherChainSource.getJsonName()] = otherChainSource.human();
 
     jv[jss::TransactionType] = jss::XChainCreateClaimID;
-    jv[jss::Flags] = tfUniversal;
+    jv[jss::Flags] = tfFullyCanonicalSig;
     return jv;
 }
 
@@ -148,7 +148,7 @@ xchain_commit(
         jv[sfOtherChainDestination.getJsonName()] = dst->human();
 
     jv[jss::TransactionType] = jss::XChainCommit;
-    jv[jss::Flags] = tfUniversal;
+    jv[jss::Flags] = tfFullyCanonicalSig;
     return jv;
 }
 
@@ -169,7 +169,7 @@ xchain_claim(
     jv[sfAmount.getJsonName()] = amt.value.getJson(JsonOptions::none);
 
     jv[jss::TransactionType] = jss::XChainClaim;
-    jv[jss::Flags] = tfUniversal;
+    jv[jss::Flags] = tfFullyCanonicalSig;
     return jv;
 }
 
@@ -191,7 +191,7 @@ sidechain_xchain_account_create(
         reward.value.getJson(JsonOptions::none);
 
     jv[jss::TransactionType] = jss::XChainAccountCreateCommit;
-    jv[jss::Flags] = tfUniversal;
+    jv[jss::Flags] = tfFullyCanonicalSig;
     return jv;
 }
 
@@ -242,7 +242,7 @@ claim_attestation(
         result[sfDestination.getJsonName()] = toBase58(*dst);
 
     result[jss::TransactionType] = jss::XChainAddClaimAttestation;
-    result[jss::Flags] = tfUniversal;
+    result[jss::Flags] = tfFullyCanonicalSig;
 
     return result;
 }
@@ -297,7 +297,7 @@ create_account_attestation(
         rewardAmount.value.getJson(JsonOptions::none);
 
     result[jss::TransactionType] = jss::XChainAddAccountCreateAttestation;
-    result[jss::Flags] = tfUniversal;
+    result[jss::Flags] = tfFullyCanonicalSig;
 
     return result;
 }

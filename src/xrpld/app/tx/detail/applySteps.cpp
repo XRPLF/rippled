@@ -26,6 +26,7 @@
 #include <xrpld/app/tx/detail/AMMVote.h>
 #include <xrpld/app/tx/detail/AMMWithdraw.h>
 #include <xrpld/app/tx/detail/ApplyContext.h>
+#include <xrpld/app/tx/detail/Batch.h>
 #include <xrpld/app/tx/detail/CancelCheck.h>
 #include <xrpld/app/tx/detail/CancelOffer.h>
 #include <xrpld/app/tx/detail/CashCheck.h>
@@ -96,7 +97,6 @@ with_txn_type(TxType txnType, F&& f)
 
 #undef TRANSACTION
 #pragma pop_macro("TRANSACTION")
-
         default:
             throw UnknownTxnType(txnType);
     }
@@ -196,6 +196,12 @@ invoke_preclaim(PreclaimContext const& ctx)
                     return result;
 
                 result = T::checkSign(ctx);
+
+                if (result != tesSUCCESS)
+                    return result;
+
+                if (ctx.tx.getTxnType() == ttBATCH)
+                    result = T::checkBatchSign(ctx);
 
                 if (result != tesSUCCESS)
                     return result;
@@ -307,7 +313,28 @@ preflight(
     }
     catch (std::exception const& e)
     {
-        JLOG(j.fatal()) << "apply: " << e.what();
+        JLOG(j.fatal()) << "apply (preflight): " << e.what();
+        return {pfctx, {tefEXCEPTION, TxConsequences{tx}}};
+    }
+}
+
+PreflightResult
+preflight(
+    Application& app,
+    Rules const& rules,
+    uint256 const& parentBatchId,
+    STTx const& tx,
+    ApplyFlags flags,
+    beast::Journal j)
+{
+    PreflightContext const pfctx(app, tx, parentBatchId, rules, flags, j);
+    try
+    {
+        return {pfctx, invoke_preflight(pfctx)};
+    }
+    catch (std::exception const& e)
+    {
+        JLOG(j.fatal()) << "apply (preflight): " << e.what();
         return {pfctx, {tefEXCEPTION, TxConsequences{tx}}};
     }
 }
@@ -321,18 +348,31 @@ preclaim(
     std::optional<PreclaimContext const> ctx;
     if (preflightResult.rules != view.rules())
     {
-        auto secondFlight = preflight(
-            app,
-            view.rules(),
-            preflightResult.tx,
-            preflightResult.flags,
-            preflightResult.j);
+        auto secondFlight = [&]() {
+            if (preflightResult.parentBatchId)
+                return preflight(
+                    app,
+                    view.rules(),
+                    preflightResult.parentBatchId.value(),
+                    preflightResult.tx,
+                    preflightResult.flags,
+                    preflightResult.j);
+
+            return preflight(
+                app,
+                view.rules(),
+                preflightResult.tx,
+                preflightResult.flags,
+                preflightResult.j);
+        }();
+
         ctx.emplace(
             app,
             view,
             secondFlight.ter,
             secondFlight.tx,
             secondFlight.flags,
+            secondFlight.parentBatchId,
             secondFlight.j);
     }
     else
@@ -343,8 +383,10 @@ preclaim(
             preflightResult.ter,
             preflightResult.tx,
             preflightResult.flags,
+            preflightResult.parentBatchId,
             preflightResult.j);
     }
+
     try
     {
         if (ctx->preflightResult != tesSUCCESS)
@@ -353,7 +395,7 @@ preclaim(
     }
     catch (std::exception const& e)
     {
-        JLOG(ctx->j.fatal()) << "apply: " << e.what();
+        JLOG(ctx->j.fatal()) << "apply (preclaim): " << e.what();
         return {*ctx, tefEXCEPTION};
     }
 }
@@ -386,6 +428,7 @@ doApply(PreclaimResult const& preclaimResult, Application& app, OpenView& view)
         ApplyContext ctx(
             app,
             view,
+            preclaimResult.parentBatchId,
             preclaimResult.tx,
             preclaimResult.ter,
             calculateBaseFee(view, preclaimResult.tx),
