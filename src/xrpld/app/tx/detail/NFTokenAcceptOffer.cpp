@@ -271,14 +271,17 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
 
         // Make sure that we are allowed to hold what the taker will pay us.
         // This is a similar approach taken by usual offers.
-        auto const result = checkAcceptAsset(
-            ctx.view,
-            ctx.flags,
-            (*so)[sfOwner],
-            ctx.j,
-            needed.asset().get<Issue>());
-        if (result != tesSUCCESS)
-            return result;
+        if (!needed.native())
+        {
+            auto const result = checkAcceptAsset(
+                ctx.view,
+                ctx.flags,
+                (*so)[sfOwner],
+                ctx.j,
+                needed.asset().get<Issue>());
+            if (result != tesSUCCESS)
+                return result;
+        }
     }
 
     // Fix a bug where the transfer of an NFToken with a transfer fee could
