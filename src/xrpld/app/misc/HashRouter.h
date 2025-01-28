@@ -228,6 +228,9 @@ private:
 
     std::mutex mutable mutex_;
 
+    // Configurable parameters
+    Setup const setup_;
+
     // Stores all suppressed hashes and their expiration time
     beast::aged_unordered_map<
         uint256,
@@ -235,9 +238,6 @@ private:
         Stopwatch::clock_type,
         hardened_hash<strong_hash>>
         suppressionMap_;
-
-    // Configurable parameters
-    Setup const setup_;
 };
 
 HashRouter::Setup
