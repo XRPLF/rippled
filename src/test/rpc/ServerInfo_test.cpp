@@ -104,17 +104,17 @@ admin = 127.0.0.1
         }
 
         {
-            auto config = makeValidatorConfig();
-            auto const rpc_port =
-                (*config)["port_rpc"].get<unsigned int>("port");
+            Env env(*this, makeValidatorConfig());
+            auto const& config = env.app().config();
+
+            auto const rpc_port = config["port_rpc"].get<unsigned int>("port");
             auto const grpc_port =
-                (*config)[SECTION_PORT_GRPC].get<unsigned int>("port");
-            auto const ws_port = (*config)["port_ws"].get<unsigned int>("port");
+                config[SECTION_PORT_GRPC].get<unsigned int>("port");
+            auto const ws_port = config["port_ws"].get<unsigned int>("port");
             BEAST_EXPECT(grpc_port);
             BEAST_EXPECT(rpc_port);
             BEAST_EXPECT(ws_port);
 
-            Env env(*this, std::move(config));
             auto const result = env.rpc("server_info");
             BEAST_EXPECT(!result[jss::result].isMember(jss::error));
             BEAST_EXPECT(result[jss::result][jss::status] == "success");
