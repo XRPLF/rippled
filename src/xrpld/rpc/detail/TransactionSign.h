@@ -43,7 +43,7 @@ getCurrentNetworkFee(
     LoadFeeTrack const& feeTrack,
     TxQ const& txQ,
     Application const& app,
-    Json::Value& tx,
+    Json::Value const& tx,
     int mult = Tuning::defaultAutoFillFeeMultiplier,
     int div = Tuning::defaultAutoFillFeeDivisor);
 

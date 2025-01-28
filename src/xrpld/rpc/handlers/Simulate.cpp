@@ -42,8 +42,9 @@ getAutofillSequence(Json::Value const& tx_json, RPC::JsonContext& context)
     if (!accountStr.isString())
     {
         // sanity check, should fail earlier
-        return Unexpected(
-            RPC::invalid_field_error("tx.Account"));  // LCOV_EXCL_LINE
+        // LCOV_EXCL_START
+        return Unexpected(RPC::invalid_field_error("tx.Account"));
+        // LCOV_EXCL_STOP
     }
     auto const srcAddressID = parseBase58<AccountID>(accountStr.asString());
     if (!srcAddressID.has_value())
@@ -200,6 +201,7 @@ getTxJsonFromParams(Json::Value const& params)
 
     return tx_json;
 }
+
 static Json::Value
 simulateTxn(RPC::JsonContext& context, std::shared_ptr<Transaction> transaction)
 {

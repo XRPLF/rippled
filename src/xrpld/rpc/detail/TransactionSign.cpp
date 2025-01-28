@@ -710,6 +710,7 @@ transactionFormatResultImpl(Transaction::pointer tpTrans, unsigned apiVersion)
 
 //------------------------------------------------------------------------------
 
+[[nodiscard]]
 static XRPAmount
 getTxFee(Application const& app, Config const& config, Json::Value tx)
 {
@@ -778,7 +779,7 @@ getCurrentNetworkFee(
     LoadFeeTrack const& feeTrack,
     TxQ const& txQ,
     Application const& app,
-    Json::Value& tx,
+    Json::Value const& tx,
     int mult,
     int div)
 {

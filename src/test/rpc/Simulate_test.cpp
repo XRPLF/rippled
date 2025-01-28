@@ -122,7 +122,7 @@ class Simulate_test : public beast::unit_test::suite
     }
 
     Json::Value
-    getJsonMetadata(Json::Value txResult)
+    getJsonMetadata(Json::Value txResult) const
     {
         if (txResult.isMember(jss::meta_blob))
         {
@@ -366,6 +366,7 @@ class Simulate_test : public beast::unit_test::suite
                 "Transaction should not be signed.");
         }
     }
+
     void
     testFeeError()
     {
@@ -404,6 +405,7 @@ class Simulate_test : public beast::unit_test::suite
             }
         }
     }
+
     void
     testSuccessfulTransaction()
     {
