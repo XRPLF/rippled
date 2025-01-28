@@ -24,14 +24,14 @@ class Xrpl(ConanFile):
     }
 
     requires = [
-        'date/3.0.1',
-        'grpc/1.50.1',
+        'date/3.0.3',
+        'grpc/1.67.1',
         'libarchive/3.6.2',
         'nudb/2.0.8',
         'openssl/1.1.1u',
         'soci/4.0.3',
         'xxhash/0.8.2',
-        'zlib/1.2.13',
+        'zlib/1.3.1',
     ]
 
     tool_requires = [
@@ -100,7 +100,7 @@ class Xrpl(ConanFile):
 
     def requirements(self):
         self.requires('boost/1.82.0', force=True)
-        self.requires('lz4/1.9.3', force=True)
+        self.requires('lz4/1.10.0', force=True)
         self.requires('protobuf/3.21.9', force=True)
         self.requires('sqlite3/3.42.0', force=True)
         if self.options.jemalloc:

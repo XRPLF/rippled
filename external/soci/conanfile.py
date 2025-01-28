@@ -66,7 +66,7 @@ class SociConan(ConanFile):
         if self.options.with_odbc and self.settings.os != "Windows":
             self.requires("odbc/2.3.11")
         if self.options.with_mysql:
-            self.requires("libmysqlclient/8.0.31")
+            self.requires("libmysqlclient/8.1.0")
         if self.options.with_postgresql:
             self.requires("libpq/14.7")
         if self.options.with_boost:
