@@ -56,6 +56,9 @@ jobs:
           else
               brew install cmake
           fi
+      - name: install nproc
+        run: |
+          brew install coreutils
       - name: check environment
         run: |
           env | sort
@@ -63,6 +66,9 @@ jobs:
           python --version
           conan --version
           cmake --version
+          nproc --version
+          echo -n "nproc returns: "
+          nproc
       - name: configure Conan
         run : |
           conan profile new default --detect || true
@@ -81,6 +87,9 @@ jobs:
         with:
           generator: ${{ matrix.generator }}
           configuration: ${{ matrix.configuration }}
+          cmake-args: ${{ matrix.cmake-args }}
       - name: test
         run: |
-          ${build_dir}/rippled --unittest
+          n=$(nproc)
+          echo "Using $n test jobs"
+          ${build_dir}/rippled --unittest --unittest-jobs $n
