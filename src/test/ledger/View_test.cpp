@@ -1012,11 +1012,7 @@ class View_test : public beast::unit_test::suite
 
         // The two Env's can't share the same ports, so modify the config
         // of the second Env to use higher port numbers
-        Env eB{
-            *this,
-            envconfig(port_increment, 3),
-            nullptr,
-            beast::severities::kDisabled};
+        Env eB{*this, envconfig(), nullptr, beast::severities::kDisabled};
 
         // Make ledgers that are incompatible with the first ledgers.  Note
         // that bob is funded before alice.

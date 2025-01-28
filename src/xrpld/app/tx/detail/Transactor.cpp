@@ -1069,7 +1069,7 @@ Transactor::operator()()
         ctx_.apply(result);
     }
 
-    JLOG(j_.trace()) << (applied ? "applied" : "not applied")
+    JLOG(j_.trace()) << (applied ? "applied " : "not applied ")
                      << transToken(result);
 
     return {result, applied};
