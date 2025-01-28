@@ -90,7 +90,7 @@ Collaboration diagram for ripple::GRPCServerImpl:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1GRPCServerImpl__coll__graph.png" border="0" usemap="#aripple_1_1GRPCServerImpl_coll__map" alt="Collaboration graph"/></div>
 <map name="aripple_1_1GRPCServerImpl_coll__map" id="aripple_1_1GRPCServerImpl_coll__map">
-<area shape="rect" title=" " alt="" coords="1568,198,1743,223"/>
+<area shape="rect" title=" " alt="" coords="1568,215,1743,241"/>
 <area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html" title=" " alt="" coords="1184,5,1388,45"/>
 <area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/container/vector.html" title=" " alt="" coords="1186,69,1386,109"/>
 <area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="860,69,1031,109"/>
@@ -107,9 +107,10 @@ Collaboration diagram for ripple::GRPCServerImpl:</div>
 <area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/types/size_t.html" title=" " alt="" coords="322,379,410,405"/>
 <area shape="rect" href="classbeast_1_1detail_1_1ListNode.html" title=" " alt="" coords="275,301,457,355"/>
 <area shape="rect" href="classbeast_1_1detail_1_1ListNode.html" title=" " alt="" coords="5,308,173,348"/>
-<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/container/vector.html" title=" " alt="" coords="1211,363,1361,403"/>
-<area shape="rect" href="classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="1231,427,1341,453"/>
-<area shape="rect" href="classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="872,427,1019,453"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="1235,363,1337,389"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/container/vector.html" title=" " alt="" coords="1211,413,1361,453"/>
+<area shape="rect" href="classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="1231,478,1341,503"/>
+<area shape="rect" href="classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="872,478,1019,503"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -134,6 +135,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a71f4a85ca90ee78f781ce91fe91936ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a15c3b2573b2c0c328954d837e7323ded"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Processor.html">Processor</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1GRPCServerImpl.html#a15c3b2573b2c0c328954d837e7323ded">setupListeners</a> ()</td></tr>
 <tr class="separator:a15c3b2573b2c0c328954d837e7323ded"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8fa9008c43e61b481a16d92553bdc85f"><td class="memItemLeft" align="right" valign="top">boost::asio::ip::tcp::endpoint&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1GRPCServerImpl.html#a8fa9008c43e61b481a16d92553bdc85f">getEndpoint</a> () const</td></tr>
+<tr class="separator:a8fa9008c43e61b481a16d92553bdc85f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-types" name="pri-types"></a>
 Private Types</h2></td></tr>
@@ -161,6 +164,8 @@ Private Attributes</h2></td></tr>
 <tr class="separator:a0dd9bc31db7c6047c8fe2ddd674a1acb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a05f4db4c5bba612d816803b39a54de71"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1GRPCServerImpl.html#a05f4db4c5bba612d816803b39a54de71">serverAddress_</a></td></tr>
 <tr class="separator:a05f4db4c5bba612d816803b39a54de71"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac15417cab7494b5e949d678b461914c7"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint16_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1GRPCServerImpl.html#ac15417cab7494b5e949d678b461914c7">serverPort_</a> = 0</td></tr>
+<tr class="separator:ac15417cab7494b5e949d678b461914c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa5868743eb76c4315428fccee16bf606"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; boost::asio::ip::address &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1GRPCServerImpl.html#aa5868743eb76c4315428fccee16bf606">secureGatewayIPs_</a></td></tr>
 <tr class="separator:aa5868743eb76c4315428fccee16bf606"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeff65d8b79df825049c53787bdcefa0e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1GRPCServerImpl.html#aeff65d8b79df825049c53787bdcefa0e">journal_</a></td></tr>
@@ -197,7 +202,7 @@ template&lt;class Request , class Response &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="GRPCServer_8h_source.html#l00096">96</a> of file <a class="el" href="GRPCServer_8h_source.html">GRPCServer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="GRPCServer_8h_source.html#l00097">97</a> of file <a class="el" href="GRPCServer_8h_source.html">GRPCServer.h</a>.</p>
 
 </div>
 </div>
@@ -223,7 +228,7 @@ template&lt;class Request , class Response &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="GRPCServer_8h_source.html#l00108">108</a> of file <a class="el" href="GRPCServer_8h_source.html">GRPCServer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="GRPCServer_8h_source.html#l00109">109</a> of file <a class="el" href="GRPCServer_8h_source.html">GRPCServer.h</a>.</p>
 
 </div>
 </div>
@@ -249,7 +254,7 @@ template&lt;class Request , class Response &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="GRPCServer_8h_source.html#l00114">114</a> of file <a class="el" href="GRPCServer_8h_source.html">GRPCServer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="GRPCServer_8h_source.html#l00115">115</a> of file <a class="el" href="GRPCServer_8h_source.html">GRPCServer.h</a>.</p>
 
 </div>
 </div>
@@ -411,6 +416,25 @@ template&lt;class Request , class Response &gt; </div>
 
 </div>
 </div>
+<a id="a8fa9008c43e61b481a16d92553bdc85f" name="a8fa9008c43e61b481a16d92553bdc85f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8fa9008c43e61b481a16d92553bdc85f">&#9670;&#160;</a></span>getEndpoint()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">boost::asio::ip::tcp::endpoint ripple::GRPCServerImpl::getEndpoint </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="GRPCServer_8cpp_source.html#l00587">587</a> of file <a class="el" href="GRPCServer_8cpp_source.html">GRPCServer.cpp</a>.</p>
+
+</div>
+</div>
 <h2 class="groupheader">Member Data Documentation</h2>
 <a id="a559d51bc83261dfb69868c1d3554b5a3" name="a559d51bc83261dfb69868c1d3554b5a3"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a559d51bc83261dfb69868c1d3554b5a3">&#9670;&#160;</a></span>cq_</h2>
@@ -556,6 +580,30 @@ template&lt;class Request , class Response &gt; </div>
 
 </div>
 </div>
+<a id="ac15417cab7494b5e949d678b461914c7" name="ac15417cab7494b5e949d678b461914c7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac15417cab7494b5e949d678b461914c7">&#9670;&#160;</a></span>serverPort_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint16_t</a> ripple::GRPCServerImpl::serverPort_ = 0</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="GRPCServer_8h_source.html#l00087">87</a> of file <a class="el" href="GRPCServer_8h_source.html">GRPCServer.h</a>.</p>
+
+</div>
+</div>
 <a id="aa5868743eb76c4315428fccee16bf606" name="aa5868743eb76c4315428fccee16bf606"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#aa5868743eb76c4315428fccee16bf606">&#9670;&#160;</a></span>secureGatewayIPs_</h2>
 
@@ -576,7 +624,7 @@ template&lt;class Request , class Response &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="GRPCServer_8h_source.html#l00088">88</a> of file <a class="el" href="GRPCServer_8h_source.html">GRPCServer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="GRPCServer_8h_source.html#l00089">89</a> of file <a class="el" href="GRPCServer_8h_source.html">GRPCServer.h</a>.</p>
 
 </div>
 </div>
@@ -600,7 +648,7 @@ template&lt;class Request , class Response &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="GRPCServer_8h_source.html#l00090">90</a> of file <a class="el" href="GRPCServer_8h_source.html">GRPCServer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="GRPCServer_8h_source.html#l00091">91</a> of file <a class="el" href="GRPCServer_8h_source.html">GRPCServer.h</a>.</p>
 
 </div>
 </div>
@@ -624,7 +672,7 @@ template&lt;class Request , class Response &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="GRPCServer_8h_source.html#l00111">111</a> of file <a class="el" href="GRPCServer_8h_source.html">GRPCServer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="GRPCServer_8h_source.html#l00112">112</a> of file <a class="el" href="GRPCServer_8h_source.html">GRPCServer.h</a>.</p>
 
 </div>
 </div>

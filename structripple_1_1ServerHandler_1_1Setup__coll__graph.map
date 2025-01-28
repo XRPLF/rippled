@@ -1,14 +1,13 @@
 <map id="ripple::ServerHandler::Setup" name="ripple::ServerHandler::Setup">
-<area shape="rect" id="node1" title=" " alt="" coords="1348,452,1508,492"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="1120,343,1263,383"/>
-<area shape="rect" id="node3" href="$structripple_1_1Port.html" title="Configuration information for a Server listening port." alt="" coords="785,311,879,337"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="193,186,280,211"/>
-<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/set.html" title=" " alt="" coords="371,179,530,219"/>
-<area shape="rect" id="node11" href="$structripple_1_1ServerHandler_1_1Setup_1_1client__t.html" title=" " alt="" coords="752,515,912,555"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="5,179,144,219"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="399,441,502,466"/>
-<area shape="rect" id="node12" href="$structripple_1_1ServerHandler_1_1Setup_1_1overlay__t.html" title=" " alt="" coords="936,453,1096,493"/>
-<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="363,243,539,283"/>
-<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="363,307,539,347"/>
-<area shape="rect" id="node10" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="365,371,536,411"/>
+<area shape="rect" id="node1" title=" " alt="" coords="1253,171,1413,211"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="1025,247,1168,287"/>
+<area shape="rect" id="node3" href="$structripple_1_1Port.html" title="Configuration information for a Server listening port." alt="" coords="785,371,879,397"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="193,371,280,397"/>
+<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/set.html" title=" " alt="" coords="371,432,530,472"/>
+<area shape="rect" id="node11" href="$structripple_1_1ServerHandler_1_1Setup_1_1client__t.html" title=" " alt="" coords="752,117,912,157"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="5,364,144,404"/>
+<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="399,138,502,163"/>
+<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="363,560,539,600"/>
+<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="363,188,539,228"/>
+<area shape="rect" id="node10" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="365,496,536,536"/>
 </map>

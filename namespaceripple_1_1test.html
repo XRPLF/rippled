@@ -797,8 +797,6 @@ Functions</h2></td></tr>
 <tr class="memitem:a343c740a28bf9c6b47ec94df0a3e379d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test.html#a343c740a28bf9c6b47ec94df0a3e379d">setupConfigForUnitTests</a> (<a class="el" href="classripple_1_1Config.html">Config</a> &amp;config)</td></tr>
 <tr class="memdesc:a343c740a28bf9c6b47ec94df0a3e379d"><td class="mdescLeft">&#160;</td><td class="mdescRight">initializes a config object for use with <a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html" title="A transaction testing environment.">jtx::Env</a>  <a href="namespaceripple_1_1test.html#a343c740a28bf9c6b47ec94df0a3e379d">More...</a><br /></td></tr>
 <tr class="separator:a343c740a28bf9c6b47ec94df0a3e379d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a474d18c596a8328b44506add96372d86"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test.html#a474d18c596a8328b44506add96372d86">incPorts</a> (int times)</td></tr>
-<tr class="separator:a474d18c596a8328b44506add96372d86"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:add7f8e2b06ca954ef33e5a0cb1fde85c"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1test_1_1AbstractClient.html">AbstractClient</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test.html#add7f8e2b06ca954ef33e5a0cb1fde85c">makeJSONRPCClient</a> (<a class="el" href="classripple_1_1Config.html">Config</a> const  &amp;cfg, unsigned rpc_version=2)</td></tr>
 <tr class="memdesc:add7f8e2b06ca954ef33e5a0cb1fde85c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a client using JSON-RPC over HTTP/S.  <a href="namespaceripple_1_1test.html#add7f8e2b06ca954ef33e5a0cb1fde85c">More...</a><br /></td></tr>
 <tr class="separator:add7f8e2b06ca954ef33e5a0cb1fde85c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -920,8 +918,6 @@ Variables</h2></td></tr>
 <tr class="separator:a55722901dcc9c5e44312da2cbcfeb244"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8852c4bb7703599e82fb733e2f514aef"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic</a>&lt; bool &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test.html#a8852c4bb7703599e82fb733e2f514aef">envUseIPv4</a> {false}</td></tr>
 <tr class="separator:a8852c4bb7703599e82fb733e2f514aef"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af3f8d75b79b9e0e1d8b46df71bf899fa"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test.html#af3f8d75b79b9e0e1d8b46df71bf899fa">port_base</a> = 8000</td></tr>
-<tr class="separator:af3f8d75b79b9e0e1d8b46df71bf899fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a83cb5379f6b51cea1bbd94050c7a5c6c"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test.html#a83cb5379f6b51cea1bbd94050c7a5c6c">MAX_PEERS</a> = 10</td></tr>
 <tr class="separator:a83cb5379f6b51cea1bbd94050c7a5c6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8449bcc80890d2b41a66c3c17716be0e"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test.html#a8449bcc80890d2b41a66c3c17716be0e">MAX_VALIDATORS</a> = 10</td></tr>
@@ -2227,7 +2223,7 @@ Variables</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00837">837</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00834">834</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -5661,27 +5657,7 @@ template&lt;typename PreVote  = decltype(defaultPreVote)&gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="envconfig_8cpp_source.html#l00038">38</a> of file <a class="el" href="envconfig_8cpp_source.html">envconfig.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a474d18c596a8328b44506add96372d86" name="a474d18c596a8328b44506add96372d86"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a474d18c596a8328b44506add96372d86">&#9670;&#160;</a></span>incPorts()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ripple::test::incPorts </td>
-          <td>(</td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>times</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="envconfig_8cpp_source.html#l00030">30</a> of file <a class="el" href="envconfig_8cpp_source.html">envconfig.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="envconfig_8cpp_source.html#l00031">31</a> of file <a class="el" href="envconfig_8cpp_source.html">envconfig.cpp</a>.</p>
 
 </div>
 </div>
@@ -5713,7 +5689,7 @@ template&lt;typename PreVote  = decltype(defaultPreVote)&gt; </div>
 
 <p>Returns a client using JSON-RPC over HTTP/S. </p>
 
-<p class="definition">Definition at line <a class="el" href="JSONRPCClient_8cpp_source.html#l00155">155</a> of file <a class="el" href="JSONRPCClient_8cpp_source.html">JSONRPCClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="JSONRPCClient_8cpp_source.html#l00159">159</a> of file <a class="el" href="JSONRPCClient_8cpp_source.html">JSONRPCClient.cpp</a>.</p>
 
 </div>
 </div>
@@ -5757,7 +5733,7 @@ template&lt;typename PreVote  = decltype(defaultPreVote)&gt; </div>
 
 <p>Returns a client operating through WebSockets/S. </p>
 
-<p class="definition">Definition at line <a class="el" href="WSClient_8cpp_source.html#l00300">300</a> of file <a class="el" href="WSClient_8cpp_source.html">WSClient.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="WSClient_8cpp_source.html#l00304">304</a> of file <a class="el" href="WSClient_8cpp_source.html">WSClient.cpp</a>.</p>
 
 </div>
 </div>
@@ -7614,22 +7590,6 @@ template&lt;class TIn , class TOut , class TDerived &gt; </div>
       <table class="memname">
         <tr>
           <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic</a>&lt; bool &gt; ripple::test::envUseIPv4 {false}</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="envconfig_8cpp_source.html#l00035">35</a> of file <a class="el" href="envconfig_8cpp_source.html">envconfig.cpp</a>.</p>
-
-</div>
-</div>
-<a id="af3f8d75b79b9e0e1d8b46df71bf899fa" name="af3f8d75b79b9e0e1d8b46df71bf899fa"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af3f8d75b79b9e0e1d8b46df71bf899fa">&#9670;&#160;</a></span>port_base</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">int ripple::test::port_base = 8000</td>
         </tr>
       </table>
 </div><div class="memdoc">

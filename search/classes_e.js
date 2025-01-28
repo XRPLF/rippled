@@ -102,13 +102,12 @@ var searchData=
   ['output_5ftest_99',['Output_test',['../structJson_1_1Output__test.html',1,'Json']]],
   ['overflow_5ferror_100',['overflow_error',['http://en.cppreference.com/w/cpp/error/overflow_error.html',1,'std']]],
   ['overlay_101',['Overlay',['../classripple_1_1Overlay.html',1,'ripple::Overlay'],['../classripple_1_1test_1_1Overlay.html',1,'ripple::test::Overlay']]],
-  ['overlay_5ft_102',['overlay_t',['../structripple_1_1ServerHandler_1_1Setup_1_1overlay__t.html',1,'ripple::ServerHandler::Setup']]],
-  ['overlayimpl_103',['OverlayImpl',['../classripple_1_1OverlayImpl.html',1,'ripple']]],
-  ['overlaysim_104',['OverlaySim',['../classripple_1_1test_1_1OverlaySim.html',1,'ripple::test']]],
-  ['oversizemeta_5ftest_105',['OversizeMeta_test',['../classripple_1_1test_1_1OversizeMeta__test.html',1,'ripple::test']]],
-  ['owner_106',['owner',['../classripple_1_1test_1_1jtx_1_1token_1_1owner.html',1,'ripple::test::jtx::token']]],
-  ['owner_5fcount_107',['owner_count',['../classripple_1_1test_1_1jtx_1_1owner__count.html',1,'ripple::test::jtx']]],
-  ['owner_5fless_108',['owner_less',['http://en.cppreference.com/w/cpp/memory/owner_less.html',1,'std']]],
-  ['ownerinfo_5ftest_109',['OwnerInfo_test',['../classripple_1_1OwnerInfo__test.html',1,'ripple']]],
-  ['owners_110',['owners',['../classripple_1_1test_1_1jtx_1_1owners.html',1,'ripple::test::jtx']]]
+  ['overlayimpl_102',['OverlayImpl',['../classripple_1_1OverlayImpl.html',1,'ripple']]],
+  ['overlaysim_103',['OverlaySim',['../classripple_1_1test_1_1OverlaySim.html',1,'ripple::test']]],
+  ['oversizemeta_5ftest_104',['OversizeMeta_test',['../classripple_1_1test_1_1OversizeMeta__test.html',1,'ripple::test']]],
+  ['owner_105',['owner',['../classripple_1_1test_1_1jtx_1_1token_1_1owner.html',1,'ripple::test::jtx::token']]],
+  ['owner_5fcount_106',['owner_count',['../classripple_1_1test_1_1jtx_1_1owner__count.html',1,'ripple::test::jtx']]],
+  ['owner_5fless_107',['owner_less',['http://en.cppreference.com/w/cpp/memory/owner_less.html',1,'std']]],
+  ['ownerinfo_5ftest_108',['OwnerInfo_test',['../classripple_1_1OwnerInfo__test.html',1,'ripple']]],
+  ['owners_109',['owners',['../classripple_1_1test_1_1jtx_1_1owners.html',1,'ripple::test::jtx']]]
 ];
