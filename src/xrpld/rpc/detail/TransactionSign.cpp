@@ -499,7 +499,7 @@ transactionPreProcessImpl(
     // If multisigning there should not be a single signature and vice versa.
     if (signingArgs.isMultiSigning())
     {
-        if (tx_json.isMember(sfTxnSignature.jsonName))
+        if (tx_json.isMember(jss::TxnSignature))
             return rpcError(rpcALREADY_SINGLE_SIG);
 
         // If multisigning then we need to return the public key.
@@ -747,10 +747,15 @@ getTxFee(Application const& app, Config const& config, Json::Value tx)
             if (!signer.isMember(jss::Signer) ||
                 !signer[jss::Signer].isObject())
                 return config.FEES.reference_fee;
-            if (!signer[jss::Signer].isMember(sfTxnSignature.jsonName))
+            if (!signer[jss::Signer].isMember(jss::SigningPubKey))
+            {
+                // autofill SigningPubKey
+                signer[jss::Signer][jss::SigningPubKey] = "";
+            }
+            if (!signer[jss::Signer].isMember(jss::TxnSignature))
             {
                 // autofill TxnSignature
-                signer[jss::Signer][sfTxnSignature.jsonName] = "";
+                signer[jss::Signer][jss::TxnSignature] = "";
             }
         }
     }

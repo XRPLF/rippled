@@ -680,8 +680,10 @@ Transactor::checkMultiSign(PreclaimContext const& ctx)
             return tefBAD_SIGNATURE;
         }
 
-        AccountID const signingAcctIDFromPubKey =
-            calcAccountID(PublicKey(makeSlice(spk)));
+        // This ternary is only needed to handle `simulate`
+        AccountID const signingAcctIDFromPubKey = spk.empty()
+            ? txSignerAcctID
+            : calcAccountID(PublicKey(makeSlice(spk)));
 
         // Verify that the signingAcctID and the signingAcctIDFromPubKey
         // belong together.  Here are the rules:

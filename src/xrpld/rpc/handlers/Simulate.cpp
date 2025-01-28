@@ -87,10 +87,10 @@ autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
         tx_json[jss::Fee] = feeOrError;
     }
 
-    if (!tx_json.isMember(sfSigningPubKey.jsonName))
+    if (!tx_json.isMember(jss::SigningPubKey))
     {
         // autofill SigningPubKey
-        tx_json[sfSigningPubKey.jsonName] = "";
+        tx_json[jss::SigningPubKey] = "";
     }
 
     if (tx_json.isMember(jss::Signers))
@@ -105,12 +105,19 @@ autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
                 !signer[jss::Signer].isObject())
                 return RPC::invalid_field_error(
                     "tx.Signers[" + std::to_string(index) + "]");
-            if (!signer[jss::Signer].isMember(sfTxnSignature.jsonName))
+
+            if (!signer[jss::Signer].isMember(jss::SigningPubKey))
+            {
+                // autofill SigningPubKey
+                signer[jss::Signer][jss::SigningPubKey] = "";
+            }
+
+            if (!signer[jss::Signer].isMember(jss::TxnSignature))
             {
                 // autofill TxnSignature
-                signer[jss::Signer][sfTxnSignature.jsonName] = "";
+                signer[jss::Signer][jss::TxnSignature] = "";
             }
-            else if (signer[jss::Signer][sfTxnSignature.jsonName] != "")
+            else if (signer[jss::Signer][jss::TxnSignature] != "")
             {
                 // Transaction must not be signed
                 return rpcError(rpcTX_SIGNED);
@@ -118,12 +125,12 @@ autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
         }
     }
 
-    if (!tx_json.isMember(sfTxnSignature.jsonName))
+    if (!tx_json.isMember(jss::TxnSignature))
     {
         // autofill TxnSignature
-        tx_json[sfTxnSignature.jsonName] = "";
+        tx_json[jss::TxnSignature] = "";
     }
-    else if (tx_json[sfTxnSignature.jsonName] != "")
+    else if (tx_json[jss::TxnSignature] != "")
     {
         // Transaction must not be signed
         return rpcError(rpcTX_SIGNED);
