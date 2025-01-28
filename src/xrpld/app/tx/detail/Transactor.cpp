@@ -548,6 +548,9 @@ Transactor::checkSingleSign(PreclaimContext const& ctx)
         return terNO_ACCOUNT;
 
     // This ternary is only needed to handle `simulate`
+    XRPL_ASSERT(
+        (ctx.flags & tapDRY_RUN) || !pkSigner.empty(),
+        "ripple::Transactor::checkSingleSign : non-empty signer or simulation");
     auto const idSigner = pkSigner.empty()
         ? idAccount
         : calcAccountID(PublicKey(makeSlice(pkSigner)));
@@ -681,6 +684,10 @@ Transactor::checkMultiSign(PreclaimContext const& ctx)
         }
 
         // This ternary is only needed to handle `simulate`
+        XRPL_ASSERT(
+            (ctx.flags & tapDRY_RUN) || !spk.empty(),
+            "ripple::Transactor::checkMultiSign : non-empty signer or "
+            "simulation");
         AccountID const signingAcctIDFromPubKey = spk.empty()
             ? txSignerAcctID
             : calcAccountID(PublicKey(makeSlice(spk)));
