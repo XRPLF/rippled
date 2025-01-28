@@ -4631,6 +4631,60 @@ struct Wasm_test : public beast::unit_test::suite
     }
 
     void
+    testEscrowWasmP5()
+    {
+        testcase("escrow wasm P5 test");
+        auto wasmHex =
+            "0061736d010000000105016000017f021b0108686f73745f6c69620e6765745f6c"
+            "65646765725f73716e0000030201000405017001010105030100100619037f0141"
+            "8080c0000b7f00418080c0000b7f00418080c0000b072d04066d656d6f72790200"
+            "05726561647900010a5f5f646174615f656e6403010b5f5f686561705f62617365"
+            "03020a0d010b0010808080800041044a0b006e046e616d65000e0d7761736d5f6c"
+            "69622e7761736d01430200395f5a4e387761736d5f6c696238686f73745f6c6962"
+            "31346765745f6c65646765725f73716e3137686663383539386237646539633036"
+            "64624501057265616479071201000f5f5f737461636b5f706f696e746572005509"
+            "70726f64756365727302086c616e6775616765010452757374000c70726f636573"
+            "7365642d62790105727573746325312e38332e302d6e696768746c792028633266"
+            "37346333663920323032342d30392d30392900490f7461726765745f6665617475"
+            "726573042b0a6d756c746976616c75652b0f6d757461626c652d676c6f62616c73"
+            "2b0f7265666572656e63652d74797065732b087369676e2d657874";
+        auto wasmStr = boost::algorithm::unhex(std::string(wasmHex));
+        std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
+
+        using namespace test::jtx;
+        struct TestLedgerDataProvider : public LedgerDataProvider
+        {
+            Env* env;
+
+        public:
+            TestLedgerDataProvider(Env* env) : env(env)
+            {
+            }
+
+            int32_t
+            get_ledger_sqn() override
+            {
+                return (int32_t)env->current()->seq();
+            }
+        };
+        Env env{*this};
+        TestLedgerDataProvider ledgerDataProvider(&env);
+        std::string funcName("ready");
+        auto re = runEscrowWasm(wasm, funcName, &ledgerDataProvider);
+        if (BEAST_EXPECT(re.has_value()))
+            BEAST_EXPECT(!re.value());
+
+        env.close();
+        env.close();
+        env.close();
+        env.close();
+
+        re = runEscrowWasm(wasm, funcName, &ledgerDataProvider);
+        if (BEAST_EXPECT(re.has_value()))
+            BEAST_EXPECT(re.value());
+    }
+
+    void
     run() override
     {
         using namespace test::jtx;
@@ -4641,6 +4695,7 @@ struct Wasm_test : public beast::unit_test::suite
         testEscrowWasmP1();
         testEscrowWasmP2P3();
         testEscrowWasmP4();
+        testEscrowWasmP5();
     }
 };
 

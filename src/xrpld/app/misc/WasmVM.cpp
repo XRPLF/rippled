@@ -389,4 +389,91 @@ runEscrowWasmP4(
     }
 }
 
+WasmEdge_Result get_ledger_sqn(void * data, const WasmEdge_CallingFrameContext *,
+                    const WasmEdge_Value *In, WasmEdge_Value *Out) {
+    Out[0] = WasmEdge_ValueGenI32(((LedgerDataProvider *)data)->get_ledger_sqn());
+    return WasmEdge_Result_Success;
+}
+
+Expected<bool, TER>
+runEscrowWasm(
+    std::vector<uint8_t> const& wasmCode,
+    std::string const& funcName,
+    LedgerDataProvider* ledgerDataProvider)
+{
+    WasmEdge_VMContext* VMCxt = WasmEdge_VMCreate(NULL, NULL);
+    {//register host function
+        WasmEdge_ValType ReturnList[1] = {WasmEdge_ValTypeGenI32()};
+        WasmEdge_FunctionTypeContext* HostFType =
+            WasmEdge_FunctionTypeCreate(NULL, 0, ReturnList, 1);
+        WasmEdge_FunctionInstanceContext* HostFunc =
+            WasmEdge_FunctionInstanceCreate(
+                HostFType, get_ledger_sqn, ledgerDataProvider, 0);
+        WasmEdge_FunctionTypeDelete(HostFType);
+
+        WasmEdge_String HostName = WasmEdge_StringCreateByCString("host_lib");
+        WasmEdge_ModuleInstanceContext* HostMod =
+            WasmEdge_ModuleInstanceCreate(HostName);
+        WasmEdge_StringDelete(HostName);
+
+        WasmEdge_String HostFuncName =
+            WasmEdge_StringCreateByCString("get_ledger_sqn");
+        WasmEdge_ModuleInstanceAddFunction(HostMod, HostFuncName, HostFunc);
+        WasmEdge_StringDelete(HostFuncName);
+
+        WasmEdge_Result regRe =
+            WasmEdge_VMRegisterModuleFromImport(VMCxt, HostMod);
+        if (!WasmEdge_ResultOK(regRe))
+        {
+            printf("host func reg error\n");
+            return Unexpected<TER>(tecFAILED_PROCESSING);
+        }
+    }
+    WasmEdge_Result loadRes =
+        WasmEdge_VMLoadWasmFromBuffer(VMCxt, wasmCode.data(), wasmCode.size());
+    if (!WasmEdge_ResultOK(loadRes))
+    {
+        printf("load error\n");
+        return Unexpected<TER>(tecFAILED_PROCESSING);
+    }
+    WasmEdge_Result validateRes = WasmEdge_VMValidate(VMCxt);
+    if (!WasmEdge_ResultOK(validateRes))
+    {
+        printf("validate error\n");
+        return Unexpected<TER>(tecFAILED_PROCESSING);
+    }
+    WasmEdge_Result instantiateRes = WasmEdge_VMInstantiate(VMCxt);
+    if (!WasmEdge_ResultOK(instantiateRes))
+    {
+        printf("instantiate error\n");
+        return Unexpected<TER>(tecFAILED_PROCESSING);
+    }
+
+    WasmEdge_Value funcReturns[1];
+    WasmEdge_String func = WasmEdge_StringCreateByCString(funcName.c_str());
+
+    WasmEdge_Result funcRes =
+        WasmEdge_VMExecute(VMCxt, func, NULL, 0, funcReturns, 1);
+
+    bool ok = WasmEdge_ResultOK(funcRes);
+    bool re = false;
+    if (ok)
+    {
+        auto result = WasmEdge_ValueGetI32(funcReturns[0]);
+        if (result != 0)
+            re = true;
+    }
+    else
+    {
+        printf("Error message: %s\n", WasmEdge_ResultGetMessage(funcRes));
+    }
+
+    WasmEdge_VMDelete(VMCxt);
+    WasmEdge_StringDelete(func);
+    if (ok)
+        return re;
+    else
+        return Unexpected<TER>(tecFAILED_PROCESSING);
+}
+
 }  // namespace ripple
