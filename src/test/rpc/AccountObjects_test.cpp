@@ -759,7 +759,7 @@ public:
         {
             // Create a bridge
             test::jtx::XChainBridgeObjects x;
-            Env scEnv(*this, envconfig(port_increment, 3), features);
+            Env scEnv(*this, envconfig(), features);
             x.createScBridgeObjects(scEnv);
 
             auto scEnvAcctObjs = [&](Account const& acct, char const* type) {
@@ -800,7 +800,7 @@ public:
             // Alice and Bob create a xchain sequence number that we can look
             // for in the ledger.
             test::jtx::XChainBridgeObjects x;
-            Env scEnv(*this, envconfig(port_increment, 3), features);
+            Env scEnv(*this, envconfig(), features);
             x.createScBridgeObjects(scEnv);
 
             scEnv(
@@ -845,7 +845,7 @@ public:
         }
         {
             test::jtx::XChainBridgeObjects x;
-            Env scEnv(*this, envconfig(port_increment, 3), features);
+            Env scEnv(*this, envconfig(), features);
             x.createScBridgeObjects(scEnv);
             auto const amt = XRP(1000);
 

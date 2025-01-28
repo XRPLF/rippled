@@ -614,7 +614,7 @@ public:
         }
 
         {
-            Env env_nonadmin{*this, no_admin(envconfig(port_increment, 3))};
+            Env env_nonadmin{*this, no_admin(envconfig())};
             Json::Value jv;
             jv[jss::url] = "no-url";
             auto jr =
