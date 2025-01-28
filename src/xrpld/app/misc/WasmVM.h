@@ -53,6 +53,23 @@ runEscrowWasmP4(
     std::vector<uint8_t> const& escrow_tx_json_data,
     std::vector<uint8_t> const& escrow_lo_json_data);
 
+struct LedgerDataProvider
+{
+    virtual int32_t
+    get_ledger_sqn()
+    {
+        return 1;
+    }
+
+    virtual ~LedgerDataProvider() = default;
+};
+
+Expected<bool, TER>
+runEscrowWasm(
+    std::vector<uint8_t> const& wasmCode,
+    std::string const& funcName,
+    LedgerDataProvider* ledgerDataProvider);
+
 }  // namespace ripple
 #endif  // RIPPLE_APP_MISC_WASMVM_H_INLCUDED
 
