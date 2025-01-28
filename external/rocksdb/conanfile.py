@@ -91,7 +91,7 @@ class RocksDBConan(ConanFile):
         if self.options.with_lz4:
             self.requires("lz4/1.10.0")
         if self.options.with_zlib:
-            self.requires("zlib/[>=1.3.1 <2]")
+            self.requires("zlib/[>=1.2.11 <2]")
         if self.options.with_zstd:
             self.requires("zstd/1.5.6")
         if self.options.get_safe("with_tbb"):

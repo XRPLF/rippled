@@ -25,10 +25,10 @@ class Xrpl(ConanFile):
 
     requires = [
         'date/3.0.3',
-        'grpc/1.67.1',
-        'libarchive/3.6.2',
+        'grpc/1.50.1',
+        'libarchive/3.7.6',
         'nudb/2.0.8',
-        'openssl/1.1.1u',
+        'openssl/1.1.1v',
         'soci/4.0.3',
         'xxhash/0.8.2',
         'zlib/1.3.1',
@@ -99,10 +99,10 @@ class Xrpl(ConanFile):
             self.options['boost'].visibility = 'global'
 
     def requirements(self):
-        self.requires('boost/1.82.0', force=True)
+        self.requires('boost/1.83.0', force=True)
         self.requires('lz4/1.10.0', force=True)
         self.requires('protobuf/3.21.9', force=True)
-        self.requires('sqlite3/3.42.0', force=True)
+        self.requires('sqlite3/3.47.0', force=True)
         if self.options.jemalloc:
             self.requires('jemalloc/5.3.0')
         if self.options.rocksdb:
