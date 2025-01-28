@@ -1,11 +1,10 @@
 libsecp256k1
 ============
 
-[![Build Status](https://api.cirrus-ci.com/github/bitcoin-core/secp256k1.svg?branch=master)](https://cirrus-ci.com/github/bitcoin-core/secp256k1)
 ![Dependencies: None](https://img.shields.io/badge/dependencies-none-success)
 [![irc.libera.chat #secp256k1](https://img.shields.io/badge/irc.libera.chat-%23secp256k1-success)](https://web.libera.chat/#secp256k1)
 
-Optimized C library for ECDSA signatures and secret/public key operations on curve secp256k1.
+High-performance high-assurance C library for digital signatures and other cryptographic primitives on the secp256k1 elliptic curve.
 
 This library is intended to be the highest quality publicly available library for cryptography on the secp256k1 curve. However, the primary focus of its development has been for usage in the Bitcoin system and usage unlike Bitcoin's may be less well tested, verified, or suffer from a less well thought out interface. Correct usage requires some care and consideration that the library is fit for your application's purpose.
 
@@ -21,6 +20,8 @@ Features:
 * Optional module for public key recovery.
 * Optional module for ECDH key exchange.
 * Optional module for Schnorr signatures according to [BIP-340](https://github.com/bitcoin/bips/blob/master/bip-0340.mediawiki).
+* Optional module for ElligatorSwift key exchange according to [BIP-324](https://github.com/bitcoin/bips/blob/master/bip-0324.mediawiki).
+* Optional module for MuSig2 Schnorr multi-signatures according to [BIP-327](https://github.com/bitcoin/bips/blob/master/bip-0327.mediawiki).
 
 Implementation details
 ----------------------
@@ -34,7 +35,7 @@ Implementation details
   * Expose only higher level interfaces to minimize the API surface and improve application security. ("Be difficult to use insecurely.")
 * Field operations
   * Optimized implementation of arithmetic modulo the curve's field size (2^256 - 0x1000003D1).
-    * Using 5 52-bit limbs (including hand-optimized assembly for x86_64, by Diederik Huys).
+    * Using 5 52-bit limbs
     * Using 10 26-bit limbs (including hand-optimized assembly for 32-bit ARM, by Wladimir J. van der Laan).
       * This is an experimental feature that has not received enough scrutiny to satisfy the standard of quality of this library but is made available for testing and review by the community.
 * Scalar operations
@@ -80,9 +81,9 @@ To maintain a pristine source tree, CMake encourages to perform an out-of-source
 
     $ mkdir build && cd build
     $ cmake ..
-    $ make
-    $ make check  # run the test suite
-    $ sudo make install  # optional
+    $ cmake --build .
+    $ ctest  # run the test suite
+    $ sudo cmake --install .  # optional
 
 To compile optional modules (such as Schnorr signatures), you need to run `cmake` with additional flags (such as `-DSECP256K1_ENABLE_MODULE_SCHNORRSIG=ON`). Run `cmake .. -LH` to see the full list of available flags.
 
@@ -114,30 +115,9 @@ Usage examples can be found in the [examples](examples) directory. To compile th
   * [ECDSA example](examples/ecdsa.c)
   * [Schnorr signatures example](examples/schnorr.c)
   * [Deriving a shared secret (ECDH) example](examples/ecdh.c)
+  * [ElligatorSwift key exchange example](examples/ellswift.c)
 
 To compile the Schnorr signature and ECDH examples, you also need to configure with `--enable-module-schnorrsig` and `--enable-module-ecdh`.
-
-Test coverage
------------
-
-This library aims to have full coverage of the reachable lines and branches.
-
-To create a test coverage report, configure with `--enable-coverage` (use of GCC is necessary):
-
-    $ ./configure --enable-coverage
-
-Run the tests:
-
-    $ make check
-
-To create a report, `gcovr` is recommended, as it includes branch coverage reporting:
-
-    $ gcovr --exclude 'src/bench*' --print-summary
-
-To create a HTML report with coloured and annotated source code:
-
-    $ mkdir -p coverage
-    $ gcovr --exclude 'src/bench*' --html --html-details -o coverage/coverage.html
 
 Benchmark
 ------------
@@ -155,3 +135,8 @@ Reporting a vulnerability
 ------------
 
 See [SECURITY.md](SECURITY.md)
+
+Contributing to libsecp256k1
+------------
+
+See [CONTRIBUTING.md](CONTRIBUTING.md)
