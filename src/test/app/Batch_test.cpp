@@ -56,7 +56,6 @@ class Batch_test : public beast::unit_test::suite
         params[jss::transactions] = true;
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
-        // std::cout << "jrr: " << jrr << std::endl;
 
         // Validate the number of transactions in the ledger
         auto const transactions =
@@ -184,10 +183,11 @@ class Batch_test : public beast::unit_test::suite
         env.close();
 
         // temBAD_FEE: preflight1
-        // {
-        //     env(batch::outer(alice, env.seq(alice), XRP(-1)),
-        //     ter(temBAD_FEE)); env.close();
-        // }
+        {
+            env(batch::outer(alice, env.seq(alice), XRP(-1), tfAllOrNothing),
+                ter(temBAD_FEE));
+            env.close();
+        }
 
         // temINVALID_FLAG: Batch: inner batch flag.
         {
@@ -342,21 +342,25 @@ class Batch_test : public beast::unit_test::suite
             env.close();
         }
 
-        // temINVALID: preflight2
-        // {
-        //     env(batch::outer(alice, env.seq(alice), XRP(-1)),
-        //         sig(bob),
-        //         ter(temBAD_FEE));
-        //     env.close();
-        // }
+        // tefBAD_AUTH: preflight2
+        {
+            auto const seq = env.seq(alice);
+            auto const batchFee = calcBatchFee(env, 0, 2);
+            env(batch::outer(alice, env.seq(alice), batchFee, tfAllOrNothing),
+                batch::inner(pay(alice, bob, XRP(10)), seq + 1),
+                batch::inner(pay(alice, bob, XRP(5)), seq + 2),
+                sig(bob),
+                ter(tefBAD_AUTH));
+            env.close();
+        }
 
         // temARRAY_TOO_LARGE: Batch: signers array exceeds 8 entries.
         {
             auto const seq = env.seq(alice);
             auto const batchFee = calcBatchFee(env, 9, 2);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
-                batch::inner(pay(alice, bob, XRP(1)), seq + 1),
-                batch::inner(pay(alice, bob, XRP(1)), seq + 2),
+                batch::inner(pay(alice, bob, XRP(10)), seq + 1),
+                batch::inner(pay(alice, bob, XRP(5)), seq + 2),
                 batch::sig(
                     bob,
                     carol,
@@ -389,9 +393,22 @@ class Batch_test : public beast::unit_test::suite
             auto const seq = env.seq(alice);
             auto const batchFee = calcBatchFee(env, 2, 2);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
-                batch::inner(pay(alice, bob, XRP(1)), seq + 1),
-                batch::inner(pay(alice, bob, XRP(1)), seq + 2),
+                batch::inner(pay(alice, bob, XRP(10)), seq + 1),
+                batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
                 batch::sig(bob, bob),
+                ter(temBAD_SIGNER));
+            env.close();
+        }
+
+        // temBAD_SIGNER: Batch: no account signature for inner txn.
+        // Note: Extra signature by bob
+        {
+            auto const seq = env.seq(alice);
+            auto const batchFee = calcBatchFee(env, 1, 2);
+            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                batch::inner(pay(alice, bob, XRP(10)), seq + 1),
+                batch::inner(pay(alice, bob, XRP(5)), seq + 2),
+                batch::sig(bob),
                 ter(temBAD_SIGNER));
             env.close();
         }
@@ -451,7 +468,8 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
                 batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
-                batch::sig(bob, carol),
+                batch::inner(pay(carol, alice, XRP(5)), env.seq(carol)),
+                batch::sig(bob),
                 ter(temBAD_SIGNER));
             env.close();
         }
@@ -473,52 +491,207 @@ class Batch_test : public beast::unit_test::suite
         auto const alice = Account("alice");
         auto const bob = Account("bob");
         auto const carol = Account("carol");
-        env.fund(XRP(10000), alice, bob, carol);
+        auto const dave = Account("dave");
+        auto const elsa = Account("elsa");
+        auto const frank = Account("frank");
+        auto const phantom = Account("phantom");
+        env.memoize(phantom);
+
+        env.fund(XRP(10000), alice, bob, carol, dave, elsa, frank);
         env.close();
 
         //----------------------------------------------------------------------
-        // checkMultiSign
+        // checkBatchSign.checkMultiSign
 
-        // tefNOT_MULTI_SIGNING
-        // accountSigners.error()
-        // tefBAD_SIGNATURE
-        // tefBAD_SIGNATURE
-        // tefBAD_SIGNATURE
-        // tefMASTER_DISABLED
-        // tefBAD_SIGNATURE
-        // tefBAD_SIGNATURE
-        // tefBAD_SIGNATURE
+        // tefNOT_MULTI_SIGNING: SignersList not enabled
+        {
+            auto const seq = env.seq(alice);
+            auto const batchFee = calcBatchFee(env, 3, 2);
+            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                batch::inner(pay(alice, bob, XRP(10)), seq + 1),
+                batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
+                batch::msig(bob, {dave, carol}),
+                ter(tefNOT_MULTI_SIGNING));
+            env.close();
+        }
+
+        env(signers(alice, 2, {{bob, 1}, {carol, 1}}));
+        env.close();
+
+        env(signers(bob, 2, {{carol, 1}, {dave, 1}, {elsa, 1}}));
+        env.close();
+
+        // tefBAD_SIGNATURE: Account not in SignersList
+        {
+            auto const seq = env.seq(alice);
+            auto const batchFee = calcBatchFee(env, 3, 2);
+            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                batch::inner(pay(alice, bob, XRP(10)), seq + 1),
+                batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
+                batch::msig(bob, {carol, frank}),
+                ter(tefBAD_SIGNATURE));
+            env.close();
+        }
+        // tefBAD_SIGNATURE: Wrong publicKey type
+        {
+            auto const seq = env.seq(alice);
+            auto const batchFee = calcBatchFee(env, 3, 2);
+            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                batch::inner(pay(alice, bob, XRP(10)), seq + 1),
+                batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
+                batch::msig(bob, {carol, Account("dave", KeyType::ed25519)}),
+                ter(tefBAD_SIGNATURE));
+            env.close();
+        }
+        // tefMASTER_DISABLED: Master key disabled
+        {
+            env(regkey(elsa, frank));
+            env(fset(elsa, asfDisableMaster), sig(elsa));
+            auto const seq = env.seq(alice);
+            auto const batchFee = calcBatchFee(env, 3, 2);
+            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                batch::inner(pay(alice, bob, XRP(10)), seq + 1),
+                batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
+                batch::msig(bob, {carol, elsa}),
+                ter(tefMASTER_DISABLED));
+            env.close();
+        }
+        // tefBAD_SIGNATURE: Signer does not exist
+        {
+            auto const seq = env.seq(alice);
+            auto const batchFee = calcBatchFee(env, 3, 2);
+            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                batch::inner(pay(alice, bob, XRP(10)), seq + 1),
+                batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
+                batch::msig(bob, {carol, phantom}),
+                ter(tefBAD_SIGNATURE));
+            env.close();
+        }
+        // tefBAD_SIGNATURE: Signer has not enabled RegularKey
+        {
+            auto const seq = env.seq(alice);
+            auto const batchFee = calcBatchFee(env, 3, 2);
+            Account const davo{"davo", KeyType::ed25519};
+            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                batch::inner(pay(alice, bob, XRP(10)), seq + 1),
+                batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
+                batch::msig(bob, {carol, Reg{dave, davo}}),
+                ter(tefBAD_SIGNATURE));
+            env.close();
+        }
+        // tefBAD_SIGNATURE: Wrong RegularKey Set
+        {
+            env(regkey(dave, frank));
+            auto const seq = env.seq(alice);
+            auto const batchFee = calcBatchFee(env, 3, 2);
+            Account const davo{"davo", KeyType::ed25519};
+            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                batch::inner(pay(alice, bob, XRP(10)), seq + 1),
+                batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
+                batch::msig(bob, {carol, Reg{dave, davo}}),
+                ter(tefBAD_SIGNATURE));
+            env.close();
+        }
         // tefBAD_QUORUM
-        // tesSUCCESS
+        {
+            auto const seq = env.seq(alice);
+            auto const batchFee = calcBatchFee(env, 2, 2);
+            Account const davo{"davo", KeyType::ed25519};
+            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                batch::inner(pay(alice, bob, XRP(10)), seq + 1),
+                batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
+                batch::msig(bob, {carol}),
+                ter(tefBAD_QUORUM));
+            env.close();
+        }
+        // tesSUCCESS: BatchSigners.Signers
+        {
+            auto const seq = env.seq(alice);
+            auto const batchFee = calcBatchFee(env, 3, 2);
+            Account const davo{"davo", KeyType::ed25519};
+            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                batch::inner(pay(alice, bob, XRP(10)), seq + 1),
+                batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
+                batch::msig(bob, {carol, dave}),
+                ter(tesSUCCESS));
+            env.close();
+        }
+        // tesSUCCESS: Multisign + BatchSigners.Signers
+        {
+            auto const seq = env.seq(alice);
+            auto const batchFee = calcBatchFee(env, 4, 2);
+            Account const davo{"davo", KeyType::ed25519};
+            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                batch::inner(pay(alice, bob, XRP(10)), seq + 1),
+                batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
+                batch::msig(bob, {carol, dave}),
+                msig(bob, carol),
+                ter(tesSUCCESS));
+            env.close();
+        }
 
         //----------------------------------------------------------------------
-        // checkSingleSign
+        // checkBatchSign.checkSingleSign
 
-        // tefBAD_AUTH
-        // tefBAD_AUTH: A batch can create an account ONLY when the account
-        // master key is the signer
+        // tefBAD_AUTH: Wrong PublicKey Type
         {
-            Json::Value tx1 = noop(bob);
-            tx1[sfSetFlag.fieldName] = asfAllowTrustLineClawback;
+            auto const seq = env.seq(alice);
+            auto const batchFee = calcBatchFee(env, 1, 2);
+            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                batch::inner(pay(alice, bob, XRP(1)), seq + 1),
+                batch::inner(pay(bob, alice, XRP(2)), env.seq(bob)),
+                batch::sig(Reg{bob, Account("bob", KeyType::ed25519)}),
+                ter(tefBAD_AUTH));
+            env.close();
+        }
+        // tefBAD_AUTH: Account is not signer
+        {
             auto const ledSeq = env.current()->seq();
             auto const seq = env.seq(alice);
             auto const batchFee = calcBatchFee(env, 1, 2);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(1000)), seq + 1),
-                batch::inner(tx1, ledSeq),
+                batch::inner(noop(bob), ledSeq),
                 batch::sig(Reg{bob, carol}),
                 ter(tefBAD_AUTH));
             env.close();
         }
-        // tesSUCCESS
-        // tesSUCCESS
-        // tesSUCCESS
-        // tefMASTER_DISABLED
-        // tefBAD_AUTH
-        // tefMASTER_DISABLED
-        // tefBAD_AUTH
-        // tefBAD_AUTH_MASTER
-        // tesSUCCESS
+        // tesSUCCESS: Signed With Regular Key
+        {
+            env(regkey(bob, carol));
+            auto const seq = env.seq(alice);
+            auto const batchFee = calcBatchFee(env, 1, 2);
+            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                batch::inner(pay(alice, bob, XRP(1)), seq + 1),
+                batch::inner(pay(bob, alice, XRP(2)), env.seq(bob)),
+                batch::sig(Reg{bob, carol}),
+                ter(tesSUCCESS));
+            env.close();
+        }
+        // tesSUCCESS: Signed With Master Key
+        {
+            auto const seq = env.seq(alice);
+            auto const batchFee = calcBatchFee(env, 1, 2);
+            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                batch::inner(pay(alice, bob, XRP(1)), seq + 1),
+                batch::inner(pay(bob, alice, XRP(2)), env.seq(bob)),
+                batch::sig(bob),
+                ter(tesSUCCESS));
+            env.close();
+        }
+        // tefMASTER_DISABLED: Signed With Master Key Disabled
+        {
+            env(regkey(bob, carol));
+            env(fset(bob, asfDisableMaster), sig(bob));
+            auto const seq = env.seq(alice);
+            auto const batchFee = calcBatchFee(env, 1, 2);
+            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                batch::inner(pay(alice, bob, XRP(1)), seq + 1),
+                batch::inner(pay(bob, alice, XRP(2)), env.seq(bob)),
+                batch::sig(bob),
+                ter(tefMASTER_DISABLED));
+            env.close();
+        }
     }
 
     void
@@ -732,9 +905,9 @@ class Batch_test : public beast::unit_test::suite
     }
 
     void
-    testBadFeeOuterBatch(FeatureBitset features)
+    testBadOuterFee(FeatureBitset features)
     {
-        testcase("bad fee outer batch");
+        testcase("bad outer fee");
 
         using namespace test::jtx;
         using namespace std::literals;
@@ -911,45 +1084,6 @@ class Batch_test : public beast::unit_test::suite
     }
 
     void
-    testChangesBetweenViews(FeatureBitset features)
-    {
-        testcase("changes between views");
-
-        using namespace test::jtx;
-        using namespace std::literals;
-
-        test::jtx::Env env{*this, envconfig()};
-        auto const reserve = env.current()->fees().reserve;
-        auto const incReserve = env.current()->fees().increment;
-
-        auto const alice = Account("alice");
-        auto const bob = Account("bob");
-        auto const carol = Account("carol");
-        env.fund(reserve + incReserve, alice, bob, carol);
-        env.close();
-
-        auto const preAlice = env.balance(alice);
-        auto const preBob = env.balance(bob);
-
-        // Using reserve to create insufficient reserve result
-        auto const batchFee = reserve;
-        auto const seq = env.seq(alice);
-        env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
-            batch::inner(pay(alice, bob, XRP(10)), seq + 1),
-            batch::inner(pay(alice, bob, XRP(15)), seq + 2),
-            ter(tesSUCCESS));
-        TxID const parentBatchId = env.tx()->getTransactionID();
-        std::vector<TestBatchData> testCases = {};
-        env.close();
-        validateBatch(env, parentBatchId, testCases);
-
-        // Alice pays fee and sequence; Bob should not be affected.
-        BEAST_EXPECT(env.seq(alice) == seq + 1);
-        BEAST_EXPECT(env.balance(alice) == preAlice - batchFee);
-        BEAST_EXPECT(env.balance(bob) == preBob);
-    }
-
-    void
     testBadInnerFee(FeatureBitset features)
     {
         testcase("bad inner fee");
@@ -978,13 +1112,55 @@ class Batch_test : public beast::unit_test::suite
 
         auto const seq = env.seq(alice);
         auto const batchFee = calcBatchFee(env, 0, 2);
-        auto tx = pay(alice, bob, XRP(1000));
-        tx[jss::Fee] = to_string(feeDrops);
+        auto tx1 = pay(alice, bob, XRP(1));
+        tx1[jss::Fee] = to_string(feeDrops);
+        tx1[jss::Sequence] = seq + 1;
+        tx1[jss::SigningPubKey] = "";
+        tx1[jss::Flags] = tx1[jss::Flags].asUInt() | tfInnerBatchTxn;
         env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
-            batch::inner(pay(alice, bob, XRP(10)), seq + 1),
-            batch::inner(tx, seq + 2),
+            batch::inner_nofill(tx1),
+            batch::inner(pay(alice, bob, XRP(2)), seq + 2),
             ter(tesSUCCESS));
         auto const txIDs = env.tx()->getBatchTransactionIDs();
+        TxID const parentBatchId = env.tx()->getTransactionID();
+        std::vector<TestBatchData> testCases = {};
+        env.close();
+        validateBatch(env, parentBatchId, testCases);
+
+        // Alice pays fee and sequence; Bob should not be affected.
+        BEAST_EXPECT(env.seq(alice) == seq + 1);
+        BEAST_EXPECT(env.balance(alice) == preAlice - batchFee);
+        BEAST_EXPECT(env.balance(bob) == preBob);
+    }
+
+    void
+    testChangesBetweenViews(FeatureBitset features)
+    {
+        testcase("changes between views");
+
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        test::jtx::Env env{*this, envconfig()};
+        auto const reserve = env.current()->fees().reserve;
+        auto const incReserve = env.current()->fees().increment;
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const carol = Account("carol");
+        env.fund(reserve + incReserve, alice, bob, carol);
+        env.close();
+
+        auto const preAlice = env.balance(alice);
+        auto const preBob = env.balance(bob);
+
+        // Using reserve to create insufficient reserve result
+        auto const batchFee = reserve;
+        auto const seq = env.seq(alice);
+        env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+            batch::inner(pay(alice, bob, XRP(10)), seq + 1),
+            batch::inner(pay(alice, bob, XRP(15)), seq + 2),
+            ter(tesSUCCESS));
         TxID const parentBatchId = env.tx()->getTransactionID();
         std::vector<TestBatchData> testCases = {};
         env.close();
@@ -1206,313 +1382,6 @@ class Batch_test : public beast::unit_test::suite
         // Alice pays XRP & Fee; Bob receives XRP
         BEAST_EXPECT(env.balance(alice) == preAlice - XRP(6) - batchFee);
         BEAST_EXPECT(env.balance(bob) == preBob + XRP(6));
-    }
-
-    void
-    testRegularKey(FeatureBitset features)
-    {
-        testcase("regular key");
-
-        using namespace test::jtx;
-        using namespace std::literals;
-
-        test::jtx::Env env{*this, envconfig()};
-
-        auto const alice = Account("alice");
-        auto const bob = Account("bob");
-        auto const carol = Account("carol");
-        env.fund(XRP(1000), alice, bob, carol);
-        env.close();
-
-        env(regkey(alice, carol));
-        env.close();
-
-        auto const preAlice = env.balance(alice);
-        auto const preBob = env.balance(bob);
-
-        auto const seq = env.seq(alice);
-        auto const batchFee = calcBatchFee(env, 0, 2);
-        env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
-            batch::inner(pay(alice, bob, XRP(1)), seq + 1),
-            batch::inner(pay(alice, bob, XRP(2)), seq + 2),
-            sig(carol));
-
-        auto const txIDs = env.tx()->getBatchTransactionIDs();
-        TxID const parentBatchId = env.tx()->getTransactionID();
-        std::vector<TestBatchData> testCases = {
-            {"tesSUCCESS", to_string(txIDs[0])},
-            {"tesSUCCESS", to_string(txIDs[1])},
-        };
-        env.close();
-        validateBatch(env, parentBatchId, testCases);
-
-        // Alice consumes sequences (# of txns)
-        BEAST_EXPECT(env.seq(alice) == seq + 3);
-
-        // Alice pays XRP & Fee; Bob receives XRP
-        BEAST_EXPECT(env.balance(alice) == preAlice - XRP(3) - batchFee);
-        BEAST_EXPECT(env.balance(bob) == preBob + XRP(3));
-    }
-
-    void
-    testRegularKeyMultiParty(FeatureBitset features)
-    {
-        testcase("regular key multi party");
-
-        using namespace test::jtx;
-        using namespace std::literals;
-
-        test::jtx::Env env{*this, envconfig()};
-
-        auto const alice = Account("alice");
-        auto const bob = Account("bob");
-        auto const carol = Account("carol");
-        auto const dave = Account("dave");
-        auto const elsa = Account("elsa");
-
-        env.fund(XRP(1000), alice, bob, carol, dave, elsa);
-        env.close();
-
-        env(regkey(bob, carol));
-        env.close();
-
-        {
-            auto const preAlice = env.balance(alice);
-            auto const preBob = env.balance(bob);
-            auto const bobSeq = env.seq(bob);
-            auto const seq = env.seq(alice);
-            auto const batchFee = calcBatchFee(env, 1, 2);
-            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
-                batch::inner(pay(alice, bob, XRP(10)), seq + 1),
-                batch::inner(pay(bob, alice, XRP(5)), bobSeq),
-                batch::sig(Reg{bob, carol}));
-            auto const txIDs = env.tx()->getBatchTransactionIDs();
-            TxID const parentBatchId = env.tx()->getTransactionID();
-            std::vector<TestBatchData> testCases = {
-                {"tesSUCCESS", to_string(txIDs[0])},
-                {"tesSUCCESS", to_string(txIDs[1])},
-            };
-            env.close();
-            validateBatch(env, parentBatchId, testCases);
-
-            // Alice consumes sequences (# of txns)
-            BEAST_EXPECT(env.seq(alice) == seq + 2);
-
-            // Alice consumes sequences (# of txns)
-            BEAST_EXPECT(env.seq(bob) == bobSeq + 1);
-
-            // Alice pays XRP & Fee; Bob receives XRP
-            BEAST_EXPECT(env.balance(alice) == preAlice - XRP(5) - batchFee);
-            BEAST_EXPECT(env.balance(bob) == preBob + XRP(5));
-        }
-    }
-
-    void
-    testMultisign(FeatureBitset features)
-    {
-        testcase("multisign");
-
-        using namespace test::jtx;
-        using namespace std::literals;
-
-        test::jtx::Env env{*this, envconfig()};
-
-        auto const alice = Account("alice");
-        auto const bob = Account("bob");
-        auto const carol = Account("carol");
-        env.fund(XRP(1000), alice, bob, carol);
-        env.close();
-
-        env(signers(alice, 2, {{bob, 1}, {carol, 1}}));
-        env.close();
-
-        auto const preAlice = env.balance(alice);
-        auto const preBob = env.balance(bob);
-
-        auto const seq = env.seq(alice);
-        auto const batchFee = calcBatchFee(env, 2, 2);
-        env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
-            batch::inner(pay(alice, bob, XRP(1)), seq + 1),
-            batch::inner(pay(alice, bob, XRP(2)), seq + 2),
-            msig(bob, carol));
-
-        auto const txIDs = env.tx()->getBatchTransactionIDs();
-        TxID const parentBatchId = env.tx()->getTransactionID();
-        std::vector<TestBatchData> testCases = {
-            {"tesSUCCESS", to_string(txIDs[0])},
-            {"tesSUCCESS", to_string(txIDs[1])},
-        };
-        env.close();
-        validateBatch(env, parentBatchId, testCases);
-
-        // Alice consumes sequences (# of txns)
-        BEAST_EXPECT(env.seq(alice) == seq + 3);
-
-        // Alice pays XRP & Fee; Bob receives XRP
-        BEAST_EXPECT(env.balance(alice) == preAlice - XRP(3) - batchFee);
-        BEAST_EXPECT(env.balance(bob) == preBob + XRP(3));
-    }
-
-    void
-    testBatchSigner(FeatureBitset features)
-    {
-        testcase("batch signer");
-
-        using namespace test::jtx;
-        using namespace std::literals;
-
-        test::jtx::Env env{*this, envconfig()};
-
-        auto const alice = Account("alice");
-        auto const bob = Account("bob");
-
-        env.fund(XRP(1000), alice, bob);
-        env.close();
-
-        env(noop(bob), ter(tesSUCCESS));
-        env.close();
-
-        auto const preAlice = env.balance(alice);
-        auto const preBob = env.balance(bob);
-        auto const bobSeq = env.seq(bob);
-
-        auto const seq = env.seq(alice);
-        auto const batchFee = calcBatchFee(env, 1, 2);
-        env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
-            batch::inner(pay(alice, bob, XRP(10)), seq + 1),
-            batch::inner(pay(bob, alice, XRP(5)), bobSeq),
-            batch::sig(bob));
-        auto const txIDs = env.tx()->getBatchTransactionIDs();
-        TxID const parentBatchId = env.tx()->getTransactionID();
-        std::vector<TestBatchData> testCases = {
-            {"tesSUCCESS", to_string(txIDs[0])},
-            {"tesSUCCESS", to_string(txIDs[1])},
-        };
-        env.close();
-        validateBatch(env, parentBatchId, testCases);
-
-        // Alice consumes sequences (# of txns)
-        BEAST_EXPECT(env.seq(alice) == seq + 2);
-
-        // Alice consumes sequences (# of txns)
-        BEAST_EXPECT(env.seq(bob) == bobSeq + 1);
-
-        // Alice pays XRP & Fee; Bob receives XRP
-        BEAST_EXPECT(env.balance(alice) == preAlice - XRP(5) - batchFee);
-        BEAST_EXPECT(env.balance(bob) == preBob + XRP(5));
-    }
-
-    void
-    testBatchMultisign(FeatureBitset features)
-    {
-        testcase("batch multisign");
-
-        using namespace test::jtx;
-        using namespace std::literals;
-
-        test::jtx::Env env{*this, envconfig()};
-
-        auto const alice = Account("alice");
-        auto const bob = Account("bob");
-        auto const carol = Account("carol");
-        auto const dave = Account("dave");
-        auto const elsa = Account("elsa");
-
-        env.fund(XRP(1000), alice, bob, carol, dave, elsa);
-        env.close();
-
-        env(signers(alice, 2, {{bob, 1}, {carol, 1}}));
-        env.close();
-
-        env(signers(bob, 2, {{carol, 1}, {dave, 1}, {elsa, 1}}));
-        env.close();
-
-        // tefBAD_QUORUM
-        {
-            auto const seq = env.seq(alice);
-            auto const batchFee = calcBatchFee(env, 2, 2);
-            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
-                batch::inner(pay(alice, bob, XRP(10)), seq + 1),
-                batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
-                batch::msig(bob, {dave}),
-                ter(tefBAD_QUORUM));
-            env.close();
-        }
-
-        // tefBAD_SIGNATURE
-        {
-            auto const seq = env.seq(alice);
-            auto const batchFee = calcBatchFee(env, 2, 2);
-            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
-                batch::inner(pay(alice, bob, XRP(10)), seq + 1),
-                batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
-                batch::msig(bob, {alice, dave}),
-                ter(tefBAD_SIGNATURE));
-            env.close();
-        }
-
-        // tesSUCCESS - BatchSigners.Signers
-        {
-            auto const preAlice = env.balance(alice);
-            auto const preBob = env.balance(bob);
-            auto const bobSeq = env.seq(bob);
-            auto const seq = env.seq(alice);
-            auto const batchFee = calcBatchFee(env, 3, 2);
-            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
-                batch::inner(pay(alice, bob, XRP(10)), seq + 1),
-                batch::inner(pay(bob, alice, XRP(5)), bobSeq),
-                batch::msig(bob, {dave, carol}));
-            auto const txIDs = env.tx()->getBatchTransactionIDs();
-            TxID const parentBatchId = env.tx()->getTransactionID();
-            std::vector<TestBatchData> testCases = {
-                {"tesSUCCESS", to_string(txIDs[0])},
-                {"tesSUCCESS", to_string(txIDs[1])},
-            };
-            env.close();
-            validateBatch(env, parentBatchId, testCases);
-
-            // Alice consumes sequences (# of txns)
-            BEAST_EXPECT(env.seq(alice) == seq + 2);
-
-            // Alice consumes sequences (# of txns)
-            BEAST_EXPECT(env.seq(bob) == bobSeq + 1);
-
-            // Alice pays XRP & Fee; Bob receives XRP
-            BEAST_EXPECT(env.balance(alice) == preAlice - XRP(5) - batchFee);
-            BEAST_EXPECT(env.balance(bob) == preBob + XRP(5));
-        }
-
-        // tesSUCCESS - Multisign + BatchSigners.Signers
-        {
-            auto const preAlice = env.balance(alice);
-            auto const preBob = env.balance(bob);
-            auto const bobSeq = env.seq(bob);
-            auto const seq = env.seq(alice);
-            auto const batchFee = calcBatchFee(env, 4, 2);
-            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
-                batch::inner(pay(alice, bob, XRP(10)), seq + 1),
-                batch::inner(pay(bob, alice, XRP(5)), bobSeq),
-                batch::msig(bob, {dave, carol}),
-                msig(bob, carol));
-            auto const txIDs = env.tx()->getBatchTransactionIDs();
-            TxID const parentBatchId = env.tx()->getTransactionID();
-            std::vector<TestBatchData> testCases = {
-                {"tesSUCCESS", to_string(txIDs[0])},
-                {"tesSUCCESS", to_string(txIDs[1])},
-            };
-            env.close();
-            validateBatch(env, parentBatchId, testCases);
-
-            // Alice consumes sequences (# of txns)
-            BEAST_EXPECT(env.seq(alice) == seq + 2);
-
-            // Alice consumes sequences (# of txns)
-            BEAST_EXPECT(env.seq(bob) == bobSeq + 1);
-
-            // Alice pays XRP & Fee; Bob receives XRP
-            BEAST_EXPECT(env.balance(alice) == preAlice - XRP(5) - batchFee);
-            BEAST_EXPECT(env.balance(bob) == preBob + XRP(5));
-        }
     }
 
     void
@@ -2515,18 +2384,13 @@ class Batch_test : public beast::unit_test::suite
         testPreclaim(features);
         testBadRawTxn(features);
         testBadSequence(features);
-        testBadFeeOuterBatch(features);
-        testChangesBetweenViews(features);
+        testBadOuterFee(features);
         testBadInnerFee(features);
+        testChangesBetweenViews(features);
         testAllOrNothing(features);
         testOnlyOne(features);
         testUntilFailure(features);
         testIndependent(features);
-        testRegularKey(features);
-        testRegularKeyMultiParty(features);
-        testMultisign(features);
-        testBatchSigner(features);
-        testBatchMultisign(features);
         testBatchType(features);
         testInnerSubmitRPC(features);
         testAccountActivation(features);
