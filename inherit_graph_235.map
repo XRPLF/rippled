@@ -1,12 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="236,5,491,45"/>
-<area shape="rect" id="node2" href="$classripple_1_1SHAMapAccountStateLeafNode.html" title="A leaf node for a state object." alt="" coords="539,16,747,56"/>
-<area shape="rect" id="node3" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="9,241,184,281"/>
-<area shape="rect" id="node4" href="$classripple_1_1SHAMapInnerNode.html" title=" " alt="" coords="269,249,458,274"/>
-<area shape="rect" id="node5" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="271,69,456,109"/>
-<area shape="rect" id="node6" href="$classripple_1_1SHAMapTxLeafNode.html" title="A leaf node for a transaction." alt="" coords="543,91,743,117"/>
-<area shape="rect" id="node7" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="241,184,486,224"/>
-<area shape="rect" id="node8" href="$classripple_1_1SHAMapTxPlusMetaLeafNode.html" title="A leaf node for a transaction and its associated metadata." alt="" coords="543,156,742,196"/>
-<area shape="rect" id="node9" href="$classripple_1_1SHAMapTreeNode.html" title=" " alt="" coords="5,163,188,189"/>
-<area shape="rect" id="node10" href="$classripple_1_1SHAMapLeafNode.html" title=" " alt="" coords="271,134,455,159"/>
+<area shape="rect" id="node1" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="5,5,168,45"/>
+<area shape="rect" id="node2" href="$classripple_1_1RippleLineCache.html" title=" " alt="" coords="216,13,391,38"/>
 </map>

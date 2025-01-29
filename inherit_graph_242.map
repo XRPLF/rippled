@@ -1,3 +1,5 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classripple_1_1CountedObjects.html" title="Manages all counted object types." alt="" coords="5,5,176,31"/>
+<area shape="rect" id="node1" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="21,5,184,45"/>
+<area shape="rect" id="node2" href="$classripple_1_1Transaction.html" title=" " alt="" coords="248,45,389,70"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,69,200,109"/>
 </map>

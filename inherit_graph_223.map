@@ -1,18 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="49,69,211,109"/>
-<area shape="rect" id="node2" href="$classripple_1_1InboundLedger.html" title=" " alt="" coords="319,77,481,102"/>
-<area shape="rect" id="node3" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="40,197,220,237"/>
-<area shape="rect" id="node4" href="$classripple_1_1LedgerDeltaAcquire.html" title="Manage the retrieval of a ledger delta (header and transactions) from the network." alt="" coords="303,205,497,230"/>
-<area shape="rect" id="node5" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="45,312,215,352"/>
-<area shape="rect" id="node6" href="$classripple_1_1LedgerReplayTask.html" title=" " alt="" coords="307,319,493,345"/>
-<area shape="rect" id="node7" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="49,504,211,544"/>
-<area shape="rect" id="node8" href="$classripple_1_1SkipListAcquire.html" title="Manage the retrieval of a skip list in a ledger from the network." alt="" coords="317,447,483,473"/>
-<area shape="rect" id="node9" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="43,632,217,672"/>
-<area shape="rect" id="node10" href="$classripple_1_1TransactionAcquire.html" title=" " alt="" coords="305,575,495,601"/>
-<area shape="rect" id="node11" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="21,5,239,45"/>
-<area shape="rect" id="node12" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,133,255,173"/>
-<area shape="rect" id="node13" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="11,376,249,416"/>
-<area shape="rect" id="node14" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="19,440,241,480"/>
-<area shape="rect" id="node15" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="8,568,252,608"/>
-<area shape="rect" id="node16" href="$classripple_1_1TimeoutCounter.html" title="This class is an &quot;active&quot; object." alt="" coords="44,262,216,287"/>
+<area shape="rect" id="node1" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="5,5,168,45"/>
+<area shape="rect" id="node2" href="$classripple_1_1HashRouter_1_1Entry.html" title="An entry in the routing table." alt="" coords="216,5,359,45"/>
 </map>

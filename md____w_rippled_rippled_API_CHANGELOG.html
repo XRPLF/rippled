@@ -159,12 +159,14 @@ Inconsistency: server_info - network_id</h2>
 <p >The <code>network_id</code> field was added in the <code>server_info</code> response in version 1.5.0 (2019), but it is not returned in <a href="https://xrpl.org/rippled-server-modes.html#reporting-mode">reporting mode</a>. However, use of reporting mode is now discouraged, in favor of using <a href="https://github.com/XRPLF/clio">Clio</a> instead.</p>
 <h1><a class="anchor" id="autotoc_md10"></a>
 XRP Ledger server version 2.4.0</h1>
-<p >As of 2025-01-23, version 2.4.0 is in development. You can use a pre-release version by building from source or <a href="https://xrpl.org/docs/infrastructure/installation/install-rippled-on-ubuntu">using the <code>nightly</code> package</a>.</p>
+<p >As of 2025-01-28, version 2.4.0 is in development. You can use a pre-release version by building from source or <a href="https://xrpl.org/docs/infrastructure/installation/install-rippled-on-ubuntu">using the <code>nightly</code> package</a>.</p>
 <h2><a class="anchor" id="autotoc_md11"></a>
 Additions and bugfixes in 2.4.0</h2>
 <ul>
 <li><code>ledger_entry</code>: <code>state</code> is added an alias for <code>ripple_state</code>.</li>
 <li><code>validators</code>: Added new field <code>validator_list_threshold</code> in response.</li>
+<li><code>simulate</code>: A new RPC that executes a <a href="https://github.com/XRPLF/XRPL-Standards/tree/master/XLS-0069d-simulate#2-rpc-simulate">dry run of a transaction submission</a></li>
+<li>Signing methods autofill fees better and properly handle transactions that don't have a base fee.</li>
 </ul>
 <h1><a class="anchor" id="autotoc_md12"></a>
 XRP Ledger server version 2.3.0</h1>

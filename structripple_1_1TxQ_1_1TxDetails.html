@@ -393,7 +393,7 @@ Public Attributes</h2></td></tr>
 </div><div class="memdoc">
 
 <p>The <em>intermediate</em> result returned by <a class="el" href="namespaceripple.html#a24280b80536d1afd09e24a75f4596922">preflight</a> before this transaction was queued, or after it is queued, but before a failed attempt to <code>apply</code> it to the open ledger. </p>
-<p >This will usually be <code>tesSUCCESS</code>, but there are some edge cases where it has another value. Those edge cases are interesting enough that this value is made available here. Specifically, if the <code>rules</code> change between attempts, <code>preflight</code> will be run again in <code><a class="el" href="classripple_1_1TxQ_1_1MaybeTx.html#a5f9328a8682192b3a060e02a352c41c2" title="Attempt to apply the queued transaction to the open ledger.">TxQ::MaybeTx::apply</a></code>. </p>
+<p >This will usually be <code>tesSUCCESS</code>, but there are some edge cases where it has another value. Those edge cases are interesting enough that this value is made available here. Specifically, if the <code>rules</code> change between attempts, <code>preflight</code> will be run again in <code><a class="el" href="classripple_1_1TxQ_1_1MaybeTx.html#a09e39fbc7ae67203ffde9124190d40e1" title="Attempt to apply the queued transaction to the open ledger.">TxQ::MaybeTx::apply</a></code>. </p>
 
 <p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00245">245</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 

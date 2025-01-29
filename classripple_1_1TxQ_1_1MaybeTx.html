@@ -133,9 +133,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a5a00a6620ad164b279396218c731422b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TxQ_1_1MaybeTx.html#a5a00a6620ad164b279396218c731422b">MaybeTx</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STTx.html">STTx</a> const &gt; const &amp;, <a class="el" href="namespaceripple.html#a3f39560bfd60c64700b109c412e90f72">TxID</a> const &amp;<a class="el" href="classripple_1_1TxQ_1_1MaybeTx.html#ae5eefa76fcb4af4310136b9d8fe6ce1d">txID</a>, <a class="el" href="namespaceripple.html#aaaf6522d07c2b836c5fd589e9ecf578c">FeeLevel64</a> <a class="el" href="classripple_1_1TxQ_1_1MaybeTx.html#a653a567497410b13a32bf0700a6999c1">feeLevel</a>, <a class="el" href="namespaceripple.html#ad2487abbcc1a5d6064b72144b461df6e">ApplyFlags</a> const <a class="el" href="classripple_1_1TxQ_1_1MaybeTx.html#a0ae6617f6b837815578a5832276e2d3d">flags</a>, <a class="el" href="structripple_1_1PreflightResult.html">PreflightResult</a> const &amp;<a class="el" href="classripple_1_1TxQ_1_1MaybeTx.html#a735992a97463ef579f12dfbc1199e63e">pfresult</a>)</td></tr>
 <tr class="memdesc:a5a00a6620ad164b279396218c731422b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor.  <a href="classripple_1_1TxQ_1_1MaybeTx.html#a5a00a6620ad164b279396218c731422b">More...</a><br /></td></tr>
 <tr class="separator:a5a00a6620ad164b279396218c731422b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5f9328a8682192b3a060e02a352c41c2"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>, bool &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TxQ_1_1MaybeTx.html#a5f9328a8682192b3a060e02a352c41c2">apply</a> (<a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="el" href="classripple_1_1OpenView.html">OpenView</a> &amp;view, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
-<tr class="memdesc:a5f9328a8682192b3a060e02a352c41c2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Attempt to apply the queued transaction to the open ledger.  <a href="classripple_1_1TxQ_1_1MaybeTx.html#a5f9328a8682192b3a060e02a352c41c2">More...</a><br /></td></tr>
-<tr class="separator:a5f9328a8682192b3a060e02a352c41c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a09e39fbc7ae67203ffde9124190d40e1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1ApplyResult.html">ApplyResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TxQ_1_1MaybeTx.html#a09e39fbc7ae67203ffde9124190d40e1">apply</a> (<a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="el" href="classripple_1_1OpenView.html">OpenView</a> &amp;view, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
+<tr class="memdesc:a09e39fbc7ae67203ffde9124190d40e1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Attempt to apply the queued transaction to the open ledger.  <a href="classripple_1_1TxQ_1_1MaybeTx.html#a09e39fbc7ae67203ffde9124190d40e1">More...</a><br /></td></tr>
+<tr class="separator:a09e39fbc7ae67203ffde9124190d40e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af94c48036063440d318f8ba2a27c57ca"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1TxConsequences.html">TxConsequences</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TxQ_1_1MaybeTx.html#af94c48036063440d318f8ba2a27c57ca">consequences</a> () const</td></tr>
 <tr class="memdesc:af94c48036063440d318f8ba2a27c57ca"><td class="mdescLeft">&#160;</td><td class="mdescRight">Potential <a class="el" href="classripple_1_1TxConsequences.html">TxConsequences</a> of applying this transaction to the open ledger.  <a href="classripple_1_1TxQ_1_1MaybeTx.html#af94c48036063440d318f8ba2a27c57ca">More...</a><br /></td></tr>
 <tr class="separator:af94c48036063440d318f8ba2a27c57ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -244,14 +244,14 @@ Static Public Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a5f9328a8682192b3a060e02a352c41c2" name="a5f9328a8682192b3a060e02a352c41c2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5f9328a8682192b3a060e02a352c41c2">&#9670;&#160;</a></span>apply()</h2>
+<a id="a09e39fbc7ae67203ffde9124190d40e1" name="a09e39fbc7ae67203ffde9124190d40e1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a09e39fbc7ae67203ffde9124190d40e1">&#9670;&#160;</a></span>apply()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>, bool &gt; ripple::TxQ::MaybeTx::apply </td>
+          <td class="memname"><a class="el" href="structripple_1_1ApplyResult.html">ApplyResult</a> ripple::TxQ::MaybeTx::apply </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classripple_1_1Application.html">Application</a> &amp;&#160;</td>
           <td class="paramname"><em>app</em>, </td>

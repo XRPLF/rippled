@@ -15,7 +15,7 @@ var searchData=
   ['requested_5ftransactions_12',['requested_transactions',['../classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7acebb5c897d624ae1c27e67da091b5752',1,'ripple::TrafficCount']]],
   ['retired_13',['Retired',['../namespaceripple.html#a3330933c50c449b7830586d1450da8f5ad109ac74df282488efd1dd7621a847d2',1,'ripple']]],
   ['retry_14',['retry',['../classripple_1_1OpenLedger.html#a96bb5c3c9dfae39b054eedc8d6026a97abd936aff81db9087051d25a3e30e6e54',1,'ripple::OpenLedger']]],
-  ['retry_15',['Retry',['../namespaceripple.html#abbfb5342bce7b612bff600b8a44268aba6327b4e59f58137083214a1fec358855',1,'ripple']]],
+  ['retry_15',['Retry',['../namespaceripple.html#a3352ead78ab1510016d3f728004acd63a6327b4e59f58137083214a1fec358855',1,'ripple']]],
   ['reverse_16',['reverse',['../namespaceripple.html#a2fca0f72cfacc04d15ad41d84ebf46fda4d9c2073afa3c2abb817dceb22c34de6',1,'ripple']]],
   ['revoked_17',['revoked',['../namespaceripple.html#aaf9d6587e02c610e84a029ad5b5e17b4a80b785d265b6419ab99251d8f4340a1d',1,'ripple']]],
   ['rootacc_18',['rootAcc',['../classripple_1_1test_1_1ElementComboIter.html#a4a14ce172d72da140cb8ae49a8f132dca84cddf3c98e840adcd2db5f1c234214a',1,'ripple::test::ElementComboIter']]],
@@ -86,10 +86,11 @@ var searchData=
   ['rpcstream_5fmalformed_83',['rpcSTREAM_MALFORMED',['../namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a8ea4e65eae406a522497b5a12dcde036',1,'ripple']]],
   ['rpcsuccess_84',['rpcSUCCESS',['../namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a6f69b339743d28bbc421fa3b31437173',1,'ripple']]],
   ['rpctoo_5fbusy_85',['rpcTOO_BUSY',['../namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a41779a85a65f6faeb648c960e77f388f',1,'ripple']]],
-  ['rpctxn_5fnot_5ffound_86',['rpcTXN_NOT_FOUND',['../namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a34422dc324e558835f6b63c7f430729a',1,'ripple']]],
-  ['rpcunknown_87',['rpcUNKNOWN',['../namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932aa4f3cb4313d397ba327dfc49ce439cae',1,'ripple']]],
-  ['rpcunknown_5fcommand_88',['rpcUNKNOWN_COMMAND',['../namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a2e316006c45784996f1c36ff28ecf795',1,'ripple']]],
-  ['rpcwrong_5fnetwork_89',['rpcWRONG_NETWORK',['../namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932acf2bb4b677f2af23815cbd3727964880',1,'ripple']]],
-  ['rsasha256_90',['rsaSha256',['../namespaceripple_1_1cryptoconditions.html#aa3107e15003c13674a275abb96856ccda13da7df82b08c2bca253d97812ba1eb4',1,'ripple::cryptoconditions']]],
-  ['running_91',['running',['../classripple_1_1NetworkOPsImp.html#a2f6f4ea357f04537a3d762db3464caafa75101dcdfc88455bcafc9e53e0b06689',1,'ripple::NetworkOPsImp']]]
+  ['rpctx_5fsigned_86',['rpcTX_SIGNED',['../namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a4fa92eda2a5646cf19562903188f6417',1,'ripple']]],
+  ['rpctxn_5fnot_5ffound_87',['rpcTXN_NOT_FOUND',['../namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a34422dc324e558835f6b63c7f430729a',1,'ripple']]],
+  ['rpcunknown_88',['rpcUNKNOWN',['../namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932aa4f3cb4313d397ba327dfc49ce439cae',1,'ripple']]],
+  ['rpcunknown_5fcommand_89',['rpcUNKNOWN_COMMAND',['../namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a2e316006c45784996f1c36ff28ecf795',1,'ripple']]],
+  ['rpcwrong_5fnetwork_90',['rpcWRONG_NETWORK',['../namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932acf2bb4b677f2af23815cbd3727964880',1,'ripple']]],
+  ['rsasha256_91',['rsaSha256',['../namespaceripple_1_1cryptoconditions.html#aa3107e15003c13674a275abb96856ccda13da7df82b08c2bca253d97812ba1eb4',1,'ripple::cryptoconditions']]],
+  ['running_92',['running',['../classripple_1_1NetworkOPsImp.html#a2f6f4ea357f04537a3d762db3464caafa75101dcdfc88455bcafc9e53e0b06689',1,'ripple::NetworkOPsImp']]]
 ];

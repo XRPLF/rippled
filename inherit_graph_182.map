@@ -1,5 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classripple_1_1BasicTaker.html" title="State for the active party during order book or payment operations." alt="" coords="5,35,141,60"/>
-<area shape="rect" id="node2" href="$classripple_1_1Taker.html" title=" " alt="" coords="205,5,307,31"/>
-<area shape="rect" id="node3" href="$classripple_1_1Taker__test_1_1TestTaker.html" title=" " alt="" coords="189,55,323,95"/>
+<area shape="rect" id="node1" href="$classripple_1_1BasicConfig.html" title="Holds unparsed configuration information." alt="" coords="5,5,148,31"/>
+<area shape="rect" id="node2" href="$classripple_1_1Config.html" title=" " alt="" coords="196,5,304,31"/>
 </map>

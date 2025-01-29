@@ -101,8 +101,8 @@ Functions</h2></td></tr>
 <tr class="separator:a2998743e56f4dcad557e09132debc6fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5243c8f203b40c3b2cedf27af29f7218"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="structripple_1_1RPC_1_1detail_1_1transactionPreProcessResult.html">transactionPreProcessResult</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC_1_1detail.html#a5243c8f203b40c3b2cedf27af29f7218">transactionPreProcessImpl</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> &amp;params, <a class="el" href="namespaceripple.html#ae08fe18f17b24699ce41d3898fbb8c2c">Role</a> role, <a class="el" href="classripple_1_1RPC_1_1detail_1_1SigningForParams.html">SigningForParams</a> &amp;signingArgs, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> validatedLedgerAge, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app)</td></tr>
 <tr class="separator:a5243c8f203b40c3b2cedf27af29f7218"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a58c4ba8974862c46113df19241fc7431"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="classJson_1_1Value.html">Json::Value</a>, <a class="el" href="classripple_1_1Transaction.html#ab9691bbf2e54050d728dc25baf1d48a0">Transaction::pointer</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC_1_1detail.html#a58c4ba8974862c46113df19241fc7431">transactionConstructImpl</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STTx.html">STTx</a> const &gt; const &amp;stpTrans, <a class="el" href="classripple_1_1Rules.html">Rules</a> const &amp;rules, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app)</td></tr>
-<tr class="separator:a58c4ba8974862c46113df19241fc7431"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6c387f430610b0d1439dd16f4e5a2da1"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="classJson_1_1Value.html">Json::Value</a>, <a class="el" href="classripple_1_1Transaction.html#ab9691bbf2e54050d728dc25baf1d48a0">Transaction::pointer</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC_1_1detail.html#a6c387f430610b0d1439dd16f4e5a2da1">transactionConstructImpl</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STTx.html">STTx</a> const &gt; const &amp;stTx, <a class="el" href="classripple_1_1Rules.html">Rules</a> const &amp;rules, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app)</td></tr>
+<tr class="separator:a6c387f430610b0d1439dd16f4e5a2da1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:af4dc49eb0a127a2e10548647378fea74"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC_1_1detail.html#af4dc49eb0a127a2e10548647378fea74">transactionFormatResultImpl</a> (<a class="el" href="classripple_1_1Transaction.html#ab9691bbf2e54050d728dc25baf1d48a0">Transaction::pointer</a> tpTrans, unsigned <a class="el" href="namespaceripple_1_1RPC.html#a47dbdaa21d9c40b369424e671ccd7e20">apiVersion</a>)</td></tr>
 <tr class="separator:af4dc49eb0a127a2e10548647378fea74"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9951e7bcb8c906eb76608e94b1f56320"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC_1_1detail.html#a9951e7bcb8c906eb76608e94b1f56320">checkMultiSignFields</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;jvRequest)</td></tr>
@@ -147,7 +147,7 @@ template&lt;int M, int N&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8cpp_source.html#l00119">119</a> of file <a class="el" href="ErrorCodes_8cpp_source.html">ErrorCodes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8cpp_source.html#l00120">120</a> of file <a class="el" href="ErrorCodes_8cpp_source.html">ErrorCodes.cpp</a>.</p>
 
 </div>
 </div>
@@ -191,7 +191,7 @@ template&lt;int M, int N&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l00136">136</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l00135">135</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
 
 </div>
 </div>
@@ -253,7 +253,7 @@ template&lt;int M, int N&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l00172">172</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l00171">171</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
 
 </div>
 </div>
@@ -321,7 +321,7 @@ template&lt;int M, int N&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l00299">299</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l00298">298</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
 
 </div>
 </div>
@@ -377,12 +377,12 @@ template&lt;int M, int N&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l00393">393</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l00392">392</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a58c4ba8974862c46113df19241fc7431" name="a58c4ba8974862c46113df19241fc7431"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a58c4ba8974862c46113df19241fc7431">&#9670;&#160;</a></span>transactionConstructImpl()</h2>
+<a id="a6c387f430610b0d1439dd16f4e5a2da1" name="a6c387f430610b0d1439dd16f4e5a2da1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6c387f430610b0d1439dd16f4e5a2da1">&#9670;&#160;</a></span>transactionConstructImpl()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -394,7 +394,7 @@ template&lt;int M, int N&gt; </div>
           <td class="memname">static <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="el" href="classJson_1_1Value.html">Json::Value</a>, <a class="el" href="classripple_1_1Transaction.html#ab9691bbf2e54050d728dc25baf1d48a0">Transaction::pointer</a> &gt; ripple::RPC::detail::transactionConstructImpl </td>
           <td>(</td>
           <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STTx.html">STTx</a> const &gt; const &amp;&#160;</td>
-          <td class="paramname"><em>stpTrans</em>, </td>
+          <td class="paramname"><em>stTx</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
@@ -487,7 +487,7 @@ template&lt;int M, int N&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l00893">893</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l00974">974</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
 
 </div>
 </div>
@@ -525,7 +525,7 @@ template&lt;int M, int N&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l00924">924</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l01005">1005</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
 
 </div>
 </div>
@@ -574,7 +574,7 @@ template&lt;int M, int N&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8cpp_source.html#l00163">163</a> of file <a class="el" href="ErrorCodes_8cpp_source.html">ErrorCodes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8cpp_source.html#l00164">164</a> of file <a class="el" href="ErrorCodes_8cpp_source.html">ErrorCodes.cpp</a>.</p>
 
 </div>
 </div>
@@ -598,7 +598,7 @@ template&lt;int M, int N&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ErrorCodes_8cpp_source.html#l00165">165</a> of file <a class="el" href="ErrorCodes_8cpp_source.html">ErrorCodes.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ErrorCodes_8cpp_source.html#l00166">166</a> of file <a class="el" href="ErrorCodes_8cpp_source.html">ErrorCodes.cpp</a>.</p>
 
 </div>
 </div>

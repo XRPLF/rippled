@@ -2317,7 +2317,7 @@ $(function() {
 <div class="line"><a id="l02239" name="l02239"></a><span class="lineno"> 2239</span>            BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(990));</div>
 <div class="line"><a id="l02240" name="l02240"></a><span class="lineno"> 2240</span> </div>
 <div class="line"><a id="l02241" name="l02241"></a><span class="lineno"> 2241</span>            <span class="comment">// minter sells the nft to alice.  Because alice is part of the</span></div>
-<div class="line"><a id="l02242" name="l02242"></a><span class="lineno"> 2242</span>            <span class="comment">// transaction no tranfer fee is removed.</span></div>
+<div class="line"><a id="l02242" name="l02242"></a><span class="lineno"> 2242</span>            <span class="comment">// transaction no transfer fee is removed.</span></div>
 <div class="line"><a id="l02243" name="l02243"></a><span class="lineno"> 2243</span>            <a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span> minterSellOfferIndex =</div>
 <div class="line"><a id="l02244" name="l02244"></a><span class="lineno"> 2244</span>                <a class="code hl_function" href="namespaceripple_1_1keylet.html#adddc4768b4e412ab96f6fff32b8c3903">keylet::nftoffer</a>(minter, env.seq(minter)).<a class="code hl_variable" href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">key</a>;</div>
 <div class="line"><a id="l02245" name="l02245"></a><span class="lineno"> 2245</span>            env(token::createOffer(minter, nftID, gwXAU(10)),</div>
@@ -2409,7 +2409,7 @@ $(function() {
 <div class="line"><a id="l02331" name="l02331"></a><span class="lineno"> 2331</span>            BEAST_EXPECT(env.balance(carol, gwXAU) == gwXAU(990));</div>
 <div class="line"><a id="l02332" name="l02332"></a><span class="lineno"> 2332</span> </div>
 <div class="line"><a id="l02333" name="l02333"></a><span class="lineno"> 2333</span>            <span class="comment">// carol sells the nft to alice.  Because alice is part of the</span></div>
-<div class="line"><a id="l02334" name="l02334"></a><span class="lineno"> 2334</span>            <span class="comment">// transaction no tranfer fee is removed.</span></div>
+<div class="line"><a id="l02334" name="l02334"></a><span class="lineno"> 2334</span>            <span class="comment">// transaction no transfer fee is removed.</span></div>
 <div class="line"><a id="l02335" name="l02335"></a><span class="lineno"> 2335</span>            <a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span> carolSellOfferIndex =</div>
 <div class="line"><a id="l02336" name="l02336"></a><span class="lineno"> 2336</span>                <a class="code hl_function" href="namespaceripple_1_1keylet.html#adddc4768b4e412ab96f6fff32b8c3903">keylet::nftoffer</a>(carol, env.seq(carol)).<a class="code hl_variable" href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">key</a>;</div>
 <div class="line"><a id="l02337" name="l02337"></a><span class="lineno"> 2337</span>            env(token::createOffer(carol, nftID, gwXAU(10)),</div>
