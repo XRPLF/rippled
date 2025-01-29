@@ -64,6 +64,9 @@ jobs:
     env:
       build_dir: .build
     steps:
+      - name: upgrade conan
+        run: |
+          pip install --upgrade "conan<2"
       - name: checkout
         uses: actions/checkout@v4
       - name: check environment
@@ -122,6 +125,9 @@ jobs:
     env:
       build_dir: .build
     steps:
+      - name: upgrade conan
+        run: |
+          pip install --upgrade "conan<2"
       - name: download cache
         uses: actions/download-artifact@v3
         with:
@@ -171,6 +177,9 @@ jobs:
     env:
       build_dir: .build
     steps:
+      - name: upgrade conan
+        run: |
+          pip install --upgrade "conan<2"
       - name: download cache
         uses: actions/download-artifact@v3
         with:
@@ -241,6 +250,9 @@ jobs:
       build_dir: .build
       configuration: Release
     steps:
+      - name: upgrade conan
+        run: |
+          pip install --upgrade "conan<2"
       - name: download cache
         uses: actions/download-artifact@v3
         with:
