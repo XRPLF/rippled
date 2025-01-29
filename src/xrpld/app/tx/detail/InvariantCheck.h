@@ -300,8 +300,8 @@ public:
 /**
  * @brief Invariant: frozen trust line balance change is not allowed.
  *
- * We iterate all the trust lines and ensure that they don't have unexpected
- * change of balance if they're frozen.
+ * We iterate all affected trust lines and ensure that they don't have
+ * unexpected change of balance if they're frozen.
  */
 class TransfersNotFrozen
 {
@@ -350,7 +350,7 @@ private:
         bool isDelete);
 
     void
-    recordBalance(Issue const& issuer, BalanceChange change);
+    recordBalance(Issue const& issue, BalanceChange change);
 
     void
     recordBalanceChanges(

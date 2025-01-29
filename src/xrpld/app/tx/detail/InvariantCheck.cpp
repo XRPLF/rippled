@@ -651,9 +651,9 @@ TransfersNotFrozen::finalize(
     [[maybe_unused]] bool const enforce =
         view.rules().enabled(featureDeepFreeze);
 
-    for (auto const& [issuer, changes] : balanceChanges_)
+    for (auto const& [issue, changes] : balanceChanges_)
     {
-        auto const issuerSle = findIssuer(issuer.account, view);
+        auto const issuerSle = findIssuer(issue.account, view);
         // It should be impossible for the issuer to not be found, but check
         // just in case so rippled doesn't crash in release.
         if (!issuerSle)
@@ -737,13 +737,13 @@ TransfersNotFrozen::calculateBalanceChange(
 }
 
 void
-TransfersNotFrozen::recordBalance(Issue const& issuer, BalanceChange change)
+TransfersNotFrozen::recordBalance(Issue const& issue, BalanceChange change)
 {
     XRPL_ASSERT(
         change.balanceChangeSign,
         "ripple::TransfersNotFrozen::recordBalance : valid trustline "
         "balance sign.");
-    auto& changes = balanceChanges_[issuer];
+    auto& changes = balanceChanges_[issue];
     if (change.balanceChangeSign < 0)
         changes.senders.emplace_back(std::move(change));
     else
