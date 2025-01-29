@@ -28,15 +28,16 @@ ApplyViewImpl::ApplyViewImpl(ReadView const* base, ApplyFlags flags)
 {
 }
 
-void
+std::optional<TxMeta>
 ApplyViewImpl::apply(
     OpenView& to,
     STTx const& tx,
     TER ter,
     std::optional<uint256> parentBatchId,
+    bool isDryRun,
     beast::Journal j)
 {
-    items_.apply(to, tx, ter, deliver_, parentBatchId, j);
+    return items_.apply(to, tx, ter, deliver_, parentBatchId, isDryRun, j);
 }
 
 std::size_t

@@ -43,6 +43,10 @@ enum ApplyFlags : std::uint32_t {
 
     // Transaction is executing as part of a batch
     tapBATCH = 0x800
+
+    // Transaction shouldn't be applied
+    // Signatures shouldn't be checked
+    tapDRY_RUN = 0x1000
 };
 
 constexpr ApplyFlags

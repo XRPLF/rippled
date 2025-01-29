@@ -139,6 +139,7 @@ apply(Application& app, OpenView& view, PreflightChecks&& preflightChecks)
 }
 
 std::pair<TER, bool>
+ApplyResult
 apply(
     Application& app,
     OpenView& view,
@@ -231,7 +232,7 @@ applyBatchTransactions(
     return applied != 0;
 }
 
-ApplyResult
+ApplyTransactionResult
 applyTransaction(
     Application& app,
     OpenView& view,
@@ -251,7 +252,7 @@ applyTransaction(
     {
         auto const result = apply(app, view, txn, flags, j);
 
-        if (result.second)
+        if (result.applied)
         {
             JLOG(j.debug())
                 << "Transaction applied: " << transToken(result.first);
@@ -266,25 +267,25 @@ applyTransaction(
                     wholeBatchView.apply(view);
             }
 
-            return ApplyResult::Success;
+            return ApplyTransactionResult::Success;
         }
 
-        if (isTefFailure(result.first) || isTemMalformed(result.first) ||
-            isTelLocal(result.first))
+        if (isTefFailure(result.ter) || isTemMalformed(result.ter) ||
+            isTelLocal(result.ter))
         {
             // failure
             JLOG(j.debug())
-                << "Transaction failure: " << transToken(result.first);
-            return ApplyResult::Fail;
+                << "Transaction failure: " << transHuman(result.ter);
+            return ApplyTransactionResult::Fail;
         }
 
-        JLOG(j.debug()) << "Transaction retry: " << transToken(result.first);
-        return ApplyResult::Retry;
+        JLOG(j.debug()) << "Transaction retry: " << transHuman(result.ter);
+        return ApplyTransactionResult::Retry;
     }
     catch (std::exception const& ex)
     {
         JLOG(j.warn()) << "Throws: " << ex.what();
-        return ApplyResult::Fail;
+        return ApplyTransactionResult::Fail;
     }
 }
 

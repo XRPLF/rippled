@@ -58,10 +58,10 @@ ApplyContext::discard()
     view_.emplace(&base_, flags_);
 }
 
-void
+std::optional<TxMeta>
 ApplyContext::apply(TER ter)
 {
-    view_->apply(base_, tx, ter, parentBatchId_, journal);
+    return view_->apply(base_, tx, ter, parentBatchId_, flags_ & tapDRY_RUN, journal);
 }
 
 std::size_t

@@ -150,7 +150,7 @@ protected:
 public:
     enum ConsequencesFactoryType { Normal, Blocker, Custom };
     /** Process the transaction. */
-    std::pair<TER, bool>
+    ApplyResult
     operator()();
 
     ApplyView&

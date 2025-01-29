@@ -27,11 +27,11 @@ typedef int (*secp256k1_ecdh_hash_function)(
 
 /** An implementation of SHA256 hash function that applies to compressed public key.
  * Populates the output parameter with 32 bytes. */
-SECP256K1_API_VAR const secp256k1_ecdh_hash_function secp256k1_ecdh_hash_function_sha256;
+SECP256K1_API const secp256k1_ecdh_hash_function secp256k1_ecdh_hash_function_sha256;
 
 /** A default ECDH hash function (currently equal to secp256k1_ecdh_hash_function_sha256).
  * Populates the output parameter with 32 bytes. */
-SECP256K1_API_VAR const secp256k1_ecdh_hash_function secp256k1_ecdh_hash_function_default;
+SECP256K1_API const secp256k1_ecdh_hash_function secp256k1_ecdh_hash_function_default;
 
 /** Compute an EC Diffie-Hellman secret in constant time
  *
@@ -39,7 +39,7 @@ SECP256K1_API_VAR const secp256k1_ecdh_hash_function secp256k1_ecdh_hash_functio
  *           0: scalar was invalid (zero or overflow) or hashfp returned 0
  *  Args:    ctx:        pointer to a context object.
  *  Out:     output:     pointer to an array to be filled by hashfp.
- *  In:      pubkey:     a pointer to a secp256k1_pubkey containing an initialized public key.
+ *  In:      pubkey:     pointer to a secp256k1_pubkey containing an initialized public key.
  *           seckey:     a 32-byte scalar with which to multiply the point.
  *           hashfp:     pointer to a hash function. If NULL,
  *                       secp256k1_ecdh_hash_function_sha256 is used

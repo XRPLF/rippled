@@ -52,12 +52,13 @@ public:
         operation on this object is to call the
         destructor.
     */
-    void
+    std::optional<TxMeta>
     apply(
         OpenView& to,
         STTx const& tx,
         TER ter,
         std::optional<uint256> parentBatchId,
+        bool isDryRun,
         beast::Journal j);
 
     /** Set the amount of currency delivered.

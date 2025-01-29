@@ -157,6 +157,34 @@ preflight1(PreflightContext const& ctx)
 NotTEC
 preflight2(PreflightContext const& ctx)
 {
+    if (ctx.flags & tapDRY_RUN)  // simulation
+    {
+        if (!ctx.tx.getSignature().empty())
+        {
+            // NOTE: This code should never be hit because it's checked in the
+            // `simulate` RPC
+            return temINVALID;  // LCOV_EXCL_LINE
+        }
+
+        if (!ctx.tx.isFieldPresent(sfSigners))
+        {
+            // no signers, no signature - a valid simulation
+            return tesSUCCESS;
+        }
+
+        for (auto const& signer : ctx.tx.getFieldArray(sfSigners))
+        {
+            if (signer.isFieldPresent(sfTxnSignature) &&
+                !signer[sfTxnSignature].empty())
+            {
+                // NOTE: This code should never be hit because it's
+                // checked in the `simulate` RPC
+                return temINVALID;  // LCOV_EXCL_LINE
+            }
+        }
+        return tesSUCCESS;
+    }
+
     auto const sigValid = checkValidity(
         ctx.app.getHashRouter(), ctx.tx, ctx.rules, ctx.app.config());
     if (sigValid.first == Validity::SigBad)
@@ -524,6 +552,14 @@ Transactor::checkSign(PreclaimContext const& ctx)
 
     auto const idAccount = ctx.tx.getAccountID(sfAccount);
 
+    if (ctx.flags & tapDRY_RUN)
+    {
+        // This code must be different for `simulate`
+        // Since the public key may be empty even for single signing
+        if (ctx.tx.isFieldPresent(sfSigners))
+            return checkMultiSign(ctx);
+        return checkSingleSign(ctx);
+    }
     // If the pk is empty, then we must be multi-signing.
     if (ctx.tx.getSigningPubKey().empty())
     {
@@ -533,7 +569,7 @@ Transactor::checkSign(PreclaimContext const& ctx)
 
     // Check Single Sign
     auto const pkSigner = ctx.tx.getSigningPubKey();
-    if (!publicKeyType(makeSlice(pkSigner)))
+    if (!(ctx.flags & tapDRY_RUN) && !publicKeyType(makeSlice(pkSigner)))
     {
         JLOG(ctx.j.trace())
             << "checkSingleSign: signing public key type is unknown";
@@ -600,6 +636,11 @@ Transactor::checkSingleSign(
     Rules const& rules,
     beast::Journal j)
 {
+    // This ternary is only needed to handle `simulate`
+    XRPL_ASSERT(
+        (ctx.flags & tapDRY_RUN) || !pkSigner.empty(),
+        "ripple::Transactor::checkSingleSign : non-empty signer or simulation");
+
     bool const isMasterDisabled = sleAccount->isFlag(lsfDisableMaster);
 
     if (rules.enabled(fixMasterKeyAsRegularKey))
@@ -722,15 +763,21 @@ Transactor::checkMultiSign(
         // public key.
         auto const spk = txSigner.getFieldVL(sfSigningPubKey);
 
-        if (!publicKeyType(makeSlice(spk)))
+        if (!(ctx.flags & tapDRY_RUN) && !publicKeyType(makeSlice(spk)))
         {
             JLOG(j.trace())
                 << "checkMultiSign: signing public key type is unknown";
             return tefBAD_SIGNATURE;
         }
 
-        AccountID const signingAcctIDFromPubKey =
-            calcAccountID(PublicKey(makeSlice(spk)));
+        // This ternary is only needed to handle `simulate`
+        XRPL_ASSERT(
+            (ctx.flags & tapDRY_RUN) || !spk.empty(),
+            "ripple::Transactor::checkMultiSign : non-empty signer or "
+            "simulation");
+        AccountID const signingAcctIDFromPubKey = spk.empty()
+            ? txSignerAcctID
+            : calcAccountID(PublicKey(makeSlice(spk)));
 
         // Verify that the signingAcctID and the signingAcctIDFromPubKey
         // belong together.  Here are the rules:
@@ -952,7 +999,7 @@ Transactor::trapTransaction(uint256 txHash) const
 }
 
 //------------------------------------------------------------------------------
-std::pair<TER, bool>
+ApplyResult
 Transactor::operator()()
 {
     JLOG(j_.trace()) << "apply: " << ctx_.tx.getTransactionID();
@@ -1138,6 +1185,7 @@ Transactor::operator()()
             applied = false;
     }
 
+    std::optional<TxMeta> metadata;
     if (applied)
     {
         // Transaction succeeded fully or (retries are not allowed and the
@@ -1157,13 +1205,18 @@ Transactor::operator()()
             ctx_.destroyXRP(fee);
 
         // Once we call apply, we will no longer be able to look at view()
-        ctx_.apply(result);
+        metadata = ctx_.apply(result);
+    }
+
+    if (ctx_.flags() & tapDRY_RUN)
+    {
+        applied = false;
     }
 
     JLOG(j_.trace()) << (applied ? "applied " : "not applied ")
                      << transToken(result);
 
-    return {result, applied};
+    return {result, applied, metadata};
 }
 
 }  // namespace ripple
