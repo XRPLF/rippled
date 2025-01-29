@@ -317,8 +317,9 @@ class TransfersNotFrozen
         std::vector<BalanceChange> receivers;
     };
 
-    using ByCurrency = std::map<Currency, IssuerChanges>;
-    using ByIssuer = std::map<AccountID, ByCurrency>;
+    using Issuer = std::pair<AccountID, Currency>;
+    using ByIssuer = std::map<Issuer, IssuerChanges>;
+
     ByIssuer balanceChanges_;
     std::map<AccountID, std::shared_ptr<SLE const> const> possibleIssuers_;
 
@@ -350,10 +351,7 @@ private:
         bool isDelete);
 
     void
-    recordBalance(
-        AccountID const& issuer,
-        Currency const& currency,
-        BalanceChange change);
+    recordBalance(Issuer const& issuer, BalanceChange change);
 
     void
     recordBalanceChanges(
@@ -366,19 +364,10 @@ private:
     bool
     validateIssuerChanges(
         std::shared_ptr<SLE const> const& issuer,
-        ByCurrency const& byCurrency,
+        IssuerChanges const& changes,
         STTx const& tx,
         beast::Journal const& j,
         bool enforce);
-
-    bool
-    validateChanges(
-        IssuerChanges const& changes,
-        std::shared_ptr<SLE const> const& issuer,
-        STTx const& tx,
-        beast::Journal const& j,
-        bool enforce,
-        bool globalFreeze);
 
     bool
     validateFrozenState(

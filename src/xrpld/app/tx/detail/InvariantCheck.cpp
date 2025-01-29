@@ -651,12 +651,12 @@ TransfersNotFrozen::finalize(
     [[maybe_unused]] bool const enforce =
         view.rules().enabled(featureDeepFreeze);
 
-    for (auto const& [issuerID, byCurrency] : balanceChanges_)
+    for (auto const& [issuer, changes] : balanceChanges_)
     {
-        auto const issuer = findIssuer(issuerID, view);
+        auto const issuerSle = findIssuer(issuer.first, view);
         // It should be impossible for the issuer to not be found, but check
         // just in case so rippled doesn't crash in release.
-        if (!issuer)
+        if (!issuerSle)
         {
             XRPL_ASSERT(
                 enforce,
@@ -669,7 +669,7 @@ TransfersNotFrozen::finalize(
             continue;
         }
 
-        if (!validateIssuerChanges(issuer, byCurrency, tx, j, enforce))
+        if (!validateIssuerChanges(issuerSle, changes, tx, j, enforce))
         {
             return false;
         }
@@ -737,16 +737,13 @@ TransfersNotFrozen::calculateBalanceChange(
 }
 
 void
-TransfersNotFrozen::recordBalance(
-    AccountID const& issuer,
-    Currency const& currency,
-    BalanceChange change)
+TransfersNotFrozen::recordBalance(Issuer const& issuer, BalanceChange change)
 {
     XRPL_ASSERT(
         change.balanceChangeSign,
         "ripple::TransfersNotFrozen::recordBalance : valid trustline "
         "balance sign.");
-    auto& changes = balanceChanges_[issuer][currency];
+    auto& changes = balanceChanges_[issuer];
     if (change.balanceChangeSign < 0)
         changes.senders.emplace_back(std::move(change));
     else
@@ -763,14 +760,12 @@ TransfersNotFrozen::recordBalanceChanges(
 
     // Change from low account's perspective, which is trust line default
     recordBalance(
-        after->at(sfHighLimit).getIssuer(),
-        currency,
+        {after->at(sfHighLimit).getIssuer(), currency},
         {after, balanceChangeSign});
 
     // Change from high account's perspective, which reverses the sign.
     recordBalance(
-        after->at(sfLowLimit).getIssuer(),
-        currency,
+        {after->at(sfLowLimit).getIssuer(), currency},
         {after, -balanceChangeSign});
 }
 
@@ -788,7 +783,7 @@ TransfersNotFrozen::findIssuer(AccountID const& issuerID, ReadView const& view)
 bool
 TransfersNotFrozen::validateIssuerChanges(
     std::shared_ptr<SLE const> const& issuer,
-    ByCurrency const& byCurrency,
+    IssuerChanges const& changes,
     STTx const& tx,
     beast::Journal const& j,
     bool enforce)
@@ -799,38 +794,18 @@ TransfersNotFrozen::validateIssuerChanges(
     }
 
     bool const globalFreeze = issuer->isFlag(lsfGlobalFreeze);
-
-    for (auto const& [currency, changes] : byCurrency)
+    if (changes.receivers.empty() || changes.senders.empty())
     {
-        if (changes.receivers.empty() || changes.senders.empty())
-        {
-            /* If there are no receivers, then the holder(s) are returning
-             * their tokens to the issuer. Likewise, if there are no
-             * senders, then the issuer is issuing tokens to the holder(s).
-             * This is allowed regardless of the issuer's freeze flags. (The
-             * holder may have contradicting freeze flags, but that will be
-             * checked when the holder is treated as issuer.)
-             */
-            continue;
-        }
-
-        if (!validateChanges(changes, issuer, tx, j, enforce, globalFreeze))
-        {
-            return false;
-        }
+        /* If there are no receivers, then the holder(s) are returning
+         * their tokens to the issuer. Likewise, if there are no
+         * senders, then the issuer is issuing tokens to the holder(s).
+         * This is allowed regardless of the issuer's freeze flags. (The
+         * holder may have contradicting freeze flags, but that will be
+         * checked when the holder is treated as issuer.)
+         */
+        return true;
     }
-    return true;
-}
 
-bool
-TransfersNotFrozen::validateChanges(
-    IssuerChanges const& changes,
-    std::shared_ptr<SLE const> const& issuer,
-    STTx const& tx,
-    beast::Journal const& j,
-    bool enforce,
-    bool globalFreeze)
-{
     for (auto const& actors : {changes.senders, changes.receivers})
     {
         for (auto const& change : actors)
