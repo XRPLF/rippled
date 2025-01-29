@@ -1309,7 +1309,7 @@ class Batch_test : public beast::unit_test::suite
         env.fund(XRP(1000), alice, bob, carol);
         env.close();
 
-        // tfUntilFailure - tec error        
+        // tfUntilFailure - tec error
         {
             auto const preAlice = env.balance(alice);
             auto const preBob = env.balance(bob);
@@ -1340,7 +1340,7 @@ class Batch_test : public beast::unit_test::suite
             BEAST_EXPECT(env.balance(bob) == preBob + XRP(3));
         }
 
-        // tfUntilFailure - tem error        
+        // tfUntilFailure - tem error
         {
             XRPAmount const feeDrops = env.current()->fees().base;
 

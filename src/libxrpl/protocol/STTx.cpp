@@ -510,7 +510,8 @@ STTx::checkMultiSign(
     return multiSignHelper(
         *this,
         fullyCanonical,
-        [&dataStart](AccountID const& accountID) mutable -> std::vector<uint8_t> {
+        [&dataStart](
+            AccountID const& accountID) mutable -> std::vector<uint8_t> {
             Serializer s = dataStart;
             finishMultiSigningData(accountID, s);
             return s.getData();
