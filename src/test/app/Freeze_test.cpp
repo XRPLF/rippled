@@ -1482,8 +1482,6 @@ class Freeze_test : public beast::unit_test::suite
                 uint256 const checkId{getCheckIndex(G1, env.seq(G1))};
                 env(check::create(G1, A1, USD(10)));
                 env.close();
-                // This might be a bug in current check implementation.
-                // Normal freeze should not prevent A1 balance from increasing.
                 env(check::cash(A1, checkId, USD(10)), ter(tecFROZEN));
                 env.close();
             }
@@ -1500,9 +1498,6 @@ class Freeze_test : public beast::unit_test::suite
 
             // test: A1 writes check to issuer
             {
-                // This might be another bug in check implementation.
-                // The creation of the check is not a payment, it's not
-                // really necessary to prevent the creation of checks.
                 env(check::create(A1, G1, USD(10)), ter(tecFROZEN));
                 env.close();
             }
@@ -1574,9 +1569,6 @@ class Freeze_test : public beast::unit_test::suite
 
             // test: A1 writes check to issuer
             {
-                // This might be another bug in check implementation.
-                // The creation of the check is not a payment, it's not
-                // really necessary to prevent the creation of checks.
                 env(check::create(A1, G1, USD(10)), ter(tecFROZEN));
                 env.close();
             }

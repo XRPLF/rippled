@@ -595,16 +595,21 @@ NoDeepFreezeTrustLinesWithoutFreeze::finalize(
 //------------------------------------------------------------------------------
 
 void
-BalanceChangeNotFrozen::visitEntry(
+TransfersNotFrozen::visitEntry(
     bool isDelete,
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
-    // `before` can be null in case it's a newly created trustline, but `after`
-    // can't be null.
-    XRPL_ASSERT(
-        after, "ripple::BalanceChangeNotFrozen::visitEntry : valid after.");
-
+    /*
+     * A trust line freeze state alone doesn't determine if a transfer is
+     * frozen. The transfer must be examined "end-to-end" because both sides of
+     * the transfer may have different freeze states and freeze impact depends
+     * on the transfer direction. This is why first we need to track the
+     * transfers using IssuerChanges senders/receivers.
+     *
+     * Only in validateIssuerChanges, after we collected all changes can we
+     * determine if the transfer is valid.
+     */
     if (!isValidEntry(before, after))
     {
         return;
@@ -620,18 +625,33 @@ BalanceChangeNotFrozen::visitEntry(
 }
 
 bool
-BalanceChangeNotFrozen::finalize(
+TransfersNotFrozen::finalize(
     STTx const& tx,
     TER const ter,
     XRPAmount const fee,
     ReadView const& view,
     beast::Journal const& j)
 {
-    // This invariant check is only enabled with deep freeze amendment.
+    /*
+     * We check this invariant regardless of deep freeze amendment status,
+     * allowing for detection and logging of potential issues even when the
+     * amendment is disabled.
+     *
+     * If an exploit that allows moving frozen assets is discovered,
+     * we can alert operators who monitor fatal messages and trigger assert in
+     * debug builds for an early warning.
+     *
+     * In an unlikely event that an exploit is found, this early detection
+     * enables encouraging the UNL to expedite deep freeze amendment activation
+     * or deploy hotfixes via new amendments. In case of a new amendment, we'd
+     * only have to change this line setting 'enforce' variable.
+     * enforce = view.rules().enabled(featureDeepFreeze) ||
+     *           view.rules().enabled(fixFreezeExploit);
+     */
     [[maybe_unused]] bool const enforce =
         view.rules().enabled(featureDeepFreeze);
 
-    for (auto const& [issuerID, byCurrency] : balanceChanges)
+    for (auto const& [issuerID, byCurrency] : balanceChanges_)
     {
         auto const issuer = findIssuer(issuerID, view);
         // It should be impossible for the issuer to not be found, but check
@@ -640,7 +660,7 @@ BalanceChangeNotFrozen::finalize(
         {
             XRPL_ASSERT(
                 enforce,
-                "ripple::BalanceChangeNotFrozen::finalize : enforce "
+                "ripple::TransfersNotFrozen::finalize : enforce "
                 "invariant.");
             if (enforce)
             {
@@ -659,10 +679,13 @@ BalanceChangeNotFrozen::finalize(
 }
 
 bool
-BalanceChangeNotFrozen::isValidEntry(
+TransfersNotFrozen::isValidEntry(
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
+    // `after` can never be null, even if the trust line is deleted.
+    XRPL_ASSERT(
+        after, "ripple::TransfersNotFrozen::isValidEntry : valid after.");
     if (!after)
     {
         return false;
@@ -670,42 +693,60 @@ BalanceChangeNotFrozen::isValidEntry(
 
     if (after->getType() == ltACCOUNT_ROOT)
     {
-        possibleIssuers.emplace(after->at(sfAccount), after);
+        possibleIssuers_.emplace(after->at(sfAccount), after);
         return false;
     }
 
+    /* While LedgerEntryTypesMatch invariant also checks types, all invariants
+     * are processed regardless of previous failures.
+     *
+     * This type check is still necessary here because it prevents potential
+     * issues in subsequent processing.
+     */
     return after->getType() == ltRIPPLE_STATE &&
         (!before || before->getType() == ltRIPPLE_STATE);
 }
 
 STAmount
-BalanceChangeNotFrozen::calculateBalanceChange(
+TransfersNotFrozen::calculateBalanceChange(
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after,
     bool isDelete)
 {
-    auto getBalance = [](auto const& line, auto const& other, bool zero) {
+    auto const getBalance = [](auto const& line, auto const& other, bool zero) {
         STAmount amt =
             line ? line->at(sfBalance) : other->at(sfBalance).zeroed();
         return zero ? amt.zeroed() : amt;
     };
 
+    /* Trust lines can be created dynamically by other transactions such as
+     * Payment and OfferCreate that cross offers. Such trust line won't be
+     * created frozen, but the sender might be, so the starting balance must be
+     * treated as zero.
+     */
     auto const balanceBefore = getBalance(before, after, false);
+
+    /* Same as above, trust lines can be dynamically deleted, and for frozen
+     * trust lines, payments not involving the issuer must be blocked. This is
+     * achieved by treating the final balance as zero when isDelete=true to
+     * ensure frozen line restrictions are enforced even during deletion.
+     */
     auto const balanceAfter = getBalance(after, before, isDelete);
+
     return balanceAfter - balanceBefore;
 }
 
 void
-BalanceChangeNotFrozen::recordBalance(
+TransfersNotFrozen::recordBalance(
     AccountID const& issuer,
     Currency const& currency,
     BalanceChange change)
 {
     XRPL_ASSERT(
         change.balanceChangeSign,
-        "ripple::BalanceChangeNotFrozen::recordBalance : valid trustline "
+        "ripple::TransfersNotFrozen::recordBalance : valid trustline "
         "balance sign.");
-    auto& changes = balanceChanges[issuer][currency];
+    auto& changes = balanceChanges_[issuer][currency];
     if (change.balanceChangeSign < 0)
         changes.senders.emplace_back(std::move(change));
     else
@@ -713,7 +754,7 @@ BalanceChangeNotFrozen::recordBalance(
 }
 
 void
-BalanceChangeNotFrozen::recordBalanceChanges(
+TransfersNotFrozen::recordBalanceChanges(
     std::shared_ptr<SLE const> const& after,
     STAmount const& balanceChange)
 {
@@ -734,11 +775,9 @@ BalanceChangeNotFrozen::recordBalanceChanges(
 }
 
 std::shared_ptr<SLE const>
-BalanceChangeNotFrozen::findIssuer(
-    AccountID const& issuerID,
-    ReadView const& view)
+TransfersNotFrozen::findIssuer(AccountID const& issuerID, ReadView const& view)
 {
-    if (auto it = possibleIssuers.find(issuerID); it != possibleIssuers.end())
+    if (auto it = possibleIssuers_.find(issuerID); it != possibleIssuers_.end())
     {
         return it->second;
     }
@@ -747,7 +786,7 @@ BalanceChangeNotFrozen::findIssuer(
 }
 
 bool
-BalanceChangeNotFrozen::validateIssuerChanges(
+TransfersNotFrozen::validateIssuerChanges(
     std::shared_ptr<SLE const> const& issuer,
     ByCurrency const& byCurrency,
     STTx const& tx,
@@ -765,12 +804,13 @@ BalanceChangeNotFrozen::validateIssuerChanges(
     {
         if (changes.receivers.empty() || changes.senders.empty())
         {
-            // If there are no receivers, then the holder(s) are returning
-            // their tokens to the issuer. Likewise, if there are no
-            // senders, then the issuer is issuing tokens to the holder(s).
-            // This is allowed regardless of the issuer's freeze flags. (The
-            // holder may have contradicting freeze flags, but that will be
-            // checked when the holder is treated as issuer.)
+            /* If there are no receivers, then the holder(s) are returning
+             * their tokens to the issuer. Likewise, if there are no
+             * senders, then the issuer is issuing tokens to the holder(s).
+             * This is allowed regardless of the issuer's freeze flags. (The
+             * holder may have contradicting freeze flags, but that will be
+             * checked when the holder is treated as issuer.)
+             */
             continue;
         }
 
@@ -783,7 +823,7 @@ BalanceChangeNotFrozen::validateIssuerChanges(
 }
 
 bool
-BalanceChangeNotFrozen::validateChanges(
+TransfersNotFrozen::validateChanges(
     IssuerChanges const& changes,
     std::shared_ptr<SLE const> const& issuer,
     STTx const& tx,
@@ -809,7 +849,7 @@ BalanceChangeNotFrozen::validateChanges(
 }
 
 bool
-BalanceChangeNotFrozen::validateFrozenState(
+TransfersNotFrozen::validateFrozenState(
     BalanceChange const& change,
     bool high,
     STTx const& tx,
@@ -820,7 +860,7 @@ BalanceChangeNotFrozen::validateFrozenState(
     bool const freeze = change.balanceChangeSign < 0 &&
         change.line->isFlag(high ? lsfLowFreeze : lsfHighFreeze);
     bool const deepFreeze =
-        change.line->isFlag(high ? lsfLowDeepFreeze : lsfHighFreeze);
+        change.line->isFlag(high ? lsfLowDeepFreeze : lsfHighDeepFreeze);
     bool const frozen = globalFreeze || deepFreeze || freeze;
 
     bool const isAMMLine = change.line->isFlag(lsfAMMNode);
@@ -844,7 +884,7 @@ BalanceChangeNotFrozen::validateFrozenState(
                     << tx.getTransactionID();
     XRPL_ASSERT(
         enforce,
-        "ripple::BalanceChangeNotFrozen::validateFrozenState : enforce "
+        "ripple::TransfersNotFrozen::validateFrozenState : enforce "
         "invariant.");
 
     if (enforce)

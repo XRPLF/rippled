@@ -492,10 +492,10 @@ class Invariants_test : public beast::unit_test::suite
     }
 
     void
-    testBalanceChangeNotFrozen()
+    testTransfersNotFrozen()
     {
         using namespace test::jtx;
-        testcase << "trust lines balance change when frozen";
+        testcase << "transfers when frozen";
 
         Account G1{"G1"};
         // Helper function to establish the trustlines

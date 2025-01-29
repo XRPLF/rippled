@@ -300,10 +300,10 @@ public:
 /**
  * @brief Invariant: frozen trust line balance change is not allowed.
  *
- * We iterate all the trust lines created by this transaction and ensure
- * that they don't unexpected change of balance if they're frozen.
+ * We iterate all the trust lines and ensure that they don't have unexpected
+ * change of balance if they're frozen.
  */
-class BalanceChangeNotFrozen
+class TransfersNotFrozen
 {
     struct BalanceChange
     {
@@ -319,8 +319,8 @@ class BalanceChangeNotFrozen
 
     using ByCurrency = std::map<Currency, IssuerChanges>;
     using ByIssuer = std::map<AccountID, ByCurrency>;
-    ByIssuer balanceChanges;
-    std::map<AccountID, std::shared_ptr<SLE const> const> possibleIssuers;
+    ByIssuer balanceChanges_;
+    std::map<AccountID, std::shared_ptr<SLE const> const> possibleIssuers_;
 
 public:
     void
@@ -639,7 +639,7 @@ using InvariantChecks = std::tuple<
     XRPNotCreated,
     NoXRPTrustLines,
     NoDeepFreezeTrustLinesWithoutFreeze,
-    BalanceChangeNotFrozen,
+    TransfersNotFrozen,
     NoBadOffers,
     NoZeroEscrow,
     ValidNewAccountRoot,
