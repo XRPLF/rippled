@@ -690,12 +690,6 @@ isRawTransactionOkay(STObject const& st, std::string& reason)
     auto const& rawTxns = st.getFieldArray(sfRawTransactions);
     for (STObject raw : rawTxns)
     {
-        if (!raw.isFieldPresent(sfTransactionType))
-        {
-            reason = "Field 'TransactionType' is required but missing.";
-            return false;
-        }
-
         try
         {
             TxType const tt =
