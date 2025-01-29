@@ -1239,7 +1239,7 @@ public:
         testTypesMatch();
         testNoXRPTrustLine();
         testNoDeepFreezeTrustLinesWithoutFreeze();
-        testBalanceChangeNotFrozen();
+        testTransfersNotFrozen();
         testXRPBalanceCheck();
         testTransactionFeeCheck();
         testNoBadOffers();
