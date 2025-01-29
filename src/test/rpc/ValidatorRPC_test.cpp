@@ -49,6 +49,7 @@ public:
             for (std::string cmd : {"validators", "validator_list_sites"})
             {
                 Env env{*this, isAdmin ? envconfig() : envconfig(no_admin)};
+                env.set_retries(isAdmin ? 5 : 0);
                 auto const jrr = env.rpc(cmd)[jss::result];
                 if (isAdmin)
                 {
