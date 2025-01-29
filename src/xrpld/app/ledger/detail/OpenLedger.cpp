@@ -167,10 +167,10 @@ OpenLedger::apply_one(
         flags = flags | tapRETRY;
     // If it's in anybody's proposed set, try to keep it in the ledger
     auto const result = ripple::apply(app, view, *tx, flags, j);
-    if (result.second || result.first == terQUEUED)
+    if (result.applied || result.ter == terQUEUED)
         return Result::success;
-    if (isTefFailure(result.first) || isTemMalformed(result.first) ||
-        isTelLocal(result.first))
+    if (isTefFailure(result.ter) || isTemMalformed(result.ter) ||
+        isTelLocal(result.ter))
         return Result::failure;
     return Result::retry;
 }

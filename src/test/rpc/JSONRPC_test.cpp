@@ -1337,6 +1337,26 @@ static constexpr TxnTestData txnTestArray[] = {
        "Invalid field 'tx_json', not object.",
        "Invalid field 'tx_json', not object."}}},
 
+    {"Pass in Fee with minimal payment, both Amount and DeliverMax.",
+     __LINE__,
+     R"({
+    "command": "doesnt_matter",
+    "account": "r9zN9x52FiCFAcicCLMQKbj1nxYhxJbbSy",
+    "secret": "ssgN6zTvtM1q9XV8DvJpWm8LBYWiY",
+    "tx_json": {
+        "Fee": 10,
+        "Account": "r9zN9x52FiCFAcicCLMQKbj1nxYhxJbbSy",
+        "Amount": "1000000000",
+        "DeliverMax": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment"
+    }
+})",
+     {{"Source account not found.",
+       "Source account not found.",
+       "Missing field 'tx_json.Sequence'.",
+       "Missing field 'tx_json.Sequence'."}}},
+
     {"Minimal submit_multisigned.",
      __LINE__,
      R"({
@@ -2159,6 +2179,28 @@ public:
 
             BEAST_EXPECT(RPC::contains_error(result));
             BEAST_EXPECT(!req[jss::tx_json].isMember(jss::Fee));
+        }
+
+        {
+            // transaction with a higher base fee
+            Json::Value req;
+            test::jtx::Account const alice("alice");
+            req[jss::tx_json] =
+                test::jtx::acctdelete(env.master.human(), alice.human());
+            Json::Value result = checkFee(
+                req,
+                Role::ADMIN,
+                true,
+                env.app().config(),
+                feeTrack,
+                env.app().getTxQ(),
+                env.app());
+
+            BEAST_EXPECT(result.size() == 0);
+            BEAST_EXPECT(
+                req[jss::tx_json].isMember(jss::Fee) &&
+                req[jss::tx_json][jss::Fee] ==
+                    env.current()->fees().increment.jsonClipped());
         }
     }
 
