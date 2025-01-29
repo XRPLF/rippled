@@ -259,6 +259,7 @@ private:
         ReadView const& view,
         AccountID const& idAccount,
         STArray const& txSigners,
+        ApplyFlags const& flags,
         beast::Journal j);
 
     void trapTransaction(uint256) const;

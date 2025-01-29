@@ -42,7 +42,7 @@ enum ApplyFlags : std::uint32_t {
     tapUNLIMITED = 0x400,
 
     // Transaction is executing as part of a batch
-    tapBATCH = 0x800
+    tapBATCH = 0x800,
 
     // Transaction shouldn't be applied
     // Signatures shouldn't be checked

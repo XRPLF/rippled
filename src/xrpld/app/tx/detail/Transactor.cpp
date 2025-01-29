@@ -552,30 +552,31 @@ Transactor::checkSign(PreclaimContext const& ctx)
 
     auto const idAccount = ctx.tx.getAccountID(sfAccount);
 
-    if (ctx.flags & tapDRY_RUN)
-    {
-        // This code must be different for `simulate`
-        // Since the public key may be empty even for single signing
-        if (ctx.tx.isFieldPresent(sfSigners))
-            return checkMultiSign(ctx);
-        return checkSingleSign(ctx);
-    }
-    // If the pk is empty, then we must be multi-signing.
-    if (ctx.tx.getSigningPubKey().empty())
+    // If the pk is empty and not simulate or simulate and signers,
+    // then we must be multi-signing.
+    if ((ctx.flags & tapDRY_RUN && ctx.tx.isFieldPresent(sfSigners)) ||
+        (!(ctx.flags & tapDRY_RUN) && ctx.tx.getSigningPubKey().empty()))
     {
         STArray const& txSigners(ctx.tx.getFieldArray(sfSigners));
-        return checkMultiSign(ctx.view, idAccount, txSigners, ctx.j);
+        return checkMultiSign(ctx.view, idAccount, txSigners, ctx.flags, ctx.j);
     }
 
     // Check Single Sign
     auto const pkSigner = ctx.tx.getSigningPubKey();
+    // This ternary is only needed to handle `simulate`
+    XRPL_ASSERT(
+        (ctx.flags & tapDRY_RUN) || !pkSigner.empty(),
+        "ripple::Transactor::checkSingleSign : non-empty signer or simulation");
+
     if (!(ctx.flags & tapDRY_RUN) && !publicKeyType(makeSlice(pkSigner)))
     {
         JLOG(ctx.j.trace())
             << "checkSingleSign: signing public key type is unknown";
         return tefBAD_AUTH;  // FIXME: should be better error!
     }
-    auto const idSigner = calcAccountID(PublicKey(makeSlice(pkSigner)));
+    auto const idSigner = pkSigner.empty()
+        ? idAccount
+        : calcAccountID(PublicKey(makeSlice(pkSigner)));
     auto const sleAccount = ctx.view.read(keylet::account(idAccount));
     if (!sleAccount)
         return terNO_ACCOUNT;
@@ -597,7 +598,8 @@ Transactor::checkBatchSign(PreclaimContext const& ctx)
         if (pkSigner.empty())
         {
             STArray const& txSigners(signer.getFieldArray(sfSigners));
-            if (ret = checkMultiSign(ctx.view, idAccount, txSigners, ctx.j);
+            if (ret = checkMultiSign(
+                    ctx.view, idAccount, txSigners, ctx.flags, ctx.j);
                 !isTesSuccess(ret))
                 return ret;
         }
@@ -636,11 +638,6 @@ Transactor::checkSingleSign(
     Rules const& rules,
     beast::Journal j)
 {
-    // This ternary is only needed to handle `simulate`
-    XRPL_ASSERT(
-        (ctx.flags & tapDRY_RUN) || !pkSigner.empty(),
-        "ripple::Transactor::checkSingleSign : non-empty signer or simulation");
-
     bool const isMasterDisabled = sleAccount->isFlag(lsfDisableMaster);
 
     if (rules.enabled(fixMasterKeyAsRegularKey))
@@ -699,6 +696,7 @@ Transactor::checkMultiSign(
     ReadView const& view,
     AccountID const& id,
     STArray const& txSigners,
+    ApplyFlags const& flags,
     beast::Journal j)
 {
     // Get mTxnAccountID's SignerList and Quorum.
@@ -763,7 +761,7 @@ Transactor::checkMultiSign(
         // public key.
         auto const spk = txSigner.getFieldVL(sfSigningPubKey);
 
-        if (!(ctx.flags & tapDRY_RUN) && !publicKeyType(makeSlice(spk)))
+        if (!(flags & tapDRY_RUN) && !publicKeyType(makeSlice(spk)))
         {
             JLOG(j.trace())
                 << "checkMultiSign: signing public key type is unknown";
@@ -772,7 +770,7 @@ Transactor::checkMultiSign(
 
         // This ternary is only needed to handle `simulate`
         XRPL_ASSERT(
-            (ctx.flags & tapDRY_RUN) || !spk.empty(),
+            (flags & tapDRY_RUN) || !spk.empty(),
             "ripple::Transactor::checkMultiSign : non-empty signer or "
             "simulation");
         AccountID const signingAcctIDFromPubKey = spk.empty()

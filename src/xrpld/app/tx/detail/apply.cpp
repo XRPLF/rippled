@@ -129,7 +129,7 @@ forceValidity(HashRouter& router, uint256 const& txid, Validity validity)
 }
 
 template <typename PreflightChecks>
-std::pair<TER, bool>
+ApplyResult
 apply(Application& app, OpenView& view, PreflightChecks&& preflightChecks)
 {
     STAmountSO stAmountSO{view.rules().enabled(fixSTAmountCanonicalize)};
@@ -138,7 +138,6 @@ apply(Application& app, OpenView& view, PreflightChecks&& preflightChecks)
     return doApply(preclaim(preflightChecks(), app, view), app, view);
 }
 
-std::pair<TER, bool>
 ApplyResult
 apply(
     Application& app,
@@ -152,7 +151,7 @@ apply(
     });
 }
 
-std::pair<TER, bool>
+ApplyResult
 apply(
     Application& app,
     OpenView& view,
@@ -181,28 +180,28 @@ applyBatchTransactions(
     auto const parentBatchId = batchTxn.getTransactionID();
     auto const mode = batchTxn.getFlags();
 
-    auto applyOneTransaction = [&app, &j, &parentBatchId, &batchView](
-                                   STTx&& tx) {
-        OpenView perTxBatchView(batch_view, batchView);
+    auto applyOneTransaction =
+        [&app, &j, &parentBatchId, &batchView](STTx&& tx) {
+            OpenView perTxBatchView(batch_view, batchView);
 
-        auto const ret =
-            apply(app, perTxBatchView, parentBatchId, tx, tapBATCH, j);
-        XRPL_ASSERT(
-            ret.second == (isTesSuccess(ret.first) || isTecClaim(ret.first)),
-            "Inner transaction should not be applied");
+            auto const ret =
+                apply(app, perTxBatchView, parentBatchId, tx, tapBATCH, j);
+            XRPL_ASSERT(
+                ret.applied == (isTesSuccess(ret.ter) || isTecClaim(ret.ter)),
+                "Inner transaction should not be applied");
 
-        JLOG(j.trace()) << "BatchTrace[" << parentBatchId
-                        << "]: " << tx.getTransactionID() << " "
-                        << (ret.second ? "applied" : "failure") << ": "
-                        << transToken(ret.first);
+            JLOG(j.trace()) << "BatchTrace[" << parentBatchId
+                            << "]: " << tx.getTransactionID() << " "
+                            << (ret.applied ? "applied" : "failure") << ": "
+                            << transToken(ret.ter);
 
-        // If the transaction should be applied push its changes to the
-        // whole-batch view.
-        if (ret.second && (isTesSuccess(ret.first) || isTecClaim(ret.first)))
-            perTxBatchView.apply(batchView);
+            // If the transaction should be applied push its changes to the
+            // whole-batch view.
+            if (ret.applied && (isTesSuccess(ret.ter) || isTecClaim(ret.ter)))
+                perTxBatchView.apply(batchView);
 
-        return ret;
-    };
+            return ret;
+        };
 
     int applied = 0;
 
@@ -210,14 +209,14 @@ applyBatchTransactions(
     {
         auto const result = applyOneTransaction(STTx{std::move(rb)});
         XRPL_ASSERT(
-            result.second ==
-                (isTesSuccess(result.first) || isTecClaim(result.first)),
+            result.applied ==
+                (isTesSuccess(result.ter) || isTecClaim(result.ter)),
             "Outer Batch failure, inner transaction should not be applied");
 
-        if (result.second)
+        if (result.applied)
             ++applied;
 
-        if (!isTesSuccess(result.first))
+        if (!isTesSuccess(result.ter))
         {
             if (mode & tfAllOrNothing)
                 return false;
@@ -255,11 +254,11 @@ applyTransaction(
         if (result.applied)
         {
             JLOG(j.debug())
-                << "Transaction applied: " << transToken(result.first);
+                << "Transaction applied: " << transToken(result.ter);
 
             // The batch transaction was just applied; now we need to apply
             // its inner transactions as necessary.
-            if (isTesSuccess(result.first) && txn.getTxnType() == ttBATCH)
+            if (isTesSuccess(result.ter) && txn.getTxnType() == ttBATCH)
             {
                 OpenView wholeBatchView(batch_view, view);
 
