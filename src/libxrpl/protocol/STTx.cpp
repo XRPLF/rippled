@@ -502,13 +502,18 @@ STTx::checkMultiSign(
 {
     bool const fullyCanonical = (getFlags() & tfFullyCanonicalSig) ||
         (requireCanonicalSig == RequireFullyCanonicalSig::yes);
+
+    // We can ease the computational load inside the loop a bit by
+    // pre-constructing part of the data that we hash.  Fill a Serializer
+    // with the stuff that stays constant from signature to signature.
+    Serializer dataStart = startMultiSigningData(*this);
     return multiSignHelper(
         *this,
         fullyCanonical,
-        [this](AccountID const& accountID) -> std::vector<uint8_t> {
-            Serializer dataStart = startMultiSigningData(*this);
-            finishMultiSigningData(accountID, dataStart);
-            return dataStart.getData();
+        [&dataStart](AccountID const& accountID) mutable -> std::vector<uint8_t> {
+            Serializer s = dataStart;
+            finishMultiSigningData(accountID, s);
+            return s.getData();
         },
         rules);
 }
