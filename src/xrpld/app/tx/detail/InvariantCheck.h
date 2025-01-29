@@ -317,10 +317,9 @@ class TransfersNotFrozen
         std::vector<BalanceChange> receivers;
     };
 
-    using Issuer = std::pair<AccountID, Currency>;
-    using ByIssuer = std::map<Issuer, IssuerChanges>;
-
+    using ByIssuer = std::map<Issue, IssuerChanges>;
     ByIssuer balanceChanges_;
+
     std::map<AccountID, std::shared_ptr<SLE const> const> possibleIssuers_;
 
 public:
@@ -351,7 +350,7 @@ private:
         bool isDelete);
 
     void
-    recordBalance(Issuer const& issuer, BalanceChange change);
+    recordBalance(Issue const& issuer, BalanceChange change);
 
     void
     recordBalanceChanges(

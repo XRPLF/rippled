@@ -653,7 +653,7 @@ TransfersNotFrozen::finalize(
 
     for (auto const& [issuer, changes] : balanceChanges_)
     {
-        auto const issuerSle = findIssuer(issuer.first, view);
+        auto const issuerSle = findIssuer(issuer.account, view);
         // It should be impossible for the issuer to not be found, but check
         // just in case so rippled doesn't crash in release.
         if (!issuerSle)
@@ -737,7 +737,7 @@ TransfersNotFrozen::calculateBalanceChange(
 }
 
 void
-TransfersNotFrozen::recordBalance(Issuer const& issuer, BalanceChange change)
+TransfersNotFrozen::recordBalance(Issue const& issuer, BalanceChange change)
 {
     XRPL_ASSERT(
         change.balanceChangeSign,
@@ -760,12 +760,12 @@ TransfersNotFrozen::recordBalanceChanges(
 
     // Change from low account's perspective, which is trust line default
     recordBalance(
-        {after->at(sfHighLimit).getIssuer(), currency},
+        {currency, after->at(sfHighLimit).getIssuer()},
         {after, balanceChangeSign});
 
     // Change from high account's perspective, which reverses the sign.
     recordBalance(
-        {after->at(sfLowLimit).getIssuer(), currency},
+        {currency, after->at(sfLowLimit).getIssuer()},
         {after, -balanceChangeSign});
 }
 
