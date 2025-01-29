@@ -61,7 +61,8 @@ ApplyContext::discard()
 std::optional<TxMeta>
 ApplyContext::apply(TER ter)
 {
-    return view_->apply(base_, tx, ter, parentBatchId_, flags_ & tapDRY_RUN, journal);
+    return view_->apply(
+        base_, tx, ter, parentBatchId_, flags_ & tapDRY_RUN, journal);
 }
 
 std::size_t
