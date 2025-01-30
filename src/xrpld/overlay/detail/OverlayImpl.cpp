@@ -35,6 +35,7 @@
 #include <xrpl/basics/make_SSLContext.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/server/SimpleWriter.h>
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -1211,17 +1212,39 @@ OverlayImpl::getManifestsMessage()
 void
 OverlayImpl::relay(
     uint256 const& hash,
-    protocol::TMTransaction& m,
+    std::optional<std::reference_wrapper<protocol::TMTransaction>> tx,
     std::set<Peer::id_t> const& toSkip)
 {
-    auto const sm = std::make_shared<Message>(m, protocol::mtTRANSACTION);
+    bool relay = tx.has_value();
+    if (relay)
+    {
+        auto& txn = tx->get();
+        SerialIter sit(makeSlice(txn.rawtransaction()));
+        relay = !isPseudoTx(STTx{sit});
+    }
+
+    Overlay::PeerSequence peers = {};
     std::size_t total = 0;
     std::size_t disabled = 0;
     std::size_t enabledInSkip = 0;
 
-    // total peers excluding peers in toSkip
-    auto peers = getActivePeers(toSkip, total, disabled, enabledInSkip);
-    auto minRelay = app_.config().TX_REDUCE_RELAY_MIN_PEERS + disabled;
+    if (!relay)
+    {
+        if (!app_.config().TX_REDUCE_RELAY_ENABLE)
+            return;
+
+        peers = getActivePeers(toSkip, total, disabled, enabledInSkip);
+        JLOG(journal_.trace())
+            << "not relaying tx, total peers " << peers.size();
+        for (auto const& p : peers)
+            p->addTxQueue(hash);
+        return;
+    }
+
+    auto& txn = tx->get();
+    auto const sm = std::make_shared<Message>(txn, protocol::mtTRANSACTION);
+    peers = getActivePeers(toSkip, total, disabled, enabledInSkip);
+    auto const minRelay = app_.config().TX_REDUCE_RELAY_MIN_PEERS + disabled;
 
     if (!app_.config().TX_REDUCE_RELAY_ENABLE || total <= minRelay)
     {
@@ -1236,7 +1259,7 @@ OverlayImpl::relay(
     // We have more peers than the minimum (disabled + minimum enabled),
     // relay to all disabled and some randomly selected enabled that
     // do not have the transaction.
-    auto enabledTarget = app_.config().TX_REDUCE_RELAY_MIN_PEERS +
+    auto const enabledTarget = app_.config().TX_REDUCE_RELAY_MIN_PEERS +
         (total - minRelay) * app_.config().TX_RELAY_PERCENTAGE / 100;
 
     txMetrics_.addMetrics(enabledTarget, toSkip.size(), disabled);
