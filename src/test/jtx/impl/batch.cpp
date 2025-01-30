@@ -33,6 +33,16 @@ namespace jtx {
 
 namespace batch {
 
+XRPAmount
+calcBatchFee(
+    test::jtx::Env const& env,
+    uint32_t const& numSigners,
+    uint32_t const& txns)
+{
+    XRPAmount const feeDrops = env.current()->fees().base;
+    return ((numSigners + 2) * feeDrops) + feeDrops * txns;
+}
+
 // Batch.
 Json::Value
 outer(

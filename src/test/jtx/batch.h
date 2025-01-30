@@ -37,6 +37,13 @@ namespace jtx {
 /** Batch operations */
 namespace batch {
 
+/** Calculate Batch Fee. */
+XRPAmount
+calcBatchFee(
+    jtx::Env const& env,
+    uint32_t const& numSigners,
+    uint32_t const& txns = 0);
+
 /** Batch. */
 Json::Value
 outer(
