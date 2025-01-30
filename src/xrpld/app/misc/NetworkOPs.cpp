@@ -1450,9 +1450,9 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
 
                     auto const result = app_.getTxQ().apply(
                         app_, view, e.transaction->getSTransaction(), flags, j);
-                    e.result = result.first;
-                    e.applied = result.second;
-                    changed = changed || result.second;
+                    e.result = result.ter;
+                    e.applied = result.applied;
+                    changed = changed || result.applied;
                 }
                 return changed;
             });

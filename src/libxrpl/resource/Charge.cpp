@@ -61,10 +61,10 @@ Charge::operator==(Charge const& c) const
     return c.m_cost == m_cost;
 }
 
-bool
-Charge::operator!=(Charge const& c) const
+std::strong_ordering
+Charge::operator<=>(Charge const& c) const
 {
-    return c.m_cost != m_cost;
+    return m_cost <=> c.m_cost;
 }
 
 }  // namespace Resource
