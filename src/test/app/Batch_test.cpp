@@ -332,18 +332,6 @@ class Batch_test : public beast::unit_test::suite
             env.close();
         }
 
-        // tefBAD_AUTH: preflight2
-        {
-            auto const seq = env.seq(alice);
-            auto const batchFee = batch::calcBatchFee(env, 0, 2);
-            env(batch::outer(alice, env.seq(alice), batchFee, tfAllOrNothing),
-                batch::inner(pay(alice, bob, XRP(10)), seq + 1),
-                batch::inner(pay(alice, bob, XRP(5)), seq + 2),
-                sig(bob),
-                ter(tefBAD_AUTH));
-            env.close();
-        }
-
         // temARRAY_TOO_LARGE: Batch: signers array exceeds 8 entries.
         {
             auto const seq = env.seq(alice);

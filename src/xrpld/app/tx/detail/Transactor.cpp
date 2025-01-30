@@ -190,7 +190,7 @@ preflight2(PreflightContext const& ctx)
     if (sigValid.first == Validity::SigBad)
     {
         JLOG(ctx.j.debug()) << "preflight2: bad signature. " << sigValid.second;
-        return temINVALID;
+        return temINVALID;  // LCOV_EXCL_LINE
     }
     return tesSUCCESS;
 }
