@@ -38,7 +38,7 @@ nftPageLinks(jtx::Account const& acct, jtx::Account const& owner)
     jv[sfLedgerFixType.jsonName] = LedgerStateFix::nfTokenPageLink;
     jv[sfOwner.jsonName] = owner.human();
     jv[sfTransactionType.jsonName] = jss::LedgerStateFix;
-    jv[sfFlags.jsonName] = tfFullyCanonicalSig;
+    // jv[sfFlags.jsonName] = tfFullyCanonicalSig;
     return jv;
 }
 

@@ -465,8 +465,8 @@ transactionPreProcessImpl(
                 hasTicketSeq ? 0 : app.getTxQ().nextQueuableSeq(sle).value();
         }
 
-        if (!tx_json.isMember(jss::Flags))
-            tx_json[jss::Flags] = tfFullyCanonicalSig;
+        // if (!tx_json.isMember(jss::Flags))
+        //     tx_json[jss::Flags] = tfFullyCanonicalSig;
     }
 
     {
