@@ -523,13 +523,20 @@ EscrowFinish::doApply()
         // WASM execution
         auto const wasmStr = slep->getFieldVL(sfFinishFunction);
         std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
-        std::string funcName("check_accountID");
+        std::string funcName("compare_accountID");
 
-        std::string accountStr = toBase58(ctx_.tx[sfAccount]);
-        std::vector<uint8_t> account(accountStr.begin(), accountStr.end());
-        auto re = runEscrowWasm(wasm, funcName, account);
+        auto const escrowTx =
+            ctx_.tx.getJson(JsonOptions::none).toStyledString();
+        auto const escrowObj =
+            slep->getJson(JsonOptions::none).toStyledString();
+        JLOG(j_.fatal()) << escrowTx;
+        JLOG(j_.fatal()) << escrowObj;
+        std::vector<uint8_t> excrowTxData(escrowTx.begin(), escrowTx.end());
+        std::vector<uint8_t> escrowObjData(escrowObj.begin(), escrowObj.end());
+
+        auto re = runEscrowWasm(wasm, funcName, excrowTxData, escrowObjData);
         JLOG(j_.fatal()) << "ESCROW RAN";
-        if (re)
+        if (re.has_value())
         {
             JLOG(j_.fatal()) << "Success: " + std::to_string(re.value());
             if (!re.value())
