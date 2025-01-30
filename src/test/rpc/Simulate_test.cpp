@@ -236,6 +236,58 @@ class Simulate_test : public beast::unit_test::suite
                 "Invalid field 'tx_json', not object.");
         }
         {
+            // `seed` field included
+            Json::Value params = Json::objectValue;
+            params[jss::seed] = "doesnt_matter";
+            Json::Value tx_json = Json::objectValue;
+            tx_json[jss::TransactionType] = jss::AccountSet;
+            tx_json[jss::Account] = env.master.human();
+            params[jss::tx_json] = tx_json;
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Invalid field 'seed'.");
+        }
+        {
+            // `secret` field included
+            Json::Value params = Json::objectValue;
+            params[jss::secret] = "doesnt_matter";
+            Json::Value tx_json = Json::objectValue;
+            tx_json[jss::TransactionType] = jss::AccountSet;
+            tx_json[jss::Account] = env.master.human();
+            params[jss::tx_json] = tx_json;
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Invalid field 'secret'.");
+        }
+        {
+            // `seed_hex` field included
+            Json::Value params = Json::objectValue;
+            params[jss::seed_hex] = "doesnt_matter";
+            Json::Value tx_json = Json::objectValue;
+            tx_json[jss::TransactionType] = jss::AccountSet;
+            tx_json[jss::Account] = env.master.human();
+            params[jss::tx_json] = tx_json;
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Invalid field 'seed_hex'.");
+        }
+        {
+            // `passphrase` field included
+            Json::Value params = Json::objectValue;
+            params[jss::passphrase] = "doesnt_matter";
+            Json::Value tx_json = Json::objectValue;
+            tx_json[jss::TransactionType] = jss::AccountSet;
+            tx_json[jss::Account] = env.master.human();
+            params[jss::tx_json] = tx_json;
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Invalid field 'passphrase'.");
+        }
+        {
             // Invalid transaction
             Json::Value params = Json::objectValue;
             Json::Value tx_json = Json::objectValue;

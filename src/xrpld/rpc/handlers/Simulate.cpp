@@ -299,6 +299,15 @@ doSimulate(RPC::JsonContext& context)
         return RPC::invalid_field_error(jss::binary);
     }
 
+    for (auto const field :
+         {jss::secret, jss::seed, jss::seed_hex, jss::passphrase})
+    {
+        if (context.params.isMember(field))
+        {
+            return RPC::invalid_field_error(field);
+        }
+    }
+
     // get JSON equivalent of transaction
     tx_json = getTxJsonFromParams(context.params);
     if (tx_json.isMember(jss::error))
