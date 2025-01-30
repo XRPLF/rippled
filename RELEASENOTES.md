@@ -6,6 +6,62 @@ This document contains the release notes for `rippled`, the reference server imp
 
 Have new ideas? Need help with setting up your node? [Please open an issue here](https://github.com/xrplf/rippled/issues/new/choose).
 
+# Version 2.3.1
+
+Version 2.3.1 of `rippled`, the reference server implementation of the XRP Ledger protocol, is now available. 
+This is a hotfix release that includes the following updates:
+- Fix an erroneous high fee penalty that peers could incur for sending older transactions. 
+- Update to the fees charged for imposing a load on the server. 
+- Prevent the relaying of internal pseudo-transactions. 
+    - Before: Pseudo-transactions received from a peer will fail the signature check, even if they were requested (using TMGetObjectByHash) because they have no signature. This causes the peer to be charged for an invalid signature. 
+    - After: Pseudo-transactions, are put into the global cache (TransactionMaster) only. If the transaction is not part of a TMTransactions batch, the peer is charged an unwanted data fee. These fees will not be a problem in the normal course of operations but should dissuade peers from behaving badly by sending a bunch of junk.
+- Improved logging now specifies the reason for the fee charged to the peer.
+
+[Sign Up for Future Release Announcements](https://groups.google.com/g/ripple-server)
+
+<!-- BREAK -->
+
+## Action Required
+
+If you run an XRP Ledger validator, upgrade to version 2.3.1 as soon as possible to ensure stable and uninterrupted network behavior.
+
+## Changelog
+
+### Amendments and New Features
+
+- None
+
+### Bug Fixes and Performance Improvements
+
+- Change the charged fee for sending older transactions from feeInvalidSignature to feeUnwantedData. [#5243](https://github.com/XRPLF/rippled/pull/5243)
+
+### Docs and Build System
+
+- None
+
+### GitHub
+
+The public source code repository for `rippled` is hosted on GitHub at <https://github.com/XRPLF/rippled>.
+
+We welcome all contributions and invite everyone to join the community of XRP Ledger developers to help build the Internet of Value.
+
+
+## Credits
+
+The following people contributed directly to this release:
+
+Ed Hennis <ed@ripple.com>
+JoelKatz <DavidJoelSchwartz@GMail.com>
+Sophia Xie <106177003+sophiax851@users.noreply.github.com>
+Valentin Balaschenko <13349202+vlntb@users.noreply.github.com>
+
+
+Bug Bounties and Responsible Disclosures:
+
+We welcome reviews of the `rippled` code and urge researchers to responsibly disclose any issues they may find.
+
+To report a bug, please send a detailed report to: <bugs@xrpl.org>
+
 # Version 2.3.0
 
 Version 2.3.0 of `rippled`, the reference server implementation of the XRP Ledger protocol, is now available. This release includes 8 new amendments, including Multi-Purpose Tokens, Credentials, Clawback support for AMMs, and the ability to make offers as part of minting NFTs. Additionally, this release includes important fixes for stability, so server operators are encouraged to upgrade as soon as possible.
