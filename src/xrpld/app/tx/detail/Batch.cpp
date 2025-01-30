@@ -146,9 +146,10 @@ Batch::preflight(PreflightContext const& ctx)
                 ctx.app, ctx.rules, parentBatchId, stx, tapBATCH, ctx.j);
             preflightResult.ter != tesSUCCESS)
         {
-            JLOG(ctx.j.trace()) << "BatchTrace[" << parentBatchId << "]: "
-                                << "inner txn preflight failed. "
-                                << "txID: " << hash;
+            JLOG(ctx.j.trace())
+                << "BatchTrace[" << parentBatchId << "]: "
+                << "inner txn preflight failed: " << preflightResult.ter << " "
+                << "txID: " << hash;
             return temINVALID_INNER_BATCH;
         }
 
