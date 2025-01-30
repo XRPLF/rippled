@@ -221,7 +221,8 @@ public:
         return {};
     }
     void
-    charge(Resource::Charge const& fee) override
+    charge(Resource::Charge const& fee, std::string const& context = {})
+        override
     {
     }
     id_t

@@ -1083,7 +1083,8 @@ InboundLedger::processData(
         if (packet.nodes().empty())
         {
             JLOG(journal_.warn()) << peer->id() << ": empty header data";
-            peer->charge(Resource::feeInvalidRequest);
+            peer->charge(
+                Resource::feeMalformedRequest, "ledger_data empty header");
             return -1;
         }
 
@@ -1098,7 +1099,9 @@ InboundLedger::processData(
                 if (!takeHeader(packet.nodes(0).nodedata()))
                 {
                     JLOG(journal_.warn()) << "Got invalid header data";
-                    peer->charge(Resource::feeInvalidRequest);
+                    peer->charge(
+                        Resource::feeMalformedRequest,
+                        "ledger_data invalid header");
                     return -1;
                 }
 
@@ -1121,7 +1124,8 @@ InboundLedger::processData(
         {
             JLOG(journal_.warn())
                 << "Included AS/TX root invalid: " << ex.what();
-            peer->charge(Resource::feeBadData);
+            using namespace std::string_literals;
+            peer->charge(Resource::feeInvalidData, "ledger_data "s + ex.what());
             return -1;
         }
 
@@ -1141,7 +1145,7 @@ InboundLedger::processData(
         if (packet.nodes().empty())
         {
             JLOG(journal_.info()) << peer->id() << ": response with no nodes";
-            peer->charge(Resource::feeInvalidRequest);
+            peer->charge(Resource::feeMalformedRequest, "ledger_data no nodes");
             return -1;
         }
 
@@ -1153,7 +1157,8 @@ InboundLedger::processData(
             if (!node.has_nodeid() || !node.has_nodedata())
             {
                 JLOG(journal_.warn()) << "Got bad node";
-                peer->charge(Resource::feeInvalidRequest);
+                peer->charge(
+                    Resource::feeMalformedRequest, "ledger_data bad node");
                 return -1;
             }
         }

@@ -78,7 +78,7 @@ public:
 
     /** Adjust this peer's load balance based on the type of load imposed. */
     virtual void
-    charge(Resource::Charge const& fee) = 0;
+    charge(Resource::Charge const& fee, std::string const& context) = 0;
 
     //
     // Identity
