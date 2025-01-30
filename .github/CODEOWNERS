@@ -1,0 +1,5 @@
+# Allow anyone to review any change by default.
+*
+
+# Require the rpc team to review changes to the rpc code.
+src/xrpld/rpc/ @XRPLF/rpc-reviewers
