@@ -119,7 +119,7 @@ transResults()
         MAKE_ERROR(tecBAD_CREDENTIALS,               "Bad credentials."),
         MAKE_ERROR(tecWRONG_ASSET,                   "Wrong asset given."),
         MAKE_ERROR(tecLIMIT_EXCEEDED,                "Limit exceeded."),
-        MAKE_ERROR(tecREMOVING_PERMISSIONS,          "Would remove permissions previously granted."),
+        MAKE_ERROR(tecINVALID_DOMAIN,                "Invalid permissioned domain."),
 
         MAKE_ERROR(tefALREADY,                     "The exact transaction was already in this ledger."),
         MAKE_ERROR(tefBAD_ADD_AUTH,                "Not authorized to add account."),

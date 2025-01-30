@@ -67,14 +67,7 @@ VaultSet::preclaim(PreclaimContext const& ctx)
     if (auto const domain = ctx.tx[~sfDomainID])
     {
         if ((sle->getFlags() & tfVaultPrivate) == 0)
-            return tecREMOVING_PERMISSIONS;
-        if (auto const oldDomain = sle->at(~sfDomainID))
-        {
-            if (*oldDomain != *domain)
-                return tecREMOVING_PERMISSIONS;
-            // else no change
-        }
-        // else domain wasn't set previously, we allow setting it now
+            return tecINVALID_DOMAIN;
     }
 
     return tesSUCCESS;

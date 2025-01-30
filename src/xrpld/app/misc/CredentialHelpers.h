@@ -55,11 +55,11 @@ checkFields(PreflightContext const& ctx);
 TER
 valid(PreclaimContext const& ctx, AccountID const& src);
 
-// Check if subject has any credential maching the given domain. Do not use in
-// doApply (only in preclaim) since it does not remove expired credentials. If
-// you call it in prelaim, you also must call verifyDomain in doApply
+// Check if subject has any credential maching the given domain. If you call it
+// in preclaim and it returns tecEXPIRED, you should call verifyValidDomain in
+// doApply. This will ensure that expired credentials are deleted.
 TER
-valid(ReadView const& view, uint256 domainID, AccountID const& subject);
+validDomain(ReadView const& view, uint256 domainID, AccountID const& subject);
 
 // This function is only called when we about to return tecNO_PERMISSION
 // because all the checks for the DepositPreauth authorization failed.
@@ -83,7 +83,7 @@ checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j);
 // Check expired credentials and for credentials maching DomainID of the ledger
 // object
 TER
-verifyDomain(
+verifyValidDomain(
     ApplyView& view,
     AccountID const& account,
     uint256 domainID,

@@ -188,12 +188,17 @@ valid(PreclaimContext const& ctx, AccountID const& src)
 }
 
 TER
-valid(ReadView const& view, uint256 domainID, AccountID const& subject)
+validDomain(ReadView const& view, uint256 domainID, AccountID const& subject)
 {
+    // Note, permissioned domain objects can be deleted at any time
     auto const slePD = view.read(keylet::permissionedDomain(domainID));
-    if (!slePD || !slePD->isFieldPresent(sfAcceptedCredentials))
+    if (!slePD)
+        return tecINVALID_DOMAIN;
+    else if (!slePD->isFieldPresent(sfAcceptedCredentials))
         return tefINTERNAL;
 
+    auto const closeTime = view.info().parentCloseTime;
+    bool foundExpired = false;
     for (auto const& h : slePD->getFieldArray(sfAcceptedCredentials))
     {
         if (!h.isFieldPresent(sfIssuer) || !h.isFieldPresent(sfCredentialType))
@@ -204,13 +209,26 @@ valid(ReadView const& view, uint256 domainID, AccountID const& subject)
         auto const sleCredential =
             view.read(keylet::credential(subject, issuer, type));
 
-        // Do not check for expired credentials here, we need ApplyView& for
-        // that, to allow us to delete them (see verifyDomain below)
-        if (sleCredential && (sleCredential->getFlags() & lsfAccepted))
-            return tesSUCCESS;
+        // We cannot delete expired credentials, that would require ApplyView&
+        // However we can check if credentials are expired. Expected transaction
+        // flow is to use `validDomain` in preclaim, converting tecEXPIRED to
+        // tesSUCCESS, then proceed to call `verifyValidDomain` in doApply. This
+        // allows expired credentials to be deleted by any transaction.
+        if (sleCredential)
+        {
+            if (checkExpired(sleCredential, closeTime))
+            {
+                foundExpired = true;
+                continue;
+            }
+            else if (sleCredential->getFlags() & lsfAccepted)
+                return tesSUCCESS;
+            else
+                continue;
+        }
     }
 
-    return tecNO_PERMISSION;
+    return foundExpired ? tecEXPIRED : tecNO_PERMISSION;
 }
 
 TER
@@ -301,7 +319,7 @@ checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j)
 }  // namespace credentials
 
 TER
-verifyDomain(
+verifyValidDomain(
     ApplyView& view,
     AccountID const& account,
     uint256 domainID,

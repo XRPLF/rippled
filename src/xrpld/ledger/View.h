@@ -586,8 +586,10 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account);
 
 /** Check if the account lacks required authorization.
  *
- *   Does not check for expired credentials, hence must be followed by
- *   verifyAuth from doApply
+ *   This will also check for expired credentials. If it is called directly
+ *   from preclaim, the user should convert result tecEXPIRED to tesSUCCESS and
+ *   proceed to also check permissions with verifyValidDomain inside doApply.
+ *   This will ensure that any expired credentials are deleted.
  */
 [[nodiscard]] TER
 requireAuth(

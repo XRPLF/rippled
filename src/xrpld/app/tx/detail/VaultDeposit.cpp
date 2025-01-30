@@ -97,11 +97,37 @@ VaultDeposit::doApply()
     }
 
     // Make sure the depositor can hold shares.
-    MPTIssue const mptIssue((*vault)[sfMPTokenIssuanceID]);
-    if (auto const err =
-            verifyAuth(ctx_.view(), mptIssue, account_, mPriorBalance, j_);
-        !isTesSuccess(err))
-        return err;
+    auto const mptIssuanceID = (*vault)[sfMPTokenIssuanceID];
+    auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
+    if (!sleIssuance)
+        return tefINTERNAL;
+
+    auto const& vaultAccount = vault->at(sfAccount);
+
+    MPTIssue const mptIssue(mptIssuanceID);
+    if (vault->getFlags() == tfVaultPrivate)
+    {
+        if (auto const err =
+                verifyAuth(ctx_.view(), mptIssue, account_, mPriorBalance, j_);
+            !isTesSuccess(err))
+            return err;
+    }
+    else
+    {
+        // No authorization needed, but must ensure there is MPToken
+        auto sleMpt = view().read(keylet::mptoken(mptIssuanceID, account_));
+        if (!sleMpt && account_ != vaultAccount)
+        {
+            if (auto const err = MPTokenAuthorize::authorize(
+                    view(),
+                    ctx_.journal,
+                    {.priorBalance = mPriorBalance,
+                     .mptIssuanceID = mptIssuanceID,
+                     .accountID = account_});
+                !isTesSuccess(err))
+                return err;
+        }
+    }
 
     // Compute exchange before transferring any amounts.
     auto const shares = assetsToSharesDeposit(view(), vault, assets);
@@ -118,7 +144,6 @@ VaultDeposit::doApply()
     if (maximum != 0 && *vault->at(sfAssetTotal) > maximum)
         return tecLIMIT_EXCEEDED;
 
-    auto const& vaultAccount = vault->at(sfAccount);
     // Transfer assets from depositor to vault.
     if (auto ter = accountSend(view(), account_, vaultAccount, assets, j_))
         return ter;
