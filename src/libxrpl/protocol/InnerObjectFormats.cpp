@@ -28,7 +28,7 @@ InnerObjectFormats::InnerObjectFormats()
     // inner objects with the default fields have to be
     // constructed with STObject::makeInnerObject()
 
-    add(sfSignerEntry.jsonName.c_str(),
+    add(sfSignerEntry.jsonName,
         sfSignerEntry.getCode(),
         {
             {sfAccount, soeREQUIRED},
@@ -36,7 +36,7 @@ InnerObjectFormats::InnerObjectFormats()
             {sfWalletLocator, soeOPTIONAL},
         });
 
-    add(sfSigner.jsonName.c_str(),
+    add(sfSigner.jsonName,
         sfSigner.getCode(),
         {
             {sfAccount, soeREQUIRED},
@@ -44,28 +44,28 @@ InnerObjectFormats::InnerObjectFormats()
             {sfTxnSignature, soeREQUIRED},
         });
 
-    add(sfMajority.jsonName.c_str(),
+    add(sfMajority.jsonName,
         sfMajority.getCode(),
         {
             {sfAmendment, soeREQUIRED},
             {sfCloseTime, soeREQUIRED},
         });
 
-    add(sfDisabledValidator.jsonName.c_str(),
+    add(sfDisabledValidator.jsonName,
         sfDisabledValidator.getCode(),
         {
             {sfPublicKey, soeREQUIRED},
             {sfFirstLedgerSequence, soeREQUIRED},
         });
 
-    add(sfNFToken.jsonName.c_str(),
+    add(sfNFToken.jsonName,
         sfNFToken.getCode(),
         {
             {sfNFTokenID, soeREQUIRED},
             {sfURI, soeOPTIONAL},
         });
 
-    add(sfVoteEntry.jsonName.c_str(),
+    add(sfVoteEntry.jsonName,
         sfVoteEntry.getCode(),
         {
             {sfAccount, soeREQUIRED},
@@ -73,7 +73,7 @@ InnerObjectFormats::InnerObjectFormats()
             {sfVoteWeight, soeREQUIRED},
         });
 
-    add(sfAuctionSlot.jsonName.c_str(),
+    add(sfAuctionSlot.jsonName,
         sfAuctionSlot.getCode(),
         {{sfAccount, soeREQUIRED},
          {sfExpiration, soeREQUIRED},
@@ -81,7 +81,7 @@ InnerObjectFormats::InnerObjectFormats()
          {sfPrice, soeREQUIRED},
          {sfAuthAccounts, soeOPTIONAL}});
 
-    add(sfXChainClaimAttestationCollectionElement.jsonName.c_str(),
+    add(sfXChainClaimAttestationCollectionElement.jsonName,
         sfXChainClaimAttestationCollectionElement.getCode(),
         {
             {sfAttestationSignerAccount, soeREQUIRED},
@@ -95,7 +95,7 @@ InnerObjectFormats::InnerObjectFormats()
             {sfDestination, soeOPTIONAL},
         });
 
-    add(sfXChainCreateAccountAttestationCollectionElement.jsonName.c_str(),
+    add(sfXChainCreateAccountAttestationCollectionElement.jsonName,
         sfXChainCreateAccountAttestationCollectionElement.getCode(),
         {
             {sfAttestationSignerAccount, soeREQUIRED},
@@ -110,7 +110,7 @@ InnerObjectFormats::InnerObjectFormats()
             {sfSignatureReward, soeREQUIRED},
         });
 
-    add(sfXChainClaimProofSig.jsonName.c_str(),
+    add(sfXChainClaimProofSig.jsonName,
         sfXChainClaimProofSig.getCode(),
         {
             {sfAttestationSignerAccount, soeREQUIRED},
@@ -121,7 +121,7 @@ InnerObjectFormats::InnerObjectFormats()
             {sfDestination, soeOPTIONAL},
         });
 
-    add(sfXChainCreateAccountProofSig.jsonName.c_str(),
+    add(sfXChainCreateAccountProofSig.jsonName,
         sfXChainCreateAccountProofSig.getCode(),
         {
             {sfAttestationSignerAccount, soeREQUIRED},
@@ -133,13 +133,13 @@ InnerObjectFormats::InnerObjectFormats()
             {sfDestination, soeREQUIRED},
         });
 
-    add(sfAuthAccount.jsonName.c_str(),
+    add(sfAuthAccount.jsonName,
         sfAuthAccount.getCode(),
         {
             {sfAccount, soeREQUIRED},
         });
 
-    add(sfPriceData.jsonName.c_str(),
+    add(sfPriceData.jsonName,
         sfPriceData.getCode(),
         {
             {sfBaseAsset, soeREQUIRED},
@@ -148,7 +148,7 @@ InnerObjectFormats::InnerObjectFormats()
             {sfScale, soeDEFAULT},
         });
 
-    add(sfCredential.jsonName.c_str(),
+    add(sfCredential.jsonName,
         sfCredential.getCode(),
         {
             {sfIssuer, soeREQUIRED},
