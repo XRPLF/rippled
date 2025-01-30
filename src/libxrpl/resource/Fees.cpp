@@ -22,24 +22,26 @@
 namespace ripple {
 namespace Resource {
 
-Charge const feeInvalidRequest(100, "malformed request");
+Charge const feeMalformedRequest(200, "malformed request");
 Charge const feeRequestNoReply(10, "unsatisfiable request");
-Charge const feeInvalidSignature(1000, "invalid signature");
-Charge const feeUnwantedData(150, "useless data");
-Charge const feeBadData(200, "invalid data");
+Charge const feeInvalidSignature(2000, "invalid signature");
+Charge const feeUselessData(150, "useless data");
+Charge const feeInvalidData(400, "invalid data");
 
-Charge const feeInvalidRPC(100, "malformed RPC");
+Charge const feeMalformedRPC(100, "malformed RPC");
 Charge const feeReferenceRPC(20, "reference RPC");
 Charge const feeExceptionRPC(100, "exceptioned RPC");
 Charge const feeMediumBurdenRPC(400, "medium RPC");
-Charge const feeHighBurdenRPC(3000, "heavy RPC");
+Charge const feeHeavyBurdenRPC(3000, "heavy RPC");
 
-Charge const feeLightPeer(1, "trivial peer request");
-Charge const feeMediumBurdenPeer(250, "moderate peer request");
-Charge const feeHighBurdenPeer(2000, "heavy peer request");
+Charge const feeTrivialPeer(1, "trivial peer request");
+Charge const feeModerateBurdenPeer(250, "moderate peer request");
+Charge const feeHeavyBurdenPeer(2000, "heavy peer request");
 
-Charge const feeWarning(2000, "received warning");
-Charge const feeDrop(3000, "dropped");
+Charge const feeWarning(4000, "received warning");
+Charge const feeDrop(6000, "dropped");
+
+// See also Resource::Logic::charge for log level cutoff values
 
 }  // namespace Resource
 }  // namespace ripple

@@ -183,7 +183,7 @@ public:
     virtual void
     relay(
         uint256 const& hash,
-        protocol::TMTransaction& m,
+        std::optional<std::reference_wrapper<protocol::TMTransaction>> m,
         std::set<Peer::id_t> const& toSkip) = 0;
 
     /** Visit every active peer.

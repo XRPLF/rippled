@@ -135,6 +135,8 @@ doSign(RPC::JsonContext&);
 Json::Value
 doSignFor(RPC::JsonContext&);
 Json::Value
+doSimulate(RPC::JsonContext&);
+Json::Value
 doStop(RPC::JsonContext&);
 Json::Value
 doSubmit(RPC::JsonContext&);
