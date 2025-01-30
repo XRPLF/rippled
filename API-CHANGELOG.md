@@ -85,12 +85,14 @@ The `network_id` field was added in the `server_info` response in version 1.5.0 
 
 ## XRP Ledger server version 2.4.0
 
-As of 2025-01-23, version 2.4.0 is in development. You can use a pre-release version by building from source or [using the `nightly` package](https://xrpl.org/docs/infrastructure/installation/install-rippled-on-ubuntu).
+As of 2025-01-28, version 2.4.0 is in development. You can use a pre-release version by building from source or [using the `nightly` package](https://xrpl.org/docs/infrastructure/installation/install-rippled-on-ubuntu).
 
 ### Additions and bugfixes in 2.4.0
 
 - `ledger_entry`: `state` is added an alias for `ripple_state`.
 - `validators`: Added new field `validator_list_threshold` in response.
+- `simulate`: A new RPC that executes a [dry run of a transaction submission](https://github.com/XRPLF/XRPL-Standards/tree/master/XLS-0069d-simulate#2-rpc-simulate)
+- Signing methods autofill fees better and properly handle transactions that don't have a base fee.
 
 ## XRP Ledger server version 2.3.0
 
