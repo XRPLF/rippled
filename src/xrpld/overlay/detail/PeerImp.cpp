@@ -1265,7 +1265,7 @@ PeerImp::handleTransaction(
         {
             JLOG(p_journal_.warn()) << "Ignoring Network relayed Tx containing "
                                        "tfInnerBatchTxn (handleTransaction).";
-            fee_ = Resource::feeHighBurdenPeer;
+            fee_.update(Resource::feeModerateBurdenPeer, "inner batch txn");
             return;
         }
 
@@ -2803,7 +2803,7 @@ PeerImp::checkTransaction(
         {
             JLOG(p_journal_.warn()) << "Ignoring Network relayed Tx containing "
                                        "tfInnerBatchTxn (checkSignature).";
-            charge(Resource::feeHighBurdenPeer);
+            charge(Resource::feeModerateBurdenPeer, "inner batch txn");
             return;
         }
 
