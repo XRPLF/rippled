@@ -1,5 +1,6 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classripple_1_1PeerSetBuilder.html" title=" " alt="" coords="5,35,168,60"/>
-<area shape="rect" id="node2" href="$classripple_1_1PeerSetBuilderImpl.html" title=" " alt="" coords="216,5,408,31"/>
-<area shape="rect" id="node3" href="$classripple_1_1test_1_1TestPeerSetBuilder.html" title="Build the TestPeerSet." alt="" coords="224,55,400,95"/>
+<area shape="rect" id="node1" href="$classripple_1_1PeerSet.html" title="Supports data retrieval by managing a set of peers." alt="" coords="5,55,123,80"/>
+<area shape="rect" id="node2" href="$classripple_1_1DummyPeerSet.html" title=" " alt="" coords="174,5,343,31"/>
+<area shape="rect" id="node3" href="$classripple_1_1PeerSetImpl.html" title=" " alt="" coords="185,55,332,80"/>
+<area shape="rect" id="node4" href="$structripple_1_1test_1_1TestPeerSet.html" title="Simulate a peerSet that supplies peers to ledger replay subtasks." alt="" coords="171,104,347,129"/>
 </map>

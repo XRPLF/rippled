@@ -145,9 +145,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ad7cedbf4822211a1c627483b36d8a2b4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple_1_1Resource.html#ae12997de115c1cf0032794aa5ea1b15d">Disposition</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Resource_1_1Consumer.html#ad7cedbf4822211a1c627483b36d8a2b4">disposition</a> () const</td></tr>
 <tr class="memdesc:ad7cedbf4822211a1c627483b36d8a2b4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the current disposition of this consumer.  <a href="classripple_1_1Resource_1_1Consumer.html#ad7cedbf4822211a1c627483b36d8a2b4">More...</a><br /></td></tr>
 <tr class="separator:ad7cedbf4822211a1c627483b36d8a2b4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a65d4f295e044ae0bf1e5ef1e4e6df539"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple_1_1Resource.html#ae12997de115c1cf0032794aa5ea1b15d">Disposition</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Resource_1_1Consumer.html#a65d4f295e044ae0bf1e5ef1e4e6df539">charge</a> (<a class="el" href="classripple_1_1Resource_1_1Charge.html">Charge</a> const &amp;fee)</td></tr>
-<tr class="memdesc:a65d4f295e044ae0bf1e5ef1e4e6df539"><td class="mdescLeft">&#160;</td><td class="mdescRight">Apply a load charge to the consumer.  <a href="classripple_1_1Resource_1_1Consumer.html#a65d4f295e044ae0bf1e5ef1e4e6df539">More...</a><br /></td></tr>
-<tr class="separator:a65d4f295e044ae0bf1e5ef1e4e6df539"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a935e83cb32adf14651d2256783ad81d9"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple_1_1Resource.html#ae12997de115c1cf0032794aa5ea1b15d">Disposition</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Resource_1_1Consumer.html#a935e83cb32adf14651d2256783ad81d9">charge</a> (<a class="el" href="classripple_1_1Resource_1_1Charge.html">Charge</a> const &amp;fee, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;context={})</td></tr>
+<tr class="memdesc:a935e83cb32adf14651d2256783ad81d9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Apply a load charge to the consumer.  <a href="classripple_1_1Resource_1_1Consumer.html#a935e83cb32adf14651d2256783ad81d9">More...</a><br /></td></tr>
+<tr class="separator:a935e83cb32adf14651d2256783ad81d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a27db21f6a4965d2ade4ba1761e3d8ccd"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Resource_1_1Consumer.html#a27db21f6a4965d2ade4ba1761e3d8ccd">warn</a> ()</td></tr>
 <tr class="memdesc:a27db21f6a4965d2ade4ba1761e3d8ccd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns <code>true</code> if the consumer should be warned.  <a href="classripple_1_1Resource_1_1Consumer.html#a27db21f6a4965d2ade4ba1761e3d8ccd">More...</a><br /></td></tr>
 <tr class="separator:a27db21f6a4965d2ade4ba1761e3d8ccd"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -384,8 +384,8 @@ Friends</h2></td></tr>
 
 </div>
 </div>
-<a id="a65d4f295e044ae0bf1e5ef1e4e6df539" name="a65d4f295e044ae0bf1e5ef1e4e6df539"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a65d4f295e044ae0bf1e5ef1e4e6df539">&#9670;&#160;</a></span>charge()</h2>
+<a id="a935e83cb32adf14651d2256783ad81d9" name="a935e83cb32adf14651d2256783ad81d9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a935e83cb32adf14651d2256783ad81d9">&#9670;&#160;</a></span>charge()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -394,8 +394,18 @@ Friends</h2></td></tr>
           <td class="memname"><a class="el" href="namespaceripple_1_1Resource.html#ae12997de115c1cf0032794aa5ea1b15d">Disposition</a> ripple::Resource::Consumer::charge </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classripple_1_1Resource_1_1Charge.html">Charge</a> const &amp;&#160;</td>
-          <td class="paramname"><em>fee</em></td><td>)</td>
+          <td class="paramname"><em>fee</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;&#160;</td>
+          <td class="paramname"><em>context</em> = <code>{}</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">

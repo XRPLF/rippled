@@ -181,9 +181,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:acf8edd8c9f7c0ab6b4556f94e6abb69d"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/container/set.html">std::set</a>&lt; <a class="el" href="classripple_1_1Peer.html#a56cc3cdd9c73921f23cb43a2bfa696a1">Peer::id_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Overlay.html#acf8edd8c9f7c0ab6b4556f94e6abb69d">relay</a> (protocol::TMValidation &amp;m, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;uid, <a class="el" href="classripple_1_1PublicKey.html">PublicKey</a> const &amp;validator)=0</td></tr>
 <tr class="memdesc:acf8edd8c9f7c0ab6b4556f94e6abb69d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Relay a validation.  <a href="classripple_1_1Overlay.html#acf8edd8c9f7c0ab6b4556f94e6abb69d">More...</a><br /></td></tr>
 <tr class="separator:acf8edd8c9f7c0ab6b4556f94e6abb69d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a876aee0822b3e6b83e236f5ea531ae50"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Overlay.html#a876aee0822b3e6b83e236f5ea531ae50">relay</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;hash, protocol::TMTransaction &amp;m, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/set.html">std::set</a>&lt; <a class="el" href="classripple_1_1Peer.html#a56cc3cdd9c73921f23cb43a2bfa696a1">Peer::id_t</a> &gt; const &amp;toSkip)=0</td></tr>
-<tr class="memdesc:a876aee0822b3e6b83e236f5ea531ae50"><td class="mdescLeft">&#160;</td><td class="mdescRight">Relay a transaction.  <a href="classripple_1_1Overlay.html#a876aee0822b3e6b83e236f5ea531ae50">More...</a><br /></td></tr>
-<tr class="separator:a876aee0822b3e6b83e236f5ea531ae50"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a086f3a1c8c9f3cbe335a7ffe1bf7db3f"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Overlay.html#a086f3a1c8c9f3cbe335a7ffe1bf7db3f">relay</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;hash, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/reference_wrapper.html">std::reference_wrapper</a>&lt; protocol::TMTransaction &gt; &gt; m, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/set.html">std::set</a>&lt; <a class="el" href="classripple_1_1Peer.html#a56cc3cdd9c73921f23cb43a2bfa696a1">Peer::id_t</a> &gt; const &amp;toSkip)=0</td></tr>
+<tr class="memdesc:a086f3a1c8c9f3cbe335a7ffe1bf7db3f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Relay a transaction.  <a href="classripple_1_1Overlay.html#a086f3a1c8c9f3cbe335a7ffe1bf7db3f">More...</a><br /></td></tr>
+<tr class="separator:a086f3a1c8c9f3cbe335a7ffe1bf7db3f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ace401ddd7d28c698af38c35ef8fc06e3"><td class="memTemplParams" colspan="2">template&lt;class Function &gt; </td></tr>
 <tr class="memitem:ace401ddd7d28c698af38c35ef8fc06e3"><td class="memTemplItemLeft" align="right" valign="top">void&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1Overlay.html#ace401ddd7d28c698af38c35ef8fc06e3">foreach</a> (Function f) const</td></tr>
 <tr class="memdesc:ace401ddd7d28c698af38c35ef8fc06e3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Visit every active peer.  <a href="classripple_1_1Overlay.html#ace401ddd7d28c698af38c35ef8fc06e3">More...</a><br /></td></tr>
@@ -952,8 +952,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a876aee0822b3e6b83e236f5ea531ae50" name="a876aee0822b3e6b83e236f5ea531ae50"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a876aee0822b3e6b83e236f5ea531ae50">&#9670;&#160;</a></span>relay() <span class="overload">[3/3]</span></h2>
+<a id="a086f3a1c8c9f3cbe335a7ffe1bf7db3f" name="a086f3a1c8c9f3cbe335a7ffe1bf7db3f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a086f3a1c8c9f3cbe335a7ffe1bf7db3f">&#9670;&#160;</a></span>relay() <span class="overload">[3/3]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -970,7 +970,7 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">protocol::TMTransaction &amp;&#160;</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/reference_wrapper.html">std::reference_wrapper</a>&lt; protocol::TMTransaction &gt; &gt;&#160;</td>
           <td class="paramname"><em>m</em>, </td>
         </tr>
         <tr>
@@ -1002,7 +1002,7 @@ Private Attributes</h2></td></tr>
   </dd>
 </dl>
 
-<p>Implemented in <a class="el" href="classripple_1_1OverlayImpl.html#a960a7f99133f717f3cd36a1cfd4e48d6">ripple::OverlayImpl</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1OverlayImpl.html#aac479ff52203b9e9928474b21b4c4a22">ripple::OverlayImpl</a>.</p>
 
 </div>
 </div>

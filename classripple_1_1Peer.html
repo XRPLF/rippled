@@ -124,9 +124,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ac4df87634b8bfedbdb69edcd11fee6a1"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Peer.html#ac4df87634b8bfedbdb69edcd11fee6a1">removeTxQueue</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;)=0</td></tr>
 <tr class="memdesc:ac4df87634b8bfedbdb69edcd11fee6a1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove hash from the transactions' hashes queue.  <a href="classripple_1_1Peer.html#ac4df87634b8bfedbdb69edcd11fee6a1">More...</a><br /></td></tr>
 <tr class="separator:ac4df87634b8bfedbdb69edcd11fee6a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6fb081a4c8492b9891bff272041541ab"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Peer.html#a6fb081a4c8492b9891bff272041541ab">charge</a> (<a class="el" href="classripple_1_1Resource_1_1Charge.html">Resource::Charge</a> const &amp;fee)=0</td></tr>
-<tr class="memdesc:a6fb081a4c8492b9891bff272041541ab"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adjust this peer's load balance based on the type of load imposed.  <a href="classripple_1_1Peer.html#a6fb081a4c8492b9891bff272041541ab">More...</a><br /></td></tr>
-<tr class="separator:a6fb081a4c8492b9891bff272041541ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae84b85a8fcbebaa2a7b3a79fbcdddb73"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Peer.html#ae84b85a8fcbebaa2a7b3a79fbcdddb73">charge</a> (<a class="el" href="classripple_1_1Resource_1_1Charge.html">Resource::Charge</a> const &amp;fee, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;context)=0</td></tr>
+<tr class="memdesc:ae84b85a8fcbebaa2a7b3a79fbcdddb73"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adjust this peer's load balance based on the type of load imposed.  <a href="classripple_1_1Peer.html#ae84b85a8fcbebaa2a7b3a79fbcdddb73">More...</a><br /></td></tr>
+<tr class="separator:ae84b85a8fcbebaa2a7b3a79fbcdddb73"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aee121254a095838be2d8040bfdfacc79"><td class="memItemLeft" align="right" valign="top">virtual <a class="el" href="classripple_1_1Peer.html#a56cc3cdd9c73921f23cb43a2bfa696a1">id_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Peer.html#aee121254a095838be2d8040bfdfacc79">id</a> () const =0</td></tr>
 <tr class="separator:aee121254a095838be2d8040bfdfacc79"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8a547a67289ee47e4998117c1ea38fe9"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Peer.html#a8a547a67289ee47e4998117c1ea38fe9">cluster</a> () const =0</td></tr>
@@ -374,8 +374,8 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a6fb081a4c8492b9891bff272041541ab" name="a6fb081a4c8492b9891bff272041541ab"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6fb081a4c8492b9891bff272041541ab">&#9670;&#160;</a></span>charge()</h2>
+<a id="ae84b85a8fcbebaa2a7b3a79fbcdddb73" name="ae84b85a8fcbebaa2a7b3a79fbcdddb73"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae84b85a8fcbebaa2a7b3a79fbcdddb73">&#9670;&#160;</a></span>charge()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -387,8 +387,18 @@ Public Member Functions</h2></td></tr>
           <td class="memname">virtual void ripple::Peer::charge </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classripple_1_1Resource_1_1Charge.html">Resource::Charge</a> const &amp;&#160;</td>
-          <td class="paramname"><em>fee</em></td><td>)</td>
+          <td class="paramname"><em>fee</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;&#160;</td>
+          <td class="paramname"><em>context</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
   </td>
@@ -400,7 +410,7 @@ Public Member Functions</h2></td></tr>
 
 <p>Adjust this peer's load balance based on the type of load imposed. </p>
 
-<p>Implemented in <a class="el" href="classripple_1_1test_1_1TestPeer.html#a8ab88c7aa2fb32a5055e5b827054bda4">ripple::test::TestPeer</a>, <a class="el" href="classripple_1_1test_1_1PeerPartial.html#a624db2b9856ca8b364e063b96f480979">ripple::test::PeerPartial</a>, and <a class="el" href="classripple_1_1PeerImp.html#ae8751c05cccdb39124a0b81bd8efa58e">ripple::PeerImp</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1PeerImp.html#a9a03c68a459193d1269b8afc9f5438f4">ripple::PeerImp</a>, <a class="el" href="classripple_1_1test_1_1TestPeer.html#a479a3a2fe0d73accb0cbeecad0b47f57">ripple::test::TestPeer</a>, and <a class="el" href="classripple_1_1test_1_1PeerPartial.html#a92b0c384344830a256493f361c459b78">ripple::test::PeerPartial</a>.</p>
 
 </div>
 </div>

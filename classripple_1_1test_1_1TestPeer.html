@@ -122,9 +122,9 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a49a0c65115d326e7fbd38be43a800f8d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a31b518b004fd1fa0d597036180f21a5b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbeast_1_1IP_1_1Endpoint.html">beast::IP::Endpoint</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TestPeer.html#a31b518b004fd1fa0d597036180f21a5b">getRemoteAddress</a> () const override</td></tr>
 <tr class="separator:a31b518b004fd1fa0d597036180f21a5b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8ab88c7aa2fb32a5055e5b827054bda4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TestPeer.html#a8ab88c7aa2fb32a5055e5b827054bda4">charge</a> (<a class="el" href="classripple_1_1Resource_1_1Charge.html">Resource::Charge</a> const &amp;<a class="el" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>) override</td></tr>
-<tr class="memdesc:a8ab88c7aa2fb32a5055e5b827054bda4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adjust this peer's load balance based on the type of load imposed.  <a href="classripple_1_1test_1_1TestPeer.html#a8ab88c7aa2fb32a5055e5b827054bda4">More...</a><br /></td></tr>
-<tr class="separator:a8ab88c7aa2fb32a5055e5b827054bda4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a479a3a2fe0d73accb0cbeecad0b47f57"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TestPeer.html#a479a3a2fe0d73accb0cbeecad0b47f57">charge</a> (<a class="el" href="classripple_1_1Resource_1_1Charge.html">Resource::Charge</a> const &amp;<a class="el" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;context={}) override</td></tr>
+<tr class="memdesc:a479a3a2fe0d73accb0cbeecad0b47f57"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adjust this peer's load balance based on the type of load imposed.  <a href="classripple_1_1test_1_1TestPeer.html#a479a3a2fe0d73accb0cbeecad0b47f57">More...</a><br /></td></tr>
+<tr class="separator:a479a3a2fe0d73accb0cbeecad0b47f57"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a71506ecf36760b766e81a453df84e91a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Peer.html#a56cc3cdd9c73921f23cb43a2bfa696a1">id_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TestPeer.html#a71506ecf36760b766e81a453df84e91a">id</a> () const override</td></tr>
 <tr class="separator:a71506ecf36760b766e81a453df84e91a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a088d1200aef40cbe192d1af3521ecbf8"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TestPeer.html#a088d1200aef40cbe192d1af3521ecbf8">cluster</a> () const override</td></tr>
@@ -315,8 +315,8 @@ Public Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a8ab88c7aa2fb32a5055e5b827054bda4" name="a8ab88c7aa2fb32a5055e5b827054bda4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8ab88c7aa2fb32a5055e5b827054bda4">&#9670;&#160;</a></span>charge()</h2>
+<a id="a479a3a2fe0d73accb0cbeecad0b47f57" name="a479a3a2fe0d73accb0cbeecad0b47f57"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a479a3a2fe0d73accb0cbeecad0b47f57">&#9670;&#160;</a></span>charge()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -328,8 +328,18 @@ Public Attributes</h2></td></tr>
           <td class="memname">void ripple::test::TestPeer::charge </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classripple_1_1Resource_1_1Charge.html">Resource::Charge</a> const &amp;&#160;</td>
-          <td class="paramname"><em>fee</em></td><td>)</td>
+          <td class="paramname"><em>fee</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;&#160;</td>
+          <td class="paramname"><em>context</em> = <code>{}</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
   </td>
@@ -341,7 +351,7 @@ Public Attributes</h2></td></tr>
 
 <p>Adjust this peer's load balance based on the type of load imposed. </p>
 
-<p>Implements <a class="el" href="classripple_1_1Peer.html#a6fb081a4c8492b9891bff272041541ab">ripple::Peer</a>.</p>
+<p>Implements <a class="el" href="classripple_1_1Peer.html#ae84b85a8fcbebaa2a7b3a79fbcdddb73">ripple::Peer</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00224">224</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
 
@@ -372,7 +382,7 @@ Public Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Peer.html#aee121254a095838be2d8040bfdfacc79">ripple::Peer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00228">228</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00229">229</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -403,7 +413,7 @@ Public Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Peer.html#a8a547a67289ee47e4998117c1ea38fe9">ripple::Peer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00233">233</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00234">234</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -432,7 +442,7 @@ Public Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Peer.html#a03de12036ac5466b0b01a26e2ef0e729">ripple::Peer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00238">238</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00239">239</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -462,7 +472,7 @@ Public Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Peer.html#a25952c97b91516972a84da5dac619f96">ripple::Peer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00243">243</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00244">244</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -491,7 +501,7 @@ Public Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Peer.html#ab2beac6cc5bcdb1315f492075077b6d1">ripple::Peer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00248">248</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00249">249</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -520,7 +530,7 @@ Public Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Peer.html#a3a7b97f3e4307066f4e0a6abc9f9be35">ripple::Peer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00253">253</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00254">254</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -550,7 +560,7 @@ Public Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Peer.html#a1781d176803366238413407a0815124a">ripple::Peer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00258">258</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00259">259</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -580,7 +590,7 @@ Public Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Peer.html#a5e7c80f282e6d8074865222d31fdbd5a">ripple::Peer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00265">265</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00266">266</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -620,7 +630,7 @@ Public Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Peer.html#adc1069de1a8a5ff1364003caf00bb139">ripple::Peer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00270">270</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00271">271</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -649,7 +659,7 @@ Public Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Peer.html#ad1af0d4715179fb388b2c8eb049b4ffc">ripple::Peer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00274">274</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00275">275</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -689,7 +699,7 @@ Public Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Peer.html#a855aa29a52d98979b211ff765dbc542a">ripple::Peer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00280">280</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00281">281</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -729,7 +739,7 @@ Public Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Peer.html#ac03dabc3ec86db62e3d1ea827ab0d0fa">ripple::Peer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00285">285</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00286">286</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -759,7 +769,7 @@ Public Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Peer.html#adc8cbc6f94f2122808ed21ac217f18fa">ripple::Peer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00289">289</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00290">290</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -788,7 +798,7 @@ Public Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Peer.html#a580e873a73a8000e6bdba97a2a37b9e0">ripple::Peer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00294">294</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00295">295</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -828,7 +838,7 @@ Public Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Peer.html#a95b02bf56c4332da48e7e0bc503a0d43">ripple::Peer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00298">298</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00299">299</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -857,7 +867,7 @@ Public Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Peer.html#a574a942c5ee778c1b795b5ca65292821">ripple::Peer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00303">303</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00304">304</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -888,7 +898,7 @@ Public Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Peer.html#a9cec6a68be4e99382787eec3571a36b4">ripple::Peer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00308">308</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00309">309</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -920,7 +930,7 @@ Public Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Peer.html#a910dd384abd01647432192b7e05b3748">ripple::Peer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00312">312</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00313">313</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -952,7 +962,7 @@ Public Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Peer.html#ac4df87634b8bfedbdb69edcd11fee6a1">ripple::Peer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00316">316</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00317">317</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -981,7 +991,7 @@ Public Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Peer.html#a0cb56d7585b19a684f6476830125b835">ripple::Peer</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00320">320</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00321">321</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -998,7 +1008,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00325">325</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00326">326</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -1014,7 +1024,7 @@ Public Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00326">326</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerReplay__test_8cpp_source.html#l00327">327</a> of file <a class="el" href="LedgerReplay__test_8cpp_source.html">LedgerReplay_test.cpp</a>.</p>
 
 </div>
 </div>

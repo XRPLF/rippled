@@ -222,7 +222,7 @@ $(function() {
 <div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span> </div>
 <div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span>        <span class="keywordflow">if</span> (ta == <span class="keyword">nullptr</span>)</div>
 <div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span>        {</div>
-<div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span>            peer-&gt;charge(<a class="code hl_variable" href="namespaceripple_1_1Resource.html#a2fea8fe51d3db71dc22f97c5f88154ac">Resource::feeUnwantedData</a>);</div>
+<div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span>            peer-&gt;charge(<a class="code hl_variable" href="namespaceripple_1_1Resource.html#a41d3c2c4f11f98da55fa0ef10ffcd4e8">Resource::feeUselessData</a>, <span class="stringliteral">&quot;ledger_data&quot;</span>);</div>
 <div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span>            <span class="keywordflow">return</span>;</div>
 <div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span>        }</div>
 <div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span> </div>
@@ -233,7 +233,7 @@ $(function() {
 <div class="line"><a id="l00157" name="l00157"></a><span class="lineno">  157</span>        {</div>
 <div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span>            <span class="keywordflow">if</span> (!node.has_nodeid() || !node.has_nodedata())</div>
 <div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span>            {</div>
-<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span>                peer-&gt;charge(<a class="code hl_variable" href="namespaceripple_1_1Resource.html#a261bec897e7b0c7c198bad1e37d87458">Resource::feeInvalidRequest</a>);</div>
+<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span>                peer-&gt;charge(<a class="code hl_variable" href="namespaceripple_1_1Resource.html#a0b2a0218d1e64ae67ac02712b613a936">Resource::feeMalformedRequest</a>, <span class="stringliteral">&quot;ledger_data&quot;</span>);</div>
 <div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span>                <span class="keywordflow">return</span>;</div>
 <div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span>            }</div>
 <div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span> </div>
@@ -241,7 +241,7 @@ $(function() {
 <div class="line"><a id="l00165" name="l00165"></a><span class="lineno">  165</span> </div>
 <div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span>            <span class="keywordflow">if</span> (!<span class="keywordtype">id</span>)</div>
 <div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span>            {</div>
-<div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span>                peer-&gt;charge(<a class="code hl_variable" href="namespaceripple_1_1Resource.html#abc6c0ef712d658627689ff62dd74207a">Resource::feeBadData</a>);</div>
+<div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span>                peer-&gt;charge(<a class="code hl_variable" href="namespaceripple_1_1Resource.html#a0de6de4b6471f86389f36c06a97c204c">Resource::feeInvalidData</a>, <span class="stringliteral">&quot;ledger_data&quot;</span>);</div>
 <div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span>                <span class="keywordflow">return</span>;</div>
 <div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span>            }</div>
 <div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span> </div>
@@ -249,7 +249,7 @@ $(function() {
 <div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span>        }</div>
 <div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span> </div>
 <div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span>        <span class="keywordflow">if</span> (!ta-&gt;takeNodes(data, peer).isUseful())</div>
-<div class="line"><a id="l00176" name="l00176"></a><span class="lineno">  176</span>            peer-&gt;charge(<a class="code hl_variable" href="namespaceripple_1_1Resource.html#a2fea8fe51d3db71dc22f97c5f88154ac">Resource::feeUnwantedData</a>);</div>
+<div class="line"><a id="l00176" name="l00176"></a><span class="lineno">  176</span>            peer-&gt;charge(<a class="code hl_variable" href="namespaceripple_1_1Resource.html#a41d3c2c4f11f98da55fa0ef10ffcd4e8">Resource::feeUselessData</a>, <span class="stringliteral">&quot;ledger_data not useful&quot;</span>);</div>
 <div class="line"><a id="l00177" name="l00177"></a><span class="lineno">  177</span>    }</div>
 <div class="line"><a id="l00178" name="l00178"></a><span class="lineno">  178</span> </div>
 <div class="line"><a id="l00179" name="l00179"></a><span class="lineno">  179</span>    <span class="keywordtype">void</span></div>
@@ -393,9 +393,9 @@ $(function() {
 <div class="ttc" id="amake_pair_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/pair/make_pair.html">std::make_pair</a></div><div class="ttdeci">T make_pair(T... args)</div></div>
 <div class="ttc" id="amemory_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/memory.html">memory</a></div></div>
 <div class="ttc" id="amutex_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/mutex.html">mutex</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1Resource_html_a261bec897e7b0c7c198bad1e37d87458"><div class="ttname"><a href="namespaceripple_1_1Resource.html#a261bec897e7b0c7c198bad1e37d87458">ripple::Resource::feeInvalidRequest</a></div><div class="ttdeci">Charge const feeInvalidRequest</div><div class="ttdoc">Schedule of fees charged for imposing load on the server.</div></div>
-<div class="ttc" id="anamespaceripple_1_1Resource_html_a2fea8fe51d3db71dc22f97c5f88154ac"><div class="ttname"><a href="namespaceripple_1_1Resource.html#a2fea8fe51d3db71dc22f97c5f88154ac">ripple::Resource::feeUnwantedData</a></div><div class="ttdeci">Charge const feeUnwantedData</div></div>
-<div class="ttc" id="anamespaceripple_1_1Resource_html_abc6c0ef712d658627689ff62dd74207a"><div class="ttname"><a href="namespaceripple_1_1Resource.html#abc6c0ef712d658627689ff62dd74207a">ripple::Resource::feeBadData</a></div><div class="ttdeci">Charge const feeBadData</div></div>
+<div class="ttc" id="anamespaceripple_1_1Resource_html_a0b2a0218d1e64ae67ac02712b613a936"><div class="ttname"><a href="namespaceripple_1_1Resource.html#a0b2a0218d1e64ae67ac02712b613a936">ripple::Resource::feeMalformedRequest</a></div><div class="ttdeci">Charge const feeMalformedRequest</div><div class="ttdoc">Schedule of fees charged for imposing load on the server.</div></div>
+<div class="ttc" id="anamespaceripple_1_1Resource_html_a0de6de4b6471f86389f36c06a97c204c"><div class="ttname"><a href="namespaceripple_1_1Resource.html#a0de6de4b6471f86389f36c06a97c204c">ripple::Resource::feeInvalidData</a></div><div class="ttdeci">Charge const feeInvalidData</div></div>
+<div class="ttc" id="anamespaceripple_1_1Resource_html_a41d3c2c4f11f98da55fa0ef10ffcd4e8"><div class="ttname"><a href="namespaceripple_1_1Resource.html#a41d3c2c4f11f98da55fa0ef10ffcd4e8">ripple::Resource::feeUselessData</a></div><div class="ttdeci">Charge const feeUselessData</div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="algorithm_8h_source.html#l00026">algorithm.h:26</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a2f08d50eaefe0b52afe21deac6048746"><div class="ttname"><a href="namespaceripple.html#a2f08d50eaefe0b52afe21deac6048746">ripple::deserializeSHAMapNodeID</a></div><div class="ttdeci">std::optional&lt; SHAMapNodeID &gt; deserializeSHAMapNodeID(void const *data, std::size_t size)</div><div class="ttdoc">Return an object representing a serialized SHAMap Node ID.</div><div class="ttdef"><b>Definition:</b> <a href="SHAMapNodeID_8cpp_source.html#l00109">SHAMapNodeID.cpp:109</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a356c68147333a9a48a344718038576d9"><div class="ttname"><a href="namespaceripple.html#a356c68147333a9a48a344718038576d9">ripple::uint256</a></div><div class="ttdeci">base_uint&lt; 256 &gt; uint256</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00557">base_uint.h:557</a></div></div>
