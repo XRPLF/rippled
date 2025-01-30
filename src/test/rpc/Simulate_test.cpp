@@ -407,6 +407,37 @@ class Simulate_test : public beast::unit_test::suite
     }
 
     void
+    testInvalidTransactionType()
+    {
+        testcase("Invalid transaction type");
+
+        using namespace jtx;
+
+        Env env(*this);
+
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        env.fund(XRP(1000000), alice, bob);
+        env.close();
+
+        auto const batchFee = batch::calcBatchFee(env, 0, 2);
+        auto const seq = env.seq(alice);
+        auto jt = env.jtnofill(
+            batch::outer(alice, env.seq(alice), batchFee, tfAllOrNothing),
+            batch::inner(pay(alice, bob, XRP(10)), seq + 1),
+            batch::inner(pay(alice, bob, XRP(10)), seq + 1));
+
+        jt.jv.removeMember(jss::TxnSignature);
+        Json::Value params;
+        params[jss::tx_json] = jt.jv;
+        auto const resp = env.rpc("json", "simulate", to_string(params));
+        BEAST_EXPECT(resp[jss::result][jss::error] == "invalidTransaction");
+        BEAST_EXPECT(
+            resp[jss::result][jss::error_exception] ==
+            "Batch transactions are not supported.");
+    }
+
+    void
     testSuccessfulTransaction()
     {
         testcase("Successful transaction");
@@ -954,6 +985,7 @@ public:
     {
         testParamErrors();
         testFeeError();
+        testInvalidTransactionType();
         testSuccessfulTransaction();
         testTransactionNonTecFailure();
         testTransactionTecFailure();

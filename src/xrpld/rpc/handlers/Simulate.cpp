@@ -325,6 +325,15 @@ doSimulate(RPC::JsonContext& context)
         return jvResult;
     }
 
+    if (stTx->getTxnType() == ttBATCH)
+    {
+        Json::Value jvResult = Json::objectValue;
+        jvResult[jss::error] = "invalidTransaction";
+        jvResult[jss::error_exception] =
+            "Batch transactions are not supported.";
+        return jvResult;
+    }
+
     std::string reason;
     auto transaction = std::make_shared<Transaction>(stTx, reason, context.app);
     // Actually run the transaction through the transaction processor
