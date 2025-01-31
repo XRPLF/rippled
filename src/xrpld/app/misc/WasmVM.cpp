@@ -332,55 +332,61 @@ runEscrowWasmP4(
     {
         auto pointer = WasmEdge_ValueGetI32(returns[0]);
         const WasmEdge_ModuleInstanceContext* m =
-                WasmEdge_VMGetActiveModule(VMCxt);
+            WasmEdge_VMGetActiveModule(VMCxt);
         WasmEdge_String mName = WasmEdge_StringCreateByCString("memory");
         WasmEdge_MemoryInstanceContext* mi =
             WasmEdge_ModuleInstanceFindMemory(m, mName);
         uint8_t buff[9];
-        WasmEdge_Result getRes = WasmEdge_MemoryInstanceGetData(
-            mi, buff, pointer, 9);
-        if (!WasmEdge_ResultOK(getRes)){
-            printf("re mem get message: %s\n", WasmEdge_ResultGetMessage(getRes));
+        WasmEdge_Result getRes =
+            WasmEdge_MemoryInstanceGetData(mi, buff, pointer, 9);
+        if (!WasmEdge_ResultOK(getRes))
+        {
+            printf(
+                "re mem get message: %s\n", WasmEdge_ResultGetMessage(getRes));
             return Unexpected<TER>(tecFAILED_PROCESSING);
         }
         auto flag = buff[0];
 
-        auto leToInt32 = [](const uint8_t * d) -> uint32_t {
+        auto leToInt32 = [](const uint8_t* d) -> uint32_t {
             uint32_t r = 0;
             for (int i = 0; i < 4; ++i)
             {
                 r |= static_cast<uint32_t>(d[i]) << (i * 8);
-//                printf("leToInt32 %d\n", r);
+                //                printf("leToInt32 %d\n", r);
             }
             return r;
         };
-        auto ret_pointer = leToInt32(reinterpret_cast<const uint8_t*>(&buff[1]));
+        auto ret_pointer =
+            leToInt32(reinterpret_cast<const uint8_t*>(&buff[1]));
         auto ret_len = leToInt32(reinterpret_cast<const uint8_t*>(&buff[5]));
-//        printf("re flag %d, ptr %d, len %d\n", flag, ret_pointer, ret_len);
+        //        printf("re flag %d, ptr %d, len %d\n", flag, ret_pointer,
+        //        ret_len);
 
         std::vector<uint8_t> buff2(ret_len);
         getRes = WasmEdge_MemoryInstanceGetData(
             mi, buff2.data(), ret_pointer, ret_len);
-        if (!WasmEdge_ResultOK(getRes)){
-            printf("re 2 mem get message: %s\n", WasmEdge_ResultGetMessage(getRes));
+        if (!WasmEdge_ResultOK(getRes))
+        {
+            printf(
+                "re 2 mem get message: %s\n",
+                WasmEdge_ResultGetMessage(getRes));
             return Unexpected<TER>(tecFAILED_PROCESSING);
         }
 
         std::string newData(buff2.begin(), buff2.end());
 
-        //free
+        // free
         WasmEdge_String freeFunc = WasmEdge_StringCreateByCString("deallocate");
         WasmEdge_Value freeParams[2] = {
-            WasmEdge_ValueGenI32(ret_pointer),
-            WasmEdge_ValueGenI32(ret_len)};
+            WasmEdge_ValueGenI32(ret_pointer), WasmEdge_ValueGenI32(ret_len)};
         WasmEdge_Value freeReturns[0];
         WasmEdge_VMExecute(VMCxt, freeFunc, freeParams, 2, freeReturns, 0);
-        //free pointer too, with len = 9 too
+        // free pointer too, with len = 9 too
         freeParams[0] = WasmEdge_ValueGenI32(pointer);
         freeParams[1] = WasmEdge_ValueGenI32(9);
         WasmEdge_VMExecute(VMCxt, freeFunc, freeParams, 2, freeReturns, 0);
 
-        return std::pair<bool, std::string>(flag==1, newData);
+        return std::pair<bool, std::string>(flag == 1, newData);
     }
     else
     {

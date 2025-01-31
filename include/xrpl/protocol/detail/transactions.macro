@@ -49,6 +49,7 @@ TRANSACTION(ttESCROW_CREATE, 1, EscrowCreate, ({
     {sfFinishAfter, soeOPTIONAL},
     {sfFinishFunction, soeOPTIONAL},
     {sfDestinationTag, soeOPTIONAL},
+    {sfData,           soeOPTIONAL},
 }))
 
 /** This transaction type completes an existing escrow. */
