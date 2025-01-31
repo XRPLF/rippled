@@ -1,12 +1,6 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,5,183,45"/>
-<area shape="rect" id="node2" href="$classripple_1_1detail_1_1WorkFile.html" title=" " alt="" coords="240,13,408,38"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="231,127,417,167"/>
-<area shape="rect" id="node4" href="$classripple_1_1detail_1_1WorkPlain.html" title=" " alt="" coords="465,102,643,127"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="235,255,413,295"/>
-<area shape="rect" id="node6" href="$classripple_1_1detail_1_1WorkSSL.html" title=" " alt="" coords="470,294,638,319"/>
-<area shape="rect" id="node7" href="$classripple_1_1detail_1_1Work.html" title=" " alt="" coords="21,134,167,159"/>
-<area shape="rect" id="node8" href="$classripple_1_1detail_1_1WorkBase.html" title=" " alt="" coords="235,63,413,103"/>
-<area shape="rect" id="node9" href="$classripple_1_1detail_1_1WorkBase.html" title=" " alt="" coords="235,319,413,359"/>
-<area shape="rect" id="node10" href="$classripple_1_1detail_1_1WorkBase.html" title=" " alt="" coords="235,191,413,231"/>
+<area shape="rect" id="node1" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,37,192,77"/>
+<area shape="rect" id="node2" href="$classbeast_1_1insight_1_1EventImpl.html" title=" " alt="" coords="240,45,424,70"/>
+<area shape="rect" id="node3" href="$classbeast_1_1insight_1_1detail_1_1NullEventImpl.html" title=" " alt="" coords="472,5,627,45"/>
+<area shape="rect" id="node4" href="$classbeast_1_1insight_1_1detail_1_1StatsDEventImpl.html" title=" " alt="" coords="472,69,627,109"/>
 </map>

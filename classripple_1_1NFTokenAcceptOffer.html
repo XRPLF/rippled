@@ -250,6 +250,8 @@ Private Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-static-methods" name="pri-static-methods"></a>
 Static Private Member Functions</h2></td></tr>
+<tr class="memitem:a8f8779ad815a28e7590bcfe97b0b8910"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NFTokenAcceptOffer.html#a8f8779ad815a28e7590bcfe97b0b8910">checkAcceptAsset</a> (<a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &amp;<a class="el" href="classripple_1_1Transactor.html#a9acc4edc9b8f2a11a27fbcf5e93e2fe2">view</a>, <a class="el" href="namespaceripple.html#ad2487abbcc1a5d6064b72144b461df6e">ApplyFlags</a> const flags, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const id, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> const j, <a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;issue)</td></tr>
+<tr class="separator:a8f8779ad815a28e7590bcfe97b0b8910"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a68776b873595ab6d7ed33ddd0353c01b"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="namespaceripple.html#af99ba2263d2a1e29207c40a35fc9f6b3">NotTEC</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transactor.html#a68776b873595ab6d7ed33ddd0353c01b">checkSingleSign</a> (<a class="el" href="structripple_1_1PreclaimContext.html">PreclaimContext</a> const &amp;ctx)</td></tr>
 <tr class="separator:a68776b873595ab6d7ed33ddd0353c01b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afcb347c674044ec5c9e9ac751b54c3ac"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="namespaceripple.html#af99ba2263d2a1e29207c40a35fc9f6b3">NotTEC</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Transactor.html#afcb347c674044ec5c9e9ac751b54c3ac">checkMultiSign</a> (<a class="el" href="structripple_1_1PreclaimContext.html">PreclaimContext</a> const &amp;ctx)</td></tr>
@@ -313,7 +315,7 @@ Static Private Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NFTokenAcceptOffer_8h_source.html#l00050">50</a> of file <a class="el" href="NFTokenAcceptOffer_8h_source.html">NFTokenAcceptOffer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NFTokenAcceptOffer_8h_source.html#l00058">58</a> of file <a class="el" href="NFTokenAcceptOffer_8h_source.html">NFTokenAcceptOffer.h</a>.</p>
 
 </div>
 </div>
@@ -358,7 +360,7 @@ Static Private Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NFTokenAcceptOffer_8cpp_source.html#l00299">299</a> of file <a class="el" href="NFTokenAcceptOffer_8cpp_source.html">NFTokenAcceptOffer.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NFTokenAcceptOffer_8cpp_source.html#l00313">313</a> of file <a class="el" href="NFTokenAcceptOffer_8cpp_source.html">NFTokenAcceptOffer.cpp</a>.</p>
 
 </div>
 </div>
@@ -386,7 +388,7 @@ Static Private Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NFTokenAcceptOffer_8cpp_source.html#l00381">381</a> of file <a class="el" href="NFTokenAcceptOffer_8cpp_source.html">NFTokenAcceptOffer.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NFTokenAcceptOffer_8cpp_source.html#l00395">395</a> of file <a class="el" href="NFTokenAcceptOffer_8cpp_source.html">NFTokenAcceptOffer.cpp</a>.</p>
 
 </div>
 </div>
@@ -466,7 +468,63 @@ Static Private Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NFTokenAcceptOffer_8cpp_source.html#l00327">327</a> of file <a class="el" href="NFTokenAcceptOffer_8cpp_source.html">NFTokenAcceptOffer.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NFTokenAcceptOffer_8cpp_source.html#l00341">341</a> of file <a class="el" href="NFTokenAcceptOffer_8cpp_source.html">NFTokenAcceptOffer.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a8f8779ad815a28e7590bcfe97b0b8910" name="a8f8779ad815a28e7590bcfe97b0b8910"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8f8779ad815a28e7590bcfe97b0b8910">&#9670;&#160;</a></span>checkAcceptAsset()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a> ripple::NFTokenAcceptOffer::checkAcceptAsset </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &amp;&#160;</td>
+          <td class="paramname"><em>view</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#ad2487abbcc1a5d6064b72144b461df6e">ApplyFlags</a> const&#160;</td>
+          <td class="paramname"><em>flags</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const&#160;</td>
+          <td class="paramname"><em>id</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> const&#160;</td>
+          <td class="paramname"><em>j</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;&#160;</td>
+          <td class="paramname"><em>issue</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="NFTokenAcceptOffer_8cpp_source.html#l00528">528</a> of file <a class="el" href="NFTokenAcceptOffer_8cpp_source.html">NFTokenAcceptOffer.cpp</a>.</p>
 
 </div>
 </div>
@@ -551,7 +609,7 @@ Static Private Member Functions</h2></td></tr>
 
 <p>Implements <a class="el" href="classripple_1_1Transactor.html#af0192505cdcebc1bb31be32dfb62aa72">ripple::Transactor</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="NFTokenAcceptOffer_8cpp_source.html#l00416">416</a> of file <a class="el" href="NFTokenAcceptOffer_8cpp_source.html">NFTokenAcceptOffer.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NFTokenAcceptOffer_8cpp_source.html#l00430">430</a> of file <a class="el" href="NFTokenAcceptOffer_8cpp_source.html">NFTokenAcceptOffer.cpp</a>.</p>
 
 </div>
 </div>
@@ -1177,7 +1235,7 @@ Static Private Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NFTokenAcceptOffer_8h_source.html#l00048">48</a> of file <a class="el" href="NFTokenAcceptOffer_8h_source.html">NFTokenAcceptOffer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NFTokenAcceptOffer_8h_source.html#l00056">56</a> of file <a class="el" href="NFTokenAcceptOffer_8h_source.html">NFTokenAcceptOffer.h</a>.</p>
 
 </div>
 </div>

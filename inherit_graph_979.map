@@ -1,5 +1,16 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integral_constant.html" title=" " alt="" coords="5,20,168,45"/>
-<area shape="rect" id="node2" href="$structbeast_1_1is__contiguously__hashable.html" title=" " alt="" coords="216,13,456,53"/>
-<area shape="rect" id="node3" href="$structbeast_1_1is__contiguously__hashable_3_01ripple_1_1tagged__integer_3_01Int_00_01Tag_01_4_00_01HashAlgorithm_01_4.html" title=" " alt="" coords="504,5,776,60"/>
+<area shape="rect" id="node1" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/error/exception.html" title=" " alt="" coords="5,169,120,195"/>
+<area shape="rect" id="node2" href="$structJson_1_1JsonMissingKeyError.html" title=" " alt="" coords="178,5,367,31"/>
+<area shape="rect" id="node3" href="$structJson_1_1JsonTypeMismatchError.html" title=" " alt="" coords="168,55,377,80"/>
+<area shape="rect" id="node4" href="$structbeast_1_1unit__test_1_1suite_1_1abort__exception.html" title=" " alt="" coords="191,105,354,145"/>
+<area shape="rect" id="node5" href="$structripple_1_1RPC_1_1Status.html" title="Status represents the results of an operation that might fail." alt="" coords="201,169,344,195"/>
+<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/bad_cast.html" title=" " alt="" coords="219,219,327,244"/>
+<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/error/logic_error.html" title=" " alt="" coords="213,268,332,293"/>
+<area shape="rect" id="node10" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/error/runtime_error.html" title=" " alt="" coords="203,375,342,400"/>
+<area shape="rect" id="node7" href="$structbeast_1_1BadLexicalCast.html" title="Thrown when a conversion is not possible with LexicalCast." alt="" coords="445,211,612,236"/>
+<area shape="rect" id="node9" href="$structripple_1_1test_1_1jtx_1_1parse__error.html" title="Thrown when parse fails." alt="" coords="466,261,591,301"/>
+<area shape="rect" id="node11" href="$structJson_1_1error.html" title=" " alt="" coords="485,325,573,351"/>
+<area shape="rect" id="node12" href="$classripple_1_1SHAMapMissingNode.html" title=" " alt="" coords="425,375,632,400"/>
+<area shape="rect" id="node13" href="$classripple_1_1STObject_1_1FieldErr.html" title=" " alt="" coords="437,424,620,449"/>
+<area shape="rect" id="node14" href="$structripple_1_1bad__expected__access.html" title="Expected is an approximation of std::expected (hoped for in C++23)" alt="" coords="449,474,608,514"/>
 </map>

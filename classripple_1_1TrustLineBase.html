@@ -146,9 +146,15 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ade260e280520be6badb0e90e8b284df1"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TrustLineBase.html#ade260e280520be6badb0e90e8b284df1">getFreeze</a> () const</td></tr>
 <tr class="memdesc:ade260e280520be6badb0e90e8b284df1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Have we set the freeze flag on our peer.  <a href="classripple_1_1TrustLineBase.html#ade260e280520be6badb0e90e8b284df1">More...</a><br /></td></tr>
 <tr class="separator:ade260e280520be6badb0e90e8b284df1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2d2d8f0a1ec86819fb0af3207fb57624"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TrustLineBase.html#a2d2d8f0a1ec86819fb0af3207fb57624">getDeepFreeze</a> () const</td></tr>
+<tr class="memdesc:a2d2d8f0a1ec86819fb0af3207fb57624"><td class="mdescLeft">&#160;</td><td class="mdescRight">Have we set the deep freeze flag on our peer.  <a href="classripple_1_1TrustLineBase.html#a2d2d8f0a1ec86819fb0af3207fb57624">More...</a><br /></td></tr>
+<tr class="separator:a2d2d8f0a1ec86819fb0af3207fb57624"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:acab300b0074630684f7e86c745507d48"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TrustLineBase.html#acab300b0074630684f7e86c745507d48">getFreezePeer</a> () const</td></tr>
 <tr class="memdesc:acab300b0074630684f7e86c745507d48"><td class="mdescLeft">&#160;</td><td class="mdescRight">Has the peer set the freeze flag on us.  <a href="classripple_1_1TrustLineBase.html#acab300b0074630684f7e86c745507d48">More...</a><br /></td></tr>
 <tr class="separator:acab300b0074630684f7e86c745507d48"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afb6d4bcf51855363439d35d39f0d28d1"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TrustLineBase.html#afb6d4bcf51855363439d35d39f0d28d1">getDeepFreezePeer</a> () const</td></tr>
+<tr class="memdesc:afb6d4bcf51855363439d35d39f0d28d1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Has the peer set the deep freeze flag on us.  <a href="classripple_1_1TrustLineBase.html#afb6d4bcf51855363439d35d39f0d28d1">More...</a><br /></td></tr>
+<tr class="separator:afb6d4bcf51855363439d35d39f0d28d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a619f613255c66a4af5284b7fffea8d6a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TrustLineBase.html#a619f613255c66a4af5284b7fffea8d6a">getBalance</a> () const</td></tr>
 <tr class="separator:a619f613255c66a4af5284b7fffea8d6a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a35950f0a341ea04071e1b9f13d619f31"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1STAmount.html">STAmount</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TrustLineBase.html#a35950f0a341ea04071e1b9f13d619f31">getLimit</a> () const</td></tr>
@@ -548,6 +554,27 @@ Protected Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="a2d2d8f0a1ec86819fb0af3207fb57624" name="a2d2d8f0a1ec86819fb0af3207fb57624"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2d2d8f0a1ec86819fb0af3207fb57624">&#9670;&#160;</a></span>getDeepFreeze()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ripple::TrustLineBase::getDeepFreeze </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Have we set the deep freeze flag on our peer. </p>
+
+<p class="definition">Definition at line <a class="el" href="TrustLine_8h_source.html#l00144">144</a> of file <a class="el" href="TrustLine_8h_source.html">TrustLine.h</a>.</p>
+
+</div>
+</div>
 <a id="acab300b0074630684f7e86c745507d48" name="acab300b0074630684f7e86c745507d48"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#acab300b0074630684f7e86c745507d48">&#9670;&#160;</a></span>getFreezePeer()</h2>
 
@@ -565,7 +592,28 @@ Protected Attributes</h2></td></tr>
 
 <p>Has the peer set the freeze flag on us. </p>
 
-<p class="definition">Definition at line <a class="el" href="TrustLine_8h_source.html#l00144">144</a> of file <a class="el" href="TrustLine_8h_source.html">TrustLine.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TrustLine_8h_source.html#l00151">151</a> of file <a class="el" href="TrustLine_8h_source.html">TrustLine.h</a>.</p>
+
+</div>
+</div>
+<a id="afb6d4bcf51855363439d35d39f0d28d1" name="afb6d4bcf51855363439d35d39f0d28d1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afb6d4bcf51855363439d35d39f0d28d1">&#9670;&#160;</a></span>getDeepFreezePeer()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ripple::TrustLineBase::getDeepFreezePeer </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Has the peer set the deep freeze flag on us. </p>
+
+<p class="definition">Definition at line <a class="el" href="TrustLine_8h_source.html#l00158">158</a> of file <a class="el" href="TrustLine_8h_source.html">TrustLine.h</a>.</p>
 
 </div>
 </div>
@@ -584,7 +632,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TrustLine_8h_source.html#l00150">150</a> of file <a class="el" href="TrustLine_8h_source.html">TrustLine.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TrustLine_8h_source.html#l00164">164</a> of file <a class="el" href="TrustLine_8h_source.html">TrustLine.h</a>.</p>
 
 </div>
 </div>
@@ -603,7 +651,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TrustLine_8h_source.html#l00156">156</a> of file <a class="el" href="TrustLine_8h_source.html">TrustLine.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TrustLine_8h_source.html#l00170">170</a> of file <a class="el" href="TrustLine_8h_source.html">TrustLine.h</a>.</p>
 
 </div>
 </div>
@@ -622,7 +670,7 @@ Protected Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TrustLine_8h_source.html#l00162">162</a> of file <a class="el" href="TrustLine_8h_source.html">TrustLine.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TrustLine_8h_source.html#l00176">176</a> of file <a class="el" href="TrustLine_8h_source.html">TrustLine.h</a>.</p>
 
 </div>
 </div>
@@ -667,7 +715,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TrustLine_8h_source.html#l00171">171</a> of file <a class="el" href="TrustLine_8h_source.html">TrustLine.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TrustLine_8h_source.html#l00185">185</a> of file <a class="el" href="TrustLine_8h_source.html">TrustLine.h</a>.</p>
 
 </div>
 </div>
@@ -691,7 +739,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TrustLine_8h_source.html#l00173">173</a> of file <a class="el" href="TrustLine_8h_source.html">TrustLine.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TrustLine_8h_source.html#l00187">187</a> of file <a class="el" href="TrustLine_8h_source.html">TrustLine.h</a>.</p>
 
 </div>
 </div>
@@ -715,7 +763,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TrustLine_8h_source.html#l00174">174</a> of file <a class="el" href="TrustLine_8h_source.html">TrustLine.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TrustLine_8h_source.html#l00188">188</a> of file <a class="el" href="TrustLine_8h_source.html">TrustLine.h</a>.</p>
 
 </div>
 </div>
@@ -739,7 +787,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TrustLine_8h_source.html#l00176">176</a> of file <a class="el" href="TrustLine_8h_source.html">TrustLine.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TrustLine_8h_source.html#l00190">190</a> of file <a class="el" href="TrustLine_8h_source.html">TrustLine.h</a>.</p>
 
 </div>
 </div>
@@ -763,7 +811,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TrustLine_8h_source.html#l00178">178</a> of file <a class="el" href="TrustLine_8h_source.html">TrustLine.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TrustLine_8h_source.html#l00192">192</a> of file <a class="el" href="TrustLine_8h_source.html">TrustLine.h</a>.</p>
 
 </div>
 </div>
@@ -787,7 +835,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TrustLine_8h_source.html#l00180">180</a> of file <a class="el" href="TrustLine_8h_source.html">TrustLine.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TrustLine_8h_source.html#l00194">194</a> of file <a class="el" href="TrustLine_8h_source.html">TrustLine.h</a>.</p>
 
 </div>
 </div>
