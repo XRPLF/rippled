@@ -93,6 +93,7 @@ struct MPTInit
     bool fund = true;
     bool close = true;
 };
+static MPTInit const mptInitNoFund{.fund = false};
 
 struct MPTCreate
 {

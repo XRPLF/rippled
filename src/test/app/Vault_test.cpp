@@ -228,7 +228,7 @@ class Vault_test : public beast::unit_test::suite
             [](Env& env,
                Account const& issuer,
                Account const& depositor) -> Asset {
-                MPTTester mptt{env, issuer, {.fund = false}};
+                MPTTester mptt{env, issuer, mptInitNoFund};
                 mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
                 PrettyAsset asset = mptt.issuanceID();
                 mptt.authorize({.account = depositor});
@@ -405,7 +405,7 @@ class Vault_test : public beast::unit_test::suite
         env.close();
         auto vault = env.vault();
 
-        MPTTester mptt{env, issuer, {.fund = false}};
+        MPTTester mptt{env, issuer, mptInitNoFund};
 
         // Locked because that is the default flag.
         mptt.create();
@@ -435,7 +435,7 @@ class Vault_test : public beast::unit_test::suite
             env.close();
             auto vault = env.vault();
 
-            MPTTester mptt{env, issuer, {.fund = false}};
+            MPTTester mptt{env, issuer, mptInitNoFund};
             mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
             PrettyAsset asset = mptt.issuanceID();
             mptt.authorize({.account = depositor});
