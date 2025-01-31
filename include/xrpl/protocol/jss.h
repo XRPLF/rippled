@@ -284,6 +284,8 @@ JSS(flags);                   // out: AccountOffers,
 JSS(forward);                 // in: AccountTx
 JSS(freeze);                  // out: AccountLines
 JSS(freeze_peer);             // out: AccountLines
+JSS(deep_freeze);                  // out: AccountLines
+JSS(deep_freeze_peer);             // out: AccountLines
 JSS(frozen_balances);         // out: GatewayBalances
 JSS(full);                    // in: LedgerClearer, handlers/Ledger
 JSS(full_reply);              // out: PathFind

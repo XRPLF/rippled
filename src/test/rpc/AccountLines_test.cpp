@@ -167,7 +167,11 @@ public:
             env.close();
 
             // Set flags on gw2 trust lines so we can look for them.
-            env(trust(alice, gw2Currency(0), gw2, tfSetNoRipple | tfSetFreeze));
+            env(trust(
+                alice,
+                gw2Currency(0),
+                gw2,
+                tfSetNoRipple | tfSetFreeze | tfSetDeepFreeze));
         }
         env.close();
         LedgerInfo const ledger58Info = env.closed()->info();
@@ -344,6 +348,7 @@ public:
                     gw2.human() + R"("})");
             auto const& line = lines[jss::result][jss::lines][0u];
             BEAST_EXPECT(line[jss::freeze].asBool() == true);
+            BEAST_EXPECT(line[jss::deep_freeze].asBool() == true);
             BEAST_EXPECT(line[jss::no_ripple].asBool() == true);
             BEAST_EXPECT(line[jss::peer_authorized].asBool() == true);
         }
@@ -359,6 +364,7 @@ public:
                     alice.human() + R"("})");
             auto const& lineA = linesA[jss::result][jss::lines][0u];
             BEAST_EXPECT(lineA[jss::freeze_peer].asBool() == true);
+            BEAST_EXPECT(lineA[jss::deep_freeze_peer].asBool() == true);
             BEAST_EXPECT(lineA[jss::no_ripple_peer].asBool() == true);
             BEAST_EXPECT(lineA[jss::authorized].asBool() == true);
 
@@ -981,7 +987,11 @@ public:
             env.close();
 
             // Set flags on gw2 trust lines so we can look for them.
-            env(trust(alice, gw2Currency(0), gw2, tfSetNoRipple | tfSetFreeze));
+            env(trust(
+                alice,
+                gw2Currency(0),
+                gw2,
+                tfSetNoRipple | tfSetFreeze | tfSetDeepFreeze));
         }
         env.close();
         LedgerInfo const ledger58Info = env.closed()->info();
@@ -1311,6 +1321,7 @@ public:
                     gw2.human() + R"("}})");
             auto const& line = lines[jss::result][jss::lines][0u];
             BEAST_EXPECT(line[jss::freeze].asBool() == true);
+            BEAST_EXPECT(line[jss::deep_freeze].asBool() == true);
             BEAST_EXPECT(line[jss::no_ripple].asBool() == true);
             BEAST_EXPECT(line[jss::peer_authorized].asBool() == true);
             BEAST_EXPECT(
@@ -1338,6 +1349,7 @@ public:
                     alice.human() + R"("}})");
             auto const& lineA = linesA[jss::result][jss::lines][0u];
             BEAST_EXPECT(lineA[jss::freeze_peer].asBool() == true);
+            BEAST_EXPECT(lineA[jss::deep_freeze_peer].asBool() == true);
             BEAST_EXPECT(lineA[jss::no_ripple_peer].asBool() == true);
             BEAST_EXPECT(lineA[jss::authorized].asBool() == true);
             BEAST_EXPECT(
