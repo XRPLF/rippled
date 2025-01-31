@@ -71,46 +71,53 @@ Expected<MPTID, TER>
 MPTokenIssuanceCreate::create(
     ApplyView& view,
     beast::Journal journal,
-    MPTCreateArgs const& args)
+    AccountID const& account,
+    std::uint32_t sequence,
+    std::uint32_t flags,
+    std::optional<std::uint64_t> maxAmount,
+    std::optional<std::uint8_t> assetScale,
+    std::optional<std::uint16_t> transferFee,
+    std::optional<Slice> const& metadata,
+    std::optional<uint256> domainId)
 {
-    auto const acct = view.peek(keylet::account(args.account));
+    auto const acct = view.peek(keylet::account(account));
     if (!acct)
         return Unexpected(tecINTERNAL);
 
-    auto mptId = makeMptID(args.sequence, args.account);
+    auto mptId = makeMptID(sequence, account);
     auto const mptIssuanceKeylet = keylet::mptIssuance(mptId);
 
     // create the MPTokenIssuance
     {
         auto const ownerNode = view.dirInsert(
-            keylet::ownerDir(args.account),
+            keylet::ownerDir(account),
             mptIssuanceKeylet,
-            describeOwnerDir(args.account));
+            describeOwnerDir(account));
 
         if (!ownerNode)
             return Unexpected(tecDIR_FULL);
 
         auto mptIssuance = std::make_shared<SLE>(mptIssuanceKeylet);
-        (*mptIssuance)[sfFlags] = args.flags & ~tfUniversal;
-        (*mptIssuance)[sfIssuer] = args.account;
+        (*mptIssuance)[sfFlags] = flags & ~tfUniversal;
+        (*mptIssuance)[sfIssuer] = account;
         (*mptIssuance)[sfOutstandingAmount] = 0;
         (*mptIssuance)[sfOwnerNode] = *ownerNode;
-        (*mptIssuance)[sfSequence] = args.sequence;
+        (*mptIssuance)[sfSequence] = sequence;
 
-        if (args.maxAmount)
-            (*mptIssuance)[sfMaximumAmount] = *args.maxAmount;
+        if (maxAmount)
+            (*mptIssuance)[sfMaximumAmount] = *maxAmount;
 
-        if (args.assetScale)
-            (*mptIssuance)[sfAssetScale] = *args.assetScale;
+        if (assetScale)
+            (*mptIssuance)[sfAssetScale] = *assetScale;
 
-        if (args.transferFee)
-            (*mptIssuance)[sfTransferFee] = *args.transferFee;
+        if (transferFee)
+            (*mptIssuance)[sfTransferFee] = *transferFee;
 
-        if (args.metadata)
-            (*mptIssuance)[sfMPTokenMetadata] = *args.metadata;
+        if (metadata)
+            (*mptIssuance)[sfMPTokenMetadata] = *metadata;
 
-        if (args.domainId)
-            (*mptIssuance)[sfDomainID] = *args.domainId;
+        if (domainId)
+            (*mptIssuance)[sfDomainID] = *domainId;
 
         view.insert(mptIssuance);
     }
@@ -133,13 +140,13 @@ MPTokenIssuanceCreate::doApply()
     auto result = create(
         view(),
         j_,
-        {.account = account_,
-         .sequence = tx.getSeqProxy().value(),
-         .flags = tx.getFlags(),
-         .maxAmount = tx[~sfMaximumAmount],
-         .assetScale = tx[~sfAssetScale],
-         .transferFee = tx[~sfTransferFee],
-         .metadata = tx[~sfMPTokenMetadata]});
+        account_,
+        tx.getSeqProxy().value(),
+        tx.getFlags(),
+        tx[~sfMaximumAmount],
+        tx[~sfAssetScale],
+        tx[~sfTransferFee],
+        tx[~sfMPTokenMetadata]);
     return result ? tesSUCCESS : result.error();
 }
 

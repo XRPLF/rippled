@@ -24,12 +24,6 @@
 
 namespace ripple {
 
-struct MPTDestroyArgs
-{
-    AccountID const& account;
-    MPTID issuanceID;
-};
-
 class MPTokenIssuanceDestroy : public Transactor
 {
 public:
@@ -49,7 +43,8 @@ public:
     destroy(
         ApplyView& view,
         beast::Journal journal,
-        MPTDestroyArgs const& args);
+        AccountID const account,
+        MPTID issuanceID);
 
     TER
     doApply() override;

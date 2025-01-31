@@ -141,13 +141,14 @@ VaultCreate::doApply()
     auto maybeShare = MPTokenIssuanceCreate::create(
         view(),
         j_,
-        {
-            .account = pseudoId,
-            .sequence = 1,
-            .flags = mptFlags,
-            .metadata = tx[~sfMPTokenMetadata],
-            .domainId = tx[~sfDomainID],
-        });
+        pseudoId,
+        1,
+        mptFlags,
+        {},
+        {},
+        {},
+        tx[~sfMPTokenMetadata],
+        tx[~sfDomainID]);
     if (!maybeShare)
         return maybeShare.error();
     auto& share = *maybeShare;

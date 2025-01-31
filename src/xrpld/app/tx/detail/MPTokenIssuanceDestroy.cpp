@@ -66,15 +66,16 @@ TER
 MPTokenIssuanceDestroy::destroy(
     ApplyView& view,
     beast::Journal journal,
-    MPTDestroyArgs const& args)
+    AccountID const account,
+    MPTID issuanceID)
 {
-    auto const mpt = view.peek(keylet::mptIssuance(args.issuanceID));
+    auto const mpt = view.peek(keylet::mptIssuance(issuanceID));
     if (!mpt)
         return tecOBJECT_NOT_FOUND;
 
-    if ((*mpt)[sfIssuer] != args.account)
+    if ((*mpt)[sfIssuer] != account)
         return tecNO_PERMISSION;
-    auto const& issuer = args.account;
+    auto const& issuer = account;
 
     if ((*mpt)[~sfOutstandingAmount] != 0)
         return tecHAS_OBLIGATIONS;
@@ -92,10 +93,7 @@ TER
 MPTokenIssuanceDestroy::doApply()
 {
     return destroy(
-        view(),
-        j_,
-        {.account = ctx_.tx[sfAccount],
-         .issuanceID = ctx_.tx[sfMPTokenIssuanceID]});
+        view(), j_, ctx_.tx[sfAccount], ctx_.tx[sfMPTokenIssuanceID]);
 }
 
 }  // namespace ripple
