@@ -69,7 +69,10 @@ VaultDelete::doApply()
 
     // Destroy the share issuance.
     if (auto ter = MPTokenIssuanceDestroy::destroy(
-            view(), j_, vault->at(sfAccount), vault->at(sfMPTokenIssuanceID)))
+            view(),
+            j_,
+            {.account = vault->at(sfAccount),
+             .issuanceID = vault->at(sfMPTokenIssuanceID)}))
         return ter;
 
     // The psuedo-account's directory should have been deleted already.
