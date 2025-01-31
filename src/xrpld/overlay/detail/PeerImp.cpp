@@ -38,7 +38,6 @@
 #include <xrpl/basics/random.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/core/LexicalCast.h>
-// #include <xrpl/beast/core/SemanticVersion.h>
 #include <xrpl/protocol/digest.h>
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -1111,7 +1110,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMCluster> const& m)
     // VFALCO NOTE I think we should drop the peer immediately
     if (!cluster())
     {
-        fee_.fee = Resource::feeUselessData;
+        fee_.update(Resource::feeUselessData, "unknown cluster");
         return;
     }
 
@@ -1189,7 +1188,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMEndpoints> const& m)
     // implication for the protocol.
     if (m->endpoints_v2().size() >= 1024)
     {
-        charge(Resource::feeInvalidData, "endpoints too large");
+        fee_.update(Resource::feeUselessData, "endpoints too large");
         return;
     }
 
@@ -1204,7 +1203,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMEndpoints> const& m)
         {
             JLOG(p_journal_.error()) << "failed to parse incoming endpoint: {"
                                      << tm.endpoint() << "}";
-            charge(Resource::feeInvalidData, "endpoints malformed");
+            fee_.update(Resource::feeInvalidData, "endpoints malformed");
             continue;
         }
 
@@ -1340,7 +1339,7 @@ void
 PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
 {
     auto badData = [&](std::string const& msg) {
-        charge(Resource::feeInvalidData, "get_ledger " + msg);
+        fee_.update(Resource::feeInvalidData, "get_ledger " + msg);
         JLOG(p_journal_.warn()) << "TMGetLedger: " << msg;
     };
     auto const itype{m->itype()};
@@ -1431,7 +1430,8 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProofPathRequest> const& m)
     JLOG(p_journal_.trace()) << "onMessage, TMProofPathRequest";
     if (!ledgerReplayEnabled_)
     {
-        charge(Resource::feeMalformedRequest, "proof_path_request disabled");
+        fee_.update(
+            Resource::feeMalformedRequest, "proof_path_request disabled");
         return;
     }
 
@@ -1468,13 +1468,14 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProofPathResponse> const& m)
 {
     if (!ledgerReplayEnabled_)
     {
-        charge(Resource::feeMalformedRequest, "proof_path_response disabled");
+        fee_.update(
+            Resource::feeMalformedRequest, "proof_path_response disabled");
         return;
     }
 
     if (!ledgerReplayMsgHandler_.processProofPathResponse(m))
     {
-        charge(Resource::feeInvalidData, "proof_path_response");
+        fee_.update(Resource::feeInvalidData, "proof_path_response");
     }
 }
 
@@ -1484,7 +1485,8 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMReplayDeltaRequest> const& m)
     JLOG(p_journal_.trace()) << "onMessage, TMReplayDeltaRequest";
     if (!ledgerReplayEnabled_)
     {
-        charge(Resource::feeMalformedRequest, "replay_delta_request disabled");
+        fee_.update(
+            Resource::feeMalformedRequest, "replay_delta_request disabled");
         return;
     }
 
@@ -1521,13 +1523,14 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMReplayDeltaResponse> const& m)
 {
     if (!ledgerReplayEnabled_)
     {
-        charge(Resource::feeMalformedRequest, "replay_delta_response disabled");
+        fee_.update(
+            Resource::feeMalformedRequest, "replay_delta_response disabled");
         return;
     }
 
     if (!ledgerReplayMsgHandler_.processReplayDeltaResponse(m))
     {
-        charge(Resource::feeInvalidData, "replay_delta_response");
+        fee_.update(Resource::feeInvalidData, "replay_delta_response");
     }
 }
 
@@ -2628,14 +2631,14 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMSquelch> const& m)
 
     if (!m->has_validatorpubkey())
     {
-        charge(Resource::feeInvalidData, "squelch no pubkey");
+        fee_.update(Resource::feeInvalidData, "squelch no pubkey");
         return;
     }
     auto validator = m->validatorpubkey();
     auto const slice{makeSlice(validator)};
     if (!publicKeyType(slice))
     {
-        charge(Resource::feeInvalidData, "squelch bad pubkey");
+        fee_.update(Resource::feeInvalidData, "squelch bad pubkey");
         return;
     }
     PublicKey key(slice);
@@ -2643,7 +2646,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMSquelch> const& m)
     // Ignore non-validator squelch
     if (!app_.validators().listed(key))
     {
-        charge(Resource::feeInvalidData, "squelch non-validator");
+        fee_.update(Resource::feeInvalidData, "squelch non-validator");
         JLOG(p_journal_.debug())
             << "onMessage: TMSquelch discarding non-validator squelch "
             << slice;
@@ -2663,7 +2666,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMSquelch> const& m)
     if (!m->squelch())
         squelch_.removeSquelch(key);
     else if (!squelch_.addSquelch(key, std::chrono::seconds{duration}))
-        charge(Resource::feeInvalidData, "squelch duration");
+        fee_.update(Resource::feeInvalidData, "squelch duration");
 
     JLOG(p_journal_.debug())
         << "onMessage: TMSquelch " << slice << " " << id() << " " << duration;
