@@ -80,7 +80,27 @@ namespace detail {
 // Feature.cpp. Because it's only used to reserve storage, and determine how
 // large to make the FeatureBitset, it MAY be larger. It MUST NOT be less than
 // the actual number of amendments. A LogicError on startup will verify this.
-static constexpr std::size_t numFeatures = 88;
+static constexpr std::size_t numFeatures = 0
+#pragma push_macro("XRPL_FEATURE")
+#undef XRPL_FEATURE
+#pragma push_macro("XRPL_FIX")
+#undef XRPL_FIX
+#pragma push_macro("XRPL_RETIRE")
+#undef XRPL_RETIRE
+
+#define XRPL_FEATURE(name, supported, vote) +1
+#define XRPL_FIX(name, supported, vote) +1
+#define XRPL_RETIRE(name) +1
+
+#include <xrpl/protocol/detail/features.macro>
+
+#undef XRPL_RETIRE
+#pragma pop_macro("XRPL_RETIRE")
+#undef XRPL_FIX
+#pragma pop_macro("XRPL_FIX")
+#undef XRPL_FEATURE
+#pragma pop_macro("XRPL_FEATURE")
+    ;
 
 /** Amendments that this server supports and the default voting behavior.
    Whether they are enabled depends on the Rules defined in the validated
@@ -320,12 +340,17 @@ foreachFeature(FeatureBitset bs, F&& f)
 #undef XRPL_FEATURE
 #pragma push_macro("XRPL_FIX")
 #undef XRPL_FIX
+#pragma push_macro("XRPL_RETIRE")
+#undef XRPL_RETIRE
 
 #define XRPL_FEATURE(name, supported, vote) extern uint256 const feature##name;
 #define XRPL_FIX(name, supported, vote) extern uint256 const fix##name;
+#define XRPL_RETIRE(name)
 
 #include <xrpl/protocol/detail/features.macro>
 
+#undef XRPL_RETIRE
+#pragma pop_macro("XRPL_RETIRE")
 #undef XRPL_FIX
 #pragma pop_macro("XRPL_FIX")
 #undef XRPL_FEATURE
