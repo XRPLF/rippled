@@ -407,6 +407,22 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
+struct EscrowLedgerDataProvider : public LedgerDataProvider
+{
+    ApplyView& view_;
+
+public:
+    EscrowLedgerDataProvider(ApplyView& view) : view_(view)
+    {
+    }
+
+    int32_t
+    get_ledger_sqn() override
+    {
+        return (int32_t)view_.seq();
+    }
+};
+
 TER
 EscrowFinish::doApply()
 {
@@ -524,7 +540,7 @@ EscrowFinish::doApply()
         // WASM execution
         auto const wasmStr = slep->getFieldVL(sfFinishFunction);
         std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
-        std::string funcName("compare_accountID");
+        std::string funcName("ready");
 
         auto const escrowTx =
             ctx_.tx.getJson(JsonOptions::none).toStyledString();
@@ -532,25 +548,20 @@ EscrowFinish::doApply()
             slep->getJson(JsonOptions::none).toStyledString();
         // JLOG(j_.fatal()) << escrowTx;
         // JLOG(j_.fatal()) << escrowObj;
-        std::vector<uint8_t> excrowTxData(escrowTx.begin(), escrowTx.end());
+        std::vector<uint8_t> escrowTxData(escrowTx.begin(), escrowTx.end());
         std::vector<uint8_t> escrowObjData(escrowObj.begin(), escrowObj.end());
 
-        auto re = runEscrowWasmP4(wasm, funcName, excrowTxData, escrowObjData);
+        EscrowLedgerDataProvider ledgerDataProvider(ctx_.view());
+
+        auto re = runEscrowWasm(wasm, funcName, &ledgerDataProvider);
         JLOG(j_.fatal()) << "ESCROW RAN";
         if (re.has_value())
         {
             auto reValue = re.value();
-            JLOG(j_.fatal()) << "Success: " + std::to_string(reValue.first) +
-                    " " + reValue.second;
-            if (reValue.second != "")
+            JLOG(j_.fatal()) << "Success: " + std::to_string(reValue);
+            if (!reValue)
             {
-                if (auto hex = strUnHex(reValue.second); hex.has_value())
-                    slep->setFieldVL(sfData, hex.value());
-            }
-
-            if (!reValue.first)
-            {
-                ctx_.view().update(slep);
+                // ctx_.view().update(slep);
                 return tecWASM_REJECTED;
             }
         }
