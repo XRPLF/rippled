@@ -130,6 +130,8 @@ constexpr std::uint32_t tfTrustSetPermissionMask = (~tfTrustSetMask) & (~tfTrust
 // EnableAmendment flags:
 constexpr std::uint32_t tfGotMajority                      = 0x00010000;
 constexpr std::uint32_t tfLostMajority                     = 0x00020000;
+constexpr std::uint32_t tfChangeMask =
+    ~( tfUniversal | tfGotMajority | tfLostMajority);
 
 // PaymentChannelClaim flags:
 constexpr std::uint32_t tfRenew                            = 0x00010000;
@@ -144,7 +146,7 @@ constexpr std::uint32_t const tfTransferable               = 0x00000008;
 constexpr std::uint32_t const tfMutable                    = 0x00000010;
 
 // MPTokenIssuanceCreate flags:
-// NOTE - there is intentionally no flag here for lsfMPTLocked, which this transaction cannot mutate. 
+// NOTE - there is intentionally no flag here for lsfMPTLocked, which this transaction cannot mutate.
 constexpr std::uint32_t const tfMPTCanLock                 = lsfMPTCanLock;
 constexpr std::uint32_t const tfMPTRequireAuth             = lsfMPTRequireAuth;
 constexpr std::uint32_t const tfMPTCanEscrow               = lsfMPTCanEscrow;
@@ -239,6 +241,18 @@ constexpr std::uint32_t const tfVaultPrivate               = 0x00010000;
 static_assert(tfVaultPrivate == lsfVaultPrivate);
 constexpr std::uint32_t const tfVaultShareNonTransferable  = 0x00020000;
 constexpr std::uint32_t const tfVaultCreateMask = ~(tfUniversal | tfVaultPrivate | tfVaultShareNonTransferable);
+
+// LoanSet flags:
+// True, indicates the loan supports overpayments
+constexpr std::uint32_t const tfLoanOverpayment = 0x00010000;
+constexpr std::uint32_t const tfLoanSetMask = ~(tfUniversal | tfLoanOverpayment);
+
+// LoanManage flags:
+constexpr std::uint32_t const tfLoanDefault = 0x00010000;
+constexpr std::uint32_t const tfLoanImpair = 0x00020000;
+constexpr std::uint32_t const tfLoanUnimpair = 0x00040000;
+constexpr std::uint32_t const tfLoanManageMask = ~(tfUniversal | tfLoanDefault | tfLoanImpair | tfLoanUnimpair);
+
 // clang-format on
 
 }  // namespace ripple

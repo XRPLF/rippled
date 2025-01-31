@@ -67,22 +67,19 @@ computeFreezeFlags(
 
 namespace ripple {
 
-NotTEC
-SetTrust::preflight(PreflightContext const& ctx)
+std::uint32_t
+SetTrust::getFlagsMask(PreflightContext const& ctx)
 {
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
+    return tfTrustSetMask;
+}
 
+NotTEC
+SetTrust::doPreflight(PreflightContext const& ctx)
+{
     auto& tx = ctx.tx;
     auto& j = ctx.j;
 
     std::uint32_t const uTxFlags = tx.getFlags();
-
-    if (uTxFlags & tfTrustSetMask)
-    {
-        JLOG(j.trace()) << "Malformed transaction: Invalid flags set.";
-        return temINVALID_FLAG;
-    }
 
     if (!ctx.rules.enabled(featureDeepFreeze))
     {
@@ -127,7 +124,7 @@ SetTrust::preflight(PreflightContext const& ctx)
         return temDST_NEEDED;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER
@@ -298,7 +295,9 @@ SetTrust::preclaim(PreclaimContext const& ctx)
             else
                 return tecINTERNAL;  // LCOV_EXCL_LINE
         }
-        else if (sleDst->isFieldPresent(sfVaultID))
+        else if (
+            sleDst->isFieldPresent(sfVaultID) ||
+            sleDst->isFieldPresent(sfLoanBrokerID))
         {
             if (ctx.view.exists(keylet::line(id, uDstAccountID, currency)))
             {

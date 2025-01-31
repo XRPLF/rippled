@@ -27,18 +27,15 @@
 
 namespace ripple {
 
-NotTEC
-LedgerStateFix::preflight(PreflightContext const& ctx)
+bool
+LedgerStateFix::isEnabled(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(fixNFTokenPageLinks))
-        return temDISABLED;
+    return ctx.rules.enabled(fixNFTokenPageLinks);
+}
 
-    if (ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
+NotTEC
+LedgerStateFix::doPreflight(PreflightContext const& ctx)
+{
     switch (ctx.tx[sfLedgerFixType])
     {
         case FixType::nfTokenPageLink:
@@ -50,7 +47,7 @@ LedgerStateFix::preflight(PreflightContext const& ctx)
             return tefINVALID_LEDGER_FIX_TYPE;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 XRPAmount
@@ -58,7 +55,7 @@ LedgerStateFix::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
     // The fee required for LedgerStateFix is one owner reserve, just like
     // the fee for AccountDelete.
-    return view.fees().increment;
+    return calculateOwnerReserveFee(view, tx);
 }
 
 TER

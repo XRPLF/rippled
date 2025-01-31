@@ -24,6 +24,7 @@
 #include <xrpld/app/tx/detail/ApplyContext.h>
 
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/WrappedSink.h>
 #include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/XRPAmount.h>
 
@@ -83,11 +84,14 @@ public:
 
 class TxConsequences;
 struct PreflightResult;
+// Needed for preflight specialization
+class Change;
 
 class Transactor
 {
 protected:
     ApplyContext& ctx_;
+    beast::WrappedSink sink_;
     beast::Journal const j_;
 
     AccountID const account_;
@@ -143,6 +147,24 @@ public:
     static XRPAmount
     calculateBaseFee(ReadView const& view, STTx const& tx);
 
+    /* Do NOT define a preflight function in a derived class.
+       Instead, define
+
+        // Optional if the transaction is gated on an amendment
+        static bool
+        isEnabled(PreflightContext const& ctx);
+
+        // Optional if the transaction uses any flags other than tfUniversal
+        static std::uint32_t
+        getFlagsMask(PreflightContext const& ctx);
+
+        static NotTEC
+        doPreflight(PreflightContext const& ctx);
+    */
+    template <class T>
+    static NotTEC
+    preflight(PreflightContext const& ctx);
+
     static TER
     preclaim(PreclaimContext const& ctx)
     {
@@ -191,6 +213,38 @@ protected:
         Fees const& fees,
         ApplyFlags flags);
 
+    // Returns the fee in fee units, not scaled for load.
+    static XRPAmount
+    calculateOwnerReserveFee(ReadView const& view, STTx const& tx);
+
+    static NotTEC
+    checkSign(
+        PreclaimContext const& ctx,
+        AccountID const& id,
+        STObject const& sigObject);
+
+    // Base class always returns true
+    static bool
+    isEnabled(PreflightContext const& ctx);
+
+    // Base class always returns tfUniversalMask
+    static std::uint32_t
+    getFlagsMask(PreflightContext const& ctx);
+
+    static bool
+    validDataLength(std::optional<Slice> const& slice, std::size_t maxLength);
+
+    template <class T>
+    static bool
+    validNumericRange(std::optional<T> value, T max, T min = {});
+
+    template <class T, class Unit>
+    static bool
+    validNumericRange(
+        std::optional<T> value,
+        unit::ValueUnit<Unit, T> max,
+        unit::ValueUnit<Unit, T> min = {});
+
 private:
     std::pair<TER, XRPAmount>
     reset(XRPAmount fee);
@@ -200,24 +254,99 @@ private:
     TER
     payFee();
     static NotTEC
-    checkSingleSign(PreclaimContext const& ctx);
+    checkSingleSign(
+        PreclaimContext const& ctx,
+        AccountID const& id,
+        STObject const& sigObject);
     static NotTEC
-    checkMultiSign(PreclaimContext const& ctx);
+    checkMultiSign(
+        PreclaimContext const& ctx,
+        AccountID const& id,
+        STObject const& sigObject);
 
     void trapTransaction(uint256) const;
 };
 
-/** Performs early sanity checks on the txid */
-NotTEC
-preflight0(PreflightContext const& ctx);
+inline bool
+Transactor::isEnabled(PreflightContext const& ctx)
+{
+    return true;
+}
 
-/** Performs early sanity checks on the account and fee fields */
+/** Performs early sanity checks on the txid and flags */
 NotTEC
-preflight1(PreflightContext const& ctx);
+preflight0(PreflightContext const& ctx, std::uint32_t flagMask);
+
+namespace detail {
+
+/** Checks the validity of the transactor signing key.
+ *
+ * Normally called from preflight1 with ctx.tx.
+ */
+NotTEC
+preflightCheckSigningKey(STObject const& sigObject, beast::Journal j);
+
+/** Performs early sanity checks on the account and fee fields.
+
+    (And passes flagMask to preflight0)
+*/
+NotTEC
+preflight1(PreflightContext const& ctx, std::uint32_t flagMask);
+
+/** Checks the special signing key state needed for simulation
+ *
+ * Normally called from preflight2 with ctx.tx.
+ */
+std::optional<NotTEC>
+preflightCheckSimulateKeys(
+    ApplyFlags flags,
+    STObject const& sigObject,
+    beast::Journal j);
 
 /** Checks whether the signature appears valid */
 NotTEC
 preflight2(PreflightContext const& ctx);
+}  // namespace detail
+
+// Defined in Change.cpp
+template <>
+NotTEC
+Transactor::preflight<Change>(PreflightContext const& ctx);
+
+template <class T>
+NotTEC
+Transactor::preflight(PreflightContext const& ctx)
+{
+    if (!T::isEnabled(ctx))
+        return temDISABLED;
+
+    if (auto const ret = ripple::detail::preflight1(ctx, T::getFlagsMask(ctx)))
+        return ret;
+
+    if (auto const ret = T::doPreflight(ctx))
+        return ret;
+
+    return ripple::detail::preflight2(ctx);
+}
+
+template <class T>
+bool
+Transactor::validNumericRange(std::optional<T> value, T max, T min)
+{
+    if (!value)
+        return true;
+    return value >= min && value <= max;
+}
+
+template <class T, class Unit>
+bool
+Transactor::validNumericRange(
+    std::optional<T> value,
+    unit::ValueUnit<Unit, T> max,
+    unit::ValueUnit<Unit, T> min)
+{
+    return validNumericRange(value, max.value(), min.value());
+}
 
 }  // namespace ripple
 

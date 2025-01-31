@@ -128,7 +128,7 @@ backend=sqlite
 /**
    Write a rippled config file and remove when done.
  */
-class RippledCfgGuard : public ripple::test::detail::FileDirGuard
+class RippledCfgGuard : public ripple::detail::FileDirGuard
 {
 private:
     path dataDir_;
@@ -239,7 +239,7 @@ moreripplevalidators.net
 /**
    Write a validators.txt file and remove when done.
  */
-class ValidatorsTxtGuard : public test::detail::FileDirGuard
+class ValidatorsTxtGuard : public detail::FileDirGuard
 {
 public:
     ValidatorsTxtGuard(
@@ -345,7 +345,7 @@ port_wss_admin
         {
             // read from file absolute path
             auto const cwd = current_path();
-            ripple::test::detail::DirGuard const g0(*this, "test_db");
+            ripple::detail::DirGuard const g0(*this, "test_db");
             path const dataDirRel("test_data_dir");
             path const dataDirAbs(cwd / g0.subdir() / dataDirRel);
             detail::RippledCfgGuard const g(

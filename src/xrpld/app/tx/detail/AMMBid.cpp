@@ -30,21 +30,15 @@
 
 namespace ripple {
 
-NotTEC
-AMMBid::preflight(PreflightContext const& ctx)
+bool
+AMMBid::isEnabled(PreflightContext const& ctx)
 {
-    if (!ammEnabled(ctx.rules))
-        return temDISABLED;
+    return ammEnabled(ctx.rules);
+}
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-    {
-        JLOG(ctx.j.debug()) << "AMM Bid: invalid flags.";
-        return temINVALID_FLAG;
-    }
-
+NotTEC
+AMMBid::doPreflight(PreflightContext const& ctx)
+{
     if (auto const res = invalidAMMAssetPair(
             ctx.tx[sfAsset].get<Issue>(), ctx.tx[sfAsset2].get<Issue>()))
     {
@@ -80,7 +74,7 @@ AMMBid::preflight(PreflightContext const& ctx)
         }
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER

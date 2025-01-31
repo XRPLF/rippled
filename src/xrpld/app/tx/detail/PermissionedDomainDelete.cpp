@@ -24,26 +24,20 @@
 
 namespace ripple {
 
-NotTEC
-PermissionedDomainDelete::preflight(PreflightContext const& ctx)
+bool
+PermissionedDomainDelete::isEnabled(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featurePermissionedDomains))
-        return temDISABLED;
+    return ctx.rules.enabled(featurePermissionedDomains);
+}
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-    {
-        JLOG(ctx.j.debug()) << "PermissionedDomainDelete: invalid flags.";
-        return temINVALID_FLAG;
-    }
-
+NotTEC
+PermissionedDomainDelete::doPreflight(PreflightContext const& ctx)
+{
     auto const domain = ctx.tx.getFieldH256(sfDomainID);
     if (domain == beast::zero)
         return temMALFORMED;
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER

@@ -33,11 +33,16 @@
 
 namespace ripple {
 
+template <>
 NotTEC
-Change::preflight(PreflightContext const& ctx)
+Transactor::preflight<Change>(PreflightContext const& ctx)
 {
-    auto const ret = preflight0(ctx);
-    if (!isTesSuccess(ret))
+    // 0 means "Allow any flags"
+    // The check for tfChangeMask is gated by LendingProtocol because that
+    // feature introduced this parameter, and it's not worth adding another
+    // amendment just for this.
+    if (auto const ret = preflight0(
+            ctx, ctx.rules.enabled(featureLendingProtocol) ? tfChangeMask : 0))
         return ret;
 
     auto account = ctx.tx.getAccountID(sfAccount);

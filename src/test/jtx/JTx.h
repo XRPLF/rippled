@@ -54,7 +54,11 @@ struct JTx
     bool fill_sig = true;
     bool fill_netid = true;
     std::shared_ptr<STTx const> stx;
-    std::function<void(Env&, JTx&)> signer;
+    // Functions that sign the transaction from the Account
+    std::vector<std::function<void(Env&, JTx&)>> mainSigners;
+    // Functions that sign something else after the mainSigners, such as
+    // sfCounterpartySignature
+    std::vector<std::function<void(Env&, JTx&)>> postSigners;
 
     JTx() = default;
     JTx(JTx const&) = default;

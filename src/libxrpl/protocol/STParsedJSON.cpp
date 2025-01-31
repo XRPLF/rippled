@@ -83,6 +83,31 @@ constexpr std::
     return static_cast<U1>(value);
 }
 
+template <typename U, typename S>
+    requires HasValue<U>
+constexpr std::enable_if_t<
+    std::is_unsigned<typename U::value_type>::value && std::is_signed<S>::value,
+    U>
+to_unsigned(S value)
+{
+    if (value < 0 || std::numeric_limits<typename U::value_type>::max() < value)
+        Throw<std::runtime_error>("Value out of range");
+    return safe_cast<U>(static_cast<typename U::value_type>(value));
+}
+
+template <typename U1, typename U2>
+    requires HasValue<U1>
+constexpr std::enable_if_t<
+    std::is_unsigned<typename U1::value_type>::value &&
+        std::is_unsigned<U2>::value,
+    U1>
+to_unsigned(U2 value)
+{
+    if (std::numeric_limits<typename U1::value_type>::max() < value)
+        Throw<std::runtime_error>("Value out of range");
+    return safe_cast<U1>(static_cast<typename U1::value_type>(value));
+}
+
 static std::string
 make_name(std::string const& object, std::string const& field)
 {
@@ -202,6 +227,173 @@ non_object_in_array(std::string const& item, Json::UInt index)
             " is not an object.  Arrays may only contain objects.");
 }
 
+template <class STResult, class Integer>
+static std::optional<detail::STVar>
+parseUnsigned(
+    SField const& field,
+    std::string const& json_name,
+    std::string const& fieldName,
+    SField const* name,
+    Json::Value const& value,
+    Json::Value& error)
+{
+    std::optional<detail::STVar> ret;
+
+    try
+    {
+        if (value.isString())
+        {
+            ret = detail::make_stvar<STResult>(
+                field,
+                safe_cast<typename STResult::value_type>(
+                    beast::lexicalCastThrow<Integer>(value.asString())));
+        }
+        else if (value.isInt())
+        {
+            ret = detail::make_stvar<STResult>(
+                field,
+                to_unsigned<typename STResult::value_type>(value.asInt()));
+        }
+        else if (value.isUInt())
+        {
+            ret = detail::make_stvar<STResult>(
+                field,
+                to_unsigned<typename STResult::value_type>(value.asUInt()));
+        }
+        else
+        {
+            error = bad_type(json_name, fieldName);
+            return ret;
+        }
+    }
+    catch (std::exception const&)
+    {
+        error = invalid_data(json_name, fieldName);
+        return ret;
+    }
+
+    return ret;
+}
+
+template <class STResult, class Integer = std::uint16_t>
+static std::optional<detail::STVar>
+parseUint16(
+    SField const& field,
+    std::string const& json_name,
+    std::string const& fieldName,
+    SField const* name,
+    Json::Value const& value,
+    Json::Value& error)
+{
+    std::optional<detail::STVar> ret;
+
+    try
+    {
+        if (value.isString())
+        {
+            std::string const strValue = value.asString();
+
+            if (!strValue.empty() &&
+                ((strValue[0] < '0') || (strValue[0] > '9')))
+            {
+                if (field == sfTransactionType)
+                {
+                    ret = detail::make_stvar<STResult>(
+                        field,
+                        safe_cast<typename STResult::value_type>(
+                            static_cast<Integer>(
+                                TxFormats::getInstance().findTypeByName(
+                                    strValue))));
+
+                    if (*name == sfGeneric)
+                        name = &sfTransaction;
+                }
+                else if (field == sfLedgerEntryType)
+                {
+                    ret = detail::make_stvar<STResult>(
+                        field,
+                        safe_cast<typename STResult::value_type>(
+                            static_cast<Integer>(
+                                LedgerFormats::getInstance().findTypeByName(
+                                    strValue))));
+
+                    if (*name == sfGeneric)
+                        name = &sfLedgerEntry;
+                }
+                else
+                {
+                    error = invalid_data(json_name, fieldName);
+                    return ret;
+                }
+            }
+        }
+        if (!ret)
+            return parseUnsigned<STResult, Integer>(
+                field, json_name, fieldName, name, value, error);
+    }
+    catch (std::exception const&)
+    {
+        error = invalid_data(json_name, fieldName);
+        return ret;
+    }
+
+    return ret;
+}
+
+template <class STResult, class Integer = std::uint32_t>
+static std::optional<detail::STVar>
+parseUint32(
+    SField const& field,
+    std::string const& json_name,
+    std::string const& fieldName,
+    SField const* name,
+    Json::Value const& value,
+    Json::Value& error)
+{
+    std::optional<detail::STVar> ret;
+
+    try
+    {
+        if (value.isString())
+        {
+            if (field == sfPermissionValue)
+            {
+                std::string const strValue = value.asString();
+                auto const granularPermission =
+                    Permission::getInstance().getGranularValue(strValue);
+                if (granularPermission)
+                {
+                    ret = detail::make_stvar<STResult>(
+                        field, *granularPermission);
+                }
+                else
+                {
+                    auto const& txType =
+                        TxFormats::getInstance().findTypeByName(strValue);
+                    ret = detail::make_stvar<STResult>(
+                        field,
+                        Permission::getInstance().txToPermissionType(txType));
+                }
+            }
+            else
+            {
+                ret = detail::make_stvar<STResult>(
+                    field, beast::lexicalCastThrow<Integer>(value.asString()));
+            }
+        }
+        if (!ret)
+            return parseUnsigned<STResult, Integer>(
+                field, json_name, fieldName, name, value, error);
+    }
+    catch (std::exception const&)
+    {
+        error = invalid_data(json_name, fieldName);
+        return ret;
+    }
+
+    return ret;
+}
+
 // This function is used by parseObject to parse any JSON type that doesn't
 // recurse.  Everything represented here is a leaf-type.
 static std::optional<detail::STVar>
@@ -302,130 +494,18 @@ parseLeaf(
             break;
 
         case STI_UINT16:
-            try
-            {
-                if (value.isString())
-                {
-                    std::string const strValue = value.asString();
-
-                    if (!strValue.empty() &&
-                        ((strValue[0] < '0') || (strValue[0] > '9')))
-                    {
-                        if (field == sfTransactionType)
-                        {
-                            ret = detail::make_stvar<STUInt16>(
-                                field,
-                                static_cast<std::uint16_t>(
-                                    TxFormats::getInstance().findTypeByName(
-                                        strValue)));
-
-                            if (*name == sfGeneric)
-                                name = &sfTransaction;
-                        }
-                        else if (field == sfLedgerEntryType)
-                        {
-                            ret = detail::make_stvar<STUInt16>(
-                                field,
-                                static_cast<std::uint16_t>(
-                                    LedgerFormats::getInstance().findTypeByName(
-                                        strValue)));
-
-                            if (*name == sfGeneric)
-                                name = &sfLedgerEntry;
-                        }
-                        else
-                        {
-                            error = invalid_data(json_name, fieldName);
-                            return ret;
-                        }
-                    }
-                    else
-                    {
-                        ret = detail::make_stvar<STUInt16>(
-                            field,
-                            beast::lexicalCastThrow<std::uint16_t>(strValue));
-                    }
-                }
-                else if (value.isInt())
-                {
-                    ret = detail::make_stvar<STUInt16>(
-                        field, to_unsigned<std::uint16_t>(value.asInt()));
-                }
-                else if (value.isUInt())
-                {
-                    ret = detail::make_stvar<STUInt16>(
-                        field, to_unsigned<std::uint16_t>(value.asUInt()));
-                }
-                else
-                {
-                    error = bad_type(json_name, fieldName);
-                    return ret;
-                }
-            }
-            catch (std::exception const&)
-            {
-                error = invalid_data(json_name, fieldName);
+            ret = parseUint16<STUInt16>(
+                field, json_name, fieldName, name, value, error);
+            if (!ret)
                 return ret;
-            }
 
             break;
 
         case STI_UINT32:
-            try
-            {
-                if (value.isString())
-                {
-                    if (field == sfPermissionValue)
-                    {
-                        std::string const strValue = value.asString();
-                        auto const granularPermission =
-                            Permission::getInstance().getGranularValue(
-                                strValue);
-                        if (granularPermission)
-                        {
-                            ret = detail::make_stvar<STUInt32>(
-                                field, *granularPermission);
-                        }
-                        else
-                        {
-                            auto const& txType =
-                                TxFormats::getInstance().findTypeByName(
-                                    strValue);
-                            ret = detail::make_stvar<STUInt32>(
-                                field,
-                                Permission::getInstance().txToPermissionType(
-                                    txType));
-                        }
-                    }
-                    else
-                    {
-                        ret = detail::make_stvar<STUInt32>(
-                            field,
-                            beast::lexicalCastThrow<std::uint32_t>(
-                                value.asString()));
-                    }
-                }
-                else if (value.isInt())
-                {
-                    ret = detail::make_stvar<STUInt32>(
-                        field, to_unsigned<std::uint32_t>(value.asInt()));
-                }
-                else if (value.isUInt())
-                {
-                    ret = detail::make_stvar<STUInt32>(
-                        field, safe_cast<std::uint32_t>(value.asUInt()));
-                }
-                else
-                {
-                    error = bad_type(json_name, fieldName);
-                    return ret;
-                }
-            }
-            catch (std::exception const&)
-            {
-                error = invalid_data(json_name, fieldName);
+            ret = parseUint32<STUInt32>(
+                field, json_name, fieldName, name, value, error);
+            if (!ret)
                 return ret;
-            }
 
             break;
 

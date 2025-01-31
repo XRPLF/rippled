@@ -619,8 +619,8 @@ xrpLiquid(
     std::uint32_t const ownerCount = confineOwnerCount(
         view.ownerCountHook(id, sle->getFieldU32(sfOwnerCount)), ownerCountAdj);
 
-    // AMMs have no reserve requirement
-    auto const reserve = sle->isFieldPresent(sfAMMID)
+    // Pseudo-accounts have no reserve requirement
+    auto const reserve = isPseudoAccount(sle)
         ? XRPAmount{0}
         : view.fees().accountReserve(ownerCount);
 
@@ -1019,7 +1019,7 @@ adjustOwnerCount(
     AccountID const id = (*sle)[sfAccount];
     std::uint32_t const adjusted = confineOwnerCount(current, amount, id, j);
     view.adjustOwnerCountHook(id, current, adjusted);
-    sle->setFieldU32(sfOwnerCount, adjusted);
+    sle->at(sfOwnerCount) = adjusted;
     view.update(sle);
 }
 
@@ -1032,13 +1032,17 @@ describeOwnerDir(AccountID const& account)
 }
 
 TER
-dirLink(ApplyView& view, AccountID const& owner, std::shared_ptr<SLE>& object)
+dirLink(
+    ApplyView& view,
+    AccountID const& owner,
+    std::shared_ptr<SLE>& object,
+    SF_UINT64 const& node)
 {
     auto const page = view.dirInsert(
         keylet::ownerDir(owner), object->key(), describeOwnerDir(owner));
     if (!page)
         return tecDIR_FULL;  // LCOV_EXCL_LINE
-    object->setFieldU64(sfOwnerNode, *page);
+    object->setFieldU64(node, *page);
     return tesSUCCESS;
 }
 
@@ -1059,15 +1063,47 @@ pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey)
     return beast::zero;
 }
 
-// Note, the list of the pseudo-account designator fields below MUST be
-// maintained but it does NOT need to be amendment-gated, since a
-// non-active amendment will not set any field, by definition. Specific
-// properties of a pseudo-account are NOT checked here, that's what
+// Pseudo-account designator fields MUST be maintained by including the
+// SField::sMD_PseudoAccount flag in the SField definition. (Don't forget to
+// "| SField::sMD_Default"!) The fields do NOT need to be amendment-gated,
+// since a non-active amendment will not set any field, by definition.
+// Specific properties of a pseudo-account are NOT checked here, that's what
 // InvariantCheck is for.
-static std::array<SField const*, 2> const pseudoAccountOwnerFields = {
-    &sfAMMID,    //
-    &sfVaultID,  //
-};
+[[nodiscard]] std::vector<SField const*> const&
+getPseudoAccountFields()
+{
+    static std::vector<SField const*> const pseudoFields = []() {
+        auto const ar = LedgerFormats::getInstance().findByType(ltACCOUNT_ROOT);
+        if (!ar)
+            LogicError(
+                "ripple::isPseudoAccount : unable to find account root ledger "
+                "format");
+        auto const& soTemplate = ar->getSOTemplate();
+
+        std::vector<SField const*> pseudoFields;
+        for (auto const& field : soTemplate)
+        {
+            if (field.sField().shouldMeta(SField::sMD_PseudoAccount))
+                pseudoFields.emplace_back(&field.sField());
+        }
+        return pseudoFields;
+    }();
+    return pseudoFields;
+}
+
+[[nodiscard]] bool
+isPseudoAccount(std::shared_ptr<SLE const> sleAcct)
+{
+    auto const& fields = getPseudoAccountFields();
+
+    // Intentionally use defensive coding here because it's cheap and makes the
+    // semantics of true return value clean.
+    return sleAcct && sleAcct->getType() == ltACCOUNT_ROOT &&
+        std::count_if(
+            fields.begin(), fields.end(), [&sleAcct](SField const* sf) -> bool {
+                return sleAcct->isFieldPresent(*sf);
+            }) > 0;
+}
 
 Expected<std::shared_ptr<SLE>, TER>
 createPseudoAccount(
@@ -1075,10 +1111,11 @@ createPseudoAccount(
     uint256 const& pseudoOwnerKey,
     SField const& ownerField)
 {
+    auto const& fields = getPseudoAccountFields();
     XRPL_ASSERT(
         std::count_if(
-            pseudoAccountOwnerFields.begin(),
-            pseudoAccountOwnerFields.end(),
+            fields.begin(),
+            fields.end(),
             [&ownerField](SField const* sf) -> bool {
                 return *sf == ownerField;
             }) == 1,
@@ -1096,9 +1133,10 @@ createPseudoAccount(
     // Pseudo-accounts can't submit transactions, so set the sequence number
     // to 0 to make them easier to spot and verify, and add an extra level
     // of protection.
-    std::uint32_t const seqno =                        //
-        view.rules().enabled(featureSingleAssetVault)  //
-        ? 0                                            //
+    std::uint32_t const seqno =                           //
+        view.rules().enabled(featureSingleAssetVault) ||  //
+            view.rules().enabled(featureLendingProtocol)  //
+        ? 0                                               //
         : view.seq();
     account->setFieldU32(sfSequence, seqno);
     // Ignore reserves requirement, disable the master key, allow default
@@ -1114,18 +1152,42 @@ createPseudoAccount(
     return account;
 }
 
-[[nodiscard]] bool
-isPseudoAccount(std::shared_ptr<SLE const> sleAcct)
+[[nodiscard]] TER
+canAddHolding(ReadView const& view, Issue const& issue)
 {
-    // Intentionally use defensive coding here because it's cheap and makes the
-    // semantics of true return value clean.
-    return sleAcct && sleAcct->getType() == ltACCOUNT_ROOT &&
-        std::count_if(
-            pseudoAccountOwnerFields.begin(),
-            pseudoAccountOwnerFields.end(),
-            [&sleAcct](SField const* sf) -> bool {
-                return sleAcct->isFieldPresent(*sf);
-            }) > 0;
+    if (issue.native())
+        return tesSUCCESS;  // No special checks for XRP
+
+    auto const issuer = view.read(keylet::account(issue.getIssuer()));
+    if (!issuer)
+        return terNO_ACCOUNT;
+    else if (!issuer->isFlag(lsfDefaultRipple))
+        return terNO_RIPPLE;
+
+    return tesSUCCESS;
+}
+
+[[nodiscard]] TER
+canAddHolding(ReadView const& view, MPTIssue const& mptIssue)
+{
+    auto mptID = mptIssue.getMptID();
+    auto issuance = view.read(keylet::mptIssuance(mptID));
+    if (!issuance)
+        return tecOBJECT_NOT_FOUND;
+    if (!issuance->isFlag(lsfMPTCanTransfer))
+        return tecNO_AUTH;
+
+    return tesSUCCESS;
+}
+
+[[nodiscard]] TER
+canAddHolding(ReadView const& view, Asset const& asset)
+{
+    return std::visit(
+        [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
+            return canAddHolding(view, issue);
+        },
+        asset.value());
 }
 
 [[nodiscard]] TER

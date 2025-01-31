@@ -26,13 +26,15 @@ namespace test {
 namespace jtx {
 
 void
-fee::operator()(Env&, JTx& jt) const
+fee::operator()(Env& env, JTx& jt) const
 {
     if (!manual_)
         return;
     jt.fill_fee = false;
+    if (increment_)
+        jt[sfFee] = STAmount(env.current()->fees().increment).getJson();
     if (amount_)
-        jt[jss::Fee] = amount_->getJson(JsonOptions::none);
+        jt[sfFee] = amount_->getJson(JsonOptions::none);
 }
 
 }  // namespace jtx

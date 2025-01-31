@@ -26,13 +26,66 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/FeeUnits.h>
 #include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TxFormats.h>
+#include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/nftPageMask.h>
 
 namespace ripple {
+
+enum Privilege {
+    noPriv =
+        0x0000,  // The transaction can not do any of the enumerated operations
+    createAcct =
+        0x0001,  // The transaction can create a new ACCOUNT_ROOT object.
+    createPseudoAcct = 0x0002,  // The transaction can create a pseudo account,
+                                // which implies createAcct
+    mustDeleteAcct =
+        0x0004,  // The transaction must delete an ACCOUNT_ROOT object
+    mayDeleteAcct = 0x0008,    // The transaction may delete an ACCOUNT_ROOT
+                               // object, but does not have to
+    overrideFreeze = 0x0010,   // The transaction can override some freeze rules
+    changeNFTCounts = 0x0020,  // The transaction can mint or burn an NFT
+    createMPTIssuance =
+        0x0040,  // The transaction can create a new MPT issuance
+    destroyMPTIssuance = 0x0080,  // The transaction can destroy an MPT issuance
+    mustAuthorizeMPT = 0x0100,  // The transaction MUST create or delete an MPT
+                                // object (except by issuer)
+    mayAuthorizeMPT = 0x0200,   // The transaction MAY create or delete an MPT
+                                // object (except by issuer)
+};
+constexpr Privilege
+operator|(Privilege lhs, Privilege rhs)
+{
+    return safe_cast<Privilege>(
+        safe_cast<std::underlying_type_t<Privilege>>(lhs) |
+        safe_cast<std::underlying_type_t<Privilege>>(rhs));
+}
+
+#pragma push_macro("TRANSACTION")
+#undef TRANSACTION
+
+#define TRANSACTION(tag, value, name, delegatable, privileges, ...) \
+    case tag: {                                                     \
+        return (privileges) & priv;                                 \
+    }
+
+bool
+checkMyPrivilege(STTx const& tx, Privilege priv)
+{
+    switch (tx.getTxnType())
+    {
+#include <xrpl/protocol/detail/transactions.macro>
+        // Deprecated types
+        default:
+            return false;
+    }
+};
+
+#undef TRANSACTION
+#pragma pop_macro("TRANSACTION")
 
 void
 TransactionFeeCheck::visitEntry(
@@ -328,10 +381,7 @@ AccountRootsNotDeleted::finalize(
     // transaction when the total AMM LP Tokens balance goes to 0.
     // A successful AccountDelete or AMMDelete MUST delete exactly
     // one account root.
-    if ((tx.getTxnType() == ttACCOUNT_DELETE ||
-         tx.getTxnType() == ttAMM_DELETE ||
-         tx.getTxnType() == ttVAULT_DELETE) &&
-        result == tesSUCCESS)
+    if (checkMyPrivilege(tx, mustDeleteAcct) && result == tesSUCCESS)
     {
         if (accountsDeleted_ == 1)
             return true;
@@ -348,9 +398,8 @@ AccountRootsNotDeleted::finalize(
     // A successful AMMWithdraw/AMMClawback MAY delete one account root
     // when the total AMM LP Tokens balance goes to 0. Not every AMM withdraw
     // deletes the AMM account, accountsDeleted_ is set if it is deleted.
-    if ((tx.getTxnType() == ttAMM_WITHDRAW ||
-         tx.getTxnType() == ttAMM_CLAWBACK) &&
-        result == tesSUCCESS && accountsDeleted_ == 1)
+    if (checkMyPrivilege(tx, mayDeleteAcct) && result == tesSUCCESS &&
+        accountsDeleted_ == 1)
         return true;
 
     if (accountsDeleted_ == 0)
@@ -366,10 +415,10 @@ void
 AccountRootsDeletedClean::visitEntry(
     bool isDelete,
     std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const&)
+    std::shared_ptr<SLE const> const& after)
 {
     if (isDelete && before && before->getType() == ltACCOUNT_ROOT)
-        accountsDeleted_.emplace_back(before);
+        accountsDeleted_.emplace_back(before, after);
 }
 
 bool
@@ -385,7 +434,8 @@ AccountRootsDeletedClean::finalize(
     // feature is enabled. Enabled, or not, though, a fatal-level message will
     // be logged
     [[maybe_unused]] bool const enforce =
-        view.rules().enabled(featureInvariantsV1_1);
+        view.rules().enabled(featureInvariantsV1_1) ||
+        view.rules().enabled(featureLendingProtocol);
 
     auto const objectExists = [&view, enforce, &j](auto const& keylet) {
         (void)enforce;
@@ -413,9 +463,33 @@ AccountRootsDeletedClean::finalize(
         return false;
     };
 
-    for (auto const& accountSLE : accountsDeleted_)
+    for (auto const& [before, after] : accountsDeleted_)
     {
-        auto const accountID = accountSLE->getAccountID(sfAccount);
+        auto const accountID = before->getAccountID(sfAccount);
+        // An account should not be deleted with a balance
+        if (after->at(sfBalance) != beast::zero)
+        {
+            JLOG(j.fatal()) << "Invariant failed: account deletion left "
+                               "behind a non-zero balance";
+            XRPL_ASSERT(
+                enforce,
+                "ripple::AccountRootsDeletedClean::finalize : "
+                "deleted account has zero balance");
+            if (enforce)
+                return false;
+        }
+        // An account should not be deleted with a non-zero owner count
+        if (after->at(sfOwnerCount) != 0)
+        {
+            JLOG(j.fatal()) << "Invariant failed: account deletion left "
+                               "behind a non-zero owner count";
+            XRPL_ASSERT(
+                enforce,
+                "ripple::AccountRootsDeletedClean::finalize : "
+                "deleted account has zero owner count");
+            if (enforce)
+                return false;
+        }
         // Simple types
         for (auto const& [keyletfunc, _, __] : directAccountKeylets)
         {
@@ -439,10 +513,14 @@ AccountRootsDeletedClean::finalize(
         }
 
         // Keys directly stored in the AccountRoot object
-        if (auto const ammKey = accountSLE->at(~sfAMMID))
+        for (auto const& field : getPseudoAccountFields())
         {
-            if (objectExists(keylet::amm(*ammKey)) && enforce)
-                return false;
+            if (before->isFieldPresent(*field))
+            {
+                auto const key = before->getFieldH256(*field);
+                if (objectExists(keylet::unchecked(key)) && enforce)
+                    return false;
+            }
         }
     }
 
@@ -462,41 +540,23 @@ LedgerEntryTypesMatch::visitEntry(
 
     if (after)
     {
+#pragma push_macro("LEDGER_ENTRY")
+#undef LEDGER_ENTRY
+
+#define LEDGER_ENTRY(tag, value, name, rpcName, fields) case tag:
+
         switch (after->getType())
         {
-            case ltACCOUNT_ROOT:
-            case ltDELEGATE:
-            case ltDIR_NODE:
-            case ltRIPPLE_STATE:
-            case ltTICKET:
-            case ltSIGNER_LIST:
-            case ltOFFER:
-            case ltLEDGER_HASHES:
-            case ltAMENDMENTS:
-            case ltFEE_SETTINGS:
-            case ltESCROW:
-            case ltPAYCHAN:
-            case ltCHECK:
-            case ltDEPOSIT_PREAUTH:
-            case ltNEGATIVE_UNL:
-            case ltNFTOKEN_PAGE:
-            case ltNFTOKEN_OFFER:
-            case ltAMM:
-            case ltBRIDGE:
-            case ltXCHAIN_OWNED_CLAIM_ID:
-            case ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID:
-            case ltDID:
-            case ltORACLE:
-            case ltMPTOKEN_ISSUANCE:
-            case ltMPTOKEN:
-            case ltCREDENTIAL:
-            case ltPERMISSIONED_DOMAIN:
-            case ltVAULT:
-                break;
+#include <xrpl/protocol/detail/ledger_entries.macro>
+
+            break;
             default:
                 invalidTypeAdded_ = true;
                 break;
         }
+
+#undef LEDGER_ENTRY
+#pragma pop_macro("LEDGER_ENTRY")
     }
 }
 
@@ -850,7 +910,7 @@ TransfersNotFrozen::validateFrozenState(
     }
 
     // AMMClawbacks are allowed to override some freeze rules
-    if ((!isAMMLine || globalFreeze) && tx.getTxnType() == ttAMM_CLAWBACK)
+    if ((!isAMMLine || globalFreeze) && checkMyPrivilege(tx, overrideFreeze))
     {
         JLOG(j.debug()) << "Invariant check allowing funds to be moved "
                         << (change.balanceChangeSign > 0 ? "to" : "from")
@@ -910,17 +970,15 @@ ValidNewAccountRoot::finalize(
     }
 
     // From this point on we know exactly one account was created.
-    if ((tx.getTxnType() == ttPAYMENT || tx.getTxnType() == ttAMM_CREATE ||
-         tx.getTxnType() == ttVAULT_CREATE ||
-         tx.getTxnType() == ttXCHAIN_ADD_CLAIM_ATTESTATION ||
-         tx.getTxnType() == ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION) &&
+    if (checkMyPrivilege(tx, createAcct | createPseudoAcct) &&
         result == tesSUCCESS)
     {
         bool const pseudoAccount =
-            (pseudoAccount_ && view.rules().enabled(featureSingleAssetVault));
+            (pseudoAccount_ &&
+             (view.rules().enabled(featureSingleAssetVault) ||
+              view.rules().enabled(featureLendingProtocol)));
 
-        if (pseudoAccount && tx.getTxnType() != ttAMM_CREATE &&
-            tx.getTxnType() != ttVAULT_CREATE)
+        if (pseudoAccount && !checkMyPrivilege(tx, createPseudoAcct))
         {
             JLOG(j.fatal()) << "Invariant failed: pseudo-account created by a "
                                "wrong transaction type";
@@ -959,7 +1017,7 @@ ValidNewAccountRoot::finalize(
 
     JLOG(j.fatal()) << "Invariant failed: account root created illegally";
     return false;
-}
+}  // namespace ripple
 
 //------------------------------------------------------------------------------
 
@@ -1154,8 +1212,7 @@ NFTokenCountTracking::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
-    if (TxType const txType = tx.getTxnType();
-        txType != ttNFTOKEN_MINT && txType != ttNFTOKEN_BURN)
+    if (!checkMyPrivilege(tx, changeNFTCounts))
     {
         if (beforeMintedTotal != afterMintedTotal)
         {
@@ -1345,8 +1402,7 @@ ValidMPTIssuance::finalize(
 {
     if (result == tesSUCCESS)
     {
-        if (tx.getTxnType() == ttMPTOKEN_ISSUANCE_CREATE ||
-            tx.getTxnType() == ttVAULT_CREATE)
+        if (checkMyPrivilege(tx, createMPTIssuance))
         {
             if (mptIssuancesCreated_ == 0)
             {
@@ -1367,8 +1423,7 @@ ValidMPTIssuance::finalize(
             return mptIssuancesCreated_ == 1 && mptIssuancesDeleted_ == 0;
         }
 
-        if (tx.getTxnType() == ttMPTOKEN_ISSUANCE_DESTROY ||
-            tx.getTxnType() == ttVAULT_DELETE)
+        if (checkMyPrivilege(tx, destroyMPTIssuance))
         {
             if (mptIssuancesDeleted_ == 0)
             {
@@ -1389,8 +1444,7 @@ ValidMPTIssuance::finalize(
             return mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 1;
         }
 
-        if (tx.getTxnType() == ttMPTOKEN_AUTHORIZE ||
-            tx.getTxnType() == ttVAULT_DEPOSIT)
+        if (checkMyPrivilege(tx, mustAuthorizeMPT | mayAuthorizeMPT))
         {
             bool const submittedByIssuer = tx.isFieldPresent(sfHolder);
 
@@ -1406,6 +1460,12 @@ ValidMPTIssuance::finalize(
                                    "succeeded but deleted issuances";
                 return false;
             }
+            else if (mptokensCreated_ + mptokensDeleted_ > 1)
+            {
+                JLOG(j.fatal()) << "Invariant failed: MPT authorize succeeded "
+                                   "but created/deleted bad number mptokens";
+                return false;
+            }
             else if (
                 submittedByIssuer &&
                 (mptokensCreated_ > 0 || mptokensDeleted_ > 0))
@@ -1416,7 +1476,7 @@ ValidMPTIssuance::finalize(
                 return false;
             }
             else if (
-                !submittedByIssuer && (tx.getTxnType() != ttVAULT_DEPOSIT) &&
+                !submittedByIssuer && !checkMyPrivilege(tx, mayAuthorizeMPT) &&
                 (mptokensCreated_ + mptokensDeleted_ != 1))
             {
                 // if the holder submitted this tx, then a mptoken must be
@@ -1578,6 +1638,381 @@ ValidPermissionedDomain::finalize(
 
     return (sleStatus_[0] ? check(*sleStatus_[0], j) : true) &&
         (sleStatus_[1] ? check(*sleStatus_[1], j) : true);
+}
+
+//------------------------------------------------------------------------------
+
+void
+NoModifiedUnmodifiableFields::visitEntry(
+    bool isDelete,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
+{
+    if (isDelete || !before)
+        // Creation and deletion are ignored
+        return;
+
+    changedEntries_.emplace(before, after);
+}
+
+bool
+NoModifiedUnmodifiableFields::finalize(
+    STTx const& tx,
+    TER const,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    static auto const fieldChanged =
+        [](auto const& before, auto const& after, auto const& field) {
+            bool const beforeField = before->isFieldPresent(field);
+            bool const afterField = after->isFieldPresent(field);
+            return beforeField != afterField ||
+                (afterField && before->at(field) != after->at(field));
+        };
+    for (auto const& slePair : changedEntries_)
+    {
+        auto const& before = slePair.first;
+        auto const& after = slePair.second;
+        auto const type = after->getType();
+        bool bad = false;
+        [[maybe_unused]] bool enforce = false;
+        switch (type)
+        {
+            case ltLOAN_BROKER:
+                /*
+                 * We check this invariant regardless of lending protocol
+                 * amendment status, allowing for detection and logging of
+                 * potential issues even when the amendment is disabled.
+                 */
+                enforce = view.rules().enabled(featureLendingProtocol);
+                bad = fieldChanged(before, after, sfLedgerEntryType) ||
+                    fieldChanged(before, after, sfLedgerIndex) ||
+                    fieldChanged(before, after, sfSequence) ||
+                    fieldChanged(before, after, sfOwnerNode) ||
+                    fieldChanged(before, after, sfVaultNode) ||
+                    fieldChanged(before, after, sfVaultID) ||
+                    fieldChanged(before, after, sfAccount) ||
+                    fieldChanged(before, after, sfOwner) ||
+                    fieldChanged(before, after, sfManagementFeeRate) ||
+                    fieldChanged(before, after, sfCoverRateMinimum) ||
+                    fieldChanged(before, after, sfCoverRateLiquidation);
+                break;
+            case ltLOAN:
+                /*
+                 * We check this invariant regardless of lending protocol
+                 * amendment status, allowing for detection and logging of
+                 * potential issues even when the amendment is disabled.
+                 */
+                enforce = view.rules().enabled(featureLendingProtocol);
+                bad = fieldChanged(before, after, sfLedgerEntryType) ||
+                    fieldChanged(before, after, sfLedgerIndex) ||
+                    fieldChanged(before, after, sfSequence) ||
+                    fieldChanged(before, after, sfOwnerNode) ||
+                    fieldChanged(before, after, sfLoanBrokerNode) ||
+                    fieldChanged(before, after, sfLoanBrokerID) ||
+                    fieldChanged(before, after, sfBorrower) ||
+                    fieldChanged(before, after, sfLoanOriginationFee) ||
+                    fieldChanged(before, after, sfLoanServiceFee) ||
+                    fieldChanged(before, after, sfLatePaymentFee) ||
+                    fieldChanged(before, after, sfClosePaymentFee) ||
+                    fieldChanged(before, after, sfOverpaymentFee) ||
+                    fieldChanged(before, after, sfInterestRate) ||
+                    fieldChanged(before, after, sfLateInterestRate) ||
+                    fieldChanged(before, after, sfCloseInterestRate) ||
+                    fieldChanged(before, after, sfOverpaymentInterestRate) ||
+                    fieldChanged(before, after, sfStartDate) ||
+                    fieldChanged(before, after, sfPaymentInterval) ||
+                    fieldChanged(before, after, sfGracePeriod);
+                break;
+            default:
+                /*
+                 * We check this invariant regardless of lending protocol
+                 * amendment status, allowing for detection and logging of
+                 * potential issues even when the amendment is disabled.
+                 *
+                 * We use the lending protocol as a gate, even though
+                 * all transactions are affected because that's when it
+                 * was added.
+                 */
+                enforce = view.rules().enabled(featureLendingProtocol);
+                bad = fieldChanged(before, after, sfLedgerEntryType) ||
+                    fieldChanged(before, after, sfLedgerIndex);
+        }
+        XRPL_ASSERT(
+            !bad || enforce,
+            "ripple::NoModifiedUnmodifiableFields::finalize : no bad "
+            "changes or enforce invariant");
+        if (bad)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: changed an unchangable field for "
+                << tx.getTransactionID();
+            if (enforce)
+                return false;
+        }
+    }
+    return true;
+}
+
+//------------------------------------------------------------------------------
+
+void
+ValidPseudoAccounts::visitEntry(
+    bool isDelete,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
+{
+    if (isDelete)
+        // Deletion is ignored
+        return;
+
+    if (after && after->getType() == ltACCOUNT_ROOT)
+    {
+        bool const isPseudo = [&]() {
+            // isPseudoAccount checks that any of the pseudo-account fields are
+            // set.
+            if (isPseudoAccount(after))
+                return true;
+            // Not all pseudo-accounts have a zero sequence, but all accounts
+            // with a zero sequence had better be pseudo-accounts.
+            if (after->at(sfSequence) == 0)
+                return true;
+
+            return false;
+        }();
+        if (isPseudo)
+        {
+            // Pseudo accounts must have the following properties:
+            // 1. Exactly one of the pseudo-account fields is set.
+            // 2. The sequence number is not changed.
+            // 3. The lsfDisableMaster, lsfDefaultRipple, and lsfDepositAuth
+            // flags are set.
+            // 4. The RegularKey is not set.
+            {
+                std::vector<SField const*> const& fields =
+                    getPseudoAccountFields();
+
+                auto const numFields = std::count_if(
+                    fields.begin(),
+                    fields.end(),
+                    [&after](SField const* sf) -> bool {
+                        return after->isFieldPresent(*sf);
+                    });
+                if (numFields != 1)
+                {
+                    std::stringstream error;
+                    error << "pseudo-account has " << numFields
+                          << " pseudo-account fields set";
+                    errors_.emplace_back(error.str());
+                }
+            }
+            if (before && before->at(sfSequence) != after->at(sfSequence))
+            {
+                errors_.emplace_back("pseudo-account sequence changed");
+            }
+            if (!after->isFlag(
+                    lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth))
+            {
+                errors_.emplace_back("pseudo-account flags are not set");
+            }
+            if (after->isFieldPresent(sfRegularKey))
+            {
+                errors_.emplace_back("pseudo-account has a regular key");
+            }
+        }
+    }
+}
+
+bool
+ValidPseudoAccounts::finalize(
+    STTx const& tx,
+    TER const,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    bool const enforce = view.rules().enabled(featureLendingProtocol);
+    XRPL_ASSERT(
+        errors_.empty() || enforce,
+        "ripple::ValidPseudoAccounts::finalize : no bad "
+        "changes or enforce invariant");
+    if (!errors_.empty())
+    {
+        for (auto const& error : errors_)
+        {
+            JLOG(j.fatal()) << "Invariant failed: " << error;
+        }
+        if (enforce)
+            return false;
+    }
+    return true;
+}
+
+//------------------------------------------------------------------------------
+
+void
+ValidLoanBroker::visitEntry(
+    bool isDelete,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
+{
+    if (after && after->getType() == ltLOAN_BROKER)
+    {
+        brokers_.emplace_back(before, after);
+    }
+}
+
+bool
+ValidLoanBroker::goodZeroDirectory(
+    ReadView const& view,
+    SLE::const_ref dir,
+    beast::Journal const& j) const
+{
+    auto const next = dir->at(~sfIndexNext);
+    auto const prev = dir->at(~sfIndexPrevious);
+    if ((prev && *prev) || (next && *next))
+    {
+        JLOG(j.fatal()) << "Invariant failed: Loan Broker with zero "
+                           "OwnerCount has multiple directory pages";
+        return false;
+    }
+    auto indexes = dir->getFieldV256(sfIndexes);
+    if (indexes.size() > 1)
+    {
+        JLOG(j.fatal())
+            << "Invariant failed: Loan Broker with zero "
+               "OwnerCount has multiple indexes in the Directory root";
+        return false;
+    }
+    if (indexes.size() == 1)
+    {
+        auto const index = indexes.value().front();
+        auto const sle = view.read(keylet::unchecked(index));
+        if (!sle)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: Loan Broker directory corrupt";
+            return false;
+        }
+        if (sle->getType() != ltRIPPLE_STATE && sle->getType() != ltMPTOKEN)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: Loan Broker with zero "
+                   "OwnerCount has an unexpected entry in the directory";
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool
+ValidLoanBroker::finalize(
+    STTx const& tx,
+    TER const,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    // Loan Brokers will not exist on ledger if the Lending Protocol amendment
+    // is not enabled, so there's no need to check it.
+
+    for (auto const& [before, after] : brokers_)
+    {
+        // https://github.com/Tapanito/XRPL-Standards/blob/xls-66-lending-protocol/XLS-0066d-lending-protocol/README.md#3123-invariants
+        // If `LoanBroker.OwnerCount = 0` the `DirectoryNode` will have at most
+        // one node (the root), which will only hold entries for `RippleState`
+        // or `MPToken` objects.
+        if (after->at(sfOwnerCount) == 0)
+        {
+            auto const dir = view.read(keylet::ownerDir(after->at(sfAccount)));
+            if (dir)
+            {
+                if (!goodZeroDirectory(view, dir, j))
+                {
+                    return false;
+                }
+            }
+        }
+        if (before && before->at(sfLoanSequence) > after->at(sfLoanSequence))
+        {
+            JLOG(j.fatal()) << "Invariant failed: Loan Broker sequence number "
+                               "decreased";
+            return false;
+        }
+        if (after->at(sfDebtTotal) < 0)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: Loan Broker debt total is negative";
+            return false;
+        }
+        if (after->at(sfCoverAvailable) < 0)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: Loan Broker cover available is negative";
+            return false;
+        }
+    }
+    return true;
+}
+
+//------------------------------------------------------------------------------
+
+void
+ValidLoan::visitEntry(
+    bool isDelete,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
+{
+    if (after && after->getType() == ltLOAN)
+    {
+        loans_.emplace_back(before, after);
+    }
+}
+
+bool
+ValidLoan::finalize(
+    STTx const& tx,
+    TER const,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    // Loan Brokers will not exist on ledger if the Lending Protocol amendment
+    // is not enabled, so there's no need to check it.
+
+    for (auto const& [before, after] : loans_)
+    {
+        // https://github.com/Tapanito/XRPL-Standards/blob/xls-66-lending-protocol/XLS-0066d-lending-protocol/README.md#3223-invariants
+        // If `Loan.PaymentRemaining = 0` then `Loan.PrincipalOutstanding = 0`
+        if (after->at(sfPaymentRemaining) == 0 &&
+            after->at(sfPrincipalOutstanding) != 0)
+        {
+            return false;
+        }
+        if (before &&
+            (before->isFlag(lsfLoanOverpayment) !=
+             after->isFlag(lsfLoanOverpayment)))
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: Loan Overpayment flag changed";
+            return false;
+        }
+        if (after->at(sfAssetsAvailable) < 0)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: Loan assets available is negative";
+            return false;
+        }
+        if (after->at(sfPrincipalOutstanding) < 0)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: Loan principal outstanding is negative";
+            return false;
+        }
+    }
+    return true;
 }
 
 }  // namespace ripple

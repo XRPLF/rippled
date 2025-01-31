@@ -3328,7 +3328,7 @@ private:
                     env.current()->rules(),
                     tapNONE,
                     env.journal);
-                auto pf = AMMBid::preflight(pfctx);
+                auto pf = Transactor::preflight<AMMBid>(pfctx);
                 BEAST_EXPECT(pf == temDISABLED);
                 env.app().config().features.insert(featureAMM);
             }
@@ -3343,7 +3343,7 @@ private:
                     env.current()->rules(),
                     tapNONE,
                     env.journal);
-                auto pf = AMMBid::preflight(pfctx);
+                auto pf = Transactor::preflight<AMMBid>(pfctx);
                 BEAST_EXPECT(pf != tesSUCCESS);
             }
 
@@ -3358,7 +3358,7 @@ private:
                     env.current()->rules(),
                     tapNONE,
                     env.journal);
-                auto pf = AMMBid::preflight(pfctx);
+                auto pf = Transactor::preflight<AMMBid>(pfctx);
                 BEAST_EXPECT(pf == temBAD_AMM_TOKENS);
             }
         }
@@ -7161,7 +7161,7 @@ private:
         using namespace test::jtx;
 
         auto const testCase = [&](std::string suffix, FeatureBitset features) {
-            testcase("Failed pseudo-account allocation " + suffix);
+            testcase("Fail pseudo-account allocation " + suffix);
             Env env{*this, features};
             env.fund(XRP(30'000), gw, alice);
             env.close();

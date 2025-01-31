@@ -96,16 +96,53 @@ public:
     };
 
     std::vector<Reg> signers;
+    SField const* const subField = nullptr;
+    static constexpr SField* const topLevel = nullptr;
 
 public:
-    msig(std::vector<Reg> signers_);
+    msig(SField const* subField_, std::vector<Reg> signers_);
+
+    msig(SField const& subField_, std::vector<Reg> signers_)
+        : msig{&subField_, signers_}
+    {
+    }
+
+    msig(std::vector<Reg> signers_) : msig(topLevel, signers_)
+    {
+    }
 
     template <class AccountType, class... Accounts>
         requires std::convertible_to<AccountType, Reg>
+    explicit msig(SField const* subField_, AccountType&& a0, Accounts&&... aN)
+        : msig{
+              subField_,
+              std::vector<Reg>{
+                  std::forward<AccountType>(a0),
+                  std::forward<Accounts>(aN)...}}
+    {
+    }
+
+    template <class AccountType, class... Accounts>
+        requires std::convertible_to<AccountType, Reg>
+    explicit msig(SField const& subField_, AccountType&& a0, Accounts&&... aN)
+        : msig{
+              &subField_,
+              std::vector<Reg>{
+                  std::forward<AccountType>(a0),
+                  std::forward<Accounts>(aN)...}}
+    {
+    }
+
+    template <class AccountType, class... Accounts>
+        requires(
+            std::convertible_to<AccountType, Reg> &&
+            !std::is_same_v<AccountType, SField*>)
     explicit msig(AccountType&& a0, Accounts&&... aN)
-        : msig{std::vector<Reg>{
-              std::forward<AccountType>(a0),
-              std::forward<Accounts>(aN)...}}
+        : msig{
+              topLevel,
+              std::vector<Reg>{
+                  std::forward<AccountType>(a0),
+                  std::forward<Accounts>(aN)...}}
     {
     }
 

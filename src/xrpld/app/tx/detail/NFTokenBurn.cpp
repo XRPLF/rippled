@@ -26,19 +26,16 @@
 
 namespace ripple {
 
-NotTEC
-NFTokenBurn::preflight(PreflightContext const& ctx)
+bool
+NFTokenBurn::isEnabled(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureNonFungibleTokensV1))
-        return temDISABLED;
+    return ctx.rules.enabled(featureNonFungibleTokensV1);
+}
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
-
-    return preflight2(ctx);
+NotTEC
+NFTokenBurn::doPreflight(PreflightContext const& ctx)
+{
+    return tesSUCCESS;
 }
 
 TER

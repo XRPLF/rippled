@@ -34,13 +34,14 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
 
 namespace ripple {
 
 /** Performs early sanity checks on the txid */
 NotTEC
-preflight0(PreflightContext const& ctx)
+preflight0(PreflightContext const& ctx, std::uint32_t flagMask)
 {
     if (!isPseudoTx(ctx.tx) || ctx.tx.isFieldPresent(sfNetworkID))
     {
@@ -75,12 +76,38 @@ preflight0(PreflightContext const& ctx)
         return temINVALID;
     }
 
+    if (ctx.tx.getFlags() & flagMask)
+    {
+        JLOG(ctx.j.debug())
+            << ctx.tx.peekAtField(sfTransactionType).getFullText()
+            << ": invalid flags.";
+        return temINVALID_FLAG;
+    }
+
+    return tesSUCCESS;
+}
+
+namespace detail {
+
+/** Checks the validity of the transactor signing key.
+ *
+ * Normally called from preflight1.
+ */
+NotTEC
+preflightCheckSigningKey(STObject const& sigObject, beast::Journal j)
+{
+    if (auto const spk = sigObject.getFieldVL(sfSigningPubKey);
+        !spk.empty() && !publicKeyType(makeSlice(spk)))
+    {
+        JLOG(j.debug()) << "preflightCheckSigningKey: invalid signing key";
+        return temBAD_SIGNATURE;
+    }
     return tesSUCCESS;
 }
 
 /** Performs early sanity checks on the account and fee fields */
 NotTEC
-preflight1(PreflightContext const& ctx)
+preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
 {
     // This is inappropriate in preflight0, because only Change transactions
     // skip this function, and those do not allow an sfTicketSequence field.
@@ -99,8 +126,7 @@ preflight1(PreflightContext const& ctx)
             return temBAD_SIGNER;
     }
 
-    auto const ret = preflight0(ctx);
-    if (!isTesSuccess(ret))
+    if (auto const ret = preflight0(ctx, flagMask))
         return ret;
 
     auto const id = ctx.tx.getAccountID(sfAccount);
@@ -118,13 +144,8 @@ preflight1(PreflightContext const& ctx)
         return temBAD_FEE;
     }
 
-    auto const spk = ctx.tx.getSigningPubKey();
-
-    if (!spk.empty() && !publicKeyType(makeSlice(spk)))
-    {
-        JLOG(ctx.j.debug()) << "preflight1: invalid signing key";
-        return temBAD_SIGNATURE;
-    }
+    if (auto const ret = preflightCheckSigningKey(ctx.tx, ctx.j))
+        return ret;
 
     // An AccountTxnID field constrains transaction ordering more than the
     // Sequence field.  Tickets, on the other hand, reduce ordering
@@ -139,26 +160,28 @@ preflight1(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-/** Checks whether the signature appears valid */
-NotTEC
-preflight2(PreflightContext const& ctx)
+std::optional<NotTEC>
+preflightCheckSimulateKeys(
+    ApplyFlags flags,
+    STObject const& sigObject,
+    beast::Journal j)
 {
-    if (ctx.flags & tapDRY_RUN)  // simulation
+    if (flags & tapDRY_RUN)  // simulation
     {
-        if (!ctx.tx.getSignature().empty())
+        if (!sigObject.getFieldVL(sfTxnSignature).empty())
         {
             // NOTE: This code should never be hit because it's checked in the
             // `simulate` RPC
             return temINVALID;  // LCOV_EXCL_LINE
         }
 
-        if (!ctx.tx.isFieldPresent(sfSigners))
+        if (!sigObject.isFieldPresent(sfSigners))
         {
             // no signers, no signature - a valid simulation
             return tesSUCCESS;
         }
 
-        for (auto const& signer : ctx.tx.getFieldArray(sfSigners))
+        for (auto const& signer : sigObject.getFieldArray(sfSigners))
         {
             if (signer.isFieldPresent(sfTxnSignature) &&
                 !signer[sfTxnSignature].empty())
@@ -170,6 +193,17 @@ preflight2(PreflightContext const& ctx)
         }
         return tesSUCCESS;
     }
+    return {};
+}
+
+/** Checks whether the signature appears valid */
+NotTEC
+preflight2(PreflightContext const& ctx)
+{
+    if (auto const ret = preflightCheckSimulateKeys(ctx.flags, ctx.tx, ctx.j))
+        // Skips following checks if the transaction is being simulated,
+        // regardless of success or failure
+        return *ret;
 
     auto const sigValid = checkValidity(
         ctx.app.getHashRouter(), ctx.tx, ctx.rules, ctx.app.config());
@@ -180,6 +214,8 @@ preflight2(PreflightContext const& ctx)
     }
     return tesSUCCESS;
 }
+
+}  // namespace detail
 
 //------------------------------------------------------------------------------
 
@@ -196,8 +232,27 @@ PreflightContext::PreflightContext(
 //------------------------------------------------------------------------------
 
 Transactor::Transactor(ApplyContext& ctx)
-    : ctx_(ctx), j_(ctx.journal), account_(ctx.tx.getAccountID(sfAccount))
+    : ctx_(ctx)
+    , sink_(ctx.journal, to_short_string(ctx.tx.getTransactionID()) + " ")
+    , j_(sink_)
+    , account_(ctx.tx.getAccountID(sfAccount))
 {
+}
+
+bool
+Transactor::validDataLength(
+    std::optional<Slice> const& slice,
+    std::size_t maxLength)
+{
+    if (!slice)
+        return true;
+    return !slice->empty() && slice->length() <= maxLength;
+}
+
+std::uint32_t
+Transactor::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfUniversalMask;
 }
 
 TER
@@ -232,6 +287,18 @@ Transactor::calculateBaseFee(ReadView const& view, STTx const& tx)
         tx.isFieldPresent(sfSigners) ? tx.getFieldArray(sfSigners).size() : 0;
 
     return baseFee + (signerCount * baseFee);
+}
+
+// Returns the fee in fee units, not scaled for load.
+XRPAmount
+Transactor::calculateOwnerReserveFee(ReadView const& view, STTx const& tx)
+{
+    // One reserve increment is typically much greater than one base fee.
+    XRPL_ASSERT(
+        view.fees().increment > view.fees().base * 100,
+        "ripple::Transactor::calculateOwnerReserveFee : Owner reserve is much "
+        "greater than base fee");
+    return view.fees().increment;
 }
 
 XRPAmount
@@ -555,28 +622,54 @@ Transactor::apply()
 }
 
 NotTEC
-Transactor::checkSign(PreclaimContext const& ctx)
+Transactor::checkSign(
+    PreclaimContext const& ctx,
+    AccountID const& id,
+    STObject const& sigObject)
 {
+    {
+        auto const sle = ctx.view.read(keylet::account(id));
+
+        if (ctx.view.rules().enabled(featureLendingProtocol) &&
+            isPseudoAccount(sle))
+            // Pseudo-accounts can't sign transactions. This check is gated on
+            // the Lending Protocol amendment because that's the project it was
+            // added under, and it doesn't justify another amendment
+            return tefBAD_AUTH;
+    }
     if (ctx.flags & tapDRY_RUN)
     {
         // This code must be different for `simulate`
         // Since the public key may be empty even for single signing
-        if (ctx.tx.isFieldPresent(sfSigners))
-            return checkMultiSign(ctx);
-        return checkSingleSign(ctx);
+        if (sigObject.isFieldPresent(sfSigners))
+            return checkMultiSign(ctx, id, sigObject);
+        return checkSingleSign(ctx, id, sigObject);
     }
     // If the pk is empty, then we must be multi-signing.
-    if (ctx.tx.getSigningPubKey().empty())
-        return checkMultiSign(ctx);
+    if (sigObject.getFieldVL(sfSigningPubKey).empty())
+        return checkMultiSign(ctx, id, sigObject);
 
-    return checkSingleSign(ctx);
+    return checkSingleSign(ctx, id, sigObject);
 }
 
 NotTEC
-Transactor::checkSingleSign(PreclaimContext const& ctx)
+Transactor::checkSign(PreclaimContext const& ctx)
+{
+    auto const idAccount = ctx.tx.isFieldPresent(sfDelegate)
+        ? ctx.tx.getAccountID(sfDelegate)
+        : ctx.tx.getAccountID(sfAccount);
+    return checkSign(ctx, idAccount, ctx.tx);
+}
+
+// TODO generalize
+NotTEC
+Transactor::checkSingleSign(
+    PreclaimContext const& ctx,
+    AccountID const& idAccount,
+    STObject const& sigObject)
 {
     // Check that the value in the signing key slot is a public key.
-    auto const pkSigner = ctx.tx.getSigningPubKey();
+    auto const pkSigner = sigObject.getFieldVL(sfSigningPubKey);
     if (!(ctx.flags & tapDRY_RUN) && !publicKeyType(makeSlice(pkSigner)))
     {
         JLOG(ctx.j.trace())
@@ -585,9 +678,6 @@ Transactor::checkSingleSign(PreclaimContext const& ctx)
     }
 
     // Look up the account.
-    auto const idAccount = ctx.tx.isFieldPresent(sfDelegate)
-        ? ctx.tx.getAccountID(sfDelegate)
-        : ctx.tx.getAccountID(sfAccount);
     auto const sleAccount = ctx.view.read(keylet::account(idAccount));
     if (!sleAccount)
         return terNO_ACCOUNT;
@@ -654,13 +744,14 @@ Transactor::checkSingleSign(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
+// TODO generalize
 NotTEC
-Transactor::checkMultiSign(PreclaimContext const& ctx)
+Transactor::checkMultiSign(
+    PreclaimContext const& ctx,
+    AccountID const& id,
+    STObject const& sigObject)
 {
-    auto const id = ctx.tx.isFieldPresent(sfDelegate)
-        ? ctx.tx.getAccountID(sfDelegate)
-        : ctx.tx.getAccountID(sfAccount);
-    // Get mTxnAccountID's SignerList and Quorum.
+    // Get id's SignerList and Quorum.
     std::shared_ptr<STLedgerEntry const> sleAccountSigners =
         ctx.view.read(keylet::signers(id));
     // If the signer list doesn't exist the account is not multi-signing.
@@ -686,7 +777,7 @@ Transactor::checkMultiSign(PreclaimContext const& ctx)
         return accountSigners.error();
 
     // Get the array of transaction signers.
-    STArray const& txSigners(ctx.tx.getFieldArray(sfSigners));
+    STArray const& txSigners(sigObject.getFieldArray(sfSigners));
 
     // Walk the accountSigners performing a variety of checks and see if
     // the quorum is met.

@@ -34,15 +34,6 @@
 namespace ripple {
 namespace test {
 
-static inline bool
-checkVL(
-    std::shared_ptr<SLE const> const& sle,
-    SField const& field,
-    std::string const& expected)
-{
-    return strHex(expected) == strHex(sle->getFieldVL(field));
-}
-
 struct Credentials_test : public beast::unit_test::suite
 {
     void

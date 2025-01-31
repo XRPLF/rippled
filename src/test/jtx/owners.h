@@ -30,8 +30,6 @@
 #include <cstdint>
 
 namespace ripple {
-namespace test {
-namespace jtx {
 
 namespace detail {
 
@@ -40,12 +38,15 @@ owned_count_of(ReadView const& view, AccountID const& id, LedgerEntryType type);
 
 void
 owned_count_helper(
-    Env& env,
+    test::jtx::Env& env,
     AccountID const& id,
     LedgerEntryType type,
     std::uint32_t value);
 
 }  // namespace detail
+
+namespace test {
+namespace jtx {
 
 // Helper for aliases
 template <LedgerEntryType Type>

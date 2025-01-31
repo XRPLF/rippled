@@ -21,6 +21,7 @@
 #define RIPPLE_PROTOCOL_STINTEGER_H_INCLUDED
 
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STBase.h>
 
 namespace ripple {
@@ -36,7 +37,7 @@ private:
 
 public:
     explicit STInteger(Integer v);
-    STInteger(SField const& n, Integer v = 0);
+    STInteger(SField const& n, Integer v = {});
     STInteger(SerialIter& sit, SField const& name);
 
     SerializedTypeID
@@ -122,7 +123,7 @@ template <typename Integer>
 inline bool
 STInteger<Integer>::isDefault() const
 {
-    return value_ == 0;
+    return value_ == Integer{};
 }
 
 template <typename Integer>

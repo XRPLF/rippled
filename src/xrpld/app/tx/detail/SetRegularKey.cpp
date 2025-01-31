@@ -49,20 +49,8 @@ SetRegularKey::calculateBaseFee(ReadView const& view, STTx const& tx)
 }
 
 NotTEC
-SetRegularKey::preflight(PreflightContext const& ctx)
+SetRegularKey::doPreflight(PreflightContext const& ctx)
 {
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
-    std::uint32_t const uTxFlags = ctx.tx.getFlags();
-
-    if (uTxFlags & tfUniversalMask)
-    {
-        JLOG(ctx.j.trace()) << "Malformed transaction: Invalid flags set.";
-
-        return temINVALID_FLAG;
-    }
-
     if (ctx.rules.enabled(fixMasterKeyAsRegularKey) &&
         ctx.tx.isFieldPresent(sfRegularKey) &&
         (ctx.tx.getAccountID(sfRegularKey) == ctx.tx.getAccountID(sfAccount)))
@@ -70,7 +58,7 @@ SetRegularKey::preflight(PreflightContext const& ctx)
         return temBAD_REGKEY;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER

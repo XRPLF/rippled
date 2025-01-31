@@ -24,9 +24,9 @@
 #include <test/jtx/tags.h>
 
 #include <xrpl/basics/contract.h>
-#include <xrpl/protocol/FeeUnits.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/Units.h>
 
 #include <cstdint>
 #include <ostream>
@@ -34,6 +34,16 @@
 #include <type_traits>
 
 namespace ripple {
+
+namespace detail {
+
+struct epsilon_multiple
+{
+    std::size_t n;
+};
+
+}  // namespace detail
+
 namespace test {
 namespace jtx {
 
@@ -57,7 +67,7 @@ struct AnyAmount;
 //
 struct None
 {
-    Issue issue;
+    Asset asset;
 };
 
 //------------------------------------------------------------------------------
@@ -133,6 +143,12 @@ public:
         return amount_;
     }
 
+    inline int
+    signum() const
+    {
+        return amount_.signum();
+    }
+
     operator STAmount const&() const
     {
         return amount_;
@@ -165,17 +181,17 @@ struct PrettyAsset
 {
 private:
     Asset asset_;
-    unsigned int scale_;
+    std::uint64_t scale_;
 
 public:
     template <typename A>
         requires std::convertible_to<A, Asset>
-    PrettyAsset(A const& asset, unsigned int scale = 1)
+    PrettyAsset(A const& asset, std::uint32_t scale = 1)
         : PrettyAsset{Asset{asset}, scale}
     {
     }
 
-    PrettyAsset(Asset const& asset, unsigned int scale = 1)
+    PrettyAsset(Asset const& asset, std::uint32_t scale = 1)
         : asset_(asset), scale_(scale)
     {
     }
@@ -200,8 +216,20 @@ public:
     PrettyAmount
     operator()(T v) const
     {
-        STAmount amount{asset_, v * scale_};
+        bool negative = false;
+        if (v < 0)
+        {
+            v = -v;
+            negative = true;
+        }
+        STAmount amount{asset_, v * scale_, 0, negative};
         return {amount, ""};
+    }
+
+    None
+    operator()(none_t) const
+    {
+        return {asset_};
     }
 };
 //------------------------------------------------------------------------------
@@ -312,15 +340,6 @@ drops(XRPAmount i)
 
 //------------------------------------------------------------------------------
 
-namespace detail {
-
-struct epsilon_multiple
-{
-    std::size_t n;
-};
-
-}  // namespace detail
-
 // The smallest possible IOU STAmount
 struct epsilon_t
 {
@@ -360,6 +379,11 @@ public:
     {
         return {currency, account.id()};
     }
+    Asset
+    asset() const
+    {
+        return issue();
+    }
 
     /** Implicit conversion to Issue or Asset.
 
@@ -370,9 +394,9 @@ public:
     {
         return issue();
     }
-    operator Asset() const
+    operator PrettyAsset() const
     {
-        return issue();
+        return asset();
     }
 
     template <
@@ -438,14 +462,32 @@ public:
         return issuanceID;
     }
 
-    /** Implicit conversion to MPTIssue.
+    /** Explicit conversion to MPTIssue or asset.
+     */
+    ripple::MPTIssue
+    mptIssue() const
+    {
+        return MPTIssue{issuanceID};
+    }
+    Asset
+    asset() const
+    {
+        return mptIssue();
+    }
+
+    /** Implicit conversion to MPTIssue or asset.
 
         This allows passing an MPT
         value where an MPTIssue is expected.
     */
     operator ripple::MPTIssue() const
     {
-        return MPTIssue{issuanceID};
+        return mptIssue();
+    }
+
+    operator PrettyAsset() const
+    {
+        return asset();
     }
 
     template <class T>
@@ -460,6 +502,13 @@ public:
     operator()(epsilon_t) const;
     PrettyAmount
     operator()(detail::epsilon_multiple) const;
+
+    /** Returns None-of-Issue */
+    None
+    operator()(none_t) const
+    {
+        return {mptIssue()};
+    }
 
     friend BookSpec
     operator~(MPT const& mpt)

@@ -125,7 +125,16 @@ public:
     }
 
     template <typename Integer>
+        requires(!HasValue<Integer>)
     int addInteger(Integer);
+
+    template <typename Integer>
+        requires HasValue<Integer>
+    int
+    addInteger(Integer i)
+    {
+        return addInteger(i.value());
+    }
 
     template <std::size_t Bits, class Tag>
     int

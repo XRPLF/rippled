@@ -33,28 +33,28 @@
 
 namespace ripple {
 
-NotTEC
-VaultCreate::preflight(PreflightContext const& ctx)
+bool
+VaultCreate::isEnabled(PreflightContext const& ctx)
 {
     if (!ctx.rules.enabled(featureSingleAssetVault) ||
         !ctx.rules.enabled(featureMPTokensV1))
-        return temDISABLED;
+        return false;
 
-    if (ctx.tx.isFieldPresent(sfDomainID) &&
-        !ctx.rules.enabled(featurePermissionedDomains))
-        return temDISABLED;
+    return !ctx.tx.isFieldPresent(sfDomainID) ||
+        ctx.rules.enabled(featurePermissionedDomains);
+}
 
-    if (auto const ter = preflight1(ctx))
-        return ter;
+std::uint32_t
+VaultCreate::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfVaultCreateMask;
+}
 
-    if (ctx.tx.getFlags() & tfVaultCreateMask)
-        return temINVALID_FLAG;
-
-    if (auto const data = ctx.tx[~sfData])
-    {
-        if (data->empty() || data->length() > maxDataPayloadLength)
-            return temMALFORMED;
-    }
+NotTEC
+VaultCreate::doPreflight(PreflightContext const& ctx)
+{
+    if (!validDataLength(ctx.tx[~sfData], maxDataPayloadLength))
+        return temMALFORMED;
 
     if (auto const withdrawalPolicy = ctx.tx[~sfWithdrawalPolicy])
     {
@@ -84,14 +84,14 @@ VaultCreate::preflight(PreflightContext const& ctx)
             return temMALFORMED;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 XRPAmount
 VaultCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
     // One reserve increment is typically much greater than one base fee.
-    return view.fees().increment;
+    return calculateOwnerReserveFee(view, tx);
 }
 
 TER
@@ -100,26 +100,8 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
     auto vaultAsset = ctx.tx[sfAsset];
     auto account = ctx.tx[sfAccount];
 
-    if (vaultAsset.native())
-        ;  // No special checks for XRP
-    else if (vaultAsset.holds<MPTIssue>())
-    {
-        auto mptID = vaultAsset.get<MPTIssue>().getMptID();
-        auto issuance = ctx.view.read(keylet::mptIssuance(mptID));
-        if (!issuance)
-            return tecOBJECT_NOT_FOUND;
-        if (!issuance->isFlag(lsfMPTCanTransfer))
-            return tecNO_AUTH;
-    }
-    else if (vaultAsset.holds<Issue>())
-    {
-        auto const issuer =
-            ctx.view.read(keylet::account(vaultAsset.getIssuer()));
-        if (!issuer)
-            return terNO_ACCOUNT;
-        else if (!issuer->isFlag(lsfDefaultRipple))
-            return terNO_RIPPLE;
-    }
+    if (auto const ter = canAddHolding(ctx.view, vaultAsset))
+        return ter;
 
     // Check for pseudo-account issuers - we do not want a vault to hold such
     // assets (e.g. MPT shares to other vaults or AMM LPTokens) as they would be

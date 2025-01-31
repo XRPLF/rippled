@@ -695,6 +695,16 @@ divRoundStrict(
 std::uint64_t
 getRate(STAmount const& offerOut, STAmount const& offerIn);
 
+template <AssetType A>
+Number
+roundToAsset(A const& asset, Number const& value)
+{
+    STAmount const amount{asset, value};
+    if (amount != value)
+        return amount;
+    return value;
+}
+
 //------------------------------------------------------------------------------
 
 inline bool

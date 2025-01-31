@@ -27,22 +27,16 @@
 
 namespace ripple {
 
-NotTEC
-AMMDelete::preflight(PreflightContext const& ctx)
+bool
+AMMDelete::isEnabled(PreflightContext const& ctx)
 {
-    if (!ammEnabled(ctx.rules))
-        return temDISABLED;
+    return ammEnabled(ctx.rules);
+}
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-    {
-        JLOG(ctx.j.debug()) << "AMM Delete: invalid flags.";
-        return temINVALID_FLAG;
-    }
-
-    return preflight2(ctx);
+NotTEC
+AMMDelete::doPreflight(PreflightContext const& ctx)
+{
+    return tesSUCCESS;
 }
 
 TER

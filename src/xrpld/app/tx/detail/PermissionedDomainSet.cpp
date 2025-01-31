@@ -28,22 +28,16 @@
 
 namespace ripple {
 
-NotTEC
-PermissionedDomainSet::preflight(PreflightContext const& ctx)
+bool
+PermissionedDomainSet::isEnabled(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featurePermissionedDomains) ||
-        !ctx.rules.enabled(featureCredentials))
-        return temDISABLED;
+    return ctx.rules.enabled(featurePermissionedDomains) &&
+        ctx.rules.enabled(featureCredentials);
+}
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-    {
-        JLOG(ctx.j.debug()) << "PermissionedDomainSet: invalid flags.";
-        return temINVALID_FLAG;
-    }
-
+NotTEC
+PermissionedDomainSet::doPreflight(PreflightContext const& ctx)
+{
     if (auto err = credentials::checkArray(
             ctx.tx.getFieldArray(sfAcceptedCredentials),
             maxPermissionedDomainCredentialsArraySize,
@@ -55,7 +49,7 @@ PermissionedDomainSet::preflight(PreflightContext const& ctx)
     if (domain && *domain == beast::zero)
         return temMALFORMED;
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER
