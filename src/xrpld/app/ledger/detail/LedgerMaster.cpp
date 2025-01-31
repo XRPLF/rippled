@@ -467,8 +467,7 @@ LedgerMaster::applyHeldTransactions()
             ApplyFlags flags = tapNONE;
             auto const result =
                 app_.getTxQ().apply(app_, view, it.second, flags, j);
-            if (result.second)
-                any = true;
+            any |= result.applied;
         }
         return any;
     });
@@ -2136,7 +2135,7 @@ LedgerMaster::makeFetchPack(
     {
         JLOG(m_journal.info())
             << "Peer requests fetch pack for ledger we don't have: " << have;
-        peer->charge(Resource::feeRequestNoReply);
+        peer->charge(Resource::feeRequestNoReply, "get_object ledger");
         return;
     }
 
@@ -2144,14 +2143,14 @@ LedgerMaster::makeFetchPack(
     {
         JLOG(m_journal.warn())
             << "Peer requests fetch pack from open ledger: " << have;
-        peer->charge(Resource::feeInvalidRequest);
+        peer->charge(Resource::feeMalformedRequest, "get_object ledger open");
         return;
     }
 
     if (have->info().seq < getEarliestFetch())
     {
         JLOG(m_journal.debug()) << "Peer requests fetch pack that is too early";
-        peer->charge(Resource::feeInvalidRequest);
+        peer->charge(Resource::feeMalformedRequest, "get_object ledger early");
         return;
     }
 
@@ -2162,7 +2161,8 @@ LedgerMaster::makeFetchPack(
         JLOG(m_journal.info())
             << "Peer requests fetch pack for ledger whose predecessor we "
             << "don't have: " << have;
-        peer->charge(Resource::feeRequestNoReply);
+        peer->charge(
+            Resource::feeRequestNoReply, "get_object ledger no parent");
         return;
     }
 

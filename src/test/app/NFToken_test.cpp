@@ -2239,7 +2239,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(990));
 
             // minter sells the nft to alice.  Because alice is part of the
-            // transaction no tranfer fee is removed.
+            // transaction no transfer fee is removed.
             uint256 const minterSellOfferIndex =
                 keylet::nftoffer(minter, env.seq(minter)).key;
             env(token::createOffer(minter, nftID, gwXAU(10)),
@@ -2331,7 +2331,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             BEAST_EXPECT(env.balance(carol, gwXAU) == gwXAU(990));
 
             // carol sells the nft to alice.  Because alice is part of the
-            // transaction no tranfer fee is removed.
+            // transaction no transfer fee is removed.
             uint256 const carolSellOfferIndex =
                 keylet::nftoffer(carol, env.seq(carol)).key;
             env(token::createOffer(carol, nftID, gwXAU(10)),
@@ -7793,11 +7793,16 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             env(token::mint(issuer, 0u), txflags(tfMutable));
             env.close();
 
-            // Set a negative fee.  Exercises invalid preflight1.
+            // Set a negative fee. Exercises invalid preflight1.
             env(token::modify(issuer, nftId),
                 fee(STAmount(10ull, true)),
                 ter(temBAD_FEE));
             env.close();
+
+            // Invalid Flags
+            env(token::modify(issuer, nftId),
+                txflags(0x00000001),
+                ter(temINVALID_FLAG));
 
             // Invalid Owner
             env(token::modify(issuer, nftId),
@@ -7862,6 +7867,19 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                     ter(tecNO_PERMISSION));
                 env.close();
             }
+        }
+        {
+            Env env{*this, features};
+            env.fund(XRP(10000), issuer, alice, bob);
+            env.close();
+
+            // modify with tfFullyCanonicalSig should success
+            uint256 const nftId{token::getNextID(env, issuer, 0u, tfMutable)};
+            env(token::mint(issuer, 0u), txflags(tfMutable), token::uri("uri"));
+            env.close();
+
+            env(token::modify(issuer, nftId), txflags(tfFullyCanonicalSig));
+            env.close();
         }
         {
             Env env{*this, features};

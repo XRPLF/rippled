@@ -63,11 +63,16 @@ jobs:
     env:
       build_dir: .build
     steps:
+      - name: upgrade conan
+        run: |
+          pip install --upgrade "conan<2"
       - name: checkout
         uses: actions/checkout@v4
       - name: check environment
         run: |
           echo ${PATH} | tr ':' '\n'
+          lsb_release -a || true
+          ${{ matrix.profile.cc }} --version
           conan --version
           cmake --version
           env | sort
@@ -120,6 +125,9 @@ jobs:
     env:
       build_dir: .build
     steps:
+      - name: upgrade conan
+        run: |
+          pip install --upgrade "conan<2"
       - name: download cache
         uses: actions/download-artifact@v4
         with:
@@ -168,6 +176,9 @@ jobs:
     env:
       build_dir: .build
     steps:
+      - name: upgrade conan
+        run: |
+          pip install --upgrade "conan<2"
       - name: download cache
         uses: actions/download-artifact@v4
         with:
@@ -238,6 +249,9 @@ jobs:
       build_dir: .build
       configuration: Release
     steps:
+      - name: upgrade conan
+        run: |
+          pip install --upgrade "conan<2"
       - name: download cache
         uses: actions/download-artifact@v4
         with:

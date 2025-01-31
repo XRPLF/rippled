@@ -201,11 +201,7 @@ struct SEnv
 template <class T>
 struct XEnv : public jtx::XChainBridgeObjects, public SEnv<T>
 {
-    XEnv(T& s, bool side = false)
-        : SEnv<T>(
-              s,
-              jtx::envconfig(jtx::port_increment, side ? 3 : 0),
-              features)
+    XEnv(T& s, bool side = false) : SEnv<T>(s, jtx::envconfig(), features)
     {
         using namespace jtx;
         STAmount xrp_funds{XRP(10000)};

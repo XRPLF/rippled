@@ -16,11 +16,15 @@
 //==============================================================================
 
 #include <test/jtx.h>
+#include <test/jtx/check.h>
 #include <test/jtx/envconfig.h>
+#include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/tx/apply.h>
+#include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/jss.h>
 
 namespace ripple {
@@ -76,8 +80,8 @@ struct Regression_test : public beast::unit_test::suite
 
             auto const result =
                 ripple::apply(env.app(), accum, *jt.stx, tapNONE, env.journal);
-            BEAST_EXPECT(result.first == tesSUCCESS);
-            BEAST_EXPECT(result.second);
+            BEAST_EXPECT(result.ter == tesSUCCESS);
+            BEAST_EXPECT(result.applied);
 
             accum.apply(*next);
         }
@@ -100,8 +104,8 @@ struct Regression_test : public beast::unit_test::suite
 
             auto const result =
                 ripple::apply(env.app(), accum, *jt.stx, tapNONE, env.journal);
-            BEAST_EXPECT(result.first == tecINSUFF_FEE);
-            BEAST_EXPECT(result.second);
+            BEAST_EXPECT(result.ter == tecINSUFF_FEE);
+            BEAST_EXPECT(result.applied);
 
             accum.apply(*next);
         }
@@ -248,6 +252,80 @@ struct Regression_test : public beast::unit_test::suite
     }
 
     void
+    testInvalidTxObjectIDType()
+    {
+        testcase("Invalid Transaction Object ID Type");
+        // Crasher bug introduced in 2.0.1. Fixed in 2.3.0.
+
+        using namespace jtx;
+        Env env(*this);
+
+        Account alice("alice");
+        Account bob("bob");
+        env.fund(XRP(10'000), alice, bob);
+        env.close();
+
+        {
+            auto const alice_index = keylet::account(alice).key;
+            if (BEAST_EXPECT(alice_index.isNonZero()))
+            {
+                env(check::cash(
+                        alice, alice_index, check::DeliverMin(XRP(100))),
+                    ter(tecNO_ENTRY));
+            }
+        }
+
+        {
+            auto const bob_index = keylet::account(bob).key;
+
+            auto const digest = [&]() -> std::optional<uint256> {
+                auto const& state =
+                    env.app().getLedgerMaster().getClosedLedger()->stateMap();
+                SHAMapHash digest;
+                if (!state.peekItem(bob_index, digest))
+                    return std::nullopt;
+                return digest.as_uint256();
+            }();
+
+            auto const mapCounts = [&](CountedObjects::List const& list) {
+                std::map<std::string, int> result;
+                for (auto const& e : list)
+                {
+                    result[e.first] = e.second;
+                }
+
+                return result;
+            };
+
+            if (BEAST_EXPECT(bob_index.isNonZero()) &&
+                BEAST_EXPECT(digest.has_value()))
+            {
+                auto& cache = env.app().cachedSLEs();
+                cache.del(*digest, false);
+                auto const beforeCounts =
+                    mapCounts(CountedObjects::getInstance().getCounts(0));
+
+                env(check::cash(alice, bob_index, check::DeliverMin(XRP(100))),
+                    ter(tecNO_ENTRY));
+
+                auto const afterCounts =
+                    mapCounts(CountedObjects::getInstance().getCounts(0));
+
+                using namespace std::string_literals;
+                BEAST_EXPECT(
+                    beforeCounts.at("CachedView::hit"s) ==
+                    afterCounts.at("CachedView::hit"s));
+                BEAST_EXPECT(
+                    beforeCounts.at("CachedView::hitExpired"s) + 1 ==
+                    afterCounts.at("CachedView::hitExpired"s));
+                BEAST_EXPECT(
+                    beforeCounts.at("CachedView::miss"s) ==
+                    afterCounts.at("CachedView::miss"s));
+            }
+        }
+    }
+
+    void
     run() override
     {
         testOffer1();
@@ -256,6 +334,7 @@ struct Regression_test : public beast::unit_test::suite
         testFeeEscalationAutofill();
         testFeeEscalationExtremeConfig();
         testJsonInvalid();
+        testInvalidTxObjectIDType();
     }
 };
 

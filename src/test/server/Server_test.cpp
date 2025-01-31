@@ -299,8 +299,8 @@ public:
         serverPort.back().port = 0;
         serverPort.back().protocol.insert("http");
         auto eps = s->ports(serverPort);
-        test_request(eps[0]);
-        test_keepalive(eps[0]);
+        test_request(eps.begin()->second);
+        test_keepalive(eps.begin()->second);
         // s->close();
         s = nullptr;
         pass();
@@ -423,7 +423,20 @@ public:
                 std::make_unique<CaptureLogs>(&messages)};
         });
         BEAST_EXPECT(
-            messages.find("Invalid value '0' for key 'port' in [port_rpc]") !=
+            messages.find("Invalid value '0' for key 'port' in [port_rpc]") ==
+            std::string::npos);
+
+        except([&] {
+            Env env{
+                *this,
+                envconfig([](std::unique_ptr<Config> cfg) {
+                    (*cfg)["server"].set("port", "0");
+                    return cfg;
+                }),
+                std::make_unique<CaptureLogs>(&messages)};
+        });
+        BEAST_EXPECT(
+            messages.find("Invalid value '0' for key 'port' in [server]") !=
             std::string::npos);
 
         except([&] {

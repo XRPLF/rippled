@@ -114,9 +114,11 @@ constexpr std::uint32_t tfSetNoRipple                      = 0x00020000;
 constexpr std::uint32_t tfClearNoRipple                    = 0x00040000;
 constexpr std::uint32_t tfSetFreeze                        = 0x00100000;
 constexpr std::uint32_t tfClearFreeze                      = 0x00200000;
+constexpr std::uint32_t tfSetDeepFreeze                    = 0x00400000;
+constexpr std::uint32_t tfClearDeepFreeze                  = 0x00800000;
 constexpr std::uint32_t tfTrustSetMask =
     ~(tfUniversal | tfSetfAuth | tfSetNoRipple | tfClearNoRipple | tfSetFreeze |
-      tfClearFreeze);
+      tfClearFreeze | tfSetDeepFreeze | tfClearDeepFreeze);
 
 // EnableAmendment flags:
 constexpr std::uint32_t tfGotMajority                      = 0x00010000;
@@ -189,7 +191,7 @@ constexpr std::uint32_t const tfNFTokenCreateOfferMask =
     ~(tfUniversal | tfSellNFToken);
 
 // NFTokenCancelOffer flags:
-constexpr std::uint32_t const tfNFTokenCancelOfferMask     = ~(tfUniversal);
+constexpr std::uint32_t const tfNFTokenCancelOfferMask     = ~tfUniversal;
 
 // NFTokenAcceptOffer flags:
 constexpr std::uint32_t const tfNFTokenAcceptOfferMask     = ~tfUniversal;

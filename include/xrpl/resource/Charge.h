@@ -53,8 +53,9 @@ public:
 
     bool
     operator==(Charge const&) const;
-    bool
-    operator!=(Charge const&) const;
+
+    std::strong_ordering
+    operator<=>(Charge const&) const;
 
 private:
     value_type m_cost;
