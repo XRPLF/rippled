@@ -70,6 +70,19 @@ runEscrowWasm(
     std::string const& funcName,
     LedgerDataProvider* ledgerDataProvider);
 
+struct EscrowResultP6
+{
+    bool result;
+    int32_t cost;
+};
+
+Expected<EscrowResultP6, TER>
+runEscrowWasm(
+    std::vector<uint8_t> const& wasmCode,
+    std::string const& funcName,
+    int32_t gasLimit,
+    int32_t input);
+
 }  // namespace ripple
 #endif  // RIPPLE_APP_MISC_WASMVM_H_INLCUDED
 
