@@ -4685,6 +4685,44 @@ struct Wasm_test : public beast::unit_test::suite
     }
 
     void
+    testEscrowWasmP6()
+    {
+        testcase("escrow wasm P6 test");
+        auto wasmHex =
+            "0061736d010000000109026000017f60017f0002150108686f73745f6c69620863"
+            "6f6e7374496e74000003030201010405017001010105030100100619037f014180"
+            "80c0000b7f00418080c0000b7f00418080c0000b073e05066d656d6f7279020007"
+            "6c6f6f70696e6700010c6c6f6f70696e675f686f737400020a5f5f646174615f65"
+            "6e6403010b5f5f686561705f6261736503020a1a0202000b150003401080808080"
+            "001a2000417f6a22000d000b0b0077046e616d65000e0d7761736d5f6c69622e77"
+            "61736d014c0300325f5a4e387761736d5f6c696238686f73745f6c696238636f6e"
+            "7374496e74313768643939653133366665323437376662344501076c6f6f70696e"
+            "67020c6c6f6f70696e675f686f7374071201000f5f5f737461636b5f706f696e74"
+            "657200550970726f64756365727302086c616e6775616765010452757374000c70"
+            "726f6365737365642d62790105727573746325312e38332e302d6e696768746c79"
+            "202863326637346333663920323032342d30392d30392900490f7461726765745f"
+            "6665617475726573042b0a6d756c746976616c75652b0f6d757461626c652d676c"
+            "6f62616c732b0f7265666572656e63652d74797065732b087369676e2d657874";
+        auto wasmStr = boost::algorithm::unhex(std::string(wasmHex));
+        std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
+
+        {
+            std::string funcName("looping");
+            auto re = runEscrowWasm(wasm, funcName, 1000, 500);
+            if (BEAST_EXPECT(re.has_value()))
+            {
+                BEAST_EXPECT(re.value().result);
+                std::cout << re.value().cost << std::endl;
+            }
+        }
+        {
+            std::string funcName("looping_host");
+            auto re = runEscrowWasm(wasm, funcName, 1000, 50);
+            BEAST_EXPECT(!re.has_value());
+        }
+    }
+
+    void
     run() override
     {
         using namespace test::jtx;
@@ -4696,6 +4734,7 @@ struct Wasm_test : public beast::unit_test::suite
         testEscrowWasmP2P3();
         testEscrowWasmP4();
         testEscrowWasmP5();
+        testEscrowWasmP6();
     }
 };
 
