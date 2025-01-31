@@ -276,6 +276,7 @@ EscrowCreate::doApply()
     (*slep)[~sfFinishAfter] = ctx_.tx[~sfFinishAfter];
     (*slep)[~sfDestinationTag] = ctx_.tx[~sfDestinationTag];
     (*slep)[~sfFinishFunction] = ctx_.tx[~sfFinishFunction];
+    (*slep)[~sfData] = ctx_.tx[~sfData];
 
     ctx_.view().insert(slep);
 
@@ -529,19 +530,28 @@ EscrowFinish::doApply()
             ctx_.tx.getJson(JsonOptions::none).toStyledString();
         auto const escrowObj =
             slep->getJson(JsonOptions::none).toStyledString();
-        JLOG(j_.fatal()) << escrowTx;
-        JLOG(j_.fatal()) << escrowObj;
+        // JLOG(j_.fatal()) << escrowTx;
+        // JLOG(j_.fatal()) << escrowObj;
         std::vector<uint8_t> excrowTxData(escrowTx.begin(), escrowTx.end());
         std::vector<uint8_t> escrowObjData(escrowObj.begin(), escrowObj.end());
 
-        auto re = runEscrowWasm(wasm, funcName, excrowTxData, escrowObjData);
+        auto re = runEscrowWasmP4(wasm, funcName, excrowTxData, escrowObjData);
         JLOG(j_.fatal()) << "ESCROW RAN";
         if (re.has_value())
         {
-            JLOG(j_.fatal()) << "Success: " + std::to_string(re.value());
-            if (!re.value())
+            auto reValue = re.value();
+            JLOG(j_.fatal()) << "Success: " + std::to_string(reValue.first) +
+                    " " + reValue.second;
+            if (reValue.second != "")
             {
-                return tecNO_PERMISSION;
+                if (auto hex = strUnHex(reValue.second); hex.has_value())
+                    slep->setFieldVL(sfData, hex.value());
+            }
+
+            if (!reValue.first)
+            {
+                ctx_.view().update(slep);
+                return tecWASM_REJECTED;
             }
         }
         else
