@@ -142,7 +142,9 @@ VaultCreate::doApply()
         view(),
         j_,
         {
-            .account = pseudoId,
+            // The operator-> gives the underlying STAccount,
+            // whose value function returns a const&.
+            .account = pseudoId->value(),
             .sequence = 1,
             .flags = mptFlags,
             .metadata = tx[~sfMPTokenMetadata],

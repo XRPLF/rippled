@@ -27,7 +27,7 @@ namespace ripple {
 struct MPTAuthorizeArgs
 {
     XRPAmount const& priorBalance;
-    uint192 const& mptIssuanceID;
+    MPTID const& mptIssuanceID;
     AccountID const& accountID;
     std::uint32_t flags{};
     std::optional<AccountID> holderID{};

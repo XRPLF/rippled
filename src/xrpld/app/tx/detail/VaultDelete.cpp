@@ -71,7 +71,9 @@ VaultDelete::doApply()
     if (auto ter = MPTokenIssuanceDestroy::destroy(
             view(),
             j_,
-            {.account = vault->at(sfAccount),
+            // The operator-> gives the underlying STAccount,
+            // whose value function returns a const&.
+            {.account = vault->at(sfAccount)->value(),
              .issuanceID = vault->at(sfMPTokenIssuanceID)}))
         return ter;
 

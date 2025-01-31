@@ -122,7 +122,9 @@ VaultDeposit::doApply()
                     view(),
                     ctx_.journal,
                     {.priorBalance = mPriorBalance,
-                     .mptIssuanceID = mptIssuanceID,
+                     // The operator-> gives the underlying STUInt192
+                     // whose value function returns a const&.
+                     .mptIssuanceID = mptIssuanceID->value(),
                      .accountID = account_});
                 !isTesSuccess(err))
                 return err;
