@@ -549,13 +549,6 @@ public:
         return rhs.value() == lhs;
     }
 
-    template <typename U>
-    friend bool
-    operator!=(U const& lhs, STObject::ValueProxy<T> const& rhs)
-    {
-        return !(lhs == rhs);
-    }
-
 private:
     friend class STObject;
 
