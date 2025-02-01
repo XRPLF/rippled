@@ -1195,6 +1195,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMEndpoints> const& m)
     std::vector<PeerFinder::Endpoint> endpoints;
     endpoints.reserve(m->endpoints_v2().size());
 
+    auto malformed = 0;
     for (auto const& tm : m->endpoints_v2())
     {
         auto result = beast::IP::Endpoint::from_string_checked(tm.endpoint());
@@ -1203,7 +1204,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMEndpoints> const& m)
         {
             JLOG(p_journal_.error()) << "failed to parse incoming endpoint: {"
                                      << tm.endpoint() << "}";
-            fee_.update(Resource::feeInvalidData, "endpoints malformed");
+            malformed++;
             continue;
         }
 
@@ -1218,6 +1219,14 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMEndpoints> const& m)
 
         endpoints.emplace_back(*result, tm.hops());
     }
+
+    // Charge the peer for each malformed endpoint. As there still may be
+    // multiple valid endpoints we don't return early.
+    if malformed > 0)
+        {
+            fee_.update(
+                Resource::feeInvalidData * malformed, "malformed endpoints");
+        }
 
     if (!endpoints.empty())
         overlay_.peerFinder().on_endpoints(slot_, endpoints);
@@ -2411,10 +2420,6 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
             return;
         }
 
-        fee_.update(
-            Resource::feeModerateBurdenPeer,
-            " received a get object by hash request");
-
         protocol::TMGetObjectByHash reply;
 
         reply.set_query(false);
@@ -2434,6 +2439,10 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
 
             reply.set_ledgerhash(packet.ledgerhash());
         }
+
+        fee_.update(
+            Resource::feeModerateBurdenPeer,
+            " received a get object by hash request");
 
         // This is a very minimal implementation
         for (int i = 0; i < packet.objects_size(); ++i)
