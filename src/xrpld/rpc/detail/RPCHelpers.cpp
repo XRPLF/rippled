@@ -939,7 +939,7 @@ chooseLedgerEntryType(Json::Value const& params)
 #undef LEDGER_ENTRY
 
 #define LEDGER_ENTRY(tag, value, name, rpcName, fields) \
-    {jss::rpcName, jss::name, tag},
+    {jss::name, jss::rpcName, tag},
 
 #include <xrpl/protocol/detail/ledger_entries.macro>
 
@@ -959,13 +959,15 @@ chooseLedgerEntryType(Json::Value const& params)
         }
 
         // Use the passed in parameter to find a ledger type based on matching
-        // against the RPC name (case sensitive) or the friendly name (case
-        // insensitive).
+        // against the canonical name (case insensitive) or the RPC name (case
+        // sensitive).
+        // Note: Filtering by RPC name is now deprecated and will be removed in
+        // a future release.
         auto const filter = p.asString();
         auto iter = std::find_if(
             types.begin(), types.end(), [&filter](decltype(types.front())& t) {
-                return std::get<0>(t) == filter ||
-                    boost::iequals(std::get<1>(t), filter);
+                return boost::iequals(std::get<0>(t), filter) ||
+                    std::get<1>(t) == filter;
             });
         if (iter == types.end())
         {
