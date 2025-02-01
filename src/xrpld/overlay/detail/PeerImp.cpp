@@ -1222,11 +1222,11 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMEndpoints> const& m)
 
     // Charge the peer for each malformed endpoint. As there still may be
     // multiple valid endpoints we don't return early.
-    if malformed > 0)
-        {
-            fee_.update(
-                Resource::feeInvalidData * malformed, "malformed endpoints");
-        }
+    if (malformed > 0)
+    {
+        fee_.update(
+            Resource::feeInvalidData * malformed, "malformed endpoints");
+    }
 
     if (!endpoints.empty())
         overlay_.peerFinder().on_endpoints(slot_, endpoints);
