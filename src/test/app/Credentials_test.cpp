@@ -1063,6 +1063,11 @@ struct Credentials_test : public beast::unit_test::suite
     {
         using namespace test::jtx;
 
+        bool const enabled = features[fixTransactionFlags];
+        testcase(
+            std::string("Test flag, fix ") +
+            (enabled ? "enabled" : "disabled"));
+
         const char credType[] = "abcde";
         Account const issuer{"issuer"};
         Account const subject{"subject"};
@@ -1075,11 +1080,6 @@ struct Credentials_test : public beast::unit_test::suite
             env.close();
 
             {
-                bool const enabled = features[fixTransactionFlags];
-                testcase(
-                    std::string("Test flag, fix ") +
-                    (enabled ? "enabled" : "disabled"));
-
                 ter const expected(
                     enabled ? TER(temINVALID_FLAG) : TER(tesSUCCESS));
                 env(credentials::create(subject, issuer, credType),
