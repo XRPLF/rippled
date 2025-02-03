@@ -131,17 +131,17 @@ applyTransactions(
                 switch (applyTransaction(
                     app, view, *it->second, certainRetry, tapNONE, j))
                 {
-                    case ApplyResult::Success:
+                    case ApplyTransactionResult::Success:
                         it = txns.erase(it);
                         ++changes;
                         break;
 
-                    case ApplyResult::Fail:
+                    case ApplyTransactionResult::Fail:
                         failed.insert(txid);
                         it = txns.erase(it);
                         break;
 
-                    case ApplyResult::Retry:
+                    case ApplyTransactionResult::Retry:
                         ++it;
                 }
             }

@@ -420,6 +420,20 @@ public:
         app().checkSigs(false);
     }
 
+    // set rpc retries
+    void
+    set_retries(unsigned r = 5)
+    {
+        retries_ = r;
+    }
+
+    // get rpc retries
+    unsigned
+    retries() const
+    {
+        return retries_;
+    }
+
     /** Associate AccountID with account. */
     void
     memoize(Account const& account);
@@ -707,6 +721,7 @@ protected:
     uint256 txid_;
     TER ter_ = tesSUCCESS;
     bool parseFailureExpected_ = false;
+    unsigned retries_ = 5;
 
     Json::Value
     do_rpc(
