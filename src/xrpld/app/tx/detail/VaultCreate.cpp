@@ -107,7 +107,7 @@ VaultCreate::doApply()
 
     auto const& tx = ctx_.tx;
     auto const& ownerId = account_;
-    auto sequence = tx.getSequence();
+    auto sequence = tx.getSeqValue();
 
     auto owner = view().peek(keylet::account(ownerId));
     auto vault = std::make_shared<SLE>(keylet::vault(ownerId, sequence));

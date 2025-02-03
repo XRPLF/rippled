@@ -198,7 +198,7 @@ STTx::getSeqProxy() const
 }
 
 std::uint32_t
-STTx::getSequence() const
+STTx::getSeqValue() const
 {
     return getSeqProxy().value();
 }

@@ -103,7 +103,7 @@ public:
 
     /** Returns the first non-zero value of (Sequence, TicketSequence). */
     std::uint32_t
-    getSequence() const;
+    getSeqValue() const;
 
     boost::container::flat_set<AccountID>
     getMentionedAccounts() const;
