@@ -139,11 +139,25 @@ public:
         return mFlags & (mViewLowest ? lsfLowFreeze : lsfHighFreeze);
     }
 
+    /** Have we set the deep freeze flag on our peer */
+    bool
+    getDeepFreeze() const
+    {
+        return mFlags & (mViewLowest ? lsfLowDeepFreeze : lsfHighDeepFreeze);
+    }
+
     /** Has the peer set the freeze flag on us */
     bool
     getFreezePeer() const
     {
         return mFlags & (!mViewLowest ? lsfLowFreeze : lsfHighFreeze);
+    }
+
+    /** Has the peer set the deep freeze flag on us */
+    bool
+    getDeepFreezePeer() const
+    {
+        return mFlags & (!mViewLowest ? lsfLowDeepFreeze : lsfHighDeepFreeze);
     }
 
     STAmount const&
