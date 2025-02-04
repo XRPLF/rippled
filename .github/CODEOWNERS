@@ -2,4 +2,7 @@
 *
 
 # Require the rpc team to review changes to the rpc code.
+include/libxrpl/protocol/ @XRPLF/rpc-reviewers
+src/libxrpl/protocol/ @XRPLF/rpc-reviewers
 src/xrpld/rpc/ @XRPLF/rpc-reviewers
+src/xrpld/app/misc/ @XRPLF/rpc-reviewers
