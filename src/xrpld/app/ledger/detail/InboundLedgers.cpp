@@ -142,28 +142,38 @@ public:
 
     void
     acquireAsync(
+        JobType type,
+        std::string const& name,
         uint256 const& hash,
         std::uint32_t seq,
         InboundLedger::Reason reason) override
     {
-        if (CanProcess const check{acquiresMutex_, pendingAcquires_, hash})
+        if (auto check = std::make_shared<CanProcess const>(
+                acquiresMutex_, pendingAcquires_, hash);
+            *check)
         {
-            try
-            {
-                acquire(hash, seq, reason);
-            }
-            catch (std::exception const& e)
-            {
-                JLOG(j_.warn())
-                    << "Exception thrown for acquiring new inbound ledger "
-                    << hash << ": " << e.what();
-            }
-            catch (...)
-            {
-                JLOG(j_.warn()) << "Unknown exception thrown for acquiring new "
-                                   "inbound ledger "
-                                << hash;
-            }
+            app_.getJobQueue().addJob(
+                type, name, [check, name, hash, seq, reason, this]() {
+                    JLOG(j_.debug())
+                        << "JOB acquireAsync " << name << " started ";
+                    try
+                    {
+                        acquire(hash, seq, reason);
+                    }
+                    catch (std::exception const& e)
+                    {
+                        JLOG(j_.warn()) << "Exception thrown for acquiring new "
+                                           "inbound ledger "
+                                        << hash << ": " << e.what();
+                    }
+                    catch (...)
+                    {
+                        JLOG(j_.warn())
+                            << "Unknown exception thrown for acquiring new "
+                               "inbound ledger "
+                            << hash;
+                    }
+                });
         }
     }
 
