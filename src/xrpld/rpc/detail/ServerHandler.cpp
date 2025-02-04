@@ -44,9 +44,11 @@
 #include <xrpl/server/Server.h>
 #include <xrpl/server/SimpleWriter.h>
 #include <xrpl/server/detail/JSONRPCUtil.h>
+
 #include <boost/algorithm/string.hpp>
 #include <boost/beast/http/fields.hpp>
 #include <boost/beast/http/string_body.hpp>
+
 #include <algorithm>
 #include <stdexcept>
 
@@ -130,7 +132,26 @@ void
 ServerHandler::setup(Setup const& setup, beast::Journal journal)
 {
     setup_ = setup;
-    m_server->ports(setup.ports);
+    endpoints_ = m_server->ports(setup.ports);
+
+    // fix auto ports
+    for (auto& port : setup_.ports)
+    {
+        if (auto it = endpoints_.find(port.name); it != endpoints_.end())
+        {
+            auto const endpointPort = it->second.port();
+            if (!port.port)
+                port.port = endpointPort;
+
+            if (!setup_.client.port &&
+                (port.protocol.count("http") > 0 ||
+                 port.protocol.count("https") > 0))
+                setup_.client.port = endpointPort;
+
+            if (!setup_.overlay.port() && (port.protocol.count("peer") > 0))
+                setup_.overlay.port(endpointPort);
+        }
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -388,9 +409,9 @@ logDuration(
     beast::Journal& journal)
 {
     using namespace std::chrono_literals;
-    auto const level = (duration >= 10s)
-        ? journal.error()
-        : (duration >= 1s) ? journal.warn() : journal.debug();
+    auto const level = (duration >= 10s) ? journal.error()
+        : (duration >= 1s)               ? journal.warn()
+                                         : journal.debug();
 
     JLOG(level) << "RPC request processing duration = "
                 << std::chrono::duration_cast<std::chrono::microseconds>(
@@ -444,7 +465,7 @@ ServerHandler::processSession(
             if (jv.isMember(jss::api_version))
                 jr[jss::api_version] = jv[jss::api_version];
 
-            is->getConsumer().charge(Resource::feeInvalidRPC);
+            is->getConsumer().charge(Resource::feeMalformedRPC);
             return jr;
         }
 
@@ -461,7 +482,7 @@ ServerHandler::processSession(
             is->user());
         if (Role::FORBID == role)
         {
-            loadType = Resource::feeInvalidRPC;
+            loadType = Resource::feeMalformedRPC;
             jr[jss::result] = rpcError(rpcFORBIDDEN);
         }
         else
@@ -729,7 +750,7 @@ ServerHandler::processRequest(
 
         if (role == Role::FORBID)
         {
-            usage.charge(Resource::feeInvalidRPC);
+            usage.charge(Resource::feeMalformedRPC);
             if (!batch)
             {
                 HTTPReply(403, "Forbidden", output, rpcJ);
@@ -743,7 +764,7 @@ ServerHandler::processRequest(
 
         if (!jsonRPC.isMember(jss::method) || jsonRPC[jss::method].isNull())
         {
-            usage.charge(Resource::feeInvalidRPC);
+            usage.charge(Resource::feeMalformedRPC);
             if (!batch)
             {
                 HTTPReply(400, "Null method", output, rpcJ);
@@ -758,7 +779,7 @@ ServerHandler::processRequest(
         Json::Value const& method = jsonRPC[jss::method];
         if (!method.isString())
         {
-            usage.charge(Resource::feeInvalidRPC);
+            usage.charge(Resource::feeMalformedRPC);
             if (!batch)
             {
                 HTTPReply(400, "method is not string", output, rpcJ);
@@ -774,7 +795,7 @@ ServerHandler::processRequest(
         std::string strMethod = method.asString();
         if (strMethod.empty())
         {
-            usage.charge(Resource::feeInvalidRPC);
+            usage.charge(Resource::feeMalformedRPC);
             if (!batch)
             {
                 HTTPReply(400, "method is empty", output, rpcJ);
@@ -802,7 +823,7 @@ ServerHandler::processRequest(
 
             else if (!params.isArray() || params.size() != 1)
             {
-                usage.charge(Resource::feeInvalidRPC);
+                usage.charge(Resource::feeMalformedRPC);
                 HTTPReply(400, "params unparseable", output, rpcJ);
                 return;
             }
@@ -811,7 +832,7 @@ ServerHandler::processRequest(
                 params = std::move(params[0u]);
                 if (!params.isObjectOrNull())
                 {
-                    usage.charge(Resource::feeInvalidRPC);
+                    usage.charge(Resource::feeMalformedRPC);
                     HTTPReply(400, "params unparseable", output, rpcJ);
                     return;
                 }
@@ -827,7 +848,7 @@ ServerHandler::processRequest(
         {
             if (!params[jss::ripplerpc].isString())
             {
-                usage.charge(Resource::feeInvalidRPC);
+                usage.charge(Resource::feeMalformedRPC);
                 if (!batch)
                 {
                     HTTPReply(400, "ripplerpc is not a string", output, rpcJ);
@@ -1094,11 +1115,6 @@ to_Port(ParsedPort const& parsed, std::ostream& log)
         log << "Missing 'port' in [" << p.name << "]";
         Throw<std::exception>();
     }
-    else if (*parsed.port == 0)
-    {
-        log << "Port " << *parsed.port << "in [" << p.name << "] is invalid";
-        Throw<std::exception>();
-    }
     p.port = *parsed.port;
 
     if (parsed.protocol.empty())
@@ -1157,7 +1173,6 @@ parse_Ports(Config const& config, std::ostream& log)
             continue;
 
         ParsedPort parsed = common;
-        parsed.name = name;
         parse_Port(parsed, config[name], log);
         result.push_back(to_Port(parsed, log));
     }
@@ -1232,11 +1247,10 @@ setup_Overlay(ServerHandler::Setup& setup)
         });
     if (iter == setup.ports.cend())
     {
-        setup.overlay.port = 0;
+        setup.overlay = {};
         return;
     }
-    setup.overlay.ip = iter->ip;
-    setup.overlay.port = iter->port;
+    setup.overlay = {iter->ip, iter->port};
 }
 
 ServerHandler::Setup

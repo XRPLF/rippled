@@ -20,13 +20,13 @@
 #ifndef RIPPLE_APP_MISC_AMMHELPERS_H_INCLUDED
 #define RIPPLE_APP_MISC_AMMHELPERS_H_INCLUDED
 
-#include <xrpl/basics/IOUAmount.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/Rules.h>
@@ -385,9 +385,9 @@ changeSpotPriceQuality(
             {
                 JLOG(j.error())
                     << "changeSpotPriceQuality failed: " << to_string(pool.in)
-                    << " " << to_string(pool.out) << " "
-                    << " " << quality << " " << tfee << " "
-                    << to_string(amounts.in) << " " << to_string(amounts.out);
+                    << " " << to_string(pool.out) << " " << " " << quality
+                    << " " << tfee << " " << to_string(amounts.in) << " "
+                    << to_string(amounts.out);
                 Throw<std::runtime_error>("changeSpotPriceQuality failed");
             }
             else

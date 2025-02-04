@@ -49,6 +49,20 @@ Issue::getText() const
     return ret;
 }
 
+void
+Issue::setJson(Json::Value& jv) const
+{
+    jv[jss::currency] = to_string(currency);
+    if (!isXRP(currency))
+        jv[jss::issuer] = toBase58(account);
+}
+
+bool
+Issue::native() const
+{
+    return *this == xrpIssue();
+}
+
 bool
 isConsistent(Issue const& ac)
 {
@@ -68,9 +82,7 @@ Json::Value
 to_json(Issue const& is)
 {
     Json::Value jv;
-    jv[jss::currency] = to_string(is.currency);
-    if (!isXRP(is.currency))
-        jv[jss::issuer] = toBase58(is.account);
+    is.setJson(jv);
     return jv;
 }
 
@@ -81,6 +93,12 @@ issueFromJson(Json::Value const& v)
     {
         Throw<std::runtime_error>(
             "issueFromJson can only be specified with an 'object' Json value");
+    }
+
+    if (v.isMember(jss::mpt_issuance_id))
+    {
+        Throw<std::runtime_error>(
+            "issueFromJson, Issue should not have mpt_issuance_id");
     }
 
     Json::Value const curStr = v[jss::currency];

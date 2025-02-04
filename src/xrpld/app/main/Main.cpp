@@ -69,6 +69,10 @@
 #error Multiple supported platforms appear active at once
 #endif
 
+#ifdef ENABLE_VOIDSTAR
+#include "antithesis_instrumentation.h"
+#endif
+
 namespace po = boost::program_options;
 
 namespace ripple {
@@ -143,7 +147,7 @@ printHelp(const po::options_description& desc)
            "     connect <ip> [<port>]\n"
            "     consensus_info\n"
            "     deposit_authorized <source_account> <destination_account> "
-           "[<ledger>]\n"
+           "[<ledger> [<credentials>, ...]]\n"
            "     feature [<feature> [accept|reject]]\n"
            "     fetch_info [clear]\n"
            "     gateway_balances [<ledger>] <issuer_account> [ <hotwallet> [ "
@@ -174,6 +178,7 @@ printHelp(const po::options_description& desc)
            "     sign_for <signer_address> <signer_private_key> <tx_json> "
            "[offline]\n"
            "     stop\n"
+           "     simulate [<tx_blob>|<tx_json>] [<binary>]\n"
            "     submit <tx_blob>|[<private_key> <tx_json>]\n"
            "     submit_multisigned <tx_json>\n"
            "     tx <id>\n"

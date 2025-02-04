@@ -43,7 +43,9 @@ TimeoutCounter::TimeoutCounter(
     , queueJobParameter_(std::move(jobParameter))
     , timer_(app_.getIOService())
 {
-    assert((timerInterval_ > 10ms) && (timerInterval_ < 30s));
+    XRPL_ASSERT(
+        (timerInterval_ > 10ms) && (timerInterval_ < 30s),
+        "ripple::TimeoutCounter::TimeoutCounter : interval input inside range");
 }
 
 void
@@ -100,8 +102,8 @@ TimeoutCounter::invokeOnTimer()
     if (!progress_)
     {
         ++timeouts_;
-        JLOG(journal_.debug()) << "Timeout(" << timeouts_ << ") "
-                               << " acquiring " << hash_;
+        JLOG(journal_.debug())
+            << "Timeout(" << timeouts_ << ") " << " acquiring " << hash_;
         onTimer(false, sl);
     }
     else

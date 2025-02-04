@@ -17,13 +17,14 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_BASICS_XRPAMOUNT_H_INCLUDED
-#define RIPPLE_BASICS_XRPAMOUNT_H_INCLUDED
+#ifndef RIPPLE_PROTOCOL_XRPAMOUNT_H_INCLUDED
+#define RIPPLE_PROTOCOL_XRPAMOUNT_H_INCLUDED
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/contract.h>
-#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/FeeUnits.h>
 
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/operators.hpp>
@@ -34,14 +35,6 @@
 #include <type_traits>
 
 namespace ripple {
-
-namespace feeunit {
-
-/** "drops" are the smallest divisible amount of XRP. This is what most
-    of the code uses. */
-struct dropTag;
-
-}  // namespace feeunit
 
 class XRPAmount : private boost::totally_ordered<XRPAmount>,
                   private boost::additive<XRPAmount>,
@@ -61,11 +54,17 @@ public:
     constexpr XRPAmount&
     operator=(XRPAmount const& other) = default;
 
+    // Round to nearest, even on tie.
+    explicit XRPAmount(Number const& x) : XRPAmount(static_cast<value_type>(x))
+    {
+    }
+
     constexpr XRPAmount(beast::Zero) : drops_(0)
     {
     }
 
-    constexpr XRPAmount& operator=(beast::Zero)
+    constexpr XRPAmount&
+    operator=(beast::Zero)
     {
         drops_ = 0;
         return *this;
@@ -155,9 +154,15 @@ public:
     }
 
     /** Returns true if the amount is not zero */
-    explicit constexpr operator bool() const noexcept
+    explicit constexpr
+    operator bool() const noexcept
     {
         return drops_ != 0;
+    }
+
+    operator Number() const noexcept
+    {
+        return drops();
     }
 
     /** Return the sign of the amount */
@@ -205,6 +210,10 @@ public:
         return dropsAs<Dest>().value_or(defaultValue.drops());
     }
 
+    /* Clips a 64-bit value to a 32-bit JSON number. It is only used
+     * in contexts that don't expect the value to ever approach
+     * the 32-bit limits (i.e. fees and reserves).
+     */
     Json::Value
     jsonClipped() const
     {

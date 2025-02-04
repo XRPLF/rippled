@@ -21,7 +21,7 @@
 #define RIPPLE_UNITY_ROCKSDB_H_INCLUDED
 
 #if RIPPLE_ROCKSDB_AVAILABLE
-//#include <rocksdb2/port/port_posix.h>
+// #include <rocksdb2/port/port_posix.h>
 #include <rocksdb/cache.h>
 #include <rocksdb/compaction_filter.h>
 #include <rocksdb/comparator.h>

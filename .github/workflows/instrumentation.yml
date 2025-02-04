@@ -1,0 +1,103 @@
+name: instrumentation
+on:
+  pull_request:
+  push:
+    # If the branches list is ever changed, be sure to change it on all
+    # build/test jobs (nix, macos, windows, instrumentation)
+    branches:
+      # Always build the package branches
+      - develop
+      - release
+      - master
+      # Branches that opt-in to running
+      - 'ci/**'
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+
+  # NOTE we are not using dependencies built inside nix because nix is lagging
+  # with compiler versions. Instrumentation requires clang version 16 or later
+
+  instrumentation-build:
+    env:
+      CLANG_RELEASE: 16
+    strategy:
+      fail-fast: false
+    runs-on: [self-hosted, heavy]
+    container: debian:bookworm
+    steps:
+        - name: install prerequisites
+          env:
+            DEBIAN_FRONTEND: noninteractive
+          run: |
+            apt-get update
+            apt-get install --yes --no-install-recommends \
+              clang-${CLANG_RELEASE} clang++-${CLANG_RELEASE} \
+              python3-pip python-is-python3 make cmake git wget
+            apt-get clean
+            update-alternatives --install \
+              /usr/bin/clang clang /usr/bin/clang-${CLANG_RELEASE} 100 \
+              --slave /usr/bin/clang++ clang++ /usr/bin/clang++-${CLANG_RELEASE}
+            update-alternatives --auto clang
+            pip install --no-cache --break-system-packages "conan<2"
+
+        - name: checkout
+          uses: actions/checkout@v4
+
+        - name: prepare environment
+          run: |
+            mkdir ${GITHUB_WORKSPACE}/.build
+            echo "SOURCE_DIR=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+            echo "BUILD_DIR=$GITHUB_WORKSPACE/.build" >> $GITHUB_ENV
+            echo "CC=/usr/bin/clang" >> $GITHUB_ENV
+            echo "CXX=/usr/bin/clang++" >> $GITHUB_ENV
+
+        - name: configure Conan
+          run: |
+            conan profile new --detect default
+            conan profile update settings.compiler=clang default
+            conan profile update settings.compiler.version=${CLANG_RELEASE} default
+            conan profile update settings.compiler.libcxx=libstdc++11 default
+            conan profile update settings.compiler.cppstd=20 default
+            conan profile update options.rocksdb=False default
+            conan profile update \
+              'conf.tools.build:compiler_executables={"c": "/usr/bin/clang", "cpp": "/usr/bin/clang++"}' default
+            conan profile update 'env.CXXFLAGS="-DBOOST_ASIO_DISABLE_CONCEPTS"' default
+            conan profile update 'conf.tools.build:cxxflags+=["-DBOOST_ASIO_DISABLE_CONCEPTS"]' default
+            conan export external/snappy snappy/1.1.10@
+            conan export external/soci soci/4.0.3@
+
+        - name: build dependencies
+          run: |
+            cd ${BUILD_DIR}
+            conan install ${SOURCE_DIR} \
+              --output-folder ${BUILD_DIR} \
+              --install-folder ${BUILD_DIR} \
+              --build missing \
+              --settings build_type=Debug
+
+        - name: build with instrumentation
+          run: |
+            cd ${BUILD_DIR}
+            cmake -S ${SOURCE_DIR} -B ${BUILD_DIR} \
+              -Dvoidstar=ON \
+              -Dtests=ON \
+              -Dxrpld=ON \
+              -DCMAKE_BUILD_TYPE=Debug \
+              -DSECP256K1_BUILD_BENCHMARK=OFF \
+              -DSECP256K1_BUILD_TESTS=OFF \
+              -DSECP256K1_BUILD_EXHAUSTIVE_TESTS=OFF \
+              -DCMAKE_TOOLCHAIN_FILE=${BUILD_DIR}/build/generators/conan_toolchain.cmake
+            cmake --build .  --parallel $(nproc)
+
+        - name: verify instrumentation enabled
+          run: |
+            cd ${BUILD_DIR}
+            ./rippled --version | grep libvoidstar
+
+        - name: run unit tests
+          run: |
+            cd ${BUILD_DIR}
+            ./rippled -u --unittest-jobs $(( $(nproc)/4 ))

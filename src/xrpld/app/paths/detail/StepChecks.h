@@ -35,7 +35,7 @@ checkFreeze(
     AccountID const& dst,
     Currency const& currency)
 {
-    assert(src != dst);
+    XRPL_ASSERT(src != dst, "ripple::checkFreeze : unequal input accounts");
 
     // check freeze
     if (auto sle = view.read(keylet::account(dst)))
@@ -49,6 +49,12 @@ checkFreeze(
     if (auto sle = view.read(keylet::line(src, dst, currency)))
     {
         if (sle->isFlag((dst > src) ? lsfHighFreeze : lsfLowFreeze))
+        {
+            return terNO_LINE;
+        }
+        // Unlike normal freeze, a deep frozen trust line acts the same
+        // regardless of which side froze it
+        if (sle->isFlag(lsfHighDeepFreeze) || sle->isFlag(lsfLowDeepFreeze))
         {
             return terNO_LINE;
         }

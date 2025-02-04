@@ -23,9 +23,9 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/ledger/ApplyViewImpl.h>
-#include <xrpl/basics/XRPAmount.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <optional>
 #include <utility>
 
@@ -69,6 +69,12 @@ public:
         return *view_;
     }
 
+    ApplyFlags const&
+    flags() const
+    {
+        return flags_;
+    }
+
     /** Sets the DeliveredAmount field in the metadata */
     void
     deliver(STAmount const& amount)
@@ -81,7 +87,7 @@ public:
     discard();
 
     /** Apply the transaction result to the base. */
-    void apply(TER);
+    std::optional<TxMeta> apply(TER);
 
     /** Get the number of unapplied changes. */
     std::size_t

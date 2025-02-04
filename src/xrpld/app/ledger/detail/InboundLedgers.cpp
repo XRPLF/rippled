@@ -25,9 +25,11 @@
 #include <xrpld/perflog/PerfLog.h>
 #include <xrpl/basics/DecayingSample.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/scope.h>
 #include <xrpl/beast/container/aged_map.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/protocol/jss.h>
+
 #include <exception>
 #include <memory>
 #include <mutex>
@@ -71,7 +73,9 @@ public:
         InboundLedger::Reason reason) override
     {
         auto doAcquire = [&, seq, reason]() -> std::shared_ptr<Ledger const> {
-            assert(hash.isNonZero());
+            XRPL_ASSERT(
+                hash.isNonZero(),
+                "ripple::InboundLedgersImp::acquire::doAcquire : nonzero hash");
 
             // probably not the right rule
             if (app_.getOPs().isNeedNetworkLedger() &&
@@ -139,7 +143,7 @@ public:
             if (pendingAcquires_.contains(hash))
                 return;
             pendingAcquires_.insert(hash);
-            lock.unlock();
+            scope_unlock unlock(lock);
             acquire(hash, seq, reason);
         }
         catch (std::exception const& e)
@@ -154,14 +158,15 @@ public:
                 << "Unknown exception thrown for acquiring new inbound ledger "
                 << hash;
         }
-        lock.lock();
         pendingAcquires_.erase(hash);
     }
 
     std::shared_ptr<InboundLedger>
     find(uint256 const& hash) override
     {
-        assert(hash.isNonZero());
+        XRPL_ASSERT(
+            hash.isNonZero(),
+            "ripple::InboundLedgersImp::find : nonzero input");
 
         std::shared_ptr<InboundLedger> ret;
 
@@ -323,7 +328,9 @@ public:
             acqs.reserve(mLedgers.size());
             for (auto const& it : mLedgers)
             {
-                assert(it.second);
+                XRPL_ASSERT(
+                    it.second,
+                    "ripple::InboundLedgersImp::getInfo : non-null ledger");
                 acqs.push_back(it);
             }
             for (auto const& it : mRecentFailures)
@@ -358,7 +365,10 @@ public:
             acquires.reserve(mLedgers.size());
             for (auto const& it : mLedgers)
             {
-                assert(it.second);
+                XRPL_ASSERT(
+                    it.second,
+                    "ripple::InboundLedgersImp::gotFetchPack : non-null "
+                    "ledger");
                 acquires.push_back(it.second);
             }
         }

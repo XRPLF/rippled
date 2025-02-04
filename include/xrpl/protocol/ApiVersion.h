@@ -76,38 +76,35 @@ static_assert(apiMaximumValidVersion >= apiMaximumSupportedVersion);
 }  // namespace RPC
 
 template <unsigned minVer, unsigned maxVer, typename Fn, typename... Args>
-    void
-    forApiVersions(Fn const& fn, Args&&... args) requires  //
-    (maxVer >= minVer) &&                                  //
-    (minVer >= RPC::apiMinimumSupportedVersion) &&         //
-    (RPC::apiMaximumValidVersion >= maxVer) &&
-    requires
-{
-    fn(std::integral_constant<unsigned int, minVer>{},
-       std::forward<Args>(args)...);
-    fn(std::integral_constant<unsigned int, maxVer>{},
-       std::forward<Args>(args)...);
-}
+void
+forApiVersions(Fn const& fn, Args&&... args)
+    requires                                        //
+    (maxVer >= minVer) &&                           //
+    (minVer >= RPC::apiMinimumSupportedVersion) &&  //
+    (RPC::apiMaximumValidVersion >= maxVer) && requires {
+        fn(std::integral_constant<unsigned int, minVer>{},
+           std::forward<Args>(args)...);
+        fn(std::integral_constant<unsigned int, maxVer>{},
+           std::forward<Args>(args)...);
+    }
 {
     constexpr auto size = maxVer + 1 - minVer;
-    [&]<std::size_t... offset>(std::index_sequence<offset...>)
-    {
+    [&]<std::size_t... offset>(std::index_sequence<offset...>) {
         (((void)fn(
              std::integral_constant<unsigned int, minVer + offset>{},
              std::forward<Args>(args)...)),
          ...);
-    }
-    (std::make_index_sequence<size>{});
+    }(std::make_index_sequence<size>{});
 }
 
 template <typename Fn, typename... Args>
 void
-forAllApiVersions(Fn const& fn, Args&&... args) requires requires
-{
-    forApiVersions<
-        RPC::apiMinimumSupportedVersion,
-        RPC::apiMaximumValidVersion>(fn, std::forward<Args>(args)...);
-}
+forAllApiVersions(Fn const& fn, Args&&... args)
+    requires requires {
+        forApiVersions<
+            RPC::apiMinimumSupportedVersion,
+            RPC::apiMaximumValidVersion>(fn, std::forward<Args>(args)...);
+    }
 {
     forApiVersions<
         RPC::apiMinimumSupportedVersion,

@@ -19,22 +19,29 @@
 #ifndef BASICS_FEES_H_INCLUDED
 #define BASICS_FEES_H_INCLUDED
 
-#include <xrpl/basics/XRPAmount.h>
+#include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
 #include <boost/multiprecision/cpp_int.hpp>
-#include <limits>
-#include <utility>
+#include <boost/operators.hpp>
 
-#include <cassert>
 #include <cmath>
 #include <ios>
 #include <iosfwd>
+#include <limits>
+#include <optional>
 #include <sstream>
 #include <string>
+#include <utility>
 
 namespace ripple {
 
 namespace feeunit {
 
+/** "drops" are the smallest divisible amount of XRP. This is what most
+    of the code uses. */
+struct dropTag;
 /** "fee units" calculations are a not-really-unitless value that is used
     to express the cost of a given transaction vs. a reference transaction.
     They are primarily used by the Transactor classes. */
@@ -84,13 +91,13 @@ private:
 protected:
     template <class Other>
     static constexpr bool is_compatible_v =
-        std::is_arithmetic_v<Other>&& std::is_arithmetic_v<value_type>&&
-            std::is_convertible_v<Other, value_type>;
+        std::is_arithmetic_v<Other> && std::is_arithmetic_v<value_type> &&
+        std::is_convertible_v<Other, value_type>;
 
     template <class OtherFee, class = enable_if_unit_t<OtherFee>>
     static constexpr bool is_compatiblefee_v =
-        is_compatible_v<typename OtherFee::value_type>&&
-            std::is_same_v<UnitTag, typename OtherFee::unit_type>;
+        is_compatible_v<typename OtherFee::value_type> &&
+        std::is_same_v<UnitTag, typename OtherFee::unit_type>;
 
     template <class Other>
     using enable_if_compatible_t =
@@ -110,7 +117,8 @@ public:
     {
     }
 
-    constexpr TaggedFee& operator=(beast::Zero)
+    constexpr TaggedFee&
+    operator=(beast::Zero)
     {
         fee_ = 0;
         return *this;
@@ -250,7 +258,8 @@ public:
     }
 
     /** Returns true if the amount is not zero */
-    explicit constexpr operator bool() const noexcept
+    explicit constexpr
+    operator bool() const noexcept
     {
         return fee_ != 0;
     }
@@ -344,8 +353,8 @@ constexpr bool can_muldiv_source_v =
 
 template <class Dest, class = enable_if_unit_t<Dest>>
 constexpr bool can_muldiv_dest_v =
-    can_muldiv_source_v<Dest>&&  // Dest is also a source
-        std::is_convertible_v<std::uint64_t, typename Dest::value_type> &&
+    can_muldiv_source_v<Dest> &&  // Dest is also a source
+    std::is_convertible_v<std::uint64_t, typename Dest::value_type> &&
     sizeof(typename Dest::value_type) >= sizeof(std::uint64_t);
 
 template <
@@ -354,8 +363,8 @@ template <
     class = enable_if_unit_t<Source1>,
     class = enable_if_unit_t<Source2>>
 constexpr bool can_muldiv_sources_v =
-    can_muldiv_source_v<Source1>&& can_muldiv_source_v<Source2>&& std::
-        is_same_v<typename Source1::unit_type, typename Source2::unit_type>;
+    can_muldiv_source_v<Source1> && can_muldiv_source_v<Source2> &&
+    std::is_same_v<typename Source1::unit_type, typename Source2::unit_type>;
 
 template <
     class Source1,
@@ -365,7 +374,7 @@ template <
     class = enable_if_unit_t<Source2>,
     class = enable_if_unit_t<Dest>>
 constexpr bool can_muldiv_v =
-    can_muldiv_sources_v<Source1, Source2>&& can_muldiv_dest_v<Dest>;
+    can_muldiv_sources_v<Source1, Source2> && can_muldiv_dest_v<Dest>;
 // Source and Dest can be the same by default
 
 template <
@@ -417,9 +426,13 @@ mulDivU(Source1 value, Dest mul, Source2 div)
     {
         // split the asserts so if one hits, the user can tell which
         // without a debugger.
-        assert(value.value() >= 0);
-        assert(mul.value() >= 0);
-        assert(div.value() >= 0);
+        XRPL_ASSERT(
+            value.value() >= 0,
+            "ripple::feeunit::mulDivU : minimum value input");
+        XRPL_ASSERT(
+            mul.value() >= 0, "ripple::feeunit::mulDivU : minimum mul input");
+        XRPL_ASSERT(
+            div.value() >= 0, "ripple::feeunit::mulDivU : minimum div input");
         return std::nullopt;
     }
 

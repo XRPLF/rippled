@@ -17,10 +17,9 @@
 */
 //==============================================================================
 
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/STBase.h>
 #include <boost/checked_delete.hpp>
-#include <cassert>
-#include <memory>
 
 namespace ripple {
 
@@ -30,7 +29,7 @@ STBase::STBase() : fName(&sfGeneric)
 
 STBase::STBase(SField const& n) : fName(&n)
 {
-    assert(fName);
+    XRPL_ASSERT(fName, "ripple::STBase::STBase : field is set");
 }
 
 STBase&
@@ -96,7 +95,8 @@ STBase::getText() const
     return std::string();
 }
 
-Json::Value STBase::getJson(JsonOptions /*options*/) const
+Json::Value
+STBase::getJson(JsonOptions /*options*/) const
 {
     return getText();
 }
@@ -105,13 +105,15 @@ void
 STBase::add(Serializer& s) const
 {
     // Should never be called
-    assert(false);
+    UNREACHABLE("ripple::STBase::add : not implemented");
 }
 
 bool
 STBase::isEquivalent(const STBase& t) const
 {
-    assert(getSType() == STI_NOTPRESENT);
+    XRPL_ASSERT(
+        getSType() == STI_NOTPRESENT,
+        "ripple::STBase::isEquivalent : type not present");
     return t.getSType() == STI_NOTPRESENT;
 }
 
@@ -125,7 +127,7 @@ void
 STBase::setFName(SField const& n)
 {
     fName = &n;
-    assert(fName);
+    XRPL_ASSERT(fName, "ripple::STBase::setFName : field is set");
 }
 
 SField const&
@@ -137,7 +139,8 @@ STBase::getFName() const
 void
 STBase::addFieldID(Serializer& s) const
 {
-    assert(fName->isBinary());
+    XRPL_ASSERT(
+        fName->isBinary(), "ripple::STBase::addFieldID : field is binary");
     s.addFieldID(fName->fieldType, fName->fieldValue);
 }
 

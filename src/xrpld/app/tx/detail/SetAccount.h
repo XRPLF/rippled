@@ -51,6 +51,8 @@ public:
     doApply() override;
 };
 
+using AccountSet = SetAccount;
+
 }  // namespace ripple
 
 #endif

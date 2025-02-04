@@ -28,16 +28,6 @@ namespace ripple {
 
 class NFTokenBurnBaseUtil_test : public beast::unit_test::suite
 {
-    // Helper function that returns the owner count of an account root.
-    static std::uint32_t
-    ownerCount(test::jtx::Env const& env, test::jtx::Account const& acct)
-    {
-        std::uint32_t ret{0};
-        if (auto const sleAcct = env.le(acct))
-            ret = sleAcct->at(sfOwnerCount);
-        return ret;
-    }
-
     // Helper function that returns the number of nfts owned by an account.
     static std::uint32_t
     nftCount(test::jtx::Env& env, test::jtx::Account const& acct)
@@ -323,7 +313,8 @@ class NFTokenBurnBaseUtil_test : public beast::unit_test::suite
             // Otherwise either alice or minter can burn.
             AcctStat& burner = owner.acct == becky.acct
                 ? *(stats[acctDist(engine)])
-                : mintDist(engine) ? alice : minter;
+                : mintDist(engine) ? alice
+                                   : minter;
 
             if (owner.acct == burner.acct)
                 env(token::burn(burner, nft));

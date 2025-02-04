@@ -46,6 +46,8 @@ public:
     doApply() override;
 };
 
+using PaymentChannelCreate = PayChanCreate;
+
 //------------------------------------------------------------------------------
 
 class PayChanFund : public Transactor
@@ -67,6 +69,8 @@ public:
     doApply() override;
 };
 
+using PaymentChannelFund = PayChanFund;
+
 //------------------------------------------------------------------------------
 
 class PayChanClaim : public Transactor
@@ -81,9 +85,14 @@ public:
     static NotTEC
     preflight(PreflightContext const& ctx);
 
+    static TER
+    preclaim(PreclaimContext const& ctx);
+
     TER
     doApply() override;
 };
+
+using PaymentChannelClaim = PayChanClaim;
 
 }  // namespace ripple
 

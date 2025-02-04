@@ -22,7 +22,7 @@
 
 #include <xrpl/protocol/tokens.h>
 // VFALCO Uncomment when the header issues are resolved
-//#include <ripple/protocol/PublicKey.h>
+// #include <ripple/protocol/PublicKey.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_value.h>

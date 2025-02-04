@@ -142,6 +142,8 @@ private:
     OfferStream::StepCounter stepCounter_;
 };
 
+using OfferCreate = CreateOffer;
+
 }  // namespace ripple
 
 #endif

@@ -52,6 +52,8 @@ public:
     doApply() override;
 };
 
+using OracleSet = SetOracle;
+
 }  // namespace ripple
 
 #endif  // RIPPLE_TX_SETORACLE_H_INCLUDED

@@ -27,6 +27,7 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/DeliveredAmount.h>
 #include <xrpld/rpc/GRPCHandlers.h>
+#include <xrpld/rpc/MPTokenIssuanceID.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpl/basics/ToString.h>
 #include <xrpl/protocol/ErrorCodes.h>
@@ -250,7 +251,8 @@ populateJsonResponse(
         // populate binary metadata
         if (auto blob = std::get_if<Blob>(&result.meta))
         {
-            assert(args.binary);
+            XRPL_ASSERT(
+                args.binary, "ripple::populateJsonResponse : binary is set");
             auto json_meta =
                 (context.apiVersion > 1 ? jss::meta_blob : jss::meta);
             response[json_meta] = strHex(makeSlice(*blob));
@@ -265,6 +267,7 @@ populateJsonResponse(
                 insertDeliveredAmount(
                     response[jss::meta], context, result.txn, *meta);
                 insertNFTSyntheticInJson(response, sttx, *meta);
+                RPC::insertMPTokenIssuanceID(response[jss::meta], sttx, *meta);
             }
         }
         response[jss::validated] = result.validated;

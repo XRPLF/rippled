@@ -82,7 +82,8 @@ public:
     operator<(IOUAmount const& other) const;
 
     /** Returns true if the amount is not zero */
-    explicit operator bool() const noexcept;
+    explicit
+    operator bool() const noexcept;
 
     /** Return the sign of the amount */
     int
@@ -109,7 +110,8 @@ inline IOUAmount::IOUAmount(std::int64_t mantissa, int exponent)
     normalize();
 }
 
-inline IOUAmount& IOUAmount::operator=(beast::Zero)
+inline IOUAmount&
+IOUAmount::operator=(beast::Zero)
 {
     // The -100 is used to allow 0 to sort less than small positive values
     // which will have a large negative exponent.

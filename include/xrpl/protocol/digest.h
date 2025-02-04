@@ -55,7 +55,8 @@ public:
     void
     operator()(void const* data, std::size_t size) noexcept;
 
-    explicit operator result_type() noexcept;
+    explicit
+    operator result_type() noexcept;
 
 private:
     char ctx_[96];
@@ -77,7 +78,8 @@ public:
     void
     operator()(void const* data, std::size_t size) noexcept;
 
-    explicit operator result_type() noexcept;
+    explicit
+    operator result_type() noexcept;
 
 private:
     char ctx_[216];
@@ -99,7 +101,8 @@ public:
     void
     operator()(void const* data, std::size_t size) noexcept;
 
-    explicit operator result_type() noexcept;
+    explicit
+    operator result_type() noexcept;
 
 private:
     char ctx_[112];
@@ -144,7 +147,8 @@ public:
         h_(data, size);
     }
 
-    explicit operator result_type() noexcept
+    explicit
+    operator result_type() noexcept
     {
         auto const d0 = sha256_hasher::result_type(h_);
         ripemd160_hasher rh;
@@ -184,18 +188,21 @@ public:
         h_(data, size);
     }
 
-    explicit operator result_type() noexcept
+    explicit
+    operator result_type() noexcept
     {
         auto const digest = sha512_hasher::result_type(h_);
         return result_type::fromVoid(digest.data());
     }
 
 private:
-    inline void erase(std::false_type)
+    inline void
+    erase(std::false_type)
     {
     }
 
-    inline void erase(std::true_type)
+    inline void
+    erase(std::true_type)
     {
         secure_erase(&h_, sizeof(h_));
     }

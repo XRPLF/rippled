@@ -55,8 +55,8 @@ constexpr size_t elementSizeBytes =
 constexpr size_t blockSizeBytes = kilobytes(512);
 
 template <std::size_t... I>
-constexpr std::array<size_t, boundaries.size()> initArrayChunkSizeBytes(
-    std::index_sequence<I...>)
+constexpr std::array<size_t, boundaries.size()>
+initArrayChunkSizeBytes(std::index_sequence<I...>)
 {
     return std::array<size_t, boundaries.size()>{
         boundaries[I] * elementSizeBytes...,
@@ -66,8 +66,8 @@ constexpr auto arrayChunkSizeBytes =
     initArrayChunkSizeBytes(std::make_index_sequence<boundaries.size()>{});
 
 template <std::size_t... I>
-constexpr std::array<size_t, boundaries.size()> initArrayChunksPerBlock(
-    std::index_sequence<I...>)
+constexpr std::array<size_t, boundaries.size()>
+initArrayChunksPerBlock(std::index_sequence<I...>)
 {
     return std::array<size_t, boundaries.size()>{
         blockSizeBytes / arrayChunkSizeBytes[I]...,
@@ -79,22 +79,26 @@ constexpr auto chunksPerBlock =
 [[nodiscard]] inline std::uint8_t
 numAllocatedChildren(std::uint8_t n)
 {
-    assert(n <= SHAMapInnerNode::branchFactor);
+    XRPL_ASSERT(
+        n <= SHAMapInnerNode::branchFactor,
+        "ripple::numAllocatedChildren : valid input");
     return *std::lower_bound(boundaries.begin(), boundaries.end(), n);
 }
 
 [[nodiscard]] inline std::size_t
 boundariesIndex(std::uint8_t numChildren)
 {
-    assert(numChildren <= SHAMapInnerNode::branchFactor);
+    XRPL_ASSERT(
+        numChildren <= SHAMapInnerNode::branchFactor,
+        "ripple::boundariesIndex : valid input");
     return std::distance(
         boundaries.begin(),
         std::lower_bound(boundaries.begin(), boundaries.end(), numChildren));
 }
 
 template <std::size_t... I>
-std::array<std::function<void*()>, boundaries.size()> initAllocateArrayFuns(
-    std::index_sequence<I...>)
+std::array<std::function<void*()>, boundaries.size()>
+initAllocateArrayFuns(std::index_sequence<I...>)
 {
     return std::array<std::function<void*()>, boundaries.size()>{
         boost::singleton_pool<
@@ -110,8 +114,8 @@ std::array<std::function<void*()>, boundaries.size()> const allocateArrayFuns =
     initAllocateArrayFuns(std::make_index_sequence<boundaries.size()>{});
 
 template <std::size_t... I>
-std::array<std::function<void(void*)>, boundaries.size()> initFreeArrayFuns(
-    std::index_sequence<I...>)
+std::array<std::function<void(void*)>, boundaries.size()>
+initFreeArrayFuns(std::index_sequence<I...>)
 {
     return std::array<std::function<void(void*)>, boundaries.size()>{
         static_cast<void (*)(void*)>(boost::singleton_pool<
@@ -127,8 +131,8 @@ std::array<std::function<void(void*)>, boundaries.size()> const freeArrayFuns =
     initFreeArrayFuns(std::make_index_sequence<boundaries.size()>{});
 
 template <std::size_t... I>
-std::array<std::function<bool(void*)>, boundaries.size()> initIsFromArrayFuns(
-    std::index_sequence<I...>)
+std::array<std::function<bool(void*)>, boundaries.size()>
+initIsFromArrayFuns(std::index_sequence<I...>)
 {
     return std::array<std::function<bool(void*)>, boundaries.size()>{
         boost::singleton_pool<
@@ -156,7 +160,9 @@ allocateArrays(std::uint8_t numChildren)
 inline void
 deallocateArrays(std::uint8_t boundaryIndex, void* p)
 {
-    assert(isFromArrayFuns[boundaryIndex](p));
+    XRPL_ASSERT(
+        isFromArrayFuns[boundaryIndex](p),
+        "ripple::deallocateArrays : valid inputs");
     freeArrayFuns[boundaryIndex](p);
 }
 
@@ -270,10 +276,15 @@ TaggedPointer::getChildIndex(std::uint16_t isBranch, int i) const
 inline TaggedPointer::TaggedPointer(RawAllocateTag, std::uint8_t numChildren)
 {
     auto [tag, p] = allocateArrays(numChildren);
-    assert(tag < boundaries.size());
-    assert(
+    XRPL_ASSERT(
+        tag < boundaries.size(),
+        "ripple::TaggedPointer::TaggedPointer(RawAllocateTag, std::uint8_t) : "
+        "maximum tag");
+    XRPL_ASSERT(
         (reinterpret_cast<std::uintptr_t>(p) & ptrMask) ==
-        reinterpret_cast<std::uintptr_t>(p));
+            reinterpret_cast<std::uintptr_t>(p),
+        "ripple::TaggedPointer::TaggedPointer(RawAllocateTag, std::uint8_t) : "
+        "valid pointer");
     tp_ = reinterpret_cast<std::uintptr_t>(p) + tag;
 }
 
@@ -283,7 +294,10 @@ inline TaggedPointer::TaggedPointer(
     std::uint16_t dstBranches,
     std::uint8_t toAllocate)
 {
-    assert(toAllocate >= popcnt16(dstBranches));
+    XRPL_ASSERT(
+        toAllocate >= popcnt16(dstBranches),
+        "ripple::TaggedPointer::TaggedPointer(TaggedPointer&& ...) : minimum "
+        "toAllocate input");
 
     if (other.capacity() == numAllocatedChildren(toAllocate))
     {
@@ -428,7 +442,10 @@ inline TaggedPointer::TaggedPointer(
             }
         }
         // If sparse, may need to run additional constructors
-        assert(!dstIsDense || dstIndex == dstNumAllocated);
+        XRPL_ASSERT(
+            !dstIsDense || dstIndex == dstNumAllocated,
+            "ripple::TaggedPointer::TaggedPointer(TaggedPointer&& ...) : "
+            "non-sparse or valid sparse");
         for (int i = dstIndex; i < dstNumAllocated; ++i)
         {
             new (&dstHashes[i]) SHAMapHash{};

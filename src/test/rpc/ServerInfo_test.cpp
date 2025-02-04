@@ -104,17 +104,17 @@ admin = 127.0.0.1
         }
 
         {
-            auto config = makeValidatorConfig();
-            auto const rpc_port =
-                (*config)["port_rpc"].get<unsigned int>("port");
+            Env env(*this, makeValidatorConfig());
+            auto const& config = env.app().config();
+
+            auto const rpc_port = config["port_rpc"].get<unsigned int>("port");
             auto const grpc_port =
-                (*config)[SECTION_PORT_GRPC].get<unsigned int>("port");
-            auto const ws_port = (*config)["port_ws"].get<unsigned int>("port");
+                config[SECTION_PORT_GRPC].get<unsigned int>("port");
+            auto const ws_port = config["port_ws"].get<unsigned int>("port");
             BEAST_EXPECT(grpc_port);
             BEAST_EXPECT(rpc_port);
             BEAST_EXPECT(ws_port);
 
-            Env env(*this, std::move(config));
             auto const result = env.rpc("server_info");
             BEAST_EXPECT(!result[jss::result].isMember(jss::error));
             BEAST_EXPECT(result[jss::result][jss::status] == "success");
@@ -197,6 +197,39 @@ admin = 127.0.0.1
                     .asUInt() == 0);
             BEAST_EXPECT(
                 result[jss::result][jss::TYPES]["AccountID"].asUInt() == 8);
+
+            // check exception SFields
+            {
+                auto const fieldExists = [&](std::string name) {
+                    for (auto& field : result[jss::result][jss::FIELDS])
+                    {
+                        if (field[0u].asString() == name)
+                        {
+                            return true;
+                        }
+                    }
+                    return false;
+                };
+                BEAST_EXPECT(fieldExists("Generic"));
+                BEAST_EXPECT(fieldExists("Invalid"));
+                BEAST_EXPECT(fieldExists("ObjectEndMarker"));
+                BEAST_EXPECT(fieldExists("ArrayEndMarker"));
+                BEAST_EXPECT(fieldExists("taker_gets_funded"));
+                BEAST_EXPECT(fieldExists("taker_pays_funded"));
+                BEAST_EXPECT(fieldExists("hash"));
+                BEAST_EXPECT(fieldExists("index"));
+            }
+
+            // test that base_uint types are replaced with "Hash" prefix
+            {
+                auto const types = result[jss::result][jss::TYPES];
+                BEAST_EXPECT(types["Hash128"].asUInt() == 4);
+                BEAST_EXPECT(types["Hash160"].asUInt() == 17);
+                BEAST_EXPECT(types["Hash192"].asUInt() == 21);
+                BEAST_EXPECT(types["Hash256"].asUInt() == 5);
+                BEAST_EXPECT(types["Hash384"].asUInt() == 22);
+                BEAST_EXPECT(types["Hash512"].asUInt() == 23);
+            }
         }
 
         // test providing the same hash

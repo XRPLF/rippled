@@ -50,6 +50,12 @@ checkArraySize(Json::Value const& val, unsigned int size)
     return val.isArray() && val.size() == size;
 }
 
+std::uint32_t
+ownerCount(Env const& env, Account const& account)
+{
+    return env.ownerCount(account);
+}
+
 /* Path finding */
 /******************************************************************************/
 void

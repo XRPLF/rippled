@@ -68,8 +68,11 @@ STVector256::isDefault() const
 void
 STVector256::add(Serializer& s) const
 {
-    assert(getFName().isBinary());
-    assert(getFName().fieldType == STI_VECTOR256);
+    XRPL_ASSERT(
+        getFName().isBinary(), "ripple::STVector256::add : field is binary");
+    XRPL_ASSERT(
+        getFName().fieldType == STI_VECTOR256,
+        "ripple::STVector256::add : valid field type");
     s.addVL(mValue.begin(), mValue.end(), mValue.size() * (256 / 8));
 }
 
@@ -80,7 +83,8 @@ STVector256::isEquivalent(const STBase& t) const
     return v && (mValue == v->mValue);
 }
 
-Json::Value STVector256::getJson(JsonOptions) const
+Json::Value
+STVector256::getJson(JsonOptions) const
 {
     Json::Value ret(Json::arrayValue);
 

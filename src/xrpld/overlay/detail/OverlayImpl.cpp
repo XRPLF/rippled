@@ -35,6 +35,7 @@
 #include <xrpl/basics/make_SSLContext.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/server/SimpleWriter.h>
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -294,7 +295,9 @@ OverlayImpl::onHandoff(
             std::lock_guard<decltype(mutex_)> lock(mutex_);
             {
                 auto const result = m_peers.emplace(peer->slot(), peer);
-                assert(result.second);
+                XRPL_ASSERT(
+                    result.second,
+                    "ripple::OverlayImpl::onHandoff : peer is inserted");
                 (void)result.second;
             }
             list_.emplace(peer.get(), peer);
@@ -387,7 +390,7 @@ OverlayImpl::makeErrorResponse(
 void
 OverlayImpl::connect(beast::IP::Endpoint const& remote_endpoint)
 {
-    assert(work_);
+    XRPL_ASSERT(work_, "ripple::OverlayImpl::connect : work is set");
 
     auto usage = resourceManager().newOutboundEndpoint(remote_endpoint);
     if (usage.disconnect(journal_))
@@ -429,7 +432,9 @@ OverlayImpl::add_active(std::shared_ptr<PeerImp> const& peer)
 
     {
         auto const result = m_peers.emplace(peer->slot(), peer);
-        assert(result.second);
+        XRPL_ASSERT(
+            result.second,
+            "ripple::OverlayImpl::add_active : peer is inserted");
         (void)result.second;
     }
 
@@ -438,7 +443,9 @@ OverlayImpl::add_active(std::shared_ptr<PeerImp> const& peer)
             std::piecewise_construct,
             std::make_tuple(peer->id()),
             std::make_tuple(peer));
-        assert(result.second);
+        XRPL_ASSERT(
+            result.second,
+            "ripple::OverlayImpl::add_active : peer ID is inserted");
         (void)result.second;
     }
 
@@ -461,7 +468,8 @@ OverlayImpl::remove(std::shared_ptr<PeerFinder::Slot> const& slot)
 {
     std::lock_guard lock(mutex_);
     auto const iter = m_peers.find(slot);
-    assert(iter != m_peers.end());
+    XRPL_ASSERT(
+        iter != m_peers.end(), "ripple::OverlayImpl::remove : valid input");
     m_peers.erase(iter);
 }
 
@@ -470,7 +478,7 @@ OverlayImpl::start()
 {
     PeerFinder::Config config = PeerFinder::Config::makeConfig(
         app_.config(),
-        serverHandler_.setup().overlay.port,
+        serverHandler_.setup().overlay.port(),
         app_.getValidationPublicKey().has_value(),
         setup_.ipLimit);
 
@@ -491,6 +499,9 @@ OverlayImpl::start()
 
         // Pool of servers operated by ISRDC - https://isrdc.in
         bootstrapIps.push_back("sahyadri.isrdc.in 51235");
+
+        // Pool of servers operated by @Xrpkuwait - https://xrpkuwait.com
+        bootstrapIps.push_back("hubs.xrpkuwait.com 51235");
     }
 
     m_resolver.resolve(
@@ -595,7 +606,9 @@ OverlayImpl::activate(std::shared_ptr<PeerImp> const& peer)
             std::piecewise_construct,
             std::make_tuple(peer->id()),
             std::make_tuple(peer)));
-        assert(result.second);
+        XRPL_ASSERT(
+            result.second,
+            "ripple::OverlayImpl::activate : peer ID is inserted");
         (void)result.second;
     }
 
@@ -606,7 +619,7 @@ OverlayImpl::activate(std::shared_ptr<PeerImp> const& peer)
                            << ")";
 
     // We just accepted this peer so we have non-zero active peers
-    assert(size() != 0);
+    XRPL_ASSERT(size(), "ripple::OverlayImpl::activate : nonzero peers");
 }
 
 void
@@ -645,7 +658,10 @@ OverlayImpl::onManifests(
                 //       the loaded Manifest out of the optional so we need to
                 //       reload it here.
                 mo = deserializeManifest(serialized);
-                assert(mo);
+                XRPL_ASSERT(
+                    mo,
+                    "ripple::OverlayImpl::onManifests : manifest "
+                    "deserialization succeeded");
 
                 app_.getOPs().pubManifest(*mo);
 
@@ -1196,17 +1212,39 @@ OverlayImpl::getManifestsMessage()
 void
 OverlayImpl::relay(
     uint256 const& hash,
-    protocol::TMTransaction& m,
+    std::optional<std::reference_wrapper<protocol::TMTransaction>> tx,
     std::set<Peer::id_t> const& toSkip)
 {
-    auto const sm = std::make_shared<Message>(m, protocol::mtTRANSACTION);
+    bool relay = tx.has_value();
+    if (relay)
+    {
+        auto& txn = tx->get();
+        SerialIter sit(makeSlice(txn.rawtransaction()));
+        relay = !isPseudoTx(STTx{sit});
+    }
+
+    Overlay::PeerSequence peers = {};
     std::size_t total = 0;
     std::size_t disabled = 0;
     std::size_t enabledInSkip = 0;
 
-    // total peers excluding peers in toSkip
-    auto peers = getActivePeers(toSkip, total, disabled, enabledInSkip);
-    auto minRelay = app_.config().TX_REDUCE_RELAY_MIN_PEERS + disabled;
+    if (!relay)
+    {
+        if (!app_.config().TX_REDUCE_RELAY_ENABLE)
+            return;
+
+        peers = getActivePeers(toSkip, total, disabled, enabledInSkip);
+        JLOG(journal_.trace())
+            << "not relaying tx, total peers " << peers.size();
+        for (auto const& p : peers)
+            p->addTxQueue(hash);
+        return;
+    }
+
+    auto& txn = tx->get();
+    auto const sm = std::make_shared<Message>(txn, protocol::mtTRANSACTION);
+    peers = getActivePeers(toSkip, total, disabled, enabledInSkip);
+    auto const minRelay = app_.config().TX_REDUCE_RELAY_MIN_PEERS + disabled;
 
     if (!app_.config().TX_REDUCE_RELAY_ENABLE || total <= minRelay)
     {
@@ -1221,7 +1259,7 @@ OverlayImpl::relay(
     // We have more peers than the minimum (disabled + minimum enabled),
     // relay to all disabled and some randomly selected enabled that
     // do not have the transaction.
-    auto enabledTarget = app_.config().TX_REDUCE_RELAY_MIN_PEERS +
+    auto const enabledTarget = app_.config().TX_REDUCE_RELAY_MIN_PEERS +
         (total - minRelay) * app_.config().TX_RELAY_PERCENTAGE / 100;
 
     txMetrics_.addMetrics(enabledTarget, toSkip.size(), disabled);

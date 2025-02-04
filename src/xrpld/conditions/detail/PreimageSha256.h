@@ -137,7 +137,8 @@ public:
         return {type(), cost(), fingerprint()};
     }
 
-    bool validate(Slice) const override
+    bool
+    validate(Slice) const override
     {
         // Perhaps counterintuitively, the message isn't
         // relevant.

@@ -42,8 +42,8 @@ static IOUAmount
 initialTokens(STAmount const& asset1, STAmount const& asset2)
 {
     auto const product = number(asset1) * number(asset2);
-    return (IOUAmount)(
-        product.mantissa() >= 0 ? root2(product) : root2(-product));
+    return (IOUAmount)(product.mantissa() >= 0 ? root2(product)
+                                               : root2(-product));
 }
 
 AMM::AMM(
@@ -140,7 +140,7 @@ AMM::create(
     if (flags)
         jv[jss::Flags] = *flags;
     if (fee_ != 0)
-        jv[jss::Fee] = std::to_string(fee_);
+        jv[sfFee] = std::to_string(fee_);
     else
         jv[jss::Fee] = std::to_string(env_.current()->fees().increment.drops());
     submit(jv, seq, ter);
@@ -821,6 +821,26 @@ pay(Account const& account, AccountID const& to, STAmount const& amount)
     jv[jss::Destination] = to_string(to);
     jv[jss::TransactionType] = jss::Payment;
     jv[jss::Flags] = tfUniversal;
+    return jv;
+}
+
+Json::Value
+ammClawback(
+    Account const& issuer,
+    Account const& holder,
+    Issue const& asset,
+    Issue const& asset2,
+    std::optional<STAmount> const& amount)
+{
+    Json::Value jv;
+    jv[jss::TransactionType] = jss::AMMClawback;
+    jv[jss::Account] = issuer.human();
+    jv[jss::Holder] = holder.human();
+    jv[jss::Asset] = to_json(asset);
+    jv[jss::Asset2] = to_json(asset2);
+    if (amount)
+        jv[jss::Amount] = amount->getJson(JsonOptions::none);
+
     return jv;
 }
 }  // namespace amm

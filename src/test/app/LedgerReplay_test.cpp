@@ -221,7 +221,8 @@ public:
         return {};
     }
     void
-    charge(Resource::Charge const& fee) override
+    charge(Resource::Charge const& fee, std::string const& context = {})
+        override
     {
     }
     id_t
@@ -583,10 +584,7 @@ public:
         PeerSetBehavior behavior = PeerSetBehavior::Good,
         InboundLedgersBehavior inboundBhvr = InboundLedgersBehavior::Good,
         PeerFeature peerFeature = PeerFeature::LedgerReplayEnabled)
-        : env(suite,
-              jtx::envconfig(jtx::port_increment, 3),
-              nullptr,
-              beast::severities::kDisabled)
+        : env(suite, jtx::envconfig(), nullptr, beast::severities::kDisabled)
         , app(env.app())
         , ledgerMaster(env.app().getLedgerMaster())
         , inboundLedgers(

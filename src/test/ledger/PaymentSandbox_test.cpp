@@ -316,13 +316,11 @@ class PaymentSandbox_test : public beast::unit_test::suite
             STAmount::cMinValue,
             STAmount::cMinOffset + 1,
             false,
-            false,
             STAmount::unchecked{});
         STAmount hugeAmt(
             issue,
             STAmount::cMaxValue,
             STAmount::cMaxOffset - 1,
-            false,
             false,
             STAmount::unchecked{});
 

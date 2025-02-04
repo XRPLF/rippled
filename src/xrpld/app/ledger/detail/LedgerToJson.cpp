@@ -24,6 +24,7 @@
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/DeliveredAmount.h>
+#include <xrpld/rpc/MPTokenIssuanceID.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/jss.h>
@@ -156,6 +157,12 @@ fillJsonTx(
                     fill.ledger,
                     txn,
                     {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
+
+            // If applicable, insert mpt issuance id
+            RPC::insertMPTokenIssuanceID(
+                txJson[jss::meta],
+                txn,
+                {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
         }
 
         if (!fill.ledger.open())
@@ -187,6 +194,12 @@ fillJsonTx(
                     fill.ledger,
                     txn,
                     {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
+
+            // If applicable, insert mpt issuance id
+            RPC::insertMPTokenIssuanceID(
+                txJson[jss::metaData],
+                txn,
+                {txn->getTransactionID(), fill.ledger.seq(), *stMeta});
         }
     }
 

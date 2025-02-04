@@ -26,12 +26,12 @@
 #include <xrpl/beast/clock/abstract_clock.h>
 #include <xrpl/beast/insight/Insight.h>
 #include <xrpl/beast/utility/PropertyStream.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/resource/Gossip.h>
 #include <xrpl/resource/detail/Import.h>
-#include <cassert>
 #include <mutex>
 
 namespace ripple {
@@ -401,7 +401,9 @@ public:
     {
         std::lock_guard _(lock_);
         Entry& entry(iter->second);
-        assert(entry.refcount == 0);
+        XRPL_ASSERT(
+            entry.refcount == 0,
+            "ripple::Resource::Logic::erase : entry not used");
         inactive_.erase(inactive_.iterator_to(entry));
         table_.erase(iter);
     }
@@ -433,7 +435,9 @@ public:
                     admin_.erase(admin_.iterator_to(entry));
                     break;
                 default:
-                    assert(false);
+                    UNREACHABLE(
+                        "ripple::Resource::Logic::release : invalid entry "
+                        "kind");
                     break;
             }
             inactive_.push_back(entry);
@@ -442,12 +446,34 @@ public:
     }
 
     Disposition
-    charge(Entry& entry, Charge const& fee)
+    charge(Entry& entry, Charge const& fee, std::string context = {})
     {
+        static constexpr Charge::value_type feeLogAsWarn = 3000;
+        static constexpr Charge::value_type feeLogAsInfo = 1000;
+        static constexpr Charge::value_type feeLogAsDebug = 100;
+        static_assert(
+            feeLogAsWarn > feeLogAsInfo && feeLogAsInfo > feeLogAsDebug &&
+            feeLogAsDebug > 10);
+
+        static auto getStream = [](Resource::Charge::value_type cost,
+                                   beast::Journal& journal) {
+            if (cost >= feeLogAsWarn)
+                return journal.warn();
+            if (cost >= feeLogAsInfo)
+                return journal.info();
+            if (cost >= feeLogAsDebug)
+                return journal.debug();
+            return journal.trace();
+        };
+
+        if (!context.empty())
+            context = " (" + context + ")";
+
         std::lock_guard _(lock_);
         clock_type::time_point const now(m_clock.now());
         int const balance(entry.add(fee.cost(), now));
-        JLOG(m_journal.trace()) << "Charging " << entry << " for " << fee;
+        JLOG(getStream(fee.cost(), m_journal))
+            << "Charging " << entry << " for " << fee << context;
         return disposition(balance);
     }
 

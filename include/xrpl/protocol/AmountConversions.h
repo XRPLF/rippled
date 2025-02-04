@@ -20,9 +20,9 @@
 #ifndef RIPPLE_PROTOCOL_AMOUNTCONVERSION_H_INCLUDED
 #define RIPPLE_PROTOCOL_AMOUNTCONVERSION_H_INCLUDED
 
-#include <xrpl/basics/IOUAmount.h>
-#include <xrpl/basics/XRPAmount.h>
+#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/XRPAmount.h>
 
 #include <type_traits>
 
@@ -33,13 +33,7 @@ toSTAmount(IOUAmount const& iou, Issue const& iss)
 {
     bool const isNeg = iou.signum() < 0;
     std::uint64_t const umant = isNeg ? -iou.mantissa() : iou.mantissa();
-    return STAmount(
-        iss,
-        umant,
-        iou.exponent(),
-        /*native*/ false,
-        isNeg,
-        STAmount::unchecked());
+    return STAmount(iss, umant, iou.exponent(), isNeg, STAmount::unchecked());
 }
 
 inline STAmount
@@ -59,7 +53,9 @@ toSTAmount(XRPAmount const& xrp)
 inline STAmount
 toSTAmount(XRPAmount const& xrp, Issue const& iss)
 {
-    assert(isXRP(iss.account) && isXRP(iss.currency));
+    XRPL_ASSERT(
+        isXRP(iss.account) && isXRP(iss.currency),
+        "ripple::toSTAmount : is XRP");
     return toSTAmount(xrp);
 }
 
@@ -78,12 +74,14 @@ template <>
 inline IOUAmount
 toAmount<IOUAmount>(STAmount const& amt)
 {
-    assert(amt.mantissa() < std::numeric_limits<std::int64_t>::max());
+    XRPL_ASSERT(
+        amt.mantissa() < std::numeric_limits<std::int64_t>::max(),
+        "ripple::toAmount<IOUAmount> : maximum mantissa");
     bool const isNeg = amt.negative();
     std::int64_t const sMant =
         isNeg ? -std::int64_t(amt.mantissa()) : amt.mantissa();
 
-    assert(!isXRP(amt));
+    XRPL_ASSERT(!isXRP(amt), "ripple::toAmount<IOUAmount> : is not XRP");
     return IOUAmount(sMant, amt.exponent());
 }
 
@@ -91,12 +89,14 @@ template <>
 inline XRPAmount
 toAmount<XRPAmount>(STAmount const& amt)
 {
-    assert(amt.mantissa() < std::numeric_limits<std::int64_t>::max());
+    XRPL_ASSERT(
+        amt.mantissa() < std::numeric_limits<std::int64_t>::max(),
+        "ripple::toAmount<XRPAmount> : maximum mantissa");
     bool const isNeg = amt.negative();
     std::int64_t const sMant =
         isNeg ? -std::int64_t(amt.mantissa()) : amt.mantissa();
 
-    assert(isXRP(amt));
+    XRPL_ASSERT(isXRP(amt), "ripple::toAmount<XRPAmount> : is XRP");
     return XRPAmount(sMant);
 }
 

@@ -19,7 +19,7 @@
 
 #include <xrpld/core/Job.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
-#include <cassert>
+#include <xrpl/beast/utility/instrumentation.h>
 
 namespace ripple {
 

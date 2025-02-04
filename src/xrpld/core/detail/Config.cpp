@@ -266,7 +266,8 @@ Config::Config()
 void
 Config::setupControl(bool bQuiet, bool bSilent, bool bStandalone)
 {
-    assert(NODE_SIZE == 0);
+    XRPL_ASSERT(
+        NODE_SIZE == 0, "ripple::Config::setupControl : node size not set");
 
     QUIET = bQuiet || bSilent;
     SILENT = bSilent;
@@ -287,7 +288,9 @@ Config::setupControl(bool bQuiet, bool bSilent, bool bStandalone)
                 return (limit == 0) || (ramSize_ < limit);
             });
 
-        assert(ns != threshold.second.end());
+        XRPL_ASSERT(
+            ns != threshold.second.end(),
+            "ripple::Config::setupControl : valid node size");
 
         if (ns != threshold.second.end())
             NODE_SIZE = std::distance(threshold.second.begin(), ns);
@@ -298,7 +301,8 @@ Config::setupControl(bool bQuiet, bool bSilent, bool bStandalone)
             NODE_SIZE = std::min<std::size_t>(hc / 2, NODE_SIZE);
     }
 
-    assert(NODE_SIZE <= 4);
+    XRPL_ASSERT(
+        NODE_SIZE <= 4, "ripple::Config::setupControl : node size is set");
 }
 
 void
@@ -416,6 +420,35 @@ Config::setup(
     get_if_exists(nodeDbSection, "fast_load", FAST_LOAD);
 }
 
+// 0 ports are allowed for unit tests, but still not allowed to be present in
+// config file
+static void
+checkZeroPorts(Config const& config)
+{
+    if (!config.exists("server"))
+        return;
+
+    for (auto const& name : config.section("server").values())
+    {
+        if (!config.exists(name))
+            return;
+
+        auto const& section = config[name];
+        auto const optResult = section.get("port");
+        if (optResult)
+        {
+            auto const port = beast::lexicalCast<std::uint16_t>(*optResult);
+            if (!port)
+            {
+                std::stringstream ss;
+                ss << "Invalid value '" << *optResult << "' for key 'port' in ["
+                   << name << "]";
+                Throw<std::runtime_error>(ss.str());
+            }
+        }
+    }
+}
+
 void
 Config::load()
 {
@@ -436,6 +469,7 @@ Config::load()
     }
 
     loadFromString(fileContents);
+    checkZeroPorts(*this);
 }
 
 void
@@ -908,6 +942,13 @@ Config::loadFromString(std::string const& fileContents)
             if (valListKeys)
                 section(SECTION_VALIDATOR_LIST_KEYS).append(*valListKeys);
 
+            auto valListThreshold =
+                getIniFileSection(iniFile, SECTION_VALIDATOR_LIST_THRESHOLD);
+
+            if (valListThreshold)
+                section(SECTION_VALIDATOR_LIST_THRESHOLD)
+                    .append(*valListThreshold);
+
             if (!entries && !valKeyEntries && !valListKeys)
                 Throw<std::runtime_error>(
                     "The file specified in [" SECTION_VALIDATORS_FILE
@@ -921,6 +962,38 @@ Config::loadFromString(std::string const& fileContents)
                     " section: " +
                     validatorsFile.string());
         }
+
+        VALIDATOR_LIST_THRESHOLD = [&]() -> std::optional<std::size_t> {
+            auto const& listThreshold =
+                section(SECTION_VALIDATOR_LIST_THRESHOLD);
+            if (listThreshold.lines().empty())
+                return std::nullopt;
+            else if (listThreshold.values().size() == 1)
+            {
+                auto strTemp = listThreshold.values()[0];
+                auto const listThreshold =
+                    beast::lexicalCastThrow<std::size_t>(strTemp);
+                if (listThreshold == 0)
+                    return std::nullopt;  // NOTE: Explicitly ask for computed
+                else if (
+                    listThreshold >
+                    section(SECTION_VALIDATOR_LIST_KEYS).values().size())
+                {
+                    Throw<std::runtime_error>(
+                        "Value in config section "
+                        "[" SECTION_VALIDATOR_LIST_THRESHOLD
+                        "] exceeds the number of configured list keys");
+                }
+                return listThreshold;
+            }
+            else
+            {
+                Throw<std::runtime_error>(
+                    "Config section "
+                    "[" SECTION_VALIDATOR_LIST_THRESHOLD
+                    "] should contain single value only");
+            }
+        }();
 
         // Consolidate [validator_keys] and [validators]
         section(SECTION_VALIDATORS)
@@ -1004,8 +1077,12 @@ int
 Config::getValueFor(SizedItem item, std::optional<std::size_t> node) const
 {
     auto const index = static_cast<std::underlying_type_t<SizedItem>>(item);
-    assert(index < sizedItems.size());
-    assert(!node || *node <= 4);
+    XRPL_ASSERT(
+        index < sizedItems.size(),
+        "ripple::Config::getValueFor : valid index input");
+    XRPL_ASSERT(
+        !node || *node <= 4,
+        "ripple::Config::getValueFor : unset or valid node");
     return sizedItems.at(index).second.at(node.value_or(NODE_SIZE));
 }
 

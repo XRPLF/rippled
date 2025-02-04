@@ -48,6 +48,8 @@ public:
     doApply() override;
 };
 
+using AccountDelete = DeleteAccount;
+
 }  // namespace ripple
 
 #endif

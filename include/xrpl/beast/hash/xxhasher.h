@@ -90,7 +90,8 @@ public:
         XXH3_64bits_update(state_, key, len);
     }
 
-    explicit operator std::size_t() noexcept
+    explicit
+    operator std::size_t() noexcept
     {
         return XXH3_64bits_digest(state_);
     }

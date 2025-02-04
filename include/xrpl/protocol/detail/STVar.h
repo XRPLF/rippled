@@ -23,8 +23,10 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/Serializer.h>
+#include <concepts>
 #include <cstddef>
 #include <cstdint>
+#include <type_traits>
 #include <typeinfo>
 #include <utility>
 
@@ -43,6 +45,19 @@ struct nonPresentObject_t
 
 extern defaultObject_t defaultObject;
 extern nonPresentObject_t nonPresentObject;
+
+// Concept to constrain STVar constructors, which
+// instantiate ST* types from SerializedTypeID
+// clang-format off
+template <typename... Args>
+concept ValidConstructSTArgs =
+    (std::is_same_v<
+         std::tuple<std::remove_cvref_t<Args>...>,
+         std::tuple<SField>> ||
+     std::is_same_v<
+         std::tuple<std::remove_cvref_t<Args>...>,
+         std::tuple<SerialIter, SField>>);
+// clang-format on
 
 // "variant" that can hold any type of serialized object
 // and includes a small-object allocation optimization.
@@ -130,6 +145,15 @@ private:
         else
             p_ = new (&d_) T(std::forward<Args>(args)...);
     }
+
+    /** Construct requested Serializable Type according to id.
+     * The variadic args are: (SField), or (SerialIter, SField).
+     * depth is ignored in former case.
+     */
+    template <typename... Args>
+        requires ValidConstructSTArgs<Args...>
+    void
+    constructST(SerializedTypeID id, int depth, Args&&... arg);
 
     bool
     on_heap() const

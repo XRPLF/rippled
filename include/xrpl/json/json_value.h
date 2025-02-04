@@ -64,7 +64,8 @@ public:
     {
     }
 
-    constexpr operator const char*() const
+    constexpr
+    operator const char*() const
     {
         return str_;
     }
@@ -296,7 +297,8 @@ public:
 
     /** Returns false if this is an empty array, empty object, empty string,
         or null. */
-    explicit operator bool() const;
+    explicit
+    operator bool() const;
 
     /// Remove all object members and array elements.
     /// \pre type() is arrayValue, objectValue, or nullValue

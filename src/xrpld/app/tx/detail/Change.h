@@ -69,6 +69,10 @@ private:
     applyUNLModify();
 };
 
+using EnableAmendment = Change;
+using SetFee = Change;
+using UNLModify = Change;
+
 }  // namespace ripple
 
 #endif
