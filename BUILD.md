@@ -226,8 +226,9 @@ It fixes some source files to add missing `#include`s.
 
     ```
     conan install .. --output-folder . --build missing --settings build_type=Release
-    conan install .. --output-folder . --build missing --settings build_type=Debug
     ```
+
+    To build Debug, set `build_type=Debug` (instead of Release) and in the next step, set `-DCMAKE_BUILD_TYPE=Debug`
 
     For a single-configuration generator, e.g. `Unix Makefiles` or `Ninja`,
     you only need to run this command once.
@@ -401,6 +402,23 @@ After any updates or changes to dependencies, you may need to do the following:
    rm -rf ~/.conan/data
    ```
 4. Re-run [conan install](#build-and-test).
+
+
+### 'protobuf/port_def.inc' file not found
+
+If `cmake --build .` results in an error due to a missing a protobuf file, then you might have generated CMake files for a different `build_type` than the `CMAKE_BUILD_TYPE` you passed to CMake.
+
+```
+/rippled/.build/pb-xrpl.libpb/xrpl/proto/ripple.pb.h:10:10: fatal error: 'google/protobuf/port_def.inc' file not found
+   10 | #include <google/protobuf/port_def.inc>
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+1 error generated.
+```
+
+For example, if you want to build Debug:
+
+1. For conan install, pass `--settings build_type=Debug`
+2. For cmake, pass `-DCMAKE_BUILD_TYPE=Debug`
 
 
 ### no std::result_of
