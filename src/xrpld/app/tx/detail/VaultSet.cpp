@@ -33,6 +33,10 @@ VaultSet::preflight(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureSingleAssetVault))
         return temDISABLED;
 
+    if (ctx.tx.isFieldPresent(sfDomainID) &&
+        !ctx.rules.enabled(featurePermissionedDomains))
+        return temDISABLED;
+
     if (auto const ter = preflight1(ctx))
         return ter;
     if (ctx.tx.getFlags() & tfUniversalMask)
