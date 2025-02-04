@@ -22,6 +22,7 @@
 #include <xrpld/ledger/View.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -79,6 +80,8 @@ TER
 VaultCreate::preclaim(PreclaimContext const& ctx)
 {
     auto asset = ctx.tx[sfAsset];
+    auto account = ctx.tx[sfAccount];
+
     if (asset.holds<MPTIssue>())
     {
         auto mptID = asset.get<MPTIssue>().getMptID();
@@ -90,6 +93,10 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
         if ((issuance->getFlags() & lsfMPTCanTransfer) == 0)
             return tecLOCKED;
     }
+
+    // Cannot create Vault for an Asset frozen for the vault owner
+    if (isFrozen(ctx.view, account, asset))
+        return tecFROZEN;
 
     if (auto const domain = ctx.tx[~sfDomainID])
     {
