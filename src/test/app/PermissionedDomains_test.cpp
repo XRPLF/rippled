@@ -54,9 +54,10 @@ exceptionExpected(Env& env, Json::Value const& jv)
 
 class PermissionedDomains_test : public beast::unit_test::suite
 {
-    FeatureBitset withFeature_{
-        supported_amendments() | featurePermissionedDomains};
     FeatureBitset withoutFeature_{supported_amendments()};
+    FeatureBitset withFeature_{
+        supported_amendments()  //
+        | featurePermissionedDomains | featureCredentials};
 
     // Verify that each tx type can execute if the feature is enabled.
     void
@@ -75,6 +76,22 @@ class PermissionedDomains_test : public beast::unit_test::suite
         BEAST_EXPECT(objects == pdomain::getObjects(alice, env, false));
         auto const domain = objects.begin()->first;
         env(pdomain::deleteTx(alice, domain));
+    }
+
+    // Verify that PD cannot be created or updated if credentials are disabled
+    void
+    testCredentialsDisabled()
+    {
+        auto amendments = supported_amendments();
+        amendments.set(featurePermissionedDomains);
+        amendments.reset(featureCredentials);
+        testcase("Credentials disabled");
+        Account const alice("alice");
+        Env env(*this, amendments);
+        env.fund(XRP(1000), alice);
+        pdomain::Credentials credentials{{alice, "first credential"}};
+        env(pdomain::setTx(alice, credentials), ter(temDISABLED));
+        env(pdomain::deleteTx(alice, uint256(75)), ter(tecNO_ENTRY));
     }
 
     // Verify that each tx does not execute if feature is disabled
@@ -556,6 +573,7 @@ public:
     run() override
     {
         testEnabled();
+        testCredentialsDisabled();
         testDisabled();
         testSet();
         testDelete();
