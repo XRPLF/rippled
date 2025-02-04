@@ -222,13 +222,14 @@ It fixes some source files to add missing `#include`s.
    the `install-folder` or `-if` option to every `conan install` command
    in the next step.
 
-2. Generate CMake files for every configuration you want to build. 
+2. Use conan to generate CMake files for every configuration you want to build:
 
     ```
     conan install .. --output-folder . --build missing --settings build_type=Release
+    conan install .. --output-folder . --build missing --settings build_type=Debug
     ```
 
-    To build Debug, set `build_type=Debug` (instead of Release) and in the next step, set `-DCMAKE_BUILD_TYPE=Debug`
+    To build Debug, in the next step, be sure to set `-DCMAKE_BUILD_TYPE=Debug`
 
     For a single-configuration generator, e.g. `Unix Makefiles` or `Ninja`,
     you only need to run this command once.
@@ -259,13 +260,16 @@ It fixes some source files to add missing `#include`s.
 
     Single-config generators:
 
+    Pass the CMake variable [`CMAKE_BUILD_TYPE`][build_type]
+    and make sure it matches the `build_type` setting you chose in the previous
+    step.
+
+    For example, to build Debug, in the next command, replace "Release" with "Debug"
+
     ```
     cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release -Dxrpld=ON -Dtests=ON ..
     ```
 
-    Pass the CMake variable [`CMAKE_BUILD_TYPE`][build_type]
-    and make sure it matches the `build_type` setting you chose in the previous
-    step.
 
     Multi-config generators:
 
@@ -275,7 +279,7 @@ It fixes some source files to add missing `#include`s.
 
     **Note:** You can pass build options for `rippled` in this step.
 
-4. Build `rippled`.
+5. Build `rippled`.
 
    For a single-configuration generator, it will build whatever configuration
    you passed for `CMAKE_BUILD_TYPE`. For a multi-configuration generator,
@@ -294,7 +298,7 @@ It fixes some source files to add missing `#include`s.
    cmake --build . --config Debug
    ```
 
-5. Test rippled.
+6. Test rippled.
 
    Single-config generators:
 
