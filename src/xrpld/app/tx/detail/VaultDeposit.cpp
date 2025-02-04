@@ -54,7 +54,16 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     if (!vault)
         return tecOBJECT_NOT_FOUND;
 
-    auto const account = ctx.tx[sfAccount];
+    auto account = ctx.tx[sfAccount];
+    auto const assets = ctx.tx[sfAmount];
+    auto asset = vault->at(sfAsset);
+    if (assets.asset() != asset)
+        return tecWRONG_ASSET;
+
+    // Cannot deposit inside Vault an Asset frozen for the depositor
+    if (isFrozen(ctx.view, account, asset))
+        return tecFROZEN;
+
     if (vault->getFlags() == tfVaultPrivate && account != vault->at(sfOwner))
     {
         auto const err = requireAuth(
@@ -82,8 +91,6 @@ VaultDeposit::doApply()
 
     auto const assets = ctx_.tx[sfAmount];
     Asset const& asset = vault->at(sfAsset);
-    if (assets.asset() != asset)
-        return tecWRONG_ASSET;
 
     if (accountHolds(
             view(),
