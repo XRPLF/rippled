@@ -1,8 +1,9 @@
 <map id="ripple::test::jtx::AMMTest" name="ripple::test::jtx::AMMTest">
-<area shape="rect" id="node1" title=" " alt="" coords="389,47,515,87"/>
-<area shape="rect" id="node4" href="$classripple_1_1test_1_1AMMClawback__test.html" title=" " alt="" coords="563,5,791,31"/>
-<area shape="rect" id="node5" href="$structripple_1_1test_1_1AMMExtended__test.html" title="Tests of AMM that use offers too." alt="" coords="563,55,790,80"/>
-<area shape="rect" id="node6" href="$structripple_1_1test_1_1AMM__test.html" title="Basic tests of AMM that do not use offers." alt="" coords="594,104,759,129"/>
-<area shape="rect" id="node2" href="$classripple_1_1test_1_1jtx_1_1AMMTestBase.html" title=" " alt="" coords="216,47,341,87"/>
-<area shape="rect" id="node3" href="$classbeast_1_1unit__test_1_1suite.html" title="A testsuite class." alt="" coords="5,55,168,80"/>
+<area shape="rect" id="node1" title=" " alt="" coords="389,73,515,113"/>
+<area shape="rect" id="node4" href="$classripple_1_1test_1_1AMMClawback__test.html" title=" " alt="" coords="567,5,795,31"/>
+<area shape="rect" id="node5" href="$structripple_1_1test_1_1AMMExtended__test.html" title="Tests of AMM that use offers too." alt="" coords="567,55,794,80"/>
+<area shape="rect" id="node6" href="$structripple_1_1test_1_1AMM__test.html" title="Basic tests of AMM that do not use offers." alt="" coords="598,104,763,129"/>
+<area shape="rect" id="node7" href="$classripple_1_1test_1_1LPTokenTransfer__test.html" title=" " alt="" coords="563,153,799,179"/>
+<area shape="rect" id="node2" href="$classripple_1_1test_1_1jtx_1_1AMMTestBase.html" title=" " alt="" coords="216,73,341,113"/>
+<area shape="rect" id="node3" href="$classbeast_1_1unit__test_1_1suite.html" title="A testsuite class." alt="" coords="5,80,168,105"/>
 </map>
