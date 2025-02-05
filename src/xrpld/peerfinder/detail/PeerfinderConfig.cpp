@@ -31,6 +31,7 @@ Config::Config()
     , autoConnect(true)
     , listeningPort(0)
     , ipLimit(0)
+    , allowPrivateEndpoints(false)
 {
 }
 
@@ -72,6 +73,7 @@ Config::onWrite(beast::PropertyStream::Map& map)
     map["port"] = listeningPort;
     map["features"] = features;
     map["ip_limit"] = ipLimit;
+    map["allow_private_endpoints"] = allowPrivateEndpoints;
 }
 
 Config
@@ -129,6 +131,8 @@ Config::makeConfig(
     config.listeningPort = port;
     config.features = "";
     config.ipLimit = ipLimit;
+
+    config.allowPrivateEndpoints = cfg.ALLOW_PRIVATE_ENDPOINTS;
 
     // Enforce business rules
     config.applyTuning();
