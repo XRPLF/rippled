@@ -464,7 +464,10 @@ class Simulate_test : public beast::unit_test::suite
         testcase("Successful transaction");
 
         using namespace jtx;
-        Env env(*this);
+        Env env{*this, envconfig([&](std::unique_ptr<Config> cfg) {
+                    cfg->NETWORK_ID = 0;
+                    return cfg;
+                })};
         static auto const newDomain = "123ABC";
 
         {
