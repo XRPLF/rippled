@@ -45,6 +45,10 @@ DatabaseRotatingImp::rotateWithLock(
     std::function<std::unique_ptr<NodeStore::Backend>(
         std::string const& writableBackendName)> const& f)
 {
+    // backendMutex_ prevents writableBackend_ and archiveBackend_ from changing
+    // while the main mutex_ is released during the callback.
+    std::lock_guard backendLock(backendMutex_);
+
     auto const writableBackend = [&] {
         std::lock_guard lock(mutex_);
         return writableBackend_;
@@ -53,14 +57,6 @@ DatabaseRotatingImp::rotateWithLock(
     auto newBackend = f(writableBackend->getName());
 
     std::lock_guard lock(mutex_);
-
-    // This function only has one caller, which is syncronous, and this is the
-    // only place other than the ctor where writableBackend_ can change. Even
-    // without a lock, it should be impossible for writableBackend_ to have
-    // changed.
-    assert(writableBackend_ == writableBackend);
-    if (writableBackend_ != writableBackend)
-        LogicError("Backend changed in the middle of a rotation");
 
     archiveBackend_->setDeletePath();
     archiveBackend_ = std::move(writableBackend_);

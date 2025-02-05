@@ -48,8 +48,6 @@ public:
         stop();
     }
 
-    // This function only has one caller in SHAMapStoreImp::run. The locking for
-    // this function will need to be rethought another caller is ever added.
     void
     rotateWithLock(
         std::function<std::unique_ptr<NodeStore::Backend>(
@@ -82,8 +80,12 @@ public:
     sweep() override;
 
 private:
+    // backendMutex_ is only needed when the *Backend_ members are modified.
+    // Reads are protected by the general mutex_.
+    std::mutex backendMutex_;
     std::shared_ptr<Backend> writableBackend_;
     std::shared_ptr<Backend> archiveBackend_;
+
     mutable std::mutex mutex_;
 
     std::shared_ptr<NodeObject>
