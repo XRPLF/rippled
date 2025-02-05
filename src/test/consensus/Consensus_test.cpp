@@ -118,6 +118,11 @@ public:
         BEAST_EXPECT(
             ConsensusState::Yes ==
             checkConsensus(0, 0, 0, 0, 3s, 16s, p, true, journal_));
+
+        // Expire if too much time has passed without agreement
+        BEAST_EXPECT(
+            ConsensusState::Expired ==
+            checkConsensus(10, 8, 1, 0, 1s, 19s, p, true, journal_));
     }
 
     void

@@ -137,7 +137,7 @@ checkConsensus(
                     << " minimum duration to reach consensus: "
                     << parms.ledgerMIN_CONSENSUS.count() << "ms"
                     << " max consensus time "
-                    << parms.ledgerMAX_CONSENSUS.count() << "s"
+                    << parms.ledgerMAX_CONSENSUS.count() << "ms"
                     << " minimum consensus percentage: "
                     << parms.minCONSENSUS_PCT;
 
@@ -179,6 +179,17 @@ checkConsensus(
     {
         JLOG(j.warn()) << "We see no consensus, but 80% of nodes have moved on";
         return ConsensusState::MovedOn;
+    }
+
+    std::chrono::milliseconds const maxAgreeTime =
+        previousAgreeTime * parms.ledgerABANDON_CONSENSUS_FACTOR;
+    if (currentAgreeTime > std::clamp(
+                               maxAgreeTime,
+                               parms.ledgerMAX_CONSENSUS,
+                               parms.ledgerABANDON_CONSENSUS))
+    {
+        JLOG(j.warn()) << "consensus taken too long";
+        return ConsensusState::Expired;
     }
 
     // no consensus yet

@@ -1591,6 +1591,13 @@ Consensus<Adaptor>::haveConsensus()
     if (result_->state == ConsensusState::No)
         return false;
 
+    // Consensus has taken far too long. Drop out of the round.
+    if (result_->state == ConsensusState::Expired)
+    {
+        JLOG(j_.error()) << "Nobody can reach consensus";
+        JLOG(j_.error()) << Json::Compact{getJson(true)};
+        leaveConsensus();
+    }
     // There is consensus, but we need to track if the network moved on
     // without us.
     if (result_->state == ConsensusState::MovedOn)

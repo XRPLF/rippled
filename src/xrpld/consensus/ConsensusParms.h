@@ -94,6 +94,18 @@ struct ConsensusParms
     //! How often we check state or change positions
     std::chrono::milliseconds ledgerGRANULARITY = std::chrono::seconds{1};
 
+    //! How long to wait before completely abandoning consensus
+    std::size_t ledgerABANDON_CONSENSUS_FACTOR = 10;
+
+    /**
+     * Maximum amount of time to give a consensus round
+     *
+     * Does not include the time to build the LCL, so there is no reason for a
+     * round to go this long, regardless of how big the ledger is.
+     */
+    std::chrono::milliseconds ledgerABANDON_CONSENSUS =
+        std::chrono::seconds{60};
+
     /** The minimum amount of time to consider the previous round
         to have taken.
 
