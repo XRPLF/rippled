@@ -93,13 +93,17 @@ class Simulate_test : public beast::unit_test::suite
             validate,
         bool testSerialized = true)
     {
+        env.close();
+
         Json::Value params;
         params[jss::tx_json] = tx;
         validate(env.rpc("json", "simulate", to_string(params)), tx);
+
         params[jss::binary] = true;
         validate(env.rpc("json", "simulate", to_string(params)), tx);
         validate(env.rpc("simulate", to_string(tx)), tx);
         validate(env.rpc("simulate", to_string(tx), "binary"), tx);
+
         if (testSerialized)
         {
             // This cannot be tested in the multisign autofill scenario
@@ -119,6 +123,10 @@ class Simulate_test : public beast::unit_test::suite
             validate(env.rpc("simulate", tx_blob), tx);
             validate(env.rpc("simulate", tx_blob, "binary"), tx);
         }
+
+        BEAST_EXPECTS(
+            env.current()->txCount() == 0,
+            std::to_string(env.current()->txCount()));
     }
 
     Json::Value
@@ -528,8 +536,6 @@ class Simulate_test : public beast::unit_test::suite
 
             // test without autofill
             testTx(env, tx, validateOutput);
-
-            // TODO: check that the ledger wasn't affected
         }
     }
 
@@ -578,8 +584,6 @@ class Simulate_test : public beast::unit_test::suite
 
             // test without autofill
             testTx(env, tx, testSimulation);
-
-            // TODO: check that the ledger wasn't affected
         }
     }
 
@@ -659,8 +663,6 @@ class Simulate_test : public beast::unit_test::suite
 
             // test without autofill
             testTx(env, tx, testSimulation);
-
-            // TODO: check that the ledger wasn't affected
         }
     }
 
@@ -680,6 +682,7 @@ class Simulate_test : public beast::unit_test::suite
 
         // set up valid multisign
         env(signers(alice, 1, {{becky, 1}, {carol, 1}}));
+        env.close();
 
         {
             auto validateOutput = [&](Json::Value const& resp,
@@ -717,7 +720,7 @@ class Simulate_test : public beast::unit_test::suite
                             BEAST_EXPECT(finalFields[sfDomain] == newDomain);
                         }
                     }
-                    BEAST_EXPECT(metadata[sfTransactionIndex.jsonName] == 1);
+                    BEAST_EXPECT(metadata[sfTransactionIndex.jsonName] == 0);
                     BEAST_EXPECT(
                         metadata[sfTransactionResult.jsonName] == "tesSUCCESS");
                 }
@@ -752,8 +755,6 @@ class Simulate_test : public beast::unit_test::suite
 
             // test without autofill
             testTx(env, tx, validateOutput);
-
-            // TODO: check that the ledger wasn't affected
         }
     }
 
@@ -809,8 +810,6 @@ class Simulate_test : public beast::unit_test::suite
 
             // test without autofill
             testTx(env, tx, testSimulation);
-
-            // TODO: check that the ledger wasn't affected
         }
     }
 
@@ -880,8 +879,6 @@ class Simulate_test : public beast::unit_test::suite
 
             // test without autofill
             testTx(env, tx, validateOutput);
-
-            // TODO: check that the ledger wasn't affected
         }
     }
 
@@ -1074,8 +1071,6 @@ class Simulate_test : public beast::unit_test::suite
 
             // test without autofill
             testTx(env, tx, validateOutput);
-
-            // TODO: check that the ledger wasn't affected
         }
     }
 
