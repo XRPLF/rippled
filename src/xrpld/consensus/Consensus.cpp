@@ -88,7 +88,8 @@ checkConsensusReached(
     std::size_t total,
     bool count_self,
     std::size_t minConsensusPct,
-    bool reachedMax)
+    bool reachedMax,
+    bool stableState)
 {
     // If we are alone for too long, we have consensus.
     // Delaying consensus like this avoids a circumstance where a peer
@@ -114,7 +115,7 @@ checkConsensusReached(
 
     std::size_t currentPercentage = (agreeing * 100) / total;
 
-    return currentPercentage >= minConsensusPct;
+    return currentPercentage >= minConsensusPct || stableState;
 }
 
 ConsensusState
@@ -125,6 +126,7 @@ checkConsensus(
     std::size_t currentFinished,
     std::chrono::milliseconds previousAgreeTime,
     std::chrono::milliseconds currentAgreeTime,
+    bool stableState,
     ConsensusParms const& parms,
     bool proposing,
     beast::Journal j)
@@ -162,9 +164,11 @@ checkConsensus(
             currentProposers,
             proposing,
             parms.minCONSENSUS_PCT,
-            currentAgreeTime > parms.ledgerMAX_CONSENSUS))
+            currentAgreeTime > parms.ledgerMAX_CONSENSUS,
+            stableState))
     {
-        JLOG(j.debug()) << "normal consensus";
+        JLOG(j.debug()) << "normal consensus with " << (stableState ? "" : "un")
+                        << "stable state";
         return ConsensusState::Yes;
     }
 
@@ -175,7 +179,8 @@ checkConsensus(
             currentProposers,
             false,
             parms.minCONSENSUS_PCT,
-            currentAgreeTime > parms.ledgerMAX_CONSENSUS))
+            currentAgreeTime > parms.ledgerMAX_CONSENSUS,
+            false))
     {
         JLOG(j.warn()) << "We see no consensus, but 80% of nodes have moved on";
         return ConsensusState::MovedOn;

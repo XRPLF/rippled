@@ -20,8 +20,11 @@
 #ifndef RIPPLE_CONSENSUS_CONSENSUS_PARMS_H_INCLUDED
 #define RIPPLE_CONSENSUS_CONSENSUS_PARMS_H_INCLUDED
 
+#include <xrpl/beast/utility/instrumentation.h>
 #include <chrono>
 #include <cstddef>
+#include <functional>
+#include <map>
 
 namespace ripple {
 
@@ -124,30 +127,68 @@ struct ConsensusParms
     // we increase the threshold for yes votes to add a transaction to our
     // position.
 
-    //! Percentage of nodes on our UNL that must vote yes
-    std::size_t avINIT_CONSENSUS_PCT = 50;
-
-    //! Percentage of previous round duration before we advance
-    std::size_t avMID_CONSENSUS_TIME = 50;
-
-    //! Percentage of nodes that most vote yes after advancing
-    std::size_t avMID_CONSENSUS_PCT = 65;
-
-    //! Percentage of previous round duration before we advance
-    std::size_t avLATE_CONSENSUS_TIME = 85;
-
-    //! Percentage of nodes that most vote yes after advancing
-    std::size_t avLATE_CONSENSUS_PCT = 70;
-
-    //! Percentage of previous round duration before we are stuck
-    std::size_t avSTUCK_CONSENSUS_TIME = 200;
-
-    //! Percentage of nodes that must vote yes after we are stuck
-    std::size_t avSTUCK_CONSENSUS_PCT = 95;
-
     //! Percentage of nodes required to reach agreement on ledger close time
     std::size_t avCT_CONSENSUS_PCT = 75;
+
+    //! Number of rounds before certain actions can happen.
+    // (Moving to the next avalanche level, considering that votes are in a
+    // stable state without consensus.)
+    std::size_t avMIN_ROUNDS = 2;
+
+    //! Number of rounds before a stuck vote is considered unlikely to change
+    //! because voting is in an undesriable stable state
+    std::size_t avSTUCK_VOTE_ROUNDS = 5;
+
+    enum AvalancheState { init, mid, late, stuck };
+    struct AvalancheCutoff
+    {
+        std::size_t const consensusTime;
+        std::size_t const consensusPct;
+        AvalancheState const next;
+    };
+    std::map<AvalancheState, AvalancheCutoff> avalancheCutoffs = {
+        // {state, {time, percent, nextState}},
+        // Initial state: 50% of nodes must vote yes
+        {init, {0, 50, mid}},
+        // mid-consensus starts after 50% of the previous round time, and
+        // requires 65% yes
+        {mid, {50, 65, late}},
+        // late consensus starts after 85% time, and requires 70% yes
+        {late, {85, 70, stuck}},
+        // we're stuck after 2x time, requires 95% yes votes
+        {stuck, {200, 95, stuck}},
+    };
 };
+
+inline std::pair<std::size_t, std::optional<ConsensusParms::AvalancheState>>
+getNeededWeight(
+    ConsensusParms const& p,
+    ConsensusParms::AvalancheState currentState,
+    int percentTime,
+    std::function<bool(ConsensusParms::AvalancheCutoff const&)>
+        considerNextCallback)
+{
+    // at() can throw, but the map is built by hand to ensure all valid
+    // values are available.
+    auto const& currentCutoff = p.avalancheCutoffs.at(currentState);
+    // Should we consider moving to the next state?
+    if (currentCutoff.next != currentState &&
+        (!considerNextCallback || considerNextCallback(currentCutoff)))
+    {
+        // at() can throw, but the map is built by hand to ensure all
+        // valid values are available.
+        auto const& nextCutoff = p.avalancheCutoffs.at(currentCutoff.next);
+        // See if enough time has passed to move on to the next.
+        XRPL_ASSERT(
+            nextCutoff.consensusTime,
+            "ripple::DisputedTx::updateVote next state valid");
+        if (percentTime >= nextCutoff.consensusTime)
+        {
+            return {nextCutoff.consensusPct, currentCutoff.next};
+        }
+    }
+    return {currentCutoff.consensusPct, {}};
+}
 
 }  // namespace ripple
 #endif

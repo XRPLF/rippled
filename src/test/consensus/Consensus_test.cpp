@@ -82,47 +82,96 @@ public:
         // Use default parameterss
         ConsensusParms const p{};
 
+        ///////////////
+        // Disputes still in doubt
+        //
         // Not enough time has elapsed
         BEAST_EXPECT(
             ConsensusState::No ==
-            checkConsensus(10, 2, 2, 0, 3s, 2s, p, true, journal_));
+            checkConsensus(10, 2, 2, 0, 3s, 2s, false, p, true, journal_));
 
         // If not enough peers have propsed, ensure
         // more time for proposals
         BEAST_EXPECT(
             ConsensusState::No ==
-            checkConsensus(10, 2, 2, 0, 3s, 4s, p, true, journal_));
+            checkConsensus(10, 2, 2, 0, 3s, 4s, false, p, true, journal_));
 
         // Enough time has elapsed and we all agree
         BEAST_EXPECT(
             ConsensusState::Yes ==
-            checkConsensus(10, 2, 2, 0, 3s, 10s, p, true, journal_));
+            checkConsensus(10, 2, 2, 0, 3s, 10s, false, p, true, journal_));
 
         // Enough time has elapsed and we don't yet agree
         BEAST_EXPECT(
             ConsensusState::No ==
-            checkConsensus(10, 2, 1, 0, 3s, 10s, p, true, journal_));
+            checkConsensus(10, 2, 1, 0, 3s, 10s, false, p, true, journal_));
 
         // Our peers have moved on
         // Enough time has elapsed and we all agree
         BEAST_EXPECT(
             ConsensusState::MovedOn ==
-            checkConsensus(10, 2, 1, 8, 3s, 10s, p, true, journal_));
+            checkConsensus(10, 2, 1, 8, 3s, 10s, false, p, true, journal_));
 
         // If no peers, don't agree until time has passed.
         BEAST_EXPECT(
             ConsensusState::No ==
-            checkConsensus(0, 0, 0, 0, 3s, 10s, p, true, journal_));
+            checkConsensus(0, 0, 0, 0, 3s, 10s, false, p, true, journal_));
 
         // Agree if no peers and enough time has passed.
         BEAST_EXPECT(
             ConsensusState::Yes ==
-            checkConsensus(0, 0, 0, 0, 3s, 16s, p, true, journal_));
+            checkConsensus(0, 0, 0, 0, 3s, 16s, false, p, true, journal_));
 
         // Expire if too much time has passed without agreement
         BEAST_EXPECT(
             ConsensusState::Expired ==
-            checkConsensus(10, 8, 1, 0, 1s, 19s, p, true, journal_));
+            checkConsensus(10, 8, 1, 0, 1s, 19s, false, p, true, journal_));
+        ///////////////
+        // Stable state
+        //
+        // Not enough time has elapsed
+        BEAST_EXPECT(
+            ConsensusState::No ==
+            checkConsensus(10, 2, 2, 0, 3s, 2s, true, p, true, journal_));
+
+        // If not enough peers have propsed, ensure
+        // more time for proposals
+        BEAST_EXPECT(
+            ConsensusState::No ==
+            checkConsensus(10, 2, 2, 0, 3s, 4s, true, p, true, journal_));
+
+        // Enough time has elapsed and we all agree
+        BEAST_EXPECT(
+            ConsensusState::Yes ==
+            checkConsensus(10, 2, 2, 0, 3s, 10s, true, p, true, journal_));
+
+        // Enough time has elapsed and we don't yet agree, but there's nothing
+        // left to dispute
+        BEAST_EXPECT(
+            ConsensusState::Yes ==
+            checkConsensus(10, 2, 1, 0, 3s, 10s, true, p, true, journal_));
+
+        // Our peers have moved on
+        // Enough time has elapsed and we all agree, nothing left to dispute
+        BEAST_EXPECT(
+            ConsensusState::Yes ==
+            checkConsensus(10, 2, 1, 8, 3s, 10s, true, p, true, journal_));
+
+        // If no peers, don't agree until time has passed.
+        BEAST_EXPECT(
+            ConsensusState::No ==
+            checkConsensus(0, 0, 0, 0, 3s, 10s, true, p, true, journal_));
+
+        // Agree if no peers and enough time has passed.
+        BEAST_EXPECT(
+            ConsensusState::Yes ==
+            checkConsensus(0, 0, 0, 0, 3s, 16s, true, p, true, journal_));
+
+        // We are done if there's nothing left to dispute, no matter how much
+        // time has passed
+        BEAST_EXPECT(
+            ConsensusState::Yes ==
+            checkConsensus(10, 8, 1, 0, 1s, 19s, true, p, true, journal_));
     }
 
     void
@@ -1058,6 +1107,41 @@ public:
     }
 
     void
+    testDisputes()
+    {
+        using namespace csf;
+        using namespace std::chrono;
+
+        std::uint32_t numPeers = 35;
+
+        ConsensusParms const parms{};
+        Sim sim;
+
+        PeerGroup peers = sim.createGroup(numPeers);
+
+        SimDuration delay = round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
+        peers.trustAndConnect(peers, delay);
+
+        // Initial round to set prior state
+        sim.run(1);
+        for (Peer* peer : peers)
+        {
+            // Every transaction will be seen by every node but two.
+            // To accomplish that, every peer will add the ids of every peer
+            // except itself, and the one following.
+            auto const myId = peer->id;
+            auto const nextId = (peer->id + PeerID(1)) % PeerID(numPeers);
+            for (Peer* to : sim.trustGraph.trustedPeers(peer))
+            {
+                if (to->id == myId || to->id == nextId)
+                    continue;
+                peer->openTxs.insert(Tx{static_cast<std::uint32_t>(to->id)});
+            }
+        }
+        sim.run(1);
+    }
+
+    void
     run() override
     {
         testShouldCloseLedger();
@@ -1073,6 +1157,7 @@ public:
         testHubNetwork();
         testPreferredByBranch();
         testPauseForLaggards();
+        testDisputes();
     }
 };
 

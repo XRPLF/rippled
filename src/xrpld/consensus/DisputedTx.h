@@ -84,6 +84,31 @@ public:
         return ourVote_;
     }
 
+    //! Are we and our peers at a "stable state" where we probably won't change
+    //! our vote?
+    bool
+    stableState(ConsensusParms const& p, int peersUnchanged) const
+    {
+        // at() can throw, but the map is built by hand to ensure all valid
+        // values are available.
+        auto const& currentCutoff = p.avalancheCutoffs.at(avalancheState_);
+
+        // We're not at the final avalanche state, so there's room for change
+        if (avalancheState_ != currentCutoff.next)
+            return false;
+
+        // We've haven't had this vote for 2 rounds yet. Things could change.
+        if (currentVoteCounter_ < p.avMIN_ROUNDS)
+            return false;
+
+        // If we or any peers have changed a vote in the last 5 rounds, then
+        // things could still change. But if _either_ has not changed in that
+        // long, we're unlikely to change our vote any time soon. (This prevents
+        // a malicious peer from flip-flopping a vote to prevent consensus.)
+        return peersUnchanged >= p.avSTUCK_VOTE_ROUNDS ||
+            currentVoteCounter_ >= p.avSTUCK_VOTE_ROUNDS;
+    }
+
     //! The disputed transaction.
     Tx_t const&
     tx() const
@@ -102,8 +127,12 @@ public:
 
         @param peer Identifier of peer.
         @param votesYes Whether peer votes to include the disputed transaction.
+
+        @return bool Whether the peer changed its vote. (A new vote counts as a
+       change.)
     */
-    void
+    [[nodiscard]]
+    bool
     setVote(NodeID_t const& peer, bool votesYes);
 
     /** Remove a peer's vote
@@ -137,12 +166,16 @@ private:
     bool ourVote_;  //< Our vote (true is yes)
     Tx_t tx_;       //< Transaction under dispute
     Map_t votes_;   //< Map from NodeID to vote
+    //! The number of rounds we've gone without changing our vote
+    std::size_t currentVoteCounter_ = 0;
+    ConsensusParms::AvalancheState avalancheState_ = ConsensusParms::init;
+    std::size_t avalancheCounter_ = 0;
     beast::Journal const j_;
 };
 
 // Track a peer's yes/no vote on a particular disputed tx_
 template <class Tx_t, class NodeID_t>
-void
+bool
 DisputedTx<Tx_t, NodeID_t>::setVote(NodeID_t const& peer, bool votesYes)
 {
     auto const [it, inserted] = votes_.insert(std::make_pair(peer, votesYes));
@@ -160,6 +193,7 @@ DisputedTx<Tx_t, NodeID_t>::setVote(NodeID_t const& peer, bool votesYes)
             JLOG(j_.debug()) << "Peer " << peer << " votes NO on " << tx_.id();
             ++nays_;
         }
+        return true;
     }
     // changes vote to yes
     else if (votesYes && !it->second)
@@ -168,6 +202,7 @@ DisputedTx<Tx_t, NodeID_t>::setVote(NodeID_t const& peer, bool votesYes)
         --nays_;
         ++yays_;
         it->second = true;
+        return true;
     }
     // changes vote to no
     else if (!votesYes && it->second)
@@ -176,7 +211,9 @@ DisputedTx<Tx_t, NodeID_t>::setVote(NodeID_t const& peer, bool votesYes)
         ++nays_;
         --yays_;
         it->second = false;
+        return true;
     }
+    return false;
 }
 
 // Remove a peer's vote on this disputed transaction
@@ -218,16 +255,26 @@ DisputedTx<Tx_t, NodeID_t>::updateVote(
         // This is basically the percentage of nodes voting 'yes' (including us)
         weight = (yays_ * 100 + (ourVote_ ? 100 : 0)) / (nays_ + yays_ + 1);
 
-        // To prevent avalanche stalls, we increase the needed weight slightly
-        // over time.
-        if (percentTime < p.avMID_CONSENSUS_TIME)
-            newPosition = weight > p.avINIT_CONSENSUS_PCT;
-        else if (percentTime < p.avLATE_CONSENSUS_TIME)
-            newPosition = weight > p.avMID_CONSENSUS_PCT;
-        else if (percentTime < p.avSTUCK_CONSENSUS_TIME)
-            newPosition = weight > p.avLATE_CONSENSUS_PCT;
-        else
-            newPosition = weight > p.avSTUCK_CONSENSUS_PCT;
+        // To prevent avalanche stalls, we increase the needed weight
+        // slightly over time. We also need to ensure that the consensus has
+        // made a minimum number of attempts at each "state" before moving
+        // to the next.
+        auto const [requiredPct, newState] = getNeededWeight(
+            p,
+            avalancheState_,
+            percentTime,
+            [&](ConsensusParms::AvalancheCutoff const& currentState) {
+                // Have we spent sufficient rounds at this step.
+                return ++avalancheCounter_ >= p.avMIN_ROUNDS &&
+                    currentState.consensusPct;
+            });
+        if (newState)
+        {
+            avalancheState_ = *newState;
+            avalancheCounter_ = 0;
+        }
+
+        newPosition = weight > requiredPct;
     }
     else
     {
@@ -238,13 +285,16 @@ DisputedTx<Tx_t, NodeID_t>::updateVote(
 
     if (newPosition == ourVote_)
     {
+        ++currentVoteCounter_;
         JLOG(j_.info()) << "No change (" << (ourVote_ ? "YES" : "NO")
                         << ") : weight " << weight << ", percent "
-                        << percentTime;
+                        << percentTime
+                        << ", round(s) with this vote: " << currentVoteCounter_;
         JLOG(j_.debug()) << Json::Compact{getJson()};
         return false;
     }
 
+    currentVoteCounter_ = 0;
     ourVote_ = newPosition;
     JLOG(j_.debug()) << "We now vote " << (ourVote_ ? "YES" : "NO") << " on "
                      << tx_.id();

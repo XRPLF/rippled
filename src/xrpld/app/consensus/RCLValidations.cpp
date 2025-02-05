@@ -189,8 +189,9 @@ handleNewValidation(
     auto& validations = app.getValidations();
 
     // masterKey is seated only if validator is trusted or listed
-    auto const outcome =
-        validations.add(calcNodeID(masterKey.value_or(signingKey)), val);
+    auto const nodeKey = masterKey.value_or(signingKey);
+    assert(nodeKey != app.getValidationPublicKey());
+    auto const outcome = validations.add(calcNodeID(nodeKey), val);
 
     if (outcome == ValStatus::current)
     {
