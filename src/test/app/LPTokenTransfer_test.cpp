@@ -336,17 +336,27 @@ class LPTokenTransfer_test : public jtx::AMMTest
 
         // carol can always create a check with lptoken that has frozen
         // token
-        uint256 const chkId{keylet::check(carol, env.seq(carol)).key};
+        uint256 const carolChkId{keylet::check(carol, env.seq(carol)).key};
         env(check::create(carol, bob, STAmount{lpIssue, 10}));
         env.close();
 
         // with fixFrozenLPTokenTransfer enabled, bob fails to cash the check
         if (features[fixFrozenLPTokenTransfer])
-            env(check::cash(bob, chkId, STAmount{lpIssue, 10}),
+            env(check::cash(bob, carolChkId, STAmount{lpIssue, 10}),
                 ter(tecPATH_PARTIAL));
         else
-            env(check::cash(bob, chkId, STAmount{lpIssue, 10}));
+            env(check::cash(bob, carolChkId, STAmount{lpIssue, 10}));
 
+        env.close();
+
+        // bob creates a check
+        uint256 const bobChkId{keylet::check(bob, env.seq(bob)).key};
+        env(check::create(bob, carol, STAmount{lpIssue, 10}));
+        env.close();
+
+        // carol cashes the bob's check. Even though carol is frozen, she can
+        // still receive LPToken
+        env(check::cash(carol, bobChkId, STAmount{lpIssue, 10}));
         env.close();
     }
 
