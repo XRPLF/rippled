@@ -144,6 +144,13 @@ autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
         tx_json[sfSequence.jsonName] = *seq;
     }
 
+    if (!tx_json.isMember(jss::NetworkID))
+    {
+        auto const networkId = context.app.config().NETWORK_ID;
+        if (networkId > 1024)
+            tx_json[jss::NetworkID] = to_string(networkId);
+    }
+
     return std::nullopt;
 }
 
