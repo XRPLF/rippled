@@ -126,9 +126,19 @@ ammLPHolds(
 
     auto const sle = view.read(keylet::line(lpAccount, ammAccount, currency));
     if (!sle)
+    {
         amount.clear(Issue{currency, ammAccount});
+        JLOG(j.trace()) << "ammLPHolds: no SLE "
+                        << " lpAccount=" << to_string(lpAccount)
+                        << " amount=" << amount.getFullText();
+    }
     else if (isFrozen(view, lpAccount, currency, ammAccount))
+    {
         amount.clear(Issue{currency, ammAccount});
+        JLOG(j.trace()) << "ammLPHolds: frozen currency "
+                        << " lpAccount=" << to_string(lpAccount)
+                        << " amount=" << amount.getFullText();
+    }
     else
     {
         amount = sle->getFieldAmount(sfBalance);
@@ -138,10 +148,11 @@ ammLPHolds(
             amount.negate();
         }
         amount.setIssuer(ammAccount);
+
+        JLOG(j.trace()) << "ammLPHolds:"
+                        << " lpAccount=" << to_string(lpAccount)
+                        << " amount=" << amount.getFullText();
     }
-    JLOG(j.trace()) << "ammLPHolds:"
-                    << " lpAccount=" << to_string(lpAccount)
-                    << " amount=" << amount.getFullText();
 
     return view.balanceHook(lpAccount, ammAccount, amount);
 }
