@@ -48,10 +48,13 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
     auto const vault = ctx.view.read(keylet::vault(ctx.tx[sfVaultID]));
     if (!vault)
         return tecOBJECT_NOT_FOUND;
+
     if (vault->at(sfOwner) != ctx.tx[sfAccount])
         return tecNO_PERMISSION;
+
     if (vault->at(sfAssetAvailable) != 0)
         return tecHAS_OBLIGATIONS;
+
     return tesSUCCESS;
 }
 
@@ -60,7 +63,7 @@ VaultDelete::doApply()
 {
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
     if (!vault)
-        return tecOBJECT_NOT_FOUND;
+        return tefINTERNAL;
 
     // Destroy the asset holding.
     if (auto ter = removeEmptyHolding(

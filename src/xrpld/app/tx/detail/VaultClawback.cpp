@@ -48,6 +48,26 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
     auto const vault = ctx.view.read(keylet::vault(ctx.tx[sfVaultID]));
     if (!vault)
         return tecOBJECT_NOT_FOUND;
+
+    auto account = ctx.tx[sfAccount];
+    Asset const asset = vault->at(sfAsset);
+    if (asset.native())
+        return tecNO_PERMISSION;  // Cannot clawback XRP.
+    else if (asset.getIssuer() != account)
+        return tecNO_PERMISSION;  // Only issuers can clawback.
+
+    STAmount const amount = ctx.tx[sfAmount];
+    if (asset != amount.asset())
+        return tecWRONG_ASSET;
+
+    AccountID holder = ctx.tx[sfHolder];
+    // Cannot clawback from a Vault an Asset frozen for the holder
+    if (isFrozen(ctx.view, holder, asset))
+        return tecFROZEN;
+
+    if (isFrozen(ctx.view, account, asset))
+        return tecFROZEN;
+
     return tesSUCCESS;
 }
 
@@ -59,20 +79,8 @@ VaultClawback::doApply()
     if (!vault)
         return tecOBJECT_NOT_FOUND;
 
-    Asset const asset = (*vault)[sfAsset];
-    if (asset.native())
-        // Cannot clawback XRP.
-        return tecNO_PERMISSION;
-    else if (asset.getIssuer() != account_)
-        // Only issuers can clawback.
-        return tecNO_PERMISSION;
-
-    AccountID holder = tx[sfHolder];
     STAmount const amount = tx[sfAmount];
-
-    if (asset != amount.asset())
-        return tecWRONG_ASSET;
-
+    AccountID holder = tx[sfHolder];
     STAmount assets, shares;
     if (amount == beast::zero)
     {

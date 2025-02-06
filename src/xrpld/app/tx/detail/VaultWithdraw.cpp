@@ -51,6 +51,17 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     if (!vault)
         return tecOBJECT_NOT_FOUND;
 
+    auto const assets = ctx.tx[sfAmount];
+    auto const asset = vault->at(sfAsset);
+    auto const share = vault->at(sfMPTokenIssuanceID);
+    if (assets.asset() != asset && assets.asset() != share)
+        return tecWRONG_ASSET;
+
+    auto const account = ctx.tx[sfAccount];
+    // Cannot withdraw from a Vault an Asset frozen for the account
+    if (isFrozen(ctx.view, account, asset))
+        return tecFROZEN;
+
     return tesSUCCESS;
 }
 
@@ -61,48 +72,44 @@ VaultWithdraw::doApply()
     if (!vault)
         return tecOBJECT_NOT_FOUND;
 
-    // TODO: Check credentials.
-    if (vault->getFlags() & lsfVaultPrivate)
-        return tecNO_PERMISSION;
+    // Note, we intentionally do not check lsfVaultPrivate flag on the Vault. If
+    // you have a share in the vault, it means you were at some point authorized
+    // to deposit into it, and this means you are also indefinitely authorized
+    // to withdraw from it.
 
     auto amount = ctx_.tx[sfAmount];
-
+    auto const asset = vault->at(sfAsset);
+    auto const share = MPTIssue(vault->at(sfMPTokenIssuanceID));
     STAmount shares, assets;
-    if (amount.asset() == vault->at(sfAsset))
+    if (amount.asset() == asset)
     {
         // Fixed assets, variable shares.
         assets = amount;
         shares = assetsToSharesWithdraw(view(), vault, assets);
     }
-    else if (amount.asset() == vault->at(sfMPTokenIssuanceID))
+    else if (amount.asset() == share)
     {
         // Fixed shares, variable assets.
         shares = amount;
         assets = sharesToAssetsWithdraw(view(), vault, shares);
     }
     else
+        return tefINTERNAL;
+
+    if (accountHolds(
+            view(),
+            account_,
+            share,
+            FreezeHandling::fhZERO_IF_FROZEN,
+            AuthHandling::ahZERO_IF_UNAUTHORIZED,
+            j_) < shares)
     {
-        return tecWRONG_ASSET;
+        return tecINSUFFICIENT_FUNDS;
     }
 
-    // // The depositor must have enough shares.
-    // // TODO: accountFunds throws here. Why?
-    // if (accountHolds(
-    //         view(),
-    //         account_,
-    //         shares.asset(),
-    //         FreezeHandling::fhZERO_IF_FROZEN,
-    //         AuthHandling::ahZERO_IF_UNAUTHORIZED,
-    //         j_) < shares)
-    // {
-    //     return tecINSUFFICIENT_FUNDS;
-    // }
-
-    // The vault must have enough assets on hand.
-    // The vault may hold assets that it has already pledged.
-    // That is why we look at AssetAvailable instead of the account balance.
-    // TODO: Invariant: vault.AssetAvailable <=
-    // vault.Account.balance(vault.Asset)
+    // The vault must have enough assets on hand. The vault may hold assets that
+    // it has already pledged. That is why we look at AssetAvailable instead of
+    // the pseudo-account balance.
     if (*vault->at(sfAssetAvailable) < assets)
         return tecINSUFFICIENT_FUNDS;
 

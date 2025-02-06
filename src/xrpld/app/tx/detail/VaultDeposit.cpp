@@ -114,8 +114,8 @@ VaultDeposit::doApply()
     MPTIssue const mptIssue(mptIssuanceID);
     if (vault->getFlags() == tfVaultPrivate)
     {
-        if (auto const err =
-                verifyAuth(ctx_.view(), mptIssue, account_, mPriorBalance, j_);
+        if (auto const err = enforceMPTokenAuthorization(
+                ctx_.view(), mptIssue, account_, mPriorBalance, j_);
             !isTesSuccess(err))
             return err;
     }

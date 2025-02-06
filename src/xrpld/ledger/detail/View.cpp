@@ -2128,7 +2128,7 @@ requireAuth(
 }
 
 [[nodiscard]] TER
-verifyAuth(
+enforceMPTokenAuthorization(
     ApplyView& view,
     MPTIssue const& mptIssue,
     AccountID const& account,

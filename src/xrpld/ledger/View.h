@@ -613,7 +613,7 @@ requireAuth(
  *   if needed, on the basis of non-expired credentals found.
  */
 [[nodiscard]] TER
-verifyAuth(
+enforceMPTokenAuthorization(
     ApplyView& view,
     MPTIssue const& mptIssue,
     AccountID const& account,

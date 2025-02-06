@@ -66,8 +66,7 @@ VaultSet::preclaim(PreclaimContext const& ctx)
     if (ctx.tx[sfAccount] != sle->at(sfOwner))
         return tecNO_PERMISSION;
 
-    // We can only set domain if private flag was originally set and
-    // domain was not set
+    // We can only set domain if private flag was originally set
     if (auto const domain = ctx.tx[~sfDomainID])
     {
         if ((sle->getFlags() & tfVaultPrivate) == 0)
@@ -102,13 +101,9 @@ VaultSet::doApply()
     }
     if (tx.isFieldPresent(sfDomainID))
     {
-        // In VaultSet::preclaim we enforce that either DomainID wasn't present
-        // in the vault, or was the same value as the one supplied. We also
-        // enforce that tfVaultPrivate must have been set in the vault. By
-        // adding DomainID to an existing private vault, we are allowing
-        // permissioned users to interract with a vault which was previously
-        // accessible to its owner only. We currently do not support making
-        // such a vault public (i.e. removal of tfVaultPrivate flag)
+        // In VaultSet::preclaim we enforce that tfVaultPrivate must have been
+        // set in the vault. We currently do not support making such a vault
+        // public (i.e. removal of tfVaultPrivate flag)
         vault->setFieldH256(sfDomainID, tx.getFieldH256(sfDomainID));
     }
 
