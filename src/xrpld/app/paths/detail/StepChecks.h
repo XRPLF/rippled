@@ -21,6 +21,7 @@
 #define RIPPLE_APP_PATHS_IMPL_STEP_CHECKS_H_INCLUDED
 
 #include <xrpld/ledger/ReadView.h>
+#include <xrpld/ledger/View.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/AccountID.h>
@@ -35,7 +36,7 @@ checkFreeze(
     AccountID const& dst,
     Currency const& currency)
 {
-    assert(src != dst);
+    XRPL_ASSERT(src != dst, "ripple::checkFreeze : unequal input accounts");
 
     // check freeze
     if (auto sle = view.read(keylet::account(dst)))
@@ -51,6 +52,32 @@ checkFreeze(
         if (sle->isFlag((dst > src) ? lsfHighFreeze : lsfLowFreeze))
         {
             return terNO_LINE;
+        }
+        // Unlike normal freeze, a deep frozen trust line acts the same
+        // regardless of which side froze it
+        if (sle->isFlag(lsfHighDeepFreeze) || sle->isFlag(lsfLowDeepFreeze))
+        {
+            return terNO_LINE;
+        }
+    }
+
+    if (view.rules().enabled(fixFrozenLPTokenTransfer))
+    {
+        if (auto const sleDst = view.read(keylet::account(dst));
+            sleDst && sleDst->isFieldPresent(sfAMMID))
+        {
+            auto const sleAmm = view.read(keylet::amm((*sleDst)[sfAMMID]));
+            if (!sleAmm)
+                return tecINTERNAL;  // LCOV_EXCL_LINE
+
+            if (isLPTokenFrozen(
+                    view,
+                    src,
+                    (*sleAmm)[sfAsset].get<Issue>(),
+                    (*sleAmm)[sfAsset2].get<Issue>()))
+            {
+                return terNO_LINE;
+            }
         }
     }
 

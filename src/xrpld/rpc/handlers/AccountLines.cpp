@@ -62,6 +62,10 @@ addLine(Json::Value& jsonLines, RPCTrustLine const& line)
         jPeer[jss::freeze] = true;
     if (line.getFreezePeer())
         jPeer[jss::freeze_peer] = true;
+    if (line.getDeepFreeze())
+        jPeer[jss::deep_freeze] = true;
+    if (line.getDeepFreezePeer())
+        jPeer[jss::deep_freeze_peer] = true;
 }
 
 // {
@@ -189,7 +193,7 @@ doAccountLines(RPC::JsonContext& context)
                     std::shared_ptr<SLE const> const& sleCur) {
                     if (!sleCur)
                     {
-                        assert(false);
+                        UNREACHABLE("ripple::doAccountLines : null SLE");
                         return false;
                     }
 

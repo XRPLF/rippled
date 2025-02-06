@@ -129,6 +129,7 @@ ValidatorList::ValidatorList(
     , j_(j)
     , quorum_(minimumQuorum.value_or(1))  // Genesis ledger quorum
     , minimumQuorum_(minimumQuorum)
+    , listThreshold_(1)
 {
 }
 
@@ -136,7 +137,8 @@ bool
 ValidatorList::load(
     std::optional<PublicKey> const& localSigningKey,
     std::vector<std::string> const& configKeys,
-    std::vector<std::string> const& publisherKeys)
+    std::vector<std::string> const& publisherKeys,
+    std::optional<std::size_t> listThreshold)
 {
     static boost::regex const re(
         "[[:space:]]*"       // skip leading whitespace
@@ -190,6 +192,26 @@ ValidatorList::load(
         ++count;
     }
 
+    if (listThreshold)
+    {
+        listThreshold_ = *listThreshold;
+        // This should be enforced by Config class
+        XRPL_ASSERT(
+            listThreshold_ > 0 && listThreshold_ <= publisherLists_.size(),
+            "ripple::ValidatorList::load : list threshold inside range");
+        JLOG(j_.debug()) << "Validator list threshold set in configuration to "
+                         << listThreshold_;
+    }
+    else
+    {
+        // Want truncated result when dividing an odd integer
+        listThreshold_ = (publisherLists_.size() < 3)
+            ? 1  //
+            : publisherLists_.size() / 2 + 1;
+        JLOG(j_.debug()) << "Validator list threshold computed as "
+                         << listThreshold_;
+    }
+
     JLOG(j_.debug()) << "Loaded " << count << " keys";
 
     if (localSigningKey)
@@ -197,7 +219,17 @@ ValidatorList::load(
 
     // Treat local validator key as though it was listed in the config
     if (localPubKey_)
-        keyListings_.insert({*localPubKey_, 1});
+    {
+        // The local validator must meet listThreshold_ so the validator does
+        // not ignore itself.
+        auto const [_, inserted] =
+            keyListings_.insert({*localPubKey_, listThreshold_});
+        if (inserted)
+        {
+            JLOG(j_.debug()) << "Added own master key "
+                             << toBase58(TokenType::NodePublic, *localPubKey_);
+        }
+    }
 
     JLOG(j_.debug()) << "Loading configured validator keys";
 
@@ -227,7 +259,7 @@ ValidatorList::load(
         if (*id == localPubKey_ || *id == localSigningKey)
             continue;
 
-        auto ret = keyListings_.insert({*id, 1});
+        auto ret = keyListings_.insert({*id, listThreshold_});
         if (!ret.second)
         {
             JLOG(j_.warn()) << "Duplicate node identity: " << match[1];
@@ -276,7 +308,9 @@ ValidatorList::buildFileData(
 {
     Json::Value value(Json::objectValue);
 
-    assert(pubCollection.rawVersion == 2 || pubCollection.remaining.empty());
+    XRPL_ASSERT(
+        pubCollection.rawVersion == 2 || pubCollection.remaining.empty(),
+        "ripple::ValidatorList::buildFileData : valid publisher list input");
     auto const effectiveVersion =
         forceVersion ? *forceVersion : pubCollection.rawVersion;
 
@@ -376,7 +410,9 @@ ValidatorList::parseBlobs(std::uint32_t version, Json::Value const& body)
             ValidatorBlobInfo& info = result.emplace_back();
             info.blob = body[jss::blob].asString();
             info.signature = body[jss::signature].asString();
-            assert(result.size() == 1);
+            XRPL_ASSERT(
+                result.size() == 1,
+                "ripple::ValidatorList::parseBlobs : single element result");
             return result;
         }
             // Treat unknown versions as if they're the latest version. This
@@ -411,7 +447,10 @@ ValidatorList::parseBlobs(std::uint32_t version, Json::Value const& body)
                     info.manifest = blobInfo[jss::manifest].asString();
                 }
             }
-            assert(result.size() == blobs.size());
+            XRPL_ASSERT(
+                result.size() == blobs.size(),
+                "ripple::ValidatorList::parseBlobs(version, Jason::Value) : "
+                "result size matches");
             return result;
         }
     }
@@ -442,7 +481,10 @@ ValidatorList::parseBlobs(protocol::TMValidatorListCollection const& body)
             info.manifest = blob.manifest();
         }
     }
-    assert(result.size() == body.blobs_size());
+    XRPL_ASSERT(
+        result.size() == body.blobs_size(),
+        "ripple::ValidatorList::parseBlobs(TMValidatorList) : result size "
+        "match");
     return result;
 }
 
@@ -464,7 +506,7 @@ splitMessage(
 {
     if (begin == 0 && end == 0)
         end = largeMsg.blobs_size();
-    assert(begin < end);
+    XRPL_ASSERT(begin < end, "ripple::splitMessage : valid inputs");
     if (end <= begin)
         return 0;
 
@@ -498,7 +540,9 @@ splitMessageParts(
         if (blob.has_manifest())
             smallMsg.set_manifest(blob.manifest());
 
-        assert(Message::totalSize(smallMsg) <= maximiumMessageSize);
+        XRPL_ASSERT(
+            Message::totalSize(smallMsg) <= maximiumMessageSize,
+            "ripple::splitMessageParts : maximum message size");
 
         messages.emplace_back(
             std::make_shared<Message>(smallMsg, protocol::mtVALIDATORLIST),
@@ -546,7 +590,10 @@ buildValidatorListMessage(
     ValidatorBlobInfo const& currentBlob,
     std::size_t maxSize)
 {
-    assert(messages.empty());
+    XRPL_ASSERT(
+        messages.empty(),
+        "ripple::buildValidatorListMessage(ValidatorBlobInfo) : empty messages "
+        "input");
     protocol::TMValidatorList msg;
     auto const manifest =
         currentBlob.manifest ? *currentBlob.manifest : rawManifest;
@@ -557,7 +604,10 @@ buildValidatorListMessage(
     // Override the version
     msg.set_version(version);
 
-    assert(Message::totalSize(msg) <= maximiumMessageSize);
+    XRPL_ASSERT(
+        Message::totalSize(msg) <= maximiumMessageSize,
+        "ripple::buildValidatorListMessage(ValidatorBlobInfo) : maximum "
+        "message size");
     messages.emplace_back(
         std::make_shared<Message>(msg, protocol::mtVALIDATORLIST),
         sha512Half(msg),
@@ -576,7 +626,10 @@ buildValidatorListMessage(
     std::map<std::size_t, ValidatorBlobInfo> const& blobInfos,
     std::size_t maxSize)
 {
-    assert(messages.empty());
+    XRPL_ASSERT(
+        messages.empty(),
+        "ripple::buildValidatorListMessage(std::map<std::size_t, "
+        "ValidatorBlobInfo>) : empty messages input");
     protocol::TMValidatorListCollection msg;
     auto const version = rawVersion < 2 ? 2 : rawVersion;
     msg.set_version(version);
@@ -592,7 +645,10 @@ buildValidatorListMessage(
         if (blobInfo.manifest)
             blob.set_manifest(*blobInfo.manifest);
     }
-    assert(msg.blobs_size() > 0);
+    XRPL_ASSERT(
+        msg.blobs_size() > 0,
+        "ripple::buildValidatorListMessage(std::map<std::size_t, "
+        "ValidatorBlobInfo>) : minimum message blobs");
     if (Message::totalSize(msg) > maxSize)
     {
         // split into smaller messages
@@ -621,7 +677,10 @@ ValidatorList::buildValidatorListMessages(
     std::vector<ValidatorList::MessageWithHash>& messages,
     std::size_t maxSize /*= maximiumMessageSize*/)
 {
-    assert(!blobInfos.empty());
+    XRPL_ASSERT(
+        !blobInfos.empty(),
+        "ripple::ValidatorList::buildValidatorListMessages : empty messages "
+        "input");
     auto const& [currentSeq, currentBlob] = *blobInfos.begin();
     auto numVLs = std::accumulate(
         messages.begin(),
@@ -704,7 +763,10 @@ ValidatorList::sendValidatorList(
         messages);
     if (newPeerSequence)
     {
-        assert(!messages.empty());
+        XRPL_ASSERT(
+            !messages.empty(),
+            "ripple::ValidatorList::sendValidatorList : non-empty messages "
+            "input");
         // Don't send it next time.
         peer.setPublisherListSequence(publisherKey, newPeerSequence);
 
@@ -720,7 +782,9 @@ ValidatorList::sendValidatorList(
         }
         // The only way sent wil be false is if the messages was too big, and
         // thus there will only be one entry without a message
-        assert(sent || messages.size() == 1);
+        XRPL_ASSERT(
+            sent || messages.size() == 1,
+            "ripple::ValidatorList::sendValidatorList : sent or one message");
         if (sent)
         {
             if (messageVersion > 1)
@@ -734,7 +798,10 @@ ValidatorList::sendValidatorList(
                     << "]";
             else
             {
-                assert(numVLs == 1);
+                XRPL_ASSERT(
+                    numVLs == 1,
+                    "ripple::ValidatorList::sendValidatorList : one validator "
+                    "list");
                 JLOG(j.debug())
                     << "Sent validator list for " << strHex(publisherKey)
                     << " with sequence " << newPeerSequence << " to "
@@ -829,9 +896,10 @@ ValidatorList::broadcastBlobs(
         // be built to hold info for all of the valid VLs.
         std::map<std::size_t, ValidatorBlobInfo> blobInfos;
 
-        assert(
+        XRPL_ASSERT(
             lists.current.sequence == maxSequence ||
-            lists.remaining.count(maxSequence) == 1);
+                lists.remaining.count(maxSequence) == 1,
+            "ripple::ValidatorList::broadcastBlobs : valid sequence");
         // Can't use overlay.foreach here because we need to modify
         // the peer, and foreach provides a const&
         for (auto& peer : overlay.getActivePeers())
@@ -975,7 +1043,9 @@ ValidatorList::applyLists(
         for (auto iter = remaining.begin(); iter != remaining.end();)
         {
             auto next = std::next(iter);
-            assert(next == remaining.end() || next->first > iter->first);
+            XRPL_ASSERT(
+                next == remaining.end() || next->first > iter->first,
+                "ripple::ValidatorList::applyLists : next is valid");
             if (iter->first <= current.sequence ||
                 (next != remaining.end() &&
                  next->second.validFrom <= iter->second.validFrom))
@@ -1147,7 +1217,9 @@ ValidatorList::applyList(
         // Remove the entry in "remaining"
         pubCollection.remaining.erase(sequence);
         // Done
-        assert(publisher.sequence == sequence);
+        XRPL_ASSERT(
+            publisher.sequence == sequence,
+            "ripple::ValidatorList::applyList : publisher sequence match");
     }
     else
     {
@@ -1441,9 +1513,10 @@ ValidatorList::removePublisherList(
     PublicKey const& publisherKey,
     PublisherStatus reason)
 {
-    assert(
+    XRPL_ASSERT(
         reason != PublisherStatus::available &&
-        reason != PublisherStatus::unavailable);
+            reason != PublisherStatus::unavailable,
+        "ripple::ValidatorList::removePublisherList : valid reason input");
     auto const iList = publisherLists_.find(publisherKey);
     if (iList == publisherLists_.end())
         return false;
@@ -1574,6 +1647,8 @@ ValidatorList::getJson() const
             x[jss::status] = "unknown";
             x[jss::expiration] = "unknown";
         }
+
+        x[jss::validator_list_threshold] = Json::UInt(listThreshold_);
     }
 
     // Validator keys listed in the local config file
@@ -1628,7 +1703,9 @@ ValidatorList::getJson() const
             Json::Value& r = remaining.append(Json::objectValue);
             appendList(future, r);
             // Race conditions can happen, so make this check "fuzzy"
-            assert(future.validFrom > timeKeeper_.now() + 600s);
+            XRPL_ASSERT(
+                future.validFrom > timeKeeper_.now() + 600s,
+                "ripple::ValidatorList::getJson : minimum valid from");
         }
         if (remaining.size())
             curr[jss::remaining] = std::move(remaining);
@@ -1693,7 +1770,9 @@ ValidatorList::for_each_available(
     {
         if (plCollection.status != PublisherStatus::available)
             continue;
-        assert(plCollection.maxSequence);
+        XRPL_ASSERT(
+            plCollection.maxSequence != 0,
+            "ripple::ValidatorList::for_each_available : nonzero maxSequence");
         func(
             plCollection.rawManifest,
             plCollection.rawVersion,
@@ -1749,11 +1828,42 @@ ValidatorList::calculateQuorum(
         return *minimumQuorum_;
     }
 
-    // Do not use achievable quorum until lists from all configured
-    // publishers are available
-    for (auto const& list : publisherLists_)
+    if (!publisherLists_.empty())
     {
-        if (list.second.status != PublisherStatus::available)
+        // Do not use achievable quorum until lists from a sufficient number of
+        // configured publishers are available
+        std::size_t unavailable = 0;
+        for (auto const& list : publisherLists_)
+        {
+            if (list.second.status != PublisherStatus::available)
+                unavailable += 1;
+        }
+        // There are two, subtly different, sides to list threshold:
+        //
+        // 1. The minimum required intersection between lists listThreshold_
+        //    for a validator to be included in trustedMasterKeys_.
+        //    If this many (or more) publishers are unavailable, we are likely
+        //    to NOT include a validator which otherwise would have been used.
+        //    We disable quorum if this happens.
+        // 2. The minimum number of publishers which, when unavailable, will
+        //    prevent us from hitting the above threshold on ANY validator.
+        //    This is calculated as:
+        //      N - M + 1
+        //    where
+        //      N: number of publishers i.e. publisherLists_.size()
+        //      M: minimum required intersection i.e. listThreshold_
+        //    If this happens, we still have this local validator and we do not
+        //    want it to form a quorum of 1, so we disable quorum as well.
+        //
+        // We disable quorum if the number of unavailable publishers exceeds
+        // either of the above thresholds
+        auto const errorThreshold = std::min(
+            listThreshold_,  //
+            publisherLists_.size() - listThreshold_ + 1);
+        XRPL_ASSERT(
+            errorThreshold > 0,
+            "ripple::ValidatorList::calculateQuorum : nonzero error threshold");
+        if (unavailable >= errorThreshold)
             return std::numeric_limits<std::size_t>::max();
     }
 
@@ -1827,21 +1937,31 @@ ValidatorList::updateTrusted(
                      next->second.validFrom <= closeTime;
                      ++iter, ++next)
                 {
-                    assert(std::next(iter) == next);
+                    XRPL_ASSERT(
+                        std::next(iter) == next,
+                        "ripple::ValidatorList::updateTrusted : sequential "
+                        "remaining");
                 }
-                assert(iter != remaining.end());
+                XRPL_ASSERT(
+                    iter != remaining.end(),
+                    "ripple::ValidatorList::updateTrusted : non-end of "
+                    "remaining");
 
                 // Rotate the pending list in to current
                 auto sequence = iter->first;
                 auto& candidate = iter->second;
                 auto& current = collection.current;
-                assert(candidate.validFrom <= closeTime);
+                XRPL_ASSERT(
+                    candidate.validFrom <= closeTime,
+                    "ripple::ValidatorList::updateTrusted : maximum time");
 
                 auto const oldList = current.list;
                 current = std::move(candidate);
                 if (collection.status != PublisherStatus::available)
                     collection.status = PublisherStatus::available;
-                assert(current.sequence == sequence);
+                XRPL_ASSERT(
+                    current.sequence == sequence,
+                    "ripple::ValidatorList::updateTrusted : sequence match");
                 // If the list is expired, remove the validators so they don't
                 // get processed in. The expiration check below will do the rest
                 // of the work
@@ -1888,20 +2008,27 @@ ValidatorList::updateTrusted(
     auto it = trustedMasterKeys_.cbegin();
     while (it != trustedMasterKeys_.cend())
     {
-        if (!keyListings_.count(*it) || validatorManifests_.revoked(*it))
+        auto const kit = keyListings_.find(*it);
+        if (kit == keyListings_.end() ||     //
+            kit->second < listThreshold_ ||  //
+            validatorManifests_.revoked(*it))
         {
             trustChanges.removed.insert(calcNodeID(*it));
             it = trustedMasterKeys_.erase(it);
         }
         else
         {
+            XRPL_ASSERT(
+                kit->second >= listThreshold_,
+                "ripple::ValidatorList::updateTrusted : count meets threshold");
             ++it;
         }
     }
 
     for (auto const& val : keyListings_)
     {
-        if (!validatorManifests_.revoked(val.first) &&
+        if (val.second >= listThreshold_ &&
+            !validatorManifests_.revoked(val.first) &&
             trustedMasterKeys_.emplace(val.first).second)
             trustChanges.added.insert(calcNodeID(val.first));
     }
@@ -1918,7 +2045,9 @@ ValidatorList::updateTrusted(
         {
             std::optional<PublicKey> const signingKey =
                 validatorManifests_.getSigningKey(k);
-            assert(signingKey);
+            XRPL_ASSERT(
+                signingKey,
+                "ripple::ValidatorList::updateTrusted : found signing key");
             trustedSigningKeys_.insert(*signingKey);
         }
     }
@@ -1977,6 +2106,13 @@ ValidatorList::getTrustedMasterKeys() const
 {
     std::shared_lock read_lock{mutex_};
     return trustedMasterKeys_;
+}
+
+std::size_t
+ValidatorList::getListThreshold() const
+{
+    std::shared_lock read_lock{mutex_};
+    return listThreshold_;
 }
 
 hash_set<PublicKey>

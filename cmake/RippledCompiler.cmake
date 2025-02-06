@@ -120,7 +120,7 @@ else ()
   target_link_libraries (common
     INTERFACE
       -rdynamic
-      $<$<BOOL:${is_linux}>:-Wl,-z,relro,-z,now>
+      $<$<BOOL:${is_linux}>:-Wl,-z,relro,-z,now,--build-id>
       # link to static libc/c++ iff:
       #   * static option set and
       #   * NOT APPLE (AppleClang does not support static libc/c++) and
@@ -129,6 +129,17 @@ else ()
       -static-libstdc++
       -static-libgcc
       >)
+endif ()
+
+# Antithesis instrumentation will only be built and deployed using machines running Linux.
+if (voidstar)
+  if (NOT CMAKE_BUILD_TYPE STREQUAL "Debug")
+    message(FATAL_ERROR "Antithesis instrumentation requires Debug build type, aborting...")
+  elseif (NOT is_linux)
+    message(FATAL_ERROR "Antithesis instrumentation requires Linux, aborting...")
+  elseif (NOT (is_clang AND CMAKE_CXX_COMPILER_VERSION VERSION_GREATER_EQUAL 16.0))
+    message(FATAL_ERROR "Antithesis instrumentation requires Clang version 16 or later, aborting...")
+  endif ()
 endif ()
 
 if (use_mold)

@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <array>
-#include <cassert>
 #include <stdexcept>
 
 namespace ripple {
@@ -109,7 +109,8 @@ constexpr static ErrorInfo unorderedErrorInfos[]{
     {rpcTXN_NOT_FOUND,          "txnNotFound",          "Transaction not found.", 404},
     {rpcUNKNOWN_COMMAND,        "unknownCmd",           "Unknown method.", 405},
     {rpcORACLE_MALFORMED,       "oracleMalformed",      "Oracle request is malformed.", 400},
-    {rpcBAD_CREDENTIALS,        "badCredentials",       "Credentials do not exist, are not accepted, or have expired.", 400}};
+    {rpcBAD_CREDENTIALS,        "badCredentials",       "Credentials do not exist, are not accepted, or have expired.", 400},
+    {rpcTX_SIGNED,              "transactionSigned",    "Transaction should not be signed.", 400}};
 // clang-format on
 
 // Sort and validate unorderedErrorInfos at compile time.  Should be
@@ -211,7 +212,9 @@ error_code_http_status(error_code_i code)
 std::string
 rpcErrorString(Json::Value const& jv)
 {
-    assert(RPC::contains_error(jv));
+    XRPL_ASSERT(
+        RPC::contains_error(jv),
+        "ripple::RPC::rpcErrorString : input contains an error");
     return jv[jss::error].asString() + jv[jss::error_message].asString();
 }
 

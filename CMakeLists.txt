@@ -19,12 +19,20 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 # make GIT_COMMIT_HASH define available to all sources
 find_package(Git)
 if(Git_FOUND)
-    execute_process(COMMAND ${GIT_EXECUTABLE} --git-dir=${CMAKE_CURRENT_SOURCE_DIR}/.git describe --always --abbrev=40
+    execute_process(COMMAND ${GIT_EXECUTABLE} --git-dir=${CMAKE_CURRENT_SOURCE_DIR}/.git rev-parse HEAD
         OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE gch)
     if(gch)
         set(GIT_COMMIT_HASH "${gch}")
         message(STATUS gch: ${GIT_COMMIT_HASH})
         add_definitions(-DGIT_COMMIT_HASH="${GIT_COMMIT_HASH}")
+    endif()
+
+    execute_process(COMMAND ${GIT_EXECUTABLE} --git-dir=${CMAKE_CURRENT_SOURCE_DIR}/.git rev-parse --abbrev-ref HEAD
+        OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE gb)
+    if(gb)
+        set(GIT_BRANCH "${gb}")
+        message(STATUS gb: ${GIT_BRANCH})
+        add_definitions(-DGIT_BRANCH="${GIT_BRANCH}")
     endif()
 endif() #git
 
@@ -73,6 +81,7 @@ set(SECP256K1_INSTALL TRUE)
 add_subdirectory(external/secp256k1)
 add_library(secp256k1::secp256k1 ALIAS secp256k1)
 add_subdirectory(external/ed25519-donna)
+add_subdirectory(external/antithesis-sdk)
 find_package(gRPC REQUIRED)
 find_package(lz4 REQUIRED)
 # Target names with :: are not allowed in a generator expression.

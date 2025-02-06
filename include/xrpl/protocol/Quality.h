@@ -20,10 +20,10 @@
 #ifndef RIPPLE_PROTOCOL_QUALITY_H_INCLUDED
 #define RIPPLE_PROTOCOL_QUALITY_H_INCLUDED
 
-#include <xrpl/basics/IOUAmount.h>
-#include <xrpl/basics/XRPAmount.h>
 #include <xrpl/protocol/AmountConversions.h>
+#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/XRPAmount.h>
 
 #include <algorithm>
 #include <cstdint>
@@ -298,7 +298,9 @@ public:
     friend double
     relativeDistance(Quality const& q1, Quality const& q2)
     {
-        assert(q1.m_value > 0 && q2.m_value > 0);
+        XRPL_ASSERT(
+            q1.m_value > 0 && q2.m_value > 0,
+            "ripple::Quality::relativeDistance : minimum inputs");
 
         if (q1.m_value == q2.m_value)  // make expected common case fast
             return 0;

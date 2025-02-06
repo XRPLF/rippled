@@ -3,14 +3,14 @@ on:
   pull_request:
   push:
     # If the branches list is ever changed, be sure to change it on all
-    # build/test jobs (nix, macos, windows)
+    # build/test jobs (nix, macos, windows, instrumentation)
     branches:
       # Always build the package branches
       - develop
       - release
       - master
       # Branches that opt-in to running
-      - 'ci/**'
+      - "ci/**"
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -35,7 +35,6 @@ concurrency:
 # and builds and tests rippled.
 
 jobs:
-
   dependencies:
     strategy:
       fail-fast: false
@@ -64,11 +63,16 @@ jobs:
     env:
       build_dir: .build
     steps:
+      - name: upgrade conan
+        run: |
+          pip install --upgrade "conan<2"
       - name: checkout
         uses: actions/checkout@v4
       - name: check environment
         run: |
           echo ${PATH} | tr ':' '\n'
+          lsb_release -a || true
+          ${{ matrix.profile.cc }} --version
           conan --version
           cmake --version
           env | sort
@@ -94,12 +98,11 @@ jobs:
         with:
           configuration: ${{ matrix.configuration }}
       - name: upload archive
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
           path: conan.tar
           if-no-files-found: error
-
 
   test:
     strategy:
@@ -122,8 +125,11 @@ jobs:
     env:
       build_dir: .build
     steps:
+      - name: upgrade conan
+        run: |
+          pip install --upgrade "conan<2"
       - name: download cache
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
       - name: extract cache
@@ -154,7 +160,6 @@ jobs:
         run: |
           ${build_dir}/rippled --unittest --unittest-jobs $(nproc)
 
-
   coverage:
     strategy:
       fail-fast: false
@@ -171,8 +176,11 @@ jobs:
     env:
       build_dir: .build
     steps:
+      - name: upgrade conan
+        run: |
+          pip install --upgrade "conan<2"
       - name: download cache
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
       - name: extract cache
@@ -214,7 +222,7 @@ jobs:
         run: |
           mv "${build_dir}/coverage.xml" ./
       - name: archive coverage report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: coverage.xml
           path: coverage.xml
@@ -241,8 +249,11 @@ jobs:
       build_dir: .build
       configuration: Release
     steps:
+      - name: upgrade conan
+        run: |
+          pip install --upgrade "conan<2"
       - name: download cache
-        uses: actions/download-artifact@v3
+        uses: actions/download-artifact@v4
         with:
           name: linux-gcc-${{ env.configuration }}
       - name: extract cache

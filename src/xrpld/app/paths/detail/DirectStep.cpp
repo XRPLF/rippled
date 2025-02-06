@@ -21,9 +21,9 @@
 #include <xrpld/app/paths/detail/StepChecks.h>
 #include <xrpld/app/paths/detail/Steps.h>
 #include <xrpld/ledger/PaymentSandbox.h>
-#include <xrpl/basics/IOUAmount.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Quality.h>
 
 #include <boost/container/flat_set.hpp>
@@ -204,7 +204,8 @@ protected:
     logStringImpl(char const* name) const
     {
         std::ostringstream ostr;
-        ostr << name << ": " << "\nSrc: " << src_ << "\nDst: " << dst_;
+        ostr << name << ": "
+             << "\nSrc: " << src_ << "\nDst: " << dst_;
         return ostr.str();
     }
 
@@ -336,7 +337,7 @@ DirectIPaymentStep::quality(ReadView const& sb, QualityDirection qDir) const
     if (!sle)
         return QUALITY_ONE;
 
-    auto const& field = [this, qDir]() -> SF_UINT32 const& {
+    auto const& field = [&, this]() -> SF_UINT32 const& {
         if (qDir == QualityDirection::in)
         {
             // compute dst quality in
@@ -514,7 +515,9 @@ DirectStepI<TDerived>::revImp(
 
     auto const [srcQOut, dstQIn] =
         qualities(sb, srcDebtDir, StrandDirection::reverse);
-    assert(static_cast<TDerived const*>(this)->verifyDstQualityIn(dstQIn));
+    XRPL_ASSERT(
+        static_cast<TDerived const*>(this)->verifyDstQualityIn(dstQIn),
+        "ripple::DirectStepI : valid destination quality");
 
     Issue const srcToDstIss(currency_, redeems(srcDebtDir) ? dst_ : src_);
 
@@ -633,7 +636,7 @@ DirectStepI<TDerived>::fwdImp(
     boost::container::flat_set<uint256>& /*ofrsToRm*/,
     IOUAmount const& in)
 {
-    assert(cache_);
+    XRPL_ASSERT(cache_, "ripple::DirectStepI::fwdImp : cache is set");
 
     auto const [maxSrcToDst, srcDebtDir] =
         static_cast<TDerived const*>(this)->maxFlow(sb, cache_->srcToDst);
@@ -720,7 +723,7 @@ DirectStepI<TDerived>::validFwd(
 
     auto const savCache = *cache_;
 
-    assert(!in.native);
+    XRPL_ASSERT(!in.native, "ripple::DirectStepI::validFwd : input is not XRP");
 
     auto const [maxSrcToDst, srcDebtDir] =
         static_cast<TDerived const*>(this)->maxFlow(sb, cache_->srcToDst);
@@ -784,8 +787,11 @@ DirectStepI<TDerived>::qualitiesSrcIssues(
 {
     // Charge a transfer rate when issuing and previous step redeems
 
-    assert(static_cast<TDerived const*>(this)->verifyPrevStepDebtDirection(
-        prevStepDebtDirection));
+    XRPL_ASSERT(
+        static_cast<TDerived const*>(this)->verifyPrevStepDebtDirection(
+            prevStepDebtDirection),
+        "ripple::DirectStepI::qualitiesSrcIssues : will prevStepDebtDirection "
+        "issue");
 
     std::uint32_t const srcQOut = redeems(prevStepDebtDirection)
         ? transferRate(sb, src_).value
@@ -924,7 +930,9 @@ DirectStepI<TDerived>::check(StrandContext const& ctx) const
         {
             if (!ctx.prevStep)
             {
-                assert(0);  // prev seen book without a prev step!?!
+                UNREACHABLE(
+                    "ripple::DirectStepI::check : prev seen book without a "
+                    "prev step");
                 return temBAD_PATH_LOOP;
             }
 

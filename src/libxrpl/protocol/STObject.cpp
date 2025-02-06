@@ -25,6 +25,7 @@
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STBlob.h>
 #include <xrpl/protocol/STCurrency.h>
+#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STObject.h>
 
 namespace ripple {
@@ -665,6 +666,13 @@ STObject::getFieldCurrency(SField const& field) const
     return getFieldByConstRef<STCurrency>(field, empty);
 }
 
+STNumber const&
+STObject::getFieldNumber(SField const& field) const
+{
+    static STNumber const empty{};
+    return getFieldByConstRef<STNumber>(field, empty);
+}
+
 void
 STObject::set(std::unique_ptr<STBase> v)
 {
@@ -766,6 +774,12 @@ STObject::setFieldIssue(SField const& field, STIssue const& v)
 }
 
 void
+STObject::setFieldNumber(SField const& field, STNumber const& v)
+{
+    setFieldUsingAssignment(field, v);
+}
+
+void
 STObject::setFieldPathSet(SField const& field, STPathSet const& v)
 {
     setFieldUsingAssignment(field, v);
@@ -848,9 +862,10 @@ STObject::add(Serializer& s, WhichFields whichFields) const
         // the type associated by rule with this field name
         // must be OBJECT, or the object cannot be deserialized
         SerializedTypeID const sType{field->getSType()};
-        assert(
+        XRPL_ASSERT(
             (sType != STI_OBJECT) ||
-            (field->getFName().fieldType == STI_OBJECT));
+                (field->getFName().fieldType == STI_OBJECT),
+            "ripple::STObject::add : valid field type");
         field->addFieldID(s);
         field->add(s);
         if (sType == STI_ARRAY || sType == STI_OBJECT)

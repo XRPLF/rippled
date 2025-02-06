@@ -28,9 +28,11 @@
 #include <xrpl/server/Server.h>
 #include <xrpl/server/Session.h>
 #include <xrpl/server/WSSession.h>
+
 #include <boost/beast/core/tcp_stream.hpp>
 #include <boost/beast/ssl/ssl_stream.hpp>
 #include <boost/utility/string_view.hpp>
+
 #include <condition_variable>
 #include <map>
 #include <mutex>
@@ -71,15 +73,7 @@ public:
         client_t client;
 
         // Configuration for the Overlay
-        struct overlay_t
-        {
-            explicit overlay_t() = default;
-
-            boost::asio::ip::address ip;
-            std::uint16_t port = 0;
-        };
-
-        overlay_t overlay;
+        boost::asio::ip::tcp::endpoint overlay;
 
         void
         makeContexts();
@@ -95,6 +89,7 @@ private:
     NetworkOPs& m_networkOPs;
     std::unique_ptr<Server> m_server;
     Setup setup_;
+    Endpoints endpoints_;
     JobQueue& m_jobQueue;
     beast::insight::Counter rpc_requests_;
     beast::insight::Event rpc_size_;
@@ -143,6 +138,12 @@ public:
     setup() const
     {
         return setup_;
+    }
+
+    Endpoints const&
+    endpoints() const
+    {
+        return endpoints_;
     }
 
     void

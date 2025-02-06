@@ -40,7 +40,7 @@ enum SOEStyle {
 };
 
 /** Amount fields that can support MPT */
-enum SOETxMPTAmount { soeMPTNone, soeMPTSupported, soeMPTNotSupported };
+enum SOETxMPTIssue { soeMPTNone, soeMPTSupported, soeMPTNotSupported };
 
 //------------------------------------------------------------------------------
 
@@ -50,7 +50,7 @@ class SOElement
     // Use std::reference_wrapper so SOElement can be stored in a std::vector.
     std::reference_wrapper<SField const> sField_;
     SOEStyle style_;
-    SOETxMPTAmount supportMpt_ = soeMPTNone;
+    SOETxMPTIssue supportMpt_ = soeMPTNone;
 
 private:
     void
@@ -72,10 +72,13 @@ public:
     {
         init(fieldName);
     }
+
+    template <typename T>
+        requires(std::is_same_v<T, STAmount> || std::is_same_v<T, STIssue>)
     SOElement(
-        TypedField<STAmount> const& fieldName,
+        TypedField<T> const& fieldName,
         SOEStyle style,
-        SOETxMPTAmount supportMpt = soeMPTNotSupported)
+        SOETxMPTIssue supportMpt = soeMPTNotSupported)
         : sField_(fieldName), style_(style), supportMpt_(supportMpt)
     {
         init(fieldName);
@@ -93,7 +96,7 @@ public:
         return style_;
     }
 
-    SOETxMPTAmount
+    SOETxMPTIssue
     supportMPT() const
     {
         return supportMpt_;

@@ -544,19 +544,22 @@ getLedger(T& ledger, LedgerShortcut shortcut, Context& context)
             return {rpcNOT_SYNCED, "notSynced"};
         }
 
-        assert(!ledger->open());
+        XRPL_ASSERT(
+            !ledger->open(), "ripple::RPC::getLedger : validated is not open");
     }
     else
     {
         if (shortcut == LedgerShortcut::CURRENT)
         {
             ledger = context.ledgerMaster.getCurrentLedger();
-            assert(ledger->open());
+            XRPL_ASSERT(
+                ledger->open(), "ripple::RPC::getLedger : current is open");
         }
         else if (shortcut == LedgerShortcut::CLOSED)
         {
             ledger = context.ledgerMaster.getClosedLedger();
-            assert(!ledger->open());
+            XRPL_ASSERT(
+                !ledger->open(), "ripple::RPC::getLedger : closed is not open");
         }
         else
         {
@@ -931,41 +934,27 @@ chooseLedgerEntryType(Json::Value const& params)
     std::pair<RPC::Status, LedgerEntryType> result{RPC::Status::OK, ltANY};
     if (params.isMember(jss::type))
     {
-        static constexpr std::array<std::pair<char const*, LedgerEntryType>, 25>
-            types{
-                {{jss::account, ltACCOUNT_ROOT},
-                 {jss::amendments, ltAMENDMENTS},
-                 {jss::amm, ltAMM},
-                 {jss::bridge, ltBRIDGE},
-                 {jss::check, ltCHECK},
-                 {jss::credential, ltCREDENTIAL},
-                 {jss::deposit_preauth, ltDEPOSIT_PREAUTH},
-                 {jss::did, ltDID},
-                 {jss::directory, ltDIR_NODE},
-                 {jss::escrow, ltESCROW},
-                 {jss::fee, ltFEE_SETTINGS},
-                 {jss::hashes, ltLEDGER_HASHES},
-                 {jss::nunl, ltNEGATIVE_UNL},
-                 {jss::oracle, ltORACLE},
-                 {jss::nft_offer, ltNFTOKEN_OFFER},
-                 {jss::nft_page, ltNFTOKEN_PAGE},
-                 {jss::offer, ltOFFER},
-                 {jss::payment_channel, ltPAYCHAN},
-                 {jss::signer_list, ltSIGNER_LIST},
-                 {jss::state, ltRIPPLE_STATE},
-                 {jss::ticket, ltTICKET},
-                 {jss::xchain_owned_claim_id, ltXCHAIN_OWNED_CLAIM_ID},
-                 {jss::xchain_owned_create_account_claim_id,
-                  ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID},
-                 {jss::mpt_issuance, ltMPTOKEN_ISSUANCE},
-                 {jss::mptoken, ltMPTOKEN}}};
+        static constexpr auto types =
+            std::to_array<std::pair<char const*, LedgerEntryType>>({
+#pragma push_macro("LEDGER_ENTRY")
+#undef LEDGER_ENTRY
+
+#define LEDGER_ENTRY(tag, value, name, rpcName, fields) {jss::rpcName, tag},
+
+#include <xrpl/protocol/detail/ledger_entries.macro>
+
+#undef LEDGER_ENTRY
+#pragma pop_macro("LEDGER_ENTRY")
+            });
 
         auto const& p = params[jss::type];
         if (!p.isString())
         {
             result.first = RPC::Status{
                 rpcINVALID_PARAMS, "Invalid field 'type', not string."};
-            assert(result.first.type() == RPC::Status::Type::error_code_i);
+            XRPL_ASSERT(
+                result.first.type() == RPC::Status::Type::error_code_i,
+                "ripple::RPC::chooseLedgerEntryType : first valid result type");
             return result;
         }
 
@@ -978,7 +967,10 @@ chooseLedgerEntryType(Json::Value const& params)
         {
             result.first =
                 RPC::Status{rpcINVALID_PARAMS, "Invalid field 'type'."};
-            assert(result.first.type() == RPC::Status::Type::error_code_i);
+            XRPL_ASSERT(
+                result.first.type() == RPC::Status::Type::error_code_i,
+                "ripple::RPC::chooseLedgerEntryType : second valid result "
+                "type");
             return result;
         }
         result.second = iter->second;
@@ -1043,7 +1035,7 @@ getLedgerByContext(RPC::JsonContext& context)
             "Exactly one of ledger_hash and ledger_index can be set.");
     }
 
-    context.loadType = Resource::feeHighBurdenRPC;
+    context.loadType = Resource::feeHeavyBurdenRPC;
 
     if (hasHash)
     {
@@ -1084,7 +1076,9 @@ getLedgerByContext(RPC::JsonContext& context)
             // ledger
             auto const refIndex = getCandidateLedger(ledgerIndex);
             auto refHash = hashOfSeq(*ledger, refIndex, j);
-            assert(refHash);
+            XRPL_ASSERT(
+                refHash,
+                "ripple::RPC::getLedgerByContext : nonzero ledger hash");
 
             ledger = ledgerMaster.getLedgerByHash(*refHash);
             if (!ledger)
@@ -1118,7 +1112,9 @@ getLedgerByContext(RPC::JsonContext& context)
 
             neededHash = hashOfSeq(*ledger, ledgerIndex, j);
         }
-        assert(neededHash);
+        XRPL_ASSERT(
+            neededHash,
+            "ripple::RPC::getLedgerByContext : nonzero needed hash");
         ledgerHash = neededHash ? *neededHash : beast::zero;  // kludge
     }
 
