@@ -2643,6 +2643,18 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
                 x[jss::expiration] = "unknown";
             }
         }
+
+#if defined(GIT_COMMIT_HASH) || defined(GIT_BRANCH)
+        {
+            auto& x = (info[jss::git] = Json::objectValue);
+#ifdef GIT_COMMIT_HASH
+            x[jss::hash] = GIT_COMMIT_HASH;
+#endif
+#ifdef GIT_BRANCH
+            x[jss::branch] = GIT_BRANCH;
+#endif
+        }
+#endif
     }
     info[jss::io_latency_ms] =
         static_cast<Json::UInt>(app_.getIOLatency().count());
