@@ -71,6 +71,7 @@ jobs:
           nproc
       - name: configure Conan
         run : |
+          rm -rf ~/.conan/profiles/default
           conan profile new default --detect || true
           conan profile update settings.compiler.cppstd=20 default
           conan profile update 'conf.tools.build:cxxflags+=["-DBOOST_ASIO_DISABLE_CONCEPTS"]' default
