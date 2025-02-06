@@ -267,6 +267,43 @@ isFrozen(
         isIndividualFrozen(view, account, mptIssue);
 }
 
+bool
+isDeepFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Currency const& currency,
+    AccountID const& issuer)
+{
+    if (isXRP(currency))
+    {
+        return false;
+    }
+
+    if (issuer == account)
+    {
+        return false;
+    }
+
+    auto const sle = view.read(keylet::line(account, issuer, currency));
+    if (!sle)
+    {
+        return false;
+    }
+
+    return sle->isFlag(lsfHighDeepFreeze) || sle->isFlag(lsfLowDeepFreeze);
+}
+
+bool
+isLPTokenFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Issue const& asset,
+    Issue const& asset2)
+{
+    return isFrozen(view, account, asset.currency, asset.account) ||
+        isFrozen(view, account, asset2.currency, asset2.account);
+}
+
 STAmount
 accountHolds(
     ReadView const& view,
@@ -284,17 +321,51 @@ accountHolds(
 
     // IOU: Return balance on trust line modulo freeze
     auto const sle = view.read(keylet::line(account, issuer, currency));
-    if (!sle)
-    {
-        amount.clear(Issue{currency, issuer});
-    }
-    else if (
-        (zeroIfFrozen == fhZERO_IF_FROZEN) &&
-        isFrozen(view, account, currency, issuer))
-    {
-        amount.clear(Issue{currency, issuer});
-    }
-    else
+    auto const allowBalance = [&]() {
+        if (!sle)
+        {
+            return false;
+        }
+
+        if (zeroIfFrozen == fhZERO_IF_FROZEN)
+        {
+            if (isFrozen(view, account, currency, issuer) ||
+                isDeepFrozen(view, account, currency, issuer))
+            {
+                return false;
+            }
+
+            // when fixFrozenLPTokenTransfer is enabled, if currency is lptoken,
+            // we need to check if the associated assets have been frozen
+            if (view.rules().enabled(fixFrozenLPTokenTransfer))
+            {
+                auto const sleIssuer = view.read(keylet::account(issuer));
+                if (!sleIssuer)
+                {
+                    return false;  // LCOV_EXCL_LINE
+                }
+                else if (sleIssuer->isFieldPresent(sfAMMID))
+                {
+                    auto const sleAmm =
+                        view.read(keylet::amm((*sleIssuer)[sfAMMID]));
+
+                    if (!sleAmm ||
+                        isLPTokenFrozen(
+                            view,
+                            account,
+                            (*sleAmm)[sfAsset].get<Issue>(),
+                            (*sleAmm)[sfAsset2].get<Issue>()))
+                    {
+                        return false;
+                    }
+                }
+            }
+        }
+
+        return true;
+    }();
+
+    if (allowBalance)
     {
         amount = sle->getFieldAmount(sfBalance);
         if (account > issuer)
@@ -304,6 +375,11 @@ accountHolds(
         }
         amount.setIssuer(issuer);
     }
+    else
+    {
+        amount.clear(Issue{currency, issuer});
+    }
+
     JLOG(j.trace()) << "accountHolds:" << " account=" << to_string(account)
                     << " amount=" << amount.getFullText();
 
@@ -453,7 +529,8 @@ xrpLiquid(
     STAmount const amount =
         (balance < reserve) ? STAmount{0} : balance - reserve;
 
-    JLOG(j.trace()) << "accountHolds:" << " account=" << to_string(id)
+    JLOG(j.trace()) << "accountHolds:"
+                    << " account=" << to_string(id)
                     << " amount=" << amount.getFullText()
                     << " fullBalance=" << fullBalance.getFullText()
                     << " balance=" << balance.getFullText()
@@ -863,6 +940,7 @@ trustCreate(
     const bool bAuth,           // --> authorize account.
     const bool bNoRipple,       // --> others cannot ripple through
     const bool bFreeze,         // --> funds cannot leave
+    bool bDeepFreeze,           // --> can neither receive nor send funds
     STAmount const& saBalance,  // --> balance of account being set.
                                 // Issuer should be noAccount()
     STAmount const& saLimit,    // --> limit for account being set.
@@ -944,7 +1022,11 @@ trustCreate(
     }
     if (bFreeze)
     {
-        uFlags |= (!bSetHigh ? lsfLowFreeze : lsfHighFreeze);
+        uFlags |= (bSetHigh ? lsfHighFreeze : lsfLowFreeze);
+    }
+    if (bDeepFreeze)
+    {
+        uFlags |= (bSetHigh ? lsfHighDeepFreeze : lsfLowDeepFreeze);
     }
 
     if ((slePeer->getFlags() & lsfDefaultRipple) == 0)
@@ -1188,6 +1270,7 @@ rippleCreditIOU(
         sleAccount,
         false,
         noRipple,
+        false,
         false,
         saBalance,
         saReceiverLimit,
@@ -1687,6 +1770,7 @@ issueIOU(
         receiverAccount,
         false,
         noRipple,
+        false,
         false,
         final_balance,
         limit,

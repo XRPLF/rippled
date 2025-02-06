@@ -29,6 +29,8 @@
 // If you add an amendment here, then do not forget to increment `numFeatures`
 // in include/xrpl/protocol/Feature.h.
 
+XRPL_FIX    (FrozenLPTokenTransfer,      Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FEATURE(DeepFreeze,                 Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(PermissionedDomains,        Supported::no,  VoteBehavior::DefaultNo)
 XRPL_FEATURE(DynamicNFT,                 Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(Credentials,                Supported::yes, VoteBehavior::DefaultNo)
@@ -116,3 +118,4 @@ XRPL_FIX    (NFTokenNegOffer,       Supported::yes, VoteBehavior::Obsolete)
 XRPL_FIX    (NFTokenDirV1,          Supported::yes, VoteBehavior::Obsolete)
 XRPL_FEATURE(NonFungibleTokensV1,   Supported::yes, VoteBehavior::Obsolete)
 XRPL_FEATURE(CryptoConditionsSuite, Supported::yes, VoteBehavior::Obsolete)
+
