@@ -65,9 +65,6 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
     if (isFrozen(ctx.view, holder, asset))
         return tecFROZEN;
 
-    if (isFrozen(ctx.view, account, asset))
-        return tecFROZEN;
-
     return tesSUCCESS;
 }
 
