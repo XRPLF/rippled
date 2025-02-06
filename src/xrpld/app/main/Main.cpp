@@ -521,6 +521,12 @@ run(int argc, char** argv)
     {
         std::cout << "rippled version " << BuildInfo::getVersionString()
                   << std::endl;
+#ifdef GIT_COMMIT_HASH
+        std::cout << "Git commit hash: " << GIT_COMMIT_HASH << std::endl;
+#endif
+#ifdef GIT_BRANCH
+        std::cout << "Git build branch: " << GIT_BRANCH << std::endl;
+#endif
         return 0;
     }
 

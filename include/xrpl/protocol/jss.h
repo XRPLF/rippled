@@ -167,6 +167,7 @@ JSS(blobs_v2);                // out: ValidatorList
 JSS(books);                   // in: Subscribe, Unsubscribe
 JSS(both);                    // in: Subscribe, Unsubscribe
 JSS(both_sides);              // in: Subscribe, Unsubscribe
+JSS(branch);                  // out: server_info
 JSS(broadcast);               // out: SubmitTransaction
 JSS(bridge_account);          // in: LedgerEntry
 JSS(build_path);              // in: TransactionSign
@@ -284,10 +285,13 @@ JSS(flags);                   // out: AccountOffers,
 JSS(forward);                 // in: AccountTx
 JSS(freeze);                  // out: AccountLines
 JSS(freeze_peer);             // out: AccountLines
+JSS(deep_freeze);                  // out: AccountLines
+JSS(deep_freeze_peer);             // out: AccountLines
 JSS(frozen_balances);         // out: GatewayBalances
 JSS(full);                    // in: LedgerClearer, handlers/Ledger
 JSS(full_reply);              // out: PathFind
 JSS(fullbelow_size);          // out: GetCounts
+JSS(git);                     // out: server_info
 JSS(good);                    // out: RPCVersion
 JSS(hash);                    // out: NetworkOPs, InboundLedger,
                               //      LedgerToJson, STTx; field
