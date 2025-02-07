@@ -33,6 +33,7 @@ DatabaseRotatingImp::DatabaseRotatingImp(
     : DatabaseRotating(scheduler, readThreads, config, j)
     , writableBackend_(std::move(writableBackend))
     , archiveBackend_(std::move(archiveBackend))
+    , unitTest_(get<bool>(config, unitTestFlag, false))
 {
     if (writableBackend_)
         fdRequired_ += writableBackend_->fdRequired();
@@ -40,40 +41,72 @@ DatabaseRotatingImp::DatabaseRotatingImp(
         fdRequired_ += archiveBackend_->fdRequired();
 }
 
-void
+[[nodiscard]] bool
 DatabaseRotatingImp::rotateWithLock(
     std::function<std::unique_ptr<NodeStore::Backend>(
         std::string const& writableBackendName)> const& f)
 {
-    // backendMutex_ prevents writableBackend_ and archiveBackend_ from changing
-    // while the main mutex_ is released during the callback.
-    std::lock_guard backendLock(backendMutex_);
+    // This function should be the only one taking any kind of unique/write
+    // lock, and should only be called once at a time by its syncronous caller.
+    // The extra checking involving the "rotating" flag, are to ensure that if
+    // that ever changes, we still avoid deadlocks and incorrect behavior.
 
+    {
+        std::unique_lock writeLock(mutex_);
+        if (!rotating)
+        {
+            // Once this flag is set, we're committed to doing the work and
+            // returning true.
+            rotating = true;
+        }
+        else
+        {
+            // This should only be reachable through unit tests.
+            XRPL_ASSERT(
+                unitTest_,
+                "ripple::NodeStore::DatabaseRotatingImp::rotateWithLock "
+                "unit testing");
+            return false;
+        }
+    }
     auto const writableBackend = [&] {
-        std::lock_guard lock(mutex_);
+        std::shared_lock readLock(mutex_);
+        XRPL_ASSERT(
+            rotating,
+            "ripple::NodeStore::DatabaseRotatingImp::rotateWithLock rotating "
+            "flag set");
+
         return writableBackend_;
     }();
 
     auto newBackend = f(writableBackend->getName());
 
-    std::lock_guard lock(mutex_);
+    // Because of the "rotating" flag, there should be no way any other thread
+    // is waiting at this point. As long as they all release the shared_lock
+    // before taking the unique_lock (which they have to, because upgrading is
+    // unsupported), there can be no deadlock.
+    std::unique_lock writeLock(mutex_);
 
     archiveBackend_->setDeletePath();
     archiveBackend_ = std::move(writableBackend_);
     writableBackend_ = std::move(newBackend);
+
+    rotating = false;
+
+    return true;
 }
 
 std::string
 DatabaseRotatingImp::getName() const
 {
-    std::lock_guard lock(mutex_);
+    std::shared_lock lock(mutex_);
     return writableBackend_->getName();
 }
 
 std::int32_t
 DatabaseRotatingImp::getWriteLoad() const
 {
-    std::lock_guard lock(mutex_);
+    std::shared_lock lock(mutex_);
     return writableBackend_->getWriteLoad();
 }
 
@@ -81,7 +114,7 @@ void
 DatabaseRotatingImp::importDatabase(Database& source)
 {
     auto const backend = [&] {
-        std::lock_guard lock(mutex_);
+        std::shared_lock lock(mutex_);
         return writableBackend_;
     }();
 
@@ -91,7 +124,7 @@ DatabaseRotatingImp::importDatabase(Database& source)
 void
 DatabaseRotatingImp::sync()
 {
-    std::lock_guard lock(mutex_);
+    std::shared_lock lock(mutex_);
     writableBackend_->sync();
 }
 
@@ -105,7 +138,7 @@ DatabaseRotatingImp::store(
     auto nObj = NodeObject::createObject(type, std::move(data), hash);
 
     auto const backend = [&] {
-        std::lock_guard lock(mutex_);
+        std::shared_lock lock(mutex_);
         return writableBackend_;
     }();
 
@@ -159,7 +192,7 @@ DatabaseRotatingImp::fetchNodeObject(
     std::shared_ptr<NodeObject> nodeObject;
 
     auto [writable, archive] = [&] {
-        std::lock_guard lock(mutex_);
+        std::shared_lock lock(mutex_);
         return std::make_pair(writableBackend_, archiveBackend_);
     }();
 
@@ -173,7 +206,7 @@ DatabaseRotatingImp::fetchNodeObject(
         {
             {
                 // Refresh the writable backend pointer
-                std::lock_guard lock(mutex_);
+                std::shared_lock lock(mutex_);
                 writable = writableBackend_;
             }
 
@@ -194,7 +227,7 @@ DatabaseRotatingImp::for_each(
     std::function<void(std::shared_ptr<NodeObject>)> f)
 {
     auto [writable, archive] = [&] {
-        std::lock_guard lock(mutex_);
+        std::shared_lock lock(mutex_);
         return std::make_pair(writableBackend_, archiveBackend_);
     }();
 

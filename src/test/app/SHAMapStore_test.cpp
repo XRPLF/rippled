@@ -20,10 +20,14 @@
 #include <test/jtx.h>
 #include <test/jtx/envconfig.h>
 #include <xrpld/app/main/Application.h>
+#include <xrpld/app/main/NodeStoreScheduler.h>
 #include <xrpld/app/misc/SHAMapStore.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/core/ConfigSections.h>
+#include <xrpld/nodestore/detail/DatabaseRotatingImp.h>
 #include <xrpl/protocol/jss.h>
+#include <boost/lexical_cast.hpp>
+#include <thread>
 
 namespace ripple {
 namespace test {
@@ -518,12 +522,128 @@ public:
         lastRotated = ledgerSeq - 1;
     }
 
+    std::unique_ptr<NodeStore::Backend>
+    makeBackendRotating(
+        jtx::Env& env,
+        NodeStoreScheduler& scheduler,
+        std::string path)
+    {
+        Section section{
+            env.app().config().section(ConfigSection::nodeDatabase())};
+        boost::filesystem::path newPath;
+
+        if (!BEAST_EXPECT(path.size()))
+            return {};
+        newPath = path;
+        section.set("path", newPath.string());
+
+        auto backend{NodeStore::Manager::instance().make_Backend(
+            section,
+            megabytes(env.app().config().getValueFor(
+                SizedItem::burstSize, std::nullopt)),
+            scheduler,
+            env.app().logs().journal("NodeStoreTest"))};
+        backend->open();
+        return backend;
+    }
+    void
+    testRotateWithLockContention()
+    {
+        // The only purpose of this test is to ensure that if something that
+        // should never happen happens, we don't get a deadlock.
+        testcase("rotate with lock contention");
+
+        using namespace jtx;
+        Env env(*this, envconfig(onlineDelete));
+
+        /////////////////////////////////////////////////////////////
+        // Create the backend. Normally, SHAMapStoreImp handles all these
+        // details
+        auto nscfg = env.app().config().section(ConfigSection::nodeDatabase());
+        nscfg.set(
+            NodeStore::DatabaseRotatingImp::unitTestFlag, std::to_string(true));
+
+        // Provide default values:
+        if (!nscfg.exists("cache_size"))
+            nscfg.set(
+                "cache_size",
+                std::to_string(env.app().config().getValueFor(
+                    SizedItem::treeCacheSize, std::nullopt)));
+
+        if (!nscfg.exists("cache_age"))
+            nscfg.set(
+                "cache_age",
+                std::to_string(env.app().config().getValueFor(
+                    SizedItem::treeCacheAge, std::nullopt)));
+
+        NodeStoreScheduler scheduler(env.app().getJobQueue());
+
+        std::string const writableDb = "write";
+        std::string const archiveDb = "archive";
+        auto writableBackend = makeBackendRotating(env, scheduler, writableDb);
+        auto archiveBackend = makeBackendRotating(env, scheduler, archiveDb);
+
+        // Create NodeStore with two backends to allow online deletion of
+        // data
+        constexpr int readThreads = 4;
+        auto dbr = std::make_unique<NodeStore::DatabaseRotatingImp>(
+            scheduler,
+            readThreads,
+            std::move(writableBackend),
+            std::move(archiveBackend),
+            nscfg,
+            env.app().logs().journal("NodeStoreTest"));
+
+        /////////////////////////////////////////////////////////////
+        // Create the impossible situation. Get several calls to rotateWithLock
+        // going in parallel using a callback that just delays
+        using namespace std::chrono_literals;
+        std::atomic<int> threadNum = 0;
+        auto const cb = [&](std::string const& writableBackendName) {
+            using namespace std::chrono_literals;
+            BEAST_EXPECT(writableBackendName == "write");
+            auto newBackend = makeBackendRotating(
+                env, scheduler, std::to_string(++threadNum));
+            std::this_thread::sleep_for(5s);
+            return newBackend;
+        };
+
+        std::atomic<int> successes = 0;
+        std::atomic<int> failures = 0;
+        std::vector<std::thread> threads;
+        threads.reserve(5);
+        for (int i = 0; i < 5; ++i)
+        {
+            threads.emplace_back([&]() {
+                auto const result = dbr->rotateWithLock(cb);
+                if (result)
+                    ++successes;
+                else
+                    ++failures;
+            });
+            // There's no point in trying to time the threads to line up at
+            // exact points, but introduce a little bit of staggering to be more
+            // "realistic".
+            std::this_thread::sleep_for(10ms * i);
+        }
+        for (auto& t : threads)
+        {
+            t.join();
+        }
+        BEAST_EXPECT(successes == 1);
+        BEAST_EXPECT(failures == 4);
+        // Only one thread will invoke the callback to increment threadNum
+        BEAST_EXPECT(threadNum == 1);
+        BEAST_EXPECT(dbr->getName() == "1");
+    }
+
     void
     run() override
     {
         testClear();
         testAutomatic();
         testCanDelete();
+        testRotateWithLockContention();
     }
 };
 

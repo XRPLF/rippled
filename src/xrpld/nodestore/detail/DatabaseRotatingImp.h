@@ -22,7 +22,7 @@
 
 #include <xrpld/nodestore/DatabaseRotating.h>
 
-#include <mutex>
+#include <shared_mutex>
 
 namespace ripple {
 namespace NodeStore {
@@ -48,7 +48,7 @@ public:
         stop();
     }
 
-    void
+    [[nodiscard]] bool
     rotateWithLock(
         std::function<std::unique_ptr<NodeStore::Backend>(
             std::string const& writableBackendName)> const& f) override;
@@ -79,14 +79,20 @@ public:
     void
     sweep() override;
 
+    // Include the space in the name to ensure it can't be set in a file
+    static constexpr auto unitTestFlag = " unit_test";
+
 private:
-    // backendMutex_ is only needed when the *Backend_ members are modified.
-    // Reads are protected by the general mutex_.
-    std::mutex backendMutex_;
+    bool const unitTest_;
+    bool rotating = false;
     std::shared_ptr<Backend> writableBackend_;
     std::shared_ptr<Backend> archiveBackend_;
 
-    mutable std::mutex mutex_;
+    // https://en.cppreference.com/w/cpp/thread/shared_timed_mutex/lock
+    // "Shared mutexes do not support direct transition from shared to unique
+    // ownership mode: the shared lock has to be relinquished with
+    // unlock_shared() before exclusive ownership may be obtained with lock()."
+    mutable std::shared_timed_mutex mutex_;
 
     std::shared_ptr<NodeObject>
     fetchNodeObject(

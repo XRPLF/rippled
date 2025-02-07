@@ -46,7 +46,8 @@ public:
 
         @param f A function executed before the rotation
     */
-    virtual void
+    [[nodiscard]]
+    virtual bool
     rotateWithLock(std::function<std::unique_ptr<NodeStore::Backend>(
                        std::string const& writableBackendName)> const& f) = 0;
 };

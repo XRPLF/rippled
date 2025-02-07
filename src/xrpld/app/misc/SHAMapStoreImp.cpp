@@ -366,18 +366,25 @@ SHAMapStoreImp::run()
 
             lastRotated = validatedSeq;
 
-            dbRotating_->rotateWithLock(
-                [&](std::string const& writableBackendName) {
-                    SavedState savedState;
-                    savedState.writableDb = newBackend->getName();
-                    savedState.archiveDb = writableBackendName;
-                    savedState.lastRotated = lastRotated;
-                    state_db_.setState(savedState);
+            if (!dbRotating_->rotateWithLock(
+                    [&](std::string const& writableBackendName) {
+                        SavedState savedState;
+                        savedState.writableDb = newBackend->getName();
+                        savedState.archiveDb = writableBackendName;
+                        savedState.lastRotated = lastRotated;
+                        state_db_.setState(savedState);
 
-                    clearCaches(validatedSeq);
+                        clearCaches(validatedSeq);
 
-                    return std::move(newBackend);
-                });
+                        return std::move(newBackend);
+                    }))
+            {
+                JLOG(journal_.error())
+                    << validatedSeq
+                    << " rotation failed. Discard unused new backend.";
+                newBackend->setDeletePath();
+                return;
+            }
 
             JLOG(journal_.warn()) << "finished rotation " << validatedSeq;
         }
