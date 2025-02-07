@@ -155,6 +155,49 @@ isFrozen(ReadView const& view, AccountID const& account, Asset const& asset)
 }
 
 [[nodiscard]] bool
+isAnyFrozen(
+    ReadView const& view,
+    AccountID const& account1,
+    AccountID const& account2,
+    MPTIssue const& mptIssue);
+
+/*
+We do not have use a case for these (yet ?)
+
+[[nodiscard]] bool
+isAnyFrozen(
+    ReadView const& view,
+    AccountID const& account1,
+    AccountID const& account2,
+    Currency const& currency,
+    AccountID const& issuer);
+
+[[nodiscard]] inline bool
+isAnyFrozen(
+    ReadView const& view,
+    AccountID const& account1,
+    AccountID const& account2,
+    Issue const& issue)
+{
+    return isAnyFrozen(view, account1, account2, issue.currency, issue.account);
+}
+
+[[nodiscard]] inline bool
+isAnyFrozen(
+    ReadView const& view,
+    AccountID const& account1,
+    AccountID const& account2,
+    Asset const& asset)
+{
+    return std::visit(
+        [&](auto const& issue) {
+            return isAnyFrozen(view, account1, account2, issue);
+        },
+        asset.value());
+}
+*/
+
+[[nodiscard]] bool
 isDeepFrozen(
     ReadView const& view,
     AccountID const& account,

@@ -486,8 +486,7 @@ Payment::doApply()
             //   - can't send between holders
             //   - holder can send back to issuer
             //   - issuer can send to holder
-            if (isFrozen(view(), account_, mptIssue) ||
-                isFrozen(view(), dstAccountID, mptIssue))
+            if (isAnyFrozen(view(), account_, dstAccountID, mptIssue))
                 return tecLOCKED;
 
             // Get the rate for a payment between the holders.

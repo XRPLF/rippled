@@ -280,6 +280,19 @@ isFrozen(
         isVaultPseudoAccountFrozen(view, mptIssue);
 }
 
+[[nodiscard]] bool
+isAnyFrozen(
+    ReadView const& view,
+    AccountID const& account1,
+    AccountID const& account2,
+    MPTIssue const& mptIssue)
+{
+    return isGlobalFrozen(view, mptIssue) ||
+        isIndividualFrozen(view, account1, mptIssue) ||
+        isIndividualFrozen(view, account2, mptIssue) ||
+        isVaultPseudoAccountFrozen(view, mptIssue);
+}
+
 bool
 isVaultPseudoAccountFrozen(ReadView const& view, MPTIssue const& mptShare)
 {
