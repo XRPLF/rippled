@@ -144,6 +144,13 @@ autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
         tx_json[sfSequence.jsonName] = *seq;
     }
 
+    if (!tx_json.isMember(jss::NetworkID))
+    {
+        auto const networkId = context.app.config().NETWORK_ID;
+        if (networkId > 1024)
+            tx_json[jss::NetworkID] = to_string(networkId);
+    }
+
     return std::nullopt;
 }
 
@@ -297,6 +304,15 @@ doSimulate(RPC::JsonContext& context)
         !context.params[jss::binary].isBool())
     {
         return RPC::invalid_field_error(jss::binary);
+    }
+
+    for (auto const field :
+         {jss::secret, jss::seed, jss::seed_hex, jss::passphrase})
+    {
+        if (context.params.isMember(field))
+        {
+            return RPC::invalid_field_error(field);
+        }
     }
 
     // get JSON equivalent of transaction
