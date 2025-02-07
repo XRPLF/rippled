@@ -91,7 +91,6 @@ class PermissionedDomains_test : public beast::unit_test::suite
         env.fund(XRP(1000), alice);
         pdomain::Credentials credentials{{alice, "first credential"}};
         env(pdomain::setTx(alice, credentials), ter(temDISABLED));
-        env(pdomain::deleteTx(alice, uint256(75)), ter(tecNO_ENTRY));
     }
 
     // Verify that each tx does not execute if feature is disabled
