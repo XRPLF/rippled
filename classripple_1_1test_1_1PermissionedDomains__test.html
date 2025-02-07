@@ -203,6 +203,8 @@ Public Attributes</h2></td></tr>
 Private Member Functions</h2></td></tr>
 <tr class="memitem:a83a16438563625a146ce47f9ab81222a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1PermissionedDomains__test.html#a83a16438563625a146ce47f9ab81222a">testEnabled</a> ()</td></tr>
 <tr class="separator:a83a16438563625a146ce47f9ab81222a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abb76b70bccf73c46e0ffcb08d57d3ce7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1PermissionedDomains__test.html#abb76b70bccf73c46e0ffcb08d57d3ce7">testCredentialsDisabled</a> ()</td></tr>
+<tr class="separator:abb76b70bccf73c46e0ffcb08d57d3ce7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa5583d8cd1cf4c58243d28f0688b72a3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1PermissionedDomains__test.html#aa5583d8cd1cf4c58243d28f0688b72a3">testDisabled</a> ()</td></tr>
 <tr class="separator:aa5583d8cd1cf4c58243d28f0688b72a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7c1088b2d72e6191a8e5811220a3c839"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1PermissionedDomains__test.html#a7c1088b2d72e6191a8e5811220a3c839">testBadData</a> (<a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const &amp;account, <a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> &amp;env, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt; domain=std::nullopt)</td></tr>
@@ -223,10 +225,10 @@ Static Private Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
-<tr class="memitem:a35914b161205507a38fa488976902e99"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1FeatureBitset.html">FeatureBitset</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1PermissionedDomains__test.html#a35914b161205507a38fa488976902e99">withFeature_</a></td></tr>
-<tr class="separator:a35914b161205507a38fa488976902e99"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a50550f762b931b3f0e3599e02cd8c27b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1FeatureBitset.html">FeatureBitset</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1PermissionedDomains__test.html#a50550f762b931b3f0e3599e02cd8c27b">withoutFeature_</a> {<a class="el" href="namespaceripple_1_1test_1_1jtx.html#af5441d84d5977d52246c5226313560d4">supported_amendments</a>()}</td></tr>
 <tr class="separator:a50550f762b931b3f0e3599e02cd8c27b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a35914b161205507a38fa488976902e99"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1FeatureBitset.html">FeatureBitset</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1PermissionedDomains__test.html#a35914b161205507a38fa488976902e99">withFeature_</a></td></tr>
+<tr class="separator:a35914b161205507a38fa488976902e99"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3dc5d5a41df80122f4a71c40b7b7397a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1unit__test_1_1suite.html#a3dc5d5a41df80122f4a71c40b7b7397a">abort_</a> = false</td></tr>
 <tr class="separator:a3dc5d5a41df80122f4a71c40b7b7397a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a45d58f9aa77f9b1ccbab63ea33acb78b"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1unit__test_1_1suite.html#a45d58f9aa77f9b1ccbab63ea33acb78b">aborted_</a> = false</td></tr>
@@ -261,7 +263,34 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PermissionedDomains__test_8cpp_source.html#l00063">63</a> of file <a class="el" href="PermissionedDomains__test_8cpp_source.html">PermissionedDomains_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PermissionedDomains__test_8cpp_source.html#l00064">64</a> of file <a class="el" href="PermissionedDomains__test_8cpp_source.html">PermissionedDomains_test.cpp</a>.</p>
+
+</div>
+</div>
+<a id="abb76b70bccf73c46e0ffcb08d57d3ce7" name="abb76b70bccf73c46e0ffcb08d57d3ce7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abb76b70bccf73c46e0ffcb08d57d3ce7">&#9670;&#160;</a></span>testCredentialsDisabled()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::test::PermissionedDomains_test::testCredentialsDisabled </td>
+          <td>(</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="PermissionedDomains__test_8cpp_source.html#l00083">83</a> of file <a class="el" href="PermissionedDomains__test_8cpp_source.html">PermissionedDomains_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -288,7 +317,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PermissionedDomains__test_8cpp_source.html#l00082">82</a> of file <a class="el" href="PermissionedDomains__test_8cpp_source.html">PermissionedDomains_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PermissionedDomains__test_8cpp_source.html#l00098">98</a> of file <a class="el" href="PermissionedDomains__test_8cpp_source.html">PermissionedDomains_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -332,7 +361,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PermissionedDomains__test_8cpp_source.html#l00096">96</a> of file <a class="el" href="PermissionedDomains__test_8cpp_source.html">PermissionedDomains_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PermissionedDomains__test_8cpp_source.html#l00112">112</a> of file <a class="el" href="PermissionedDomains__test_8cpp_source.html">PermissionedDomains_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -359,7 +388,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PermissionedDomains__test_8cpp_source.html#l00267">267</a> of file <a class="el" href="PermissionedDomains__test_8cpp_source.html">PermissionedDomains_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PermissionedDomains__test_8cpp_source.html#l00283">283</a> of file <a class="el" href="PermissionedDomains__test_8cpp_source.html">PermissionedDomains_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -386,7 +415,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PermissionedDomains__test_8cpp_source.html#l00447">447</a> of file <a class="el" href="PermissionedDomains__test_8cpp_source.html">PermissionedDomains_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PermissionedDomains__test_8cpp_source.html#l00463">463</a> of file <a class="el" href="PermissionedDomains__test_8cpp_source.html">PermissionedDomains_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -413,7 +442,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PermissionedDomains__test_8cpp_source.html#l00504">504</a> of file <a class="el" href="PermissionedDomains__test_8cpp_source.html">PermissionedDomains_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PermissionedDomains__test_8cpp_source.html#l00520">520</a> of file <a class="el" href="PermissionedDomains__test_8cpp_source.html">PermissionedDomains_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -444,7 +473,7 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classbeast_1_1unit__test_1_1suite.html#aea7ffa0eca5e015d21be62a18adb8393">beast::unit_test::suite</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="PermissionedDomains__test_8cpp_source.html#l00556">556</a> of file <a class="el" href="PermissionedDomains__test_8cpp_source.html">PermissionedDomains_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PermissionedDomains__test_8cpp_source.html#l00572">572</a> of file <a class="el" href="PermissionedDomains__test_8cpp_source.html">PermissionedDomains_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -1170,33 +1199,6 @@ template&lt;class Condition &gt; </div>
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="a35914b161205507a38fa488976902e99" name="a35914b161205507a38fa488976902e99"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a35914b161205507a38fa488976902e99">&#9670;&#160;</a></span>withFeature_</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classripple_1_1FeatureBitset.html">FeatureBitset</a> ripple::test::PermissionedDomains_test::withFeature_</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">private</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<b>Initial value:</b><div class="fragment"><div class="line">{</div>
-<div class="line">        <a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#af5441d84d5977d52246c5226313560d4">supported_amendments</a>() | featurePermissionedDomains}</div>
-<div class="ttc" id="anamespaceripple_1_1test_1_1jtx_html_af5441d84d5977d52246c5226313560d4"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx.html#af5441d84d5977d52246c5226313560d4">ripple::test::jtx::supported_amendments</a></div><div class="ttdeci">FeatureBitset supported_amendments()</div><div class="ttdef"><b>Definition:</b> <a href="Env_8h_source.html#l00070">Env.h:70</a></div></div>
-</div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="PermissionedDomains__test_8cpp_source.html#l00057">57</a> of file <a class="el" href="PermissionedDomains__test_8cpp_source.html">PermissionedDomains_test.cpp</a>.</p>
-
-</div>
-</div>
 <a id="a50550f762b931b3f0e3599e02cd8c27b" name="a50550f762b931b3f0e3599e02cd8c27b"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a50550f762b931b3f0e3599e02cd8c27b">&#9670;&#160;</a></span>withoutFeature_</h2>
 
@@ -1217,7 +1219,35 @@ template&lt;class Condition &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PermissionedDomains__test_8cpp_source.html#l00059">59</a> of file <a class="el" href="PermissionedDomains__test_8cpp_source.html">PermissionedDomains_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PermissionedDomains__test_8cpp_source.html#l00057">57</a> of file <a class="el" href="PermissionedDomains__test_8cpp_source.html">PermissionedDomains_test.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a35914b161205507a38fa488976902e99" name="a35914b161205507a38fa488976902e99"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a35914b161205507a38fa488976902e99">&#9670;&#160;</a></span>withFeature_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="classripple_1_1FeatureBitset.html">FeatureBitset</a> ripple::test::PermissionedDomains_test::withFeature_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+<b>Initial value:</b><div class="fragment"><div class="line">{</div>
+<div class="line">        <a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#af5441d84d5977d52246c5226313560d4">supported_amendments</a>()  </div>
+<div class="line">        | featurePermissionedDomains | featureCredentials}</div>
+<div class="ttc" id="anamespaceripple_1_1test_1_1jtx_html_af5441d84d5977d52246c5226313560d4"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx.html#af5441d84d5977d52246c5226313560d4">ripple::test::jtx::supported_amendments</a></div><div class="ttdeci">FeatureBitset supported_amendments()</div><div class="ttdef"><b>Definition:</b> <a href="Env_8h_source.html#l00070">Env.h:70</a></div></div>
+</div><!-- fragment -->
+<p class="definition">Definition at line <a class="el" href="PermissionedDomains__test_8cpp_source.html#l00058">58</a> of file <a class="el" href="PermissionedDomains__test_8cpp_source.html">PermissionedDomains_test.cpp</a>.</p>
 
 </div>
 </div>
