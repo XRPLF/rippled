@@ -60,11 +60,6 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
     if (asset != amount.asset())
         return tecWRONG_ASSET;
 
-    AccountID holder = ctx.tx[sfHolder];
-    // Cannot clawback from a Vault an Asset frozen for the holder
-    if (isFrozen(ctx.view, holder, asset))
-        return tecFROZEN;
-
     return tesSUCCESS;
 }
 

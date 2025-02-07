@@ -276,7 +276,43 @@ isFrozen(
     MPTIssue const& mptIssue)
 {
     return isGlobalFrozen(view, mptIssue) ||
-        isIndividualFrozen(view, account, mptIssue);
+        isIndividualFrozen(view, account, mptIssue) ||
+        isVaultPseudoAccountFrozen(view, mptIssue);
+}
+
+bool
+isVaultPseudoAccountFrozen(ReadView const& view, MPTIssue const& mptShare)
+{
+    if (view.rules().enabled(featureSingleAssetVault))
+        return false;
+
+    auto const mptIssuance =
+        view.read(keylet::mptIssuance(mptShare.getMptID()));
+    XRPL_ASSERT(
+        mptIssuance,
+        "ripple::isVaultPseudoAccountFrozen : non-null MPTokenIssuance");
+    if (!mptIssuance)
+        return false;
+
+    auto const issuer = mptIssuance->getAccountID(sfIssuer);
+    auto const mptIssuer = view.read(keylet::account(issuer));
+    XRPL_ASSERT(
+        mptIssuer,
+        "ripple::isVaultPseudoAccountFrozen : non-null MPToken issuer");
+    if (!mptIssuer)
+        return false;
+
+    if (!mptIssuer->isFieldPresent(sfVaultID))
+        return false;  // not a Vault pseudo-account
+
+    auto const vault =
+        view.read(keylet::vault(mptIssuer->getFieldH256(sfVaultID)));
+    XRPL_ASSERT(vault, "ripple::isVaultPseudoAccountFrozen : non-null vault");
+    if (!vault)
+        return false;
+
+    Asset const asset{vault->at(sfAsset)};
+    return isFrozen(view, issuer, asset);
 }
 
 bool

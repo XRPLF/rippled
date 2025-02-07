@@ -90,6 +90,9 @@ isGlobalFrozen(ReadView const& view, MPTIssue const& mptIssue);
 isGlobalFrozen(ReadView const& view, Asset const& asset);
 
 [[nodiscard]] bool
+isVaultPseudoAccountFrozen(ReadView const& view, MPTIssue const& mptShare);
+
+[[nodiscard]] bool
 isIndividualFrozen(
     ReadView const& view,
     AccountID const& account,

@@ -64,6 +64,10 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     if (isFrozen(ctx.view, account, asset))
         return tecFROZEN;
 
+    auto const share = MPTIssue(vault->at(sfMPTokenIssuanceID));
+    if (isFrozen(ctx.view, account, share))
+        return tecFROZEN;
+
     if (vault->getFlags() == tfVaultPrivate && account != vault->at(sfOwner))
     {
         auto const err = requireAuth(
