@@ -467,6 +467,13 @@ transactionPreProcessImpl(
 
         if (!tx_json.isMember(jss::Flags))
             tx_json[jss::Flags] = tfFullyCanonicalSig;
+
+        if (!tx_json.isMember(jss::NetworkID))
+        {
+            auto const networkId = app.config().NETWORK_ID;
+            if (networkId > 1024)
+                tx_json[jss::NetworkID] = to_string(networkId);
+        }
     }
 
     {
