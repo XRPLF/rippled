@@ -83,10 +83,10 @@ public:
     static constexpr auto unitTestFlag = " unit_test";
 
 private:
-    bool const unitTest_;
     bool rotating = false;
     std::shared_ptr<Backend> writableBackend_;
     std::shared_ptr<Backend> archiveBackend_;
+    bool const unitTest_;
 
     // https://en.cppreference.com/w/cpp/thread/shared_timed_mutex/lock
     // "Shared mutexes do not support direct transition from shared to unique
