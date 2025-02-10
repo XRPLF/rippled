@@ -26,7 +26,6 @@
 #include <boost/operators.hpp>
 #include <cstdint>
 #include <string>
-#include <utility>
 
 namespace ripple {
 

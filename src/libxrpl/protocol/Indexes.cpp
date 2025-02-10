@@ -20,6 +20,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Keylet.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STXChainBridge.h>
@@ -79,6 +80,7 @@ enum class LedgerNameSpace : std::uint16_t {
     MPTOKEN = 't',
     CREDENTIAL = 'D',
     PERMISSIONED_DOMAIN = 'm',
+    VAULT = 'V',
 
     // No longer used or supported. Left here to reserve the space
     // to avoid accidental reuse.
@@ -526,6 +528,12 @@ credential(
     return {
         ltCREDENTIAL,
         indexHash(LedgerNameSpace::CREDENTIAL, subject, issuer, credType)};
+}
+
+Keylet
+vault(AccountID const& owner, std::uint32_t seq) noexcept
+{
+    return vault(indexHash(LedgerNameSpace::VAULT, owner, seq));
 }
 
 Keylet

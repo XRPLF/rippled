@@ -21,19 +21,21 @@
 #define RIPPLE_TX_MPTOKENISSUANCECREATE_H_INCLUDED
 
 #include <xrpld/app/tx/detail/Transactor.h>
+#include <xrpl/basics/Expected.h>
+#include <xrpl/protocol/UintTypes.h>
 
 namespace ripple {
 
 struct MPTCreateArgs
 {
-    XRPAmount const& priorBalance;
     AccountID const& account;
     std::uint32_t sequence;
-    std::uint32_t flags;
-    std::optional<std::uint64_t> maxAmount;
-    std::optional<std::uint8_t> assetScale;
-    std::optional<std::uint16_t> transferFee;
-    std::optional<Slice> const& metadata;
+    std::uint32_t flags = 0;
+    std::optional<std::uint64_t> maxAmount{};
+    std::optional<std::uint8_t> assetScale{};
+    std::optional<std::uint16_t> transferFee{};
+    std::optional<Slice> const& metadata{};
+    std::optional<uint256> domainId{};
 };
 
 class MPTokenIssuanceCreate : public Transactor
@@ -51,7 +53,7 @@ public:
     TER
     doApply() override;
 
-    static TER
+    static Expected<MPTID, TER>
     create(ApplyView& view, beast::Journal journal, MPTCreateArgs const& args);
 };
 

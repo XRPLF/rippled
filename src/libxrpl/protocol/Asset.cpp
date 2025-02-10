@@ -43,6 +43,12 @@ Asset::setJson(Json::Value& jv) const
     std::visit([&](auto&& issue) { issue.setJson(jv); }, issue_);
 }
 
+STAmount
+Asset::operator()(Number const& number) const
+{
+    return STAmount{*this, number};
+}
+
 std::string
 to_string(Asset const& asset)
 {
@@ -68,13 +74,6 @@ assetFromJson(Json::Value const& v)
     if (v.isMember(jss::currency))
         return issueFromJson(v);
     return mptIssueFromJson(v);
-}
-
-Json::Value
-to_json(Asset const& asset)
-{
-    return std::visit(
-        [&](auto const& issue) { return to_json(issue); }, asset.value());
 }
 
 }  // namespace ripple
