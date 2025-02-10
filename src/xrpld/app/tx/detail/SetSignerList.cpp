@@ -83,7 +83,7 @@ SetSignerList::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
-    if (ctx.rules.enabled(fixTransactionFlags) &&
+    if (ctx.rules.enabled(fixInvalidTxFlags) &&
         (ctx.tx.getFlags() & tfUniversalMask))
     {
         JLOG(ctx.j.debug()) << "SetSignerList: invalid flags.";

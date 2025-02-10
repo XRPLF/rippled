@@ -1063,7 +1063,7 @@ struct Credentials_test : public beast::unit_test::suite
     {
         using namespace test::jtx;
 
-        bool const enabled = features[fixTransactionFlags];
+        bool const enabled = features[fixInvalidTxFlags];
         testcase(
             std::string("Test flag, fix ") +
             (enabled ? "enabled" : "disabled"));
@@ -1106,7 +1106,7 @@ struct Credentials_test : public beast::unit_test::suite
         testAcceptFailed(all);
         testDeleteFailed(all);
         testFeatureFailed(all - featureCredentials);
-        testFlags(all - fixTransactionFlags);
+        testFlags(all - fixInvalidTxFlags);
         testFlags(all);
         testRPC();
     }

@@ -1683,7 +1683,7 @@ public:
         env.fund(XRP(1000), alice);
         env.close();
 
-        bool const enabled = features[fixTransactionFlags];
+        bool const enabled = features[fixInvalidTxFlags];
         testcase(
             std::string("SignerListSet flag, fix ") +
             (enabled ? "enabled" : "disabled"));
@@ -1732,7 +1732,7 @@ public:
         testAll(all - featureExpandedSignerList);
         testAll(all);
 
-        test_signerListSetFlags(all - fixTransactionFlags);
+        test_signerListSetFlags(all - fixInvalidTxFlags);
         test_signerListSetFlags(all);
 
         test_amendmentTransition();
