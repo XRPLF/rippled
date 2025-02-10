@@ -19,6 +19,10 @@
 
 #include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/ledger/View.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/STVector256.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/digest.h>
 
 #include <unordered_set>
@@ -38,12 +42,11 @@ checkExpired(
 }
 
 bool
-removeExpired(ApplyView& view, STTx const& tx, beast::Journal const j)
+removeExpired(ApplyView& view, STVector256 const& arr, beast::Journal const j)
 {
     auto const closeTime = view.info().parentCloseTime;
     bool foundExpired = false;
 
-    STVector256 const& arr(tx.getFieldV256(sfCredentialIDs));
     for (auto const& h : arr)
     {
         // Credentials already checked in preclaim. Look only for expired here.
@@ -185,15 +188,61 @@ valid(PreclaimContext const& ctx, AccountID const& src)
 }
 
 TER
-authorized(ApplyContext const& ctx, AccountID const& dst)
+validDomain(ReadView const& view, uint256 domainID, AccountID const& subject)
 {
-    auto const& credIDs(ctx.tx.getFieldV256(sfCredentialIDs));
+    // Note, permissioned domain objects can be deleted at any time
+    auto const slePD = view.read(keylet::permissionedDomain(domainID));
+    if (!slePD)
+        return tecINVALID_DOMAIN;
+    else if (!slePD->isFieldPresent(sfAcceptedCredentials))
+        return tefINTERNAL;
+
+    auto const closeTime = view.info().parentCloseTime;
+    bool foundExpired = false;
+    for (auto const& h : slePD->getFieldArray(sfAcceptedCredentials))
+    {
+        if (!h.isFieldPresent(sfIssuer) || !h.isFieldPresent(sfCredentialType))
+            return tefINTERNAL;
+
+        auto const issuer = h.getAccountID(sfIssuer);
+        auto const type = makeSlice(h.getFieldVL(sfCredentialType));
+        auto const sleCredential =
+            view.read(keylet::credential(subject, issuer, type));
+
+        // We cannot delete expired credentials, that would require ApplyView&
+        // However we can check if credentials are expired. Expected transaction
+        // flow is to use `validDomain` in preclaim, converting tecEXPIRED to
+        // tesSUCCESS, then proceed to call `verifyValidDomain` in doApply. This
+        // allows expired credentials to be deleted by any transaction.
+        if (sleCredential)
+        {
+            if (checkExpired(sleCredential, closeTime))
+            {
+                foundExpired = true;
+                continue;
+            }
+            else if (sleCredential->getFlags() & lsfAccepted)
+                return tesSUCCESS;
+            else
+                continue;
+        }
+    }
+
+    return foundExpired ? tecEXPIRED : tecNO_PERMISSION;
+}
+
+TER
+authorizedDepositPreauth(
+    ApplyView const& view,
+    STVector256 const& credIDs,
+    AccountID const& dst)
+{
     std::set<std::pair<AccountID, Slice>> sorted;
     std::vector<std::shared_ptr<SLE const>> lifeExtender;
     lifeExtender.reserve(credIDs.size());
     for (auto const& h : credIDs)
     {
-        auto sleCred = ctx.view().read(keylet::credential(h));
+        auto sleCred = view.read(keylet::credential(h));
         if (!sleCred)  // already checked in preclaim
             return tefINTERNAL;
 
@@ -204,11 +253,8 @@ authorized(ApplyContext const& ctx, AccountID const& dst)
         lifeExtender.push_back(std::move(sleCred));
     }
 
-    if (!ctx.view().exists(keylet::depositPreauth(dst, sorted)))
-    {
-        JLOG(ctx.journal.trace()) << "DepositPreauth doesn't exist";
+    if (!view.exists(keylet::depositPreauth(dst, sorted)))
         return tecNO_PERMISSION;
-    }
 
     return tesSUCCESS;
 }
@@ -273,6 +319,48 @@ checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j)
 }  // namespace credentials
 
 TER
+verifyValidDomain(
+    ApplyView& view,
+    AccountID const& account,
+    uint256 domainID,
+    beast::Journal j)
+{
+    auto const slePD = view.read(keylet::permissionedDomain(domainID));
+    if (!slePD || !slePD->isFieldPresent(sfAcceptedCredentials))
+        return tefINTERNAL;
+
+    // Collect all matching credentials on a side, so we can remove expired ones
+    // We may finish the loop with this collection empty, it's fine.
+    STVector256 credentials;
+    for (auto const& h : slePD->getFieldArray(sfAcceptedCredentials))
+    {
+        if (!h.isFieldPresent(sfIssuer) || !h.isFieldPresent(sfCredentialType))
+            return tefINTERNAL;
+
+        auto const issuer = h.getAccountID(sfIssuer);
+        auto const type = makeSlice(h.getFieldVL(sfCredentialType));
+        auto const keyletCredential = keylet::credential(account, issuer, type);
+        if (view.exists(keyletCredential))
+            credentials.push_back(keyletCredential.key);
+    }
+
+    // Result intentionally ignored.
+    [[maybe_unused]] bool _ = credentials::removeExpired(view, credentials, j);
+
+    for (auto const& h : credentials)
+    {
+        auto sleCredential = view.read(keylet::credential(h));
+        if (!sleCredential)
+            continue;  // expired, i.e. deleted in credentials::removeExpired
+
+        if (sleCredential->getFlags() & lsfAccepted)
+            return tesSUCCESS;
+    }
+
+    return tecNO_PERMISSION;
+}
+
+TER
 verifyDepositPreauth(
     ApplyContext& ctx,
     AccountID const& src,
@@ -288,7 +376,8 @@ verifyDepositPreauth(
     bool const credentialsPresent = ctx.tx.isFieldPresent(sfCredentialIDs);
 
     if (credentialsPresent &&
-        credentials::removeExpired(ctx.view(), ctx.tx, ctx.journal))
+        credentials::removeExpired(
+            ctx.view(), ctx.tx.getFieldV256(sfCredentialIDs), ctx.journal))
         return tecEXPIRED;
 
     if (sleDst && (sleDst->getFlags() & lsfDepositAuth))
@@ -296,8 +385,12 @@ verifyDepositPreauth(
         if (src != dst)
         {
             if (!ctx.view().exists(keylet::depositPreauth(dst, src)))
-                return !credentialsPresent ? tecNO_PERMISSION
-                                           : credentials::authorized(ctx, dst);
+                return !credentialsPresent
+                    ? tecNO_PERMISSION
+                    : credentials::authorizedDepositPreauth(
+                          ctx.view(),
+                          ctx.tx.getFieldV256(sfCredentialIDs),
+                          dst);
         }
     }
 
