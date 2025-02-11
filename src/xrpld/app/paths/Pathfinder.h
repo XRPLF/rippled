@@ -21,9 +21,10 @@
 #define RIPPLE_APP_PATHS_PATHFINDER_H_INCLUDED
 
 #include <xrpld/app/ledger/Ledger.h>
-#include <xrpld/app/paths/RippleLineCache.h>
+#include <xrpld/app/paths/AssetCache.h>
 #include <xrpld/core/LoadEvent.h>
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/protocol/PathAsset.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STPathSet.h>
 
@@ -40,10 +41,10 @@ class Pathfinder : public CountedObject<Pathfinder>
 public:
     /** Construct a pathfinder without an issuer.*/
     Pathfinder(
-        std::shared_ptr<RippleLineCache> const& cache,
+        std::shared_ptr<AssetCache> const& cache,
         AccountID const& srcAccount,
         AccountID const& dstAccount,
-        Currency const& uSrcCurrency,
+        PathAsset const& uSrcPathAsset,
         std::optional<AccountID> const& uSrcIssuer,
         STAmount const& dstAmount,
         std::optional<STAmount> const& srcAmount,
@@ -138,14 +139,14 @@ private:
         std::function<bool(void)> const& continueCallback);
 
     bool
-    issueMatchesOrigin(Issue const&);
+    issueMatchesOrigin(Asset const&);
 
     int
     getPathsOut(
-        Currency const& currency,
+        PathAsset const& pathAsset,
         AccountID const& account,
         LineDirection direction,
-        bool isDestCurrency,
+        bool isDestPathAsset,
         AccountID const& dest,
         std::function<bool(void)> const& continueCallback);
 
@@ -197,7 +198,7 @@ private:
     AccountID mDstAccount;
     AccountID mEffectiveDst;  // The account the paths need to end at
     STAmount mDstAmount;
-    Currency mSrcCurrency;
+    PathAsset mSrcPathAsset;
     std::optional<AccountID> mSrcIssuer;
     STAmount mSrcAmount;
     /** The amount remaining from mSrcAccount after the default liquidity has
@@ -207,14 +208,14 @@ private:
 
     std::shared_ptr<ReadView const> mLedger;
     std::unique_ptr<LoadEvent> m_loadEvent;
-    std::shared_ptr<RippleLineCache> mRLCache;
+    std::shared_ptr<AssetCache> mAssetCache;
 
     STPathElement mSource;
     STPathSet mCompletePaths;
     std::vector<PathRank> mPathRanks;
     std::map<PathType, STPathSet> mPaths;
 
-    hash_map<Issue, int> mPathsOutCountMap;
+    hash_map<Asset, int> mPathsOutCountMap;
 
     Application& app_;
     beast::Journal const j_;

@@ -35,8 +35,8 @@ template <class TIn, class TOut>
 class TOfferBase
 {
 protected:
-    Issue issIn_;
-    Issue issOut_;
+    Asset assetIn_;
+    Asset assetOut_;
 };
 
 template <>
@@ -132,10 +132,10 @@ public:
         return m_entry->key();
     }
 
-    Issue const&
-    issueIn() const;
-    Issue const&
-    issueOut() const;
+    Asset const&
+    assetIn() const;
+    Asset const&
+    assetOut() const;
 
     TAmounts<TIn, TOut>
     limitOut(
@@ -155,7 +155,7 @@ public:
     isFunded() const
     {
         // Offer owner is issuer; they have unlimited funds
-        return m_account == issueOut().account;
+        return m_account == assetOut().getIssuer();
     }
 
     static std::pair<std::uint32_t, std::uint32_t>
@@ -187,8 +187,8 @@ TOffer<TIn, TOut>::TOffer(SLE::pointer const& entry, Quality quality)
     auto const tg = m_entry->getFieldAmount(sfTakerGets);
     m_amounts.in = toAmount<TIn>(tp);
     m_amounts.out = toAmount<TOut>(tg);
-    this->issIn_ = tp.issue();
-    this->issOut_ = tg.issue();
+    this->assetIn_ = tp.asset();
+    this->assetOut_ = tg.asset();
 }
 
 template <>
@@ -208,11 +208,21 @@ template <class TIn, class TOut>
 void
 TOffer<TIn, TOut>::setFieldAmounts()
 {
-#ifdef _MSC_VER
-    UNREACHABLE("ripple::TOffer::setFieldAmounts : must be specialized");
-#else
-    static_assert(sizeof(TOut) == -1, "Must be specialized");
-#endif
+    if constexpr (std::is_same_v<TIn, XRPAmount>)
+        m_entry->setFieldAmount(sfTakerPays, toSTAmount(m_amounts.in));
+    else if constexpr (std::is_same_v<TIn, STAmount>)
+        m_entry->setFieldAmount(sfTakerPays, m_amounts.in);
+    else
+        m_entry->setFieldAmount(
+            sfTakerPays, toSTAmount(m_amounts.in, assetIn()));
+
+    if constexpr (std::is_same_v<TOut, XRPAmount>)
+        m_entry->setFieldAmount(sfTakerGets, toSTAmount(m_amounts.out));
+    else if constexpr (std::is_same_v<TOut, STAmount>)
+        m_entry->setFieldAmount(sfTakerGets, m_amounts.out);
+    else
+        m_entry->setFieldAmount(
+            sfTakerGets, toSTAmount(m_amounts.out, assetOut()));
 }
 
 template <class TIn, class TOut>
@@ -257,64 +267,32 @@ TOffer<TIn, TOut>::send(Args&&... args)
     return accountSend(std::forward<Args>(args)...);
 }
 
-template <>
-inline void
-TOffer<STAmount, STAmount>::setFieldAmounts()
+template <class TIn, class TOut>
+Asset const&
+TOffer<TIn, TOut>::assetIn() const
 {
-    m_entry->setFieldAmount(sfTakerPays, m_amounts.in);
-    m_entry->setFieldAmount(sfTakerGets, m_amounts.out);
+    return this->assetIn_;
 }
 
 template <>
-inline void
-TOffer<IOUAmount, IOUAmount>::setFieldAmounts()
+inline Asset const&
+TOffer<STAmount, STAmount>::assetIn() const
 {
-    m_entry->setFieldAmount(sfTakerPays, toSTAmount(m_amounts.in, issIn_));
-    m_entry->setFieldAmount(sfTakerGets, toSTAmount(m_amounts.out, issOut_));
-}
-
-template <>
-inline void
-TOffer<IOUAmount, XRPAmount>::setFieldAmounts()
-{
-    m_entry->setFieldAmount(sfTakerPays, toSTAmount(m_amounts.in, issIn_));
-    m_entry->setFieldAmount(sfTakerGets, toSTAmount(m_amounts.out));
-}
-
-template <>
-inline void
-TOffer<XRPAmount, IOUAmount>::setFieldAmounts()
-{
-    m_entry->setFieldAmount(sfTakerPays, toSTAmount(m_amounts.in));
-    m_entry->setFieldAmount(sfTakerGets, toSTAmount(m_amounts.out, issOut_));
+    return m_amounts.in.asset();
 }
 
 template <class TIn, class TOut>
-Issue const&
-TOffer<TIn, TOut>::issueIn() const
+Asset const&
+TOffer<TIn, TOut>::assetOut() const
 {
-    return this->issIn_;
+    return this->assetOut_;
 }
 
 template <>
-inline Issue const&
-TOffer<STAmount, STAmount>::issueIn() const
+inline Asset const&
+TOffer<STAmount, STAmount>::assetOut() const
 {
-    return m_amounts.in.issue();
-}
-
-template <class TIn, class TOut>
-Issue const&
-TOffer<TIn, TOut>::issueOut() const
-{
-    return this->issOut_;
-}
-
-template <>
-inline Issue const&
-TOffer<STAmount, STAmount>::issueOut() const
-{
-    return m_amounts.out.issue();
+    return m_amounts.out.asset();
 }
 
 template <class TIn, class TOut>

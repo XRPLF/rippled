@@ -362,6 +362,8 @@ public:
     void
     setFieldH128(SField const& field, uint128 const&);
     void
+    setFieldH192(SField const& field, uint192 const&);
+    void
     setFieldH256(SField const& field, uint256 const&);
     void
     setFieldVL(SField const& field, Blob const&);

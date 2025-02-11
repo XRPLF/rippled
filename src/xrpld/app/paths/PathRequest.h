@@ -21,10 +21,11 @@
 #define RIPPLE_APP_PATHS_PATHREQUEST_H_INCLUDED
 
 #include <xrpld/app/ledger/Ledger.h>
+#include <xrpld/app/paths/AssetCache.h>
 #include <xrpld/app/paths/Pathfinder.h>
-#include <xrpld/app/paths/RippleLineCache.h>
 #include <xrpld/net/InfoSub.h>
 #include <xrpl/json/json_value.h>
+#include <xrpl/protocol/PathAsset.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <map>
 #include <mutex>
@@ -37,7 +38,7 @@ namespace ripple {
 // A pathfinding request submitted by a client
 // The request issuer must maintain a strong pointer
 
-class RippleLineCache;
+class AssetCache;
 class PathRequests;
 
 // Return values from parseJson <0 = invalid, >0 = valid
@@ -86,7 +87,7 @@ public:
     updateComplete();
 
     std::pair<bool, Json::Value>
-    doCreate(std::shared_ptr<RippleLineCache> const&, Json::Value const&);
+    doCreate(std::shared_ptr<AssetCache> const&, Json::Value const&);
 
     Json::Value
     doClose() override;
@@ -98,7 +99,7 @@ public:
     // update jvStatus
     Json::Value
     doUpdate(
-        std::shared_ptr<RippleLineCache> const&,
+        std::shared_ptr<AssetCache> const&,
         bool fast,
         std::function<bool(void)> const& continueCallback = {});
     InfoSub::pointer
@@ -108,13 +109,13 @@ public:
 
 private:
     bool
-    isValid(std::shared_ptr<RippleLineCache> const& crCache);
+    isValid(std::shared_ptr<AssetCache> const& crCache);
 
     std::unique_ptr<Pathfinder> const&
     getPathFinder(
-        std::shared_ptr<RippleLineCache> const&,
-        hash_map<Currency, std::unique_ptr<Pathfinder>>&,
-        Currency const&,
+        std::shared_ptr<AssetCache> const&,
+        hash_map<PathAsset, std::unique_ptr<Pathfinder>>&,
+        PathAsset const&,
         STAmount const&,
         int const,
         std::function<bool(void)> const&);
@@ -124,7 +125,7 @@ private:
     */
     bool
     findPaths(
-        std::shared_ptr<RippleLineCache> const&,
+        std::shared_ptr<AssetCache> const&,
         int const,
         Json::Value&,
         std::function<bool(void)> const&);
@@ -152,8 +153,8 @@ private:
     STAmount saDstAmount;
     std::optional<STAmount> saSendMax;
 
-    std::set<Issue> sciSourceCurrencies;
-    std::map<Issue, STPathSet> mContext;
+    std::set<Asset> sciSourceAssets;
+    std::map<Asset, STPathSet> mContext;
 
     bool convert_all_;
 

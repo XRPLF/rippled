@@ -17,21 +17,21 @@
 */
 //==============================================================================
 
-#include <xrpld/app/paths/AccountCurrencies.h>
+#include <xrpld/app/paths/AccountAssets.h>
 
 namespace ripple {
 
-hash_set<Currency>
-accountSourceCurrencies(
+hash_set<PathAsset>
+accountSourceAssets(
     AccountID const& account,
-    std::shared_ptr<RippleLineCache> const& lrCache,
+    std::shared_ptr<AssetCache> const& lrCache,
     bool includeXRP)
 {
-    hash_set<Currency> currencies;
+    hash_set<PathAsset> assets;
 
     // YYY Only bother if they are above reserve
     if (includeXRP)
-        currencies.insert(xrpCurrency());
+        assets.insert(xrpCurrency());
 
     if (auto const lines =
             lrCache->getRippleLines(account, LineDirection::outgoing))
@@ -48,25 +48,35 @@ accountSourceCurrencies(
                  // Peer extends credit.
                  && ((-saBalance) < rspEntry.getLimitPeer())))  // Credit left.
             {
-                currencies.insert(saBalance.getCurrency());
+                assets.insert(saBalance.get<Issue>().currency);
             }
         }
     }
 
-    currencies.erase(badCurrency());
-    return currencies;
+    assets.erase(badCurrency());
+
+    if (auto const mpts = lrCache->getMPTs(account))
+    {
+        for (auto const& rspEntry : *mpts)
+        {
+            if (!rspEntry.isZeroBalance() && !rspEntry.isMaxedOut())
+                assets.insert(rspEntry.getMptID());
+        }
+    }
+
+    return assets;
 }
 
-hash_set<Currency>
-accountDestCurrencies(
+hash_set<PathAsset>
+accountDestAssets(
     AccountID const& account,
-    std::shared_ptr<RippleLineCache> const& lrCache,
+    std::shared_ptr<AssetCache> const& lrCache,
     bool includeXRP)
 {
-    hash_set<Currency> currencies;
+    hash_set<PathAsset> assets;
 
     if (includeXRP)
-        currencies.insert(xrpCurrency());
+        assets.insert(xrpCurrency());
     // Even if account doesn't exist
 
     if (auto const lines =
@@ -77,12 +87,22 @@ accountDestCurrencies(
             auto& saBalance = rspEntry.getBalance();
 
             if (saBalance < rspEntry.getLimit())  // Can take more
-                currencies.insert(saBalance.getCurrency());
+                assets.insert(saBalance.get<Issue>().currency);
         }
     }
 
-    currencies.erase(badCurrency());
-    return currencies;
+    assets.erase(badCurrency());
+
+    if (auto const mpts = lrCache->getMPTs(account))
+    {
+        for (auto const& rspEntry : *mpts)
+        {
+            if (rspEntry.isZeroBalance() && !rspEntry.isMaxedOut())
+                assets.insert(rspEntry.getMptID());
+        }
+    }
+
+    return assets;
 }
 
 }  // namespace ripple

@@ -188,13 +188,6 @@ public:
     constexpr TIss const&
     get() const;
 
-    Issue const&
-    issue() const;
-
-    // These three are deprecated
-    Currency const&
-    getCurrency() const;
-
     AccountID const&
     getIssuer() const;
 
@@ -483,18 +476,6 @@ STAmount::get() const
     return mAsset.get<TIss>();
 }
 
-inline Issue const&
-STAmount::issue() const
-{
-    return get<Issue>();
-}
-
-inline Currency const&
-STAmount::getCurrency() const
-{
-    return mAsset.get<Issue>().currency;
-}
-
 inline AccountID const&
 STAmount::getIssuer() const
 {
@@ -568,6 +549,8 @@ STAmount::clear(Asset const& asset)
 inline void
 STAmount::setIssuer(AccountID const& uIssuer)
 {
+    if (!mAsset.holds<Issue>())
+        Throw<std::runtime_error>("Can't set issuer for non-Issue");
     mAsset.get<Issue>().account = uIssuer;
 }
 

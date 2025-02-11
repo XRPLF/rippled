@@ -25,7 +25,7 @@ STAmount
 ammLPTokens(
     STAmount const& asset1,
     STAmount const& asset2,
-    Issue const& lptIssue)
+    Asset const& lptIssue)
 {
     auto const tokens = root2(asset1 * asset2);
     return toSTAmount(lptIssue, tokens);
@@ -49,7 +49,7 @@ lpTokensIn(
     Number const r = asset1Deposit / asset1Balance;
     auto const c = root2(f2 * f2 + r / f1) - f2;
     auto const t = lptAMMBalance * (r - c) / (1 + c);
-    return toSTAmount(lptAMMBalance.issue(), t);
+    return toSTAmount(lptAMMBalance.asset(), t);
 }
 
 /* Equation 4 solves equation 3 for b:
@@ -79,7 +79,7 @@ ammAssetIn(
     auto const b = 2 * d / t2 - 1 / f1;
     auto const c = d * d - f2 * f2;
     return toSTAmount(
-        asset1Balance.issue(), asset1Balance * solveQuadraticEq(a, b, c));
+        asset1Balance.asset(), asset1Balance * solveQuadraticEq(a, b, c));
 }
 
 /* Equation 7:
@@ -97,7 +97,7 @@ lpTokensOut(
     auto const f1 = getFee(tfee);
     auto const c = fr * f1 + 2 - f1;
     auto const t = lptAMMBalance * (c - root2(c * c - 4 * fr)) / 2;
-    return toSTAmount(lptAMMBalance.issue(), t);
+    return toSTAmount(lptAMMBalance.asset(), t);
 }
 
 /* Equation 8 solves equation 7 for b:
@@ -120,7 +120,7 @@ withdrawByTokens(
     auto const f = getFee(tfee);
     Number const t1 = lpTokens / lptAMMBalance;
     auto const b = assetBalance * (t1 * t1 - t1 * (2 - f)) / (t1 * f - 1);
-    return toSTAmount(assetBalance.issue(), b);
+    return toSTAmount(assetBalance.asset(), b);
 }
 
 Number
@@ -176,9 +176,9 @@ adjustAmountsByLPTokens(
         if (amount2)
         {
             Number const fr = lpTokensActual / lpTokens;
-            auto const amountActual = toSTAmount(amount.issue(), fr * amount);
+            auto const amountActual = toSTAmount(amount.asset(), fr * amount);
             auto const amount2Actual =
-                toSTAmount(amount2->issue(), fr * *amount2);
+                toSTAmount(amount2->asset(), fr * *amount2);
             if (!ammRoundingEnabled)
                 return std::make_tuple(
                     amountActual < amount ? amountActual : amount,

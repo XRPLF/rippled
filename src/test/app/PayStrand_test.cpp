@@ -681,7 +681,7 @@ struct PayStrand_test : public beast::unit_test::suite
                     alice,
                     /*deliver*/ xrpIssue(),
                     /*limitQuality*/ std::nullopt,
-                    /*sendMaxIssue*/ EUR.issue(),
+                    /*sendMaxIssue*/ EUR,
                     path,
                     true,
                     OfferCrossing::no,
@@ -698,7 +698,7 @@ struct PayStrand_test : public beast::unit_test::suite
                     alice,
                     /*deliver*/ xrpIssue(),
                     /*limitQuality*/ std::nullopt,
-                    /*sendMaxIssue*/ EUR.issue(),
+                    /*sendMaxIssue*/ EUR,
                     path,
                     true,
                     OfferCrossing::no,
@@ -736,7 +736,7 @@ struct PayStrand_test : public beast::unit_test::suite
             test(
                 env,
                 EUR,
-                USD.issue(),
+                USD,
                 STPath(),
                 tesSUCCESS,
                 D{alice, gw, usdC},
@@ -747,7 +747,7 @@ struct PayStrand_test : public beast::unit_test::suite
             test(
                 env,
                 EUR,
-                USD.issue(),
+                USD,
                 STPath({ipe(EUR)}),
                 tesSUCCESS,
                 D{alice, gw, usdC},
@@ -759,7 +759,7 @@ struct PayStrand_test : public beast::unit_test::suite
             test(
                 env,
                 carol["USD"],
-                USD.issue(),
+                USD,
                 STPath({iape(carol)}),
                 tesSUCCESS,
                 D{alice, gw, usdC},
@@ -781,7 +781,7 @@ struct PayStrand_test : public beast::unit_test::suite
             test(
                 env,
                 xrpIssue(),
-                USD.issue(),
+                USD,
                 STPath({STPathElement{
                     STPathElement::typeCurrency,
                     xrpAccount(),
@@ -796,7 +796,7 @@ struct PayStrand_test : public beast::unit_test::suite
             test(
                 env,
                 EUR,
-                USD.issue(),
+                USD,
                 STPath({cpe(xrpCurrency())}),
                 tesSUCCESS,
                 D{alice, gw, usdC},
@@ -818,7 +818,7 @@ struct PayStrand_test : public beast::unit_test::suite
                         xrpAccount(),
                         XRP,
                         std::nullopt,
-                        USD.issue(),
+                        USD,
                         STPath(),
                         true,
                         OfferCrossing::no,
@@ -861,12 +861,7 @@ struct PayStrand_test : public beast::unit_test::suite
             }
 
             // Create an offer with the same in/out issue
-            test(
-                env,
-                EUR,
-                USD.issue(),
-                STPath({ipe(USD), ipe(EUR)}),
-                temBAD_PATH);
+            test(env, EUR, USD, STPath({ipe(USD), ipe(EUR)}), temBAD_PATH);
 
             // Path element with type zero
             test(
@@ -891,7 +886,7 @@ struct PayStrand_test : public beast::unit_test::suite
             test(
                 env,
                 EUR,
-                USD.issue(),
+                USD,
                 STPath({ipe(EUR), ipe(USD), ipe(EUR)}),
                 temBAD_PATH_LOOP);
         }
@@ -1014,7 +1009,7 @@ struct PayStrand_test : public beast::unit_test::suite
                 bob,
                 XRP,
                 std::nullopt,
-                USD.issue(),
+                USD,
                 path,
                 false,
                 OfferCrossing::no,
@@ -1022,10 +1017,7 @@ struct PayStrand_test : public beast::unit_test::suite
                 env.app().logs().journal("Flow"));
             BEAST_EXPECT(ter == tesSUCCESS);
             BEAST_EXPECT(equal(
-                strand,
-                D{alice, gw, usdC},
-                B{USD.issue(), xrpIssue()},
-                XRPS{bob}));
+                strand, D{alice, gw, usdC}, B{USD, xrpIssue()}, XRPS{bob}));
         }
     }
 
@@ -1184,7 +1176,7 @@ struct PayStrand_test : public beast::unit_test::suite
         Env env(*this, features);
         env.fund(XRP(10000), alice, bob, gw);
 
-        STAmount sendMax{USD.issue(), 100, 1};
+        STAmount sendMax{USD, 100, 1};
         STAmount noAccountAmount{Issue{USD.currency, noAccount()}, 100, 1};
         STAmount deliver;
         AccountID const srcAcc = alice.id();
@@ -1255,13 +1247,10 @@ struct PayStrand_test : public beast::unit_test::suite
     {
         using namespace jtx;
         auto const sa = supported_amendments();
-        testToStrand(sa - featureFlowCross);
         testToStrand(sa);
 
-        testRIPD1373(sa - featureFlowCross);
         testRIPD1373(sa);
 
-        testLoop(sa - featureFlowCross);
         testLoop(sa);
 
         testNoAccount(sa);

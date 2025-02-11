@@ -915,15 +915,19 @@ tokenOfferCreatePreclaim(
         if (view.rules().enabled(featureNFTokenMintOffer))
         {
             if (nftIssuer != amount.getIssuer() &&
-                !view.read(keylet::line(nftIssuer, amount.issue())))
+                !view.read(keylet::line(nftIssuer, amount.get<Issue>())))
                 return tecNO_LINE;
         }
-        else if (!view.exists(keylet::line(nftIssuer, amount.issue())))
+        else if (!view.exists(keylet::line(nftIssuer, amount.get<Issue>())))
         {
             return tecNO_LINE;
         }
 
-        if (isFrozen(view, nftIssuer, amount.getCurrency(), amount.getIssuer()))
+        if (isFrozen(
+                view,
+                nftIssuer,
+                amount.get<Issue>().currency,
+                amount.getIssuer()))
             return tecFROZEN;
     }
 
@@ -937,7 +941,8 @@ tokenOfferCreatePreclaim(
             return tefNFTOKEN_IS_NOT_TRANSFERABLE;
     }
 
-    if (isFrozen(view, acctID, amount.getCurrency(), amount.getIssuer()))
+    if (isFrozen(
+            view, acctID, amount.get<Issue>().currency, amount.getIssuer()))
         return tecFROZEN;
 
     // If this is an offer to buy the token, the account must have the
@@ -958,7 +963,7 @@ tokenOfferCreatePreclaim(
             accountHolds(
                 view,
                 acctID,
-                amount.getCurrency(),
+                amount.get<Issue>().currency,
                 amount.getIssuer(),
                 FreezeHandling::fhZERO_IF_FROZEN,
                 j)

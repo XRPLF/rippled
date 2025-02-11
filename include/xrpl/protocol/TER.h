@@ -92,6 +92,7 @@ enum TEMcodes : TERUnderlyingType {
     temBAD_FEE,
     temBAD_ISSUER,
     temBAD_LIMIT,
+    temBAD_MPT,
     temBAD_OFFER,
     temBAD_PATH,
     temBAD_PATH_LOOP,

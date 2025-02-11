@@ -26,7 +26,7 @@ namespace jtx {
 void
 balance::operator()(Env& env) const
 {
-    if (isXRP(value_.issue()))
+    if (isXRP(value_.asset()))
     {
         auto const sle = env.le(account_);
         if (none_)
@@ -38,9 +38,10 @@ balance::operator()(Env& env) const
             env.test.expect(sle->getFieldAmount(sfBalance) == value_);
         }
     }
-    else
+    else if (value_.holds<Issue>())
     {
-        auto const sle = env.le(keylet::line(account_.id(), value_.issue()));
+        auto const sle =
+            env.le(keylet::line(account_.id(), value_.get<Issue>()));
         if (none_)
         {
             env.test.expect(!sle);
@@ -48,10 +49,26 @@ balance::operator()(Env& env) const
         else if (env.test.expect(sle))
         {
             auto amount = sle->getFieldAmount(sfBalance);
-            amount.setIssuer(value_.issue().account);
-            if (account_.id() > value_.issue().account)
+            amount.setIssuer(value_.getIssuer());
+            if (account_.id() > value_.getIssuer())
                 amount.negate();
             env.test.expect(amount == value_);
+        }
+    }
+    else
+    {
+        auto const issuanceKey =
+            keylet::mptIssuance(value_.get<MPTIssue>().getMptID());
+        auto const mptokenKey = keylet::mptoken(issuanceKey.key, account_);
+        auto const sle = env.le(mptokenKey);
+        if (none_)
+        {
+            env.test.expect(!sle);
+        }
+        else if (env.test.expect(sle))
+        {
+            auto amount = sle->getFieldU64(sfMPTAmount);
+            env.test.expect(amount == value_.mpt().value());
         }
     }
 }

@@ -100,12 +100,37 @@ getBookBase(Book const& book)
     XRPL_ASSERT(
         isConsistent(book), "ripple::getBookBase : input is consistent");
 
-    auto const index = indexHash(
-        LedgerNameSpace::BOOK_DIR,
-        book.in.currency,
-        book.out.currency,
-        book.in.account,
-        book.out.account);
+    auto const index = std::visit(
+        [&]<ValidIssueType TIn, ValidIssueType TOut>(
+            TIn const& in, TOut const& out) {
+            if constexpr (
+                std::is_same_v<TIn, Issue> && std::is_same_v<TOut, Issue>)
+                return indexHash(
+                    LedgerNameSpace::BOOK_DIR,
+                    in.currency,
+                    out.currency,
+                    in.account,
+                    out.account);
+            else if constexpr (
+                std::is_same_v<TIn, Issue> && std::is_same_v<TOut, MPTIssue>)
+                return indexHash(
+                    LedgerNameSpace::BOOK_DIR,
+                    in.currency,
+                    out.getMptID(),
+                    in.account);
+            else if constexpr (
+                std::is_same_v<TIn, MPTIssue> && std::is_same_v<TOut, Issue>)
+                return indexHash(
+                    LedgerNameSpace::BOOK_DIR,
+                    in.getMptID(),
+                    out.currency,
+                    out.account);
+            else
+                return indexHash(
+                    LedgerNameSpace::BOOK_DIR, in.getMptID(), out.getMptID());
+        },
+        book.in.value(),
+        book.out.value());
 
     // Return with quality 0.
     auto k = keylet::quality({ltDIR_NODE, index}, 0);
@@ -419,16 +444,44 @@ nft_sells(uint256 const& id) noexcept
 }
 
 Keylet
-amm(Asset const& issue1, Asset const& issue2) noexcept
+amm(Asset const& asset1, Asset const& asset2) noexcept
 {
-    auto const& [minI, maxI] =
-        std::minmax(issue1.get<Issue>(), issue2.get<Issue>());
-    return amm(indexHash(
-        LedgerNameSpace::AMM,
-        minI.account,
-        minI.currency,
-        maxI.account,
-        maxI.currency));
+    auto const& [minA, maxA] = std::minmax(asset1, asset2);
+    return std::visit(
+        []<ValidIssueType TIss1, ValidIssueType TIss2>(
+            TIss1 const& issue1, TIss2 const& issue2) {
+            if constexpr (
+                std::is_same_v<TIss1, Issue> && std::is_same_v<TIss2, Issue>)
+                return amm(indexHash(
+                    LedgerNameSpace::AMM,
+                    issue1.account,
+                    issue1.currency,
+                    issue2.account,
+                    issue2.currency));
+            else if constexpr (
+                std::is_same_v<TIss1, Issue> && std::is_same_v<TIss2, MPTIssue>)
+                return amm(indexHash(
+                    LedgerNameSpace::AMM,
+                    issue1.account,
+                    issue1.currency,
+                    issue2.getMptID()));
+            else if constexpr (
+                std::is_same_v<TIss1, MPTIssue> && std::is_same_v<TIss2, Issue>)
+                return amm(indexHash(
+                    LedgerNameSpace::AMM,
+                    issue1.getMptID(),
+                    issue2.account,
+                    issue2.currency));
+            else if constexpr (
+                std::is_same_v<TIss1, MPTIssue> &&
+                std::is_same_v<TIss2, MPTIssue>)
+                return amm(indexHash(
+                    LedgerNameSpace::AMM,
+                    issue1.getMptID(),
+                    issue2.getMptID()));
+        },
+        minA.value(),
+        maxA.value());
 }
 
 Keylet
@@ -497,11 +550,11 @@ mptIssuance(std::uint32_t seq, AccountID const& issuer) noexcept
 }
 
 Keylet
-mptIssuance(MPTID const& issuanceID) noexcept
+mptIssuance(MPTIssue const& mptIssue) noexcept
 {
     return {
         ltMPTOKEN_ISSUANCE,
-        indexHash(LedgerNameSpace::MPTOKEN_ISSUANCE, issuanceID)};
+        indexHash(LedgerNameSpace::MPTOKEN_ISSUANCE, mptIssue.getMptID())};
 }
 
 Keylet

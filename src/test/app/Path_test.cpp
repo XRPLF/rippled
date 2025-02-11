@@ -19,7 +19,7 @@
 
 #include <test/jtx.h>
 #include <test/jtx/envconfig.h>
-#include <xrpld/app/paths/AccountCurrencies.h>
+#include <xrpld/app/paths/AccountAssets.h>
 #include <xrpld/core/JobQueue.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/RPCHandler.h>
@@ -736,8 +736,7 @@ public:
             jv);
 
         auto const jv_l =
-            env.le(keylet::line(
-                       Account("bob").id(), Account("alice")["USD"].issue()))
+            env.le(keylet::line(Account("bob").id(), Account("alice")["USD"]))
                 ->getJson(JsonOptions::none);
         for (auto it = jv.begin(); it != jv.end(); ++it)
             BEAST_EXPECT(*it == jv_l[it.memberName()]);
@@ -779,8 +778,7 @@ public:
             jv);
 
         auto const jv_l =
-            env.le(keylet::line(
-                       Account("bob").id(), Account("alice")["USD"].issue()))
+            env.le(keylet::line(Account("bob").id(), Account("alice")["USD"]))
                 ->getJson(JsonOptions::none);
         for (auto it = jv.begin(); it != jv.end(); ++it)
             BEAST_EXPECT(*it == jv_l[it.memberName()]);
@@ -789,8 +787,7 @@ public:
         env.trust(Account("alice")["USD"](0), "bob");
         BEAST_EXPECT(
             env.le(keylet::line(
-                Account("bob").id(), Account("alice")["USD"].issue())) ==
-            nullptr);
+                Account("bob").id(), Account("alice")["USD"])) == nullptr);
     }
 
     void
@@ -833,8 +830,7 @@ public:
             jv);
 
         auto const jv_l =
-            env.le(keylet::line(
-                       Account("alice").id(), Account("bob")["USD"].issue()))
+            env.le(keylet::line(Account("alice").id(), Account("bob")["USD"]))
                 ->getJson(JsonOptions::none);
         for (auto it = jv.begin(); it != jv.end(); ++it)
             BEAST_EXPECT(*it == jv_l[it.memberName()]);
@@ -842,8 +838,7 @@ public:
         env(pay("alice", "bob", Account("alice")["USD"](50)));
         BEAST_EXPECT(
             env.le(keylet::line(
-                Account("alice").id(), Account("bob")["USD"].issue())) ==
-            nullptr);
+                Account("alice").id(), Account("bob")["USD"])) == nullptr);
     }
 
     void

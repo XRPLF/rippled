@@ -40,8 +40,18 @@ STPathElement::get_hash(STPathElement const& element)
     for (auto const x : element.getAccountID())
         hash_account += (hash_account * 257) ^ x;
 
-    for (auto const x : element.getCurrency())
-        hash_currency += (hash_currency * 509) ^ x;
+    // Check pathAsset type instead of element's mType
+    // In some cases mType might be account but the asset
+    // is still set to either MPT or currency (see Pathfinder::addLink())
+    if (element.getPathAsset().holds<MPTID>())
+    {
+        hash_currency += beast::uhash<>{}(element.getPathAsset().get<MPTID>());
+    }
+    else
+    {
+        for (auto const x : element.getPathAsset().get<Currency>())
+            hash_currency += (hash_currency * 509) ^ x;
+    }
 
     for (auto const x : element.getIssuerID())
         hash_issuer += (hash_issuer * 911) ^ x;
@@ -82,21 +92,28 @@ STPathSet::STPathSet(SerialIter& sit, SField const& name) : STBase(name)
             auto hasAccount = iType & STPathElement::typeAccount;
             auto hasCurrency = iType & STPathElement::typeCurrency;
             auto hasIssuer = iType & STPathElement::typeIssuer;
+            auto hasMPT = iType & STPathElement::typeMPT;
 
             AccountID account;
-            Currency currency;
+            PathAsset asset;
             AccountID issuer;
 
             if (hasAccount)
                 account = sit.get160();
 
+            XRPL_ASSERT(
+                !(hasCurrency && hasMPT),
+                "ripple::STPathSet::STPathSet : not has Currency and MPT");
             if (hasCurrency)
-                currency = sit.get160();
+                asset = static_cast<Currency>(sit.get160());
+
+            if (hasMPT)
+                asset = sit.get192();
 
             if (hasIssuer)
                 issuer = sit.get160();
 
-            path.emplace_back(account, currency, issuer, hasCurrency);
+            path.emplace_back(account, asset, issuer, hasCurrency);
         }
     }
 }
@@ -150,12 +167,12 @@ STPathSet::isDefault() const
 bool
 STPath::hasSeen(
     AccountID const& account,
-    Currency const& currency,
+    PathAsset const& asset,
     AccountID const& issuer) const
 {
     for (auto& p : mPath)
     {
-        if (p.getAccountID() == account && p.getCurrency() == currency &&
+        if (p.getAccountID() == account && p.getPathAsset() == asset &&
             p.getIssuerID() == issuer)
             return true;
     }
@@ -178,8 +195,15 @@ STPath::getJson(JsonOptions) const
         if (iType & STPathElement::typeAccount)
             elem[jss::account] = to_string(it.getAccountID());
 
+        XRPL_ASSERT(
+            !(iType & STPathElement::typeCurrency &&
+              iType & STPathElement::typeMPT),
+            "ripple::STPath::getJson : not type Currency and MPT");
         if (iType & STPathElement::typeCurrency)
             elem[jss::currency] = to_string(it.getCurrency());
+
+        if (iType & STPathElement::typeMPT)
+            elem[jss::mpt_issuance_id] = to_string(it.getMPTID());
 
         if (iType & STPathElement::typeIssuer)
             elem[jss::issuer] = to_string(it.getIssuerID());
@@ -229,6 +253,9 @@ STPathSet::add(Serializer& s) const
 
             if (iType & STPathElement::typeAccount)
                 s.addBitString(speElement.getAccountID());
+
+            if (iType & STPathElement::typeMPT)
+                s.addBitString(speElement.getMPTID());
 
             if (iType & STPathElement::typeCurrency)
                 s.addBitString(speElement.getCurrency());

@@ -121,8 +121,8 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
             STAmount deltaPays = finalFields.getFieldAmount(sfTakerPays) -
                 previousFields.getFieldAmount(sfTakerPays);
 
-            std::string g{to_string(deltaGets.issue())};
-            std::string p{to_string(deltaPays.issue())};
+            std::string g{to_string(deltaGets.asset())};
+            std::string p{to_string(deltaPays.asset())};
 
             bool const noswap =
                 isXRP(deltaGets) ? true : (isXRP(deltaPays) ? false : (g < p));
@@ -190,6 +190,16 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
 
     jvObj[jss::changes] = Json::arrayValue;
 
+    auto volToStr = [](STAmount const& vol) {
+        if (vol.holds<Issue>())
+        {
+            if (isXRP(vol))
+                return to_string(vol.xrp());
+            return to_string(vol.iou());
+        }
+        return to_string(vol.mpt());
+    };
+
     for (auto const& entry : tally)
     {
         Json::Value& inner = jvObj[jss::changes].append(Json::objectValue);
@@ -197,15 +207,21 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
         STAmount volA = std::get<0>(entry.second);
         STAmount volB = std::get<1>(entry.second);
 
-        inner[jss::currency_a] =
-            (isXRP(volA) ? "XRP_drops" : to_string(volA.issue()));
-        inner[jss::currency_b] =
-            (isXRP(volB) ? "XRP_drops" : to_string(volB.issue()));
+        // Do we need mpt_issuance_id_a, etc if MPT?
+        if (volA.holds<Issue>())
+            inner[jss::currency_a] =
+                (isXRP(volA) ? "XRP_drops" : to_string(volA.asset()));
+        else
+            inner[jss::mpt_issuance_id_a] = to_string(volA.asset());
 
-        inner[jss::volume_a] =
-            (isXRP(volA) ? to_string(volA.xrp()) : to_string(volA.iou()));
-        inner[jss::volume_b] =
-            (isXRP(volB) ? to_string(volB.xrp()) : to_string(volB.iou()));
+        if (volB.holds<Issue>())
+            inner[jss::currency_b] =
+                (isXRP(volB) ? "XRP_drops" : to_string(volB.asset()));
+        else
+            inner[jss::mpt_issuance_id_b] = to_string(volB.asset());
+
+        inner[jss::volume_a] = volToStr(volA);
+        inner[jss::volume_b] = volToStr(volB);
 
         inner[jss::high] = to_string(std::get<2>(entry.second).iou());
         inner[jss::low] = to_string(std::get<3>(entry.second).iou());

@@ -17,13 +17,13 @@
 */
 //==============================================================================
 
-#include <xrpld/app/paths/RippleLineCache.h>
+#include <xrpld/app/paths/AssetCache.h>
 #include <xrpld/app/paths/TrustLine.h>
 #include <xrpld/ledger/OpenView.h>
 
 namespace ripple {
 
-RippleLineCache::RippleLineCache(
+AssetCache::AssetCache(
     std::shared_ptr<ReadView const> const& ledger,
     beast::Journal j)
     : ledger_(ledger), journal_(j)
@@ -31,7 +31,7 @@ RippleLineCache::RippleLineCache(
     JLOG(journal_.debug()) << "created for ledger " << ledger_->info().seq;
 }
 
-RippleLineCache::~RippleLineCache()
+AssetCache::~AssetCache()
 {
     JLOG(journal_.debug()) << "destroyed for ledger " << ledger_->info().seq
                            << " with " << lines_.size() << " accounts and "
@@ -39,9 +39,7 @@ RippleLineCache::~RippleLineCache()
 }
 
 std::shared_ptr<std::vector<PathFindTrustLine>>
-RippleLineCache::getRippleLines(
-    AccountID const& accountID,
-    LineDirection direction)
+AssetCache::getRippleLines(AccountID const& accountID, LineDirection direction)
 {
     auto const hash = hasher_(accountID);
     AccountKey key(accountID, direction, hash);
@@ -129,6 +127,55 @@ RippleLineCache::getRippleLines(
                            << totalLineCount_ << " trust lines";
 
     return it->second;
+}
+
+std::shared_ptr<std::vector<PathFindMPT>> const&
+AssetCache::getMPTs(const ripple::AccountID& account)
+{
+    std::lock_guard sl(mLock);
+
+    if (auto it = mpts_.find(account); it != mpts_.end())
+        return it->second;
+
+    std::vector<PathFindMPT> mpts;
+    // Get issued/authorized tokens
+    forEachItem(*ledger_, account, [&](std::shared_ptr<SLE const> const& sle) {
+        if (sle->getType() == ltMPTOKEN_ISSUANCE)
+        {
+            auto const mptID = makeMptID(sle->getFieldU32(sfSequence), account);
+            auto const maxAmount =
+                (*sle)[~sfMaximumAmount].value_or(maxMPTokenAmount);
+            bool const maxedOut = sle->at(sfOutstandingAmount) == maxAmount;
+            mpts.emplace_back(mptID, false, maxedOut);
+        }
+        else if (sle->getType() == ltMPTOKEN)
+        {
+            auto const mptID = sle->getFieldH192(sfMPTokenIssuanceID);
+            bool const zeroBalance = sle->at(sfMPTAmount) == 0;
+            bool const maxedOut = [&] {
+                if (auto const sleIssuance =
+                        ledger_->read(keylet::mptIssuance(mptID)))
+                {
+                    auto const maxAmount =
+                        (*sleIssuance)[~sfMaximumAmount].value_or(
+                            maxMPTokenAmount);
+                    return sleIssuance->at(sfOutstandingAmount) == maxAmount;
+                }
+                return true;
+            }();
+
+            mpts.emplace_back(mptID, zeroBalance, maxedOut);
+        }
+    });
+
+    if (mpts.empty())
+        mpts_.emplace(account, nullptr);
+    else
+        mpts_.emplace(
+            account,
+            std::make_shared<std::vector<PathFindMPT>>(std::move(mpts)));
+
+    return mpts_[account];
 }
 
 }  // namespace ripple

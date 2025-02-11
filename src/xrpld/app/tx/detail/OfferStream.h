@@ -86,6 +86,7 @@ protected:
     permRmOffer(uint256 const& offerIndex) = 0;
 
     template <class TTakerPays, class TTakerGets>
+        requires ValidTaker<TTakerPays, TTakerGets>
     bool
     shouldRmSmallIncreasedQOffer() const;
 
@@ -125,33 +126,6 @@ public:
     {
         return *ownerFunds_;
     }
-};
-
-/** Presents and consumes the offers in an order book.
-
-    Two `ApplyView` objects accumulate changes to the ledger. `view`
-    is applied when the calling transaction succeeds. If the calling
-    transaction fails, then `view_cancel` is applied.
-
-    Certain invalid offers are automatically removed:
-    - Offers with missing ledger entries
-    - Offers that expired
-    - Offers found unfunded:
-    An offer is found unfunded when the corresponding balance is zero
-    and the caller has not modified the balance. This is accomplished
-    by also looking up the balance in the cancel view.
-
-    When an offer is removed, it is removed from both views. This grooms the
-    order book regardless of whether or not the transaction is successful.
-*/
-class OfferStream : public TOfferStreamBase<STAmount, STAmount>
-{
-protected:
-    void
-    permRmOffer(uint256 const& offerIndex) override;
-
-public:
-    using TOfferStreamBase<STAmount, STAmount>::TOfferStreamBase;
 };
 
 /** Presents and consumes the offers in an order book.

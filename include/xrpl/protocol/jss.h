@@ -425,6 +425,8 @@ JSS(min_ledger);              // in: LedgerCleaner
 JSS(minimum_fee);             // out: TxQ
 JSS(minimum_level);           // out: TxQ
 JSS(missingCommand);          // error
+JSS(mpt_issuance_id_a);       // out: BookChanges
+JSS(mpt_issuance_id_b);       // out: BookChanges
 JSS(name);                    // out: AmendmentTableImpl, PeerImp
 JSS(needed_state_hashes);     // out: InboundLedger
 JSS(needed_transaction_hashes);  // out: InboundLedger
