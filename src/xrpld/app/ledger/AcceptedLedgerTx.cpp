@@ -62,13 +62,14 @@ AcceptedLedgerTx::AcceptedLedgerTx(
         auto const amount = mTxn->getFieldAmount(sfTakerGets);
 
         // If the offer create is not self funded then add the owner balance
-        if (account != amount.issue().account)
+        if (account != amount.getIssuer())
         {
             auto const ownerFunds = accountFunds(
                 *ledger,
                 account,
                 amount,
                 fhIGNORE_FREEZE,
+                ahIGNORE_AUTH,
                 beast::Journal{beast::Journal::getNullSink()});
             mJson[jss::transaction][jss::owner_funds] = ownerFunds.getText();
         }

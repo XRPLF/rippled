@@ -403,9 +403,11 @@ limitOut(
             return XRPAmount{*out};
         else if constexpr (std::is_same_v<TOutAmt, IOUAmount>)
             return IOUAmount{*out};
+        else if constexpr (std::is_same_v<TOutAmt, MPTAmount>)
+            return MPTAmount{*out};
         else
             return STAmount{
-                remainingOut.issue(), out->mantissa(), out->exponent()};
+                remainingOut.asset(), out->mantissa(), out->exponent()};
     }();
     // A tiny difference could be due to the round off
     if (withinRelativeDistance(out, remainingOut, Number(1, -9)))
@@ -557,7 +559,7 @@ public:
    @return Actual amount in and out from the strands, errors, and payment
    sandbox
 */
-template <class TInAmt, class TOutAmt>
+template <StepAmount TInAmt, StepAmount TOutAmt>
 FlowResult<TInAmt, TOutAmt>
 flow(
     PaymentSandbox const& baseView,

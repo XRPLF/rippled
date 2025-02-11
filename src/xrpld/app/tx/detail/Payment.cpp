@@ -77,14 +77,16 @@ Payment::preflight(PreflightContext const& ctx)
     auto& j = ctx.j;
 
     STAmount const dstAmount(tx.getFieldAmount(sfAmount));
-    bool const mptDirect = dstAmount.holds<MPTIssue>();
+    bool const isDstMPT = dstAmount.holds<MPTIssue>();
+    bool const MPTokensV2 = ctx.rules.enabled(featureMPTokensV2);
 
-    if (mptDirect && !ctx.rules.enabled(featureMPTokensV1))
+    if (!ctx.rules.enabled(featureMPTokensV1) && isDstMPT)
         return temDISABLED;
 
     std::uint32_t const txFlags = tx.getFlags();
 
-    std::uint32_t paymentMask = mptDirect ? tfMPTPaymentMask : tfPaymentMask;
+    std::uint32_t paymentMask =
+        (isDstMPT && !MPTokensV2) ? tfMPTPaymentMask : tfPaymentMask;
 
     if (txFlags & paymentMask)
     {
@@ -92,7 +94,7 @@ Payment::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
     }
 
-    if (mptDirect && ctx.tx.isFieldPresent(sfPaths))
+    if (!MPTokensV2 && isDstMPT && ctx.tx.isFieldPresent(sfPaths))
         return temMALFORMED;
 
     bool const partialPaymentAllowed = txFlags & tfPartialPayment;
@@ -107,8 +109,9 @@ Payment::preflight(PreflightContext const& ctx)
     STAmount const maxSourceAmount =
         getMaxSourceAmount(account, dstAmount, tx[~sfSendMax]);
 
-    if ((mptDirect && dstAmount.asset() != maxSourceAmount.asset()) ||
-        (!mptDirect && maxSourceAmount.holds<MPTIssue>()))
+    if (!MPTokensV2 &&
+        ((isDstMPT && dstAmount.asset() != maxSourceAmount.asset()) ||
+         (!isDstMPT && maxSourceAmount.holds<MPTIssue>())))
     {
         JLOG(j.trace()) << "Malformed transaction: inconsistent issues: "
                         << dstAmount.getFullText() << " "
@@ -145,7 +148,12 @@ Payment::preflight(PreflightContext const& ctx)
                         << dstAmount.getFullText();
         return temBAD_AMOUNT;
     }
-    if (badCurrency() == srcAsset || badCurrency() == dstAsset)
+    auto bad = [&](auto const& asset) {
+        if (ctx.rules.enabled(featureMPTokensV2))
+            return badAsset() == asset;
+        return badCurrency() == asset;
+    };
+    if (bad(srcAsset) || bad(dstAsset))
     {
         JLOG(j.trace()) << "Malformed transaction: Bad currency.";
         return temBAD_CURRENCY;
@@ -166,7 +174,7 @@ Payment::preflight(PreflightContext const& ctx)
                         << "SendMax specified for XRP to XRP.";
         return temBAD_SEND_XRP_MAX;
     }
-    if ((xrpDirect || mptDirect) && hasPaths)
+    if ((xrpDirect || (!MPTokensV2 && isDstMPT)) && hasPaths)
     {
         // XRP is sent without paths.
         JLOG(j.trace()) << "Malformed transaction: "
@@ -180,7 +188,7 @@ Payment::preflight(PreflightContext const& ctx)
                         << "Partial payment specified for XRP to XRP.";
         return temBAD_SEND_XRP_PARTIAL;
     }
-    if ((xrpDirect || mptDirect) && limitQuality)
+    if ((xrpDirect || (!MPTokensV2 && isDstMPT)) && limitQuality)
     {
         // Consistent but redundant transaction.
         JLOG(j.trace())
@@ -188,7 +196,7 @@ Payment::preflight(PreflightContext const& ctx)
             << "Limit quality specified for XRP to XRP or MPT to MPT.";
         return temBAD_SEND_XRP_LIMIT;
     }
-    if ((xrpDirect || mptDirect) && !defaultPathsAllowed)
+    if ((xrpDirect || (!MPTokensV2 && isDstMPT)) && !defaultPathsAllowed)
     {
         // Consistent but redundant transaction.
         JLOG(j.trace())
@@ -341,7 +349,7 @@ Payment::doApply()
 
     AccountID const dstAccountID(ctx_.tx.getAccountID(sfDestination));
     STAmount const dstAmount(ctx_.tx.getFieldAmount(sfAmount));
-    bool const mptDirect = dstAmount.holds<MPTIssue>();
+    bool const isDstMPT = dstAmount.holds<MPTIssue>();
     STAmount const maxSourceAmount =
         getMaxSourceAmount(account_, dstAmount, sendMax);
 
@@ -379,9 +387,11 @@ Payment::doApply()
         sleDst->getFlags() & lsfDepositAuth && depositAuth;
 
     bool const depositPreauth = view().rules().enabled(featureDepositPreauth);
+    bool const MPTokensV2 = view().rules().enabled(featureMPTokensV2);
 
-    bool const ripple =
-        (hasPaths || sendMax || !dstAmount.native()) && !mptDirect;
+    // Direct MPT payment is handled by payment engine if MPTokensV2 is enabled
+    bool const ripple = (hasPaths || sendMax || !dstAmount.native()) &&
+        (!isDstMPT || MPTokensV2);
 
     // If the destination has lsfDepositAuth set, then only direct XRP
     // payments (no intermediate steps) are allowed to the destination.
@@ -452,7 +462,7 @@ Payment::doApply()
             terResult = tecPATH_DRY;
         return terResult;
     }
-    else if (mptDirect)
+    else if (isDstMPT)
     {
         JLOG(j_.trace()) << " dstAmount=" << dstAmount.getFullText();
         auto const& mptIssue = dstAmount.get<MPTIssue>();

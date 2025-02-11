@@ -726,6 +726,12 @@ STObject::setFieldH128(SField const& field, uint128 const& v)
 }
 
 void
+STObject::setFieldH192(SField const& field, uint192 const& v)
+{
+    setFieldUsingSetValue<STUInt192>(field, v);
+}
+
+void
 STObject::setFieldH256(SField const& field, uint256 const& v)
 {
     setFieldUsingSetValue<STUInt256>(field, v);
