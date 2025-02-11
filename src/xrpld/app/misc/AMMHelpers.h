@@ -60,7 +60,7 @@ STAmount
 ammLPTokens(
     STAmount const& asset1,
     STAmount const& asset2,
-    Issue const& lptIssue);
+    Asset const& lptIssue);
 
 /** Calculate LP Tokens given asset's deposit amount.
  * @param asset1Balance current AMM asset1 balance
@@ -148,11 +148,11 @@ withinRelativeDistance(
  * @param dist requested relative distance
  * @return true if within dist, false otherwise
  */
-// clang-format off
 template <typename Amt>
     requires(
         std::is_same_v<Amt, STAmount> || std::is_same_v<Amt, IOUAmount> ||
-        std::is_same_v<Amt, XRPAmount> || std::is_same_v<Amt, Number>)
+        std::is_same_v<Amt, XRPAmount> || std::is_same_v<Amt, MPTAmount> ||
+        std::is_same_v<Amt, Number>)
 bool
 withinRelativeDistance(Amt const& calc, Amt const& req, Number const& dist)
 {
@@ -161,7 +161,6 @@ withinRelativeDistance(Amt const& calc, Amt const& req, Number const& dist)
     auto const [min, max] = std::minmax(calc, req);
     return ((max - min) / max) < dist;
 }
-// clang-format on
 
 /** Solve quadratic equation to find takerGets or takerPays. Round
  * to minimize the amount in order to maximize the quality.
@@ -226,7 +225,7 @@ getAMMOfferStartWithTakerGets(
         // Round downward to minimize the offer and to maximize the quality.
         // This has the most impact when takerGets is XRP.
         auto const takerGets = toAmount<TOut>(
-            getIssue(pool.out), nTakerGetsProposed, Number::downward);
+            getAsset(pool.out), nTakerGetsProposed, Number::downward);
         return TAmounts<TIn, TOut>{
             swapAssetOut(pool, takerGets, tfee), takerGets};
     };
@@ -297,7 +296,7 @@ getAMMOfferStartWithTakerPays(
         // Round downward to minimize the offer and to maximize the quality.
         // This has the most impact when takerPays is XRP.
         auto const takerPays = toAmount<TIn>(
-            getIssue(pool.in), nTakerPaysProposed, Number::downward);
+            getAsset(pool.in), nTakerPaysProposed, Number::downward);
         return TAmounts<TIn, TOut>{
             takerPays, swapAssetIn(pool, takerPays, tfee)};
     };
@@ -374,7 +373,7 @@ changeSpotPriceQuality(
                 return std::nullopt;
             }
             auto const takerPays =
-                toAmount<TIn>(getIssue(pool.in), nTakerPays, Number::upward);
+                toAmount<TIn>(getAsset(pool.in), nTakerPays, Number::upward);
             // should not fail
             if (auto const amounts =
                     TAmounts<TIn, TOut>{
@@ -385,9 +384,9 @@ changeSpotPriceQuality(
             {
                 JLOG(j.error())
                     << "changeSpotPriceQuality failed: " << to_string(pool.in)
-                    << " " << to_string(pool.out) << " " << " " << quality
-                    << " " << tfee << " " << to_string(amounts.in) << " "
-                    << to_string(amounts.out);
+                    << " " << to_string(pool.out) << " "
+                    << " " << quality << " " << tfee << " "
+                    << to_string(amounts.in) << " " << to_string(amounts.out);
                 Throw<std::runtime_error>("changeSpotPriceQuality failed");
             }
             else
@@ -409,7 +408,7 @@ changeSpotPriceQuality(
     // Generate the offer starting with XRP side. Return seated offer amounts
     // if the offer can be generated, otherwise nullopt.
     auto const amounts = [&]() {
-        if (isXRP(getIssue(pool.out)))
+        if (isXRP(getAsset(pool.out)))
             return getAMMOfferStartWithTakerGets(pool, quality, tfee);
         return getAMMOfferStartWithTakerPays(pool, quality, tfee);
     }();
@@ -501,7 +500,7 @@ swapAssetIn(
         auto const denom = pool.in + assetIn * (1 - fee);
 
         if (denom.signum() <= 0)
-            return toAmount<TOut>(getIssue(pool.out), 0);
+            return toAmount<TOut>(getAsset(pool.out), 0);
 
         Number::setround(Number::upward);
         auto const ratio = numerator / denom;
@@ -510,14 +509,14 @@ swapAssetIn(
         auto const swapOut = pool.out - ratio;
 
         if (swapOut.signum() < 0)
-            return toAmount<TOut>(getIssue(pool.out), 0);
+            return toAmount<TOut>(getAsset(pool.out), 0);
 
-        return toAmount<TOut>(getIssue(pool.out), swapOut, Number::downward);
+        return toAmount<TOut>(getAsset(pool.out), swapOut, Number::downward);
     }
     else
     {
         return toAmount<TOut>(
-            getIssue(pool.out),
+            getAsset(pool.out),
             pool.out -
                 (pool.in * pool.out) / (pool.in + assetIn * feeMult(tfee)),
             Number::downward);
@@ -569,7 +568,7 @@ swapAssetOut(
         auto const denom = pool.out - assetOut;
         if (denom.signum() <= 0)
         {
-            return toMaxAmount<TIn>(getIssue(pool.in));
+            return toMaxAmount<TIn>(getAsset(pool.in));
         }
 
         Number::setround(Number::upward);
@@ -583,14 +582,14 @@ swapAssetOut(
         Number::setround(Number::upward);
         auto const swapIn = numerator2 / feeMult;
         if (swapIn.signum() < 0)
-            return toAmount<TIn>(getIssue(pool.in), 0);
+            return toAmount<TIn>(getAsset(pool.in), 0);
 
-        return toAmount<TIn>(getIssue(pool.in), swapIn, Number::upward);
+        return toAmount<TIn>(getAsset(pool.in), swapIn, Number::upward);
     }
     else
     {
         return toAmount<TIn>(
-            getIssue(pool.in),
+            getAsset(pool.in),
             ((pool.in * pool.out) / (pool.out - assetOut) - pool.in) /
                 feeMult(tfee),
             Number::upward);

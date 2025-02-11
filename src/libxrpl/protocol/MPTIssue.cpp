@@ -18,12 +18,18 @@
 //==============================================================================
 
 #include <xrpl/json/json_errors.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/jss.h>
 
 namespace ripple {
 
 MPTIssue::MPTIssue(MPTID const& issuanceID) : mptID_(issuanceID)
+{
+}
+
+MPTIssue::MPTIssue(std::uint32_t sequence, AccountID const& account)
+    : MPTIssue(ripple::makeMptID(sequence, account))
 {
 }
 
@@ -102,6 +108,13 @@ mptIssueFromJson(Json::Value const& v)
     }
 
     return MPTIssue{id};
+}
+
+std::ostream&
+operator<<(std::ostream& os, MPTIssue const& x)
+{
+    os << to_string(x);
+    return os;
 }
 
 }  // namespace ripple

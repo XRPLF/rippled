@@ -122,7 +122,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
             // accountSend, no deferredCredits
             ApplyViewImpl av(&*env.current(), tapNONE);
 
-            auto const iss = USD_gw1.issue();
+            auto const iss = USD_gw1;
             auto const startingAmount = accountHolds(
                 av, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j);
             {
@@ -147,7 +147,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
             // rippleCredit, no deferredCredits
             ApplyViewImpl av(&*env.current(), tapNONE);
 
-            auto const iss = USD_gw1.issue();
+            auto const iss = USD_gw1;
             auto const startingAmount = accountHolds(
                 av, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j);
 
@@ -169,7 +169,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
             ApplyViewImpl av(&*env.current(), tapNONE);
             PaymentSandbox pv(&av);
 
-            auto const iss = USD_gw1.issue();
+            auto const iss = USD_gw1;
             auto const startingAmount = accountHolds(
                 pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j);
 
@@ -197,7 +197,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
             ApplyViewImpl av(&*env.current(), tapNONE);
             PaymentSandbox pv(&av);
 
-            auto const iss = USD_gw1.issue();
+            auto const iss = USD_gw1;
             auto const startingAmount = accountHolds(
                 pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j);
 
@@ -213,7 +213,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
             ApplyViewImpl av(&*env.current(), tapNONE);
             PaymentSandbox pv(&av);
 
-            auto const iss = USD_gw1.issue();
+            auto const iss = USD_gw1;
             auto const startingAmount = accountHolds(
                 pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j);
 
@@ -229,7 +229,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
             ApplyViewImpl av(&*env.current(), tapNONE);
             PaymentSandbox pv(&av);
 
-            auto const iss = USD_gw1.issue();
+            auto const iss = USD_gw1;
             auto const startingAmount = accountHolds(
                 pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j);
 
@@ -245,7 +245,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
             ApplyViewImpl av(&*env.current(), tapNONE);
             PaymentSandbox pv(&av);
 
-            auto const iss = USD_gw1.issue();
+            auto const iss = USD_gw1;
             auto const startingAmount = accountHolds(
                 pv, alice, iss.currency, iss.account, fhIGNORE_FREEZE, j);
 
@@ -310,7 +310,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
         Account const alice("alice");
         auto const USD = gw["USD"];
 
-        auto const issue = USD.issue();
+        auto const issue = USD;
         STAmount tinyAmt(
             issue,
             STAmount::cMinValue,
@@ -395,7 +395,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
         // The currency we pass for the last argument mimics the currency that
         // is typically passed to creditHook, since it comes from a trust line.
         Issue tlIssue = noIssue();
-        tlIssue.currency = USD.issue().currency;
+        tlIssue.currency = USD.currency;
 
         sb.creditHook(gw.id(), alice.id(), {USD, 400}, {tlIssue, 600});
         sb.creditHook(gw.id(), alice.id(), {USD, 100}, {tlIssue, 600});
@@ -403,7 +403,7 @@ class PaymentSandbox_test : public beast::unit_test::suite
         // Expect that the STAmount issuer returned by balanceHook() is correct.
         STAmount const balance =
             sb.balanceHook(gw.id(), alice.id(), {USD, 600});
-        BEAST_EXPECT(balance.getIssuer() == USD.issue().account);
+        BEAST_EXPECT(balance.getIssuer() == USD.account.id());
     }
 
 public:
@@ -419,7 +419,6 @@ public:
         };
         using namespace jtx;
         auto const sa = supported_amendments();
-        testAll(sa - featureFlowCross);
         testAll(sa);
     }
 };

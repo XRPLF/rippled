@@ -248,9 +248,9 @@ class TheoreticalQuality_test : public beast::unit_test::suite
         PaymentSandbox sb(closed.get(), tapNONE);
         AMMContext ammContext(rcp.srcAccount, false);
 
-        auto const sendMaxIssue = [&rcp]() -> std::optional<Issue> {
+        auto const sendMaxIssue = [&rcp]() -> std::optional<Asset> {
             if (rcp.sendMax)
-                return rcp.sendMax->issue();
+                return rcp.sendMax->asset();
             return std::nullopt;
         }();
 
@@ -260,7 +260,7 @@ class TheoreticalQuality_test : public beast::unit_test::suite
             sb,
             rcp.srcAccount,
             rcp.dstAccount,
-            rcp.dstAmt.issue(),
+            rcp.dstAmt.asset(),
             /*limitQuality*/ std::nullopt,
             sendMaxIssue,
             rcp.paths,

@@ -77,4 +77,14 @@ to_json(Asset const& asset)
         [&](auto const& issue) { return to_json(issue); }, asset.value());
 }
 
+std::ostream&
+operator<<(std::ostream& os, Asset const& x)
+{
+    if (x.holds<Issue>())
+        os << x.get<Issue>();
+    else
+        os << x.get<MPTIssue>();
+    return os;
+}
+
 }  // namespace ripple
