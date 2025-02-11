@@ -164,8 +164,8 @@ isDeepFrozen(
 isLPTokenFrozen(
     ReadView const& view,
     AccountID const& account,
-    Issue const& asset,
-    Issue const& asset2);
+    Asset const& asset,
+    Asset const& asset2);
 
 // Returns the amount an account can spend without going into debt.
 //
@@ -196,6 +196,15 @@ accountHolds(
     AuthHandling zeroIfUnauthorized,
     beast::Journal j);
 
+[[nodiscard]] STAmount
+accountHolds(
+    ReadView const& view,
+    AccountID const& account,
+    Asset const& issue,
+    FreezeHandling zeroIfFrozen,
+    AuthHandling zeroIfUnauthorized,
+    beast::Journal j);
+
 // Returns the amount an account can spend of the currency type saDefault, or
 // returns saDefault if this account is the issuer of the currency in
 // question. Should be used in favor of accountHolds when questioning how much
@@ -207,6 +216,15 @@ accountFunds(
     AccountID const& id,
     STAmount const& saDefault,
     FreezeHandling freezeHandling,
+    beast::Journal j);
+
+[[nodiscard]] STAmount
+accountFunds(
+    ReadView const& view,
+    AccountID const& id,
+    STAmount const& saDefault,
+    FreezeHandling freezeHandling,
+    AuthHandling authHandling,
     beast::Journal j);
 
 // Return the account's liquid (not reserved) XRP.  Generally prefer
@@ -539,17 +557,44 @@ transferXRP(
     STAmount const& amount,
     beast::Journal j);
 
+/* Check if MPToken exists:
+ * - StrongAuth - before checking lsfMPTRequireAuth is set
+ * - WeakAuth - after checking if lsfMPTRequireAuth is set
+ */
+enum class MPTAuthType : bool { StrongAuth = true, WeakAuth = false };
+
 /** Check if the account lacks required authorization.
  *   Return tecNO_AUTH or tecNO_LINE if it does
  *   and tesSUCCESS otherwise.
  */
 [[nodiscard]] TER
 requireAuth(ReadView const& view, Issue const& issue, AccountID const& account);
+/* If StrongAuth then return tecNO_AUTH if MPToken doesn't exist or
+ * lsfMPTRequireAuth is set and MPToken is not authorized. If WeakAuth then
+ * return tecNO_AUTH if lsfMPTRequireAuth is set and MPToken doesn't exist or is
+ * not authorized.
+ */
 [[nodiscard]] TER
 requireAuth(
     ReadView const& view,
     MPTIssue const& mptIssue,
-    AccountID const& account);
+    AccountID const& account,
+    MPTAuthType authType = MPTAuthType::StrongAuth);
+[[nodiscard]] TER inline requireAuth(
+    ReadView const& view,
+    Asset const& asset,
+    AccountID const& account,
+    MPTAuthType authType = MPTAuthType::StrongAuth)
+{
+    return std::visit(
+        [&]<ValidIssueType TIss>(TIss const& issue_) {
+            if constexpr (std::is_same_v<TIss, Issue>)
+                return requireAuth(view, issue_, account);
+            else
+                return requireAuth(view, issue_, account, authType);
+        },
+        asset.value());
+}
 
 /** Check if the destination account is allowed
  *  to receive MPT. Return tecNO_AUTH if it doesn't
@@ -594,6 +639,16 @@ deleteAMMTrustLine(
     ApplyView& view,
     std::shared_ptr<SLE> sleState,
     std::optional<AccountID> const& ammAccountID,
+    beast::Journal j);
+
+/** Delete AMMs MPToken. The passed `sle` must be obtained from a prior
+ * call to view.peek().
+ */
+[[nodiscard]] TER
+deleteAMMMPToken(
+    ApplyView& view,
+    std::shared_ptr<SLE> sleMPT,
+    AccountID const& ammAccountID,
     beast::Journal j);
 
 }  // namespace ripple

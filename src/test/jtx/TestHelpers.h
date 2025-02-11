@@ -140,6 +140,9 @@ equal(STAmount const& sa1, STAmount const& sa2);
 STPathElement
 IPE(Issue const& iss);
 
+STPathElement
+IPE(MPTIssue const& iss);
+
 template <class... Args>
 STPath
 stpath(Args const&... args)
@@ -165,6 +168,66 @@ same(STPathSet const& st1, Args const&... args)
     }
     return true;
 }
+
+Json::Value
+rpf(jtx::Account const& src,
+    jtx::Account const& dst,
+    STAmount const& dstAmount,
+    std::optional<STAmount> const& sendMax = std::nullopt,
+    std::optional<PathAsset> const& srcAsset = std::nullopt,
+    std::optional<AccountID> const& srcIssuer = std::nullopt);
+
+jtx::Env
+pathTestEnv(beast::unit_test::suite& suite);
+
+class gate
+{
+private:
+    std::condition_variable cv_;
+    std::mutex mutex_;
+    bool signaled_ = false;
+
+public:
+    // Thread safe, blocks until signaled or period expires.
+    // Returns `true` if signaled.
+    template <class Rep, class Period>
+    bool
+    wait_for(std::chrono::duration<Rep, Period> const& rel_time)
+    {
+        std::unique_lock<std::mutex> lk(mutex_);
+        auto b = cv_.wait_for(lk, rel_time, [this] { return signaled_; });
+        signaled_ = false;
+        return b;
+    }
+
+    void
+    signal()
+    {
+        std::lock_guard lk(mutex_);
+        signaled_ = true;
+        cv_.notify_all();
+    }
+};
+
+Json::Value
+find_paths_request(
+    jtx::Env& env,
+    jtx::Account const& src,
+    jtx::Account const& dst,
+    STAmount const& saDstAmount,
+    std::optional<STAmount> const& saSendMax = std::nullopt,
+    std::optional<PathAsset> const& srcAsset = std::nullopt,
+    std::optional<AccountID> const& srcIssuer = std::nullopt);
+
+std::tuple<STPathSet, STAmount, STAmount>
+find_paths(
+    jtx::Env& env,
+    jtx::Account const& src,
+    jtx::Account const& dst,
+    STAmount const& saDstAmount,
+    std::optional<STAmount> const& saSendMax = std::nullopt,
+    std::optional<PathAsset> const& srcAsset = std::nullopt,
+    std::optional<AccountID> const& srcIssuer = std::nullopt);
 
 /******************************************************************************/
 

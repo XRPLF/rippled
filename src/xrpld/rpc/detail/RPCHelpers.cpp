@@ -35,6 +35,7 @@
 #include <xrpl/resource/Fees.h>
 
 #include <boost/algorithm/string/case_conv.hpp>
+#include <boost/format.hpp>
 
 #include <regex>
 
@@ -1136,5 +1137,70 @@ getLedgerByContext(RPC::JsonContext& context)
     return RPC::make_error(
         rpcNOT_READY, "findCreate failed to return an inbound ledger");
 }
+
+error_code_i
+parseSubUnsubJson(
+    Asset& asset,
+    Json::Value const& params,
+    Json::StaticString const& name,
+    beast::Journal j)
+{
+    auto const& jv = params[name];
+    auto const [issuerError, assetError] = [&]() {
+        if (name == jss::taker_pays)
+            return std::make_pair(rpcSRC_ISR_MALFORMED, rpcSRC_CUR_MALFORMED);
+        return std::make_pair(rpcDST_ISR_MALFORMED, rpcDST_AMT_MALFORMED);
+    }();
+
+    if (jv.isMember(jss::mpt_issuance_id) &&
+        (jv.isMember(jss::currency) || jss::issuer))
+    {
+        JLOG(j.info()) << boost::format("Bad %s currency or MPT.") %
+                name.c_str();
+        return rpcINVALID_PARAMS;
+    }
+
+    if (jv.isMember(jss::currency))
+    {
+        Issue issue = xrpIssue();
+        // Parse mandatory currency.
+        if (!jv.isMember(jss::currency) ||
+            !to_currency(issue.currency, jv[jss::currency].asString()))
+        {
+            JLOG(j.info()) << boost::format("Bad %s currency.") % name.c_str();
+            return assetError;
+        }
+
+        // Parse optional issuer.
+        if (((jv.isMember(jss::issuer)) &&
+             (!jv[jss::issuer].isString() ||
+              !to_issuer(issue.account, jv[jss::issuer].asString())))
+            // Don't allow illegal issuers.
+            || (!issue.currency != !issue.account) ||
+            noAccount() == issue.account)
+        {
+            JLOG(j.info()) << boost::format("Bad %s issuer.") % name.c_str();
+            return issuerError;
+        }
+        asset = issue;
+    }
+    else if (jv.isMember(jss::mpt_issuance_id))
+    {
+        MPTID mptid;
+        if (!mptid.parseHex(jv[jss::mpt_issuance_id].asString()))
+            return assetError;
+        asset = mptid;
+    }
+    else
+    {
+        JLOG(j.info()) << boost::format(
+                              "Neither %s currency or MPT is present.") %
+                name.c_str();
+        return assetError;
+    }
+
+    return rpcSUCCESS;
+}
+
 }  // namespace RPC
 }  // namespace ripple

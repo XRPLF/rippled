@@ -39,6 +39,15 @@ AMMClawback::preflight(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureAMMClawback))
         return temDISABLED;
 
+    std::optional<STAmount> const clawAmount = ctx.tx[~sfAmount];
+    auto const asset = ctx.tx[sfAsset];
+    auto const asset2 = ctx.tx[sfAsset2];
+
+    if (!ctx.rules.enabled(featureMPTokensV2) &&
+        ((clawAmount && clawAmount->holds<MPTIssue>()) ||
+         asset.holds<MPTIssue>() || asset2.holds<MPTIssue>()))
+        return temDISABLED;
+
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;  // LCOV_EXCL_LINE
 
@@ -56,14 +65,10 @@ AMMClawback::preflight(PreflightContext const& ctx)
         return temMALFORMED;
     }
 
-    std::optional<STAmount> const clawAmount = ctx.tx[~sfAmount];
-    auto const asset = ctx.tx[sfAsset].get<Issue>();
-    auto const asset2 = ctx.tx[sfAsset2].get<Issue>();
-
     if (isXRP(asset))
         return temMALFORMED;
 
-    if (flags & tfClawTwoAssets && asset.account != asset2.account)
+    if (flags & tfClawTwoAssets && asset.getIssuer() != asset2.getIssuer())
     {
         JLOG(ctx.j.trace())
             << "AMMClawback: tfClawTwoAssets can only be enabled when two "
@@ -71,16 +76,16 @@ AMMClawback::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
     }
 
-    if (asset.account != issuer)
+    if (asset.getIssuer() != issuer)
     {
         JLOG(ctx.j.trace()) << "AMMClawback: Asset's account does not "
                                "match Account field.";
         return temMALFORMED;
     }
 
-    if (clawAmount && clawAmount->get<Issue>() != asset)
+    if (clawAmount && clawAmount->asset() != asset)
     {
-        JLOG(ctx.j.trace()) << "AMMClawback: Amount's issuer/currency subfield "
+        JLOG(ctx.j.trace()) << "AMMClawback: Amount's asset subfield "
                                "does not match Asset field";
         return temBAD_AMOUNT;
     }
@@ -94,8 +99,8 @@ AMMClawback::preflight(PreflightContext const& ctx)
 TER
 AMMClawback::preclaim(PreclaimContext const& ctx)
 {
-    auto const asset = ctx.tx[sfAsset].get<Issue>();
-    auto const asset2 = ctx.tx[sfAsset2].get<Issue>();
+    auto const asset = ctx.tx[sfAsset];
+    auto const asset2 = ctx.tx[sfAsset2];
     auto const sleIssuer = ctx.view.read(keylet::account(ctx.tx[sfAccount]));
     if (!sleIssuer)
         return terNO_ACCOUNT;  // LCOV_EXCL_LINE
@@ -139,8 +144,8 @@ AMMClawback::applyGuts(Sandbox& sb)
     std::optional<STAmount> const clawAmount = ctx_.tx[~sfAmount];
     AccountID const issuer = ctx_.tx[sfAccount];
     AccountID const holder = ctx_.tx[sfHolder];
-    Issue const asset = ctx_.tx[sfAsset].get<Issue>();
-    Issue const asset2 = ctx_.tx[sfAsset2].get<Issue>();
+    Asset const asset = ctx_.tx[sfAsset];
+    Asset const asset2 = ctx_.tx[sfAsset2];
 
     auto ammSle = sb.peek(keylet::amm(asset, asset2));
     if (!ammSle)
@@ -157,6 +162,7 @@ AMMClawback::applyGuts(Sandbox& sb)
         asset,
         asset2,
         FreezeHandling::fhIGNORE_FREEZE,
+        AuthHandling::ahIGNORE_AUTH,
         ctx_.journal);
 
     if (!expected)
@@ -188,6 +194,7 @@ AMMClawback::applyGuts(Sandbox& sb)
                 holdLPtokens,
                 0,
                 FreezeHandling::fhIGNORE_FREEZE,
+                AuthHandling::ahIGNORE_AUTH,
                 WithdrawAll::Yes,
                 mPriorBalance,
                 ctx_.journal);
@@ -251,7 +258,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
     auto const amount2Withdraw = amount2Balance * frac;
 
     auto const lpTokensWithdraw =
-        toSTAmount(lptAMMBalance.issue(), lptAMMBalance * frac);
+        toSTAmount(lptAMMBalance.asset(), lptAMMBalance * frac);
     if (lpTokensWithdraw > holdLPtokens)
         // if lptoken balance less than what the issuer intended to clawback,
         // clawback all the tokens. Because we are doing a two-asset withdrawal,
@@ -268,6 +275,7 @@ AMMClawback::equalWithdrawMatchingOneAmount(
             holdLPtokens,
             0,
             FreezeHandling::fhIGNORE_FREEZE,
+            AuthHandling::ahIGNORE_AUTH,
             WithdrawAll::Yes,
             mPriorBalance,
             ctx_.journal);
@@ -281,11 +289,12 @@ AMMClawback::equalWithdrawMatchingOneAmount(
         holder,
         amountBalance,
         amount,
-        toSTAmount(amount2Balance.issue(), amount2Withdraw),
+        toSTAmount(amount2Balance.asset(), amount2Withdraw),
         lptAMMBalance,
-        toSTAmount(lptAMMBalance.issue(), lptAMMBalance * frac),
+        toSTAmount(lptAMMBalance.asset(), lptAMMBalance * frac),
         0,
         FreezeHandling::fhIGNORE_FREEZE,
+        AuthHandling::ahIGNORE_AUTH,
         WithdrawAll::No,
         mPriorBalance,
         ctx_.journal);

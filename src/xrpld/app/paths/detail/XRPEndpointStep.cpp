@@ -201,7 +201,8 @@ private:
     static std::int32_t
     computeReserveReduction(StrandContext const& ctx, AccountID const& acc)
     {
-        if (ctx.isFirst && !ctx.view.read(keylet::line(acc, ctx.strandDeliver)))
+        if (ctx.isFirst && ctx.strandDeliver.holds<Issue>() &&
+            !ctx.view.read(keylet::line(acc, ctx.strandDeliver.get<Issue>())))
             return -1;
         return 0;
     }
@@ -309,9 +310,10 @@ XRPEndpointStep<TDerived>::validFwd(
         return {false, EitherAmount(XRPAmount(beast::zero))};
     }
 
-    XRPL_ASSERT(in.native, "ripple::XRPEndpointStep::validFwd : input is XRP");
+    XRPL_ASSERT(
+        in.native(), "ripple::XRPEndpointStep::validFwd : input is XRP");
 
-    auto const& xrpIn = in.xrp;
+    auto const& xrpIn = in.xrp();
     auto const balance = static_cast<TDerived const*>(this)->xrpLiquid(sb);
 
     if (!isLast_ && balance < xrpIn)
@@ -364,7 +366,7 @@ XRPEndpointStep<TDerived>::check(StrandContext const& ctx) const
     if (ctx.view.rules().enabled(fix1781))
     {
         auto const issuesIndex = isLast_ ? 0 : 1;
-        if (!ctx.seenDirectIssues[issuesIndex].insert(xrpIssue()).second)
+        if (!ctx.seenDirectAssets[issuesIndex].insert(xrpIssue()).second)
         {
             JLOG(j_.debug())
                 << "XRPEndpointStep: loop detected: Index: " << ctx.strandSize

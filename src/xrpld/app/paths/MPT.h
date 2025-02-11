@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2025 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,26 +17,52 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_PATHS_ACCOUNTCURRENCIES_H_INCLUDED
-#define RIPPLE_APP_PATHS_ACCOUNTCURRENCIES_H_INCLUDED
+#ifndef RIPPLE_APP_PATHS_MPT_H_INCLUDED
+#define RIPPLE_APP_PATHS_MPT_H_INCLUDED
 
-#include <xrpld/app/paths/RippleLineCache.h>
-#include <xrpl/protocol/UintTypes.h>
+#include <xrpl/protocol/MPTIssue.h>
 
 namespace ripple {
 
-hash_set<Currency>
-accountDestCurrencies(
-    AccountID const& account,
-    std::shared_ptr<RippleLineCache> const& cache,
-    bool includeXRP);
+class PathFindMPT final
+{
+private:
+    MPTID const mptID_;
+    // If true then holder's balance is 0, always false for issuer
+    bool const zeroBalance_;
+    // OutstandingAmount is equal to MaximumAmount
+    bool const maxedOut_;
 
-hash_set<Currency>
-accountSourceCurrencies(
-    AccountID const& account,
-    std::shared_ptr<RippleLineCache> const& lrLedger,
-    bool includeXRP);
+public:
+    PathFindMPT(MPTID const& mptID)
+        : mptID_(mptID), zeroBalance_(false), maxedOut_(false)
+    {
+    }
+    PathFindMPT(MPTID const& mptID, bool zeroBalance, bool maxedOut)
+        : mptID_(mptID), zeroBalance_(zeroBalance), maxedOut_(maxedOut)
+    {
+    }
+    operator MPTID const&() const
+    {
+        return mptID_;
+    }
+    MPTID const&
+    getMptID() const
+    {
+        return mptID_;
+    }
+    bool
+    isZeroBalance() const
+    {
+        return zeroBalance_;
+    }
+    bool
+    isMaxedOut() const
+    {
+        return maxedOut_;
+    }
+};
 
 }  // namespace ripple
 
-#endif
+#endif  // RIPPLE_APP_PATHS_MPT_H_INCLUDED
