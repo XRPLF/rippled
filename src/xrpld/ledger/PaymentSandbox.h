@@ -53,7 +53,7 @@ public:
     adjustments(
         AccountID const& main,
         AccountID const& other,
-        Currency const& currency) const;
+        Asset const& asset) const;
 
     void
     credit(
@@ -76,7 +76,7 @@ public:
 
 private:
     // lowAccount, highAccount
-    using Key = std::tuple<AccountID, AccountID, Currency>;
+    using Key = std::tuple<AccountID, AccountID, Asset::token_type>;
     struct Value
     {
         explicit Value() = default;
@@ -87,7 +87,7 @@ private:
     };
 
     static Key
-    makeKey(AccountID const& a1, AccountID const& a2, Currency const& c);
+    makeKey(AccountID const& a1, AccountID const& a2, Asset const& a);
 
     std::map<Key, Value> credits_;
     std::map<AccountID, std::uint32_t> ownerCounts_;

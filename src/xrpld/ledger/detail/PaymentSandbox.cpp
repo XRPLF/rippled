@@ -33,12 +33,12 @@ auto
 DeferredCredits::makeKey(
     AccountID const& a1,
     AccountID const& a2,
-    Currency const& c) -> Key
+    Asset const& a) -> Key
 {
     if (a1 < a2)
-        return std::make_tuple(a1, a2, c);
+        return std::make_tuple(a1, a2, a.token());
     else
-        return std::make_tuple(a2, a1, c);
+        return std::make_tuple(a2, a1, a.token());
 }
 
 void
@@ -55,7 +55,7 @@ DeferredCredits::credit(
         !amount.negative(),
         "ripple::detail::DeferredCredits::credit : positive amount");
 
-    auto const k = makeKey(sender, receiver, amount.getCurrency());
+    auto const k = makeKey(sender, receiver, amount.asset());
     auto i = credits_.find(k);
     if (i == credits_.end())
     {
@@ -71,7 +71,9 @@ DeferredCredits::credit(
         {
             v.highAcctCredits = amount.zeroed();
             v.lowAcctCredits = amount;
-            v.lowAcctOrigBalance = -preCreditSenderBalance;
+            v.lowAcctOrigBalance = amount.holds<Issue>()
+                ? -preCreditSenderBalance
+                : preCreditSenderBalance;
         }
 
         credits_[k] = v;
@@ -116,11 +118,11 @@ auto
 DeferredCredits::adjustments(
     AccountID const& main,
     AccountID const& other,
-    Currency const& currency) const -> std::optional<Adjustment>
+    Asset const& asset) const -> std::optional<Adjustment>
 {
     std::optional<Adjustment> result;
 
-    Key const k = makeKey(main, other, currency);
+    Key const k = makeKey(main, other, asset);
     auto i = credits_.find(k);
     if (i == credits_.end())
         return result;
@@ -136,7 +138,10 @@ DeferredCredits::adjustments(
     else
     {
         result.emplace(
-            v.lowAcctCredits, v.highAcctCredits, -v.lowAcctOrigBalance);
+            v.lowAcctCredits,
+            v.highAcctCredits,
+            asset.holds<Issue>() ? -v.lowAcctOrigBalance
+                                 : v.lowAcctOrigBalance);
         return result;
     }
 }
@@ -188,14 +193,14 @@ PaymentSandbox::balanceHook(
     magnitudes, (B+C)-C may not equal B.
     */
 
-    auto const currency = amount.getCurrency();
+    auto const asset = amount.asset();
 
     auto delta = amount.zeroed();
     auto lastBal = amount;
     auto minBal = amount;
     for (auto curSB = this; curSB; curSB = curSB->ps_)
     {
-        if (auto adj = curSB->tab_.adjustments(account, issuer, currency))
+        if (auto adj = curSB->tab_.adjustments(account, issuer, asset))
         {
             delta += adj->debits;
             lastBal = adj->origBalance;
@@ -209,7 +214,8 @@ PaymentSandbox::balanceHook(
     // to compute usable balance just slightly above what the ledger
     // calculates (but always less than the actual balance).
     auto adjustedAmt = std::min({amount, lastBal - delta, minBal});
-    adjustedAmt.setIssuer(amount.getIssuer());
+    if (amount.holds<Issue>())
+        adjustedAmt.setIssuer(amount.getIssuer());
 
     if (isXRP(issuer) && adjustedAmt < beast::zero)
         // A calculated negative XRP balance is not an error case. Consider a
@@ -374,7 +380,7 @@ PaymentSandbox::balanceChanges(ReadView const& view) const
         }
         // The following are now set, put them in the map
         auto delta = newBalance - oldBalance;
-        auto const cur = newBalance.getCurrency();
+        auto const cur = newBalance.get<Issue>().currency;
         result[std::make_tuple(lowID, highID, cur)] = delta;
         auto r = result.emplace(std::make_tuple(lowID, lowID, cur), delta);
         if (r.second)

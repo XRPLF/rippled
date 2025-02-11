@@ -128,11 +128,11 @@ private:
 
         // Make sure asset comparison works.
         BEAST_EXPECT(
-            STIssue(sfAsset, STAmount(XRP(2'000)).issue()) ==
-            STIssue(sfAsset, STAmount(XRP(2'000)).issue()));
+            STIssue(sfAsset, STAmount(XRP(2'000)).asset()) ==
+            STIssue(sfAsset, STAmount(XRP(2'000)).asset()));
         BEAST_EXPECT(
-            STIssue(sfAsset, STAmount(XRP(2'000)).issue()) !=
-            STIssue(sfAsset, STAmount(USD(2'000)).issue()));
+            STIssue(sfAsset, STAmount(XRP(2'000)).asset()) !=
+            STIssue(sfAsset, STAmount(USD(2'000)).asset()));
     }
 
     void
@@ -6234,7 +6234,7 @@ private:
                                     takerGets};
                             }
                             auto const takerPays = toAmount<STAmount>(
-                                getIssue(poolIn), Number{1, -10} * poolIn);
+                                getAsset(poolIn), Number{1, -10} * poolIn);
                             return Amounts{
                                 takerPays,
                                 swapAssetIn(
@@ -6976,7 +6976,7 @@ private:
             // allowed for clawing back from an AMM account. Please notice the
             // `issuer` subfield represents the account being clawed back, which
             // is confusing.
-            Issue usd(USD.issue().currency, amm.ammAccount());
+            Issue usd(USD.currency, amm.ammAccount());
             auto amount = amountFromString(usd, "10");
             env(claw(gw, amount), ter(tecAMM_ACCOUNT));
         }

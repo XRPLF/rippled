@@ -21,6 +21,7 @@
 
 #include <test/jtx/AMM.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
 #include <xrpld/rpc/RPCHandler.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
@@ -63,7 +64,7 @@ fund(
         for (auto const& amt : amts)
         {
             env.trust(amt + amt, account);
-            env(pay(amt.issue().account, account, amt));
+            env(pay(amt.getIssuer(), account, amt));
         }
     }
     env.close();
@@ -121,10 +122,10 @@ AMMTestBase::testAMM(
                     return defXRP;
                 return a + XRP(1000);
             }
-            auto const defIOU = STAmount{a.issue(), 30000};
+            auto const defIOU = STAmount{a.asset(), 30000};
             if (a <= defIOU)
                 return defIOU;
-            return a + STAmount{a.issue(), 1000};
+            return a + STAmount{a.asset(), 1000};
         };
         auto const toFund1 = tofund(asset1);
         auto const toFund2 = tofund(asset2);
