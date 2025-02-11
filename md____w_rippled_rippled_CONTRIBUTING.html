@@ -127,7 +127,24 @@ Before making a pull request</h2>
 <h3><a class="anchor" id="autotoc_md48"></a>
 Good commit messages</h3>
 <p >Refer to <a href="https://cbea.ms/git-commit/">"How to Write a Git Commit Message"</a> for general rules on writing a good commit message.</p>
-<p >In addition to those guidelines, please add one of the following prefixes to the subject line if appropriate.</p><ul>
+<p >tl;dr </p><blockquote class="doxtable">
+<p >&zwj;1. Separate subject from body with a blank line.</p><ol type="1">
+<li>Limit the subject line to 50 characters.<ul>
+<li>[...]shoot for 50 characters, but consider 72 the hard limit.</li>
+</ul>
+</li>
+<li>Capitalize the subject line.</li>
+<li>Do not end the subject line with a period.</li>
+<li>Use the imperative mood in the subject line.<ul>
+<li>A properly formed Git commit subject line should always be able to complete the following sentence: "If applied, this commit will
+     _your subject line here_".</li>
+</ul>
+</li>
+<li>Wrap the body at 72 characters.</li>
+<li>Use the body to explain what and why vs. how. </li>
+</ol>
+</blockquote>
+<p>In addition to those guidelines, please add one of the following prefixes to the subject line if appropriate.</p><ul>
 <li><code>fix:</code> - The primary purpose is to fix an existing bug.</li>
 <li><code>perf:</code> - The primary purpose is performance improvements.</li>
 <li><code>refactor:</code> - The changes refactor code without affecting functionality.</li>
