@@ -1551,41 +1551,37 @@ ValidAMM::visitEntry(
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
-    if (!isFeatureEnabled(fixAMMv1_3))
+    if (isDelete)
         return;
 
-    if (!isDelete)
-    {
-        if (after)
+    auto set = [&](std::shared_ptr<SLE const> const& sle, auto&& cb) {
+        auto const type = sle->getType();
+        if (type == ltAMM)
         {
-            auto const type = after->getType();
-            if (type == ltAMM)
-            {
-                ammAccount_ = after->getAccountID(sfAccount);
-                lptAMMBalanceAfter_ = after->getFieldAmount(sfLPTokenBalance);
-            }
-            else if (
-                after->isFieldPresent(sfBalance) &&
-                (type == ltRIPPLE_STATE ||
-                 (type == ltACCOUNT_ROOT && after->isFieldPresent(sfAMMID))))
-                ammPoolChanged_ = true;
+            cb();
         }
-        if (before)
+        else if (
+            sle->isFieldPresent(sfBalance) &&
+            ((type == ltRIPPLE_STATE && sle->getFlags() & lsfAMMNode) ||
+             (type == ltACCOUNT_ROOT && sle->isFieldPresent(sfAMMID))))
         {
-            auto const type = after->getType();
-            if (type == ltAMM)
-                lptAMMBalanceAfter_ = after->getFieldAmount(sfLPTokenBalance);
-            else if (
-                before->isFieldPresent(sfBalance) &&
-                (type == ltRIPPLE_STATE ||
-                 (type == ltACCOUNT_ROOT && after->isFieldPresent(sfAMMID))))
-                ammPoolChanged_ = true;
+            ammPoolChanged_ = true;
         }
-    }
+    };
+
+    if (after)
+        set(after, [&] {
+            ammAccount_ = after->getAccountID(sfAccount);
+            lptAMMBalanceAfter_ = after->getFieldAmount(sfLPTokenBalance);
+        });
+    if (before)
+        set(before, [&] {
+            lptAMMBalanceBefore_ = before->getFieldAmount(sfLPTokenBalance);
+        });
 }
 
 static bool
-positiveBalances(
+validBalances(
     STAmount const& amount,
     STAmount const& amount2,
     STAmount const& lptAMMBalance,
@@ -1606,8 +1602,7 @@ ValidAMM::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
-    if (!view.rules().enabled(fixAMMv1_3))
-        return true;
+    [[maybe_unused]] bool const enforce = view.rules().enabled(fixAMMv1_3);
 
     if (result == tesSUCCESS)
     {
@@ -1627,21 +1622,32 @@ ValidAMM::finalize(
             // sqrt(amount * amount2) >= LPTokens
             // all balances are greater than zero
             // unless on last withdrawal
-            // Allow for a small relative error
-            auto const res = root2(amount * amount2);
-            if (positiveBalances(amount, amount2, *lptAMMBalanceAfter_, true) &&
-                (res >= *lptAMMBalanceAfter_ ||
-                 (*lptAMMBalanceAfter_ != beast::zero &&
-                  withinRelativeDistance(
-                      res, Number{*lptAMMBalanceAfter_}, Number{1, -11}))))
+            auto const poolProductMean = root2(amount * amount2);
+            bool const nonNegativeBalances =
+                validBalances(amount, amount2, *lptAMMBalanceAfter_, true);
+            bool const strongInvariantCheck =
+                poolProductMean >= *lptAMMBalanceAfter_;
+            // Allow for a small relative error if strongInvariantCheck fails
+            auto weakInvariantCheck = [&]() {
+                return *lptAMMBalanceAfter_ != beast::zero &&
+                    withinRelativeDistance(
+                        poolProductMean,
+                        Number{*lptAMMBalanceAfter_},
+                        Number{1, -11});
+            };
+            if (nonNegativeBalances &&
+                (strongInvariantCheck || weakInvariantCheck()))
             {
+                // Bid burns LPTokens as the auction fees and doesn't change
+                // the pool.
                 if (txType == ttAMM_BID && !ammPoolChanged_)
                     return true;
-                // the product is also greater than zero
+                // This is not last withdraw or clawback when all balances
+                // and tokens might be zero.
                 if (*lptAMMBalanceAfter_ > beast::zero)
                     return true;
-                // last withdraw may have resulted in an empty AMM
-                // all balances must be zero
+                // Last withdraw or clawback may have resulted in an empty AMM.
+                // All balances must be zero.
                 if ((txType == ttAMM_WITHDRAW || txType == ttAMM_CLAWBACK) &&
                     *lptAMMBalanceAfter_ == beast::zero &&
                     amount == beast::zero && amount2 == beast::zero)
@@ -1650,12 +1656,14 @@ ValidAMM::finalize(
 
             JLOG(j.error())
                 << "AMM " << txType << " invariant failed: " << ammPoolChanged_
-                << " " << amount << " " << amount2 << " " << res << " "
-                << lptAMMBalanceAfter_->getText() << " "
+                << " " << amount << " " << amount2 << " " << poolProductMean
+                << " " << lptAMMBalanceAfter_->getText() << " "
                 << ((*lptAMMBalanceAfter_ == beast::zero)
                         ? Number{1}
-                        : ((*lptAMMBalanceAfter_ - res) / res));
-            return false;
+                        : ((*lptAMMBalanceAfter_ - poolProductMean) /
+                           poolProductMean));
+            if (enforce)
+                return false;
         }
         else if (txType == ttAMM_CREATE && ammAccount_)
         {
@@ -1669,15 +1677,15 @@ ValidAMM::finalize(
             // Create invariant:
             // sqrt(amount * amount2) == LPTokens
             // all balances are greater than zero
-            if (positiveBalances(
-                    amount, amount2, *lptAMMBalanceAfter_, false) &&
+            if (validBalances(amount, amount2, *lptAMMBalanceAfter_, false) &&
                 ammLPTokens(amount, amount2, lptAMMBalanceAfter_->issue()) ==
                     *lptAMMBalanceAfter_)
                 return true;
 
             JLOG(j.error()) << "AMMCreate invariant failed: " << amount << " "
                             << amount2 << " " << *lptAMMBalanceAfter_;
-            return false;
+            if (enforce)
+                return false;
         }
         else if (
             txType == ttAMM_VOTE && lptAMMBalanceAfter_ && lptAMMBalanceBefore_)
@@ -1690,7 +1698,8 @@ ValidAMM::finalize(
                 JLOG(j.error())
                     << "AMMVote invariant failed: " << *lptAMMBalanceBefore_
                     << " " << *lptAMMBalanceAfter_ << " " << ammPoolChanged_;
-                return false;
+                if (enforce)
+                    return false;
                 // LCOV_EXCL_STOP
             }
         }
@@ -1702,7 +1711,8 @@ ValidAMM::finalize(
             // AMM object can not be updated on swap
             // LCOV_EXCL_START
             JLOG(j.error()) << "AMM swap invariant failed: LPTokens changed";
-            return false;
+            if (enforce)
+                return false;
             // LCOV_EXCL_STOP
         }
     }
