@@ -1503,8 +1503,8 @@ private:
         BEAST_EXPECT(sa == XRP(100'000'000));
         // Bob gets ~99.99USD. This is the amount Bob
         // can get out of AMM for 100,000,000XRP.
-        BEAST_EXPECT(equal(
-            da, STAmount{bob["USD"].issue(), UINT64_C(99'9999000001), -10}));
+        BEAST_EXPECT(
+            equal(da, STAmount{bob["USD"], UINT64_C(99'9999000001), -10}));
     }
 
     // carol holds gateway AUD, sells gateway AUD for XRP
@@ -2121,10 +2121,10 @@ private:
                 };
                 {
                     // BTC -> USD
-                    STPath p1({IPE(USD.issue())});
+                    STPath p1({IPE(USD)});
                     paths.push_back(p1);
                     // BTC -> EUR -> USD
-                    STPath p2({IPE(EUR.issue()), IPE(USD.issue())});
+                    STPath p2({IPE(EUR), IPE(USD)});
                     paths.push_back(p2);
                 }
 

@@ -136,6 +136,32 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
 }
 
 TER
+MPTokenAuthorize::createMPToken(
+    ApplyView& view,
+    MPTID const& mptIssuanceID,
+    AccountID const& account,
+    std::uint32_t flags)
+{
+    auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
+
+    auto const ownerNode = view.dirInsert(
+        keylet::ownerDir(account), mptokenKey, describeOwnerDir(account));
+
+    if (!ownerNode)
+        return tecDIR_FULL;
+
+    auto mptoken = std::make_shared<SLE>(mptokenKey);
+    (*mptoken)[sfAccount] = account;
+    (*mptoken)[sfMPTokenIssuanceID] = mptIssuanceID;
+    (*mptoken)[sfFlags] = flags;
+    (*mptoken)[sfOwnerNode] = *ownerNode;
+
+    view.insert(mptoken);
+
+    return tesSUCCESS;
+}
+
+TER
 MPTokenAuthorize::authorize(
     ApplyView& view,
     beast::Journal journal,
@@ -191,23 +217,10 @@ MPTokenAuthorize::authorize(
         if (args.priorBalance < reserveCreate)
             return tecINSUFFICIENT_RESERVE;
 
-        auto const mptokenKey =
-            keylet::mptoken(args.mptIssuanceID, args.account);
-
-        auto const ownerNode = view.dirInsert(
-            keylet::ownerDir(args.account),
-            mptokenKey,
-            describeOwnerDir(args.account));
-
-        if (!ownerNode)
-            return tecDIR_FULL;
-
-        auto mptoken = std::make_shared<SLE>(mptokenKey);
-        (*mptoken)[sfAccount] = args.account;
-        (*mptoken)[sfMPTokenIssuanceID] = args.mptIssuanceID;
-        (*mptoken)[sfFlags] = 0;
-        (*mptoken)[sfOwnerNode] = *ownerNode;
-        view.insert(mptoken);
+        if (auto const ter =
+                createMPToken(view, args.mptIssuanceID, args.account, 0);
+            ter != tesSUCCESS)
+            return ter;
 
         // Update owner count.
         adjustOwnerCount(view, sleAcct, 1, journal);

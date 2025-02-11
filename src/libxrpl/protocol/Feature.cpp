@@ -459,7 +459,8 @@ uint256 const
     retiredFix1201           = retireFeature("fix1201"),
     retiredFix1512           = retireFeature("fix1512"),
     retiredFix1523           = retireFeature("fix1523"),
-    retiredFix1528           = retireFeature("fix1528");
+    retiredFix1528           = retireFeature("fix1528"),
+    retiredFlowCross         = retireFeature("FlowCross");
 
 // clang-format on
 

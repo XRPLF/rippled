@@ -336,7 +336,7 @@ struct BalanceTransfer
         bool check_payer = true)
     {
         auto reward_cost =
-            multiply(reward, STAmount(reward_accounts.size()), reward.issue());
+            multiply(reward, STAmount(reward_accounts.size()), reward.asset());
         return check_most_balances(amt, reward) &&
             (!check_payer || payor_.diff() == -(reward_cost + txFees_));
     }
@@ -1666,7 +1666,7 @@ struct XChain_test : public beast::unit_test::suite,
             BEAST_EXPECT(!scEnv.claimID(jvb, 1));  // claim id deleted
 
             BEAST_EXPECT(transfer.has_happened(
-                amt, divide(reward, STAmount(3), reward.issue())));
+                amt, divide(reward, STAmount(3), reward.asset())));
         }
 
         // 4,4 => should succeed
@@ -1691,7 +1691,7 @@ struct XChain_test : public beast::unit_test::suite,
                 return result;
             }();
             STAmount const split_reward_ =
-                divide(reward, STAmount(signers_.size()), reward.issue());
+                divide(reward, STAmount(signers_.size()), reward.asset());
 
             mcEnv.tx(create_bridge(mcDoor, jvb)).close();
 
@@ -1744,7 +1744,7 @@ struct XChain_test : public beast::unit_test::suite,
             BEAST_EXPECT(!scEnv.claimID(jvb, claimID));  // claim id deleted
 
             BEAST_EXPECT(transfer.has_happened(
-                amt, divide(reward, STAmount(2), reward.issue())));
+                amt, divide(reward, STAmount(2), reward.asset())));
         }
 
         // 1,2 => should fail
@@ -4451,7 +4451,7 @@ private:
             STAmount amt,
             std::uint64_t divisor = 1)
         {
-            if (amt.issue() != xrpIssue())
+            if (amt.asset() != xrpIssue())
                 return;
             auto it = accounts.find(acct);
             if (it == accounts.end())
@@ -4465,22 +4465,22 @@ private:
                     (divisor == 1 ? amt
                                   : divide(
                                         amt,
-                                        STAmount(amt.issue(), divisor),
-                                        amt.issue()));
+                                        STAmount(amt.asset(), divisor),
+                                        amt.asset()));
             }
         }
 
         void
         spend(jtx::Account const& acct, STAmount amt, std::uint64_t times = 1)
         {
-            if (amt.issue() != xrpIssue())
+            if (amt.asset() != xrpIssue())
                 return;
             receive(
                 acct,
                 times == 1
                     ? -amt
                     : -multiply(
-                          amt, STAmount(amt.issue(), times), amt.issue()));
+                          amt, STAmount(amt.asset(), times), amt.asset()));
         }
 
         void
@@ -4708,7 +4708,7 @@ private:
                 assert(cr.claim_id - 1 == counters.claim_count);
 
                 auto r = cr.reward;
-                auto reward = divide(r, STAmount(num_attestors), r.issue());
+                auto reward = divide(r, STAmount(num_attestors), r.asset());
 
                 for (auto i : signers)
                     st.receive(bridge_.signers[i].account, reward);
@@ -4793,7 +4793,7 @@ private:
             ChainStateTrack& st = srcState();
             jtx::Account const& srcdoor = srcDoor();
 
-            if (xfer.amt.issue() != xrpIssue())
+            if (xfer.amt.asset() != xrpIssue())
             {
                 st.env.tx(pay(srcdoor, xfer.from, xfer.amt));
                 st.spendFee(srcdoor);
@@ -4814,7 +4814,7 @@ private:
         distribute_reward(ChainStateTrack& st)
         {
             auto r = bridge_.reward;
-            auto reward = divide(r, STAmount(bridge_.quorum), r.issue());
+            auto reward = divide(r, STAmount(bridge_.quorum), r.asset());
 
             for (size_t i = 0; i < num_signers; ++i)
             {

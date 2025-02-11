@@ -18,10 +18,12 @@
 //==============================================================================
 
 #include <xrpld/app/misc/AMMUtils.h>
+#include <xrpld/app/misc/MPTUtils.h>
 #include <xrpld/app/paths/AMMLiquidity.h>
 #include <xrpld/app/paths/AMMOffer.h>
 #include <xrpld/app/paths/detail/FlatSets.h>
 #include <xrpld/app/paths/detail/Steps.h>
+#include <xrpld/app/tx/detail/MPTokenAuthorize.h>
 #include <xrpld/app/tx/detail/OfferStream.h>
 #include <xrpld/ledger/PaymentSandbox.h>
 #include <xrpl/basics/Log.h>
@@ -90,7 +92,7 @@ protected:
     }
 
 public:
-    BookStep(StrandContext const& ctx, Issue const& in, Issue const& out)
+    BookStep(StrandContext const& ctx, Asset const& in, Asset const& out)
         : maxOffersToConsume_(getMaxOffersToConsume(ctx))
         , book_(in, out)
         , strandSrc_(ctx.strandSrc)
@@ -189,12 +191,17 @@ protected:
     logStringImpl(char const* name) const
     {
         std::ostringstream ostr;
-        ostr << name << ": " << "\ninIss: " << book_.in.account
-             << "\noutIss: " << book_.out.account
-             << "\ninCur: " << book_.in.currency
-             << "\noutCur: " << book_.out.currency;
+        ostr << name << ": "
+             << "\ninIss: " << book_.in.getIssuer()
+             << "\noutIss: " << book_.out.getIssuer()
+             << "\ninCur: " << to_string(book_.in)
+             << "\noutCur: " << to_string(book_.out);
         return ostr.str();
     }
+
+    Rate
+    rate(ReadView const& view, Asset const& asset, AccountID const& dstAccount)
+        const;
 
 private:
     friend bool
@@ -255,6 +262,14 @@ private:
     // whichever is a better quality.
     std::optional<QualityFunction>
     tipOfferQualityF(ReadView const& view) const;
+
+    // Create MPT if takerPays is MPT and an offer's owner
+    // doesn't own MPT.
+    TER
+    checkCreateMPT(
+        ApplyView& view,
+        MPTIssue const& mptIssue,
+        AccountID const& owner) const;
 };
 
 //------------------------------------------------------------------------------
@@ -337,19 +352,14 @@ public:
         // (the old code does not charge a fee)
         // Calculate amount that goes to the taker and the amount charged the
         // offer owner
-        auto rate = [&](AccountID const& id) {
-            if (isXRP(id) || id == this->strandDst_)
-                return parityRate;
-            return transferRate(v, id);
-        };
-
-        auto const trIn =
-            redeems(prevStepDir) ? rate(this->book_.in.account) : parityRate;
+        auto const trIn = redeems(prevStepDir)
+            ? this->rate(v, this->book_.in, this->strandDst_)
+            : parityRate;
         // Always charge the transfer fee, even if the owner is the issuer,
         // unless the fee is waived
         auto const trOut =
             (this->ownerPaysTransferFee_ && waiveFee == WaiveTransferFee::No)
-            ? rate(this->book_.out.account)
+            ? this->rate(v, this->book_.out, this->strandDst_)
             : parityRate;
 
         Quality const q1{getRate(STAmount(trOut.value), STAmount(trIn.value))};
@@ -391,8 +401,8 @@ private:
 public:
     BookOfferCrossingStep(
         StrandContext const& ctx,
-        Issue const& in,
-        Issue const& out)
+        Asset const& in,
+        Asset const& out)
         : BookStep<TIn, TOut, BookOfferCrossingStep<TIn, TOut>>(ctx, in, out)
         , defaultPath_(ctx.isDefaultPath)
         , qualityThreshold_(getQuality(ctx.limitQuality))
@@ -540,14 +550,9 @@ public:
             (this->ammLiquidity_ && this->ammLiquidity_->multiPath()))
             return ofrQ;
 
-        auto rate = [&](AccountID const& id) {
-            if (isXRP(id) || id == this->strandDst_)
-                return parityRate;
-            return transferRate(v, id);
-        };
-
-        auto const trIn =
-            redeems(prevStepDir) ? rate(this->book_.in.account) : parityRate;
+        auto const trIn = redeems(prevStepDir)
+            ? this->rate(v, this->book_.in, this->strandDst_)
+            : parityRate;
         // AMM doesn't pay the transfer fee on the out amount
         auto const trOut = parityRate;
 
@@ -723,17 +728,13 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
     // (the old code does not charge a fee)
     // Calculate amount that goes to the taker and the amount charged the offer
     // owner
-    auto rate = [this, &sb](AccountID const& id) -> std::uint32_t {
-        if (isXRP(id) || id == this->strandDst_)
-            return QUALITY_ONE;
-        return transferRate(sb, id).value;
-    };
-
-    std::uint32_t const trIn =
-        redeems(prevStepDir) ? rate(book_.in.account) : QUALITY_ONE;
+    std::uint32_t const trIn = redeems(prevStepDir)
+        ? rate(sb, book_.in, this->strandDst_).value
+        : QUALITY_ONE;
     // Always charge the transfer fee, even if the owner is the issuer
-    std::uint32_t const trOut =
-        ownerPaysTransferFee_ ? rate(book_.out.account) : QUALITY_ONE;
+    std::uint32_t const trOut = ownerPaysTransferFee_
+        ? rate(sb, book_.out, this->strandDst_).value
+        : QUALITY_ONE;
 
     typename FlowOfferStream<TIn, TOut>::StepCounter counter(
         maxOffersToConsume_, j_);
@@ -741,7 +742,6 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
     FlowOfferStream<TIn, TOut> offers(
         sb, afView, book_, sb.parentCloseTime(), counter, j_);
 
-    bool const flowCross = afView.rules().enabled(featureFlowCross);
     bool offerAttempted = false;
     std::optional<Quality> ofrQ;
     auto execOffer = [&](auto& offer) {
@@ -756,36 +756,33 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
                 strandSrc_, strandDst_, offer, ofrQ, offers, offerAttempted))
             return true;
 
-        // Make sure offer owner has authorization to own IOUs from issuer.
-        // An account can always own XRP or their own IOUs.
-        if (flowCross && (!isXRP(offer.issueIn().currency)) &&
-            (offer.owner() != offer.issueIn().account))
+        if (offer.assetIn().template holds<MPTIssue>())
         {
-            auto const& issuerID = offer.issueIn().account;
-            auto const issuer = afView.read(keylet::account(issuerID));
-            if (issuer && ((*issuer)[sfFlags] & lsfRequireAuth))
-            {
-                // Issuer requires authorization.  See if offer owner has that.
-                auto const& ownerID = offer.owner();
-                auto const authFlag =
-                    issuerID > ownerID ? lsfHighAuth : lsfLowAuth;
+            if (auto const err = checkCreateMPT(
+                    sb,
+                    offer.assetIn().template get<MPTIssue>(),
+                    offer.owner());
+                err != tesSUCCESS)
+                return true;
+        }
 
-                auto const line = afView.read(
-                    keylet::line(ownerID, issuerID, offer.issueIn().currency));
-
-                if (!line || (((*line)[sfFlags] & authFlag) == 0))
-                {
-                    // Offer owner not authorized to hold IOU from issuer.
-                    // Remove this offer even if no crossing occurs.
-                    if (auto const key = offer.key())
-                        offers.permRmOffer(*key);
-                    if (!offerAttempted)
-                        // Change quality only if no previous offers were tried.
-                        ofrQ = std::nullopt;
-                    // Returning true causes offers.step() to delete the offer.
-                    return true;
-                }
-            }
+        // It shouldn't matter from auth point of view whether it's sb
+        // or afView. Amendment guard this change just in case.
+        auto& applyView = sb.rules().enabled(featureMPTokensV2) ? sb : afView;
+        // Make sure offer owner has authorization to own Assets from issuer.
+        // An account can always own XRP or their own Assets.
+        if (requireAuth(applyView, offer.assetIn(), offer.owner()) !=
+            tesSUCCESS)
+        {
+            // Offer owner not authorized to hold IOU/MPT from issuer.
+            // Remove this offer even if no crossing occurs.
+            if (auto const key = offer.key())
+                offers.permRmOffer(*key);
+            if (!offerAttempted)
+                // Change quality only if no previous offers were tried.
+                ofrQ = std::nullopt;
+            // Returning true causes offers.step() to delete the offer.
+            return true;
         }
 
         if (!static_cast<TDerived const*>(this)->checkQualityThreshold(
@@ -893,7 +890,7 @@ BookStep<TIn, TOut, TDerived>::consumeOffer(
     {
         auto const dr = offer.send(
             sb,
-            book_.in.account,
+            book_.in.getIssuer(),
             offer.owner(),
             toSTAmount(ofrAmt.in, book_.in),
             j_);
@@ -907,7 +904,7 @@ BookStep<TIn, TOut, TDerived>::consumeOffer(
         auto const cr = offer.send(
             sb,
             offer.owner(),
-            book_.out.account,
+            book_.out.getIssuer(),
             toSTAmount(ownerGives, book_.out),
             j_);
         if (cr != tesSUCCESS)
@@ -992,6 +989,36 @@ BookStep<TIn, TOut, TDerived>::tipOfferQualityF(ReadView const& view) const
         return QualityFunction{*q, QualityFunction::CLOBLikeTag{}};
     else
         return std::get<AMMOffer<TIn, TOut>>(*res).getQualityFunc();
+}
+
+template <class TIn, class TOut, class TDerived>
+TER
+BookStep<TIn, TOut, TDerived>::checkCreateMPT(
+    ripple::ApplyView& view,
+    const ripple::MPTIssue& mptIssue,
+    const ripple::AccountID& owner) const
+{
+    if (mptIssue.getIssuer() == owner)
+        return tesSUCCESS;
+
+    auto const mptIssuanceID = keylet::mptIssuance(mptIssue.getMptID());
+    auto const mptokenID = keylet::mptoken(mptIssuanceID.key, owner);
+    if (!view.exists(mptokenID))
+    {
+        // TODO Should the reserve be checked?
+        if (auto const err = MPTokenAuthorize::createMPToken(
+                view,
+                mptIssue.getMptID(),
+                owner,
+                lsfMPTCanTransfer | lsfMPTCanTrade);
+            err != tesSUCCESS)
+            return err;
+        auto const sleAcct = view.peek(keylet::account(owner));
+        if (!sleAcct)
+            return tecINTERNAL;
+        adjustOwnerCount(view, sleAcct, 1, j_);
+    }
+    return tesSUCCESS;
 }
 
 template <class TCollection>
@@ -1354,20 +1381,21 @@ BookStep<TIn, TOut, TDerived>::check(StrandContext const& ctx) const
     // Do not allow two books to output the same issue. This may cause offers on
     // one step to unfund offers in another step.
     if (!ctx.seenBookOuts.insert(book_.out).second ||
-        ctx.seenDirectIssues[0].count(book_.out))
+        ctx.seenDirectAssets[0].count(book_.out))
     {
         JLOG(j_.debug()) << "BookStep: loop detected: " << *this;
         return temBAD_PATH_LOOP;
     }
 
-    if (ctx.seenDirectIssues[1].count(book_.out))
+    if (ctx.seenDirectAssets[1].count(book_.out))
     {
         JLOG(j_.debug()) << "BookStep: loop detected: " << *this;
         return temBAD_PATH_LOOP;
     }
 
-    auto issuerExists = [](ReadView const& view, Issue const& iss) -> bool {
-        return isXRP(iss.account) || view.read(keylet::account(iss.account));
+    auto issuerExists = [](ReadView const& view, Asset const& iss) -> bool {
+        return isXRP(iss.getIssuer()) ||
+            view.read(keylet::account(iss.getIssuer()));
     };
 
     if (!issuerExists(ctx.view, book_.in) || !issuerExists(ctx.view, book_.out))
@@ -1381,19 +1409,52 @@ BookStep<TIn, TOut, TDerived>::check(StrandContext const& ctx) const
         if (auto const prev = ctx.prevStep->directStepSrcAcct())
         {
             auto const& view = ctx.view;
-            auto const& cur = book_.in.account;
+            auto const& cur = book_.in.getIssuer();
 
-            auto sle = view.read(keylet::line(*prev, cur, book_.in.currency));
-            if (!sle)
-                return terNO_LINE;
-            if ((*sle)[sfFlags] &
-                ((cur > *prev) ? lsfHighNoRipple : lsfLowNoRipple))
-                return terNO_RIPPLE;
+            if (book_.in.holds<Issue>())
+            {
+                auto sle = view.read(
+                    keylet::line(*prev, cur, book_.in.get<Issue>().currency));
+                if (!sle)
+                    return terNO_LINE;
+                if ((*sle)[sfFlags] &
+                    ((cur > *prev) ? lsfHighNoRipple : lsfLowNoRipple))
+                    return terNO_RIPPLE;
+            }
+            else
+            {
+                auto const issuanceID =
+                    keylet::mptIssuance(book_.in.get<MPTIssue>().getMptID());
+                if (!view.exists(issuanceID))
+                    return tecOBJECT_NOT_FOUND;
+
+                if (auto const ter = isMPTDEXAllowed(
+                        view,
+                        book_.in,
+                        book_.in.getIssuer(),
+                        book_.in.getIssuer());
+                    ter != tesSUCCESS)
+                    return ter;
+            }
         }
     }
 
     return tesSUCCESS;
 }
+
+template <class TIn, class TOut, class TDerived>
+Rate
+BookStep<TIn, TOut, TDerived>::rate(
+    ReadView const& view,
+    Asset const& asset,
+    AccountID const& dstAccount) const
+{
+    if (isXRP(asset) || asset.getIssuer() == dstAccount)
+        return parityRate;
+    if (asset.holds<Issue>())
+        return transferRate(view, asset.getIssuer());
+    return transferRate(view, asset.get<MPTIssue>().getMptID());
+};
 
 //------------------------------------------------------------------------------
 
@@ -1412,29 +1473,20 @@ equalHelper(Step const& step, ripple::Book const& book)
 bool
 bookStepEqual(Step const& step, ripple::Book const& book)
 {
-    bool const inXRP = isXRP(book.in.currency);
-    bool const outXRP = isXRP(book.out.currency);
-    if (inXRP && outXRP)
+    if (isXRP(book.in) && isXRP(book.out))
     {
         UNREACHABLE("ripple::test::bookStepEqual : no XRP to XRP book step");
         return false;  // no such thing as xrp/xrp book step
     }
-    if (inXRP && !outXRP)
-        return equalHelper<
-            XRPAmount,
-            IOUAmount,
-            BookPaymentStep<XRPAmount, IOUAmount>>(step, book);
-    if (!inXRP && outXRP)
-        return equalHelper<
-            IOUAmount,
-            XRPAmount,
-            BookPaymentStep<IOUAmount, XRPAmount>>(step, book);
-    if (!inXRP && !outXRP)
-        return equalHelper<
-            IOUAmount,
-            IOUAmount,
-            BookPaymentStep<IOUAmount, IOUAmount>>(step, book);
-    return false;
+    return std::visit(
+        [&]<typename TIn, typename TOut>(TIn const&, TOut const&) {
+            using TIn_ = typename TIn::amount_type;
+            using TOut_ = typename TOut::amount_type;
+            return equalHelper<TIn_, TOut_, BookPaymentStep<TIn_, TOut_>>(
+                step, book);
+        },
+        book.in.getAmountType(),
+        book.out.getAmountType());
 }
 }  // namespace test
 
@@ -1442,7 +1494,7 @@ bookStepEqual(Step const& step, ripple::Book const& book)
 
 template <class TIn, class TOut>
 static std::pair<TER, std::unique_ptr<Step>>
-make_BookStepHelper(StrandContext const& ctx, Issue const& in, Issue const& out)
+make_BookStepHelper(StrandContext const& ctx, Asset const& in, Asset const& out)
 {
     TER ter = tefINTERNAL;
     std::unique_ptr<Step> r;
@@ -1482,6 +1534,40 @@ std::pair<TER, std::unique_ptr<Step>>
 make_BookStepXI(StrandContext const& ctx, Issue const& out)
 {
     return make_BookStepHelper<XRPAmount, IOUAmount>(ctx, xrpIssue(), out);
+}
+
+// MPT's
+std::pair<TER, std::unique_ptr<Step>>
+make_BookStepMM(
+    StrandContext const& ctx,
+    MPTIssue const& in,
+    MPTIssue const& out)
+{
+    return make_BookStepHelper<MPTAmount, MPTAmount>(ctx, in, out);
+}
+
+std::pair<TER, std::unique_ptr<Step>>
+make_BookStepMI(StrandContext const& ctx, MPTIssue const& in, Issue const& out)
+{
+    return make_BookStepHelper<MPTAmount, IOUAmount>(ctx, in, out);
+}
+
+std::pair<TER, std::unique_ptr<Step>>
+make_BookStepIM(StrandContext const& ctx, Issue const& in, MPTIssue const& out)
+{
+    return make_BookStepHelper<IOUAmount, MPTAmount>(ctx, in, out);
+}
+
+std::pair<TER, std::unique_ptr<Step>>
+make_BookStepMX(StrandContext const& ctx, MPTIssue const& in)
+{
+    return make_BookStepHelper<MPTAmount, XRPAmount>(ctx, in, xrpIssue());
+}
+
+std::pair<TER, std::unique_ptr<Step>>
+make_BookStepXM(StrandContext const& ctx, MPTIssue const& out)
+{
+    return make_BookStepHelper<XRPAmount, MPTAmount>(ctx, xrpIssue(), out);
 }
 
 }  // namespace ripple

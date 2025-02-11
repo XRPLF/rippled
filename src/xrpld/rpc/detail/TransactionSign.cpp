@@ -213,7 +213,9 @@ checkPayment(
         return RPC::invalid_field_error("tx_json.Destination");
 
     if (params.isMember(jss::build_path) &&
-        ((doPath == false) || amount.holds<MPTIssue>()))
+        ((doPath == false) ||
+         (!app.openLedger().current()->rules().enabled(featureMPTokensV2) &&
+          amount.holds<MPTIssue>())))
         return RPC::make_error(
             rpcINVALID_PARAMS,
             "Field 'build_path' not allowed in this context.");
@@ -234,9 +236,10 @@ checkPayment(
         }
         else
         {
-            // If no SendMax, default to Amount with sender as issuer.
+            // If no SendMax, default to Amount with sender as issuer if Issue.
             sendMax = amount;
-            sendMax.setIssuer(srcAddressID);
+            if (sendMax.holds<Issue>())
+                sendMax.setIssuer(srcAddressID);
         }
 
         if (sendMax.native() && amount.native())
@@ -253,12 +256,12 @@ checkPayment(
             if (auto ledger = app.openLedger().current())
             {
                 Pathfinder pf(
-                    std::make_shared<RippleLineCache>(
-                        ledger, app.journal("RippleLineCache")),
+                    std::make_shared<AssetCache>(
+                        ledger, app.journal("AssetCache")),
                     srcAddressID,
                     *dstAccountID,
-                    sendMax.issue().currency,
-                    sendMax.issue().account,
+                    sendMax.asset(),
+                    sendMax.getIssuer(),
                     amount,
                     std::nullopt,
                     app);
@@ -269,7 +272,7 @@ checkPayment(
                     STPath fullLiquidityPath;
                     STPathSet paths;
                     result = pf.getBestPaths(
-                        4, fullLiquidityPath, paths, sendMax.issue().account);
+                        4, fullLiquidityPath, paths, sendMax.getIssuer());
                 }
             }
 

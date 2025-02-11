@@ -297,11 +297,10 @@ bool
 isLPTokenFrozen(
     ReadView const& view,
     AccountID const& account,
-    Issue const& asset,
-    Issue const& asset2)
+    Asset const& asset,
+    Asset const& asset2)
 {
-    return isFrozen(view, account, asset.currency, asset.account) ||
-        isFrozen(view, account, asset2.currency, asset2.account);
+    return isFrozen(view, account, asset) || isFrozen(view, account, asset2);
 }
 
 STAmount
@@ -353,8 +352,8 @@ accountHolds(
                         isLPTokenFrozen(
                             view,
                             account,
-                            (*sleAmm)[sfAsset].get<Issue>(),
-                            (*sleAmm)[sfAsset2].get<Issue>()))
+                            (*sleAmm)[sfAsset],
+                            (*sleAmm)[sfAsset2]))
                     {
                         return false;
                     }
@@ -439,6 +438,26 @@ accountHolds(
 }
 
 STAmount
+accountHolds(
+    ReadView const& view,
+    AccountID const& account,
+    Asset const& issue,
+    FreezeHandling zeroIfFrozen,
+    AuthHandling zeroIfUnauthorized,
+    beast::Journal j)
+{
+    return std::visit(
+        [&]<typename TIss>(TIss const& issue_) {
+            if constexpr (std::is_same_v<TIss, Issue>)
+                return accountHolds(view, account, issue_, zeroIfFrozen, j);
+            else
+                return accountHolds(
+                    view, account, issue_, zeroIfFrozen, zeroIfUnauthorized, j);
+        },
+        issue.value());
+}
+
+STAmount
 accountFunds(
     ReadView const& view,
     AccountID const& id,
@@ -452,10 +471,26 @@ accountFunds(
     return accountHolds(
         view,
         id,
-        saDefault.getCurrency(),
+        saDefault.get<Issue>().currency,
         saDefault.getIssuer(),
         freezeHandling,
         j);
+}
+
+STAmount
+accountFunds(
+    ReadView const& view,
+    AccountID const& id,
+    STAmount const& saDefault,
+    FreezeHandling freezeHandling,
+    AuthHandling authHandling,
+    beast::Journal j)
+{
+    if (!saDefault.native() && saDefault.getIssuer() == id)
+        return saDefault;
+
+    return accountHolds(
+        view, id, saDefault.asset(), freezeHandling, authHandling, j);
 }
 
 // Prevent ownerCount from wrapping under error conditions.
@@ -1000,7 +1035,8 @@ trustCreate(
     sleRippleState->setFieldAmount(
         bSetHigh ? sfLowLimit : sfHighLimit,
         STAmount(Issue{
-            saBalance.getCurrency(), bSetDst ? uSrcAccountID : uDstAccountID}));
+            saBalance.get<Issue>().currency,
+            bSetDst ? uSrcAccountID : uDstAccountID}));
 
     if (uQualityIn)
         sleRippleState->setFieldU32(
@@ -1138,7 +1174,7 @@ rippleCreditIOU(
     beast::Journal j)
 {
     AccountID const& issuer = saAmount.getIssuer();
-    Currency const& currency = saAmount.getCurrency();
+    Currency const& currency = saAmount.get<Issue>().currency;
 
     // Make sure issuer is involved.
     XRPL_ASSERT(
@@ -1692,7 +1728,8 @@ issueIOU(
         "ripple::issueIOU : neither account nor issuer is XRP");
 
     // Consistency check
-    XRPL_ASSERT(issue == amount.issue(), "ripple::issueIOU : matching issue");
+    XRPL_ASSERT(
+        issue == amount.get<Issue>(), "ripple::issueIOU : matching issue");
 
     // Can't send to self!
     XRPL_ASSERT(
@@ -1792,7 +1829,8 @@ redeemIOU(
         "ripple::redeemIOU : neither account nor issuer is XRP");
 
     // Consistency check
-    XRPL_ASSERT(issue == amount.issue(), "ripple::redeemIOU : matching issue");
+    XRPL_ASSERT(
+        issue == amount.get<Issue>(), "ripple::redeemIOU : matching issue");
 
     // Can't send to self!
     XRPL_ASSERT(
@@ -1919,7 +1957,8 @@ TER
 requireAuth(
     ReadView const& view,
     MPTIssue const& mptIssue,
-    AccountID const& account)
+    AccountID const& account,
+    MPTAuthType authType)
 {
     auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
     auto const sleIssuance = view.read(mptID);
@@ -1937,12 +1976,12 @@ requireAuth(
     auto const sleToken = view.read(mptokenID);
 
     // if account has no MPToken, fail
-    if (!sleToken)
+    if (!sleToken && authType == MPTAuthType::StrongAuth)
         return tecNO_AUTH;
 
     // mptoken must be authorized if issuance enabled requireAuth
     if (sleIssuance->getFieldU32(sfFlags) & lsfMPTRequireAuth &&
-        !(sleToken->getFlags() & lsfMPTAuthorized))
+        (!sleToken || (!(sleToken->getFlags() & lsfMPTAuthorized))))
         return tecNO_AUTH;
 
     return tesSUCCESS;
@@ -2091,6 +2130,25 @@ deleteAMMTrustLine(
         return tecINTERNAL;
 
     adjustOwnerCount(view, !ammLow ? sleLow : sleHigh, -1, j);
+
+    return tesSUCCESS;
+}
+
+TER
+deleteAMMMPToken(
+    ApplyView& view,
+    std::shared_ptr<SLE> sleMpt,
+    AccountID const& ammAccountID,
+    beast::Journal j)
+{
+    if (!view.dirRemove(
+            keylet::ownerDir(ammAccountID),
+            (*sleMpt)[sfOwnerNode],
+            sleMpt->key(),
+            false))
+        return tecINTERNAL;
+
+    view.erase(sleMpt);
 
     return tesSUCCESS;
 }

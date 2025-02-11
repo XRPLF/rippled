@@ -292,7 +292,6 @@ public:
         };
         using namespace jtx;
         auto const sa = supported_amendments();
-        withFeatsTests(sa - featureFlowCross);
         withFeatsTests(sa);
     }
 };

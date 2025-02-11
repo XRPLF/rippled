@@ -83,7 +83,7 @@ MPTTester::MPTTester(Env& env, Account const& issuer, MPTInit const& arg)
 }
 
 void
-MPTTester::create(const MPTCreate& arg)
+MPTTester::create(MPTCreate const& arg)
 {
     if (id_)
         Throw<std::runtime_error>("MPT can't be reused");
@@ -109,7 +109,29 @@ MPTTester::create(const MPTCreate& arg)
         id_.reset();
     }
     else
+    {
         env_.require(mptflags(*this, arg.flags.value_or(0)));
+        if (arg.authorize)
+        {
+            auto authAndPay = [&](auto const& accts, auto const&& getAcct) {
+                for (auto const& it : accts)
+                {
+                    authorize({.account = getAcct(it)});
+                    if (arg.pay && arg.pay->first.empty())
+                        pay(issuer_, getAcct(it), arg.pay->second);
+                }
+                if (arg.pay)
+                {
+                    for (auto const& p : arg.pay->first)
+                        pay(issuer_, p, arg.pay->second);
+                }
+            };
+            if (arg.authorize->empty())
+                authAndPay(holders_, [](auto const& it) { return it.second; });
+            else
+                authAndPay(*arg.authorize, [](auto const& it) { return it; });
+        }
+    }
 }
 
 void

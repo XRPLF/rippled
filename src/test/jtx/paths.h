@@ -25,6 +25,7 @@
 #include <type_traits>
 
 namespace ripple {
+class STPath;
 namespace test {
 namespace jtx {
 
@@ -62,6 +63,8 @@ public:
 
     template <class T, class... Args>
     explicit path(T const& t, Args const&... args);
+
+    path(STPath const& p);
 
     void
     operator()(Env&, JTx& jt) const;
