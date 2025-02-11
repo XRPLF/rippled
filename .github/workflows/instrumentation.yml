@@ -64,8 +64,6 @@ jobs:
             conan profile update options.rocksdb=False default
             conan profile update \
               'conf.tools.build:compiler_executables={"c": "/usr/bin/clang", "cpp": "/usr/bin/clang++"}' default
-            conan profile update 'env.CXXFLAGS="-DBOOST_ASIO_DISABLE_CONCEPTS"' default
-            conan profile update 'conf.tools.build:cxxflags+=["-DBOOST_ASIO_DISABLE_CONCEPTS"]' default
             conan export external/snappy snappy/1.1.10@
             conan export external/soci soci/4.0.3@
 

@@ -47,7 +47,7 @@
 #include <boost/program_options.hpp>
 
 #include <cstdlib>
-#include <iostream>
+#include <fstream>
 #include <stdexcept>
 #include <utility>
 

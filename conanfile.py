@@ -99,7 +99,7 @@ class Xrpl(ConanFile):
             self.options['boost'].visibility = 'global'
 
     def requirements(self):
-        self.requires('boost/1.83.0', force=True)
+        self.requires('boost/1.86.0', force=True)
         self.requires('lz4/1.10.0', force=True)
         self.requires('protobuf/3.21.9', force=True)
         self.requires('sqlite3/3.47.0', force=True)
