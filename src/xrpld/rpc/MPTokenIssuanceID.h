@@ -45,7 +45,7 @@ canHaveMPTokenIssuanceID(
     std::shared_ptr<STTx const> const& serializedTx,
     TxMeta const& transactionMeta);
 
-std::optional<uint192>
+std::optional<MPTID>
 getIDFromCreatedIssuance(TxMeta const& transactionMeta);
 
 void

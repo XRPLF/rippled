@@ -88,6 +88,9 @@ using lines = owner_count<ltRIPPLE_STATE>;
 /** Match the number of offers in the account's owner directory */
 using offers = owner_count<ltOFFER>;
 
+/** Match the number of MPToken in the account's owner directory */
+using mptokens = owner_count<ltMPTOKEN>;
+
 }  // namespace jtx
 }  // namespace test
 }  // namespace ripple

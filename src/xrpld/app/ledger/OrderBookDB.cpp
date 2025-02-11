@@ -115,10 +115,28 @@ OrderBookDB::update(std::shared_ptr<ReadView const> const& ledger)
             {
                 Book book;
 
-                book.in.currency = sle->getFieldH160(sfTakerPaysCurrency);
-                book.in.account = sle->getFieldH160(sfTakerPaysIssuer);
-                book.out.currency = sle->getFieldH160(sfTakerGetsCurrency);
-                book.out.account = sle->getFieldH160(sfTakerGetsIssuer);
+                if (sle->isFieldPresent(sfTakerPaysCurrency))
+                {
+                    Issue issue;
+                    issue.currency = sle->getFieldH160(sfTakerPaysCurrency);
+                    issue.account = sle->getFieldH160(sfTakerPaysIssuer);
+                    book.in = issue;
+                }
+                else
+                {
+                    book.in = sle->getFieldH192(sfTakerPaysMPT);
+                }
+                if (sle->isFieldPresent(sfTakerGetsCurrency))
+                {
+                    Issue issue;
+                    issue.currency = sle->getFieldH160(sfTakerGetsCurrency);
+                    issue.account = sle->getFieldH160(sfTakerGetsIssuer);
+                    book.out = issue;
+                }
+                else
+                {
+                    book.out = sle->getFieldH192(sfTakerGetsMPT);
+                }
 
                 allBooks[book.in].insert(book.out);
 
@@ -129,9 +147,9 @@ OrderBookDB::update(std::shared_ptr<ReadView const> const& ledger)
             }
             else if (sle->getType() == ltAMM)
             {
-                auto const issue1 = (*sle)[sfAsset].get<Issue>();
-                auto const issue2 = (*sle)[sfAsset2].get<Issue>();
-                auto addBook = [&](Issue const& in, Issue const& out) {
+                auto const asset1 = (*sle)[sfAsset];
+                auto const asset2 = (*sle)[sfAsset2];
+                auto addBook = [&](Asset const& in, Asset const& out) {
                     allBooks[in].insert(out);
 
                     if (isXRP(out))
@@ -139,8 +157,8 @@ OrderBookDB::update(std::shared_ptr<ReadView const> const& ledger)
 
                     ++cnt;
                 };
-                addBook(issue1, issue2);
-                addBook(issue2, issue1);
+                addBook(asset1, asset2);
+                addBook(asset2, asset1);
             }
         }
     }
@@ -179,19 +197,19 @@ OrderBookDB::addOrderBook(Book const& book)
 
 // return list of all orderbooks that want this issuerID and currencyID
 std::vector<Book>
-OrderBookDB::getBooksByTakerPays(Issue const& issue)
+OrderBookDB::getBooksByTakerPays(Asset const& asset)
 {
     std::vector<Book> ret;
 
     {
         std::lock_guard sl(mLock);
 
-        if (auto it = allBooks_.find(issue); it != allBooks_.end())
+        if (auto it = allBooks_.find(asset); it != allBooks_.end())
         {
             ret.reserve(it->second.size());
 
             for (auto const& gets : it->second)
-                ret.push_back(Book(issue, gets));
+                ret.push_back(Book(asset, gets));
         }
     }
 
@@ -199,19 +217,19 @@ OrderBookDB::getBooksByTakerPays(Issue const& issue)
 }
 
 int
-OrderBookDB::getBookSize(Issue const& issue)
+OrderBookDB::getBookSize(Asset const& asset)
 {
     std::lock_guard sl(mLock);
-    if (auto it = allBooks_.find(issue); it != allBooks_.end())
+    if (auto it = allBooks_.find(asset); it != allBooks_.end())
         return static_cast<int>(it->second.size());
     return 0;
 }
 
 bool
-OrderBookDB::isBookToXRP(Issue const& issue)
+OrderBookDB::isBookToXRP(Asset const& asset)
 {
     std::lock_guard sl(mLock);
-    return xrpBooks_.count(issue) > 0;
+    return xrpBooks_.count(asset) > 0;
 }
 
 BookListeners::pointer
@@ -276,8 +294,8 @@ OrderBookDB::processTxn(
                         data->isFieldPresent(sfTakerGets))
                     {
                         auto listeners = getBookListeners(
-                            {data->getFieldAmount(sfTakerGets).issue(),
-                             data->getFieldAmount(sfTakerPays).issue()});
+                            {data->getFieldAmount(sfTakerGets).asset(),
+                             data->getFieldAmount(sfTakerPays).asset()});
                         if (listeners)
                             listeners->publish(jvObj, havePublished);
                     }

@@ -186,8 +186,7 @@ public:
             };
 
             // bob's offer (the new offer) is the same every time:
-            Amounts const bobsOffer{
-                STAmount(XRP(1)), STAmount(USD.issue(), 1, 0)};
+            Amounts const bobsOffer{STAmount(XRP(1)), STAmount(USD, 1, 0)};
 
             // alice's offer has a slightly smaller TakerPays with each
             // iteration.  This should mean that the size of the offer bob
@@ -198,11 +197,11 @@ public:
                  mantissaReduce += 20'000'000ull)
             {
                 STAmount aliceUSD{
-                    bobsOffer.out.issue(),
+                    bobsOffer.out.asset(),
                     bobsOffer.out.mantissa() - mantissaReduce,
                     bobsOffer.out.exponent()};
                 STAmount aliceXRP{
-                    bobsOffer.in.issue(), bobsOffer.in.mantissa() - 1};
+                    bobsOffer.in.asset(), bobsOffer.in.mantissa() - 1};
                 Amounts alicesOffer{aliceUSD, aliceXRP};
                 blockedCount += exerciseOfferPair(alicesOffer, bobsOffer);
             }
@@ -344,8 +343,7 @@ public:
             };
 
             // alice's offer (the old offer) is the same every time:
-            Amounts const aliceOffer{
-                STAmount(XRP(1)), STAmount(USD.issue(), 1, 0)};
+            Amounts const aliceOffer{STAmount(XRP(1)), STAmount(USD, 1, 0)};
 
             // bob's offer has a slightly smaller TakerPays with each iteration.
             // This should mean that the size of the offer alice leaves in the
@@ -356,11 +354,11 @@ public:
                  mantissaReduce += 20'000'000ull)
             {
                 STAmount bobUSD{
-                    aliceOffer.out.issue(),
+                    aliceOffer.out.asset(),
                     aliceOffer.out.mantissa() - mantissaReduce,
                     aliceOffer.out.exponent()};
                 STAmount bobXRP{
-                    aliceOffer.in.issue(), aliceOffer.in.mantissa() - 1};
+                    aliceOffer.in.asset(), aliceOffer.in.mantissa() - 1};
                 Amounts bobsOffer{bobUSD, bobXRP};
 
                 blockedCount += exerciseOfferPair(aliceOffer, bobsOffer);
@@ -504,7 +502,7 @@ public:
         auto const USD = gw["USD"];
         auto const EUR = gw["EUR"];
 
-        STAmount const tinyUSD(USD.issue(), /*mantissa*/ 1, /*exponent*/ -81);
+        STAmount const tinyUSD(USD, /*mantissa*/ 1, /*exponent*/ -81);
 
         // Make one test run without fixReducedOffersV1 and one with.
         for (FeatureBitset features :
@@ -518,13 +516,10 @@ public:
             env.trust(USD(1000), alice, bob);
             env.trust(EUR(1000), alice, bob);
 
-            STAmount const eurOffer(
-                EUR.issue(), /*mantissa*/ 2957, /*exponent*/ -76);
-            STAmount const usdOffer(
-                USD.issue(), /*mantissa*/ 7109, /*exponent*/ -76);
+            STAmount const eurOffer(EUR, /*mantissa*/ 2957, /*exponent*/ -76);
+            STAmount const usdOffer(USD, /*mantissa*/ 7109, /*exponent*/ -76);
 
-            STAmount const endLoop(
-                USD.issue(), /*mantissa*/ 50, /*exponent*/ -81);
+            STAmount const endLoop(USD, /*mantissa*/ 50, /*exponent*/ -81);
 
             int blockedOrderBookCount = 0;
             for (STAmount initialBobUSD = tinyUSD; initialBobUSD <= endLoop;
@@ -724,7 +719,7 @@ public:
                     if (badRate == 0)
                     {
                         STAmount const tweakedTakerGets(
-                            aliceReducedOffer.in.issue(),
+                            aliceReducedOffer.in.asset(),
                             aliceReducedOffer.in.mantissa() + 1,
                             aliceReducedOffer.in.exponent(),
                             aliceReducedOffer.in.negative());
@@ -763,7 +758,7 @@ public:
             unsigned int blockedCount = 0;
             {
                 STAmount increaseGets = USD(0);
-                STAmount const step(increaseGets.issue(), 1, -8);
+                STAmount const step(increaseGets.asset(), 1, -8);
                 for (unsigned int i = 0; i < loopCount; ++i)
                 {
                     blockedCount += exerciseOfferTrio(

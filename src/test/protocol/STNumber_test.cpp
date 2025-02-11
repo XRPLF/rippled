@@ -75,7 +75,7 @@ struct STNumber_test : public beast::unit_test::suite
             STNumber const factor{sfNumber, 100};
             auto const iouValue = strikePrice.iou();
             IOUAmount totalValue{iouValue * factor};
-            STAmount const totalAmount{totalValue, strikePrice.issue()};
+            STAmount const totalAmount{totalValue, strikePrice.get<Issue>()};
             BEAST_EXPECT(totalAmount == Number{10'000});
         }
     }
