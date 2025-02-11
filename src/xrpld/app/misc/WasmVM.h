@@ -20,15 +20,24 @@
 #define RIPPLE_APP_MISC_WASMVM_H_INLCUDED
 
 #include <xrpl/basics/Expected.h>
-// #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/TER.h>
 
 #include <wasmedge/wasmedge.h>
+
+#include <wasm.h>
+#include <wasmtime.h>
 
 namespace ripple {
 
 Expected<bool, TER>
 runEscrowWasm(
+    std::vector<uint8_t> const& wasmCode,
+    std::string const& funcName,
+    int32_t input);
+
+Expected<bool, TER>
+runEscrowWasmWTime(
     std::vector<uint8_t> const& wasmCode,
     std::string const& funcName,
     int32_t input);

@@ -19,12 +19,10 @@
 
 #include <xrpld/app/misc/WasmVM.h>
 
-// WasmVM::WasmVM(beast::Journal j)
-//     : j_(j)
-//{
-// }
+#include <memory>
 
 namespace ripple {
+
 Expected<bool, TER>
 runEscrowWasm(
     std::vector<uint8_t> const& wasmCode,
@@ -65,6 +63,102 @@ runEscrowWasm(
         return re;
     else
         return Unexpected<TER>(tecFAILED_PROCESSING);
+}
+
+static void
+print_wasmi_error(
+    const char* message,
+    wasmtime_error_t* error,
+    wasm_trap_t* trap)
+{
+    fprintf(stderr, "error: %s\n", message);
+    wasm_byte_vec_t error_message;
+    if (error != NULL)
+    {
+        wasmtime_error_message(error, &error_message);
+        wasmtime_error_delete(error);
+    }
+    else
+    {
+        wasm_trap_message(trap, &error_message);
+        wasm_trap_delete(trap);
+    }
+    fprintf(stderr, "%.*s\n", (int)error_message.size, error_message.data);
+    wasm_byte_vec_delete(&error_message);
+}
+
+Expected<bool, TER>
+runEscrowWasmWTime(
+    std::vector<uint8_t> const& wasmCode,
+    std::string const& funcName,
+    int32_t input)
+{
+    wasmtime_error_t* error = nullptr;
+
+    std::unique_ptr<wasm_engine_t, decltype(&wasm_engine_delete)> engine(
+        wasm_engine_new(), &wasm_engine_delete);
+    std::unique_ptr<wasmtime_store_t, decltype(&wasmtime_store_delete)> store(
+        wasmtime_store_new(engine.get(), NULL, NULL), &wasmtime_store_delete);
+    wasmtime_context_t* context = wasmtime_store_context(store.get());
+
+    // Now that we've got our binary webassembly we can compile our module.
+    std::unique_ptr<wasmtime_module_t, decltype(&wasmtime_module_delete)>
+        module(nullptr, &wasmtime_module_delete);
+
+    {
+        wasmtime_module_t* m = NULL;
+        error = wasmtime_module_new(
+            engine.get(), wasmCode.data(), wasmCode.size(), &m);
+        if (error != NULL)
+        {
+            print_wasmi_error("failed to compile module", error, NULL);
+            return Unexpected<TER>(tecFAILED_PROCESSING);
+        }
+
+        module = decltype(module)(m, &wasmtime_module_delete);
+    }
+
+    // instantiate our module
+    wasm_trap_t* trap = NULL;
+    wasmtime_instance_t instance;
+    error =
+        wasmtime_instance_new(context, module.get(), NULL, 0, &instance, &trap);
+    if (error != NULL || trap != NULL)
+    {
+        print_wasmi_error("failed to instantiate", error, trap);
+        return Unexpected<TER>(tecFAILED_PROCESSING);
+    }
+
+    // Lookup our export function
+    wasmtime_extern_t wasmFunc;
+    if (!wasmtime_instance_export_get(
+            context, &instance, funcName.c_str(), funcName.size(), &wasmFunc))
+    {
+        printf("Can't find: %s\n", funcName.c_str());
+        return Unexpected<TER>(tecFAILED_PROCESSING);
+    }
+    assert(wasmFunc.kind == WASMTIME_EXTERN_FUNC);
+
+    // And call it!
+    wasmtime_val_t params[1];
+    params[0].kind = WASMTIME_I32;
+    params[0].of.i32 = input;
+    wasmtime_val_t results[1];
+    error = wasmtime_func_call(
+        context, &wasmFunc.of.func, params, 1, results, 1, &trap);
+    if (error != NULL || trap != NULL)
+    {
+        print_wasmi_error("failed to call func", error, trap);
+        return Unexpected<TER>(tecFAILED_PROCESSING);
+    }
+    assert(results[0].kind == WASMTIME_I32);
+    // printf("Result: %d\n", results[0].of.i32);
+
+    bool re = false;
+    if (results[0].of.i32 != 0)
+        re = true;
+
+    return re;
 }
 
 Expected<bool, TER>
@@ -395,9 +489,15 @@ runEscrowWasmP4(
     }
 }
 
-WasmEdge_Result get_ledger_sqn(void * data, const WasmEdge_CallingFrameContext *,
-                    const WasmEdge_Value *In, WasmEdge_Value *Out) {
-    Out[0] = WasmEdge_ValueGenI32(((LedgerDataProvider *)data)->get_ledger_sqn());
+WasmEdge_Result
+get_ledger_sqn(
+    void* data,
+    const WasmEdge_CallingFrameContext*,
+    const WasmEdge_Value* In,
+    WasmEdge_Value* Out)
+{
+    Out[0] =
+        WasmEdge_ValueGenI32(((LedgerDataProvider*)data)->get_ledger_sqn());
     return WasmEdge_Result_Success;
 }
 
@@ -408,7 +508,7 @@ runEscrowWasm(
     LedgerDataProvider* ledgerDataProvider)
 {
     WasmEdge_VMContext* VMCxt = WasmEdge_VMCreate(NULL, NULL);
-    {//register host function
+    {  // register host function
         WasmEdge_ValType ReturnList[1] = {WasmEdge_ValTypeGenI32()};
         WasmEdge_FunctionTypeContext* HostFType =
             WasmEdge_FunctionTypeCreate(NULL, 0, ReturnList, 1);

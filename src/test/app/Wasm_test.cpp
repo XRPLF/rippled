@@ -153,11 +153,21 @@ struct Wasm_test : public beast::unit_test::suite
         auto wasmStr = boost::algorithm::unhex(std::string(wasmHex));
         std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
         std::string funcName("mock_escrow");
+
         auto re = runEscrowWasm(wasm, funcName, 15);
         if (BEAST_EXPECT(re.has_value()))
             BEAST_EXPECT(re.value());
 
         re = runEscrowWasm(wasm, funcName, 11);
+        if (BEAST_EXPECT(re.has_value()))
+            BEAST_EXPECT(!re.value());
+
+        testcase("escrow wasmTime P0 test");
+        re = runEscrowWasmWTime(wasm, funcName, 15);
+        if (BEAST_EXPECT(re.has_value()))
+            BEAST_EXPECT(re.value());
+
+        re = runEscrowWasmWTime(wasm, funcName, 11);
         if (BEAST_EXPECT(re.has_value()))
             BEAST_EXPECT(!re.value());
     }

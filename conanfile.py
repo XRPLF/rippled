@@ -33,6 +33,7 @@ class Xrpl(ConanFile):
         'xxhash/0.8.2',
         'zlib/1.3.1',
         'wasmedge/0.14.1',
+        'wasmtime/21.0.0',
     ]
 
     tool_requires = [
