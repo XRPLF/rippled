@@ -88,7 +88,7 @@ private:
     bool const unitTest_;
 
     // Implements the "UpgradeLockable" concept
-    // https://www.boost.org/doc/libs/1_86_0/doc/html/thread/synchronization.html#thread.synchronization.mutex_concepts.upgrade_lockable
+    // https://www.boost.org/doc/libs/release/doc/html/thread/synchronization.html#thread.synchronization.mutex_concepts.upgrade_lockable
     // In short: Many threads can have shared ownership. One thread can have
     // upgradable ownership at the same time as others have shared ownership.
     // The upgradeable ownership can be upgraded to exclusive ownership,

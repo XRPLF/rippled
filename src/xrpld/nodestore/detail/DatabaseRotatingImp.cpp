@@ -50,8 +50,10 @@ DatabaseRotatingImp::rotateWithLock(
     // This function should be the only one taking any kind of unique/write
     // lock, and should only be called once at a time by its syncronous caller.
 
-    boost::upgrade_lock readLock(mutex_, boost::defer_lock);
-    if (!readLock.try_lock())
+    // The upgradable lock will NOT block shared locks, but will block other
+    // upgrade locks and unique/exclusive locks.
+    boost::upgrade_lock upgradeableLock(mutex_, boost::defer_lock);
+    if (!upgradeableLock.try_lock())
     {
         // If anything other than a unit test gets here, something has gone very
         // wrong
@@ -66,7 +68,7 @@ DatabaseRotatingImp::rotateWithLock(
     // boost::upgrade_mutex guarantees that only one thread can have "upgrade
     // ownership" at a time, so this is 100% safe, and guaranteed to avoid
     // deadlock.
-    boost::upgrade_to_unique_lock writeLock(readLock);
+    boost::upgrade_to_unique_lock writeLock(upgradeableLock);
 
     archiveBackend_->setDeletePath();
     archiveBackend_ = std::move(writableBackend_);
