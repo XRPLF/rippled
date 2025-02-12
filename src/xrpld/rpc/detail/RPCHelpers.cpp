@@ -959,13 +959,11 @@ chooseLedgerEntryType(Json::Value const& params)
         }
 
         // Use the passed in parameter to find a ledger type based on matching
-        // against the canonical name (case insensitive) or the RPC name (case
-        // sensitive).
-        // Note: Filtering by RPC name is now deprecated and will be removed in
-        // a future release.
+        // against the canonical name (case-insensitive) or the RPC name
+        // (case-sensitive).
         auto const filter = p.asString();
-        auto iter = std::find_if(
-            types.begin(), types.end(), [&filter](decltype(types.front())& t) {
+        const auto iter =
+            std::ranges::find_if(types, [&filter](decltype(types.front())& t) {
                 return boost::iequals(std::get<0>(t), filter) ||
                     std::get<1>(t) == filter;
             });
