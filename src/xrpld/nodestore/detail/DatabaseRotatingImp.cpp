@@ -19,6 +19,7 @@
 
 #include <xrpld/nodestore/detail/DatabaseRotatingImp.h>
 #include <xrpl/protocol/HashPrefix.h>
+#include <boost/thread/locks.hpp>
 
 namespace ripple {
 namespace NodeStore {
@@ -48,50 +49,27 @@ DatabaseRotatingImp::rotateWithLock(
 {
     // This function should be the only one taking any kind of unique/write
     // lock, and should only be called once at a time by its syncronous caller.
-    // The extra checking involving the "rotating" flag, are to ensure that if
-    // that ever changes, we still avoid deadlocks and incorrect behavior.
 
+    boost::upgrade_lock readLock(mutex_, boost::defer_lock);
+    if (!readLock.try_lock())
     {
-        std::unique_lock writeLock(mutex_);
-        if (!rotating)
-        {
-            // Once this flag is set, we're committed to doing the work and
-            // returning true.
-            rotating = true;
-        }
-        else
-        {
-            // This should only be reachable through unit tests.
-            XRPL_ASSERT(
-                unitTest_,
-                "ripple::NodeStore::DatabaseRotatingImp::rotateWithLock "
-                "unit testing");
-            return false;
-        }
-    }
-    auto const writableBackend = [&] {
-        std::shared_lock readLock(mutex_);
+        // This should only be reachable through unit tests.
         XRPL_ASSERT(
-            rotating,
-            "ripple::NodeStore::DatabaseRotatingImp::rotateWithLock rotating "
-            "flag set");
+            unitTest_,
+            "ripple::NodeStore::DatabaseRotatingImp::rotateWithLock "
+            "unit testing");
+        return false;
+    }
+    auto newBackend = f(writableBackend_->getName());
 
-        return writableBackend_;
-    }();
-
-    auto newBackend = f(writableBackend->getName());
-
-    // Because of the "rotating" flag, there should be no way any other thread
-    // is waiting at this point. As long as they all release the shared_lock
-    // before taking the unique_lock (which they have to, because upgrading is
-    // unsupported), there can be no deadlock.
-    std::unique_lock writeLock(mutex_);
+    // boost::upgrade_mutex guarantees that only only thread can have "upgrade
+    // ownership" at a time, so this is 100% safe, and guaranteed to avoid
+    // deadlock.
+    boost::upgrade_to_unique_lock writeLock(readLock);
 
     archiveBackend_->setDeletePath();
     archiveBackend_ = std::move(writableBackend_);
     writableBackend_ = std::move(newBackend);
-
-    rotating = false;
 
     return true;
 }

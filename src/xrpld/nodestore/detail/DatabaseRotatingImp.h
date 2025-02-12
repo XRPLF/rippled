@@ -22,7 +22,7 @@
 
 #include <xrpld/nodestore/DatabaseRotating.h>
 
-#include <shared_mutex>
+#include <boost/thread/shared_mutex.hpp>
 
 namespace ripple {
 namespace NodeStore {
@@ -83,16 +83,17 @@ public:
     static constexpr auto unitTestFlag = " unit_test";
 
 private:
-    bool rotating = false;
     std::shared_ptr<Backend> writableBackend_;
     std::shared_ptr<Backend> archiveBackend_;
     bool const unitTest_;
 
-    // https://en.cppreference.com/w/cpp/thread/shared_timed_mutex/lock
-    // "Shared mutexes do not support direct transition from shared to unique
-    // ownership mode: the shared lock has to be relinquished with
-    // unlock_shared() before exclusive ownership may be obtained with lock()."
-    mutable std::shared_timed_mutex mutex_;
+    // Implements the "UpgradeLockable" concept
+    // https://www.boost.org/doc/libs/1_86_0/doc/html/thread/synchronization.html#thread.synchronization.mutex_concepts.upgrade_lockable
+    // In short: Many threads can have shared ownership. One thread can have
+    // upgradable ownership at the same time as others have shared ownership.
+    // The upgradeable ownership can be upgraded to exclusive ownership,
+    // blocking if necessary until no other threads have shared ownership.
+    mutable boost::upgrade_mutex mutex_;
 
     std::shared_ptr<NodeObject>
     fetchNodeObject(

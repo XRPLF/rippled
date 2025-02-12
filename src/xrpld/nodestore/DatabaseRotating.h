@@ -45,6 +45,9 @@ public:
     /** Rotates the backends.
 
         @param f A function executed before the rotation
+
+        @return bool indicating whether the callback "f" was called, and the new
+                Backend it returned is stored
     */
     [[nodiscard]]
     virtual bool
