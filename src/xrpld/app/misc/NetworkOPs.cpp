@@ -1887,6 +1887,15 @@ NetworkOPsImp::beginConsensus(uint256 const& networkClosed)
 bool
 NetworkOPsImp::processTrustedProposal(RCLCxPeerPos peerPos)
 {
+    if (auto const localPk = app_.getValidationPublicKey())
+    {
+        auto const localID = calcNodeID(*localPk);
+        auto const& peerID = peerPos.proposal().nodeID();
+        assert(localID != peerID);
+        if (localID == peerID)
+            return false;
+    }
+
     return mConsensus.peerProposal(app_.timeKeeper().closeTime(), peerPos);
 }
 

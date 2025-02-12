@@ -25,6 +25,7 @@
 #include <cstddef>
 #include <functional>
 #include <map>
+#include <optional>
 
 namespace ripple {
 
