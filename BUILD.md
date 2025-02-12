@@ -261,8 +261,8 @@ It fixes some source files to add missing `#include`s.
     Single-config generators:
 
     Pass the CMake variable [`CMAKE_BUILD_TYPE`][build_type]
-    and make sure it matches the `build_type` setting you chose in the previous
-    step.
+    and make sure it matches the one of the `build_type` settings
+    you chose in the previous step.
 
     For example, to build Debug, in the next command, replace "Release" with "Debug"
 
