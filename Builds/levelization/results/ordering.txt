@@ -41,6 +41,7 @@ test.consensus > xrpl.basics
 test.consensus > xrpld.app
 test.consensus > xrpld.consensus
 test.consensus > xrpld.ledger
+test.consensus > xrpl.json
 test.core > test.jtx
 test.core > test.toplevel
 test.core > test.unit_test
