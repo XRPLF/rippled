@@ -22,6 +22,7 @@
 #include <xrpld/consensus/ConsensusProposal.h>
 #include <xrpl/beast/clock/manual_clock.h>
 #include <xrpl/beast/unit_test.h>
+#include <xrpl/json/to_string.h>
 #include <utility>
 
 namespace ripple {
@@ -40,6 +41,7 @@ public:
     testShouldCloseLedger()
     {
         using namespace std::chrono_literals;
+        testcase("should close ledger");
 
         // Use default parameters
         ConsensusParms const p{};
@@ -78,6 +80,7 @@ public:
     testCheckConsensus()
     {
         using namespace std::chrono_literals;
+        testcase("check consensus");
 
         // Use default parameterss
         ConsensusParms const p{};
@@ -179,6 +182,7 @@ public:
     {
         using namespace std::chrono_literals;
         using namespace csf;
+        testcase("standalone");
 
         Sim s;
         PeerGroup peers = s.createGroup(1);
@@ -203,6 +207,7 @@ public:
     {
         using namespace csf;
         using namespace std::chrono;
+        testcase("peers agree");
 
         ConsensusParms const parms{};
         Sim sim;
@@ -240,6 +245,7 @@ public:
     {
         using namespace csf;
         using namespace std::chrono;
+        testcase("slow peers");
 
         // Several tests of a complete trust graph with a subset of peers
         // that have significantly longer network delays to the rest of the
@@ -405,6 +411,7 @@ public:
     {
         using namespace csf;
         using namespace std::chrono;
+        testcase("close time disagree");
 
         // This is a very specialized test to get ledgers to disagree on
         // the close time. It unfortunately assumes knowledge about current
@@ -471,6 +478,8 @@ public:
     {
         using namespace csf;
         using namespace std::chrono;
+        testcase("wrong LCL");
+
         // Specialized test to exercise a temporary fork in which some peers
         // are working on an incorrect prior ledger.
 
@@ -643,6 +652,7 @@ public:
     {
         using namespace csf;
         using namespace std::chrono;
+        testcase("consensus close time rounding");
 
         // This is a specialized test engineered to yield ledgers with different
         // close times even though the peers believe they had close time
@@ -746,6 +756,7 @@ public:
     {
         using namespace csf;
         using namespace std::chrono;
+        testcase("fork");
 
         std::uint32_t numPeers = 10;
         // Vary overlap between two UNLs
@@ -802,6 +813,7 @@ public:
     {
         using namespace csf;
         using namespace std::chrono;
+        testcase("hub network");
 
         // Simulate a set of 5 validators that aren't directly connected but
         // rely on a single hub node for communication
@@ -889,6 +901,7 @@ public:
     {
         using namespace csf;
         using namespace std::chrono;
+        testcase("preferred by branch");
 
         // Simulate network splits that are prevented from forking when using
         // preferred ledger by trie.  This is a contrived example that involves
@@ -1021,6 +1034,7 @@ public:
     {
         using namespace csf;
         using namespace std::chrono;
+        testcase("pause for laggards");
 
         // Test that validators that jump ahead of the network slow
         // down.
@@ -1109,22 +1123,42 @@ public:
     void
     testDisputes()
     {
+        // WIP: Try to create conditions where messaging is unreliable and all
+        // peers have different initial proposals
         using namespace csf;
         using namespace std::chrono;
+        testcase("disputes");
 
-        std::uint32_t numPeers = 35;
+        std::uint32_t const numPeers = 35;
 
         ConsensusParms const parms{};
         Sim sim;
 
-        PeerGroup peers = sim.createGroup(numPeers);
+        std::vector<PeerGroup> peerGroups;
+        peerGroups.reserve(numPeers);
+        PeerGroup network;
+        for (int i = 0; i < numPeers; ++i)
+        {
+            peerGroups.emplace_back(sim.createGroup(1));
+            network = network + peerGroups.back();
+        }
 
-        SimDuration delay = round<milliseconds>(0.2 * parms.ledgerGRANULARITY);
-        peers.trustAndConnect(peers, delay);
+        // Fully connected trust graph
+        network.trust(network);
+
+        for (int i = 0; i < peerGroups.size(); ++i)
+        {
+            auto const delay = i * 0.2 * parms.ledgerGRANULARITY;
+            auto& group = peerGroups[i];
+            auto& nextGroup = peerGroups[(i + 1) % numPeers];
+            group.connect(nextGroup, round<milliseconds>(delay));
+            auto& oppositeGroup = peerGroups[(i + numPeers / 2) % numPeers];
+            group.connect(oppositeGroup, round<milliseconds>(delay));
+        }
 
         // Initial round to set prior state
         sim.run(1);
-        for (Peer* peer : peers)
+        for (Peer* peer : network)
         {
             // Every transaction will be seen by every node but two.
             // To accomplish that, every peer will add the ids of every peer
@@ -1139,6 +1173,43 @@ public:
             }
         }
         sim.run(1);
+
+        // Peers are out of sync
+        if (BEAST_EXPECT(!sim.synchronized()))
+        {
+            BEAST_EXPECT(sim.branches() == 1);
+            for (auto const& grp : peerGroups)
+            {
+                Peer const* peer = grp[0];
+                BEAST_EXPECT(
+                    peer->fullyValidatedLedger.seq() == Ledger::Seq{1});
+
+                auto const& lcl = peer->lastClosedLedger;
+                BEAST_EXPECT(lcl.id() == peer->prevLedgerID());
+                log << "Peer " << peer->id << ", lcl seq: " << lcl.seq()
+                    << ", prevProposers: " << peer->prevProposers
+                    << ", txs in lcl: " << lcl.txs().size() << ", validations: "
+                    << peer->validations.sizeOfByLedgerCache() << std::endl;
+                for (auto const& [id, positions] : peer->peerPositions)
+                {
+                    log << "\tLedger ID: " << id
+                        << ", #positions: " << positions.size() << std::endl;
+                }
+                /*
+                log << "\t" << to_string(peer->consensus.getJson(true))
+                    << std::endl
+                    << std::endl;
+                */
+                /*
+                BEAST_EXPECT(lcl.seq() == Ledger::Seq{1}, to_string);
+                // All peers proposed
+                BEAST_EXPECT(peer->prevProposers == network.size() - 1);
+                // All transactions were accepted
+                for (std::uint32_t i = 0; i < network.size(); ++i)
+                    BEAST_EXPECT(lcl.txs().find(Tx{i}) != lcl.txs().end());
+                    */
+            }
+        }
     }
 
     void
