@@ -93,7 +93,7 @@ As of 2025-01-28, version 2.4.0 is in development. You can use a pre-release ver
 - `ledger_entry`: Enables case-insensitive filtering by canonical name in addition to case-sensitive filtering by RPC name, the latter of which is now deprecated and will be removed in a future release.
 - `validators`: Added new field `validator_list_threshold` in response.
 - `simulate`: A new RPC that executes a [dry run of a transaction submission](https://github.com/XRPLF/XRPL-Standards/tree/master/XLS-0069d-simulate#2-rpc-simulate)
-- Signing methods autofill fees better and properly handle transactions that don't have a base fee.
+- Signing methods autofill fees better and properly handle transactions that don't have a base fee, and will also autofill the `NetworkID` field.
 
 ## XRP Ledger server version 2.3.0
 
