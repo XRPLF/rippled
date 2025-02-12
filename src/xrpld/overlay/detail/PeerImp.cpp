@@ -31,13 +31,11 @@
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/detail/PeerImp.h>
 #include <xrpld/overlay/detail/Tuning.h>
-#include <xrpld/overlay/predicates.h>
 #include <xrpld/perflog/PerfLog.h>
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/basics/safe_cast.h>
-#include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/protocol/digest.h>
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -1225,7 +1223,8 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMEndpoints> const& m)
     if (malformed > 0)
     {
         fee_.update(
-            Resource::feeInvalidData * malformed, std::to_string(malformed) + "malformed endpoints");
+            Resource::feeInvalidData * malformed,
+            std::to_string(malformed) + "malformed endpoints");
     }
 
     if (!endpoints.empty())
