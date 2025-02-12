@@ -99,6 +99,12 @@ public:
                     // is tested elsewhere.
                     continue;
                 }
+                if (flag == asfAllowTokenLocking)
+                {
+                    // These flags are part of the AllowTokenLocking amendment
+                    // and are tested elsewhere
+                    continue;
+                }
 
                 if (std::find(goodFlags.begin(), goodFlags.end(), flag) !=
                     goodFlags.end())

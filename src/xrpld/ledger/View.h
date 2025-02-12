@@ -76,6 +76,9 @@ enum class SkipEntry : bool { No = false, Yes };
 [[nodiscard]] bool
 hasExpired(ReadView const& view, std::optional<std::uint32_t> const& exp);
 
+[[nodiscard]] bool
+noDefaultRipple(ReadView const& view, Issue const& issue);
+
 /** Controls the treatment of frozen account balances */
 enum FreezeHandling { fhIGNORE_FREEZE, fhZERO_IF_FROZEN };
 

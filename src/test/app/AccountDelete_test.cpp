@@ -403,6 +403,34 @@ public:
                 jv[sfOfferSequence.jsonName] = seq;
                 return jv;
             };
+
+        bool const withTokenEscrow =
+            env.current()->rules().enabled(featureTokenEscrow);
+        if (withTokenEscrow)
+        {
+            Account const carol("carol");
+            auto const USD = gw["USD"];
+            env.fund(XRP(100000), carol);
+            env(fset(gw, asfAllowTokenLocking));
+            env.close();
+            env.trust(USD(10000), carol);
+            env.close();
+            env(pay(gw, carol, USD(100)));
+            env.close();
+
+            std::uint32_t const escrowSeq{env.seq(carol)};
+            env(escrowCreate(carol, becky, USD(1), env.now() + 2s));
+            env.close();
+
+            env(acctdelete(gw, becky),
+                fee(acctDelFee),
+                ter(tecHAS_OBLIGATIONS));
+            env.close();
+
+            env(escrowCancel(becky, carol, escrowSeq));
+            env.close();
+        }
+
         env(escrowCancel(becky, alice, escrowSeq));
         env.close();
 

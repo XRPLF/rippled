@@ -350,6 +350,8 @@ LEDGER_ENTRY(ltESCROW, 0x0075, Escrow, escrow, ({
     {sfPreviousTxnID,        soeREQUIRED},
     {sfPreviousTxnLgrSeq,    soeREQUIRED},
     {sfDestinationNode,      soeOPTIONAL},
+    {sfTransferRate,         soeOPTIONAL},
+    {sfIssuerNode,           soeOPTIONAL},
 }))
 
 /** A ledger object describing a single unidirectional XRP payment channel.

@@ -170,6 +170,18 @@ hasExpired(ReadView const& view, std::optional<std::uint32_t> const& exp)
 }
 
 bool
+noDefaultRipple(ReadView const& view, Issue const& issue)
+{
+    if (isXRP(issue))
+        return false;
+
+    if (auto const issuerAccount = view.read(keylet::account(issue.account)))
+        return (issuerAccount->getFlags() & lsfDefaultRipple) == 0;
+
+    return false;
+}
+
+bool
 isGlobalFrozen(ReadView const& view, AccountID const& issuer)
 {
     if (isXRP(issuer))

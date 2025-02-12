@@ -43,7 +43,7 @@ TRANSACTION(ttPAYMENT, 0, Payment, ({
 /** This transaction type creates an escrow object. */
 TRANSACTION(ttESCROW_CREATE, 1, EscrowCreate, ({
     {sfDestination, soeREQUIRED},
-    {sfAmount, soeREQUIRED},
+    {sfAmount, soeREQUIRED, soeMPTSupported},
     {sfCondition, soeOPTIONAL},
     {sfCancelAfter, soeOPTIONAL},
     {sfFinishAfter, soeOPTIONAL},
