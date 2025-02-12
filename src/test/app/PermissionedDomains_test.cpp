@@ -54,7 +54,8 @@ exceptionExpected(Env& env, Json::Value const& jv)
 
 class PermissionedDomains_test : public beast::unit_test::suite
 {
-    FeatureBitset withoutFeature_{supported_amendments()};
+    FeatureBitset withoutFeature_{
+        supported_amendments() - featurePermissionedDomains};
     FeatureBitset withFeature_{
         supported_amendments()  //
         | featurePermissionedDomains | featureCredentials};
