@@ -44,11 +44,11 @@ public:
 
     /** Rotates the backends.
 
-        @param f A function executed before the rotation
+        @param newBackend New backend
+        @return name of the old backend
     */
-    virtual void
-    rotateWithLock(std::function<std::unique_ptr<NodeStore::Backend>(
-                       std::string const& writableBackendName)> const& f) = 0;
+    [[nodiscard]] virtual std::string
+    rotateWithLock(std::unique_ptr<NodeStore::Backend> newBackend) = 0;
 };
 
 }  // namespace NodeStore

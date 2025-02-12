@@ -48,10 +48,8 @@ public:
         stop();
     }
 
-    void
-    rotateWithLock(
-        std::function<std::unique_ptr<NodeStore::Backend>(
-            std::string const& writableBackendName)> const& f) override;
+    [[nodiscard]] virtual std::string
+    rotateWithLock(std::unique_ptr<NodeStore::Backend> newBackend) override;
 
     std::string
     getName() const override;
@@ -80,9 +78,6 @@ public:
     sweep() override;
 
 private:
-    // backendMutex_ is only needed when the *Backend_ members are modified.
-    // Reads are protected by the general mutex_.
-    std::mutex backendMutex_;
     std::shared_ptr<Backend> writableBackend_;
     std::shared_ptr<Backend> archiveBackend_;
 

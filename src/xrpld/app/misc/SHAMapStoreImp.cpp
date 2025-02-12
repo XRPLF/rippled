@@ -357,8 +357,9 @@ SHAMapStoreImp::run()
 
             JLOG(journal_.trace()) << "Making a new backend";
             auto newBackend = makeBackendRotating();
+            auto const newBackendName = newBackend->getName();
             JLOG(journal_.debug())
-                << validatedSeq << " new backend " << newBackend->getName();
+                << validatedSeq << " new backend " << newBackendName;
 
             clearCaches(validatedSeq);
             if (healthWait() == stopping)
@@ -366,18 +367,13 @@ SHAMapStoreImp::run()
 
             lastRotated = validatedSeq;
 
-            dbRotating_->rotateWithLock(
-                [&](std::string const& writableBackendName) {
-                    SavedState savedState;
-                    savedState.writableDb = newBackend->getName();
-                    savedState.archiveDb = writableBackendName;
-                    savedState.lastRotated = lastRotated;
-                    state_db_.setState(savedState);
-
-                    clearCaches(validatedSeq);
-
-                    return std::move(newBackend);
-                });
+            auto const oldBackendName =
+                dbRotating_->rotateWithLock(std::move(newBackend));
+            SavedState savedState{
+                .writableDb = newBackendName,
+                .archiveDb = oldBackendName,
+                .lastRotated = lastRotated};
+            state_db_.setState(savedState);
 
             JLOG(journal_.warn()) << "finished rotation " << validatedSeq;
         }

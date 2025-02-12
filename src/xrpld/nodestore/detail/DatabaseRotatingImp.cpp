@@ -40,27 +40,18 @@ DatabaseRotatingImp::DatabaseRotatingImp(
         fdRequired_ += archiveBackend_->fdRequired();
 }
 
-void
+[[nodiscard]] std::string
 DatabaseRotatingImp::rotateWithLock(
-    std::function<std::unique_ptr<NodeStore::Backend>(
-        std::string const& writableBackendName)> const& f)
+    std::unique_ptr<NodeStore::Backend> newBackend)
 {
-    // backendMutex_ prevents writableBackend_ and archiveBackend_ from changing
-    // while the main mutex_ is released during the callback.
-    std::lock_guard backendLock(backendMutex_);
-
-    auto const writableBackend = [&] {
-        std::lock_guard lock(mutex_);
-        return writableBackend_;
-    }();
-
-    auto newBackend = f(writableBackend->getName());
-
     std::lock_guard lock(mutex_);
+    auto const oldName = writableBackend_->getName();
 
     archiveBackend_->setDeletePath();
     archiveBackend_ = std::move(writableBackend_);
     writableBackend_ = std::move(newBackend);
+
+    return oldName;
 }
 
 std::string
