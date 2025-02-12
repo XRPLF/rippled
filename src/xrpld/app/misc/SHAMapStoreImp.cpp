@@ -379,6 +379,8 @@ SHAMapStoreImp::run()
                         return std::move(newBackend);
                     }))
             {
+                UNREACHABLE(
+                    "ripple::SHAMapStoreImp::run rotateWithLock failed");
                 JLOG(journal_.error())
                     << validatedSeq
                     << " rotation failed. Discard unused new backend.";

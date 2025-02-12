@@ -615,8 +615,7 @@ public:
         for (int i = 0; i < 5; ++i)
         {
             threads.emplace_back([&]() {
-                auto const result = dbr->rotateWithLock(cb);
-                if (result)
+                if (dbr->rotateWithLock(cb))
                     ++successes;
                 else
                     ++failures;
@@ -635,6 +634,23 @@ public:
         // Only one thread will invoke the callback to increment threadNum
         BEAST_EXPECT(threadNum == 1);
         BEAST_EXPECT(dbr->getName() == "1");
+
+        /////////////////////////////////////////////////////////////
+        // Create another impossible situation. Try to re-enter rotateWithLock
+        // inside the callback.
+        auto const cbReentrant = [&](std::string const& writableBackendName) {
+            BEAST_EXPECT(writableBackendName == "1");
+            auto newBackend = makeBackendRotating(
+                env, scheduler, std::to_string(++threadNum));
+            BEAST_EXPECT(!dbr->rotateWithLock(cb));
+            return newBackend;
+        };
+        BEAST_EXPECT(dbr->rotateWithLock(cbReentrant));
+
+        BEAST_EXPECT(successes == 1);
+        BEAST_EXPECT(failures == 4);
+        BEAST_EXPECT(threadNum == 2);
+        BEAST_EXPECT(dbr->getName() == "2");
     }
 
     void

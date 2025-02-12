@@ -53,7 +53,8 @@ DatabaseRotatingImp::rotateWithLock(
     boost::upgrade_lock readLock(mutex_, boost::defer_lock);
     if (!readLock.try_lock())
     {
-        // This should only be reachable through unit tests.
+        // If anything other than a unit test gets here, something has gone very
+        // wrong
         XRPL_ASSERT(
             unitTest_,
             "ripple::NodeStore::DatabaseRotatingImp::rotateWithLock "
@@ -62,7 +63,7 @@ DatabaseRotatingImp::rotateWithLock(
     }
     auto newBackend = f(writableBackend_->getName());
 
-    // boost::upgrade_mutex guarantees that only only thread can have "upgrade
+    // boost::upgrade_mutex guarantees that only one thread can have "upgrade
     // ownership" at a time, so this is 100% safe, and guaranteed to avoid
     // deadlock.
     boost::upgrade_to_unique_lock writeLock(readLock);
@@ -77,14 +78,14 @@ DatabaseRotatingImp::rotateWithLock(
 std::string
 DatabaseRotatingImp::getName() const
 {
-    std::shared_lock lock(mutex_);
+    boost::shared_lock lock(mutex_);
     return writableBackend_->getName();
 }
 
 std::int32_t
 DatabaseRotatingImp::getWriteLoad() const
 {
-    std::shared_lock lock(mutex_);
+    boost::shared_lock lock(mutex_);
     return writableBackend_->getWriteLoad();
 }
 
@@ -92,7 +93,7 @@ void
 DatabaseRotatingImp::importDatabase(Database& source)
 {
     auto const backend = [&] {
-        std::shared_lock lock(mutex_);
+        boost::shared_lock lock(mutex_);
         return writableBackend_;
     }();
 
@@ -102,7 +103,7 @@ DatabaseRotatingImp::importDatabase(Database& source)
 void
 DatabaseRotatingImp::sync()
 {
-    std::shared_lock lock(mutex_);
+    boost::shared_lock lock(mutex_);
     writableBackend_->sync();
 }
 
@@ -116,7 +117,7 @@ DatabaseRotatingImp::store(
     auto nObj = NodeObject::createObject(type, std::move(data), hash);
 
     auto const backend = [&] {
-        std::shared_lock lock(mutex_);
+        boost::shared_lock lock(mutex_);
         return writableBackend_;
     }();
 
@@ -170,7 +171,7 @@ DatabaseRotatingImp::fetchNodeObject(
     std::shared_ptr<NodeObject> nodeObject;
 
     auto [writable, archive] = [&] {
-        std::shared_lock lock(mutex_);
+        boost::shared_lock lock(mutex_);
         return std::make_pair(writableBackend_, archiveBackend_);
     }();
 
@@ -184,7 +185,7 @@ DatabaseRotatingImp::fetchNodeObject(
         {
             {
                 // Refresh the writable backend pointer
-                std::shared_lock lock(mutex_);
+                boost::shared_lock lock(mutex_);
                 writable = writableBackend_;
             }
 
@@ -205,7 +206,7 @@ DatabaseRotatingImp::for_each(
     std::function<void(std::shared_ptr<NodeObject>)> f)
 {
     auto [writable, archive] = [&] {
-        std::shared_lock lock(mutex_);
+        boost::shared_lock lock(mutex_);
         return std::make_pair(writableBackend_, archiveBackend_);
     }();
 
