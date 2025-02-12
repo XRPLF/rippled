@@ -19,7 +19,6 @@
 
 #include <xrpld/nodestore/detail/DatabaseRotatingImp.h>
 #include <xrpl/protocol/HashPrefix.h>
-#include <boost/thread/locks.hpp>
 
 namespace ripple {
 namespace NodeStore {
@@ -34,7 +33,6 @@ DatabaseRotatingImp::DatabaseRotatingImp(
     : DatabaseRotating(scheduler, readThreads, config, j)
     , writableBackend_(std::move(writableBackend))
     , archiveBackend_(std::move(archiveBackend))
-    , unitTest_(get<bool>(config, unitTestFlag, false))
 {
     if (writableBackend_)
         fdRequired_ += writableBackend_->fdRequired();
@@ -42,52 +40,40 @@ DatabaseRotatingImp::DatabaseRotatingImp(
         fdRequired_ += archiveBackend_->fdRequired();
 }
 
-[[nodiscard]] bool
+void
 DatabaseRotatingImp::rotateWithLock(
     std::function<std::unique_ptr<NodeStore::Backend>(
         std::string const& writableBackendName)> const& f)
 {
-    // This function should be the only one taking any kind of unique/write
-    // lock, and should only be called once at a time by its syncronous caller.
+    // backendMutex_ prevents writableBackend_ and archiveBackend_ from changing
+    // while the main mutex_ is released during the callback.
+    std::lock_guard backendLock(backendMutex_);
 
-    // The upgradable lock will NOT block shared locks, but will block other
-    // upgrade locks and unique/exclusive locks.
-    boost::upgrade_lock upgradeableLock(mutex_, boost::defer_lock);
-    if (!upgradeableLock.try_lock())
-    {
-        // If anything other than a unit test gets here, something has gone very
-        // wrong
-        XRPL_ASSERT(
-            unitTest_,
-            "ripple::NodeStore::DatabaseRotatingImp::rotateWithLock "
-            "unit testing");
-        return false;
-    }
-    auto newBackend = f(writableBackend_->getName());
+    auto const writableBackend = [&] {
+        std::lock_guard lock(mutex_);
+        return writableBackend_;
+    }();
 
-    // boost::upgrade_mutex guarantees that only one thread can have "upgrade
-    // ownership" at a time, so this is 100% safe, and guaranteed to avoid
-    // deadlock.
-    boost::upgrade_to_unique_lock writeLock(upgradeableLock);
+    auto newBackend = f(writableBackend->getName());
+
+    std::lock_guard lock(mutex_);
 
     archiveBackend_->setDeletePath();
     archiveBackend_ = std::move(writableBackend_);
     writableBackend_ = std::move(newBackend);
-
-    return true;
 }
 
 std::string
 DatabaseRotatingImp::getName() const
 {
-    boost::shared_lock lock(mutex_);
+    std::lock_guard lock(mutex_);
     return writableBackend_->getName();
 }
 
 std::int32_t
 DatabaseRotatingImp::getWriteLoad() const
 {
-    boost::shared_lock lock(mutex_);
+    std::lock_guard lock(mutex_);
     return writableBackend_->getWriteLoad();
 }
 
@@ -95,7 +81,7 @@ void
 DatabaseRotatingImp::importDatabase(Database& source)
 {
     auto const backend = [&] {
-        boost::shared_lock lock(mutex_);
+        std::lock_guard lock(mutex_);
         return writableBackend_;
     }();
 
@@ -105,7 +91,7 @@ DatabaseRotatingImp::importDatabase(Database& source)
 void
 DatabaseRotatingImp::sync()
 {
-    boost::shared_lock lock(mutex_);
+    std::lock_guard lock(mutex_);
     writableBackend_->sync();
 }
 
@@ -119,7 +105,7 @@ DatabaseRotatingImp::store(
     auto nObj = NodeObject::createObject(type, std::move(data), hash);
 
     auto const backend = [&] {
-        boost::shared_lock lock(mutex_);
+        std::lock_guard lock(mutex_);
         return writableBackend_;
     }();
 
@@ -173,7 +159,7 @@ DatabaseRotatingImp::fetchNodeObject(
     std::shared_ptr<NodeObject> nodeObject;
 
     auto [writable, archive] = [&] {
-        boost::shared_lock lock(mutex_);
+        std::lock_guard lock(mutex_);
         return std::make_pair(writableBackend_, archiveBackend_);
     }();
 
@@ -187,7 +173,7 @@ DatabaseRotatingImp::fetchNodeObject(
         {
             {
                 // Refresh the writable backend pointer
-                boost::shared_lock lock(mutex_);
+                std::lock_guard lock(mutex_);
                 writable = writableBackend_;
             }
 
@@ -208,7 +194,7 @@ DatabaseRotatingImp::for_each(
     std::function<void(std::shared_ptr<NodeObject>)> f)
 {
     auto [writable, archive] = [&] {
-        boost::shared_lock lock(mutex_);
+        std::lock_guard lock(mutex_);
         return std::make_pair(writableBackend_, archiveBackend_);
     }();
 
