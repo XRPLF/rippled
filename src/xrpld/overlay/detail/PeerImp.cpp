@@ -1225,7 +1225,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMEndpoints> const& m)
     if (malformed > 0)
     {
         fee_.update(
-            Resource::feeInvalidData * malformed, "malformed endpoints");
+            Resource::feeInvalidData * malformed, std::to_string(malformed) + "malformed endpoints");
     }
 
     if (!endpoints.empty())
