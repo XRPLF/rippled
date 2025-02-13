@@ -47,8 +47,12 @@ DatabaseRotatingImp::rotate(
         std::string const& writableName,
         std::string const& archiveName)> const& f)
 {
-    std::string newWritableBackendName;
+    // Pass these two names to the callback function
+    std::string const newWritableBackendName = newBackEnd->getName();
     std::string newArchiveBackendName;
+    // Hold on to current archive backend pointer until after the
+    // callback finishes. Only then will the archive directory be
+    // deleted.
     std::shared_ptr<NodeStore::Backend> oldArchiveBackend;
     {
         std::lock_guard lock(mutex_);
@@ -58,8 +62,8 @@ DatabaseRotatingImp::rotate(
 
         archiveBackend_ = std::move(writableBackend_);
         newArchiveBackendName = archiveBackend_->getName();
+
         writableBackend_ = std::move(newBackend);
-        newWritableBackendName = writableBackend_->getName();
     }
 
     f(newWritableBackendName, newArchiveBackendName);
