@@ -544,6 +544,7 @@ public:
         backend->open();
         return backend;
     }
+
     void
     testRotate()
     {
