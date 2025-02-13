@@ -104,7 +104,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
             return tecNFTOKEN_BUY_SELL_MISMATCH;
 
         // The two offers being brokered must be for the same asset:
-        if ((*bo)[sfAmount].issue() != (*so)[sfAmount].issue())
+        if ((*bo)[sfAmount].asset() != (*so)[sfAmount].asset())
             return tecNFTOKEN_BUY_SELL_MISMATCH;
 
         // The two offers may not form a loop.  A broker may not sell the
@@ -152,7 +152,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         // cut, if any).
         if (auto const brokerFee = ctx.tx[~sfNFTokenBrokerFee])
         {
-            if (brokerFee->issue() != (*bo)[sfAmount].issue())
+            if (brokerFee->asset() != (*bo)[sfAmount].asset())
                 return tecNFTOKEN_BUY_SELL_MISMATCH;
 
             if (brokerFee >= (*bo)[sfAmount])
@@ -203,7 +203,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
             accountHolds(
                 ctx.view,
                 (*bo)[sfOwner],
-                needed.getCurrency(),
+                needed.get<Issue>().currency,
                 needed.getIssuer(),
                 fhZERO_IF_FROZEN,
                 ctx.j) < needed)
@@ -240,7 +240,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
             if (accountHolds(
                     ctx.view,
                     ctx.tx[sfAccount],
-                    needed.getCurrency(),
+                    needed.get<Issue>().currency,
                     needed.getIssuer(),
                     fhZERO_IF_FROZEN,
                     ctx.j) < needed)
@@ -302,7 +302,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
             auto const issuer = nft::getIssuer(tokenID);
             // Issuer doesn't need a trust line to accept their own currency.
             if (issuer != amount.getIssuer() &&
-                !ctx.view.read(keylet::line(issuer, amount.issue())))
+                !ctx.view.read(keylet::line(issuer, amount.get<Issue>())))
                 return tecNO_LINE;
         }
     }

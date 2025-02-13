@@ -21,21 +21,20 @@
 #define RIPPLE_PROTOCOL_ASSET_H_INCLUDED
 
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
 
 namespace ripple {
 
-class Asset;
-
-template <typename TIss>
-concept ValidIssueType =
-    std::is_same_v<TIss, Issue> || std::is_same_v<TIss, MPTIssue>;
-
-template <typename A>
-concept AssetType =
-    std::is_convertible_v<A, Asset> || std::is_convertible_v<A, Issue> ||
-    std::is_convertible_v<A, MPTIssue> || std::is_convertible_v<A, MPTID>;
+template <typename T>
+    requires(
+        std::is_same_v<T, XRPAmount> || std::is_same_v<T, IOUAmount> ||
+        std::is_same_v<T, MPTAmount>)
+struct AmountType
+{
+    using amount_type = T;
+};
 
 /* Asset is an abstraction of three different issue types: XRP, IOU, MPT.
  * For historical reasons, two issue types XRP and IOU are wrapped in Issue
@@ -46,6 +45,10 @@ class Asset
 {
 public:
     using value_type = std::variant<Issue, MPTIssue>;
+    using AmtType = std::variant<
+        AmountType<XRPAmount>,
+        AmountType<IOUAmount>,
+        AmountType<MPTAmount>>;
 
 private:
     value_type issue_;
@@ -92,11 +95,14 @@ public:
     void
     setJson(Json::Value& jv) const;
 
-    bool
+    constexpr bool
     native() const
     {
         return holds<Issue>() && get<Issue>().native();
     }
+
+    constexpr AmtType
+    getAmountType() const;
 
     friend constexpr bool
     operator==(Asset const& lhs, Asset const& rhs);
@@ -143,6 +149,22 @@ constexpr Asset::value_type const&
 Asset::value() const
 {
     return issue_;
+}
+
+constexpr Asset::AmtType
+Asset::getAmountType() const
+{
+    return std::visit(
+        [&]<ValidIssueType TIss>(TIss const& issue) -> AmtType {
+            constexpr AmountType<XRPAmount> xrp;
+            constexpr AmountType<IOUAmount> iou;
+            constexpr AmountType<MPTAmount> mpt;
+            if constexpr (std::is_same_v<TIss, Issue>)
+                return native() ? AmtType(xrp) : AmtType(iou);
+            else
+                return AmtType(mpt);
+        },
+        issue_);
 }
 
 constexpr bool
@@ -221,6 +243,50 @@ assetFromJson(Json::Value const& jv);
 
 Json::Value
 to_json(Asset const& asset);
+
+inline bool
+isConsistent(Asset const& issue)
+{
+    return std::visit(
+        [&]<typename TIss>(TIss const& issue_) {
+            if constexpr (std::is_same_v<TIss, Issue>)
+                return isConsistent(issue_);
+            else
+                return true;
+        },
+        issue.value());
+}
+
+inline bool
+validAsset(Asset const& issue)
+{
+    return std::visit(
+        [&]<typename TIss>(TIss const& issue_) {
+            if constexpr (std::is_same_v<TIss, Issue>)
+                return isConsistent(issue_) && issue_.currency != badCurrency();
+            else
+                return true;
+        },
+        issue.value());
+}
+
+template <class Hasher>
+void
+hash_append(Hasher& h, Asset const& r)
+{
+    using beast::hash_append;
+    std::visit(
+        [&]<ValidIssueType TIss>(TIss const& issue) {
+            if constexpr (std::is_same_v<TIss, Issue>)
+                hash_append(h, issue);
+            else
+                hash_append(h, issue);
+        },
+        r.value());
+}
+
+std::ostream&
+operator<<(std::ostream& os, Asset const& x);
 
 }  // namespace ripple
 

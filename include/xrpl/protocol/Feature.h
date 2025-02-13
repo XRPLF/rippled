@@ -52,11 +52,12 @@
  * When a feature has been enabled for several years, the conditional code
  * may be removed, and the feature "retired". To retire a feature:
  * 1) Remove the uint256 declaration from this file.
- * 2) MOVE the uint256 definition in Feature.cpp to the "retired features"
- *    section at the end of the file.
+ * 2) MOVE the uint256 definition in features.macro to the "retired features"
+ *    section at the end of Feature.cpp, which calls retireFeature().
+ *    retireFeature() registers the retired feature as Supported::yes with
+ *    VoteBehavior::Obsolete.
  * 3) CHANGE the name of the variable to start with "retired".
- * 4) CHANGE the parameters of the `registerFeature` call to `Supported::yes`
- *    and `VoteBehavior::DefaultNo`.
+ *
  * The feature must remain registered and supported indefinitely because it
  * still exists in the ledger, but there is no need to vote for it because
  * there's nothing to vote for. If it is removed completely from the code, any
@@ -80,7 +81,7 @@ namespace detail {
 // Feature.cpp. Because it's only used to reserve storage, and determine how
 // large to make the FeatureBitset, it MAY be larger. It MUST NOT be less than
 // the actual number of amendments. A LogicError on startup will verify this.
-static constexpr std::size_t numFeatures = 88;
+static constexpr std::size_t numFeatures = 90;
 
 /** Amendments that this server supports and the default voting behavior.
    Whether they are enabled depends on the Rules defined in the validated
