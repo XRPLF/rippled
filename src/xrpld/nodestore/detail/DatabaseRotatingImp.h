@@ -22,7 +22,7 @@
 
 #include <xrpld/nodestore/DatabaseRotating.h>
 
-#include <boost/thread/shared_mutex.hpp>
+#include <mutex>
 
 namespace ripple {
 namespace NodeStore {
@@ -48,7 +48,7 @@ public:
         stop();
     }
 
-    [[nodiscard]] bool
+    void
     rotateWithLock(
         std::function<std::unique_ptr<NodeStore::Backend>(
             std::string const& writableBackendName)> const& f) override;
@@ -79,21 +79,16 @@ public:
     void
     sweep() override;
 
-    // Include the space in the name to ensure it can't be set in a file
-    static constexpr auto unitTestFlag = " unit_test";
-
 private:
     std::shared_ptr<Backend> writableBackend_;
     std::shared_ptr<Backend> archiveBackend_;
-    bool const unitTest_;
-
-    // Implements the "UpgradeLockable" concept
-    // https://www.boost.org/doc/libs/release/doc/html/thread/synchronization.html#thread.synchronization.mutex_concepts.upgrade_lockable
-    // In short: Many threads can have shared ownership. One thread can have
-    // upgradable ownership at the same time as others have shared ownership.
-    // The upgradeable ownership can be upgraded to exclusive ownership,
-    // blocking if necessary until no other threads have shared ownership.
-    mutable boost::upgrade_mutex mutex_;
+    // This needs to be a recursive mutex because callbacks in `rotateWithLock`
+    // can call function that also lock the mutex. A current example of this is
+    // a callback from SHAMapStoreImp, which calls `clearCaches`. This
+    // `clearCaches` call eventually calls `fetchNodeObject` which tries to
+    // relock the mutex. It would be desirable to rewrite the code so the lock
+    // was not held during a callback.
+    mutable std::recursive_mutex mutex_;
 
     std::shared_ptr<NodeObject>
     fetchNodeObject(
