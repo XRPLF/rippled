@@ -668,9 +668,6 @@ public:
         PeerGroup fast = sim.createGroup(4);
         PeerGroup network = fast + slow;
 
-        for (Peer* peer : network)
-            peer->consensusParms = parms;
-
         // Connected trust graph
         network.trust(network);
 
