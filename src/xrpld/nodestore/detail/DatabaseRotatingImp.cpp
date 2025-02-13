@@ -47,23 +47,20 @@ DatabaseRotatingImp::rotate(
         std::string const& writableName,
         std::string const& archiveName)> const& f)
 {
-    auto const
-        [newWritableBackendName, newArchiveBackendName, oldArchiveBackend] =
-            [&]() {
-                std::lock_guard lock(mutex_);
+    std::string newWritableBackendName;
+    std::string newArchiveBackendName;
+    std::shared_ptr<NodeStore::Backend> oldArchiveBackend;
+    {
+        std::lock_guard lock(mutex_);
 
-                archiveBackend_->setDeletePath();
-                auto const oldArchiveBackend = std::move(archiveBackend_);
+        archiveBackend_->setDeletePath();
+        oldArchiveBackend = std::move(archiveBackend_);
 
-                archiveBackend_ = std::move(writableBackend_);
-                auto const newArchiveBackendName = archiveBackend_->getName();
-                writableBackend_ = std::move(newBackend);
-                auto const newWritableBackendName = writableBackend_->getName();
-                return std::tuple{
-                    newWritableBackendName,
-                    newArchiveBackendName,
-                    oldArchiveBackend};
-            }();
+        archiveBackend_ = std::move(writableBackend_);
+        newArchiveBackendName = archiveBackend_->getName();
+        writableBackend_ = std::move(newBackend);
+        newWritableBackendName = writableBackend_->getName();
+    }
 
     f(newWritableBackendName, newArchiveBackendName);
 }
