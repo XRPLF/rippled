@@ -560,8 +560,6 @@ public:
         // Create the backend. Normally, SHAMapStoreImp handles all these
         // details
         auto nscfg = env.app().config().section(ConfigSection::nodeDatabase());
-        nscfg.set(
-            NodeStore::DatabaseRotatingImp::unitTestFlag, std::to_string(true));
 
         // Provide default values:
         if (!nscfg.exists("cache_size"))
@@ -595,8 +593,7 @@ public:
             env.app().logs().journal("NodeStoreTest"));
 
         /////////////////////////////////////////////////////////////
-        // Create the impossible situation. Get several calls to rotateWithLock
-        // going in parallel using a callback that just delays
+        // Check basic functionality
         using namespace std::chrono_literals;
         std::atomic<int> threadNum = 0;
         auto const cb = [&](std::string const& writableBackendName) {
@@ -604,52 +601,35 @@ public:
             BEAST_EXPECT(writableBackendName == "write");
             auto newBackend = makeBackendRotating(
                 env, scheduler, std::to_string(++threadNum));
-            std::this_thread::sleep_for(5s);
+            // Ensure that dbr functions can be called from within the callback
+            BEAST_EXPECT(dbr->getName() == "write");
+
             return newBackend;
         };
 
-        std::atomic<int> successes = 0;
-        std::atomic<int> failures = 0;
-        std::vector<std::thread> threads;
-        threads.reserve(5);
-        for (int i = 0; i < 5; ++i)
-        {
-            threads.emplace_back([&]() {
-                if (dbr->rotateWithLock(cb))
-                    ++successes;
-                else
-                    ++failures;
-            });
-            // There's no point in trying to time the threads to line up at
-            // exact points, but introduce a little bit of staggering to be more
-            // "realistic".
-            std::this_thread::sleep_for(10ms * i);
-        }
-        for (auto& t : threads)
-        {
-            t.join();
-        }
-        BEAST_EXPECT(successes == 1);
-        BEAST_EXPECT(failures == 4);
-        // Only one thread will invoke the callback to increment threadNum
+        dbr->rotateWithLock(cb);
         BEAST_EXPECT(threadNum == 1);
         BEAST_EXPECT(dbr->getName() == "1");
 
         /////////////////////////////////////////////////////////////
         // Create another impossible situation. Try to re-enter rotateWithLock
         // inside the callback.
+        auto const cbBasic = [&](std::string const& writableBackendName) {
+            auto newBackend = makeBackendRotating(
+                env, scheduler, std::to_string(++threadNum));
+            return newBackend;
+        };
         auto const cbReentrant = [&](std::string const& writableBackendName) {
             BEAST_EXPECT(writableBackendName == "1");
             auto newBackend = makeBackendRotating(
                 env, scheduler, std::to_string(++threadNum));
-            BEAST_EXPECT(!dbr->rotateWithLock(cb));
+            // Note: doing this is stupid and should never happen
+            dbr->rotateWithLock(cbBasic);
             return newBackend;
         };
-        BEAST_EXPECT(dbr->rotateWithLock(cbReentrant));
+        dbr->rotateWithLock(cbReentrant);
 
-        BEAST_EXPECT(successes == 1);
-        BEAST_EXPECT(failures == 4);
-        BEAST_EXPECT(threadNum == 2);
+        BEAST_EXPECT(threadNum == 3);
         BEAST_EXPECT(dbr->getName() == "2");
     }
 
