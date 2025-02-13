@@ -26,8 +26,6 @@
 #include <xrpld/core/ConfigSections.h>
 #include <xrpld/nodestore/detail/DatabaseRotatingImp.h>
 #include <xrpl/protocol/jss.h>
-#include <boost/lexical_cast.hpp>
-#include <thread>
 
 namespace ripple {
 namespace test {
