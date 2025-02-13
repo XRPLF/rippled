@@ -124,9 +124,9 @@ Collaboration diagram for ripple::NodeStore::DatabaseRotating:</div>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a9575132eef9af0001fec07684a2434cd"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1DatabaseRotating.html#a9575132eef9af0001fec07684a2434cd">DatabaseRotating</a> (<a class="el" href="classripple_1_1NodeStore_1_1Scheduler.html">Scheduler</a> &amp;scheduler, int readThreads, <a class="el" href="classripple_1_1Section.html">Section</a> const &amp;config, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> journal)</td></tr>
 <tr class="separator:a9575132eef9af0001fec07684a2434cd"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae436a072e5a6068e819776a53fc0ab25"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1DatabaseRotating.html#ae436a072e5a6068e819776a53fc0ab25">rotateWithLock</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1NodeStore_1_1Backend.html">NodeStore::Backend</a> &gt;(<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;writableBackendName)&gt; const &amp;f)=0</td></tr>
-<tr class="memdesc:ae436a072e5a6068e819776a53fc0ab25"><td class="mdescLeft">&#160;</td><td class="mdescRight">Rotates the backends.  <a href="classripple_1_1NodeStore_1_1DatabaseRotating.html#ae436a072e5a6068e819776a53fc0ab25">More...</a><br /></td></tr>
-<tr class="separator:ae436a072e5a6068e819776a53fc0ab25"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6f01b2e1b8281065d791c149c912bb38"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1DatabaseRotating.html#a6f01b2e1b8281065d791c149c912bb38">rotate</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1NodeStore_1_1Backend.html">NodeStore::Backend</a> &gt; &amp;&amp;newBackend, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;writableName, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;archiveName)&gt; const &amp;f)=0</td></tr>
+<tr class="memdesc:a6f01b2e1b8281065d791c149c912bb38"><td class="mdescLeft">&#160;</td><td class="mdescRight">Rotates the backends.  <a href="classripple_1_1NodeStore_1_1DatabaseRotating.html#a6f01b2e1b8281065d791c149c912bb38">More...</a><br /></td></tr>
+<tr class="separator:a6f01b2e1b8281065d791c149c912bb38"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a24f47bc48e8d040c662611674898fe2e"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NodeStore_1_1Database.html#a24f47bc48e8d040c662611674898fe2e">getName</a> () const =0</td></tr>
 <tr class="memdesc:a24f47bc48e8d040c662611674898fe2e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve the name associated with this backend.  <a href="classripple_1_1NodeStore_1_1Database.html#a24f47bc48e8d040c662611674898fe2e">More...</a><br /></td></tr>
 <tr class="separator:a24f47bc48e8d040c662611674898fe2e"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -283,8 +283,8 @@ Private Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="ae436a072e5a6068e819776a53fc0ab25" name="ae436a072e5a6068e819776a53fc0ab25"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae436a072e5a6068e819776a53fc0ab25">&#9670;&#160;</a></span>rotateWithLock()</h2>
+<a id="a6f01b2e1b8281065d791c149c912bb38" name="a6f01b2e1b8281065d791c149c912bb38"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6f01b2e1b8281065d791c149c912bb38">&#9670;&#160;</a></span>rotate()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -293,11 +293,21 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual void ripple::NodeStore::DatabaseRotating::rotateWithLock </td>
+          <td class="memname">virtual void ripple::NodeStore::DatabaseRotating::rotate </td>
           <td>(</td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1NodeStore_1_1Backend.html">NodeStore::Backend</a> &gt;(<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;writableBackendName)&gt; const &amp;&#160;</td>
-          <td class="paramname"><em>f</em></td><td>)</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1NodeStore_1_1Backend.html">NodeStore::Backend</a> &gt; &amp;&amp;&#160;</td>
+          <td class="paramname"><em>newBackend</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void(<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;writableName, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;archiveName)&gt; const &amp;&#160;</td>
+          <td class="paramname"><em>f</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
   </td>
@@ -310,12 +320,13 @@ Private Attributes</h2></td></tr>
 <p>Rotates the backends. </p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">f</td><td>A function executed before the rotation and under the same lock </td></tr>
+    <tr><td class="paramname">newBackend</td><td>New writable backend </td></tr>
+    <tr><td class="paramname">f</td><td>A function executed after the rotation outside of lock. The values passed to f will be the new backend database names <em>after</em> rotation. </td></tr>
   </table>
   </dd>
 </dl>
 
-<p>Implemented in <a class="el" href="classripple_1_1NodeStore_1_1DatabaseRotatingImp.html#a76f256f68048bc81a0d034f7226387b8">ripple::NodeStore::DatabaseRotatingImp</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1NodeStore_1_1DatabaseRotatingImp.html#acf7791e3f58c2ae49fec9bc76f42b12c">ripple::NodeStore::DatabaseRotatingImp</a>.</p>
 
 </div>
 </div>
