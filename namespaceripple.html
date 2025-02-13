@@ -8731,7 +8731,7 @@ ledger.
 </div><div class="memdoc">
 
 <p><a class="el" href="classripple_1_1Transaction.html">Transaction</a> type identifiers. </p>
-<p >These are part of the binary message format. <a class="el" href="classripple_1_1Transaction.html">Transaction</a> type identifieers</p>
+<p >These are part of the binary message format. <a class="el" href="classripple_1_1Transaction.html">Transaction</a> type identifiers</p>
 <p >Each ledger object requires a unique type identifier, which is stored within the object itself; this makes it possible to iterate the entire ledger and determine each object's type and verify that the object you retrieved from a given hash matches the expected type.</p>
 <dl class="section warning"><dt>Warning</dt><dd>Since these values are included in transactions, which are signed objects, and used by the code to determine the type of transaction being invoked, they are part of the protocol. <b>Changing them should be avoided because without special handling, this will result in a hard fork.</b></dd></dl>
 <dl class="section note"><dt>Note</dt><dd>When retiring types, the specific values should not be removed but should be marked as [[deprecated]]. This is to avoid accidental reuse of identifiers.</dd></dl>
@@ -13570,7 +13570,7 @@ template&lt;&gt; </div>
 <p >The cache is optional and need not be initialized. But because conversion is expensive (it requires a SHA-256 operation) in most cases the overhead of the cache is worth the benefit.</p>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
-    <tr><td class="paramname">count</td><td>The number of entries the cache should accomodate. Zero will disable the cache, releasing any memory associated with it.</td></tr>
+    <tr><td class="paramname">count</td><td>The number of entries the cache should accommodate. Zero will disable the cache, releasing any memory associated with it.</td></tr>
   </table>
   </dd>
 </dl>
@@ -18376,7 +18376,7 @@ template&lt;class T &gt; </div>
 <p >We can optimize verifying multiple multisignatures by splitting the data building into two parts; o A large part that is shared by all of the computations. o A small part that is unique to each signer in the multisignature.</p>
 <p >The following methods support that optimization:</p><ol type="1">
 <li>startMultiSigningData provides the large part which can be shared.</li>
-<li>finishMuiltiSigningData caps the passed in serializer with each signer's unique data. </li>
+<li>finishMultiSigningData caps the passed in serializer with each signer's unique data. </li>
 </ol>
 
 <p class="definition">Definition at line <a class="el" href="Sign_8cpp_source.html#l00095">95</a> of file <a class="el" href="Sign_8cpp_source.html">Sign.cpp</a>.</p>
