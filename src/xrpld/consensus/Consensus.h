@@ -842,7 +842,10 @@ Consensus<Adaptor>::timerEntry(NetClock::time_point const& now)
     else if (phase_ == ConsensusPhase::establish)
     {
         if (result_)
+        {
             ++result_->peerUnchangedCounter;
+            ++result_->establishCounter;
+        }
         phaseEstablish();
     }
 }
@@ -1584,13 +1587,19 @@ Consensus<Adaptor>::haveConsensus()
 
     ConsensusParms const& parms = adaptor_.parms();
     // stable state is NOT desirable if we don't have 80% agreement
-    bool stableState = true;
-    for (auto const& [txid, dt] : result_->disputes)
+    bool stableState = haveCloseTimeConsensus_;
+    if (stableState)
     {
-        if (!dt.stableState(parms, result_->peerUnchangedCounter))
+        for (auto const& [txid, dt] : result_->disputes)
         {
-            stableState = false;
-            break;
+            if (!dt.stableState(
+                    parms,
+                    mode_.get() == ConsensusMode::proposing,
+                    result_->peerUnchangedCounter))
+            {
+                stableState = false;
+                break;
+            }
         }
     }
 
@@ -1613,6 +1622,22 @@ Consensus<Adaptor>::haveConsensus()
     // Consensus has taken far too long. Drop out of the round.
     if (result_->state == ConsensusState::Expired)
     {
+        auto const minimumCounter =
+            parms.avalancheCutoffs.size() * parms.avMIN_ROUNDS;
+        if (result_->establishCounter < minimumCounter)
+        {
+            // If each round of phaseEstablish takes a very long time, we may
+            // "expire" before we've given consensus enough time at each
+            // avalanche level to actually come to a consensus. In that case,
+            // keep trying. This should only happen if there are an extremely
+            // large number of disputes such that each round takes an inordinate
+            // amount of time.
+            JLOG(j_.error())
+                << "Consensus time has expired in round "
+                << result_->establishCounter << "; continue until round "
+                << minimumCounter << ". " << Json::Compact{getJson(false)};
+            return false;
+        }
         JLOG(j_.error()) << "Nobody can reach consensus";
         JLOG(j_.error()) << Json::Compact{getJson(true)};
         leaveConsensus();

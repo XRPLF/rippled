@@ -87,26 +87,52 @@ public:
     //! Are we and our peers at a "stable state" where we probably won't change
     //! our vote?
     bool
-    stableState(ConsensusParms const& p, int peersUnchanged) const
+    stableState(ConsensusParms const& p, bool proposing, int peersUnchanged)
+        const
     {
         // at() can throw, but the map is built by hand to ensure all valid
         // values are available.
         auto const& currentCutoff = p.avalancheCutoffs.at(avalancheState_);
+        auto const& nextCutoff = p.avalancheCutoffs.at(currentCutoff.next);
 
         // We're not at the final avalanche state, so there's room for change
-        if (avalancheState_ != currentCutoff.next)
+        // Check the times in case the state machine is updated to allow states
+        // to loop.
+        if (avalancheState_ != currentCutoff.next &&
+            nextCutoff.consensusTime > currentCutoff.consensusTime)
             return false;
 
-        // We've haven't had this vote for 2 rounds yet. Things could change.
+        // We've haven't had this vote for minimum rounds yet. Things could
+        // change.
         if (currentVoteCounter_ < p.avMIN_ROUNDS)
             return false;
 
-        // If we or any peers have changed a vote in the last 5 rounds, then
+        // If we or any peers have changed a vote in several rounds, then
         // things could still change. But if _either_ has not changed in that
         // long, we're unlikely to change our vote any time soon. (This prevents
         // a malicious peer from flip-flopping a vote to prevent consensus.)
-        return peersUnchanged >= p.avSTUCK_VOTE_ROUNDS ||
-            currentVoteCounter_ >= p.avSTUCK_VOTE_ROUNDS;
+        if (peersUnchanged < p.avSTABLE_STATE_ROUNDS ||
+            currentVoteCounter_ < p.avSTABLE_STATE_ROUNDS)
+            return false;
+
+        // Does this transaction have more than 80% agreement
+
+        // Compute the percentage of nodes voting 'yes' (possibly including us)
+        int support = yays_ * 100;
+        int total = nays_ + yays_;
+        if (proposing)  // give ourselves full weight
+        {
+            support += (ourVote_ ? 100 : 0);
+            ++total;
+        }
+        if (!total)
+            // There are no votes, so we know nothing
+            return false;
+        int const weight = support / total;
+        // Returns true if the tx has more than minCONSENSUS_PCT (80) percent
+        // agreement. Either voting for _or_ voting against the tx.
+        return weight > p.minCONSENSUS_PCT ||
+            weight < (100 - p.minCONSENSUS_PCT);
     }
 
     //! The disputed transaction.
@@ -168,7 +194,9 @@ private:
     Map_t votes_;   //< Map from NodeID to vote
     //! The number of rounds we've gone without changing our vote
     std::size_t currentVoteCounter_ = 0;
+    //! Which minimum acceptance percentage phase we are currently in
     ConsensusParms::AvalancheState avalancheState_ = ConsensusParms::init;
+    //! How long we have been in the current acceptance phase
     std::size_t avalancheCounter_ = 0;
     beast::Journal const j_;
 };

@@ -237,7 +237,10 @@ struct ConsensusResult
 
     // The number of attempts to establish consensus where none of our peers
     // have changed any votes on disputed transactions.
-    std::size_t peerUnchangedCounter;
+    std::size_t peerUnchangedCounter = 0;
+
+    // The total number of times we have tried to establish consensus
+    std::size_t establishCounter = 0;
 
     // Indicates state in which consensus ended.  Once in the accept phase
     // will be either Yes or MovedOn or Expired

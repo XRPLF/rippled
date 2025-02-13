@@ -110,7 +110,7 @@ struct ConsensusParms
      * round to go this long, regardless of how big the ledger is.
      */
     std::chrono::milliseconds const ledgerABANDON_CONSENSUS =
-        std::chrono::seconds{60};
+        std::chrono::seconds{120};
 
     /** The minimum amount of time to consider the previous round
         to have taken.
@@ -140,8 +140,8 @@ struct ConsensusParms
     std::size_t const avMIN_ROUNDS = 2;
 
     //! Number of rounds before a stuck vote is considered unlikely to change
-    //! because voting is in an undesriable stable state
-    std::size_t const avSTUCK_VOTE_ROUNDS = 5;
+    //! because voting is in an undesirable stable state
+    std::size_t const avSTABLE_STATE_ROUNDS = 4;
 
     enum AvalancheState { init, mid, late, stuck };
     struct AvalancheCutoff
@@ -150,6 +150,11 @@ struct ConsensusParms
         std::size_t const consensusPct;
         AvalancheState const next;
     };
+    //! Map the consensus requirement avalanche state to the amount of time that
+    //! must pass before moving to that state, the agreement percentage required
+    //! at that state, and the next state. "stuck" loops back on itself because
+    //! once we're stuck, we're stuck.
+    //! This structure allows for "looping" of states if needed.
     std::map<AvalancheState, AvalancheCutoff> const avalancheCutoffs{
         // {state, {time, percent, nextState}},
         // Initial state: 50% of nodes must vote yes
