@@ -1354,7 +1354,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetLedger> const& m)
 {
     auto badData = [&](std::string const& msg, bool chargefee = true) {
         if (chargefee)
-        fee_.update(Resource::feeInvalidData, "get_ledger " + msg);
+            fee_.update(Resource::feeInvalidData, "get_ledger " + msg);
         JLOG(p_journal_.warn()) << "TMGetLedger: " << msg;
     };
     auto const itype{m->itype()};
