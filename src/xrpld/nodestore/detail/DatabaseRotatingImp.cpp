@@ -48,7 +48,7 @@ DatabaseRotatingImp::rotate(
         std::string const& archiveName)> const& f)
 {
     // Pass these two names to the callback function
-    std::string const newWritableBackendName = newBackEnd->getName();
+    std::string const newWritableBackendName = newBackend->getName();
     std::string newArchiveBackendName;
     // Hold on to current archive backend pointer until after the
     // callback finishes. Only then will the archive directory be
