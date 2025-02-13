@@ -73,12 +73,12 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 <div class="textblock"><p >This document contains instructions for installing rippled. The APT package manager is common on Debian-based Linux distributions like Ubuntu, while the YUM package manager is common on Red Hat-based Linux distributions like CentOS. Installing from source is an option for all platforms, and the only supported option for installing custom builds.</p>
-<h2><a class="anchor" id="autotoc_md143"></a>
+<h2><a class="anchor" id="autotoc_md144"></a>
 From source</h2>
 <p >From a source build, you can install rippled and libxrpl using CMake's <code>--install</code> mode:</p>
 <div class="fragment"><div class="line">cmake --install . --prefix /opt/local</div>
 </div><!-- fragment --><p >The default <a href="https://cmake.org/cmake/help/latest/variable/CMAKE_INSTALL_PREFIX.html">prefix</a> is typically <code>/usr/local</code> on Linux and macOS and <code>C:/Program Files/rippled</code> on Windows.</p>
-<h2><a class="anchor" id="autotoc_md144"></a>
+<h2><a class="anchor" id="autotoc_md145"></a>
 With the APT package manager</h2>
 <ol type="1">
 <li>Update repositories: <pre class="fragment"> sudo apt update -y
@@ -124,7 +124,7 @@ sub   rsa3072 2019-02-14 [E] [expires: 2026-02-17]
 <p class="startli">This allows you to serve incoming API requests on port 80 or 443. (If you want to do so, you must also update the config file's port settings.) </p><pre class="fragment">sudo setcap 'cap_net_bind_service=+ep' /opt/ripple/bin/rippled
 </pre></li>
 </ol>
-<h2><a class="anchor" id="autotoc_md145"></a>
+<h2><a class="anchor" id="autotoc_md146"></a>
 With the YUM package manager</h2>
 <ol type="1">
 <li><p class="startli">Install the Ripple RPM repository:</p>

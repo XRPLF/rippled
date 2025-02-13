@@ -76,9 +76,9 @@ $(function() {
 <li>NodeStore</li>
 <li>Benchmarks</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md580"></a>
+<h1><a class="anchor" id="autotoc_md581"></a>
 NodeStore</h1>
-<h2><a class="anchor" id="autotoc_md581"></a>
+<h2><a class="anchor" id="autotoc_md582"></a>
 Introduction</h2>
 <p >A <code>NodeObject</code> is a simple object that the Ledger uses to store entries. It is comprised of a type, a hash and a blob. It can be uniquely identified by the hash, which is a 256 bit hash of the blob. The blob is a variable length block of serialized data. The type identifies what the blob contains. The fields are as follows:</p>
 <ul>
@@ -117,7 +117,7 @@ Introduction</h2>
 </table>
 <hr  />
 <p> The <code>NodeStore</code> provides an interface that stores, in a persistent database, a collection of NodeObjects that rippled uses as its primary representation of ledger entries. All ledger entries are stored as NodeObjects and as such, need to be persisted between launches. If a NodeObject is accessed and is not in memory, it will be retrieved from the database.</p>
-<h2><a class="anchor" id="autotoc_md582"></a>
+<h2><a class="anchor" id="autotoc_md583"></a>
 Backend</h2>
 <p >The <code>NodeStore</code> implementation provides the <code>Backend</code> abstract interface, which lets different key/value databases to be chosen at run-time. This allows experimentation with different engines. Improvements in the performance of the NodeStore are a constant area of research. The database can be specified in the configuration file [node_db] section as follows.</p>
 <p >One or more lines of key / value pairs</p>
@@ -148,15 +148,15 @@ Backend</h2>
 <li><b>0</b> off</li>
 <li><b>1</b> on (default)</li>
 </ul>
-<h1><a class="anchor" id="autotoc_md583"></a>
+<h1><a class="anchor" id="autotoc_md584"></a>
 Benchmarks</h1>
 <p >The <code>NodeStore.Timing</code> test is used to execute a set of read/write workloads to compare current available nodestore backends. It can be executed with:</p>
 <div class="fragment"><div class="line">$rippled --unittest=NodeStoreTiming</div>
 </div><!-- fragment --><p >It is also possible to use alternate DB config params by passing config strings as <code>--unittest-arg</code>.</p>
-<h2><a class="anchor" id="autotoc_md584"></a>
+<h2><a class="anchor" id="autotoc_md585"></a>
 Addendum</h2>
 <p >The discussion below refers to a <code>RocksDBQuick</code> backend that has since been removed from the code as it was not working and not maintained. That backend primarily used one of the several rocks <code>Optimize*</code> methods to setup the majority of the DB options/params, whereas the primary RocksDB backend exposes many of the available config options directly. The code for RocksDBQuick can be found in versions of this repo 1.2 and earlier if you need to refer back to it. The conclusions below date from about 2014 and may need revisiting based on newer versions of RocksDB (TBD).</p>
-<h2><a class="anchor" id="autotoc_md585"></a>
+<h2><a class="anchor" id="autotoc_md586"></a>
 Discussion</h2>
 <p >RocksDBQuickFactory is intended to provide a testbed for comparing potential rocksdb performance with the existing recommended configuration in rippled.cfg. Through various executions and profiling some conclusions are presented below.</p>
 <ul>
