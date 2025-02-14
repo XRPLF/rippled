@@ -55,6 +55,8 @@ struct LedgerHeader
 
     // If validated is false, it means "not yet validated."
     // Once validated is true, it will never be set false at a later time.
+    // NOTE: If you are accessing this directly, you are probably doing it
+    //   wrong. Use LedgerMaster::isValidated().
     // VFALCO TODO Make this not mutable
     bool mutable validated = false;
     bool accepted = false;
