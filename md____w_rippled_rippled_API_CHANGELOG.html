@@ -164,6 +164,7 @@ XRP Ledger server version 2.4.0</h1>
 Additions and bugfixes in 2.4.0</h2>
 <ul>
 <li><code>ledger_entry</code>: <code>state</code> is added an alias for <code>ripple_state</code>.</li>
+<li><code>ledger_entry</code>: Enables case-insensitive filtering by canonical name in addition to case-sensitive filtering by RPC name.</li>
 <li><code>validators</code>: Added new field <code>validator_list_threshold</code> in response.</li>
 <li><code>simulate</code>: A new RPC that executes a <a href="https://github.com/XRPLF/XRPL-Standards/tree/master/XLS-0069d-simulate#2-rpc-simulate">dry run of a transaction submission</a></li>
 <li>Signing methods autofill fees better and properly handle transactions that don't have a base fee, and will also autofill the <code>NetworkID</code> field.</li>

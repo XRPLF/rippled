@@ -124,12 +124,13 @@ var searchData=
   ['rpccall_5ftest_121',['RPCCall_test',['../classripple_1_1test_1_1RPCCall__test.html',1,'ripple::test']]],
   ['rpccallimp_122',['RPCCallImp',['../structripple_1_1RPCCallImp.html',1,'ripple']]],
   ['rpccalltestdata_123',['RPCCallTestData',['../structripple_1_1test_1_1RPCCallTestData.html',1,'ripple::test']]],
-  ['rpcoverload_5ftest_124',['RPCOverload_test',['../classripple_1_1test_1_1RPCOverload__test.html',1,'ripple::test']]],
-  ['rpcparser_125',['RPCParser',['../classripple_1_1RPCParser.html',1,'ripple']]],
-  ['rpcsub_126',['RPCSub',['../classripple_1_1RPCSub.html',1,'ripple']]],
-  ['rpcsubimp_127',['RPCSubImp',['../classripple_1_1RPCSubImp.html',1,'ripple']]],
-  ['rpctrustline_128',['RPCTrustLine',['../classripple_1_1RPCTrustLine.html',1,'ripple']]],
-  ['rules_129',['Rules',['../classripple_1_1Rules.html',1,'ripple']]],
-  ['runner_130',['runner',['../classbeast_1_1unit__test_1_1runner.html',1,'beast::unit_test']]],
-  ['runtime_5ferror_131',['runtime_error',['http://en.cppreference.com/w/cpp/error/runtime_error.html',1,'std']]]
+  ['rpchelpers_5ftest_124',['RPCHelpers_test',['../classripple_1_1test_1_1RPCHelpers__test.html',1,'ripple::test']]],
+  ['rpcoverload_5ftest_125',['RPCOverload_test',['../classripple_1_1test_1_1RPCOverload__test.html',1,'ripple::test']]],
+  ['rpcparser_126',['RPCParser',['../classripple_1_1RPCParser.html',1,'ripple']]],
+  ['rpcsub_127',['RPCSub',['../classripple_1_1RPCSub.html',1,'ripple']]],
+  ['rpcsubimp_128',['RPCSubImp',['../classripple_1_1RPCSubImp.html',1,'ripple']]],
+  ['rpctrustline_129',['RPCTrustLine',['../classripple_1_1RPCTrustLine.html',1,'ripple']]],
+  ['rules_130',['Rules',['../classripple_1_1Rules.html',1,'ripple']]],
+  ['runner_131',['runner',['../classbeast_1_1unit__test_1_1runner.html',1,'beast::unit_test']]],
+  ['runtime_5ferror_132',['runtime_error',['http://en.cppreference.com/w/cpp/error/runtime_error.html',1,'std']]]
 ];
