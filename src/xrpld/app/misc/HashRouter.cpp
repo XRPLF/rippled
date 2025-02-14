@@ -142,20 +142,13 @@ HashRouter::shouldRelay(uint256 const& key)
     return s.releasePeerSet();
 }
 
-void
-HashRouter::forEachPeer(
-    uint256 const& key,
-    std::function<bool(PeerShortID)> callback)
+auto
+HashRouter::getPeers(uint256 const& key) -> std::set<PeerShortID>
 {
     std::lock_guard lock(mutex_);
 
     auto& s = emplace(key).first;
-
-    for (auto const peerID : s.peekPeerSet())
-    {
-        if (!callback(peerID))
-            return;
-    }
+    return s.peekPeerSet();
 }
 
 }  // namespace ripple

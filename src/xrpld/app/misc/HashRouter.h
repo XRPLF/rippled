@@ -240,14 +240,10 @@ public:
     std::optional<std::set<PeerShortID>>
     shouldRelay(uint256 const& key);
 
-    /** Calls a callback for each peer in the Entry for the key
-
-        callback is executed under lock. If callback returns false, the loop
-       will exit.
-
-    */
-    void
-    forEachPeer(uint256 const& key, std::function<bool(PeerShortID)> callback);
+    /** Returns a copy of the set of peers in the Entry for the key
+     */
+    std::set<PeerShortID>
+    getPeers(uint256 const& key);
 
 private:
     // pair.second indicates whether the entry was created

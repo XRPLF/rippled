@@ -396,7 +396,7 @@ InboundLedger::onTimer(bool wasProgress, ScopedLockType&)
         {
             // Done. Something else (probably consensus) built the ledger
             // locally while waiting for data (or possibly before requesting)
-            assert(isDone());
+            XRPL_ASSERT(isDone(), "ripple::InboundLedger::onTimer : done");
             JLOG(journal_.info()) << "Finished while waiting " << hash_;
             return;
         }

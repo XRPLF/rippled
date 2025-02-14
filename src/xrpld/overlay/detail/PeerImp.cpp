@@ -1682,7 +1682,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
     {
         // Check if this message needs to be forwarded to one or more peers.
         // Maximum of one of the relevant fields should be populated.
-        assert(!m->has_requestcookie() || !m->responsecookies_size());
+        XRPL_ASSERT(
+            !m->has_requestcookie() || !m->responsecookies_size(),
+            "ripple::PeerImp::onMessage(TMLedgerData) : valid cookie fields");
 
         // Make a copy of the response cookies, then wipe the list so it can be
         // forwarded cleanly
@@ -1697,7 +1699,10 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
         auto const relay = [this, m, &messageHash](auto const cookie) {
             if (auto peer = overlay_.findPeerByShortID(cookie))
             {
-                assert(!m->has_requestcookie() && !m->responsecookies_size());
+                XRPL_ASSERT(
+                    !m->has_requestcookie() && !m->responsecookies_size(),
+                    "ripple::PeerImp::onMessage(TMLedgerData) relay : no "
+                    "cookies");
                 if (peer->supportsFeature(ProtocolFeature::LedgerDataCookies))
                     // Setting this flag is not _strictly_ necessary for peers
                     // that support it if there are no cookies included in the
@@ -1716,7 +1721,10 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
         // If there is a request cookie, attempt to relay the message
         if (m->has_requestcookie())
         {
-            assert(responseCookies.empty());
+            XRPL_ASSERT(
+                responseCookies.empty(),
+                "ripple::PeerImp::onMessage(TMLedgerData) : no response "
+                "cookies");
             m->clear_requestcookie();
             relay(m->requestcookie());
             if (!directResponse && responseCookies.empty())
@@ -1738,7 +1746,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
     if (routed)
     {
         m->clear_directresponse();
-        assert(!m->has_requestcookie() && !m->responsecookies_size());
+        XRPL_ASSERT(
+            !m->has_requestcookie() && !m->responsecookies_size(),
+            "ripple::PeerImp::onMessage(TMLedgerData) : no cookies");
         auto const baseMessageHash = sha512Half(*m);
         if (!app_.getHashRouter().addSuppressionPeer(baseMessageHash, id_))
         {
@@ -3142,7 +3152,8 @@ getPeerWithTree(
     std::shared_ptr<PeerImp> ret;
     int retScore = 0;
 
-    assert(shouldProcessCallback);
+    XRPL_ASSERT(
+        shouldProcessCallback, "ripple::getPeerWithTree : callback provided");
     ov.for_each([&](std::shared_ptr<PeerImp>&& p) {
         if (p->hasTxSet(rootHash) && p.get() != skip)
         {
@@ -3172,7 +3183,8 @@ getPeerWithLedger(
     std::shared_ptr<PeerImp> ret;
     int retScore = 0;
 
-    assert(shouldProcessCallback);
+    XRPL_ASSERT(
+        shouldProcessCallback, "ripple::getPeerWithLedger : callback provided");
     ov.for_each([&](std::shared_ptr<PeerImp>&& p) {
         if (p->hasLedger(ledgerHash, ledger) && p.get() != skip)
         {
@@ -3277,7 +3289,10 @@ PeerImp::sendToMultiple(
 
                 ledgerData.clear_requestcookie();
             }
-            assert(!multipleCookies);
+            XRPL_ASSERT(
+                !multipleCookies,
+                "ripple::PeerImp::sendToMultiple : ledger data cookies "
+                "unsupported");
             auto message{
                 std::make_shared<Message>(ledgerData, protocol::mtLEDGER_DATA)};
             peer->send(message);
@@ -3287,7 +3302,9 @@ PeerImp::sendToMultiple(
             // Send a single message with all the cookies and/or the direct
             // response flag, so the receiver can farm out the single message to
             // multiple peers and/or itself
-            assert(sendCookies.size() || directResponse);
+            XRPL_ASSERT(
+                sendCookies.size() || directResponse,
+                "ripple::PeerImp::sendToMultiple : valid response options");
             ledgerData.clear_requestcookie();
             ledgerData.clear_responsecookies();
             ledgerData.set_directresponse(directResponse);
@@ -3305,7 +3322,8 @@ PeerImp::sendToMultiple(
                 << ": " << sha512Half(ledgerData);
         }
     }
-    assert(foundSelf);
+    XRPL_ASSERT(
+        foundSelf, "ripple::PeerImp::sendToMultiple : current peer included");
 }
 
 std::shared_ptr<Ledger const>
@@ -3507,14 +3525,8 @@ PeerImp::processLedgerRequest(
             result[shared_from_this()] = myCookies;
         }
 
-        std::set<HashRouter::PeerShortID> peers;
-        app_.getHashRouter().forEachPeer(
-            mHash, [&](HashRouter::PeerShortID const& peerID) {
-                // callback is called under lock, so finish as fast as
-                // possible.
-                peers.insert(peerID);
-                return true;
-            });
+        std::set<HashRouter::PeerShortID> const peers =
+            app_.getHashRouter().getPeers(mHash);
         for (auto const peerID : peers)
         {
             // This loop does not need to be done under the HashRouter
@@ -3529,7 +3541,10 @@ PeerImp::processLedgerRequest(
                     // Unlikely, but if a request came in to this peer while
                     // iterating, add the items instead of copying /
                     // overwriting.
-                    assert(p.get() == this);
+                    XRPL_ASSERT(
+                        p.get() == this,
+                        "ripple::PeerImp::processLedgerRequest : found self in "
+                        "map");
                     for (auto const& cookie : cookies)
                         result[p].emplace(cookie);
                 }
