@@ -251,6 +251,33 @@ class HashRouter_test : public beast::unit_test::suite
         BEAST_EXPECT(router.shouldProcess(key, peer, flags, 1s));
     }
 
+    void
+    testProcessPeer()
+    {
+        using namespace std::chrono_literals;
+        TestStopwatch stopwatch;
+        HashRouter router(stopwatch, 5s);
+        uint256 const key(1);
+        HashRouter::PeerShortID peer1 = 1;
+        HashRouter::PeerShortID peer2 = 2;
+        auto const timeout = 2s;
+
+        BEAST_EXPECT(router.shouldProcessForPeer(key, peer1, timeout));
+        BEAST_EXPECT(!router.shouldProcessForPeer(key, peer1, timeout));
+        ++stopwatch;
+        BEAST_EXPECT(!router.shouldProcessForPeer(key, peer1, timeout));
+        BEAST_EXPECT(router.shouldProcessForPeer(key, peer2, timeout));
+        BEAST_EXPECT(!router.shouldProcessForPeer(key, peer2, timeout));
+        ++stopwatch;
+        BEAST_EXPECT(router.shouldProcessForPeer(key, peer1, timeout));
+        BEAST_EXPECT(!router.shouldProcessForPeer(key, peer2, timeout));
+        ++stopwatch;
+        BEAST_EXPECT(router.shouldProcessForPeer(key, peer2, timeout));
+        ++stopwatch;
+        BEAST_EXPECT(router.shouldProcessForPeer(key, peer1, timeout));
+        BEAST_EXPECT(!router.shouldProcessForPeer(key, peer2, timeout));
+    }
+
 public:
     void
     run() override
@@ -261,6 +288,7 @@ public:
         testSetFlags();
         testRelay();
         testProcess();
+        testProcessPeer();
     }
 };
 

@@ -965,8 +965,9 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
     }
 
     JLOG(m_journal.info()) << "Advancing accepted ledger to "
-                           << ledger->info().seq << " with >= " << minVal
-                           << " validations";
+                           << ledger->info().seq << " ("
+                           << to_short_string(ledger->info().hash)
+                           << ") with >= " << minVal << " validations";
 
     ledger->setValidated();
     ledger->setFull();
