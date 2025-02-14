@@ -2614,6 +2614,7 @@ Enumerations</h2></td></tr>
 <tr class="memitem:a3b423ad1ba6341f945c08c13fe141150"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a3b423ad1ba6341f945c08c13fe141150">ProtocolFeature</a> { <a class="el" href="namespaceripple.html#a3b423ad1ba6341f945c08c13fe141150a9a32e2a438c197a712d352ca4e69b65b">ValidatorListPropagation</a>
 , <a class="el" href="namespaceripple.html#a3b423ad1ba6341f945c08c13fe141150abbd68b30711cfd4adc8abd9b5519abe1">ValidatorList2Propagation</a>
 , <a class="el" href="namespaceripple.html#a3b423ad1ba6341f945c08c13fe141150a955e673a299bbf8322d01b7b5e88be4e">LedgerReplay</a>
+, <a class="el" href="namespaceripple.html#a3b423ad1ba6341f945c08c13fe141150aa6ed3b3aae7e62076aadcc8512a35a08">LedgerDataCookies</a>
  }</td></tr>
 <tr class="separator:a3b423ad1ba6341f945c08c13fe141150"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae08fe18f17b24699ce41d3898fbb8c2c"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ae08fe18f17b24699ce41d3898fbb8c2c">Role</a> { <br />
@@ -2688,6 +2689,9 @@ Functions</h2></td></tr>
 <tr class="memitem:ac124fe6744b7fe887dec949b56b16d50"><td class="memTemplParams" colspan="2">template&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> Bits, class Tag &gt; </td></tr>
 <tr class="memitem:ac124fe6744b7fe887dec949b56b16d50"><td class="memTemplItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ac124fe6744b7fe887dec949b56b16d50">to_string</a> (<a class="el" href="classripple_1_1base__uint.html">base_uint</a>&lt; Bits, Tag &gt; const &amp;a)</td></tr>
 <tr class="separator:ac124fe6744b7fe887dec949b56b16d50"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a033d0d7e970df05013f1a46236227141"><td class="memTemplParams" colspan="2">template&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> Bits, class Tag &gt; </td></tr>
+<tr class="memitem:a033d0d7e970df05013f1a46236227141"><td class="memTemplItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a033d0d7e970df05013f1a46236227141">to_short_string</a> (<a class="el" href="classripple_1_1base__uint.html">base_uint</a>&lt; Bits, Tag &gt; const &amp;a)</td></tr>
+<tr class="separator:a033d0d7e970df05013f1a46236227141"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5c77599883897def8bd3e9e4ad140f95"><td class="memTemplParams" colspan="2">template&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> Bits, class Tag &gt; </td></tr>
 <tr class="memitem:a5c77599883897def8bd3e9e4ad140f95"><td class="memTemplItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_ostream.html">std::ostream</a> &amp;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a5c77599883897def8bd3e9e4ad140f95">operator&lt;&lt;</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_ostream.html">std::ostream</a> &amp;<a class="el" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a>, <a class="el" href="classripple_1_1base__uint.html">base_uint</a>&lt; Bits, Tag &gt; const &amp;u)</td></tr>
 <tr class="separator:a5c77599883897def8bd3e9e4ad140f95"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -3895,6 +3899,8 @@ requires requires { <a class="el" href="namespaceripple.html#afa35799caaa5a9f071
 <tr class="separator:a692ccb9a8bc67a497473e1e1761ae357"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2ae249ffcf04cd1614ca5c023b40720d"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a2ae249ffcf04cd1614ca5c023b40720d">debugTostr</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &gt; const &amp;view)</td></tr>
 <tr class="separator:a2ae249ffcf04cd1614ca5c023b40720d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af0f2e97c3fc24d01f591d2d09194e2bd"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#af0f2e97c3fc24d01f591d2d09194e2bd">to_string</a> (<a class="el" href="classripple_1_1InboundLedger.html#a3e8d7f8b5fa089a184dcc9b00b6e0da7">InboundLedger::Reason</a> reason)</td></tr>
+<tr class="separator:af0f2e97c3fc24d01f591d2d09194e2bd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a71f5c3f4baec0e09c5eab4d6f5b5efcb"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a71f5c3f4baec0e09c5eab4d6f5b5efcb">calculateLedgerHash</a> (<a class="el" href="namespaceripple.html#aaf521cde20561da32d6a54a105363555">LedgerInfo</a> const &amp;info)</td></tr>
 <tr class="separator:a71f5c3f4baec0e09c5eab4d6f5b5efcb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a33d37a32d6220d610aa99faea1048627"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STTx.html">STTx</a> const &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a33d37a32d6220d610aa99faea1048627">deserializeTx</a> (<a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> const  &amp;item)</td></tr>
@@ -4728,10 +4734,10 @@ requires (T::ConsequencesFactory == <a class="el" href="classripple_1_1Transacto
 <tr class="separator:afe217b6314ac671b777edb7917d8074d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a56ea3162e3d91377dcbcdfa7a65fbd77"><td class="memItemLeft" align="right" valign="top">static bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a56ea3162e3d91377dcbcdfa7a65fbd77">stringIsUint256Sized</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;pBuffStr)</td></tr>
 <tr class="separator:a56ea3162e3d91377dcbcdfa7a65fbd77"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aaf04a98535be95227d6f788bc854d819"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1PeerImp.html">PeerImp</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aaf04a98535be95227d6f788bc854d819">getPeerWithTree</a> (<a class="el" href="classripple_1_1OverlayImpl.html">OverlayImpl</a> &amp;ov, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;rootHash, <a class="el" href="classripple_1_1PeerImp.html">PeerImp</a> const *skip)</td></tr>
-<tr class="separator:aaf04a98535be95227d6f788bc854d819"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8d7ea7bb8787b67516b5db71857e8b00"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1PeerImp.html">PeerImp</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a8d7ea7bb8787b67516b5db71857e8b00">getPeerWithLedger</a> (<a class="el" href="classripple_1_1OverlayImpl.html">OverlayImpl</a> &amp;ov, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;ledgerHash, <a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> ledger, <a class="el" href="classripple_1_1PeerImp.html">PeerImp</a> const *skip)</td></tr>
-<tr class="separator:a8d7ea7bb8787b67516b5db71857e8b00"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3f6fc02e71da4bbad41c85c69f857368"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1PeerImp.html">PeerImp</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a3f6fc02e71da4bbad41c85c69f857368">getPeerWithTree</a> (<a class="el" href="classripple_1_1OverlayImpl.html">OverlayImpl</a> &amp;ov, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;rootHash, <a class="el" href="classripple_1_1PeerImp.html">PeerImp</a> const *skip, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; bool(<a class="el" href="classripple_1_1Peer.html#a56cc3cdd9c73921f23cb43a2bfa696a1">Peer::id_t</a>)&gt; shouldProcessCallback)</td></tr>
+<tr class="separator:a3f6fc02e71da4bbad41c85c69f857368"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3d7fdaa0c62546427cf82278a754deb3"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1PeerImp.html">PeerImp</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a3d7fdaa0c62546427cf82278a754deb3">getPeerWithLedger</a> (<a class="el" href="classripple_1_1OverlayImpl.html">OverlayImpl</a> &amp;ov, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;ledgerHash, <a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a> ledger, <a class="el" href="classripple_1_1PeerImp.html">PeerImp</a> const *skip, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; bool(<a class="el" href="classripple_1_1Peer.html#a56cc3cdd9c73921f23cb43a2bfa696a1">Peer::id_t</a>)&gt; shouldProcessCallback)</td></tr>
+<tr class="separator:a3d7fdaa0c62546427cf82278a754deb3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6d96d342f61e5dd48b86a8a37cdce642"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1PeerSetBuilder.html">PeerSetBuilder</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a6d96d342f61e5dd48b86a8a37cdce642">make_PeerSetBuilder</a> (<a class="el" href="classripple_1_1Application.html">Application</a> &amp;app)</td></tr>
 <tr class="separator:a6d96d342f61e5dd48b86a8a37cdce642"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5a08ef41766731386ceb3ec0866c47d8"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1PeerSet.html">PeerSet</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a5a08ef41766731386ceb3ec0866c47d8">make_DummyPeerSet</a> (<a class="el" href="classripple_1_1Application.html">Application</a> &amp;app)</td></tr>
@@ -4739,6 +4745,8 @@ requires (T::ConsequencesFactory == <a class="el" href="classripple_1_1Transacto
 <tr class="separator:a5a08ef41766731386ceb3ec0866c47d8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a26f911b45c375c0ef008c8c5e4416b02"><td class="memItemLeft" align="right" valign="top">protocol::MessageType&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a26f911b45c375c0ef008c8c5e4416b02">protocolMessageType</a> (protocol::TMGetLedger const &amp;)</td></tr>
 <tr class="separator:a26f911b45c375c0ef008c8c5e4416b02"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac3b22a9b69ed965cc19cd0dc515692e7"><td class="memItemLeft" align="right" valign="top">protocol::MessageType&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ac3b22a9b69ed965cc19cd0dc515692e7">protocolMessageType</a> (protocol::TMLedgerData const &amp;)</td></tr>
+<tr class="separator:ac3b22a9b69ed965cc19cd0dc515692e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a38e7e5e0139a032db72c38d6e9f2a1c1"><td class="memItemLeft" align="right" valign="top">protocol::MessageType&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a38e7e5e0139a032db72c38d6e9f2a1c1">protocolMessageType</a> (protocol::TMReplayDeltaRequest const &amp;)</td></tr>
 <tr class="separator:a38e7e5e0139a032db72c38d6e9f2a1c1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae7e4a001155126bb132492e7cb72362e"><td class="memItemLeft" align="right" valign="top">protocol::MessageType&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ae7e4a001155126bb132492e7cb72362e">protocolMessageType</a> (protocol::TMProofPathRequest const &amp;)</td></tr>
@@ -6357,7 +6365,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerHeader_8h_source.html#l00079">79</a> of file <a class="el" href="LedgerHeader_8h_source.html">LedgerHeader.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerHeader_8h_source.html#l00081">81</a> of file <a class="el" href="LedgerHeader_8h_source.html">LedgerHeader.h</a>.</p>
 
 </div>
 </div>
@@ -9883,6 +9891,7 @@ ledger.
 <tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a3b423ad1ba6341f945c08c13fe141150a9a32e2a438c197a712d352ca4e69b65b" name="a3b423ad1ba6341f945c08c13fe141150a9a32e2a438c197a712d352ca4e69b65b"></a>ValidatorListPropagation&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a3b423ad1ba6341f945c08c13fe141150abbd68b30711cfd4adc8abd9b5519abe1" name="a3b423ad1ba6341f945c08c13fe141150abbd68b30711cfd4adc8abd9b5519abe1"></a>ValidatorList2Propagation&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="a3b423ad1ba6341f945c08c13fe141150a955e673a299bbf8322d01b7b5e88be4e" name="a3b423ad1ba6341f945c08c13fe141150a955e673a299bbf8322d01b7b5e88be4e"></a>LedgerReplay&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a3b423ad1ba6341f945c08c13fe141150aa6ed3b3aae7e62076aadcc8512a35a08" name="a3b423ad1ba6341f945c08c13fe141150aa6ed3b3aae7e62076aadcc8512a35a08"></a>LedgerDataCookies&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
 <p class="definition">Definition at line <a class="el" href="xrpld_2overlay_2Peer_8h_source.html#l00035">35</a> of file <a class="el" href="xrpld_2overlay_2Peer_8h_source.html">xrpld/overlay/Peer.h</a>.</p>
@@ -10532,7 +10541,7 @@ template&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t
 </div>
 </div>
 <a id="ac124fe6744b7fe887dec949b56b16d50" name="ac124fe6744b7fe887dec949b56b16d50"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac124fe6744b7fe887dec949b56b16d50">&#9670;&#160;</a></span>to_string() <span class="overload">[1/29]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ac124fe6744b7fe887dec949b56b16d50">&#9670;&#160;</a></span>to_string() <span class="overload">[1/30]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -10550,6 +10559,28 @@ template&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="base__uint_8h_source.html#l00629">629</a> of file <a class="el" href="base__uint_8h_source.html">base_uint.h</a>.</p>
+
+</div>
+</div>
+<a id="a033d0d7e970df05013f1a46236227141" name="a033d0d7e970df05013f1a46236227141"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a033d0d7e970df05013f1a46236227141">&#9670;&#160;</a></span>to_short_string()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> Bits, class Tag &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> ripple::to_short_string </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1base__uint.html">base_uint</a>&lt; Bits, Tag &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>a</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="base__uint_8h_source.html#l00636">636</a> of file <a class="el" href="base__uint_8h_source.html">base_uint.h</a>.</p>
 
 </div>
 </div>
@@ -10581,7 +10612,7 @@ template&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base__uint_8h_source.html#l00635">635</a> of file <a class="el" href="base__uint_8h_source.html">base_uint.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base__uint_8h_source.html#l00642">642</a> of file <a class="el" href="base__uint_8h_source.html">base_uint.h</a>.</p>
 
 </div>
 </div>
@@ -10603,7 +10634,7 @@ template&lt;&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="base__uint_8h_source.html#l00643">643</a> of file <a class="el" href="base__uint_8h_source.html">base_uint.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="base__uint_8h_source.html#l00650">650</a> of file <a class="el" href="base__uint_8h_source.html">base_uint.h</a>.</p>
 
 </div>
 </div>
@@ -10985,7 +11016,7 @@ template&lt;class T &gt; </div>
 </div>
 </div>
 <a id="aa7c655d460cd49a70a942831c924292f" name="aa7c655d460cd49a70a942831c924292f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa7c655d460cd49a70a942831c924292f">&#9670;&#160;</a></span>to_string() <span class="overload">[2/29]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aa7c655d460cd49a70a942831c924292f">&#9670;&#160;</a></span>to_string() <span class="overload">[2/30]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -11007,7 +11038,7 @@ template&lt;class Duration &gt; </div>
 </div>
 </div>
 <a id="a36812daaa079fa01b096438639a019e4" name="a36812daaa079fa01b096438639a019e4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a36812daaa079fa01b096438639a019e4">&#9670;&#160;</a></span>to_string() <span class="overload">[3/29]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a36812daaa079fa01b096438639a019e4">&#9670;&#160;</a></span>to_string() <span class="overload">[3/30]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -11528,7 +11559,7 @@ template&lt;class Stream , class Iter &gt; </div>
 </div>
 </div>
 <a id="a5bf7ceb7c5d4c12b5137def1455f0bdc" name="a5bf7ceb7c5d4c12b5137def1455f0bdc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5bf7ceb7c5d4c12b5137def1455f0bdc">&#9670;&#160;</a></span>to_string() <span class="overload">[4/29]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a5bf7ceb7c5d4c12b5137def1455f0bdc">&#9670;&#160;</a></span>to_string() <span class="overload">[4/30]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -12226,7 +12257,7 @@ template&lt;class T &gt; </div>
 </div>
 </div>
 <a id="ac47b38f7edefd4afd48dbf705d4c7bc6" name="ac47b38f7edefd4afd48dbf705d4c7bc6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac47b38f7edefd4afd48dbf705d4c7bc6">&#9670;&#160;</a></span>to_string() <span class="overload">[5/29]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ac47b38f7edefd4afd48dbf705d4c7bc6">&#9670;&#160;</a></span>to_string() <span class="overload">[5/30]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -12258,7 +12289,7 @@ template&lt;class T &gt; </div>
 </div>
 </div>
 <a id="a7d24946b15c0dd06b8ddaa12a6946cf8" name="a7d24946b15c0dd06b8ddaa12a6946cf8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7d24946b15c0dd06b8ddaa12a6946cf8">&#9670;&#160;</a></span>to_string() <span class="overload">[6/29]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a7d24946b15c0dd06b8ddaa12a6946cf8">&#9670;&#160;</a></span>to_string() <span class="overload">[6/30]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -13193,7 +13224,7 @@ template&lt;class Iterator &gt; </div>
 </div>
 </div>
 <a id="a7ddbe3d40fdf9950d56946220b13bde6" name="a7ddbe3d40fdf9950d56946220b13bde6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7ddbe3d40fdf9950d56946220b13bde6">&#9670;&#160;</a></span>to_string() <span class="overload">[7/29]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a7ddbe3d40fdf9950d56946220b13bde6">&#9670;&#160;</a></span>to_string() <span class="overload">[7/30]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -13218,7 +13249,7 @@ template&lt;class T &gt; </div>
 </div>
 </div>
 <a id="a025e046a184a9312eb3d0bdf35e6e0d3" name="a025e046a184a9312eb3d0bdf35e6e0d3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a025e046a184a9312eb3d0bdf35e6e0d3">&#9670;&#160;</a></span>to_string() <span class="overload">[8/29]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a025e046a184a9312eb3d0bdf35e6e0d3">&#9670;&#160;</a></span>to_string() <span class="overload">[8/30]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -13238,7 +13269,7 @@ template&lt;class T &gt; </div>
 </div>
 </div>
 <a id="aa41d022c31abb234bddd183bf1b9b199" name="aa41d022c31abb234bddd183bf1b9b199"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa41d022c31abb234bddd183bf1b9b199">&#9670;&#160;</a></span>to_string() <span class="overload">[9/29]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aa41d022c31abb234bddd183bf1b9b199">&#9670;&#160;</a></span>to_string() <span class="overload">[9/30]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -13258,7 +13289,7 @@ template&lt;class T &gt; </div>
 </div>
 </div>
 <a id="a7a9c86873fd68be6d8ce6f0c13a0a5ac" name="a7a9c86873fd68be6d8ce6f0c13a0a5ac"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7a9c86873fd68be6d8ce6f0c13a0a5ac">&#9670;&#160;</a></span>to_string() <span class="overload">[10/29]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a7a9c86873fd68be6d8ce6f0c13a0a5ac">&#9670;&#160;</a></span>to_string() <span class="overload">[10/30]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -13278,7 +13309,7 @@ template&lt;class T &gt; </div>
 </div>
 </div>
 <a id="a90a879d9d4a26ad85b14efee04eabac2" name="a90a879d9d4a26ad85b14efee04eabac2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a90a879d9d4a26ad85b14efee04eabac2">&#9670;&#160;</a></span>to_string() <span class="overload">[11/29]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a90a879d9d4a26ad85b14efee04eabac2">&#9670;&#160;</a></span>to_string() <span class="overload">[11/30]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -13499,7 +13530,7 @@ template&lt;&gt; </div>
 </div>
 </div>
 <a id="a7ee2254ebd37325e45375b4d8ac20494" name="a7ee2254ebd37325e45375b4d8ac20494"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7ee2254ebd37325e45375b4d8ac20494">&#9670;&#160;</a></span>to_string() <span class="overload">[12/29]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a7ee2254ebd37325e45375b4d8ac20494">&#9670;&#160;</a></span>to_string() <span class="overload">[12/30]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -14601,7 +14632,7 @@ requires requires { <a class="el" href="namespaceripple.html#afa35799caaa5a9f071
 </div>
 </div>
 <a id="af5cce9bfd9ac0fdd7cf905d70d5a0c0f" name="af5cce9bfd9ac0fdd7cf905d70d5a0c0f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af5cce9bfd9ac0fdd7cf905d70d5a0c0f">&#9670;&#160;</a></span>to_string() <span class="overload">[13/29]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#af5cce9bfd9ac0fdd7cf905d70d5a0c0f">&#9670;&#160;</a></span>to_string() <span class="overload">[13/30]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -14701,7 +14732,7 @@ requires requires { <a class="el" href="namespaceripple.html#afa35799caaa5a9f071
 </div>
 </div>
 <a id="a7cdadcdf4622f8512aff6509ecbcfacf" name="a7cdadcdf4622f8512aff6509ecbcfacf"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7cdadcdf4622f8512aff6509ecbcfacf">&#9670;&#160;</a></span>to_string() <span class="overload">[14/29]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a7cdadcdf4622f8512aff6509ecbcfacf">&#9670;&#160;</a></span>to_string() <span class="overload">[14/30]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -15626,7 +15657,7 @@ template&lt;class Hasher &gt; </div>
 </div>
 </div>
 <a id="a7fdda52cfb8e7dbaed475a5fe6ce58b8" name="a7fdda52cfb8e7dbaed475a5fe6ce58b8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7fdda52cfb8e7dbaed475a5fe6ce58b8">&#9670;&#160;</a></span>to_string() <span class="overload">[15/29]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a7fdda52cfb8e7dbaed475a5fe6ce58b8">&#9670;&#160;</a></span>to_string() <span class="overload">[15/30]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -15747,7 +15778,7 @@ template&lt;class Hasher &gt; </div>
 </div>
 </div>
 <a id="acdb860e5a7358efb9a0a69c9ea437f9b" name="acdb860e5a7358efb9a0a69c9ea437f9b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acdb860e5a7358efb9a0a69c9ea437f9b">&#9670;&#160;</a></span>to_string() <span class="overload">[16/29]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#acdb860e5a7358efb9a0a69c9ea437f9b">&#9670;&#160;</a></span>to_string() <span class="overload">[16/30]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -16031,7 +16062,7 @@ template&lt;class Hasher &gt; </div>
 </div>
 </div>
 <a id="a2ab8e177c93819235a0e65f04851548f" name="a2ab8e177c93819235a0e65f04851548f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2ab8e177c93819235a0e65f04851548f">&#9670;&#160;</a></span>to_string() <span class="overload">[17/29]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a2ab8e177c93819235a0e65f04851548f">&#9670;&#160;</a></span>to_string() <span class="overload">[17/30]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -16098,7 +16129,7 @@ template&lt;class Stream &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerHeader_8h_source.html#l00085">85</a> of file <a class="el" href="LedgerHeader_8h_source.html">LedgerHeader.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerHeader_8h_source.html#l00087">87</a> of file <a class="el" href="LedgerHeader_8h_source.html">LedgerHeader.h</a>.</p>
 
 </div>
 </div>
@@ -16203,7 +16234,7 @@ template&lt;class Stream &gt; </div>
 </div>
 </div>
 <a id="aeecc95d6a6c521e701619c1c7a97c1b8" name="aeecc95d6a6c521e701619c1c7a97c1b8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aeecc95d6a6c521e701619c1c7a97c1b8">&#9670;&#160;</a></span>to_string() <span class="overload">[18/29]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#aeecc95d6a6c521e701619c1c7a97c1b8">&#9670;&#160;</a></span>to_string() <span class="overload">[18/30]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -16383,7 +16414,7 @@ template&lt;class Stream &gt; </div>
 </div>
 </div>
 <a id="a1d1cfe12dcde27447cd87fc2eadf7b6e" name="a1d1cfe12dcde27447cd87fc2eadf7b6e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1d1cfe12dcde27447cd87fc2eadf7b6e">&#9670;&#160;</a></span>to_string() <span class="overload">[19/29]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a1d1cfe12dcde27447cd87fc2eadf7b6e">&#9670;&#160;</a></span>to_string() <span class="overload">[19/30]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -21188,7 +21219,7 @@ template&lt;class Char , class Traits &gt; </div>
 </div>
 </div>
 <a id="a3b2cb95751a41f93d6080e2ce00871c1" name="a3b2cb95751a41f93d6080e2ce00871c1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3b2cb95751a41f93d6080e2ce00871c1">&#9670;&#160;</a></span>to_string() <span class="overload">[20/29]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a3b2cb95751a41f93d6080e2ce00871c1">&#9670;&#160;</a></span>to_string() <span class="overload">[20/30]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -26613,7 +26644,7 @@ template&lt;class ApplyTxs &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00471">471</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InboundLedgers_8cpp_source.html#l00549">549</a> of file <a class="el" href="InboundLedgers_8cpp_source.html">InboundLedgers.cpp</a>.</p>
 
 </div>
 </div>
@@ -26813,7 +26844,7 @@ template&lt;class ApplyTxs &gt; </div>
 <p>The rationale is that for transaction trees, it may make sense to not include the leaves if the fetch pack is being constructed for someone attempting to get a recent ledger for which they already have the transactions.</p>
 <p >However, for historical ledgers, which is the only use we have for fetch packs right now, it makes sense to include the transactions because the caller is unlikely to have them. </p>
 
-<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l02075">2075</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerMaster_8cpp_source.html#l02076">2076</a> of file <a class="el" href="LedgerMaster_8cpp_source.html">LedgerMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -26967,6 +26998,26 @@ template&lt;class ApplyTxs &gt; </div>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="OpenLedger_8cpp_source.html#l00218">218</a> of file <a class="el" href="OpenLedger_8cpp_source.html">OpenLedger.cpp</a>.</p>
+
+</div>
+</div>
+<a id="af0f2e97c3fc24d01f591d2d09194e2bd" name="af0f2e97c3fc24d01f591d2d09194e2bd"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af0f2e97c3fc24d01f591d2d09194e2bd">&#9670;&#160;</a></span>to_string() <span class="overload">[21/30]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> ripple::to_string </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1InboundLedger.html#a3e8d7f8b5fa089a184dcc9b00b6e0da7">InboundLedger::Reason</a>&#160;</td>
+          <td class="paramname"><em>reason</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="InboundLedger_8h_source.html#l00200">200</a> of file <a class="el" href="InboundLedger_8h_source.html">InboundLedger.h</a>.</p>
 
 </div>
 </div>
@@ -29279,7 +29330,7 @@ template&lt;typename TIn , typename TOut &gt; </div>
 </div>
 </div>
 <a id="af9776f187d3686a7fba4c2d2fbeebdf4" name="af9776f187d3686a7fba4c2d2fbeebdf4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af9776f187d3686a7fba4c2d2fbeebdf4">&#9670;&#160;</a></span>to_string() <span class="overload">[21/29]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#af9776f187d3686a7fba4c2d2fbeebdf4">&#9670;&#160;</a></span>to_string() <span class="overload">[22/30]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -29591,7 +29642,7 @@ template&lt;class Stream &gt; </div>
 </div>
 </div>
 <a id="a96888695e8d79474e080c334f149e30a" name="a96888695e8d79474e080c334f149e30a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a96888695e8d79474e080c334f149e30a">&#9670;&#160;</a></span>to_string() <span class="overload">[22/29]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a96888695e8d79474e080c334f149e30a">&#9670;&#160;</a></span>to_string() <span class="overload">[23/30]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -29970,7 +30021,7 @@ template&lt;class T , class  = std::enable_if_t&lt;        std::is_same&lt;T, ch
 </div>
 </div>
 <a id="a274e43e395783cfc2e252891660b71b1" name="a274e43e395783cfc2e252891660b71b1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a274e43e395783cfc2e252891660b71b1">&#9670;&#160;</a></span>to_string() <span class="overload">[23/29]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a274e43e395783cfc2e252891660b71b1">&#9670;&#160;</a></span>to_string() <span class="overload">[24/30]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -30013,7 +30064,7 @@ template&lt;class T , class  = std::enable_if_t&lt;        std::is_same&lt;T, ch
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l02049">2049</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l02052">2052</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
 
 </div>
 </div>
@@ -30097,7 +30148,7 @@ template&lt;class T , class  = std::enable_if_t&lt;        std::is_same&lt;T, ch
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l04564">4564</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l04562">4562</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
 
 </div>
 </div>
@@ -35882,7 +35933,7 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
 </div>
 </div>
 <a id="adc3c30f5af69be2fb015915e83bec5ff" name="adc3c30f5af69be2fb015915e83bec5ff"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adc3c30f5af69be2fb015915e83bec5ff">&#9670;&#160;</a></span>to_string() <span class="overload">[24/29]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#adc3c30f5af69be2fb015915e83bec5ff">&#9670;&#160;</a></span>to_string() <span class="overload">[25/30]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -35902,7 +35953,7 @@ template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </div>
 </div>
 </div>
 <a id="adacaa5bdc65e1615b5485f9b0b9b72f1" name="adacaa5bdc65e1615b5485f9b0b9b72f1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#adacaa5bdc65e1615b5485f9b0b9b72f1">&#9670;&#160;</a></span>to_string() <span class="overload">[25/29]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#adacaa5bdc65e1615b5485f9b0b9b72f1">&#9670;&#160;</a></span>to_string() <span class="overload">[26/30]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -36125,7 +36176,7 @@ template&lt;class Clock , class Duration , class Rep , class Period &gt; </div>
 </div>
 </div>
 <a id="a49d3a2fa89321343ddb5e337429c713f" name="a49d3a2fa89321343ddb5e337429c713f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a49d3a2fa89321343ddb5e337429c713f">&#9670;&#160;</a></span>to_string() <span class="overload">[26/29]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a49d3a2fa89321343ddb5e337429c713f">&#9670;&#160;</a></span>to_string() <span class="overload">[27/30]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -40816,12 +40867,12 @@ template&lt;typename headers &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerImp_8cpp_source.html#l00150">150</a> of file <a class="el" href="PeerImp_8cpp_source.html">PeerImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerImp_8cpp_source.html#l00154">154</a> of file <a class="el" href="PeerImp_8cpp_source.html">PeerImp.cpp</a>.</p>
 
 </div>
 </div>
-<a id="aaf04a98535be95227d6f788bc854d819" name="aaf04a98535be95227d6f788bc854d819"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aaf04a98535be95227d6f788bc854d819">&#9670;&#160;</a></span>getPeerWithTree()</h2>
+<a id="a3f6fc02e71da4bbad41c85c69f857368" name="a3f6fc02e71da4bbad41c85c69f857368"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3f6fc02e71da4bbad41c85c69f857368">&#9670;&#160;</a></span>getPeerWithTree()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -40845,7 +40896,13 @@ template&lt;typename headers &gt; </div>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype"><a class="el" href="classripple_1_1PeerImp.html">PeerImp</a> const *&#160;</td>
-          <td class="paramname"><em>skip</em>&#160;</td>
+          <td class="paramname"><em>skip</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; bool(<a class="el" href="classripple_1_1Peer.html#a56cc3cdd9c73921f23cb43a2bfa696a1">Peer::id_t</a>)&gt;&#160;</td>
+          <td class="paramname"><em>shouldProcessCallback</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -40860,12 +40917,12 @@ template&lt;typename headers &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerImp_8cpp_source.html#l03000">3000</a> of file <a class="el" href="PeerImp_8cpp_source.html">PeerImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerImp_8cpp_source.html#l03146">3146</a> of file <a class="el" href="PeerImp_8cpp_source.html">PeerImp.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a8d7ea7bb8787b67516b5db71857e8b00" name="a8d7ea7bb8787b67516b5db71857e8b00"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8d7ea7bb8787b67516b5db71857e8b00">&#9670;&#160;</a></span>getPeerWithLedger()</h2>
+<a id="a3d7fdaa0c62546427cf82278a754deb3" name="a3d7fdaa0c62546427cf82278a754deb3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3d7fdaa0c62546427cf82278a754deb3">&#9670;&#160;</a></span>getPeerWithLedger()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -40895,7 +40952,13 @@ template&lt;typename headers &gt; </div>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype"><a class="el" href="classripple_1_1PeerImp.html">PeerImp</a> const *&#160;</td>
-          <td class="paramname"><em>skip</em>&#160;</td>
+          <td class="paramname"><em>skip</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; bool(<a class="el" href="classripple_1_1Peer.html#a56cc3cdd9c73921f23cb43a2bfa696a1">Peer::id_t</a>)&gt;&#160;</td>
+          <td class="paramname"><em>shouldProcessCallback</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -40910,7 +40973,7 @@ template&lt;typename headers &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerImp_8cpp_source.html#l03024">3024</a> of file <a class="el" href="PeerImp_8cpp_source.html">PeerImp.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerImp_8cpp_source.html#l03176">3176</a> of file <a class="el" href="PeerImp_8cpp_source.html">PeerImp.cpp</a>.</p>
 
 </div>
 </div>
@@ -40930,7 +40993,7 @@ template&lt;typename headers &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8cpp_source.html#l00144">144</a> of file <a class="el" href="PeerSet_8cpp_source.html">PeerSet.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8cpp_source.html#l00182">182</a> of file <a class="el" href="PeerSet_8cpp_source.html">PeerSet.cpp</a>.</p>
 
 </div>
 </div>
@@ -40953,12 +41016,12 @@ template&lt;typename headers &gt; </div>
 <p>Make a dummy <a class="el" href="classripple_1_1PeerSet.html" title="Supports data retrieval by managing a set of peers.">PeerSet</a> that does not do anything. </p>
 <dl class="section note"><dt>Note</dt><dd>For the use case of <a class="el" href="classripple_1_1InboundLedger.html">InboundLedger</a> in <a class="el" href="classripple_1_1ApplicationImp.html#a4cdb1faad304fe40ee102a6d89b187aa">ApplicationImp::loadOldLedger()</a>, where a real <a class="el" href="classripple_1_1PeerSet.html" title="Supports data retrieval by managing a set of peers.">PeerSet</a> is not needed. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="PeerSet_8cpp_source.html#l00187">187</a> of file <a class="el" href="PeerSet_8cpp_source.html">PeerSet.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="PeerSet_8cpp_source.html#l00225">225</a> of file <a class="el" href="PeerSet_8cpp_source.html">PeerSet.cpp</a>.</p>
 
 </div>
 </div>
 <a id="a26f911b45c375c0ef008c8c5e4416b02" name="a26f911b45c375c0ef008c8c5e4416b02"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a26f911b45c375c0ef008c8c5e4416b02">&#9670;&#160;</a></span>protocolMessageType() <span class="overload">[1/3]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a26f911b45c375c0ef008c8c5e4416b02">&#9670;&#160;</a></span>protocolMessageType() <span class="overload">[1/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -40977,8 +41040,28 @@ template&lt;typename headers &gt; </div>
 
 </div>
 </div>
+<a id="ac3b22a9b69ed965cc19cd0dc515692e7" name="ac3b22a9b69ed965cc19cd0dc515692e7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac3b22a9b69ed965cc19cd0dc515692e7">&#9670;&#160;</a></span>protocolMessageType() <span class="overload">[2/4]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">protocol::MessageType ripple::protocolMessageType </td>
+          <td>(</td>
+          <td class="paramtype">protocol::TMLedgerData const &amp;&#160;</td>
+          <td class="paramname"></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="ProtocolMessage_8h_source.html#l00047">47</a> of file <a class="el" href="ProtocolMessage_8h_source.html">ProtocolMessage.h</a>.</p>
+
+</div>
+</div>
 <a id="a38e7e5e0139a032db72c38d6e9f2a1c1" name="a38e7e5e0139a032db72c38d6e9f2a1c1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a38e7e5e0139a032db72c38d6e9f2a1c1">&#9670;&#160;</a></span>protocolMessageType() <span class="overload">[2/3]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a38e7e5e0139a032db72c38d6e9f2a1c1">&#9670;&#160;</a></span>protocolMessageType() <span class="overload">[3/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -40993,12 +41076,12 @@ template&lt;typename headers &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ProtocolMessage_8h_source.html#l00047">47</a> of file <a class="el" href="ProtocolMessage_8h_source.html">ProtocolMessage.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ProtocolMessage_8h_source.html#l00053">53</a> of file <a class="el" href="ProtocolMessage_8h_source.html">ProtocolMessage.h</a>.</p>
 
 </div>
 </div>
 <a id="ae7e4a001155126bb132492e7cb72362e" name="ae7e4a001155126bb132492e7cb72362e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae7e4a001155126bb132492e7cb72362e">&#9670;&#160;</a></span>protocolMessageType() <span class="overload">[3/3]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ae7e4a001155126bb132492e7cb72362e">&#9670;&#160;</a></span>protocolMessageType() <span class="overload">[4/4]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -41013,7 +41096,7 @@ template&lt;typename headers &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="ProtocolMessage_8h_source.html#l00053">53</a> of file <a class="el" href="ProtocolMessage_8h_source.html">ProtocolMessage.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ProtocolMessage_8h_source.html#l00059">59</a> of file <a class="el" href="ProtocolMessage_8h_source.html">ProtocolMessage.h</a>.</p>
 
 </div>
 </div>
@@ -41037,7 +41120,7 @@ template&lt;class  = void&gt; </div>
 
 <p>Returns the name of a protocol message given its type. </p>
 
-<p class="definition">Definition at line <a class="el" href="ProtocolMessage_8h_source.html#l00061">61</a> of file <a class="el" href="ProtocolMessage_8h_source.html">ProtocolMessage.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ProtocolMessage_8h_source.html#l00067">67</a> of file <a class="el" href="ProtocolMessage_8h_source.html">ProtocolMessage.h</a>.</p>
 
 </div>
 </div>
@@ -41087,12 +41170,12 @@ template&lt;class Buffers , class Handler &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>The number of bytes consumed, or the error code if any. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="ProtocolMessage_8h_source.html#l00336">336</a> of file <a class="el" href="ProtocolMessage_8h_source.html">ProtocolMessage.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ProtocolMessage_8h_source.html#l00342">342</a> of file <a class="el" href="ProtocolMessage_8h_source.html">ProtocolMessage.h</a>.</p>
 
 </div>
 </div>
 <a id="a4f0ccdacfa8449fee76f632565aebab0" name="a4f0ccdacfa8449fee76f632565aebab0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4f0ccdacfa8449fee76f632565aebab0">&#9670;&#160;</a></span>to_string() <span class="overload">[27/29]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#a4f0ccdacfa8449fee76f632565aebab0">&#9670;&#160;</a></span>to_string() <span class="overload">[28/30]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -41109,7 +41192,7 @@ template&lt;class Buffers , class Handler &gt; </div>
 
 <p>Print a protocol version a human-readable string. </p>
 
-<p class="definition">Definition at line <a class="el" href="ProtocolVersion_8cpp_source.html#l00072">72</a> of file <a class="el" href="ProtocolVersion_8cpp_source.html">ProtocolVersion.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ProtocolVersion_8cpp_source.html#l00074">74</a> of file <a class="el" href="ProtocolVersion_8cpp_source.html">ProtocolVersion.cpp</a>.</p>
 
 </div>
 </div>
@@ -41134,7 +41217,7 @@ template&lt;class Buffers , class Handler &gt; </div>
 <dl class="section return"><dt>Returns</dt><dd>A list of all apparently valid protocol versions.</dd></dl>
 <dl class="section note"><dt>Note</dt><dd>The returned list of protocol versions is guaranteed to contain no duplicates and will be sorted in ascending protocol order. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="ProtocolVersion_8cpp_source.html#l00078">78</a> of file <a class="el" href="ProtocolVersion_8cpp_source.html">ProtocolVersion.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ProtocolVersion_8cpp_source.html#l00080">80</a> of file <a class="el" href="ProtocolVersion_8cpp_source.html">ProtocolVersion.cpp</a>.</p>
 
 </div>
 </div>
@@ -41156,7 +41239,7 @@ template&lt;class Buffers , class Handler &gt; </div>
 
 <p>Given a list of supported protocol versions, choose the one we prefer. </p>
 
-<p class="definition">Definition at line <a class="el" href="ProtocolVersion_8cpp_source.html#l00125">125</a> of file <a class="el" href="ProtocolVersion_8cpp_source.html">ProtocolVersion.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ProtocolVersion_8cpp_source.html#l00127">127</a> of file <a class="el" href="ProtocolVersion_8cpp_source.html">ProtocolVersion.cpp</a>.</p>
 
 </div>
 </div>
@@ -41178,7 +41261,7 @@ template&lt;class Buffers , class Handler &gt; </div>
 
 <p>Given a list of supported protocol versions, choose the one we prefer. </p>
 
-<p class="definition">Definition at line <a class="el" href="ProtocolVersion_8cpp_source.html#l00148">148</a> of file <a class="el" href="ProtocolVersion_8cpp_source.html">ProtocolVersion.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ProtocolVersion_8cpp_source.html#l00150">150</a> of file <a class="el" href="ProtocolVersion_8cpp_source.html">ProtocolVersion.cpp</a>.</p>
 
 </div>
 </div>
@@ -41199,7 +41282,7 @@ template&lt;class Buffers , class Handler &gt; </div>
 
 <p>The list of all the protocol versions we support. </p>
 
-<p class="definition">Definition at line <a class="el" href="ProtocolVersion_8cpp_source.html#l00156">156</a> of file <a class="el" href="ProtocolVersion_8cpp_source.html">ProtocolVersion.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ProtocolVersion_8cpp_source.html#l00158">158</a> of file <a class="el" href="ProtocolVersion_8cpp_source.html">ProtocolVersion.cpp</a>.</p>
 
 </div>
 </div>
@@ -41221,7 +41304,7 @@ template&lt;class Buffers , class Handler &gt; </div>
 
 <p>Determine whether we support a specific protocol version. </p>
 
-<p class="definition">Definition at line <a class="el" href="ProtocolVersion_8cpp_source.html#l00174">174</a> of file <a class="el" href="ProtocolVersion_8cpp_source.html">ProtocolVersion.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ProtocolVersion_8cpp_source.html#l00176">176</a> of file <a class="el" href="ProtocolVersion_8cpp_source.html">ProtocolVersion.cpp</a>.</p>
 
 </div>
 </div>
@@ -45763,7 +45846,7 @@ template&lt;class T &gt; </div>
 </div>
 </div>
 <a id="ae4231cd5ae89abe4232eed5ff0ec8030" name="ae4231cd5ae89abe4232eed5ff0ec8030"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae4231cd5ae89abe4232eed5ff0ec8030">&#9670;&#160;</a></span>to_string() <span class="overload">[28/29]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ae4231cd5ae89abe4232eed5ff0ec8030">&#9670;&#160;</a></span>to_string() <span class="overload">[29/30]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -45783,7 +45866,7 @@ template&lt;class T &gt; </div>
 </div>
 </div>
 <a id="ae17017060989c5be0a5e70d8e41dbff2" name="ae17017060989c5be0a5e70d8e41dbff2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae17017060989c5be0a5e70d8e41dbff2">&#9670;&#160;</a></span>to_string() <span class="overload">[29/29]</span></h2>
+<h2 class="memtitle"><span class="permalink"><a href="#ae17017060989c5be0a5e70d8e41dbff2">&#9670;&#160;</a></span>to_string() <span class="overload">[30/30]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -46231,7 +46314,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LedgerHeader_8h_source.html#l00082">82</a> of file <a class="el" href="LedgerHeader_8h_source.html">LedgerHeader.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LedgerHeader_8h_source.html#l00084">84</a> of file <a class="el" href="LedgerHeader_8h_source.html">LedgerHeader.h</a>.</p>
 
 </div>
 </div>
@@ -51390,7 +51473,9 @@ template&lt;class Dest , class Src &gt; </div>
 </div><div class="memdoc">
 <b>Initial value:</b><div class="fragment"><div class="line">{</div>
 <div class="line">    {2, 1},</div>
-<div class="line">    {2, 2}</div>
+<div class="line">    {2, 2},</div>
+<div class="line">    </div>
+<div class="line">    {2, 3}</div>
 <div class="line">}</div>
 </div><!-- fragment -->
 <p>The list of protocol versions we speak and we prefer to use. </p>

@@ -143,6 +143,9 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:aac29c2160c4d24ff6536c5a562b627a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2a2ef462b7dc7e845d7c0fa55cdb3665"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HashRouter.html#a2a2ef462b7dc7e845d7c0fa55cdb3665">shouldProcess</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;key, <a class="el" href="classripple_1_1HashRouter.html#ae1bb71697fff314fed4cdffde40d581e">PeerShortID</a> peer, int &amp;flags, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> tx_interval)</td></tr>
 <tr class="separator:a2a2ef462b7dc7e845d7c0fa55cdb3665"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a81cbf261ff987cbe182cbc98e55a0feb"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HashRouter.html#a81cbf261ff987cbe182cbc98e55a0feb">shouldProcessForPeer</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;key, <a class="el" href="classripple_1_1HashRouter.html#ae1bb71697fff314fed4cdffde40d581e">PeerShortID</a> peer, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> interval)</td></tr>
+<tr class="memdesc:a81cbf261ff987cbe182cbc98e55a0feb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Determines whether the hashed item should be processed for the given peer.  <a href="classripple_1_1HashRouter.html#a81cbf261ff987cbe182cbc98e55a0feb">More...</a><br /></td></tr>
+<tr class="separator:a81cbf261ff987cbe182cbc98e55a0feb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac43309b8c10713823bdc233f39931472"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HashRouter.html#ac43309b8c10713823bdc233f39931472">setFlags</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;key, int flags)</td></tr>
 <tr class="memdesc:ac43309b8c10713823bdc233f39931472"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the flags on a hash.  <a href="classripple_1_1HashRouter.html#ac43309b8c10713823bdc233f39931472">More...</a><br /></td></tr>
 <tr class="separator:ac43309b8c10713823bdc233f39931472"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -151,6 +154,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a29980c0f77dcc002ef322c23080f3266"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/container/set.html">std::set</a>&lt; <a class="el" href="classripple_1_1HashRouter.html#ae1bb71697fff314fed4cdffde40d581e">PeerShortID</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HashRouter.html#a29980c0f77dcc002ef322c23080f3266">shouldRelay</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;key)</td></tr>
 <tr class="memdesc:a29980c0f77dcc002ef322c23080f3266"><td class="mdescLeft">&#160;</td><td class="mdescRight">Determines whether the hashed item should be relayed.  <a href="classripple_1_1HashRouter.html#a29980c0f77dcc002ef322c23080f3266">More...</a><br /></td></tr>
 <tr class="separator:a29980c0f77dcc002ef322c23080f3266"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acd7591e0649aa4388f5763bd64708c7a"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/set.html">std::set</a>&lt; <a class="el" href="classripple_1_1HashRouter.html#ae1bb71697fff314fed4cdffde40d581e">PeerShortID</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1HashRouter.html#acd7591e0649aa4388f5763bd64708c7a">getPeers</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;key)</td></tr>
+<tr class="memdesc:acd7591e0649aa4388f5763bd64708c7a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns a copy of the set of peers in the <a class="el" href="classripple_1_1HashRouter_1_1Entry.html" title="An entry in the routing table.">Entry</a> for the key.  <a href="classripple_1_1HashRouter.html#acd7591e0649aa4388f5763bd64708c7a">More...</a><br /></td></tr>
+<tr class="separator:acd7591e0649aa4388f5763bd64708c7a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
@@ -220,7 +226,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00146">146</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00169">169</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
 
 </div>
 </div>
@@ -273,7 +279,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00139">139</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00162">162</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
 
 </div>
 </div>
@@ -380,7 +386,7 @@ Private Attributes</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Add a suppression peer and get message's relay status. </p>
-<p >Return pair: element 1: true if the peer is added. element 2: optional is seated to the relay time point or is unseated if has not relayed yet. </p>
+<p >Return pair: element 1: true if the key is added. element 2: optional is seated to the relay time point or is unseated if has not relayed yet. </p>
 
 <p class="definition">Definition at line <a class="el" href="HashRouter_8cpp_source.html#l00057">57</a> of file <a class="el" href="HashRouter_8cpp_source.html">HashRouter.cpp</a>.</p>
 
@@ -464,6 +470,46 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="a81cbf261ff987cbe182cbc98e55a0feb" name="a81cbf261ff987cbe182cbc98e55a0feb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a81cbf261ff987cbe182cbc98e55a0feb">&#9670;&#160;</a></span>shouldProcessForPeer()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ripple::HashRouter::shouldProcessForPeer </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
+          <td class="paramname"><em>key</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1HashRouter.html#ae1bb71697fff314fed4cdffde40d581e">PeerShortID</a>&#160;</td>
+          <td class="paramname"><em>peer</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>&#160;</td>
+          <td class="paramname"><em>interval</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Determines whether the hashed item should be processed for the given peer. </p>
+<p >Could be an incoming or outgoing message.</p>
+<p >Items filtered with this function should only be processed for the given peer once. Unlike shouldProcess, it can be processed for other peers. </p>
+
+<p class="definition">Definition at line <a class="el" href="HashRouter_8cpp_source.html#l00094">94</a> of file <a class="el" href="HashRouter_8cpp_source.html">HashRouter.cpp</a>.</p>
+
+</div>
+</div>
 <a id="ac43309b8c10713823bdc233f39931472" name="ac43309b8c10713823bdc233f39931472"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ac43309b8c10713823bdc233f39931472">&#9670;&#160;</a></span>setFlags()</h2>
 
@@ -493,7 +539,7 @@ Private Attributes</h2></td></tr>
 <p>Set the flags on a hash. </p>
 <dl class="section return"><dt>Returns</dt><dd><code>true</code> if the flags were changed. <code>false</code> if unchanged. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="HashRouter_8cpp_source.html#l00102">102</a> of file <a class="el" href="HashRouter_8cpp_source.html">HashRouter.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HashRouter_8cpp_source.html#l00116">116</a> of file <a class="el" href="HashRouter_8cpp_source.html">HashRouter.cpp</a>.</p>
 
 </div>
 </div>
@@ -513,7 +559,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HashRouter_8cpp_source.html#l00094">94</a> of file <a class="el" href="HashRouter_8cpp_source.html">HashRouter.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HashRouter_8cpp_source.html#l00108">108</a> of file <a class="el" href="HashRouter_8cpp_source.html">HashRouter.cpp</a>.</p>
 
 </div>
 </div>
@@ -539,7 +585,29 @@ return `true` again until the hold time has expired.
 The internal set of peers will also be reset.
 </pre> <dl class="section return"><dt>Returns</dt><dd>A <code><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a></code> set of peers which do not need to be relayed to. If the result is uninitialized, the item should <em>not</em> be relayed. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="HashRouter_8cpp_source.html#l00118">118</a> of file <a class="el" href="HashRouter_8cpp_source.html">HashRouter.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HashRouter_8cpp_source.html#l00132">132</a> of file <a class="el" href="HashRouter_8cpp_source.html">HashRouter.cpp</a>.</p>
+
+</div>
+</div>
+<a id="acd7591e0649aa4388f5763bd64708c7a" name="acd7591e0649aa4388f5763bd64708c7a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acd7591e0649aa4388f5763bd64708c7a">&#9670;&#160;</a></span>getPeers()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">auto ripple::HashRouter::getPeers </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
+          <td class="paramname"><em>key</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Returns a copy of the set of peers in the <a class="el" href="classripple_1_1HashRouter_1_1Entry.html" title="An entry in the routing table.">Entry</a> for the key. </p>
+
+<p class="definition">Definition at line <a class="el" href="HashRouter_8cpp_source.html#l00146">146</a> of file <a class="el" href="HashRouter_8cpp_source.html">HashRouter.cpp</a>.</p>
 
 </div>
 </div>
@@ -592,7 +660,7 @@ The internal set of peers will also be reset.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00213">213</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00253">253</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
 
 </div>
 </div>
@@ -616,7 +684,7 @@ The internal set of peers will also be reset.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00221">221</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00261">261</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
 
 </div>
 </div>
@@ -640,7 +708,7 @@ The internal set of peers will also be reset.
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00223">223</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="HashRouter_8h_source.html#l00263">263</a> of file <a class="el" href="HashRouter_8h_source.html">HashRouter.h</a>.</p>
 
 </div>
 </div>

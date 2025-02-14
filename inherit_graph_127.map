@@ -1,4 +1,13 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" title=" " alt="" coords="5,5,179,45"/>
-<area shape="rect" id="node2" href="$classripple_1_1ZeroCopyInputStream.html" title="Implements ZeroCopyInputStream around a buffer sequence." alt="" coords="227,5,437,45"/>
+<area shape="rect" id="node1" title=" " alt="" coords="32,89,113,115"/>
+<area shape="rect" id="node2" href="$classbeast_1_1detail_1_1aged__ordered__container_1_1KeyValueCompare.html" title=" " alt="" coords="192,113,403,197"/>
+<area shape="rect" id="node4" href="$classbeast_1_1detail_1_1aged__ordered__container_1_1pair__value__compare.html" title=" " alt="" coords="192,5,403,89"/>
+<area shape="rect" id="node3" href="$classbeast_1_1detail_1_1aged__ordered__container_1_1config__t.html" title=" " alt="" coords="455,153,665,237"/>
+<area shape="rect" id="node5" title=" " alt="" coords="5,236,140,261"/>
+<area shape="rect" id="node6" href="$classbeast_1_1detail_1_1empty__base__optimization.html" title=" " alt="" coords="188,221,407,276"/>
+<area shape="rect" id="node7" href="$classbeast_1_1detail_1_1aged__unordered__container_1_1config__t.html" title=" " alt="" coords="465,300,655,384"/>
+<area shape="rect" id="node8" title=" " alt="" coords="45,329,100,355"/>
+<area shape="rect" id="node9" href="$classbeast_1_1detail_1_1aged__unordered__container_1_1ValueHash.html" title=" " alt="" coords="202,300,393,384"/>
+<area shape="rect" id="node10" title=" " alt="" coords="31,437,114,463"/>
+<area shape="rect" id="node11" href="$classbeast_1_1detail_1_1aged__unordered__container_1_1KeyValueEqual.html" title=" " alt="" coords="196,408,399,492"/>
 </map>

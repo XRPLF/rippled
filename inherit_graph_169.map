@@ -1,5 +1,6 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$structripple_1_1Attestations_1_1AttestationBase.html" title=" " alt="" coords="5,37,152,77"/>
-<area shape="rect" id="node2" href="$structripple_1_1Attestations_1_1AttestationClaim.html" title=" " alt="" coords="225,5,372,45"/>
-<area shape="rect" id="node3" href="$structripple_1_1Attestations_1_1AttestationCreateAccount.html" title=" " alt="" coords="200,69,397,109"/>
+<area shape="rect" id="node1" href="$classripple_1_1AsyncObject.html" title=" " alt="" coords="177,5,344,45"/>
+<area shape="rect" id="node2" href="$classripple_1_1ResolverAsioImpl.html" title=" " alt="" coords="392,42,573,67"/>
+<area shape="rect" id="node3" href="$classripple_1_1Resolver.html" title=" " alt="" coords="5,70,129,95"/>
+<area shape="rect" id="node4" href="$classripple_1_1ResolverAsio.html" title=" " alt="" coords="185,70,337,95"/>
 </map>

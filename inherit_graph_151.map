@@ -1,4 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" title=" " alt="" coords="5,5,147,45"/>
-<area shape="rect" id="node2" href="$structstd_1_1hash_3_01ripple_1_1AccountID_01_4.html" title=" " alt="" coords="195,5,336,45"/>
+<area shape="rect" id="node1" href="$classripple_1_1AbstractFetchPackContainer.html" title="An interface facilitating retrieval of fetch packs without an application or ledgermaster object." alt="" coords="5,5,192,45"/>
+<area shape="rect" id="node2" href="$classripple_1_1LedgerMaster.html" title=" " alt="" coords="240,13,396,38"/>
 </map>

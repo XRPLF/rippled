@@ -1,3 +1,5 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$structripple_1_1Fees.html" title="Reflects the fee settings for a particular ledger." alt="" coords="5,5,103,31"/>
+<area shape="rect" id="node1" href="$classripple_1_1Family.html" title=" " alt="" coords="5,31,116,56"/>
+<area shape="rect" id="node2" href="$classripple_1_1NodeFamily.html" title=" " alt="" coords="197,5,341,31"/>
+<area shape="rect" id="node3" href="$classripple_1_1tests_1_1TestNodeFamily.html" title=" " alt="" coords="164,55,375,80"/>
 </map>

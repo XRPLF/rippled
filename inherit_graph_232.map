@@ -1,3 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classripple_1_1CountedObject.html" title="Tracks the number of instances of an object." alt="" coords="5,5,168,45"/>
+<area shape="rect" id="node1" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="5,5,168,45"/>
+<area shape="rect" id="node2" href="$classripple_1_1NodeObject.html" title="A simple object that the Ledger uses to store entries." alt="" coords="216,13,359,38"/>
 </map>
