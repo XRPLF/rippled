@@ -1595,7 +1595,7 @@ Consensus<Adaptor>::haveConsensus()
                      << ", disagree=" << disagree;
 
     ConsensusParms const& parms = adaptor_.parms();
-    // Stallling is BAD
+    // Stalling is BAD
     bool stalled = haveCloseTimeConsensus_ &&
         std::all_of(result_->disputes.begin(),
                     result_->disputes.end(),

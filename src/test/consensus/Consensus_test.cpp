@@ -1119,13 +1119,13 @@ public:
     }
 
     void
-    testDisputes()
+    testDisjointNetwork()
     {
         // WIP: Try to create conditions where messaging is unreliable and all
         // peers have different initial proposals
         using namespace csf;
         using namespace std::chrono;
-        testcase("disputes");
+        testcase("disjoint network");
 
         std::uint32_t const numPeers = 35;
 
@@ -1211,6 +1211,66 @@ public:
     }
 
     void
+    testDisputes()
+    {
+        testcase("disputes");
+
+        using namespace csf;
+
+        // Test dispute objects directly
+        using Dispute = DisputedTx<Tx, PeerID>;
+
+        Tx const tx{99};
+        int const numPeers = 100;
+        ConsensusParms p;
+        std::size_t peersUnchanged = 0;
+
+        // Three cases:
+        // 1 proposing, initial vote yes
+        // 2 proposing, initial vote no
+        // 3 not proposing, initial vote doesn't matter after the first update, use yes
+        {
+            bool const proposing = true;
+            bool const myVote = true;
+
+            Dispute d{tx.id(), myVote, numPeers, journal_};
+            BEAST_EXPECT(d.ID() == 99);
+
+            // Create an even split in the peer votes
+            for (int i = 0; i < numPeers; ++i)
+            {
+                BEAST_EXPECT(d.setVote(PeerID(i), i < 50));
+            }
+            // Switch the middle vote to match mine
+            BEAST_EXPECT(d.setVote(myVote ? PeerID(50) : PeerID(49), myVote));
+
+            // no changes yet
+            BEAST_EXPECT(d.getOurVote() == myVote);
+            BEAST_EXPECT(!d.stalled(p, proposing, peersUnchanged));
+
+            // I'm in the majority, my vote should not change
+            BEAST_EXPECT(d.updateVote(5, proposing, p) != proposing);
+            BEAST_EXPECT(d.updateVote(10, proposing, p) != proposing);
+
+            // Right now, the vote is 51%. The requirement is about to jump to 65%
+            bool changed = d.updateVote(55, proposing, p);
+            BEAST_EXPECT(changed == !proposing || myVote);
+            BEAST_EXPECT(!changed || d.getOurVote() != myVote);
+            // 16 validators change their vote to match my original vote
+            for (int i = 0; i < 16; ++i)
+            {
+                // If I was voting yes, change no's from the end
+                auto  p =myVote ? PeerID(numPeers - i - 1) : PeerID(i);
+                BEAST_EXPECT(d.setVote(p, myVote));
+            }
+            // The vote should now be 66%
+            changed = d.updateVote(60, proposing, p);
+            BEAST_EXPECT(changed == proposing);
+            BEAST_EXPECT(!changed || d.getOurVote() == myVote);
+        }
+    }
+
+    void
     run() override
     {
         testShouldCloseLedger();
@@ -1226,6 +1286,7 @@ public:
         testHubNetwork();
         testPreferredByBranch();
         testPauseForLaggards();
+        testDisjointNetwork();
         testDisputes();
     }
 };
