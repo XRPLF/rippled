@@ -57,6 +57,9 @@ public:
     std::strong_ordering
     operator<=>(Charge const&) const;
 
+    Charge
+    operator*(value_type m) const;
+
 private:
     value_type m_cost;
     std::string m_label;
