@@ -89,7 +89,7 @@ checkConsensusReached(
     bool count_self,
     std::size_t minConsensusPct,
     bool reachedMax,
-    bool stableState)
+    bool stalled)
 {
     // If we are alone for too long, we have consensus.
     // Delaying consensus like this avoids a circumstance where a peer
@@ -115,7 +115,7 @@ checkConsensusReached(
 
     std::size_t currentPercentage = (agreeing * 100) / total;
 
-    return currentPercentage >= minConsensusPct || stableState;
+    return stalled || currentPercentage >= minConsensusPct;
 }
 
 ConsensusState
@@ -126,7 +126,7 @@ checkConsensus(
     std::size_t currentFinished,
     std::chrono::milliseconds previousAgreeTime,
     std::chrono::milliseconds currentAgreeTime,
-    bool stableState,
+    bool stalled,
     ConsensusParms const& parms,
     bool proposing,
     beast::Journal j)
@@ -165,10 +165,10 @@ checkConsensus(
             proposing,
             parms.minCONSENSUS_PCT,
             currentAgreeTime > parms.ledgerMAX_CONSENSUS,
-            stableState))
+            stalled))
     {
-        JLOG(j.debug()) << "normal consensus with " << (stableState ? "" : "un")
-                        << "stable state";
+        JLOG(j.debug()) << "normal consensus"
+                        << (stalled ? ", but stalled" : "");
         return ConsensusState::Yes;
     }
 
@@ -194,6 +194,7 @@ checkConsensus(
                                parms.ledgerABANDON_CONSENSUS))
     {
         JLOG(j.warn()) << "consensus taken too long";
+        // Note the Expired result may be overridden by the caller.
         return ConsensusState::Expired;
     }
 

@@ -84,35 +84,35 @@ public:
         return ourVote_;
     }
 
-    //! Are we and our peers at a "stable state" where we probably won't change
+    //! Are we and our peers "stalled" where we probably won't change
     //! our vote?
     bool
-    stableState(ConsensusParms const& p, bool proposing, int peersUnchanged)
-        const
+    stalled(ConsensusParms const& p, bool proposing, int peersUnchanged) const
     {
         // at() can throw, but the map is built by hand to ensure all valid
         // values are available.
         auto const& currentCutoff = p.avalancheCutoffs.at(avalancheState_);
         auto const& nextCutoff = p.avalancheCutoffs.at(currentCutoff.next);
 
-        // We're not at the final avalanche state, so there's room for change
-        // Check the times in case the state machine is updated to allow states
-        // to loop.
+        // We're have not reached the final avalanche state, or been there long
+        // enough, so there's room for change. Check the times in case the state
+        // machine is altered to allow states to loop.
         if (avalancheState_ != currentCutoff.next &&
-            nextCutoff.consensusTime > currentCutoff.consensusTime)
+            nextCutoff.consensusTime > currentCutoff.consensusTime &&
+            avalancheCounter_ < p.avMIN_ROUNDS)
             return false;
 
         // We've haven't had this vote for minimum rounds yet. Things could
         // change.
-        if (currentVoteCounter_ < p.avMIN_ROUNDS)
+        if (proposing && currentVoteCounter_ < p.avMIN_ROUNDS)
             return false;
 
         // If we or any peers have changed a vote in several rounds, then
         // things could still change. But if _either_ has not changed in that
         // long, we're unlikely to change our vote any time soon. (This prevents
         // a malicious peer from flip-flopping a vote to prevent consensus.)
-        if (peersUnchanged < p.avSTABLE_STATE_ROUNDS ||
-            currentVoteCounter_ < p.avSTABLE_STATE_ROUNDS)
+        if (peersUnchanged < p.avSTALLED_ROUNDS ||
+            (proposing && currentVoteCounter_ < p.avSTALLED_ROUNDS))
             return false;
 
         // Does this transaction have more than 80% agreement
@@ -291,11 +291,8 @@ DisputedTx<Tx_t, NodeID_t>::updateVote(
             p,
             avalancheState_,
             percentTime,
-            [&](ConsensusParms::AvalancheCutoff const& currentState) {
-                // Have we spent sufficient rounds at this step.
-                return ++avalancheCounter_ >= p.avMIN_ROUNDS &&
-                    currentState.consensusPct;
-            });
+            ++avalancheCounter_,
+            p.avMIN_ROUNDS);
         if (newState)
         {
             avalancheState_ = *newState;

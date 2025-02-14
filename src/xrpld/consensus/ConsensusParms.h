@@ -130,19 +130,6 @@ struct ConsensusParms
     // As a function of the percent this round's duration is of the prior round,
     // we increase the threshold for yes votes to add a transaction to our
     // position.
-
-    //! Percentage of nodes required to reach agreement on ledger close time
-    std::size_t const avCT_CONSENSUS_PCT = 75;
-
-    //! Number of rounds before certain actions can happen.
-    // (Moving to the next avalanche level, considering that votes are in a
-    // stable state without consensus.)
-    std::size_t const avMIN_ROUNDS = 2;
-
-    //! Number of rounds before a stuck vote is considered unlikely to change
-    //! because voting is in an undesirable stable state
-    std::size_t const avSTABLE_STATE_ROUNDS = 4;
-
     enum AvalancheState { init, mid, late, stuck };
     struct AvalancheCutoff
     {
@@ -167,6 +154,18 @@ struct ConsensusParms
         // we're stuck after 2x time, requires 95% yes votes
         {stuck, {200, 95, stuck}},
     };
+
+    //! Percentage of nodes required to reach agreement on ledger close time
+    std::size_t const avCT_CONSENSUS_PCT = 75;
+
+    //! Number of rounds before certain actions can happen.
+    // (Moving to the next avalanche level, considering that votes are stalled
+    // without consensus.)
+    std::size_t const avMIN_ROUNDS = 2;
+
+    //! Number of rounds before a stuck vote is considered unlikely to change
+    //! because voting stalled
+    std::size_t const avSTALLED_ROUNDS = 4;
 };
 
 inline std::pair<std::size_t, std::optional<ConsensusParms::AvalancheState>>
@@ -174,22 +173,21 @@ getNeededWeight(
     ConsensusParms const& p,
     ConsensusParms::AvalancheState currentState,
     int percentTime,
-    std::function<bool(ConsensusParms::AvalancheCutoff const&)>
-        considerNextCallback)
+    std::size_t currentRounds,
+    std::size_t minimumRounds)
 {
     // at() can throw, but the map is built by hand to ensure all valid
     // values are available.
     auto const& currentCutoff = p.avalancheCutoffs.at(currentState);
     // Should we consider moving to the next state?
-    if (currentCutoff.next != currentState &&
-        (!considerNextCallback || considerNextCallback(currentCutoff)))
+    if (currentCutoff.next != currentState && currentRounds >= minimumRounds)
     {
         // at() can throw, but the map is built by hand to ensure all
         // valid values are available.
         auto const& nextCutoff = p.avalancheCutoffs.at(currentCutoff.next);
         // See if enough time has passed to move on to the next.
         XRPL_ASSERT(
-            nextCutoff.consensusTime,
+            nextCutoff.consensusTime >= currentCutoff.consensusTime,
             "ripple::DisputedTx::updateVote next state valid");
         if (percentTime >= nextCutoff.consensusTime)
         {

@@ -31,6 +31,7 @@
 #include <xrpl/json/json_writer.h>
 #include <boost/logic/tribool.hpp>
 
+#include <algorithm>
 #include <chrono>
 #include <deque>
 #include <optional>
@@ -79,7 +80,7 @@ shouldCloseLedger(
                              last ledger
     @param currentAgreeTime how long, in milliseconds, we've been trying to
                             agree
-    @param stableState the network appears to be in a stable state, where
+    @param stalled the network appears to be stalled, where
            neither we nor our peers have changed their vote on any disputes in a
            while. This is undesirable, and will cause us to end consensus
            without 80% agreement.
@@ -95,7 +96,7 @@ checkConsensus(
     std::size_t currentFinished,
     std::chrono::milliseconds previousAgreeTime,
     std::chrono::milliseconds currentAgreeTime,
-    bool stableState,
+    bool stalled,
     ConsensusParms const& parms,
     bool proposing,
     beast::Journal j);
@@ -592,6 +593,13 @@ private:
     std::optional<Result> result_;
     ConsensusCloseTimes rawCloseTimes_;
 
+    // The number of calls to phaseEstablish where none of our peers
+    // have changed any votes on disputed transactions.
+    std::size_t peerUnchangedCounter_ = 0;
+
+    // The total number of times we have called phaseEstablish
+    std::size_t establishCounter_ = 0;
+
     //-------------------------------------------------------------------------
     // Peer related consensus data
 
@@ -841,11 +849,6 @@ Consensus<Adaptor>::timerEntry(NetClock::time_point const& now)
     }
     else if (phase_ == ConsensusPhase::establish)
     {
-        if (result_)
-        {
-            ++result_->peerUnchangedCounter;
-            ++result_->establishCounter;
-        }
         phaseEstablish();
     }
 }
@@ -1279,6 +1282,9 @@ Consensus<Adaptor>::phaseEstablish()
     // can only establish consensus if we already took a stance
     XRPL_ASSERT(result_, "ripple::Consensus::phaseEstablish : result is set");
 
+    ++peerUnchangedCounter_;
+    ++establishCounter_;
+
     using namespace std::chrono;
     ConsensusParms const& parms = adaptor_.parms();
 
@@ -1330,6 +1336,8 @@ Consensus<Adaptor>::closeLedger()
     phase_ = ConsensusPhase::establish;
     JLOG(j_.debug()) << "transitioned to ConsensusPhase::establish";
     rawCloseTimes_.self = now_;
+    peerUnchangedCounter_ = 0;
+    establishCounter_ = 0;
 
     result_.emplace(adaptor_.onClose(previousLedger_, now_, mode_.get()));
     result_->roundTime.reset(clock_.now());
@@ -1457,8 +1465,9 @@ Consensus<Adaptor>::updateOurPositions()
     }
     else
     {
+        // We don't track rounds for close time, so just pass 0s
         auto const [neededWeight, newState] = getNeededWeight(
-            parms, closeTimeAvalancheState_, convergePercent_, {});
+            parms, closeTimeAvalancheState_, convergePercent_, 0, 0);
         if (newState)
             closeTimeAvalancheState_ = *newState;
 
@@ -1586,22 +1595,16 @@ Consensus<Adaptor>::haveConsensus()
                      << ", disagree=" << disagree;
 
     ConsensusParms const& parms = adaptor_.parms();
-    // stable state is NOT desirable if we don't have 80% agreement
-    bool stableState = haveCloseTimeConsensus_;
-    if (stableState)
-    {
-        for (auto const& [txid, dt] : result_->disputes)
-        {
-            if (!dt.stableState(
-                    parms,
-                    mode_.get() == ConsensusMode::proposing,
-                    result_->peerUnchangedCounter))
-            {
-                stableState = false;
-                break;
-            }
-        }
-    }
+    // Stallling is BAD
+    bool stalled = haveCloseTimeConsensus_ &&
+        std::all_of(result_->disputes.begin(),
+                    result_->disputes.end(),
+                    [this, &parms](auto const& dispute) {
+                        return dispute.second.stalled(
+                            parms,
+                            mode_.get() == ConsensusMode::proposing,
+                            peerUnchangedCounter_);
+                    });
 
     // Determine if we actually have consensus or not
     result_->state = checkConsensus(
@@ -1611,7 +1614,7 @@ Consensus<Adaptor>::haveConsensus()
         currentFinished,
         prevRoundTime_,
         result_->roundTime.read(),
-        stableState,
+        stalled,
         parms,
         mode_.get() == ConsensusMode::proposing,
         j_);
@@ -1622,9 +1625,9 @@ Consensus<Adaptor>::haveConsensus()
     // Consensus has taken far too long. Drop out of the round.
     if (result_->state == ConsensusState::Expired)
     {
-        auto const minimumCounter =
+        static auto const minimumCounter =
             parms.avalancheCutoffs.size() * parms.avMIN_ROUNDS;
-        if (result_->establishCounter < minimumCounter)
+        if (establishCounter_ < minimumCounter)
         {
             // If each round of phaseEstablish takes a very long time, we may
             // "expire" before we've given consensus enough time at each
@@ -1633,9 +1636,9 @@ Consensus<Adaptor>::haveConsensus()
             // large number of disputes such that each round takes an inordinate
             // amount of time.
             JLOG(j_.error())
-                << "Consensus time has expired in round "
-                << result_->establishCounter << "; continue until round "
-                << minimumCounter << ". " << Json::Compact{getJson(false)};
+                << "Consensus time has expired in round " << establishCounter_
+                << "; continue until round " << minimumCounter << ". "
+                << Json::Compact{getJson(false)};
             return false;
         }
         JLOG(j_.error()) << "Nobody can reach consensus";
@@ -1722,7 +1725,7 @@ Consensus<Adaptor>::createDisputes(TxSet_t const& o)
             auto const cit = acquired_.find(peerProp.position());
             if (cit != acquired_.end() &&
                 dtx.setVote(nodeId, cit->second.exists(txID)))
-                result_->peerUnchangedCounter = 0;
+                peerUnchangedCounter_ = 0;
         }
         adaptor_.share(dtx.tx());
 
@@ -1747,7 +1750,7 @@ Consensus<Adaptor>::updateDisputes(NodeID_t const& node, TxSet_t const& other)
     {
         auto& d = it.second;
         if (d.setVote(node, other.exists(d.tx().id())))
-            result_->peerUnchangedCounter = 0;
+            peerUnchangedCounter_ = 0;
     }
 }
 

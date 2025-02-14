@@ -129,8 +129,9 @@ public:
         BEAST_EXPECT(
             ConsensusState::Expired ==
             checkConsensus(10, 8, 1, 0, 1s, 19s, false, p, true, journal_));
+
         ///////////////
-        // Stable state
+        // Stalled
         //
         // Not enough time has elapsed
         BEAST_EXPECT(
