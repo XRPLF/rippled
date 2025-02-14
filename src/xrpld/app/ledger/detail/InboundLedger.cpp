@@ -392,7 +392,14 @@ InboundLedger::onTimer(bool wasProgress, ScopedLockType&)
 
     if (!wasProgress)
     {
-        checkLocal();
+        if (checkLocal())
+        {
+            // Done. Something else (probably consensus) built the ledger
+            // locally while waiting for data (or possibly before requesting)
+            XRPL_ASSERT(isDone(), "ripple::InboundLedger::onTimer : done");
+            JLOG(journal_.info()) << "Finished while waiting " << hash_;
+            return;
+        }
 
         mByHash = true;
 
@@ -502,15 +509,17 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
 
     if (auto stream = journal_.debug())
     {
-        stream << "Trigger acquiring ledger " << hash_;
+        std::stringstream ss;
+        ss << "Trigger acquiring ledger " << hash_;
         if (peer)
-            stream << " from " << peer;
+            ss << " from " << peer;
 
         if (complete_ || failed_)
-            stream << "complete=" << complete_ << " failed=" << failed_;
+            ss << " complete=" << complete_ << " failed=" << failed_;
         else
-            stream << "header=" << mHaveHeader << " tx=" << mHaveTransactions
-                   << " as=" << mHaveState;
+            ss << " header=" << mHaveHeader << " tx=" << mHaveTransactions
+               << " as=" << mHaveState;
+        stream << ss.str();
     }
 
     if (!mHaveHeader)
