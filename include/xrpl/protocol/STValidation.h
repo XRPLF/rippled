@@ -147,17 +147,15 @@ public:
     {
         std::stringstream ss;
         ss << "validation: "
-            << " ledger_hash: " << getLedgerHash()
-            << " consensus_hash: " << getConsensusHash()
-            << " sign_time: " << to_string(getSignTime())
-            << " seen_time: " << to_string(getSeenTime())
-            << " signer_public_key: " << getSignerPublic()
-            << " node_id: " << getNodeID()
-            << " is_valid: " << isValid()
-            << " is_full: " << isFull()
-            << " is_trusted: " << isTrusted()
-            << " signing_hash: " << getSigningHash()
-            << " base58: " << toBase58(TokenType::NodePublic, getSignerPublic());
+           << " ledger_hash: " << getLedgerHash()
+           << " consensus_hash: " << getConsensusHash()
+           << " sign_time: " << to_string(getSignTime())
+           << " seen_time: " << to_string(getSeenTime())
+           << " signer_public_key: " << getSignerPublic()
+           << " node_id: " << getNodeID() << " is_valid: " << isValid()
+           << " is_full: " << isFull() << " is_trusted: " << isTrusted()
+           << " signing_hash: " << getSigningHash()
+           << " base58: " << toBase58(TokenType::NodePublic, getSignerPublic());
         return ss.str();
     }
 

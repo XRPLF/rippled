@@ -25,8 +25,8 @@
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/jss.h>
 #include <cstdint>
-#include <sstream>
 #include <optional>
+#include <sstream>
 
 namespace ripple {
 /** Represents a proposed position taken during a round of consensus.
@@ -200,12 +200,10 @@ public:
     {
         std::stringstream ss;
         ss << "proposal: previous_ledger: " << previousLedger_
-            << " proposal_seq: " << proposeSeq_
-            << " position: " << position_
-            << " close_time: " << to_string(closeTime_)
-            << " now: " << to_string(time_)
-            << " is_bow_out:" << isBowOut()
-            << " node_id: " << nodeID_;
+           << " proposal_seq: " << proposeSeq_ << " position: " << position_
+           << " close_time: " << to_string(closeTime_)
+           << " now: " << to_string(time_) << " is_bow_out:" << isBowOut()
+           << " node_id: " << nodeID_;
         return ss.str();
     }
 
