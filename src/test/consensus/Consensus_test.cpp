@@ -1228,7 +1228,8 @@ public:
         // Three cases:
         // 1 proposing, initial vote yes
         // 2 proposing, initial vote no
-        // 3 not proposing, initial vote doesn't matter after the first update, use yes
+        // 3 not proposing, initial vote doesn't matter after the first update,
+        // use yes
         {
             bool const proposing = true;
             bool const myVote = true;
@@ -1252,7 +1253,8 @@ public:
             BEAST_EXPECT(d.updateVote(5, proposing, p) != proposing);
             BEAST_EXPECT(d.updateVote(10, proposing, p) != proposing);
 
-            // Right now, the vote is 51%. The requirement is about to jump to 65%
+            // Right now, the vote is 51%. The requirement is about to jump to
+            // 65%
             bool changed = d.updateVote(55, proposing, p);
             BEAST_EXPECT(changed == !proposing || myVote);
             BEAST_EXPECT(!changed || d.getOurVote() != myVote);
@@ -1260,7 +1262,7 @@ public:
             for (int i = 0; i < 16; ++i)
             {
                 // If I was voting yes, change no's from the end
-                auto  p =myVote ? PeerID(numPeers - i - 1) : PeerID(i);
+                auto p = myVote ? PeerID(numPeers - i - 1) : PeerID(i);
                 BEAST_EXPECT(d.setVote(p, myVote));
             }
             // The vote should now be 66%
