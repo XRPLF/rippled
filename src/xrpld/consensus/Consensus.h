@@ -704,6 +704,7 @@ Consensus<Adaptor>::peerProposal(
     NetClock::time_point const& now,
     PeerPosition_t const& newPeerPos)
 {
+    JLOG(j_.debug()) << "PROPOSAL " << newPeerPos.render();
     auto const& peerID = newPeerPos.proposal().nodeID();
 
     // Always need to store recent positions
