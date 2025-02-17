@@ -37,6 +37,9 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
     if (tx.isFieldPresent(sfRawTransactions))
     {
         auto const& txns = tx.getFieldArray(sfRawTransactions);
+        XRPL_ASSERT(
+            txns.size() <= maxBatchTxCount,
+            "Raw Transactions array exceeds max entries.");
         for (STObject txn : txns)
         {
             STTx const stx = STTx{std::move(txn)};
@@ -48,7 +51,11 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
     std::int32_t signerCount = 0;
     if (tx.isFieldPresent(sfBatchSigners))
     {
-        for (STObject const& signer : tx.getFieldArray(sfBatchSigners))
+        auto const& signers = tx.getFieldArray(sfBatchSigners);
+        XRPL_ASSERT(
+            signers.size() <= maxBatchTxCount,
+            "Batch Signers array exceeds max entries.");
+        for (STObject const& signer : signers)
         {
             if (signer.isFieldPresent(sfTxnSignature))
                 signerCount += 1;

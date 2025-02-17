@@ -227,6 +227,7 @@ class Batch_test : public beast::unit_test::suite
         }
 
         // temARRAY_TOO_LARGE: Batch: txns array exceeds 8 entries.
+        // telENV_RPC_FAILED
         {
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 9);
@@ -240,7 +241,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(1)), seq + 7),
                 batch::inner(pay(alice, bob, XRP(1)), seq + 8),
                 batch::inner(pay(alice, bob, XRP(1)), seq + 9),
-                ter(temARRAY_TOO_LARGE));
+                ter(telENV_RPC_FAILED));
             env.close();
         }
 
@@ -333,6 +334,7 @@ class Batch_test : public beast::unit_test::suite
         }
 
         // temARRAY_TOO_LARGE: Batch: signers array exceeds 8 entries.
+        // telENV_RPC_FAILED
         {
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 9, 2);
@@ -350,7 +352,7 @@ class Batch_test : public beast::unit_test::suite
                     carol,
                     alice,
                     alice),
-                ter(temARRAY_TOO_LARGE));
+                ter(telENV_RPC_FAILED));
             env.close();
         }
 
@@ -1096,6 +1098,119 @@ class Batch_test : public beast::unit_test::suite
         BEAST_EXPECT(env.seq(alice) == seq + 1);
         BEAST_EXPECT(env.balance(alice) == preAlice - batchFee);
         BEAST_EXPECT(env.balance(bob) == preBob);
+    }
+
+    void
+    testCalculateBaseFee(FeatureBitset features)
+    {
+        testcase("calculate base fee");
+
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        // telENV_RPC_FAILED: Batch: txns array exceeds 8 entries.
+        {
+            test::jtx::Env env{*this, envconfig()};
+
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            env.fund(XRP(1000), alice, bob);
+            env.close();
+
+            auto const batchFee = batch::calcBatchFee(env, 0, 9);
+            auto const aliceSeq = env.seq(alice);
+            env(batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
+                batch::inner(pay(alice, bob, XRP(1)), aliceSeq),
+                batch::inner(pay(alice, bob, XRP(1)), aliceSeq),
+                batch::inner(pay(alice, bob, XRP(1)), aliceSeq),
+                batch::inner(pay(alice, bob, XRP(1)), aliceSeq),
+                batch::inner(pay(alice, bob, XRP(1)), aliceSeq),
+                batch::inner(pay(alice, bob, XRP(1)), aliceSeq),
+                batch::inner(pay(alice, bob, XRP(1)), aliceSeq),
+                batch::inner(pay(alice, bob, XRP(1)), aliceSeq),
+                batch::inner(pay(alice, bob, XRP(1)), aliceSeq),
+                ter(telENV_RPC_FAILED));
+            env.close();
+        }
+
+        // temARRAY_TOO_LARGE: Batch: txns array exceeds 8 entries.
+        {
+            test::jtx::Env env{*this, envconfig()};
+
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            env.fund(XRP(1000), alice, bob);
+            env.close();
+
+            auto const batchFee = batch::calcBatchFee(env, 0, 9);
+            auto const aliceSeq = env.seq(alice);
+            auto jt = env.jtnofill(
+                batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
+                batch::inner(pay(alice, bob, XRP(1)), aliceSeq),
+                batch::inner(pay(alice, bob, XRP(1)), aliceSeq),
+                batch::inner(pay(alice, bob, XRP(1)), aliceSeq),
+                batch::inner(pay(alice, bob, XRP(1)), aliceSeq),
+                batch::inner(pay(alice, bob, XRP(1)), aliceSeq),
+                batch::inner(pay(alice, bob, XRP(1)), aliceSeq),
+                batch::inner(pay(alice, bob, XRP(1)), aliceSeq),
+                batch::inner(pay(alice, bob, XRP(1)), aliceSeq),
+                batch::inner(pay(alice, bob, XRP(1)), aliceSeq));
+
+            env.app().openLedger().modify(
+                [&](OpenView& view, beast::Journal j) {
+                    auto const result =
+                        ripple::apply(env.app(), view, *jt.stx, tapNONE, j);
+                    BEAST_EXPECT(
+                        !result.applied && result.ter == temARRAY_TOO_LARGE);
+                    return result.applied;
+                });
+        }
+
+        // telENV_RPC_FAILED: Batch: signers array exceeds 8 entries.
+        {
+            test::jtx::Env env{*this, envconfig()};
+
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            env.fund(XRP(1000), alice, bob);
+            env.close();
+
+            auto const aliceSeq = env.seq(alice);
+            auto const batchFee = batch::calcBatchFee(env, 9, 2);
+            env(batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
+                batch::inner(pay(alice, bob, XRP(10)), aliceSeq + 1),
+                batch::inner(pay(alice, bob, XRP(5)), aliceSeq + 2),
+                batch::sig(bob, bob, bob, bob, bob, bob, bob, bob, bob, bob),
+                ter(telENV_RPC_FAILED));
+            env.close();
+        }
+
+        // temARRAY_TOO_LARGE: Batch: signers array exceeds 8 entries.
+        {
+            test::jtx::Env env{*this, envconfig()};
+
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            env.fund(XRP(1000), alice, bob);
+            env.close();
+
+            auto const batchFee = batch::calcBatchFee(env, 0, 9);
+            auto const aliceSeq = env.seq(alice);
+            auto jt = env.jtnofill(
+                batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
+                batch::inner(pay(alice, bob, XRP(10)), aliceSeq + 1),
+                batch::inner(pay(alice, bob, XRP(5)), aliceSeq + 2),
+                batch::sig(bob, bob, bob, bob, bob, bob, bob, bob, bob, bob));
+
+            env.app().openLedger().modify(
+                [&](OpenView& view, beast::Journal j) {
+                    auto const result =
+                        ripple::apply(env.app(), view, *jt.stx, tapNONE, j);
+                    BEAST_EXPECT(
+                        !result.applied && result.ter == temARRAY_TOO_LARGE);
+                    return result.applied;
+                });
+        }
     }
 
     void
@@ -2443,6 +2558,7 @@ class Batch_test : public beast::unit_test::suite
         testBadSequence(features);
         testBadOuterFee(features);
         testBadInnerFee(features);
+        testCalculateBaseFee(features);
         testAllOrNothing(features);
         testOnlyOne(features);
         testUntilFailure(features);

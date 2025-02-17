@@ -693,7 +693,19 @@ isRawTransactionOkay(STObject const& st, std::string& reason)
     if (!st.isFieldPresent(sfRawTransactions))
         return true;
 
+    if (st.isFieldPresent(sfBatchSigners) &&
+        st.getFieldArray(sfBatchSigners).size() > maxBatchTxCount)
+    {
+        reason = "Batch Signers array exceeds max entries.";
+        return false;
+    }
+
     auto const& rawTxns = st.getFieldArray(sfRawTransactions);
+    if (rawTxns.size() > maxBatchTxCount)
+    {
+        reason = "Raw Transactions array exceeds max entries.";
+        return false;
+    }
     for (STObject raw : rawTxns)
     {
         try
