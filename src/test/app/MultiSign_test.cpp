@@ -1673,6 +1673,29 @@ public:
     }
 
     void
+    test_signerListSetFlags(FeatureBitset features)
+    {
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+
+        env.fund(XRP(1000), alice);
+        env.close();
+
+        bool const enabled = features[fixInvalidTxFlags];
+        testcase(
+            std::string("SignerListSet flag, fix ") +
+            (enabled ? "enabled" : "disabled"));
+
+        ter const expected(enabled ? TER(temINVALID_FLAG) : TER(tesSUCCESS));
+        env(signers(alice, 2, {{bogie, 1}, {ghost, 1}}),
+            expected,
+            txflags(tfPassive));
+        env.close();
+    }
+
+    void
     testAll(FeatureBitset features)
     {
         test_noReserve(features);
@@ -1708,6 +1731,10 @@ public:
         testAll(all - featureMultiSignReserve - featureExpandedSignerList);
         testAll(all - featureExpandedSignerList);
         testAll(all);
+
+        test_signerListSetFlags(all - fixInvalidTxFlags);
+        test_signerListSetFlags(all);
+
         test_amendmentTransition();
     }
 };

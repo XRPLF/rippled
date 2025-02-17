@@ -50,10 +50,10 @@
 #include <xrpld/rpc/DeliveredAmount.h>
 #include <xrpld/rpc/MPTokenIssuanceID.h>
 #include <xrpld/rpc/ServerHandler.h>
+#include <xrpl/basics/CanProcess.h>
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/basics/mulDiv.h>
 #include <xrpl/basics/safe_cast.h>
-#include <xrpl/basics/scope.h>
 #include <xrpl/beast/rfc2616.h>
 #include <xrpl/beast/utility/rngfill.h>
 #include <xrpl/crypto/RFC1751.h>
@@ -404,7 +404,7 @@ public:
     isFull() override;
 
     void
-    setMode(OperatingMode om) override;
+    setMode(OperatingMode om, const char* reason) override;
 
     bool
     isBlocked() override;
@@ -875,7 +875,7 @@ NetworkOPsImp::strOperatingMode(bool const admin /* = false */) const
 inline void
 NetworkOPsImp::setStandAlone()
 {
-    setMode(OperatingMode::FULL);
+    setMode(OperatingMode::FULL, "setStandAlone");
 }
 
 inline void
@@ -1023,7 +1023,9 @@ NetworkOPsImp::processHeartbeatTimer()
         {
             if (mMode != OperatingMode::DISCONNECTED)
             {
-                setMode(OperatingMode::DISCONNECTED);
+                setMode(
+                    OperatingMode::DISCONNECTED,
+                    "Heartbeat: insufficient peers");
                 JLOG(m_journal.warn())
                     << "Node count (" << numPeers << ") has fallen "
                     << "below required minimum (" << minPeerCount_ << ").";
@@ -1039,7 +1041,7 @@ NetworkOPsImp::processHeartbeatTimer()
 
         if (mMode == OperatingMode::DISCONNECTED)
         {
-            setMode(OperatingMode::CONNECTED);
+            setMode(OperatingMode::CONNECTED, "Heartbeat: sufficient peers");
             JLOG(m_journal.info())
                 << "Node count (" << numPeers << ") is sufficient.";
         }
@@ -1047,9 +1049,9 @@ NetworkOPsImp::processHeartbeatTimer()
         // Check if the last validated ledger forces a change between these
         // states.
         if (mMode == OperatingMode::SYNCING)
-            setMode(OperatingMode::SYNCING);
+            setMode(OperatingMode::SYNCING, "Heartbeat: check syncing");
         else if (mMode == OperatingMode::CONNECTED)
-            setMode(OperatingMode::CONNECTED);
+            setMode(OperatingMode::CONNECTED, "Heartbeat: check connected");
     }
 
     mConsensus.timerEntry(app_.timeKeeper().closeTime());
@@ -1636,7 +1638,7 @@ void
 NetworkOPsImp::setAmendmentBlocked()
 {
     amendmentBlocked_ = true;
-    setMode(OperatingMode::CONNECTED);
+    setMode(OperatingMode::CONNECTED, "setAmendmentBlocked");
 }
 
 inline bool
@@ -1667,7 +1669,7 @@ void
 NetworkOPsImp::setUNLBlocked()
 {
     unlBlocked_ = true;
-    setMode(OperatingMode::CONNECTED);
+    setMode(OperatingMode::CONNECTED, "setUNLBlocked");
 }
 
 inline void
@@ -1768,7 +1770,7 @@ NetworkOPsImp::checkLastClosedLedger(
 
     if ((mMode == OperatingMode::TRACKING) || (mMode == OperatingMode::FULL))
     {
-        setMode(OperatingMode::CONNECTED);
+        setMode(OperatingMode::CONNECTED, "check LCL: not on consensus ledger");
     }
 
     if (consensus)
@@ -1855,8 +1857,9 @@ NetworkOPsImp::beginConsensus(uint256 const& networkClosed)
         // this shouldn't happen unless we jump ledgers
         if (mMode == OperatingMode::FULL)
         {
-            JLOG(m_journal.warn()) << "Don't have LCL, going to tracking";
-            setMode(OperatingMode::TRACKING);
+            JLOG(m_journal.warn())
+                << "beginConsensus Don't have LCL, going to tracking";
+            setMode(OperatingMode::TRACKING, "beginConsensus: No LCL");
         }
 
         return false;
@@ -1966,7 +1969,7 @@ NetworkOPsImp::endConsensus()
         // validations we have for LCL.  If the ledger is good enough, go to
         // TRACKING - TODO
         if (!needNetworkLedger_)
-            setMode(OperatingMode::TRACKING);
+            setMode(OperatingMode::TRACKING, "endConsensus: check tracking");
     }
 
     if (((mMode == OperatingMode::CONNECTED) ||
@@ -1980,7 +1983,7 @@ NetworkOPsImp::endConsensus()
         if (app_.timeKeeper().now() < (current->info().parentCloseTime +
                                        2 * current->info().closeTimeResolution))
         {
-            setMode(OperatingMode::FULL);
+            setMode(OperatingMode::FULL, "endConsensus: check full");
         }
     }
 
@@ -1992,7 +1995,7 @@ NetworkOPsImp::consensusViewChange()
 {
     if ((mMode == OperatingMode::FULL) || (mMode == OperatingMode::TRACKING))
     {
-        setMode(OperatingMode::CONNECTED);
+        setMode(OperatingMode::CONNECTED, "consensusViewChange");
     }
 }
 
@@ -2310,7 +2313,7 @@ NetworkOPsImp::pubPeerStatus(std::function<Json::Value(void)> const& func)
 }
 
 void
-NetworkOPsImp::setMode(OperatingMode om)
+NetworkOPsImp::setMode(OperatingMode om, const char* reason)
 {
     using namespace std::chrono_literals;
     if (om == OperatingMode::CONNECTED)
@@ -2330,11 +2333,12 @@ NetworkOPsImp::setMode(OperatingMode om)
     if (mMode == om)
         return;
 
+    auto const sink = om < mMode ? m_journal.warn() : m_journal.info();
     mMode = om;
 
     accounting_.mode(om);
 
-    JLOG(m_journal.info()) << "STATE->" << strOperatingMode();
+    JLOG(sink) << "STATE->" << strOperatingMode() << " - " << reason;
     pubServer();
 }
 
@@ -2346,36 +2350,45 @@ NetworkOPsImp::recvValidation(
     JLOG(m_journal.trace())
         << "recvValidation " << val->getLedgerHash() << " from " << source;
 
-    std::unique_lock lock(validationsMutex_);
-    BypassAccept bypassAccept = BypassAccept::no;
-    try
     {
-        if (pendingValidations_.contains(val->getLedgerHash()))
-            bypassAccept = BypassAccept::yes;
-        else
-            pendingValidations_.insert(val->getLedgerHash());
-        scope_unlock unlock(lock);
-        handleNewValidation(app_, val, source, bypassAccept, m_journal);
+        CanProcess const check(
+            validationsMutex_, pendingValidations_, val->getLedgerHash());
+        try
+        {
+            BypassAccept bypassAccept =
+                check ? BypassAccept::no : BypassAccept::yes;
+            handleNewValidation(app_, val, source, bypassAccept, m_journal);
+        }
+        catch (std::exception const& e)
+        {
+            JLOG(m_journal.warn())
+                << "Exception thrown for handling new validation "
+                << val->getLedgerHash() << ": " << e.what();
+        }
+        catch (...)
+        {
+            JLOG(m_journal.warn())
+                << "Unknown exception thrown for handling new validation "
+                << val->getLedgerHash();
+        }
     }
-    catch (std::exception const& e)
-    {
-        JLOG(m_journal.warn())
-            << "Exception thrown for handling new validation "
-            << val->getLedgerHash() << ": " << e.what();
-    }
-    catch (...)
-    {
-        JLOG(m_journal.warn())
-            << "Unknown exception thrown for handling new validation "
-            << val->getLedgerHash();
-    }
-    if (bypassAccept == BypassAccept::no)
-    {
-        pendingValidations_.erase(val->getLedgerHash());
-    }
-    lock.unlock();
 
     pubValidation(val);
+
+    JLOG(m_journal.debug()) << [this, &val]() -> auto {
+        std::stringstream ss;
+        ss << "VALIDATION: " << val->render() << " master_key: ";
+        auto master = app_.validators().getTrustedKey(val->getSignerPublic());
+        if (master)
+        {
+            ss << toBase58(TokenType::NodePublic, *master);
+        }
+        else
+        {
+            ss << "none";
+        }
+        return ss.str();
+    }();
 
     // We will always relay trusted validations; if configured, we will
     // also relay all untrusted validations.
@@ -2515,6 +2528,18 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
                 x[jss::expiration] = "unknown";
             }
         }
+
+#if defined(GIT_COMMIT_HASH) || defined(GIT_BRANCH)
+        {
+            auto& x = (info[jss::git] = Json::objectValue);
+#ifdef GIT_COMMIT_HASH
+            x[jss::hash] = GIT_COMMIT_HASH;
+#endif
+#ifdef GIT_BRANCH
+            x[jss::branch] = GIT_BRANCH;
+#endif
+        }
+#endif
     }
     info[jss::io_latency_ms] =
         static_cast<Json::UInt>(app_.getIOLatency().count());

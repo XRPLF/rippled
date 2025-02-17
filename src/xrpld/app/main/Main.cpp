@@ -56,7 +56,7 @@
 #include <sys/types.h>
 #endif
 
-// Do we know the plaform we're compiling on? If you're adding new platforms
+// Do we know the platform we're compiling on? If you're adding new platforms
 // modify this check accordingly.
 #if !BOOST_OS_LINUX && !BOOST_OS_WINDOWS && !BOOST_OS_MACOS
 #error Supported platforms are: Linux, Windows and MacOS
@@ -521,6 +521,12 @@ run(int argc, char** argv)
     {
         std::cout << "rippled version " << BuildInfo::getVersionString()
                   << std::endl;
+#ifdef GIT_COMMIT_HASH
+        std::cout << "Git commit hash: " << GIT_COMMIT_HASH << std::endl;
+#endif
+#ifdef GIT_BRANCH
+        std::cout << "Git build branch: " << GIT_BRANCH << std::endl;
+#endif
         return 0;
     }
 
