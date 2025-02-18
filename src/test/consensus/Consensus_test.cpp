@@ -19,7 +19,10 @@
 #include <test/csf.h>
 #include <test/unit_test/SuiteJournal.h>
 #include <xrpld/consensus/Consensus.h>
+#include <xrpld/consensus/ConsensusProposal.h>
+#include <xrpl/beast/clock/manual_clock.h>
 #include <xrpl/beast/unit_test.h>
+#include <utility>
 
 namespace ripple {
 namespace test {

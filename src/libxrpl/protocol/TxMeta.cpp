@@ -17,7 +17,9 @@
 */
 //==============================================================================
 
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/STAccount.h>
 #include <xrpl/protocol/TxMeta.h>
 #include <string>

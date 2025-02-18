@@ -25,9 +25,14 @@
 #include <xrpl/server/Port.h>
 #include <boost/beast/core/multi_buffer.hpp>
 #include <boost/beast/websocket.hpp>
-#include <iostream>
+
+#include <condition_variable>
 #include <string>
 #include <unordered_map>
+
+#include <iostream>
+
+#include <xrpl/beast/unit_test.h>
 
 namespace ripple {
 namespace test {

@@ -18,7 +18,10 @@
 //==============================================================================
 
 #include <xrpld/app/consensus/RCLCxPeerPos.h>
+#include <xrpld/core/Config.h>
+#include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
 
 namespace ripple {

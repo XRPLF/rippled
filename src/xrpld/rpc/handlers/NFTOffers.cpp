@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <xrpld/app/main/Application.h>
 #include <xrpld/ledger/ReadView.h>
 #include <xrpld/ledger/View.h>
 #include <xrpld/rpc/Context.h>

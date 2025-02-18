@@ -30,6 +30,7 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/digest.h>
+#include <xrpl/protocol/st.h>
 
 namespace ripple {
 

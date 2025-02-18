@@ -27,6 +27,7 @@
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
+#include <cstring>
 
 namespace ripple {
 namespace test {

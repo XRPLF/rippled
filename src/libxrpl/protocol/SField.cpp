@@ -17,8 +17,11 @@
 */
 //==============================================================================
 
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/SField.h>
 #include <string>
+#include <string_view>
+#include <utility>
 
 namespace ripple {
 

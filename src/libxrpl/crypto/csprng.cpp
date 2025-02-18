@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/crypto/csprng.h>
 #include <array>
 #include <openssl/rand.h>

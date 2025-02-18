@@ -19,11 +19,13 @@
 
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/LedgerToJson.h>
+#include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/DeliverMax.h>
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/DeliveredAmount.h>
 #include <xrpld/rpc/MPTokenIssuanceID.h>
+#include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/jss.h>
 

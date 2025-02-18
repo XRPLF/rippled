@@ -32,6 +32,7 @@
 #include <boost/format.hpp>
 #include <boost/predef.h>
 #include <boost/regex.hpp>
+#include <boost/system/error_code.hpp>
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>

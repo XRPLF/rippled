@@ -39,6 +39,7 @@
 #include <set>
 #include <variant>
 #include <vector>
+#include <utility>
 
 namespace antithesis {
     inline const char* SDK_VERSION = "0.4.4";
@@ -99,6 +100,7 @@ namespace antithesis::internal::random {
 #ifndef NO_ANTITHESIS_SDK
 
 #include <array>
+#include <iomanip>
 
 namespace antithesis::internal::json {
     template<class>
@@ -211,8 +213,10 @@ namespace antithesis::internal::json {
 #include <iostream>
 #include <sstream>
 #include <dlfcn.h>
+#include <memory>
 #include <cstring>
 #include <cstdlib>
+#include <fcntl.h>
 #include <unistd.h>
 #include <sys/stat.h>
 

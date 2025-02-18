@@ -21,6 +21,7 @@
 #include <test/unit_test/SuiteJournal.h>
 #include <xrpld/nodestore/DummyScheduler.h>
 #include <xrpld/nodestore/Manager.h>
+#include <xrpld/unity/rocksdb.h>
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/safe_cast.h>
@@ -33,9 +34,11 @@
 #include <chrono>
 #include <iterator>
 #include <limits>
+#include <map>
 #include <random>
 #include <sstream>
 #include <stdexcept>
+#include <thread>
 #include <type_traits>
 #include <utility>
 

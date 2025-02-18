@@ -23,7 +23,6 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/HashPrefix.h>
-#include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
 #include <cstdint>
 #include <optional>

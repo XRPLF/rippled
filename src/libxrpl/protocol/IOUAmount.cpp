@@ -21,6 +21,8 @@
 #include <xrpl/protocol/IOUAmount.h>
 #include <boost/multiprecision/cpp_int.hpp>
 #include <algorithm>
+#include <iterator>
+#include <numeric>
 #include <stdexcept>
 
 namespace ripple {

@@ -22,6 +22,7 @@
 #include <xrpl/protocol/jss.h>
 
 #include <test/jtx/WSClient.h>
+#include <test/rpc/GRPCTestClientBase.h>
 
 namespace ripple {
 namespace test {

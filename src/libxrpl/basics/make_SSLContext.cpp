@@ -20,6 +20,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/make_SSLContext.h>
 #include <ctime>
+#include <stdexcept>
 
 namespace ripple {
 namespace openssl {

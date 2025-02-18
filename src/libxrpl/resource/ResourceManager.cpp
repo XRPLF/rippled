@@ -24,7 +24,11 @@
 #include <xrpl/resource/ResourceManager.h>
 #include <xrpl/resource/detail/Logic.h>
 #include <boost/asio/ip/address_v4.hpp>
+#include <boost/core/ignore_unused.hpp>
+#include <boost/system/error_code.hpp>
 #include <condition_variable>
+#include <memory>
+#include <mutex>
 
 namespace ripple {
 namespace Resource {

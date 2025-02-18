@@ -17,8 +17,10 @@
 */
 //==============================================================================
 
+#include <xrpld/app/main/Application.h>
 #include <xrpld/app/paths/TrustLine.h>
 #include <xrpl/protocol/STAmount.h>
+#include <cstdint>
 #include <memory>
 
 namespace ripple {

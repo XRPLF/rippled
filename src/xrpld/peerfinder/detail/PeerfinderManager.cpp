@@ -23,8 +23,10 @@
 #include <xrpld/peerfinder/detail/SourceStrings.h>
 #include <xrpld/peerfinder/detail/StoreSqdb.h>
 #include <boost/asio/io_service.hpp>
+#include <boost/utility/in_place_factory.hpp>
 #include <memory>
 #include <optional>
+#include <thread>
 
 namespace ripple {
 namespace PeerFinder {

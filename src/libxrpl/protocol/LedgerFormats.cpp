@@ -19,6 +19,7 @@
 
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/jss.h>
+#include <utility>
 
 namespace ripple {
 

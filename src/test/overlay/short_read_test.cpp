@@ -23,9 +23,12 @@
 #include <xrpl/beast/unit_test.h>
 
 #include <boost/asio.hpp>
+#include <boost/asio/ssl.hpp>
 #include <boost/utility/in_place_factory.hpp>
 
+#include <condition_variable>
 #include <functional>
+#include <memory>
 #include <optional>
 #include <thread>
 #include <utility>

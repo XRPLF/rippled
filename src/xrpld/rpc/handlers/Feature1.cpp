@@ -22,6 +22,7 @@
 #include <xrpld/app/misc/AmendmentTable.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
 

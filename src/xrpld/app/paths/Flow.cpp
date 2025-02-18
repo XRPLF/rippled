@@ -27,6 +27,11 @@
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/XRPAmount.h>
 
+#include <boost/container/flat_set.hpp>
+
+#include <numeric>
+#include <sstream>
+
 namespace ripple {
 
 template <class FlowResult>

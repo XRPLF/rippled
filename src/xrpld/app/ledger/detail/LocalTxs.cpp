@@ -19,6 +19,7 @@
 
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/LocalTxs.h>
+#include <xrpld/app/main/Application.h>
 #include <xrpl/protocol/Indexes.h>
 
 /*

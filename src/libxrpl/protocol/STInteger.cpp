@@ -18,12 +18,14 @@
 //==============================================================================
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/STInteger.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
+#include <charconv>
 
 namespace ripple {
 

@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/STAmount.h>

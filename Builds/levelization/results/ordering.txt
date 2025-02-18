@@ -12,6 +12,7 @@ libxrpl.server > xrpl.json
 libxrpl.server > xrpl.protocol
 libxrpl.server > xrpl.server
 test.app > test.jtx
+test.app > test.rpc
 test.app > test.toplevel
 test.app > test.unit_test
 test.app > xrpl.basics
@@ -57,6 +58,7 @@ test.json > test.jtx
 test.json > xrpl.json
 test.jtx > xrpl.basics
 test.jtx > xrpld.app
+test.jtx > xrpld.consensus
 test.jtx > xrpld.core
 test.jtx > xrpld.ledger
 test.jtx > xrpld.net

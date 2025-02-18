@@ -17,7 +17,10 @@
 */
 //==============================================================================
 
+#include <xrpl/basics/Log.h>
+#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/protocol/STVector256.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 

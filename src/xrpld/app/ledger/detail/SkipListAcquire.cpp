@@ -21,6 +21,7 @@
 #include <xrpld/app/ledger/LedgerReplayer.h>
 #include <xrpld/app/ledger/detail/SkipListAcquire.h>
 #include <xrpld/app/main/Application.h>
+#include <xrpld/core/JobQueue.h>
 #include <xrpld/overlay/PeerSet.h>
 
 namespace ripple {

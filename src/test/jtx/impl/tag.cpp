@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <test/jtx/tag.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 namespace test {

@@ -20,6 +20,7 @@
 #include <test/json/TestOutputSuite.h>
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/json/Writer.h>
+#include <xrpl/json/json_writer.h>
 
 namespace Json {
 

@@ -19,11 +19,18 @@
 
 #include <xrpl/protocol/STIssue.h>
 
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/SystemParameters.h>
+#include <xrpl/protocol/jss.h>
 
 #include <boost/algorithm/string.hpp>
+#include <boost/multiprecision/cpp_int.hpp>
 #include <boost/regex.hpp>
+
+#include <iostream>
+#include <iterator>
+#include <memory>
 
 namespace ripple {
 

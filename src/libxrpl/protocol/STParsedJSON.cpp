@@ -43,6 +43,7 @@
 #include <xrpl/protocol/detail/STVar.h>
 
 #include <charconv>
+#include <memory>
 
 namespace ripple {
 
