@@ -21,7 +21,6 @@
 #include <test/jtx/TestSuite.h>
 #include <test/jtx/WSClient.h>
 #include <test/jtx/envconfig.h>
-#include <test/jtx/ticket.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/LoadFeeTrack.h>
 #include <xrpld/app/misc/TxQ.h>

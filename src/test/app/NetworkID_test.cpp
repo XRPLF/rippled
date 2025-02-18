@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <test/jtx.h>
-#include <test/jtx/Env.h>
 #include <xrpl/protocol/jss.h>
 
 namespace ripple {

@@ -28,9 +28,7 @@
 #include <xrpl/protocol/XChainAttestations.h>
 
 #include <test/jtx.h>
-#include <test/jtx/Env.h>
 #include <test/jtx/attester.h>
-#include <test/jtx/multisign.h>
 #include <test/jtx/xchain_bridge.h>
 
 #include <functional>
