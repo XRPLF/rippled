@@ -19,10 +19,8 @@
 
 #include <xrpl/basics/hardened_hash.h>
 #include <xrpl/beast/unit_test.h>
-#include <boost/functional/hash.hpp>
 #include <array>
 #include <cstdint>
-#include <functional>
 #include <iomanip>
 #include <unordered_map>
 #include <unordered_set>
