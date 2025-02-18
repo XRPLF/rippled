@@ -19,12 +19,9 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <boost/predef.h>
-#include <algorithm>
 #include <numeric>
 #include <stdexcept>
 #include <type_traits>
-#include <utility>
 
 #ifdef BOOST_COMP_MSVC
 #include <boost/multiprecision/cpp_int.hpp>

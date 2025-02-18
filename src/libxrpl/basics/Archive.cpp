@@ -23,8 +23,6 @@
 #include <archive.h>
 #include <archive_entry.h>
 
-#include <memory>
-
 namespace ripple {
 
 void

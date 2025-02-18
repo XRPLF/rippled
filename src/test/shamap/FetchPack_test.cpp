@@ -21,7 +21,6 @@
 #include <test/unit_test/SuiteJournal.h>
 #include <xrpld/shamap/SHAMap.h>
 #include <xrpld/shamap/SHAMapSyncFilter.h>
-#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/random.h>

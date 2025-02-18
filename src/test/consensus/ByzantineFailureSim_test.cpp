@@ -17,7 +17,6 @@
 */
 //==============================================================================
 #include <test/csf.h>
-#include <xrpl/beast/clock/manual_clock.h>
 #include <xrpl/beast/unit_test.h>
 #include <utility>
 

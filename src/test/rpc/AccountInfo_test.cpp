@@ -22,10 +22,6 @@
 #include <xrpl/protocol/jss.h>
 
 #include <test/jtx/WSClient.h>
-#include <test/rpc/GRPCTestClientBase.h>
-#include <xrpld/rpc/GRPCHandlers.h>
-#include <xrpl/resource/Charge.h>
-#include <xrpl/resource/Fees.h>
 
 namespace ripple {
 namespace test {

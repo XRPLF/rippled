@@ -19,7 +19,6 @@
 
 #include <xrpld/nodestore/Factory.h>
 #include <xrpld/nodestore/Manager.h>
-#include <xrpl/basics/contract.h>
 #include <memory>
 
 namespace ripple {

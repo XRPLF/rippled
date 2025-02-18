@@ -21,7 +21,6 @@
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/SystemParameters.h>
-#include <xrpl/protocol/jss.h>
 #include <xrpl/server/detail/JSONRPCUtil.h>
 #include <boost/algorithm/string.hpp>
 

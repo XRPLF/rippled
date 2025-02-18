@@ -23,9 +23,6 @@
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/detail/AccountTxPaging.h>
 #include <xrpl/protocol/Serializer.h>
-#include <xrpl/protocol/UintTypes.h>
-#include <boost/format.hpp>
-#include <memory>
 
 namespace ripple {
 

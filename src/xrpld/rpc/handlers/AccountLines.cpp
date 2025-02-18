@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <xrpld/app/main/Application.h>
 #include <xrpld/app/paths/TrustLine.h>
 #include <xrpld/ledger/ReadView.h>
 #include <xrpld/rpc/Context.h>

@@ -20,7 +20,6 @@
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <boost/regex.hpp>
-#include <algorithm>
 
 namespace ripple {
 

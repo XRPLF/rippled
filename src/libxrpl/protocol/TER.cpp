@@ -19,7 +19,6 @@
 
 #include <xrpl/protocol/TER.h>
 #include <boost/range/adaptor/transformed.hpp>
-#include <type_traits>
 
 namespace ripple {
 

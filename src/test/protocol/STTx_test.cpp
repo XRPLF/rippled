@@ -26,7 +26,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Sign.h>
 #include <xrpl/protocol/TxFormats.h>
-#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/messages.h>
 #include <memory>
 #include <regex>

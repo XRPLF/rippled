@@ -27,7 +27,6 @@
 #include <xrpl/basics/DecayingSample.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/container/aged_map.h>
-#include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/protocol/jss.h>
 
 #include <exception>
@@ -89,8 +88,8 @@ public:
             }();
 
             std::stringstream ss;
-            ss << "InboundLedger::acquire: "
-               << "Request: " << to_string(hash) << ", " << seq
+            ss << "InboundLedger::acquire: " << "Request: " << to_string(hash)
+               << ", " << seq
                << " NeedNetworkLedger: " << (needNetworkLedger ? "yes" : "no")
                << " Reason: " << to_string(reason)
                << " Should acquire: " << (shouldAcquire ? "true." : "false.");

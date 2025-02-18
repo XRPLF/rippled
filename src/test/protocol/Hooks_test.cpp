@@ -18,8 +18,6 @@
 //==============================================================================
 
 #include <test/jtx.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/jss.h>
 #include <functional>
 #include <vector>
 

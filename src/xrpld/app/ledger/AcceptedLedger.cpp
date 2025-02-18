@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <xrpld/app/ledger/AcceptedLedger.h>
-#include <xrpld/app/main/Application.h>
 #include <algorithm>
 
 namespace ripple {
