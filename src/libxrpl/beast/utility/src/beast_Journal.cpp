@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/instrumentation.h>
 
 namespace beast {
 
