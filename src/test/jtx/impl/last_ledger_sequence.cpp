@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <test/jtx/last_ledger_sequence.h>
-#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 namespace test {

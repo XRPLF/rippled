@@ -19,7 +19,6 @@
 
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/LedgerToJson.h>
-#include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/DeliverMax.h>
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/rpc/Context.h>
