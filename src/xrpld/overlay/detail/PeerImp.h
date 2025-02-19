@@ -145,10 +145,29 @@ private:
     //
     // June 2019
 
+    struct ChargeWithContext
+    {
+        Resource::Charge fee = Resource::feeTrivialPeer;
+        std::string context = {};
+
+        void
+        update(Resource::Charge f, std::string const& add)
+        {
+            XRPL_ASSERT(
+                f >= fee, "ripple::PeerImp::ChargeWithContext fee increases");
+            fee = f;
+            if (!context.empty())
+            {
+                context += " ";
+            }
+            context += add;
+        }
+    };
+
     std::mutex mutable recentLock_;
     protocol::TMStatusChange last_status_;
     Resource::Consumer usage_;
-    Resource::Charge fee_;
+    ChargeWithContext fee_;
     std::shared_ptr<PeerFinder::Slot> const slot_;
     boost::beast::multi_buffer read_buffer_;
     http_request_type request_;
@@ -175,6 +194,15 @@ private:
     bool vpReduceRelayEnabled_ = false;
     bool ledgerReplayEnabled_ = false;
     LedgerReplayMsgHandler ledgerReplayMsgHandler_;
+
+    // Track message requests and responses
+    // TODO: Use an expiring cache or something
+    using MessageCookieMap =
+        std::map<uint256, std::set<std::optional<uint64_t>>>;
+    using PeerCookieMap =
+        std::map<std::shared_ptr<Peer>, std::set<std::optional<uint64_t>>>;
+    std::mutex mutable cookieLock_;
+    MessageCookieMap messageRequestCookies_;
 
     friend class OverlayImpl;
 
@@ -304,7 +332,7 @@ public:
     }
 
     void
-    charge(Resource::Charge const& fee) override;
+    charge(Resource::Charge const& fee, std::string const& context) override;
 
     //
     // Identity
@@ -422,6 +450,13 @@ public:
         return txReduceRelayEnabled_;
     }
 
+    //
+    // Messages
+    //
+
+    std::set<std::optional<uint64_t>>
+    releaseRequestCookies(uint256 const& requestHash) override;
+
 private:
     void
     close();
@@ -482,11 +517,15 @@ private:
        the queue when called from onMessage(TMTransactions) because this
        message is a response to the missing transactions request and the queue
        would not have any of these transactions.
+       @param batch is false when called from onMessage(TMTransaction)
+       and is true when called from onMessage(TMTransactions). If true, then the
+       transaction is part of a batch, and should not be charged an extra fee.
      */
     void
     handleTransaction(
         std::shared_ptr<protocol::TMTransaction> const& m,
-        bool eraseTxQueue);
+        bool eraseTxQueue,
+        bool batch);
 
     /** Handle protocol message with hashes of transactions that have not
        been relayed by an upstream node down to its peers - request
@@ -598,7 +637,8 @@ private:
     checkTransaction(
         int flags,
         bool checkSignature,
-        std::shared_ptr<STTx const> const& stx);
+        std::shared_ptr<STTx const> const& stx,
+        bool batch);
 
     void
     checkPropose(
@@ -615,16 +655,28 @@ private:
     void
     sendLedgerBase(
         std::shared_ptr<Ledger const> const& ledger,
-        protocol::TMLedgerData& ledgerData);
-
-    std::shared_ptr<Ledger const>
-    getLedger(std::shared_ptr<protocol::TMGetLedger> const& m);
-
-    std::shared_ptr<SHAMap const>
-    getTxSet(std::shared_ptr<protocol::TMGetLedger> const& m) const;
+        protocol::TMLedgerData& ledgerData,
+        PeerCookieMap const& destinations);
 
     void
-    processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m);
+    sendToMultiple(
+        protocol::TMLedgerData& ledgerData,
+        PeerCookieMap const& destinations);
+
+    std::shared_ptr<Ledger const>
+    getLedger(
+        std::shared_ptr<protocol::TMGetLedger> const& m,
+        uint256 const& mHash);
+
+    std::shared_ptr<SHAMap const>
+    getTxSet(
+        std::shared_ptr<protocol::TMGetLedger> const& m,
+        uint256 const& mHash) const;
+
+    void
+    processLedgerRequest(
+        std::shared_ptr<protocol::TMGetLedger> const& m,
+        uint256 const& mHash);
 };
 
 //------------------------------------------------------------------------------
@@ -664,7 +716,7 @@ PeerImp::PeerImp(
     , creationTime_(clock_type::now())
     , squelch_(app_.journal("Squelch"))
     , usage_(usage)
-    , fee_(Resource::feeLightPeer)
+    , fee_{Resource::feeTrivialPeer}
     , slot_(std::move(slot))
     , response_(std::move(response))
     , headers_(response_)

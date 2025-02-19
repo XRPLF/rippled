@@ -88,7 +88,8 @@ public:
         return {};
     }
     void
-    charge(Resource::Charge const& fee) override
+    charge(Resource::Charge const& fee, std::string const& context = {})
+        override
     {
     }
     bool
@@ -180,6 +181,11 @@ public:
     void
     removeTxQueue(const uint256&) override
     {
+    }
+    std::set<std::optional<uint64_t>>
+    releaseRequestCookies(uint256 const& requestHash) override
+    {
+        return {};
     }
 };
 

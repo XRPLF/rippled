@@ -392,7 +392,14 @@ InboundLedger::onTimer(bool wasProgress, ScopedLockType&)
 
     if (!wasProgress)
     {
-        checkLocal();
+        if (checkLocal())
+        {
+            // Done. Something else (probably consensus) built the ledger
+            // locally while waiting for data (or possibly before requesting)
+            XRPL_ASSERT(isDone(), "ripple::InboundLedger::onTimer : done");
+            JLOG(journal_.info()) << "Finished while waiting " << hash_;
+            return;
+        }
 
         mByHash = true;
 
@@ -502,15 +509,17 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
 
     if (auto stream = journal_.debug())
     {
-        stream << "Trigger acquiring ledger " << hash_;
+        std::stringstream ss;
+        ss << "Trigger acquiring ledger " << hash_;
         if (peer)
-            stream << " from " << peer;
+            ss << " from " << peer;
 
         if (complete_ || failed_)
-            stream << "complete=" << complete_ << " failed=" << failed_;
+            ss << " complete=" << complete_ << " failed=" << failed_;
         else
-            stream << "header=" << mHaveHeader << " tx=" << mHaveTransactions
-                   << " as=" << mHaveState;
+            ss << " header=" << mHaveHeader << " tx=" << mHaveTransactions
+               << " as=" << mHaveState;
+        stream << ss.str();
     }
 
     if (!mHaveHeader)
@@ -1074,7 +1083,8 @@ InboundLedger::processData(
         if (packet.nodes().empty())
         {
             JLOG(journal_.warn()) << peer->id() << ": empty header data";
-            peer->charge(Resource::feeInvalidRequest);
+            peer->charge(
+                Resource::feeMalformedRequest, "ledger_data empty header");
             return -1;
         }
 
@@ -1089,7 +1099,9 @@ InboundLedger::processData(
                 if (!takeHeader(packet.nodes(0).nodedata()))
                 {
                     JLOG(journal_.warn()) << "Got invalid header data";
-                    peer->charge(Resource::feeInvalidRequest);
+                    peer->charge(
+                        Resource::feeMalformedRequest,
+                        "ledger_data invalid header");
                     return -1;
                 }
 
@@ -1112,7 +1124,8 @@ InboundLedger::processData(
         {
             JLOG(journal_.warn())
                 << "Included AS/TX root invalid: " << ex.what();
-            peer->charge(Resource::feeBadData);
+            using namespace std::string_literals;
+            peer->charge(Resource::feeInvalidData, "ledger_data "s + ex.what());
             return -1;
         }
 
@@ -1132,7 +1145,7 @@ InboundLedger::processData(
         if (packet.nodes().empty())
         {
             JLOG(journal_.info()) << peer->id() << ": response with no nodes";
-            peer->charge(Resource::feeInvalidRequest);
+            peer->charge(Resource::feeMalformedRequest, "ledger_data no nodes");
             return -1;
         }
 
@@ -1144,7 +1157,8 @@ InboundLedger::processData(
             if (!node.has_nodeid() || !node.has_nodedata())
             {
                 JLOG(journal_.warn()) << "Got bad node";
-                peer->charge(Resource::feeInvalidRequest);
+                peer->charge(
+                    Resource::feeMalformedRequest, "ledger_data bad node");
                 return -1;
             }
         }

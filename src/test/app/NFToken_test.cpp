@@ -2240,7 +2240,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             BEAST_EXPECT(env.balance(minter, gwXAU) == gwXAU(990));
 
             // minter sells the nft to alice.  Because alice is part of the
-            // transaction no tranfer fee is removed.
+            // transaction no transfer fee is removed.
             uint256 const minterSellOfferIndex =
                 keylet::nftoffer(minter, env.seq(minter)).key;
             env(token::createOffer(minter, nftID, gwXAU(10)),
@@ -2332,7 +2332,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             BEAST_EXPECT(env.balance(carol, gwXAU) == gwXAU(990));
 
             // carol sells the nft to alice.  Because alice is part of the
-            // transaction no tranfer fee is removed.
+            // transaction no transfer fee is removed.
             uint256 const carolSellOfferIndex =
                 keylet::nftoffer(carol, env.seq(carol)).key;
             env(token::createOffer(carol, nftID, gwXAU(10)),
