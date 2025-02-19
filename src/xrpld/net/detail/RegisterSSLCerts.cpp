@@ -17,7 +17,6 @@
 */
 //==============================================================================
 #include <xrpld/net/RegisterSSLCerts.h>
-#include <boost/predef.h>
 
 #if BOOST_OS_WINDOWS
 #include <boost/asio/ssl/error.hpp>
