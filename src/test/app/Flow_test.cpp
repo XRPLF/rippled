@@ -26,7 +26,6 @@
 #include <xrpld/ledger/Sandbox.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 namespace test {

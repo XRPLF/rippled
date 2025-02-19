@@ -26,12 +26,10 @@
 #include <xrpld/shamap/SHAMap.h>
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TxMeta.h>
-#include <mutex>
 
 namespace ripple {
 

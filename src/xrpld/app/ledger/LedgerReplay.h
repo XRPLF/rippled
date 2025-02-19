@@ -23,7 +23,6 @@
 #include <xrpl/basics/CountedObject.h>
 #include <cstdint>
 #include <map>
-#include <memory>
 
 namespace ripple {
 

@@ -24,8 +24,8 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/DeliveredAmount.h>
 #include <xrpld/rpc/MPTokenIssuanceID.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/protocol/ApiVersion.h>
 #include <xrpl/protocol/jss.h>
 
 namespace ripple {

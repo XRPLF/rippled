@@ -22,7 +22,6 @@
 
 #include <xrpl/beast/utility/Journal.h>
 #include <atomic>
-#include <condition_variable>
 #include <memory>
 #include <mutex>
 #include <thread>

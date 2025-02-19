@@ -22,8 +22,6 @@
 
 #include <xrpld/app/rdb/RelationalDatabase.h>
 #include <cstdint>
-#include <string>
-#include <utility>
 
 //------------------------------------------------------------------------------
 

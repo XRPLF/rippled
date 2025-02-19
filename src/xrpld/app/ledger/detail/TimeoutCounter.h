@@ -22,7 +22,6 @@
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/Job.h>
-#include <xrpl/beast/clock/abstract_clock.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/WrappedSink.h>
 
