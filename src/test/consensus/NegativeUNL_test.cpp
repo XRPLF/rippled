@@ -24,7 +24,6 @@
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/ledger/View.h>
-#include <xrpl/basics/Log.h>
 #include <xrpl/beast/unit_test.h>
 
 namespace ripple {

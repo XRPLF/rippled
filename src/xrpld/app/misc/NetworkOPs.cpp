@@ -35,7 +35,6 @@
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/TxQ.h>
-#include <xrpld/app/misc/ValidatorKeys.h>
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/app/misc/detail/AccountTxPaging.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
@@ -54,16 +53,13 @@
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/basics/mulDiv.h>
 #include <xrpl/basics/safe_cast.h>
-#include <xrpl/beast/rfc2616.h>
 #include <xrpl/beast/utility/rngfill.h>
 #include <xrpl/crypto/RFC1751.h>
 #include <xrpl/crypto/csprng.h>
-#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/MultiApiJson.h>
 #include <xrpl/protocol/RPCErr.h>
-#include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/resource/ResourceManager.h>
