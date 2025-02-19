@@ -14,7 +14,7 @@ Loop: xrpld.app xrpld.net
   xrpld.app > xrpld.net
 
 Loop: xrpld.app xrpld.overlay
-  xrpld.overlay ~= xrpld.app
+  xrpld.overlay == xrpld.app
 
 Loop: xrpld.app xrpld.peerfinder
   xrpld.app > xrpld.peerfinder
