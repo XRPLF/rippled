@@ -32,18 +32,42 @@ namespace ripple {
 XRPAmount
 Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
+    XRPAmount const maxAmount{std::numeric_limits<std::int64_t>::max()};
+
+    // batchBase: view.fees().base for batch processing + default base fee
+    XRPAmount const baseFee = Transactor::calculateBaseFee(view, tx);
+
+    // LCOV_EXCL_START
+    if (baseFee > maxAmount - view.fees().base)
+        return INITIAL_XRP;
+    // LCOV_EXCL_STOP
+
+    XRPAmount const batchBase = view.fees().base + baseFee;
+
     // Calculate the Inner Txn Fees
     XRPAmount txnFees{0};
     if (tx.isFieldPresent(sfRawTransactions))
     {
         auto const& txns = tx.getFieldArray(sfRawTransactions);
+
         XRPL_ASSERT(
             txns.size() <= maxBatchTxCount,
             "Raw Transactions array exceeds max entries.");
+
+        // LCOV_EXCL_START
+        if (txns.size() > maxBatchTxCount)
+            return INITIAL_XRP;
+        // LCOV_EXCL_STOP
+
         for (STObject txn : txns)
         {
             STTx const stx = STTx{std::move(txn)};
-            txnFees += ripple::calculateBaseFee(view, stx);
+            auto const fee = ripple::calculateBaseFee(view, stx);
+            // LCOV_EXCL_START
+            if (txnFees > maxAmount - fee)
+                return INITIAL_XRP;
+            // LCOV_EXCL_STOP
+            txnFees += fee;
         }
     }
 
@@ -55,6 +79,12 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
         XRPL_ASSERT(
             signers.size() <= maxBatchTxCount,
             "Batch Signers array exceeds max entries.");
+
+        // LCOV_EXCL_START
+        if (signers.size() > maxBatchTxCount)
+            return INITIAL_XRP;
+        // LCOV_EXCL_STOP
+
         for (STObject const& signer : signers)
         {
             if (signer.isFieldPresent(sfTxnSignature))
@@ -64,11 +94,22 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
         }
     }
 
-    // 10 drops per batch signature + sum of inner tx fees + 10 drops for
-    // processing + default base fee
-    XRPAmount const baseFee = view.fees().base;
-    return (signerCount * baseFee) + txnFees + baseFee +
-        Transactor::calculateBaseFee(view, tx);
+    // LCOV_EXCL_START
+    if (signerCount > 0 && view.fees().base > maxAmount / signerCount)
+        return INITIAL_XRP;
+    // LCOV_EXCL_STOP
+
+    XRPAmount signerFees = signerCount * view.fees().base;
+
+    // LCOV_EXCL_START
+    if (signerFees > maxAmount - txnFees)
+        return INITIAL_XRP;
+    if (txnFees + signerFees > maxAmount - batchBase)
+        return INITIAL_XRP;
+    // LCOV_EXCL_STOP
+
+    // 10 drops per batch signature + sum of inner tx fees + batchBase
+    return signerFees + txnFees + batchBase;
 }
 
 NotTEC
@@ -125,7 +166,7 @@ Batch::preflight(PreflightContext const& ctx)
         if (!uniqueHashes.emplace(hash).second)
         {
             JLOG(ctx.j.trace()) << "BatchTrace[" << parentBatchId << "]: "
-                                << "duplicate TxID found. "
+                                << "duplicate Txn found. "
                                 << "txID: " << hash;
             return temMALFORMED;
         }

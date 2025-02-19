@@ -1516,7 +1516,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                 }
             }
 
-            if (validatedLedgerIndex)
+            if (!isTemMalformed(e.result) && validatedLedgerIndex)
             {
                 auto [fee, accountSeq, availableSeq] =
                     app_.getTxQ().getTxRequiredFeeAndSeq(
