@@ -322,11 +322,6 @@ public:
     {
         return false;
     }
-    std::set<std::optional<uint64_t>>
-    releaseRequestCookies(uint256 const& requestHash) override
-    {
-        return {};
-    }
 
     bool ledgerReplayEnabled_;
     PublicKey nodePublicKey_;
