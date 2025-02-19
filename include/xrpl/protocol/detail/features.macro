@@ -32,19 +32,20 @@
 // If you add an amendment here, then do not forget to increment `numFeatures`
 // in include/xrpl/protocol/Feature.h.
 
+XRPL_FIX    (EnforceNFTokenTrustlineV2,  Supported::no, VoteBehavior::DefaultNo)
 XRPL_FEATURE(SingleAssetVault,           Supported::no, VoteBehavior::DefaultNo)
 XRPL_FEATURE(PermissionDelegation,       Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (PayChanCancelAfter,         Supported::yes, VoteBehavior::DefaultNo)
 // Check flags in Credential transactions
-XRPL_FIX    (InvalidTxFlags,             Supported::yes, VoteBehavior::DefaultNo)
-XRPL_FIX    (FrozenLPTokenTransfer,      Supported::yes, VoteBehavior::DefaultNo)
-XRPL_FEATURE(DeepFreeze,                 Supported::yes, VoteBehavior::DefaultNo)
-XRPL_FEATURE(PermissionedDomains,        Supported::yes, VoteBehavior::DefaultNo)
-XRPL_FEATURE(DynamicNFT,                 Supported::yes, VoteBehavior::DefaultNo)
-XRPL_FEATURE(Credentials,                Supported::yes, VoteBehavior::DefaultNo)
-XRPL_FEATURE(AMMClawback,                Supported::yes, VoteBehavior::DefaultNo)
-XRPL_FIX    (AMMv1_2,                    Supported::yes, VoteBehavior::DefaultNo)
-XRPL_FEATURE(MPTokensV1,                 Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FIX    (InvalidTxFlags,              Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FIX    (FrozenLPTokenTransfer,       Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FEATURE(DeepFreeze,                  Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FEATURE(PermissionedDomains,         Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FEATURE(DynamicNFT,                  Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FEATURE(Credentials,                 Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FEATURE(AMMClawback,                 Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FIX    (AMMv1_2,                     Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FEATURE(MPTokensV1,                  Supported::yes, VoteBehavior::DefaultNo)
 // InvariantsV1_1 will be changes to Supported::yes when all the
 // invariants expected to be included under it are complete.
 XRPL_FEATURE(InvariantsV1_1,             Supported::no,  VoteBehavior::DefaultNo)

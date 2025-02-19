@@ -160,6 +160,27 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
 
             if ((*so)[sfAmount] > (*bo)[sfAmount] - *brokerFee)
                 return tecINSUFFICIENT_PAYMENT;
+
+            // Check if broker is allowed to receive the fee with these IOUs.
+            if (!brokerFee->native() &&
+                ctx.view.rules().enabled(fixEnforceNFTokenTrustlineV2))
+            {
+                auto res = nft::checkTrustlineAuthorized(
+                    ctx.view,
+                    ctx.tx[sfAccount],
+                    ctx.j,
+                    brokerFee->asset().get<Issue>());
+                if (res != tesSUCCESS)
+                    return res;
+
+                res = nft::checkTrustlineDeepFrozen(
+                    ctx.view,
+                    ctx.tx[sfAccount],
+                    ctx.j,
+                    brokerFee->asset().get<Issue>());
+                if (res != tesSUCCESS)
+                    return res;
+            }
         }
     }
 
@@ -208,6 +229,30 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
                 fhZERO_IF_FROZEN,
                 ctx.j) < needed)
             return tecINSUFFICIENT_FUNDS;
+
+        // Check that the account accepting the buy offer (he's selling the NFT)
+        // is allowed to receive IOUs. But we need to exclude the case when the
+        // transaction is created by the broker. Only the actual seller needs to
+        // be checked.
+        if (!so && !needed.native() &&
+            ctx.view.rules().enabled(fixEnforceNFTokenTrustlineV2))
+        {
+            auto res = nft::checkTrustlineAuthorized(
+                ctx.view,
+                ctx.tx[sfAccount],
+                ctx.j,
+                needed.asset().get<Issue>());
+            if (res != tesSUCCESS)
+                return res;
+
+            res = nft::checkTrustlineDeepFrozen(
+                ctx.view,
+                ctx.tx[sfAccount],
+                ctx.j,
+                needed.asset().get<Issue>());
+            if (res != tesSUCCESS)
+                return res;
+        }
     }
 
     if (so)
@@ -270,17 +315,23 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         }
 
         // Make sure that we are allowed to hold what the taker will pay us.
-        // This is a similar approach taken by usual offers.
         if (!needed.native())
         {
-            auto const result = checkAcceptAsset(
-                ctx.view,
-                ctx.flags,
-                (*so)[sfOwner],
-                ctx.j,
-                needed.asset().get<Issue>());
-            if (result != tesSUCCESS)
-                return result;
+            if (ctx.view.rules().enabled(fixEnforceNFTokenTrustlineV2))
+            {
+                auto const res = nft::checkTrustlineAuthorized(
+                    ctx.view,
+                    (*so)[sfOwner],
+                    ctx.j,
+                    needed.asset().get<Issue>());
+                if (res != tesSUCCESS)
+                    return res;
+            }
+
+            auto const res = nft::checkTrustlineDeepFrozen(
+                ctx.view, (*so)[sfOwner], ctx.j, needed.asset().get<Issue>());
+            if (res != tesSUCCESS)
+                return res;
         }
     }
 
@@ -304,6 +355,17 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
             if (issuer != amount.getIssuer() &&
                 !ctx.view.read(keylet::line(issuer, amount.issue())))
                 return tecNO_LINE;
+
+            // issuer in this context is NFT minter.
+            // Check that the minter is allowed to receive IOUs.
+            if (ctx.view.rules().enabled(fixEnforceNFTokenTrustlineV2))
+            {
+                auto res = nft::checkTrustlineAuthorized(
+                    ctx.view, issuer, ctx.j, amount.asset().get<Issue>());
+                if (res != tesSUCCESS)
+
+                    return res;
+            }
         }
     }
     return tesSUCCESS;
@@ -522,64 +584,6 @@ NFTokenAcceptOffer::doApply()
         return acceptOffer(so);
 
     return tecINTERNAL;
-}
-
-TER
-NFTokenAcceptOffer::checkAcceptAsset(
-    ReadView const& view,
-    ApplyFlags const flags,
-    AccountID const id,
-    beast::Journal const j,
-    Issue const& issue)
-{
-    // Only valid for custom currencies
-
-    if (!view.rules().enabled(featureDeepFreeze))
-    {
-        return tesSUCCESS;
-    }
-
-    XRPL_ASSERT(
-        !isXRP(issue.currency),
-        "NFTokenAcceptOffer::checkAcceptAsset : valid to check.");
-    auto const issuerAccount = view.read(keylet::account(issue.account));
-
-    if (!issuerAccount)
-    {
-        JLOG(j.debug())
-            << "delay: can't receive IOUs from non-existent issuer: "
-            << to_string(issue.account);
-
-        return tecNO_ISSUER;
-    }
-
-    // An account can not create a trustline to itself, so no line can exist
-    // to be frozen. Additionally, an issuer can always accept its own
-    // issuance.
-    if (issue.account == id)
-    {
-        return tesSUCCESS;
-    }
-
-    auto const trustLine =
-        view.read(keylet::line(id, issue.account, issue.currency));
-
-    if (!trustLine)
-    {
-        return tesSUCCESS;
-    }
-
-    // There's no difference which side enacted deep freeze, accepting
-    // tokens shouldn't be possible.
-    bool const deepFrozen =
-        (*trustLine)[sfFlags] & (lsfLowDeepFreeze | lsfHighDeepFreeze);
-
-    if (deepFrozen)
-    {
-        return tecFROZEN;
-    }
-
-    return tesSUCCESS;
 }
 
 }  // namespace ripple
