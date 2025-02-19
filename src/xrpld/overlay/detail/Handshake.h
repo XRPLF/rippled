@@ -24,9 +24,6 @@
 #include <xrpld/overlay/detail/ProtocolVersion.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/BuildInfo.h>
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/ssl/context.hpp>
-#include <boost/asio/ssl/stream.hpp>
 #include <boost/beast/core/tcp_stream.hpp>
 #include <boost/beast/ssl/ssl_stream.hpp>
 
