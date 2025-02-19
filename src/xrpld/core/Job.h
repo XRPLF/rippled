@@ -25,8 +25,6 @@
 #include <xrpl/basics/CountedObject.h>
 #include <functional>
 
-#include <functional>
-
 namespace ripple {
 
 // Note that this queue should only be used for CPU-bound jobs

@@ -21,8 +21,6 @@
 #define RIPPLE_LEDGER_READVIEWFWDRANGE_H_INCLUDED
 
 #include <cstddef>
-#include <iterator>
-#include <memory>
 #include <optional>
 
 namespace ripple {

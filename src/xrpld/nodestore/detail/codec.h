@@ -33,7 +33,6 @@
 #include <lz4.h>
 #include <nudb/detail/field.hpp>
 #include <string>
-#include <utility>
 
 namespace ripple {
 namespace NodeStore {

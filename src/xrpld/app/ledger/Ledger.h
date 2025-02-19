@@ -20,6 +20,7 @@
 #ifndef RIPPLE_APP_LEDGER_LEDGER_H_INCLUDED
 #define RIPPLE_APP_LEDGER_LEDGER_H_INCLUDED
 
+#include <xrpld/core/Config.h>
 #include <xrpld/core/TimeKeeper.h>
 #include <xrpld/ledger/CachedView.h>
 #include <xrpld/ledger/View.h>
