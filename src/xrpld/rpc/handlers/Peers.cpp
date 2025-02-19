@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/LoadFeeTrack.h>
 #include <xrpld/core/TimeKeeper.h>
 #include <xrpld/overlay/Cluster.h>

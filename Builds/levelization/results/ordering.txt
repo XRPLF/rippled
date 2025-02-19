@@ -181,7 +181,6 @@ xrpld.peerfinder > xrpld.core
 xrpld.peerfinder > xrpl.protocol
 xrpld.perflog > xrpl.basics
 xrpld.perflog > xrpl.json
-xrpld.perflog > xrpl.protocol
 xrpld.rpc > xrpl.basics
 xrpld.rpc > xrpld.core
 xrpld.rpc > xrpld.ledger

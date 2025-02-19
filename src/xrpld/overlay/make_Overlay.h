@@ -23,9 +23,7 @@
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/rpc/ServerHandler.h>
 #include <xrpl/basics/Resolver.h>
-#include <xrpl/resource/ResourceManager.h>
 #include <boost/asio/io_service.hpp>
-#include <boost/asio/ssl/context.hpp>
 
 namespace ripple {
 

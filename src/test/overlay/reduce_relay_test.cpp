@@ -16,10 +16,12 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
+
 #include <test/jtx/Env.h>
 #include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/Slot.h>
+#include <xrpld/overlay/Squelch.h>
 #include <xrpld/overlay/detail/Handshake.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/unit_test.h>
