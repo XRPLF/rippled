@@ -17,7 +17,7 @@ Loop: xrpld.app xrpld.overlay
   xrpld.overlay > xrpld.app
 
 Loop: xrpld.app xrpld.peerfinder
-  xrpld.app > xrpld.peerfinder
+  xrpld.peerfinder ~= xrpld.app
 
 Loop: xrpld.app xrpld.rpc
   xrpld.rpc > xrpld.app

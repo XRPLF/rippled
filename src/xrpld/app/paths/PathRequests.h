@@ -23,7 +23,6 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/paths/PathRequest.h>
 #include <xrpld/app/paths/RippleLineCache.h>
-#include <xrpld/core/Job.h>
 #include <atomic>
 #include <mutex>
 #include <vector>
