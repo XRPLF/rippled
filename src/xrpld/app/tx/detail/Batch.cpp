@@ -159,6 +159,10 @@ Batch::preflight(PreflightContext const& ctx)
     // Validation Inner Batch Txns
     std::unordered_set<AccountID> requiredSigners;
     std::unordered_set<uint256> uniqueHashes;
+    std::unordered_map<AccountID, std::unordered_set<std::uint32_t>>
+        accountSequences;
+    std::unordered_map<AccountID, std::unordered_set<std::uint32_t>>
+        accountTickets;
     for (STObject rb : rawTxns)
     {
         STTx const stx = STTx{std::move(rb)};
@@ -168,7 +172,7 @@ Batch::preflight(PreflightContext const& ctx)
             JLOG(ctx.j.trace()) << "BatchTrace[" << parentBatchId << "]: "
                                 << "duplicate Txn found. "
                                 << "txID: " << hash;
-            return temMALFORMED;
+            return temINVALID_INNER_BATCH;
         }
 
         if (stx.getFieldU16(sfTransactionType) == ttBATCH)
@@ -199,6 +203,56 @@ Batch::preflight(PreflightContext const& ctx)
                 << "inner txn preflight failed: " << preflightResult.ter << " "
                 << "txID: " << hash;
             return temINVALID_INNER_BATCH;
+        }
+
+        // Check that the fee is zero
+        if (auto const fee = stx.getFieldAmount(sfFee);
+            !fee.native() || fee.xrp() != beast::zero)
+        {
+            JLOG(ctx.j.trace()) << "BatchTrace[" << parentBatchId << "]: "
+                                << "inner txn must have a fee of 0. "
+                                << "txID: " << hash;
+            return temINVALID_INNER_BATCH;
+        }
+
+        // Check that Sequence and TicketSequence are not both present
+        if (stx.isFieldPresent(sfTicketSequence) &&
+            stx.getFieldU32(sfSequence) != 0)
+        {
+            JLOG(ctx.j.trace()) << "BatchTrace[" << parentBatchId << "]: "
+                                << "inner txn cannot have both Sequence and "
+                                   "TicketSequence. "
+                                << "txID: " << hash;
+            return temINVALID_INNER_BATCH;
+        }
+
+        // Duplicate sequence and ticket checks
+        if (flags & (tfAllOrNothing | tfUntilFailure))
+        {
+            if (auto const seq = stx.getFieldU32(sfSequence); seq != 0)
+            {
+                if (!accountSequences[innerAccount].insert(seq).second)
+                {
+                    JLOG(ctx.j.trace())
+                        << "BatchTrace[" << parentBatchId << "]: "
+                        << "duplicate sequence found: "
+                        << "txID: " << hash;
+                    return temINVALID_INNER_BATCH;
+                }
+            }
+
+            if (stx.isFieldPresent(sfTicketSequence))
+            {
+                if (auto const ticket = stx.getFieldU32(sfTicketSequence);
+                    !accountTickets[innerAccount].insert(ticket).second)
+                {
+                    JLOG(ctx.j.trace())
+                        << "BatchTrace[" << parentBatchId << "]: "
+                        << "duplicate ticket found: "
+                        << "txID: " << hash;
+                    return temINVALID_INNER_BATCH;
+                }
+            }
         }
 
         // If the inner account is the same as the outer account, do not add the
