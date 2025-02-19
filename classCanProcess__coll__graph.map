@@ -1,4 +1,0 @@
-<map id="CanProcess" name="CanProcess">
-<area shape="rect" id="node1" title="RAII class to check if an Item is already being processed on another thread, as indicated by it&#39;s pre..." alt="" coords="40,93,137,119"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/functional/function.html" title=" " alt="" coords="5,5,172,31"/>
-</map>

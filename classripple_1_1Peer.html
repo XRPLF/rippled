@@ -162,13 +162,11 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a574a942c5ee778c1b795b5ca65292821"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a0cb56d7585b19a684f6476830125b835"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Peer.html#a0cb56d7585b19a684f6476830125b835">txReduceRelayEnabled</a> () const =0</td></tr>
 <tr class="separator:a0cb56d7585b19a684f6476830125b835"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aed310bdb5a782e165dc5e436e8ea37ad"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/container/set.html">std::set</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; uint64_t &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Peer.html#aed310bdb5a782e165dc5e436e8ea37ad">releaseRequestCookies</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;requestHash)=0</td></tr>
-<tr class="separator:aed310bdb5a782e165dc5e436e8ea37ad"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p >Represents a peer connection in the overlay. </p>
 
-<p class="definition">Definition at line <a class="el" href="xrpld_2overlay_2Peer_8h_source.html#l00043">43</a> of file <a class="el" href="xrpld_2overlay_2Peer_8h_source.html">xrpld/overlay/Peer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="xrpld_2overlay_2Peer_8h_source.html#l00042">42</a> of file <a class="el" href="xrpld_2overlay_2Peer_8h_source.html">xrpld/overlay/Peer.h</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="a850dd8184743072d8c57febcc4d686ea" name="a850dd8184743072d8c57febcc4d686ea"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a850dd8184743072d8c57febcc4d686ea">&#9670;&#160;</a></span>ptr</h2>
@@ -182,7 +180,7 @@ Public Member Functions</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="xrpld_2overlay_2Peer_8h_source.html#l00046">46</a> of file <a class="el" href="xrpld_2overlay_2Peer_8h_source.html">xrpld/overlay/Peer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="xrpld_2overlay_2Peer_8h_source.html#l00045">45</a> of file <a class="el" href="xrpld_2overlay_2Peer_8h_source.html">xrpld/overlay/Peer.h</a>.</p>
 
 </div>
 </div>
@@ -201,7 +199,7 @@ Public Member Functions</h2></td></tr>
 <p>Uniquely identifies a peer. </p>
 <p >This can be stored in tables to find the peer later. Callers can discover if the peer is no longer connected and make adjustments as needed. </p>
 
-<p class="definition">Definition at line <a class="el" href="xrpld_2overlay_2Peer_8h_source.html#l00053">53</a> of file <a class="el" href="xrpld_2overlay_2Peer_8h_source.html">xrpld/overlay/Peer.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="xrpld_2overlay_2Peer_8h_source.html#l00052">52</a> of file <a class="el" href="xrpld_2overlay_2Peer_8h_source.html">xrpld/overlay/Peer.h</a>.</p>
 
 </div>
 </div>
@@ -922,34 +920,6 @@ Public Member Functions</h2></td></tr>
 </div><div class="memdoc">
 
 <p>Implemented in <a class="el" href="classripple_1_1test_1_1TestPeer.html#a86cd77871fad7677f30757f903357ae2">ripple::test::TestPeer</a>, <a class="el" href="classripple_1_1test_1_1PeerPartial.html#a314bde933a8f3c3863aeca66810c5d80">ripple::test::PeerPartial</a>, and <a class="el" href="classripple_1_1PeerImp.html#acbc5cde85994cdfc157d2011be362afa">ripple::PeerImp</a>.</p>
-
-</div>
-</div>
-<a id="aed310bdb5a782e165dc5e436e8ea37ad" name="aed310bdb5a782e165dc5e436e8ea37ad"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aed310bdb5a782e165dc5e436e8ea37ad">&#9670;&#160;</a></span>releaseRequestCookies()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/container/set.html">std::set</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; uint64_t &gt; &gt; ripple::Peer::releaseRequestCookies </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
-          <td class="paramname"><em>requestHash</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">pure virtual</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p>Implemented in <a class="el" href="classripple_1_1test_1_1TestPeer.html#a4cf54b012fcec1cf5591c634812279cc">ripple::test::TestPeer</a>, <a class="el" href="classripple_1_1test_1_1PeerPartial.html#afe145e7c11e2bf64038ba7ffa88b3827">ripple::test::PeerPartial</a>, and <a class="el" href="classripple_1_1PeerImp.html#aac4359adc4f6267729e991f0af8e20b2">ripple::PeerImp</a>.</p>
 
 </div>
 </div>
