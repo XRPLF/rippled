@@ -22,6 +22,7 @@
 #include <numeric>
 #include <stdexcept>
 #include <type_traits>
+#include <utility>
 
 #ifdef BOOST_COMP_MSVC
 #include <boost/multiprecision/cpp_int.hpp>

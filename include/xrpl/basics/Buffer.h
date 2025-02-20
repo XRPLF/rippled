@@ -24,8 +24,6 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <cstdint>
 #include <cstring>
-#include <memory>
-#include <utility>
 
 namespace ripple {
 
