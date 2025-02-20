@@ -77,6 +77,12 @@ struct Peer
             return proposal_.getJson();
         }
 
+        std::string
+        render() const
+        {
+            return "";
+        }
+
     private:
         Proposal proposal_;
     };
