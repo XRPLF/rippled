@@ -57,6 +57,14 @@ public:
         std::cout << clock_.now().time_since_epoch().count() << " " << text
                   << std::endl;
     }
+
+    void
+    writeAlways(beast::severities::Severity level, std::string const& text)
+        override
+    {
+        std::cout << clock_.now().time_since_epoch().count() << " " << text
+                  << std::endl;
+    }
 };
 
 class Sim

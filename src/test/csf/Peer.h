@@ -116,6 +116,10 @@ struct Peer
         }
     };
 
+    class TestConsensusLogger
+    {
+    };
+
     /** Generic Validations adaptor that simply ignores recently stale
      * validations
      */
@@ -532,7 +536,8 @@ struct Peer
             closeResolution,
             rawCloseTimes,
             mode,
-            std::move(consensusJson));
+            std::move(consensusJson),
+            validating());
     }
 
     void
@@ -542,7 +547,8 @@ struct Peer
         NetClock::duration const& closeResolution,
         ConsensusCloseTimes const& rawCloseTimes,
         ConsensusMode const& mode,
-        Json::Value&& consensusJson)
+        Json::Value&& consensusJson,
+        const bool validating)
     {
         schedule(delays.ledgerAccept, [=, this]() {
             const bool proposing = mode == ConsensusMode::proposing;
@@ -877,6 +883,13 @@ struct Peer
     {
     }
 
+    bool
+    validating() const
+    {
+        // does not matter
+        return false;
+    }
+
     //--------------------------------------------------------------------------
     //  A locally submitted transaction
     void
@@ -917,7 +930,7 @@ struct Peer
         // Not yet modeling dynamic UNL.
         hash_set<PeerID> nowUntrusted;
         consensus.startRound(
-            now(), bestLCL, lastClosedLedger, nowUntrusted, runAsValidator);
+            now(), bestLCL, lastClosedLedger, nowUntrusted, runAsValidator, {});
     }
 
     // Start the consensus process assuming it is not yet running

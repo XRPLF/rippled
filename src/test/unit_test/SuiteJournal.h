@@ -50,10 +50,24 @@ public:
 
     void
     write(beast::severities::Severity level, std::string const& text) override;
+
+    void
+    writeAlways(beast::severities::Severity level, std::string const& text)
+        override;
 };
 
 inline void
 SuiteJournalSink::write(
+    beast::severities::Severity level,
+    std::string const& text)
+{
+    // Only write the string if the level at least equals the threshold.
+    if (level >= threshold())
+        writeAlways(level, text);
+}
+
+inline void
+SuiteJournalSink::writeAlways(
     beast::severities::Severity level,
     std::string const& text)
 {
@@ -80,9 +94,7 @@ SuiteJournalSink::write(
         return "FTL:";
     }();
 
-    // Only write the string if the level at least equals the threshold.
-    if (level >= threshold())
-        suite_.log << s << partition_ << text << std::endl;
+    suite_.log << s << partition_ << text << std::endl;
 }
 
 class SuiteJournal
@@ -127,9 +139,16 @@ public:
     {
         if (level < threshold())
             return;
+        writeAlways(level, text);
+    }
 
+    inline void
+    writeAlways(beast::severities::Severity level, std::string const& text)
+        override
+    {
         strm_ << text << std::endl;
     }
+
     std::stringstream const&
     messages() const
     {
