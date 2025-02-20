@@ -77,7 +77,6 @@ $(function() {
 <a href="#nested-classes">Classes</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
-<a href="#pri-static-attribs">Static Private Attributes</a> &#124;
 <a href="classripple_1_1TrustedVotes-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">ripple::TrustedVotes Class Reference</div></div>
 </div><!--header-->
@@ -90,18 +89,17 @@ Collaboration diagram for ripple::TrustedVotes:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1TrustedVotes__coll__graph.png" border="0" usemap="#aripple_1_1TrustedVotes_coll__map" alt="Collaboration graph"/></div>
 <map name="aripple_1_1TrustedVotes_coll__map" id="aripple_1_1TrustedVotes_coll__map">
-<area shape="rect" title="TrustedVotes records the most recent votes from trusted validators." alt="" coords="1627,41,1777,67"/>
-<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/chrono/time_point.html" title=" " alt="" coords="1298,5,1470,31"/>
-<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/container/unordered_map.html" title=" " alt="" coords="1295,55,1473,125"/>
-<area shape="rect" href="classripple_1_1PublicKey.html" title="A public key." alt="" coords="492,49,623,75"/>
-<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/types/size_t.html" title=" " alt="" coords="261,105,349,131"/>
-<area shape="rect" href="classripple_1_1base__uint.html" title="Integers of any length that is a multiple of 32&#45;bits." alt="" coords="487,163,628,203"/>
-<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="258,35,353,60"/>
-<area shape="rect" href="structripple_1_1TrustedVotes_1_1UpvotesAndTimeout.html" title=" " alt="" coords="1019,99,1181,139"/>
-<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/container/vector.html" title=" " alt="" coords="756,163,899,203"/>
-<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/container/array.html" title=" " alt="" coords="221,178,389,218"/>
-<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="5,185,108,211"/>
-<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/chrono/time_point.html" title=" " alt="" coords="741,99,913,139"/>
+<area shape="rect" title="TrustedVotes records the most recent votes from trusted validators." alt="" coords="1621,48,1772,73"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/container/unordered_map.html" title=" " alt="" coords="1289,26,1468,95"/>
+<area shape="rect" href="classripple_1_1PublicKey.html" title="A public key." alt="" coords="492,20,623,45"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/types/size_t.html" title=" " alt="" coords="261,76,349,101"/>
+<area shape="rect" href="classripple_1_1base__uint.html" title="Integers of any length that is a multiple of 32&#45;bits." alt="" coords="487,134,628,174"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="258,5,353,31"/>
+<area shape="rect" href="structripple_1_1TrustedVotes_1_1UpvotesAndTimeout.html" title=" " alt="" coords="1013,70,1176,110"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/container/vector.html" title=" " alt="" coords="753,134,896,174"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/container/array.html" title=" " alt="" coords="221,149,389,189"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="5,156,108,181"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/utility/optional.html" title=" " alt="" coords="741,70,908,110"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -120,8 +118,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a9e1cc14137a4b9cd2acdb0a7ca9d0974"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:abc0eec642a9611d23c5e451374db4a9c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TrustedVotes.html#abc0eec642a9611d23c5e451374db4a9c">trustChanged</a> (<a class="el" href="namespaceripple.html#a7750eec5e079354285f1d60cfd0247ca">hash_set</a>&lt; <a class="el" href="classripple_1_1PublicKey.html">PublicKey</a> &gt; const &amp;allTrusted, <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a> &gt; const &amp;lock)</td></tr>
 <tr class="separator:abc0eec642a9611d23c5e451374db4a9c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1cc0935035ec54319faba8edfa402fc4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TrustedVotes.html#a1cc0935035ec54319faba8edfa402fc4">recordVotes</a> (<a class="el" href="classripple_1_1Rules.html">Rules</a> const &amp;rules, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STValidation.html">STValidation</a> &gt; &gt; const &amp;valSet, <a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> const closeTime, <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a> &gt; const &amp;lock)</td></tr>
-<tr class="separator:a1cc0935035ec54319faba8edfa402fc4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6ddb6129de9561409013dd3a789d96ea"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TrustedVotes.html#a6ddb6129de9561409013dd3a789d96ea">recordVotes</a> (<a class="el" href="classripple_1_1Rules.html">Rules</a> const &amp;rules, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STValidation.html">STValidation</a> &gt; &gt; const &amp;valSet, <a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> const closeTime, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j, <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a> &gt; const &amp;lock)</td></tr>
+<tr class="separator:a6ddb6129de9561409013dd3a789d96ea"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a922f8bafae9857187a7711f809ae4cfb"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; int, <a class="el" href="namespaceripple.html#a46c521271235f4e2715d7fa8b68940ca">hash_map</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>, int &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TrustedVotes.html#a922f8bafae9857187a7711f809ae4cfb">getVotes</a> (<a class="el" href="classripple_1_1Rules.html">Rules</a> const &amp;rules, <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a> &gt; const &amp;lock) const</td></tr>
 <tr class="separator:a922f8bafae9857187a7711f809ae4cfb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -129,11 +127,6 @@ Public Member Functions</h2></td></tr>
 Private Attributes</h2></td></tr>
 <tr class="memitem:a92a6e302c047b3c033dfa5b88549d6d1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a46c521271235f4e2715d7fa8b68940ca">hash_map</a>&lt; <a class="el" href="classripple_1_1PublicKey.html">PublicKey</a>, <a class="el" href="structripple_1_1TrustedVotes_1_1UpvotesAndTimeout.html">UpvotesAndTimeout</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TrustedVotes.html#a92a6e302c047b3c033dfa5b88549d6d1">recordedVotes_</a></td></tr>
 <tr class="separator:a92a6e302c047b3c033dfa5b88549d6d1"><td class="memSeparator" colspan="2">&#160;</td></tr>
-</table><table class="memberdecls">
-<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-static-attribs" name="pri-static-attribs"></a>
-Static Private Attributes</h2></td></tr>
-<tr class="memitem:abb5ca74efccd0c0e3d0c14e5ad845d25"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TrustedVotes.html#abb5ca74efccd0c0e3d0c14e5ad845d25">maxTimeout</a></td></tr>
-<tr class="separator:abb5ca74efccd0c0e3d0c14e5ad845d25"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p ><a class="el" href="classripple_1_1TrustedVotes.html" title="TrustedVotes records the most recent votes from trusted validators.">TrustedVotes</a> records the most recent votes from trusted validators. </p>
@@ -142,7 +135,7 @@ Static Private Attributes</h2></td></tr>
 <p ><a class="el" href="classripple_1_1TrustedVotes.html" title="TrustedVotes records the most recent votes from trusted validators.">TrustedVotes</a> addresses the problem by holding on to the last vote seen from every trusted validator. So if any given validator is off line near a flag ledger we can assume that they did not change their vote.</p>
 <p >If we haven't seen any STValidations from a validator for several hours we lose confidence that the validator hasn't changed their position. So there's a timeout. We remove upVotes if they haven't been updated in several hours. </p>
 
-<p class="definition">Definition at line <a class="el" href="AmendmentTable_8cpp_source.html#l00088">88</a> of file <a class="el" href="AmendmentTable_8cpp_source.html">AmendmentTable.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AmendmentTable_8cpp_source.html#l00091">91</a> of file <a class="el" href="AmendmentTable_8cpp_source.html">AmendmentTable.cpp</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a3d752f8a8137c54441bd754db241b286" name="a3d752f8a8137c54441bd754db241b286"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a3d752f8a8137c54441bd754db241b286">&#9670;&#160;</a></span>TrustedVotes() <span class="overload">[1/2]</span></h2>
@@ -248,12 +241,12 @@ Static Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AmendmentTable_8cpp_source.html#l00113">113</a> of file <a class="el" href="AmendmentTable_8cpp_source.html">AmendmentTable.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AmendmentTable_8cpp_source.html#l00118">118</a> of file <a class="el" href="AmendmentTable_8cpp_source.html">AmendmentTable.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a1cc0935035ec54319faba8edfa402fc4" name="a1cc0935035ec54319faba8edfa402fc4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1cc0935035ec54319faba8edfa402fc4">&#9670;&#160;</a></span>recordVotes()</h2>
+<a id="a6ddb6129de9561409013dd3a789d96ea" name="a6ddb6129de9561409013dd3a789d96ea"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6ddb6129de9561409013dd3a789d96ea">&#9670;&#160;</a></span>recordVotes()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -279,6 +272,12 @@ Static Private Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td>
+          <td class="paramname"><em>j</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a> &gt; const &amp;&#160;</td>
           <td class="paramname"><em>lock</em>&#160;</td>
         </tr>
@@ -290,7 +289,7 @@ Static Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AmendmentTable_8cpp_source.html#l00146">146</a> of file <a class="el" href="AmendmentTable_8cpp_source.html">AmendmentTable.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AmendmentTable_8cpp_source.html#l00151">151</a> of file <a class="el" href="AmendmentTable_8cpp_source.html">AmendmentTable.cpp</a>.</p>
 
 </div>
 </div>
@@ -320,38 +319,11 @@ Static Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AmendmentTable_8cpp_source.html#l00205">205</a> of file <a class="el" href="AmendmentTable_8cpp_source.html">AmendmentTable.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AmendmentTable_8cpp_source.html#l00259">259</a> of file <a class="el" href="AmendmentTable_8cpp_source.html">AmendmentTable.cpp</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="abb5ca74efccd0c0e3d0c14e5ad845d25" name="abb5ca74efccd0c0e3d0c14e5ad845d25"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abb5ca74efccd0c0e3d0c14e5ad845d25">&#9670;&#160;</a></span>maxTimeout</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">constexpr <a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> ripple::TrustedVotes::maxTimeout</td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span><span class="mlabel">private</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-<b>Initial value:</b><div class="fragment"><div class="line">=</div>
-<div class="line">        <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/chrono/time_point/max.html">NetClock::time_point::max</a>()</div>
-<div class="ttc" id="amax_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/chrono/time_point/max.html">std::chrono::time_point::max</a></div><div class="ttdeci">T max(T... args)</div></div>
-</div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="AmendmentTable_8cpp_source.html#l00091">91</a> of file <a class="el" href="AmendmentTable_8cpp_source.html">AmendmentTable.cpp</a>.</p>
-
-</div>
-</div>
 <a id="a92a6e302c047b3c033dfa5b88549d6d1" name="a92a6e302c047b3c033dfa5b88549d6d1"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a92a6e302c047b3c033dfa5b88549d6d1">&#9670;&#160;</a></span>recordedVotes_</h2>
 
@@ -372,7 +344,7 @@ Static Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AmendmentTable_8cpp_source.html#l00101">101</a> of file <a class="el" href="AmendmentTable_8cpp_source.html">AmendmentTable.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="AmendmentTable_8cpp_source.html#l00106">106</a> of file <a class="el" href="AmendmentTable_8cpp_source.html">AmendmentTable.cpp</a>.</p>
 
 </div>
 </div>

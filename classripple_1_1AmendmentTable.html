@@ -142,8 +142,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a4783349db2b8d9ac7f1ab17e1928083e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5d4b2a78401a735cbd82edf30504d1d0"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AmendmentTable.html#a5d4b2a78401a735cbd82edf30504d1d0">getDesired</a> () const =0</td></tr>
 <tr class="separator:a5d4b2a78401a735cbd82edf30504d1d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7c159df72abeffa2e953e0da40b90b95"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AmendmentTable.html#a7c159df72abeffa2e953e0da40b90b95">doVoting</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &gt; const &amp;lastClosedLedger, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STValidation.html">STValidation</a> &gt; &gt; const &amp;parentValidations, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SHAMap.html">SHAMap</a> &gt; const &amp;initialPosition)</td></tr>
-<tr class="separator:a7c159df72abeffa2e953e0da40b90b95"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a02fd625de19d6564a1250cbde00b0a28"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1AmendmentTable.html#a02fd625de19d6564a1250cbde00b0a28">doVoting</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &gt; const &amp;lastClosedLedger, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STValidation.html">STValidation</a> &gt; &gt; const &amp;parentValidations, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SHAMap.html">SHAMap</a> &gt; const &amp;initialPosition, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
+<tr class="separator:a02fd625de19d6564a1250cbde00b0a28"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p >The amendment table stores the list of enabled and potential amendments. </p>
@@ -706,8 +706,8 @@ Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a7c159df72abeffa2e953e0da40b90b95" name="a7c159df72abeffa2e953e0da40b90b95"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7c159df72abeffa2e953e0da40b90b95">&#9670;&#160;</a></span>doVoting() <span class="overload">[2/2]</span></h2>
+<a id="a02fd625de19d6564a1250cbde00b0a28" name="a02fd625de19d6564a1250cbde00b0a28"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a02fd625de19d6564a1250cbde00b0a28">&#9670;&#160;</a></span>doVoting() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -728,7 +728,13 @@ Public Member Functions</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SHAMap.html">SHAMap</a> &gt; const &amp;&#160;</td>
-          <td class="paramname"><em>initialPosition</em>&#160;</td>
+          <td class="paramname"><em>initialPosition</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td>
+          <td class="paramname"><em>j</em>&#160;</td>
         </tr>
         <tr>
           <td></td>

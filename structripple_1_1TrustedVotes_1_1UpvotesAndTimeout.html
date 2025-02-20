@@ -84,13 +84,13 @@ Collaboration diagram for ripple::TrustedVotes::UpvotesAndTimeout:</div>
 <div class="dyncontent">
 <div class="center"><img src="structripple_1_1TrustedVotes_1_1UpvotesAndTimeout__coll__graph.png" border="0" usemap="#aripple_1_1TrustedVotes_1_1UpvotesAndTimeout_coll__map" alt="Collaboration graph"/></div>
 <map name="aripple_1_1TrustedVotes_1_1UpvotesAndTimeout_coll__map" id="aripple_1_1TrustedVotes_1_1UpvotesAndTimeout_coll__map">
-<area shape="rect" title=" " alt="" coords="144,416,307,456"/>
+<area shape="rect" title=" " alt="" coords="141,416,304,456"/>
 <area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/container/vector.html" title=" " alt="" coords="18,313,161,353"/>
 <area shape="rect" href="classripple_1_1base__uint.html" title="Integers of any length that is a multiple of 32&#45;bits." alt="" coords="19,211,160,251"/>
 <area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/types/size_t.html" title=" " alt="" coords="5,101,93,126"/>
 <area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/container/array.html" title=" " alt="" coords="117,93,285,133"/>
 <area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="150,5,253,31"/>
-<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/chrono/time_point.html" title=" " alt="" coords="185,313,357,353"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/utility/optional.html" title=" " alt="" coords="185,313,351,353"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -98,8 +98,9 @@ Collaboration diagram for ripple::TrustedVotes::UpvotesAndTimeout:</div>
 Public Attributes</h2></td></tr>
 <tr class="memitem:a4588ecf54c235e6525991eb727a0fa92"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1TrustedVotes_1_1UpvotesAndTimeout.html#a4588ecf54c235e6525991eb727a0fa92">upVotes</a></td></tr>
 <tr class="separator:a4588ecf54c235e6525991eb727a0fa92"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac4944187feae82501ea48a796003a0d7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1TrustedVotes_1_1UpvotesAndTimeout.html#ac4944187feae82501ea48a796003a0d7">timeout</a> = <a class="el" href="classripple_1_1TrustedVotes.html#abb5ca74efccd0c0e3d0c14e5ad845d25">maxTimeout</a></td></tr>
-<tr class="separator:ac4944187feae82501ea48a796003a0d7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8aa0aefb1fe98d9700c4be5d2c2ab1b2"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1TrustedVotes_1_1UpvotesAndTimeout.html#a8aa0aefb1fe98d9700c4be5d2c2ab1b2">timeout</a></td></tr>
+<tr class="memdesc:a8aa0aefb1fe98d9700c4be5d2c2ab1b2"><td class="mdescLeft">&#160;</td><td class="mdescRight">An unseated timeout indicates that either.  <a href="structripple_1_1TrustedVotes_1_1UpvotesAndTimeout.html#a8aa0aefb1fe98d9700c4be5d2c2ab1b2">More...</a><br /></td></tr>
+<tr class="separator:a8aa0aefb1fe98d9700c4be5d2c2ab1b2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
@@ -121,19 +122,25 @@ Public Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="ac4944187feae82501ea48a796003a0d7" name="ac4944187feae82501ea48a796003a0d7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac4944187feae82501ea48a796003a0d7">&#9670;&#160;</a></span>timeout</h2>
+<a id="a8aa0aefb1fe98d9700c4be5d2c2ab1b2" name="a8aa0aefb1fe98d9700c4be5d2c2ab1b2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8aa0aefb1fe98d9700c4be5d2c2ab1b2">&#9670;&#160;</a></span>timeout</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> ripple::TrustedVotes::UpvotesAndTimeout::timeout = <a class="el" href="classripple_1_1TrustedVotes.html#abb5ca74efccd0c0e3d0c14e5ad845d25">maxTimeout</a></td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt;<a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a>&gt; ripple::TrustedVotes::UpvotesAndTimeout::timeout</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="AmendmentTable_8cpp_source.html#l00099">99</a> of file <a class="el" href="AmendmentTable_8cpp_source.html">AmendmentTable.cpp</a>.</p>
+<p>An unseated timeout indicates that either. </p>
+<ol type="1">
+<li>No validations have ever been received</li>
+<li>The validator has not been heard from in long enough that the timeout passed, and votes expired. </li>
+</ol>
+
+<p class="definition">Definition at line <a class="el" href="AmendmentTable_8cpp_source.html#l00104">104</a> of file <a class="el" href="AmendmentTable_8cpp_source.html">AmendmentTable.cpp</a>.</p>
 
 </div>
 </div>
