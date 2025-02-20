@@ -865,7 +865,7 @@ AmendmentTableImpl::doVoting(
     // process all amendments we know of
     for (auto const& entry : amendmentMap_)
     {
-        if (enabledAmendments.count(entry.first) != 0)
+        if (enabledAmendments.contains(entry.first))
         {
             JLOG(j_.trace()) << entry.first << ": amendment already enabled";
 
@@ -883,22 +883,25 @@ AmendmentTableImpl::doVoting(
 
         bool const hasLedgerMajority = majorityTime.has_value();
 
-        std::stringstream ss;
-        ss << entry.first << " (" << entry.second.name << ") has "
-           << vote->votes(entry.first) << " votes";
+        auto const logStr = [&entry, &vote]() {
+            std::stringstream ss;
+            ss << entry.first << " (" << entry.second.name << ") has "
+               << vote->votes(entry.first) << " votes";
+            return ss.str();
+        }();
 
         if (hasValMajority && !hasLedgerMajority &&
             entry.second.vote == AmendmentVote::up)
         {
             // Ledger says no majority, validators say yes, and voting yes
             // locally
-            JLOG(j_.debug()) << ss.str() << ": amendment got majority";
+            JLOG(j_.debug()) << logStr << ": amendment got majority";
             actions[entry.first] = tfGotMajority;
         }
         else if (!hasValMajority && hasLedgerMajority)
         {
             // Ledger says majority, validators say no
-            JLOG(j_.debug()) << ss.str() << ": amendment lost majority";
+            JLOG(j_.debug()) << logStr << ": amendment lost majority";
             actions[entry.first] = tfLostMajority;
         }
         else if (
@@ -907,20 +910,19 @@ AmendmentTableImpl::doVoting(
             entry.second.vote == AmendmentVote::up)
         {
             // Ledger says majority held
-            JLOG(j_.debug()) << ss.str() << ": amendment majority held";
+            JLOG(j_.debug()) << logStr << ": amendment majority held";
             actions[entry.first] = 0;
         }
         // Logging only below this point
         else if (hasValMajority && hasLedgerMajority)
         {
             JLOG(j_.debug())
-                << ss.str()
+                << logStr
                 << ": amendment holding majority, waiting to be enabled";
         }
         else if (!hasValMajority)
         {
-            JLOG(j_.debug())
-                << ss.str() << ": amendment does not have majority";
+            JLOG(j_.debug()) << logStr << ": amendment does not have majority";
         }
     }
 
