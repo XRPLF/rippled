@@ -195,7 +195,7 @@ public:
     virtual bool
     isFull() = 0;
     virtual void
-    setMode(OperatingMode om, const char* reason) = 0;
+    setMode(OperatingMode om) = 0;
     virtual bool
     isBlocked() = 0;
     virtual bool
