@@ -23,7 +23,6 @@
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/base_uint.h>
 #include <optional>
-#include <ostream>
 #include <string>
 #include <tuple>
 

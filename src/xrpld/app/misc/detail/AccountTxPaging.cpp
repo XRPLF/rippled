@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <xrpld/app/ledger/LedgerMaster.h>
-#include <xrpld/app/ledger/LedgerToJson.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/detail/AccountTxPaging.h>
