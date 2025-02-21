@@ -21,6 +21,7 @@
 #include <test/jtx/token.h>
 
 #include <xrpld/app/tx/detail/NFTokenMint.h>
+#include <xrpl/basics/random.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
@@ -230,6 +231,23 @@ Json::Value
 clearMinter(jtx::Account const& account)
 {
     return fclear(account, asfAuthorizedNFTokenMinter);
+}
+
+std::string
+randURI()
+{
+    std::string ret;
+
+    // About 20% of the returned strings should be empty
+    if (rand_int(4) == 0)
+        return ret;
+
+    std::size_t const strLen = rand_int(256);
+    ret.reserve(strLen);
+    for (std::size_t i = 0; i < strLen; ++i)
+        ret.push_back(rand_byte());
+
+    return ret;
 }
 
 }  // namespace token

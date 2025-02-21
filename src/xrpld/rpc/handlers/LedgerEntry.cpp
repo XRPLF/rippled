@@ -807,6 +807,41 @@ doLedgerEntry(RPC::JsonContext& context)
                 }
             }
         }
+        else if (context.params.isMember(jss::account_permission))
+        {
+            expectedType = ltACCOUNT_PERMISSION;
+            auto const params = context.params[jss::account_permission];
+            if (!params.isObject())
+            {
+                uint256 uNodeIndex;
+                if (!uNodeIndex.parseHex(params.asString()))
+                {
+                    uNodeIndex = beast::zero;
+                    jvResult[jss::error] = "malformedRequest";
+                }
+            }
+            else if (
+                !params.isMember(jss::account) ||
+                !params.isMember(jss::authorize))
+            {
+                jvResult[jss::error] = "malformedRequest";
+            }
+            else
+            {
+                auto const account =
+                    parseBase58<AccountID>(params[jss::account].asString());
+                auto const authorize =
+                    parseBase58<AccountID>(params[jss::authorize].asString());
+
+                if (!account)
+                    jvResult[jss::error] = "malformedAccount";
+                else if (!authorize)
+                    jvResult[jss::error] = "malformedAuthorize";
+                else
+                    uNodeIndex =
+                        keylet::accountPermission(*account, *authorize).key;
+            }
+        }
         else
         {
             if (context.params.isMember("params") &&

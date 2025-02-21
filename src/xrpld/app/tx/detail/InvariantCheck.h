@@ -23,7 +23,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/STLedgerEntry.h>
-#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/STTxDelegated.h>
 #include <xrpl/protocol/TER.h>
 
 #include <cstdint>
@@ -76,7 +76,7 @@ public:
      */
     bool
     finalize(
-        STTx const& tx,
+        STTxDelegated const& tx,
         TER const tec,
         XRPAmount const fee,
         ReadView const& view,
@@ -101,7 +101,7 @@ public:
 
     bool
     finalize(
-        STTx const&,
+        STTxDelegated const&,
         TER const,
         XRPAmount const,
         ReadView const&,
@@ -129,7 +129,7 @@ public:
 
     bool
     finalize(
-        STTx const&,
+        STTxDelegated const&,
         TER const,
         XRPAmount const,
         ReadView const&,
@@ -157,7 +157,7 @@ public:
 
     bool
     finalize(
-        STTx const&,
+        STTxDelegated const&,
         TER const,
         XRPAmount const,
         ReadView const&,
@@ -187,7 +187,7 @@ public:
 
     bool
     finalize(
-        STTx const&,
+        STTxDelegated const&,
         TER const,
         XRPAmount const,
         ReadView const&,
@@ -214,7 +214,7 @@ public:
 
     bool
     finalize(
-        STTx const&,
+        STTxDelegated const&,
         TER const,
         XRPAmount const,
         ReadView const&,
@@ -239,7 +239,7 @@ public:
 
     bool
     finalize(
-        STTx const&,
+        STTxDelegated const&,
         TER const,
         XRPAmount const,
         ReadView const&,
@@ -265,7 +265,7 @@ public:
 
     bool
     finalize(
-        STTx const&,
+        STTxDelegated const&,
         TER const,
         XRPAmount const,
         ReadView const&,
@@ -292,7 +292,7 @@ public:
 
     bool
     finalize(
-        STTx const&,
+        STTxDelegated const&,
         TER const,
         XRPAmount const,
         ReadView const&,
@@ -316,7 +316,7 @@ public:
 
     bool
     finalize(
-        STTx const&,
+        STTxDelegated const&,
         TER const,
         XRPAmount const,
         ReadView const&,
@@ -342,7 +342,7 @@ public:
 
     bool
     finalize(
-        STTx const&,
+        STTxDelegated const&,
         TER const,
         XRPAmount const,
         ReadView const&,
@@ -379,7 +379,7 @@ public:
 
     bool
     finalize(
-        STTx const&,
+        STTxDelegated const&,
         TER const,
         XRPAmount const,
         ReadView const&,
@@ -415,7 +415,7 @@ public:
 
     bool
     finalize(
-        STTx const&,
+        STTxDelegated const&,
         TER const,
         XRPAmount const,
         ReadView const&,
@@ -444,7 +444,7 @@ public:
 
     bool
     finalize(
-        STTx const&,
+        STTxDelegated const&,
         TER const,
         XRPAmount const,
         ReadView const&,
@@ -468,7 +468,7 @@ public:
 
     bool
     finalize(
-        STTx const&,
+        STTxDelegated const&,
         TER const,
         XRPAmount const,
         ReadView const&,

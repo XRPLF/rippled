@@ -436,3 +436,19 @@ LEDGER_ENTRY(ltCREDENTIAL, 0x0081, Credential, ({
     {sfPreviousTxnID,        soeREQUIRED},
     {sfPreviousTxnLgrSeq,    soeREQUIRED},
 }))
+
+
+/** A ledger object representing permissions an account has delegated to another account.
+    \sa keylet::accountPermission
+ */
+LEDGER_ENTRY(ltACCOUNT_PERMISSION, 0x0083, AccountPermission, ({
+    {sfAccount,              soeREQUIRED},
+    {sfAuthorize,            soeREQUIRED},
+    {sfPermissions,          soeREQUIRED},
+    {sfOwnerNode,            soeREQUIRED},
+    {sfPreviousTxnID,        soeREQUIRED},
+    {sfPreviousTxnLgrSeq,    soeREQUIRED},
+}))
+
+#undef EXPAND
+#undef LEDGER_ENTRY_DUPLICATE

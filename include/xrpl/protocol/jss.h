@@ -57,12 +57,16 @@ JSS(AssetClass);           // in: Oracle
 JSS(AssetPrice);           // in: Oracle
 JSS(AuthAccount);          // in: AMM Auction Slot
 JSS(AuthAccounts);         // in: AMM Auction Slot
+JSS(Authorize);            // in: account_permission
+JSS(AccountPermission);    // in: account_permission
 JSS(BaseAsset);            // in: Oracle
 JSS(BidMax);               // in: AMM Bid
 JSS(BidMin);               // in: AMM Bid
 JSS(Bridge);               // ledger type.
 JSS(Check);                // ledger type.
 JSS(ClearFlag);            // field.
+JSS(DelegateTicketSequence); // in/out: OnBehalfOf; field.
+JSS(DelegateSequence);     // in/out: OnBehalfOf; field.
 JSS(Credential);           // ledger type.
 JSS(DID);                  // ledger type.
 JSS(DeliverMax);           // out: alias to Amount
@@ -91,11 +95,15 @@ JSS(LPTokenIn);            // in: AMM Liquidity Provider withdraw tokens
 JSS(LPToken);              // out: AMM Liquidity Provider tokens info
 JSS(Offer);                // ledger type.
 JSS(OfferSequence);        // field.
+JSS(OnBehalfOf);
 JSS(Oracle);               // ledger type.
 JSS(OracleDocumentID);     // field
 JSS(Owner);                // field
 JSS(Paths);                // in/out: TransactionSign
 JSS(PayChannel);           // ledger type.
+JSS(Permission);
+JSS(Permissions);
+JSS(PermissionValue); 
 JSS(PriceDataSeries);                    // field.
 JSS(PriceData);                          // field.
 JSS(Provider);                           // field.
@@ -132,6 +140,7 @@ JSS(account_hash);           // out: LedgerToJson
 JSS(account_id);             // out: WalletPropose
 JSS(account_nfts);           // out: AccountNFTs
 JSS(account_objects);        // out: AccountObjects
+JSS(account_permission);     // out: account_permission
 JSS(account_root);           // in: LedgerEntry
 JSS(account_sequence_next);  // out: SubmitTransaction
 JSS(account_sequence_available);  // out: SubmitTransaction
@@ -168,6 +177,7 @@ JSS(attestations);
 JSS(attestation_reward_account);
 JSS(auction_slot);            // out: amm_info
 JSS(authorized);              // out: AccountLines
+JSS(authorize);               // out: account_permission
 JSS(authorized_credentials);   // in: ledger_entry DepositPreauth
 JSS(auth_accounts);           // out: amm_info
 JSS(auth_change);             // out: AccountInfo

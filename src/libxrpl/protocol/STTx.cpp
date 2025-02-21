@@ -195,6 +195,23 @@ STTx::getSeqProxy() const
     return SeqProxy{SeqProxy::ticket, *ticketSeq};
 }
 
+SeqProxy
+STTx::getDelegateSeqProxy() const
+{
+    std::uint32_t const seq{getFieldU32(sfDelegateSequence)};
+    if (seq != 0)
+        return SeqProxy::sequence(seq);
+
+    std::optional<std::uint32_t> const ticketSeq{operator[](
+        ~sfDelegateTicketSequence)};
+    if (!ticketSeq)
+        // No DelegateTicketSequence specified.  Return the delegateSequence,
+        // whatever it is.
+        return SeqProxy::sequence(seq);
+
+    return SeqProxy{SeqProxy::ticket, *ticketSeq};
+}
+
 void
 STTx::sign(PublicKey const& publicKey, SecretKey const& secretKey)
 {
@@ -434,6 +451,13 @@ STTx::checkMultiSign(
     }
     // All signatures verified.
     return {};
+}
+
+AccountID
+STTx::getEffectiveAccountID() const
+{
+    return isFieldPresent(sfOnBehalfOf) ? getAccountID(sfOnBehalfOf)
+                                        : getAccountID(sfAccount);
 }
 
 //------------------------------------------------------------------------------

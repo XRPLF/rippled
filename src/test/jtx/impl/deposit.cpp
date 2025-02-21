@@ -28,23 +28,33 @@ namespace deposit {
 
 // Add DepositPreauth.
 Json::Value
-auth(jtx::Account const& account, jtx::Account const& auth)
+auth(
+    jtx::Account const& account,
+    jtx::Account const& auth,
+    std::optional<jtx::Account> const& onBehalfOf)
 {
     Json::Value jv;
     jv[sfAccount.jsonName] = account.human();
     jv[sfAuthorize.jsonName] = auth.human();
     jv[sfTransactionType.jsonName] = jss::DepositPreauth;
+    if (onBehalfOf)
+        jv[sfOnBehalfOf.jsonName] = onBehalfOf->human();
     return jv;
 }
 
 // Remove DepositPreauth.
 Json::Value
-unauth(jtx::Account const& account, jtx::Account const& unauth)
+unauth(
+    jtx::Account const& account,
+    jtx::Account const& unauth,
+    std::optional<jtx::Account> const& onBehalfOf)
 {
     Json::Value jv;
     jv[sfAccount.jsonName] = account.human();
     jv[sfUnauthorize.jsonName] = unauth.human();
     jv[sfTransactionType.jsonName] = jss::DepositPreauth;
+    if (onBehalfOf)
+        jv[sfOnBehalfOf.jsonName] = onBehalfOf->human();
     return jv;
 }
 
@@ -86,6 +96,25 @@ unauthCredentials(
     }
     jv[sfTransactionType.jsonName] = jss::DepositPreauth;
     return jv;
+}
+
+Json::Value
+ledgerEntryDepositPreauth(
+    jtx::Env& env,
+    jtx::Account const& acc,
+    std::vector<jtx::deposit::AuthorizeCredentials> const& auth)
+{
+    Json::Value jvParams;
+    jvParams[jss::ledger_index] = jss::validated;
+    jvParams[jss::deposit_preauth][jss::owner] = acc.human();
+    jvParams[jss::deposit_preauth][jss::authorized_credentials] =
+        Json::arrayValue;
+    auto& arr(jvParams[jss::deposit_preauth][jss::authorized_credentials]);
+    for (auto const& o : auth)
+    {
+        arr.append(o.toLEJson());
+    }
+    return env.rpc("json", "ledger_entry", to_string(jvParams));
 }
 
 }  // namespace deposit

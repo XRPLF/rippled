@@ -81,7 +81,7 @@ SetSignerList::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
-    auto const result = determineOperation(ctx.tx, ctx.flags, ctx.j);
+    auto const result = determineOperation(ctx.tx.getSTTx(), ctx.flags, ctx.j);
 
     if (std::get<0>(result) != tesSUCCESS)
         return std::get<0>(result);
@@ -136,7 +136,7 @@ void
 SetSignerList::preCompute()
 {
     // Get the quorum and operation info.
-    auto result = determineOperation(ctx_.tx, view().flags(), j_);
+    auto result = determineOperation(ctx_.tx.getSTTx(), view().flags(), j_);
     assert(std::get<0>(result) == tesSUCCESS);
     assert(std::get<3>(result) != unknown);
 

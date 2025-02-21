@@ -45,6 +45,9 @@ TxFormats::TxFormats()
         {sfTxnSignature, soeOPTIONAL},
         {sfSigners, soeOPTIONAL},  // submit_multisigned
         {sfNetworkID, soeOPTIONAL},
+        {sfOnBehalfOf, soeOPTIONAL},
+        {sfDelegateSequence, soeOPTIONAL},
+        {sfDelegateTicketSequence, soeOPTIONAL},
     };
 
 #pragma push_macro("UNWRAP")

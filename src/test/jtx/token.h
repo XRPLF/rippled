@@ -237,6 +237,9 @@ setMinter(jtx::Account const& account, jtx::Account const& minter);
 Json::Value
 clearMinter(jtx::Account const& account);
 
+std::string
+randURI();
+
 }  // namespace token
 
 }  // namespace jtx

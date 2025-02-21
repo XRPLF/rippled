@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2019 Ripple Labs Inc.
+    Copyright (c) 2024 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,60 +17,30 @@
 */
 //==============================================================================
 
-#include <test/jtx/did.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/jss.h>
+#pragma once
+
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
 
 namespace ripple {
 namespace test {
 namespace jtx {
 
-/** DID operations. */
-namespace did {
+namespace account_permission {
 
 Json::Value
-set(jtx::Account const& account)
-{
-    Json::Value jv;
-    jv[jss::TransactionType] = jss::DIDSet;
-    jv[jss::Account] = to_string(account.id());
-    jv[jss::Flags] = tfUniversal;
-    return jv;
-}
+accountPermissionSet(
+    jtx::Account const& account,
+    jtx::Account const& authorize,
+    std::list<std::string> const& permissions);
 
 Json::Value
-setValid(jtx::Account const& account)
-{
-    Json::Value jv;
-    jv[jss::TransactionType] = jss::DIDSet;
-    jv[jss::Account] = to_string(account.id());
-    jv[jss::Flags] = tfUniversal;
-    jv[sfURI.jsonName] = strHex(std::string{"uri"});
-    return jv;
-}
+ledgerEntry(
+    jtx::Env& env,
+    jtx::Account const& account,
+    jtx::Account const& authorize);
 
-Json::Value
-del(jtx::Account const& account, std::optional<jtx::Account> const& onBehalfOf)
-{
-    Json::Value jv;
-    jv[jss::TransactionType] = jss::DIDDelete;
-    jv[jss::Account] = to_string(account.id());
-    jv[jss::Flags] = tfUniversal;
-    if (onBehalfOf)
-        jv[sfOnBehalfOf.jsonName] = onBehalfOf->human();
-    return jv;
-}
-
-bool
-checkVL(Slice const& result, std::string expected)
-{
-    Serializer s;
-    s.addRaw(result);
-    return s.getString() == expected;
-}
-}  // namespace did
-
+}  // namespace account_permission
 }  // namespace jtx
-
 }  // namespace test
 }  // namespace ripple

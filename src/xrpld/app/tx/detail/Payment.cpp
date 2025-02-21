@@ -42,7 +42,8 @@ Payment::makeTxConsequences(PreflightContext const& ctx)
         return maxAmount.native() ? maxAmount.xrp() : beast::zero;
     };
 
-    return TxConsequences{ctx.tx, calculateMaxXRPSpend(ctx.tx)};
+    return TxConsequences{
+        ctx.tx.getSTTx(), calculateMaxXRPSpend(ctx.tx.getSTTx())};
 }
 
 STAmount
@@ -341,6 +342,30 @@ Payment::doApply()
 
     AccountID const dstAccountID(ctx_.tx.getAccountID(sfDestination));
     STAmount const dstAmount(ctx_.tx.getFieldAmount(sfAmount));
+
+    // if the transaction is transaction-level delegated, ctx_.permissions
+    // was already cleaned up.
+    if (ctx_.tx.isDelegated() && !ctx_.permissions.empty())
+    {
+        // If permissions is not empty, granular delegation is happening.
+        // Currently we only support PaymentMint and PaymentBurn granular
+        // permission. PaymentMint means the sender is the issuer. PaymentBurn
+        // means the destination is the issuer.
+        bool authorized = false;
+        auto const amountIssue = dstAmount.issue();
+        if (isXRP(amountIssue))
+            return tecNO_PERMISSION;
+        if (amountIssue.account == account_ &&
+            ctx_.permissions.contains(PaymentMint))
+            authorized = true;
+        if (amountIssue.account == dstAccountID &&
+            ctx_.permissions.contains(PaymentBurn))
+            authorized = true;
+
+        if (!authorized)
+            return tecNO_PERMISSION;
+    }
+
     bool const mptDirect = dstAmount.holds<MPTIssue>();
     STAmount const maxSourceAmount =
         getMaxSourceAmount(account_, dstAmount, sendMax);

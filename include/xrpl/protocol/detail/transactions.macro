@@ -448,6 +448,12 @@ TRANSACTION(ttCREDENTIAL_DELETE, 60, CredentialDelete, ({
 }))
 
 
+/** This transaction type delegates authorized account specified permissions */
+TRANSACTION(ttACCOUNT_PERMISSION_SET, 64, AccountPermissionSet, ({
+    {sfAuthorize, soeREQUIRED},
+    {sfPermissions, soeREQUIRED},
+}))
+
 /** This system-generated transaction type is used to update the status of the various amendments.
 
     For details, see: https://xrpl.org/amendments.html

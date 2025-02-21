@@ -139,7 +139,7 @@ tokenOfferCreateApply(
     STAmount const& amount,
     std::optional<AccountID> const& dest,
     std::optional<std::uint32_t> const& expiration,
-    SeqProxy seqProxy,
+    std::uint32_t seq,
     uint256 const& nftokenID,
     XRPAmount const& priorBalance,
     beast::Journal j,
