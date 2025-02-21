@@ -360,7 +360,7 @@ RCLConsensus::Adaptor::onClose(
             {
                 feeVote_->doVoting(prevLedger, validations, initialSet);
                 app_.getAmendmentTable().doVoting(
-                    prevLedger, validations, initialSet);
+                    prevLedger, validations, initialSet, j_);
             }
         }
         else if (
@@ -1073,8 +1073,7 @@ void
 RCLConsensus::Adaptor::updateOperatingMode(std::size_t const positions) const
 {
     if (!positions && app_.getOPs().isFull())
-        app_.getOPs().setMode(
-            OperatingMode::CONNECTED, "updateOperatingMode: no positions");
+        app_.getOPs().setMode(OperatingMode::CONNECTED);
 }
 
 void
