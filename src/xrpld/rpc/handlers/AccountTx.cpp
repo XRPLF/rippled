@@ -26,6 +26,7 @@
 #include <xrpld/ledger/ReadView.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/DeliveredAmount.h>
+#include <xrpld/rpc/MPTokenIssuanceID.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
@@ -306,7 +307,9 @@ populateJsonResponse(
 
         if (auto txnsData = std::get_if<TxnsData>(&result.transactions))
         {
-            assert(!args.binary);
+            XRPL_ASSERT(
+                !args.binary,
+                "ripple::populateJsonResponse : binary is not set");
 
             for (auto const& [txn, txnMeta] : *txnsData)
             {
@@ -349,15 +352,20 @@ populateJsonResponse(
                         insertDeliveredAmount(
                             jvObj[jss::meta], context, txn, *txnMeta);
                         insertNFTSyntheticInJson(jvObj, sttx, *txnMeta);
+                        RPC::insertMPTokenIssuanceID(
+                            jvObj[jss::meta], sttx, *txnMeta);
                     }
                     else
-                        assert(false && "Missing transaction medatata");
+                        UNREACHABLE(
+                            "ripple::populateJsonResponse : missing "
+                            "transaction medatata");
                 }
             }
         }
         else
         {
-            assert(args.binary);
+            XRPL_ASSERT(
+                args.binary, "ripple::populateJsonResponse : binary is set");
 
             for (auto const& binaryData :
                  std::get<TxnsDataBinary>(result.transactions))

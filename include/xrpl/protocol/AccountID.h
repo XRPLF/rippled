@@ -22,7 +22,7 @@
 
 #include <xrpl/protocol/tokens.h>
 // VFALCO Uncomment when the header issues are resolved
-//#include <ripple/protocol/PublicKey.h>
+// #include <ripple/protocol/PublicKey.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_value.h>
@@ -114,7 +114,7 @@ operator<<(std::ostream& os, AccountID const& x)
     is expensive (it requires a SHA-256 operation) in most cases the overhead
     of the cache is worth the benefit.
 
-    @param count The number of entries the cache should accomodate. Zero will
+    @param count The number of entries the cache should accommodate. Zero will
                  disable the cache, releasing any memory associated with it.
 
     @note The function will only initialize the cache the first time it is

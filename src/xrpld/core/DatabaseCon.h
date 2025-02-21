@@ -73,7 +73,8 @@ public:
     {
         return session_.get();
     }
-    explicit operator bool() const
+    explicit
+    operator bool() const
     {
         return bool(session_);
     }
@@ -96,7 +97,10 @@ public:
         std::vector<std::string> const*
         commonPragma() const
         {
-            assert(!useGlobalPragma || globalPragma);
+            XRPL_ASSERT(
+                !useGlobalPragma || globalPragma,
+                "ripple::DatabaseCon::Setup::commonPragma : consistent global "
+                "pragma");
             return useGlobalPragma && globalPragma ? globalPragma.get()
                                                    : nullptr;
         }

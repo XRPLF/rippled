@@ -84,6 +84,8 @@ public:
     doApply() override;
 };
 
+using TicketCreate = CreateTicket;
+
 }  // namespace ripple
 
 #endif

@@ -77,6 +77,12 @@ struct Peer
             return proposal_.getJson();
         }
 
+        std::string
+        render() const
+        {
+            return "";
+        }
+
     private:
         Proposal proposal_;
     };
@@ -644,7 +650,8 @@ struct Peer
     }
 
     // Not interested in tracking consensus mode changes for now
-    void onModeChange(ConsensusMode, ConsensusMode)
+    void
+    onModeChange(ConsensusMode, ConsensusMode)
     {
     }
 

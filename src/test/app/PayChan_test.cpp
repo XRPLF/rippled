@@ -833,6 +833,190 @@ struct PayChan_test : public beast::unit_test::suite
     }
 
     void
+    testDepositAuthCreds()
+    {
+        testcase("Deposit Authorization with Credentials");
+        using namespace jtx;
+        using namespace std::literals::chrono_literals;
+
+        const char credType[] = "abcde";
+
+        Account const alice("alice");
+        Account const bob("bob");
+        Account const carol("carol");
+        Account const dillon("dillon");
+        Account const zelda("zelda");
+
+        {
+            Env env{*this};
+            env.fund(XRP(10000), alice, bob, carol, dillon, zelda);
+
+            auto const pk = alice.pk();
+            auto const settleDelay = 100s;
+            auto const chan = channel(alice, bob, env.seq(alice));
+            env(create(alice, bob, XRP(1000), settleDelay, pk));
+            env.close();
+
+            // alice add funds to the channel
+            env(fund(alice, chan, XRP(1000)));
+            env.close();
+
+            std::string const credBadIdx =
+                "D007AE4B6E1274B4AF872588267B810C2F82716726351D1C7D38D3E5499FC6"
+                "E1";
+
+            auto const delta = XRP(500).value();
+
+            {  // create credentials
+                auto jv = credentials::create(alice, carol, credType);
+                uint32_t const t = env.current()
+                                       ->info()
+                                       .parentCloseTime.time_since_epoch()
+                                       .count() +
+                    100;
+                jv[sfExpiration.jsonName] = t;
+                env(jv);
+                env.close();
+            }
+
+            auto const jv =
+                credentials::ledgerEntry(env, alice, carol, credType);
+            std::string const credIdx = jv[jss::result][jss::index].asString();
+
+            // Bob require preauthorization
+            env(fset(bob, asfDepositAuth));
+            env.close();
+
+            // Fail, credentials not accepted
+            env(claim(alice, chan, delta, delta),
+                credentials::ids({credIdx}),
+                ter(tecBAD_CREDENTIALS));
+            env.close();
+
+            env(credentials::accept(alice, carol, credType));
+            env.close();
+
+            // Fail, no depositPreauth object
+            env(claim(alice, chan, delta, delta),
+                credentials::ids({credIdx}),
+                ter(tecNO_PERMISSION));
+            env.close();
+
+            // Setup deposit authorization
+            env(deposit::authCredentials(bob, {{carol, credType}}));
+            env.close();
+
+            // Fail, credentials doesn’t belong to root account
+            env(claim(dillon, chan, delta, delta),
+                credentials::ids({credIdx}),
+                ter(tecBAD_CREDENTIALS));
+
+            // Fails because bob's lsfDepositAuth flag is set.
+            env(claim(alice, chan, delta, delta), ter(tecNO_PERMISSION));
+
+            // Fail, bad credentials index.
+            env(claim(alice, chan, delta, delta),
+                credentials::ids({credBadIdx}),
+                ter(tecBAD_CREDENTIALS));
+
+            // Fail, empty credentials
+            env(claim(alice, chan, delta, delta),
+                credentials::ids({}),
+                ter(temMALFORMED));
+
+            {
+                // claim fails cause of expired credentials
+
+                // Every cycle +10sec.
+                for (int i = 0; i < 10; ++i)
+                    env.close();
+
+                env(claim(alice, chan, delta, delta),
+                    credentials::ids({credIdx}),
+                    ter(tecEXPIRED));
+                env.close();
+            }
+
+            {  // create credentials once more
+                env(credentials::create(alice, carol, credType));
+                env.close();
+                env(credentials::accept(alice, carol, credType));
+                env.close();
+
+                auto const jv =
+                    credentials::ledgerEntry(env, alice, carol, credType);
+                std::string const credIdx =
+                    jv[jss::result][jss::index].asString();
+
+                // Success
+                env(claim(alice, chan, delta, delta),
+                    credentials::ids({credIdx}));
+            }
+        }
+
+        {
+            Env env{*this};
+            env.fund(XRP(10000), alice, bob, carol, dillon, zelda);
+
+            auto const pk = alice.pk();
+            auto const settleDelay = 100s;
+            auto const chan = channel(alice, bob, env.seq(alice));
+            env(create(alice, bob, XRP(1000), settleDelay, pk));
+            env.close();
+
+            // alice add funds to the channel
+            env(fund(alice, chan, XRP(1000)));
+            env.close();
+
+            auto const delta = XRP(500).value();
+
+            {  // create credentials
+                env(credentials::create(alice, carol, credType));
+                env.close();
+                env(credentials::accept(alice, carol, credType));
+                env.close();
+            }
+
+            auto const jv =
+                credentials::ledgerEntry(env, alice, carol, credType);
+            std::string const credIdx = jv[jss::result][jss::index].asString();
+
+            // Succeed, lsfDepositAuth is not set
+            env(claim(alice, chan, delta, delta), credentials::ids({credIdx}));
+            env.close();
+        }
+
+        {
+            // Credentials amendment not enabled
+            Env env(*this, supported_amendments() - featureCredentials);
+            env.fund(XRP(5000), "alice", "bob");
+            env.close();
+
+            auto const pk = alice.pk();
+            auto const settleDelay = 100s;
+            auto const chan = channel(alice, bob, env.seq(alice));
+            env(create(alice, bob, XRP(1000), settleDelay, pk));
+            env.close();
+
+            env(fund(alice, chan, XRP(1000)));
+            env.close();
+            std::string const credIdx =
+                "48004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288B"
+                "E4";
+
+            // can't claim with old DepositPreauth because rule is not enabled.
+            env(fset(bob, asfDepositAuth));
+            env.close();
+            env(deposit::auth(bob, alice));
+            env.close();
+
+            env(claim(alice, chan, XRP(500).value(), XRP(500).value()),
+                credentials::ids({credIdx}),
+                ter(temDISABLED));
+        }
+    }
+
+    void
     testMultiple(FeatureBitset features)
     {
         // auth amount defaults to balance if not present
@@ -2116,6 +2300,7 @@ public:
         FeatureBitset const all{supported_amendments()};
         testWithFeats(all - disallowIncoming);
         testWithFeats(all);
+        testDepositAuthCreds();
     }
 };
 

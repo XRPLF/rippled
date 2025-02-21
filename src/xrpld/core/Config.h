@@ -21,10 +21,10 @@
 #define RIPPLE_CORE_CONFIG_H_INCLUDED
 
 #include <xrpl/basics/BasicConfig.h>
-#include <xrpl/basics/FeeUnits.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/FeeUnits.h>
 #include <xrpl/protocol/SystemParameters.h>  // VFALCO Breaks levelization
 
 #include <boost/beast/core/string.hpp>
@@ -304,6 +304,8 @@ public:
     // only.
     std::optional<std::pair<std::uint32_t, std::uint32_t>>
         FORCED_LEDGER_RANGE_PRESENT;
+
+    std::optional<std::size_t> VALIDATOR_LIST_THRESHOLD;
 
 public:
     Config();

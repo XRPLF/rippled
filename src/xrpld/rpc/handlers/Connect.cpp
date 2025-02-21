@@ -38,7 +38,9 @@ Json::Value
 doConnect(RPC::JsonContext& context)
 {
     if (context.app.config().standalone())
-        return "cannot connect in standalone mode";
+    {
+        return RPC::make_error(rpcNOT_SYNCED);
+    }
 
     if (!context.params.isMember(jss::ip))
         return RPC::missing_field_error(jss::ip);

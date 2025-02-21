@@ -43,6 +43,8 @@ public:
     doApply() override;
 };
 
+using CheckCreate = CreateCheck;
+
 }  // namespace ripple
 
 #endif

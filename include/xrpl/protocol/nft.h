@@ -54,6 +54,7 @@ constexpr std::uint16_t const flagBurnable = 0x0001;
 constexpr std::uint16_t const flagOnlyXRP = 0x0002;
 constexpr std::uint16_t const flagCreateTrustLines = 0x0004;
 constexpr std::uint16_t const flagTransferable = 0x0008;
+constexpr std::uint16_t const flagMutable = 0x0010;
 
 inline std::uint16_t
 getFlags(uint256 const& id)

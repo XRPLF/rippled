@@ -267,7 +267,7 @@ public:
                 the open ledger. If the transaction is queued,
                 will return `{ terQUEUED, false }`.
     */
-    std::pair<TER, bool>
+    ApplyResult
     apply(
         Application& app,
         OpenView& view,
@@ -596,7 +596,7 @@ private:
             PreflightResult const& pfresult);
 
         /// Attempt to apply the queued transaction to the open ledger.
-        std::pair<TER, bool>
+        ApplyResult
         apply(Application& app, OpenView& view, beast::Journal j);
 
         /// Potential @ref TxConsequences of applying this transaction
@@ -730,7 +730,7 @@ private:
 
     // Helper function for TxQ::apply.  If a transaction's fee is high enough,
     // attempt to directly apply that transaction to the ledger.
-    std::optional<std::pair<TER, bool>>
+    std::optional<ApplyResult>
     tryDirectApply(
         Application& app,
         OpenView& view,
@@ -837,7 +837,7 @@ private:
         `accountIter` up to and including `tx`.  Transactions following
         `tx` are not cleared.
     */
-    std::pair<TER, bool>
+    ApplyResult
     tryClearAccountQueueUpThruTx(
         Application& app,
         OpenView& view,

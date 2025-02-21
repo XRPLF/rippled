@@ -1023,13 +1023,11 @@ struct Flow_test : public beast::unit_test::suite
                 9000000000000000ll,
                 -17,
                 false,
-                false,
                 STAmount::unchecked{}};
             STAmount tinyAmt3{
                 USD.issue(),
                 9000000000000003ll,
                 -17,
-                false,
                 false,
                 STAmount::unchecked{}};
 
@@ -1058,13 +1056,11 @@ struct Flow_test : public beast::unit_test::suite
                 9000000000000000ll,
                 -17,
                 false,
-                false,
                 STAmount::unchecked{}};
             STAmount tinyAmt3{
                 USD.issue(),
                 9000000000000003ll,
                 -17,
-                false,
                 false,
                 STAmount::unchecked{}};
 

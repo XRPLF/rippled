@@ -21,6 +21,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/SField.h>
@@ -41,7 +42,6 @@
 #include <xrpl/protocol/XChainAttestations.h>
 #include <xrpl/protocol/detail/STVar.h>
 
-#include <cassert>
 #include <charconv>
 #include <memory>
 
@@ -398,8 +398,15 @@ parseLeaf(
 
                     std::uint64_t val;
 
+                    bool const useBase10 =
+                        field.shouldMeta(SField::sMD_BaseTen);
+
+                    // if the field is amount, serialize as base 10
                     auto [p, ec] = std::from_chars(
-                        str.data(), str.data() + str.size(), val, 16);
+                        str.data(),
+                        str.data() + str.size(),
+                        val,
+                        useBase10 ? 10 : 16);
 
                     if (ec != std::errc() || (p != str.data() + str.size()))
                         Throw<std::invalid_argument>("invalid data");
@@ -451,6 +458,30 @@ parseLeaf(
             }
 
             ret = detail::make_stvar<STUInt128>(field, num);
+            break;
+        }
+
+        case STI_UINT192: {
+            if (!value.isString())
+            {
+                error = bad_type(json_name, fieldName);
+                return ret;
+            }
+
+            uint192 num;
+
+            if (auto const s = value.asString(); !num.parseHex(s))
+            {
+                if (!s.empty())
+                {
+                    error = invalid_data(json_name, fieldName);
+                    return ret;
+                }
+
+                num.zero();
+            }
+
+            ret = detail::make_stvar<STUInt192>(field, num);
             break;
         }
 
@@ -967,8 +998,7 @@ parseArray(
             Json::Value const objectFields(json[i][objectName]);
 
             std::stringstream ss;
-            ss << json_name << "."
-               << "[" << i << "]." << objectName;
+            ss << json_name << "." << "[" << i << "]." << objectName;
 
             auto ret = parseObject(
                 ss.str(), objectFields, nameField, depth + 1, error);

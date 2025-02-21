@@ -27,6 +27,8 @@
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TxFlags.h>
+
 #include <algorithm>
 #include <cstdint>
 
@@ -81,6 +83,13 @@ SetSignerList::preflight(PreflightContext const& ctx)
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
+    if (ctx.rules.enabled(fixInvalidTxFlags) &&
+        (ctx.tx.getFlags() & tfUniversalMask))
+    {
+        JLOG(ctx.j.debug()) << "SetSignerList: invalid flags.";
+        return temINVALID_FLAG;
+    }
+
     auto const result = determineOperation(ctx.tx, ctx.flags, ctx.j);
 
     if (std::get<0>(result) != tesSUCCESS)
@@ -128,7 +137,7 @@ SetSignerList::doApply()
         default:
             break;
     }
-    assert(false);  // Should not be possible to get here.
+    UNREACHABLE("ripple::SetSignerList::doApply : invalid operation");
     return temMALFORMED;
 }
 
@@ -137,8 +146,12 @@ SetSignerList::preCompute()
 {
     // Get the quorum and operation info.
     auto result = determineOperation(ctx_.tx, view().flags(), j_);
-    assert(std::get<0>(result) == tesSUCCESS);
-    assert(std::get<3>(result) != unknown);
+    XRPL_ASSERT(
+        std::get<0>(result) == tesSUCCESS,
+        "ripple::SetSignerList::preCompute : result is tesSUCCESS");
+    XRPL_ASSERT(
+        std::get<3>(result) != unknown,
+        "ripple::SetSignerList::preCompute : result is known operation");
 
     quorum_ = std::get<1>(result);
     signers_ = std::get<2>(result);
@@ -171,8 +184,12 @@ signerCountBasedOwnerCountDelta(std::size_t entryCount, Rules const& rules)
     // The static_cast should always be safe since entryCount should always
     // be in the range from 1 to 8 (or 32 if ExpandedSignerList is enabled).
     // We've got a lot of room to grow.
-    assert(entryCount >= STTx::minMultiSigners);
-    assert(entryCount <= STTx::maxMultiSigners(&rules));
+    XRPL_ASSERT(
+        entryCount >= STTx::minMultiSigners,
+        "ripple::signerCountBasedOwnerCountDelta : minimum signers");
+    XRPL_ASSERT(
+        entryCount <= STTx::maxMultiSigners(&rules),
+        "ripple::signerCountBasedOwnerCountDelta : maximum signers");
     return 2 + static_cast<int>(entryCount);
 }
 
@@ -260,7 +277,10 @@ SetSignerList::validateQuorumAndSignerEntries(
     }
 
     // Make sure there are no duplicate signers.
-    assert(std::is_sorted(signers.begin(), signers.end()));
+    XRPL_ASSERT(
+        std::is_sorted(signers.begin(), signers.end()),
+        "ripple::SetSignerList::validateQuorumAndSignerEntries : sorted "
+        "signers");
     if (std::adjacent_find(signers.begin(), signers.end()) != signers.end())
     {
         JLOG(j.trace()) << "Duplicate signers in signer list";

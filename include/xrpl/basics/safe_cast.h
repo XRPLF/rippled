@@ -30,8 +30,8 @@ namespace ripple {
 
 template <class Dest, class Src>
 static constexpr bool is_safetocasttovalue_v =
-    (std::is_integral_v<Src> && std::is_integral_v<Dest>)&&(
-        std::is_signed<Src>::value || std::is_unsigned<Dest>::value) &&
+    (std::is_integral_v<Src> && std::is_integral_v<Dest>) &&
+    (std::is_signed<Src>::value || std::is_unsigned<Dest>::value) &&
     (std::is_signed<Src>::value != std::is_signed<Dest>::value
          ? sizeof(Dest) > sizeof(Src)
          : sizeof(Dest) >= sizeof(Src));

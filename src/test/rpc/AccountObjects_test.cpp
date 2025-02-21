@@ -575,8 +575,8 @@ public:
         Account const gw{"gateway"};
         auto const USD = gw["USD"];
 
-        auto const features =
-            supported_amendments() | FeatureBitset{featureXChainBridge};
+        auto const features = supported_amendments() | featureXChainBridge |
+            featurePermissionedDomains;
         Env env(*this, features);
 
         // Make a lambda we can use to get "account_objects" easily.
@@ -627,6 +627,7 @@ public:
         BEAST_EXPECT(acctObjsIsSize(acctObjs(gw, jss::ticket), 0));
         BEAST_EXPECT(acctObjsIsSize(acctObjs(gw, jss::amm), 0));
         BEAST_EXPECT(acctObjsIsSize(acctObjs(gw, jss::did), 0));
+        BEAST_EXPECT(acctObjsIsSize(acctObjs(gw, jss::permissioned_domain), 0));
 
         // we expect invalid field type reported for the following types
         BEAST_EXPECT(acctObjsTypeIsInvalid(acctObjs(gw, jss::amendments)));
@@ -714,10 +715,51 @@ public:
             BEAST_EXPECT(escrow[sfDestination.jsonName] == gw.human());
             BEAST_EXPECT(escrow[sfAmount.jsonName].asUInt() == 100'000'000);
         }
+
+        {
+            std::string const credentialType1 = "credential1";
+            Account issuer("issuer");
+            env.fund(XRP(5000), issuer);
+
+            // gw creates an PermissionedDomain.
+            env(pdomain::setTx(gw, {{issuer, credentialType1}}));
+            env.close();
+
+            // Find the PermissionedDomain.
+            Json::Value const resp = acctObjs(gw, jss::permissioned_domain);
+            BEAST_EXPECT(acctObjsIsSize(resp, 1));
+
+            auto const& permissionedDomain =
+                resp[jss::result][jss::account_objects][0u];
+            BEAST_EXPECT(
+                permissionedDomain.isMember(jss::Owner) &&
+                (permissionedDomain[jss::Owner] == gw.human()));
+            bool const check1 = BEAST_EXPECT(
+                permissionedDomain.isMember(jss::AcceptedCredentials) &&
+                permissionedDomain[jss::AcceptedCredentials].isArray() &&
+                (permissionedDomain[jss::AcceptedCredentials].size() == 1) &&
+                (permissionedDomain[jss::AcceptedCredentials][0u].isMember(
+                    jss::Credential)));
+
+            if (check1)
+            {
+                auto const& credential =
+                    permissionedDomain[jss::AcceptedCredentials][0u]
+                                      [jss::Credential];
+                BEAST_EXPECT(
+                    credential.isMember(sfIssuer.jsonName) &&
+                    (credential[sfIssuer.jsonName] == issuer.human()));
+                BEAST_EXPECT(
+                    credential.isMember(sfCredentialType.jsonName) &&
+                    (credential[sfCredentialType.jsonName] ==
+                     strHex(credentialType1)));
+            }
+        }
+
         {
             // Create a bridge
             test::jtx::XChainBridgeObjects x;
-            Env scEnv(*this, envconfig(port_increment, 3), features);
+            Env scEnv(*this, envconfig(), features);
             x.createScBridgeObjects(scEnv);
 
             auto scEnvAcctObjs = [&](Account const& acct, char const* type) {
@@ -758,7 +800,7 @@ public:
             // Alice and Bob create a xchain sequence number that we can look
             // for in the ledger.
             test::jtx::XChainBridgeObjects x;
-            Env scEnv(*this, envconfig(port_increment, 3), features);
+            Env scEnv(*this, envconfig(), features);
             x.createScBridgeObjects(scEnv);
 
             scEnv(
@@ -803,7 +845,7 @@ public:
         }
         {
             test::jtx::XChainBridgeObjects x;
-            Env scEnv(*this, envconfig(port_increment, 3), features);
+            Env scEnv(*this, envconfig(), features);
             x.createScBridgeObjects(scEnv);
             auto const amt = XRP(1000);
 
@@ -925,10 +967,13 @@ public:
             BEAST_EXPECT(entry[sfAccount.jsonName] == alice.human());
             BEAST_EXPECT(entry[sfSignerWeight.jsonName].asUInt() == 7);
         }
-        // Create a Ticket for gw.
-        env(ticket::create(gw, 1));
-        env.close();
+
         {
+            auto const seq = env.seq(gw);
+            // Create a Ticket for gw.
+            env(ticket::create(gw, 1));
+            env.close();
+
             // Find the ticket.
             Json::Value const resp = acctObjs(gw, jss::ticket);
             BEAST_EXPECT(acctObjsIsSize(resp, 1));
@@ -936,8 +981,9 @@ public:
             auto const& ticket = resp[jss::result][jss::account_objects][0u];
             BEAST_EXPECT(ticket[sfAccount.jsonName] == gw.human());
             BEAST_EXPECT(ticket[sfLedgerEntryType.jsonName] == jss::Ticket);
-            BEAST_EXPECT(ticket[sfTicketSequence.jsonName].asUInt() == 14);
+            BEAST_EXPECT(ticket[sfTicketSequence.jsonName].asUInt() == seq + 1);
         }
+
         {
             // See how "deletion_blockers_only" handles gw's directory.
             Json::Value params;
@@ -951,7 +997,8 @@ public:
                     jss::Check.c_str(),
                     jss::NFTokenPage.c_str(),
                     jss::RippleState.c_str(),
-                    jss::PayChannel.c_str()};
+                    jss::PayChannel.c_str(),
+                    jss::PermissionedDomain.c_str()};
                 std::sort(v.begin(), v.end());
                 return v;
             }();
@@ -1221,6 +1268,173 @@ public:
     }
 
     void
+    testAccountObjectMarker()
+    {
+        testcase("AccountObjectMarker");
+
+        using namespace jtx;
+        Env env(*this);
+
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        Account const carol{"carol"};
+        env.fund(XRP(10000), alice, bob, carol);
+
+        unsigned const accountObjectSize = 30;
+        for (unsigned i = 0; i < accountObjectSize; i++)
+            env(check::create(alice, bob, XRP(10)));
+
+        for (unsigned i = 0; i < 10; i++)
+            env(token::mint(carol, 0));
+
+        env.close();
+
+        unsigned const limit = 11;
+        Json::Value marker;
+
+        // test account_objects with a limit and update marker
+        {
+            Json::Value params;
+            params[jss::account] = bob.human();
+            params[jss::limit] = limit;
+            params[jss::ledger_index] = "validated";
+            auto resp = env.rpc("json", "account_objects", to_string(params));
+            auto& accountObjects = resp[jss::result][jss::account_objects];
+            marker = resp[jss::result][jss::marker];
+            BEAST_EXPECT(!resp[jss::result].isMember(jss::error));
+            BEAST_EXPECT(accountObjects.size() == limit);
+        }
+
+        // test account_objects with valid marker and update marker
+        {
+            Json::Value params;
+            params[jss::account] = bob.human();
+            params[jss::limit] = limit;
+            params[jss::marker] = marker;
+            params[jss::ledger_index] = "validated";
+            auto resp = env.rpc("json", "account_objects", to_string(params));
+            auto& accountObjects = resp[jss::result][jss::account_objects];
+            marker = resp[jss::result][jss::marker];
+            BEAST_EXPECT(!resp[jss::result].isMember(jss::error));
+            BEAST_EXPECT(accountObjects.size() == limit);
+        }
+
+        // this lambda function is used to check invalid marker response.
+        auto testInvalidMarker = [&](std::string& marker) {
+            Json::Value params;
+            params[jss::account] = bob.human();
+            params[jss::limit] = limit;
+            params[jss::ledger_index] = jss::validated;
+            params[jss::marker] = marker;
+            Json::Value const resp =
+                env.rpc("json", "account_objects", to_string(params));
+            return resp[jss::result][jss::error_message] ==
+                "Invalid field \'marker\'.";
+        };
+
+        auto const markerStr = marker.asString();
+        auto const& idx = markerStr.find(',');
+        auto const dirIndex = markerStr.substr(0, idx);
+        auto const entryIndex = markerStr.substr(idx + 1);
+
+        // test account_objects with an invalid marker that contains no ','
+        {
+            std::string s = dirIndex + entryIndex;
+            BEAST_EXPECT(testInvalidMarker(s));
+        }
+
+        // test invalid marker by adding invalid string after the maker:
+        // "dirIndex,entryIndex,1234"
+        {
+            std::string s = markerStr + ",1234";
+            BEAST_EXPECT(testInvalidMarker(s));
+        }
+
+        // test account_objects with an invalid marker containing invalid
+        // dirIndex by replacing some characters from the dirIndex.
+        {
+            std::string s = markerStr;
+            s.replace(0, 7, "FFFFFFF");
+            BEAST_EXPECT(testInvalidMarker(s));
+        }
+
+        // test account_objects with an invalid marker containing invalid
+        // entryIndex by replacing some characters from the entryIndex.
+        {
+            std::string s = entryIndex;
+            s.replace(0, 7, "FFFFFFF");
+            s = dirIndex + ',' + s;
+            BEAST_EXPECT(testInvalidMarker(s));
+        }
+
+        // test account_objects with an invalid marker containing invalid
+        // dirIndex with marker: ",entryIndex"
+        {
+            std::string s = ',' + entryIndex;
+            BEAST_EXPECT(testInvalidMarker(s));
+        }
+
+        // test account_objects with marker: "0,entryIndex", this is still
+        // valid, because when dirIndex = 0, we will use root key to find
+        // dir.
+        {
+            std::string s = "0," + entryIndex;
+            Json::Value params;
+            params[jss::account] = bob.human();
+            params[jss::limit] = limit;
+            params[jss::marker] = s;
+            params[jss::ledger_index] = "validated";
+            auto resp = env.rpc("json", "account_objects", to_string(params));
+            auto& accountObjects = resp[jss::result][jss::account_objects];
+            BEAST_EXPECT(!resp[jss::result].isMember(jss::error));
+            BEAST_EXPECT(accountObjects.size() == limit);
+        }
+
+        // test account_objects with an invalid marker containing invalid
+        // entryIndex with marker: "dirIndex,"
+        {
+            std::string s = dirIndex + ',';
+            BEAST_EXPECT(testInvalidMarker(s));
+        }
+
+        // test account_objects with an invalid marker containing invalid
+        // entryIndex with marker: "dirIndex,0"
+        {
+            std::string s = dirIndex + ",0";
+            BEAST_EXPECT(testInvalidMarker(s));
+        }
+
+        // continue getting account_objects with valid marker. This will be the
+        // last page, so response will not contain any marker.
+        {
+            Json::Value params;
+            params[jss::account] = bob.human();
+            params[jss::limit] = limit;
+            params[jss::marker] = marker;
+            params[jss::ledger_index] = "validated";
+            auto resp = env.rpc("json", "account_objects", to_string(params));
+            auto& accountObjects = resp[jss::result][jss::account_objects];
+            BEAST_EXPECT(!resp[jss::result].isMember(jss::error));
+            BEAST_EXPECT(
+                accountObjects.size() == accountObjectSize - limit * 2);
+            BEAST_EXPECT(!resp[jss::result].isMember(jss::marker));
+        }
+
+        // test account_objects when the account only have nft pages, but
+        // provided invalid entry index.
+        {
+            Json::Value params;
+            params[jss::account] = carol.human();
+            params[jss::limit] = 10;
+            params[jss::marker] = "0," + entryIndex;
+            params[jss::ledger_index] = "validated";
+            auto resp = env.rpc("json", "account_objects", to_string(params));
+            auto& accountObjects = resp[jss::result][jss::account_objects];
+            BEAST_EXPECT(accountObjects.size() == 0);
+        }
+    }
+
+    void
     run() override
     {
         testErrors();
@@ -1229,6 +1443,7 @@ public:
         testObjectTypes();
         testNFTsMarker();
         testAccountNFTs();
+        testAccountObjectMarker();
     }
 };
 

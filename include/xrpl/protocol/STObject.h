@@ -21,10 +21,11 @@
 #define RIPPLE_PROTOCOL_STOBJECT_H_INCLUDED
 
 #include <xrpl/basics/CountedObject.h>
-#include <xrpl/basics/FeeUnits.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/FeeUnits.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/SOTemplate.h>
 #include <xrpl/protocol/STAmount.h>
@@ -35,7 +36,6 @@
 #include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/detail/STVar.h>
 #include <boost/iterator/transform_iterator.hpp>
-#include <cassert>
 #include <optional>
 #include <stdexcept>
 #include <type_traits>
@@ -226,6 +226,8 @@ public:
 
     uint160
     getFieldH160(SField const& field) const;
+    uint192
+    getFieldH192(SField const& field) const;
     uint256
     getFieldH256(SField const& field) const;
     AccountID
@@ -243,6 +245,8 @@ public:
     getFieldArray(SField const& field) const;
     const STCurrency&
     getFieldCurrency(SField const& field) const;
+    STNumber const&
+    getFieldNumber(SField const& field) const;
 
     /** Get the value of a field.
         @param A TypedField built from an SField value representing the desired
@@ -374,6 +378,8 @@ public:
     void
     setFieldCurrency(SField const& field, STCurrency const&);
     void
+    setFieldNumber(SField const& field, STNumber const&);
+    void
     setFieldPathSet(SField const& field, STPathSet const&);
     void
     setFieldV256(SField const& field, STVector256 const& v);
@@ -498,6 +504,11 @@ protected:
     assign(U&& u);
 };
 
+// Constraint += and -= ValueProxy operators
+// to value types that support arithmetic operations
+template <typename U>
+concept IsArithmetic = std::is_arithmetic_v<U> || std::is_same_v<U, STAmount>;
+
 template <class T>
 class STObject::ValueProxy : private Proxy<T>
 {
@@ -512,6 +523,16 @@ public:
     template <class U>
     std::enable_if_t<std::is_assignable_v<T, U>, ValueProxy&>
     operator=(U&& u);
+
+    // Convenience operators for value types supporting
+    // arithmetic operations
+    template <IsArithmetic U>
+    ValueProxy&
+    operator+=(U const& u);
+
+    template <IsArithmetic U>
+    ValueProxy&
+    operator-=(U const& u);
 
     operator value_type() const;
 
@@ -539,7 +560,8 @@ public:
         Fields with soeDEFAULT and set to the
         default value will return `true`
     */
-    explicit operator bool() const noexcept;
+    explicit
+    operator bool() const noexcept;
 
     /** Return the contained value
 
@@ -715,7 +737,7 @@ STObject::Proxy<T>::assign(U&& u)
         t = dynamic_cast<T*>(st_->getPField(*f_, true));
     else
         t = dynamic_cast<T*>(st_->makeFieldPresent(*f_));
-    assert(t);
+    XRPL_ASSERT(t, "ripple::STObject::Proxy::assign : type cast succeeded");
     *t = std::forward<U>(u);
 }
 
@@ -727,6 +749,24 @@ std::enable_if_t<std::is_assignable_v<T, U>, STObject::ValueProxy<T>&>
 STObject::ValueProxy<T>::operator=(U&& u)
 {
     this->assign(std::forward<U>(u));
+    return *this;
+}
+
+template <typename T>
+template <IsArithmetic U>
+STObject::ValueProxy<T>&
+STObject::ValueProxy<T>::operator+=(U const& u)
+{
+    this->assign(this->value() + u);
+    return *this;
+}
+
+template <class T>
+template <IsArithmetic U>
+STObject::ValueProxy<T>&
+STObject::ValueProxy<T>::operator-=(U const& u)
+{
+    this->assign(this->value() - u);
     return *this;
 }
 
@@ -993,13 +1033,19 @@ STObject::at(TypedField<T> const& f) const
     if (auto const u = dynamic_cast<T const*>(b))
         return u->value();
 
-    assert(mType);
-    assert(b->getSType() == STI_NOTPRESENT);
+    XRPL_ASSERT(
+        mType,
+        "ripple::STObject::at(TypedField auto) : field template non-null");
+    XRPL_ASSERT(
+        b->getSType() == STI_NOTPRESENT,
+        "ripple::STObject::at(TypedField auto) : type not present");
 
     if (mType->style(f) == soeOPTIONAL)
         Throw<STObject::FieldErr>("Missing optional field: " + f.getName());
 
-    assert(mType->style(f) == soeDEFAULT);
+    XRPL_ASSERT(
+        mType->style(f) == soeDEFAULT,
+        "ripple::STObject::at(TypedField auto) : template style is default");
 
     // Used to help handle the case where value_type is a const reference,
     // otherwise we would return the address of a temporary.
@@ -1017,11 +1063,19 @@ STObject::at(OptionaledField<T> const& of) const
     auto const u = dynamic_cast<T const*>(b);
     if (!u)
     {
-        assert(mType);
-        assert(b->getSType() == STI_NOTPRESENT);
+        XRPL_ASSERT(
+            mType,
+            "ripple::STObject::at(OptionaledField auto) : field template "
+            "non-null");
+        XRPL_ASSERT(
+            b->getSType() == STI_NOTPRESENT,
+            "ripple::STObject::at(OptionaledField auto) : type not present");
         if (mType->style(*of.f) == soeOPTIONAL)
             return std::nullopt;
-        assert(mType->style(*of.f) == soeDEFAULT);
+        XRPL_ASSERT(
+            mType->style(*of.f) == soeDEFAULT,
+            "ripple::STObject::at(OptionaledField auto) : template style is "
+            "default");
         return typename T::value_type{};
     }
     return u->value();

@@ -23,9 +23,9 @@
 #include <xrpld/app/paths/detail/AmountSpec.h>
 #include <xrpld/app/paths/detail/Steps.h>
 #include <xrpld/app/paths/detail/StrandFlow.h>
-#include <xrpl/basics/IOUAmount.h>
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/XRPAmount.h>
+#include <xrpl/protocol/IOUAmount.h>
+#include <xrpl/protocol/XRPAmount.h>
 
 #include <boost/container/flat_set.hpp>
 
@@ -193,7 +193,7 @@ flow(
                 flowDebugInfo));
     }
 
-    assert(!srcIsXRP && !dstIsXRP);
+    XRPL_ASSERT(!srcIsXRP && !dstIsXRP, "ripple::flow : neither is XRP");
     return finishFlow(
         sb,
         srcIssue,

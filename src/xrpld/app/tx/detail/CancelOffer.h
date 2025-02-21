@@ -46,6 +46,8 @@ public:
     doApply() override;
 };
 
+using OfferCancel = CancelOffer;
+
 }  // namespace ripple
 
 #endif

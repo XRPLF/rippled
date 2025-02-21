@@ -39,11 +39,11 @@ namespace jtx {
 // when we have moved to better compilers.
 template <typename Input>
 auto
-make_vector(Input const& input) requires requires(Input& v)
-{
-    std::begin(v);
-    std::end(v);
-}
+make_vector(Input const& input)
+    requires requires(Input& v) {
+        std::begin(v);
+        std::end(v);
+    }
 {
     return std::vector(std::begin(input), std::end(input));
 }
@@ -95,6 +95,10 @@ getAccountLines(Env& env, AccountID const& acctId, IOU... ious)
 
 [[nodiscard]] bool
 checkArraySize(Json::Value const& val, unsigned int size);
+
+// Helper function that returns the owner count on an account.
+std::uint32_t
+ownerCount(test::jtx::Env const& env, test::jtx::Account const& account);
 
 /* Path finding */
 /******************************************************************************/

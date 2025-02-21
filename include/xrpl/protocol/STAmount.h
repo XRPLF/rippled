@@ -21,14 +21,17 @@
 #define RIPPLE_PROTOCOL_STAMOUNT_H_INCLUDED
 
 #include <xrpl/basics/CountedObject.h>
-#include <xrpl/basics/IOUAmount.h>
 #include <xrpl/basics/LocalValue.h>
 #include <xrpl/basics/Number.h>
-#include <xrpl/basics/XRPAmount.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/json_get_or_throw.h>
 
 namespace ripple {
@@ -51,10 +54,9 @@ public:
     using rep = std::pair<mantissa_type, exponent_type>;
 
 private:
-    Issue mIssue;
+    Asset mAsset;
     mantissa_type mValue;
     exponent_type mOffset;
-    bool mIsNative;  // A shorthand for isXRP(mIssue).
     bool mIsNegative;
 
 public:
@@ -70,8 +72,10 @@ public:
 
     // Max native value on network.
     static const std::uint64_t cMaxNativeN = 100000000000000000ull;
-    static const std::uint64_t cNotNative = 0x8000000000000000ull;
-    static const std::uint64_t cPosNative = 0x4000000000000000ull;
+    static const std::uint64_t cIssuedCurrency = 0x8000000000000000ull;
+    static const std::uint64_t cPositive = 0x4000000000000000ull;
+    static const std::uint64_t cMPToken = 0x2000000000000000ull;
+    static const std::uint64_t cValueMask = ~(cPositive | cMPToken);
 
     static std::uint64_t const uRateOne;
 
@@ -84,31 +88,31 @@ public:
     };
 
     // Do not call canonicalize
+    template <AssetType A>
     STAmount(
         SField const& name,
-        Issue const& issue,
+        A const& asset,
         mantissa_type mantissa,
         exponent_type exponent,
-        bool native,
         bool negative,
         unchecked);
 
+    template <AssetType A>
     STAmount(
-        Issue const& issue,
+        A const& asset,
         mantissa_type mantissa,
         exponent_type exponent,
-        bool native,
         bool negative,
         unchecked);
 
     // Call canonicalize
+    template <AssetType A>
     STAmount(
         SField const& name,
-        Issue const& issue,
-        mantissa_type mantissa,
-        exponent_type exponent,
-        bool native,
-        bool negative);
+        A const& asset,
+        mantissa_type mantissa = 0,
+        exponent_type exponent = 0,
+        bool negative = false);
 
     STAmount(SField const& name, std::int64_t mantissa);
 
@@ -117,37 +121,42 @@ public:
         std::uint64_t mantissa = 0,
         bool negative = false);
 
-    STAmount(
-        SField const& name,
-        Issue const& issue,
-        std::uint64_t mantissa = 0,
-        int exponent = 0,
-        bool negative = false);
-
     explicit STAmount(std::uint64_t mantissa = 0, bool negative = false);
 
     explicit STAmount(SField const& name, STAmount const& amt);
 
+    template <AssetType A>
     STAmount(
-        Issue const& issue,
+        A const& asset,
         std::uint64_t mantissa = 0,
         int exponent = 0,
-        bool negative = false);
+        bool negative = false)
+        : mAsset(asset)
+        , mValue(mantissa)
+        , mOffset(exponent)
+        , mIsNegative(negative)
+    {
+        canonicalize();
+    }
 
     // VFALCO Is this needed when we have the previous signature?
+    template <AssetType A>
     STAmount(
-        Issue const& issue,
+        A const& asset,
         std::uint32_t mantissa,
         int exponent = 0,
         bool negative = false);
 
-    STAmount(Issue const& issue, std::int64_t mantissa, int exponent = 0);
+    template <AssetType A>
+    STAmount(A const& asset, std::int64_t mantissa, int exponent = 0);
 
-    STAmount(Issue const& issue, int mantissa, int exponent = 0);
+    template <AssetType A>
+    STAmount(A const& asset, int mantissa, int exponent = 0);
 
     // Legacy support for new-style amounts
     STAmount(IOUAmount const& amount, Issue const& issue);
     STAmount(XRPAmount const& amount);
+    STAmount(MPTAmount const& amount, MPTIssue const& mptIssue);
     operator Number() const;
 
     //--------------------------------------------------------------------------
@@ -162,11 +171,22 @@ public:
     bool
     native() const noexcept;
 
+    template <ValidIssueType TIss>
+    constexpr bool
+    holds() const noexcept;
+
     bool
     negative() const noexcept;
 
     std::uint64_t
     mantissa() const noexcept;
+
+    Asset const&
+    asset() const;
+
+    template <ValidIssueType TIss>
+    constexpr TIss const&
+    get() const;
 
     Issue const&
     issue() const;
@@ -197,7 +217,8 @@ public:
     //
     //--------------------------------------------------------------------------
 
-    explicit operator bool() const noexcept;
+    explicit
+    operator bool() const noexcept;
 
     STAmount&
     operator+=(STAmount const&);
@@ -223,17 +244,14 @@ public:
 
     // Zero while copying currency and issuer.
     void
-    clear(STAmount const& saTmpl);
-
-    void
-    clear(Issue const& issue);
+    clear(Asset const& asset);
 
     void
     setIssuer(AccountID const& uIssuer);
 
-    /** Set the Issue for this amount and update mIsNative. */
+    /** Set the Issue for this amount. */
     void
-    setIssue(Issue const& issue);
+    setIssue(Asset const& asset);
 
     //--------------------------------------------------------------------------
     //
@@ -265,6 +283,8 @@ public:
     xrp() const;
     IOUAmount
     iou() const;
+    MPTAmount
+    mpt() const;
 
 private:
     static std::unique_ptr<STAmount>
@@ -289,6 +309,103 @@ private:
     operator+(STAmount const& v1, STAmount const& v2);
 };
 
+template <AssetType A>
+STAmount::STAmount(
+    SField const& name,
+    A const& asset,
+    mantissa_type mantissa,
+    exponent_type exponent,
+    bool negative,
+    unchecked)
+    : STBase(name)
+    , mAsset(asset)
+    , mValue(mantissa)
+    , mOffset(exponent)
+    , mIsNegative(negative)
+{
+}
+
+template <AssetType A>
+STAmount::STAmount(
+    A const& asset,
+    mantissa_type mantissa,
+    exponent_type exponent,
+    bool negative,
+    unchecked)
+    : mAsset(asset), mValue(mantissa), mOffset(exponent), mIsNegative(negative)
+{
+}
+
+template <AssetType A>
+STAmount::STAmount(
+    SField const& name,
+    A const& asset,
+    std::uint64_t mantissa,
+    int exponent,
+    bool negative)
+    : STBase(name)
+    , mAsset(asset)
+    , mValue(mantissa)
+    , mOffset(exponent)
+    , mIsNegative(negative)
+{
+    // mValue is uint64, but needs to fit in the range of int64
+    XRPL_ASSERT(
+        mValue <= std::numeric_limits<std::int64_t>::max(),
+        "ripple::STAmount::STAmount(SField, A, std::uint64_t, int, bool) : "
+        "maximum mantissa input");
+    canonicalize();
+}
+
+template <AssetType A>
+STAmount::STAmount(A const& asset, std::int64_t mantissa, int exponent)
+    : mAsset(asset), mOffset(exponent)
+{
+    set(mantissa);
+    canonicalize();
+}
+
+template <AssetType A>
+STAmount::STAmount(
+    A const& asset,
+    std::uint32_t mantissa,
+    int exponent,
+    bool negative)
+    : STAmount(asset, safe_cast<std::uint64_t>(mantissa), exponent, negative)
+{
+}
+
+template <AssetType A>
+STAmount::STAmount(A const& asset, int mantissa, int exponent)
+    : STAmount(asset, safe_cast<std::int64_t>(mantissa), exponent)
+{
+}
+
+// Legacy support for new-style amounts
+inline STAmount::STAmount(IOUAmount const& amount, Issue const& issue)
+    : mAsset(issue)
+    , mOffset(amount.exponent())
+    , mIsNegative(amount < beast::zero)
+{
+    if (mIsNegative)
+        mValue = unsafe_cast<std::uint64_t>(-amount.mantissa());
+    else
+        mValue = unsafe_cast<std::uint64_t>(amount.mantissa());
+
+    canonicalize();
+}
+
+inline STAmount::STAmount(MPTAmount const& amount, MPTIssue const& mptIssue)
+    : mAsset(mptIssue), mOffset(0), mIsNegative(amount < beast::zero)
+{
+    if (mIsNegative)
+        mValue = unsafe_cast<std::uint64_t>(-amount.value());
+    else
+        mValue = unsafe_cast<std::uint64_t>(amount.value());
+
+    canonicalize();
+}
+
 //------------------------------------------------------------------------------
 //
 // Creation
@@ -300,7 +417,7 @@ STAmount
 amountFromQuality(std::uint64_t rate);
 
 STAmount
-amountFromString(Issue const& issue, std::string const& amount);
+amountFromString(Asset const& issue, std::string const& amount);
 
 STAmount
 amountFromJson(SField const& name, Json::Value const& v);
@@ -331,7 +448,14 @@ STAmount::exponent() const noexcept
 inline bool
 STAmount::native() const noexcept
 {
-    return mIsNative;
+    return mAsset.native();
+}
+
+template <ValidIssueType TIss>
+constexpr bool
+STAmount::holds() const noexcept
+{
+    return mAsset.holds<TIss>();
 }
 
 inline bool
@@ -346,22 +470,35 @@ STAmount::mantissa() const noexcept
     return mValue;
 }
 
+inline Asset const&
+STAmount::asset() const
+{
+    return mAsset;
+}
+
+template <ValidIssueType TIss>
+constexpr TIss const&
+STAmount::get() const
+{
+    return mAsset.get<TIss>();
+}
+
 inline Issue const&
 STAmount::issue() const
 {
-    return mIssue;
+    return get<Issue>();
 }
 
 inline Currency const&
 STAmount::getCurrency() const
 {
-    return mIssue.currency;
+    return mAsset.get<Issue>().currency;
 }
 
 inline AccountID const&
 STAmount::getIssuer() const
 {
-    return mIssue.account;
+    return mAsset.getIssuer();
 }
 
 inline int
@@ -373,7 +510,7 @@ STAmount::signum() const noexcept
 inline STAmount
 STAmount::zeroed() const
 {
-    return STAmount(mIssue);
+    return STAmount(mAsset);
 }
 
 inline STAmount::operator bool() const noexcept
@@ -383,12 +520,15 @@ inline STAmount::operator bool() const noexcept
 
 inline STAmount::operator Number() const
 {
-    if (mIsNative)
+    if (native())
         return xrp();
+    if (mAsset.holds<MPTIssue>())
+        return mpt();
     return iou();
 }
 
-inline STAmount& STAmount::operator=(beast::Zero)
+inline STAmount&
+STAmount::operator=(beast::Zero)
 {
     clear();
     return *this;
@@ -413,30 +553,22 @@ STAmount::clear()
 {
     // The -100 is used to allow 0 to sort less than a small positive values
     // which have a negative exponent.
-    mOffset = mIsNative ? 0 : -100;
+    mOffset = native() ? 0 : -100;
     mValue = 0;
     mIsNegative = false;
 }
 
-// Zero while copying currency and issuer.
 inline void
-STAmount::clear(STAmount const& saTmpl)
+STAmount::clear(Asset const& asset)
 {
-    clear(saTmpl.mIssue);
-}
-
-inline void
-STAmount::clear(Issue const& issue)
-{
-    setIssue(issue);
+    setIssue(asset);
     clear();
 }
 
 inline void
 STAmount::setIssuer(AccountID const& uIssuer)
 {
-    mIssue.account = uIssuer;
-    setIssue(mIssue);
+    mAsset.get<Issue>().account = uIssuer;
 }
 
 inline STAmount const&
@@ -501,17 +633,17 @@ STAmount
 operator-(STAmount const& v1, STAmount const& v2);
 
 STAmount
-divide(STAmount const& v1, STAmount const& v2, Issue const& issue);
+divide(STAmount const& v1, STAmount const& v2, Asset const& asset);
 
 STAmount
-multiply(STAmount const& v1, STAmount const& v2, Issue const& issue);
+multiply(STAmount const& v1, STAmount const& v2, Asset const& asset);
 
 // multiply rounding result in specified direction
 STAmount
 mulRound(
     STAmount const& v1,
     STAmount const& v2,
-    Issue const& issue,
+    Asset const& asset,
     bool roundUp);
 
 // multiply following the rounding directions more precisely.
@@ -519,7 +651,7 @@ STAmount
 mulRoundStrict(
     STAmount const& v1,
     STAmount const& v2,
-    Issue const& issue,
+    Asset const& asset,
     bool roundUp);
 
 // divide rounding result in specified direction
@@ -527,7 +659,7 @@ STAmount
 divRound(
     STAmount const& v1,
     STAmount const& v2,
-    Issue const& issue,
+    Asset const& asset,
     bool roundUp);
 
 // divide following the rounding directions more precisely.
@@ -535,7 +667,7 @@ STAmount
 divRoundStrict(
     STAmount const& v1,
     STAmount const& v2,
-    Issue const& issue,
+    Asset const& asset,
     bool roundUp);
 
 // Someone is offering X for Y, what is the rate?
@@ -549,7 +681,7 @@ getRate(STAmount const& offerOut, STAmount const& offerIn);
 inline bool
 isXRP(STAmount const& amount)
 {
-    return isXRP(amount.issue().currency);
+    return amount.native();
 }
 
 // Since `canonicalize` does not have access to a ledger, this is needed to put

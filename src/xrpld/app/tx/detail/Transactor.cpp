@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/app/main/Application.h>
+#include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/app/misc/LoadFeeTrack.h>
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
@@ -132,6 +133,34 @@ preflight1(PreflightContext const& ctx)
 NotTEC
 preflight2(PreflightContext const& ctx)
 {
+    if (ctx.flags & tapDRY_RUN)  // simulation
+    {
+        if (!ctx.tx.getSignature().empty())
+        {
+            // NOTE: This code should never be hit because it's checked in the
+            // `simulate` RPC
+            return temINVALID;  // LCOV_EXCL_LINE
+        }
+
+        if (!ctx.tx.isFieldPresent(sfSigners))
+        {
+            // no signers, no signature - a valid simulation
+            return tesSUCCESS;
+        }
+
+        for (auto const& signer : ctx.tx.getFieldArray(sfSigners))
+        {
+            if (signer.isFieldPresent(sfTxnSignature) &&
+                !signer[sfTxnSignature].empty())
+            {
+                // NOTE: This code should never be hit because it's
+                // checked in the `simulate` RPC
+                return temINVALID;  // LCOV_EXCL_LINE
+            }
+        }
+        return tesSUCCESS;
+    }
+
     auto const sigValid = checkValidity(
         ctx.app.getHashRouter(), ctx.tx, ctx.rules, ctx.app.config());
     if (sigValid.first == Validity::SigBad)
@@ -226,9 +255,9 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
 
     if (balance < feePaid)
     {
-        JLOG(ctx.j.trace()) << "Insufficient balance:"
-                            << " balance=" << to_string(balance)
-                            << " paid=" << to_string(feePaid);
+        JLOG(ctx.j.trace())
+            << "Insufficient balance:" << " balance=" << to_string(balance)
+            << " paid=" << to_string(feePaid);
 
         if ((balance > beast::zero) && !ctx.view.open())
         {
@@ -367,7 +396,8 @@ Transactor::checkPriorTxAndLastLedger(PreclaimContext const& ctx)
 TER
 Transactor::consumeSeqProxy(SLE::pointer const& sleAccount)
 {
-    assert(sleAccount);
+    XRPL_ASSERT(
+        sleAccount, "ripple::Transactor::consumeSeqProxy : non-null account");
     SeqProxy const seqProx = ctx_.tx.getSeqProxy();
     if (seqProx.isSeq())
     {
@@ -439,7 +469,9 @@ Transactor::ticketDelete(
 void
 Transactor::preCompute()
 {
-    assert(account_ != beast::zero);
+    XRPL_ASSERT(
+        account_ != beast::zero,
+        "ripple::Transactor::preCompute : nonzero account");
 }
 
 TER
@@ -453,7 +485,9 @@ Transactor::apply()
 
     // sle must exist except for transactions
     // that allow zero account.
-    assert(sle != nullptr || account_ == beast::zero);
+    XRPL_ASSERT(
+        sle != nullptr || account_ == beast::zero,
+        "ripple::Transactor::apply : non-null SLE or zero account");
 
     if (sle)
     {
@@ -480,6 +514,14 @@ Transactor::apply()
 NotTEC
 Transactor::checkSign(PreclaimContext const& ctx)
 {
+    if (ctx.flags & tapDRY_RUN)
+    {
+        // This code must be different for `simulate`
+        // Since the public key may be empty even for single signing
+        if (ctx.tx.isFieldPresent(sfSigners))
+            return checkMultiSign(ctx);
+        return checkSingleSign(ctx);
+    }
     // If the pk is empty, then we must be multi-signing.
     if (ctx.tx.getSigningPubKey().empty())
         return checkMultiSign(ctx);
@@ -492,7 +534,7 @@ Transactor::checkSingleSign(PreclaimContext const& ctx)
 {
     // Check that the value in the signing key slot is a public key.
     auto const pkSigner = ctx.tx.getSigningPubKey();
-    if (!publicKeyType(makeSlice(pkSigner)))
+    if (!(ctx.flags & tapDRY_RUN) && !publicKeyType(makeSlice(pkSigner)))
     {
         JLOG(ctx.j.trace())
             << "checkSingleSign: signing public key type is unknown";
@@ -500,12 +542,18 @@ Transactor::checkSingleSign(PreclaimContext const& ctx)
     }
 
     // Look up the account.
-    auto const idSigner = calcAccountID(PublicKey(makeSlice(pkSigner)));
     auto const idAccount = ctx.tx.getAccountID(sfAccount);
     auto const sleAccount = ctx.view.read(keylet::account(idAccount));
     if (!sleAccount)
         return terNO_ACCOUNT;
 
+    // This ternary is only needed to handle `simulate`
+    XRPL_ASSERT(
+        (ctx.flags & tapDRY_RUN) || !pkSigner.empty(),
+        "ripple::Transactor::checkSingleSign : non-empty signer or simulation");
+    auto const idSigner = pkSigner.empty()
+        ? idAccount
+        : calcAccountID(PublicKey(makeSlice(pkSigner)));
     bool const isMasterDisabled = sleAccount->isFlag(lsfDisableMaster);
 
     if (ctx.view.rules().enabled(fixMasterKeyAsRegularKey))
@@ -578,8 +626,12 @@ Transactor::checkMultiSign(PreclaimContext const& ctx)
 
     // We have plans to support multiple SignerLists in the future.  The
     // presence and defaulted value of the SignerListID field will enable that.
-    assert(sleAccountSigners->isFieldPresent(sfSignerListID));
-    assert(sleAccountSigners->getFieldU32(sfSignerListID) == 0);
+    XRPL_ASSERT(
+        sleAccountSigners->isFieldPresent(sfSignerListID),
+        "ripple::Transactor::checkMultiSign : has signer list ID");
+    XRPL_ASSERT(
+        sleAccountSigners->getFieldU32(sfSignerListID) == 0,
+        "ripple::Transactor::checkMultiSign : signer list ID is 0");
 
     auto accountSigners =
         SignerEntries::deserialize(*sleAccountSigners, ctx.j, "ledger");
@@ -624,15 +676,21 @@ Transactor::checkMultiSign(PreclaimContext const& ctx)
         // public key.
         auto const spk = txSigner.getFieldVL(sfSigningPubKey);
 
-        if (!publicKeyType(makeSlice(spk)))
+        if (!(ctx.flags & tapDRY_RUN) && !publicKeyType(makeSlice(spk)))
         {
             JLOG(ctx.j.trace())
                 << "checkMultiSign: signing public key type is unknown";
             return tefBAD_SIGNATURE;
         }
 
-        AccountID const signingAcctIDFromPubKey =
-            calcAccountID(PublicKey(makeSlice(spk)));
+        // This ternary is only needed to handle `simulate`
+        XRPL_ASSERT(
+            (ctx.flags & tapDRY_RUN) || !spk.empty(),
+            "ripple::Transactor::checkMultiSign : non-empty signer or "
+            "simulation");
+        AccountID const signingAcctIDFromPubKey = spk.empty()
+            ? txSignerAcctID
+            : calcAccountID(PublicKey(makeSlice(spk)));
 
         // Verify that the signingAcctID and the signingAcctIDFromPubKey
         // belong together.  Here are the rules:
@@ -761,6 +819,19 @@ removeExpiredNFTokenOffers(
 }
 
 static void
+removeExpiredCredentials(
+    ApplyView& view,
+    std::vector<uint256> const& creds,
+    beast::Journal viewJ)
+{
+    for (auto const& index : creds)
+    {
+        if (auto const sle = view.peek(keylet::credential(index)))
+            credentials::deleteSLE(view, sle, viewJ);
+    }
+}
+
+static void
 removeDeletedTrustLines(
     ApplyView& view,
     std::vector<uint256> const& trustLines,
@@ -802,7 +873,9 @@ Transactor::reset(XRPAmount fee)
     auto const balance = txnAcct->getFieldAmount(sfBalance).xrp();
 
     // balance should have already been checked in checkFee / preFlight.
-    assert(balance != beast::zero && (!view().open() || balance >= fee));
+    XRPL_ASSERT(
+        balance != beast::zero && (!view().open() || balance >= fee),
+        "ripple::Transactor::reset : valid balance");
 
     // We retry/reject the transaction if the account balance is zero or we're
     // applying against an open ledger and the balance is less than the fee
@@ -817,7 +890,8 @@ Transactor::reset(XRPAmount fee)
     // reject the transaction.
     txnAcct->setFieldAmount(sfBalance, balance - fee);
     TER const ter{consumeSeqProxy(txnAcct)};
-    assert(isTesSuccess(ter));
+    XRPL_ASSERT(
+        isTesSuccess(ter), "ripple::Transactor::reset : result is tesSUCCESS");
 
     if (isTesSuccess(ter))
         view().update(txnAcct);
@@ -834,7 +908,7 @@ Transactor::trapTransaction(uint256 txHash) const
 }
 
 //------------------------------------------------------------------------------
-std::pair<TER, bool>
+ApplyResult
 Transactor::operator()()
 {
     JLOG(j_.trace()) << "apply: " << ctx_.tx.getTransactionID();
@@ -857,7 +931,8 @@ Transactor::operator()()
             JLOG(j_.fatal()) << "Transaction serdes mismatch";
             JLOG(j_.info()) << to_string(ctx_.tx.getJson(JsonOptions::none));
             JLOG(j_.fatal()) << s2.getJson(JsonOptions::none);
-            assert(false);
+            UNREACHABLE(
+                "ripple::Transactor::operator() : transaction serdes mismatch");
         }
     }
 #endif
@@ -874,7 +949,9 @@ Transactor::operator()()
 
     // No transaction can return temUNKNOWN from apply,
     // and it can't be passed in from a preclaim.
-    assert(result != temUNKNOWN);
+    XRPL_ASSERT(
+        result != temUNKNOWN,
+        "ripple::Transactor::operator() : result is not temUNKNOWN");
 
     if (auto stream = j_.trace())
         stream << "preclaim result: " << transToken(result);
@@ -907,26 +984,33 @@ Transactor::operator()()
         std::vector<uint256> removedOffers;
         std::vector<uint256> removedTrustLines;
         std::vector<uint256> expiredNFTokenOffers;
+        std::vector<uint256> expiredCredentials;
 
         bool const doOffers =
             ((result == tecOVERSIZE) || (result == tecKILLED));
         bool const doLines = (result == tecINCOMPLETE);
         bool const doNFTokenOffers = (result == tecEXPIRED);
-        if (doOffers || doLines || doNFTokenOffers)
+        bool const doCredentials = (result == tecEXPIRED);
+        if (doOffers || doLines || doNFTokenOffers || doCredentials)
         {
-            ctx_.visit([&doOffers,
+            ctx_.visit([doOffers,
                         &removedOffers,
-                        &doLines,
+                        doLines,
                         &removedTrustLines,
-                        &doNFTokenOffers,
-                        &expiredNFTokenOffers](
+                        doNFTokenOffers,
+                        &expiredNFTokenOffers,
+                        doCredentials,
+                        &expiredCredentials](
                            uint256 const& index,
                            bool isDelete,
                            std::shared_ptr<SLE const> const& before,
                            std::shared_ptr<SLE const> const& after) {
                 if (isDelete)
                 {
-                    assert(before && after);
+                    XRPL_ASSERT(
+                        before && after,
+                        "ripple::Transactor::operator()::visit : non-null SLE "
+                        "inputs");
                     if (doOffers && before && after &&
                         (before->getType() == ltOFFER) &&
                         (before->getFieldAmount(sfTakerPays) ==
@@ -946,6 +1030,10 @@ Transactor::operator()()
                     if (doNFTokenOffers && before && after &&
                         (before->getType() == ltNFTOKEN_OFFER))
                         expiredNFTokenOffers.push_back(index);
+
+                    if (doCredentials && before && after &&
+                        (before->getType() == ltCREDENTIAL))
+                        expiredCredentials.push_back(index);
                 }
             });
         }
@@ -971,6 +1059,10 @@ Transactor::operator()()
         if (result == tecINCOMPLETE)
             removeDeletedTrustLines(
                 view(), removedTrustLines, ctx_.app.journal("View"));
+
+        if (result == tecEXPIRED)
+            removeExpiredCredentials(
+                view(), expiredCredentials, ctx_.app.journal("View"));
 
         applied = isTecClaim(result);
     }
@@ -1003,6 +1095,7 @@ Transactor::operator()()
             applied = false;
     }
 
+    std::optional<TxMeta> metadata;
     if (applied)
     {
         // Transaction succeeded fully or (retries are not allowed and the
@@ -1022,13 +1115,18 @@ Transactor::operator()()
             ctx_.destroyXRP(fee);
 
         // Once we call apply, we will no longer be able to look at view()
-        ctx_.apply(result);
+        metadata = ctx_.apply(result);
     }
 
-    JLOG(j_.trace()) << (applied ? "applied" : "not applied")
+    if (ctx_.flags() & tapDRY_RUN)
+    {
+        applied = false;
+    }
+
+    JLOG(j_.trace()) << (applied ? "applied " : "not applied ")
                      << transToken(result);
 
-    return {result, applied};
+    return {result, applied, metadata};
 }
 
 }  // namespace ripple

@@ -39,6 +39,9 @@ enum SOEStyle {
                       // constructed with STObject::makeInnerObject()
 };
 
+/** Amount fields that can support MPT */
+enum SOETxMPTIssue { soeMPTNone, soeMPTSupported, soeMPTNotSupported };
+
 //------------------------------------------------------------------------------
 
 /** An element in a SOTemplate. */
@@ -47,10 +50,11 @@ class SOElement
     // Use std::reference_wrapper so SOElement can be stored in a std::vector.
     std::reference_wrapper<SField const> sField_;
     SOEStyle style_;
+    SOETxMPTIssue supportMpt_ = soeMPTNone;
 
-public:
-    SOElement(SField const& fieldName, SOEStyle style)
-        : sField_(fieldName), style_(style)
+private:
+    void
+    init(SField const& fieldName) const
     {
         if (!sField_.get().isUseful())
         {
@@ -60,6 +64,24 @@ public:
             Throw<std::runtime_error>(
                 "SField (" + nm + ") in SOElement must be useful.");
         }
+    }
+
+public:
+    SOElement(SField const& fieldName, SOEStyle style)
+        : sField_(fieldName), style_(style)
+    {
+        init(fieldName);
+    }
+
+    template <typename T>
+        requires(std::is_same_v<T, STAmount> || std::is_same_v<T, STIssue>)
+    SOElement(
+        TypedField<T> const& fieldName,
+        SOEStyle style,
+        SOETxMPTIssue supportMpt = soeMPTNotSupported)
+        : sField_(fieldName), style_(style), supportMpt_(supportMpt)
+    {
+        init(fieldName);
     }
 
     SField const&
@@ -72,6 +94,12 @@ public:
     style() const
     {
         return style_;
+    }
+
+    SOETxMPTIssue
+    supportMPT() const
+    {
+        return supportMpt_;
     }
 };
 

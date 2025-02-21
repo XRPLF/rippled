@@ -163,7 +163,8 @@ STPath::hasSeen(
     return false;
 }
 
-Json::Value STPath::getJson(JsonOptions) const
+Json::Value
+STPath::getJson(JsonOptions) const
 {
     Json::Value ret(Json::arrayValue);
 
@@ -208,8 +209,11 @@ STPathSet::getSType() const
 void
 STPathSet::add(Serializer& s) const
 {
-    assert(getFName().isBinary());
-    assert(getFName().fieldType == STI_PATHSET);
+    XRPL_ASSERT(
+        getFName().isBinary(), "ripple::STPathSet::add : field is binary");
+    XRPL_ASSERT(
+        getFName().fieldType == STI_PATHSET,
+        "ripple::STPathSet::add : valid field type");
     bool first = true;
 
     for (auto const& spPath : value)

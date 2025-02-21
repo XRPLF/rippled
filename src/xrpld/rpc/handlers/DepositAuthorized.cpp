@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/ledger/ReadView.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
@@ -32,6 +33,7 @@ namespace ripple {
 //   destination_account : <ident>
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
+//   credentials : [<credentialID>,...]
 // }
 
 Json::Value
@@ -88,23 +90,111 @@ doDepositAuthorized(RPC::JsonContext& context)
         return result;
     }
 
-    // If the two accounts are the same, then the deposit should be fine.
-    bool depositAuthorized{true};
-    if (srcAcct != dstAcct)
+    bool const reqAuth =
+        (sleDest->getFlags() & lsfDepositAuth) && (srcAcct != dstAcct);
+    bool const credentialsPresent = params.isMember(jss::credentials);
+
+    std::set<std::pair<AccountID, Slice>> sorted;
+    std::vector<std::shared_ptr<SLE const>> lifeExtender;
+    if (credentialsPresent)
     {
-        // Check destination for the DepositAuth flag.  If that flag is
-        // not set then a deposit should be just fine.
-        if (sleDest->getFlags() & lsfDepositAuth)
+        auto const& creds(params[jss::credentials]);
+        if (!creds.isArray() || !creds)
         {
-            // See if a preauthorization entry is in the ledger.
-            auto const sleDepositAuth =
-                ledger->read(keylet::depositPreauth(dstAcct, srcAcct));
-            depositAuthorized = static_cast<bool>(sleDepositAuth);
+            return RPC::make_error(
+                rpcINVALID_PARAMS,
+                RPC::expected_field_message(
+                    jss::credentials,
+                    "is non-empty array of CredentialID(hash256)"));
+        }
+        else if (creds.size() > maxCredentialsArraySize)
+        {
+            return RPC::make_error(
+                rpcINVALID_PARAMS,
+                RPC::expected_field_message(
+                    jss::credentials, "array too long"));
+        }
+
+        lifeExtender.reserve(creds.size());
+        for (auto const& jo : creds)
+        {
+            if (!jo.isString())
+            {
+                return RPC::make_error(
+                    rpcINVALID_PARAMS,
+                    RPC::expected_field_message(
+                        jss::credentials, "an array of CredentialID(hash256)"));
+            }
+
+            uint256 credH;
+            auto const credS = jo.asString();
+            if (!credH.parseHex(credS))
+            {
+                return RPC::make_error(
+                    rpcINVALID_PARAMS,
+                    RPC::expected_field_message(
+                        jss::credentials, "an array of CredentialID(hash256)"));
+            }
+
+            std::shared_ptr<SLE const> sleCred =
+                ledger->read(keylet::credential(credH));
+            if (!sleCred)
+            {
+                RPC::inject_error(
+                    rpcBAD_CREDENTIALS, "credentials don't exist", result);
+                return result;
+            }
+
+            if (!(sleCred->getFlags() & lsfAccepted))
+            {
+                RPC::inject_error(
+                    rpcBAD_CREDENTIALS, "credentials aren't accepted", result);
+                return result;
+            }
+
+            if (credentials::checkExpired(
+                    sleCred, ledger->info().parentCloseTime))
+            {
+                RPC::inject_error(
+                    rpcBAD_CREDENTIALS, "credentials are expired", result);
+                return result;
+            }
+
+            if ((*sleCred)[sfSubject] != srcAcct)
+            {
+                RPC::inject_error(
+                    rpcBAD_CREDENTIALS,
+                    "credentials doesn't belong to the root account",
+                    result);
+                return result;
+            }
+
+            auto [it, ins] = sorted.emplace(
+                (*sleCred)[sfIssuer], (*sleCred)[sfCredentialType]);
+            if (!ins)
+            {
+                RPC::inject_error(
+                    rpcBAD_CREDENTIALS, "duplicates in credentials", result);
+                return result;
+            }
+            lifeExtender.push_back(std::move(sleCred));
         }
     }
+
+    // If the two accounts are the same OR if that flag is
+    // not set, then the deposit should be fine.
+    bool depositAuthorized = true;
+    if (reqAuth)
+        depositAuthorized =
+            ledger->exists(keylet::depositPreauth(dstAcct, srcAcct)) ||
+            (credentialsPresent &&
+             ledger->exists(keylet::depositPreauth(dstAcct, sorted)));
+
     result[jss::source_account] = params[jss::source_account].asString();
     result[jss::destination_account] =
         params[jss::destination_account].asString();
+    if (credentialsPresent)
+        result[jss::credentials] = params[jss::credentials];
 
     result[jss::deposit_authorized] = depositAuthorized;
     return result;

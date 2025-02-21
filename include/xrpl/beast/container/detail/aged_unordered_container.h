@@ -1057,8 +1057,9 @@ public:
     // map, set
     template <bool maybe_multi = IsMulti, bool maybe_map = IsMap>
     auto
-    insert(value_type&& value) -> typename std::
-        enable_if<!maybe_multi && !maybe_map, std::pair<iterator, bool>>::type;
+    insert(value_type&& value) -> typename std::enable_if<
+                                   !maybe_multi && !maybe_map,
+                                   std::pair<iterator, bool>>::type;
 
     // multimap, multiset
     template <bool maybe_multi = IsMulti, bool maybe_map = IsMap>
@@ -1329,7 +1330,10 @@ public:
     size_type
     bucket(Key const& k) const
     {
-        assert(bucket_count() != 0);
+        XRPL_ASSERT(
+            bucket_count() != 0,
+            "beast::detail::aged_unordered_container::bucket : nonzero bucket "
+            "count");
         return m_cont.bucket(k, std::cref(m_config.hash_function()));
     }
 
@@ -1470,7 +1474,10 @@ private:
     {
         if (would_exceed(additional))
             m_buck.resize(size() + additional, m_cont);
-        assert(load_factor() <= max_load_factor());
+        XRPL_ASSERT(
+            load_factor() <= max_load_factor(),
+            "beast::detail::aged_unordered_container::maybe_rehash : maximum "
+            "load factor");
     }
 
     // map, set
@@ -2799,8 +2806,9 @@ aged_unordered_container<
     Clock,
     Hash,
     KeyEqual,
-    Allocator>::insert(value_type&& value) -> typename std::
-    enable_if<!maybe_multi && !maybe_map, std::pair<iterator, bool>>::type
+    Allocator>::insert(value_type&& value) ->
+    typename std::
+        enable_if<!maybe_multi && !maybe_map, std::pair<iterator, bool>>::type
 {
     maybe_rehash(1);
     typename cont_type::insert_commit_data d;

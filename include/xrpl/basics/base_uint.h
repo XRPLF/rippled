@@ -29,8 +29,10 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/hardened_hash.h>
+#include <xrpl/basics/partitioned_unordered_map.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <boost/endian/conversion.hpp>
 #include <boost/functional/hash.hpp>
 #include <algorithm>
@@ -289,7 +291,9 @@ public:
             std::is_trivially_copyable<typename Container::value_type>::value>>
     explicit base_uint(Container const& c)
     {
-        assert(c.size() * sizeof(typename Container::value_type) == size());
+        XRPL_ASSERT(
+            c.size() * sizeof(typename Container::value_type) == size(),
+            "ripple::base_uint::base_uint(Container auto) : input size match");
         std::memcpy(data_.data(), c.data(), size());
     }
 
@@ -300,7 +304,9 @@ public:
         base_uint&>
     operator=(Container const& c)
     {
-        assert(c.size() * sizeof(typename Container::value_type) == size());
+        XRPL_ASSERT(
+            c.size() * sizeof(typename Container::value_type) == size(),
+            "ripple::base_uint::operator=(Container auto) : input size match");
         std::memcpy(data_.data(), c.data(), size());
         return *this;
     }
@@ -521,7 +527,8 @@ public:
         return bytes;
     }
 
-    base_uint<Bits, Tag>& operator=(beast::Zero)
+    base_uint<Bits, Tag>&
+    operator=(beast::Zero)
     {
         data_.fill(0);
         return *this;
@@ -548,6 +555,7 @@ public:
 using uint128 = base_uint<128>;
 using uint160 = base_uint<160>;
 using uint256 = base_uint<256>;
+using uint192 = base_uint<192>;
 
 template <std::size_t Bits, class Tag>
 [[nodiscard]] inline constexpr std::strong_ordering
@@ -630,9 +638,21 @@ operator<<(std::ostream& out, base_uint<Bits, Tag> const& u)
     return out << to_string(u);
 }
 
+template <>
+inline std::size_t
+extract(uint256 const& key)
+{
+    std::size_t result;
+    // Use memcpy to avoid unaligned UB
+    // (will optimize to equivalent code)
+    std::memcpy(&result, key.data(), sizeof(std::size_t));
+    return result;
+}
+
 #ifndef __INTELLISENSE__
 static_assert(sizeof(uint128) == 128 / 8, "There should be no padding bytes");
 static_assert(sizeof(uint160) == 160 / 8, "There should be no padding bytes");
+static_assert(sizeof(uint192) == 192 / 8, "There should be no padding bytes");
 static_assert(sizeof(uint256) == 256 / 8, "There should be no padding bytes");
 #endif
 

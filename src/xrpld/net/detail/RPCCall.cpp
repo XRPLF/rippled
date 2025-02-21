@@ -416,7 +416,8 @@ private:
         return jvRequest;
     }
 
-    // deposit_authorized <source_account> <destination_account> [<ledger>]
+    // deposit_authorized <source_account> <destination_account>
+    // [<ledger> [<credentials>, ...]]
     Json::Value
     parseDepositAuthorized(Json::Value const& jvParams)
     {
@@ -424,8 +425,16 @@ private:
         jvRequest[jss::source_account] = jvParams[0u].asString();
         jvRequest[jss::destination_account] = jvParams[1u].asString();
 
-        if (jvParams.size() == 3)
+        if (jvParams.size() >= 3)
             jvParseLedger(jvRequest, jvParams[2u].asString());
+
+        // 8 credentials max
+        if ((jvParams.size() >= 4) && (jvParams.size() <= 11))
+        {
+            jvRequest[jss::credentials] = Json::Value(Json::arrayValue);
+            for (uint32_t i = 3; i < jvParams.size(); ++i)
+                jvRequest[jss::credentials].append(jvParams[i].asString());
+        }
 
         return jvRequest;
     }
@@ -659,6 +668,21 @@ private:
         return jvRequest;
     }
 
+    // ledger_entry [id] [<index>]
+    Json::Value
+    parseLedgerEntry(Json::Value const& jvParams)
+    {
+        Json::Value jvRequest{Json::objectValue};
+
+        jvRequest[jss::index] = jvParams[0u].asString();
+
+        if (jvParams.size() == 2 &&
+            !jvParseLedger(jvRequest, jvParams[1u].asString()))
+            return rpcError(rpcLGR_IDX_MALFORMED);
+
+        return jvRequest;
+    }
+
     // log_level:                           Get log levels
     // log_level <severity>:                Set master log level to the
     // specified severity log_level <partition> <severity>:    Set specified
@@ -885,6 +909,36 @@ private:
         return rpcError(rpcINVALID_PARAMS);
     }
 
+    // simulate any transaction on the network
+    //
+    // simulate <tx_blob> [binary]
+    // simulate <tx_json> [binary]
+    Json::Value
+    parseSimulate(Json::Value const& jvParams)
+    {
+        Json::Value txJSON;
+        Json::Reader reader;
+        Json::Value jvRequest{Json::objectValue};
+
+        if (reader.parse(jvParams[0u].asString(), txJSON))
+        {
+            jvRequest[jss::tx_json] = txJSON;
+        }
+        else
+        {
+            jvRequest[jss::tx_blob] = jvParams[0u].asString();
+        }
+
+        if (jvParams.size() == 2)
+        {
+            if (!jvParams[1u].isString() || jvParams[1u].asString() != "binary")
+                return rpcError(rpcINVALID_PARAMS);
+            jvRequest[jss::binary] = true;
+        }
+
+        return jvRequest;
+    }
+
     // sign/submit any transaction to the network
     //
     // sign <private_key> <json> offline
@@ -953,7 +1007,9 @@ private:
     parseTransactionEntry(Json::Value const& jvParams)
     {
         // Parameter count should have already been verified.
-        assert(jvParams.size() == 2);
+        XRPL_ASSERT(
+            jvParams.size() == 2,
+            "ripple::RPCParser::parseTransactionEntry : valid parameter count");
 
         std::string const txHash = jvParams[0u].asString();
         if (txHash.length() != 64)
@@ -1161,7 +1217,7 @@ public:
             {"channel_verify", &RPCParser::parseChannelVerify, 4, 4},
             {"connect", &RPCParser::parseConnect, 1, 2},
             {"consensus_info", &RPCParser::parseAsIs, 0, 0},
-            {"deposit_authorized", &RPCParser::parseDepositAuthorized, 2, 3},
+            {"deposit_authorized", &RPCParser::parseDepositAuthorized, 2, 11},
             {"feature", &RPCParser::parseFeature, 0, 2},
             {"fetch_info", &RPCParser::parseFetchInfo, 0, 1},
             {"gateway_balances", &RPCParser::parseGatewayBalances, 1, -1},
@@ -1172,8 +1228,7 @@ public:
             {"ledger_accept", &RPCParser::parseAsIs, 0, 0},
             {"ledger_closed", &RPCParser::parseAsIs, 0, 0},
             {"ledger_current", &RPCParser::parseAsIs, 0, 0},
-            //      {   "ledger_entry",         &RPCParser::parseLedgerEntry,
-            //      -1, -1   },
+            {"ledger_entry", &RPCParser::parseLedgerEntry, 1, 2},
             {"ledger_header", &RPCParser::parseLedgerId, 1, 1},
             {"ledger_request", &RPCParser::parseLedgerId, 1, 1},
             {"log_level", &RPCParser::parseLogLevel, 0, 2},
@@ -1202,6 +1257,7 @@ public:
             {"sign", &RPCParser::parseSignSubmit, 2, 3},
             {"sign_for", &RPCParser::parseSignFor, 3, 4},
             {"stop", &RPCParser::parseAsIs, 0, 0},
+            {"simulate", &RPCParser::parseSimulate, 1, 2},
             {"submit", &RPCParser::parseSignSubmit, 1, 3},
             {"submit_multisigned", &RPCParser::parseSubmitMultiSigned, 1, 1},
             {"transaction_entry", &RPCParser::parseTransactionEntry, 2, 2},
@@ -1309,7 +1365,10 @@ struct RPCCallImp
 
             // Receive reply
             if (strData.empty())
-                Throw<std::runtime_error>("no response from server");
+                Throw<std::runtime_error>(
+                    "no response from server. Please "
+                    "ensure that the rippled server is running in another "
+                    "process.");
 
             // Parse reply
             JLOG(j.debug()) << "RPC reply: " << strData << std::endl;

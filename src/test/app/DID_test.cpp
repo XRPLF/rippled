@@ -30,16 +30,6 @@
 namespace ripple {
 namespace test {
 
-// Helper function that returns the owner count of an account root.
-static std::uint32_t
-ownerCount(test::jtx::Env const& env, test::jtx::Account const& acct)
-{
-    std::uint32_t ret{0};
-    if (auto const sleAcct = env.le(acct))
-        ret = sleAcct->at(sfOwnerCount);
-    return ret;
-}
-
 bool
 checkVL(Slice const& result, std::string expected)
 {

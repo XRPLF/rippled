@@ -45,7 +45,7 @@ constexpr ProtocolVersion const supportedProtocolList[]
 // ascending order and doesn't contain any duplicates.
 // FIXME: With C++20 we can use std::is_sorted with an appropriate comparator
 static_assert(
-    []() constexpr->bool {
+    []() constexpr -> bool {
         auto const len = std::distance(
             std::begin(supportedProtocolList), std::end(supportedProtocolList));
 

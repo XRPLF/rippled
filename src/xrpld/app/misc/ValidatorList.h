@@ -242,6 +242,9 @@ class ValidatorList
     // The current list of trusted master keys
     hash_set<PublicKey> trustedMasterKeys_;
 
+    // Minimum number of lists on which a trusted validator must appear on
+    std::size_t listThreshold_;
+
     // The current list of trusted signing keys. For those validators using
     // a manifest, the signing key is the ephemeral key. For the ones using
     // a seed, the signing key is the same as the master key.
@@ -343,7 +346,8 @@ public:
     load(
         std::optional<PublicKey> const& localSigningKey,
         std::vector<std::string> const& configKeys,
-        std::vector<std::string> const& publisherKeys);
+        std::vector<std::string> const& publisherKeys,
+        std::optional<std::size_t> listThreshold = {});
 
     /** Pull the blob/signature/manifest information out of the appropriate Json
         body fields depending on the version.
@@ -678,6 +682,13 @@ public:
      */
     hash_set<PublicKey>
     getTrustedMasterKeys() const;
+
+    /**
+     * get the validator list threshold
+     * @return the threshold
+     */
+    std::size_t
+    getListThreshold() const;
 
     /**
      * get the master public keys of Negative UNL validators

@@ -21,9 +21,9 @@
 #include <xrpl/basics/ResolverAsio.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
 #include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <boost/asio.hpp>
 #include <atomic>
-#include <cassert>
 #include <condition_variable>
 #include <deque>
 #include <locale>
@@ -48,7 +48,9 @@ public:
     ~AsyncObject()
     {
         // Destroying the object with I/O pending? Not a clean exit!
-        assert(m_pending.load() == 0);
+        XRPL_ASSERT(
+            m_pending.load() == 0,
+            "ripple::AsyncObject::~AsyncObject : nothing pending");
     }
 
     /** RAII container that maintains the count of pending I/O.
@@ -153,8 +155,11 @@ public:
 
     ~ResolverAsioImpl() override
     {
-        assert(m_work.empty());
-        assert(m_stopped);
+        XRPL_ASSERT(
+            m_work.empty(),
+            "ripple::ResolverAsioImpl::~ResolverAsioImpl : no pending work");
+        XRPL_ASSERT(
+            m_stopped, "ripple::ResolverAsioImpl::~ResolverAsioImpl : stopped");
     }
 
     //-------------------------------------------------------------------------
@@ -176,8 +181,11 @@ public:
     void
     start() override
     {
-        assert(m_stopped == true);
-        assert(m_stop_called == false);
+        XRPL_ASSERT(
+            m_stopped == true, "ripple::ResolverAsioImpl::start : stopped");
+        XRPL_ASSERT(
+            m_stop_called == false,
+            "ripple::ResolverAsioImpl::start : not stopping");
 
         if (m_stopped.exchange(false) == true)
         {
@@ -217,8 +225,12 @@ public:
     resolve(std::vector<std::string> const& names, HandlerType const& handler)
         override
     {
-        assert(m_stop_called == false);
-        assert(!names.empty());
+        XRPL_ASSERT(
+            m_stop_called == false,
+            "ripple::ResolverAsioImpl::resolve : not stopping");
+        XRPL_ASSERT(
+            !names.empty(),
+            "ripple::ResolverAsioImpl::resolve : names non-empty");
 
         // TODO NIKB use rvalue references to construct and move
         //           reducing cost.
@@ -232,9 +244,12 @@ public:
 
     //-------------------------------------------------------------------------
     // Resolver
-    void do_stop(CompletionCounter)
+    void
+    do_stop(CompletionCounter)
     {
-        assert(m_stop_called == true);
+        XRPL_ASSERT(
+            m_stop_called == true,
+            "ripple::ResolverAsioImpl::do_stop : stopping");
 
         if (m_stopped.exchange(true) == false)
         {
@@ -330,7 +345,8 @@ public:
             std::string(port_first, port_last));
     }
 
-    void do_work(CompletionCounter)
+    void
+    do_work(CompletionCounter)
     {
         if (m_stop_called == true)
             return;
@@ -379,7 +395,9 @@ public:
         HandlerType const& handler,
         CompletionCounter)
     {
-        assert(!names.empty());
+        XRPL_ASSERT(
+            !names.empty(),
+            "ripple::ResolverAsioImpl::do_resolve : names non-empty");
 
         if (m_stop_called == false)
         {

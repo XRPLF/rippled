@@ -23,6 +23,7 @@
 #include <xrpld/ledger/RawView.h>
 #include <xrpld/ledger/ReadView.h>
 #include <xrpl/basics/safe_cast.h>
+#include <xrpl/beast/utility/instrumentation.h>
 
 namespace ripple {
 
@@ -39,6 +40,10 @@ enum ApplyFlags : std::uint32_t {
 
     // Transaction came from a privileged source
     tapUNLIMITED = 0x400,
+
+    // Transaction shouldn't be applied
+    // Signatures shouldn't be checked
+    tapDRY_RUN = 0x1000
 };
 
 constexpr ApplyFlags
@@ -276,8 +281,11 @@ public:
     {
         if (key.type != ltOFFER)
         {
-            assert(!"Only Offers are appended to book directories.  "
-                "Call dirInsert() instead.");
+            UNREACHABLE(
+                "ripple::ApplyView::dirAppend : only Offers are appended to "
+                "book directories");
+            // Only Offers are appended to book directories. Call dirInsert()
+            // instead
             return std::nullopt;
         }
         return dirAdd(true, directory, key.key, describe);

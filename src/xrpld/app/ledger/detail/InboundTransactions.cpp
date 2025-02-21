@@ -146,7 +146,7 @@ public:
 
         if (ta == nullptr)
         {
-            peer->charge(Resource::feeUnwantedData);
+            peer->charge(Resource::feeUselessData, "ledger_data");
             return;
         }
 
@@ -157,7 +157,7 @@ public:
         {
             if (!node.has_nodeid() || !node.has_nodedata())
             {
-                peer->charge(Resource::feeInvalidRequest);
+                peer->charge(Resource::feeMalformedRequest, "ledger_data");
                 return;
             }
 
@@ -165,7 +165,7 @@ public:
 
             if (!id)
             {
-                peer->charge(Resource::feeBadData);
+                peer->charge(Resource::feeInvalidData, "ledger_data");
                 return;
             }
 
@@ -173,7 +173,7 @@ public:
         }
 
         if (!ta->takeNodes(data, peer).isUseful())
-            peer->charge(Resource::feeUnwantedData);
+            peer->charge(Resource::feeUselessData, "ledger_data not useful");
     }
 
     void

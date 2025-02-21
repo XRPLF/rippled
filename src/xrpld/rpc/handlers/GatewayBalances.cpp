@@ -74,7 +74,7 @@ doGatewayBalances(RPC::JsonContext& context)
     if (!id)
         return rpcError(rpcACT_MALFORMED);
     auto const accountID{std::move(id.value())};
-    context.loadType = Resource::feeHighBurdenRPC;
+    context.loadType = Resource::feeHeavyBurdenRPC;
 
     result[jss::account] = toBase58(accountID);
 
