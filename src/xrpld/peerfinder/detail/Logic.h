@@ -753,10 +753,8 @@ public:
                 }
             }
 
-            // Discard invalid addresses
-            // if (!is_public(address))
-            // return false;
-            if (!is_valid_address(ep.address))
+            // Discard invalid addresses and if we don't support private IPs in Endpoint message
+            if (!is_valid_address(ep.address) || (!config_.allowPrivateEndpoints && !is_public(ep.address)))
             {
                 JLOG(m_journal.debug()) << beast::leftw(18) << "Endpoints drop "
                                         << ep.address << " as invalid";
