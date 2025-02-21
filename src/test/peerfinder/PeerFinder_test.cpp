@@ -313,7 +313,8 @@ public:
                 .port = 4000,
                 .expectOut = 10,
                 .expectIn = 11,
-                .expectIpLimit = 2},
+                .expectIpLimit = 2,
+            },
             TestCase{
                 .name = "legacy max_peers 0",
                 .maxPeers = 0,
@@ -322,7 +323,8 @@ public:
                 .port = 4000,
                 .expectOut = 10,
                 .expectIn = 11,
-                .expectIpLimit = 2},
+                .expectIpLimit = 2,
+            },
             TestCase{
                 .name = "legacy max_peers 5",
                 .maxPeers = 5,
@@ -331,7 +333,8 @@ public:
                 .port = 4000,
                 .expectOut = 10,
                 .expectIn = 0,
-                .expectIpLimit = 1},
+                .expectIpLimit = 1,
+            },
             TestCase{
                 .name = "legacy max_peers 20",
                 .maxPeers = 20,
@@ -340,7 +343,8 @@ public:
                 .port = 4000,
                 .expectOut = 10,
                 .expectIn = 10,
-                .expectIpLimit = 2},
+                .expectIpLimit = 2,
+            },
             TestCase{
                 .name = "legacy max_peers 100",
                 .maxPeers = 100,
@@ -349,7 +353,8 @@ public:
                 .port = 4000,
                 .expectOut = 15,
                 .expectIn = 85,
-                .expectIpLimit = 6},
+                .expectIpLimit = 6,
+            },
             TestCase{
                 .name = "legacy max_peers 20, private",
                 .maxPeers = 20,
@@ -358,7 +363,8 @@ public:
                 .port = 0,
                 .expectOut = 20,
                 .expectIn = 0,
-                .expectIpLimit = 1},
+                .expectIpLimit = 1,
+            },
 
             // test with max_in_peers and max_out_peers
             TestCase{
@@ -369,7 +375,8 @@ public:
                 .port = 4000,
                 .expectOut = 10,
                 .expectIn = 100,
-                .expectIpLimit = 6},
+                .expectIpLimit = 6,
+            },
             TestCase{
                 .name = "new in 0/out 10",
                 .maxPeers = {},
@@ -378,7 +385,8 @@ public:
                 .port = 4000,
                 .expectOut = 10,
                 .expectIn = 0,
-                .expectIpLimit = 1},
+                .expectIpLimit = 1,
+            },
             TestCase{
                 .name = "new in 100/out 10, private",
                 .maxPeers = {},
@@ -387,7 +395,8 @@ public:
                 .port = 0,
                 .expectOut = 10,
                 .expectIn = 0,
-                .expectIpLimit = 6}};
+                .expectIpLimit = 6,
+            }};
 
         for (auto const& tc : testcases)
             run(tc);
@@ -402,7 +411,8 @@ public:
             c.loadFromString(toLoad);
             Config config = Config::makeConfig(c, 0, false, 0);
 
-            BEAST_EXPECT(config.allowPrivateEndpoints == c.ALLOW_PRIVATE_ENDPOINTS);
+            BEAST_EXPECT(
+                config.allowPrivateEndpoints == c.ALLOW_PRIVATE_ENDPOINTS);
         };
         run(R"rippleConfig(
 [allow_private_endpoints]
@@ -505,7 +515,8 @@ false
                         Endpoint{
                             beast::IP::Endpoint::from_string("65.1.1.1:5"), 1},
                     },
-                .expectedSize = 1},
+                .expectedSize = 1,
+            },
             TestCase{
                 .name = "allow private IPs",
                 .allowPrivateEndpoints = true,
@@ -518,9 +529,8 @@ false
                         Endpoint{
                             beast::IP::Endpoint::from_string("65.1.1.1:5"), 1},
                     },
-                .expectedSize = 2},
-
-        };
+                .expectedSize = 2,
+            }};
 
         for (auto const& tc : testcases)
             run(tc);

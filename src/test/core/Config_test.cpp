@@ -1503,8 +1503,7 @@ r.ripple.com:51235
         Config c;
         try
         {
-            c.loadFromString(R"rippleConfig(
-)rippleConfig");
+            c.loadFromString("");
         }
         catch (std::runtime_error& e)
         {
@@ -1528,7 +1527,7 @@ true
 
         BEAST_EXPECT(error == "");
         BEAST_EXPECT(c.ALLOW_PRIVATE_ENDPOINTS == true);
-try
+try 
         {
             c.loadFromString(R"rippleConfig(
 [allow_private_endpoints]
