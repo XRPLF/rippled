@@ -32,11 +32,17 @@ namespace deposit {
 
 /** Preauthorize for deposit.  Invoke as deposit::auth. */
 Json::Value
-auth(Account const& account, Account const& auth);
+auth(
+    Account const& account,
+    Account const& auth,
+    std::optional<jtx::Account> const& onBehalfOf = std::nullopt);
 
 /** Remove preauthorization for deposit.  Invoke as deposit::unauth. */
 Json::Value
-unauth(Account const& account, Account const& unauth);
+unauth(
+    Account const& account,
+    Account const& unauth,
+    std::optional<jtx::Account> const& onBehalfOf = std::nullopt);
 
 struct AuthorizeCredentials
 {
@@ -75,6 +81,12 @@ Json::Value
 unauthCredentials(
     jtx::Account const& account,
     std::vector<AuthorizeCredentials> const& auth);
+
+Json::Value
+ledgerEntryDepositPreauth(
+    jtx::Env& env,
+    jtx::Account const& acc,
+    std::vector<jtx::deposit::AuthorizeCredentials> const& auth);
 
 }  // namespace deposit
 

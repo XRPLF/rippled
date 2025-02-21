@@ -29,7 +29,13 @@ void
 paths::operator()(Env& env, JTx& jt) const
 {
     auto& jv = jt.jv;
-    auto const from = env.lookup(jv[jss::Account].asString());
+    std::string fromAccount;
+    if (from_.empty())
+        fromAccount = jv[jss::Account].asString();
+    else
+        fromAccount = from_;
+
+    auto const from = env.lookup(fromAccount);
     auto const to = env.lookup(jv[jss::Destination].asString());
     auto const amount = amountFromJson(sfAmount, jv[jss::Amount]);
     Pathfinder pf(

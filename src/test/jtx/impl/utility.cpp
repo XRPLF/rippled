@@ -75,6 +75,20 @@ fill_seq(Json::Value& jv, ReadView const& view)
     jv[jss::Sequence] = ar->getFieldU32(sfSequence);
 }
 
+void
+fill_delegating_seq(Json::Value& jv, ReadView const& view)
+{
+    if (jv.isMember(jss::DelegateSequence) || !jv.isMember(jss::OnBehalfOf))
+        return;
+    auto const account = parseBase58<AccountID>(jv[jss::OnBehalfOf].asString());
+    if (!account)
+        Throw<parse_error>("unexpected invalid OnBehalfOf Account");
+    auto const ar = view.read(keylet::account(*account));
+    if (!ar)
+        Throw<parse_error>("unexpected missing OnBehalfOf account root");
+    jv[jss::DelegateSequence] = ar->getFieldU32(sfSequence);
+}
+
 Json::Value
 cmdToJSONRPC(
     std::vector<std::string> const& args,
