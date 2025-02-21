@@ -2355,6 +2355,21 @@ NetworkOPsImp::recvValidation(
 
     pubValidation(val);
 
+    JLOG(m_journal.debug()) << [this, &val]() -> auto {
+        std::stringstream ss;
+        ss << "VALIDATION: " << val->render() << " master_key: ";
+        auto master = app_.validators().getTrustedKey(val->getSignerPublic());
+        if (master)
+        {
+            ss << toBase58(TokenType::NodePublic, *master);
+        }
+        else
+        {
+            ss << "none";
+        }
+        return ss.str();
+    }();
+
     // We will always relay trusted validations; if configured, we will
     // also relay all untrusted validations.
     return app_.config().RELAY_UNTRUSTED_VALIDATIONS == 1 || val->isTrusted();
@@ -2493,6 +2508,18 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
                 x[jss::expiration] = "unknown";
             }
         }
+
+#if defined(GIT_COMMIT_HASH) || defined(GIT_BRANCH)
+        {
+            auto& x = (info[jss::git] = Json::objectValue);
+#ifdef GIT_COMMIT_HASH
+            x[jss::hash] = GIT_COMMIT_HASH;
+#endif
+#ifdef GIT_BRANCH
+            x[jss::branch] = GIT_BRANCH;
+#endif
+        }
+#endif
     }
     info[jss::io_latency_ms] =
         static_cast<Json::UInt>(app_.getIOLatency().count());

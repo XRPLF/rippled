@@ -160,6 +160,13 @@ isDeepFrozen(
     Currency const& currency,
     AccountID const& issuer);
 
+[[nodiscard]] bool
+isLPTokenFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Issue const& asset,
+    Issue const& asset2);
+
 // Returns the amount an account can spend without going into debt.
 //
 // <-- saAmount: amount of currency held by account. May be negative.

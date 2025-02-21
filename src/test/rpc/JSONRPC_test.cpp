@@ -2049,6 +2049,7 @@ public:
     void
     testBadRpcCommand()
     {
+        testcase("bad RPC command");
         test::jtx::Env env(*this);
         Json::Value const result{
             env.rpc("bad_command", R"({"MakingThisUp": 0})")};
@@ -2061,6 +2062,7 @@ public:
     void
     testAutoFillFees()
     {
+        testcase("autofill fees");
         test::jtx::Env env(*this);
         auto ledger = env.current();
         auto const& feeTrack = env.app().getFeeTrack();
@@ -2207,6 +2209,7 @@ public:
     void
     testAutoFillEscalatedFees()
     {
+        testcase("autofill escalated fees");
         using namespace test::jtx;
         Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
                     cfg->loadFromString("[" SECTION_SIGNING_SUPPORT "]\ntrue");
@@ -2538,6 +2541,32 @@ public:
         }
     }
 
+    void
+    testAutoFillNetworkID()
+    {
+        testcase("autofill NetworkID");
+        using namespace test::jtx;
+        Env env{*this, envconfig([&](std::unique_ptr<Config> cfg) {
+                    cfg->NETWORK_ID = 1025;
+                    return cfg;
+                })};
+
+        {
+            Json::Value toSign;
+            toSign[jss::tx_json] = noop(env.master);
+
+            BEAST_EXPECT(!toSign[jss::tx_json].isMember(jss::NetworkID));
+            toSign[jss::secret] = "masterpassphrase";
+            auto rpcResult = env.rpc("json", "sign", to_string(toSign));
+            auto result = rpcResult[jss::result];
+
+            BEAST_EXPECT(!RPC::contains_error(result));
+            BEAST_EXPECT(
+                result[jss::tx_json].isMember(jss::NetworkID) &&
+                result[jss::tx_json][jss::NetworkID] == 1025);
+        }
+    }
+
     // A function that can be called as though it would process a transaction.
     static void
     fakeProcessTransaction(
@@ -2552,6 +2581,7 @@ public:
     void
     testTransactionRPC()
     {
+        testcase("sign/submit RPCs");
         using namespace std::chrono_literals;
         // Use jtx to set up a ledger so the tests will do the right thing.
         test::jtx::Account const a{"a"};  // rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA
@@ -2678,6 +2708,7 @@ public:
         testBadRpcCommand();
         testAutoFillFees();
         testAutoFillEscalatedFees();
+        testAutoFillNetworkID();
         testTransactionRPC();
     }
 };

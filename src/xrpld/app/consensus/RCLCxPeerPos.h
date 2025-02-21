@@ -97,6 +97,12 @@ public:
     Json::Value
     getJson() const;
 
+    std::string
+    render() const
+    {
+        return proposal_.render();
+    }
+
 private:
     PublicKey publicKey_;
     uint256 suppression_;
