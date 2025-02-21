@@ -17,47 +17,40 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_RPC_MPTOKENISSUANCEID_H_INCLUDED
-#define RIPPLE_RPC_MPTOKENISSUANCEID_H_INCLUDED
+#ifndef RIPPLE_TX_ACCOUNTPERMISSIONSET_H_INCLUDED
+#define RIPPLE_TX_ACCOUNTPERMISSIONSET_H_INCLUDED
 
-#include <xrpl/basics/base_uint.h>
-#include <xrpl/json/json_forwards.h>
-#include <xrpl/protocol/STTx.h>
-#include <xrpl/protocol/TxMeta.h>
-
-#include <memory>
-#include <optional>
+#include <xrpld/app/tx/detail/Transactor.h>
 
 namespace ripple {
 
-namespace RPC {
+class AccountPermissionSet : public Transactor
+{
+public:
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
-/**
-   Add a `mpt_issuance_id` field to the `meta` input/output parameter.
-   The field is only added to successful MPTokenIssuanceCreate transactions.
-   The mpt_issuance_id is parsed from the sequence and the issuer in the
-   MPTokenIssuance object.
+    explicit AccountPermissionSet(ApplyContext& ctx) : Transactor(ctx)
+    {
+    }
 
-   @{
- */
-bool
-canHaveMPTokenIssuanceID(
-    std::shared_ptr<STTx const> const& serializedTx,
-    TxMeta const& transactionMeta);
+    static NotTEC
+    preflight(PreflightContext const& ctx);
 
-std::optional<uint192>
-getIDFromCreatedIssuance(
-    TxMeta const& transactionMeta,
-    AccountID const& sender);
+    static TER
+    preclaim(PreclaimContext const& ctx);
 
-void
-insertMPTokenIssuanceID(
-    Json::Value& response,
-    std::shared_ptr<STTx const> const& transaction,
-    TxMeta const& transactionMeta);
-/** @} */
+    TER
+    doApply() override;
 
-}  // namespace RPC
+    // Interface used by DeleteAccount
+    static TER
+    deleteAccountPermission(
+        ApplyView& view,
+        std::shared_ptr<SLE> const& sle,
+        AccountID const& account,
+        beast::Journal j);
+};
+
 }  // namespace ripple
 
 #endif

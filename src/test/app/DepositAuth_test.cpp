@@ -383,25 +383,6 @@ struct DepositAuth_test : public beast::unit_test::suite
     }
 };
 
-static Json::Value
-ledgerEntryDepositPreauth(
-    jtx::Env& env,
-    jtx::Account const& acc,
-    std::vector<jtx::deposit::AuthorizeCredentials> const& auth)
-{
-    Json::Value jvParams;
-    jvParams[jss::ledger_index] = jss::validated;
-    jvParams[jss::deposit_preauth][jss::owner] = acc.human();
-    jvParams[jss::deposit_preauth][jss::authorized_credentials] =
-        Json::arrayValue;
-    auto& arr(jvParams[jss::deposit_preauth][jss::authorized_credentials]);
-    for (auto const& o : auth)
-    {
-        arr.append(o.toLEJson());
-    }
-    return env.rpc("json", "ledger_entry", to_string(jvParams));
-}
-
 struct DepositPreauth_test : public beast::unit_test::suite
 {
     void
@@ -878,8 +859,8 @@ struct DepositPreauth_test : public beast::unit_test::suite
             env(deposit::authCredentials(bob, {{issuer, credType}}));
             env.close();
 
-            auto const jDP =
-                ledgerEntryDepositPreauth(env, bob, {{issuer, credType}});
+            auto const jDP = deposit::ledgerEntryDepositPreauth(
+                env, bob, {{issuer, credType}});
             BEAST_EXPECT(
                 jDP.isObject() && jDP.isMember(jss::result) &&
                 !jDP[jss::result].isMember(jss::error) &&
@@ -1140,8 +1121,8 @@ struct DepositPreauth_test : public beast::unit_test::suite
                 env(deposit::authCredentials(bob, {{issuer, credType}}));
                 env.close();
 
-                auto const jDP =
-                    ledgerEntryDepositPreauth(env, bob, {{issuer, credType}});
+                auto const jDP = deposit::ledgerEntryDepositPreauth(
+                    env, bob, {{issuer, credType}});
                 BEAST_EXPECT(
                     jDP.isObject() && jDP.isMember(jss::result) &&
                     !jDP[jss::result].isMember(jss::error) &&
@@ -1174,8 +1155,8 @@ struct DepositPreauth_test : public beast::unit_test::suite
             {
                 env(deposit::unauthCredentials(bob, {{issuer, credType}}));
                 env.close();
-                auto const jDP =
-                    ledgerEntryDepositPreauth(env, bob, {{issuer, credType}});
+                auto const jDP = deposit::ledgerEntryDepositPreauth(
+                    env, bob, {{issuer, credType}});
                 BEAST_EXPECT(
                     jDP.isObject() && jDP.isMember(jss::result) &&
                     jDP[jss::result].isMember(jss::error) &&
@@ -1465,7 +1446,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
                 env.close();
 
                 auto const dp =
-                    ledgerEntryDepositPreauth(env, stock, credentials);
+                    deposit::ledgerEntryDepositPreauth(env, stock, credentials);
                 auto const& authCred(
                     dp[jss::result][jss::node]["AuthorizeCredentials"]);
                 BEAST_EXPECT(

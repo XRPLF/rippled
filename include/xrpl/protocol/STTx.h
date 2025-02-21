@@ -101,6 +101,9 @@ public:
     SeqProxy
     getSeqProxy() const;
 
+    SeqProxy
+    getDelegateSeqProxy() const;
+
     boost::container::flat_set<AccountID>
     getMentionedAccounts() const;
 
@@ -138,6 +141,9 @@ public:
         std::uint32_t inLedger,
         char status,
         std::string const& escapedMetaData) const;
+
+    AccountID
+    getEffectiveAccountID() const;
 
 private:
     Expected<void, std::string>

@@ -26,6 +26,24 @@ namespace test {
 namespace jtx {
 
 namespace credentials {
+bool
+checkVL(
+    std::shared_ptr<SLE const> const& sle,
+    SField const& field,
+    std::string const& expected)
+{
+    return strHex(expected) == strHex(sle->getFieldVL(field));
+}
+
+Keylet
+credentialKeylet(
+    test::jtx::Account const& subject,
+    test::jtx::Account const& issuer,
+    std::string_view credType)
+{
+    return keylet::credential(
+        subject.id(), issuer.id(), Slice(credType.data(), credType.size()));
+}
 
 Json::Value
 create(

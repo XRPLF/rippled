@@ -25,6 +25,7 @@
 #include <xrpld/app/tx/detail/AMMDeposit.h>
 #include <xrpld/app/tx/detail/AMMVote.h>
 #include <xrpld/app/tx/detail/AMMWithdraw.h>
+#include <xrpld/app/tx/detail/AccountPermissionSet.h>
 #include <xrpld/app/tx/detail/ApplyContext.h>
 #include <xrpld/app/tx/detail/CancelCheck.h>
 #include <xrpld/app/tx/detail/CancelOffer.h>
@@ -120,7 +121,7 @@ requires(T::ConsequencesFactory == Transactor::Normal)
 TxConsequences
     consequences_helper(PreflightContext const& ctx)
 {
-    return TxConsequences(ctx.tx);
+    return TxConsequences(ctx.tx.getSTTx());
 };
 
 // For Transactor::Blocker
@@ -129,7 +130,7 @@ requires(T::ConsequencesFactory == Transactor::Blocker)
 TxConsequences
     consequences_helper(PreflightContext const& ctx)
 {
-    return TxConsequences(ctx.tx, TxConsequences::blocker);
+    return TxConsequences(ctx.tx.getSTTx(), TxConsequences::blocker);
 };
 
 // For Transactor::Custom
@@ -165,7 +166,7 @@ invoke_preflight(PreflightContext const& ctx)
     }
 }
 
-static TER
+static std::pair<TER, std::unordered_set<GranularPermissionType>>
 invoke_preclaim(PreclaimContext const& ctx)
 {
     try
@@ -177,31 +178,52 @@ invoke_preclaim(PreclaimContext const& ctx)
             // doesn't list one, preflight will have already a flagged a
             // failure.
             auto const id = ctx.tx.getAccountID(sfAccount);
+            std::unordered_set<GranularPermissionType> permissions;
 
             if (id != beast::zero)
             {
-                TER result = T::checkSeqProxy(ctx.view, ctx.tx, ctx.j);
+                TER result =
+                    T::checkSeqProxy(ctx.view, ctx.tx.getSTTx(), ctx.j);
 
                 if (result != tesSUCCESS)
-                    return result;
+                    return std::make_pair(result, permissions);
+
+                if (ctx.tx.isDelegated())
+                {
+                    // if this is a delegated transaction, check if the account
+                    // has authorization.
+                    result = T::checkPermissions(
+                        ctx.view, ctx.tx.getSTTx(), permissions);
+
+                    if (result != tesSUCCESS)
+                        return std::make_pair(result, permissions);
+
+                    // check delegate sequence
+                    result = T::checkDelegateSeqProxy(
+                        ctx.view, ctx.tx.getSTTx(), ctx.j);
+
+                    if (result != tesSUCCESS)
+                        return std::make_pair(result, permissions);
+                }
 
                 result = T::checkPriorTxAndLastLedger(ctx);
 
                 if (result != tesSUCCESS)
-                    return result;
+                    return std::make_pair(result, permissions);
 
-                result = T::checkFee(ctx, calculateBaseFee(ctx.view, ctx.tx));
+                result = T::checkFee(
+                    ctx, calculateBaseFee(ctx.view, ctx.tx.getSTTx()));
 
                 if (result != tesSUCCESS)
-                    return result;
+                    return std::make_pair(result, permissions);
 
                 result = T::checkSign(ctx);
 
                 if (result != tesSUCCESS)
-                    return result;
+                    return std::make_pair(result, permissions);
             }
 
-            return T::preclaim(ctx);
+            return std::make_pair(T::preclaim(ctx), permissions);
         });
     }
     catch (UnknownTxnType const& e)
@@ -210,7 +232,7 @@ invoke_preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.fatal())
             << "Unknown transaction type in preclaim: " << e.txnType;
         UNREACHABLE("ripple::invoke_preclaim : unknown transaction type");
-        return temUNKNOWN;
+        return {temUNKNOWN, std::unordered_set<GranularPermissionType>{}};
     }
 }
 
@@ -324,14 +346,14 @@ preclaim(
         auto secondFlight = preflight(
             app,
             view.rules(),
-            preflightResult.tx,
+            preflightResult.tx.getSTTx(),
             preflightResult.flags,
             preflightResult.j);
         ctx.emplace(
             app,
             view,
             secondFlight.ter,
-            secondFlight.tx,
+            secondFlight.tx.getSTTx(),
             secondFlight.flags,
             secondFlight.j);
     }
@@ -341,20 +363,28 @@ preclaim(
             app,
             view,
             preflightResult.ter,
-            preflightResult.tx,
+            preflightResult.tx.getSTTx(),
             preflightResult.flags,
             preflightResult.j);
     }
     try
     {
         if (ctx->preflightResult != tesSUCCESS)
-            return {*ctx, ctx->preflightResult};
-        return {*ctx, invoke_preclaim(*ctx)};
+            return {
+                *ctx,
+                ctx->preflightResult,
+                std::unordered_set<GranularPermissionType>{}};
+
+        auto const& res = invoke_preclaim(*ctx);
+        return {*ctx, res.first, res.second};
     }
     catch (std::exception const& e)
     {
         JLOG(ctx->j.fatal()) << "apply: " << e.what();
-        return {*ctx, tefEXCEPTION};
+        return {
+            *ctx,
+            tefEXCEPTION,
+            std::unordered_set<GranularPermissionType>{}};  // LCOV_EXCL_LINE
     }
 }
 
@@ -386,10 +416,11 @@ doApply(PreclaimResult const& preclaimResult, Application& app, OpenView& view)
         ApplyContext ctx(
             app,
             view,
-            preclaimResult.tx,
+            preclaimResult.tx.getSTTx(),
             preclaimResult.ter,
-            calculateBaseFee(view, preclaimResult.tx),
+            calculateBaseFee(view, preclaimResult.tx.getSTTx()),
             preclaimResult.flags,
+            preclaimResult.permissions,
             preclaimResult.j);
         return invoke_apply(ctx);
     }
