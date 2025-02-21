@@ -444,8 +444,8 @@ public:
               std::make_unique<LoadFeeTrack>(logs_->journal("LoadManager")))
 
         , hashRouter_(std::make_unique<HashRouter>(
-              stopwatch(),
-              HashRouter::getDefaultHoldTime()))
+              setup_HashRouter(*config_),
+              stopwatch()))
 
         , mValidations(
               ValidationParms(),
