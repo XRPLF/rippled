@@ -533,50 +533,83 @@ NFTokenAcceptOffer::checkAcceptAsset(
     Issue const& issue)
 {
     // Only valid for custom currencies
-
-    if (!view.rules().enabled(featureDeepFreeze))
-    {
-        return tesSUCCESS;
-    }
-
     XRPL_ASSERT(
         !isXRP(issue.currency),
         "NFTokenAcceptOffer::checkAcceptAsset : valid to check.");
-    auto const issuerAccount = view.read(keylet::account(issue.account));
 
-    if (!issuerAccount)
+    if (view.rules().enabled(fixEnforceNFTokenAuthTrustline))
     {
-        JLOG(j.debug())
-            << "delay: can't receive IOUs from non-existent issuer: "
-            << to_string(issue.account);
+        auto const issuerAccount = view.read(keylet::account(issue.account));
+        if (!issuerAccount)
+        {
+            JLOG(j.debug()) << "NFTokenAcceptOffer::checkAcceptAsset(1): can't "
+                               "receive IOUs from non-existent issuer: "
+                            << to_string(issue.account);
 
-        return tecNO_ISSUER;
+            return tecNO_ISSUER;
+        }
+
+        if ((*issuerAccount)[sfFlags] & lsfRequireAuth)
+        {
+            auto const trustLine =
+                view.read(keylet::line(id, issue.account, issue.currency));
+
+            if (!trustLine)
+            {
+                return tecNO_LINE;
+            }
+
+            // Entries have a canonical representation, determined by a
+            // lexicographical "greater than" comparison employing strict weak
+            // ordering. Determine which entry we need to access.
+            bool const isAuthorized(
+                (*trustLine)[sfFlags] &
+                (id > issue.account ? lsfLowAuth : lsfHighAuth));
+
+            if (!isAuthorized)
+            {
+                return tecNO_AUTH;
+            }
+        }
     }
 
-    // An account can not create a trustline to itself, so no line can exist
-    // to be frozen. Additionally, an issuer can always accept its own
-    // issuance.
-    if (issue.account == id)
+    if (view.rules().enabled(featureDeepFreeze))
     {
-        return tesSUCCESS;
-    }
+        auto const issuerAccount = view.read(keylet::account(issue.account));
+        if (!issuerAccount)
+        {
+            JLOG(j.debug()) << "NFTokenAcceptOffer::checkAcceptAsset(2): can't "
+                               "receive IOUs from non-existent issuer: "
+                            << to_string(issue.account);
 
-    auto const trustLine =
-        view.read(keylet::line(id, issue.account, issue.currency));
+            return tecNO_ISSUER;
+        }
 
-    if (!trustLine)
-    {
-        return tesSUCCESS;
-    }
+        // An account can not create a trustline to itself, so no line can exist
+        // to be frozen. Additionally, an issuer can always accept its own
+        // issuance.
+        if (issue.account == id)
+        {
+            return tesSUCCESS;
+        }
 
-    // There's no difference which side enacted deep freeze, accepting
-    // tokens shouldn't be possible.
-    bool const deepFrozen =
-        (*trustLine)[sfFlags] & (lsfLowDeepFreeze | lsfHighDeepFreeze);
+        auto const trustLine =
+            view.read(keylet::line(id, issue.account, issue.currency));
 
-    if (deepFrozen)
-    {
-        return tecFROZEN;
+        if (!trustLine)
+        {
+            return tesSUCCESS;
+        }
+
+        // There's no difference which side enacted deep freeze, accepting
+        // tokens shouldn't be possible.
+        bool const deepFrozen =
+            (*trustLine)[sfFlags] & (lsfLowDeepFreeze | lsfHighDeepFreeze);
+
+        if (deepFrozen)
+        {
+            return tecFROZEN;
+        }
     }
 
     return tesSUCCESS;
