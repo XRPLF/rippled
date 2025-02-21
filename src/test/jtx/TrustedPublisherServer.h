@@ -34,7 +34,6 @@
 #include <boost/beast/ssl.hpp>
 #include <boost/beast/version.hpp>
 #include <boost/lexical_cast.hpp>
-
 #include <memory>
 #include <thread>
 

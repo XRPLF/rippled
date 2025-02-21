@@ -32,7 +32,6 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/messages.h>
 #include <boost/regex.hpp>
-
 #include <cmath>
 #include <numeric>
 #include <shared_mutex>

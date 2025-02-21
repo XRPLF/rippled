@@ -23,7 +23,6 @@
 #include <xrpl/beast/hash/hash_append.h>
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/net/IPAddress.h>
-
 #include <cstdint>
 #include <ios>
 #include <optional>

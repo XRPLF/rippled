@@ -18,11 +18,8 @@
 //==============================================================================
 
 #include <test/unit_test/multi_runner.h>
-
 #include <xrpl/beast/unit_test/amount.h>
-
 #include <boost/lexical_cast.hpp>
-
 #include <algorithm>
 #include <iomanip>
 #include <iostream>

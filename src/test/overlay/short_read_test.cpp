@@ -21,11 +21,9 @@
 #include <xrpl/basics/make_SSLContext.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/unit_test.h>
-
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/utility/in_place_factory.hpp>
-
 #include <functional>
 #include <optional>
 #include <thread>

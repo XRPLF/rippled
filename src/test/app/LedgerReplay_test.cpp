@@ -30,7 +30,6 @@
 #include <xrpld/overlay/PeerSet.h>
 #include <xrpld/overlay/detail/PeerImp.h>
 #include <xrpl/basics/Slice.h>
-
 #include <chrono>
 #include <thread>
 

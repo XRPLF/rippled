@@ -18,11 +18,20 @@
 //==============================================================================
 
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/contract.h>
-#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STPathSet.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
+#include <cstddef>
+#include <stdexcept>
+#include <utility>
+#include <vector>
 
 namespace ripple {
 

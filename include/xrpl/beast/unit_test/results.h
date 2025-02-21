@@ -9,7 +9,6 @@
 #define BEAST_UNIT_TEST_RESULTS_HPP
 
 #include <xrpl/beast/unit_test/detail/const_container.h>
-
 #include <string>
 #include <vector>
 

@@ -18,6 +18,9 @@
 //==============================================================================
 
 #include <xrpl/beast/utility/Journal.h>
+#include <ios>
+#include <ostream>
+#include <string>
 
 namespace beast {
 

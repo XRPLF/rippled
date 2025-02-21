@@ -18,6 +18,10 @@
 //==============================================================================
 
 #include <xrpl/basics/UptimeClock.h>
+#include <__chrono/duration.h>
+#include <atomic>
+#include <chrono>
+#include <thread>
 
 namespace ripple {
 

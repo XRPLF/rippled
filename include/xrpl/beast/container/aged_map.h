@@ -21,7 +21,6 @@
 #define BEAST_CONTAINER_AGED_MAP_H_INCLUDED
 
 #include <xrpl/beast/container/detail/aged_ordered_container.h>
-
 #include <chrono>
 #include <functional>
 #include <memory>

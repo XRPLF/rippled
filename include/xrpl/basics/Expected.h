@@ -21,9 +21,7 @@
 #define RIPPLE_BASICS_EXPECTED_H_INCLUDED
 
 #include <xrpl/basics/contract.h>
-
 #include <boost/outcome.hpp>
-
 #include <stdexcept>
 
 namespace ripple {

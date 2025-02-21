@@ -17,7 +17,6 @@
 */
 //==============================================================================
 #include <xrpld/app/paths/AMMLiquidity.h>
-
 #include <xrpld/app/paths/AMMOffer.h>
 
 namespace ripple {

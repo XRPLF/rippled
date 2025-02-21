@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpl/protocol/digest.h>
+#include <cstddef>
 #include <openssl/ripemd.h>
 #include <openssl/sha.h>
 

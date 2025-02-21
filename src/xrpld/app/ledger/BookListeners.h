@@ -22,7 +22,6 @@
 
 #include <xrpld/net/InfoSub.h>
 #include <xrpl/protocol/MultiApiJson.h>
-
 #include <memory>
 #include <mutex>
 

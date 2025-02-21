@@ -27,7 +27,6 @@
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/serialize.h>
-
 #include <optional>
 #include <tuple>
 

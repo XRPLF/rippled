@@ -21,10 +21,8 @@
 #include <xrpld/core/SociDB.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
-
 #include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
-
 #include <memory>
 #include <unordered_map>
 

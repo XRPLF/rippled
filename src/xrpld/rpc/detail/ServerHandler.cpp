@@ -17,14 +17,13 @@
 */
 //==============================================================================
 
-#include <xrpld/rpc/ServerHandler.h>
-
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/ConfigSections.h>
 #include <xrpld/core/JobQueue.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/rpc/RPCHandler.h>
 #include <xrpld/rpc/Role.h>
+#include <xrpld/rpc/ServerHandler.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/Tuning.h>
 #include <xrpld/rpc/json_body.h>
@@ -43,11 +42,9 @@
 #include <xrpl/server/Server.h>
 #include <xrpl/server/SimpleWriter.h>
 #include <xrpl/server/detail/JSONRPCUtil.h>
-
 #include <boost/algorithm/string.hpp>
 #include <boost/beast/http/fields.hpp>
 #include <boost/beast/http/string_body.hpp>
-
 #include <algorithm>
 #include <stdexcept>
 

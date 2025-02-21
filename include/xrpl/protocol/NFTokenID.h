@@ -24,7 +24,6 @@
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TxMeta.h>
-
 #include <memory>
 #include <optional>
 #include <vector>

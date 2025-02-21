@@ -17,14 +17,27 @@
 */
 //==============================================================================
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
+#include <xrpl/beast/insight/Collector.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
+#include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/PropertyStream.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/resource/Consumer.h>
+#include <xrpl/resource/Gossip.h>
 #include <xrpl/resource/ResourceManager.h>
 #include <xrpl/resource/detail/Logic.h>
-#include <boost/asio/ip/address_v4.hpp>
+#include <boost/asio/ip/address.hpp>
+#include <boost/system/detail/error_code.hpp>
+#include <chrono>
 #include <condition_variable>
+#include <memory>
+#include <mutex>
+#include <string>
+#include <string_view>
+#include <thread>
 
 namespace ripple {
 namespace Resource {

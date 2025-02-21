@@ -23,7 +23,6 @@
 #include <xrpl/beast/unit_test.h>
 #include <boost/endian/conversion.hpp>
 #include <complex>
-
 #include <type_traits>
 
 namespace ripple {

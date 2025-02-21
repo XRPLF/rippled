@@ -52,7 +52,6 @@
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/resource/Fees.h>
-
 #include <algorithm>
 #include <chrono>
 #include <cstdlib>

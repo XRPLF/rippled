@@ -18,11 +18,10 @@
 //==============================================================================
 
 #include <test/jtx.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/jss.h>
-
 #include <test/jtx/WSClient.h>
 #include <test/rpc/GRPCTestClientBase.h>
+#include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 namespace test {

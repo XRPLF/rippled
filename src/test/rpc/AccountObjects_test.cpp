@@ -26,9 +26,7 @@
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/nft.h>
-
 #include <boost/utility/string_ref.hpp>
-
 #include <algorithm>
 
 namespace ripple {

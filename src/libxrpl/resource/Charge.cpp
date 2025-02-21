@@ -18,7 +18,10 @@
 //==============================================================================
 
 #include <xrpl/resource/Charge.h>
+#include <compare>
+#include <ostream>
 #include <sstream>
+#include <string>
 
 namespace ripple {
 namespace Resource {

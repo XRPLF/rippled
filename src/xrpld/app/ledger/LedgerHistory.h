@@ -24,7 +24,6 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpl/beast/insight/Collector.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
-
 #include <optional>
 
 namespace ripple {

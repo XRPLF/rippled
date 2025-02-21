@@ -19,11 +19,20 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/safe_cast.h>
-#include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STInteger.h>
+#include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
+#include <charconv>
+#include <cstdint>
+#include <iterator>
+#include <string>
+#include <system_error>
 
 namespace ripple {
 

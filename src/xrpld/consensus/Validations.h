@@ -27,7 +27,6 @@
 #include <xrpl/beast/container/aged_container_utility.h>
 #include <xrpl/beast/container/aged_unordered_map.h>
 #include <xrpl/protocol/PublicKey.h>
-
 #include <mutex>
 #include <optional>
 #include <type_traits>

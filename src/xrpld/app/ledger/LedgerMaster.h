@@ -35,9 +35,8 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/messages.h>
-#include <optional>
-
 #include <mutex>
+#include <optional>
 
 namespace ripple {
 

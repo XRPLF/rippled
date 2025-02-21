@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/nodestore/detail/codec.h>
+#include <xrpld/unity/rocksdb.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/clock/basic_seconds_clock.h>
 #include <xrpl/beast/core/LexicalCast.h>
@@ -33,8 +34,6 @@
 #include <nudb/detail/format.hpp>
 #include <nudb/xxhasher.hpp>
 #include <sstream>
-
-#include <xrpld/unity/rocksdb.h>
 
 /*
 

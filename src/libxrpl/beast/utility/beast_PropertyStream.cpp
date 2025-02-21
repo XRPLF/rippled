@@ -21,6 +21,9 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <algorithm>
 #include <iostream>
+#include <mutex>
+#include <string>
+#include <utility>
 
 namespace beast {
 

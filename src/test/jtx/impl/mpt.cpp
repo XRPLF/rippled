@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <test/jtx/mpt.h>
-
 #include <xrpl/protocol/jss.h>
 
 namespace ripple {

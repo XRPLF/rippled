@@ -17,16 +17,31 @@
 */
 //==============================================================================
 
+#include <xrpl/basics/Buffer.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/utility/rngfill.h>
 #include <xrpl/crypto/csprng.h>
 #include <xrpl/crypto/secure_erase.h>
+#include <xrpl/protocol/KeyType.h>
+#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
+#include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/detail/secp256k1.h>
 #include <xrpl/protocol/digest.h>
+#include <xrpl/protocol/tokens.h>
+#include <boost/utility/string_view.hpp>
+#include "secp256k1.h"
+#include <algorithm>
+#include <array>
+#include <cstdint>
 #include <cstring>
 #include <ed25519.h>
+#include <optional>
+#include <stdexcept>
+#include <utility>
 
 namespace ripple {
 

@@ -23,13 +23,11 @@
 #include <xrpl/beast/unit_test/global_suites.h>
 #include <xrpl/beast/unit_test/runner.h>
 #include <boost/beast/core/static_string.hpp>
-
 #include <boost/container/static_vector.hpp>
 #include <boost/interprocess/ipc/message_queue.hpp>
 #include <boost/interprocess/mapped_region.hpp>
 #include <boost/interprocess/shared_memory_object.hpp>
 #include <boost/interprocess/sync/interprocess_mutex.hpp>
-
 #include <atomic>
 #include <chrono>
 #include <numeric>

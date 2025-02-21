@@ -19,7 +19,6 @@
 
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/Serializer.h>
-
 #include <limits>
 
 namespace ripple {

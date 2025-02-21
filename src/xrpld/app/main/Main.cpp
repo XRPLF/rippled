@@ -32,12 +32,10 @@
 #include <xrpl/beast/unit_test/match.h>
 #endif  // ENABLE_TESTS
 
-#include <google/protobuf/stubs/common.h>
-
 #include <boost/process.hpp>
 #include <boost/program_options.hpp>
-
 #include <cstdlib>
+#include <google/protobuf/stubs/common.h>
 #include <iostream>
 #include <stdexcept>
 #include <utility>

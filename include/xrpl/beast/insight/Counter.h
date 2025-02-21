@@ -21,7 +21,6 @@
 #define BEAST_INSIGHT_COUNTER_H_INCLUDED
 
 #include <xrpl/beast/insight/CounterImpl.h>
-
 #include <memory>
 
 namespace beast {

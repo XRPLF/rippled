@@ -22,7 +22,6 @@
 
 #include <test/csf/random.h>
 #include <boost/container/flat_set.hpp>
-
 #include <chrono>
 #include <numeric>
 #include <random>

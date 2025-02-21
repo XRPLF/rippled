@@ -26,7 +26,6 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
-
 #include <memory>
 
 namespace Json {

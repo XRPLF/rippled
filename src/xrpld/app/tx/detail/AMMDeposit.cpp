@@ -17,10 +17,9 @@
 */
 //==============================================================================
 
-#include <xrpld/app/tx/detail/AMMDeposit.h>
-
 #include <xrpld/app/misc/AMMHelpers.h>
 #include <xrpld/app/misc/AMMUtils.h>
+#include <xrpld/app/tx/detail/AMMDeposit.h>
 #include <xrpld/ledger/Sandbox.h>
 #include <xrpld/ledger/View.h>
 #include <xrpl/protocol/AMMCore.h>

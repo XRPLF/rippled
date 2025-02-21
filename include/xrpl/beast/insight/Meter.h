@@ -20,9 +20,8 @@
 #ifndef BEAST_INSIGHT_METER_H_INCLUDED
 #define BEAST_INSIGHT_METER_H_INCLUDED
 
-#include <memory>
-
 #include <xrpl/beast/insight/MeterImpl.h>
+#include <memory>
 
 namespace beast {
 namespace insight {

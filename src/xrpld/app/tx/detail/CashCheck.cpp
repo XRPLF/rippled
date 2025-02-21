@@ -26,7 +26,6 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
-
 #include <algorithm>
 
 namespace ripple {

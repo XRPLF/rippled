@@ -23,7 +23,6 @@
 #include <xrpld/shamap/SHAMapNodeID.h>
 #include <xrpld/shamap/SHAMapTreeNode.h>
 #include <xrpld/shamap/detail/TaggedPointer.h>
-
 #include <atomic>
 #include <cstdint>
 #include <optional>

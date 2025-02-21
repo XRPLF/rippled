@@ -21,7 +21,6 @@
 #define BEAST_INSIGHT_EVENT_H_INCLUDED
 
 #include <xrpl/beast/insight/EventImpl.h>
-
 #include <chrono>
 #include <memory>
 

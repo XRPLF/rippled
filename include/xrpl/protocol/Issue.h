@@ -23,7 +23,6 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/UintTypes.h>
-
 #include <functional>
 #include <type_traits>
 

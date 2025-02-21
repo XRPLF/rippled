@@ -23,7 +23,6 @@
 #include <xrpl/json/json_writer.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/XRPAmount.h>
-
 #include <algorithm>
 
 namespace ripple {

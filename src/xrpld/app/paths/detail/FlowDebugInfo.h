@@ -24,9 +24,7 @@
 #include <xrpld/ledger/PaymentSandbox.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/XRPAmount.h>
-
 #include <boost/container/flat_map.hpp>
-
 #include <chrono>
 #include <optional>
 #include <sstream>

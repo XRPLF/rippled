@@ -19,7 +19,6 @@
 
 #include <test/jtx.h>
 #include <xrpl/protocol/Feature.h>
-
 #include <algorithm>
 
 namespace ripple {

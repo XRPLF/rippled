@@ -20,10 +20,9 @@
 #ifndef RIPPLE_JSON_MULTIAPIJSON_H_INCLUDED
 #define RIPPLE_JSON_MULTIAPIJSON_H_INCLUDED
 
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ApiVersion.h>
-
-#include <xrpl/beast/utility/instrumentation.h>
 #include <array>
 #include <concepts>
 #include <cstdlib>

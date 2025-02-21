@@ -29,7 +29,6 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_writer.h>
-
 #include <chrono>
 #include <deque>
 #include <optional>

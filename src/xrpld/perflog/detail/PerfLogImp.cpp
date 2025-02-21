@@ -17,9 +17,8 @@
 */
 //==============================================================================
 
-#include <xrpld/perflog/detail/PerfLogImp.h>
-
 #include <xrpld/core/JobTypes.h>
+#include <xrpld/perflog/detail/PerfLogImp.h>
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/utility/Journal.h>

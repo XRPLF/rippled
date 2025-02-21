@@ -30,7 +30,6 @@
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/messages.h>
-
 #include <boost/beast/core/multi_buffer.hpp>
 
 namespace ripple {

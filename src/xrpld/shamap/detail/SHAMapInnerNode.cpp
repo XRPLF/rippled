@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <xrpld/shamap/SHAMapInnerNode.h>
-
 #include <xrpld/shamap/SHAMapTreeNode.h>
 #include <xrpld/shamap/detail/TaggedPointer.ipp>
 #include <xrpl/basics/Slice.h>
@@ -26,7 +25,6 @@
 #include <xrpl/basics/spinlock.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/digest.h>
-
 #include <algorithm>
 #include <iterator>
 

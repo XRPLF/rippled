@@ -20,6 +20,9 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/crypto/csprng.h>
 #include <array>
+#include <cstddef>
+#include <mutex>
+#include <openssl/opensslv.h>
 #include <openssl/rand.h>
 #include <random>
 #include <stdexcept>

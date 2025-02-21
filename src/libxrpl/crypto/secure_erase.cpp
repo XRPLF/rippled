@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpl/crypto/secure_erase.h>
+#include <cstddef>
 #include <openssl/crypto.h>
 
 namespace ripple {

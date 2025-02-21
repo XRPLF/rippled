@@ -26,9 +26,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/json/json_value.h>
-
 #include <boost/asio.hpp>
-
 #include <mutex>
 #include <optional>
 

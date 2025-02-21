@@ -24,7 +24,6 @@
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/st.h>
-
 #include <array>
 #include <memory>
 #include <type_traits>

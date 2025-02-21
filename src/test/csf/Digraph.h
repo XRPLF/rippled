@@ -23,7 +23,6 @@
 #include <boost/container/flat_map.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/iterator_range.hpp>
-
 #include <fstream>
 #include <optional>
 #include <type_traits>

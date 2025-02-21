@@ -17,8 +17,10 @@
 */
 //==============================================================================
 
-#include <xrpl/protocol/XChainAttestations.h>
-
+#include <xrpl/basics/Buffer.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
@@ -26,11 +28,17 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/XChainAttestations.h>
 #include <xrpl/protocol/json_get_or_throw.h>
 #include <xrpl/protocol/jss.h>
-
+#include <cstdint>
 #include <optional>
+#include <stdexcept>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 namespace ripple {
 namespace Attestations {

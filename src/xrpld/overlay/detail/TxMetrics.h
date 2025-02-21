@@ -22,9 +22,7 @@
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/messages.h>
-
 #include <boost/circular_buffer.hpp>
-
 #include <chrono>
 #include <mutex>
 

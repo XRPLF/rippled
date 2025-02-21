@@ -6,6 +6,7 @@ libxrpl.protocol > xrpl.basics
 libxrpl.protocol > xrpl.json
 libxrpl.protocol > xrpl.protocol
 libxrpl.resource > xrpl.basics
+libxrpl.resource > xrpl.json
 libxrpl.resource > xrpl.resource
 libxrpl.server > xrpl.basics
 libxrpl.server > xrpl.json

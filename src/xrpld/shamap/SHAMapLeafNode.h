@@ -23,7 +23,6 @@
 #include <xrpld/shamap/SHAMapItem.h>
 #include <xrpld/shamap/SHAMapNodeID.h>
 #include <xrpld/shamap/SHAMapTreeNode.h>
-
 #include <cstdint>
 
 namespace ripple {

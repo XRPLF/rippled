@@ -37,10 +37,8 @@
 #include <xrpl/basics/random.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/protocol/digest.h>
-
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/beast/core/ostream.hpp>
-
 #include <algorithm>
 #include <memory>
 #include <mutex>

@@ -20,9 +20,8 @@
 #ifndef RIPPLE_PROTOCOL_TXFLAGS_H_INCLUDED
 #define RIPPLE_PROTOCOL_TXFLAGS_H_INCLUDED
 
-#include <cstdint>
-
 #include <xrpl/protocol/LedgerFormats.h>
+#include <cstdint>
 
 namespace ripple {
 

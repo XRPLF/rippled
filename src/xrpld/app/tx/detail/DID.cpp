@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <xrpld/app/tx/detail/DID.h>
-
 #include <xrpld/ledger/ApplyView.h>
 #include <xrpld/ledger/View.h>
 #include <xrpl/basics/Log.h>

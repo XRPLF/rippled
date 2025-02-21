@@ -18,10 +18,19 @@
 //==============================================================================
 
 #include <xrpl/beast/hash/uhash.h>
+#include <xrpl/beast/insight/Collector.h>
+#include <xrpl/beast/insight/Counter.h>
+#include <xrpl/beast/insight/Event.h>
+#include <xrpl/beast/insight/Gauge.h>
 #include <xrpl/beast/insight/Group.h>
 #include <xrpl/beast/insight/Groups.h>
+#include <xrpl/beast/insight/Hook.h>
+#include <xrpl/beast/insight/HookImpl.h>
+#include <xrpl/beast/insight/Meter.h>
 #include <memory>
+#include <string>
 #include <unordered_map>
+#include <utility>
 
 namespace beast {
 namespace insight {

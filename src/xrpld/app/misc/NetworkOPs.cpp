@@ -65,7 +65,6 @@
 #include <xrpl/resource/ResourceManager.h>
 #include <boost/asio/ip/host_name.hpp>
 #include <boost/asio/steady_timer.hpp>
-
 #include <algorithm>
 #include <exception>
 #include <mutex>

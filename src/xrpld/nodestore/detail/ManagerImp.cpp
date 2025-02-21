@@ -19,7 +19,6 @@
 
 #include <xrpld/nodestore/detail/DatabaseNodeImp.h>
 #include <xrpld/nodestore/detail/ManagerImp.h>
-
 #include <boost/algorithm/string/predicate.hpp>
 
 namespace ripple {

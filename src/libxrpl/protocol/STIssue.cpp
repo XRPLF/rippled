@@ -17,13 +17,23 @@
 */
 //==============================================================================
 
-#include <xrpl/protocol/STIssue.h>
-
 #include <xrpl/basics/contract.h>
-#include <xrpl/protocol/SystemParameters.h>
-
-#include <boost/algorithm/string.hpp>
-#include <boost/regex.hpp>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/STIssue.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/UintTypes.h>
+#include <cstddef>
+#include <cstdint>
+#include <cstring>
+#include <stdexcept>
+#include <string>
+#include <utility>
 
 namespace ripple {
 

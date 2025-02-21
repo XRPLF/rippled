@@ -25,9 +25,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Quality.h>
-
 #include <boost/container/flat_set.hpp>
-
 #include <numeric>
 #include <sstream>
 
@@ -204,8 +202,7 @@ protected:
     logStringImpl(char const* name) const
     {
         std::ostringstream ostr;
-        ostr << name << ": "
-             << "\nSrc: " << src_ << "\nDst: " << dst_;
+        ostr << name << ": " << "\nSrc: " << src_ << "\nDst: " << dst_;
         return ostr.str();
     }
 

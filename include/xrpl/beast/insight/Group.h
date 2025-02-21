@@ -21,7 +21,6 @@
 #define BEAST_INSIGHT_GROUP_H_INCLUDED
 
 #include <xrpl/beast/insight/Collector.h>
-
 #include <memory>
 #include <string>
 

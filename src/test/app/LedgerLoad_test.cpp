@@ -25,7 +25,6 @@
 #include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
-
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 #include <fstream>

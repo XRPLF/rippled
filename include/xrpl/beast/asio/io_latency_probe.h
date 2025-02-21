@@ -23,7 +23,6 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/io_service.hpp>
-
 #include <chrono>
 #include <condition_variable>
 #include <mutex>

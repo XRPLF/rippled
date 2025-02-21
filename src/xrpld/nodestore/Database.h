@@ -26,7 +26,6 @@
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/SystemParameters.h>
-
 #include <condition_variable>
 
 namespace ripple {

@@ -22,6 +22,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <cstdlib>
 #include <iostream>
+#include <string>
 
 namespace ripple {
 

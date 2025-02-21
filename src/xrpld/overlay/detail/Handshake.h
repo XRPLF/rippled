@@ -24,13 +24,12 @@
 #include <xrpld/overlay/detail/ProtocolVersion.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/BuildInfo.h>
-#include <boost/beast/core/tcp_stream.hpp>
-#include <boost/beast/ssl/ssl_stream.hpp>
-
 #include <boost/asio/ssl.hpp>
+#include <boost/beast/core/tcp_stream.hpp>
 #include <boost/beast/http/dynamic_body.hpp>
 #include <boost/beast/http/empty_body.hpp>
 #include <boost/beast/http/fields.hpp>
+#include <boost/beast/ssl/ssl_stream.hpp>
 #include <optional>
 #include <utility>
 

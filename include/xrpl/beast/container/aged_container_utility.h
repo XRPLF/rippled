@@ -21,7 +21,6 @@
 #define BEAST_CONTAINER_AGED_CONTAINER_UTILITY_H_INCLUDED
 
 #include <xrpl/beast/container/aged_container.h>
-
 #include <type_traits>
 
 namespace beast {

@@ -26,7 +26,6 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
-
 #include <string_view>
 
 namespace ripple {

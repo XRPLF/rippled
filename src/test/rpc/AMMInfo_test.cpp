@@ -21,7 +21,6 @@
 #include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
 #include <xrpl/protocol/jss.h>
-
 #include <unordered_map>
 
 namespace ripple {

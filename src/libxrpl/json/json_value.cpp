@@ -17,10 +17,16 @@
 */
 //==============================================================================
 
-#include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/detail/json_assert.h>
+#include <xrpl/json/json_forwards.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>
+#include <cstdlib>
+#include <cstring>
+#include <string>
+#include <utility>
 
 namespace Json {
 

@@ -17,7 +17,9 @@
 */
 //==============================================================================
 
-#include <xrpl/basics/Buffer.h>
+#include <xrpl/basics/Blob.h>
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/rngfill.h>
 #include <xrpl/crypto/RFC1751.h>
@@ -28,9 +30,13 @@
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/digest.h>
+#include <xrpl/protocol/tokens.h>
 #include <algorithm>
+#include <array>
+#include <cstdint>
 #include <cstring>
 #include <iterator>
+#include <optional>
 
 namespace ripple {
 
