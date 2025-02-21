@@ -93,6 +93,13 @@ public:
         using beast::Journal;
         sink_.write(level, prefix_ + text);
     }
+
+    void
+    writeAlways(severities::Severity level, std::string const& text) override
+    {
+        using beast::Journal;
+        sink_.writeAlways(level, prefix_ + text);
+    }
 };
 
 }  // namespace beast
