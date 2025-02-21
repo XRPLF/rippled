@@ -88,7 +88,8 @@ checkConsensusReached(
     std::size_t total,
     bool count_self,
     std::size_t minConsensusPct,
-    bool reachedMax)
+    bool reachedMax,
+    bool stalled)
 {
     // If we are alone for too long, we have consensus.
     // Delaying consensus like this avoids a circumstance where a peer
@@ -114,7 +115,7 @@ checkConsensusReached(
 
     std::size_t currentPercentage = (agreeing * 100) / total;
 
-    return currentPercentage >= minConsensusPct;
+    return stalled || currentPercentage >= minConsensusPct;
 }
 
 ConsensusState
@@ -125,6 +126,7 @@ checkConsensus(
     std::size_t currentFinished,
     std::chrono::milliseconds previousAgreeTime,
     std::chrono::milliseconds currentAgreeTime,
+    bool stalled,
     ConsensusParms const& parms,
     bool proposing,
     beast::Journal j)
@@ -137,7 +139,7 @@ checkConsensus(
                     << " minimum duration to reach consensus: "
                     << parms.ledgerMIN_CONSENSUS.count() << "ms"
                     << " max consensus time "
-                    << parms.ledgerMAX_CONSENSUS.count() << "s"
+                    << parms.ledgerMAX_CONSENSUS.count() << "ms"
                     << " minimum consensus percentage: "
                     << parms.minCONSENSUS_PCT;
 
@@ -162,9 +164,11 @@ checkConsensus(
             currentProposers,
             proposing,
             parms.minCONSENSUS_PCT,
-            currentAgreeTime > parms.ledgerMAX_CONSENSUS))
+            currentAgreeTime > parms.ledgerMAX_CONSENSUS,
+            stalled))
     {
-        JLOG(j.debug()) << "normal consensus";
+        JLOG(j.debug()) << "normal consensus"
+                        << (stalled ? ", but stalled" : "");
         return ConsensusState::Yes;
     }
 
@@ -175,10 +179,23 @@ checkConsensus(
             currentProposers,
             false,
             parms.minCONSENSUS_PCT,
-            currentAgreeTime > parms.ledgerMAX_CONSENSUS))
+            currentAgreeTime > parms.ledgerMAX_CONSENSUS,
+            false))
     {
         JLOG(j.warn()) << "We see no consensus, but 80% of nodes have moved on";
         return ConsensusState::MovedOn;
+    }
+
+    std::chrono::milliseconds const maxAgreeTime =
+        previousAgreeTime * parms.ledgerABANDON_CONSENSUS_FACTOR;
+    if (currentAgreeTime > std::clamp(
+                               maxAgreeTime,
+                               parms.ledgerMAX_CONSENSUS,
+                               parms.ledgerABANDON_CONSENSUS))
+    {
+        JLOG(j.warn()) << "consensus taken too long";
+        // Note the Expired result may be overridden by the caller.
+        return ConsensusState::Expired;
     }
 
     // no consensus yet

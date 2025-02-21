@@ -22,6 +22,7 @@
 #include <xrpld/consensus/ConsensusProposal.h>
 #include <xrpl/beast/clock/manual_clock.h>
 #include <xrpl/beast/unit_test.h>
+#include <xrpl/json/to_string.h>
 #include <utility>
 
 namespace ripple {
@@ -40,6 +41,7 @@ public:
     testShouldCloseLedger()
     {
         using namespace std::chrono_literals;
+        testcase("should close ledger");
 
         // Use default parameters
         ConsensusParms const p{};
@@ -78,46 +80,102 @@ public:
     testCheckConsensus()
     {
         using namespace std::chrono_literals;
+        testcase("check consensus");
 
         // Use default parameterss
         ConsensusParms const p{};
 
+        ///////////////
+        // Disputes still in doubt
+        //
         // Not enough time has elapsed
         BEAST_EXPECT(
             ConsensusState::No ==
-            checkConsensus(10, 2, 2, 0, 3s, 2s, p, true, journal_));
+            checkConsensus(10, 2, 2, 0, 3s, 2s, false, p, true, journal_));
 
         // If not enough peers have propsed, ensure
         // more time for proposals
         BEAST_EXPECT(
             ConsensusState::No ==
-            checkConsensus(10, 2, 2, 0, 3s, 4s, p, true, journal_));
+            checkConsensus(10, 2, 2, 0, 3s, 4s, false, p, true, journal_));
 
         // Enough time has elapsed and we all agree
         BEAST_EXPECT(
             ConsensusState::Yes ==
-            checkConsensus(10, 2, 2, 0, 3s, 10s, p, true, journal_));
+            checkConsensus(10, 2, 2, 0, 3s, 10s, false, p, true, journal_));
 
         // Enough time has elapsed and we don't yet agree
         BEAST_EXPECT(
             ConsensusState::No ==
-            checkConsensus(10, 2, 1, 0, 3s, 10s, p, true, journal_));
+            checkConsensus(10, 2, 1, 0, 3s, 10s, false, p, true, journal_));
 
         // Our peers have moved on
         // Enough time has elapsed and we all agree
         BEAST_EXPECT(
             ConsensusState::MovedOn ==
-            checkConsensus(10, 2, 1, 8, 3s, 10s, p, true, journal_));
+            checkConsensus(10, 2, 1, 8, 3s, 10s, false, p, true, journal_));
 
         // If no peers, don't agree until time has passed.
         BEAST_EXPECT(
             ConsensusState::No ==
-            checkConsensus(0, 0, 0, 0, 3s, 10s, p, true, journal_));
+            checkConsensus(0, 0, 0, 0, 3s, 10s, false, p, true, journal_));
 
         // Agree if no peers and enough time has passed.
         BEAST_EXPECT(
             ConsensusState::Yes ==
-            checkConsensus(0, 0, 0, 0, 3s, 16s, p, true, journal_));
+            checkConsensus(0, 0, 0, 0, 3s, 16s, false, p, true, journal_));
+
+        // Expire if too much time has passed without agreement
+        BEAST_EXPECT(
+            ConsensusState::Expired ==
+            checkConsensus(10, 8, 1, 0, 1s, 19s, false, p, true, journal_));
+
+        ///////////////
+        // Stalled
+        //
+        // Not enough time has elapsed
+        BEAST_EXPECT(
+            ConsensusState::No ==
+            checkConsensus(10, 2, 2, 0, 3s, 2s, true, p, true, journal_));
+
+        // If not enough peers have propsed, ensure
+        // more time for proposals
+        BEAST_EXPECT(
+            ConsensusState::No ==
+            checkConsensus(10, 2, 2, 0, 3s, 4s, true, p, true, journal_));
+
+        // Enough time has elapsed and we all agree
+        BEAST_EXPECT(
+            ConsensusState::Yes ==
+            checkConsensus(10, 2, 2, 0, 3s, 10s, true, p, true, journal_));
+
+        // Enough time has elapsed and we don't yet agree, but there's nothing
+        // left to dispute
+        BEAST_EXPECT(
+            ConsensusState::Yes ==
+            checkConsensus(10, 2, 1, 0, 3s, 10s, true, p, true, journal_));
+
+        // Our peers have moved on
+        // Enough time has elapsed and we all agree, nothing left to dispute
+        BEAST_EXPECT(
+            ConsensusState::Yes ==
+            checkConsensus(10, 2, 1, 8, 3s, 10s, true, p, true, journal_));
+
+        // If no peers, don't agree until time has passed.
+        BEAST_EXPECT(
+            ConsensusState::No ==
+            checkConsensus(0, 0, 0, 0, 3s, 10s, true, p, true, journal_));
+
+        // Agree if no peers and enough time has passed.
+        BEAST_EXPECT(
+            ConsensusState::Yes ==
+            checkConsensus(0, 0, 0, 0, 3s, 16s, true, p, true, journal_));
+
+        // We are done if there's nothing left to dispute, no matter how much
+        // time has passed
+        BEAST_EXPECT(
+            ConsensusState::Yes ==
+            checkConsensus(10, 8, 1, 0, 1s, 19s, true, p, true, journal_));
     }
 
     void
@@ -125,6 +183,7 @@ public:
     {
         using namespace std::chrono_literals;
         using namespace csf;
+        testcase("standalone");
 
         Sim s;
         PeerGroup peers = s.createGroup(1);
@@ -149,6 +208,7 @@ public:
     {
         using namespace csf;
         using namespace std::chrono;
+        testcase("peers agree");
 
         ConsensusParms const parms{};
         Sim sim;
@@ -186,6 +246,7 @@ public:
     {
         using namespace csf;
         using namespace std::chrono;
+        testcase("slow peers");
 
         // Several tests of a complete trust graph with a subset of peers
         // that have significantly longer network delays to the rest of the
@@ -351,6 +412,7 @@ public:
     {
         using namespace csf;
         using namespace std::chrono;
+        testcase("close time disagree");
 
         // This is a very specialized test to get ledgers to disagree on
         // the close time. It unfortunately assumes knowledge about current
@@ -417,6 +479,8 @@ public:
     {
         using namespace csf;
         using namespace std::chrono;
+        testcase("wrong LCL");
+
         // Specialized test to exercise a temporary fork in which some peers
         // are working on an incorrect prior ledger.
 
@@ -589,6 +653,7 @@ public:
     {
         using namespace csf;
         using namespace std::chrono;
+        testcase("consensus close time rounding");
 
         // This is a specialized test engineered to yield ledgers with different
         // close times even though the peers believe they had close time
@@ -603,9 +668,6 @@ public:
         PeerGroup slow = sim.createGroup(2);
         PeerGroup fast = sim.createGroup(4);
         PeerGroup network = fast + slow;
-
-        for (Peer* peer : network)
-            peer->consensusParms = parms;
 
         // Connected trust graph
         network.trust(network);
@@ -692,6 +754,7 @@ public:
     {
         using namespace csf;
         using namespace std::chrono;
+        testcase("fork");
 
         std::uint32_t numPeers = 10;
         // Vary overlap between two UNLs
@@ -748,6 +811,7 @@ public:
     {
         using namespace csf;
         using namespace std::chrono;
+        testcase("hub network");
 
         // Simulate a set of 5 validators that aren't directly connected but
         // rely on a single hub node for communication
@@ -835,6 +899,7 @@ public:
     {
         using namespace csf;
         using namespace std::chrono;
+        testcase("preferred by branch");
 
         // Simulate network splits that are prevented from forking when using
         // preferred ledger by trie.  This is a contrived example that involves
@@ -967,6 +1032,7 @@ public:
     {
         using namespace csf;
         using namespace std::chrono;
+        testcase("pause for laggards");
 
         // Test that validators that jump ahead of the network slow
         // down.
@@ -1053,6 +1119,160 @@ public:
     }
 
     void
+    testDisjointNetwork()
+    {
+        // WIP: Try to create conditions where messaging is unreliable and all
+        // peers have different initial proposals
+        using namespace csf;
+        using namespace std::chrono;
+        testcase("disjoint network");
+
+        std::uint32_t const numPeers = 35;
+
+        ConsensusParms const parms{};
+        Sim sim;
+
+        std::vector<PeerGroup> peerGroups;
+        peerGroups.reserve(numPeers);
+        PeerGroup network;
+        for (int i = 0; i < numPeers; ++i)
+        {
+            peerGroups.emplace_back(sim.createGroup(1));
+            network = network + peerGroups.back();
+        }
+
+        // Fully connected trust graph
+        network.trust(network);
+
+        for (int i = 0; i < peerGroups.size(); ++i)
+        {
+            auto const delay = i * 0.2 * parms.ledgerGRANULARITY;
+            auto& group = peerGroups[i];
+            auto& nextGroup = peerGroups[(i + 1) % numPeers];
+            group.connect(nextGroup, round<milliseconds>(delay));
+            auto& oppositeGroup = peerGroups[(i + numPeers / 2) % numPeers];
+            group.connect(oppositeGroup, round<milliseconds>(delay));
+        }
+
+        // Initial round to set prior state
+        sim.run(1);
+        for (Peer* peer : network)
+        {
+            // Every transaction will be seen by every node but two.
+            // To accomplish that, every peer will add the ids of every peer
+            // except itself, and the one following.
+            auto const myId = peer->id;
+            auto const nextId = (peer->id + PeerID(1)) % PeerID(numPeers);
+            for (Peer* to : sim.trustGraph.trustedPeers(peer))
+            {
+                if (to->id == myId || to->id == nextId)
+                    continue;
+                peer->openTxs.insert(Tx{static_cast<std::uint32_t>(to->id)});
+            }
+        }
+        sim.run(1);
+
+        // Peers are out of sync
+        if (BEAST_EXPECT(!sim.synchronized()))
+        {
+            BEAST_EXPECT(sim.branches() == 1);
+            for (auto const& grp : peerGroups)
+            {
+                Peer const* peer = grp[0];
+                BEAST_EXPECT(
+                    peer->fullyValidatedLedger.seq() == Ledger::Seq{1});
+
+                auto const& lcl = peer->lastClosedLedger;
+                BEAST_EXPECT(lcl.id() == peer->prevLedgerID());
+                log << "Peer " << peer->id << ", lcl seq: " << lcl.seq()
+                    << ", prevProposers: " << peer->prevProposers
+                    << ", txs in lcl: " << lcl.txs().size() << ", validations: "
+                    << peer->validations.sizeOfByLedgerCache() << std::endl;
+                for (auto const& [id, positions] : peer->peerPositions)
+                {
+                    log << "\tLedger ID: " << id
+                        << ", #positions: " << positions.size() << std::endl;
+                }
+                /*
+                log << "\t" << to_string(peer->consensus.getJson(true))
+                    << std::endl
+                    << std::endl;
+                */
+                /*
+                BEAST_EXPECT(lcl.seq() == Ledger::Seq{1}, to_string);
+                // All peers proposed
+                BEAST_EXPECT(peer->prevProposers == network.size() - 1);
+                // All transactions were accepted
+                for (std::uint32_t i = 0; i < network.size(); ++i)
+                    BEAST_EXPECT(lcl.txs().find(Tx{i}) != lcl.txs().end());
+                    */
+            }
+        }
+    }
+
+    void
+    testDisputes()
+    {
+        testcase("disputes");
+
+        using namespace csf;
+
+        // Test dispute objects directly
+        using Dispute = DisputedTx<Tx, PeerID>;
+
+        Tx const tx{99};
+        int const numPeers = 100;
+        ConsensusParms p;
+        std::size_t peersUnchanged = 0;
+
+        // Three cases:
+        // 1 proposing, initial vote yes
+        // 2 proposing, initial vote no
+        // 3 not proposing, initial vote doesn't matter after the first update,
+        // use yes
+        {
+            bool const proposing = true;
+            bool const myVote = true;
+
+            Dispute d{tx.id(), myVote, numPeers, journal_};
+            BEAST_EXPECT(d.ID() == 99);
+
+            // Create an even split in the peer votes
+            for (int i = 0; i < numPeers; ++i)
+            {
+                BEAST_EXPECT(d.setVote(PeerID(i), i < 50));
+            }
+            // Switch the middle vote to match mine
+            BEAST_EXPECT(d.setVote(myVote ? PeerID(50) : PeerID(49), myVote));
+
+            // no changes yet
+            BEAST_EXPECT(d.getOurVote() == myVote);
+            BEAST_EXPECT(!d.stalled(p, proposing, peersUnchanged));
+
+            // I'm in the majority, my vote should not change
+            BEAST_EXPECT(d.updateVote(5, proposing, p) != proposing);
+            BEAST_EXPECT(d.updateVote(10, proposing, p) != proposing);
+
+            // Right now, the vote is 51%. The requirement is about to jump to
+            // 65%
+            bool changed = d.updateVote(55, proposing, p);
+            BEAST_EXPECT(changed == !proposing || myVote);
+            BEAST_EXPECT(!changed || d.getOurVote() != myVote);
+            // 16 validators change their vote to match my original vote
+            for (int i = 0; i < 16; ++i)
+            {
+                // If I was voting yes, change no's from the end
+                auto p = myVote ? PeerID(numPeers - i - 1) : PeerID(i);
+                BEAST_EXPECT(d.setVote(p, myVote));
+            }
+            // The vote should now be 66%
+            changed = d.updateVote(60, proposing, p);
+            BEAST_EXPECT(changed == proposing);
+            BEAST_EXPECT(!changed || d.getOurVote() == myVote);
+        }
+    }
+
+    void
     run() override
     {
         testShouldCloseLedger();
@@ -1068,6 +1288,8 @@ public:
         testHubNetwork();
         testPreferredByBranch();
         testPauseForLaggards();
+        testDisjointNetwork();
+        testDisputes();
     }
 };
 
