@@ -182,6 +182,11 @@ public:
     removeTxQueue(const uint256&) override
     {
     }
+    std::set<std::optional<uint64_t>>
+    releaseRequestCookies(uint256 const& requestHash) override
+    {
+        return {};
+    }
 };
 
 /** Manually advanced clock. */

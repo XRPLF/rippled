@@ -195,6 +195,15 @@ private:
     bool ledgerReplayEnabled_ = false;
     LedgerReplayMsgHandler ledgerReplayMsgHandler_;
 
+    // Track message requests and responses
+    // TODO: Use an expiring cache or something
+    using MessageCookieMap =
+        std::map<uint256, std::set<std::optional<uint64_t>>>;
+    using PeerCookieMap =
+        std::map<std::shared_ptr<Peer>, std::set<std::optional<uint64_t>>>;
+    std::mutex mutable cookieLock_;
+    MessageCookieMap messageRequestCookies_;
+
     friend class OverlayImpl;
 
     class Metrics
@@ -441,6 +450,13 @@ public:
         return txReduceRelayEnabled_;
     }
 
+    //
+    // Messages
+    //
+
+    std::set<std::optional<uint64_t>>
+    releaseRequestCookies(uint256 const& requestHash) override;
+
 private:
     void
     close();
@@ -639,16 +655,28 @@ private:
     void
     sendLedgerBase(
         std::shared_ptr<Ledger const> const& ledger,
-        protocol::TMLedgerData& ledgerData);
-
-    std::shared_ptr<Ledger const>
-    getLedger(std::shared_ptr<protocol::TMGetLedger> const& m);
-
-    std::shared_ptr<SHAMap const>
-    getTxSet(std::shared_ptr<protocol::TMGetLedger> const& m) const;
+        protocol::TMLedgerData& ledgerData,
+        PeerCookieMap const& destinations);
 
     void
-    processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m);
+    sendToMultiple(
+        protocol::TMLedgerData& ledgerData,
+        PeerCookieMap const& destinations);
+
+    std::shared_ptr<Ledger const>
+    getLedger(
+        std::shared_ptr<protocol::TMGetLedger> const& m,
+        uint256 const& mHash);
+
+    std::shared_ptr<SHAMap const>
+    getTxSet(
+        std::shared_ptr<protocol::TMGetLedger> const& m,
+        uint256 const& mHash) const;
+
+    void
+    processLedgerRequest(
+        std::shared_ptr<protocol::TMGetLedger> const& m,
+        uint256 const& mHash);
 };
 
 //------------------------------------------------------------------------------
