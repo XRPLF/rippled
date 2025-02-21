@@ -21,7 +21,6 @@
 #define RIPPLE_NODESTORE_ENCODEDBLOB_H_INCLUDED
 
 #include <xrpld/nodestore/NodeObject.h>
-#include <xrpl/basics/Buffer.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <boost/align/align_up.hpp>
 #include <algorithm>

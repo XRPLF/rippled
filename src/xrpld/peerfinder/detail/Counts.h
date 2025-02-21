@@ -25,8 +25,6 @@
 #include <xrpld/peerfinder/detail/Tuning.h>
 #include <xrpl/basics/random.h>
 
-#include <cmath>
-
 namespace ripple {
 namespace PeerFinder {
 

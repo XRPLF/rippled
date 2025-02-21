@@ -23,9 +23,6 @@
 #include <xrpld/ledger/ReadView.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/Serializer.h>
-#include <cstdint>
-#include <memory>
-#include <utility>
 
 namespace ripple {
 

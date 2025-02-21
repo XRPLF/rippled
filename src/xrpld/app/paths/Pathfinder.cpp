@@ -23,7 +23,6 @@
 #include <xrpld/app/paths/RippleCalc.h>
 #include <xrpld/app/paths/RippleLineCache.h>
 #include <xrpld/app/paths/detail/PathfinderUtils.h>
-#include <xrpld/core/Config.h>
 #include <xrpld/core/JobQueue.h>
 #include <xrpld/ledger/PaymentSandbox.h>
 #include <xrpl/basics/Log.h>

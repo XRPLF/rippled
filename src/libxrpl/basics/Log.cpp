@@ -19,13 +19,11 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
-#include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <boost/algorithm/string.hpp>
 #include <fstream>
 #include <functional>
 #include <iostream>
-#include <memory>
 #include <mutex>
 
 namespace ripple {

@@ -22,6 +22,7 @@
 #include <xrpld/nodestore/DummyScheduler.h>
 #include <xrpld/nodestore/Manager.h>
 #include <xrpld/unity/rocksdb.h>
+#include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/beast/utility/temp_dir.h>
 #include <algorithm>
 

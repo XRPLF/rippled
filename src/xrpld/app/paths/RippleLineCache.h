@@ -26,7 +26,6 @@
 #include <xrpl/basics/hardened_hash.h>
 
 #include <cstddef>
-#include <memory>
 #include <mutex>
 #include <vector>
 

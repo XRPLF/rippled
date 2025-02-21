@@ -21,7 +21,6 @@
 #define RIPPLE_NODESTORE_TYPES_H_INCLUDED
 
 #include <xrpld/nodestore/NodeObject.h>
-#include <xrpl/basics/BasicConfig.h>
 #include <vector>
 
 namespace ripple {

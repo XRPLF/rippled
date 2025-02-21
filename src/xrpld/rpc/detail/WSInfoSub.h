@@ -25,7 +25,6 @@
 #include <xrpl/beast/net/IPAddressConversion.h>
 #include <xrpl/json/json_writer.h>
 #include <xrpl/server/WSSession.h>
-#include <boost/utility/string_view.hpp>
 #include <memory>
 #include <string>
 

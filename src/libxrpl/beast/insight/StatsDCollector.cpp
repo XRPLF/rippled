@@ -26,13 +26,10 @@
 #include <xrpl/beast/insight/StatsDCollector.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <boost/asio/ip/tcp.hpp>
-#include <climits>
 #include <deque>
 #include <functional>
 #include <mutex>
 #include <optional>
-#include <set>
 #include <sstream>
 #include <thread>
 

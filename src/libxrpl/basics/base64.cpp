@@ -56,9 +56,6 @@
 
 #include <xrpl/basics/base64.h>
 
-#include <cctype>
-#include <utility>
-
 namespace ripple {
 
 namespace base64 {

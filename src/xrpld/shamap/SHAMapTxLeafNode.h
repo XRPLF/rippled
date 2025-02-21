@@ -22,7 +22,6 @@
 
 #include <xrpld/shamap/SHAMapItem.h>
 #include <xrpld/shamap/SHAMapLeafNode.h>
-#include <xrpld/shamap/SHAMapNodeID.h>
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/digest.h>

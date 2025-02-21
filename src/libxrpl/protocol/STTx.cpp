@@ -17,12 +17,9 @@
 */
 //==============================================================================
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
-#include <xrpl/json/to_string.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -38,7 +35,6 @@
 #include <array>
 #include <memory>
 #include <type_traits>
-#include <utility>
 
 namespace ripple {
 

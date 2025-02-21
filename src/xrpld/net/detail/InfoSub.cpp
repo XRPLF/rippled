@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <xrpld/net/InfoSub.h>
-#include <atomic>
 
 namespace ripple {
 

@@ -29,7 +29,6 @@
 #include <boost/asio/ip/network_v6.hpp>
 #include <boost/utility/string_view.hpp>
 #include <string>
-#include <variant>
 #include <vector>
 
 namespace ripple {

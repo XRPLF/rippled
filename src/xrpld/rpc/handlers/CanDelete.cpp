@@ -19,14 +19,12 @@
 
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/SHAMapStore.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 #include <boost/algorithm/string/case_conv.hpp>
-#include <boost/format.hpp>
 
 namespace ripple {
 

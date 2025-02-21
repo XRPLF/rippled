@@ -32,7 +32,6 @@
 #include <optional>
 #include <set>
 #include <string>
-#include <variant>
 
 namespace boost {
 namespace asio {

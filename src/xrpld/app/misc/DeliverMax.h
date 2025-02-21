@@ -22,9 +22,6 @@
 
 #include <xrpl/protocol/TxFormats.h>
 
-#include <functional>
-#include <memory>
-
 namespace Json {
 class Value;
 }

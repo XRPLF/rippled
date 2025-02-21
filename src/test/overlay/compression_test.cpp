@@ -24,7 +24,6 @@
 #include <test/jtx/pay.h>
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
-#include <xrpld/app/misc/Manifest.h>
 #include <xrpld/overlay/Compression.h>
 #include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/detail/Handshake.h>

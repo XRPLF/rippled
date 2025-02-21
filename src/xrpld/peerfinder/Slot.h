@@ -22,7 +22,6 @@
 
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/protocol/PublicKey.h>
-#include <memory>
 #include <optional>
 
 namespace ripple {

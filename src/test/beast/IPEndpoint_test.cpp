@@ -27,7 +27,6 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/asio/ip/address.hpp>
 #include <boost/predef.h>
-#include <typeinfo>
 
 namespace beast {
 namespace IP {

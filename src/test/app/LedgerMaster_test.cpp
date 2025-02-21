@@ -20,7 +20,6 @@
 #include <test/jtx.h>
 #include <test/jtx/Env.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
-#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 namespace test {

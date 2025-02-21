@@ -23,14 +23,12 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/app/misc/detail/Work.h>
-#include <xrpld/core/Config.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/json/json_value.h>
 
 #include <boost/asio.hpp>
 
-#include <memory>
 #include <mutex>
 #include <optional>
 

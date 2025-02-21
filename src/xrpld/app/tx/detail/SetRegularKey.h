@@ -21,9 +21,6 @@
 #define RIPPLE_TX_SETREGULARKEY_H_INCLUDED
 
 #include <xrpld/app/tx/detail/Transactor.h>
-#include <xrpl/basics/Log.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/UintTypes.h>
 
 namespace ripple {
 

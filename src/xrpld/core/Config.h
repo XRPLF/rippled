@@ -24,20 +24,13 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/protocol/FeeUnits.h>
 #include <xrpl/protocol/SystemParameters.h>  // VFALCO Breaks levelization
 
-#include <boost/beast/core/string.hpp>
 #include <boost/filesystem.hpp>  // VFALCO FIX: This include should not be here
-#include <boost/lexical_cast.hpp>
 
-#include <algorithm>
-#include <chrono>
 #include <cstdint>
-#include <map>
 #include <optional>
 #include <string>
-#include <type_traits>
 #include <unordered_set>
 #include <utility>
 #include <vector>

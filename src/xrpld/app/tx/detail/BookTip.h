@@ -24,8 +24,6 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Quality.h>
 
-#include <functional>
-
 namespace ripple {
 
 class Logs;

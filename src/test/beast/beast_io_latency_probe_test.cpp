@@ -26,11 +26,9 @@
 #include <boost/asio/io_service.hpp>
 
 #include <algorithm>
-#include <chrono>
 #include <mutex>
 #include <numeric>
 #include <optional>
-#include <thread>
 #include <vector>
 
 using namespace std::chrono_literals;

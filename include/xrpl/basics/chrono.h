@@ -30,7 +30,6 @@
 #include <cstdint>
 #include <ratio>
 #include <string>
-#include <type_traits>
 
 namespace ripple {
 

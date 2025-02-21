@@ -19,7 +19,6 @@
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/FeeUnits.h>
 #include <xrpl/protocol/SystemParameters.h>
-#include <type_traits>
 
 namespace ripple {
 namespace test {

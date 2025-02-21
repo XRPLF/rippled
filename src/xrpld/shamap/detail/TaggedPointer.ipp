@@ -22,7 +22,6 @@
 #include <xrpl/basics/ByteUtilities.h>
 
 #include <array>
-#include <bit>
 
 #include <boost/pool/pool_alloc.hpp>
 

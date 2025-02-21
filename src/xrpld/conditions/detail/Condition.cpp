@@ -18,12 +18,8 @@
 //==============================================================================
 
 #include <xrpld/conditions/Condition.h>
-#include <xrpld/conditions/Fulfillment.h>
 #include <xrpld/conditions/detail/PreimageSha256.h>
 #include <xrpld/conditions/detail/utils.h>
-#include <xrpl/basics/contract.h>
-#include <iostream>
-#include <vector>
 
 namespace ripple {
 namespace cryptoconditions {

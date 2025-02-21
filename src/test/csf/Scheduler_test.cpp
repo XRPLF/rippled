@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <test/csf/Scheduler.h>
-#include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/beast/unit_test.h>
 
 #include <set>

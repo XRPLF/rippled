@@ -20,7 +20,6 @@
 #ifndef RIPPLE_RPC_CONTEXT_H_INCLUDED
 #define RIPPLE_RPC_CONTEXT_H_INCLUDED
 
-#include <xrpld/core/Config.h>
 #include <xrpld/core/JobQueue.h>
 #include <xrpld/net/InfoSub.h>
 #include <xrpld/rpc/Role.h>

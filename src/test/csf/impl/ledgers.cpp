@@ -19,8 +19,6 @@
 #include <test/csf/ledgers.h>
 #include <algorithm>
 
-#include <sstream>
-
 namespace ripple {
 namespace test {
 namespace csf {

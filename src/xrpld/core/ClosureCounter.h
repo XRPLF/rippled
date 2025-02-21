@@ -25,7 +25,6 @@
 #include <condition_variable>
 #include <mutex>
 #include <optional>
-#include <type_traits>
 
 namespace ripple {
 

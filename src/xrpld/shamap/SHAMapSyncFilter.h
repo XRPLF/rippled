@@ -20,7 +20,6 @@
 #ifndef RIPPLE_SHAMAP_SHAMAPSYNCFILTER_H_INCLUDED
 #define RIPPLE_SHAMAP_SHAMAPSYNCFILTER_H_INCLUDED
 
-#include <xrpld/shamap/SHAMapNodeID.h>
 #include <xrpld/shamap/SHAMapTreeNode.h>
 #include <optional>
 

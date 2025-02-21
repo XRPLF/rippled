@@ -20,7 +20,6 @@
 #include <xrpld/consensus/LedgerTrie.h>
 #include <xrpl/beast/unit_test.h>
 #include <random>
-#include <unordered_map>
 
 namespace ripple {
 namespace test {

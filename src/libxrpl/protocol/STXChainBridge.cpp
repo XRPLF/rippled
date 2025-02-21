@@ -19,16 +19,12 @@
 
 #include <xrpl/protocol/STXChainBridge.h>
 
-#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
-#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAccount.h>
 #include <xrpl/protocol/STObject.h>
-#include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
-#include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/tokens.h>
 
 #include <boost/format.hpp>
