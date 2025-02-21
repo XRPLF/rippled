@@ -154,7 +154,12 @@ enum error_code_i {
     // Simulate
     rpcTX_SIGNED = 96,
 
-    rpcLAST = rpcTX_SIGNED  // rpcLAST should always equal the last code.
+    // ledger_entry
+    rpcENTRY_NOT_FOUND = 97,
+    rpcUNEXPECTED_LEDGER_TYPE = 98,
+
+    rpcLAST =
+        rpcUNEXPECTED_LEDGER_TYPE  // rpcLAST should always equal the last code.
 };
 
 /** Codes returned in the `warnings` array of certain RPC commands.
