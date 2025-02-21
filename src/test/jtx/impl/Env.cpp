@@ -486,6 +486,8 @@ Env::autofill(JTx& jt)
         jtx::fill_fee(jv, *current());
     if (jt.fill_seq)
         jtx::fill_seq(jv, *current());
+    if (jt.fill_delegating_seq)
+        jtx::fill_delegating_seq(jv, *current());
 
     if (jt.fill_netid)
     {

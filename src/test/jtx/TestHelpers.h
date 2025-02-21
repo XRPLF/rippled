@@ -344,6 +344,71 @@ public:
     }
 };
 
+struct onBehalfOf
+{
+private:
+    jtx::Account onBehalfOf_;
+
+public:
+    explicit onBehalfOf(jtx::Account const& u) : onBehalfOf_(u)
+    {
+    }
+
+    void
+    operator()(jtx::Env&, jtx::JTx& jtx) const
+    {
+        jtx.jv[sfOnBehalfOf.jsonName] = onBehalfOf_.human();
+    }
+};
+
+struct delegateSequence
+{
+private:
+    bool manual_ = true;
+    std::optional<std::uint32_t> num_;
+
+public:
+    explicit delegateSequence(autofill_t) : manual_(false)
+    {
+    }
+
+    explicit delegateSequence(none_t)
+    {
+    }
+
+    explicit delegateSequence(std::uint32_t num) : num_(num)
+    {
+    }
+
+    void
+    operator()(jtx::Env&, jtx::JTx& jtx) const
+    {
+        if (!manual_)
+            return;
+        jtx.fill_delegating_seq = false;
+        if (num_)
+            jtx[jss::DelegateSequence] = *num_;
+    }
+};
+
+struct delegateTicketSequence
+{
+private:
+    std::uint32_t ticketSeq_;
+
+public:
+    explicit delegateTicketSequence(std::uint32_t ticketSeq)
+        : ticketSeq_(ticketSeq)
+    {
+    }
+
+    void
+    operator()(jtx::Env&, jtx::JTx& jtx) const
+    {
+        jtx.jv[jss::DelegateTicketSequence] = ticketSeq_;
+    }
+};
+
 /* Payment Channel */
 /******************************************************************************/
 
@@ -401,6 +466,9 @@ channel(Account const& account, Account const& dst, std::uint32_t seqProxyValue)
 
 STAmount
 channelBalance(ReadView const& view, uint256 const& chan);
+
+STAmount
+channelAmount(ReadView const& view, uint256 const& chan);
 
 bool
 channelExists(ReadView const& view, uint256 const& chan);

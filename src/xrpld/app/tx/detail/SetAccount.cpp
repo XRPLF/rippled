@@ -52,7 +52,8 @@ SetAccount::makeTxConsequences(PreflightContext const& ctx)
         return TxConsequences::normal;
     };
 
-    return TxConsequences{ctx.tx, getTxConsequencesCategory(ctx.tx)};
+    return TxConsequences{
+        ctx.tx.getSTTx(), getTxConsequencesCategory(ctx.tx.getSTTx())};
 }
 
 NotTEC
@@ -262,12 +263,28 @@ SetAccount::doApply()
     std::uint32_t const uFlagsIn = sle->getFieldU32(sfFlags);
     std::uint32_t uFlagsOut = uFlagsIn;
 
-    STTx const& tx{ctx_.tx};
+    STTx const& tx{ctx_.tx.getSTTx()};
     std::uint32_t const uSetFlag{tx.getFieldU32(sfSetFlag)};
     std::uint32_t const uClearFlag{tx.getFieldU32(sfClearFlag)};
 
     // legacy AccountSet flags
     std::uint32_t const uTxFlags{tx.getFlags()};
+
+    bool granularDelegated = false;
+    // AccountSet can not be delegated on the transaction level.
+    if (ctx_.tx.isDelegated() && !ctx_.permissions.empty())
+    {
+        // if permissions is not empty, granular delegation is happening.
+        granularDelegated = true;
+
+        // We don't support any flag based granular permission under
+        // AccountSet transaction. If any delegated account is trying to
+        // update the flag onbehalf of another account, it is not
+        // authorized.
+        if (uSetFlag != 0 || uClearFlag != 0 || uTxFlags != 0)
+            return tecNO_PERMISSION;
+    }
+
     bool const bSetRequireDest{
         (uTxFlags & tfRequireDestTag) || (uSetFlag == asfRequireDest)};
     bool const bClearRequireDest{
@@ -450,6 +467,11 @@ SetAccount::doApply()
     //
     if (tx.isFieldPresent(sfEmailHash))
     {
+        if (granularDelegated &&
+            ctx_.permissions.find(AccountEmailHashSet) ==
+                ctx_.permissions.end())
+            return tecNO_PERMISSION;
+
         uint128 const uHash = tx.getFieldH128(sfEmailHash);
 
         if (!uHash)
@@ -469,6 +491,9 @@ SetAccount::doApply()
     //
     if (tx.isFieldPresent(sfWalletLocator))
     {
+        if (granularDelegated)
+            return tecNO_PERMISSION;
+
         uint256 const uHash = tx.getFieldH256(sfWalletLocator);
 
         if (!uHash)
@@ -488,6 +513,11 @@ SetAccount::doApply()
     //
     if (tx.isFieldPresent(sfMessageKey))
     {
+        if (granularDelegated &&
+            ctx_.permissions.find(AccountMessageKeySet) ==
+                ctx_.permissions.end())
+            return tecNO_PERMISSION;
+
         Blob const messageKey = tx.getFieldVL(sfMessageKey);
 
         if (messageKey.empty())
@@ -507,6 +537,10 @@ SetAccount::doApply()
     //
     if (tx.isFieldPresent(sfDomain))
     {
+        if (granularDelegated &&
+            ctx_.permissions.find(AccountDomainSet) == ctx_.permissions.end())
+            return tecNO_PERMISSION;
+
         Blob const domain = tx.getFieldVL(sfDomain);
 
         if (domain.empty())
@@ -526,6 +560,11 @@ SetAccount::doApply()
     //
     if (tx.isFieldPresent(sfTransferRate))
     {
+        if (granularDelegated &&
+            ctx_.permissions.find(AccountTransferRateSet) ==
+                ctx_.permissions.end())
+            return tecNO_PERMISSION;
+
         std::uint32_t uRate = tx.getFieldU32(sfTransferRate);
 
         if (uRate == 0 || uRate == QUALITY_ONE)
@@ -545,6 +584,10 @@ SetAccount::doApply()
     //
     if (tx.isFieldPresent(sfTickSize))
     {
+        if (granularDelegated &&
+            ctx_.permissions.find(AccountTickSizeSet) == ctx_.permissions.end())
+            return tecNO_PERMISSION;
+
         auto uTickSize = tx[sfTickSize];
         if ((uTickSize == 0) || (uTickSize == Quality::maxTickSize))
         {

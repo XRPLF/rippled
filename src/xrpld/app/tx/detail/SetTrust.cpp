@@ -342,6 +342,23 @@ SetTrust::doApply()
     bool const bSetDeepFreeze = (uTxFlags & tfSetDeepFreeze);
     bool const bClearDeepFreeze = (uTxFlags & tfClearDeepFreeze);
 
+    bool granularDelegated = false;
+    if (ctx_.tx.isDelegated() && !ctx_.permissions.empty())
+    {
+        granularDelegated = true;
+        // If granular permission is delegated under the TrustSet transaction.
+        // Currently we only support TrustlineAuthorize, TrustlineFreeze and
+        // TrustlineUnfreeze granular permission.
+        if (bSetNoRipple || bClearNoRipple || bQualityIn || bQualityOut)
+            return tecNO_PERMISSION;
+        if (bSetAuth && !ctx_.permissions.contains(TrustlineAuthorize))
+            return tecNO_PERMISSION;
+        if (bSetFreeze && !ctx_.permissions.contains(TrustlineFreeze))
+            return tecNO_PERMISSION;
+        if (bClearFreeze && !ctx_.permissions.contains(TrustlineUnfreeze))
+            return tecNO_PERMISSION;
+    }
+
     auto viewJ = ctx_.app.journal("View");
 
     // Trust lines to self are impossible but because of the old bug there
@@ -399,6 +416,18 @@ SetTrust::doApply()
         //
         // Limits
         //
+        if (granularDelegated)
+        {
+            // Currently we only support TrustlineAuthorize, TrustlineFreeze and
+            // TrustlineUnfreeze granular permission. So updating the
+            // LimitAmount is not allowed unless the delegated account has full
+            // transaction level permission.
+            auto const curLimit = bHigh
+                ? sleRippleState->getFieldAmount(sfHighLimit)
+                : sleRippleState->getFieldAmount(sfLowLimit);
+            if (curLimit != saLimitAllow)
+                return tecNO_PERMISSION;
+        }
 
         sleRippleState->setFieldAmount(
             !bHigh ? sfLowLimit : sfHighLimit, saLimitAllow);
@@ -638,6 +667,13 @@ SetTrust::doApply()
     }
     else
     {
+        if (granularDelegated)
+            // currently we only allow TrustlineAuthorize, TrustlineFreeze and
+            // TrustlineUnfreeze granular permission delegation, a delegated
+            // account can not create a new trust line if it is not fully
+            // delegated with the whole TrustSet transaction based permission.
+            return tecNO_PERMISSION;
+
         // Zero balance in currency.
         STAmount saBalance(Issue{currency, noAccount()});
 

@@ -96,7 +96,7 @@ NFTokenCreateOffer::doApply()
         ctx_.tx[sfAmount],
         ctx_.tx[~sfDestination],
         ctx_.tx[~sfExpiration],
-        ctx_.tx.getSeqProxy(),
+        ctx_.tx.getEffectiveSeq(),
         ctx_.tx[sfNFTokenID],
         mPriorBalance,
         j_,

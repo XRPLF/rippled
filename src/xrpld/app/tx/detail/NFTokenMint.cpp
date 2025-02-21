@@ -334,7 +334,7 @@ NFTokenMint::doApply()
                 ctx_.tx[sfAmount],
                 ctx_.tx[~sfDestination],
                 ctx_.tx[~sfExpiration],
-                ctx_.tx.getSeqProxy(),
+                ctx_.tx.getEffectiveSeq(),
                 nftokenID,
                 mPriorBalance,
                 j_);

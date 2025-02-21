@@ -55,9 +55,10 @@ MPTTester::makeHolders(std::vector<Account> const& holders)
     return accounts;
 }
 
-MPTTester::MPTTester(Env& env, Account const& issuer, MPTInit const& arg)
+MPTTester::MPTTester(Env& env, Account const& account, MPTInit const& arg)
     : env_(env)
-    , issuer_(issuer)
+    , issuer_(account)
+    , sender_(account)
     , holders_(makeHolders(arg.holders))
     , close_(arg.close)
 {
@@ -81,6 +82,20 @@ MPTTester::MPTTester(Env& env, Account const& issuer, MPTInit const& arg)
     }
 }
 
+// when the MPT is issued on behalf of another account
+MPTTester::MPTTester(
+    Env& env,
+    Account const& sender,
+    Account const& issuer,
+    MPTInit const& arg)
+    : env_(env)
+    , issuer_(issuer)
+    , sender_(sender)
+    , holders_(makeHolders(arg.holders))
+    , close_(arg.close)
+{
+}
+
 void
 MPTTester::create(const MPTCreate& arg)
 {
@@ -98,6 +113,14 @@ MPTTester::create(const MPTCreate& arg)
         jv[sfMPTokenMetadata] = strHex(*arg.metadata);
     if (arg.maxAmt)
         jv[sfMaximumAmount] = std::to_string(*arg.maxAmt);
+    if (arg.onBehalfOf)
+    {
+        if (*arg.onBehalfOf != issuer_)
+            Throw<std::runtime_error>(
+                "create has to be sent on behalf of issuer");
+        jv[sfAccount] = sender_.human();
+        jv[sfOnBehalfOf] = arg.onBehalfOf->human();
+    }
     if (submit(arg, jv) != tesSUCCESS)
     {
         // Verify issuance doesn't exist
@@ -127,6 +150,8 @@ MPTTester::destroy(MPTDestroy const& arg)
             Throw<std::runtime_error>("MPT has not been created");
         jv[sfMPTokenIssuanceID] = to_string(*id_);
     }
+    if (arg.onBehalfOf)
+        jv[sfOnBehalfOf] = arg.onBehalfOf->human();
     jv[sfTransactionType] = jss::MPTokenIssuanceDestroy;
     submit(arg, jv);
 }
@@ -159,10 +184,14 @@ MPTTester::authorize(MPTAuthorize const& arg)
     }
     if (arg.holder)
         jv[sfHolder] = arg.holder->human();
+    if (arg.onBehalfOf)
+        jv[sfOnBehalfOf] = arg.onBehalfOf->human();
+    auto const account =
+        arg.onBehalfOf ? arg.onBehalfOf : (arg.account ? arg.account : issuer_);
     if (auto const result = submit(arg, jv); result == tesSUCCESS)
     {
         // Issuer authorizes
-        if (!arg.account || *arg.account == issuer_)
+        if (!account || *account == issuer_)
         {
             auto const flags = getFlags(arg.holder);
             // issuer un-authorizes the holder
@@ -176,29 +205,28 @@ MPTTester::authorize(MPTAuthorize const& arg)
         // Holder authorizes
         else if (arg.flags.value_or(0) != tfMPTUnauthorize)
         {
-            auto const flags = getFlags(arg.account);
+            auto const flags = getFlags(account);
             // holder creates a token
-            env_.require(mptflags(*this, flags, arg.account));
-            env_.require(mptbalance(*this, *arg.account, 0));
+            env_.require(mptflags(*this, flags, account));
+            env_.require(mptbalance(*this, *account, 0));
         }
         else
         {
             // Verify that the MPToken doesn't exist.
             forObject(
                 [&](SLEP const& sle) { return env_.test.BEAST_EXPECT(!sle); },
-                arg.account);
+                account);
         }
     }
     else if (
-        arg.account && *arg.account != issuer_ &&
+        account && *account != issuer_ &&
         arg.flags.value_or(0) != tfMPTUnauthorize && id_)
     {
         if (result == tecDUPLICATE)
         {
             // Verify that MPToken already exists
             env_.require(requireAny([&]() -> bool {
-                return env_.le(keylet::mptoken(*id_, arg.account->id())) !=
-                    nullptr;
+                return env_.le(keylet::mptoken(*id_, account->id())) != nullptr;
             }));
         }
         else
@@ -206,8 +234,7 @@ MPTTester::authorize(MPTAuthorize const& arg)
             // Verify MPToken doesn't exist if holder failed authorizing(unless
             // it already exists)
             env_.require(requireAny([&]() -> bool {
-                return env_.le(keylet::mptoken(*id_, arg.account->id())) ==
-                    nullptr;
+                return env_.le(keylet::mptoken(*id_, account->id())) == nullptr;
             }));
         }
     }
@@ -232,6 +259,8 @@ MPTTester::set(MPTSet const& arg)
     }
     if (arg.holder)
         jv[sfHolder] = arg.holder->human();
+    if (arg.onBehalfOf)
+        jv[sfOnBehalfOf] = arg.onBehalfOf->human();
     if (submit(arg, jv) == tesSUCCESS && arg.flags.value_or(0))
     {
         auto require = [&](std::optional<Account> const& holder,

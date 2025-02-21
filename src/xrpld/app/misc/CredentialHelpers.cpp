@@ -288,7 +288,7 @@ verifyDepositPreauth(
     bool const credentialsPresent = ctx.tx.isFieldPresent(sfCredentialIDs);
 
     if (credentialsPresent &&
-        credentials::removeExpired(ctx.view(), ctx.tx, ctx.journal))
+        credentials::removeExpired(ctx.view(), ctx.tx.getSTTx(), ctx.journal))
         return tecEXPIRED;
 
     if (sleDst && (sleDst->getFlags() & lsfDepositAuth))

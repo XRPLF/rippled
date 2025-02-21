@@ -63,6 +63,10 @@ fill_fee(Json::Value& jv, ReadView const& view);
 void
 fill_seq(Json::Value& jv, ReadView const& view);
 
+/** Set the delegating sequence number automatically. */
+void
+fill_delegating_seq(Json::Value& jv, ReadView const& view);
+
 /** Given a rippled unit test rpc command, return the corresponding JSON. */
 Json::Value
 cmdToJSONRPC(

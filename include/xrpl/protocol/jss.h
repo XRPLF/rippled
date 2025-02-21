@@ -55,10 +55,13 @@ JSS(AssetClass);           // in: Oracle
 JSS(AssetPrice);           // in: Oracle
 JSS(AuthAccount);          // in: AMM Auction Slot
 JSS(AuthAccounts);         // in: AMM Auction Slot
+JSS(Authorize);            // in: account_permission
 JSS(BaseAsset);            // in: Oracle
 JSS(BidMax);               // in: AMM Bid
 JSS(BidMin);               // in: AMM Bid
 JSS(ClearFlag);            // field.
+JSS(DelegateTicketSequence); // in/out: OnBehalfOf; field.
+JSS(DelegateSequence);     // in/out: OnBehalfOf; field.
 JSS(DeliverMax);           // out: alias to Amount
 JSS(DeliverMin);           // in: TransactionSign
 JSS(Destination);          // in: TransactionSign; field.
@@ -76,9 +79,13 @@ JSS(LPTokenOut);           // in: AMM Liquidity Provider deposit tokens
 JSS(LPTokenIn);            // in: AMM Liquidity Provider withdraw tokens
 JSS(LPToken);              // out: AMM Liquidity Provider tokens info
 JSS(OfferSequence);        // field.
+JSS(OnBehalfOf);           // in: AccountPermission
 JSS(OracleDocumentID);     // field
 JSS(Owner);                // field
 JSS(Paths);                // in/out: TransactionSign
+JSS(Permission);           // in: AccountPermission
+JSS(Permissions);          // in: AccountPermission
+JSS(PermissionValue);      // in: AccountPermission
 JSS(PriceDataSeries);                    // field.
 JSS(PriceData);                          // field.
 JSS(Provider);                           // field.
@@ -145,6 +152,7 @@ JSS(attestations);
 JSS(attestation_reward_account);
 JSS(auction_slot);            // out: amm_info
 JSS(authorized);              // out: AccountLines
+JSS(authorize);               // out: account_permission
 JSS(authorized_credentials);   // in: ledger_entry DepositPreauth
 JSS(auth_accounts);           // out: amm_info
 JSS(auth_change);             // out: AccountInfo

@@ -103,6 +103,7 @@ struct MPTCreate
     std::optional<std::uint32_t> holderCount = std::nullopt;
     bool fund = true;
     std::optional<std::uint32_t> flags = {0};
+    std::optional<Account> onBehalfOf = std::nullopt;
     std::optional<TER> err = std::nullopt;
 };
 
@@ -113,6 +114,7 @@ struct MPTDestroy
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
+    std::optional<Account> onBehalfOf = std::nullopt;
     std::optional<TER> err = std::nullopt;
 };
 
@@ -124,6 +126,7 @@ struct MPTAuthorize
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
+    std::optional<Account> onBehalfOf = std::nullopt;
     std::optional<TER> err = std::nullopt;
 };
 
@@ -135,6 +138,7 @@ struct MPTSet
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
+    std::optional<Account> onBehalfOf = std::nullopt;
     std::optional<TER> err = std::nullopt;
 };
 
@@ -142,12 +146,19 @@ class MPTTester
 {
     Env& env_;
     Account const& issuer_;
+    Account const& sender_;
     std::unordered_map<std::string, Account> const holders_;
     std::optional<MPTID> id_;
     bool close_;
 
 public:
     MPTTester(Env& env, Account const& issuer, MPTInit const& constr = {});
+
+    MPTTester(
+        Env& env,
+        Account const& issuer,
+        Account const& sender,
+        MPTInit const& constr = {});
 
     void
     create(MPTCreate const& arg = MPTCreate{});

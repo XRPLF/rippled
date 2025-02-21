@@ -31,9 +31,68 @@ namespace jtx {
 /** Check operations. */
 namespace check {
 
+/** Set Expiration on a JTx. */
+class expiration
+{
+private:
+    std::uint32_t const expry_;
+
+public:
+    explicit expiration(NetClock::time_point const& expiry)
+        : expry_{expiry.time_since_epoch().count()}
+    {
+    }
+
+    void
+    operator()(Env&, JTx& jt) const
+    {
+        jt[sfExpiration.jsonName] = expry_;
+    }
+};
+
+/** Set SourceTag on a JTx. */
+class source_tag
+{
+private:
+    std::uint32_t const tag_;
+
+public:
+    explicit source_tag(std::uint32_t tag) : tag_{tag}
+    {
+    }
+
+    void
+    operator()(Env&, JTx& jt) const
+    {
+        jt[sfSourceTag.jsonName] = tag_;
+    }
+};
+
+/** Set DestinationTag on a JTx. */
+class dest_tag
+{
+private:
+    std::uint32_t const tag_;
+
+public:
+    explicit dest_tag(std::uint32_t tag) : tag_{tag}
+    {
+    }
+
+    void
+    operator()(Env&, JTx& jt) const
+    {
+        jt[sfDestinationTag.jsonName] = tag_;
+    }
+};
+
 /** Cash a check requiring that a specific amount be delivered. */
 Json::Value
-cash(jtx::Account const& dest, uint256 const& checkId, STAmount const& amount);
+cash(
+    jtx::Account const& dest,
+    uint256 const& checkId,
+    STAmount const& amount,
+    std::optional<jtx::Account> const& onBehalfOf = std::nullopt);
 
 /** Type used to specify DeliverMin for cashing a check. */
 struct DeliverMin
@@ -49,11 +108,18 @@ Json::Value
 cash(
     jtx::Account const& dest,
     uint256 const& checkId,
-    DeliverMin const& atLeast);
+    DeliverMin const& atLeast,
+    std::optional<jtx::Account> const& onBehalfOf = std::nullopt);
 
 /** Cancel a check. */
 Json::Value
-cancel(jtx::Account const& dest, uint256 const& checkId);
+cancel(
+    jtx::Account const& dest,
+    uint256 const& checkId,
+    std::optional<jtx::Account> const& onBehalfOf = std::nullopt);
+
+std::vector<std::shared_ptr<SLE const>>
+checksOnAccount(test::jtx::Env& env, test::jtx::Account account);
 
 }  // namespace check
 

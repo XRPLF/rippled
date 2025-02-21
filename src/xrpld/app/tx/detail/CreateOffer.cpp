@@ -35,7 +35,8 @@ CreateOffer::makeTxConsequences(PreflightContext const& ctx)
         return amount.native() ? amount.xrp() : beast::zero;
     };
 
-    return TxConsequences{ctx.tx, calculateMaxXRPSpend(ctx.tx)};
+    return TxConsequences{
+        ctx.tx.getSTTx(), calculateMaxXRPSpend(ctx.tx.getSTTx())};
 }
 
 NotTEC
@@ -968,7 +969,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 
     // Note that we we use the value from the sequence or ticket as the
     // offer sequence.  For more explanation see comments in SeqProxy.h.
-    auto const offerSequence = ctx_.tx.getSeqProxy().value();
+    auto const offerSequence = ctx_.tx.getEffectiveSeq();
 
     // This is the original rate of the offer, and is the rate at which
     // it will be placed, even if crossing offers change the amounts that

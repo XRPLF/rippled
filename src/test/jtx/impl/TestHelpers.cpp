@@ -338,6 +338,15 @@ channelBalance(ReadView const& view, uint256 const& chan)
     return (*slep)[sfBalance];
 }
 
+STAmount
+channelAmount(ReadView const& view, uint256 const& chan)
+{
+    auto const slep = view.read({ltPAYCHAN, chan});
+    if (!slep)
+        return XRPAmount{-1};
+    return (*slep)[sfAmount];
+}
+
 bool
 channelExists(ReadView const& view, uint256 const& chan)
 {

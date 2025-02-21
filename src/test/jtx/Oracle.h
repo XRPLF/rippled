@@ -74,6 +74,8 @@ struct CreateArg
     int fee = 10;
     std::optional<ter> err = std::nullopt;
     bool close = false;
+    std::optional<Account> onBehalfOf = std::nullopt;
+    std::optional<Account> sender = std::nullopt;
 };
 
 // Typical defaults for Update
@@ -91,6 +93,8 @@ struct UpdateArg
     std::optional<jtx::seq> seq = std::nullopt;
     int fee = 10;
     std::optional<ter> err = std::nullopt;
+    std::optional<Account> onBehalfOf = std::nullopt;
+    std::optional<Account> sender = std::nullopt;
 };
 
 struct RemoveArg
@@ -102,6 +106,8 @@ struct RemoveArg
     std::optional<jtx::seq> seq = std::nullopt;
     int fee = 10;
     std::optional<ter> const& err = std::nullopt;
+    std::optional<Account> onBehalfOf = std::nullopt;
+    std::optional<Account> sender = std::nullopt;
 };
 
 // Simulate testStartTime as 10'000s from Ripple epoch time to make

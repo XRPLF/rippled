@@ -308,8 +308,8 @@ TxQ::MaybeTx::apply(Application& app, OpenView& view, beast::Journal j)
                         << " rules or flags have changed. Flags from "
                         << pfresult->flags << " to " << flags;
 
-        pfresult.emplace(
-            preflight(app, view.rules(), pfresult->tx, flags, pfresult->j));
+        pfresult.emplace(preflight(
+            app, view.rules(), pfresult->tx.getSTTx(), flags, pfresult->j));
     }
 
     auto pcresult = preclaim(*pfresult, app, view);

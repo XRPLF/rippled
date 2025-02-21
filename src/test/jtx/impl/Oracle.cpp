@@ -64,6 +64,11 @@ Oracle::remove(RemoveArg const& arg)
         jv[jss::Fee] = std::to_string(env_.current()->fees().increment.drops());
     if (arg.flags != 0)
         jv[jss::Flags] = arg.flags;
+    if (arg.onBehalfOf && arg.sender)
+    {
+        jv[jss::Account] = arg.sender->human();
+        jv[jss::OnBehalfOf] = arg.onBehalfOf->human();
+    }
     submit(jv, arg.msig, arg.seq, arg.err);
 }
 
@@ -261,6 +266,12 @@ Oracle::set(UpdateArg const& arg)
         dataSeries.append(priceData);
     }
     jv[jss::PriceDataSeries] = dataSeries;
+    if (arg.onBehalfOf && arg.sender)
+    {
+        owner_ = *arg.onBehalfOf;
+        jv[jss::Account] = arg.sender->human();
+        jv[jss::OnBehalfOf] = arg.onBehalfOf->human();
+    }
     submit(jv, arg.msig, arg.seq, arg.err);
 }
 
@@ -279,7 +290,9 @@ Oracle::set(CreateArg const& arg)
         .msig = arg.msig,
         .seq = arg.seq,
         .fee = arg.fee,
-        .err = arg.err});
+        .err = arg.err,
+        .onBehalfOf = arg.onBehalfOf,
+        .sender = arg.sender});
 }
 
 Json::Value

@@ -20,6 +20,7 @@
 #include <test/jtx/flags.h>
 #include <test/jtx/token.h>
 #include <xrpld/app/tx/detail/NFTokenMint.h>
+#include <xrpl/basics/random.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
@@ -239,6 +240,26 @@ modify(jtx::Account const& account, uint256 const& nftokenID)
     jv[sfNFTokenID.jsonName] = to_string(nftokenID);
     jv[jss::TransactionType] = jss::NFTokenModify;
     return jv;
+}
+
+// returns a randomly generated string which fits
+// the constraints of a URI.  Empty strings may be returned.
+// In the empty string case do not add the URI to the nft.
+std::string
+randURI()
+{
+    std::string ret;
+
+    // About 20% of the returned strings should be empty
+    if (rand_int(4) == 0)
+        return ret;
+
+    std::size_t const strLen = rand_int(256);
+    ret.reserve(strLen);
+    for (std::size_t i = 0; i < strLen; ++i)
+        ret.push_back(rand_byte());
+
+    return ret;
 }
 
 }  // namespace token

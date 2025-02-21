@@ -29,7 +29,7 @@ TxConsequences
 CreateTicket::makeTxConsequences(PreflightContext const& ctx)
 {
     // Create TxConsequences identifying the number of sequences consumed.
-    return TxConsequences{ctx.tx, ctx.tx[sfTicketCount]};
+    return TxConsequences{ctx.tx.getSTTx(), ctx.tx[sfTicketCount]};
 }
 
 NotTEC
@@ -108,7 +108,9 @@ CreateTicket::doApply()
 
     // Sanity check that the transaction machinery really did already
     // increment the account root Sequence.
-    if (std::uint32_t const txSeq = ctx_.tx[sfSequence];
+    if (std::uint32_t const txSeq = ctx_.tx.isDelegated()
+            ? ctx_.tx[sfDelegateSequence]
+            : ctx_.tx[sfSequence];
         txSeq != 0 && txSeq != (firstTicketSeq - 1))
         return tefINTERNAL;
 

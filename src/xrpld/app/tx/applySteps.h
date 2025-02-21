@@ -22,6 +22,8 @@
 
 #include <xrpld/ledger/ApplyViewImpl.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/Permissions.h>
+#include <xrpl/protocol/STTxDelegated.h>
 
 namespace ripple {
 
@@ -163,7 +165,7 @@ struct PreflightResult
 {
 public:
     /// From the input - the transaction
-    STTx const& tx;
+    STTxDelegated const tx;
     /// From the input - the rules
     Rules const rules;
     /// Consequences of the transaction
@@ -172,7 +174,6 @@ public:
     ApplyFlags const flags;
     /// From the input - the journal
     beast::Journal const j;
-
     /// Intermediate transaction result
     NotTEC const ter;
 
@@ -208,7 +209,7 @@ public:
     /// From the input - the ledger view
     ReadView const& view;
     /// From the input - the transaction
-    STTx const& tx;
+    STTxDelegated const tx;
     /// From the input - the flags
     ApplyFlags const flags;
     /// From the input - the journal
@@ -216,18 +217,25 @@ public:
 
     /// Intermediate transaction result
     TER const ter;
+    /// granular permissions enabled for the transaction. If empty and
+    /// isDelegated=true, then the entire transaction is authorized.
+    std::unordered_set<GranularPermissionType> permissions;
     /// Success flag - whether the transaction is likely to
     /// claim a fee
     bool const likelyToClaimFee;
 
     /// Constructor
     template <class Context>
-    PreclaimResult(Context const& ctx_, TER ter_)
+    PreclaimResult(
+        Context const& ctx_,
+        TER ter_,
+        std::unordered_set<GranularPermissionType> permissions_)
         : view(ctx_.view)
         , tx(ctx_.tx)
         , flags(ctx_.flags)
         , j(ctx_.j)
         , ter(ter_)
+        , permissions(std::move(permissions_))
         , likelyToClaimFee(ter == tesSUCCESS || isTecClaimHardFail(ter, flags))
     {
     }

@@ -68,6 +68,18 @@ public:
     }
 };
 
+bool
+checkVL(
+    std::shared_ptr<SLE const> const& sle,
+    SField const& field,
+    std::string const& expected);
+
+Keylet
+credentialKeylet(
+    test::jtx::Account const& subject,
+    test::jtx::Account const& issuer,
+    std::string_view credType);
+
 Json::Value
 create(
     jtx::Account const& subject,

@@ -68,6 +68,43 @@ parseAuthorizeCredentials(Json::Value const& jv)
 }
 
 static std::optional<uint256>
+parseAccountPermission(Json::Value const& params, Json::Value& jvResult)
+{
+    // LCOV_EXCL_START
+    if (!params.isObject())
+    {
+        uint256 uNodeIndex;
+        if (!uNodeIndex.parseHex(params.asString()))
+        {
+            jvResult[jss::error] = "malformedRequest";
+            return std::nullopt;
+        }
+        return uNodeIndex;
+    }
+    // LCOV_EXCL_STOP
+    if (!params.isMember(jss::account) || !params.isMember(jss::authorize))
+    {
+        jvResult[jss::error] = "malformedRequest";
+        return std::nullopt;
+    }
+    auto const account =
+        parseBase58<AccountID>(params[jss::account].asString());
+    if (!account)
+    {
+        jvResult[jss::error] = "malformedAccount";
+        return std::nullopt;
+    }
+    auto const authorize =
+        parseBase58<AccountID>(params[jss::authorize].asString());
+    if (!authorize)
+    {
+        jvResult[jss::error] = "malformedAuthorize";
+        return std::nullopt;
+    }
+    return keylet::accountPermission(*account, *authorize).key;
+}
+
+static std::optional<uint256>
 parseIndex(Json::Value const& params, Json::Value& jvResult)
 {
     uint256 uNodeIndex;
@@ -873,6 +910,7 @@ doLedgerEntry(RPC::JsonContext& context)
         {jss::index, parseIndex, ltANY},
         {jss::account_root, parseAccountRoot, ltACCOUNT_ROOT},
         // TODO: add amendments
+        {jss::account_permission, parseAccountPermission, ltACCOUNT_PERMISSION},
         {jss::amm, parseAMM, ltAMM},
         {jss::bridge, parseBridge, ltBRIDGE},
         {jss::check, parseCheck, ltCHECK},

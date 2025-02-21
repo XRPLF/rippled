@@ -40,7 +40,7 @@ namespace ripple {
 NotTEC
 preflight0(PreflightContext const& ctx)
 {
-    if (!isPseudoTx(ctx.tx) || ctx.tx.isFieldPresent(sfNetworkID))
+    if (!isPseudoTx(ctx.tx.getSTTx()) || ctx.tx.isFieldPresent(sfNetworkID))
     {
         uint32_t nodeNID = ctx.app.config().NETWORK_ID;
         std::optional<uint32_t> txNID = ctx.tx[~sfNetworkID];
@@ -80,6 +80,14 @@ preflight0(PreflightContext const& ctx)
 NotTEC
 preflight1(PreflightContext const& ctx)
 {
+    if (!ctx.rules.enabled(featureAccountPermission))
+    {
+        if (ctx.tx.isFieldPresent(sfOnBehalfOf) ||
+            ctx.tx.isFieldPresent(sfDelegateSequence) ||
+            ctx.tx.isFieldPresent(sfDelegateTicketSequence))
+            return temDISABLED;
+    }
+
     // This is inappropriate in preflight0, because only Change transactions
     // skip this function, and those do not allow an sfTicketSequence field.
     if (ctx.tx.isFieldPresent(sfTicketSequence) &&
@@ -92,7 +100,7 @@ preflight1(PreflightContext const& ctx)
     if (!isTesSuccess(ret))
         return ret;
 
-    auto const id = ctx.tx.getAccountID(sfAccount);
+    auto const id = ctx.tx.getSenderAccount();
     if (id == beast::zero)
     {
         JLOG(ctx.j.warn()) << "preflight1: bad account id";
@@ -161,7 +169,7 @@ preflight2(PreflightContext const& ctx)
     }
 
     auto const sigValid = checkValidity(
-        ctx.app.getHashRouter(), ctx.tx, ctx.rules, ctx.app.config());
+        ctx.app.getHashRouter(), ctx.tx.getSTTx(), ctx.rules, ctx.app.config());
     if (sigValid.first == Validity::SigBad)
     {
         JLOG(ctx.j.debug()) << "preflight2: bad signature. " << sigValid.second;
@@ -178,7 +186,11 @@ PreflightContext::PreflightContext(
     Rules const& rules_,
     ApplyFlags flags_,
     beast::Journal j_)
-    : app(app_), tx(tx_), rules(rules_), flags(flags_), j(j_)
+    : app(app_)
+    , tx(STTxDelegated(tx_, tx_.isFieldPresent(sfOnBehalfOf)))
+    , rules(rules_)
+    , flags(flags_)
+    , j(j_)
 {
 }
 
@@ -205,6 +217,52 @@ Transactor::calculateBaseFee(ReadView const& view, STTx const& tx)
         tx.isFieldPresent(sfSigners) ? tx.getFieldArray(sfSigners).size() : 0;
 
     return baseFee + (signerCount * baseFee);
+}
+
+TER
+Transactor::checkPermissions(
+    ReadView const& view,
+    STTx const& tx,
+    std::unordered_set<GranularPermissionType>& permissions)
+{
+    if (!tx.isFieldPresent(sfOnBehalfOf) ||
+        !view.exists(keylet::account(tx[sfOnBehalfOf])))
+        return terNO_ACCOUNT;
+
+    auto const accountPermissionKey =
+        keylet::accountPermission(tx[sfOnBehalfOf], tx[sfAccount]);
+    auto const sle = view.read(accountPermissionKey);
+    if (!sle)
+        return tecNO_PERMISSION;
+
+    auto const permissionArray = sle->getFieldArray(sfPermissions);
+    auto const transactionType = tx.getTxnType();
+
+    for (auto const& permission : permissionArray)
+    {
+        auto const permissionValue = permission[sfPermissionValue];
+        if (permissionValue == transactionType + 1)
+        {
+            // if the transaction permission is authorized, do not need to check
+            // granular permission.
+            permissions.clear();
+            return tesSUCCESS;
+        }
+
+        auto const gpType =
+            static_cast<GranularPermissionType>(permissionValue);
+        auto const& type = Permission::getInstance().getGranularTxType(gpType);
+        if (type && *type == transactionType)
+            permissions.insert(gpType);
+    }
+
+    if (permissions.empty())
+        return tecNO_PERMISSION;
+
+    // When the code reaches here, the transaction permission is not authorized.
+    // But one or more of its granular permission under this transaction type is
+    // authorized. And the granular types are stored in permissions.
+    return tesSUCCESS;
 }
 
 XRPAmount
@@ -245,7 +303,7 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
     if (feePaid == beast::zero)
         return tesSUCCESS;
 
-    auto const id = ctx.tx.getAccountID(sfAccount);
+    auto const id = ctx.tx.getSenderAccount();
     auto const sle = ctx.view.read(keylet::account(id));
     if (!sle)
         return terNO_ACCOUNT;
@@ -275,15 +333,20 @@ Transactor::payFee()
 {
     auto const feePaid = ctx_.tx[sfFee].xrp();
 
-    auto const sle = view().peek(keylet::account(account_));
+    // whether the transaction is being delegated to another account or not,
+    // the sender account will pay the fee.
+    auto const sle = view().peek(keylet::account(ctx_.tx.getSenderAccount()));
     if (!sle)
         return tefINTERNAL;
 
     // Deduct the fee, so it's not available during the transaction.
     // Will only write the account back if the transaction succeeds.
 
-    mSourceBalance -= feePaid;
-    sle->setFieldAmount(sfBalance, mSourceBalance);
+    sle->setFieldAmount(sfBalance, STAmount{(*sle)[sfBalance]}.xrp() - feePaid);
+    if (!ctx_.tx.isDelegated())
+    {
+        mSourceBalance -= feePaid;
+    }
 
     // VFALCO Should we call view().rawDestroyXRP() here as well?
 
@@ -310,6 +373,8 @@ Transactor::checkSeqProxy(
 
     SeqProxy const t_seqProx = tx.getSeqProxy();
     SeqProxy const a_seq = SeqProxy::sequence((*sle)[sfSequence]);
+
+    // check delegate seq
 
     if (t_seqProx.isSeq())
     {
@@ -363,9 +428,82 @@ Transactor::checkSeqProxy(
 }
 
 NotTEC
+Transactor::checkDelegateSeqProxy(
+    ReadView const& view,
+    STTx const& tx,
+    beast::Journal j)
+{
+    if (!tx.isFieldPresent(sfDelegateSequence))
+    {
+        JLOG(j.trace()) << "applyTransaction: has no DelegateSequence";
+        return temBAD_SEQUENCE;
+    }
+
+    // we only call this function when it is delegated, so this should not
+    // happen
+    if (!tx.isFieldPresent(sfOnBehalfOf))
+        return temMALFORMED;  // LCOV_EXEL_LINE
+
+    auto const id = tx.getAccountID(sfOnBehalfOf);
+    auto const sle = view.read(keylet::account(id));
+    if (!sle)
+        return terNO_ACCOUNT;  // LCOV_EXEL_LINE
+
+    SeqProxy const t_seqProx = tx.getDelegateSeqProxy();
+    SeqProxy const a_seq = SeqProxy::sequence((*sle)[sfSequence]);
+
+    if (t_seqProx.isSeq())
+    {
+        if (tx.isFieldPresent(sfDelegateTicketSequence) &&
+            view.rules().enabled(featureTicketBatch))
+        {
+            JLOG(j.trace())
+                << "applyTransaction: has both a DelegateTicketSequence "
+                   "and a non-zero DelegateSequence number";
+            return temSEQ_AND_TICKET;
+        }
+        if (t_seqProx != a_seq)
+        {
+            if (a_seq < t_seqProx)
+            {
+                JLOG(j.trace()) << "applyTransaction: has future delegating "
+                                   "sequence number "
+                                << "a_seq=" << a_seq << " t_seq=" << t_seqProx;
+                return terPRE_SEQ;
+            }
+            // It's an already-used sequence number.
+            JLOG(j.trace())
+                << "applyTransaction: has past delegating sequence number "
+                << "a_seq=" << a_seq << " t_seq=" << t_seqProx;
+            return tefPAST_SEQ;
+        }
+    }
+    else if (t_seqProx.isTicket())
+    {
+        if (a_seq.value() <= t_seqProx.value())
+        {
+            JLOG(j.trace()) << "applyTransaction: has future ticket id "
+                            << "a_seq=" << a_seq << " t_seq=" << t_seqProx;
+            return terPRE_TICKET;
+        }
+
+        // Transaction can never succeed if the Ticket is not in the ledger.
+        if (!view.exists(keylet::ticket(id, t_seqProx)))
+        {
+            JLOG(j.trace())
+                << "applyTransaction: ticket already used or never created "
+                << "a_seq=" << a_seq << " t_seq=" << t_seqProx;
+            return tefNO_TICKET;
+        }
+    }
+
+    return tesSUCCESS;
+}
+
+NotTEC
 Transactor::checkPriorTxAndLastLedger(PreclaimContext const& ctx)
 {
-    auto const id = ctx.tx.getAccountID(sfAccount);
+    auto const id = ctx.tx.getSenderAccount();
 
     auto const sle = ctx.view.read(keylet::account(id));
 
@@ -393,11 +531,14 @@ Transactor::checkPriorTxAndLastLedger(PreclaimContext const& ctx)
 }
 
 TER
-Transactor::consumeSeqProxy(SLE::pointer const& sleAccount)
+Transactor::consumeSeqProxy(
+    AccountID const& account,
+    SLE::pointer const& sleAccount,
+    SeqProxy const& seqProx)
 {
     XRPL_ASSERT(
         sleAccount, "ripple::Transactor::consumeSeqProxy : non-null account");
-    SeqProxy const seqProx = ctx_.tx.getSeqProxy();
+
     if (seqProx.isSeq())
     {
         // Note that if this transaction is a TicketCreate, then
@@ -406,8 +547,7 @@ Transactor::consumeSeqProxy(SLE::pointer const& sleAccount)
         sleAccount->setFieldU32(sfSequence, seqProx.value() + 1);
         return tesSUCCESS;
     }
-    return ticketDelete(
-        view(), account_, getTicketIndex(account_, seqProx), j_);
+    return ticketDelete(view(), account, getTicketIndex(account, seqProx), j_);
 }
 
 // Remove a single Ticket from the ledger.
@@ -480,20 +620,23 @@ Transactor::apply()
 
     // If the transactor requires a valid account and the transaction doesn't
     // list one, preflight will have already a flagged a failure.
-    auto const sle = view().peek(keylet::account(account_));
+    auto const sleEffective = view().peek(keylet::account(account_));
+    auto const sender = ctx_.tx.getSenderAccount();
+    auto const sle = view().peek(keylet::account(sender));
 
     // sle must exist except for transactions
     // that allow zero account.
+
     XRPL_ASSERT(
-        sle != nullptr || account_ == beast::zero,
+        sle != nullptr || sender == beast::zero,
         "ripple::Transactor::apply : non-null SLE or zero account");
 
     if (sle)
     {
-        mPriorBalance = STAmount{(*sle)[sfBalance]}.xrp();
+        mPriorBalance = STAmount{(*sleEffective)[sfBalance]}.xrp();
         mSourceBalance = mPriorBalance;
 
-        TER result = consumeSeqProxy(sle);
+        TER result = consumeSeqProxy(sender, sle, ctx_.tx.getSeqProxy());
         if (result != tesSUCCESS)
             return result;
 
@@ -505,6 +648,18 @@ Transactor::apply()
             sle->setFieldH256(sfAccountTxnID, ctx_.tx.getTransactionID());
 
         view().update(sle);
+
+        if (ctx_.tx.isDelegated())
+        {
+            auto const accountDelegating = ctx_.tx.getAccountID(sfAccount);
+            auto const sleDelegating =
+                view().peek(keylet::account(accountDelegating));
+            result = consumeSeqProxy(
+                accountDelegating,
+                sleDelegating,
+                ctx_.tx.getDelegateSeqProxy());
+            view().update(sleDelegating);
+        }
     }
 
     return doApply();
@@ -541,7 +696,7 @@ Transactor::checkSingleSign(PreclaimContext const& ctx)
     }
 
     // Look up the account.
-    auto const idAccount = ctx.tx.getAccountID(sfAccount);
+    auto const idAccount = ctx.tx.getSenderAccount();
     auto const sleAccount = ctx.view.read(keylet::account(idAccount));
     if (!sleAccount)
         return terNO_ACCOUNT;
@@ -611,7 +766,7 @@ Transactor::checkSingleSign(PreclaimContext const& ctx)
 NotTEC
 Transactor::checkMultiSign(PreclaimContext const& ctx)
 {
-    auto const id = ctx.tx.getAccountID(sfAccount);
+    auto const id = ctx.tx.getSenderAccount();
     // Get mTxnAccountID's SignerList and Quorum.
     std::shared_ptr<STLedgerEntry const> sleAccountSigners =
         ctx.view.read(keylet::signers(id));
@@ -862,8 +1017,8 @@ Transactor::reset(XRPAmount fee)
 {
     ctx_.discard();
 
-    auto const txnAcct =
-        view().peek(keylet::account(ctx_.tx.getAccountID(sfAccount)));
+    auto sender = ctx_.tx.getSenderAccount();
+    auto const txnAcct = view().peek(keylet::account(sender));
     if (!txnAcct)
         // The account should never be missing from the ledger.  But if it
         // is missing then we can't very well charge it a fee, can we?
@@ -888,12 +1043,27 @@ Transactor::reset(XRPAmount fee)
     // then the ledger is corrupted.  Rather than make things worse we
     // reject the transaction.
     txnAcct->setFieldAmount(sfBalance, balance - fee);
-    TER const ter{consumeSeqProxy(txnAcct)};
+    TER const ter{consumeSeqProxy(sender, txnAcct, ctx_.tx.getSeqProxy())};
     XRPL_ASSERT(
         isTesSuccess(ter), "ripple::Transactor::reset : result is tesSUCCESS");
 
     if (isTesSuccess(ter))
         view().update(txnAcct);
+
+    if (ctx_.tx.isDelegated())
+    {
+        auto const accountDelegating = ctx_.tx.getAccountID(sfAccount);
+        auto const sleDelegating =
+            view().peek(keylet::account(accountDelegating));
+        TER const terDelegate{consumeSeqProxy(
+            accountDelegating, sleDelegating, ctx_.tx.getDelegateSeqProxy())};
+        XRPL_ASSERT(
+            isTesSuccess(terDelegate),
+            "ripple::Transactor::reset delegate seq : result is tesSUCCESS");
+
+        if (isTesSuccess(terDelegate))
+            view().update(sleDelegating);
+    }
 
     return {ter, fee};
 }
@@ -925,7 +1095,7 @@ Transactor::operator()()
         SerialIter sit(ser.slice());
         STTx s2(sit);
 
-        if (!s2.isEquivalent(ctx_.tx))
+        if (!s2.isEquivalent(ctx_.tx.getSTTx()))
         {
             JLOG(j_.fatal()) << "Transaction serdes mismatch";
             JLOG(j_.info()) << to_string(ctx_.tx.getJson(JsonOptions::none));

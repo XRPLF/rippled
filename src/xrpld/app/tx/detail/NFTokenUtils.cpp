@@ -1013,7 +1013,7 @@ tokenOfferCreateApply(
     STAmount const& amount,
     std::optional<AccountID> const& dest,
     std::optional<std::uint32_t> const& expiration,
-    SeqProxy seqProxy,
+    std::uint32_t seq,
     uint256 const& nftokenID,
     XRPAmount const& priorBalance,
     beast::Journal j,
@@ -1024,7 +1024,7 @@ tokenOfferCreateApply(
         priorBalance < view.fees().accountReserve((*acct)[sfOwnerCount] + 1))
         return tecINSUFFICIENT_RESERVE;
 
-    auto const offerID = keylet::nftoffer(acctID, seqProxy.value());
+    auto const offerID = keylet::nftoffer(acctID, seq);
 
     // Create the offer:
     {

@@ -57,6 +57,7 @@ AMM::AMM(
     std::optional<jtx::seq> seq,
     std::optional<jtx::msig> ms,
     std::optional<ter> const& ter,
+    std::optional<Account> const& onBehalfOf,
     bool close)
     : env_(env)
     , creatorAccount_(account)
@@ -71,7 +72,7 @@ AMM::AMM(
     , bidMax_()
     , msig_(ms)
     , fee_(fee)
-    , ammAccount_(create(tfee, flags, seq, ter))
+    , ammAccount_(create(tfee, flags, seq, ter, onBehalfOf))
     , lptIssue_(ripple::ammLPTIssue(
           asset1_.issue().currency,
           asset2_.issue().currency,
@@ -98,7 +99,31 @@ AMM::AMM(
           std::nullopt,
           std::nullopt,
           ter,
+          std::nullopt,
           close)
+{
+}
+
+AMM::AMM(
+    Env& env,
+    Account const& account,
+    STAmount const& asset1,
+    STAmount const& asset2,
+    Account const& onBehalfOf,
+    ter const& ter)
+    : AMM(env,
+          account,
+          asset1,
+          asset2,
+          false,
+          0,
+          0,
+          std::nullopt,
+          std::nullopt,
+          std::nullopt,
+          ter,
+          onBehalfOf,
+          false)
 {
 }
 
@@ -119,6 +144,7 @@ AMM::AMM(
           arg.seq,
           arg.ms,
           arg.err,
+          arg.onBehalfOf,
           arg.close)
 {
 }
@@ -128,7 +154,8 @@ AMM::create(
     std::uint32_t tfee,
     std::optional<std::uint32_t> const& flags,
     std::optional<jtx::seq> const& seq,
-    std::optional<ter> const& ter)
+    std::optional<ter> const& ter,
+    std::optional<Account> const& onBehalfOf)
 {
     Json::Value jv;
     jv[jss::Account] = creatorAccount_.human();
@@ -136,6 +163,8 @@ AMM::create(
     jv[jss::Amount2] = asset2_.getJson(JsonOptions::none);
     jv[jss::TradingFee] = tfee;
     jv[jss::TransactionType] = jss::AMMCreate;
+    if (onBehalfOf)
+        jv[jss::OnBehalfOf] = onBehalfOf->human();
     if (flags)
         jv[jss::Flags] = *flags;
     if (fee_ != 0)
@@ -392,17 +421,23 @@ AMM::deposit(
     Json::Value& jv,
     std::optional<std::pair<Issue, Issue>> const& assets,
     std::optional<jtx::seq> const& seq,
-    std::optional<ter> const& ter)
+    std::optional<ter> const& ter,
+    std::optional<Account> const& onBehalfOf)
 {
     auto const& acct = account ? *account : creatorAccount_;
-    auto const lpTokens = getLPTokensBalance(acct);
+    auto const lpTokens =
+        onBehalfOf ? getLPTokensBalance(*onBehalfOf) : getLPTokensBalance(acct);
     jv[jss::Account] = acct.human();
     setTokens(jv, assets);
     jv[jss::TransactionType] = jss::AMMDeposit;
     if (fee_ != 0)
         jv[jss::Fee] = std::to_string(fee_);
+    if (onBehalfOf)
+        jv[jss::OnBehalfOf] = onBehalfOf->human();
     submit(jv, seq, ter);
-    return getLPTokensBalance(acct) - lpTokens;
+    auto const curLPTokens =
+        onBehalfOf ? getLPTokensBalance(*onBehalfOf) : getLPTokensBalance(acct);
+    return curLPTokens - lpTokens;
 }
 
 IOUAmount
@@ -423,7 +458,8 @@ AMM::deposit(
         std::nullopt,
         std::nullopt,
         std::nullopt,
-        ter);
+        ter,
+        std::nullopt);
 }
 
 IOUAmount
@@ -433,7 +469,8 @@ AMM::deposit(
     std::optional<STAmount> const& asset2In,
     std::optional<STAmount> const& maxEP,
     std::optional<std::uint32_t> const& flags,
-    std::optional<ter> const& ter)
+    std::optional<ter> const& ter,
+    std::optional<Account> const& onBehalfOf)
 {
     assert(!(asset2In && maxEP));
     return deposit(
@@ -446,7 +483,8 @@ AMM::deposit(
         std::nullopt,
         std::nullopt,
         std::nullopt,
-        ter);
+        ter,
+        onBehalfOf);
 }
 
 IOUAmount
@@ -460,7 +498,8 @@ AMM::deposit(
     std::optional<std::pair<Issue, Issue>> const& assets,
     std::optional<jtx::seq> const& seq,
     std::optional<std::uint16_t> const& tfee,
-    std::optional<ter> const& ter)
+    std::optional<ter> const& ter,
+    std::optional<Account> const& onBehalfOf)
 {
     Json::Value jv;
     if (tokens)
@@ -493,7 +532,7 @@ AMM::deposit(
             jvflags |= tfSingleAsset;
     }
     jv[jss::Flags] = jvflags;
-    return deposit(account, jv, assets, seq, ter);
+    return deposit(account, jv, assets, seq, ter, onBehalfOf);
 }
 
 IOUAmount
@@ -509,7 +548,8 @@ AMM::deposit(DepositArg const& arg)
         arg.assets,
         arg.seq,
         arg.tfee,
-        arg.err);
+        arg.err,
+        arg.onBehalfOf);
 }
 
 IOUAmount
@@ -518,17 +558,21 @@ AMM::withdraw(
     Json::Value& jv,
     std::optional<jtx::seq> const& seq,
     std::optional<std::pair<Issue, Issue>> const& assets,
-    std::optional<ter> const& ter)
+    std::optional<ter> const& ter,
+    std::optional<Account> const& onBehalfOf)
 {
     auto const& acct = account ? *account : creatorAccount_;
-    auto const lpTokens = getLPTokensBalance(acct);
+    auto const lpTokens =
+        onBehalfOf ? getLPTokensBalance(*onBehalfOf) : getLPTokensBalance(acct);
     jv[jss::Account] = acct.human();
     setTokens(jv, assets);
     jv[jss::TransactionType] = jss::AMMWithdraw;
     if (fee_ != 0)
         jv[jss::Fee] = std::to_string(fee_);
     submit(jv, seq, ter);
-    return lpTokens - getLPTokensBalance(acct);
+    auto const curLPTokens =
+        onBehalfOf ? getLPTokensBalance(*onBehalfOf) : getLPTokensBalance(acct);
+    return lpTokens - curLPTokens;
 }
 
 IOUAmount
@@ -557,7 +601,8 @@ AMM::withdraw(
     STAmount const& asset1Out,
     std::optional<STAmount> const& asset2Out,
     std::optional<IOUAmount> const& maxEP,
-    std::optional<ter> const& ter)
+    std::optional<ter> const& ter,
+    std::optional<Account> const& onBehalfOf)
 {
     assert(!(asset2Out && maxEP));
     return withdraw(
@@ -569,7 +614,8 @@ AMM::withdraw(
         std::nullopt,
         std::nullopt,
         std::nullopt,
-        ter);
+        ter,
+        onBehalfOf);
 }
 
 IOUAmount
@@ -582,7 +628,8 @@ AMM::withdraw(
     std::optional<std::uint32_t> const& flags,
     std::optional<std::pair<Issue, Issue>> const& assets,
     std::optional<jtx::seq> const& seq,
-    std::optional<ter> const& ter)
+    std::optional<ter> const& ter,
+    std::optional<Account> const& onBehalfOf)
 {
     Json::Value jv;
     if (tokens)
@@ -612,6 +659,8 @@ AMM::withdraw(
         else if (asset1Out)
             jvflags |= tfSingleAsset;
     }
+    if (onBehalfOf)
+        jv[jss::OnBehalfOf] = onBehalfOf->human();
     jv[jss::Flags] = jvflags;
     return withdraw(account, jv, seq, assets, ter);
 }
@@ -628,7 +677,8 @@ AMM::withdraw(WithdrawArg const& arg)
         arg.flags,
         arg.assets,
         arg.seq,
-        arg.err);
+        arg.err,
+        arg.onBehalfOf);
 }
 
 void
@@ -638,7 +688,8 @@ AMM::vote(
     std::optional<std::uint32_t> const& flags,
     std::optional<jtx::seq> const& seq,
     std::optional<std::pair<Issue, Issue>> const& assets,
-    std::optional<ter> const& ter)
+    std::optional<ter> const& ter,
+    std::optional<Account> const& onBehalfOf)
 {
     Json::Value jv;
     jv[jss::Account] = account ? account->human() : creatorAccount_.human();
@@ -649,13 +700,22 @@ AMM::vote(
         jv[jss::Flags] = *flags;
     if (fee_ != 0)
         jv[jss::Fee] = std::to_string(fee_);
+    if (onBehalfOf)
+        jv[jss::OnBehalfOf] = onBehalfOf->human();
     submit(jv, seq, ter);
 }
 
 void
 AMM::vote(VoteArg const& arg)
 {
-    return vote(arg.account, arg.tfee, arg.flags, arg.seq, arg.assets, arg.err);
+    return vote(
+        arg.account,
+        arg.tfee,
+        arg.flags,
+        arg.seq,
+        arg.assets,
+        arg.err,
+        arg.onBehalfOf);
 }
 
 Json::Value
@@ -719,6 +779,8 @@ AMM::bid(BidArg const& arg)
     jv[jss::TransactionType] = jss::AMMBid;
     if (fee_ != 0)
         jv[jss::Fee] = std::to_string(fee_);
+    if (arg.onBehalfOf)
+        jv[jss::OnBehalfOf] = arg.onBehalfOf->human();
     return jv;
 }
 
@@ -787,7 +849,10 @@ AMM::expectAuctionSlot(auto&& cb) const
 }
 
 void
-AMM::ammDelete(AccountID const& deleter, std::optional<ter> const& ter)
+AMM::ammDelete(
+    AccountID const& deleter,
+    std::optional<ter> const& ter,
+    std::optional<Account> const& onBehalfOf)
 {
     Json::Value jv;
     jv[jss::Account] = to_string(deleter);
@@ -795,6 +860,8 @@ AMM::ammDelete(AccountID const& deleter, std::optional<ter> const& ter)
     jv[jss::TransactionType] = jss::AMMDelete;
     if (fee_ != 0)
         jv[jss::Fee] = std::to_string(fee_);
+    if (onBehalfOf)
+        jv[jss::OnBehalfOf] = onBehalfOf->human();
     submit(jv, std::nullopt, ter);
 }
 
@@ -829,7 +896,8 @@ ammClawback(
     Account const& holder,
     Issue const& asset,
     Issue const& asset2,
-    std::optional<STAmount> const& amount)
+    std::optional<STAmount> const& amount,
+    std::optional<Account> const& onBehalfOf)
 {
     Json::Value jv;
     jv[jss::TransactionType] = jss::AMMClawback;
@@ -839,6 +907,8 @@ ammClawback(
     jv[jss::Asset2] = to_json(asset2);
     if (amount)
         jv[jss::Amount] = amount->getJson(JsonOptions::none);
+    if (onBehalfOf)
+        jv[jss::OnBehalfOf] = onBehalfOf->human();
 
     return jv;
 }
