@@ -24,7 +24,6 @@
 #include <cctype>
 #include <ios>
 #include <istream>
-#include <netinet/in.h>
 #include <optional>
 #include <sstream>
 #include <string>
