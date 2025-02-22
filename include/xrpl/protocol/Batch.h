@@ -1,12 +1,10 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
-
+    Copyright (c) 2024 Ripple Labs Inc.
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
     copyright notice and this permission notice appear in all copies.
-
     THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
     WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
     MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
@@ -17,45 +15,23 @@
 */
 //==============================================================================
 
-#include <xrpld/ledger/ApplyViewImpl.h>
-#include <xrpl/basics/contract.h>
-#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/STVector256.h>
+#include <xrpl/protocol/Serializer.h>
 
 namespace ripple {
 
-ApplyViewImpl::ApplyViewImpl(ReadView const* base, ApplyFlags flags)
-    : ApplyViewBase(base, flags)
+inline void
+serializeBatch(
+    Serializer& msg,
+    std::uint32_t const& flags,
+    std::vector<uint256> const& txids)
 {
-}
-
-std::optional<TxMeta>
-ApplyViewImpl::apply(
-    OpenView& to,
-    STTx const& tx,
-    TER ter,
-    std::optional<uint256> parentBatchId,
-    bool isDryRun,
-    beast::Journal j)
-{
-    return items_.apply(to, tx, ter, deliver_, parentBatchId, isDryRun, j);
-}
-
-std::size_t
-ApplyViewImpl::size()
-{
-    return items_.size();
-}
-
-void
-ApplyViewImpl::visit(
-    OpenView& to,
-    std::function<void(
-        uint256 const& key,
-        bool isDelete,
-        std::shared_ptr<SLE const> const& before,
-        std::shared_ptr<SLE const> const& after)> const& func)
-{
-    items_.visit(to, func);
+    msg.add32(HashPrefix::batch);
+    msg.add32(flags);
+    msg.add32(std::uint32_t(txids.size()));
+    for (auto const& txid : txids)
+        msg.addBitString(txid);
 }
 
 }  // namespace ripple

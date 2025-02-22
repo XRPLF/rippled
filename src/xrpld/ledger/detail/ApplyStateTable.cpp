@@ -115,6 +115,7 @@ ApplyStateTable::apply(
     STTx const& tx,
     TER ter,
     std::optional<STAmount> const& deliver,
+    std::optional<uint256 const> const& parentBatchId,
     bool isDryRun,
     beast::Journal j)
 {
@@ -125,9 +126,11 @@ ApplyStateTable::apply(
     std::optional<TxMeta> metadata;
     if (!to.open() || isDryRun)
     {
-        TxMeta meta(tx.getTransactionID(), to.seq());
+        TxMeta meta(tx.getTransactionID(), to.seq(), parentBatchId);
+
         if (deliver)
             meta.setDeliveredAmount(*deliver);
+
         Mods newMod;
         for (auto& item : items_)
         {

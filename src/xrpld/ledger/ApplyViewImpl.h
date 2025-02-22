@@ -57,6 +57,7 @@ public:
         OpenView& to,
         STTx const& tx,
         TER ter,
+        std::optional<uint256> parentBatchId,
         bool isDryRun,
         beast::Journal j);
 

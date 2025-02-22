@@ -457,7 +457,7 @@ public:
         // Attempt a multisigned transaction that meets the quorum.
         auto const baseFee = env.current()->fees().base;
         std::uint32_t aliceSeq = env.seq(alice);
-        env(noop(alice), msig(msig::Reg{cheri, cher}), fee(2 * baseFee));
+        env(noop(alice), msig(Reg{cheri, cher}), fee(2 * baseFee));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
@@ -477,7 +477,7 @@ public:
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
         aliceSeq = env.seq(alice);
-        env(noop(alice), msig(msig::Reg{becky, beck}), fee(2 * baseFee));
+        env(noop(alice), msig(Reg{becky, beck}), fee(2 * baseFee));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
@@ -485,7 +485,7 @@ public:
         aliceSeq = env.seq(alice);
         env(noop(alice),
             fee(3 * baseFee),
-            msig(msig::Reg{becky, beck}, msig::Reg{cheri, cher}));
+            msig(Reg{becky, beck}, Reg{cheri, cher}));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
     }
@@ -780,12 +780,12 @@ public:
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
         aliceSeq = env.seq(alice);
-        env(noop(alice), msig(msig::Reg{cheri, cher}), fee(2 * baseFee));
+        env(noop(alice), msig(Reg{cheri, cher}), fee(2 * baseFee));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
         aliceSeq = env.seq(alice);
-        env(noop(alice), msig(msig::Reg{daria, dari}), fee(2 * baseFee));
+        env(noop(alice), msig(Reg{daria, dari}), fee(2 * baseFee));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
@@ -798,7 +798,7 @@ public:
         aliceSeq = env.seq(alice);
         env(noop(alice),
             fee(5 * baseFee),
-            msig(becky, msig::Reg{cheri, cher}, msig::Reg{daria, dari}, jinni));
+            msig(becky, Reg{cheri, cher}, Reg{daria, dari}, jinni));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
@@ -817,7 +817,7 @@ public:
         aliceSeq = env.seq(alice);
         env(noop(alice),
             fee(9 * baseFee),
-            msig(becky, msig::Reg{cheri, cher}, msig::Reg{daria, dari}, jinni));
+            msig(becky, Reg{cheri, cher}, Reg{daria, dari}, jinni));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
@@ -825,7 +825,7 @@ public:
         aliceSeq = env.seq(alice);
         env(noop(alice),
             fee(5 * baseFee),
-            msig(becky, cheri, msig::Reg{daria, dari}, jinni));
+            msig(becky, cheri, Reg{daria, dari}, jinni));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
@@ -850,8 +850,8 @@ public:
             fee(9 * baseFee),
             msig(
                 becky,
-                msig::Reg{cheri, cher},
-                msig::Reg{daria, dari},
+                Reg{cheri, cher},
+                Reg{daria, dari},
                 haunt,
                 jinni,
                 phase,
@@ -1342,7 +1342,7 @@ public:
         // Becky cannot 2-level multisign for alice.  2-level multisigning
         // is not supported.
         env(noop(alice),
-            msig(msig::Reg{becky, bogie}),
+            msig(Reg{becky, bogie}),
             fee(2 * baseFee),
             ter(tefBAD_SIGNATURE));
         env.close();
@@ -1351,7 +1351,7 @@ public:
         // not yet enabled.
         Account const beck{"beck", KeyType::ed25519};
         env(noop(alice),
-            msig(msig::Reg{becky, beck}),
+            msig(Reg{becky, beck}),
             fee(2 * baseFee),
             ter(tefBAD_SIGNATURE));
         env.close();
@@ -1361,13 +1361,13 @@ public:
         env(regkey(becky, beck), msig(demon), fee(2 * baseFee));
         env.close();
 
-        env(noop(alice), msig(msig::Reg{becky, beck}), fee(2 * baseFee));
+        env(noop(alice), msig(Reg{becky, beck}), fee(2 * baseFee));
         env.close();
 
         // The presence of becky's regular key does not influence whether she
         // can 2-level multisign; it still won't work.
         env(noop(alice),
-            msig(msig::Reg{becky, demon}),
+            msig(Reg{becky, demon}),
             fee(2 * baseFee),
             ter(tefBAD_SIGNATURE));
         env.close();
