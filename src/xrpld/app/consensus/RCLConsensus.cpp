@@ -359,7 +359,7 @@ RCLConsensus::Adaptor::onClose(
             {
                 feeVote_->doVoting(prevLedger, validations, initialSet);
                 app_.getAmendmentTable().doVoting(
-                    prevLedger, validations, initialSet);
+                    prevLedger, validations, initialSet, j_);
             }
         }
         else if (
