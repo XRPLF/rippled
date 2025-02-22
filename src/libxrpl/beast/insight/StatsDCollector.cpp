@@ -35,7 +35,6 @@
 #include <boost/asio/ip/udp.hpp>
 #include <boost/asio/strand.hpp>
 #include <boost/system/detail/error_code.hpp>
-#include <__chrono/duration.h>
 #include <chrono>
 #include <cstddef>
 #include <deque>

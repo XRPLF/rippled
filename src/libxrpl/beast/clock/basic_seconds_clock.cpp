@@ -19,8 +19,6 @@
 
 #include <xrpl/beast/clock/basic_seconds_clock.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <__chrono/duration.h>
-#include <__chrono/time_point.h>
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
