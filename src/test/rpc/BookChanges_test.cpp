@@ -30,12 +30,12 @@ public:
     {
         testcase("Specify well-known strings as ledger input");
         jtx::Env env(*this);
-        Json::Value params, resp;
+        Json::Value params;
 
         // As per convention in XRPL, ledgers can be specified with strings
         // "closed", "validated" or "current"
         params["ledger"] = "validated";
-        resp = env.rpc("json", "book_changes", to_string(params));
+        Json::Value resp = env.rpc("json", "book_changes", to_string(params));
         BEAST_EXPECT(!resp[jss::result].isMember(jss::error));
         BEAST_EXPECT(resp[jss::result][jss::status] == "success");
         BEAST_EXPECT(resp[jss::result][jss::validated] == true);

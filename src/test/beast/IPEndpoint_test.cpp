@@ -84,8 +84,7 @@ public:
         BEAST_EXPECT(AddressV4{v1}.to_ulong() == 1);
 
         {
-            AddressV4 v;
-            v = v1;
+            AddressV4 v = v1;
             BEAST_EXPECT(v.to_ulong() == v1.to_ulong());
         }
 

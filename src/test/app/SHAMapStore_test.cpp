@@ -528,11 +528,10 @@ public:
     {
         Section section{
             env.app().config().section(ConfigSection::nodeDatabase())};
-        boost::filesystem::path newPath;
 
         if (!BEAST_EXPECT(path.size()))
             return {};
-        newPath = path;
+        boost::filesystem::path newPath = path;
         section.set("path", newPath.string());
 
         auto backend{NodeStore::Manager::instance().make_Backend(

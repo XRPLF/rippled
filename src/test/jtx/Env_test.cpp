@@ -569,8 +569,7 @@ public:
         BEAST_EXPECT(jt2.get<int>());
         BEAST_EXPECT(*jt2.get<int>() == 7);
         BEAST_EXPECT(!jt2.get<UDT>());
-        JTx jt3;
-        jt3 = jt1;
+        JTx jt3 = jt1;
         BEAST_EXPECT(jt3.get<int>());
         BEAST_EXPECT(*jt3.get<int>() == 7);
         BEAST_EXPECT(!jt3.get<UDT>());

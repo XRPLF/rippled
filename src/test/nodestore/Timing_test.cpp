@@ -358,9 +358,8 @@ public:
             {
                 try
                 {
-                    std::shared_ptr<NodeObject> obj;
                     std::shared_ptr<NodeObject> result;
-                    obj = seq1_.obj(dist_(gen_));
+                    std::shared_ptr<NodeObject> obj = seq1_.obj(dist_(gen_));
                     backend_.fetch(obj->getHash().data(), &result);
                     suite_.expect(result && isSame(result, obj));
                 }
@@ -517,9 +516,9 @@ public:
                     }
                     else
                     {
-                        std::shared_ptr<NodeObject> obj;
                         std::shared_ptr<NodeObject> result;
-                        obj = seq1_.obj(dist_(gen_));
+                        std::shared_ptr<NodeObject> obj =
+                            seq1_.obj(dist_(gen_));
                         backend_.fetch(obj->getHash().data(), &result);
                         suite_.expect(result && isSame(result, obj));
                     }
@@ -601,10 +600,9 @@ public:
                     if (rand_(gen_) < 200)
                     {
                         // historical lookup
-                        std::shared_ptr<NodeObject> obj;
                         std::shared_ptr<NodeObject> result;
                         auto const j = older_(gen_);
-                        obj = seq1_.obj(j);
+                        std::shared_ptr<NodeObject> obj = seq1_.obj(j);
                         std::shared_ptr<NodeObject> result1;
                         backend_.fetch(obj->getHash().data(), &result);
                         suite_.expect(result != nullptr);
