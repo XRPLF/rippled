@@ -786,9 +786,7 @@ public:
         }
 
         auto hasFeature = [](Env& env, uint256 const& f) {
-            return (
-                env.app().config().features.find(f) !=
-                env.app().config().features.end());
+            return (env.app().config().features.contains(f));
         };
 
         {

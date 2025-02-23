@@ -517,7 +517,7 @@ struct LedgerServer
         auto updateIdx = [&]() {
             assert(fundedAccounts > senders.size());
             fromIdx = (fromIdx + r) % fundedAccounts;
-            while (senders.count(fromIdx) != 0)
+            while (senders.contains(fromIdx))
                 fromIdx = (fromIdx + 1) % fundedAccounts;
             senders.insert(fromIdx);
             toIdx = (toIdx + r * 2) % fundedAccounts;

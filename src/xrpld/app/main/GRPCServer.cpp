@@ -158,7 +158,7 @@ GRPCServerImpl::CallData<Request, Response>::process(
 
             {
                 std::stringstream toLog;
-                toLog << "role = " << (int)role;
+                toLog << "role = " << static_cast<int>(role);
 
                 toLog << " address = ";
                 if (auto clientIp = getClientIpAddress())

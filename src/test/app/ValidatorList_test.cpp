@@ -2200,7 +2200,7 @@ private:
                         {
                             for (auto& n : nUnl_temp)
                             {
-                                if (nUnl.find(n) == nUnl.end())
+                                if (!nUnl.contains(n))
                                     return false;
                             }
                             validators->updateTrusted(

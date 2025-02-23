@@ -179,7 +179,10 @@ public:
         setupSQLiteConfig(c, getDatabasePath());
         DBConfig sc(c, "SociTestDB");
         std::vector<std::uint64_t> const ubid(
-            {(std::uint64_t)std::numeric_limits<std::int64_t>::max(), 20, 30});
+            {static_cast<std::uint64_t>(
+                 std::numeric_limits<std::int64_t>::max()),
+             20,
+             30});
         std::vector<std::int64_t> const bid({-10, -20, -30});
         std::vector<std::uint32_t> const uid(
             {std::numeric_limits<std::uint32_t>::max(), 2, 3});

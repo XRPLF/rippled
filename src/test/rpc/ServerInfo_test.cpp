@@ -115,7 +115,7 @@ admin = 127.0.0.1
 
             // Call NetworkOPs directly and set the admin flag to false.
             auto const result =
-                env.app().getOPs().getServerInfo(true, false, 0);
+                env.app().getOPs().getServerInfo(true, false, false);
             // Expect that the admin ports are not included in the result.
             auto const& ports = result[jss::ports];
             BEAST_EXPECT(ports.isArray() && ports.size() == 0);

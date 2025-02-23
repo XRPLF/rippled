@@ -571,7 +571,8 @@ class Transaction_test : public beast::unit_test::suite
         // completeness
         auto const expected3 = std::optional<std::string>("CFFFFFFF0000FFFF");
         BEAST_EXPECT(
-            RPC::encodeCTID(0x0FFF'FFFF, (uint16_t)0x10000, 0xFFFF) ==
+            RPC::encodeCTID(
+                0x0FFF'FFFF, static_cast<uint16_t>(0x10000), 0xFFFF) ==
             expected3);
 
         // Test case 4: network_id greater than 0xFFFF
@@ -579,7 +580,8 @@ class Transaction_test : public beast::unit_test::suite
         // completeness
         auto const expected4 = std::optional<std::string>("CFFFFFFFFFFF0000");
         BEAST_EXPECT(
-            RPC::encodeCTID(0x0FFF'FFFFUL, 0xFFFFU, (uint16_t)0x1000'0U) ==
+            RPC::encodeCTID(
+                0x0FFF'FFFFUL, 0xFFFFU, static_cast<uint16_t>(0x1000'0U)) ==
             expected4);
 
         // Test case 5: Valid input values

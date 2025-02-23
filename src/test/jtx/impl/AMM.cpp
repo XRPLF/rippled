@@ -41,8 +41,8 @@ static IOUAmount
 initialTokens(STAmount const& asset1, STAmount const& asset2)
 {
     auto const product = number(asset1) * number(asset2);
-    return (IOUAmount)(product.mantissa() >= 0 ? root2(product)
-                                               : root2(-product));
+    return static_cast<IOUAmount>(
+        product.mantissa() >= 0 ? root2(product) : root2(-product));
 }
 
 AMM::AMM(

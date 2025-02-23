@@ -377,7 +377,7 @@ public:
     {
         for (auto id : peers)
         {
-            assert(links_.find(id) != links_.end());
+            assert(links_.contains(id));
             f(*links_[id], message_);
         }
     }
@@ -635,7 +635,7 @@ public:
     isSelected(PublicKey const& validator, Peer::id_t peer)
     {
         auto selected = slots_.getSelected(validator);
-        return selected.find(peer) != selected.end();
+        return selected.contains(peer);
     }
 
     id_t
@@ -886,9 +886,11 @@ protected:
     {
         auto peers = network_.overlay().getPeers(network_.validator(validator));
         std::cout << msg << " " << "num peers "
-                  << (int)network_.overlay().getNumPeers() << std::endl;
+                  << static_cast<int>(network_.overlay().getNumPeers())
+                  << std::endl;
         for (auto& [k, v] : peers)
-            std::cout << k << ":" << (int)std::get<reduce_relay::PeerState>(v)
+            std::cout << k << ":"
+                      << static_cast<int>(std::get<reduce_relay::PeerState>(v))
                       << " ";
         std::cout << std::endl;
     }
@@ -968,8 +970,8 @@ protected:
                     str << s << " ";
                 if (log)
                     std::cout
-                        << (double)reduce_relay::epoch<milliseconds>(now)
-                                .count() /
+                        << static_cast<double>(
+                               reduce_relay::epoch<milliseconds>(now).count()) /
                             1000.
                         << " random, squelched, validator: " << validator.id()
                         << " peers: " << str.str() << std::endl;
@@ -1004,8 +1006,8 @@ protected:
                             network_.isSelected(link.peerId());
                 };
                 auto r = rand_int(0, 1000);
-                if (r == (int)EventType::LinkDown ||
-                    r == (int)EventType::PeerDisconnected)
+                if (r == static_cast<int>(EventType::LinkDown) ||
+                    r == static_cast<int>(EventType::PeerDisconnected))
                 {
                     update(static_cast<EventType>(r));
                 }
@@ -1064,7 +1066,7 @@ protected:
                         network_.overlay().inState(
                             *event.key_, reduce_relay::PeerState::Squelched) >
                             0 &&
-                        peers.find(event.peer_) != peers.end();
+                        peers.contains(event.peer_);
                 }
                 network_.overlay().deleteIdlePeers(
                     [&](PublicKey const& v, PeerWPtr const& ptr) {

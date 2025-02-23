@@ -3659,7 +3659,7 @@ private:
             {
                 accounts.insert(offer[jss::Account].asString());
             }
-            BEAST_EXPECT(accounts.find(A2.human()) != std::end(accounts));
+            BEAST_EXPECT(accounts.contains(A2.human()));
 
             //    test: visible offers where taker_gets is unfrozen issuer
             offers = env.rpc(
@@ -3673,7 +3673,7 @@ private:
             {
                 accounts.insert(offer[jss::Account].asString());
             }
-            BEAST_EXPECT(accounts.find(A1.human()) != std::end(accounts));
+            BEAST_EXPECT(accounts.contains(A1.human()));
         }
 
         {
