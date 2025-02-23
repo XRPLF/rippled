@@ -96,7 +96,7 @@ randomB256TestData(std::span<std::uint8_t> d)
     auto& rng = randEngine();
     std::uniform_int_distribution<std::uint8_t> dist(0, 255);
     auto [tokType, tokSize] = randomTokenTypeAndSize();
-    std::generate(d.begin(), d.begin() + tokSize, [&] { return dist(rng); });
+    std::generate_n(d.begin(), tokSize, [&] { return dist(rng); });
     return {tokType, d.subspan(0, tokSize)};
 }
 

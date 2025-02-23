@@ -38,7 +38,7 @@ public:
             int val[256];
             Table()
             {
-                std::fill(val, val + 256, 0);
+                std::fill_n(val, 256, 0);
                 for (int i = 0; i < 10; ++i)
                     val['0' + i] = i;
                 for (int i = 0; i < 6; ++i)
