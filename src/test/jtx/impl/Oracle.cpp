@@ -111,20 +111,16 @@ Oracle::expectPrice(DataSeries const& series) const
             return false;
         for (auto const& data : series)
         {
-            if (std::find_if(
-                    leSeries.begin(),
-                    leSeries.end(),
-                    [&](STObject const& o) -> bool {
-                        auto const& baseAsset = o.getFieldCurrency(sfBaseAsset);
-                        auto const& quoteAsset =
-                            o.getFieldCurrency(sfQuoteAsset);
-                        auto const& price = o.getFieldU64(sfAssetPrice);
-                        auto const& scale = o.getFieldU8(sfScale);
-                        return baseAsset.getText() == std::get<0>(data) &&
-                            quoteAsset.getText() == std::get<1>(data) &&
-                            price == std::get<2>(data) &&
-                            scale == std::get<3>(data);
-                    }) == leSeries.end())
+            if (std::ranges::find_if(leSeries, [&](STObject const& o) -> bool {
+                    auto const& baseAsset = o.getFieldCurrency(sfBaseAsset);
+                    auto const& quoteAsset = o.getFieldCurrency(sfQuoteAsset);
+                    auto const& price = o.getFieldU64(sfAssetPrice);
+                    auto const& scale = o.getFieldU8(sfScale);
+                    return baseAsset.getText() == std::get<0>(data) &&
+                        quoteAsset.getText() == std::get<1>(data) &&
+                        price == std::get<2>(data) &&
+                        scale == std::get<3>(data);
+                }) == leSeries.end())
                 return false;
         }
         return true;

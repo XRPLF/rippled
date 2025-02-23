@@ -296,10 +296,9 @@ AMM::expectAuctionSlot(std::vector<AccountID> const& authAccounts) const
                                  STArray const& accounts) {
         for (auto const& account : accounts)
         {
-            if (std::find(
-                    authAccounts.cbegin(),
-                    authAccounts.cend(),
-                    account.getAccountID(sfAccount)) == authAccounts.end())
+            if (std::ranges::find(
+                    authAccounts, account.getAccountID(sfAccount)) ==
+                authAccounts.end())
                 return false;
         }
         return true;

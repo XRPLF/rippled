@@ -260,8 +260,7 @@ Change::applyAmendment()
 
     STVector256 amendments = amendmentObject->getFieldV256(sfAmendments);
 
-    if (std::find(amendments.begin(), amendments.end(), amendment) !=
-        amendments.end())
+    if (std::ranges::find(amendments, amendment) != amendments.end())
         return tefALREADY;
 
     auto flags = ctx_.tx.getFlags();

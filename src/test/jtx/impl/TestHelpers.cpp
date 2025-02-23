@@ -157,11 +157,10 @@ expectOffers(
             if (sle->getType() == ltOFFER)
             {
                 ++cnt;
-                if (std::find_if(
-                        toMatch.begin(), toMatch.end(), [&](auto const& a) {
-                            return a.in == sle->getFieldAmount(sfTakerPays) &&
-                                a.out == sle->getFieldAmount(sfTakerGets);
-                        }) != toMatch.end())
+                if (std::ranges::find_if(toMatch, [&](auto const& a) {
+                        return a.in == sle->getFieldAmount(sfTakerPays) &&
+                            a.out == sle->getFieldAmount(sfTakerGets);
+                    }) != toMatch.end())
                     ++matched;
             }
             return true;

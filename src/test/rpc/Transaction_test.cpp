@@ -689,14 +689,12 @@ class Transaction_test : public beast::unit_test::suite
 
             // Verify that there are at least two upper case letters in ctid and
             // test a mixed case
-            if (BEAST_EXPECT(
-                    std::count_if(ctid.begin(), ctid.end(), isUpper) > 1))
+            if (BEAST_EXPECT(std::ranges::count_if(ctid, isUpper) > 1))
             {
                 // Change the first upper case letter to lower case.
                 std::string mixedCase = ctid;
                 {
-                    auto const iter = std::find_if(
-                        mixedCase.begin(), mixedCase.end(), isUpper);
+                    auto const iter = std::ranges::find_if(mixedCase, isUpper);
                     *iter = std::tolower(*iter);
                 }
                 BEAST_EXPECT(ctid != mixedCase);

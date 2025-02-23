@@ -75,7 +75,7 @@ TOfferStreamBase<TIn, TOut>::erase(ApplyView& view)
     }
 
     auto v(p->getFieldV256(sfIndexes));
-    auto it(std::find(v.begin(), v.end(), tip_.index()));
+    auto it(std::ranges::find(v, tip_.index()));
 
     if (it == v.end())
     {

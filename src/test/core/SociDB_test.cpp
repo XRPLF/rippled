@@ -135,11 +135,9 @@ public:
             {
                 auto si = std::distance(
                     stringData.begin(),
-                    std::find(
-                        stringData.begin(), stringData.end(), stringResult[i]));
+                    std::ranges::find(stringData, stringResult[i]));
                 auto ii = std::distance(
-                    intData.begin(),
-                    std::find(intData.begin(), intData.end(), intResult[i]));
+                    intData.begin(), std::ranges::find(intData, intResult[i]));
                 BEAST_EXPECT(si == ii && si < stringResult.size());
             }
         };

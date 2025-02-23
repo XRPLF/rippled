@@ -112,11 +112,9 @@ results::merge(results const& r)
     // combine the two top collections
     boost::container::static_vector<run_time, 2 * max_top> top_result;
     top_result.resize(top.size() + r.top.size());
-    std::merge(
-        top.begin(),
-        top.end(),
-        r.top.begin(),
-        r.top.end(),
+    std::ranges::merge(
+        top,
+        r.top,
         top_result.begin(),
         [](run_time const& t1, run_time const& t2) {
             return t1.second > t2.second;

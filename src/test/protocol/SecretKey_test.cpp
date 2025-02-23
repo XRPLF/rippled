@@ -170,8 +170,8 @@ public:
 
                 // swaps the smallest and largest elements in buffer
                 std::iter_swap(
-                    std::min_element(badData.begin(), badData.end()),
-                    std::max_element(badData.begin(), badData.end()));
+                    std::ranges::min_element(badData),
+                    std::ranges::max_element(badData));
 
                 // Wrong data: should fail
                 BEAST_EXPECT(!verify(pk, makeSlice(badData), sig, true));

@@ -4101,12 +4101,12 @@ public:
                 auto actorOffers = offersOnAccount(env, actor.acct);
                 auto const offerCount = std::distance(
                     actorOffers.begin(),
-                    std::remove_if(
-                        actorOffers.begin(),
-                        actorOffers.end(),
+                    std::ranges::remove_if(
+                        actorOffers,
                         [](std::shared_ptr<SLE const>& offer) {
                             return (*offer)[sfTakerGets].signum() == 0;
-                        }));
+                        })
+                        .begin());
                 BEAST_EXPECT(offerCount == actor.offers);
 
                 env.require(balance(actor.acct, actor.xrp));
@@ -4849,9 +4849,8 @@ public:
     {
         std::vector<std::shared_ptr<SLE const>> offers{
             offersOnAccount(env, acct)};
-        std::sort(
-            offers.begin(),
-            offers.end(),
+        std::ranges::sort(
+            offers,
             [](std::shared_ptr<SLE const> const& rhs,
                std::shared_ptr<SLE const> const& lhs) {
                 return (*rhs)[sfSequence] < (*lhs)[sfSequence];

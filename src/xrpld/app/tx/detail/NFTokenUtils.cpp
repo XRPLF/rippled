@@ -125,11 +125,9 @@ getPageForToken(
         // equivalent NFTokens then check the front of the page for a
         // place to make the split.
         if (splitIter == narr.end())
-            splitIter = std::find_if(
-                narr.begin(), narr.end(), [&cmp](STObject const& obj) {
-                    return (obj.getFieldH256(sfNFTokenID) & nft::pageMask) ==
-                        cmp;
-                });
+            splitIter = std::ranges::find_if(narr, [&cmp](STObject const& obj) {
+                return (obj.getFieldH256(sfNFTokenID) & nft::pageMask) == cmp;
+            });
 
         // There should be no circumstance when splitIter == end(), but if it
         // were to happen we should bail out because something is confused.
@@ -257,7 +255,7 @@ changeTokenURI(
     STArray& arr = page->peekFieldArray(sfNFTokens);
 
     auto const nftIter =
-        std::find_if(arr.begin(), arr.end(), [&nftokenID](STObject const& obj) {
+        std::ranges::find_if(arr, [&nftokenID](STObject const& obj) {
             return (obj[sfNFTokenID] == nftokenID);
         });
 
@@ -343,11 +341,9 @@ mergePages(
 
     STArray x(p1arr.size() + p2arr.size());
 
-    std::merge(
-        p1arr.begin(),
-        p1arr.end(),
-        p2arr.begin(),
-        p2arr.end(),
+    std::ranges::merge(
+        p1arr,
+        p2arr,
         std::back_inserter(x),
         [](STObject const& a, STObject const& b) {
             return compareTokens(
@@ -406,10 +402,9 @@ removeToken(
     auto arr = curr->getFieldArray(sfNFTokens);
 
     {
-        auto x = std::find_if(
-            arr.begin(), arr.end(), [&nftokenID](STObject const& obj) {
-                return (obj[sfNFTokenID] == nftokenID);
-            });
+        auto x = std::ranges::find_if(arr, [&nftokenID](STObject const& obj) {
+            return (obj[sfNFTokenID] == nftokenID);
+        });
 
         if (x == arr.end())
             return tecNO_ENTRY;

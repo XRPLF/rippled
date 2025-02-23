@@ -76,7 +76,7 @@ public:
 
             {
                 // Reorder and read the copy again
-                std::shuffle(batch.begin(), batch.end(), rng);
+                std::ranges::shuffle(batch, rng);
                 Batch copy;
                 fetchCopyOfBatch(*backend, &copy, batch);
                 BEAST_EXPECT(areBatchesEqual(batch, copy));
@@ -93,8 +93,8 @@ public:
             Batch copy;
             fetchCopyOfBatch(*backend, &copy, batch);
             // Canonicalize the source and destination batches
-            std::sort(batch.begin(), batch.end(), LessThan{});
-            std::sort(copy.begin(), copy.end(), LessThan{});
+            std::ranges::sort(batch, LessThan{});
+            std::ranges::sort(copy, LessThan{});
             BEAST_EXPECT(areBatchesEqual(batch, copy));
         }
     }

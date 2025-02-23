@@ -310,7 +310,7 @@ Payment::preclaim(PreclaimContext const& ctx)
         STPathSet const& paths = ctx.tx.getFieldPathSet(sfPaths);
 
         if (paths.size() > MaxPathSize ||
-            std::any_of(paths.begin(), paths.end(), [](STPath const& path) {
+            std::ranges::any_of(paths, [](STPath const& path) {
                 return path.size() > MaxPathLength;
             }))
         {

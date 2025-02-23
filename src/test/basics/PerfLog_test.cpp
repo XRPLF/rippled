@@ -178,14 +178,11 @@ class PerfLog_test : public beast::unit_test::suite
 
         // Note that the longest durations should be at the front of the
         // vector since they were started first.
-        std::sort(
-            currents.begin(),
-            currents.end(),
-            [](Cur const& lhs, Cur const& rhs) {
-                if (lhs.dur != rhs.dur)
-                    return (rhs.dur < lhs.dur);
-                return (lhs.name < rhs.name);
-            });
+        std::ranges::sort(currents, [](Cur const& lhs, Cur const& rhs) {
+            if (lhs.dur != rhs.dur)
+                return (rhs.dur < lhs.dur);
+            return (lhs.name < rhs.name);
+        });
         return currents;
     }
 
@@ -310,7 +307,7 @@ public:
         // causing an assert.
         std::vector<char const*> labels =
             test::jtx::make_vector(ripple::RPC::getHandlerNames());
-        std::shuffle(labels.begin(), labels.end(), default_prng());
+        std::ranges::shuffle(labels, default_prng());
 
         // Get two IDs to associate with each label.  Errors tend to happen at
         // boundaries, so we pick IDs starting from zero and ending at
@@ -329,7 +326,7 @@ public:
             [i = std::numeric_limits<std::uint64_t>::max()]() mutable {
                 return i--;
             });
-        std::shuffle(ids.begin(), ids.end(), default_prng());
+        std::ranges::shuffle(ids, default_prng());
 
         // Start all of the RPC commands twice to show they can all be tracked
         // simultaneously.
@@ -534,7 +531,7 @@ public:
                 jobs.emplace_back(job.first, job.second.name());
             }
         }
-        std::shuffle(jobs.begin(), jobs.end(), default_prng());
+        std::ranges::shuffle(jobs, default_prng());
 
         // Walk through all of the jobs, enqueuing every job once.  Check
         // the jobs data with every addition.

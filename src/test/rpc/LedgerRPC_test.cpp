@@ -290,20 +290,16 @@ class LedgerRPC_XChain_test : public beast::unit_test::suite,
                     a[i][jss::Destination] == scCarol.human());
                 BEAST_EXPECT(
                     a[i].isMember(sfAttestationSignerAccount.jsonName) &&
-                    std::any_of(
-                        signers.begin(), signers.end(), [&](signer const& s) {
-                            return a[i][sfAttestationSignerAccount.jsonName] ==
-                                s.account.human();
-                        }));
+                    std::ranges::any_of(signers, [&](signer const& s) {
+                        return a[i][sfAttestationSignerAccount.jsonName] ==
+                            s.account.human();
+                    }));
                 BEAST_EXPECT(
                     a[i].isMember(sfAttestationRewardAccount.jsonName) &&
-                    std::any_of(
-                        payee.begin(),
-                        payee.end(),
-                        [&](Account const& account) {
-                            return a[i][sfAttestationRewardAccount.jsonName] ==
-                                account.human();
-                        }));
+                    std::ranges::any_of(payee, [&](Account const& account) {
+                        return a[i][sfAttestationRewardAccount.jsonName] ==
+                            account.human();
+                    }));
                 BEAST_EXPECT(
                     a[i].isMember(sfWasLockingChainSend.jsonName) &&
                     a[i][sfWasLockingChainSend.jsonName] == 1);

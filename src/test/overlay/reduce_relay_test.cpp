@@ -386,13 +386,11 @@ public:
     for_links(LinkIterCB f, bool simulateSlow = false)
     {
         std::vector<LinkSPtr> v;
-        std::transform(
-            links_.begin(), links_.end(), std::back_inserter(v), [](auto& kv) {
-                return kv.second;
-            });
+        std::ranges::transform(
+            links_, std::back_inserter(v), [](auto& kv) { return kv.second; });
         std::random_device d;
         std::mt19937 g(d());
-        std::shuffle(v.begin(), v.end(), g);
+        std::ranges::shuffle(v, g);
 
         for (auto& link : v)
         {
@@ -766,10 +764,8 @@ public:
     void
     enableLink(std::uint16_t validatorId, Peer::id_t peer, bool enable)
     {
-        auto it =
-            std::find_if(validators_.begin(), validators_.end(), [&](auto& v) {
-                return v.id() == validatorId;
-            });
+        auto it = std::ranges::find_if(
+            validators_, [&](auto& v) { return v.id() == validatorId; });
         assert(it != validators_.end());
         if (enable)
             it->linkUp(peer);
@@ -808,7 +804,7 @@ public:
         std::iota(s.begin(), s.end(), min);
         std::random_device d;
         std::mt19937 g(d());
-        std::shuffle(s.begin(), s.end(), g);
+        std::ranges::shuffle(s, g);
         for (auto v : s)
             f(v);
     }
@@ -1291,7 +1287,7 @@ protected:
             ManualClock::advance(seconds(601));
             BEAST_EXPECT(propagateAndSquelch(log, true, false));
             auto peers = network_.overlay().getPeers(network_.validator(0));
-            auto it = std::find_if(peers.begin(), peers.end(), [&](auto it) {
+            auto it = std::ranges::find_if(peers, [&](auto it) {
                 return std::get<reduce_relay::PeerState>(it.second) ==
                     reduce_relay::PeerState::Squelched;
             });

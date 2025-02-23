@@ -185,10 +185,7 @@ public:
                 (*i.second).begin(),
                 (*i.second).end(),
                 std::back_inserter(before_sorted[i.first]));
-            std::sort(
-                before_sorted[i.first].begin(),
-                before_sorted[i.first].end(),
-                cmp_EP);
+            std::ranges::sort(before_sorted[i.first], cmp_EP);
         }
 
         c.hops.shuffle();
@@ -207,10 +204,7 @@ public:
                 (*i.second).begin(),
                 (*i.second).end(),
                 std::back_inserter(after_sorted[i.first]));
-            std::sort(
-                after_sorted[i.first].begin(),
-                after_sorted[i.first].end(),
-                cmp_EP);
+            std::ranges::sort(after_sorted[i.first], cmp_EP);
         }
 
         // each hop bucket should contain the same items

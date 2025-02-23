@@ -107,7 +107,7 @@ struct Directory_test : public beast::unit_test::suite
 
                 // Ensure that the entries in the page are sorted
                 auto const& v = p->getFieldV256(sfIndexes);
-                BEAST_EXPECT(std::is_sorted(v.begin(), v.end()));
+                BEAST_EXPECT(std::ranges::is_sorted(v));
 
                 // Ensure that the page contains the correct orders by
                 // calculating which sequence numbers belong here.
@@ -192,7 +192,7 @@ struct Directory_test : public beast::unit_test::suite
 
             BEAST_EXPECT(!dirIsEmpty(*env.closed(), keylet::ownerDir(alice)));
 
-            std::shuffle(cl.begin(), cl.end(), default_prng());
+            std::ranges::shuffle(cl, default_prng());
 
             for (auto const& c : cl)
             {
@@ -225,7 +225,7 @@ struct Directory_test : public beast::unit_test::suite
             // Now fill the offers in a random order. Offer
             // entries will drop, and be replaced by trust
             // lines that are implicitly created.
-            std::shuffle(cl.begin(), cl.end(), default_prng());
+            std::ranges::shuffle(cl, default_prng());
 
             for (auto const& c : cl)
             {
@@ -236,7 +236,7 @@ struct Directory_test : public beast::unit_test::suite
             // Finally, Alice now sends the funds back to
             // Charlie. The implicitly created trust lines
             // should drop away:
-            std::shuffle(cl.begin(), cl.end(), default_prng());
+            std::ranges::shuffle(cl, default_prng());
 
             for (auto const& c : cl)
             {

@@ -72,7 +72,7 @@ class Handler_test : public beast::unit_test::suite
                 samples[k] = (std::chrono::steady_clock::now() - start).count();
             }
 
-            std::sort(samples.begin(), samples.end());
+            std::ranges::sort(samples);
             for (std::size_t k = 35; k < 65; ++k)
             {
                 j += 1;

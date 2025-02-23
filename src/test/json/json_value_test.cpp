@@ -824,9 +824,8 @@ struct json_value_test : beast::unit_test::suite
         char const* s("{\"array\":[{\"12\":23},{},null,false,0.5]}");
 
         auto countLines = [](std::string const& str) {
-            return 1 + std::count_if(str.begin(), str.end(), [](char c) {
-                       return c == '\n';
-                   });
+            return 1 +
+                std::ranges::count_if(str, [](char c) { return c == '\n'; });
         };
 
         BEAST_EXPECT(r.parse(s, j));

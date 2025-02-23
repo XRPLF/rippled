@@ -99,7 +99,7 @@ public:
 
             for (auto const& n : network)
             {
-                auto found = std::find(cluster.begin(), cluster.end(), n);
+                auto found = std::ranges::find(cluster, n);
                 BEAST_EXPECT(
                     static_cast<bool>(c->member(n)) ==
                     (found != cluster.end()));
@@ -119,7 +119,7 @@ public:
 
             for (auto const& n : network)
             {
-                auto found = std::find(cluster.begin(), cluster.end(), n);
+                auto found = std::ranges::find(cluster, n);
                 BEAST_EXPECT(
                     static_cast<bool>(c->member(n)) ==
                     (found != cluster.end()));

@@ -66,12 +66,9 @@ signers(Account const& account, none_t)
 msig::msig(std::vector<msig::Reg> signers_) : signers(std::move(signers_))
 {
     // Signatures must be applied in sorted order.
-    std::sort(
-        signers.begin(),
-        signers.end(),
-        [](msig::Reg const& lhs, msig::Reg const& rhs) {
-            return lhs.acct.id() < rhs.acct.id();
-        });
+    std::ranges::sort(signers, [](msig::Reg const& lhs, msig::Reg const& rhs) {
+        return lhs.acct.id() < rhs.acct.id();
+    });
 }
 
 void

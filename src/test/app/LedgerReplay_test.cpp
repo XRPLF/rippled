@@ -675,11 +675,10 @@ public:
     findTask(uint256 const& hash, int totalReplay)
     {
         std::unique_lock<std::mutex> lock(replayer.mtx_);
-        auto i = std::find_if(
-            replayer.tasks_.begin(), replayer.tasks_.end(), [&](auto const& t) {
-                return t->parameter_.finishHash_ == hash &&
-                    t->parameter_.totalLedgers_ == totalReplay;
-            });
+        auto i = std::ranges::find_if(replayer.tasks_, [&](auto const& t) {
+            return t->parameter_.finishHash_ == hash &&
+                t->parameter_.totalLedgers_ == totalReplay;
+        });
         if (i == replayer.tasks_.end())
             return {};
         return *i;

@@ -266,10 +266,8 @@ public:
             };
             auto sort = [](std::vector<Manifest const*> mv)
                 -> std::vector<Manifest const*> {
-                std::sort(
-                    mv.begin(),
-                    mv.end(),
-                    [](Manifest const* lhs, Manifest const* rhs) {
+                std::ranges::sort(
+                    mv, [](Manifest const* lhs, Manifest const* rhs) {
                         return lhs->serialized < rhs->serialized;
                     });
                 return mv;
