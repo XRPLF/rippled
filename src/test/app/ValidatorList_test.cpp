@@ -447,8 +447,7 @@ private:
                 cfgPublishers.push_back(strHex(key));
 
             // explicitly set the list threshold
-            BEAST_EXPECT(trustedKeys->load(
-                {}, emptyCfgKeys, cfgPublishers, std::size_t(2)));
+            BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgPublishers, 2));
             for (auto const& key : keys)
                 BEAST_EXPECT(trustedKeys->trustedPublisher(key));
             BEAST_EXPECT(trustedKeys->getListThreshold() == 2);
@@ -522,8 +521,7 @@ private:
 
             std::vector<std::string> cfgPublishers = {
                 strHex(pubRevokedPublic), strHex(legitKey)};
-            BEAST_EXPECT(trustedKeys->load(
-                {}, emptyCfgKeys, cfgPublishers, std::size_t(2)));
+            BEAST_EXPECT(trustedKeys->load({}, emptyCfgKeys, cfgPublishers, 2));
 
             BEAST_EXPECT(!trustedKeys->trustedPublisher(pubRevokedPublic));
             BEAST_EXPECT(trustedKeys->trustedPublisher(legitKey));
@@ -1355,8 +1353,7 @@ private:
             std::vector<std::string> cfgPublishers(
                 {strHex(publisher1Public), strHex(publisher2Public)});
 
-            BEAST_EXPECT(
-                trustedKeys->load({}, cfgKeys, cfgPublishers, std::size_t(2)));
+            BEAST_EXPECT(trustedKeys->load({}, cfgKeys, cfgPublishers, 2));
 
             TrustChanges changes = trustedKeys->updateTrusted(
                 activeValidatorsOuter,
@@ -1668,8 +1665,8 @@ private:
                 std::vector<std::string> emptyCfgKeys;
 
                 // Threshold of 1 will result in a union of all the lists
-                BEAST_EXPECT(trustedKeys->load(
-                    {}, emptyCfgKeys, cfgPublishers, std::size_t(1)));
+                BEAST_EXPECT(
+                    trustedKeys->load({}, emptyCfgKeys, cfgPublishers, 1));
 
                 auto const version = 1;
                 auto const sequence = 1;
