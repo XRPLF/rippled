@@ -121,7 +121,7 @@ printAsInt(std::span<std::uint8_t> a, std::span<std::uint8_t> b)
         std::stringstream sstr;
         for (auto i : s)
         {
-            sstr << std::setw(3) << int(i) << ',';
+            sstr << std::setw(3) << i << ',';
         }
         return sstr.str();
     };

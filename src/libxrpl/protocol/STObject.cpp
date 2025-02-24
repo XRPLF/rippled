@@ -183,10 +183,9 @@ STObject::applyTemplate(const SOTemplate& type)
     v.reserve(type.size());
     for (auto const& e : type)
     {
-        auto const iter =
-            std::find_if(v_.begin(), v_.end(), [&](detail::STVar const& b) {
-                return b.get().getFName() == e.sField();
-            });
+        auto const iter = std::ranges::find_if(v_, [&](detail::STVar const& b) {
+            return b.get().getFName() == e.sField();
+        });
         if (iter != v_.end())
         {
             if ((e.style() == soeDEFAULT) && iter->get().isDefault())
@@ -283,8 +282,8 @@ STObject::set(SerialIter& sit, int depth)
     // duplicate fields. This is a key invariant:
     auto const sf = getSortedFields(*this, withAllFields);
 
-    auto const dup = std::adjacent_find(
-        sf.cbegin(), sf.cend(), [](STBase const* lhs, STBase const* rhs) {
+    auto const dup = std::ranges::adjacent_find(
+        sf, [](STBase const* lhs, STBase const* rhs) {
             return lhs->getFName() == rhs->getFName();
         });
 
@@ -379,12 +378,8 @@ STObject::isEquivalent(const STBase& t) const
     auto const sf1 = getSortedFields(*this, withAllFields);
     auto const sf2 = getSortedFields(*v, withAllFields);
 
-    return std::equal(
-        sf1.begin(),
-        sf1.end(),
-        sf2.begin(),
-        sf2.end(),
-        [](STBase const* st1, STBase const* st2) {
+    return std::ranges::equal(
+        sf1, sf2, [](STBase const* st1, STBase const* st2) {
             return (st1->getSType() == st2->getSType()) &&
                 st1->isEquivalent(*st2);
         });
@@ -920,7 +915,7 @@ STObject::getSortedFields(STObject const& objToSort, WhichFields whichFields)
     }
 
     // Sort the fields by fieldCode.
-    std::sort(sf.begin(), sf.end(), [](STBase const* lhs, STBase const* rhs) {
+    std::ranges::sort(sf, [](STBase const* lhs, STBase const* rhs) {
         return lhs->getFName().fieldCode < rhs->getFName().fieldCode;
     });
 

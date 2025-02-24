@@ -580,7 +580,7 @@ trustthesevalidators.gov
                 1);
             BEAST_EXPECT(
                 c.section(SECTION_VALIDATOR_LIST_THRESHOLD).values()[0] == "1");
-            BEAST_EXPECT(c.VALIDATOR_LIST_THRESHOLD == std::size_t(1));
+            BEAST_EXPECT(c.VALIDATOR_LIST_THRESHOLD == 1);
         }
         {
             // load validator list sites and keys from config

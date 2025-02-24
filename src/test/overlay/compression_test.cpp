@@ -57,15 +57,15 @@ ledgerHash(LedgerInfo const& info)
 {
     return ripple::sha512Half(
         HashPrefix::ledgerMaster,
-        std::uint32_t(info.seq),
-        std::uint64_t(info.drops.drops()),
+        info.seq,
+        static_cast<std::uint64_t>(info.drops.drops()),
         info.parentHash,
         info.txHash,
         info.accountHash,
-        std::uint32_t(info.parentCloseTime.time_since_epoch().count()),
-        std::uint32_t(info.closeTime.time_since_epoch().count()),
-        std::uint8_t(info.closeTimeResolution.count()),
-        std::uint8_t(info.closeFlags));
+        info.parentCloseTime.time_since_epoch().count(),
+        info.closeTime.time_since_epoch().count(),
+        static_cast<std::uint8_t>(info.closeTimeResolution.count()),
+        static_cast<std::uint8_t>(info.closeFlags));
 }
 
 class compression_test : public beast::unit_test::suite

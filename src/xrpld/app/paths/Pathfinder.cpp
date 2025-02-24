@@ -542,9 +542,8 @@ Pathfinder::rankPaths(
     //    width of path
     //    length of path
     // A better PathRank is lower, best are sorted to the beginning.
-    std::sort(
-        rankedPaths.begin(),
-        rankedPaths.end(),
+    std::ranges::sort(
+        rankedPaths,
         [&](Pathfinder::PathRank const& a, Pathfinder::PathRank const& b) {
             // 1) Higher quality (lower cost) is better
             if (!convert_all_ && a.quality != b.quality)
@@ -1078,9 +1077,8 @@ Pathfinder::addLink(
 
                     if (!candidates.empty())
                     {
-                        std::sort(
-                            candidates.begin(),
-                            candidates.end(),
+                        std::ranges::sort(
+                            candidates,
                             std::bind(
                                 compareAccountCandidate,
                                 mLedger->seq(),

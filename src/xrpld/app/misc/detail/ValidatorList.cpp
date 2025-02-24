@@ -180,7 +180,7 @@ ValidatorList::load(
             status = PublisherStatus::revoked;
         }
 
-        if (publisherLists_.count(id))
+        if (publisherLists_.contains(id))
         {
             JLOG(j_.warn())
                 << "Duplicate validator list publisher key: " << key;
@@ -903,7 +903,7 @@ ValidatorList::broadcastBlobs(
         // the peer, and foreach provides a const&
         for (auto& peer : overlay.getActivePeers())
         {
-            if (toSkip->count(peer->id()) == 0)
+            if (!toSkip->contains(peer->id()))
             {
                 auto const peerSequence =
                     peer->publisherListSequence(publisherKey).value_or(0);
@@ -999,10 +999,7 @@ ValidatorList::applyLists(
     std::string siteUri,
     std::optional<uint256> const& hash /* = {} */)
 {
-    if (std::count(
-            std::begin(supportedListVersions),
-            std::end(supportedListVersions),
-            version) != 1)
+    if (std::ranges::count(supportedListVersions, version) != 1)
         return PublisherListStats{ListDisposition::unsupported_version};
 
     std::lock_guard lock{mutex_};
@@ -1034,7 +1031,7 @@ ValidatorList::applyLists(
 
     // Clean up the collection, because some of the processing may have made it
     // inconsistent
-    if (result.publisherKey && publisherLists_.count(*result.publisherKey))
+    if (result.publisherKey && publisherLists_.contains(*result.publisherKey))
     {
         auto& pubCollection = publisherLists_[*result.publisherKey];
         auto& remaining = pubCollection.remaining;
@@ -1115,7 +1112,7 @@ ValidatorList::updatePublisherList(
     {
         auto m = deserializeManifest(base64_decode(valManifest));
 
-        if (!m || !keyListings_.count(m->masterKey))
+        if (!m || !keyListings_.contains(m->masterKey))
         {
             JLOG(j_.warn()) << "List for " << strHex(pubKey)
                             << " contained untrusted validator manifest";
@@ -1165,7 +1162,7 @@ ValidatorList::applyList(
     PublicKey pubKey = *pubKeyOpt;
     if (result > ListDisposition::pending)
     {
-        if (publisherLists_.count(pubKey))
+        if (publisherLists_.contains(pubKey))
         {
             auto const& pubCollection = publisherLists_[pubKey];
             if (pubCollection.maxSequence &&
@@ -1201,7 +1198,7 @@ ValidatorList::applyList(
 
     Json::Value const& newList = list[jss::validators];
     std::vector<PublicKey> oldList;
-    if (accepted && pubCollection.remaining.count(sequence) != 0)
+    if (accepted && pubCollection.remaining.contains(sequence))
     {
         // We've seen this list before and stored it in "remaining". The
         // normal expected process is that the processed list would have
@@ -1359,7 +1356,7 @@ ValidatorList::verify(
 {
     auto m = deserializeManifest(base64_decode(manifest));
 
-    if (!m || !publisherLists_.count(m->masterKey))
+    if (!m || !publisherLists_.contains(m->masterKey))
         return {ListDisposition::untrusted, {}};
 
     PublicKey masterPubKey = m->masterKey;
@@ -1421,7 +1418,7 @@ ValidatorList::verify(
             //   known_sequence
             return !listCollection.maxSequence ||
                     sequence > *listCollection.maxSequence ||
-                    (listCollection.remaining.count(sequence) == 0 &&
+                    (!listCollection.remaining.contains(sequence) &&
                      validFrom < listCollection.remaining
                                      .at(*listCollection.maxSequence)
                                      .validFrom)
@@ -1442,7 +1439,7 @@ ValidatorList::listed(PublicKey const& identity) const
     std::shared_lock read_lock{mutex_};
 
     auto const pubKey = validatorManifests_.getMasterKey(identity);
-    return keyListings_.find(pubKey) != keyListings_.end();
+    return keyListings_.contains(pubKey);
 }
 
 bool
@@ -1451,7 +1448,7 @@ ValidatorList::trusted(
     PublicKey const& identity) const
 {
     auto const pubKey = validatorManifests_.getMasterKey(identity);
-    return trustedMasterKeys_.find(pubKey) != trustedMasterKeys_.end();
+    return trustedMasterKeys_.contains(pubKey);
 }
 
 bool
@@ -1467,7 +1464,7 @@ ValidatorList::getListedKey(PublicKey const& identity) const
     std::shared_lock read_lock{mutex_};
 
     auto const pubKey = validatorManifests_.getMasterKey(identity);
-    if (keyListings_.find(pubKey) != keyListings_.end())
+    if (keyListings_.contains(pubKey))
         return pubKey;
     return std::nullopt;
 }
@@ -1478,7 +1475,7 @@ ValidatorList::getTrustedKey(
     PublicKey const& identity) const
 {
     auto const pubKey = validatorManifests_.getMasterKey(identity);
-    if (trustedMasterKeys_.find(pubKey) != trustedMasterKeys_.end())
+    if (trustedMasterKeys_.contains(pubKey))
         return pubKey;
     return std::nullopt;
 }
@@ -1495,7 +1492,7 @@ bool
 ValidatorList::trustedPublisher(PublicKey const& identity) const
 {
     std::shared_lock read_lock{mutex_};
-    return identity.size() && publisherLists_.count(identity) &&
+    return identity.size() && publisherLists_.contains(identity) &&
         publisherLists_.at(identity).status < PublisherStatus::revoked;
 }
 
@@ -1647,7 +1644,8 @@ ValidatorList::getJson() const
             x[jss::expiration] = "unknown";
         }
 
-        x[jss::validator_list_threshold] = Json::UInt(listThreshold_);
+        x[jss::validator_list_threshold] =
+            static_cast<Json::UInt>(listThreshold_);
     }
 
     // Validator keys listed in the local config file
@@ -2062,7 +2060,7 @@ ValidatorList::updateTrusted(
     {
         for (auto const& k : trustedMasterKeys_)
         {
-            if (negativeUNL_.count(k))
+            if (negativeUNL_.contains(k))
                 --effectiveUnlSize;
         }
         hash_set<NodeID> negUnlNodeIDs;
@@ -2072,7 +2070,7 @@ ValidatorList::updateTrusted(
         }
         for (auto const& nid : seenValidators)
         {
-            if (negUnlNodeIDs.count(nid))
+            if (negUnlNodeIDs.contains(nid))
                 --seenSize;
         }
     }
@@ -2139,21 +2137,21 @@ ValidatorList::negativeUNLFilter(
     if (!negativeUNL_.empty())
     {
         ret.erase(
-            std::remove_if(
-                ret.begin(),
-                ret.end(),
+            std::ranges::remove_if(
+                ret,
                 [&](auto const& v) -> bool {
                     if (auto const masterKey =
                             getTrustedKey(read_lock, v->getSignerPublic());
                         masterKey)
                     {
-                        return negativeUNL_.count(*masterKey);
+                        return negativeUNL_.contains(*masterKey);
                     }
                     else
                     {
                         return false;
                     }
-                }),
+                })
+                .begin(),
             ret.end());
     }
 

@@ -42,8 +42,8 @@ namespace ripple {
 bool
 Port::secure() const
 {
-    return protocol.count("peer") > 0 || protocol.count("https") > 0 ||
-        protocol.count("wss") > 0 || protocol.count("wss2") > 0;
+    return protocol.contains("peer") || protocol.contains("https") ||
+        protocol.contains("wss") || protocol.contains("wss2");
 }
 
 std::string

@@ -86,10 +86,8 @@ void
 ManagerImp::erase(Factory& factory)
 {
     std::lock_guard _(mutex_);
-    auto const iter =
-        std::find_if(list_.begin(), list_.end(), [&factory](Factory* other) {
-            return other == &factory;
-        });
+    auto const iter = std::ranges::find_if(
+        list_, [&factory](Factory* other) { return other == &factory; });
     XRPL_ASSERT(
         iter != list_.end(),
         "ripple::NodeStore::ManagerImp::erase : valid input");
@@ -100,10 +98,9 @@ Factory*
 ManagerImp::find(std::string const& name)
 {
     std::lock_guard _(mutex_);
-    auto const iter =
-        std::find_if(list_.begin(), list_.end(), [&name](Factory* other) {
-            return boost::iequals(name, other->getName());
-        });
+    auto const iter = std::ranges::find_if(list_, [&name](Factory* other) {
+        return boost::iequals(name, other->getName());
+    });
     if (iter == list_.end())
         return nullptr;
     return *iter;

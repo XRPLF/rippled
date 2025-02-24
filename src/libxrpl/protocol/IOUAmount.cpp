@@ -216,8 +216,7 @@ mulRatio(
     static auto log10Floor = [](uint128_t const& v) {
         // Find the index of the first element >= the requested element, the
         // index is the log of the element in the log table.
-        auto const l =
-            std::lower_bound(powerTable.begin(), powerTable.end(), v);
+        auto const l = std::ranges::lower_bound(powerTable, v);
         int index = std::distance(powerTable.begin(), l);
         // If we're not equal, subtract to get the floor
         if (*l != v)
@@ -229,9 +228,8 @@ mulRatio(
     static auto log10Ceil = [](uint128_t const& v) {
         // Find the index of the first element >= the requested element, the
         // index is the log of the element in the log table.
-        auto const l =
-            std::lower_bound(powerTable.begin(), powerTable.end(), v);
-        return int(std::distance(powerTable.begin(), l));
+        auto const l = std::ranges::lower_bound(powerTable, v);
+        return static_cast<int>(std::distance(powerTable.begin(), l));
     };
 
     static auto const fl64 =
@@ -273,7 +271,7 @@ mulRatio(
     // result we can store in the mantissa. Scale result down by dividing by ten
     // and adding one to the exponent until the low will fit in the 64-bit
     // mantissa. Use logarithms to avoid looping.
-    bool hasRem = bool(rem);
+    bool hasRem = static_cast<bool>(rem);
     auto const mustShrink = log10Ceil(low) - fl64;
     if (mustShrink > 0)
     {
@@ -281,7 +279,7 @@ mulRatio(
         exponent += mustShrink;
         low /= powerTable[mustShrink];
         if (!hasRem)
-            hasRem = bool(sav - low * powerTable[mustShrink]);
+            hasRem = static_cast<bool>(sav - low * powerTable[mustShrink]);
     }
 
     std::int64_t mantissa = low.convert_to<std::int64_t>();

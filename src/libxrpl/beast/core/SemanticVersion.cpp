@@ -76,8 +76,8 @@ chopUInt(int& value, int limit, std::string& input)
     if (input.empty())
         return false;
 
-    auto left_iter = std::find_if_not(
-        input.begin(), input.end(), [](std::string::value_type c) {
+    auto left_iter =
+        std::ranges::find_if_not(input, [](std::string::value_type c) {
             return std::isdigit(c, std::locale::classic());
         });
 
@@ -171,8 +171,8 @@ bool
 SemanticVersion::parse(std::string const& input)
 {
     // May not have leading or trailing whitespace
-    auto left_iter = std::find_if_not(
-        input.begin(), input.end(), [](std::string::value_type c) {
+    auto left_iter =
+        std::ranges::find_if_not(input, [](std::string::value_type c) {
             return std::isspace(c, std::locale::classic());
         });
 

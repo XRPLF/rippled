@@ -137,7 +137,7 @@ std::size_t
 InboundLedger::getPeerCount() const
 {
     auto const& peerIds = mPeerSet->getPeerIds();
-    return std::count_if(peerIds.begin(), peerIds.end(), [this](auto id) {
+    return std::ranges::count_if(peerIds, [this](auto id) {
         return (app_.overlay().findPeerByShortID(id) != nullptr);
     });
 }
@@ -561,14 +561,13 @@ InboundLedger::trigger(std::shared_ptr<Peer> const& peer, TriggerReason reason)
                 auto packet =
                     std::make_shared<Message>(tmBH, protocol::mtGET_OBJECTS);
                 auto const& peerIds = mPeerSet->getPeerIds();
-                std::for_each(
-                    peerIds.begin(), peerIds.end(), [this, &packet](auto id) {
-                        if (auto p = app_.overlay().findPeerByShortID(id))
-                        {
-                            mByHash = false;
-                            p->send(packet);
-                        }
-                    });
+                std::ranges::for_each(peerIds, [this, &packet](auto id) {
+                    if (auto p = app_.overlay().findPeerByShortID(id))
+                    {
+                        mByHash = false;
+                        p->send(packet);
+                    }
+                });
             }
             else
             {
@@ -773,7 +772,7 @@ InboundLedger::filterNodes(
     // requested come before the ones we have.
     auto dup = std::stable_partition(
         nodes.begin(), nodes.end(), [this](auto const& item) {
-            return mRecentNodes.count(item.second) == 0;
+            return !mRecentNodes.contains(item.second);
         });
 
     // If everything is a duplicate we don't want to send

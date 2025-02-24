@@ -140,10 +140,10 @@ private:
         fillJson(Status(status, messages));
 
         auto prefix = label + ": ";
-        expect(bool(value_), prefix + "No value");
+        expect(static_cast<bool>(value_), prefix + "No value");
 
         auto error = value_[jss::error];
-        expect(bool(error), prefix + "No error.");
+        expect(static_cast<bool>(error), prefix + "No error.");
 
         auto code = error[jss::code].asInt();
         expect(

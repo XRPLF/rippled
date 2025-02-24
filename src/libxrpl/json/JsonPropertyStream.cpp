@@ -86,7 +86,7 @@ JsonPropertyStream::add(std::string const& key, unsigned int v)
 void
 JsonPropertyStream::add(std::string const& key, long v)
 {
-    (*m_stack.back())[key] = int(v);
+    (*m_stack.back())[key] = static_cast<int>(v);
 }
 
 void
@@ -158,7 +158,7 @@ JsonPropertyStream::add(unsigned int v)
 void
 JsonPropertyStream::add(long v)
 {
-    m_stack.back()->append(int(v));
+    m_stack.back()->append(static_cast<int>(v));
 }
 
 void

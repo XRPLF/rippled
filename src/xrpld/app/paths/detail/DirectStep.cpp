@@ -599,7 +599,8 @@ DirectStepI<TDerived>::setCacheLimiting(
         {
             if (fwdIn.exponent() != cache_->in.exponent() ||
                 !cache_->in.mantissa() ||
-                (double(fwdIn.mantissa()) / double(cache_->in.mantissa())) >
+                static_cast<double>(fwdIn.mantissa()) /
+                        static_cast<double>(cache_->in.mantissa()) >
                     1.01)
             {
                 // Detect large diffs on forward pass so they may be

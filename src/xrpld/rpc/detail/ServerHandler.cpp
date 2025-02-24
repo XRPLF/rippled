@@ -140,11 +140,11 @@ ServerHandler::setup(Setup const& setup, beast::Journal journal)
                 port.port = endpointPort;
 
             if (!setup_.client.port &&
-                (port.protocol.count("http") > 0 ||
-                 port.protocol.count("https") > 0))
+                (port.protocol.contains("http") ||
+                 port.protocol.contains("https")))
                 setup_.client.port = endpointPort;
 
-            if (!setup_.overlay.port() && (port.protocol.count("peer") > 0))
+            if (!setup_.overlay.port() && (port.protocol.contains("peer")))
                 setup_.overlay.port(endpointPort);
         }
     }
@@ -196,8 +196,8 @@ ServerHandler::onHandoff(
     using namespace boost::beast;
     auto const& p{session.port().protocol};
     bool const is_ws{
-        p.count("ws") > 0 || p.count("ws2") > 0 || p.count("wss") > 0 ||
-        p.count("wss2") > 0};
+        p.contains("ws") || p.contains("ws2") || p.contains("wss") ||
+        p.contains("wss2")};
 
     if (websocket::is_upgrade(request))
     {
@@ -239,7 +239,7 @@ ServerHandler::onHandoff(
         return handoff;
     }
 
-    if (bundle && p.count("peer") > 0)
+    if (bundle && p.contains("peer"))
         return app_.overlay().onHandoff(
             std::move(bundle), std::move(request), remote_address);
 
@@ -267,7 +267,7 @@ build_map(boost::beast::http::fields const& h)
         // key cannot be a std::string_view because it needs to be used in
         // map and along with iterators
         std::string key(e.name_string());
-        std::transform(key.begin(), key.end(), key.begin(), [](auto kc) {
+        std::ranges::transform(key, key.begin(), [](auto kc) {
             return std::tolower(static_cast<unsigned char>(kc));
         });
         c[key] = e.value();
@@ -294,8 +294,8 @@ void
 ServerHandler::onRequest(Session& session)
 {
     // Make sure RPC is enabled on the port
-    if (session.port().protocol.count("http") == 0 &&
-        session.port().protocol.count("https") == 0)
+    if (!session.port().protocol.contains("http") &&
+        !session.port().protocol.contains("https"))
     {
         HTTPReply(403, "Forbidden", makeOutput(session), app_.journal("RPC"));
         session.close(true);
@@ -668,7 +668,7 @@ ServerHandler::processRequest(
             jsonRPC[jss::params][0u].isObject())
         {
             apiVersion = RPC::getAPIVersionNumber(
-                jsonRPC[jss::params][Json::UInt(0)],
+                jsonRPC[jss::params][static_cast<Json::UInt>(0)],
                 app_.config().BETA_RPC_API);
         }
 
@@ -705,12 +705,12 @@ ServerHandler::processRequest(
 
         if (jsonRPC.isMember(jss::params) && jsonRPC[jss::params].isArray() &&
             jsonRPC[jss::params].size() > 0 &&
-            jsonRPC[jss::params][Json::UInt(0)].isObjectOrNull())
+            jsonRPC[jss::params][static_cast<Json::UInt>(0)].isObjectOrNull())
         {
             role = requestRole(
                 required,
                 port,
-                jsonRPC[jss::params][Json::UInt(0)],
+                jsonRPC[jss::params][static_cast<Json::UInt>(0)],
                 remoteIPAddress,
                 user);
         }
@@ -1191,10 +1191,9 @@ parse_Ports(Config const& config, std::ostream& log)
     }
     else
     {
-        auto const count =
-            std::count_if(result.cbegin(), result.cend(), [](Port const& p) {
-                return p.protocol.count("peer") != 0;
-            });
+        auto const count = std::ranges::count_if(
+            std::as_const(result),
+            [](Port const& p) { return p.protocol.contains("peer"); });
 
         if (count > 1)
         {
@@ -1215,12 +1214,11 @@ setup_Client(ServerHandler::Setup& setup)
 {
     decltype(setup.ports)::const_iterator iter;
     for (iter = setup.ports.cbegin(); iter != setup.ports.cend(); ++iter)
-        if (iter->protocol.count("http") > 0 ||
-            iter->protocol.count("https") > 0)
+        if (iter->protocol.contains("http") || iter->protocol.contains("https"))
             break;
     if (iter == setup.ports.cend())
         return;
-    setup.client.secure = iter->protocol.count("https") > 0;
+    setup.client.secure = iter->protocol.contains("https");
     setup.client.ip = beast::IP::is_unspecified(iter->ip)
         ?
         // VFALCO HACK! to make localhost work
@@ -1237,10 +1235,9 @@ setup_Client(ServerHandler::Setup& setup)
 static void
 setup_Overlay(ServerHandler::Setup& setup)
 {
-    auto const iter = std::find_if(
-        setup.ports.cbegin(), setup.ports.cend(), [](Port const& port) {
-            return port.protocol.count("peer") != 0;
-        });
+    auto const iter = std::ranges::find_if(
+        std::as_const(setup.ports),
+        [](Port const& port) { return port.protocol.contains("peer"); });
     if (iter == setup.ports.cend())
     {
         setup.overlay = {};

@@ -129,7 +129,7 @@ ValueIteratorBase::index() const
     if (!czstring.c_str())
         return czstring.index();
 
-    return Value::UInt(-1);
+    return static_cast<Value::UInt>(-1);
 }
 
 const char*

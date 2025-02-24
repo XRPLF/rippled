@@ -54,15 +54,15 @@ calculateLedgerHash(LedgerInfo const& info)
     // VFALCO This has to match addRaw in View.h.
     return sha512Half(
         HashPrefix::ledgerMaster,
-        std::uint32_t(info.seq),
-        std::uint64_t(info.drops.drops()),
+        info.seq,
+        static_cast<std::uint64_t>(info.drops.drops()),
         info.parentHash,
         info.txHash,
         info.accountHash,
-        std::uint32_t(info.parentCloseTime.time_since_epoch().count()),
-        std::uint32_t(info.closeTime.time_since_epoch().count()),
-        std::uint8_t(info.closeTimeResolution.count()),
-        std::uint8_t(info.closeFlags));
+        info.parentCloseTime.time_since_epoch().count(),
+        info.closeTime.time_since_epoch().count(),
+        static_cast<std::uint8_t>(info.closeTimeResolution.count()),
+        static_cast<std::uint8_t>(info.closeFlags));
 }
 
 //------------------------------------------------------------------------------
@@ -199,8 +199,7 @@ Ledger::Ledger(
     {
         auto sle = std::make_shared<SLE>(keylet::fees());
         // Whether featureXRPFees is supported will depend on startup options.
-        if (std::find(amendments.begin(), amendments.end(), featureXRPFees) !=
-            amendments.end())
+        if (std::ranges::find(amendments, featureXRPFees) != amendments.end())
         {
             sle->at(sfBaseFeeDrops) = config.FEES.reference_fee;
             sle->at(sfReserveBaseDrops) = config.FEES.account_reserve;

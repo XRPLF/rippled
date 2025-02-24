@@ -1983,7 +1983,7 @@ NetworkOPsImp::pubManifest(Manifest const& mo)
         if (mo.signingKey)
             jvObj[jss::signing_key] =
                 toBase58(TokenType::NodePublic, *mo.signingKey);
-        jvObj[jss::seq] = Json::UInt(mo.sequence);
+        jvObj[jss::seq] = static_cast<Json::UInt>(mo.sequence);
         if (auto sig = mo.getSignature())
             jvObj[jss::signature] = strHex(*sig);
         jvObj[jss::master_signature] = strHex(mo.getMasterSignature());
@@ -2553,12 +2553,13 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
     auto const fp = m_ledgerMaster.getFetchPackCacheSize();
 
     if (fp != 0)
-        info[jss::fetch_pack] = Json::UInt(fp);
+        info[jss::fetch_pack] = static_cast<Json::UInt>(fp);
 
-    info[jss::peers] = Json::UInt(app_.overlay().size());
+    info[jss::peers] = static_cast<Json::UInt>(app_.overlay().size());
 
     Json::Value lastClose = Json::objectValue;
-    lastClose[jss::proposers] = Json::UInt(mConsensus.prevProposers());
+    lastClose[jss::proposers] =
+        static_cast<Json::UInt>(mConsensus.prevProposers());
 
     if (human)
     {
@@ -2568,7 +2569,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
     else
     {
         lastClose[jss::converge_time] =
-            Json::Int(mConsensus.prevRoundTime().count());
+            static_cast<Json::Int>(mConsensus.prevRoundTime().count());
     }
 
     info[jss::last_close] = lastClose;
@@ -2666,7 +2667,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
     {
         XRPAmount const baseFee = lpClosed->fees().base;
         Json::Value l(Json::objectValue);
-        l[jss::seq] = Json::UInt(lpClosed->info().seq);
+        l[jss::seq] = static_cast<Json::UInt>(lpClosed->info().seq);
         l[jss::hash] = to_string(lpClosed->info().hash);
 
         if (!human)
@@ -2675,7 +2676,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
             l[jss::reserve_base] =
                 lpClosed->fees().accountReserve(0).jsonClipped();
             l[jss::reserve_inc] = lpClosed->fees().increment.jsonClipped();
-            l[jss::close_time] = Json::Value::UInt(
+            l[jss::close_time] = static_cast<Json::Value::UInt>(
                 lpClosed->info().closeTime.time_since_epoch().count());
         }
         else
@@ -2694,8 +2695,8 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
             if (m_ledgerMaster.haveValidated())
             {
                 auto const age = m_ledgerMaster.getValidatedLedgerAge();
-                l[jss::age] =
-                    Json::UInt(age < highAgeThreshold ? age.count() : 0);
+                l[jss::age] = static_cast<Json::UInt>(
+                    age < highAgeThreshold ? age.count() : 0);
             }
             else
             {
@@ -2705,8 +2706,8 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
                 {
                     using namespace std::chrono_literals;
                     auto age = closeTime - lCloseTime;
-                    l[jss::age] =
-                        Json::UInt(age < highAgeThreshold ? age.count() : 0);
+                    l[jss::age] = static_cast<Json::UInt>(
+                        age < highAgeThreshold ? age.count() : 0);
                 }
             }
         }
@@ -2735,7 +2736,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
     // This array must be sorted in increasing order.
     static constexpr std::array<std::string_view, 7> protocols{
         "http", "https", "peer", "ws", "ws2", "wss", "wss2"};
-    static_assert(std::is_sorted(std::begin(protocols), std::end(protocols)));
+    static_assert(std::ranges::is_sorted(protocols));
     {
         Json::Value ports{Json::arrayValue};
         for (auto const& port : app_.getServerHandler().setup().ports)
@@ -2859,7 +2860,7 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
             jvObj[jss::type] = "ledgerClosed";
             jvObj[jss::ledger_index] = lpAccepted->info().seq;
             jvObj[jss::ledger_hash] = to_string(lpAccepted->info().hash);
-            jvObj[jss::ledger_time] = Json::Value::UInt(
+            jvObj[jss::ledger_time] = static_cast<Json::Value::UInt>(
                 lpAccepted->info().closeTime.time_since_epoch().count());
 
             if (!lpAccepted->rules().enabled(featureXRPFees))
@@ -2870,7 +2871,8 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
             jvObj[jss::reserve_inc] =
                 lpAccepted->fees().increment.jsonClipped();
 
-            jvObj[jss::txn_count] = Json::UInt(alpAccepted->size());
+            jvObj[jss::txn_count] =
+                static_cast<Json::UInt>(alpAccepted->size());
 
             if (mMode >= OperatingMode::SYNCING)
             {
@@ -3897,7 +3899,7 @@ NetworkOPsImp::subLedger(InfoSub::ref isrListener, Json::Value& jvResult)
     {
         jvResult[jss::ledger_index] = lpClosed->info().seq;
         jvResult[jss::ledger_hash] = to_string(lpClosed->info().hash);
-        jvResult[jss::ledger_time] = Json::Value::UInt(
+        jvResult[jss::ledger_time] = static_cast<Json::Value::UInt>(
             lpClosed->info().closeTime.time_since_epoch().count());
         if (!lpClosed->rules().enabled(featureXRPFees))
             jvResult[jss::fee_ref] = Config::FEE_UNITS_DEPRECATED;
@@ -4133,7 +4135,7 @@ NetworkOPsImp::tryRemoveRpcSub(std::string const& strUrl)
     // this entry before removing
     for (SubMapType const& map : mStreamMaps)
     {
-        if (map.find(pInfo->getSeq()) != map.end())
+        if (map.contains(pInfo->getSeq()))
             return false;
     }
     mRpcSubMap.erase(strUrl);

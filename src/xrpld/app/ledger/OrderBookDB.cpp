@@ -211,7 +211,7 @@ bool
 OrderBookDB::isBookToXRP(Issue const& issue)
 {
     std::lock_guard sl(mLock);
-    return xrpBooks_.count(issue) > 0;
+    return xrpBooks_.contains(issue);
 }
 
 BookListeners::pointer

@@ -33,7 +33,7 @@ rate(Account const& account, double multiplier)
         Throw<std::runtime_error>("rate multiplier out of range");
     Json::Value jv;
     jv[jss::Account] = account.human();
-    jv[jss::TransferRate] = std::uint32_t(1000000000 * multiplier);
+    jv[jss::TransferRate] = static_cast<std::uint32_t>(1000000000 * multiplier);
     jv[jss::TransactionType] = jss::AccountSet;
     return jv;
 }

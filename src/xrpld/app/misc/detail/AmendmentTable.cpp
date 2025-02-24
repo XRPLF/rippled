@@ -217,9 +217,8 @@ public:
         }
 
         // Now remove any expired records from recordedVotes_.
-        std::for_each(
-            recordedVotes_.begin(),
-            recordedVotes_.end(),
+        std::ranges::for_each(
+            recordedVotes_,
             [&closeTime, newTimeout, &j](
                 decltype(recordedVotes_)::value_type& votes) {
                 auto const pkHuman =
@@ -600,7 +599,7 @@ AmendmentTableImpl::AmendmentTableImpl(
         }
         else
         {  // Otherwise transfer config data into the table
-            if (detect_conflict.count(a.first) == 0)
+            if (!detect_conflict.contains(a.first))
             {
                 persistVote(a.first, a.second, AmendmentVote::down);
             }
@@ -813,7 +812,7 @@ AmendmentTableImpl::doValidation(std::set<uint256> const& enabled) const
         for (auto const& e : amendmentMap_)
         {
             if (e.second.supported && e.second.vote == AmendmentVote::up &&
-                (enabled.count(e.first) == 0))
+                !enabled.contains(e.first))
             {
                 amendments.push_back(e.first);
                 JLOG(j_.info()) << "Voting for amendment " << e.second.name;
@@ -822,7 +821,7 @@ AmendmentTableImpl::doValidation(std::set<uint256> const& enabled) const
     }
 
     if (!amendments.empty())
-        std::sort(amendments.begin(), amendments.end());
+        std::ranges::sort(amendments);
 
     return amendments;
 }

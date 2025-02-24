@@ -96,8 +96,7 @@ to_currency(Currency& currency, std::string const& code)
 
         currency = beast::zero;
 
-        std::copy(
-            code.begin(), code.end(), currency.begin() + detail::isoCodeOffset);
+        std::ranges::copy(code, currency.begin() + detail::isoCodeOffset);
 
         return true;
     }

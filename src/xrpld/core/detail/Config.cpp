@@ -280,10 +280,8 @@ Config::setupControl(bool bQuiet, bool bSilent, bool bStandalone)
         auto const& threshold =
             sizedItems[std::underlying_type_t<SizedItem>(SizedItem::ramSizeGB)];
 
-        auto ns = std::find_if(
-            threshold.second.begin(),
-            threshold.second.end(),
-            [this](std::size_t limit) {
+        auto ns =
+            std::ranges::find_if(threshold.second, [this](std::size_t limit) {
                 return (limit == 0) || (ramSize_ < limit);
             });
 
@@ -491,7 +489,7 @@ Config::loadFromString(std::string const& fileContents)
             for (auto& line : strVec)
             {
                 // skip anything that might be an ipv6 address
-                if (std::count(line.begin(), line.end(), ':') != 1)
+                if (std::ranges::count(line, ':') != 1)
                     continue;
 
                 std::string result = std::regex_replace(line, e, " $1");

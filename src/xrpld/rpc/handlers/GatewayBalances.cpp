@@ -161,7 +161,7 @@ doGatewayBalances(RPC::JsonContext& context)
                 // A positive balance means the cold wallet has an asset
                 // (unusual)
 
-                if (hotWallets.count(peer) > 0)
+                if (hotWallets.contains(peer))
                 {
                     // This is a specified hot wallet
                     hotBalances[peer].push_back(-rs->getBalance());

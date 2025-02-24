@@ -267,7 +267,7 @@ loadValidatorToken(std::vector<std::string> const& blob, beast::Journal journal)
         tokenStr.reserve(std::accumulate(
             blob.cbegin(),
             blob.cend(),
-            std::size_t(0),
+            static_cast<std::size_t>(0),
             [](std::size_t init, std::string const& s) {
                 return init + s.size();
             }));
@@ -580,7 +580,7 @@ ManifestCache::load(
         revocationStr.reserve(std::accumulate(
             configRevocation.cbegin(),
             configRevocation.cend(),
-            std::size_t(0),
+            static_cast<std::size_t>(0),
             [](std::size_t init, std::string const& s) {
                 return init + s.size();
             }));

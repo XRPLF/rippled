@@ -4258,12 +4258,12 @@ public:
                 auto actorOffers = offersOnAccount(env, actor.acct);
                 auto const offerCount = std::distance(
                     actorOffers.begin(),
-                    std::remove_if(
-                        actorOffers.begin(),
-                        actorOffers.end(),
+                    std::ranges::remove_if(
+                        actorOffers,
                         [](std::shared_ptr<SLE const>& offer) {
                             return (*offer)[sfTakerGets].signum() == 0;
-                        }));
+                        })
+                        .begin());
                 BEAST_EXPECT(offerCount == actor.offers);
 
                 env.require(balance(actor.acct, actor.xrp));
@@ -4643,7 +4643,7 @@ public:
                                   jtx::Account const& src,
                                   jtx::Account const& dst,
                                   Currency const& cur) -> bool {
-            return bool(env.le(keylet::line(src, dst, cur)));
+            return static_cast<bool>(env.le(keylet::line(src, dst, cur)));
         };
 
         Account const alice("alice");

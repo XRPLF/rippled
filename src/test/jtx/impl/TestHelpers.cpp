@@ -341,7 +341,7 @@ bool
 channelExists(ReadView const& view, uint256 const& chan)
 {
     auto const slep = view.read({ltPAYCHAN, chan});
-    return bool(slep);
+    return static_cast<bool>(slep);
 }
 
 /* Crossing Limits */

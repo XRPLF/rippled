@@ -215,7 +215,7 @@ Bootcache::onWrite(beast::PropertyStream::Map& map)
     {
         beast::PropertyStream::Map entry(entries);
         entry["endpoint"] = iter->get_left().to_string();
-        entry["valence"] = std::int32_t(iter->get_right().valence());
+        entry["valence"] = iter->get_right().valence();
     }
 }
 

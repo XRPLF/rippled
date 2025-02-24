@@ -275,12 +275,12 @@ class LedgerRPC_XChain_test : public beast::unit_test::suite,
             auto attest = r[sfXChainCreateAccountAttestations.jsonName];
             BEAST_EXPECT(attest.isArray());
             BEAST_EXPECT(attest.size() == 3);
-            BEAST_EXPECT(attest[Json::Value::UInt(0)].isMember(
+            BEAST_EXPECT(attest[static_cast<Json::Value::UInt>(0)].isMember(
                 sfXChainCreateAccountProofSig.jsonName));
             Json::Value a[num_attest];
             for (size_t i = 0; i < num_attest; ++i)
             {
-                a[i] = attest[Json::Value::UInt(0)]
+                a[i] = attest[static_cast<Json::Value::UInt>(0)]
                              [sfXChainCreateAccountProofSig.jsonName];
                 BEAST_EXPECT(
                     a[i].isMember(jss::Amount) &&

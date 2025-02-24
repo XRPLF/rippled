@@ -298,7 +298,7 @@ PeerImp::sendTxQueue()
     if (!txQueue_.empty())
     {
         protocol::TMHaveTransactions ht;
-        std::for_each(txQueue_.begin(), txQueue_.end(), [&](auto const& hash) {
+        std::ranges::for_each(txQueue_, [&](auto const& hash) {
             ht.add_hashes(hash.data(), hash.size());
         });
         JLOG(p_journal_.trace()) << "sendTxQueue " << txQueue_.size();
@@ -516,8 +516,7 @@ PeerImp::hasLedger(uint256 const& hash, std::uint32_t seq) const
         if ((seq != 0) && (seq >= minLedger_) && (seq <= maxLedger_) &&
             (tracking_.load() == Tracking::converged))
             return true;
-        if (std::find(recentLedgers_.begin(), recentLedgers_.end(), hash) !=
-            recentLedgers_.end())
+        if (std::ranges::find(recentLedgers_, hash) != recentLedgers_.end())
             return true;
     }
     return false;
@@ -536,8 +535,7 @@ bool
 PeerImp::hasTxSet(uint256 const& hash) const
 {
     std::lock_guard sl(recentLock_);
-    return std::find(recentTxSets_.begin(), recentTxSets_.end(), hash) !=
-        recentTxSets_.end();
+    return std::ranges::find(recentTxSets_, hash) != recentTxSets_.end();
 }
 
 void
@@ -1165,7 +1163,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMCluster> const& m)
     if (!fees.empty())
     {
         auto const index = fees.size() / 2;
-        std::nth_element(fees.begin(), fees.begin() + index, fees.end());
+        std::ranges::nth_element(fees, fees.begin() + index);
         clusterFee = fees[index];
     }
 
@@ -1900,13 +1898,13 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMStatusChange> const& m)
 
         if (m->has_networktime())
         {
-            j[jss::date] = Json::UInt(m->networktime());
+            j[jss::date] = static_cast<Json::UInt>(m->networktime());
         }
 
         if (m->has_firstseq() && m->has_lastseq())
         {
-            j[jss::ledger_index_min] = Json::UInt(m->firstseq());
-            j[jss::ledger_index_max] = Json::UInt(m->lastseq());
+            j[jss::ledger_index_min] = static_cast<Json::UInt>(m->firstseq());
+            j[jss::ledger_index_max] = static_cast<Json::UInt>(m->lastseq());
         }
 
         return j;
@@ -1969,8 +1967,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMHaveTransactionSet> const& m)
     {
         std::lock_guard sl(recentLock_);
 
-        if (std::find(recentTxSets_.begin(), recentTxSets_.end(), hash) !=
-            recentTxSets_.end())
+        if (std::ranges::find(recentTxSets_, hash) != recentTxSets_.end())
         {
             fee_.update(Resource::feeUselessData, "duplicate (tsHAVE)");
             return;
@@ -2575,7 +2572,8 @@ PeerImp::handleHaveTransactions(
 
         auto txn = app_.getMasterTransaction().fetch_from_cache(hash);
 
-        JLOG(p_journal_.trace()) << "checking transaction " << (bool)txn;
+        JLOG(p_journal_.trace())
+            << "checking transaction " << static_cast<bool>(txn);
 
         if (!txn)
         {
@@ -2689,8 +2687,7 @@ PeerImp::addLedger(
     // locked by the caller.
     (void)lockedRecentLock;
 
-    if (std::find(recentLedgers_.begin(), recentLedgers_.end(), hash) !=
-        recentLedgers_.end())
+    if (std::ranges::find(recentLedgers_, hash) != recentLedgers_.end())
         return;
 
     recentLedgers_.push_back(hash);

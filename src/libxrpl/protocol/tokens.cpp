@@ -307,8 +307,8 @@ decodeBase58(std::string const& s)
         --remain;
     }
     // Skip leading zeroes in b256.
-    auto iter = std::find_if(
-        b256.begin(), b256.end(), [](unsigned char c) { return c != 0; });
+    auto iter =
+        std::ranges::find_if(b256, [](unsigned char c) { return c != 0; });
     std::string result;
     result.reserve(zeroes + (b256.end() - iter));
     result.assign(zeroes, 0x00);
@@ -457,8 +457,7 @@ b256_to_b58_be(std::span<std::uint8_t const> input, std::span<std::uint8_t> out)
 
     // Translate the result into the alphabet
     // Put all the zeros at the beginning, then all the values from the output
-    std::fill(
-        out.begin(), out.begin() + input_zeros, ::ripple::alphabetForward[0]);
+    std::fill_n(out.begin(), input_zeros, ::ripple::alphabetForward[0]);
 
     // iterate through the base 58^10 coeff
     // convert to base 58 big endian then
@@ -598,7 +597,7 @@ b58_to_b256_be(std::string_view input, std::span<std::uint8_t> out)
             cur_result_size += 1;
         }
     }
-    std::fill(out.begin(), out.begin() + input_zeros, 0);
+    std::fill_n(out.begin(), input_zeros, 0);
     auto cur_out_i = input_zeros;
     // Don't write leading zeros to the output for the most significant
     // coeff

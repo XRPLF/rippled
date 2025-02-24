@@ -110,7 +110,10 @@ int
 Serializer::addRaw(const void* ptr, int len)
 {
     int ret = mData.size();
-    mData.insert(mData.end(), (const char*)ptr, ((const char*)ptr) + len);
+    mData.insert(
+        mData.end(),
+        static_cast<const char*>(ptr),
+        static_cast<const char*>(ptr) + len);
     return ret;
 }
 
@@ -368,7 +371,8 @@ SerialIter::get16()
     p_ += 2;
     used_ += 2;
     remain_ -= 2;
-    return (std::uint64_t(t[0]) << 8) + std::uint64_t(t[1]);
+    return (static_cast<std::uint64_t>(t[0]) << 8) +
+        static_cast<std::uint64_t>(t[1]);
 }
 
 std::uint32_t
@@ -380,8 +384,10 @@ SerialIter::get32()
     p_ += 4;
     used_ += 4;
     remain_ -= 4;
-    return (std::uint64_t(t[0]) << 24) + (std::uint64_t(t[1]) << 16) +
-        (std::uint64_t(t[2]) << 8) + std::uint64_t(t[3]);
+    return (static_cast<std::uint64_t>(t[0]) << 24) +
+        (static_cast<std::uint64_t>(t[1]) << 16) +
+        (static_cast<std::uint64_t>(t[2]) << 8) +
+        static_cast<std::uint64_t>(t[3]);
 }
 
 std::uint64_t
@@ -393,10 +399,14 @@ SerialIter::get64()
     p_ += 8;
     used_ += 8;
     remain_ -= 8;
-    return (std::uint64_t(t[0]) << 56) + (std::uint64_t(t[1]) << 48) +
-        (std::uint64_t(t[2]) << 40) + (std::uint64_t(t[3]) << 32) +
-        (std::uint64_t(t[4]) << 24) + (std::uint64_t(t[5]) << 16) +
-        (std::uint64_t(t[6]) << 8) + std::uint64_t(t[7]);
+    return (static_cast<std::uint64_t>(t[0]) << 56) +
+        (static_cast<std::uint64_t>(t[1]) << 48) +
+        (static_cast<std::uint64_t>(t[2]) << 40) +
+        (static_cast<std::uint64_t>(t[3]) << 32) +
+        (static_cast<std::uint64_t>(t[4]) << 24) +
+        (static_cast<std::uint64_t>(t[5]) << 16) +
+        (static_cast<std::uint64_t>(t[6]) << 8) +
+        static_cast<std::uint64_t>(t[7]);
 }
 
 std::int32_t

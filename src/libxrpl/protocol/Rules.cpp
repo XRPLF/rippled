@@ -86,9 +86,9 @@ public:
     bool
     enabled(uint256 const& feature) const
     {
-        if (presets_.count(feature) > 0)
+        if (presets_.contains(feature))
             return true;
-        return set_.count(feature) > 0;
+        return set_.contains(feature);
     }
 
     bool

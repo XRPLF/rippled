@@ -4696,9 +4696,7 @@ private:
             auto complete_cb = [&](std::vector<size_t> const& signers) {
                 auto num_attestors = signers.size();
                 st.env.close();
-                assert(
-                    num_attestors <=
-                    std::count(cr.attested.begin(), cr.attested.end(), true));
+                assert(num_attestors <= std::ranges::count(cr.attested, true));
                 assert(num_attestors >= bridge_.quorum);
                 assert(cr.claim_id - 1 == counters.claim_count);
 
@@ -4852,8 +4850,7 @@ private:
 
             // return true if quorum was reached, false otherwise
             bool quorum =
-                std::count(xfer.attested.begin(), xfer.attested.end(), true) >=
-                bridge_.quorum;
+                std::ranges::count(xfer.attested, true) >= bridge_.quorum;
             if (quorum && xfer.with_claim == WithClaim::no)
             {
                 distribute_reward(st);

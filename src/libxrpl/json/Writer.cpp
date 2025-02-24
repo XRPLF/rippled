@@ -169,7 +169,7 @@ public:
 #ifndef NDEBUG
         // Make sure we haven't already seen this tag.
         auto& tags = stack_.top().tags;
-        check(tags.find(tag) == tags.end(), "Already seen tag " + tag);
+        check(!tags.contains(tag), "Already seen tag " + tag);
         tags.insert(tag);
 #endif
 

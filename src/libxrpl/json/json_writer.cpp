@@ -71,7 +71,7 @@ valueToString(Int value)
     if (isNegative)
         value = -value;
 
-    uintToString(UInt(value), current);
+    uintToString(static_cast<UInt>(value), current);
 
     if (isNegative)
         *--current = '-';
@@ -439,7 +439,7 @@ StyledWriter::isMultineArray(const Value& value)
         for (int index = 0; index < size; ++index)
         {
             writeValue(value[index]);
-            lineLength += int(childValues_[index].length());
+            lineLength += static_cast<int>(childValues_[index].length());
         }
 
         addChildValues_ = false;
@@ -665,7 +665,7 @@ StyledStreamWriter::isMultineArray(const Value& value)
         for (int index = 0; index < size; ++index)
         {
             writeValue(value[index]);
-            lineLength += int(childValues_[index].length());
+            lineLength += static_cast<int>(childValues_[index].length());
         }
 
         addChildValues_ = false;

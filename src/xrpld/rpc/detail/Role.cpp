@@ -217,7 +217,7 @@ extractIpAddrFromField(std::string_view field)
         // We may have an IPv6 address in square brackets.  Scan up to the
         // closing square bracket.
         auto const closeBracket =
-            std::find_if_not(ret.begin(), ret.end(), [](unsigned char c) {
+            std::ranges::find_if_not(ret, [](unsigned char c) {
                 return std::isxdigit(c) || c == ':' || c == '.' || c == ' ';
             });
 
@@ -237,10 +237,8 @@ extractIpAddrFromField(std::string_view field)
     // then there cannot be an appended port.  In that case we're done.
     {
         // Skip any leading hex digits.
-        auto const colon =
-            std::find_if_not(ret.begin(), ret.end(), [](unsigned char c) {
-                return std::isxdigit(c) || c == ' ';
-            });
+        auto const colon = std::ranges::find_if_not(
+            ret, [](unsigned char c) { return std::isxdigit(c) || c == ' '; });
 
         // If the string starts with optional hex digits followed by a colon
         // it's an IVv6 address.  We're done.

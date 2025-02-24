@@ -263,7 +263,7 @@ LedgerMaster::setValidLedger(std::shared_ptr<Ledger const> const& l)
     if (!times.empty() && times.size() >= app_.validators().quorum())
     {
         // Calculate the sample median
-        std::sort(times.begin(), times.end());
+        std::ranges::sort(times);
         auto const t0 = times[(times.size() - 1) / 2];
         auto const t1 = times[times.size() / 2];
         signTime = t0 + (t1 - t0) / 2;
@@ -597,9 +597,9 @@ LedgerMaster::getValidatedRange(std::uint32_t& minVal, std::uint32_t& maxVal)
         // Ensure we shrink the tips as much as possible. If we have 7-9 and
         // 8,9 are invalid, we don't want to see the 8 and shrink to just 9
         // because then we'll have nothing when we could have 7.
-        while (pendingSaves.count(maxVal) > 0)
+        while (pendingSaves.contains(maxVal))
             --maxVal;
-        while (pendingSaves.count(minVal) > 0)
+        while (pendingSaves.contains(minVal))
             ++minVal;
 
         // Best effort for remaining exclusions
@@ -991,12 +991,12 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
         auto fees2 =
             app_.getValidations().fees(ledger->info().parentHash, base);
         fees.reserve(fees.size() + fees2.size());
-        std::copy(fees2.begin(), fees2.end(), std::back_inserter(fees));
+        std::ranges::copy(fees2, std::back_inserter(fees));
     }
     std::uint32_t fee;
     if (!fees.empty())
     {
-        std::sort(fees.begin(), fees.end());
+        std::ranges::sort(fees);
         if (auto stream = m_journal.debug())
         {
             std::stringstream s;

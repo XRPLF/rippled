@@ -135,7 +135,7 @@ public:
             {
                 // Integer values are always parsed as int,
                 // unless they're too big. We want a small uint.
-                jv["CloseResolution"] = Json::UInt(19);
+                jv["CloseResolution"] = static_cast<Json::UInt>(19);
                 STParsedJSONObject parsed("test", jv);
                 if (BEAST_EXPECT(parsed.object))
                 {

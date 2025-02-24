@@ -1012,18 +1012,13 @@ sortAndValidateSigners(STArray& signers, AccountID const& signingForID)
         return RPC::make_param_error("Signers array may not be empty.");
 
     // Signers must be sorted by Account.
-    std::sort(
-        signers.begin(),
-        signers.end(),
-        [](STObject const& a, STObject const& b) {
-            return (a[sfAccount] < b[sfAccount]);
-        });
+    std::ranges::sort(signers, [](STObject const& a, STObject const& b) {
+        return (a[sfAccount] < b[sfAccount]);
+    });
 
     // Signers may not contain any duplicates.
-    auto const dupIter = std::adjacent_find(
-        signers.begin(),
-        signers.end(),
-        [](STObject const& a, STObject const& b) {
+    auto const dupIter = std::ranges::adjacent_find(
+        signers, [](STObject const& a, STObject const& b) {
             return (a[sfAccount] == b[sfAccount]);
         });
 
@@ -1037,12 +1032,9 @@ sortAndValidateSigners(STArray& signers, AccountID const& signingForID)
 
     // An account may not sign for itself.
     if (signers.end() !=
-        std::find_if(
-            signers.begin(),
-            signers.end(),
-            [&signingForID](STObject const& elem) {
-                return elem[sfAccount] == signingForID;
-            }))
+        std::ranges::find_if(signers, [&signingForID](STObject const& elem) {
+            return elem[sfAccount] == signingForID;
+        }))
     {
         std::ostringstream err;
         err << "A Signer may not be the transaction's Account ("
@@ -1316,15 +1308,14 @@ transactionSubmitMultiSigned(
         return RPC::make_param_error("tx_json.Signers array may not be empty.");
 
     // The Signers array may only contain Signer objects.
-    if (std::find_if_not(
-            signers.begin(), signers.end(), [](STObject const& obj) {
-                return (
-                    // A Signer object always contains these fields and no
-                    // others.
-                    obj.isFieldPresent(sfAccount) &&
-                    obj.isFieldPresent(sfSigningPubKey) &&
-                    obj.isFieldPresent(sfTxnSignature) && obj.getCount() == 3);
-            }) != signers.end())
+    if (std::ranges::find_if_not(signers, [](STObject const& obj) {
+            return (
+                // A Signer object always contains these fields and no
+                // others.
+                obj.isFieldPresent(sfAccount) &&
+                obj.isFieldPresent(sfSigningPubKey) &&
+                obj.isFieldPresent(sfTxnSignature) && obj.getCount() == 3);
+        }) != signers.end())
     {
         return RPC::make_param_error(
             "Signers array may only contain Signer entries.");

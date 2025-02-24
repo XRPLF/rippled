@@ -480,8 +480,7 @@ toStrands(
     result.reserve(1 + paths.size());
     // Insert the strand into result if it is not already part of the vector
     auto insert = [&](Strand s) {
-        bool const hasStrand =
-            std::find(result.begin(), result.end(), s) != result.end();
+        bool const hasStrand = std::ranges::find(result, s) != result.end();
 
         if (!hasStrand)
             result.emplace_back(std::move(s));

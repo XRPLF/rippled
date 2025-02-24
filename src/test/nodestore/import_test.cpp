@@ -226,7 +226,7 @@ public:
         {
             return;
         }
-        auto const rate = elapsed.count() / double(work);
+        auto const rate = elapsed.count() / static_cast<double>(work);
         clock_type::duration const remain(
             static_cast<clock_type::duration::rep>((work_ - work) * rate));
         log << "Remaining: " << detail::fmtdur(remain) << " (" << work << " of "

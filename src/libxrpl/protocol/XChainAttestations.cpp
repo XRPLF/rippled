@@ -111,7 +111,7 @@ AttestationBase::AttestationBase(STObject const& o)
     , sendingAccount{o[sfAccount]}
     , sendingAmount{o[sfAmount]}
     , rewardAccount{o[sfAttestationRewardAccount]}
-    , wasLockingChainSend{bool(o[sfWasLockingChainSend])}
+    , wasLockingChainSend{static_cast<bool>(o[sfWasLockingChainSend])}
 {
 }
 

@@ -277,9 +277,8 @@ doGetAggregatePrice(RPC::JsonContext& context)
         iteratePriceData(context, sle, [&](STObject const& node) {
             auto const& series = node.getFieldArray(sfPriceDataSeries);
             // find the token pair entry with the price
-            if (auto iter = std::find_if(
-                    series.begin(),
-                    series.end(),
+            if (auto iter = std::ranges::find_if(
+                    series,
                     [&](STObject const& o) -> bool {
                         return o.getFieldCurrency(sfBaseAsset).getText() ==
                             std::get<Json::Value>(baseAsset) &&

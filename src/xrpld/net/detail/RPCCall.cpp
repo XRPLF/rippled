@@ -397,7 +397,7 @@ private:
         }
 
         // handle case where there is one argument of the form ip:port
-        if (std::count(ip.begin(), ip.end(), ':') == 1)
+        if (std::ranges::count(ip, ':') == 1)
         {
             std::size_t colon = ip.find_last_of(":");
             jvRequest[jss::ip] = std::string{ip, 0, colon};

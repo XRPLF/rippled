@@ -39,7 +39,7 @@ fillTransaction(
     std::uint32_t& sequence,
     ReadView const& ledger)
 {
-    txArray["Sequence"] = Json::UInt(sequence++);
+    txArray["Sequence"] = static_cast<Json::UInt>(sequence++);
     txArray["Account"] = toBase58(accountID);
     auto& fees = ledger.fees();
     // Convert the reference transaction cost in fee units to drops

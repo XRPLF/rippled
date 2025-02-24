@@ -560,7 +560,7 @@ RCLConsensus::Adaptor::doAccept(
             [curr = built.seq(),
              j = app_.journal("CensorshipDetector"),
              &failed](uint256 const& id, LedgerIndex seq) {
-                if (failed.count(id))
+                if (failed.contains(id))
                     return true;
 
                 auto const wait = curr - seq;

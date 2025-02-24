@@ -163,7 +163,7 @@ getAccountObjects(
 
     auto typeMatchesFilter = [](std::vector<LedgerEntryType> const& typeFilter,
                                 LedgerEntryType ledgerType) {
-        auto it = std::find(typeFilter.begin(), typeFilter.end(), ledgerType);
+        auto it = std::ranges::find(typeFilter, ledgerType);
         return it != typeFilter.end();
     };
 
@@ -723,8 +723,9 @@ parseRippleLibSeed(Json::Value const& value)
     auto const result = decodeBase58Token(value.asString(), TokenType::None);
 
     if (result.size() == 18 &&
-        static_cast<std::uint8_t>(result[0]) == std::uint8_t(0xE1) &&
-        static_cast<std::uint8_t>(result[1]) == std::uint8_t(0x4B))
+        static_cast<std::uint8_t>(result[0]) ==
+            static_cast<std::uint8_t>(0xE1) &&
+        static_cast<std::uint8_t>(result[1]) == static_cast<std::uint8_t>(0x4B))
         return Seed(makeSlice(result.substr(2)));
 
     return std::nullopt;

@@ -325,10 +325,9 @@ leaves(SHAMap const& sm)
     std::vector<SHAMapItem const*> v;
     for (auto const& item : sm)
         v.push_back(&item);
-    std::sort(
-        v.begin(), v.end(), [](SHAMapItem const* lhs, SHAMapItem const* rhs) {
-            return lhs->key() < rhs->key();
-        });
+    std::ranges::sort(v, [](SHAMapItem const* lhs, SHAMapItem const* rhs) {
+        return lhs->key() < rhs->key();
+    });
     return v;
 }
 

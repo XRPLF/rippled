@@ -77,9 +77,8 @@ getNFTokenIDFromPage(TxMeta const& transactionMeta)
             STArray const& toAddPrevNFTs = node.peekAtField(sfNewFields)
                                                .downcast<STObject>()
                                                .getFieldArray(sfNFTokens);
-            std::transform(
-                toAddPrevNFTs.begin(),
-                toAddPrevNFTs.end(),
+            std::ranges::transform(
+                toAddPrevNFTs,
                 std::back_inserter(finalIDs),
                 [](STObject const& nft) {
                     return nft.getFieldH256(sfNFTokenID);
@@ -103,9 +102,8 @@ getNFTokenIDFromPage(TxMeta const& transactionMeta)
 
             STArray const& toAddPrevNFTs =
                 previousFields.getFieldArray(sfNFTokens);
-            std::transform(
-                toAddPrevNFTs.begin(),
-                toAddPrevNFTs.end(),
+            std::ranges::transform(
+                toAddPrevNFTs,
                 std::back_inserter(prevIDs),
                 [](STObject const& nft) {
                     return nft.getFieldH256(sfNFTokenID);
@@ -114,9 +112,8 @@ getNFTokenIDFromPage(TxMeta const& transactionMeta)
             STArray const& toAddFinalNFTs = node.peekAtField(sfFinalFields)
                                                 .downcast<STObject>()
                                                 .getFieldArray(sfNFTokens);
-            std::transform(
-                toAddFinalNFTs.begin(),
-                toAddFinalNFTs.end(),
+            std::ranges::transform(
+                toAddFinalNFTs,
                 std::back_inserter(finalIDs),
                 [](STObject const& nft) {
                     return nft.getFieldH256(sfNFTokenID);
@@ -160,10 +157,9 @@ getNFTokenIDFromDeletedOffer(TxMeta const& transactionMeta)
 
     // Deduplicate the NFT IDs because multiple offers could affect the same NFT
     // and hence we would get duplicate NFT IDs
-    sort(tokenIDResult.begin(), tokenIDResult.end());
+    std::ranges::sort(tokenIDResult);
     tokenIDResult.erase(
-        unique(tokenIDResult.begin(), tokenIDResult.end()),
-        tokenIDResult.end());
+        std::ranges::unique(tokenIDResult).begin(), tokenIDResult.end());
     return tokenIDResult;
 }
 
