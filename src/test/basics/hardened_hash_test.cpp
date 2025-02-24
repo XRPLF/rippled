@@ -98,7 +98,7 @@ class unsigned_integer
 {
 private:
     static_assert(
-        std::is_integral<UInt>::value && std::is_unsigned<UInt>::value,
+        std::is_integral_v<UInt> && std::is_unsigned_v<UInt>,
         "UInt must be an unsigned integral type");
 
     static_assert(

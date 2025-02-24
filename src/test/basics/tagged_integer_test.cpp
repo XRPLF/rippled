@@ -43,85 +43,85 @@ private:
 
     // Check construction of tagged_integers
     static_assert(
-        std::is_constructible<TagUInt1, std::uint32_t>::value,
+        std::is_constructible_v<TagUInt1, std::uint32_t>,
         "TagUInt1 should be constructible using a std::uint32_t");
 
     static_assert(
-        !std::is_constructible<TagUInt1, std::uint64_t>::value,
+        !std::is_constructible_v<TagUInt1, std::uint64_t>,
         "TagUInt1 should not be constructible using a std::uint64_t");
 
     static_assert(
-        std::is_constructible<TagUInt3, std::uint32_t>::value,
+        std::is_constructible_v<TagUInt3, std::uint32_t>,
         "TagUInt3 should be constructible using a std::uint32_t");
 
     static_assert(
-        std::is_constructible<TagUInt3, std::uint64_t>::value,
+        std::is_constructible_v<TagUInt3, std::uint64_t>,
         "TagUInt3 should be constructible using a std::uint64_t");
 
     // Check assignment of tagged_integers
     static_assert(
-        !std::is_assignable<TagUInt1, std::uint32_t>::value,
+        !std::is_assignable_v<TagUInt1, std::uint32_t>,
         "TagUInt1 should not be assignable with a std::uint32_t");
 
     static_assert(
-        !std::is_assignable<TagUInt1, std::uint64_t>::value,
+        !std::is_assignable_v<TagUInt1, std::uint64_t>,
         "TagUInt1 should not be assignable with a std::uint64_t");
 
     static_assert(
-        !std::is_assignable<TagUInt3, std::uint32_t>::value,
+        !std::is_assignable_v<TagUInt3, std::uint32_t>,
         "TagUInt3 should not be assignable with a std::uint32_t");
 
     static_assert(
-        !std::is_assignable<TagUInt3, std::uint64_t>::value,
+        !std::is_assignable_v<TagUInt3, std::uint64_t>,
         "TagUInt3 should not be assignable with a std::uint64_t");
 
     static_assert(
-        std::is_assignable<TagUInt1, TagUInt1>::value,
+        std::is_assignable_v<TagUInt1, TagUInt1>,
         "TagUInt1 should be assignable with a TagUInt1");
 
     static_assert(
-        !std::is_assignable<TagUInt1, TagUInt2>::value,
+        !std::is_assignable_v<TagUInt1, TagUInt2>,
         "TagUInt1 should not be assignable with a TagUInt2");
 
     static_assert(
-        std::is_assignable<TagUInt3, TagUInt3>::value,
+        std::is_assignable_v<TagUInt3, TagUInt3>,
         "TagUInt3 should be assignable with a TagUInt1");
 
     static_assert(
-        !std::is_assignable<TagUInt1, TagUInt3>::value,
+        !std::is_assignable_v<TagUInt1, TagUInt3>,
         "TagUInt1 should not be assignable with a TagUInt3");
 
     static_assert(
-        !std::is_assignable<TagUInt3, TagUInt1>::value,
+        !std::is_assignable_v<TagUInt3, TagUInt1>,
         "TagUInt3 should not be assignable with a TagUInt1");
 
     // Check convertibility of tagged_integers
     static_assert(
-        !std::is_convertible<std::uint32_t, TagUInt1>::value,
+        !std::is_convertible_v<std::uint32_t, TagUInt1>,
         "std::uint32_t should not be convertible to a TagUInt1");
 
     static_assert(
-        !std::is_convertible<std::uint32_t, TagUInt3>::value,
+        !std::is_convertible_v<std::uint32_t, TagUInt3>,
         "std::uint32_t should not be convertible to a TagUInt3");
 
     static_assert(
-        !std::is_convertible<std::uint64_t, TagUInt3>::value,
+        !std::is_convertible_v<std::uint64_t, TagUInt3>,
         "std::uint64_t should not be convertible to a TagUInt3");
 
     static_assert(
-        !std::is_convertible<std::uint64_t, TagUInt2>::value,
+        !std::is_convertible_v<std::uint64_t, TagUInt2>,
         "std::uint64_t should not be convertible to a TagUInt2");
 
     static_assert(
-        !std::is_convertible<TagUInt1, TagUInt2>::value,
+        !std::is_convertible_v<TagUInt1, TagUInt2>,
         "TagUInt1 should not be convertible to TagUInt2");
 
     static_assert(
-        !std::is_convertible<TagUInt1, TagUInt3>::value,
+        !std::is_convertible_v<TagUInt1, TagUInt3>,
         "TagUInt1 should not be convertible to TagUInt3");
 
     static_assert(
-        !std::is_convertible<TagUInt2, TagUInt3>::value,
+        !std::is_convertible_v<TagUInt2, TagUInt3>,
         "TagUInt2 should not be convertible to a TagUInt3");
 
 public:

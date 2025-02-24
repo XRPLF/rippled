@@ -77,16 +77,14 @@ public:
         PrettyAmount(1u);
         PrettyAmount(-1);
         static_assert(
-            !std::is_trivially_constructible<PrettyAmount, char>::value, "");
+            !std::is_trivially_constructible_v<PrettyAmount, char>, "");
         static_assert(
-            !std::is_trivially_constructible<PrettyAmount, unsigned char>::
-                value,
+            !std::is_trivially_constructible_v<PrettyAmount, unsigned char>,
             "");
         static_assert(
-            !std::is_trivially_constructible<PrettyAmount, short>::value, "");
+            !std::is_trivially_constructible_v<PrettyAmount, short>, "");
         static_assert(
-            !std::is_trivially_constructible<PrettyAmount, unsigned short>::
-                value,
+            !std::is_trivially_constructible_v<PrettyAmount, unsigned short>,
             "");
 
         try

@@ -128,7 +128,7 @@ std::error_code
 make_error_code(error ev)
 {
     return std::error_code{
-        safe_cast<std::underlying_type<error>::type>(ev),
+        safe_cast<std::underlying_type_t<error>>(ev),
         detail::get_cryptoconditions_error_category()};
 }
 

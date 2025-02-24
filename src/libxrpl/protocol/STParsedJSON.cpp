@@ -61,9 +61,8 @@ namespace ripple {
 
 namespace STParsedJSONDetail {
 template <typename U, typename S>
-constexpr std::
-    enable_if_t<std::is_unsigned<U>::value && std::is_signed<S>::value, U>
-    to_unsigned(S value)
+constexpr std::enable_if_t<std::is_unsigned_v<U> && std::is_signed_v<S>, U>
+to_unsigned(S value)
 {
     if (value < 0 || std::numeric_limits<U>::max() < value)
         Throw<std::runtime_error>("Value out of range");
@@ -71,9 +70,8 @@ constexpr std::
 }
 
 template <typename U1, typename U2>
-constexpr std::
-    enable_if_t<std::is_unsigned<U1>::value && std::is_unsigned<U2>::value, U1>
-    to_unsigned(U2 value)
+constexpr std::enable_if_t<std::is_unsigned_v<U1> && std::is_unsigned_v<U2>, U1>
+to_unsigned(U2 value)
 {
     if (std::numeric_limits<U1>::max() < value)
         Throw<std::runtime_error>("Value out of range");

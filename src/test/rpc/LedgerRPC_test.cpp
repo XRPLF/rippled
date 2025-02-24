@@ -1276,9 +1276,7 @@ class LedgerRPC_test : public beast::unit_test::suite
                 "cred7",
                 "cred8",
                 "cred9"};
-            static_assert(
-                sizeof(credTypes) / sizeof(credTypes[0]) >
-                maxCredentialsArraySize);
+            static_assert(std::size(credTypes) > maxCredentialsArraySize);
 
             Json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
@@ -1289,8 +1287,7 @@ class LedgerRPC_test : public beast::unit_test::suite
             auto& arr(
                 jvParams[jss::deposit_preauth][jss::authorized_credentials]);
 
-            for (unsigned i = 0; i < sizeof(credTypes) / sizeof(credTypes[0]);
-                 ++i)
+            for (unsigned i = 0; i < std::size(credTypes); ++i)
             {
                 Json::Value jo;
                 jo[jss::issuer] = issuer.human();
