@@ -1101,30 +1101,50 @@ struct Flow_test : public beast::unit_test::suite
             pay(gw,
                 alice,
                 // 12.55....
-                STAmount{USD.issue(), 1255555555555555ull, -14, false}));
+                STAmount{
+                    USD.issue(),
+                    static_cast<std::uint64_t>(1255555555555555ull),
+                    -14,
+                    false}));
 
         env(offer(
             gw,
             // 5.0...
-            STAmount{USD.issue(), 5000000000000000ull, -15, false},
+            STAmount{
+                USD.issue(),
+                static_cast<std::uint64_t>(5000000000000000ull),
+                -15,
+                false},
             XRP(1000)));
 
         env(offer(
             gw,
             // .555...
-            STAmount{USD.issue(), 5555555555555555ull, -16, false},
+            STAmount{
+                USD.issue(),
+                static_cast<std::uint64_t>(5555555555555555ull),
+                -16,
+                false},
             XRP(10)));
 
         env(offer(
             gw,
             // 4.44....
-            STAmount{USD.issue(), 4444444444444444ull, -15, false},
+            STAmount{
+                USD.issue(),
+                static_cast<std::uint64_t>(4444444444444444ull),
+                -15,
+                false},
             XRP(.1)));
 
         env(offer(
             alice,
             // 17
-            STAmount{USD.issue(), 1700000000000000ull, -14, false},
+            STAmount{
+                USD.issue(),
+                static_cast<std::uint64_t>(1700000000000000ull),
+                -14,
+                false},
             XRP(.001)));
 
         env(pay(alice, bob, XRP(10000)),
