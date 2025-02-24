@@ -35,8 +35,7 @@
 #include <xrpl/resource/Fees.h>
 
 #include <boost/algorithm/string/case_conv.hpp>
-
-#include <regex>
+#include <boost/algorithm/string/predicate.hpp>
 
 namespace ripple {
 namespace RPC {
@@ -934,18 +933,19 @@ chooseLedgerEntryType(Json::Value const& params)
     std::pair<RPC::Status, LedgerEntryType> result{RPC::Status::OK, ltANY};
     if (params.isMember(jss::type))
     {
-        static constexpr auto types =
-            std::to_array<std::pair<char const*, LedgerEntryType>>({
+        static constexpr auto types = std::to_array<
+            std::tuple<char const*, char const*, LedgerEntryType>>({
 #pragma push_macro("LEDGER_ENTRY")
 #undef LEDGER_ENTRY
 
-#define LEDGER_ENTRY(tag, value, name, rpcName, fields) {jss::rpcName, tag},
+#define LEDGER_ENTRY(tag, value, name, rpcName, fields) \
+    {jss::name, jss::rpcName, tag},
 
 #include <xrpl/protocol/detail/ledger_entries.macro>
 
 #undef LEDGER_ENTRY
 #pragma pop_macro("LEDGER_ENTRY")
-            });
+        });
 
         auto const& p = params[jss::type];
         if (!p.isString())
@@ -958,10 +958,14 @@ chooseLedgerEntryType(Json::Value const& params)
             return result;
         }
 
+        // Use the passed in parameter to find a ledger type based on matching
+        // against the canonical name (case-insensitive) or the RPC name
+        // (case-sensitive).
         auto const filter = p.asString();
-        auto iter = std::find_if(
-            types.begin(), types.end(), [&filter](decltype(types.front())& t) {
-                return t.first == filter;
+        const auto iter =
+            std::ranges::find_if(types, [&filter](decltype(types.front())& t) {
+                return boost::iequals(std::get<0>(t), filter) ||
+                    std::get<1>(t) == filter;
             });
         if (iter == types.end())
         {
@@ -973,7 +977,7 @@ chooseLedgerEntryType(Json::Value const& params)
                 "type");
             return result;
         }
-        result.second = iter->second;
+        result.second = std::get<2>(*iter);
     }
     return result;
 }

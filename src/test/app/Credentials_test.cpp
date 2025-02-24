@@ -1059,6 +1059,43 @@ struct Credentials_test : public beast::unit_test::suite
     }
 
     void
+    testFlags(FeatureBitset features)
+    {
+        using namespace test::jtx;
+
+        bool const enabled = features[fixInvalidTxFlags];
+        testcase(
+            std::string("Test flag, fix ") +
+            (enabled ? "enabled" : "disabled"));
+
+        const char credType[] = "abcde";
+        Account const issuer{"issuer"};
+        Account const subject{"subject"};
+
+        {
+            using namespace jtx;
+            Env env{*this, features};
+
+            env.fund(XRP(5000), subject, issuer);
+            env.close();
+
+            {
+                ter const expected(
+                    enabled ? TER(temINVALID_FLAG) : TER(tesSUCCESS));
+                env(credentials::create(subject, issuer, credType),
+                    txflags(tfTransferable),
+                    expected);
+                env(credentials::accept(subject, issuer, credType),
+                    txflags(tfSellNFToken),
+                    expected);
+                env(credentials::deleteCred(subject, subject, issuer, credType),
+                    txflags(tfPassive),
+                    expected);
+            }
+        }
+    }
+
+    void
     run() override
     {
         using namespace test::jtx;
@@ -1069,6 +1106,8 @@ struct Credentials_test : public beast::unit_test::suite
         testAcceptFailed(all);
         testDeleteFailed(all);
         testFeatureFailed(all - featureCredentials);
+        testFlags(all - fixInvalidTxFlags);
+        testFlags(all);
         testRPC();
     }
 };
