@@ -264,7 +264,7 @@ multi_runner_base<IsParent>::multi_runner_base()
         if (IsParent)
             inner_ = new (region_.get_address()) inner{};
         else
-            inner_ = reinterpret_cast<inner*>(region_.get_address());
+            inner_ = static_cast<inner*>(region_.get_address());
     }
     catch (...)
     {

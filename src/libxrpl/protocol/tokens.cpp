@@ -224,7 +224,7 @@ encodeBase58(
     void* temp,
     std::size_t temp_size)
 {
-    auto pbegin = reinterpret_cast<unsigned char const*>(message);
+    auto pbegin = static_cast<unsigned char const*>(message);
     auto const pend = pbegin + size;
 
     // Skip & count leading zeroes.
@@ -235,7 +235,7 @@ encodeBase58(
         zeroes++;
     }
 
-    auto const b58begin = reinterpret_cast<unsigned char*>(temp);
+    auto const b58begin = static_cast<unsigned char*>(temp);
     auto const b58end = b58begin + temp_size;
 
     std::fill(b58begin, b58end, 0);
@@ -721,7 +721,7 @@ encodeBase58Token(TokenType type, void const* token, std::size_t size)
     std::span<std::uint8_t> outSp(
         reinterpret_cast<std::uint8_t*>(sr.data()), sr.size());
     std::span<std::uint8_t const> inSp(
-        reinterpret_cast<std::uint8_t const*>(token), size);
+        static_cast<std::uint8_t const*>(token), size);
     auto r = b58_fast::encodeBase58Token(type, inSp, outSp);
     if (!r)
         return {};

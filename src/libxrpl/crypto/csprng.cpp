@@ -82,8 +82,7 @@ csprng_engine::operator()(void* ptr, std::size_t count)
     std::lock_guard lock(mutex_);
 #endif
 
-    auto const result =
-        RAND_bytes(reinterpret_cast<unsigned char*>(ptr), count);
+    auto const result = RAND_bytes(static_cast<unsigned char*>(ptr), count);
 
     if (result != 1)
         Throw<std::runtime_error>("CSPRNG: Insufficient entropy");

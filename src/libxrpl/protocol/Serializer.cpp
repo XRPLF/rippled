@@ -328,7 +328,7 @@ Serializer::decodeVLLength(int b1, int b2, int b3)
 //------------------------------------------------------------------------------
 
 SerialIter::SerialIter(void const* data, std::size_t size) noexcept
-    : p_(reinterpret_cast<std::uint8_t const*>(data)), remain_(size)
+    : p_(static_cast<std::uint8_t const*>(data)), remain_(size)
 {
 }
 

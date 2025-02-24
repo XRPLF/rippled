@@ -66,7 +66,7 @@ rngcpy(void* buffer, std::size_t bytes, Generator& g)
     {
         auto const v = g();
         memcpy(buffer, &v, sizeof(v));
-        buffer = reinterpret_cast<std::uint8_t*>(buffer) + sizeof(v);
+        buffer = static_cast<std::uint8_t*>(buffer) + sizeof(v);
         bytes -= sizeof(v);
     }
 

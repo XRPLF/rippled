@@ -57,7 +57,7 @@ public:
     static void
     thread_entry(void* ptr)
     {
-        ThreadParams* const p(reinterpret_cast<ThreadParams*>(ptr));
+        ThreadParams* const p(static_cast<ThreadParams*>(ptr));
         void (*f)(void*) = p->f;
         void* a(p->a);
         delete p;
@@ -364,10 +364,9 @@ public:
 
             wb.Put(
                 rocksdb::Slice(
-                    reinterpret_cast<char const*>(encoded.getKey()),
-                    m_keyBytes),
+                    static_cast<char const*>(encoded.getKey()), m_keyBytes),
                 rocksdb::Slice(
-                    reinterpret_cast<char const*>(encoded.getData()),
+                    static_cast<char const*>(encoded.getData()),
                     encoded.getSize()));
         }
 
