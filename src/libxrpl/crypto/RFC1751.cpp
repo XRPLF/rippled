@@ -521,8 +521,7 @@ RFC1751::getWordFromBlob(void const* blob, size_t bytes)
     hash ^= (hash >> 11);
     hash += (hash << 15);
 
-    return s_dictionary
-        [hash % (sizeof(s_dictionary) / sizeof(s_dictionary[0]))];
+    return s_dictionary[hash % std::size(s_dictionary)];
 }
 
 }  // namespace ripple

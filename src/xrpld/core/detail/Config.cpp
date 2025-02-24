@@ -278,7 +278,8 @@ Config::setupControl(bool bQuiet, bool bSilent, bool bStandalone)
     {
         // First, check against 'minimum' RAM requirements per node size:
         auto const& threshold =
-            sizedItems[std::underlying_type_t<SizedItem>(SizedItem::ramSizeGB)];
+            sizedItems[static_cast<std::underlying_type_t<SizedItem>>(
+                SizedItem::ramSizeGB)];
 
         auto ns =
             std::ranges::find_if(threshold.second, [this](std::size_t limit) {
