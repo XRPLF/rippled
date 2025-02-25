@@ -275,7 +275,7 @@ Private Attributes</h2></td></tr>
 <tr class="memdesc:a21c99b49f8d49b48488d8388ad53f747"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum number of transactions allowed in the queue based on the current metrics.  <a href="classripple_1_1TxQ.html#a21c99b49f8d49b48488d8388ad53f747">More...</a><br /></td></tr>
 <tr class="separator:a21c99b49f8d49b48488d8388ad53f747"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a71a301b0a48137d7121dda3b66db2fb5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#af5a72d3e0d9b6913c13f688390b90796">LedgerHash</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TxQ.html#a71a301b0a48137d7121dda3b66db2fb5">parentHash_</a> {beast::zero}</td></tr>
-<tr class="memdesc:a71a301b0a48137d7121dda3b66db2fb5"><td class="mdescLeft">&#160;</td><td class="mdescRight">parentHash_ checks that no unexpected ledger transitions happen, and is only checked via debug asserts.  <a href="classripple_1_1TxQ.html#a71a301b0a48137d7121dda3b66db2fb5">More...</a><br /></td></tr>
+<tr class="memdesc:a71a301b0a48137d7121dda3b66db2fb5"><td class="mdescLeft">&#160;</td><td class="mdescRight">parentHash_ used for logging only  <a href="classripple_1_1TxQ.html#a71a301b0a48137d7121dda3b66db2fb5">More...</a><br /></td></tr>
 <tr class="separator:a71a301b0a48137d7121dda3b66db2fb5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a63a8817d4a8b421e026e1454c4ba4646"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TxQ.html#a63a8817d4a8b421e026e1454c4ba4646">mutex_</a></td></tr>
 <tr class="memdesc:a63a8817d4a8b421e026e1454c4ba4646"><td class="mdescLeft">&#160;</td><td class="mdescRight">Most queue operations are done under the master lock, but use this mutex for the <a class="el" href="namespaceripple_1_1RPC.html" title="API version numbers used in later API versions.">RPC</a> "fee" command, which isn't.  <a href="classripple_1_1TxQ.html#a63a8817d4a8b421e026e1454c4ba4646">More...</a><br /></td></tr>
@@ -1386,9 +1386,9 @@ template&lt;size_t fillPercentage&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p>parentHash_ checks that no unexpected ledger transitions happen, and is only checked via debug asserts. </p>
+<p>parentHash_ used for logging only </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00793">793</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00791">791</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
@@ -1414,7 +1414,7 @@ template&lt;size_t fillPercentage&gt; </div>
 
 <p>Most queue operations are done under the master lock, but use this mutex for the <a class="el" href="namespaceripple_1_1RPC.html" title="API version numbers used in later API versions.">RPC</a> "fee" command, which isn't. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00799">799</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00796">796</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
