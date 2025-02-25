@@ -51,6 +51,10 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     if (!vault)
         return tecOBJECT_NOT_FOUND;
 
+    // Enforce valid withdrawal policy
+    if (vault->at(sfWithdrawalPolicy) != vaultStrategyFirstComeFirstServe)
+        return tefINTERNAL;
+
     auto const assets = ctx.tx[sfAmount];
     auto const asset = vault->at(sfAsset);
     auto const share = vault->at(sfMPTokenIssuanceID);

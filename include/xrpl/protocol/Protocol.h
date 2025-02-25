@@ -118,6 +118,9 @@ std::uint64_t constexpr maxMPTokenAmount = 0x7FFF'FFFF'FFFF'FFFFull;
 /** The maximum length of MPTokenMetadata */
 std::size_t constexpr maxVaultDataLength = 256;
 
+/** Vault withdrawal policies */
+std::uint8_t constexpr vaultStrategyFirstComeFirstServe = 1;
+
 /** A ledger index. */
 using LedgerIndex = std::uint32_t;
 

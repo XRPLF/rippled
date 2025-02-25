@@ -480,9 +480,9 @@ LEDGER_ENTRY(ltVAULT, 0x0083, Vault, vault, ({
     {sfAssetMaximum,         soeDEFAULT},
     {sfLossUnrealized,       soeDEFAULT},
     {sfMPTokenIssuanceID,    soeREQUIRED}, // sfShare
+    {sfWithdrawalPolicy,     soeREQUIRED},
     // no ShareTotal ever (use MPTIssuance.sfOutstandingAmount)
-    // no PermissionedDomainID (use MPTIssuance.sfDomainID)
-    // no WithdrawalPolicy yet
+    // no PermissionedDomainID ever (use MPTIssuance.sfDomainID)
 }))
 
 #undef EXPAND

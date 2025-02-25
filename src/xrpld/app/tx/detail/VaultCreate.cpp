@@ -23,6 +23,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -48,6 +49,13 @@ VaultCreate::preflight(PreflightContext const& ctx)
     if (auto const data = ctx.tx[~sfData])
     {
         if (data->empty() || data->length() > maxVaultDataLength)
+            return temMALFORMED;
+    }
+
+    if (auto const data = ctx.tx[~sfWithdrawalPolicy])
+    {
+        // Enforce valid withdrawal policy
+        if (*data != vaultStrategyFirstComeFirstServe)
             return temMALFORMED;
     }
 
@@ -176,6 +184,11 @@ VaultCreate::doApply()
     vault->at(sfMPTokenIssuanceID) = share;
     if (auto value = tx[~sfData])
         vault->at(sfData) = *value;
+    // Required field, default to vaultStrategyFirstComeFirstServe
+    if (auto value = tx[~sfWithdrawalPolicy])
+        vault->at(sfWithdrawalPolicy) = *value;
+    else
+        vault->at(sfWithdrawalPolicy) = vaultStrategyFirstComeFirstServe;
     // No `LossUnrealized`.
     view().insert(vault);
 

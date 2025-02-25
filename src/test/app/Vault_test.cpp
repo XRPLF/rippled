@@ -295,6 +295,32 @@ class Vault_test : public beast::unit_test::suite
                      Asset const& asset,
                      Vault& vault) {
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            tx[sfWithdrawalPolicy] = 1;
+            testcase("explicitly select withdrawal policy");
+            env(tx);
+        });
+
+        testCase([this](
+                     Env& env,
+                     Account const& issuer,
+                     Account const& owner,
+                     Account const& depositor,
+                     Asset const& asset,
+                     Vault& vault) {
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            tx[sfWithdrawalPolicy] = 0;
+            testcase("invalid withdrawal policy");
+            env(tx, ter(temMALFORMED));
+        });
+
+        testCase([this](
+                     Env& env,
+                     Account const& issuer,
+                     Account const& owner,
+                     Account const& depositor,
+                     Asset const& asset,
+                     Vault& vault) {
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
             testcase("insufficient fee");
             env(tx, fee(env.current()->fees().base), ter(telINSUF_FEE_P));
         });

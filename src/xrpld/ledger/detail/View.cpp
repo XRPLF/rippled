@@ -2531,7 +2531,6 @@ assetsToSharesWithdraw(
         return shares;
     Number shareTotal = getShareTotal(view, vault);
     shares = shareTotal * (assets / assetTotal);
-    // TODO: Limit by withdrawal policy?
     return shares;
 }
 
@@ -2549,7 +2548,6 @@ sharesToAssetsWithdraw(
         return assets;
     Number shareTotal = getShareTotal(view, vault);
     assets = assetTotal * (shares / shareTotal);
-    // TODO: Limit by withdrawal policy?
     return assets;
 }
 

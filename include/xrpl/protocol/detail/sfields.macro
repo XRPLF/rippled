@@ -42,6 +42,7 @@ TYPED_SFIELD(sfTickSize,                 UINT8,     16)
 TYPED_SFIELD(sfUNLModifyDisabling,       UINT8,     17)
 TYPED_SFIELD(sfHookResult,               UINT8,     18)
 TYPED_SFIELD(sfWasLockingChainSend,      UINT8,     19)
+TYPED_SFIELD(sfWithdrawalPolicy,         UINT8,     20)
 
 // 16-bit integers (common)
 TYPED_SFIELD(sfLedgerEntryType,          UINT16,     1, SField::sMD_Never)
