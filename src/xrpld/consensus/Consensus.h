@@ -1598,14 +1598,13 @@ Consensus<Adaptor>::haveConsensus()
     ConsensusParms const& parms = adaptor_.parms();
     // Stalling is BAD
     bool stalled = haveCloseTimeConsensus_ &&
-        std::all_of(result_->disputes.begin(),
-                    result_->disputes.end(),
-                    [this, &parms](auto const& dispute) {
-                        return dispute.second.stalled(
-                            parms,
-                            mode_.get() == ConsensusMode::proposing,
-                            peerUnchangedCounter_);
-                    });
+        std::ranges::all_of(
+                       result_->disputes, [this, &parms](auto const& dispute) {
+                           return dispute.second.stalled(
+                               parms,
+                               mode_.get() == ConsensusMode::proposing,
+                               peerUnchangedCounter_);
+                       });
 
     // Determine if we actually have consensus or not
     result_->state = checkConsensus(

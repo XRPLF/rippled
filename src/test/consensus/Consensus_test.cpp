@@ -1220,7 +1220,10 @@ public:
         // Test dispute objects directly
         using Dispute = DisputedTx<Tx, PeerID>;
 
-        Tx const tx{99};
+        Tx const txTrue{99};
+        Tx const txFalse{98};
+        Tx const txFollowingTrue{97};
+        Tx const txFollowingFalse{96};
         int const numPeers = 100;
         ConsensusParms p;
         std::size_t peersUnchanged = 0;
@@ -1231,44 +1234,275 @@ public:
         // 3 not proposing, initial vote doesn't matter after the first update,
         // use yes
         {
-            bool const proposing = true;
-            bool const myVote = true;
-
-            Dispute d{tx.id(), myVote, numPeers, journal_};
-            BEAST_EXPECT(d.ID() == 99);
+            Dispute proposingTrue{txTrue.id(), true, numPeers, journal_};
+            Dispute proposingFalse{txFalse.id(), false, numPeers, journal_};
+            Dispute followingTrue{
+                txFollowingTrue.id(), true, numPeers, journal_};
+            Dispute followingFalse{
+                txFollowingFalse.id(), false, numPeers, journal_};
+            BEAST_EXPECT(proposingTrue.ID() == 99);
+            BEAST_EXPECT(proposingFalse.ID() == 98);
+            BEAST_EXPECT(followingTrue.ID() == 97);
+            BEAST_EXPECT(followingFalse.ID() == 96);
 
             // Create an even split in the peer votes
             for (int i = 0; i < numPeers; ++i)
             {
-                BEAST_EXPECT(d.setVote(PeerID(i), i < 50));
+                BEAST_EXPECT(proposingTrue.setVote(PeerID(i), i < 50));
+                BEAST_EXPECT(proposingFalse.setVote(PeerID(i), i < 50));
+                BEAST_EXPECT(followingTrue.setVote(PeerID(i), i < 50));
+                BEAST_EXPECT(followingFalse.setVote(PeerID(i), i < 50));
             }
             // Switch the middle vote to match mine
-            BEAST_EXPECT(d.setVote(myVote ? PeerID(50) : PeerID(49), myVote));
+            BEAST_EXPECT(proposingTrue.setVote(PeerID(50), true));
+            BEAST_EXPECT(proposingFalse.setVote(PeerID(49), false));
+            BEAST_EXPECT(followingTrue.setVote(PeerID(50), true));
+            BEAST_EXPECT(followingFalse.setVote(PeerID(49), false));
 
             // no changes yet
-            BEAST_EXPECT(d.getOurVote() == myVote);
-            BEAST_EXPECT(!d.stalled(p, proposing, peersUnchanged));
+            BEAST_EXPECT(proposingTrue.getOurVote() == true);
+            BEAST_EXPECT(proposingFalse.getOurVote() == false);
+            BEAST_EXPECT(followingTrue.getOurVote() == true);
+            BEAST_EXPECT(followingFalse.getOurVote() == false);
+            BEAST_EXPECT(!proposingTrue.stalled(p, true, peersUnchanged));
+            BEAST_EXPECT(!proposingFalse.stalled(p, true, peersUnchanged));
+            BEAST_EXPECT(!followingTrue.stalled(p, false, peersUnchanged));
+            BEAST_EXPECT(!followingFalse.stalled(p, false, peersUnchanged));
 
             // I'm in the majority, my vote should not change
-            BEAST_EXPECT(d.updateVote(5, proposing, p) != proposing);
-            BEAST_EXPECT(d.updateVote(10, proposing, p) != proposing);
+            BEAST_EXPECT(!proposingTrue.updateVote(5, true, p));
+            BEAST_EXPECT(!proposingFalse.updateVote(5, true, p));
+            BEAST_EXPECT(!followingTrue.updateVote(5, false, p));
+            BEAST_EXPECT(!followingFalse.updateVote(5, false, p));
+
+            BEAST_EXPECT(!proposingTrue.updateVote(10, true, p));
+            BEAST_EXPECT(!proposingFalse.updateVote(10, true, p));
+            BEAST_EXPECT(!followingTrue.updateVote(10, false, p));
+            BEAST_EXPECT(!followingFalse.updateVote(10, false, p));
+
+            peersUnchanged = 2;
+            BEAST_EXPECT(!proposingTrue.stalled(p, true, peersUnchanged));
+            BEAST_EXPECT(!proposingFalse.stalled(p, true, peersUnchanged));
+            BEAST_EXPECT(!followingTrue.stalled(p, false, peersUnchanged));
+            BEAST_EXPECT(!followingFalse.stalled(p, false, peersUnchanged));
 
             // Right now, the vote is 51%. The requirement is about to jump to
             // 65%
-            bool changed = d.updateVote(55, proposing, p);
-            BEAST_EXPECT(changed == !proposing || myVote);
-            BEAST_EXPECT(!changed || d.getOurVote() != myVote);
+            BEAST_EXPECT(proposingTrue.updateVote(55, true, p));
+            BEAST_EXPECT(!proposingFalse.updateVote(55, true, p));
+            BEAST_EXPECT(!followingTrue.updateVote(55, false, p));
+            BEAST_EXPECT(!followingFalse.updateVote(55, false, p));
+
+            BEAST_EXPECT(proposingTrue.getOurVote() == false);
+            BEAST_EXPECT(proposingFalse.getOurVote() == false);
+            BEAST_EXPECT(followingTrue.getOurVote() == true);
+            BEAST_EXPECT(followingFalse.getOurVote() == false);
             // 16 validators change their vote to match my original vote
             for (int i = 0; i < 16; ++i)
             {
-                // If I was voting yes, change no's from the end
-                auto p = myVote ? PeerID(numPeers - i - 1) : PeerID(i);
-                BEAST_EXPECT(d.setVote(p, myVote));
+                auto pTrue = PeerID(numPeers - i - 1);
+                auto pFalse = PeerID(i);
+                BEAST_EXPECT(proposingTrue.setVote(pTrue, true));
+                BEAST_EXPECT(proposingFalse.setVote(pFalse, false));
+                BEAST_EXPECT(followingTrue.setVote(pTrue, true));
+                BEAST_EXPECT(followingFalse.setVote(pFalse, false));
             }
-            // The vote should now be 66%
-            changed = d.updateVote(60, proposing, p);
-            BEAST_EXPECT(changed == proposing);
-            BEAST_EXPECT(!changed || d.getOurVote() == myVote);
+            // The vote should now be 66%, threshold is 65%
+            BEAST_EXPECT(proposingTrue.updateVote(60, true, p));
+            BEAST_EXPECT(!proposingFalse.updateVote(60, true, p));
+            BEAST_EXPECT(!followingTrue.updateVote(60, false, p));
+            BEAST_EXPECT(!followingFalse.updateVote(60, false, p));
+
+            BEAST_EXPECT(proposingTrue.getOurVote() == true);
+            BEAST_EXPECT(proposingFalse.getOurVote() == false);
+            BEAST_EXPECT(followingTrue.getOurVote() == true);
+            BEAST_EXPECT(followingFalse.getOurVote() == false);
+
+            // Threshold jumps to 70%
+            BEAST_EXPECT(proposingTrue.updateVote(86, true, p));
+            BEAST_EXPECT(!proposingFalse.updateVote(86, true, p));
+            BEAST_EXPECT(!followingTrue.updateVote(86, false, p));
+            BEAST_EXPECT(!followingFalse.updateVote(86, false, p));
+
+            BEAST_EXPECT(proposingTrue.getOurVote() == false);
+            BEAST_EXPECT(proposingFalse.getOurVote() == false);
+            BEAST_EXPECT(followingTrue.getOurVote() == true);
+            BEAST_EXPECT(followingFalse.getOurVote() == false);
+
+            // 5 more validators change their vote to match my original vote
+            for (int i = 16; i < 21; ++i)
+            {
+                auto pTrue = PeerID(numPeers - i - 1);
+                auto pFalse = PeerID(i);
+                BEAST_EXPECT(proposingTrue.setVote(pTrue, true));
+                BEAST_EXPECT(proposingFalse.setVote(pFalse, false));
+                BEAST_EXPECT(followingTrue.setVote(pTrue, true));
+                BEAST_EXPECT(followingFalse.setVote(pFalse, false));
+            }
+
+            // The vote should now be 71%, threshold is 70%
+            BEAST_EXPECT(proposingTrue.updateVote(90, true, p));
+            BEAST_EXPECT(!proposingFalse.updateVote(90, true, p));
+            BEAST_EXPECT(!followingTrue.updateVote(90, false, p));
+            BEAST_EXPECT(!followingFalse.updateVote(90, false, p));
+
+            BEAST_EXPECT(proposingTrue.getOurVote() == true);
+            BEAST_EXPECT(proposingFalse.getOurVote() == false);
+            BEAST_EXPECT(followingTrue.getOurVote() == true);
+            BEAST_EXPECT(followingFalse.getOurVote() == false);
+
+            // The vote should now be 71%, threshold is 70%
+            BEAST_EXPECT(!proposingTrue.updateVote(150, true, p));
+            BEAST_EXPECT(!proposingFalse.updateVote(150, true, p));
+            BEAST_EXPECT(!followingTrue.updateVote(150, false, p));
+            BEAST_EXPECT(!followingFalse.updateVote(150, false, p));
+
+            BEAST_EXPECT(proposingTrue.getOurVote() == true);
+            BEAST_EXPECT(proposingFalse.getOurVote() == false);
+            BEAST_EXPECT(followingTrue.getOurVote() == true);
+            BEAST_EXPECT(followingFalse.getOurVote() == false);
+
+            // The vote should now be 71%, threshold is 70%
+            BEAST_EXPECT(!proposingTrue.updateVote(190, true, p));
+            BEAST_EXPECT(!proposingFalse.updateVote(190, true, p));
+            BEAST_EXPECT(!followingTrue.updateVote(190, false, p));
+            BEAST_EXPECT(!followingFalse.updateVote(190, false, p));
+
+            BEAST_EXPECT(proposingTrue.getOurVote() == true);
+            BEAST_EXPECT(proposingFalse.getOurVote() == false);
+            BEAST_EXPECT(followingTrue.getOurVote() == true);
+            BEAST_EXPECT(followingFalse.getOurVote() == false);
+
+            peersUnchanged = 3;
+            BEAST_EXPECT(!proposingTrue.stalled(p, true, peersUnchanged));
+            BEAST_EXPECT(!proposingFalse.stalled(p, true, peersUnchanged));
+            BEAST_EXPECT(!followingTrue.stalled(p, false, peersUnchanged));
+            BEAST_EXPECT(!followingFalse.stalled(p, false, peersUnchanged));
+
+            // Threshold jumps to 95%
+            BEAST_EXPECT(proposingTrue.updateVote(220, true, p));
+            BEAST_EXPECT(!proposingFalse.updateVote(220, true, p));
+            BEAST_EXPECT(!followingTrue.updateVote(220, false, p));
+            BEAST_EXPECT(!followingFalse.updateVote(220, false, p));
+
+            BEAST_EXPECT(proposingTrue.getOurVote() == false);
+            BEAST_EXPECT(proposingFalse.getOurVote() == false);
+            BEAST_EXPECT(followingTrue.getOurVote() == true);
+            BEAST_EXPECT(followingFalse.getOurVote() == false);
+
+            // 25 more validators change their vote to match my original vote
+            for (int i = 21; i < 46; ++i)
+            {
+                auto pTrue = PeerID(numPeers - i - 1);
+                auto pFalse = PeerID(i);
+                BEAST_EXPECT(proposingTrue.setVote(pTrue, true));
+                BEAST_EXPECT(proposingFalse.setVote(pFalse, false));
+                BEAST_EXPECT(followingTrue.setVote(pTrue, true));
+                BEAST_EXPECT(followingFalse.setVote(pFalse, false));
+            }
+
+            // The vote should now be 96%, threshold is 95%
+            BEAST_EXPECT(proposingTrue.updateVote(250, true, p));
+            BEAST_EXPECT(!proposingFalse.updateVote(250, true, p));
+            BEAST_EXPECT(!followingTrue.updateVote(250, false, p));
+            BEAST_EXPECT(!followingFalse.updateVote(250, false, p));
+
+            BEAST_EXPECT(proposingTrue.getOurVote() == true);
+            BEAST_EXPECT(proposingFalse.getOurVote() == false);
+            BEAST_EXPECT(followingTrue.getOurVote() == true);
+            BEAST_EXPECT(followingFalse.getOurVote() == false);
+
+            for (peersUnchanged = 0; peersUnchanged < 6; ++peersUnchanged)
+            {
+                BEAST_EXPECT(!proposingTrue.stalled(p, true, peersUnchanged));
+                BEAST_EXPECT(!proposingFalse.stalled(p, true, peersUnchanged));
+                BEAST_EXPECT(!followingTrue.stalled(p, false, peersUnchanged));
+                BEAST_EXPECT(!followingFalse.stalled(p, false, peersUnchanged));
+            }
+
+            for (int i = 0; i < 1; ++i)
+            {
+                BEAST_EXPECT(!proposingTrue.updateVote(250 + 10 * i, true, p));
+                BEAST_EXPECT(!proposingFalse.updateVote(250 + 10 * i, true, p));
+                BEAST_EXPECT(!followingTrue.updateVote(250 + 10 * i, false, p));
+                BEAST_EXPECT(
+                    !followingFalse.updateVote(250 + 10 * i, false, p));
+
+                BEAST_EXPECT(proposingTrue.getOurVote() == true);
+                BEAST_EXPECT(proposingFalse.getOurVote() == false);
+                BEAST_EXPECT(followingTrue.getOurVote() == true);
+                BEAST_EXPECT(followingFalse.getOurVote() == false);
+
+                // true vote has changed recently, so not stalled
+                BEAST_EXPECT(!proposingTrue.stalled(p, true, 0));
+                // remaining votes have been unchanged in so long that we only
+                // need to hit the second round at 95% to be stalled, regardless
+                // of peers
+                BEAST_EXPECT(proposingFalse.stalled(p, true, 0));
+                BEAST_EXPECT(followingTrue.stalled(p, false, 0));
+                BEAST_EXPECT(followingFalse.stalled(p, false, 0));
+
+                // true vote has changed recently, so not stalled
+                BEAST_EXPECT(!proposingTrue.stalled(p, true, peersUnchanged));
+                // remaining votes have been unchanged in so long that we only
+                // need to hit the second round at 95% to be stalled, regardless
+                // of peers
+                BEAST_EXPECT(proposingFalse.stalled(p, true, peersUnchanged));
+                BEAST_EXPECT(followingTrue.stalled(p, false, peersUnchanged));
+                BEAST_EXPECT(followingFalse.stalled(p, false, peersUnchanged));
+            }
+            for (int i = 1; i < 3; ++i)
+            {
+                BEAST_EXPECT(!proposingTrue.updateVote(250 + 10 * i, true, p));
+                BEAST_EXPECT(!proposingFalse.updateVote(250 + 10 * i, true, p));
+                BEAST_EXPECT(!followingTrue.updateVote(250 + 10 * i, false, p));
+                BEAST_EXPECT(
+                    !followingFalse.updateVote(250 + 10 * i, false, p));
+
+                BEAST_EXPECT(proposingTrue.getOurVote() == true);
+                BEAST_EXPECT(proposingFalse.getOurVote() == false);
+                BEAST_EXPECT(followingTrue.getOurVote() == true);
+                BEAST_EXPECT(followingFalse.getOurVote() == false);
+
+                // true vote changed 2 rounds ago, and peers are changing, so
+                // not stalled
+                BEAST_EXPECT(!proposingTrue.stalled(p, true, 0));
+                // still stalled
+                BEAST_EXPECT(proposingFalse.stalled(p, true, 0));
+                BEAST_EXPECT(followingTrue.stalled(p, false, 0));
+                BEAST_EXPECT(followingFalse.stalled(p, false, 0));
+
+                // true vote changed 2 rounds ago, and peers are NOT changing,
+                // so stalled
+                BEAST_EXPECT(proposingTrue.stalled(p, true, peersUnchanged));
+                // still stalled
+                BEAST_EXPECT(proposingFalse.stalled(p, true, peersUnchanged));
+                BEAST_EXPECT(followingTrue.stalled(p, false, peersUnchanged));
+                BEAST_EXPECT(followingFalse.stalled(p, false, peersUnchanged));
+            }
+            for (int i = 3; i < 5; ++i)
+            {
+                BEAST_EXPECT(!proposingTrue.updateVote(250 + 10 * i, true, p));
+                BEAST_EXPECT(!proposingFalse.updateVote(250 + 10 * i, true, p));
+                BEAST_EXPECT(!followingTrue.updateVote(250 + 10 * i, false, p));
+                BEAST_EXPECT(
+                    !followingFalse.updateVote(250 + 10 * i, false, p));
+
+                BEAST_EXPECT(proposingTrue.getOurVote() == true);
+                BEAST_EXPECT(proposingFalse.getOurVote() == false);
+                BEAST_EXPECT(followingTrue.getOurVote() == true);
+                BEAST_EXPECT(followingFalse.getOurVote() == false);
+
+                BEAST_EXPECT(proposingTrue.stalled(p, true, 0));
+                BEAST_EXPECT(proposingFalse.stalled(p, true, 0));
+                BEAST_EXPECT(followingTrue.stalled(p, false, 0));
+                BEAST_EXPECT(followingFalse.stalled(p, false, 0));
+
+                BEAST_EXPECT(proposingTrue.stalled(p, true, peersUnchanged));
+                BEAST_EXPECT(proposingFalse.stalled(p, true, peersUnchanged));
+                BEAST_EXPECT(followingTrue.stalled(p, false, peersUnchanged));
+                BEAST_EXPECT(followingFalse.stalled(p, false, peersUnchanged));
+            }
         }
     }
 

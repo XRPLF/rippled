@@ -97,8 +97,8 @@ public:
         // We're have not reached the final avalanche state, or been there long
         // enough, so there's room for change. Check the times in case the state
         // machine is altered to allow states to loop.
-        if (avalancheState_ != currentCutoff.next &&
-            nextCutoff.consensusTime > currentCutoff.consensusTime &&
+        if (avalancheState_ != currentCutoff.next ||
+            nextCutoff.consensusTime > currentCutoff.consensusTime ||
             avalancheCounter_ < p.avMIN_ROUNDS)
             return false;
 
@@ -111,7 +111,7 @@ public:
         // things could still change. But if _either_ has not changed in that
         // long, we're unlikely to change our vote any time soon. (This prevents
         // a malicious peer from flip-flopping a vote to prevent consensus.)
-        if (peersUnchanged < p.avSTALLED_ROUNDS ||
+        if (peersUnchanged < p.avSTALLED_ROUNDS &&
             (proposing && currentVoteCounter_ < p.avSTALLED_ROUNDS))
             return false;
 
@@ -278,26 +278,24 @@ DisputedTx<Tx_t, NodeID_t>::updateVote(
     bool newPosition;
     int weight;
 
+    // When proposing, to prevent avalanche stalls, we increase the needed
+    // weight slightly over time. We also need to ensure that the consensus has
+    // made a minimum number of attempts at each "state" before moving
+    // to the next.
+    // Proposing or not, we need to keep track of which state we've reached so
+    // we can determine if the vote has stalled.
+    auto const [requiredPct, newState] = getNeededWeight(
+        p, avalancheState_, percentTime, ++avalancheCounter_, p.avMIN_ROUNDS);
+    if (newState)
+    {
+        avalancheState_ = *newState;
+        avalancheCounter_ = 0;
+    }
+
     if (proposing)  // give ourselves full weight
     {
         // This is basically the percentage of nodes voting 'yes' (including us)
         weight = (yays_ * 100 + (ourVote_ ? 100 : 0)) / (nays_ + yays_ + 1);
-
-        // To prevent avalanche stalls, we increase the needed weight
-        // slightly over time. We also need to ensure that the consensus has
-        // made a minimum number of attempts at each "state" before moving
-        // to the next.
-        auto const [requiredPct, newState] = getNeededWeight(
-            p,
-            avalancheState_,
-            percentTime,
-            ++avalancheCounter_,
-            p.avMIN_ROUNDS);
-        if (newState)
-        {
-            avalancheState_ = *newState;
-            avalancheCounter_ = 0;
-        }
 
         newPosition = weight > requiredPct;
     }
