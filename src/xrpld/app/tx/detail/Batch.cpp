@@ -62,6 +62,15 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
         for (STObject txn : txns)
         {
             STTx const stx = STTx{std::move(txn)};
+
+            XRPL_ASSERT(
+                stx.getTxnType() != ttBATCH, "Inner Batch transaction found.");
+
+            // LCOV_EXCL_START
+            if (stx.getTxnType() == ttBATCH)
+                return INITIAL_XRP;
+            // LCOV_EXCL_STOP
+
             auto const fee = ripple::calculateBaseFee(view, stx);
             // LCOV_EXCL_START
             if (txnFees > maxAmount - fee)

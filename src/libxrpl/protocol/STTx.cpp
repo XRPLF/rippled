@@ -712,6 +712,11 @@ isRawTransactionOkay(STObject const& st, std::string& reason)
         {
             TxType const tt =
                 safe_cast<TxType>(raw.getFieldU16(sfTransactionType));
+            if (tt == ttBATCH)
+            {
+                reason = "Raw transaction cannot be a batch transaction.";
+                return false;
+            }
             raw.applyTemplate(getTxFormat(tt)->getSOTemplate());
         }
         catch (std::exception const& e)

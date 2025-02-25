@@ -259,6 +259,7 @@ class Batch_test : public beast::unit_test::suite
         }
 
         // temINVALID_INNER_BATCH: Batch: batch cannot have inner batch txn.
+        // telENV_RPC_FAILED
         {
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
@@ -266,7 +267,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(
                     batch::outer(alice, seq, batchFee, tfAllOrNothing), seq),
                 batch::inner(pay(alice, bob, XRP(1)), seq + 2),
-                ter(temINVALID_INNER_BATCH));
+                ter(telENV_RPC_FAILED));
             env.close();
         }
 
