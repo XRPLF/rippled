@@ -1570,7 +1570,7 @@ TxQ::accept(Application& app, OpenView& view)
     // reordered.
     LedgerHash const& parentHash = view.info().parentHash;
     if (parentHash == parentHash_)
-        JLOG(j_.warn()) << "Parent hash unchanged";
+        JLOG(j_.warn()) << "Parent ledger hash unchanged from " << parentHash;
     else
         parentHash_ = parentHash;
 
