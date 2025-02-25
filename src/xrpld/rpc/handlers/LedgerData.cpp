@@ -169,15 +169,21 @@ doLedgerDataGrpc(
     }
 
     auto e = ledger->sles.end();
-    if (auto key = uint256::fromVoidChecked(request.end_marker()))
+    if (request.end_marker().size() != 0)
     {
-        e = ledger->sles.upper_bound(*key);
-    }
-    else if (request.end_marker().size() != 0)
-    {
-        grpc::Status errorStatus{
-            grpc::StatusCode::INVALID_ARGUMENT, "end marker malformed"};
-        return {response, errorStatus};
+        if (auto const key = uint256::fromVoidChecked(request.end_marker()))
+        {
+            if (*key < startKey)
+            {
+                grpc::Status errorStatus{
+                    grpc::StatusCode::INVALID_ARGUMENT, "end marker malformed"};
+                return {response, errorStatus};
+            }
+            else
+            {
+                e = ledger->sles.upper_bound(*key);
+            }
+        }
     }
 
     int maxLimit = RPC::Tuning::pageLength(true);
