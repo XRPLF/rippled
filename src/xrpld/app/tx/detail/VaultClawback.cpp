@@ -23,6 +23,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
 namespace ripple {
@@ -38,6 +39,10 @@ VaultClawback::preflight(PreflightContext const& ctx)
 
     if (ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
+
+    // Note, zero amount is valid, it means "all". It is also the default.
+    if (ctx.tx[sfAmount] < beast::zero)
+        return temBAD_AMOUNT;
 
     return preflight2(ctx);
 }

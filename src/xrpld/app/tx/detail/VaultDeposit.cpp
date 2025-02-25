@@ -44,6 +44,9 @@ VaultDeposit::preflight(PreflightContext const& ctx)
     if (ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
 
+    if (ctx.tx[sfAmount] <= beast::zero)
+        return temBAD_AMOUNT;
+
     return preflight2(ctx);
 }
 

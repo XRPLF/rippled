@@ -60,6 +60,25 @@ class Vault_test : public beast::unit_test::suite
             }
 
             {
+                testcase(prefix + " fail to deposit negative amount");
+                auto tx = vault.deposit(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = PrettyAmount(
+                         STAmount(asset.raw(), 1ul, 0, true), "")});
+                env(tx, ter(temBAD_AMOUNT));
+            }
+
+            {
+                testcase(prefix + " fail to deposit zero amount");
+                auto tx = vault.deposit(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = asset(0)});
+                env(tx, ter(temBAD_AMOUNT));
+            }
+
+            {
                 testcase(prefix + " deposit non-zero amount");
                 auto tx = vault.deposit(
                     {.depositor = depositor,
@@ -121,6 +140,25 @@ class Vault_test : public beast::unit_test::suite
             }
 
             {
+                testcase(prefix + " fail to withdraw negative amount");
+                auto tx = vault.withdraw(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = PrettyAmount(
+                         STAmount(asset.raw(), 1ul, 0, true), "")});
+                env(tx, ter(temBAD_AMOUNT));
+            }
+
+            {
+                testcase(prefix + " fail to withdraw zero amount");
+                auto tx = vault.withdraw(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = asset(0)});
+                env(tx, ter(temBAD_AMOUNT));
+            }
+
+            {
                 testcase(prefix + " fail to withdraw more than assets held");
                 auto tx = vault.withdraw(
                     {.depositor = depositor,
@@ -147,6 +185,17 @@ class Vault_test : public beast::unit_test::suite
                      .holder = depositor,
                      .amount = asset(50)});
                 env(tx, ter(tecNO_PERMISSION));
+            }
+
+            {
+                testcase(prefix + " fail to clawback negative amount");
+                auto tx = vault.clawback(
+                    {.issuer = issuer,
+                     .id = keylet.key,
+                     .holder = depositor,
+                     .amount = PrettyAmount(
+                         STAmount(asset.raw(), 1ul, 0, true), "")});
+                env(tx, ter(temBAD_AMOUNT));
             }
 
             {
