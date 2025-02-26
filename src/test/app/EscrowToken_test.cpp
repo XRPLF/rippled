@@ -298,7 +298,7 @@ struct EscrowToken_test : public beast::unit_test::suite
         using namespace std::chrono;
 
         {
-            testcase("Timing: Token Finish Only");
+            testcase("IOU Timing Finish Only");
             Env env{*this, features};
             auto const alice = Account("alice");
             auto const bob = Account("bob");
@@ -328,7 +328,7 @@ struct EscrowToken_test : public beast::unit_test::suite
         }
 
         {
-            testcase("Timing: Token Cancel Only");
+            testcase("IOU Timing Cancel Only");
             Env env{*this, features};
             auto const alice = Account("alice");
             auto const bob = Account("bob");
@@ -370,7 +370,7 @@ struct EscrowToken_test : public beast::unit_test::suite
         }
 
         {
-            testcase("Timing: Token Finish and Cancel -> Finish");
+            testcase("IOU Timing Finish and Cancel -> Finish");
             Env env{*this, features};
             auto const alice = Account("alice");
             auto const bob = Account("bob");
@@ -414,7 +414,7 @@ struct EscrowToken_test : public beast::unit_test::suite
         }
 
         {
-            testcase("Timing: Token Finish and Cancel -> Cancel");
+            testcase("IOU Timing Finish and Cancel -> Cancel");
             Env env{*this, features};
             auto const alice = Account("alice");
             auto const bob = Account("bob");
@@ -3017,7 +3017,7 @@ struct EscrowToken_test : public beast::unit_test::suite
         testIOUEscrowWithTickets(features);
         testIOURippleState(features);
         testIOUGateway(features);
-        // testIOULockedRate(features);
+        testIOULockedRate(features);
         testIOUTLLimitAmount(features);
         testIOUTLRequireAuth(features);
         testIOUTLFreeze(features);
@@ -3029,15 +3029,13 @@ struct EscrowToken_test : public beast::unit_test::suite
     testMPTWithFeats(FeatureBitset features)
     {
         testMPTEnablement(features);
-        // testIOULockup(features);
-        // testIOURippleState(features);
-        // testIOUGateway(features);
-        // testIOULockedRate(features);
-        // testIOUTLLimitAmount(features);
-        // testIOUTLRequireAuth(features);
-        // testIOUTLFreeze(features);
-        // testIOUTLINSF(features);
-        // testIOUPrecisionLoss(features);
+        // testMPTGateway(features);
+        // testMPTLockedRate(features);
+        // testMPTTLLimitAmount(features);
+        // testMPTTLRequireAuth(features);
+        // testMPTTLFreeze(features);
+        // testMPTTLINSF(features);
+        // testMPTPrecisionLoss(features);
     }
 
 public:

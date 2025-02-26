@@ -493,12 +493,12 @@ EscrowCreate::doApply()
     (*slep)[~sfFinishAfter] = ctx_.tx[~sfFinishAfter];
     (*slep)[~sfDestinationTag] = ctx_.tx[~sfDestinationTag];
 
-    // TODO: Fix for MPT & IOU
-    // if (ctx_.view().rules().enabled(featureTokenEscrow))
-    // {
-    //     auto const xferRate = transferRate(view(), issuer);
-    //     (*slep)[~sfTransferRate] = xferRate.value;
-    // }
+    if (ctx_.view().rules().enabled(featureTokenEscrow) && !isXRP(amount))
+    {
+        auto const xferRate = transferRate(ctx_.view(), amount);
+        if (xferRate != parityRate)
+            (*slep)[sfTransferRate] = xferRate.value;
+    }
 
     ctx_.view().insert(slep);
 
@@ -831,7 +831,7 @@ escrowFinishApplyHelper<Issue>(
     if (!view.exists(trustLineKey) && !dstIssuer)
         return tecNO_LINE;
 
-    auto const xferRate = transferRate(view, issuer);
+    auto const xferRate = transferRate(view, amount);
     // update if issuer rate is less than locked rate
     if (xferRate < lockedRate)
         lockedRate = xferRate;
@@ -918,7 +918,7 @@ escrowFinishApplyHelper<MPTIssue>(
     if (!view.exists(keylet::mptoken(issuanceKey.key, dest)) && !dstIssuer)
         return tecNO_AUTH;
 
-    auto const xferRate = transferRate(view, issuer);
+    auto const xferRate = transferRate(view, amount);
     // update if issuer rate is less than locked rate
     if (xferRate < lockedRate)
         lockedRate = xferRate;
