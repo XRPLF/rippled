@@ -553,6 +553,11 @@ requireAuth(
     ReadView const& view,
     MPTIssue const& mptIssue,
     AccountID const& account);
+[[nodiscard]] TER
+requireAuthIfNeeded(
+    ReadView const& view,
+    MPTIssue const& mptIssue,
+    AccountID const& account);
 
 /** Check if the destination account is allowed
  *  to receive MPT. Return tecNO_AUTH if it doesn't

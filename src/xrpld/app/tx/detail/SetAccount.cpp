@@ -597,9 +597,9 @@ SetAccount::doApply()
     if (ctx_.view().rules().enabled(featureTokenEscrow))
     {
         if (uSetFlag == asfAllowTokenLocking)
-            uFlagsOut |= lsfAllowTokenLocking;
+            uFlagsOut |= lsfAllowTokenEscrow;
         else if (uClearFlag == asfAllowTokenLocking)
-            uFlagsOut &= ~lsfAllowTokenLocking;
+            uFlagsOut &= ~lsfAllowTokenEscrow;
     }
 
     // Set flag for clawback

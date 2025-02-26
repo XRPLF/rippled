@@ -1961,6 +1961,37 @@ requireAuth(
 }
 
 TER
+requireAuthIfNeeded(
+    ReadView const& view,
+    MPTIssue const& mptIssue,
+    AccountID const& account)
+{
+    auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
+    auto const sleIssuance = view.read(mptID);
+
+    if (!sleIssuance)
+        return tecOBJECT_NOT_FOUND;
+
+    auto const mptIssuer = sleIssuance->getAccountID(sfIssuer);
+
+    // issuer is always "authorized"
+    if (mptIssuer == account)
+        return tesSUCCESS;
+
+    if (sleIssuance->getFieldU32(sfFlags) & lsfMPTRequireAuth)
+    {
+        auto const mptokenID = keylet::mptoken(mptID.key, account);
+        auto const sleToken = view.read(mptokenID);
+        if (!sleToken)
+            return tecNO_AUTH;
+
+        if (!(sleToken->getFlags() & lsfMPTAuthorized))
+            return tecNO_AUTH;
+    }
+    return tesSUCCESS;
+}
+
+TER
 canTransfer(
     ReadView const& view,
     MPTIssue const& mptIssue,
