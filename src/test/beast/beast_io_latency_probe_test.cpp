@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/asio/io_latency_probe.h>
 #include <xrpl/beast/test/yield_to.h>
 #include <xrpl/beast/unit_test.h>
@@ -193,9 +192,9 @@ class io_latency_probe_test : public beast::unit_test::suite,
         log << "measured max for timers: " << tt.getMax<milliseconds>()
             << "ms\n";
         expected_probe_count_min =
-            safe_cast<size_t>(
+            static_cast<size_t>(
                 duration_cast<milliseconds>(probe_duration).count()) /
-            safe_cast<size_t>(tt.getMean<milliseconds>());
+            static_cast<size_t>(tt.getMean<milliseconds>());
 #endif
         test_sampler io_probe{interval, get_io_service()};
         io_probe.start();
