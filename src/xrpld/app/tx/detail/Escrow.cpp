@@ -282,8 +282,9 @@ escrowCreatePreclaimHelper<Issue>(
     // If the balance is less than or equal to 0, return tecINSUFFICIENT_FUNDS
     if (spendableAmount <= beast::zero)
         return tecINSUFFICIENT_FUNDS;
-    
-    // If the spendable amount is less than the amount, return tecINSUFFICIENT_FUNDS
+
+    // If the spendable amount is less than the amount, return
+    // tecINSUFFICIENT_FUNDS
     if (spendableAmount < amount)
         return tecINSUFFICIENT_FUNDS;
 
@@ -327,13 +328,15 @@ escrowCreatePreclaimHelper<MPTIssue>(
     if (!ctx.view.exists(keylet::mptoken(issuanceKey.key, account)))
         return tecOBJECT_NOT_FOUND;
 
-    // If the issuer has requireAuthIfNeeded set, check if the account is authorized
+    // If the issuer has requireAuthIfNeeded set, check if the account is
+    // authorized
     auto const& mptIssue = amount.get<MPTIssue>();
     if (auto const ter = requireAuthIfNeeded(ctx.view, mptIssue, account);
         ter != tesSUCCESS)
         return ter;
 
-    // If the issuer has requireAuthIfNeeded set, check if the destination is authorized
+    // If the issuer has requireAuthIfNeeded set, check if the destination is
+    // authorized
     if (auto const ter = requireAuthIfNeeded(ctx.view, mptIssue, dest);
         ter != tesSUCCESS)
         return ter;
@@ -363,7 +366,8 @@ escrowCreatePreclaimHelper<MPTIssue>(
     if (spendableAmount <= beast::zero)
         return tecINSUFFICIENT_FUNDS;
 
-    // If the spendable amount is less than the amount, return tecINSUFFICIENT_FUNDS
+    // If the spendable amount is less than the amount, return
+    // tecINSUFFICIENT_FUNDS
     if (spendableAmount < amount)
         return tecINSUFFICIENT_FUNDS;
 
@@ -702,7 +706,8 @@ escrowFinishPreclaimHelper<MPTIssue>(
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    // If the issuer has requireAuthIfNeeded set, check if the destination is authorized
+    // If the issuer has requireAuthIfNeeded set, check if the destination is
+    // authorized
     auto const& mptIssue = amount.get<MPTIssue>();
     if (auto const ter = requireAuthIfNeeded(ctx.view, mptIssue, dest);
         ter != tesSUCCESS)
@@ -1190,7 +1195,8 @@ escrowCancelPreclaimHelper<MPTIssue>(
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    // If the issuer has requireAuthIfNeeded set, check if the account is authorized
+    // If the issuer has requireAuthIfNeeded set, check if the account is
+    // authorized
     auto const& mptIssue = amount.get<MPTIssue>();
     if (auto const ter = requireAuthIfNeeded(ctx.view, mptIssue, account);
         ter != tesSUCCESS)
@@ -1202,7 +1208,6 @@ escrowCancelPreclaimHelper<MPTIssue>(
 TER
 EscrowCancel::preclaim(PreclaimContext const& ctx)
 {
-
     auto const k = keylet::escrow(ctx.tx[sfOwner], ctx.tx[sfOfferSequence]);
     auto const slep = ctx.view.read(k);
     if (!slep)
@@ -1210,7 +1215,7 @@ EscrowCancel::preclaim(PreclaimContext const& ctx)
 
     AccountID const account = (*slep)[sfAccount];
     STAmount const amount = (*slep)[sfAmount];
-    
+
     if (!isXRP(amount))
     {
         if (!ctx.view.rules().enabled(featureTokenEscrow))
