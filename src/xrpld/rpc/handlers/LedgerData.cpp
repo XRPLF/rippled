@@ -171,18 +171,16 @@ doLedgerDataGrpc(
     auto e = ledger->sles.end();
     if (request.end_marker().size() != 0)
     {
-        if (auto const key = uint256::fromVoidChecked(request.end_marker()))
+        if (auto const key = uint256::fromVoidChecked(request.end_marker());
+            !key || *key < startKey)
         {
-            if (*key < startKey)
-            {
-                grpc::Status errorStatus{
-                    grpc::StatusCode::INVALID_ARGUMENT, "end marker malformed"};
-                return {response, errorStatus};
-            }
-            else
-            {
-                e = ledger->sles.upper_bound(*key);
-            }
+            grpc::Status errorStatus{
+                grpc::StatusCode::INVALID_ARGUMENT, "end marker malformed"};
+            return {response, errorStatus};
+        }
+        else
+        {
+            e = ledger->sles.upper_bound(*key);
         }
     }
 
