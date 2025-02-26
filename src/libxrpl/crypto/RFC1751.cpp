@@ -290,7 +290,7 @@ RFC1751::extract(char const* s, int start, int length)
     cc = (shiftR < 16) ? s[start / 8 + 1] : 0;
     cr = (shiftR < 8) ? s[start / 8 + 2] : 0;
 
-    x = (safe_cast<long>(cl << 8 | cc) << 8 | cr);  // Put bits together
+    x = static_cast<long>(cl << 8 | cc) << 8 | cr;  // Put bits together
     x = x >> shiftR;                                // Right justify number
     x = (x & (0xffff >> (16 - length)));            // Trim extra bits.
 
@@ -338,7 +338,7 @@ RFC1751::insert(char* s, int x, int start, int length)
         "ripple::RFC1751::insert : maximum start + length");
 
     shift = ((8 - ((start + length) % 8)) % 8);
-    y = safe_cast<long>(x) << shift;
+    y = static_cast<long>(x) << shift;
     cl = (y >> 16) & 0xff;
     cc = (y >> 8) & 0xff;
     cr = y & 0xff;

@@ -25,7 +25,6 @@
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
-
 #include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
 #include <boost/range/adaptor/transformed.hpp>
@@ -325,13 +324,13 @@ private:
         threshold_ = !rules_.enabled(fixAmendmentMajorityCalc)
             ? std::max(
                   1L,
-                  safe_cast<long>(
+                  static_cast<long>(
                       (trustedValidations_ *
                        preFixAmendmentMajorityCalcThreshold.num) /
                       preFixAmendmentMajorityCalcThreshold.den))
             : std::max(
                   1L,
-                  safe_cast<long>(
+                  static_cast<long>(
                       (trustedValidations_ *
                        postFixAmendmentMajorityCalcThreshold.num) /
                       postFixAmendmentMajorityCalcThreshold.den));
