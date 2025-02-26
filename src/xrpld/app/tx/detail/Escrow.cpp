@@ -676,8 +676,8 @@ escrowFinishPreclaimHelper<Issue>(
         ter != tesSUCCESS)
         return ter;
 
-    // If the issuer has frozen the destination, return tecFROZEN
-    if (isFrozen(ctx.view, dest, amount.issue()))
+    // If the issuer has deep frozen the destination, return tecFROZEN
+    if (isDeepFrozen(ctx.view, dest, amount.getCurrency(), amount.getIssuer()))
         return tecFROZEN;
 
     return tesSUCCESS;
@@ -1168,10 +1168,6 @@ escrowCancelPreclaimHelper<Issue>(
         ter != tesSUCCESS)
         return ter;
 
-    // If the issuer has frozen the account, return tecFROZEN
-    if (isFrozen(ctx.view, account, amount.issue()))
-        return tecFROZEN;
-
     return tesSUCCESS;
 }
 
@@ -1199,10 +1195,6 @@ escrowCancelPreclaimHelper<MPTIssue>(
     if (auto const ter = requireAuthIfNeeded(ctx.view, mptIssue, account);
         ter != tesSUCCESS)
         return ter;
-
-    // If the issuer has frozen the account, return tecFROZEN
-    if (isFrozen(ctx.view, account, mptIssue))
-        return tecFROZEN;
 
     return tesSUCCESS;
 }

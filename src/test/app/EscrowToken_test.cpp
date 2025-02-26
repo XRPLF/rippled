@@ -2821,6 +2821,7 @@ struct EscrowToken_test : public beast::unit_test::suite
                 fee(1500));
             env.close();
         }
+        // TODO: Deep Freeze
     }
     void
     testIOUTLINSF(FeatureBitset features)
@@ -3019,7 +3020,7 @@ struct EscrowToken_test : public beast::unit_test::suite
         // testIOULockedRate(features);
         testIOUTLLimitAmount(features);
         testIOUTLRequireAuth(features);
-        // testIOUTLFreeze(features);
+        testIOUTLFreeze(features);
         testIOUTLINSF(features);
         testIOUPrecisionLoss(features);
     }
