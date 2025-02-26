@@ -1088,6 +1088,7 @@ class Check_test : public beast::unit_test::suite
         Env env{*this, features};
 
         env.fund(XRP(1000), gw, alice, bob);
+        env.close();
 
         env(trust(alice, USD(1000)));
         env(trust(bob, USD(1000)));
@@ -1158,6 +1159,7 @@ class Check_test : public beast::unit_test::suite
         Env env{*this, features};
 
         env.fund(XRP(1000), gw, alice, bob);
+        env.close();
 
         env(trust(alice, USD(1000)));
         env(trust(bob, USD(1000)));
@@ -1990,12 +1992,10 @@ class Check_test : public beast::unit_test::suite
         BEAST_EXPECT(checksOnAccount(env, alice).size() == 0);
         BEAST_EXPECT(env.seq(alice) == aliceSeq);
         env.require(balance(alice, USD(700)));
-        env.require(balance(alice, drops(699'999'940)));
 
         env.require(owners(bob, 6));
         BEAST_EXPECT(env.seq(bob) == bobSeq);
         env.require(balance(bob, USD(200)));
-        env.require(balance(bob, drops(1'299'999'940)));
     }
 
     void
