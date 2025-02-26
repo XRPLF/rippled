@@ -224,8 +224,9 @@ LedgerReplayer::sweep()
                          << " skipLists, and " << deltas_.size() << " deltas.";
 
         tasks_.erase(
-            std::ranges::remove_if(
-                tasks_,
+            std::remove_if(
+                tasks_.begin(),
+                tasks_.end(),
                 [this](auto const& t) -> bool {
                     if (t->finished())
                     {
@@ -234,8 +235,7 @@ LedgerReplayer::sweep()
                         return true;
                     }
                     return false;
-                })
-                .begin(),
+                }),
             tasks_.end());
 
         auto removeCannotLocked = [](auto& subTasks) {
