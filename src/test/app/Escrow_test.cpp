@@ -378,7 +378,7 @@ struct Escrow_test : public beast::unit_test::suite
         using namespace std::chrono;
 
         Env env(*this, features);
-        env.fund(XRP(5000), "alice", "bob");
+        env.fund(XRP(5000), "alice", "bob", "gw");
         env.close();
 
         // Finish time is in the past
@@ -404,7 +404,7 @@ struct Escrow_test : public beast::unit_test::suite
             env.current()->rules().enabled(featureTokenEscrow);
         auto const txResult =
             withTokenEscrow ? ter(tecNO_PERMISSION) : ter(temDISABLED);
-        env(escrow("alice", "carol", Account("alice")["USD"](500)),
+        env(escrow("alice", "carol", Account("gw")["USD"](500)),
             finish_time(env.now() + 1s),
             txResult);
 
