@@ -97,8 +97,7 @@ public:
         // We're have not reached the final avalanche state, or been there long
         // enough, so there's room for change. Check the times in case the state
         // machine is altered to allow states to loop.
-        if (avalancheState_ != currentCutoff.next ||
-            nextCutoff.consensusTime > currentCutoff.consensusTime ||
+        if (nextCutoff.consensusTime > currentCutoff.consensusTime ||
             avalancheCounter_ < p.avMIN_ROUNDS)
             return false;
 
@@ -118,13 +117,8 @@ public:
         // Does this transaction have more than 80% agreement
 
         // Compute the percentage of nodes voting 'yes' (possibly including us)
-        int support = yays_ * 100;
-        int total = nays_ + yays_;
-        if (proposing)  // give ourselves full weight
-        {
-            support += (ourVote_ ? 100 : 0);
-            ++total;
-        }
+        int const support = (yays_ + (proposing && ourVote_ ? 1 : 0)) * 100;
+        int total = nays_ + yays_ + (proposing ? 1 : 0);
         if (!total)
             // There are no votes, so we know nothing
             return false;

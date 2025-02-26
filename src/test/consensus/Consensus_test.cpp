@@ -1184,6 +1184,7 @@ public:
 
                 auto const& lcl = peer->lastClosedLedger;
                 BEAST_EXPECT(lcl.id() == peer->prevLedgerID());
+                /*
                 log << "Peer " << peer->id << ", lcl seq: " << lcl.seq()
                     << ", prevProposers: " << peer->prevProposers
                     << ", txs in lcl: " << lcl.txs().size() << ", validations: "
@@ -1193,6 +1194,7 @@ public:
                     log << "\tLedger ID: " << id
                         << ", #positions: " << positions.size() << std::endl;
                 }
+                */
                 /*
                 log << "\t" << to_string(peer->consensus.getJson(true))
                     << std::endl
