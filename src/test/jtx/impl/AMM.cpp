@@ -820,7 +820,6 @@ pay(Account const& account, AccountID const& to, STAmount const& amount)
     jv[jss::Amount] = amount.getJson(JsonOptions::none);
     jv[jss::Destination] = to_string(to);
     jv[jss::TransactionType] = jss::Payment;
-    // jv[jss::Flags] = tfFullyCanonicalSig;
     return jv;
 }
 

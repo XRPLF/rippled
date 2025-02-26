@@ -1647,7 +1647,6 @@ class LedgerRPC_test : public beast::unit_test::suite
                                NetClock::time_point const& cancelAfter) {
             Json::Value jv;
             jv[jss::TransactionType] = jss::EscrowCreate;
-            // jv[jss::Flags] = tfFullyCanonicalSig;
             jv[jss::Account] = account.human();
             jv[jss::Destination] = to.human();
             jv[jss::Amount] = amount.getJson(JsonOptions::none);

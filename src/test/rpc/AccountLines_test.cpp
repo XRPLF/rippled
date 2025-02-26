@@ -576,7 +576,6 @@ public:
                           STAmount const& amount) {
             Json::Value jv;
             jv[jss::TransactionType] = jss::EscrowCreate;
-            // jv[jss::Flags] = tfFullyCanonicalSig;
             jv[jss::Account] = account.human();
             jv[jss::Destination] = to.human();
             jv[jss::Amount] = amount.getJson(JsonOptions::none);
@@ -592,7 +591,6 @@ public:
                           PublicKey const& pk) {
             Json::Value jv;
             jv[jss::TransactionType] = jss::PaymentChannelCreate;
-            // jv[jss::Flags] = tfFullyCanonicalSig;
             jv[jss::Account] = account.human();
             jv[jss::Destination] = to.human();
             jv[jss::Amount] = amount.getJson(JsonOptions::none);

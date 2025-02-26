@@ -38,8 +38,6 @@ create(
 
     jv[jss::Account] = issuer.human();
     jv[jss::Subject] = subject.human();
-
-    // jv[jss::Flags] = tfFullyCanonicalSig;
     jv[sfCredentialType.jsonName] = strHex(credType);
 
     return jv;
@@ -56,8 +54,6 @@ accept(
     jv[jss::Account] = subject.human();
     jv[jss::Issuer] = issuer.human();
     jv[sfCredentialType.jsonName] = strHex(credType);
-    // jv[jss::Flags] = tfFullyCanonicalSig;
-
     return jv;
 }
 
@@ -74,7 +70,6 @@ deleteCred(
     jv[jss::Subject] = subject.human();
     jv[jss::Issuer] = issuer.human();
     jv[sfCredentialType.jsonName] = strHex(credType);
-    // jv[jss::Flags] = tfFullyCanonicalSig;
     return jv;
 }
 
