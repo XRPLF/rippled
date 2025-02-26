@@ -282,6 +282,10 @@ escrowCreatePreclaimHelper<Issue>(
     // If the balance is less than or equal to 0, return tecINSUFFICIENT_FUNDS
     if (spendableAmount <= beast::zero)
         return tecINSUFFICIENT_FUNDS;
+    
+    // If the spendable amount is less than the amount, return tecINSUFFICIENT_FUNDS
+    if (spendableAmount < amount)
+        return tecINSUFFICIENT_FUNDS;
 
     // If the amount is not addable to the balance, return tecPRECISION_LOSS
     if (!isAddable(spendableAmount, amount))
@@ -357,6 +361,10 @@ escrowCreatePreclaimHelper<MPTIssue>(
 
     // If the balance is less than or equal to 0, return tecINSUFFICIENT_FUNDS
     if (spendableAmount <= beast::zero)
+        return tecINSUFFICIENT_FUNDS;
+
+    // If the spendable amount is less than the amount, return tecINSUFFICIENT_FUNDS
+    if (spendableAmount < amount)
         return tecINSUFFICIENT_FUNDS;
 
     return tesSUCCESS;
@@ -530,15 +538,19 @@ EscrowCreate::doApply()
         (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
     else
     {
-        auto const ter = rippleCredit(
-            ctx_.view(),
-            amount.getIssuer(),
-            account,
-            amount,
-            amount.holds<MPTIssue>() ? false : true,
-            ctx_.journal);
-        if (ter != tesSUCCESS)
-            return ter;  // LCOV_EXCL_LINE
+        auto const issuer = amount.getIssuer();
+        if (issuer != account)
+        {
+            auto const ter = rippleCredit(
+                ctx_.view(),
+                account,
+                issuer,
+                amount,
+                amount.holds<MPTIssue>() ? false : true,
+                ctx_.journal);
+            if (ter != tesSUCCESS)
+                return ter;  // LCOV_EXCL_LINE
+        }
     }
 
     // increment owner count

@@ -707,9 +707,11 @@ struct EscrowToken_test : public beast::unit_test::suite
 
         {  // Fail if the sender wants to send more than he has:
             auto const daniel = Account("daniel");
-            env.fund(XRP(5000), daniel);
+            auto const evan = Account("evan");
+            auto const frank = Account("frank");
+            env.fund(XRP(5000), daniel, evan, frank);
             env.close();
-            env.trust(USD(100), daniel);
+            env.trust(USD(100), daniel, evan);
             env.close();
             env(pay(gw, daniel, USD(50)));
             env.close();
@@ -718,14 +720,13 @@ struct EscrowToken_test : public beast::unit_test::suite
                 finish_time(env.now() + 1s),
                 ter(tecINSUFFICIENT_FUNDS));
 
-            // Removed 3 Account Reserve/Increment XRP tests
-            // See line 602
-
-            env(escrow(daniel, bob, USD(10)), finish_time(env.now() + 1s));
-            env.close();
-            env(escrow(daniel, bob, USD(51)),
+            env(escrow(evan, bob, USD(51)),
                 finish_time(env.now() + 1s),
                 ter(tecINSUFFICIENT_FUNDS));
+
+            env(escrow(frank, bob, USD(51)),
+                finish_time(env.now() + 1s),
+                ter(tecNO_LINE));
         }
 
         {  // Specify incorrect sequence number
@@ -3004,23 +3005,23 @@ struct EscrowToken_test : public beast::unit_test::suite
     testIOUWithFeats(FeatureBitset features)
     {
         testIOUEnablement(features);
-        // testIOUTiming(features);
-        // testIOUTags(features);
-        // testIOU1571(features);
-        // testIOUFails(features);
-        // testIOULockup(features);
-        // testIOUEscrowConditions(features);
-        // testIOUMetaAndOwnership(features);
-        // testIOUConsequences(features);
-        // testIOUEscrowWithTickets(features);
-        // testIOURippleState(features);
-        // testIOUGateway(features);
+        testIOUTiming(features);
+        testIOUTags(features);
+        testIOU1571(features);
+        testIOUFails(features);
+        testIOULockup(features);
+        testIOUEscrowConditions(features);
+        testIOUMetaAndOwnership(features);
+        testIOUConsequences(features);
+        testIOUEscrowWithTickets(features);
+        testIOURippleState(features);
+        testIOUGateway(features);
         // testIOULockedRate(features);
-        // testIOUTLLimitAmount(features);
-        // testIOUTLRequireAuth(features);
+        testIOUTLLimitAmount(features);
+        testIOUTLRequireAuth(features);
         // testIOUTLFreeze(features);
-        // testIOUTLINSF(features);
-        // testIOUPrecisionLoss(features);
+        testIOUTLINSF(features);
+        testIOUPrecisionLoss(features);
     }
 
     void
