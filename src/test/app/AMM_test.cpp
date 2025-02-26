@@ -1635,6 +1635,7 @@ private:
             env.fund(XRP(30'000), gw, alice, bob);
             env.close();
             env(fset(gw, asfRequireAuth));
+            env.close();
             env(trust(alice, gw["USD"](30'000), 0));
             env(trust(gw, alice["USD"](0), tfSetfAuth));
             // Bob trusts Gateway to owe him USD...
@@ -3835,11 +3836,14 @@ private:
         {
             Env env(*this, features);
             fund(env, gw, {alice, bob, carol}, XRP(20'000), {USD(2'000)});
+            env.close();
             env(offer(bob, XRP(50), USD(150)), txflags(tfPassive));
+            env.close();
             AMM ammAlice(env, alice, XRP(1'000), USD(1'050));
             env(pay(alice, carol, USD(200)),
                 sendmax(XRP(200)),
                 txflags(tfPartialPayment));
+            env.close();
             BEAST_EXPECT(ammAlice.expectBalances(
                 XRP(1'050), USD(1'000), ammAlice.tokens()));
             BEAST_EXPECT(expectLine(env, carol, USD(2'200)));
