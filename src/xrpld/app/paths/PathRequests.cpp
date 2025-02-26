@@ -160,17 +160,17 @@ PathRequests::updateAll(std::shared_ptr<ReadView const> const& inLedger)
 
                 // Remove any dangling weak pointers or weak
                 // pointers that refer to this path request.
-                auto ret = std::ranges::remove_if(
-                               requests_,
-                               [&removed, &request](auto const& wl) {
-                                   auto r = wl.lock();
+                auto ret = std::remove_if(
+                    requests_.begin(),
+                    requests_.end(),
+                    [&removed, &request](auto const& wl) {
+                        auto r = wl.lock();
 
-                                   if (r && r != request)
-                                       return false;
-                                   ++removed;
-                                   return true;
-                               })
-                               .begin();
+                        if (r && r != request)
+                            return false;
+                        ++removed;
+                        return true;
+                    });
 
                 requests_.erase(ret, requests_.end());
             }
