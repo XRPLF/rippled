@@ -19,6 +19,7 @@
 
 #include <test/jtx.h>
 #include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/safe_cast.h>
 
 namespace ripple {
 namespace test {
@@ -70,13 +71,13 @@ class FeeVote_test : public beast::unit_test::suite
             auto setup = setup_FeeVote(config);
             BEAST_EXPECT(setup.reference_fee == defaultSetup.reference_fee);
             BEAST_EXPECT(
-                setup.account_reserve == static_cast<std::uint32_t>(-1234567));
+                setup.account_reserve == unsafe_cast<std::uint32_t>(-1234567));
             BEAST_EXPECT(
-                setup.owner_reserve == static_cast<std::uint32_t>(-1234));
+                setup.owner_reserve == unsafe_cast<std::uint32_t>(-1234));
         }
         {
             const auto big64 = std::to_string(
-                static_cast<std::uint64_t>(
+                unsafe_cast<std::uint64_t>(
                     std::numeric_limits<XRPAmount::value_type>::max()) +
                 1);
             Section config;

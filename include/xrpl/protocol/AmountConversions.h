@@ -20,6 +20,7 @@
 #ifndef RIPPLE_PROTOCOL_AMOUNTCONVERSION_H_INCLUDED
 #define RIPPLE_PROTOCOL_AMOUNTCONVERSION_H_INCLUDED
 
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -156,12 +157,12 @@ toMaxAmount(Issue const& issue)
     if constexpr (std::is_same_v<IOUAmount, T>)
         return IOUAmount(STAmount::cMaxValue, STAmount::cMaxOffset);
     else if constexpr (std::is_same_v<XRPAmount, T>)
-        return XRPAmount(static_cast<std::int64_t>(STAmount::cMaxNativeN));
+        return XRPAmount(unsafe_cast<std::int64_t>(STAmount::cMaxNativeN));
     else if constexpr (std::is_same_v<STAmount, T>)
     {
         if (isXRP(issue))
             return STAmount(
-                issue, static_cast<std::int64_t>(STAmount::cMaxNativeN));
+                issue, unsafe_cast<std::int64_t>(STAmount::cMaxNativeN));
         return STAmount(issue, STAmount::cMaxValue, STAmount::cMaxOffset);
     }
     else

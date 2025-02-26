@@ -21,6 +21,7 @@
 #define RIPPLED_COMPRESSIONALGORITHMS_H_INCLUDED
 
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/safe_cast.h>
 #include <algorithm>
 #include <cstdint>
 #include <lz4.h>
@@ -77,8 +78,8 @@ lz4Decompress(
     std::uint8_t* decompressed,
     std::size_t decompressedSizeUnchecked)
 {
-    int const inSize = static_cast<int>(inSizeUnchecked);
-    int const decompressedSize = static_cast<int>(decompressedSizeUnchecked);
+    int const inSize = unsafe_cast<int>(inSizeUnchecked);
+    int const decompressedSize = unsafe_cast<int>(decompressedSizeUnchecked);
 
     if (inSize <= 0)
         Throw<std::runtime_error>("lz4Decompress: integer overflow (input)");

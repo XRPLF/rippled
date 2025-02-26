@@ -19,6 +19,7 @@
 
 #include <test/jtx.h>
 #include <xrpld/rpc/detail/Handler.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/unit_test.h>
 #include <chrono>
 #include <iostream>
@@ -107,7 +108,7 @@ class Handler_test : public beast::unit_test::suite
             1'000'000,
             [&](std::size_t i) {
                 auto const d = RPC::getHandler(1, false, names[i]);
-                dummy = dummy + i + static_cast<int>(d->role_);
+                dummy = dummy + i + safe_cast<int>(d->role_);
             },
             [&]() -> std::size_t { return distr(prng); });
 

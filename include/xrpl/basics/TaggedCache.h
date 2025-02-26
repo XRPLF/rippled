@@ -23,6 +23,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/hardened_hash.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/clock/abstract_clock.h>
 #include <xrpl/beast/insight/Insight.h>
 #include <atomic>
@@ -111,7 +112,7 @@ public:
         {
             for (auto& partition : m_cache.map())
             {
-                partition.rehash(static_cast<std::size_t>(
+                partition.rehash(safe_cast<std::size_t>(
                     (s + (s >> 2)) /
                         (partition.max_load_factor() * m_cache.partitions()) +
                     1));
@@ -216,7 +217,7 @@ public:
             std::lock_guard lock(m_mutex);
 
             if (m_target_size == 0 ||
-                (static_cast<int>(m_cache.size()) <= m_target_size))
+                (unsafe_cast<int>(m_cache.size()) <= m_target_size))
             {
                 when_expire = now - m_target_age;
             }

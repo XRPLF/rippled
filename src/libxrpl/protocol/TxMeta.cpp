@@ -20,6 +20,7 @@
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/SField.h>
@@ -92,7 +93,7 @@ TxMeta::TxMeta(
 TxMeta::TxMeta(uint256 const& transactionID, std::uint32_t ledger)
     : mTransactionID(transactionID)
     , mLedger(ledger)
-    , mIndex(static_cast<std::uint32_t>(-1))
+    , mIndex(unsafe_cast<std::uint32_t>(-1))
     , mResult(255)
     , mNodes(sfAffectedNodes)
 {

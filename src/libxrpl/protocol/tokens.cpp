@@ -145,7 +145,7 @@ static constexpr std::array<int, 256> const alphabetReverse = []() {
     for (auto& m : map)
         m = -1;
     for (int i = 0, j = 0; alphabetForward[i] != 0; ++i)
-        map[static_cast<unsigned char>(alphabetForward[i])] = j++;
+        map[unsafe_cast<unsigned char>(alphabetForward[i])] = j++;
     return map;
 }();
 
@@ -353,7 +353,7 @@ decodeBase58Token(std::string const& s, TokenType type)
         return {};
 
     // The type must match.
-    if (type != safe_cast<TokenType>(static_cast<std::uint8_t>(ret[0])))
+    if (type != safe_cast<TokenType>(unsafe_cast<std::uint8_t>(ret[0])))
         return {};
 
     // And the checksum must as well.
@@ -654,7 +654,7 @@ encodeBase58Token(
         return Unexpected(TokenCodecErrc::inputTooSmall);
     }
     // <type (1 byte)><token (input len)><checksum (4 bytes)>
-    buf[0] = static_cast<std::uint8_t>(token_type);
+    buf[0] = safe_cast<std::uint8_t>(token_type);
     // buf[1..=input.len()] = input;
     memcpy(&buf[1], input.data(), input.size());
     size_t const checksum_i = input.size() + 1;
@@ -688,7 +688,7 @@ decodeBase58Token(
         return Unexpected(TokenCodecErrc::inputTooSmall);
 
     // The type must match.
-    if (type != static_cast<TokenType>(static_cast<std::uint8_t>(ret[0])))
+    if (type != safe_cast<TokenType>(safe_cast<std::uint8_t>(ret[0])))
         return Unexpected(TokenCodecErrc::mismatchedTokenType);
 
     // And the checksum must as well.

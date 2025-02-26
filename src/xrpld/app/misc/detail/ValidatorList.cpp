@@ -25,6 +25,7 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base64.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/STValidation.h>
@@ -1619,7 +1620,7 @@ ValidatorList::getJson() const
     {
         auto& x = (res[jss::validator_list] = Json::objectValue);
 
-        x[jss::count] = static_cast<Json::UInt>(count(read_lock));
+        x[jss::count] = unsafe_cast<Json::UInt>(count(read_lock));
 
         if (auto when = expires(read_lock))
         {
@@ -1645,7 +1646,7 @@ ValidatorList::getJson() const
         }
 
         x[jss::validator_list_threshold] =
-            static_cast<Json::UInt>(listThreshold_);
+            unsafe_cast<Json::UInt>(listThreshold_);
     }
 
     // Validator keys listed in the local config file
@@ -1671,7 +1672,7 @@ ValidatorList::getJson() const
             if (publisherList.validUntil != TimeKeeper::time_point{})
             {
                 target[jss::seq] =
-                    static_cast<Json::UInt>(publisherList.sequence);
+                    unsafe_cast<Json::UInt>(publisherList.sequence);
                 target[jss::expiration] = to_string(publisherList.validUntil);
             }
             if (publisherList.validFrom != TimeKeeper::time_point{})

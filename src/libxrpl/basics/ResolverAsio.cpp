@@ -20,6 +20,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Resolver.h>
 #include <xrpl/basics/ResolverAsio.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -336,7 +337,7 @@ public:
 
         // Attempt to find the first and last valid port separators
         auto const find_port_separator = [](char const c) -> bool {
-            if (std::isspace(static_cast<unsigned char>(c)))
+            if (std::isspace(unsafe_cast<unsigned char>(c)))
                 return true;
 
             if (c == ':')

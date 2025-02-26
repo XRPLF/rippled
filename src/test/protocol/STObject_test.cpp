@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <test/jtx.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/to_string.h>
@@ -135,7 +136,7 @@ public:
             {
                 // Integer values are always parsed as int,
                 // unless they're too big. We want a small uint.
-                jv["CloseResolution"] = static_cast<Json::UInt>(19);
+                jv["CloseResolution"] = unsafe_cast<Json::UInt>(19);
                 STParsedJSONObject parsed("test", jv);
                 if (BEAST_EXPECT(parsed.object))
                 {

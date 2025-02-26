@@ -19,6 +19,7 @@
 
 #include <xrpld/shamap/SHAMap.h>
 #include <xrpld/shamap/SHAMapNodeID.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Serializer.h>
@@ -128,7 +129,7 @@ deserializeSHAMapNodeID(void const* data, std::size_t size)
 selectBranch(SHAMapNodeID const& id, uint256 const& hash)
 {
     auto const depth = id.getDepth();
-    auto branch = static_cast<unsigned int>(*(hash.begin() + (depth / 2)));
+    auto branch = safe_cast<unsigned int>(*(hash.begin() + (depth / 2)));
 
     if (depth & 1)
         branch &= 0xf;

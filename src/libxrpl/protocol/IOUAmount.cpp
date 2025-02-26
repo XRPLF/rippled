@@ -20,6 +20,7 @@
 #include <xrpl/basics/LocalValue.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <boost/multiprecision/cpp_int.hpp>
@@ -229,7 +230,7 @@ mulRatio(
         // Find the index of the first element >= the requested element, the
         // index is the log of the element in the log table.
         auto const l = std::ranges::lower_bound(powerTable, v);
-        return static_cast<int>(std::distance(powerTable.begin(), l));
+        return unsafe_cast<int>(std::distance(powerTable.begin(), l));
     };
 
     static auto const fl64 =

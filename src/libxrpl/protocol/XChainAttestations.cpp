@@ -20,6 +20,7 @@
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -111,7 +112,7 @@ AttestationBase::AttestationBase(STObject const& o)
     , sendingAccount{o[sfAccount]}
     , sendingAmount{o[sfAmount]}
     , rewardAccount{o[sfAttestationRewardAccount]}
-    , wasLockingChainSend{static_cast<bool>(o[sfWasLockingChainSend])}
+    , wasLockingChainSend{safe_cast<bool>(o[sfWasLockingChainSend])}
 {
 }
 

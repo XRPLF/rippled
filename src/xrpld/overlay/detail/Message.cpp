@@ -19,6 +19,7 @@
 
 #include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/detail/TrafficCount.h>
+#include <xrpl/basics/safe_cast.h>
 #include <cstdint>
 
 namespace ripple {
@@ -180,17 +181,17 @@ Message::setHeader(
     auto h = in;
 
     auto pack = [](std::uint8_t*& in, std::uint32_t size) {
-        *in++ = static_cast<std::uint8_t>(
+        *in++ = unsafe_cast<std::uint8_t>(
             (size >> 24) & 0x0F);  // leftmost 4 are compression bits
-        *in++ = static_cast<std::uint8_t>((size >> 16) & 0xFF);
-        *in++ = static_cast<std::uint8_t>((size >> 8) & 0xFF);
-        *in++ = static_cast<std::uint8_t>(size & 0xFF);
+        *in++ = unsafe_cast<std::uint8_t>((size >> 16) & 0xFF);
+        *in++ = unsafe_cast<std::uint8_t>((size >> 8) & 0xFF);
+        *in++ = unsafe_cast<std::uint8_t>(size & 0xFF);
     };
 
     pack(in, payloadBytes);
 
-    *in++ = static_cast<std::uint8_t>((type >> 8) & 0xFF);
-    *in++ = static_cast<std::uint8_t>(type & 0xFF);
+    *in++ = unsafe_cast<std::uint8_t>((type >> 8) & 0xFF);
+    *in++ = unsafe_cast<std::uint8_t>(type & 0xFF);
 
     if (compression != Algorithm::None)
     {
@@ -222,7 +223,7 @@ Message::getBuffer(Compressed tryCompressed)
 int
 Message::getType(std::uint8_t const* in) const
 {
-    int type = (static_cast<int>(*(in + 4)) << 8) + *(in + 5);
+    int type = (safe_cast<int>(*(in + 4)) << 8) + *(in + 5);
     return type;
 }
 

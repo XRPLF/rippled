@@ -16,6 +16,7 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
+
 #include <test/jtx.h>
 #include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
@@ -25,6 +26,7 @@
 #include <xrpld/app/misc/AMMUtils.h>
 #include <xrpld/app/tx/detail/AMMBid.h>
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
 #include <boost/regex.hpp>
@@ -6367,33 +6369,33 @@ private:
                      .sendMaxUsdBIT{usdBIT(50)},             //
                      .sendUsdGH{
                          usdGH,
-                         static_cast<uint64_t>(272'455089820359),
+                         unsafe_cast<uint64_t>(272'455089820359),
                          -12},                   //
                      .failUsdGH = STAmount{0},   //
                      .failUsdGHr = STAmount{0},  //
                      .failUsdBIT{
                          usdBIT,
-                         static_cast<uint64_t>(46'47826086956522),
+                         unsafe_cast<uint64_t>(46'47826086956522),
                          -14},  //
                      .failUsdBITr{
                          usdBIT,
-                         static_cast<uint64_t>(46'47826086956521),
+                         unsafe_cast<uint64_t>(46'47826086956521),
                          -14},  //
                      .goodUsdGH{
                          usdGH,
-                         static_cast<uint64_t>(96'7543114220382),
+                         unsafe_cast<uint64_t>(96'7543114220382),
                          -13},  //
                      .goodUsdGHr{
                          usdGH,
-                         static_cast<uint64_t>(96'7543114222965),
+                         unsafe_cast<uint64_t>(96'7543114222965),
                          -13},  //
                      .goodUsdBIT{
                          usdBIT,
-                         static_cast<uint64_t>(8'464739069120721),
+                         unsafe_cast<uint64_t>(8'464739069120721),
                          -15},  //
                      .goodUsdBITr{
                          usdBIT,
-                         static_cast<uint64_t>(8'464739069098152),
+                         unsafe_cast<uint64_t>(8'464739069098152),
                          -15},                                    //
                      .lpTokenBalance = {28'61817604250837, -14},  //
                      .offer1BtcGH = 0.1,                          //
@@ -6414,11 +6416,11 @@ private:
                      .failUsdBITr{usdBIT, static_cast<uint64_t>(1'111), -3},  //
                      .goodUsdGH{
                          usdGH,
-                         static_cast<uint64_t>(90'04347888284115),
+                         unsafe_cast<uint64_t>(90'04347888284115),
                          -14},  //
                      .goodUsdGHr{
                          usdGH,
-                         static_cast<uint64_t>(90'04347888284201),
+                         unsafe_cast<uint64_t>(90'04347888284201),
                          -14},                                                //
                      .goodUsdBIT{usdBIT, static_cast<uint64_t>(1'111), -3},   //
                      .goodUsdBITr{usdBIT, static_cast<uint64_t>(1'111), -3},  //
@@ -6441,11 +6443,11 @@ private:
                      .failUsdBITr{usdBIT, static_cast<uint64_t>(2), 0},  //
                      .goodUsdGH{
                          usdGH,
-                         static_cast<uint64_t>(52'94379354424079),
+                         unsafe_cast<uint64_t>(52'94379354424079),
                          -14},  //
                      .goodUsdGHr{
                          usdGH,
-                         static_cast<uint64_t>(52'94379354424135),
+                         unsafe_cast<uint64_t>(52'94379354424135),
                          -14},                                           //
                      .goodUsdBIT{usdBIT, static_cast<uint64_t>(2), 0},   //
                      .goodUsdBITr{usdBIT, static_cast<uint64_t>(2), 0},  //
@@ -6469,19 +6471,19 @@ private:
                          usdBIT, static_cast<uint64_t>(5'6432), -4},  //
                      .goodUsdGH{
                          usdGH,
-                         static_cast<uint64_t>(35'44113971506987),
+                         unsafe_cast<uint64_t>(35'44113971506987),
                          -14},  //
                      .goodUsdGHr{
                          usdGH,
-                         static_cast<uint64_t>(35'44113971506987),
+                         unsafe_cast<uint64_t>(35'44113971506987),
                          -14},  //
                      .goodUsdBIT{
                          usdBIT,
-                         static_cast<uint64_t>(2'821579689703915),
+                         unsafe_cast<uint64_t>(2'821579689703915),
                          -15},  //
                      .goodUsdBITr{
                          usdBIT,
-                         static_cast<uint64_t>(2'821579689703954),
+                         unsafe_cast<uint64_t>(2'821579689703954),
                          -15},                //
                      .lpTokenBalance{10, 0},  //
                      .offer1BtcGH = 1e-5,     //
@@ -6502,19 +6504,19 @@ private:
                      .failUsdBITr{usdBIT, static_cast<uint64_t>(11), 0},  //
                      .goodUsdGH{
                          usdGH,
-                         static_cast<uint64_t>(35'44113971506987),
+                         unsafe_cast<uint64_t>(35'44113971506987),
                          -14},  //
                      .goodUsdGHr{
                          usdGH,
-                         static_cast<uint64_t>(35'44113971506987),
+                         unsafe_cast<uint64_t>(35'44113971506987),
                          -14},  //
                      .goodUsdBIT{
                          usdBIT,
-                         static_cast<uint64_t>(2'821579689703915),
+                         unsafe_cast<uint64_t>(2'821579689703915),
                          -15},  //
                      .goodUsdBITr{
                          usdBIT,
-                         static_cast<uint64_t>(2'821579689703954),
+                         unsafe_cast<uint64_t>(2'821579689703954),
                          -15},                //
                      .lpTokenBalance{10, 0},  //
                      .offer1BtcGH = 1e-5,     //
@@ -6535,16 +6537,16 @@ private:
                      .failUsdBITr{usdBIT, static_cast<uint64_t>(55'55), -2},  //
                      .goodUsdGH{
                          usdGH,
-                         static_cast<uint64_t>(90'04347888284113),
+                         unsafe_cast<uint64_t>(90'04347888284113),
                          -14},  //
                      .goodUsdGHr{
                          usdGH,
-                         static_cast<uint64_t>(90'0434788828413),
+                         unsafe_cast<uint64_t>(90'0434788828413),
                          -13},                                                //
                      .goodUsdBIT{usdBIT, static_cast<uint64_t>(55'55), -2},   //
                      .goodUsdBITr{usdBIT, static_cast<uint64_t>(55'55), -2},  //
                      .lpTokenBalance{
-                         static_cast<uint64_t>(70'71067811865475), -14},  //
+                         unsafe_cast<uint64_t>(70'71067811865475), -14},  //
                      .offer1BtcGH = 1e-5,                                 //
                      .offer2BtcGH = 1,                                    //
                      .offer2UsdGH = 1e-5,                                 //
@@ -6559,26 +6561,26 @@ private:
                      .sendUsdGH{usdGH, 100},                        //
                      .failUsdGH{
                          usdGH,
-                         static_cast<uint64_t>(52'94379354424081),
+                         unsafe_cast<uint64_t>(52'94379354424081),
                          -14},  //
                      .failUsdGHr{
                          usdGH,
-                         static_cast<uint64_t>(52'94379354424092),
+                         unsafe_cast<uint64_t>(52'94379354424092),
                          -14},                                             //
                      .failUsdBIT{usdBIT, static_cast<uint64_t>(100), 0},   //
                      .failUsdBITr{usdBIT, static_cast<uint64_t>(100), 0},  //
                      .goodUsdGH{
                          usdGH,
-                         static_cast<uint64_t>(52'94379354424081),
+                         unsafe_cast<uint64_t>(52'94379354424081),
                          -14},  //
                      .goodUsdGHr{
                          usdGH,
-                         static_cast<uint64_t>(52'94379354424092),
+                         unsafe_cast<uint64_t>(52'94379354424092),
                          -14},                                             //
                      .goodUsdBIT{usdBIT, static_cast<uint64_t>(100), 0},   //
                      .goodUsdBITr{usdBIT, static_cast<uint64_t>(100), 0},  //
                      .lpTokenBalance{
-                         static_cast<uint64_t>(70'71067811865475), -14},  //
+                         unsafe_cast<uint64_t>(70'71067811865475), -14},  //
                      .offer1BtcGH = 1e-5,                                 //
                      .offer2BtcGH = 1,                                    //
                      .offer2UsdGH = 1e-5,                                 //
@@ -6598,19 +6600,19 @@ private:
                          usdBIT, static_cast<uint64_t>(282'16), -2},  //
                      .goodUsdGH{
                          usdGH,
-                         static_cast<uint64_t>(35'44113971506987),
+                         unsafe_cast<uint64_t>(35'44113971506987),
                          -14},  //
                      .goodUsdGHr{
                          usdGH,
-                         static_cast<uint64_t>(35'44113971506987),
+                         unsafe_cast<uint64_t>(35'44113971506987),
                          -14},  //
                      .goodUsdBIT{
                          usdBIT,
-                         static_cast<uint64_t>(141'0789844851958),
+                         unsafe_cast<uint64_t>(141'0789844851958),
                          -13},  //
                      .goodUsdBITr{
                          usdBIT,
-                         static_cast<uint64_t>(141'0789844851962),
+                         unsafe_cast<uint64_t>(141'0789844851962),
                          -13},                                 //
                      .lpTokenBalance{70'71067811865475, -14},  //
                      .offer1BtcGH = 1e-5,                      //
@@ -6631,19 +6633,19 @@ private:
                      .failUsdBITr{usdBIT, static_cast<uint64_t>(550), 0},  //
                      .goodUsdGH{
                          usdGH,
-                         static_cast<uint64_t>(35'44113971506987),
+                         unsafe_cast<uint64_t>(35'44113971506987),
                          -14},  //
                      .goodUsdGHr{
                          usdGH,
-                         static_cast<uint64_t>(35'44113971506987),
+                         unsafe_cast<uint64_t>(35'44113971506987),
                          -14},  //
                      .goodUsdBIT{
                          usdBIT,
-                         static_cast<uint64_t>(141'0789844851958),
+                         unsafe_cast<uint64_t>(141'0789844851958),
                          -13},  //
                      .goodUsdBITr{
                          usdBIT,
-                         static_cast<uint64_t>(141'0789844851962),
+                         unsafe_cast<uint64_t>(141'0789844851962),
                          -13},                                 //
                      .lpTokenBalance{70'71067811865475, -14},  //
                      .offer1BtcGH = 1e-5,                      //
@@ -6732,9 +6734,9 @@ private:
 
                     // Include a tiny tolerance for the test cases using
                     //   .goodUsdGH{usdGH,
-                    //   static_cast<uint64_t>(35'44113971506987), -14},
+                    //   unsafe_cast<uint64_t>(35'44113971506987), -14},
                     //   .goodUsdBIT{usdBIT,
-                    //   static_cast<uint64_t>(2'821579689703915), -15},
+                    //   unsafe_cast<uint64_t>(2'821579689703915), -15},
                     // These two values multiply
                     // to 99.99999999999994227040383754105 which gets
                     // internally rounded to 100, due to representation

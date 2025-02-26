@@ -20,6 +20,7 @@
 #include <xrpld/core/JobQueue.h>
 #include <xrpld/perflog/PerfLog.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/safe_cast.h>
 #include <mutex>
 
 namespace ripple {
@@ -248,13 +249,13 @@ JobQueue::getJson(int c)
                 pri["waiting"] = waiting;
 
             if (stats.count != 0)
-                pri["per_second"] = static_cast<int>(stats.count);
+                pri["per_second"] = unsafe_cast<int>(stats.count);
 
             if (stats.latencyPeak != 0ms)
-                pri["peak_time"] = static_cast<int>(stats.latencyPeak.count());
+                pri["peak_time"] = unsafe_cast<int>(stats.latencyPeak.count());
 
             if (stats.latencyAvg != 0ms)
-                pri["avg_time"] = static_cast<int>(stats.latencyAvg.count());
+                pri["avg_time"] = unsafe_cast<int>(stats.latencyAvg.count());
 
             if (running != 0)
                 pri["in_progress"] = running;

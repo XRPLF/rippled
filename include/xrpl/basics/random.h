@@ -20,6 +20,7 @@
 #ifndef RIPPLE_BASICS_RANDOM_H_INCLUDED
 #define RIPPLE_BASICS_RANDOM_H_INCLUDED
 
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/beast/xor_shift_engine.h>
 #include <cstddef>
@@ -171,7 +172,7 @@ std::enable_if_t<
     Byte>
 rand_byte(Engine& engine)
 {
-    return static_cast<Byte>(rand_int<Engine, std::uint32_t>(
+    return unsafe_cast<Byte>(rand_int<Engine, std::uint32_t>(
         engine,
         std::numeric_limits<Byte>::min(),
         std::numeric_limits<Byte>::max()));

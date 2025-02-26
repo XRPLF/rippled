@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/app/rdb/Wallet.h>
+#include <xrpl/basics/safe_cast.h>
 #include <boost/format.hpp>
 
 namespace ripple {
@@ -234,7 +235,7 @@ createFeatureVotes(soci::session& session)
     // SOCI requires boost::optional (not std::optional) as the parameter.
     boost::optional<int> featureVotesCount;
     session << sql, soci::into(featureVotesCount);
-    bool exists = static_cast<bool>(*featureVotesCount);
+    bool exists = unsafe_cast<bool>(*featureVotesCount);
 
     // Create FeatureVotes table in WalletDB if it doesn't exist
     if (!exists)

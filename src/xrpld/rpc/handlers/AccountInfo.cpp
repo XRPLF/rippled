@@ -23,6 +23,7 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/GRPCHandlers.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
@@ -189,7 +190,7 @@ doAccountInfo(RPC::JsonContext& context)
             if (!txs.empty())
             {
                 jvQueueData[jss::txn_count] =
-                    static_cast<Json::UInt>(txs.size());
+                    unsafe_cast<Json::UInt>(txs.size());
 
                 auto& jvQueueTx = jvQueueData[jss::transactions];
                 jvQueueTx = Json::arrayValue;

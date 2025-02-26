@@ -24,6 +24,7 @@
 #include <xrpld/overlay/Squelch.h>
 #include <xrpld/overlay/detail/Handshake.h>
 #include <xrpl/basics/random.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/messages.h>
@@ -886,11 +887,11 @@ protected:
     {
         auto peers = network_.overlay().getPeers(network_.validator(validator));
         std::cout << msg << " " << "num peers "
-                  << static_cast<int>(network_.overlay().getNumPeers())
+                  << safe_cast<int>(network_.overlay().getNumPeers())
                   << std::endl;
         for (auto& [k, v] : peers)
             std::cout << k << ":"
-                      << static_cast<int>(std::get<reduce_relay::PeerState>(v))
+                      << safe_cast<int>(std::get<reduce_relay::PeerState>(v))
                       << " ";
         std::cout << std::endl;
     }
@@ -1006,10 +1007,10 @@ protected:
                             network_.isSelected(link.peerId());
                 };
                 auto r = rand_int(0, 1000);
-                if (r == static_cast<int>(EventType::LinkDown) ||
-                    r == static_cast<int>(EventType::PeerDisconnected))
+                if (r == unsafe_cast<int>(EventType::LinkDown) ||
+                    r == unsafe_cast<int>(EventType::PeerDisconnected))
                 {
-                    update(static_cast<EventType>(r));
+                    update(unsafe_cast<EventType>(r));
                 }
             }
 

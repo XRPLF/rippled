@@ -57,7 +57,7 @@ STLedgerEntry::STLedgerEntry(Keylet const& k)
 
     set(format->getSOTemplate());
 
-    setFieldU16(sfLedgerEntryType, static_cast<std::uint16_t>(type_));
+    setFieldU16(sfLedgerEntryType, safe_cast<std::uint16_t>(type_));
 }
 
 STLedgerEntry::STLedgerEntry(SerialIter& sit, uint256 const& index)

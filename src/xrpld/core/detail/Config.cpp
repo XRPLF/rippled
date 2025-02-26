@@ -24,6 +24,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/protocol/Feature.h>
@@ -49,7 +50,7 @@ namespace detail {
 getMemorySize()
 {
     if (MEMORYSTATUSEX msx{sizeof(MEMORYSTATUSEX)}; GlobalMemoryStatusEx(&msx))
-        return static_cast<std::uint64_t>(msx.ullTotalPhys);
+        return safe_cast<std::uint64_t>(msx.ullTotalPhys);
 
     return 0;
 }
@@ -68,7 +69,7 @@ namespace detail {
 getMemorySize()
 {
     if (struct sysinfo si; sysinfo(&si) == 0)
-        return static_cast<std::uint64_t>(si.totalram) * si.mem_unit;
+        return safe_cast<std::uint64_t>(si.totalram) * si.mem_unit;
 
     return 0;
 }
@@ -93,7 +94,7 @@ getMemorySize()
     size_t size = sizeof(ram);
 
     if (sysctl(mib, 2, &ram, &size, NULL, 0) == 0)
-        return static_cast<std::uint64_t>(ram);
+        return unsafe_cast<std::uint64_t>(ram);
 
     return 0;
 }
@@ -137,7 +138,7 @@ static_assert(
 
         for (auto const& i : sizedItems)
         {
-            if (static_cast<std::underlying_type_t<SizedItem>>(i.first) != idx)
+            if (safe_cast<std::underlying_type_t<SizedItem>>(i.first) != idx)
                 return false;
 
             ++idx;
@@ -278,7 +279,7 @@ Config::setupControl(bool bQuiet, bool bSilent, bool bStandalone)
     {
         // First, check against 'minimum' RAM requirements per node size:
         auto const& threshold =
-            sizedItems[static_cast<std::underlying_type_t<SizedItem>>(
+            sizedItems[safe_cast<std::underlying_type_t<SizedItem>>(
                 SizedItem::ramSizeGB)];
 
         auto ns =
@@ -1074,7 +1075,7 @@ Config::getDebugLogFile() const
 int
 Config::getValueFor(SizedItem item, std::optional<std::size_t> node) const
 {
-    auto const index = static_cast<std::underlying_type_t<SizedItem>>(item);
+    auto const index = safe_cast<std::underlying_type_t<SizedItem>>(item);
     XRPL_ASSERT(
         index < sizedItems.size(),
         "ripple::Config::getValueFor : valid index input");

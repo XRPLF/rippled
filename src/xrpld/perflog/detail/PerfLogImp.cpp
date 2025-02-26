@@ -20,6 +20,7 @@
 #include <xrpld/core/JobTypes.h>
 #include <xrpld/perflog/detail/PerfLogImp.h>
 #include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_writer.h>
@@ -294,7 +295,7 @@ PerfLogImp::report()
     {
         std::lock_guard lock{counters_.jobsMutex_};
         report[jss::workers] =
-            static_cast<unsigned int>(counters_.jobs_.size());
+            unsafe_cast<unsigned int>(counters_.jobs_.size());
     }
     report[jss::hostid] = hostname_;
     report[jss::counters] = counters_.countersJson();

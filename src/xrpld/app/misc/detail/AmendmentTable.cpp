@@ -318,13 +318,13 @@ private:
         threshold_ = !rules_.enabled(fixAmendmentMajorityCalc)
             ? std::max(
                   1L,
-                  static_cast<long>(
+                  safe_cast<long>(
                       (trustedValidations_ *
                        preFixAmendmentMajorityCalcThreshold.num) /
                       preFixAmendmentMajorityCalcThreshold.den))
             : std::max(
                   1L,
-                  static_cast<long>(
+                  safe_cast<long>(
                       (trustedValidations_ *
                        postFixAmendmentMajorityCalcThreshold.num) /
                       postFixAmendmentMajorityCalcThreshold.den));

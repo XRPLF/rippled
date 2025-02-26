@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/nodestore/detail/BatchWriter.h>
+#include <xrpl/basics/safe_cast.h>
 
 namespace ripple {
 namespace NodeStore {
@@ -61,7 +62,7 @@ BatchWriter::getWriteLoad()
 {
     std::lock_guard sl(mWriteMutex);
 
-    return std::max(mWriteLoad, static_cast<int>(mWriteSet.size()));
+    return std::max(mWriteLoad, unsafe_cast<int>(mWriteSet.size()));
 }
 
 void

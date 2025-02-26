@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
 #include <algorithm>
@@ -43,28 +44,28 @@ codePointToUTF8(unsigned int cp)
     if (cp <= 0x7f)
     {
         result.resize(1);
-        result[0] = static_cast<char>(cp);
+        result[0] = ripple::unsafe_cast<char>(cp);
     }
     else if (cp <= 0x7FF)
     {
         result.resize(2);
-        result[1] = static_cast<char>(0x80 | (0x3f & cp));
-        result[0] = static_cast<char>(0xC0 | (0x1f & (cp >> 6)));
+        result[1] = ripple::unsafe_cast<char>(0x80 | (0x3f & cp));
+        result[0] = ripple::unsafe_cast<char>(0xC0 | (0x1f & (cp >> 6)));
     }
     else if (cp <= 0xFFFF)
     {
         result.resize(3);
-        result[2] = static_cast<char>(0x80 | (0x3f & cp));
-        result[1] = 0x80 | static_cast<char>((0x3f & (cp >> 6)));
-        result[0] = 0xE0 | static_cast<char>((0xf & (cp >> 12)));
+        result[2] = ripple::unsafe_cast<char>(0x80 | (0x3f & cp));
+        result[1] = 0x80 | ripple::unsafe_cast<char>((0x3f & (cp >> 6)));
+        result[0] = 0xE0 | ripple::unsafe_cast<char>((0xf & (cp >> 12)));
     }
     else if (cp <= 0x10FFFF)
     {
         result.resize(4);
-        result[3] = static_cast<char>(0x80 | (0x3f & cp));
-        result[2] = static_cast<char>(0x80 | (0x3f & (cp >> 6)));
-        result[1] = static_cast<char>(0x80 | (0x3f & (cp >> 12)));
-        result[0] = static_cast<char>(0xF0 | (0x7 & (cp >> 18)));
+        result[3] = ripple::unsafe_cast<char>(0x80 | (0x3f & cp));
+        result[2] = ripple::unsafe_cast<char>(0x80 | (0x3f & (cp >> 6)));
+        result[1] = ripple::unsafe_cast<char>(0x80 | (0x3f & (cp >> 12)));
+        result[0] = ripple::unsafe_cast<char>(0xF0 | (0x7 & (cp >> 18)));
     }
 
     return result;
@@ -93,7 +94,7 @@ Reader::parse(std::istream& sin, Value& root)
     // Since std::string is reference-counted, this at least does not
     // create an extra copy.
     std::string doc;
-    std::getline(sin, doc, static_cast<char>(EOF));
+    std::getline(sin, doc, ripple::unsafe_cast<char>(EOF));
     return parse(doc, root);
 }
 
@@ -377,7 +378,7 @@ Reader::readNumber()
 
         while (current_ != end_)
         {
-            if (!std::isdigit(static_cast<unsigned char>(*current_)))
+            if (!std::isdigit(ripple::unsafe_cast<unsigned char>(*current_)))
             {
                 auto ret = std::ranges::find(extended_tokens, *current_);
 
@@ -599,7 +600,7 @@ Reader::decodeNumber(Token& token)
                 token);
         }
 
-        currentValue() = static_cast<Value::Int>(value);
+        currentValue() = ripple::unsafe_cast<Value::Int>(value);
     }
     else
     {
@@ -613,9 +614,9 @@ Reader::decodeNumber(Token& token)
 
         // If it's representable as a signed integer, construct it as one.
         if (value <= Value::maxInt)
-            currentValue() = static_cast<Value::Int>(value);
+            currentValue() = ripple::unsafe_cast<Value::Int>(value);
         else
-            currentValue() = static_cast<Value::UInt>(value);
+            currentValue() = ripple::unsafe_cast<Value::UInt>(value);
     }
 
     return true;
@@ -627,7 +628,7 @@ Reader::decodeDouble(Token& token)
     double value = 0;
     const int bufferSize = 32;
     int count;
-    int length = static_cast<int>(token.end_ - token.start_);
+    int length = ripple::unsafe_cast<int>(token.end_ - token.start_);
     // Sanity check to avoid buffer overflow exploits.
     if (length < 0)
     {
@@ -844,7 +845,7 @@ Reader::addError(std::string const& message, Token& token, Location extra)
 bool
 Reader::recoverFromError(TokenType skipUntilToken)
 {
-    int errorCount = static_cast<int>(errors_.size());
+    int errorCount = ripple::unsafe_cast<int>(errors_.size());
     Token skip;
 
     while (true)
@@ -913,7 +914,7 @@ Reader::getLocationLineAndColumn(Location location, int& line, int& column)
     }
 
     // column & line start at 1
-    column = static_cast<int>(location - lastLineStart) + 1;
+    column = ripple::unsafe_cast<int>(location - lastLineStart) + 1;
     ++line;
 }
 

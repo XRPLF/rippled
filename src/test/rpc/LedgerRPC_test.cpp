@@ -23,6 +23,7 @@
 #include <test/jtx/multisign.h>
 #include <test/jtx/xchain_bridge.h>
 #include <xrpld/app/misc/TxQ.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
@@ -275,12 +276,12 @@ class LedgerRPC_XChain_test : public beast::unit_test::suite,
             auto attest = r[sfXChainCreateAccountAttestations.jsonName];
             BEAST_EXPECT(attest.isArray());
             BEAST_EXPECT(attest.size() == 3);
-            BEAST_EXPECT(attest[static_cast<Json::Value::UInt>(0)].isMember(
+            BEAST_EXPECT(attest[unsafe_cast<Json::Value::UInt>(0)].isMember(
                 sfXChainCreateAccountProofSig.jsonName));
             Json::Value a[num_attest];
             for (size_t i = 0; i < num_attest; ++i)
             {
-                a[i] = attest[static_cast<Json::Value::UInt>(0)]
+                a[i] = attest[unsafe_cast<Json::Value::UInt>(0)]
                              [sfXChainCreateAccountProofSig.jsonName];
                 BEAST_EXPECT(
                     a[i].isMember(jss::Amount) &&

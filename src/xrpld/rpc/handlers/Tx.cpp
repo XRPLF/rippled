@@ -30,6 +30,7 @@
 #include <xrpld/rpc/MPTokenIssuanceID.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpl/basics/ToString.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/NFTSyntheticSerializer.h>
 #include <xrpl/protocol/RPCErr.h>
@@ -174,8 +175,8 @@ doTxHelp(RPC::Context& context, TxArgs args)
         if (txnIdx <= 0xFFFFU && netID < 0xFFFFU && lgrSeq < 0x0FFF'FFFFUL)
             result.ctid = RPC::encodeCTID(
                 lgrSeq,
-                static_cast<uint16_t>(txnIdx),
-                static_cast<uint16_t>(netID));
+                unsafe_cast<uint16_t>(txnIdx),
+                unsafe_cast<uint16_t>(netID));
     }
 
     return {result, rpcSUCCESS};

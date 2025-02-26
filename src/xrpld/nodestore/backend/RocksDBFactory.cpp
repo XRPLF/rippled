@@ -315,7 +315,7 @@ public:
             }
             else
             {
-                status = static_cast<Status>(
+                status = unsafe_cast<Status>(
                     customCode + unsafe_cast<int>(getStatus.code()));
 
                 JLOG(m_journal.error()) << getStatus.ToString();

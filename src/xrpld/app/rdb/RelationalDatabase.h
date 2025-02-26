@@ -26,6 +26,7 @@
 #include <xrpld/core/Config.h>
 #include <xrpld/core/DatabaseCon.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <boost/filesystem.hpp>
 #include <boost/variant.hpp>
@@ -241,7 +242,7 @@ rangeCheckedCast(C c)
             << " max: " << std::numeric_limits<T>::max();
     }
 
-    return static_cast<T>(c);
+    return unsafe_cast<T>(c);
 }
 
 }  // namespace ripple

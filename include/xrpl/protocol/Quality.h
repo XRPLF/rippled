@@ -20,6 +20,7 @@
 #ifndef RIPPLE_PROTOCOL_QUALITY_H_INCLUDED
 #define RIPPLE_PROTOCOL_QUALITY_H_INCLUDED
 
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/STAmount.h>
@@ -310,7 +311,7 @@ public:
             return rate & ~(255ull << (64 - 8));
         };
         auto exponent = [](std::uint64_t rate) {
-            return static_cast<int>(rate >> (64 - 8)) - 100;
+            return unsafe_cast<int>(rate >> (64 - 8)) - 100;
         };
 
         auto const minVMantissa = mantissa(minV);

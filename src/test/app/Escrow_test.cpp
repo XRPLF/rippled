@@ -20,6 +20,7 @@
 #include <test/jtx.h>
 #include <xrpld/app/tx/applySteps.h>
 #include <xrpld/ledger/Dir.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -1154,7 +1155,7 @@ struct Escrow_test : public beast::unit_test::suite
                 cancel_time(env.now() + 500s));
             BEAST_EXPECT(
                 (*env.meta())[sfTransactionResult] ==
-                static_cast<std::uint8_t>(tesSUCCESS));
+                unsafe_cast<std::uint8_t>(tesSUCCESS));
             env.close(5s);
             auto const aa = env.le(keylet::escrow(alice.id(), aseq));
             BEAST_EXPECT(aa);
@@ -1171,7 +1172,7 @@ struct Escrow_test : public beast::unit_test::suite
                 cancel_time(env.now() + 2s));
             BEAST_EXPECT(
                 (*env.meta())[sfTransactionResult] ==
-                static_cast<std::uint8_t>(tesSUCCESS));
+                unsafe_cast<std::uint8_t>(tesSUCCESS));
             env.close(5s);
             auto const bb = env.le(keylet::escrow(bruce.id(), bseq));
             BEAST_EXPECT(bb);
@@ -1189,7 +1190,7 @@ struct Escrow_test : public beast::unit_test::suite
                 BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), aseq)));
                 BEAST_EXPECT(
                     (*env.meta())[sfTransactionResult] ==
-                    static_cast<std::uint8_t>(tesSUCCESS));
+                    unsafe_cast<std::uint8_t>(tesSUCCESS));
 
                 ripple::Dir aod(*env.current(), keylet::ownerDir(alice.id()));
                 BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 0);
@@ -1208,7 +1209,7 @@ struct Escrow_test : public beast::unit_test::suite
                 BEAST_EXPECT(!env.le(keylet::escrow(bruce.id(), bseq)));
                 BEAST_EXPECT(
                     (*env.meta())[sfTransactionResult] ==
-                    static_cast<std::uint8_t>(tesSUCCESS));
+                    unsafe_cast<std::uint8_t>(tesSUCCESS));
 
                 ripple::Dir bod(*env.current(), keylet::ownerDir(bruce.id()));
                 BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 0);
@@ -1227,14 +1228,14 @@ struct Escrow_test : public beast::unit_test::suite
             env(escrow(alice, bruce, XRP(1000)), finish_time(env.now() + 1s));
             BEAST_EXPECT(
                 (*env.meta())[sfTransactionResult] ==
-                static_cast<std::uint8_t>(tesSUCCESS));
+                unsafe_cast<std::uint8_t>(tesSUCCESS));
             env.close(5s);
             env(escrow(bruce, carol, XRP(1000)),
                 finish_time(env.now() + 1s),
                 cancel_time(env.now() + 2s));
             BEAST_EXPECT(
                 (*env.meta())[sfTransactionResult] ==
-                static_cast<std::uint8_t>(tesSUCCESS));
+                unsafe_cast<std::uint8_t>(tesSUCCESS));
             env.close(5s);
 
             auto const ab = env.le(keylet::escrow(alice.id(), aseq));

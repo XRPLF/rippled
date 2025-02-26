@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
@@ -71,7 +72,7 @@ valueToString(Int value)
     if (isNegative)
         value = -value;
 
-    uintToString(static_cast<UInt>(value), current);
+    uintToString(ripple::unsafe_cast<UInt>(value), current);
 
     if (isNegative)
         *--current = '-';
@@ -176,7 +177,7 @@ valueToQuotedString(const char* value)
                     std::ostringstream oss;
                     oss << "\\u" << std::hex << std::uppercase
                         << std::setfill('0') << std::setw(4)
-                        << static_cast<int>(*c);
+                        << ripple::safe_cast<int>(*c);
                     result += oss.str();
                 }
                 else
@@ -439,7 +440,8 @@ StyledWriter::isMultineArray(const Value& value)
         for (int index = 0; index < size; ++index)
         {
             writeValue(value[index]);
-            lineLength += static_cast<int>(childValues_[index].length());
+            lineLength +=
+                ripple::unsafe_cast<int>(childValues_[index].length());
         }
 
         addChildValues_ = false;
@@ -665,7 +667,8 @@ StyledStreamWriter::isMultineArray(const Value& value)
         for (int index = 0; index < size; ++index)
         {
             writeValue(value[index]);
-            lineLength += static_cast<int>(childValues_[index].length());
+            lineLength +=
+                ripple::unsafe_cast<int>(childValues_[index].length());
         }
 
         addChildValues_ = false;

@@ -32,6 +32,7 @@
 #include <xrpld/nodestore/detail/DatabaseNodeImp.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/Feature.h>
@@ -55,14 +56,14 @@ calculateLedgerHash(LedgerInfo const& info)
     return sha512Half(
         HashPrefix::ledgerMaster,
         info.seq,
-        static_cast<std::uint64_t>(info.drops.drops()),
+        unsafe_cast<std::uint64_t>(info.drops.drops()),
         info.parentHash,
         info.txHash,
         info.accountHash,
         info.parentCloseTime.time_since_epoch().count(),
         info.closeTime.time_since_epoch().count(),
-        static_cast<std::uint8_t>(info.closeTimeResolution.count()),
-        static_cast<std::uint8_t>(info.closeFlags));
+        unsafe_cast<std::uint8_t>(info.closeTimeResolution.count()),
+        unsafe_cast<std::uint8_t>(info.closeFlags));
 }
 
 //------------------------------------------------------------------------------

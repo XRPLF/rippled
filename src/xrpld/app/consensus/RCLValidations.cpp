@@ -28,6 +28,7 @@
 #include <xrpld/perflog/PerfLog.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/basics/safe_cast.h>
 #include <memory>
 
 namespace ripple {
@@ -59,7 +60,7 @@ RCLValidatedLedger::RCLValidatedLedger(
 auto
 RCLValidatedLedger::minSeq() const -> Seq
 {
-    return seq() - std::min(seq(), static_cast<Seq>(ancestors_.size()));
+    return seq() - std::min(seq(), unsafe_cast<Seq>(ancestors_.size()));
 }
 
 auto

@@ -16,7 +16,9 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
+
 #include <xrpld/net/RegisterSSLCerts.h>
+#include <xrpl/basics/safe_cast.h>
 
 #if BOOST_OS_WINDOWS
 #include <boost/asio/ssl/error.hpp>
@@ -59,7 +61,7 @@ registerSSLCerts(
     if (!store)
     {
         ec = boost::system::error_code(
-            static_cast<int>(::ERR_get_error()),
+            safe_cast<int>(::ERR_get_error()),
             boost::asio::error::get_ssl_category());
         return;
     }

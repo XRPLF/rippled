@@ -31,6 +31,7 @@
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/make_SSLContext.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
 #include <xrpl/beast/rfc2616.h>
 #include <xrpl/json/json_reader.h>
@@ -268,7 +269,7 @@ build_map(boost::beast::http::fields const& h)
         // map and along with iterators
         std::string key(e.name_string());
         std::ranges::transform(key, key.begin(), [](auto kc) {
-            return std::tolower(static_cast<unsigned char>(kc));
+            return std::tolower(unsafe_cast<unsigned char>(kc));
         });
         c[key] = e.value();
     }
@@ -668,7 +669,7 @@ ServerHandler::processRequest(
             jsonRPC[jss::params][0u].isObject())
         {
             apiVersion = RPC::getAPIVersionNumber(
-                jsonRPC[jss::params][static_cast<Json::UInt>(0)],
+                jsonRPC[jss::params][unsafe_cast<Json::UInt>(0)],
                 app_.config().BETA_RPC_API);
         }
 
@@ -705,12 +706,12 @@ ServerHandler::processRequest(
 
         if (jsonRPC.isMember(jss::params) && jsonRPC[jss::params].isArray() &&
             jsonRPC[jss::params].size() > 0 &&
-            jsonRPC[jss::params][static_cast<Json::UInt>(0)].isObjectOrNull())
+            jsonRPC[jss::params][unsafe_cast<Json::UInt>(0)].isObjectOrNull())
         {
             role = requestRole(
                 required,
                 port,
-                jsonRPC[jss::params][static_cast<Json::UInt>(0)],
+                jsonRPC[jss::params][unsafe_cast<Json::UInt>(0)],
                 remoteIPAddress,
                 user);
         }
@@ -1006,7 +1007,7 @@ ServerHandler::processRequest(
             {
                 int const errCode = reply[jss::error][jss::error_code].asInt();
                 return RPC::error_code_http_status(
-                    static_cast<error_code_i>(errCode));
+                    safe_cast<error_code_i>(errCode));
             }
         }
         // Return OK.

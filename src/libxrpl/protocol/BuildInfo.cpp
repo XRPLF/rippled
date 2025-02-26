@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/core/SemanticVersion.h>
 #include <xrpl/protocol/BuildInfo.h>
@@ -143,7 +144,7 @@ encodeSoftwareVersion(char const* const versionStr)
 
                 if (x & 0xC0)
                 {
-                    c |= static_cast<std::uint64_t>(x) << 16;
+                    c |= safe_cast<std::uint64_t>(x) << 16;
                     break;
                 }
             }

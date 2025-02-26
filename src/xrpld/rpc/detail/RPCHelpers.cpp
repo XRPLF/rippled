@@ -28,6 +28,7 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/DeliveredAmount.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/nftPageMask.h>
@@ -723,9 +724,9 @@ parseRippleLibSeed(Json::Value const& value)
     auto const result = decodeBase58Token(value.asString(), TokenType::None);
 
     if (result.size() == 18 &&
-        static_cast<std::uint8_t>(result[0]) ==
-            static_cast<std::uint8_t>(0xE1) &&
-        static_cast<std::uint8_t>(result[1]) == static_cast<std::uint8_t>(0x4B))
+        unsafe_cast<std::uint8_t>(result[0]) ==
+            unsafe_cast<std::uint8_t>(0xE1) &&
+        unsafe_cast<std::uint8_t>(result[1]) == unsafe_cast<std::uint8_t>(0x4B))
         return Seed(makeSlice(result.substr(2)));
 
     return std::nullopt;

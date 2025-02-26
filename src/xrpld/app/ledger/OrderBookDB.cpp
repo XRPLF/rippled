@@ -25,6 +25,7 @@
 #include <xrpld/core/Config.h>
 #include <xrpld/core/JobQueue.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/protocol/Indexes.h>
 
 namespace ripple {
@@ -203,7 +204,7 @@ OrderBookDB::getBookSize(Issue const& issue)
 {
     std::lock_guard sl(mLock);
     if (auto it = allBooks_.find(issue); it != allBooks_.end())
-        return static_cast<int>(it->second.size());
+        return unsafe_cast<int>(it->second.size());
     return 0;
 }
 

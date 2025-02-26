@@ -101,10 +101,10 @@ getInt64Value(STAmount const& amount, bool valid, const char* error)
     XRPL_ASSERT(
         amount.exponent() == 0, "ripple::getInt64Value : exponent is zero");
 
-    auto ret = static_cast<std::int64_t>(amount.mantissa());
+    auto ret = unsafe_cast<std::int64_t>(amount.mantissa());
 
     XRPL_ASSERT(
-        static_cast<std::uint64_t>(ret) == amount.mantissa(),
+        unsafe_cast<std::uint64_t>(ret) == amount.mantissa(),
         "ripple::getInt64Value : mantissa must roundtrip");
 
     if (amount.negative())
@@ -186,7 +186,7 @@ STAmount::STAmount(SerialIter& sit, SField const& name) : STBase(name)
         Throw<std::runtime_error>("invalid native account");
 
     // 10 bits for the offset, sign and "not native" flag
-    int offset = static_cast<int>(value >> (64 - 10));
+    int offset = unsafe_cast<int>(value >> (64 - 10));
 
     value &= ~(1023ull << (64 - 10));
 
@@ -306,7 +306,7 @@ STAmount::xrp() const
         Throw<std::logic_error>(
             "Cannot return non-native STAmount as XRPAmount");
 
-    auto drops = static_cast<XRPAmount::value_type>(mValue);
+    auto drops = unsafe_cast<XRPAmount::value_type>(mValue);
 
     if (mIsNegative)
         drops = -drops;
@@ -320,7 +320,7 @@ STAmount::iou() const
     if (native() || !holds<Issue>())
         Throw<std::logic_error>("Cannot return non-IOU STAmount as IOUAmount");
 
-    auto mantissa = static_cast<std::int64_t>(mValue);
+    auto mantissa = unsafe_cast<std::int64_t>(mValue);
     auto exponent = mOffset;
 
     if (mIsNegative)
@@ -335,7 +335,7 @@ STAmount::mpt() const
     if (!holds<MPTIssue>())
         Throw<std::logic_error>("Cannot return STAmount as MPTAmount");
 
-    auto value = static_cast<MPTAmount::value_type>(mValue);
+    auto value = unsafe_cast<MPTAmount::value_type>(mValue);
 
     if (mIsNegative)
         value = -value;
@@ -352,9 +352,9 @@ STAmount::operator=(IOUAmount const& iou)
     mOffset = iou.exponent();
     mIsNegative = iou < beast::zero;
     if (mIsNegative)
-        mValue = static_cast<std::uint64_t>(-iou.mantissa());
+        mValue = unsafe_cast<std::uint64_t>(-iou.mantissa());
     else
-        mValue = static_cast<std::uint64_t>(iou.mantissa());
+        mValue = unsafe_cast<std::uint64_t>(iou.mantissa());
     return *this;
 }
 
@@ -411,8 +411,8 @@ operator+(STAmount const& v1, STAmount const& v2)
     }
 
     int ov1 = v1.exponent(), ov2 = v2.exponent();
-    std::int64_t vv1 = static_cast<std::int64_t>(v1.mantissa());
-    std::int64_t vv2 = static_cast<std::int64_t>(v2.mantissa());
+    std::int64_t vv1 = unsafe_cast<std::int64_t>(v1.mantissa());
+    std::int64_t vv2 = unsafe_cast<std::int64_t>(v2.mantissa());
 
     if (v1.negative())
         vv1 = -vv1;
@@ -444,12 +444,12 @@ operator+(STAmount const& v1, STAmount const& v2)
         return STAmount{
             v1.getFName(),
             v1.asset(),
-            static_cast<std::uint64_t>(fv),
+            unsafe_cast<std::uint64_t>(fv),
             ov1,
             false};
 
     return STAmount{
-        v1.getFName(), v1.asset(), static_cast<std::uint64_t>(-fv), ov1, true};
+        v1.getFName(), v1.asset(), unsafe_cast<std::uint64_t>(-fv), ov1, true};
 }
 
 STAmount
@@ -652,9 +652,9 @@ STAmount::add(Serializer& s) const
     }
     else if (mAsset.holds<MPTIssue>())
     {
-        auto u8 = static_cast<unsigned char>(cMPToken >> 56);
+        auto u8 = unsafe_cast<unsigned char>(cMPToken >> 56);
         if (!mIsNegative)
-            u8 |= static_cast<unsigned char>(cPositive >> 56);
+            u8 |= unsafe_cast<unsigned char>(cPositive >> 56);
         s.add8(u8);
         s.add64(mValue);
         s.addBitString(mAsset.get<MPTIssue>().getMptID());
@@ -837,12 +837,12 @@ STAmount::set(std::int64_t v)
     if (v < 0)
     {
         mIsNegative = true;
-        mValue = static_cast<std::uint64_t>(-v);
+        mValue = unsafe_cast<std::uint64_t>(-v);
     }
     else
     {
         mIsNegative = false;
-        mValue = static_cast<std::uint64_t>(v);
+        mValue = unsafe_cast<std::uint64_t>(v);
     }
 }
 
@@ -855,7 +855,7 @@ amountFromQuality(std::uint64_t rate)
         return STAmount(noIssue());
 
     std::uint64_t mantissa = rate & ~(255ull << (64 - 8));
-    int exponent = static_cast<int>(rate >> (64 - 8)) - 100;
+    int exponent = unsafe_cast<int>(rate >> (64 - 8)) - 100;
 
     return STAmount(noIssue(), mantissa, exponent);
 }
@@ -963,9 +963,9 @@ amountFromJson(SField const& name, Json::Value const& v)
     }
     else if (v.isArray())
     {
-        value = v.get(static_cast<Json::UInt>(0), 0);
-        currencyOrMPTID = v.get(static_cast<Json::UInt>(1), Json::nullValue);
-        issuer = v.get(static_cast<Json::UInt>(2), Json::nullValue);
+        value = v.get(unsafe_cast<Json::UInt>(0), 0);
+        currencyOrMPTID = v.get(unsafe_cast<Json::UInt>(1), Json::nullValue);
+        issuer = v.get(unsafe_cast<Json::UInt>(2), Json::nullValue);
     }
     else if (v.isString())
     {

@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/crypto/RFC1751.h>
 #include <boost/algorithm/string/classification.hpp>
@@ -289,9 +290,9 @@ RFC1751::extract(char const* s, int start, int length)
     cc = (shiftR < 16) ? s[start / 8 + 1] : 0;
     cr = (shiftR < 8) ? s[start / 8 + 2] : 0;
 
-    x = (static_cast<long>(cl << 8 | cc) << 8 | cr);  // Put bits together
-    x = x >> shiftR;                                  // Right justify number
-    x = (x & (0xffff >> (16 - length)));              // Trim extra bits.
+    x = (safe_cast<long>(cl << 8 | cc) << 8 | cr);  // Put bits together
+    x = x >> shiftR;                                // Right justify number
+    x = (x & (0xffff >> (16 - length)));            // Trim extra bits.
 
     return x;
 }
@@ -310,7 +311,7 @@ RFC1751::btoe(std::string& strHuman, std::string const& strData)
     for (p = 0, i = 0; i < 64; i += 2)
         p += extract(caBuffer, i, 2);
 
-    caBuffer[8] = static_cast<char>(p) << 6;
+    caBuffer[8] = unsafe_cast<char>(p) << 6;
 
     strHuman = std::string() + s_dictionary[extract(caBuffer, 0, 11)] + " " +
         s_dictionary[extract(caBuffer, 11, 11)] + " " +
@@ -337,7 +338,7 @@ RFC1751::insert(char* s, int x, int start, int length)
         "ripple::RFC1751::insert : maximum start + length");
 
     shift = ((8 - ((start + length) % 8)) % 8);
-    y = static_cast<long>(x) << shift;
+    y = safe_cast<long>(x) << shift;
     cl = (y >> 16) & 0xff;
     cc = (y >> 8) & 0xff;
     cr = y & 0xff;
@@ -364,8 +365,8 @@ RFC1751::standard(std::string& strWord)
 {
     for (auto& letter : strWord)
     {
-        if (islower(static_cast<unsigned char>(letter)))
-            letter = toupper(static_cast<unsigned char>(letter));
+        if (islower(unsafe_cast<unsigned char>(letter)))
+            letter = toupper(unsafe_cast<unsigned char>(letter));
         else if (letter == '1')
             letter = 'L';
         else if (letter == '0')

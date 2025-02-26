@@ -19,6 +19,7 @@
 
 #include <xrpld/app/main/GRPCServer.h>
 #include <xrpld/core/ConfigSections.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
 #include <xrpl/resource/Fees.h>
@@ -158,7 +159,7 @@ GRPCServerImpl::CallData<Request, Response>::process(
 
             {
                 std::stringstream toLog;
-                toLog << "role = " << static_cast<int>(role);
+                toLog << "role = " << safe_cast<int>(role);
 
                 toLog << " address = ";
                 if (auto clientIp = getClientIpAddress())
@@ -575,9 +576,9 @@ GRPCServerImpl::start()
     cq_ = builder.AddCompletionQueue();
     // Finally assemble the server.
     server_ = builder.BuildAndStart();
-    serverPort_ = static_cast<std::uint16_t>(port);
+    serverPort_ = unsafe_cast<std::uint16_t>(port);
 
-    return static_cast<bool>(serverPort_);
+    return unsafe_cast<bool>(serverPort_);
 }
 
 boost::asio::ip::tcp::endpoint

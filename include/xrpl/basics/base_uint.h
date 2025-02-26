@@ -30,6 +30,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/hardened_hash.h>
 #include <xrpl/basics/partitioned_unordered_map.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -207,11 +208,11 @@ private:
                 return ParseResult::badChar;
 
             if (c >= 'a')
-                nibble = static_cast<std::uint32_t>(c - 'a' + 0xA);
+                nibble = unsafe_cast<std::uint32_t>(c - 'a' + 0xA);
             else if (c >= 'A')
-                nibble = static_cast<std::uint32_t>(c - 'A' + 0xA);
+                nibble = unsafe_cast<std::uint32_t>(c - 'A' + 0xA);
             else if (c <= '9')
-                nibble = static_cast<std::uint32_t>(c - '0');
+                nibble = unsafe_cast<std::uint32_t>(c - '0');
 
             if (nibble > 0xFu)
                 return ParseResult::badChar;
@@ -474,7 +475,7 @@ public:
                 boost::endian::big_to_native(b.data_[i]);
 
             data_[i] =
-                boost::endian::native_to_big(static_cast<std::uint32_t>(n));
+                boost::endian::native_to_big(unsafe_cast<std::uint32_t>(n));
             carry = n >> 32;
         }
 

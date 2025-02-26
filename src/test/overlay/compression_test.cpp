@@ -31,6 +31,7 @@
 #include <xrpld/overlay/detail/ZeroCopyStream.h>
 #include <xrpld/shamap/SHAMapNodeID.h>
 #include <xrpl/basics/random.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/HashPrefix.h>
@@ -58,14 +59,14 @@ ledgerHash(LedgerInfo const& info)
     return ripple::sha512Half(
         HashPrefix::ledgerMaster,
         info.seq,
-        static_cast<std::uint64_t>(info.drops.drops()),
+        unsafe_cast<std::uint64_t>(info.drops.drops()),
         info.parentHash,
         info.txHash,
         info.accountHash,
         info.parentCloseTime.time_since_epoch().count(),
         info.closeTime.time_since_epoch().count(),
-        static_cast<std::uint8_t>(info.closeTimeResolution.count()),
-        static_cast<std::uint8_t>(info.closeFlags));
+        unsafe_cast<std::uint8_t>(info.closeTimeResolution.count()),
+        unsafe_cast<std::uint8_t>(info.closeFlags));
 }
 
 class compression_test : public beast::unit_test::suite

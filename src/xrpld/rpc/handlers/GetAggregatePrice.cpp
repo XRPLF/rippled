@@ -22,6 +22,7 @@
 #include <xrpld/ledger/ReadView.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
@@ -290,7 +291,7 @@ doGetAggregatePrice(RPC::JsonContext& context)
             {
                 auto const price = iter->getFieldU64(sfAssetPrice);
                 auto const scale = iter->isFieldPresent(sfScale)
-                    ? -static_cast<int>(iter->getFieldU8(sfScale))
+                    ? -safe_cast<int>(iter->getFieldU8(sfScale))
                     : 0;
                 prices.insert(Prices::value_type(
                     node.getFieldU32(sfLastUpdateTime),
