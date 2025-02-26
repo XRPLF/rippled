@@ -16,6 +16,7 @@ ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
 OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
+
 #include <xrpl/beast/core/SemanticVersion.h>
 #include <xrpl/beast/unit_test.h>
 namespace beast {

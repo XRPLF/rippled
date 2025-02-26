@@ -1241,7 +1241,7 @@ PeerImp::handleTransaction(
 {
     XRPL_ASSERT(
         eraseTxQueue != batch,
-        ("ripple::PeerImp::handleTransaction correct function params"));
+        ("ripple::PeerImp::handleTransaction : valid inputs"));
     if (tracking_.load() == Tracking::diverged)
         return;
 
