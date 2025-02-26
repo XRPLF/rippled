@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/asio/io_latency_probe.h>
 #include <xrpl/beast/test/yield_to.h>
 #include <xrpl/beast/unit_test.h>

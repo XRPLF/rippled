@@ -21,7 +21,6 @@
 #define RIPPLE_PROTOCOL_B58_UTILS_H_INCLUDED
 
 #include <xrpl/basics/contract.h>
-#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/detail/token_errors.h>
 #include <boost/outcome.hpp>
@@ -155,7 +154,7 @@ inplace_bigint_div_rem(std::span<uint64_t> numerator, std::uint64_t divisor)
             r >> 64 == 0,
             "ripple::b58_fast::detail::inplace_bigint_div_rem::div_rem_64 : "
             "valid remainder");
-        return {unsafe_cast<std::uint64_t>(d), unsafe_cast<std::uint64_t>(r)};
+        return {static_cast<std::uint64_t>(d), static_cast<std::uint64_t>(r)};
     };
 
     std::uint64_t prev_rem = 0;

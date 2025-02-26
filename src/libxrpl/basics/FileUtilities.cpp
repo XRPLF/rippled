@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <xrpl/basics/FileUtilities.h>
-#include <xrpl/basics/safe_cast.h>
 #include <boost/filesystem/fstream.hpp>
 #include <boost/filesystem/operations.hpp>
 #include <boost/filesystem/path.hpp>
@@ -58,7 +57,7 @@ getFileContents(
 
     if (!fileStream)
     {
-        ec = make_error_code(unsafe_cast<errc_t>(errno));
+        ec = make_error_code(static_cast<errc_t>(errno));
         return {};
     }
 
@@ -68,7 +67,7 @@ getFileContents(
 
     if (fileStream.bad())
     {
-        ec = make_error_code(unsafe_cast<errc_t>(errno));
+        ec = make_error_code(static_cast<errc_t>(errno));
         return {};
     }
 
@@ -88,7 +87,7 @@ writeFileContents(
 
     if (!fileStream)
     {
-        ec = make_error_code(unsafe_cast<errc_t>(errno));
+        ec = make_error_code(static_cast<errc_t>(errno));
         return;
     }
 
@@ -96,7 +95,7 @@ writeFileContents(
 
     if (fileStream.bad())
     {
-        ec = make_error_code(unsafe_cast<errc_t>(errno));
+        ec = make_error_code(static_cast<errc_t>(errno));
         return;
     }
 }
