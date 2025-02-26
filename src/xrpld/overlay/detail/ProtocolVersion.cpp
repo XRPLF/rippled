@@ -116,7 +116,7 @@ parseProtocolVersions(boost::beast::string_view const& value)
 
     // We guarantee that the returned list is sorted and contains no duplicates:
     std::ranges::sort(result);
-    result.erase(std::ranges::unique(result).begin(), result.end());
+    result.erase(std::unique(result.begin(), result.end()), result.end());
 
     return result;
 }
