@@ -1305,8 +1305,10 @@ struct Flow_test : public beast::unit_test::suite
                 // Payment path starting with XRP
                 Env env(*this, feats);
                 env.fund(XRP(10000), alice, bob, gw);
+                env.close();
                 env.trust(USD(1000), alice, bob);
                 env.trust(EUR(1000), alice, bob);
+                env.close();
                 env(pay(gw, alice, USD(100)));
                 env(pay(gw, alice, EUR(100)));
                 env.close();
