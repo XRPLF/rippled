@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <xrpl/basics/safe_cast.h>
 #include <xrpl/json/JsonPropertyStream.h>
 #include <xrpl/json/json_value.h>
 #include <string>
@@ -87,7 +86,7 @@ JsonPropertyStream::add(std::string const& key, unsigned int v)
 void
 JsonPropertyStream::add(std::string const& key, long v)
 {
-    (*m_stack.back())[key] = unsafe_cast<int>(v);
+    (*m_stack.back())[key] = static_cast<int>(v);
 }
 
 void
@@ -159,7 +158,7 @@ JsonPropertyStream::add(unsigned int v)
 void
 JsonPropertyStream::add(long v)
 {
-    m_stack.back()->append(unsafe_cast<int>(v));
+    m_stack.back()->append(static_cast<int>(v));
 }
 
 void
