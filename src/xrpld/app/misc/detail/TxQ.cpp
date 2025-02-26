@@ -1567,12 +1567,12 @@ TxQ::accept(Application& app, OpenView& view)
     // parent hash, so that transactions paying the same fee are
     // reordered.
     LedgerHash const& parentHash = view.info().parentHash;
-#if !NDEBUG
-    auto const startingSize = byFee_.size();
-    XRPL_ASSERT(
-        parentHash != parentHash_, "ripple::TxQ::accept : new parent hash");
-    parentHash_ = parentHash;
-#endif
+    if (parentHash == parentHash_)
+        JLOG(j_.warn()) << "Parent ledger hash unchanged from " << parentHash;
+    else
+        parentHash_ = parentHash;
+
+    [[maybe_unused]] auto const startingSize = byFee_.size();
     // byFee_ doesn't "own" the candidate objects inside it, so it's
     // perfectly safe to wipe it and start over, repopulating from
     // byAccount_.

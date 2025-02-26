@@ -785,13 +785,10 @@ private:
     */
     std::optional<size_t> maxSize_;
 
-#if !NDEBUG
     /**
-        parentHash_ checks that no unexpected ledger transitions
-        happen, and is only checked via debug asserts.
+        parentHash_ used for logging only
     */
     LedgerHash parentHash_{beast::zero};
-#endif
 
     /** Most queue operations are done under the master lock,
         but use this mutex for the RPC "fee" command, which isn't.
