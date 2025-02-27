@@ -154,7 +154,8 @@ private:
         update(Resource::Charge f, std::string const& add)
         {
             XRPL_ASSERT(
-                f >= fee, "ripple::PeerImp::ChargeWithContext fee increases");
+                f >= fee,
+                "ripple::PeerImp::ChargeWithContext::update : fee increases");
             fee = f;
             if (!context.empty())
             {

@@ -9,7 +9,7 @@ on:
       - release
 
 jobs:
-  check:
+  up_to_date:
     runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@v4
