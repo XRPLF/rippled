@@ -1756,6 +1756,7 @@ Consensus<Adaptor>::haveConsensus(
     {
         static auto const minimumCounter =
             parms.avalancheCutoffs.size() * parms.avMIN_ROUNDS;
+        std::stringstream ss;
         if (establishCounter_ < minimumCounter)
         {
             // If each round of phaseEstablish takes a very long time, we may
@@ -1764,14 +1765,18 @@ Consensus<Adaptor>::haveConsensus(
             // keep trying. This should only happen if there are an extremely
             // large number of disputes such that each round takes an inordinate
             // amount of time.
-            JLOG(j_.error())
-                << "Consensus time has expired in round " << establishCounter_
-                << "; continue until round " << minimumCounter << ". "
-                << Json::Compact{getJson(false)};
+
+            ss << "Consensus time has expired in round " << establishCounter_
+               << "; continue until round " << minimumCounter << ". "
+               << Json::Compact{getJson(false)};
+            JLOG(j_.error()) << ss.str();
+            CLOG(clog) << ss.str() << ". ";
             return false;
         }
-        JLOG(j_.error()) << "Nobody can reach consensus";
-        JLOG(j_.error()) << Json::Compact{getJson(true)};
+        ss << "Consensus expired. ";
+        << Json::Compact{getJson(true)};
+        JLOG(j_.error()) << ss.str();
+        CLOG(clog) << ss.str() << ". ";
         leaveConsensus();
     }
     // There is consensus, but we need to track if the network moved on

@@ -246,6 +246,7 @@ checkConsensus(
                                parms.ledgerABANDON_CONSENSUS))
     {
         JLOG(j.warn()) << "consensus taken too long";
+        CLOG(clog) << "Consensus taken too long. ";
         // Note the Expired result may be overridden by the caller.
         return ConsensusState::Expired;
     }
