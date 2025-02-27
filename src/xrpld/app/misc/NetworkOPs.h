@@ -180,9 +180,11 @@ public:
 
     // network state machine
     virtual bool
-    beginConsensus(uint256 const& netLCL) = 0;
+    beginConsensus(
+        uint256 const& netLCL,
+        std::unique_ptr<std::stringstream> const& clog) = 0;
     virtual void
-    endConsensus() = 0;
+    endConsensus(std::unique_ptr<std::stringstream> const& clog) = 0;
     virtual void
     setStandAlone() = 0;
     virtual void

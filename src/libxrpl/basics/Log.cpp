@@ -47,6 +47,14 @@ Logs::Sink::write(beast::severities::Severity level, std::string const& text)
     logs_.write(level, partition_, text, console());
 }
 
+void
+Logs::Sink::writeAlways(
+    beast::severities::Severity level,
+    std::string const& text)
+{
+    logs_.write(level, partition_, text, console());
+}
+
 //------------------------------------------------------------------------------
 
 Logs::File::File() : m_stream(nullptr)
