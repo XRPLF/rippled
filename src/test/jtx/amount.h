@@ -25,6 +25,7 @@
 #include <test/jtx/tags.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/FeeUnits.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/STAmount.h>
 #include <cstdint>
@@ -376,6 +377,12 @@ public:
 
     MPT(std::string const& n, ripple::MPTID const& issuanceID_)
         : name(n), issuanceID(issuanceID_)
+    {
+    }
+    MPT(std::string const& n = "") : name(n), issuanceID(noMPT())
+    {
+    }
+    MPT(Asset const& asset) : name(""), issuanceID(asset.get<MPTIssue>())
     {
     }
 

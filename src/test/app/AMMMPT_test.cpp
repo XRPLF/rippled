@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2023 Ripple Labs Inc.
+    Copyright (c) 2025 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -20,21 +20,18 @@
 #include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
 #include <test/jtx/amount.h>
+#include <test/jtx/mpt.h>
 #include <test/jtx/sendmax.h>
 #include <xrpld/app/misc/AMMHelpers.h>
 #include <xrpld/app/misc/AMMUtils.h>
 #include <xrpld/app/paths/AMMContext.h>
-#include <xrpld/app/paths/AMMOffer.h>
 #include <xrpld/app/tx/detail/AMMBid.h>
-#include <xrpld/rpc/RPCHandler.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/resource/Fees.h>
 
-#include <chrono>
 #include <utility>
 #include <vector>
 
@@ -47,7 +44,7 @@ namespace test {
  * Basic tests of AMM that do not use offers.
  * Tests incorporating offers are in `AMMExtended_test`.
  */
-struct AMM_test : public jtx::AMMTest
+struct AMMMPT_test : public jtx::AMMTest
 {
 private:
     void
@@ -57,32 +54,51 @@ private:
 
         using namespace jtx;
 
-        // XRP to IOU
-        testAMM([&](AMM& ammAlice, Env&) {
-            BEAST_EXPECT(ammAlice.expectBalances(
-                XRP(10'000), USD(10'000), IOUAmount{10'000'000, 0}));
-        });
-
-        // IOU to IOU
+        // XRP to MPT
         testAMM(
             [&](AMM& ammAlice, Env&) {
                 BEAST_EXPECT(ammAlice.expectBalances(
-                    USD(20'000), BTC(0.5), IOUAmount{100, 0}));
+                    XRP(10'000),
+                    MPT(ammAlice[1])(10'000),
+                    IOUAmount{10'000'000}));
             },
-            {{USD(20'000), BTC(0.5)}});
+            {.pool = {{XRP(10'000), AMMMPT(10'000)}}});
+        // IOU to MPT
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    USD(20'000), MPT(ammAlice[1])(20'000), IOUAmount{20'000}));
+            },
+            {{USD(20'000), AMMMPT(20'000)}});
+        // MPT to MPT
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    MPT(ammAlice[0])(20'000),
+                    MPT(ammAlice[1])(20'000),
+                    IOUAmount{20'000}));
+            },
+            {{AMMMPT(20'000), AMMMPT(20'000)}});
 
-        // IOU to IOU + transfer fee
+        // IOU to MPT + transfer fee
         {
             Env env{*this};
-            fund(env, gw, {alice}, {USD(20'000), BTC(0.5)}, Fund::All);
+            fund(env, gw, {alice}, {USD(20'000)}, Fund::All);
             env(rate(gw, 1.25));
             env.close();
+            MPT const BTC = MPTTester(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice},
+                 .transferFee = 1'500,
+                 .pay = 30'000});
             // no transfer fee on create
-            AMM ammAlice(env, alice, USD(20'000), BTC(0.5));
+            AMM ammAlice(env, alice, USD(20'000), BTC(20'000));
             BEAST_EXPECT(ammAlice.expectBalances(
-                USD(20'000), BTC(0.5), IOUAmount{100, 0}));
+                USD(20'000), BTC(20'000), IOUAmount{20'000, 0}));
             BEAST_EXPECT(expectLine(env, alice, USD(0)));
-            BEAST_EXPECT(expectLine(env, alice, BTC(0)));
+            // alice initially had 30'000
+            BEAST_EXPECT(expectMPT(env, alice, BTC(10'000)));
         }
 
         // Require authorization is set, account is authorized
@@ -96,43 +112,32 @@ private:
             env.close();
             env(pay(gw, alice, USD(10'000)));
             env.close();
-            AMM ammAlice(env, alice, XRP(10'000), USD(10'000));
+            MPT const BTC = MPTTester(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice},
+                 .pay = 30'000,
+                 .flags = tfMPTRequireAuth | MPTDEXFlags,
+                 .authHolder = true});
+            AMM ammAlice(env, alice, USD(10'000), BTC(10'000));
         }
 
         // Cleared global freeze
         {
             Env env{*this};
             env.fund(XRP(30'000), gw, alice);
-            env.close();
-            env.trust(USD(30'000), alice);
-            env.close();
-            env(pay(gw, alice, USD(10'000)));
-            env.close();
-            env(fset(gw, asfGlobalFreeze));
-            env.close();
+            MPTTester USD(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice},
+                 .pay = 30'000,
+                 .flags = tfMPTCanLock | MPTDEXFlags});
+            USD.set({.flags = tfMPTLock});
             AMM ammAliceFail(
                 env, alice, XRP(10'000), USD(10'000), ter(tecFROZEN));
-            env(fclear(gw, asfGlobalFreeze));
-            env.close();
+            USD.set({.flags = tfMPTUnlock});
             AMM ammAlice(env, alice, XRP(10'000), USD(10'000));
         }
-
-        // Trading fee
-        testAMM(
-            [&](AMM& amm, Env&) {
-                BEAST_EXPECT(amm.expectTradingFee(1'000));
-                BEAST_EXPECT(amm.expectAuctionSlot(100, 0, IOUAmount{0}));
-            },
-            std::nullopt,
-            1'000);
-
-        // Make sure asset comparison works.
-        BEAST_EXPECT(
-            STIssue(sfAsset, STAmount(XRP(2'000)).asset()) ==
-            STIssue(sfAsset, STAmount(XRP(2'000)).asset()));
-        BEAST_EXPECT(
-            STIssue(sfAsset, STAmount(XRP(2'000)).asset()) !=
-            STIssue(sfAsset, STAmount(USD(2'000)).asset()));
     }
 
     void
@@ -142,6 +147,7 @@ private:
 
         using namespace jtx;
 
+        // Not applicable for MPT
         // Can't have both XRP tokens
         {
             Env env{*this};
@@ -151,6 +157,7 @@ private:
             BEAST_EXPECT(!ammAlice.ammExists());
         }
 
+        // Use MPT instead of IOU
         // Can't have both tokens the same IOU
         {
             Env env{*this};
@@ -160,6 +167,7 @@ private:
             BEAST_EXPECT(!ammAlice.ammExists());
         }
 
+        // Use MPT instead of IOU
         // Can't have zero or negative amounts
         {
             Env env{*this};
@@ -176,6 +184,7 @@ private:
             BEAST_EXPECT(!ammAlice3.ammExists());
         }
 
+        // Use noMPT()
         // Bad currency
         {
             Env env{*this};
@@ -185,6 +194,7 @@ private:
             BEAST_EXPECT(!ammAlice.ammExists());
         }
 
+        // Use MPT instead of IOU
         // Insufficient IOU balance
         {
             Env env{*this};
@@ -194,6 +204,7 @@ private:
             BEAST_EXPECT(!ammAlice.ammExists());
         }
 
+        // Don't need this, already tested
         // Insufficient XRP balance
         {
             Env env{*this};
@@ -203,6 +214,7 @@ private:
             BEAST_EXPECT(!ammAlice.ammExists());
         }
 
+        // Use MPT trading fee
         // Invalid trading fee
         {
             Env env{*this};
@@ -222,12 +234,14 @@ private:
             BEAST_EXPECT(!ammAlice.ammExists());
         }
 
+        // Use MPT instead of IOU
         // AMM already exists
         testAMM([&](AMM& ammAlice, Env& env) {
             AMM ammCarol(
                 env, carol, XRP(10'000), USD(10'000), ter(tecDUPLICATE));
         });
 
+        // Don't need to test it
         // Invalid flags
         {
             Env env{*this};
@@ -247,6 +261,7 @@ private:
             BEAST_EXPECT(!ammAlice.ammExists());
         }
 
+        // I don't think need to test it
         // Invalid Account
         {
             Env env{*this};
@@ -267,6 +282,7 @@ private:
             BEAST_EXPECT(!ammAlice.ammExists());
         }
 
+        // Use MPT instead of IOU
         // Require authorization is set
         {
             Env env{*this};
@@ -280,6 +296,7 @@ private:
             BEAST_EXPECT(!ammAlice.ammExists());
         }
 
+        // Use MPT instead of IOU
         // Globally frozen
         {
             Env env{*this};
@@ -293,6 +310,7 @@ private:
             BEAST_EXPECT(!ammAlice.ammExists());
         }
 
+        // Use MPT instead of IOU
         // Individually frozen
         {
             Env env{*this};
@@ -306,6 +324,7 @@ private:
             BEAST_EXPECT(!ammAlice.ammExists());
         }
 
+        // I don't think need to test it for MPT
         // Insufficient reserve, XRP/IOU
         {
             Env env(*this);
@@ -323,6 +342,7 @@ private:
                 env, alice, XRP(1'000), USD(1'000), ter(tecUNFUNDED_AMM));
         }
 
+        // I don't think need to test it
         // Insufficient reserve, IOU/IOU
         {
             Env env(*this);
@@ -342,6 +362,7 @@ private:
                 env, alice, EUR(1'000), USD(1'000), ter(tecINSUF_RESERVE_LINE));
         }
 
+        // I don't think need to test it
         // Insufficient fee
         {
             Env env(*this);
@@ -360,6 +381,7 @@ private:
                 ter(telINSUF_FEE_P));
         }
 
+        // I don't think need to test it
         // AMM with LPTokens
 
         // AMM with one LPToken from another AMM.
@@ -393,6 +415,7 @@ private:
                 ter(tecAMM_INVALID_TOKENS));
         });
 
+        // Not applicable for MPT
         // Issuer has DefaultRipple disabled
         {
             Env env(*this);
@@ -7171,7 +7194,7 @@ private:
     }
 };
 
-BEAST_DEFINE_TESTSUITE_PRIO(AMM, app, ripple, 1);
+BEAST_DEFINE_TESTSUITE_PRIO(AMMMPT, app, ripple, 1);
 
 }  // namespace test
 }  // namespace ripple

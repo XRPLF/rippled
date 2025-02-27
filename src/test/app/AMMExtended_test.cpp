@@ -1480,7 +1480,7 @@ private:
         Env env = pathTestEnv();
         env.fund(XRP(100'000'250), alice);
         fund(env, gw, {carol, bob}, {USD(100)}, Fund::All);
-        fund(env, gw, {alice}, {USD(100)}, Fund::IOUOnly);
+        fund(env, gw, {alice}, {USD(100)}, Fund::TokenOnly);
         AMM ammCarol(env, carol, XRP(100), USD(100));
 
         STPathSet st;
@@ -3961,7 +3961,7 @@ private:
                 bob,
                 {alice, gw},
                 {BobUSD(100), BobEUR(100)},
-                Fund::IOUOnly);
+                Fund::TokenOnly);
 
             AMM ammBobXRP_USD(env, bob, XRP(100), BobUSD(100));
             env(offer(gw, XRP(100), USD(100)), txflags(tfPassive));

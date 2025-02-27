@@ -41,6 +41,11 @@ public:
 
     MPTIssue(std::uint32_t sequence, AccountID const& account);
 
+    operator MPTID const&() const
+    {
+        return mptID_;
+    }
+
     AccountID const&
     getIssuer() const;
 

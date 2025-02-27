@@ -3233,6 +3233,60 @@ class MPToken_test : public beast::unit_test::suite
                 path(~USD),
                 txflags(tfNoRippleDirect | tfPartialPayment));
         }
+#if 0
+        {
+            Env env(*this, features);
+            env.fund(XRP(1'000), gw, alice, carol, bob);
+
+            auto MUSD = MPTTester(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice, carol, bob},
+                 .maxAmt = 1'000});
+            MPT const USD = MUSD;
+            env(pay(gw, alice, USD(800)));
+            env(offer(gw, XRP(300), USD(300)));
+            env(pay(carol, bob, USD(300)),
+                sendmax(XRP(300)),
+                path(~USD),
+                txflags(tfPartialPayment));
+            BEAST_EXPECT(MUSD.checkMPTokenAmount(bob, 200));
+            BEAST_EXPECT(MUSD.checkMPTokenOutstandingAmount(1'000));
+            // initial + offer - fees
+            BEAST_EXPECT(
+                env.balance(gw) == (XRP(1'000) + XRP(200) - txfee(env, 3)));
+        }
+        {
+            Env env(*this, features);
+            auto const EUR = gw["EUR"];
+            env.fund(XRP(1'000), gw, alice, carol, bob);
+
+            env(trust(alice, EUR(1'000)));
+            env(pay(gw, alice, EUR(300)));
+            env(trust(bob, EUR(1'000)));
+
+            auto MUSD = MPTTester(
+                {.env = env,
+                 .issuer = gw,
+                 .holders = {alice, carol, bob},
+                 .maxAmt = 1'000});
+            MPT const USD = MUSD;
+
+            env(pay(gw, alice, USD(800)));
+            env(offer(gw, XRP(300), USD(300)));
+            env(offer(alice, USD(300), EUR(300)));
+            env(pay(carol, bob, EUR(300)),
+                sendmax(XRP(300)),
+                path(~USD, ~EUR),
+                txflags(tfPartialPayment));
+            BEAST_EXPECT(MUSD.checkMPTokenAmount(alice, 1'000));
+            BEAST_EXPECT(MUSD.checkMPTokenOutstandingAmount(1'000));
+            // initial + offer - fees
+            BEAST_EXPECT(
+                env.balance(gw) == (XRP(1'000) + XRP(200) - txfee(env, 3)));
+            BEAST_EXPECT(env.balance(bob, EUR) == EUR(200));
+        }
+#endif
     }
 
     void

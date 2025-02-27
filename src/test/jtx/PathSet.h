@@ -110,6 +110,8 @@ public:
     Path&
     push_back(Issue const& iss);
     Path&
+    push_back(MPTIssue const& iss);
+    Path&
     push_back(jtx::Account const& acc);
     Path&
     push_back(STPathElement const& pe);
@@ -137,6 +139,17 @@ Path::push_back(Issue const& iss)
         beast::zero,
         iss.currency,
         iss.account);
+    return *this;
+}
+
+inline Path&
+Path::push_back(MPTIssue const& iss)
+{
+    path.emplace_back(
+        STPathElement::typeMPT | STPathElement::typeIssuer,
+        beast::zero,
+        iss.getMptID(),
+        iss.getIssuer());
     return *this;
 }
 
