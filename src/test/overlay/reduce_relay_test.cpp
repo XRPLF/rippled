@@ -1007,10 +1007,10 @@ protected:
                             network_.isSelected(link.peerId());
                 };
                 auto r = rand_int(0, 1000);
-                if (r == unsafe_cast<int>(EventType::LinkDown) ||
-                    r == unsafe_cast<int>(EventType::PeerDisconnected))
+                if (r == static_cast<int>(EventType::LinkDown) ||
+                    r == static_cast<int>(EventType::PeerDisconnected))
                 {
-                    update(unsafe_cast<EventType>(r));
+                    update(static_cast<EventType>(r));
                 }
             }
 
