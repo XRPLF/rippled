@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Issue.h>
@@ -43,7 +44,7 @@ namespace nft {
 Rate
 transferFeeAsRate(std::uint16_t fee)
 {
-    return Rate{static_cast<std::uint32_t>(fee) * 10000};
+    return Rate{safe_cast<std::uint32_t>(fee) * 10000};
 }
 
 }  // namespace nft

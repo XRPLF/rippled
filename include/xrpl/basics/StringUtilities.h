@@ -21,6 +21,7 @@
 #define RIPPLE_BASICS_STRINGUTILITIES_H_INCLUDED
 
 #include <xrpl/basics/Blob.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/basics/strHex.h>
 #include <boost/format.hpp>
 #include <boost/utility/string_view.hpp>
@@ -95,7 +96,7 @@ strUnHex(std::size_t strSize, Iterator begin, Iterator end)
         if (cLow < 0)
             return {};
 
-        out.push_back(static_cast<unsigned char>((cHigh << 4) | cLow));
+        out.push_back(unsafe_cast<unsigned char>((cHigh << 4) | cLow));
     }
 
     return {std::move(out)};

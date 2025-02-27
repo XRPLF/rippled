@@ -25,6 +25,7 @@
 #include <xrpld/conditions/detail/error.h>
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/protocol/digest.h>
 #include <memory>
 
@@ -128,7 +129,7 @@ public:
     std::uint32_t
     cost() const override
     {
-        return static_cast<std::uint32_t>(payload_.size());
+        return unsafe_cast<std::uint32_t>(payload_.size());
     }
 
     Condition

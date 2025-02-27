@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/detail/json_assert.h>
@@ -31,9 +32,11 @@
 namespace Json {
 
 const Value Value::null;
-const Int Value::minInt = static_cast<Int>(~(static_cast<UInt>(-1) / 2));
-const Int Value::maxInt = static_cast<Int>(static_cast<UInt>(-1) / 2);
-const UInt Value::maxUInt = static_cast<UInt>(-1);
+const Int Value::minInt =
+    ripple::unsafe_cast<Int>(~(ripple::unsafe_cast<UInt>(-1) / 2));
+const Int Value::maxInt =
+    ripple::unsafe_cast<Int>(ripple::unsafe_cast<UInt>(-1) / 2);
+const UInt Value::maxUInt = ripple::unsafe_cast<UInt>(-1);
 
 class DefaultValueAllocator : public ValueAllocator
 {
@@ -61,7 +64,8 @@ public:
         //   return 0;
 
         if (length == unknown)
-            length = value ? static_cast<unsigned int>(strlen(value)) : 0;
+            length =
+                value ? ripple::unsafe_cast<unsigned int>(strlen(value)) : 0;
 
         char* newString = static_cast<char*>(malloc(length + 1));
         if (value)
@@ -239,7 +243,7 @@ Value::Value(const char* value) : type_(stringValue), allocated_(true)
 Value::Value(std::string const& value) : type_(stringValue), allocated_(true)
 {
     value_.string_ = valueAllocator()->duplicateStringValue(
-        value.c_str(), static_cast<unsigned int>(value.length()));
+        value.c_str(), ripple::unsafe_cast<unsigned int>(value.length()));
 }
 
 Value::Value(const StaticString& value) : type_(stringValue), allocated_(false)
@@ -404,7 +408,7 @@ operator<(const Value& x, const Value& y)
 
         case arrayValue:
         case objectValue: {
-            if (int signum = static_cast<int>(x.value_.map_->size()) -
+            if (int signum = ripple::unsafe_cast<int>(x.value_.map_->size()) -
                     y.value_.map_->size())
                 return signum < 0;
 
@@ -518,7 +522,7 @@ Value::asInt() const
 
         case uintValue:
             JSON_ASSERT_MESSAGE(
-                value_.uint_ < static_cast<unsigned>(maxInt),
+                value_.uint_ < ripple::unsafe_cast<unsigned>(maxInt),
                 "integer out of signed integer range");
             return value_.uint_;
 
@@ -670,7 +674,7 @@ Value::isConvertibleTo(ValueType other) const
         case uintValue:
             return (other == nullValue && value_.uint_ == 0) ||
                 (other == intValue &&
-                 value_.uint_ <= static_cast<unsigned int>(maxInt)) ||
+                 value_.uint_ <= ripple::unsafe_cast<unsigned int>(maxInt)) ||
                 other == uintValue || other == realValue ||
                 other == stringValue || other == booleanValue;
 
@@ -733,7 +737,7 @@ Value::size() const
             return 0;
 
         case objectValue:
-            return static_cast<Int>(value_.map_->size());
+            return ripple::unsafe_cast<Int>(value_.map_->size());
 
         default:
             UNREACHABLE("Json::Value::size : invalid type");

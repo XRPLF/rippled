@@ -22,6 +22,7 @@
 #include <test/jtx/envconfig.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/rpc/CTID.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/jss.h>
@@ -572,7 +573,7 @@ class Transaction_test : public beast::unit_test::suite
         auto const expected3 = std::optional<std::string>("CFFFFFFF0000FFFF");
         BEAST_EXPECT(
             RPC::encodeCTID(
-                0x0FFF'FFFF, static_cast<uint16_t>(0x10000), 0xFFFF) ==
+                0x0FFF'FFFF, unsafe_cast<uint16_t>(0x10000), 0xFFFF) ==
             expected3);
 
         // Test case 4: network_id greater than 0xFFFF
@@ -581,7 +582,7 @@ class Transaction_test : public beast::unit_test::suite
         auto const expected4 = std::optional<std::string>("CFFFFFFFFFFF0000");
         BEAST_EXPECT(
             RPC::encodeCTID(
-                0x0FFF'FFFFUL, 0xFFFFU, static_cast<uint16_t>(0x1000'0U)) ==
+                0x0FFF'FFFFUL, 0xFFFFU, unsafe_cast<uint16_t>(0x1000'0U)) ==
             expected4);
 
         // Test case 5: Valid input values

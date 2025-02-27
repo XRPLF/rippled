@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <test/jtx.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -131,7 +132,7 @@ public:
         {
             // gw1 currencies have names "YAA" -> "YAZ".
             gw1Currencies.push_back(
-                gw1[std::string("YA") + static_cast<char>('A' + c)]);
+                gw1[std::string("YA") + unsafe_cast<char>('A' + c)]);
             IOU const& gw1Currency = gw1Currencies.back();
 
             // Establish trust lines.
@@ -156,7 +157,7 @@ public:
         {
             // gw2 currencies have names "ZAA" -> "ZAZ".
             gw2Currencies.push_back(
-                gw2[std::string("ZA") + static_cast<char>('A' + c)]);
+                gw2[std::string("ZA") + unsafe_cast<char>('A' + c)]);
             IOU const& gw2Currency = gw2Currencies.back();
 
             // Establish trust lines.
@@ -951,7 +952,7 @@ public:
         {
             // gw1 currencies have names "YAA" -> "YAZ".
             gw1Currencies.push_back(
-                gw1[std::string("YA") + static_cast<char>('A' + c)]);
+                gw1[std::string("YA") + unsafe_cast<char>('A' + c)]);
             IOU const& gw1Currency = gw1Currencies.back();
 
             // Establish trust lines.
@@ -976,7 +977,7 @@ public:
         {
             // gw2 currencies have names "ZAA" -> "ZAZ".
             gw2Currencies.push_back(
-                gw2[std::string("ZA") + static_cast<char>('A' + c)]);
+                gw2[std::string("ZA") + unsafe_cast<char>('A' + c)]);
             IOU const& gw2Currency = gw2Currencies.back();
 
             // Establish trust lines.

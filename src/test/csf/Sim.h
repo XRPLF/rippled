@@ -28,6 +28,7 @@
 #include <test/csf/Scheduler.h>
 #include <test/csf/SimTime.h>
 #include <test/csf/TrustGraph.h>
+#include <xrpl/basics/safe_cast.h>
 #include <deque>
 #include <iostream>
 #include <random>
@@ -104,7 +105,7 @@ public:
         for (std::size_t i = 0; i < numPeers; ++i)
         {
             peers.emplace_back(
-                PeerID{static_cast<std::uint32_t>(peers.size())},
+                PeerID{unsafe_cast<std::uint32_t>(peers.size())},
                 scheduler,
                 oracle,
                 net,

@@ -21,6 +21,7 @@
 #define RIPPLE_CORE_WORKERS_H_INCLUDED
 
 #include <xrpld/core/detail/semaphore.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/core/LockFreeStack.h>
 #include <atomic>
 #include <condition_variable>
@@ -114,7 +115,7 @@ public:
         perf::PerfLog* perfLog,
         std::string const& threadNames = "Worker",
         int numberOfThreads =
-            static_cast<int>(std::thread::hardware_concurrency()));
+            unsafe_cast<int>(std::thread::hardware_concurrency()));
 
     ~Workers();
 

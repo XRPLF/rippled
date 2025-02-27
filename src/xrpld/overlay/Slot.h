@@ -25,6 +25,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/random.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/container/aged_unordered_map.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -292,8 +293,8 @@ Slot<clock_type>::update(
 
     JLOG(journal_.trace())
         << "update: existing peer " << Slice(validator) << " " << id
-        << " slot state " << static_cast<int>(state_) << " peer state "
-        << static_cast<int>(peer.state) << " count " << peer.count << " last "
+        << " slot state " << safe_cast<int>(state_) << " peer state "
+        << safe_cast<int>(peer.state) << " count " << peer.count << " last "
         << duration_cast<milliseconds>(now - peer.lastMessage).count()
         << " pool " << considered_.size() << " threshold " << reachedThreshold_
         << " " << (type == protocol::mtVALIDATION ? "validation" : "proposal");

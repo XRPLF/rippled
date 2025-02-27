@@ -19,6 +19,7 @@
 
 // included by json_value.cpp
 
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 
@@ -129,7 +130,7 @@ ValueIteratorBase::index() const
     if (!czstring.c_str())
         return czstring.index();
 
-    return static_cast<Value::UInt>(-1);
+    return ripple::unsafe_cast<Value::UInt>(-1);
 }
 
 const char*

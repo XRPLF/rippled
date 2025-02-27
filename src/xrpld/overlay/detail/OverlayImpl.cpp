@@ -34,6 +34,7 @@
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/make_SSLContext.h>
 #include <xrpl/basics/random.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/server/SimpleWriter.h>
@@ -722,7 +723,7 @@ OverlayImpl::getOverlayInfo()
         pv[jss::public_key] = base64_encode(
             sp->getNodePublic().data(), sp->getNodePublic().size());
         pv[jss::type] = sp->slot()->inbound() ? "in" : "out";
-        pv[jss::uptime] = static_cast<std::uint32_t>(
+        pv[jss::uptime] = unsafe_cast<std::uint32_t>(
             duration_cast<seconds>(sp->uptime()).count());
         if (sp->crawl())
         {

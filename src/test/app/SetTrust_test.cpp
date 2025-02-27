@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <test/jtx.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
@@ -316,7 +317,7 @@ public:
                 env(trust(
                         alice,
                         gw["USD"](100),
-                        static_cast<std::uint32_t>(badFlag)),
+                        unsafe_cast<std::uint32_t>(badFlag)),
                     ter(temINVALID_FLAG));
         }
 

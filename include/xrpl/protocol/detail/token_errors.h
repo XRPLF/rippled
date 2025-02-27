@@ -20,6 +20,7 @@
 #ifndef RIPPLE_PROTOCOL_TOKEN_ERRORS_H_INCLUDED
 #define RIPPLE_PROTOCOL_TOKEN_ERRORS_H_INCLUDED
 
+#include <xrpl/basics/safe_cast.h>
 #include <system_error>
 
 namespace ripple {
@@ -59,7 +60,7 @@ public:
     virtual std::string
     message(int c) const override final
     {
-        switch (static_cast<TokenCodecErrc>(c))
+        switch (safe_cast<TokenCodecErrc>(c))
         {
             case TokenCodecErrc::success:
                 return "conversion successful";
@@ -96,7 +97,7 @@ TokenCodecErrcCategory()
 inline std::error_code
 make_error_code(ripple::TokenCodecErrc e)
 {
-    return {static_cast<int>(e), TokenCodecErrcCategory()};
+    return {safe_cast<int>(e), TokenCodecErrcCategory()};
 }
 }  // namespace ripple
 #endif  // TOKEN_ERRORS_H_

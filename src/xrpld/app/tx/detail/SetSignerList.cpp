@@ -21,6 +21,7 @@
 #include <xrpld/app/tx/detail/SetSignerList.h>
 #include <xrpld/ledger/ApplyView.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/STArray.h>
@@ -179,7 +180,7 @@ signerCountBasedOwnerCountDelta(std::size_t entryCount, Rules const& rules)
     // So, at a minimum, adding a SignerList with 1 entry costs 3 OwnerCount
     // units.  A SignerList with 8 entries would cost 10 OwnerCount units.
     //
-    // The static_cast should always be safe since entryCount should always
+    // The safe_cast should always be safe since entryCount should always
     // be in the range from 1 to 8 (or 32 if ExpandedSignerList is enabled).
     // We've got a lot of room to grow.
     XRPL_ASSERT(
@@ -188,7 +189,7 @@ signerCountBasedOwnerCountDelta(std::size_t entryCount, Rules const& rules)
     XRPL_ASSERT(
         entryCount <= STTx::maxMultiSigners(&rules),
         "ripple::signerCountBasedOwnerCountDelta : maximum signers");
-    return 2 + static_cast<int>(entryCount);
+    return 2 + unsafe_cast<int>(entryCount);
 }
 
 static TER

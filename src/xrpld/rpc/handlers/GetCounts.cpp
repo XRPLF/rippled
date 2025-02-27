@@ -26,6 +26,7 @@
 #include <xrpld/nodestore/Database.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpl/basics/UptimeClock.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
@@ -95,22 +96,22 @@ getCountsJson(Application& app, int minObjectCount)
         {
             std::size_t c = app.getOPs().getLocalTxCount();
             if (c > 0)
-                ret[jss::local_txs] = static_cast<Json::UInt>(c);
+                ret[jss::local_txs] = unsafe_cast<Json::UInt>(c);
         }
     }
 
     ret[jss::write_load] = app.getNodeStore().getWriteLoad();
 
     ret[jss::historical_perminute] =
-        static_cast<int>(app.getInboundLedgers().fetchRate());
+        unsafe_cast<int>(app.getInboundLedgers().fetchRate());
     ret[jss::SLE_hit_rate] = app.cachedSLEs().rate();
     ret[jss::ledger_hit_rate] = app.getLedgerMaster().getCacheHitRate();
     ret[jss::AL_size] =
-        static_cast<Json::UInt>(app.getAcceptedLedgerCache().size());
+        unsafe_cast<Json::UInt>(app.getAcceptedLedgerCache().size());
     ret[jss::AL_hit_rate] = app.getAcceptedLedgerCache().getHitRate();
 
     ret[jss::fullbelow_size] =
-        static_cast<int>(app.getNodeFamily().getFullBelowCache()->size());
+        unsafe_cast<int>(app.getNodeFamily().getFullBelowCache()->size());
     ret[jss::treenode_cache_size] =
         app.getNodeFamily().getTreeNodeCache()->getCacheSize();
     ret[jss::treenode_track_size] =

@@ -17,7 +17,11 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_TEST_BEST_IPENDPOINTCOMMON_H_INCLUDED
+#define RIPPLE_TEST_BEST_IPENDPOINTCOMMON_H_INCLUDED
+
 #include <xrpl/basics/random.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 
 namespace beast {
@@ -29,29 +33,29 @@ randomEP(bool v4 = true)
     using namespace ripple;
     auto dv4 = []() -> AddressV4::bytes_type {
         return {
-            {static_cast<std::uint8_t>(rand_int<int>(1, UINT8_MAX)),
-             static_cast<std::uint8_t>(rand_int<int>(1, UINT8_MAX)),
-             static_cast<std::uint8_t>(rand_int<int>(1, UINT8_MAX)),
-             static_cast<std::uint8_t>(rand_int<int>(1, UINT8_MAX))}};
+            {unsafe_cast<std::uint8_t>(rand_int<int>(1, UINT8_MAX)),
+             unsafe_cast<std::uint8_t>(rand_int<int>(1, UINT8_MAX)),
+             unsafe_cast<std::uint8_t>(rand_int<int>(1, UINT8_MAX)),
+             unsafe_cast<std::uint8_t>(rand_int<int>(1, UINT8_MAX))}};
     };
     auto dv6 = []() -> AddressV6::bytes_type {
         return {
-            {static_cast<std::uint8_t>(rand_int<int>(1, UINT8_MAX)),
-             static_cast<std::uint8_t>(rand_int<int>(1, UINT8_MAX)),
-             static_cast<std::uint8_t>(rand_int<int>(1, UINT8_MAX)),
-             static_cast<std::uint8_t>(rand_int<int>(1, UINT8_MAX)),
-             static_cast<std::uint8_t>(rand_int<int>(1, UINT8_MAX)),
-             static_cast<std::uint8_t>(rand_int<int>(1, UINT8_MAX)),
-             static_cast<std::uint8_t>(rand_int<int>(1, UINT8_MAX)),
-             static_cast<std::uint8_t>(rand_int<int>(1, UINT8_MAX)),
-             static_cast<std::uint8_t>(rand_int<int>(1, UINT8_MAX)),
-             static_cast<std::uint8_t>(rand_int<int>(1, UINT8_MAX)),
-             static_cast<std::uint8_t>(rand_int<int>(1, UINT8_MAX)),
-             static_cast<std::uint8_t>(rand_int<int>(1, UINT8_MAX)),
-             static_cast<std::uint8_t>(rand_int<int>(1, UINT8_MAX)),
-             static_cast<std::uint8_t>(rand_int<int>(1, UINT8_MAX)),
-             static_cast<std::uint8_t>(rand_int<int>(1, UINT8_MAX)),
-             static_cast<std::uint8_t>(rand_int<int>(1, UINT8_MAX))}};
+            {unsafe_cast<std::uint8_t>(rand_int<int>(1, UINT8_MAX)),
+             unsafe_cast<std::uint8_t>(rand_int<int>(1, UINT8_MAX)),
+             unsafe_cast<std::uint8_t>(rand_int<int>(1, UINT8_MAX)),
+             unsafe_cast<std::uint8_t>(rand_int<int>(1, UINT8_MAX)),
+             unsafe_cast<std::uint8_t>(rand_int<int>(1, UINT8_MAX)),
+             unsafe_cast<std::uint8_t>(rand_int<int>(1, UINT8_MAX)),
+             unsafe_cast<std::uint8_t>(rand_int<int>(1, UINT8_MAX)),
+             unsafe_cast<std::uint8_t>(rand_int<int>(1, UINT8_MAX)),
+             unsafe_cast<std::uint8_t>(rand_int<int>(1, UINT8_MAX)),
+             unsafe_cast<std::uint8_t>(rand_int<int>(1, UINT8_MAX)),
+             unsafe_cast<std::uint8_t>(rand_int<int>(1, UINT8_MAX)),
+             unsafe_cast<std::uint8_t>(rand_int<int>(1, UINT8_MAX)),
+             unsafe_cast<std::uint8_t>(rand_int<int>(1, UINT8_MAX)),
+             unsafe_cast<std::uint8_t>(rand_int<int>(1, UINT8_MAX)),
+             unsafe_cast<std::uint8_t>(rand_int<int>(1, UINT8_MAX)),
+             unsafe_cast<std::uint8_t>(rand_int<int>(1, UINT8_MAX))}};
     };
     return Endpoint{
         v4 ? Address{AddressV4{dv4()}} : Address{AddressV6{dv6()}},
@@ -60,3 +64,5 @@ randomEP(bool v4 = true)
 
 }  // namespace IP
 }  // namespace beast
+
+#endif

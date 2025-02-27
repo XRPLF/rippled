@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <test/jtx/Oracle.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/protocol/jss.h>
 
 namespace ripple {
@@ -234,25 +235,25 @@ private:
             // Less than the last close time - 300s
             oracle.set(UpdateArg{
                 .series = {{"XRP", "USD", 740, 1}},
-                .lastUpdateTime = static_cast<std::uint32_t>(closeTime() - 301),
+                .lastUpdateTime = unsafe_cast<std::uint32_t>(closeTime() - 301),
                 .err = ter(tecINVALID_UPDATE_TIME)});
             // Greater than last close time + 300s
             oracle.set(UpdateArg{
                 .series = {{"XRP", "USD", 740, 1}},
-                .lastUpdateTime = static_cast<std::uint32_t>(closeTime() + 311),
+                .lastUpdateTime = unsafe_cast<std::uint32_t>(closeTime() + 311),
                 .err = ter(tecINVALID_UPDATE_TIME)});
             oracle.set(UpdateArg{.series = {{"XRP", "USD", 740, 1}}});
             BEAST_EXPECT(oracle.expectLastUpdateTime(
-                static_cast<std::uint32_t>(testStartTime.count() + 450)));
+                unsafe_cast<std::uint32_t>(testStartTime.count() + 450)));
             // Less than the previous lastUpdateTime
             oracle.set(UpdateArg{
                 .series = {{"XRP", "USD", 740, 1}},
-                .lastUpdateTime = static_cast<std::uint32_t>(449),
+                .lastUpdateTime = unsafe_cast<std::uint32_t>(449),
                 .err = ter(tecINVALID_UPDATE_TIME)});
             // Less than the epoch time
             oracle.set(UpdateArg{
                 .series = {{"XRP", "USD", 740, 1}},
-                .lastUpdateTime = static_cast<int>(epoch_offset.count() - 1),
+                .lastUpdateTime = unsafe_cast<int>(epoch_offset.count() - 1),
                 .err = ter(tecINVALID_UPDATE_TIME)});
         }
 

@@ -21,6 +21,7 @@
 #include <xrpld/core/SociDB.h>
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/safe_cast.h>
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 
@@ -179,7 +180,7 @@ public:
         setupSQLiteConfig(c, getDatabasePath());
         DBConfig sc(c, "SociTestDB");
         std::vector<std::uint64_t> const ubid(
-            {static_cast<std::uint64_t>(
+            {unsafe_cast<std::uint64_t>(
                  std::numeric_limits<std::int64_t>::max()),
              20,
              30});

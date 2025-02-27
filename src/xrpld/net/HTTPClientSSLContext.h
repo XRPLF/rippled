@@ -24,6 +24,7 @@
 #include <xrpld/net/RegisterSSLCerts.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/safe_cast.h>
 #include <boost/asio.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl.hpp>
@@ -110,7 +111,7 @@ public:
         if (!SSL_set_tlsext_host_name(strm.native_handle(), host.c_str()))
         {
             ec.assign(
-                static_cast<int>(::ERR_get_error()),
+                unsafe_cast<int>(::ERR_get_error()),
                 boost::asio::error::get_ssl_category());
         }
         else if (!sslVerify())

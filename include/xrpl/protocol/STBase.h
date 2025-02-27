@@ -21,6 +21,7 @@
 #define RIPPLE_PROTOCOL_STBASE_H_INCLUDED
 
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/Serializer.h>
 #include <memory>
@@ -29,6 +30,7 @@
 #include <type_traits>
 #include <typeinfo>
 #include <utility>
+
 namespace ripple {
 
 /// Note, should be treated as flags that can be | and &
@@ -86,7 +88,7 @@ struct JsonOptions
     [[nodiscard]] constexpr JsonOptions friend
     operator~(JsonOptions v) noexcept
     {
-        return {~v.value & static_cast<underlying_t>(_all)};
+        return {~v.value & safe_cast<underlying_t>(_all)};
     }
 };
 

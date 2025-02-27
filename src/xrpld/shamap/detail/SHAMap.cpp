@@ -24,6 +24,7 @@
 #include <xrpld/shamap/SHAMapTxLeafNode.h>
 #include <xrpld/shamap/SHAMapTxPlusMetaLeafNode.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/safe_cast.h>
 
 namespace ripple {
 
@@ -47,7 +48,7 @@ makeTypedLeaf(
     LogicError(
         "Attempt to create leaf node of unknown type " +
         std::to_string(
-            static_cast<std::underlying_type_t<SHAMapNodeType>>(type)));
+            safe_cast<std::underlying_type_t<SHAMapNodeType>>(type)));
 }
 
 SHAMap::SHAMap(SHAMapType t, Family& f)

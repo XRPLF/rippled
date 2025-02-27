@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpl/basics/Number.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <algorithm>
 #include <cstddef>
@@ -181,7 +182,7 @@ Number::normalize()
         return;
     }
     bool const negative = (mantissa_ < 0);
-    auto m = static_cast<std::make_unsigned_t<rep>>(mantissa_);
+    auto m = unsafe_cast<std::make_unsigned_t<rep>>(mantissa_);
     if (negative)
         m = -m;
     while ((m < minMantissa) && (exponent_ > minExponent))
@@ -343,7 +344,7 @@ Number::operator+=(Number const& y)
 }
 
 // Optimization equivalent to:
-// auto r = static_cast<unsigned>(u % 10);
+// auto r = safe_cast<unsigned>(u % 10);
 // u /= 10;
 // return r;
 // Derived from Hacker's Delight Second Edition Chapter 10
@@ -408,7 +409,7 @@ Number::operator*=(Number const& y)
     while (zm > maxMantissa)
     {
         // The following is optimization for:
-        // g.push(static_cast<unsigned>(zm % 10));
+        // g.push(safe_cast<unsigned>(zm % 10));
         // zm /= 10;
         g.push(divu10(zm));
         ++ze;
@@ -650,7 +651,7 @@ root(Number f, unsigned d)
 
     // Scale f into the range (0, 1) such that f's exponent is a multiple of d
     auto e = f.exponent() + 16;
-    auto const di = static_cast<int>(d);
+    auto const di = unsafe_cast<int>(d);
     auto ex = [e = e, di = di]()  // Euclidean remainder of e/d
     {
         int k = (e >= 0 ? e : e - (di - 1)) / di;

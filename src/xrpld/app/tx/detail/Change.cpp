@@ -24,6 +24,7 @@
 #include <xrpld/app/tx/detail/Change.h>
 #include <xrpld/ledger/Sandbox.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -178,7 +179,7 @@ Change::activateTrustLinesToSelfFix()
         if (tl->getType() != ltRIPPLE_STATE)
         {
             JLOG(j_.warn()) << id << ": Unexpected type "
-                            << static_cast<std::uint16_t>(tl->getType());
+                            << safe_cast<std::uint16_t>(tl->getType());
             return true;
         }
 

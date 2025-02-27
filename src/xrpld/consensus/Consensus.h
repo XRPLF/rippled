@@ -27,6 +27,7 @@
 #include <xrpld/consensus/LedgerTiming.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_writer.h>
 #include <chrono>
@@ -917,14 +918,14 @@ Consensus<Adaptor>::getJson(bool full) const
     Json::Value ret(Json::objectValue);
 
     ret["proposing"] = (mode_.get() == ConsensusMode::proposing);
-    ret["proposers"] = static_cast<int>(currPeerPositions_.size());
+    ret["proposers"] = unsafe_cast<int>(currPeerPositions_.size());
 
     if (mode_.get() != ConsensusMode::wrongLedger)
     {
         ret["synched"] = true;
         ret["ledger_seq"] =
             static_cast<std::uint32_t>(previousLedger_.seq()) + 1;
-        ret["close_granularity"] = static_cast<Int>(closeResolution_.count());
+        ret["close_granularity"] = unsafe_cast<Int>(closeResolution_.count());
     }
     else
         ret["synched"] = false;
@@ -932,7 +933,7 @@ Consensus<Adaptor>::getJson(bool full) const
     ret["phase"] = to_string(phase_);
 
     if (result_ && !result_->disputes.empty() && !full)
-        ret["disputes"] = static_cast<Int>(result_->disputes.size());
+        ret["disputes"] = unsafe_cast<Int>(result_->disputes.size());
 
     if (result_)
         ret["our_position"] = result_->position.getJson();
@@ -941,12 +942,12 @@ Consensus<Adaptor>::getJson(bool full) const
     {
         if (result_)
             ret["current_ms"] =
-                static_cast<Int>(result_->roundTime.read().count());
+                unsafe_cast<Int>(result_->roundTime.read().count());
         ret["converge_percent"] = convergePercent_;
-        ret["close_resolution"] = static_cast<Int>(closeResolution_.count());
+        ret["close_resolution"] = unsafe_cast<Int>(closeResolution_.count());
         ret["have_time_consensus"] = haveCloseTimeConsensus_;
-        ret["previous_proposers"] = static_cast<Int>(prevProposers_);
-        ret["previous_mseconds"] = static_cast<Int>(prevRoundTime_.count());
+        ret["previous_proposers"] = unsafe_cast<Int>(prevProposers_);
+        ret["previous_mseconds"] = unsafe_cast<Int>(prevRoundTime_.count());
 
         if (!currPeerPositions_.empty())
         {

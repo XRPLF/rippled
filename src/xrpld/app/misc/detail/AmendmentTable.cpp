@@ -25,7 +25,6 @@
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
-
 #include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
 #include <boost/range/adaptor/transformed.hpp>

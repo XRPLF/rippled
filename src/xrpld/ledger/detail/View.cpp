@@ -21,6 +21,7 @@
 #include <xrpld/ledger/View.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Protocol.h>
@@ -1191,9 +1192,9 @@ rippleCreditIOU(
             && (uFlags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve))
             // Sender reserve is set.
             &&
-            static_cast<bool>(
+            unsafe_cast<bool>(
                 uFlags & (!bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple)) !=
-                static_cast<bool>(
+                unsafe_cast<bool>(
                     view.read(keylet::account(uSenderID))->getFlags() &
                     lsfDefaultRipple) &&
             !(uFlags & (!bSenderHigh ? lsfLowFreeze : lsfHighFreeze)) &&
@@ -1649,9 +1650,9 @@ updateTrustLine(
         // Sender is zero or negative.
         && (flags & (!bSenderHigh ? lsfLowReserve : lsfHighReserve))
         // Sender reserve is set.
-        && static_cast<bool>(
+        && unsafe_cast<bool>(
                flags & (!bSenderHigh ? lsfLowNoRipple : lsfHighNoRipple)) !=
-            static_cast<bool>(sle->getFlags() & lsfDefaultRipple) &&
+            unsafe_cast<bool>(sle->getFlags() & lsfDefaultRipple) &&
         !(flags & (!bSenderHigh ? lsfLowFreeze : lsfHighFreeze)) &&
         !state->getFieldAmount(!bSenderHigh ? sfLowLimit : sfHighLimit)
         // Sender trust limit is 0.

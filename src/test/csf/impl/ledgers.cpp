@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <test/csf/ledgers.h>
+#include <xrpl/basics/safe_cast.h>
 #include <algorithm>
 
 namespace ripple {
@@ -89,7 +90,7 @@ LedgerOracle::LedgerOracle()
 Ledger::ID
 LedgerOracle::nextID() const
 {
-    return Ledger::ID{static_cast<Ledger::ID::value_type>(instances_.size())};
+    return Ledger::ID{unsafe_cast<Ledger::ID::value_type>(instances_.size())};
 }
 
 Ledger

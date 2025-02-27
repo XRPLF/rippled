@@ -29,7 +29,6 @@
 #include <xrpld/nodestore/detail/EncodedBlob.h>
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/contract.h>
-#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <atomic>
 #include <memory>
@@ -316,7 +315,7 @@ public:
             else
             {
                 status = static_cast<Status>(
-                    customCode + unsafe_cast<int>(getStatus.code()));
+                    customCode + static_cast<int>(getStatus.code()));
 
                 JLOG(m_journal.error()) << getStatus.ToString();
             }

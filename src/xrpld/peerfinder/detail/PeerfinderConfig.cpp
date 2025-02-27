@@ -19,6 +19,7 @@
 
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/peerfinder/detail/Tuning.h>
+#include <xrpl/basics/safe_cast.h>
 
 namespace ripple {
 namespace PeerFinder {
@@ -54,12 +55,12 @@ Config::applyTuning()
 
         if (inPeers > Tuning::defaultMaxPeers)
             ipLimit += std::min(
-                5, static_cast<int>(inPeers / Tuning::defaultMaxPeers));
+                5, unsafe_cast<int>(inPeers / Tuning::defaultMaxPeers));
     }
 
     // We don't allow a single IP to consume all incoming slots,
     // unless we only have one incoming slot available.
-    ipLimit = std::max(1, std::min(ipLimit, static_cast<int>(inPeers / 2)));
+    ipLimit = std::max(1, std::min(ipLimit, unsafe_cast<int>(inPeers / 2)));
 }
 
 void

@@ -251,7 +251,7 @@ PeerImp::send(std::shared_ptr<Message> const& m)
     overlay_.reportTraffic(
         safe_cast<TrafficCount::category>(m->getCategory()),
         false,
-        static_cast<int>(m->getBuffer(compressionEnabled_).size()));
+        unsafe_cast<int>(m->getBuffer(compressionEnabled_).size()));
 
     auto sendq_size = send_queue_.size();
 
@@ -409,10 +409,10 @@ PeerImp::json()
     {
         std::lock_guard sl(recentLock_);
         if (latency_)
-            ret[jss::latency] = static_cast<Json::UInt>(latency_->count());
+            ret[jss::latency] = unsafe_cast<Json::UInt>(latency_->count());
     }
 
-    ret[jss::uptime] = static_cast<Json::UInt>(
+    ret[jss::uptime] = unsafe_cast<Json::UInt>(
         std::chrono::duration_cast<std::chrono::seconds>(uptime()).count());
 
     std::uint32_t minSeq, maxSeq;
@@ -1010,7 +1010,7 @@ PeerImp::onMessageBegin(
     load_event_ = app_.getJobQueue().makeLoadEvent(jtPEER, name);
     fee_ = {Resource::feeTrivialPeer, name};
     auto const category = TrafficCount::categorize(*m, type, true);
-    overlay_.reportTraffic(category, true, static_cast<int>(size));
+    overlay_.reportTraffic(category, true, unsafe_cast<int>(size));
     using namespace protocol;
     if ((type == MessageType::mtTRANSACTION ||
          type == MessageType::mtHAVE_TRANSACTIONS ||
@@ -1026,7 +1026,7 @@ PeerImp::onMessageBegin(
         (txReduceRelayEnabled() || app_.config().TX_REDUCE_RELAY_METRICS))
     {
         overlay_.addTxMetrics(
-            static_cast<MessageType>(type), static_cast<std::uint64_t>(size));
+            safe_cast<MessageType>(type), static_cast<std::uint64_t>(size));
     }
     JLOG(journal_.trace()) << "onMessageBegin: " << type << " " << size << " "
                            << uncompressed_size << " " << isCompressed;
@@ -1898,13 +1898,13 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMStatusChange> const& m)
 
         if (m->has_networktime())
         {
-            j[jss::date] = static_cast<Json::UInt>(m->networktime());
+            j[jss::date] = unsafe_cast<Json::UInt>(m->networktime());
         }
 
         if (m->has_firstseq() && m->has_lastseq())
         {
-            j[jss::ledger_index_min] = static_cast<Json::UInt>(m->firstseq());
-            j[jss::ledger_index_max] = static_cast<Json::UInt>(m->lastseq());
+            j[jss::ledger_index_min] = safe_cast<Json::UInt>(m->firstseq());
+            j[jss::ledger_index_max] = safe_cast<Json::UInt>(m->lastseq());
         }
 
         return j;

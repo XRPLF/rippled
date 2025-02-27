@@ -23,6 +23,7 @@
 #include <xrpld/rpc/GRPCHandlers.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/handlers/LedgerHandler.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
@@ -225,7 +226,7 @@ doLedgerGrpc(RPC::GRPCContext<org::xrpl::rpc::v1::GetLedgerRequest>& context)
                 obj->set_mod_type(org::xrpl::rpc::v1::RawLedgerObject::CREATED);
             auto const blob = inDesired ? inDesired->slice() : inBase->slice();
             auto const objectType =
-                static_cast<LedgerEntryType>(blob[1] << 8 | blob[2]);
+                unsafe_cast<LedgerEntryType>(blob[1] << 8 | blob[2]);
 
             if (request.get_object_neighbors())
             {

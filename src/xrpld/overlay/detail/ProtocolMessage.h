@@ -23,6 +23,7 @@
 #include <xrpld/overlay/Compression.h>
 #include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/detail/ZeroCopyStream.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/messages.h>
 #include <boost/asio/buffer.hpp>
@@ -198,7 +199,7 @@ parseMessageHeader(
             return std::nullopt;
         }
 
-        hdr.algorithm = static_cast<compression::Algorithm>(*iter & 0xF0);
+        hdr.algorithm = unsafe_cast<compression::Algorithm>(*iter & 0xF0);
 
         if (hdr.algorithm != compression::Algorithm::LZ4)
         {

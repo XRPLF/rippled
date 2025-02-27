@@ -25,6 +25,7 @@
 #include <xrpld/ledger/PaymentSandbox.h>
 #include <xrpld/ledger/Sandbox.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/protocol/Feature.h>
 
 namespace ripple {
@@ -1103,7 +1104,7 @@ struct Flow_test : public beast::unit_test::suite
                 // 12.55....
                 STAmount{
                     USD.issue(),
-                    static_cast<std::uint64_t>(1255555555555555ull),
+                    safe_cast<std::uint64_t>(1255555555555555ull),
                     -14,
                     false}));
 
@@ -1112,7 +1113,7 @@ struct Flow_test : public beast::unit_test::suite
             // 5.0...
             STAmount{
                 USD.issue(),
-                static_cast<std::uint64_t>(5000000000000000ull),
+                safe_cast<std::uint64_t>(5000000000000000ull),
                 -15,
                 false},
             XRP(1000)));
@@ -1122,7 +1123,7 @@ struct Flow_test : public beast::unit_test::suite
             // .555...
             STAmount{
                 USD.issue(),
-                static_cast<std::uint64_t>(5555555555555555ull),
+                safe_cast<std::uint64_t>(5555555555555555ull),
                 -16,
                 false},
             XRP(10)));
@@ -1132,7 +1133,7 @@ struct Flow_test : public beast::unit_test::suite
             // 4.44....
             STAmount{
                 USD.issue(),
-                static_cast<std::uint64_t>(4444444444444444ull),
+                safe_cast<std::uint64_t>(4444444444444444ull),
                 -15,
                 false},
             XRP(.1)));
@@ -1142,7 +1143,7 @@ struct Flow_test : public beast::unit_test::suite
             // 17
             STAmount{
                 USD.issue(),
-                static_cast<std::uint64_t>(1700000000000000ull),
+                safe_cast<std::uint64_t>(1700000000000000ull),
                 -14,
                 false},
             XRP(.001)));

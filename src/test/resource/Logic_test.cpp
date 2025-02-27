@@ -72,7 +72,7 @@ public:
             Gossip::Item item;
             item.balance = 100 + rand_int(499);
             beast::IP::AddressV4::bytes_type d = {
-                {192, 0, 2, static_cast<std::uint8_t>(v + i)}};
+                {192, 0, 2, unsafe_cast<std::uint8_t>(v + i)}};
             item.address = beast::IP::Endpoint{beast::IP::AddressV4{d}};
             gossip.items.push_back(item);
         }

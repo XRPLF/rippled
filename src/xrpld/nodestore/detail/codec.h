@@ -41,7 +41,7 @@ template <class BufferFactory>
 std::pair<void const*, std::size_t>
 lz4_decompress(void const* in, std::size_t in_size, BufferFactory&& bf)
 {
-    if (static_cast<int>(in_size) < 0)
+    if (unsafe_cast<int>(in_size) < 0)
         Throw<std::runtime_error>("lz4_decompress: integer overflow (input)");
 
     std::size_t outSize = 0;
@@ -52,16 +52,16 @@ lz4_decompress(void const* in, std::size_t in_size, BufferFactory&& bf)
     if (n == 0 || n >= in_size)
         Throw<std::runtime_error>("lz4_decompress: invalid blob");
 
-    if (static_cast<int>(outSize) <= 0)
+    if (unsafe_cast<int>(outSize) <= 0)
         Throw<std::runtime_error>("lz4_decompress: integer overflow (output)");
 
     void* const out = bf(outSize);
 
     if (LZ4_decompress_safe(
-            reinterpret_cast<char const*>(in) + n,
-            reinterpret_cast<char*>(out),
-            static_cast<int>(in_size - n),
-            static_cast<int>(outSize)) != static_cast<int>(outSize))
+            static_cast<char const*>(in) + n,
+            static_cast<char*>(out),
+            unsafe_cast<int>(in_size - n),
+            unsafe_cast<int>(outSize)) != unsafe_cast<int>(outSize))
         Throw<std::runtime_error>("lz4_decompress: LZ4_decompress_safe");
 
     return {out, outSize};
@@ -150,7 +150,7 @@ nodeobject_decompress(void const* in, std::size_t in_size, BufferFactory&& bf)
             write<std::uint32_t>(os, 0);
             write<std::uint8_t>(os, hotUNKNOWN);
             write<std::uint32_t>(
-                os, static_cast<std::uint32_t>(HashPrefix::innerNode));
+                os, safe_cast<std::uint32_t>(HashPrefix::innerNode));
             if (mask == 0)
                 Throw<std::runtime_error>(
                     "nodeobject codec v1: empty inner node");
@@ -194,7 +194,7 @@ nodeobject_decompress(void const* in, std::size_t in_size, BufferFactory&& bf)
             write<std::uint32_t>(os, 0);
             write<std::uint8_t>(os, hotUNKNOWN);
             write<std::uint32_t>(
-                os, static_cast<std::uint32_t>(HashPrefix::innerNode));
+                os, safe_cast<std::uint32_t>(HashPrefix::innerNode));
             write(os, is(512), 512);
             break;
         }

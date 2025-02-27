@@ -1308,7 +1308,7 @@ InboundLedger::getJson(int)
         ret[jss::failed] = true;
 
     if (!complete_ && !failed_)
-        ret[jss::peers] = static_cast<int>(mPeerSet->getPeerIds().size());
+        ret[jss::peers] = unsafe_cast<int>(mPeerSet->getPeerIds().size());
 
     ret[jss::have_header] = mHaveHeader;
 

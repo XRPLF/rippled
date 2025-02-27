@@ -27,6 +27,7 @@
 #include <xrpld/core/SociDB.h>
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/safe_cast.h>
 #include <boost/filesystem.hpp>
 #include <memory>
 #include <soci/sqlite3/soci-sqlite3.h>
@@ -130,7 +131,7 @@ getKBUsedAll(soci::session& s)
 {
     if (!getConnection(s))
         Throw<std::logic_error>("No connection found.");
-    return static_cast<size_t>(
+    return unsafe_cast<size_t>(
         sqlite_api::sqlite3_memory_used() / kilobytes(1));
 }
 

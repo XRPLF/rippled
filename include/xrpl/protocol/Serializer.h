@@ -94,10 +94,10 @@ public:
     add32(T i)
     {
         int ret = mData.size();
-        mData.push_back(static_cast<unsigned char>((i >> 24) & 0xff));
-        mData.push_back(static_cast<unsigned char>((i >> 16) & 0xff));
-        mData.push_back(static_cast<unsigned char>((i >> 8) & 0xff));
-        mData.push_back(static_cast<unsigned char>(i & 0xff));
+        mData.push_back(unsafe_cast<unsigned char>((i >> 24) & 0xff));
+        mData.push_back(unsafe_cast<unsigned char>((i >> 16) & 0xff));
+        mData.push_back(unsafe_cast<unsigned char>((i >> 8) & 0xff));
+        mData.push_back(unsafe_cast<unsigned char>(i & 0xff));
         return ret;
     }
 
@@ -112,14 +112,14 @@ public:
     add64(T i)
     {
         int ret = mData.size();
-        mData.push_back(static_cast<unsigned char>((i >> 56) & 0xff));
-        mData.push_back(static_cast<unsigned char>((i >> 48) & 0xff));
-        mData.push_back(static_cast<unsigned char>((i >> 40) & 0xff));
-        mData.push_back(static_cast<unsigned char>((i >> 32) & 0xff));
-        mData.push_back(static_cast<unsigned char>((i >> 24) & 0xff));
-        mData.push_back(static_cast<unsigned char>((i >> 16) & 0xff));
-        mData.push_back(static_cast<unsigned char>((i >> 8) & 0xff));
-        mData.push_back(static_cast<unsigned char>(i & 0xff));
+        mData.push_back(unsafe_cast<unsigned char>((i >> 56) & 0xff));
+        mData.push_back(unsafe_cast<unsigned char>((i >> 48) & 0xff));
+        mData.push_back(unsafe_cast<unsigned char>((i >> 40) & 0xff));
+        mData.push_back(unsafe_cast<unsigned char>((i >> 32) & 0xff));
+        mData.push_back(unsafe_cast<unsigned char>((i >> 24) & 0xff));
+        mData.push_back(unsafe_cast<unsigned char>((i >> 16) & 0xff));
+        mData.push_back(unsafe_cast<unsigned char>((i >> 8) & 0xff));
+        mData.push_back(unsafe_cast<unsigned char>(i & 0xff));
         return ret;
     }
 
@@ -375,7 +375,7 @@ public:
     int
     getBytesLeft() const noexcept
     {
-        return static_cast<int>(remain_);
+        return unsafe_cast<int>(remain_);
     }
 
     // get functions throw on error

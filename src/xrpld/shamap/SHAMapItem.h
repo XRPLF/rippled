@@ -25,6 +25,7 @@
 #include <xrpl/basics/SlabAllocator.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 
@@ -62,7 +63,7 @@ private:
     // so we limit this constructor to codepaths that do this right and limit
     // arbitrary construction.
     SHAMapItem(uint256 const& tag, Slice data)
-        : tag_(tag), size_(static_cast<std::uint32_t>(data.size()))
+        : tag_(tag), size_(unsafe_cast<std::uint32_t>(data.size()))
     {
         std::memcpy(
             reinterpret_cast<std::uint8_t*>(this) + sizeof(*this),

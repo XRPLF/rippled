@@ -22,6 +22,7 @@
 #include <xrpld/shamap/SHAMap.h>
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Buffer.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/beast/utility/Journal.h>
 
@@ -110,7 +111,7 @@ public:
     IntToVUC(int v)
     {
         Buffer vuc(32);
-        std::fill_n(vuc.data(), vuc.size(), static_cast<std::uint8_t>(v));
+        std::fill_n(vuc.data(), vuc.size(), unsafe_cast<std::uint8_t>(v));
         return vuc;
     }
 

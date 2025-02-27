@@ -76,7 +76,7 @@ sim.run(1);
 
 // everyone submits their own ID as a TX and relay it to peers
 for (Peer * p : validators)
-    p->submit(Tx(static_cast<std::uint32_t>(p->id)));
+    p->submit(Tx(safe_cast<std::uint32_t>(p->id)));
 
 sim.run(1);
 
@@ -167,7 +167,7 @@ std::cout << (simDur.stop - simDur.start).count() << std::endl;
 ```c++
 // everyone submits their own ID as a TX and relay it to peers
 for (Peer * p : validators)
-    p->submit(Tx(static_cast<std::uint32_t>(p->id)));
+    p->submit(Tx(safe_cast<std::uint32_t>(p->id)));
 ```
 
 In this basic example, we explicitly submit a single transaction to each

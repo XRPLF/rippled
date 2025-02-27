@@ -23,6 +23,7 @@
 #include <xrpld/overlay/detail/PeerImp.h>
 #include <xrpld/peerfinder/detail/SlotImp.h>
 #include <xrpl/basics/make_SSLContext.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/unit_test.h>
 
 namespace ripple {
@@ -56,8 +57,8 @@ private:
                             bool success = true) {
                 std::stringstream str("[reduce_relay]");
                 str << "[reduce_relay]\n"
-                    << "tx_enable=" << static_cast<int>(enable) << "\n"
-                    << "tx_metrics=" << static_cast<int>(metrics) << "\n"
+                    << "tx_enable=" << safe_cast<int>(enable) << "\n"
+                    << "tx_metrics=" << safe_cast<int>(metrics) << "\n"
                     << "tx_min_peers=" << min << "\n"
                     << "tx_relay_percentage=" << pct << "\n";
                 Config c;

@@ -21,6 +21,7 @@
 #include <test/jtx/AMM.h>
 #include <test/jtx/xchain_bridge.h>
 #include <xrpld/app/tx/detail/NFTokenMint.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
@@ -1002,7 +1003,7 @@ public:
             }();
 
             std::uint32_t const expectedAccountObjects{
-                static_cast<std::uint32_t>(std::size(expectedLedgerTypes))};
+                unsafe_cast<std::uint32_t>(std::size(expectedLedgerTypes))};
 
             if (BEAST_EXPECT(acctObjsIsSize(resp, expectedAccountObjects)))
             {

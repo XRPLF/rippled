@@ -21,6 +21,7 @@
 #define RIPPLE_NODESTORE_ENCODEDBLOB_H_INCLUDED
 
 #include <xrpld/nodestore/NodeObject.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <boost/align/align_up.hpp>
 #include <algorithm>
@@ -94,7 +95,7 @@ public:
                                          : new std::uint8_t[size_])
     {
         std::fill_n(ptr_, 8, std::uint8_t{0});
-        ptr_[8] = static_cast<std::uint8_t>(obj->getType());
+        ptr_[8] = unsafe_cast<std::uint8_t>(obj->getType());
         std::copy_n(obj->getData().data(), obj->getData().size(), ptr_ + 9);
         std::copy_n(obj->getHash().data(), obj->getHash().size(), key_.data());
     }

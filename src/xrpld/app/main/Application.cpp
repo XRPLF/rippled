@@ -59,6 +59,7 @@
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/ResolverAsio.h>
 #include <xrpl/basics/random.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/asio/io_latency_probe.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/crypto/csprng.h>
@@ -298,7 +299,7 @@ public:
                       return config->WORKERS;
 
                   auto count =
-                      static_cast<int>(std::thread::hardware_concurrency());
+                      unsafe_cast<int>(std::thread::hardware_concurrency());
 
                   // Be more aggressive about the number of threads to use
                   // for the job queue if the server is configured as "large"

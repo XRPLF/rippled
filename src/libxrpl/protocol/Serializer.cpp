@@ -41,8 +41,8 @@ int
 Serializer::add16(std::uint16_t i)
 {
     int ret = mData.size();
-    mData.push_back(static_cast<unsigned char>(i >> 8));
-    mData.push_back(static_cast<unsigned char>(i & 0xff));
+    mData.push_back(unsafe_cast<unsigned char>(i >> 8));
+    mData.push_back(unsafe_cast<unsigned char>(i & 0xff));
     return ret;
 }
 
@@ -128,26 +128,26 @@ Serializer::addFieldID(int type, int name)
     if (type < 16)
     {
         if (name < 16)  // common type, common name
-            mData.push_back(static_cast<unsigned char>((type << 4) | name));
+            mData.push_back(unsafe_cast<unsigned char>((type << 4) | name));
         else
         {
             // common type, uncommon name
-            mData.push_back(static_cast<unsigned char>(type << 4));
-            mData.push_back(static_cast<unsigned char>(name));
+            mData.push_back(unsafe_cast<unsigned char>(type << 4));
+            mData.push_back(unsafe_cast<unsigned char>(name));
         }
     }
     else if (name < 16)
     {
         // uncommon type, common name
-        mData.push_back(static_cast<unsigned char>(name));
-        mData.push_back(static_cast<unsigned char>(type));
+        mData.push_back(unsafe_cast<unsigned char>(name));
+        mData.push_back(unsafe_cast<unsigned char>(type));
     }
     else
     {
         // uncommon type, uncommon name
-        mData.push_back(static_cast<unsigned char>(0));
-        mData.push_back(static_cast<unsigned char>(type));
-        mData.push_back(static_cast<unsigned char>(name));
+        mData.push_back(unsafe_cast<unsigned char>(0));
+        mData.push_back(unsafe_cast<unsigned char>(type));
+        mData.push_back(unsafe_cast<unsigned char>(name));
     }
 
     return ret;
@@ -227,22 +227,22 @@ Serializer::addEncoded(int length)
 
     if (length <= 192)
     {
-        bytes[0] = static_cast<unsigned char>(length);
+        bytes[0] = unsafe_cast<unsigned char>(length);
         numBytes = 1;
     }
     else if (length <= 12480)
     {
         length -= 193;
-        bytes[0] = 193 + static_cast<unsigned char>(length >> 8);
-        bytes[1] = static_cast<unsigned char>(length & 0xff);
+        bytes[0] = 193 + unsafe_cast<unsigned char>(length >> 8);
+        bytes[1] = unsafe_cast<unsigned char>(length & 0xff);
         numBytes = 2;
     }
     else if (length <= 918744)
     {
         length -= 12481;
-        bytes[0] = 241 + static_cast<unsigned char>(length >> 16);
-        bytes[1] = static_cast<unsigned char>((length >> 8) & 0xff);
-        bytes[2] = static_cast<unsigned char>(length & 0xff);
+        bytes[0] = 241 + unsafe_cast<unsigned char>(length >> 16);
+        bytes[1] = unsafe_cast<unsigned char>((length >> 8) & 0xff);
+        bytes[2] = unsafe_cast<unsigned char>(length & 0xff);
         numBytes = 3;
     }
     else
@@ -371,8 +371,8 @@ SerialIter::get16()
     p_ += 2;
     used_ += 2;
     remain_ -= 2;
-    return (static_cast<std::uint64_t>(t[0]) << 8) +
-        static_cast<std::uint64_t>(t[1]);
+    return (safe_cast<std::uint64_t>(t[0]) << 8) +
+        safe_cast<std::uint64_t>(t[1]);
 }
 
 std::uint32_t
@@ -384,10 +384,9 @@ SerialIter::get32()
     p_ += 4;
     used_ += 4;
     remain_ -= 4;
-    return (static_cast<std::uint64_t>(t[0]) << 24) +
-        (static_cast<std::uint64_t>(t[1]) << 16) +
-        (static_cast<std::uint64_t>(t[2]) << 8) +
-        static_cast<std::uint64_t>(t[3]);
+    return (safe_cast<std::uint64_t>(t[0]) << 24) +
+        (safe_cast<std::uint64_t>(t[1]) << 16) +
+        (safe_cast<std::uint64_t>(t[2]) << 8) + safe_cast<std::uint64_t>(t[3]);
 }
 
 std::uint64_t
@@ -399,14 +398,13 @@ SerialIter::get64()
     p_ += 8;
     used_ += 8;
     remain_ -= 8;
-    return (static_cast<std::uint64_t>(t[0]) << 56) +
-        (static_cast<std::uint64_t>(t[1]) << 48) +
-        (static_cast<std::uint64_t>(t[2]) << 40) +
-        (static_cast<std::uint64_t>(t[3]) << 32) +
-        (static_cast<std::uint64_t>(t[4]) << 24) +
-        (static_cast<std::uint64_t>(t[5]) << 16) +
-        (static_cast<std::uint64_t>(t[6]) << 8) +
-        static_cast<std::uint64_t>(t[7]);
+    return (safe_cast<std::uint64_t>(t[0]) << 56) +
+        (safe_cast<std::uint64_t>(t[1]) << 48) +
+        (safe_cast<std::uint64_t>(t[2]) << 40) +
+        (safe_cast<std::uint64_t>(t[3]) << 32) +
+        (safe_cast<std::uint64_t>(t[4]) << 24) +
+        (safe_cast<std::uint64_t>(t[5]) << 16) +
+        (safe_cast<std::uint64_t>(t[6]) << 8) + safe_cast<std::uint64_t>(t[7]);
 }
 
 std::int32_t

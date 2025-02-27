@@ -19,6 +19,7 @@
 
 #include <xrpld/nodestore/Database.h>
 #include <xrpl/basics/chrono.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/HashPrefix.h>
@@ -271,7 +272,7 @@ Database::getCountsJson(Json::Value& obj)
 
     {
         std::unique_lock<std::mutex> lock(readLock_);
-        obj["read_queue"] = static_cast<Json::UInt>(read_.size());
+        obj["read_queue"] = unsafe_cast<Json::UInt>(read_.size());
     }
 
     obj["read_threads_total"] = readThreads_.load();

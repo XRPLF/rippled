@@ -20,6 +20,7 @@
 #include <xrpld/app/tx/detail/NFTokenMint.h>
 #include <xrpld/ledger/View.h>
 #include <xrpl/basics/Expected.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/InnerObjectFormats.h>
 #include <xrpl/protocol/Rate.h>
@@ -32,7 +33,7 @@ namespace ripple {
 static std::uint16_t
 extractNFTokenFlagsFromTxFlags(std::uint32_t txFlags)
 {
-    return static_cast<std::uint16_t>(txFlags & 0x0000FFFF);
+    return unsafe_cast<std::uint16_t>(txFlags & 0x0000FFFF);
 }
 
 NotTEC

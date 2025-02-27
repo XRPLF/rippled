@@ -75,7 +75,7 @@ to_unsigned(U2 value)
 {
     if (std::numeric_limits<U1>::max() < value)
         Throw<std::runtime_error>("Value out of range");
-    return static_cast<U1>(value);
+    return unsafe_cast<U1>(value);
 }
 
 static std::string
@@ -246,7 +246,7 @@ parseLeaf(
 
                             ret = detail::make_stvar<STUInt8>(
                                 field,
-                                static_cast<std::uint8_t>(TERtoInt(*ter)));
+                                unsafe_cast<std::uint8_t>(TERtoInt(*ter)));
                         }
                         else
                         {
@@ -270,7 +270,7 @@ parseLeaf(
                     }
 
                     ret = detail::make_stvar<STUInt8>(
-                        field, static_cast<std::uint8_t>(value.asInt()));
+                        field, unsafe_cast<std::uint8_t>(value.asInt()));
                 }
                 else if (value.isUInt())
                 {
@@ -281,7 +281,7 @@ parseLeaf(
                     }
 
                     ret = detail::make_stvar<STUInt8>(
-                        field, static_cast<std::uint8_t>(value.asUInt()));
+                        field, unsafe_cast<std::uint8_t>(value.asUInt()));
                 }
                 else
                 {
@@ -310,7 +310,7 @@ parseLeaf(
                         {
                             ret = detail::make_stvar<STUInt16>(
                                 field,
-                                static_cast<std::uint16_t>(
+                                safe_cast<std::uint16_t>(
                                     TxFormats::getInstance().findTypeByName(
                                         strValue)));
 
@@ -321,7 +321,7 @@ parseLeaf(
                         {
                             ret = detail::make_stvar<STUInt16>(
                                 field,
-                                static_cast<std::uint16_t>(
+                                safe_cast<std::uint16_t>(
                                     LedgerFormats::getInstance().findTypeByName(
                                         strValue)));
 

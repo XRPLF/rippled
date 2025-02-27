@@ -23,6 +23,7 @@
 #include <test/jtx/envconfig.h>
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/random.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
@@ -631,7 +632,7 @@ private:
                     {
                         std::stringstream body;
                         for (auto i = 0; i < 1024; ++i)
-                            body << static_cast<char>(rand_int<short>(32, 126)),
+                            body << unsafe_cast<char>(rand_int<short>(32, 126)),
                                 res.body() = body.str();
                     }
                 }

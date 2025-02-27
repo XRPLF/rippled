@@ -21,6 +21,7 @@
 #include <xrpld/app/tx/detail/DepositPreauth.h>
 #include <xrpld/ledger/View.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -38,7 +39,7 @@ DepositPreauth::preflight(PreflightContext const& ctx)
     bool const unauthArrPresent =
         ctx.tx.isFieldPresent(sfUnauthorizeCredentials);
     int const authCredPresent =
-        static_cast<int>(authArrPresent) + static_cast<int>(unauthArrPresent);
+        safe_cast<int>(authArrPresent) + safe_cast<int>(unauthArrPresent);
 
     if (authCredPresent && !ctx.rules.enabled(featureCredentials))
         return temDISABLED;
@@ -56,8 +57,8 @@ DepositPreauth::preflight(PreflightContext const& ctx)
 
     auto const optAuth = ctx.tx[~sfAuthorize];
     auto const optUnauth = ctx.tx[~sfUnauthorize];
-    int const authPresent = static_cast<int>(optAuth.has_value()) +
-        static_cast<int>(optUnauth.has_value());
+    int const authPresent = safe_cast<int>(optAuth.has_value()) +
+        safe_cast<int>(optUnauth.has_value());
 
     if (authPresent + authCredPresent != 1)
     {

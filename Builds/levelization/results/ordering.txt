@@ -56,6 +56,7 @@ test.csf > xrpld.consensus
 test.csf > xrpl.json
 test.csf > xrpl.protocol
 test.json > test.jtx
+test.json > xrpl.basics
 test.json > xrpl.json
 test.jtx > xrpl.basics
 test.jtx > xrpld.app

@@ -20,6 +20,7 @@
 #ifndef RIPPLE_JSON_MULTIAPIJSON_H_INCLUDED
 #define RIPPLE_JSON_MULTIAPIJSON_H_INCLUDED
 
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ApiVersion.h>
@@ -64,7 +65,7 @@ struct MultiApiJson
     static constexpr auto
     index(unsigned int v) noexcept -> std::size_t
     {
-        return (v < MinVer) ? 0 : static_cast<std::size_t>(v - MinVer);
+        return (v < MinVer) ? 0 : safe_cast<std::size_t>(v - MinVer);
     }
 
     constexpr static std::size_t size = MaxVer + 1 - MinVer;

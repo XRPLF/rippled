@@ -24,6 +24,7 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/Tuning.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -39,7 +40,7 @@ fillTransaction(
     std::uint32_t& sequence,
     ReadView const& ledger)
 {
-    txArray["Sequence"] = static_cast<Json::UInt>(sequence++);
+    txArray["Sequence"] = safe_cast<Json::UInt>(sequence++);
     txArray["Account"] = toBase58(accountID);
     auto& fees = ledger.fees();
     // Convert the reference transaction cost in fee units to drops

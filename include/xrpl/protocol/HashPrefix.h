@@ -20,6 +20,7 @@
 #ifndef RIPPLE_PROTOCOL_HASHPREFIX_H_INCLUDED
 #define RIPPLE_PROTOCOL_HASHPREFIX_H_INCLUDED
 
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/hash/hash_append.h>
 #include <cstdint>
 
@@ -94,7 +95,7 @@ void
 hash_append(Hasher& h, HashPrefix const& hp) noexcept
 {
     using beast::hash_append;
-    hash_append(h, static_cast<std::uint32_t>(hp));
+    hash_append(h, safe_cast<std::uint32_t>(hp));
 }
 
 }  // namespace ripple

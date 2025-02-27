@@ -20,6 +20,7 @@
 #ifndef RIPPLE_RPC_CTID_H_INCLUDED
 #define RIPPLE_RPC_CTID_H_INCLUDED
 
+#include <xrpl/basics/safe_cast.h>
 #include <boost/regex.hpp>
 #include <optional>
 #include <regex>
@@ -39,8 +40,8 @@ encodeCTID(
         return {};
 
     uint64_t ctidValue =
-        ((0xC000'0000ULL + static_cast<uint64_t>(ledger_seq)) << 32) +
-        (static_cast<uint64_t>(txn_index) << 16) + network_id;
+        ((0xC000'0000ULL + safe_cast<uint64_t>(ledger_seq)) << 32) +
+        (safe_cast<uint64_t>(txn_index) << 16) + network_id;
 
     std::stringstream buffer;
     buffer << std::hex << std::uppercase << std::setfill('0') << std::setw(16)

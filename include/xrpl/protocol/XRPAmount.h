@@ -22,6 +22,7 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/FeeUnits.h>
@@ -191,7 +192,7 @@ public:
         {
             return std::nullopt;
         }
-        return static_cast<Dest>(drops_);
+        return unsafe_cast<Dest>(drops_);
     }
 
     template <class Dest>
@@ -226,7 +227,7 @@ public:
             return min;
         if (drops_ > max)
             return max;
-        return static_cast<Json::Int>(drops_);
+        return unsafe_cast<Json::Int>(drops_);
     }
 
     /** Returns the underlying value. Code SHOULD NOT call this

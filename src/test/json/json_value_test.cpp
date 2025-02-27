@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/json/json_reader.h>
@@ -640,7 +641,7 @@ struct json_value_test : beast::unit_test::suite
         BEAST_EXPECT(j1["a_small_int"] < a_uint);
 
         json = "{\"overflow\":";
-        json += std::to_string(static_cast<std::uint64_t>(max_uint) + 1);
+        json += std::to_string(safe_cast<std::uint64_t>(max_uint) + 1);
         json += "}";
 
         Json::Value j2;
@@ -649,7 +650,7 @@ struct json_value_test : beast::unit_test::suite
         BEAST_EXPECT(!r2.parse(json, j2));
 
         json = "{\"underflow\":";
-        json += std::to_string(static_cast<std::int64_t>(min_int) - 1);
+        json += std::to_string(safe_cast<std::int64_t>(min_int) - 1);
         json += "}";
 
         Json::Value j3;
