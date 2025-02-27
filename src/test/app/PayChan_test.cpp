@@ -1954,7 +1954,9 @@ struct PayChan_test : public beast::unit_test::suite
             else
             {
                 auto const preAlice = env.balance(alice);
-                env(claim(alice, chan, reqBal, authAmt), ter(tecNO_DST));
+                env(claim(alice, chan, reqBal, authAmt),
+                    fee(feeDrops),
+                    ter(tecNO_DST));
                 env.close();
                 BEAST_EXPECT(channelBalance(*env.current(), chan) == chanBal);
                 BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
@@ -1966,7 +1968,7 @@ struct PayChan_test : public beast::unit_test::suite
             if (withOwnerDirFix)
             {
                 auto const preAlice = env.balance(alice);
-                env(fund(alice, chan, XRP(1000)));
+                env(fund(alice, chan, XRP(1000)), fee(feeDrops));
                 env.close();
                 BEAST_EXPECT(
                     env.balance(alice) == preAlice - XRP(1000) - feeDrops);
@@ -1977,7 +1979,9 @@ struct PayChan_test : public beast::unit_test::suite
             else
             {
                 auto const preAlice = env.balance(alice);
-                env(fund(alice, chan, XRP(1000)), ter(tecNO_DST));
+                env(fund(alice, chan, XRP(1000)),
+                    fee(feeDrops),
+                    ter(tecNO_DST));
                 env.close();
                 BEAST_EXPECT(env.balance(alice) == preAlice - feeDrops);
                 BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
@@ -2030,7 +2034,9 @@ struct PayChan_test : public beast::unit_test::suite
             {
                 // claim should fail, since bob doesn't exist
                 auto const preAlice = env.balance(alice);
-                env(claim(alice, chan, reqBal, authAmt), ter(tecNO_DST));
+                env(claim(alice, chan, reqBal, authAmt),
+                    fee(feeDrops),
+                    ter(tecNO_DST));
                 env.close();
                 BEAST_EXPECT(channelBalance(*env.current(), chan) == chanBal);
                 BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
@@ -2041,7 +2047,9 @@ struct PayChan_test : public beast::unit_test::suite
             {
                 // fund should fail, sincebob doesn't exist
                 auto const preAlice = env.balance(alice);
-                env(fund(alice, chan, XRP(1000)), ter(tecNO_DST));
+                env(fund(alice, chan, XRP(1000)),
+                    fee(feeDrops),
+                    ter(tecNO_DST));
                 env.close();
                 BEAST_EXPECT(env.balance(alice) == preAlice - feeDrops);
                 BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
@@ -2071,7 +2079,8 @@ struct PayChan_test : public beast::unit_test::suite
                 authAmt = reqBal + XRP(100);
                 auto const sig =
                     signClaimAuth(alice.pk(), alice.sk(), chan, authAmt);
-                env(claim(bob, chan, reqBal, authAmt, Slice(sig), alice.pk()));
+                env(claim(bob, chan, reqBal, authAmt, Slice(sig), alice.pk()),
+                    fee(feeDrops));
                 BEAST_EXPECT(channelBalance(*env.current(), chan) == reqBal);
                 BEAST_EXPECT(channelAmount(*env.current(), chan) == chanAmt);
                 BEAST_EXPECT(env.balance(bob) == preBob + delta - feeDrops);
@@ -2081,7 +2090,7 @@ struct PayChan_test : public beast::unit_test::suite
             {
                 // alice should be able to fund
                 auto const preAlice = env.balance(alice);
-                env(fund(alice, chan, XRP(1000)));
+                env(fund(alice, chan, XRP(1000)), fee(feeDrops));
                 BEAST_EXPECT(
                     env.balance(alice) == preAlice - XRP(1000) - feeDrops);
                 BEAST_EXPECT(
