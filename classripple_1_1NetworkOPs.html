@@ -142,10 +142,10 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:aa0f61ec21b1c950dc46892cea846faf4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a554532c5230a96a9a76b157144a37eb8"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NetworkOPs.html#a554532c5230a96a9a76b157144a37eb8">mapComplete</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1SHAMap.html">SHAMap</a> &gt; const &amp;map, bool fromAcquire)=0</td></tr>
 <tr class="separator:a554532c5230a96a9a76b157144a37eb8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a55c88f2d5f7a900c212fd87b8715bc01"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NetworkOPs.html#a55c88f2d5f7a900c212fd87b8715bc01">beginConsensus</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;netLCL)=0</td></tr>
-<tr class="separator:a55c88f2d5f7a900c212fd87b8715bc01"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad40d5c74e846c0da9aa21c0957505a2f"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NetworkOPs.html#ad40d5c74e846c0da9aa21c0957505a2f">endConsensus</a> ()=0</td></tr>
-<tr class="separator:ad40d5c74e846c0da9aa21c0957505a2f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aac75570cf880ab43c7fb1972952e5796"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NetworkOPs.html#aac75570cf880ab43c7fb1972952e5796">beginConsensus</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;netLCL, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> &gt; const &amp;clog)=0</td></tr>
+<tr class="separator:aac75570cf880ab43c7fb1972952e5796"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3833d17761a224b2a8c144a3a51c4f67"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NetworkOPs.html#a3833d17761a224b2a8c144a3a51c4f67">endConsensus</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> &gt; const &amp;clog)=0</td></tr>
+<tr class="separator:a3833d17761a224b2a8c144a3a51c4f67"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6fe4993dc5d3b89ff38090790d83bfd4"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NetworkOPs.html#a6fe4993dc5d3b89ff38090790d83bfd4">setStandAlone</a> ()=0</td></tr>
 <tr class="separator:a6fe4993dc5d3b89ff38090790d83bfd4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afa309faddae30361165a1e79ae888bf1"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1NetworkOPs.html#afa309faddae30361165a1e79ae888bf1">setStateTimer</a> ()=0</td></tr>
@@ -802,8 +802,8 @@ Static Public Member Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a55c88f2d5f7a900c212fd87b8715bc01" name="a55c88f2d5f7a900c212fd87b8715bc01"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a55c88f2d5f7a900c212fd87b8715bc01">&#9670;&#160;</a></span>beginConsensus()</h2>
+<a id="aac75570cf880ab43c7fb1972952e5796" name="aac75570cf880ab43c7fb1972952e5796"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aac75570cf880ab43c7fb1972952e5796">&#9670;&#160;</a></span>beginConsensus()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -815,8 +815,18 @@ Static Public Member Functions</h2></td></tr>
           <td class="memname">virtual bool ripple::NetworkOPs::beginConsensus </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;&#160;</td>
-          <td class="paramname"><em>netLCL</em></td><td>)</td>
+          <td class="paramname"><em>netLCL</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>clog</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
   </td>
@@ -826,12 +836,12 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="classripple_1_1NetworkOPsImp.html#afc7f87140c7a597be162321b9e61e70c">ripple::NetworkOPsImp</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1NetworkOPsImp.html#a5bdefe0a65e980e29a90d410057f1876">ripple::NetworkOPsImp</a>.</p>
 
 </div>
 </div>
-<a id="ad40d5c74e846c0da9aa21c0957505a2f" name="ad40d5c74e846c0da9aa21c0957505a2f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad40d5c74e846c0da9aa21c0957505a2f">&#9670;&#160;</a></span>endConsensus()</h2>
+<a id="a3833d17761a224b2a8c144a3a51c4f67" name="a3833d17761a224b2a8c144a3a51c4f67"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3833d17761a224b2a8c144a3a51c4f67">&#9670;&#160;</a></span>endConsensus()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -842,7 +852,8 @@ Static Public Member Functions</h2></td></tr>
         <tr>
           <td class="memname">virtual void ripple::NetworkOPs::endConsensus </td>
           <td>(</td>
-          <td class="paramname"></td><td>)</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>clog</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -853,7 +864,7 @@ Static Public Member Functions</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implemented in <a class="el" href="classripple_1_1NetworkOPsImp.html#aa6550e6907efbe5781675dbe6d0f2576">ripple::NetworkOPsImp</a>.</p>
+<p>Implemented in <a class="el" href="classripple_1_1NetworkOPsImp.html#a6cf338cf2fd9fc3ccd7506bb1dbf9421">ripple::NetworkOPsImp</a>.</p>
 
 </div>
 </div>

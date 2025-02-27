@@ -128,6 +128,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ad63d2310128b209b7a997c4e14e96628"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1SuiteJournalSink.html#ad63d2310128b209b7a997c4e14e96628">write</a> (<a class="el" href="namespacebeast_1_1severities.html#a069a8a312b9123b77f6aa31733ca73be">beast::severities::Severity</a> level, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;text) override</td></tr>
 <tr class="memdesc:ad63d2310128b209b7a997c4e14e96628"><td class="mdescLeft">&#160;</td><td class="mdescRight">Write text to the sink at the specified severity.  <a href="classripple_1_1test_1_1SuiteJournalSink.html#ad63d2310128b209b7a997c4e14e96628">More...</a><br /></td></tr>
 <tr class="separator:ad63d2310128b209b7a997c4e14e96628"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aee33f0261c32820acf3f2c942fc89f56"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1SuiteJournalSink.html#aee33f0261c32820acf3f2c942fc89f56">writeAlways</a> (<a class="el" href="namespacebeast_1_1severities.html#a069a8a312b9123b77f6aa31733ca73be">beast::severities::Severity</a> level, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;text) override</td></tr>
+<tr class="memdesc:aee33f0261c32820acf3f2c942fc89f56"><td class="mdescLeft">&#160;</td><td class="mdescRight">Bypass filter and write text to the sink at the specified severity.  <a href="classripple_1_1test_1_1SuiteJournalSink.html#aee33f0261c32820acf3f2c942fc89f56">More...</a><br /></td></tr>
+<tr class="separator:aee33f0261c32820acf3f2c942fc89f56"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a802ffa8580f1820bcc797592fc8fdfe2"><td class="memItemLeft" align="right" valign="top">virtual bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1Journal_1_1Sink.html#a802ffa8580f1820bcc797592fc8fdfe2">console</a> () const</td></tr>
 <tr class="memdesc:a802ffa8580f1820bcc797592fc8fdfe2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns <code>true</code> if a message is also written to the Output Window (MSVC).  <a href="classbeast_1_1Journal_1_1Sink.html#a802ffa8580f1820bcc797592fc8fdfe2">More...</a><br /></td></tr>
 <tr class="separator:a802ffa8580f1820bcc797592fc8fdfe2"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -264,7 +267,57 @@ Private Attributes</h2></td></tr>
 
 <p>Implements <a class="el" href="classbeast_1_1Journal_1_1Sink.html#a8886af7a5275b68f3f2e5e907dbbe726">beast::Journal::Sink</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="SuiteJournal_8h_source.html#l00056">56</a> of file <a class="el" href="SuiteJournal_8h_source.html">SuiteJournal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="SuiteJournal_8h_source.html#l00060">60</a> of file <a class="el" href="SuiteJournal_8h_source.html">SuiteJournal.h</a>.</p>
+
+</div>
+</div>
+<a id="aee33f0261c32820acf3f2c942fc89f56" name="aee33f0261c32820acf3f2c942fc89f56"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aee33f0261c32820acf3f2c942fc89f56">&#9670;&#160;</a></span>writeAlways()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::test::SuiteJournalSink::writeAlways </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespacebeast_1_1severities.html#a069a8a312b9123b77f6aa31733ca73be">beast::severities::Severity</a>&#160;</td>
+          <td class="paramname"><em>level</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;&#160;</td>
+          <td class="paramname"><em>text</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Bypass filter and write text to the sink at the specified severity. </p>
+<p >Always write the message, but maintain the same formatting as if it passed through a level filter.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">level</td><td>Level to display in message. </td></tr>
+    <tr><td class="paramname">text</td><td>Text to write to sink. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p>Implements <a class="el" href="classbeast_1_1Journal_1_1Sink.html#ab3c494b44e89acc64314906d01198761">beast::Journal::Sink</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="SuiteJournal_8h_source.html#l00070">70</a> of file <a class="el" href="SuiteJournal_8h_source.html">SuiteJournal.h</a>.</p>
 
 </div>
 </div>
@@ -295,7 +348,7 @@ Private Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classbeast_1_1WrappedSink.html#a16d049eb969c6b085bbeb218a3e2e5ae">beast::WrappedSink</a>, and <a class="el" href="classbeast_1_1NullJournalSink.html#a6ed960ff0db3728aa5a9430c42fba500">beast::NullJournalSink</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="beast__Journal_8cpp_source.html#l00096">96</a> of file <a class="el" href="beast__Journal_8cpp_source.html">beast_Journal.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="beast__Journal_8cpp_source.html#l00101">101</a> of file <a class="el" href="beast__Journal_8cpp_source.html">beast_Journal.cpp</a>.</p>
 
 </div>
 </div>
@@ -327,7 +380,7 @@ Private Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classbeast_1_1WrappedSink.html#a1354817ab3a7d8f6b70a52a493d61aa1">beast::WrappedSink</a>, and <a class="el" href="classbeast_1_1NullJournalSink.html#ad81bb288a388dbf440d83214914eaadc">beast::NullJournalSink</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="beast__Journal_8cpp_source.html#l00102">102</a> of file <a class="el" href="beast__Journal_8cpp_source.html">beast_Journal.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="beast__Journal_8cpp_source.html#l00107">107</a> of file <a class="el" href="beast__Journal_8cpp_source.html">beast_Journal.cpp</a>.</p>
 
 </div>
 </div>
@@ -358,7 +411,7 @@ Private Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classbeast_1_1WrappedSink.html#a809574e6c42452d076743b498303fa7a">beast::WrappedSink</a>, and <a class="el" href="classbeast_1_1NullJournalSink.html#aede15f392badd0460ff5a9dd498f2581">beast::NullJournalSink</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="beast__Journal_8cpp_source.html#l00108">108</a> of file <a class="el" href="beast__Journal_8cpp_source.html">beast_Journal.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="beast__Journal_8cpp_source.html#l00113">113</a> of file <a class="el" href="beast__Journal_8cpp_source.html">beast_Journal.cpp</a>.</p>
 
 </div>
 </div>
@@ -390,7 +443,7 @@ Private Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classbeast_1_1WrappedSink.html#ae823d11f371af8f69a0a5959a1771643">beast::WrappedSink</a>, and <a class="el" href="classbeast_1_1NullJournalSink.html#aa44e45d147dac57fe02166450503cd63">beast::NullJournalSink</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="beast__Journal_8cpp_source.html#l00114">114</a> of file <a class="el" href="beast__Journal_8cpp_source.html">beast_Journal.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="beast__Journal_8cpp_source.html#l00119">119</a> of file <a class="el" href="beast__Journal_8cpp_source.html">beast_Journal.cpp</a>.</p>
 
 </div>
 </div>
@@ -463,7 +516,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Journal_8h_source.html#l00116">116</a> of file <a class="el" href="Journal_8h_source.html">Journal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Journal_8h_source.html#l00126">126</a> of file <a class="el" href="Journal_8h_source.html">Journal.h</a>.</p>
 
 </div>
 </div>
@@ -487,7 +540,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Journal_8h_source.html#l00117">117</a> of file <a class="el" href="Journal_8h_source.html">Journal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Journal_8h_source.html#l00127">127</a> of file <a class="el" href="Journal_8h_source.html">Journal.h</a>.</p>
 
 </div>
 </div>

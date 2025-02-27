@@ -132,6 +132,9 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:af6769577b5fd1ba886af0da309144ede"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1WrappedSink.html#af6769577b5fd1ba886af0da309144ede">write</a> (<a class="el" href="namespacebeast_1_1severities.html#a069a8a312b9123b77f6aa31733ca73be">beast::severities::Severity</a> level, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;text) override</td></tr>
 <tr class="memdesc:af6769577b5fd1ba886af0da309144ede"><td class="mdescLeft">&#160;</td><td class="mdescRight">Write text to the sink at the specified severity.  <a href="classbeast_1_1WrappedSink.html#af6769577b5fd1ba886af0da309144ede">More...</a><br /></td></tr>
 <tr class="separator:af6769577b5fd1ba886af0da309144ede"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a87c0cf2c3b187231380eae3cab0f6c9a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1WrappedSink.html#a87c0cf2c3b187231380eae3cab0f6c9a">writeAlways</a> (<a class="el" href="namespacebeast_1_1severities.html#a069a8a312b9123b77f6aa31733ca73be">severities::Severity</a> level, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;text) override</td></tr>
+<tr class="memdesc:a87c0cf2c3b187231380eae3cab0f6c9a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Bypass filter and write text to the sink at the specified severity.  <a href="classbeast_1_1WrappedSink.html#a87c0cf2c3b187231380eae3cab0f6c9a">More...</a><br /></td></tr>
+<tr class="separator:a87c0cf2c3b187231380eae3cab0f6c9a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
@@ -447,6 +450,56 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
+<a id="a87c0cf2c3b187231380eae3cab0f6c9a" name="a87c0cf2c3b187231380eae3cab0f6c9a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a87c0cf2c3b187231380eae3cab0f6c9a">&#9670;&#160;</a></span>writeAlways()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">void beast::WrappedSink::writeAlways </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespacebeast_1_1severities.html#a069a8a312b9123b77f6aa31733ca73be">severities::Severity</a>&#160;</td>
+          <td class="paramname"><em>level</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;&#160;</td>
+          <td class="paramname"><em>text</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">override</span><span class="mlabel">virtual</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Bypass filter and write text to the sink at the specified severity. </p>
+<p >Always write the message, but maintain the same formatting as if it passed through a level filter.</p>
+<dl class="params"><dt>Parameters</dt><dd>
+  <table class="params">
+    <tr><td class="paramname">level</td><td>Level to display in message. </td></tr>
+    <tr><td class="paramname">text</td><td>Text to write to sink. </td></tr>
+  </table>
+  </dd>
+</dl>
+
+<p>Implements <a class="el" href="classbeast_1_1Journal_1_1Sink.html#ab3c494b44e89acc64314906d01198761">beast::Journal::Sink</a>.</p>
+
+<p class="definition">Definition at line <a class="el" href="WrappedSink_8h_source.html#l00098">98</a> of file <a class="el" href="WrappedSink_8h_source.html">WrappedSink.h</a>.</p>
+
+</div>
+</div>
 <h2 class="groupheader">Member Data Documentation</h2>
 <a id="a4965950b6eea7361f57d18ca9f06044c" name="a4965950b6eea7361f57d18ca9f06044c"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a4965950b6eea7361f57d18ca9f06044c">&#9670;&#160;</a></span>sink_</h2>
@@ -516,7 +569,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Journal_8h_source.html#l00116">116</a> of file <a class="el" href="Journal_8h_source.html">Journal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Journal_8h_source.html#l00126">126</a> of file <a class="el" href="Journal_8h_source.html">Journal.h</a>.</p>
 
 </div>
 </div>
@@ -540,7 +593,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Journal_8h_source.html#l00117">117</a> of file <a class="el" href="Journal_8h_source.html">Journal.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Journal_8h_source.html#l00127">127</a> of file <a class="el" href="Journal_8h_source.html">Journal.h</a>.</p>
 
 </div>
 </div>

@@ -97,7 +97,7 @@ var searchData=
   ['updatelocaltx_94',['updateLocalTx',['../classripple_1_1NetworkOPsImp.html#a289bd2af94ea79ee97e154c03e50b396',1,'ripple::NetworkOPsImp::updateLocalTx()'],['../classripple_1_1NetworkOPs.html#ae818648c14f68b1e31afe0164b850130',1,'ripple::NetworkOPs::updateLocalTx()']]],
   ['updatenegativeunl_95',['updateNegativeUNL',['../classripple_1_1Ledger.html#a57cbdf736a8b80012ded0f3eeac30691',1,'ripple::Ledger']]],
   ['updateoperatingmode_96',['updateOperatingMode',['../structripple_1_1test_1_1csf_1_1Peer.html#a89ca2ce0490990628a7f69bc40442c85',1,'ripple::test::csf::Peer::updateOperatingMode()'],['../classripple_1_1RCLConsensus_1_1Adaptor.html#af204a12bd25345da7fbdb8d267a1e23f',1,'ripple::RCLConsensus::Adaptor::updateOperatingMode()']]],
-  ['updateourpositions_97',['updateOurPositions',['../classripple_1_1Consensus.html#a23aa1cff2c0b9ba53cf472dc0b53ac30',1,'ripple::Consensus']]],
+  ['updateourpositions_97',['updateOurPositions',['../classripple_1_1Consensus.html#a5ec2cad9d4319b4ad2b0d4b6566289be',1,'ripple::Consensus']]],
   ['updatepaths_98',['updatePaths',['../classripple_1_1LedgerMaster.html#a05b6278153dde8163b8beba57b9c064a',1,'ripple::LedgerMaster']]],
   ['updatepeerfinderdb_99',['updatePeerFinderDB',['../namespaceripple.html#a5408e52c33471da0e8fcedb32b228d59',1,'ripple']]],
   ['updatepublisherlist_100',['updatePublisherList',['../classripple_1_1ValidatorList.html#a3728d8811726a5ffb23bcd5c21d235a3',1,'ripple::ValidatorList']]],

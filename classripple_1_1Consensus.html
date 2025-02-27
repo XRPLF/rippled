@@ -134,15 +134,15 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ade8b4954a44f6b8bc30afbd0415704db"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Consensus.html#ade8b4954a44f6b8bc30afbd0415704db">Consensus</a> (<a class="el" href="classripple_1_1Consensus.html#afe915e894470ce19e551b21b503826ed">clock_type</a> const &amp;clock, Adaptor &amp;adaptor, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j)</td></tr>
 <tr class="memdesc:ade8b4954a44f6b8bc30afbd0415704db"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor.  <a href="classripple_1_1Consensus.html#ade8b4954a44f6b8bc30afbd0415704db">More...</a><br /></td></tr>
 <tr class="separator:ade8b4954a44f6b8bc30afbd0415704db"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae860970b8a78fda5497221c1a8bf1b98"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Consensus.html#ae860970b8a78fda5497221c1a8bf1b98">startRound</a> (<a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> const &amp;now, typename Ledger_t::ID const &amp;<a class="el" href="classripple_1_1Consensus.html#a641a3e0e3bb00ef33619c4ef9a26bbed">prevLedgerID</a>, <a class="el" href="classripple_1_1Consensus.html#ab3549c5ca51ce1c6fcbb4ed8ccc65d75">Ledger_t</a> prevLedger, <a class="el" href="namespaceripple.html#a7750eec5e079354285f1d60cfd0247ca">hash_set</a>&lt; <a class="el" href="classripple_1_1Consensus.html#ac0595ebca5fc6577d86cb4b4dddaef3e">NodeID_t</a> &gt; const &amp;nowUntrusted, bool <a class="el" href="namespaceripple.html#a33f8b6e68b5f63faf2e9755cc251563ea80dcf57f5ecd4be3cbfa37eccbcb6f44">proposing</a>)</td></tr>
-<tr class="memdesc:ae860970b8a78fda5497221c1a8bf1b98"><td class="mdescLeft">&#160;</td><td class="mdescRight">Kick-off the next round of consensus.  <a href="classripple_1_1Consensus.html#ae860970b8a78fda5497221c1a8bf1b98">More...</a><br /></td></tr>
-<tr class="separator:ae860970b8a78fda5497221c1a8bf1b98"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a81e4b6a616724ff96fdaeeaff1e0c689"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Consensus.html#a81e4b6a616724ff96fdaeeaff1e0c689">startRound</a> (<a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> const &amp;now, typename Ledger_t::ID const &amp;<a class="el" href="classripple_1_1Consensus.html#a641a3e0e3bb00ef33619c4ef9a26bbed">prevLedgerID</a>, <a class="el" href="classripple_1_1Consensus.html#ab3549c5ca51ce1c6fcbb4ed8ccc65d75">Ledger_t</a> prevLedger, <a class="el" href="namespaceripple.html#a7750eec5e079354285f1d60cfd0247ca">hash_set</a>&lt; <a class="el" href="classripple_1_1Consensus.html#ac0595ebca5fc6577d86cb4b4dddaef3e">NodeID_t</a> &gt; const &amp;nowUntrusted, bool <a class="el" href="namespaceripple.html#a33f8b6e68b5f63faf2e9755cc251563ea80dcf57f5ecd4be3cbfa37eccbcb6f44">proposing</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> &gt; const &amp;clog={})</td></tr>
+<tr class="memdesc:a81e4b6a616724ff96fdaeeaff1e0c689"><td class="mdescLeft">&#160;</td><td class="mdescRight">Kick-off the next round of consensus.  <a href="classripple_1_1Consensus.html#a81e4b6a616724ff96fdaeeaff1e0c689">More...</a><br /></td></tr>
+<tr class="separator:a81e4b6a616724ff96fdaeeaff1e0c689"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac847edb496ffd3e8cecf636c56ccb0b0"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Consensus.html#ac847edb496ffd3e8cecf636c56ccb0b0">peerProposal</a> (<a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> const &amp;now, <a class="el" href="classripple_1_1Consensus.html#a357a8b2f6eadd8e3c50da583189d4555">PeerPosition_t</a> const &amp;newProposal)</td></tr>
 <tr class="memdesc:ac847edb496ffd3e8cecf636c56ccb0b0"><td class="mdescLeft">&#160;</td><td class="mdescRight">A peer has proposed a new position, adjust our tracking.  <a href="classripple_1_1Consensus.html#ac847edb496ffd3e8cecf636c56ccb0b0">More...</a><br /></td></tr>
 <tr class="separator:ac847edb496ffd3e8cecf636c56ccb0b0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1d3b6552f4cbf49c31cf7032d68bfbce"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Consensus.html#a1d3b6552f4cbf49c31cf7032d68bfbce">timerEntry</a> (<a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> const &amp;now)</td></tr>
-<tr class="memdesc:a1d3b6552f4cbf49c31cf7032d68bfbce"><td class="mdescLeft">&#160;</td><td class="mdescRight">Call periodically to drive consensus forward.  <a href="classripple_1_1Consensus.html#a1d3b6552f4cbf49c31cf7032d68bfbce">More...</a><br /></td></tr>
-<tr class="separator:a1d3b6552f4cbf49c31cf7032d68bfbce"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1fb9110620eecec18eda923c97de93c7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Consensus.html#a1fb9110620eecec18eda923c97de93c7">timerEntry</a> (<a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> const &amp;now, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> &gt; const &amp;clog={})</td></tr>
+<tr class="memdesc:a1fb9110620eecec18eda923c97de93c7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Call periodically to drive consensus forward.  <a href="classripple_1_1Consensus.html#a1fb9110620eecec18eda923c97de93c7">More...</a><br /></td></tr>
+<tr class="separator:a1fb9110620eecec18eda923c97de93c7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9dffbdf2708f81eee49bed08891a7b9a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Consensus.html#a9dffbdf2708f81eee49bed08891a7b9a">gotTxSet</a> (<a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> const &amp;now, <a class="el" href="classripple_1_1Consensus.html#a524b889667609917d080a6ec775ab2e4">TxSet_t</a> const &amp;txSet)</td></tr>
 <tr class="memdesc:a9dffbdf2708f81eee49bed08891a7b9a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Process a transaction set acquired from the network.  <a href="classripple_1_1Consensus.html#a9dffbdf2708f81eee49bed08891a7b9a">More...</a><br /></td></tr>
 <tr class="separator:a9dffbdf2708f81eee49bed08891a7b9a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -177,40 +177,40 @@ Private Types</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-methods" name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
-<tr class="memitem:aaa6eed1569253686d382e3f85b92acf8"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Consensus.html#aaa6eed1569253686d382e3f85b92acf8">startRoundInternal</a> (<a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> const &amp;now, typename Ledger_t::ID const &amp;<a class="el" href="classripple_1_1Consensus.html#a641a3e0e3bb00ef33619c4ef9a26bbed">prevLedgerID</a>, <a class="el" href="classripple_1_1Consensus.html#ab3549c5ca51ce1c6fcbb4ed8ccc65d75">Ledger_t</a> const &amp;prevLedger, <a class="el" href="namespaceripple.html#a33f8b6e68b5f63faf2e9755cc251563e">ConsensusMode</a> mode)</td></tr>
-<tr class="separator:aaa6eed1569253686d382e3f85b92acf8"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a91c38c78ada592aae6c3b8b67085c6e4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Consensus.html#a91c38c78ada592aae6c3b8b67085c6e4">handleWrongLedger</a> (typename Ledger_t::ID const &amp;lgrId)</td></tr>
-<tr class="separator:a91c38c78ada592aae6c3b8b67085c6e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa918eecfee1d4f424a17a7e8b6211cc1"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Consensus.html#aa918eecfee1d4f424a17a7e8b6211cc1">checkLedger</a> ()</td></tr>
-<tr class="memdesc:aa918eecfee1d4f424a17a7e8b6211cc1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if our previous ledger matches the network's.  <a href="classripple_1_1Consensus.html#aa918eecfee1d4f424a17a7e8b6211cc1">More...</a><br /></td></tr>
-<tr class="separator:aa918eecfee1d4f424a17a7e8b6211cc1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2b1df91557e80f28f3c41dd1610c9c40"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Consensus.html#a2b1df91557e80f28f3c41dd1610c9c40">startRoundInternal</a> (<a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> const &amp;now, typename Ledger_t::ID const &amp;<a class="el" href="classripple_1_1Consensus.html#a641a3e0e3bb00ef33619c4ef9a26bbed">prevLedgerID</a>, <a class="el" href="classripple_1_1Consensus.html#ab3549c5ca51ce1c6fcbb4ed8ccc65d75">Ledger_t</a> const &amp;prevLedger, <a class="el" href="namespaceripple.html#a33f8b6e68b5f63faf2e9755cc251563e">ConsensusMode</a> mode, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> &gt; const &amp;clog)</td></tr>
+<tr class="separator:a2b1df91557e80f28f3c41dd1610c9c40"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a683df2c3c61ec015280725fa62145012"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Consensus.html#a683df2c3c61ec015280725fa62145012">handleWrongLedger</a> (typename Ledger_t::ID const &amp;lgrId, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> &gt; const &amp;clog)</td></tr>
+<tr class="separator:a683df2c3c61ec015280725fa62145012"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a68b7a8451b83ed2e53d6880da71ff6a0"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Consensus.html#a68b7a8451b83ed2e53d6880da71ff6a0">checkLedger</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> &gt; const &amp;clog)</td></tr>
+<tr class="memdesc:a68b7a8451b83ed2e53d6880da71ff6a0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if our previous ledger matches the network's.  <a href="classripple_1_1Consensus.html#a68b7a8451b83ed2e53d6880da71ff6a0">More...</a><br /></td></tr>
+<tr class="separator:a68b7a8451b83ed2e53d6880da71ff6a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1316dae522dbe158d2c7ceef87d426fd"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Consensus.html#a1316dae522dbe158d2c7ceef87d426fd">playbackProposals</a> ()</td></tr>
 <tr class="memdesc:a1316dae522dbe158d2c7ceef87d426fd"><td class="mdescLeft">&#160;</td><td class="mdescRight">If we radically changed our consensus context for some reason, we need to replay recent proposals so that they're not lost.  <a href="classripple_1_1Consensus.html#a1316dae522dbe158d2c7ceef87d426fd">More...</a><br /></td></tr>
 <tr class="separator:a1316dae522dbe158d2c7ceef87d426fd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac93a6d481982ad06bcb8722eae97417e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Consensus.html#ac93a6d481982ad06bcb8722eae97417e">peerProposalInternal</a> (<a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> const &amp;now, <a class="el" href="classripple_1_1Consensus.html#a357a8b2f6eadd8e3c50da583189d4555">PeerPosition_t</a> const &amp;newProposal)</td></tr>
 <tr class="memdesc:ac93a6d481982ad06bcb8722eae97417e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Handle a replayed or a new peer proposal.  <a href="classripple_1_1Consensus.html#ac93a6d481982ad06bcb8722eae97417e">More...</a><br /></td></tr>
 <tr class="separator:ac93a6d481982ad06bcb8722eae97417e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8a0dcd0e9a733e910fe18b07aee659e2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Consensus.html#a8a0dcd0e9a733e910fe18b07aee659e2">phaseOpen</a> ()</td></tr>
-<tr class="memdesc:a8a0dcd0e9a733e910fe18b07aee659e2"><td class="mdescLeft">&#160;</td><td class="mdescRight">Handle pre-close phase.  <a href="classripple_1_1Consensus.html#a8a0dcd0e9a733e910fe18b07aee659e2">More...</a><br /></td></tr>
-<tr class="separator:a8a0dcd0e9a733e910fe18b07aee659e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abd84b31f54fb4fa5d27475a1f9df86ee"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Consensus.html#abd84b31f54fb4fa5d27475a1f9df86ee">phaseEstablish</a> ()</td></tr>
-<tr class="memdesc:abd84b31f54fb4fa5d27475a1f9df86ee"><td class="mdescLeft">&#160;</td><td class="mdescRight">Handle establish phase.  <a href="classripple_1_1Consensus.html#abd84b31f54fb4fa5d27475a1f9df86ee">More...</a><br /></td></tr>
-<tr class="separator:abd84b31f54fb4fa5d27475a1f9df86ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa94afd9386801e101c02ae927ceec23e"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Consensus.html#aa94afd9386801e101c02ae927ceec23e">shouldPause</a> () const</td></tr>
-<tr class="memdesc:aa94afd9386801e101c02ae927ceec23e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Evaluate whether pausing increases likelihood of validation.  <a href="classripple_1_1Consensus.html#aa94afd9386801e101c02ae927ceec23e">More...</a><br /></td></tr>
-<tr class="separator:aa94afd9386801e101c02ae927ceec23e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4598700d99a01a00a32535173117ae12"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Consensus.html#a4598700d99a01a00a32535173117ae12">closeLedger</a> ()</td></tr>
-<tr class="separator:a4598700d99a01a00a32535173117ae12"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a23aa1cff2c0b9ba53cf472dc0b53ac30"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Consensus.html#a23aa1cff2c0b9ba53cf472dc0b53ac30">updateOurPositions</a> ()</td></tr>
-<tr class="separator:a23aa1cff2c0b9ba53cf472dc0b53ac30"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a498092766e111e7e2ac715d572318a27"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Consensus.html#a498092766e111e7e2ac715d572318a27">haveConsensus</a> ()</td></tr>
-<tr class="separator:a498092766e111e7e2ac715d572318a27"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7cb6b51c2126cd4637c0e14cf39638f4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Consensus.html#a7cb6b51c2126cd4637c0e14cf39638f4">createDisputes</a> (<a class="el" href="classripple_1_1Consensus.html#a524b889667609917d080a6ec775ab2e4">TxSet_t</a> const &amp;o)</td></tr>
-<tr class="separator:a7cb6b51c2126cd4637c0e14cf39638f4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aec30e436ae026b2918a255f8afc396aa"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Consensus.html#aec30e436ae026b2918a255f8afc396aa">phaseOpen</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> &gt; const &amp;clog)</td></tr>
+<tr class="memdesc:aec30e436ae026b2918a255f8afc396aa"><td class="mdescLeft">&#160;</td><td class="mdescRight">Handle pre-close phase.  <a href="classripple_1_1Consensus.html#aec30e436ae026b2918a255f8afc396aa">More...</a><br /></td></tr>
+<tr class="separator:aec30e436ae026b2918a255f8afc396aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2df54cafe7eda4851c3ace0d326d2e05"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Consensus.html#a2df54cafe7eda4851c3ace0d326d2e05">phaseEstablish</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> &gt; const &amp;clog)</td></tr>
+<tr class="memdesc:a2df54cafe7eda4851c3ace0d326d2e05"><td class="mdescLeft">&#160;</td><td class="mdescRight">Handle establish phase.  <a href="classripple_1_1Consensus.html#a2df54cafe7eda4851c3ace0d326d2e05">More...</a><br /></td></tr>
+<tr class="separator:a2df54cafe7eda4851c3ace0d326d2e05"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad4eca3cb1f7dc0f93d7048266dbc9864"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Consensus.html#ad4eca3cb1f7dc0f93d7048266dbc9864">shouldPause</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> &gt; const &amp;clog) const</td></tr>
+<tr class="memdesc:ad4eca3cb1f7dc0f93d7048266dbc9864"><td class="mdescLeft">&#160;</td><td class="mdescRight">Evaluate whether pausing increases likelihood of validation.  <a href="classripple_1_1Consensus.html#ad4eca3cb1f7dc0f93d7048266dbc9864">More...</a><br /></td></tr>
+<tr class="separator:ad4eca3cb1f7dc0f93d7048266dbc9864"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac12058e1a31bae2eba350034970fbba5"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Consensus.html#ac12058e1a31bae2eba350034970fbba5">closeLedger</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> &gt; const &amp;clog)</td></tr>
+<tr class="separator:ac12058e1a31bae2eba350034970fbba5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5ec2cad9d4319b4ad2b0d4b6566289be"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Consensus.html#a5ec2cad9d4319b4ad2b0d4b6566289be">updateOurPositions</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> &gt; const &amp;clog)</td></tr>
+<tr class="separator:a5ec2cad9d4319b4ad2b0d4b6566289be"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a61a480c4dc2aa1f81553a64f4f350e29"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Consensus.html#a61a480c4dc2aa1f81553a64f4f350e29">haveConsensus</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> &gt; const &amp;clog)</td></tr>
+<tr class="separator:a61a480c4dc2aa1f81553a64f4f350e29"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9c7b09f8e8242025e0f1bbc76ce29aad"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Consensus.html#a9c7b09f8e8242025e0f1bbc76ce29aad">createDisputes</a> (<a class="el" href="classripple_1_1Consensus.html#a524b889667609917d080a6ec775ab2e4">TxSet_t</a> const &amp;o, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> &gt; const &amp;clog={})</td></tr>
+<tr class="separator:a9c7b09f8e8242025e0f1bbc76ce29aad"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4e782139b66fec214ed2b12adef662ac"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Consensus.html#a4e782139b66fec214ed2b12adef662ac">updateDisputes</a> (<a class="el" href="classripple_1_1Consensus.html#ac0595ebca5fc6577d86cb4b4dddaef3e">NodeID_t</a> const &amp;node, <a class="el" href="classripple_1_1Consensus.html#a524b889667609917d080a6ec775ab2e4">TxSet_t</a> const &amp;other)</td></tr>
 <tr class="separator:a4e782139b66fec214ed2b12adef662ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8910d52e827ffa8f0a5f2418855d596d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Consensus.html#a8910d52e827ffa8f0a5f2418855d596d">leaveConsensus</a> ()</td></tr>
-<tr class="separator:a8910d52e827ffa8f0a5f2418855d596d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4b9cd1dcf891a027ba7649d2464c81ff"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Consensus.html#a4b9cd1dcf891a027ba7649d2464c81ff">leaveConsensus</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> &gt; const &amp;clog)</td></tr>
+<tr class="separator:a4b9cd1dcf891a027ba7649d2464c81ff"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9639282cdda2fcd103490c15c08b9af7"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Consensus.html#a9639282cdda2fcd103490c15c08b9af7">asCloseTime</a> (<a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> raw) const</td></tr>
 <tr class="separator:a9639282cdda2fcd103490c15c08b9af7"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -438,7 +438,7 @@ class ripple::Consensus&lt; Adaptor &gt;</div><p >Generic implementation of cons
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00287">287</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00291">291</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="ab3549c5ca51ce1c6fcbb4ed8ccc65d75" name="ab3549c5ca51ce1c6fcbb4ed8ccc65d75"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ab3549c5ca51ce1c6fcbb4ed8ccc65d75">&#9670;&#160;</a></span>Ledger_t</h2>
@@ -462,7 +462,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00289">289</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00293">293</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -488,7 +488,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00290">290</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00294">294</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -514,7 +514,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00291">291</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00295">295</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -540,7 +540,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00292">292</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00296">296</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -566,7 +566,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00293">293</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00297">297</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -592,7 +592,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00294">294</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00298">298</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -618,7 +618,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00299">299</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00303">303</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -638,7 +638,7 @@ template&lt;class Adaptor &gt; </div>
 
 <p>Clock type for measuring time within the consensus code. </p>
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00327">327</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00331">331</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -715,13 +715,13 @@ template&lt;class Adaptor &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00608">608</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00623">623</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="ae860970b8a78fda5497221c1a8bf1b98" name="ae860970b8a78fda5497221c1a8bf1b98"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae860970b8a78fda5497221c1a8bf1b98">&#9670;&#160;</a></span>startRound()</h2>
+<a id="a81e4b6a616724ff96fdaeeaff1e0c689" name="a81e4b6a616724ff96fdaeeaff1e0c689"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a81e4b6a616724ff96fdaeeaff1e0c689">&#9670;&#160;</a></span>startRound()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -756,7 +756,13 @@ template&lt;class Adaptor &gt; </div>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">bool&#160;</td>
-          <td class="paramname"><em>proposing</em>&#160;</td>
+          <td class="paramname"><em>proposing</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>clog</em> = <code>{}</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -774,13 +780,14 @@ template&lt;class Adaptor &gt; </div>
     <tr><td class="paramname">prevLedgerID</td><td>the ID of the last ledger </td></tr>
     <tr><td class="paramname">prevLedger</td><td>The last ledger </td></tr>
     <tr><td class="paramname">nowUntrusted</td><td>ID of nodes that are newly untrusted this round </td></tr>
-    <tr><td class="paramname">proposing</td><td>Whether we want to send proposals to peers this round.</td></tr>
+    <tr><td class="paramname">proposing</td><td>Whether we want to send proposals to peers this round. </td></tr>
+    <tr><td class="paramname">clog</td><td>log object to which to append</td></tr>
   </table>
   </dd>
 </dl>
 <dl class="section note"><dt>Note</dt><dd><b>prevLedgerID</b> is not required to the ID of <b>prevLedger</b> since the ID may be known locally before the contents of the ledger arrive </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00619">619</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00634">634</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -822,12 +829,12 @@ template&lt;class Adaptor &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Whether we should do delayed relay of this proposal. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00703">703</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00726">726</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
-<a id="a1d3b6552f4cbf49c31cf7032d68bfbce" name="a1d3b6552f4cbf49c31cf7032d68bfbce"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1d3b6552f4cbf49c31cf7032d68bfbce">&#9670;&#160;</a></span>timerEntry()</h2>
+<a id="a1fb9110620eecec18eda923c97de93c7" name="a1fb9110620eecec18eda923c97de93c7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1fb9110620eecec18eda923c97de93c7">&#9670;&#160;</a></span>timerEntry()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -838,8 +845,18 @@ template&lt;class Adaptor &gt; </div>
           <td class="memname">void <a class="el" href="classripple_1_1Consensus.html">ripple::Consensus</a>&lt; Adaptor &gt;::timerEntry </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classripple_1_1NetClock.html#a4c2428e178dca6689fa3fb4be0657107">NetClock::time_point</a> const &amp;&#160;</td>
-          <td class="paramname"><em>now</em></td><td>)</td>
+          <td class="paramname"><em>now</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>clog</em> = <code>{}</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -848,11 +865,12 @@ template&lt;class Adaptor &gt; </div>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">now</td><td>The network adjusted time </td></tr>
+    <tr><td class="paramname">clog</td><td>log object to which to append </td></tr>
   </table>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00819">819</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00842">842</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -893,7 +911,7 @@ template&lt;class Adaptor &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00842">842</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00875">875</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -937,7 +955,7 @@ template&lt;class Adaptor &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00890">890</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00923">923</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -962,7 +980,7 @@ template&lt;class Adaptor &gt; </div>
 <p >The previous ledger is the last ledger seen by the consensus code and should correspond to the most recent validated ledger seen by this peer.</p>
 <dl class="section return"><dt>Returns</dt><dd>ID of previous ledger </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00415">415</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00425">425</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -983,7 +1001,7 @@ template&lt;class Adaptor &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00421">421</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00431">431</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1015,12 +1033,12 @@ template&lt;class Adaptor &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>The <a class="el" href="namespaceJson.html" title="JSON (JavaScript Object Notation).">Json</a> state. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00914">914</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00947">947</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
-<a id="aaa6eed1569253686d382e3f85b92acf8" name="aaa6eed1569253686d382e3f85b92acf8"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aaa6eed1569253686d382e3f85b92acf8">&#9670;&#160;</a></span>startRoundInternal()</h2>
+<a id="a2b1df91557e80f28f3c41dd1610c9c40" name="a2b1df91557e80f28f3c41dd1610c9c40"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2b1df91557e80f28f3c41dd1610c9c40">&#9670;&#160;</a></span>startRoundInternal()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1052,7 +1070,13 @@ template&lt;class Adaptor &gt; </div>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype"><a class="el" href="namespaceripple.html#a33f8b6e68b5f63faf2e9755cc251563e">ConsensusMode</a>&#160;</td>
-          <td class="paramname"><em>mode</em>&#160;</td>
+          <td class="paramname"><em>mode</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>clog</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -1067,12 +1091,12 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00665">665</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00681">681</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
-<a id="a91c38c78ada592aae6c3b8b67085c6e4" name="a91c38c78ada592aae6c3b8b67085c6e4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a91c38c78ada592aae6c3b8b67085c6e4">&#9670;&#160;</a></span>handleWrongLedger()</h2>
+<a id="a683df2c3c61ec015280725fa62145012" name="a683df2c3c61ec015280725fa62145012"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a683df2c3c61ec015280725fa62145012">&#9670;&#160;</a></span>handleWrongLedger()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1086,8 +1110,18 @@ template&lt;class Adaptor &gt; </div>
           <td class="memname">void <a class="el" href="classripple_1_1Consensus.html">ripple::Consensus</a>&lt; Adaptor &gt;::handleWrongLedger </td>
           <td>(</td>
           <td class="paramtype">typename Ledger_t::ID const &amp;&#160;</td>
-          <td class="paramname"><em>lgrId</em></td><td>)</td>
+          <td class="paramname"><em>lgrId</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>clog</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
   </td>
@@ -1097,12 +1131,12 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01012">1012</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01045">1045</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
-<a id="aa918eecfee1d4f424a17a7e8b6211cc1" name="aa918eecfee1d4f424a17a7e8b6211cc1"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa918eecfee1d4f424a17a7e8b6211cc1">&#9670;&#160;</a></span>checkLedger()</h2>
+<a id="a68b7a8451b83ed2e53d6880da71ff6a0" name="a68b7a8451b83ed2e53d6880da71ff6a0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a68b7a8451b83ed2e53d6880da71ff6a0">&#9670;&#160;</a></span>checkLedger()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1113,7 +1147,11 @@ template&lt;class Adaptor &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classripple_1_1Consensus.html">ripple::Consensus</a>&lt; Adaptor &gt;::checkLedger</td>
+          <td class="memname">void <a class="el" href="classripple_1_1Consensus.html">ripple::Consensus</a>&lt; Adaptor &gt;::checkLedger </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>clog</em></td><td>)</td>
+          <td></td>
         </tr>
       </table>
   </td>
@@ -1126,7 +1164,7 @@ template&lt;class Adaptor &gt; </div>
 <p>Check if our previous ledger matches the network's. </p>
 <p >If the previous ledger differs, we are no longer in sync with the network and need to bow out/switch modes. </p>
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01059">1059</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01101">1101</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1154,7 +1192,7 @@ template&lt;class Adaptor &gt; </div>
 
 <p>If we radically changed our consensus context for some reason, we need to replay recent proposals so that they're not lost. </p>
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01081">1081</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01134">1134</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1196,12 +1234,12 @@ template&lt;class Adaptor &gt; </div>
 
 <p>Handle a replayed or a new peer proposal. </p>
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00724">724</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00747">747</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
-<a id="a8a0dcd0e9a733e910fe18b07aee659e2" name="a8a0dcd0e9a733e910fe18b07aee659e2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8a0dcd0e9a733e910fe18b07aee659e2">&#9670;&#160;</a></span>phaseOpen()</h2>
+<a id="aec30e436ae026b2918a255f8afc396aa" name="aec30e436ae026b2918a255f8afc396aa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aec30e436ae026b2918a255f8afc396aa">&#9670;&#160;</a></span>phaseOpen()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1212,7 +1250,11 @@ template&lt;class Adaptor &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classripple_1_1Consensus.html">ripple::Consensus</a>&lt; Adaptor &gt;::phaseOpen</td>
+          <td class="memname">void <a class="el" href="classripple_1_1Consensus.html">ripple::Consensus</a>&lt; Adaptor &gt;::phaseOpen </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>clog</em></td><td>)</td>
+          <td></td>
         </tr>
       </table>
   </td>
@@ -1225,12 +1267,12 @@ template&lt;class Adaptor &gt; </div>
 <p>Handle pre-close phase. </p>
 <p >In the pre-close phase, the ledger is open as we wait for new transactions. After enough time has elapsed, we will close the ledger, switch to the establish phase and start the consensus process. </p>
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01098">1098</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01151">1151</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
-<a id="abd84b31f54fb4fa5d27475a1f9df86ee" name="abd84b31f54fb4fa5d27475a1f9df86ee"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abd84b31f54fb4fa5d27475a1f9df86ee">&#9670;&#160;</a></span>phaseEstablish()</h2>
+<a id="a2df54cafe7eda4851c3ace0d326d2e05" name="a2df54cafe7eda4851c3ace0d326d2e05"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2df54cafe7eda4851c3ace0d326d2e05">&#9670;&#160;</a></span>phaseEstablish()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1241,7 +1283,11 @@ template&lt;class Adaptor &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classripple_1_1Consensus.html">ripple::Consensus</a>&lt; Adaptor &gt;::phaseEstablish</td>
+          <td class="memname">void <a class="el" href="classripple_1_1Consensus.html">ripple::Consensus</a>&lt; Adaptor &gt;::phaseEstablish </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>clog</em></td><td>)</td>
+          <td></td>
         </tr>
       </table>
   </td>
@@ -1255,12 +1301,12 @@ template&lt;class Adaptor &gt; </div>
 <p >In the establish phase, the ledger has closed and we work with peers to reach consensus. Update our position only on the timer, and in this phase.</p>
 <p >If we have consensus, move to the accepted phase. </p>
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01264">1264</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01348">1348</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
-<a id="aa94afd9386801e101c02ae927ceec23e" name="aa94afd9386801e101c02ae927ceec23e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa94afd9386801e101c02ae927ceec23e">&#9670;&#160;</a></span>shouldPause()</h2>
+<a id="ad4eca3cb1f7dc0f93d7048266dbc9864" name="ad4eca3cb1f7dc0f93d7048266dbc9864"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad4eca3cb1f7dc0f93d7048266dbc9864">&#9670;&#160;</a></span>shouldPause()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1271,7 +1317,11 @@ template&lt;class Adaptor &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">bool <a class="el" href="classripple_1_1Consensus.html">ripple::Consensus</a>&lt; Adaptor &gt;::shouldPause</td>
+          <td class="memname">bool <a class="el" href="classripple_1_1Consensus.html">ripple::Consensus</a>&lt; Adaptor &gt;::shouldPause </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>clog</em></td><td>)</td>
+          <td> const</td>
         </tr>
       </table>
   </td>
@@ -1289,12 +1339,12 @@ template&lt;class Adaptor &gt; </div>
 <p >No particular threshold guarantees consensus. Lower thresholds are easier to achieve than higher, but higher thresholds are more likely to reach consensus. Cycle through the phases if lack of synchronization continues.</p>
 <p >Current information indicates that no phase is likely to be intrinsically better than any other: the lower the threshold, the less likely that up-to-date nodes will be able to reach consensus without the laggards. But the higher the threshold, the longer the likely resulting pause. 100% is slightly less desirable in the long run because the potential of a single dawdling peer to slow down everything else. So if we accept that no phase is any better than any other phase, but that all of them will potentially enable us to arrive at consensus, cycling through them seems to be appropriate. Further, if we do reach the point of having to cycle back around, then it's likely that something else out of the scope of this delay mechanism is wrong with the network.</p>
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01151">1151</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01226">1226</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
-<a id="a4598700d99a01a00a32535173117ae12" name="a4598700d99a01a00a32535173117ae12"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4598700d99a01a00a32535173117ae12">&#9670;&#160;</a></span>closeLedger()</h2>
+<a id="ac12058e1a31bae2eba350034970fbba5" name="ac12058e1a31bae2eba350034970fbba5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac12058e1a31bae2eba350034970fbba5">&#9670;&#160;</a></span>closeLedger()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1305,7 +1355,11 @@ template&lt;class Adaptor &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classripple_1_1Consensus.html">ripple::Consensus</a>&lt; Adaptor &gt;::closeLedger</td>
+          <td class="memname">void <a class="el" href="classripple_1_1Consensus.html">ripple::Consensus</a>&lt; Adaptor &gt;::closeLedger </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>clog</em></td><td>)</td>
+          <td></td>
         </tr>
       </table>
   </td>
@@ -1315,12 +1369,12 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01312">1312</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01413">1413</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
-<a id="a23aa1cff2c0b9ba53cf472dc0b53ac30" name="a23aa1cff2c0b9ba53cf472dc0b53ac30"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a23aa1cff2c0b9ba53cf472dc0b53ac30">&#9670;&#160;</a></span>updateOurPositions()</h2>
+<a id="a5ec2cad9d4319b4ad2b0d4b6566289be" name="a5ec2cad9d4319b4ad2b0d4b6566289be"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5ec2cad9d4319b4ad2b0d4b6566289be">&#9670;&#160;</a></span>updateOurPositions()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1331,7 +1385,11 @@ template&lt;class Adaptor &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classripple_1_1Consensus.html">ripple::Consensus</a>&lt; Adaptor &gt;::updateOurPositions</td>
+          <td class="memname">void <a class="el" href="classripple_1_1Consensus.html">ripple::Consensus</a>&lt; Adaptor &gt;::updateOurPositions </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>clog</em></td><td>)</td>
+          <td></td>
         </tr>
       </table>
   </td>
@@ -1341,12 +1399,12 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01365">1365</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01469">1469</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
-<a id="a498092766e111e7e2ac715d572318a27" name="a498092766e111e7e2ac715d572318a27"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a498092766e111e7e2ac715d572318a27">&#9670;&#160;</a></span>haveConsensus()</h2>
+<a id="a61a480c4dc2aa1f81553a64f4f350e29" name="a61a480c4dc2aa1f81553a64f4f350e29"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a61a480c4dc2aa1f81553a64f4f350e29">&#9670;&#160;</a></span>haveConsensus()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1357,7 +1415,11 @@ template&lt;class Adaptor &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">bool <a class="el" href="classripple_1_1Consensus.html">ripple::Consensus</a>&lt; Adaptor &gt;::haveConsensus</td>
+          <td class="memname">bool <a class="el" href="classripple_1_1Consensus.html">ripple::Consensus</a>&lt; Adaptor &gt;::haveConsensus </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>clog</em></td><td>)</td>
+          <td></td>
         </tr>
       </table>
   </td>
@@ -1367,12 +1429,12 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01550">1550</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01664">1664</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
-<a id="a7cb6b51c2126cd4637c0e14cf39638f4" name="a7cb6b51c2126cd4637c0e14cf39638f4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7cb6b51c2126cd4637c0e14cf39638f4">&#9670;&#160;</a></span>createDisputes()</h2>
+<a id="a9c7b09f8e8242025e0f1bbc76ce29aad" name="a9c7b09f8e8242025e0f1bbc76ce29aad"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9c7b09f8e8242025e0f1bbc76ce29aad">&#9670;&#160;</a></span>createDisputes()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1386,8 +1448,18 @@ template&lt;class Adaptor &gt; </div>
           <td class="memname">void <a class="el" href="classripple_1_1Consensus.html">ripple::Consensus</a>&lt; Adaptor &gt;::createDisputes </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classripple_1_1Consensus.html#a524b889667609917d080a6ec775ab2e4">TxSet_t</a> const &amp;&#160;</td>
-          <td class="paramname"><em>o</em></td><td>)</td>
+          <td class="paramname"><em>o</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>clog</em> = <code>{}</code>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
         </tr>
       </table>
   </td>
@@ -1397,7 +1469,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01625">1625</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01749">1749</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1437,12 +1509,12 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01685">1685</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01819">1819</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
-<a id="a8910d52e827ffa8f0a5f2418855d596d" name="a8910d52e827ffa8f0a5f2418855d596d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8910d52e827ffa8f0a5f2418855d596d">&#9670;&#160;</a></span>leaveConsensus()</h2>
+<a id="a4b9cd1dcf891a027ba7649d2464c81ff" name="a4b9cd1dcf891a027ba7649d2464c81ff"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4b9cd1dcf891a027ba7649d2464c81ff">&#9670;&#160;</a></span>leaveConsensus()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1453,7 +1525,11 @@ template&lt;class Adaptor &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classripple_1_1Consensus.html">ripple::Consensus</a>&lt; Adaptor &gt;::leaveConsensus</td>
+          <td class="memname">void <a class="el" href="classripple_1_1Consensus.html">ripple::Consensus</a>&lt; Adaptor &gt;::leaveConsensus </td>
+          <td>(</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>clog</em></td><td>)</td>
+          <td></td>
         </tr>
       </table>
   </td>
@@ -1463,7 +1539,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01608">1608</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01730">1730</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1493,7 +1569,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01704">1704</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01838">1838</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1520,7 +1596,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00544">544</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00559">559</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1546,7 +1622,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00546">546</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00561">561</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1572,7 +1648,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00547">547</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00562">562</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1598,7 +1674,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00548">548</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00563">563</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1624,7 +1700,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00549">549</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00564">564</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1650,7 +1726,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00551">551</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00566">566</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1676,7 +1752,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00555">555</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00570">570</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1702,7 +1778,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00558">558</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00573">573</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1728,7 +1804,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00560">560</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00575">575</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1754,7 +1830,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00563">563</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00578">578</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1780,7 +1856,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00570">570</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00585">585</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1806,7 +1882,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00571">571</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00586">586</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1832,7 +1908,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00577">577</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00592">592</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1858,7 +1934,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00579">579</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00594">594</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1884,7 +1960,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00582">582</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00597">597</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1910,7 +1986,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00584">584</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00599">599</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1936,7 +2012,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00585">585</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00600">600</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1962,7 +2038,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00591">591</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00606">606</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1988,7 +2064,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00595">595</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00610">610</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -2014,7 +2090,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00598">598</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00613">613</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -2040,7 +2116,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00601">601</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00616">616</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -2066,7 +2142,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00604">604</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l00619">619</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
