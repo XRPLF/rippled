@@ -383,6 +383,14 @@ public:
         Json::Value& jv,
         std::optional<std::pair<Asset, Asset>> const& assets = std::nullopt);
 
+    Asset const&
+    operator[](std::uint8_t i)
+    {
+        if (i > 1)
+            Throw<std::runtime_error>("AMM: operator[], invalid index");
+        return i == 0 ? asset1_.asset() : asset2_.asset();
+    }
+
 private:
     AccountID
     create(

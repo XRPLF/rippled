@@ -31,9 +31,15 @@ namespace jtx {
 
 class AMM;
 
-enum class Fund { All, Acct, Gw, IOUOnly };
+enum class Fund { All, Acct, Gw, TokenOnly };
 
-void
+// A hint to testAMM() or fund() to create/fund MPT.
+// A distinct MPT is created if both AMM assets
+// are MPT. The actual MPT asset can be accessed
+// via AMM::operator[](0|1).
+inline static auto AMMMPT = MPT("AMM");
+
+[[maybe_unused]] std::vector<STAmount>
 fund(
     jtx::Env& env,
     jtx::Account const& gw,
@@ -41,7 +47,7 @@ fund(
     std::vector<STAmount> const& amts,
     Fund how);
 
-void
+[[maybe_unused]] std::vector<STAmount>
 fund(
     jtx::Env& env,
     jtx::Account const& gw,
@@ -50,13 +56,22 @@ fund(
     std::vector<STAmount> const& amts = {},
     Fund how = Fund::All);
 
-void
+[[maybe_unused]] std::vector<STAmount>
 fund(
     jtx::Env& env,
     std::vector<jtx::Account> const& accounts,
     STAmount const& xrp,
     std::vector<STAmount> const& amts = {},
-    Fund how = Fund::All);
+    Fund how = Fund::All,
+    std::optional<Account> const& mptIssuer = std::nullopt);
+
+struct TestAMMArgs
+{
+    std::optional<std::pair<STAmount, STAmount>> const& pool = std::nullopt;
+    std::uint16_t tfee = 0;
+    std::optional<jtx::ter> const& ter = std::nullopt;
+    std::vector<FeatureBitset> const& features = {supported_amendments()};
+};
 
 class AMMTestBase : public beast::unit_test::suite
 {
@@ -85,6 +100,13 @@ protected:
         std::uint16_t tfee = 0,
         std::optional<jtx::ter> const& ter = std::nullopt,
         std::vector<FeatureBitset> const& features = {supported_amendments()});
+    void
+    testAMM(
+        std::function<void(jtx::AMM&, jtx::Env&)>&& cb,
+        TestAMMArgs const& args)
+    {
+        testAMM(std::move(cb), args.pool, args.tfee, args.ter, args.features);
+    }
 };
 
 class AMMTest : public jtx::AMMTestBase

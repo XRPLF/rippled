@@ -32,6 +32,8 @@ namespace jtx {
 
 class MPTTester;
 
+auto const MPTDEXFlags = tfMPTCanTrade | tfMPTCanTransfer;
+
 // Check flags settings on MPT create
 class mptflags
 {
@@ -85,15 +87,6 @@ public:
     operator()(Env& env) const;
 };
 
-struct MPTInit
-{
-    std::vector<Account> holders = {};
-    PrettyAmount const& xrp = XRP(10'000);
-    PrettyAmount const& xrpHolders = XRP(10'000);
-    bool fund = true;
-    bool close = true;
-};
-
 struct MPTCreate
 {
     static inline std::vector<Account> AllHolders = {};
@@ -103,15 +96,40 @@ struct MPTCreate
     std::optional<std::string> metadata = std::nullopt;
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
-    // authorize if seated
+    // authorize if seated.
     // if empty vector then authorize all holders
     std::optional<std::vector<Account>> authorize = std::nullopt;
-    // pay if seated and if authorize is seated
-    // if empty vector then pay to either authorize or all holders
+    // pay if seated. if authorize is not seated then authorize.
+    // if empty vector then pay to either authorize or all holders.
     std::optional<std::pair<std::vector<Account>, std::uint64_t>> pay =
         std::nullopt;
-    bool fund = true;
     std::optional<std::uint32_t> flags = {0};
+    bool authHolder = false;
+    std::optional<TER> err = std::nullopt;
+};
+
+struct MPTInit
+{
+    std::vector<Account> holders = {};
+    PrettyAmount const& xrp = XRP(10'000);
+    PrettyAmount const& xrpHolders = XRP(10'000);
+    bool fund = true;
+    bool close = true;
+    // create MPTIssuanceID if seated and follow rules for MPTCreate args
+    std::optional<MPTCreate> create = std::nullopt;
+};
+
+struct MPTInitDef
+{
+    Env& env;
+    Account issuer;
+    std::vector<Account> holders;
+    std::uint16_t transferFee = 0;
+    std::optional<std::uint64_t> pay = std::nullopt;
+    std::uint32_t flags = MPTDEXFlags;
+    bool authHolder = false;
+    bool fund = false;
+    bool close = true;
     std::optional<TER> err = std::nullopt;
 };
 
@@ -150,13 +168,15 @@ struct MPTSet
 class MPTTester
 {
     Env& env_;
-    Account const& issuer_;
+    Account const issuer_;
     std::unordered_map<std::string, Account> const holders_;
     std::optional<MPTID> id_;
     bool close_;
 
 public:
     MPTTester(Env& env, Account const& issuer, MPTInit const& constr = {});
+    MPTTester(MPTInitDef const& constr);
+    operator MPT() const;
 
     void
     create(MPTCreate const& arg = MPTCreate{});
@@ -220,6 +240,9 @@ public:
 
     MPT
     operator[](std::string const& name);
+
+    PrettyAmount
+    operator()(std::uint64_t amount) const;
 
 private:
     using SLEP = std::shared_ptr<SLE const>;
