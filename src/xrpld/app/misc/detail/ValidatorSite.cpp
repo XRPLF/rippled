@@ -22,7 +22,6 @@
 #include <xrpld/app/misc/detail/WorkFile.h>
 #include <xrpld/app/misc/detail/WorkPlain.h>
 #include <xrpld/app/misc/detail/WorkSSL.h>
-#include <xrpl/basics/safe_cast.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
@@ -697,7 +696,7 @@ ValidatorSite::getJson() const
                         site.lastRefreshStatus->message;
             }
             v[jss::refresh_interval_min] =
-                unsafe_cast<Int>(site.refreshInterval.count());
+                static_cast<Int>(site.refreshInterval.count());
         }
     }
     return jrr;
