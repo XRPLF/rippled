@@ -329,6 +329,15 @@ expectLine(Env& env, AccountID const& account, None const& value)
 }
 
 [[nodiscard]] bool
+expectMPT(Env& env, AccountID const& account, STAmount const& value)
+{
+    auto const mptIssuanceID =
+        keylet::mptIssuance(value.asset().get<MPTIssue>());
+    auto const mptToken = env.le(keylet::mptoken(mptIssuanceID.key, account));
+    return mptToken && (*mptToken)[sfMPTAmount] == value.mpt().value();
+}
+
+[[nodiscard]] bool
 expectOffers(
     Env& env,
     AccountID const& account,
@@ -379,6 +388,30 @@ ledgerEntryState(
     jvParams[jss::ripple_state][jss::accounts].append(acct_a.human());
     jvParams[jss::ripple_state][jss::accounts].append(acct_b.human());
     return env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+}
+
+Json::Value
+ledgerEntryOffer(
+    jtx::Env& env,
+    jtx::Account const& acct,
+    std::uint32_t offer_seq)
+{
+    Json::Value jvParams;
+    jvParams[jss::offer][jss::account] = acct.human();
+    jvParams[jss::offer][jss::seq] = offer_seq;
+    return env.rpc("json", "ledger_entry", to_string(jvParams))[jss::result];
+}
+
+Json::Value
+getBookOffers(jtx::Env& env, Issue const& taker_pays, Issue const& taker_gets)
+{
+    Json::Value jvbp;
+    jvbp[jss::ledger_index] = "current";
+    jvbp[jss::taker_pays][jss::currency] = to_string(taker_pays.currency);
+    jvbp[jss::taker_pays][jss::issuer] = to_string(taker_pays.account);
+    jvbp[jss::taker_gets][jss::currency] = to_string(taker_gets.currency);
+    jvbp[jss::taker_gets][jss::issuer] = to_string(taker_gets.account);
+    return env.rpc("json", "book_offers", to_string(jvbp))[jss::result];
 }
 
 Json::Value

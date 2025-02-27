@@ -466,6 +466,9 @@ public:
     PrettyAmount
     balance(Account const& account, Issue const& issue) const;
 
+    PrettyAmount
+    balance(Account const& account, MPTIssue const& issue) const;
+
     /** Return the number of objects owned by an account.
      * Returns 0 if the account does not exist.
      */

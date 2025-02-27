@@ -260,6 +260,9 @@ bool
 expectLine(Env& env, AccountID const& account, None const& value);
 
 bool
+expectMPT(Env& env, AccountID const& account, STAmount const& value);
+
+bool
 expectOffers(
     Env& env,
     AccountID const& account,
@@ -275,6 +278,15 @@ ledgerEntryState(
     Account const& acct_a,
     Account const& acct_b,
     std::string const& currency);
+
+Json::Value
+ledgerEntryOffer(
+    jtx::Env& env,
+    jtx::Account const& acct,
+    std::uint32_t offer_seq);
+
+Json::Value
+getBookOffers(jtx::Env& env, Issue const& taker_pays, Issue const& taker_gets);
 
 Json::Value
 accountBalance(Env& env, Account const& acct);
