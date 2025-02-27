@@ -31,7 +31,7 @@ namespace ripple {
 namespace test {
 namespace jtx {
 
-void
+[[maybe_unused]] std::vector<STAmount>
 fund(
     jtx::Env& env,
     jtx::Account const& gw,
@@ -39,16 +39,17 @@ fund(
     std::vector<STAmount> const& amts,
     Fund how)
 {
-    fund(env, gw, accounts, XRP(30000), amts, how);
+    return fund(env, gw, accounts, XRP(30000), amts, how);
 }
 
-void
+[[maybe_unused]] std::vector<STAmount>
 fund(
     jtx::Env& env,
     std::vector<jtx::Account> const& accounts,
     STAmount const& xrp,
     std::vector<STAmount> const& amts,
-    Fund how)
+    Fund how,
+    std::optional<Account> const& mptIssuer)
 {
     for (auto const& account : accounts)
     {
@@ -58,18 +59,33 @@ fund(
         }
     }
     env.close();
+    std::vector<STAmount> amtsOut;
     for (auto const& account : accounts)
     {
         for (auto const& amt : amts)
         {
-            env.trust(amt + amt, account);
-            env(pay(amt.getIssuer(), account, amt));
+            auto amt_ = [&]() {
+                if (amt.holds<Issue>())
+                    env.trust(amt + amt, account);
+                else if (mptIssuer)
+                {
+                    MPTTester mpt(
+                        {.env = env,
+                         .issuer = *mptIssuer,
+                         .holders = {account}});
+                    return STAmount{mpt.issuanceID(), amt.mpt().value()};
+                }
+                return amt;
+            }();
+            amtsOut.push_back(amt_);
+            env(pay(amt_.getIssuer(), account, amt_));
         }
     }
     env.close();
+    return amtsOut;
 }
 
-void
+[[maybe_unused]] std::vector<STAmount>
 fund(
     jtx::Env& env,
     jtx::Account const& gw,
@@ -81,7 +97,7 @@ fund(
     if (how == Fund::All || how == Fund::Gw)
         env.fund(xrp, gw);
     env.close();
-    fund(env, accounts, xrp, amts, how);
+    return fund(env, accounts, xrp, amts, how, gw);
 }
 
 AMMTestBase::AMMTestBase()
@@ -130,21 +146,42 @@ AMMTestBase::testAMM(
         auto const toFund2 = tofund(asset2);
         BEAST_EXPECT(asset1 <= toFund1 && asset2 <= toFund2);
 
+        // asset1/asset2 could be dummy MPT. In this case real MPT
+        // is created by fund(), which returns the funded amounts.
+        // The amounts then can be used to figure out the created
+        // MPT if any.
+        std::vector<STAmount> funded;
         if (!asset1.native() && !asset2.native())
-            fund(env, gw, {alice, carol}, {toFund1, toFund2}, Fund::All);
+        {
+            funded =
+                fund(env, gw, {alice, carol}, {toFund1, toFund2}, Fund::All);
+        }
         else if (asset1.native())
-            fund(env, gw, {alice, carol}, toFund1, {toFund2}, Fund::All);
+        {
+            funded =
+                fund(env, gw, {alice, carol}, toFund1, {toFund2}, Fund::All);
+            funded.insert(funded.begin(), toFund1);
+        }
         else if (asset2.native())
-            fund(env, gw, {alice, carol}, toFund2, {toFund1}, Fund::All);
+        {
+            funded =
+                fund(env, gw, {alice, carol}, toFund2, {toFund1}, Fund::All);
+            funded.push_back(toFund2);
+        }
+
+        auto const pool1 =
+            STAmount{funded[0].asset(), static_cast<Number>(asset1)};
+        auto const pool2 =
+            STAmount{funded[1].asset(), static_cast<Number>(asset2)};
 
         AMM ammAlice(
             env,
             alice,
-            asset1,
-            asset2,
+            pool1,
+            pool2,
             CreateArg{.log = false, .tfee = tfee, .err = ter});
         if (BEAST_EXPECT(
-                ammAlice.expectBalances(asset1, asset2, ammAlice.tokens())))
+                ammAlice.expectBalances(pool1, pool2, ammAlice.tokens())))
             cb(ammAlice, env);
     }
 }
