@@ -40,7 +40,7 @@ Config::calcOutPeers() const
 {
     return std::max(
         (maxPeers * Tuning::outPercent + 50) / 100,
-        safe_cast<std::size_t>(Tuning::minOutCount));
+        static_cast<std::size_t>(Tuning::minOutCount));
 }
 
 void
