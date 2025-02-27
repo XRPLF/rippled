@@ -203,6 +203,18 @@ Env::balance(Account const& account, Issue const& issue) const
     return {amount, lookup(issue.account).name()};
 }
 
+PrettyAmount
+Env::balance(Account const& account, MPTIssue const& issue) const
+{
+    auto const issuanceKey = keylet::mptIssuance(issue.getMptID());
+    auto const mptokenKey = keylet::mptoken(issuanceKey.key, account);
+    auto const sle = le(mptokenKey);
+    if (!sle)
+        return {STAmount(issue, 0), account.name()};
+    auto amount = sle->getFieldU64(sfMPTAmount);
+    return {STAmount{issue, amount}, lookup(issue.getIssuer()).name()};
+}
+
 std::uint32_t
 Env::ownerCount(Account const& account) const
 {
