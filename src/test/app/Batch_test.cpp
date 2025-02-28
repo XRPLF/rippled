@@ -32,6 +32,15 @@ namespace test {
 
 class Batch_test : public beast::unit_test::suite
 {
+    struct TestLedgerData
+    {
+        int index;
+        std::string txType;
+        std::string result;
+        std::string txHash;
+        bool isInner;
+    };
+
     struct TestBatchData
     {
         std::string result;
@@ -43,6 +52,17 @@ class Batch_test : public beast::unit_test::suite
         int index;
         jtx::Account account;
     };
+
+    Json::Value
+    getTxByIndex(Json::Value const& jrr, int const index)
+    {
+        for (auto const& txn : jrr[jss::result][jss::ledger][jss::transactions])
+        {
+            if (txn[jss::metaData][sfTransactionIndex.jsonName] == index)
+                return txn;
+        }
+        return {};
+    }
 
     void
     validateBatch(
@@ -63,16 +83,6 @@ class Batch_test : public beast::unit_test::suite
         BEAST_EXPECT(transactions.size() == batchResults.size() + 1 + pbIndex);
 
         // Validate ttBatch is correct index
-        auto getTxByIndex = [](Json::Value const& jrr,
-                               int const index) -> Json::Value {
-            for (auto const& txn :
-                 jrr[jss::result][jss::ledger][jss::transactions])
-            {
-                if (txn[jss::metaData][sfTransactionIndex.jsonName] == index)
-                    return txn;
-            }
-            return {};
-        };
         auto const txn = getTxByIndex(jrr, pbIndex);
         BEAST_EXPECT(txn.isMember(jss::metaData));
         Json::Value const meta = txn[jss::metaData];
@@ -94,6 +104,56 @@ class Batch_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 jrr[jss::meta][sfParentBatchID.jsonName] ==
                 to_string(parentBatchId));
+        }
+    }
+
+    Json::Value
+    getLastLedger(jtx::Env& env)
+    {
+        Json::Value params;
+        params[jss::ledger_index] = env.current()->seq() - 1;
+        params[jss::transactions] = true;
+        params[jss::expand] = true;
+        return env.rpc("json", "ledger", to_string(params));
+    }
+
+    void
+    validateInnerTxn(
+        jtx::Env& env,
+        TxID const& parentBatchId,
+        TestLedgerData const& ledgerResult)
+    {
+        Json::Value const jrr = env.rpc("tx", ledgerResult.txHash)[jss::result];
+        BEAST_EXPECT(jrr[sfTransactionType.jsonName] == ledgerResult.txType);
+        BEAST_EXPECT(
+            jrr[jss::meta][sfTransactionResult.jsonName] ==
+            ledgerResult.result);
+        BEAST_EXPECT(
+            jrr[jss::meta][sfParentBatchID.jsonName] ==
+            to_string(parentBatchId));
+    }
+
+    void
+    validateLedgerTxns(
+        jtx::Env& env,
+        Json::Value const& jrr,
+        std::vector<TestLedgerData> const& ledgerResults,
+        TxID const& parentBatchId)
+    {
+        auto const transactions =
+            jrr[jss::result][jss::ledger][jss::transactions];
+        BEAST_EXPECT(transactions.size() == ledgerResults.size());
+        for (TestLedgerData const& ledgerResult : ledgerResults)
+        {
+            auto const txn = getTxByIndex(jrr, ledgerResult.index);
+            BEAST_EXPECT(txn.isMember(jss::metaData));
+            Json::Value const meta = txn[jss::metaData];
+            BEAST_EXPECT(
+                txn[sfTransactionType.jsonName] == ledgerResult.txType);
+            BEAST_EXPECT(
+                meta[sfTransactionResult.jsonName] == ledgerResult.result);
+            if (ledgerResult.isInner)
+                validateInnerTxn(env, parentBatchId, ledgerResult);
         }
     }
 
@@ -2334,6 +2394,279 @@ class Batch_test : public beast::unit_test::suite
     }
 
     void
+    testSequenceOpenLedger(FeatureBitset features)
+    {
+        testcase("sequence open ledger");
+
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+
+        // Before Batch Txn w/ same sequence
+        // Batch inner using non existing ticket
+        {
+            test::jtx::Env env{*this, envconfig()};
+            env.fund(XRP(1000), alice, bob);
+            env.close();
+
+            auto const aliceSeq = env.seq(alice);
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto const batchTxn = env.jt(
+                batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
+                batch::inner(
+                    pay(alice, bob, XRP(1)),
+                    0,
+                    aliceSeq + 1),  // Uses Ticket (Fails with terPRE_TICKET)
+                batch::inner(pay(alice, bob, XRP(2)), aliceSeq + 2));
+            auto const noopTxn = env.jt(noop(alice), seq(aliceSeq + 1));
+            env(noopTxn, ter(terPRE_SEQ));
+            env(batchTxn);
+            env.close();
+
+            auto const txIDs = batchTxn.stx->getBatchTransactionIDs();
+            TxID const parentBatchId = batchTxn.stx->getTransactionID();
+            Json::Value const jrr = getLastLedger(env);
+            std::vector<TestLedgerData> testCases = {
+                {0, "Batch", "tesSUCCESS", to_string(parentBatchId), false},
+                {1,
+                 "AccountSet",
+                 "tesSUCCESS",
+                 to_string(noopTxn.stx->getTransactionID()),
+                 false},
+            };
+            validateLedgerTxns(env, jrr, testCases, parentBatchId);
+        }
+
+        // Before Batch Txn w/ same sequence
+        {
+            test::jtx::Env env{*this, envconfig()};
+            env.fund(XRP(1000), alice, bob);
+            env.close();
+
+            auto const aliceSeq = env.seq(alice);
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto const batchTxn = env.jt(
+                batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
+                batch::inner(pay(alice, bob, XRP(1)), aliceSeq + 1),
+                batch::inner(pay(alice, bob, XRP(2)), aliceSeq + 2));
+            auto const noopTxn = env.jt(noop(alice), seq(aliceSeq + 1));
+            env(noopTxn, ter(terPRE_SEQ));
+            env(batchTxn);
+            env.close();
+
+            auto const txIDs = batchTxn.stx->getBatchTransactionIDs();
+            TxID const parentBatchId = batchTxn.stx->getTransactionID();
+            Json::Value const jrr = getLastLedger(env);
+            std::vector<TestLedgerData> testCases = {
+                {0, "Batch", "tesSUCCESS", to_string(parentBatchId), false},
+                {1, "Payment", "tesSUCCESS", to_string(txIDs[0]), true},
+                {2, "Payment", "tesSUCCESS", to_string(txIDs[1]), true},
+            };
+            validateLedgerTxns(env, jrr, testCases, parentBatchId);
+        }
+
+        // After Batch Txn w/ same sequence
+        {
+            test::jtx::Env env{*this, envconfig()};
+            env.fund(XRP(1000), alice, bob);
+            env.close();
+
+            auto const aliceSeq = env.seq(alice);
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto const batchTxn = env.jt(
+                batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
+                batch::inner(pay(alice, bob, XRP(1)), aliceSeq + 1),
+                batch::inner(pay(alice, bob, XRP(2)), aliceSeq + 2));
+            auto const noopTxn = env.jt(noop(alice), seq(aliceSeq + 1));
+            env(batchTxn);
+            env(noopTxn);
+            env.close();
+
+            auto const txIDs = batchTxn.stx->getBatchTransactionIDs();
+            TxID const parentBatchId = batchTxn.stx->getTransactionID();
+            Json::Value const jrr = getLastLedger(env);
+            std::vector<TestLedgerData> testCases = {
+                {0, "Batch", "tesSUCCESS", to_string(parentBatchId), false},
+                {1, "Payment", "tesSUCCESS", to_string(txIDs[0]), true},
+                {2, "Payment", "tesSUCCESS", to_string(txIDs[1]), true},
+            };
+            validateLedgerTxns(env, jrr, testCases, parentBatchId);
+        }
+    }
+
+    void
+    testTicketsOpenLedger(FeatureBitset features)
+    {
+        testcase("tickets open ledger");
+
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+
+        // Before Batch Txn w/ same ticket
+        {
+            test::jtx::Env env{*this, envconfig()};
+            env.fund(XRP(1000), alice, bob);
+            env.close();
+
+            std::uint32_t aliceTicketSeq{env.seq(alice) + 1};
+            env(ticket::create(alice, 10));
+            env.close();
+
+            auto const aliceSeq = env.seq(alice);
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto const batchTxn = env.jt(
+                batch::outer(alice, 0, batchFee, tfAllOrNothing),
+                batch::inner(pay(alice, bob, XRP(1)), 0, aliceTicketSeq + 1),
+                batch::inner(pay(alice, bob, XRP(2)), aliceSeq),
+                ticket::use(aliceTicketSeq));
+            auto const noopTxn =
+                env.jt(noop(alice), ticket::use(aliceTicketSeq + 1));
+            env(noopTxn);
+            env(batchTxn);
+            env.close();
+
+            auto const txIDs = batchTxn.stx->getBatchTransactionIDs();
+            TxID const parentBatchId = batchTxn.stx->getTransactionID();
+            Json::Value const jrr = getLastLedger(env);
+            std::vector<TestLedgerData> testCases = {
+                {0, "Batch", "tesSUCCESS", to_string(parentBatchId), false},
+                {1, "Payment", "tesSUCCESS", to_string(txIDs[0]), true},
+                {2, "Payment", "tesSUCCESS", to_string(txIDs[1]), true},
+            };
+            validateLedgerTxns(env, jrr, testCases, parentBatchId);
+        }
+
+        // After Batch Txn w/ same ticket
+        {
+            test::jtx::Env env{*this, envconfig()};
+            env.fund(XRP(1000), alice, bob);
+            env.close();
+
+            std::uint32_t aliceTicketSeq{env.seq(alice) + 1};
+            env(ticket::create(alice, 10));
+            env.close();
+
+            auto const aliceSeq = env.seq(alice);
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto const batchTxn = env.jt(
+                batch::outer(alice, 0, batchFee, tfAllOrNothing),
+                batch::inner(pay(alice, bob, XRP(1)), 0, aliceTicketSeq + 1),
+                batch::inner(pay(alice, bob, XRP(2)), aliceSeq),
+                ticket::use(aliceTicketSeq));
+            auto const noopTxn =
+                env.jt(noop(alice), ticket::use(aliceTicketSeq + 1));
+            env(batchTxn);
+            env(noopTxn);
+            env.close();
+
+            auto const txIDs = batchTxn.stx->getBatchTransactionIDs();
+            TxID const parentBatchId = batchTxn.stx->getTransactionID();
+            Json::Value const jrr = getLastLedger(env);
+            std::vector<TestLedgerData> testCases = {
+                {0, "Batch", "tesSUCCESS", to_string(parentBatchId), false},
+                {1, "Payment", "tesSUCCESS", to_string(txIDs[0]), true},
+                {2, "Payment", "tesSUCCESS", to_string(txIDs[1]), true},
+            };
+            validateLedgerTxns(env, jrr, testCases, parentBatchId);
+        }
+    }
+
+    void
+    testObjectsOpenLedger(FeatureBitset features)
+    {
+        testcase("objects open ledger");
+
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+
+        // Before Batch Txn
+        {
+            test::jtx::Env env{*this, envconfig()};
+            env.fund(XRP(1000), alice, bob);
+            env.close();
+
+            std::uint32_t aliceTicketSeq{env.seq(alice) + 1};
+            env(ticket::create(alice, 10));
+            env.close();
+
+            auto const aliceSeq = env.seq(alice);
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            uint256 const chkId{getCheckIndex(alice, aliceSeq)};
+            auto const batchTxn = env.jt(
+                batch::outer(alice, 0, batchFee, tfAllOrNothing),
+                batch::inner(check::create(alice, bob, XRP(10)), aliceSeq),
+                batch::inner(pay(alice, bob, XRP(1)), 0, aliceTicketSeq + 1),
+                ticket::use(aliceTicketSeq));
+            auto const objTxn = env.jt(check::cash(bob, chkId, XRP(10)));
+            env(objTxn, ter(tecNO_ENTRY));
+            env(batchTxn);
+            env.close();
+
+            auto const txIDs = batchTxn.stx->getBatchTransactionIDs();
+            TxID const parentBatchId = batchTxn.stx->getTransactionID();
+            Json::Value const jrr = getLastLedger(env);
+            std::vector<TestLedgerData> testCases = {
+                {0, "Batch", "tesSUCCESS", to_string(parentBatchId), false},
+                {1, "CheckCreate", "tesSUCCESS", to_string(txIDs[0]), true},
+                {2, "Payment", "tesSUCCESS", to_string(txIDs[1]), true},
+                {3,
+                 "CheckCash",
+                 "tesSUCCESS",
+                 to_string(objTxn.stx->getTransactionID()),
+                 false},
+            };
+            validateLedgerTxns(env, jrr, testCases, parentBatchId);
+        }
+
+        // After Batch Txn
+        {
+            test::jtx::Env env{*this, envconfig()};
+            env.fund(XRP(1000), alice, bob);
+            env.close();
+
+            std::uint32_t aliceTicketSeq{env.seq(alice) + 1};
+            env(ticket::create(alice, 10));
+            env.close();
+
+            auto const aliceSeq = env.seq(alice);
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            uint256 const chkId{getCheckIndex(alice, aliceSeq)};
+            auto const batchTxn = env.jt(
+                batch::outer(alice, 0, batchFee, tfAllOrNothing),
+                batch::inner(check::create(alice, bob, XRP(10)), aliceSeq),
+                batch::inner(pay(alice, bob, XRP(1)), 0, aliceTicketSeq + 1),
+                ticket::use(aliceTicketSeq));
+            auto const objTxn = env.jt(check::cash(bob, chkId, XRP(10)));
+            env(batchTxn);
+            env(objTxn, ter(tecNO_ENTRY));
+            env.close();
+
+            auto const txIDs = batchTxn.stx->getBatchTransactionIDs();
+            TxID const parentBatchId = batchTxn.stx->getTransactionID();
+            Json::Value const jrr = getLastLedger(env);
+            std::vector<TestLedgerData> testCases = {
+                {0, "Batch", "tesSUCCESS", to_string(parentBatchId), false},
+                {1, "CheckCreate", "tesSUCCESS", to_string(txIDs[0]), true},
+                {2, "Payment", "tesSUCCESS", to_string(txIDs[1]), true},
+                {3,
+                 "CheckCash",
+                 "tesSUCCESS",
+                 to_string(objTxn.stx->getTransactionID()),
+                 false},
+            };
+            validateLedgerTxns(env, jrr, testCases, parentBatchId);
+        }
+    }
+
+    void
     testPseudoTxn(FeatureBitset features)
     {
         testcase("pseudo txn");
@@ -2587,6 +2920,9 @@ class Batch_test : public beast::unit_test::suite
         testTicketsOuter(features);
         testTicketsInner(features);
         testTicketsOuterInner(features);
+        testSequenceOpenLedger(features);
+        testTicketsOpenLedger(features);
+        testObjectsOpenLedger(features);
         testPseudoTxn(features);
         testBatchWithSelfSubmit(features);
         testBatchTxQueue(features);
