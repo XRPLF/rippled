@@ -44,12 +44,12 @@
  * 3) If the feature development is COMPLETE, and the feature is ready to be
  *    SUPPORTED, change the macro parameter in features.macro to Supported::yes.
  *
- * 4) When the feature is ready to be ENABLED, change the macro parameter in
- * features.macro parameter to `VoteBehavior::DefaultYes`.
+ * 4) In general, any newly supported amendments (`Supported::yes`) should have
+ *    a `VoteBehavior::DefaultNo` indefinitely so that external governance can
+ *    make the decision on when to activate it. High priority bug fixes can be
+ *    an exception to this rule. In such cases, change the macro parameter in
+ *    features.macro to `VoteBehavior::DefaultYes`.
  *
- * In general, any newly supported amendments (`Supported::yes`) should have
- * a `VoteBehavior::DefaultNo` for at least one full release cycle. High
- * priority bug fixes can be an exception to this rule of thumb.
  *
  * When a feature has been enabled for several years, the conditional code
  * may be removed, and the feature "retired". To retire a feature:
@@ -58,10 +58,11 @@
  *    section at the end of the file, and change the macro to XRPL_RETIRE.
  *
  * The feature must remain registered and supported indefinitely because it
- * still exists in the ledger, but there is no need to vote for it because
- * there's nothing to vote for. If the definition is removed completely from the
- * code, any instances running that code will get amendment blocked. Removing
- * the feature from the ledger is beyond the scope of these instructions.
+ * may exist in the Amendments object on ledger. There is no need to vote
+ * for it because there's nothing to vote for. If the feature definition is
+ * removed completely from the code, any instances running that code will get
+ * amendment blocked. Removing the feature from the ledger is beyond the scope
+ * of these instructions.
  *
  */
 
