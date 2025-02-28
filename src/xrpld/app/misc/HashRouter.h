@@ -61,8 +61,11 @@ public:
 
     /** Structure used to customize @ref HashRouter behavior.
      *
-     * Even though these items are configurable, don't change them unless there
-     * is a good reason, and network-wide coordination to do it.
+     * Even though these items are configurable, they are undocumented. Don't
+     * change them unless there is a good reason, and network-wide coordination
+     * to do it.
+     *
+     * Configuration is processed in setup_HashRouter.
      */
     struct Setup
     {
@@ -132,9 +135,9 @@ private:
         bool
         shouldRelay(
             Stopwatch::time_point const& now,
-            std::chrono::seconds holdTime)
+            std::chrono::seconds relayTime)
         {
-            if (relayed_ && *relayed_ + holdTime > now)
+            if (relayed_ && *relayed_ + relayTime > now)
                 return false;
             relayed_.emplace(now);
             return true;

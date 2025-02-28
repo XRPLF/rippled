@@ -142,7 +142,7 @@ setup_HashRouter(Config const& config)
 
     if (set(tmp, "hold_time", section))
     {
-        if (tmp < 8)
+        if (tmp < 12)
             Throw<std::runtime_error>(
                 "HashRouter hold time must be at least 12 seconds (the "
                 "approximate validation time for three ledgers).");

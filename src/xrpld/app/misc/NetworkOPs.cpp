@@ -1418,7 +1418,9 @@ NetworkOPsImp::processTransactionSet(CanonicalTXSet const& set)
     }
 
     doTransactionSyncBatch(lock, [&](std::unique_lock<std::mutex> const&) {
-        assert(lock.owns_lock());
+        XRPL_ASSERT(
+            lock.owns_lock(),
+            "ripple::NetworkOPsImp::processTransactionSet has lock");
         return std::any_of(
             mTransactions.begin(), mTransactions.end(), [](auto const& t) {
                 return t.transaction->getApplying();
