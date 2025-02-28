@@ -1578,16 +1578,6 @@ Consensus<Adaptor>::updateOurPositions(
             parms, closeTimeAvalancheState_, convergePercent_, 0, 0);
         if (newState)
             closeTimeAvalancheState_ = *newState;
-        int neededWeight;
-
-        if (convergePercent_ < parms.avMID_CONSENSUS_TIME)
-            neededWeight = parms.avINIT_CONSENSUS_PCT;
-        else if (convergePercent_ < parms.avLATE_CONSENSUS_TIME)
-            neededWeight = parms.avMID_CONSENSUS_PCT;
-        else if (convergePercent_ < parms.avSTUCK_CONSENSUS_TIME)
-            neededWeight = parms.avLATE_CONSENSUS_PCT;
-        else
-            neededWeight = parms.avSTUCK_CONSENSUS_PCT;
         CLOG(clog) << "neededWeight " << neededWeight << ". ";
 
         int participants = currPeerPositions_.size();
@@ -1773,11 +1763,10 @@ Consensus<Adaptor>::haveConsensus(
             CLOG(clog) << ss.str() << ". ";
             return false;
         }
-        ss << "Consensus expired. ";
-        << Json::Compact{getJson(true)};
+        ss << "Consensus expired. " << Json::Compact{getJson(true)};
         JLOG(j_.error()) << ss.str();
         CLOG(clog) << ss.str() << ". ";
-        leaveConsensus();
+        leaveConsensus(clog);
     }
     // There is consensus, but we need to track if the network moved on
     // without us.
