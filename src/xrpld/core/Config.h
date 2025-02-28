@@ -309,6 +309,7 @@ public:
 
     // Allow the use of private IPs in the PeerFinder Protocol
     bool ALLOW_PRIVATE_ENDPOINTS = false;
+
 public:
     Config();
 

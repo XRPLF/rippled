@@ -1008,7 +1008,8 @@ Config::loadFromString(std::string const& fileContents)
         }
     }
 
-    if (getSingleSection(secConfig, SECTION_ALLOW_PRIVATE_ENDPOINTS, strTemp, j_))
+    if (getSingleSection(
+            secConfig, SECTION_ALLOW_PRIVATE_ENDPOINTS, strTemp, j_))
         ALLOW_PRIVATE_ENDPOINTS = beast::lexicalCastThrow<bool>(strTemp);
 
     {

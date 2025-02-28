@@ -1527,7 +1527,7 @@ true
 
         BEAST_EXPECT(error == "");
         BEAST_EXPECT(c.ALLOW_PRIVATE_ENDPOINTS == true);
-try 
+        try
         {
             c.loadFromString(R"rippleConfig(
 [allow_private_endpoints]
@@ -1541,7 +1541,6 @@ false
 
         BEAST_EXPECT(error == "");
         BEAST_EXPECT(c.ALLOW_PRIVATE_ENDPOINTS == false);
-    
     }
 
     void
