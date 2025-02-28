@@ -93,7 +93,7 @@ jobs:
         with:
           generator: ${{ matrix.generator }}
           configuration: ${{ matrix.configuration }}
-          cmake-args: ${{ matrix.cmake-args }}
+          cmake-args: "-Dassert=TRUE -Dwerr=TRUE ${{ matrix.cmake-args }}"
       - name: test
         run: |
           n=$(nproc)

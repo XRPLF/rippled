@@ -96,6 +96,13 @@ public:
 
             suite_.log << text << std::endl;
         }
+
+        void
+        writeAlways(beast::severities::Severity level, std::string const& text)
+            override
+        {
+            suite_.log << text << std::endl;
+        }
     };
 
     //--------------------------------------------------------------------------
