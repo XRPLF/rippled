@@ -220,12 +220,12 @@ public:
         std::uint32_t seq,
         InboundLedger::Reason reason) override
     {
-        if (CanProcess const check{acquiresMutex_, pendingAcquires_, hash})
+        if (auto check = std::make_shared<CanProcess const>(
+                acquiresMutex_, pendingAcquires_, hash);
+            *check)
         {
             app_.getJobQueue().addJob(
-                type,
-                name,
-                [check = std::move(check), name, hash, seq, reason, this]() {
+                type, name, [check, name, hash, seq, reason, this]() {
                     JLOG(j_.debug())
                         << "JOB acquireAsync " << name << " started ";
                     try
