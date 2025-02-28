@@ -33,7 +33,7 @@
  *
  * Steps required to add new features to the code:
  *
- * 1) Add a the appropriate XRPL_FEATURE or XRPL_FIX macro definition for the
+ * 1) Add the appropriate XRPL_FEATURE or XRPL_FIX macro definition for the
  *    feature to features.macro with the feature's name, `Supported::no`, and
  *    `VoteBehavior::DefaultNo`.
  *
