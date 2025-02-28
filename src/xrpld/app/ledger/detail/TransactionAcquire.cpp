@@ -262,6 +262,7 @@ TransactionAcquire::stillNeed()
 
     if (timeouts_ > NORM_TIMEOUTS)
         timeouts_ = NORM_TIMEOUTS;
+    failed_ = false;
 }
 
 }  // namespace ripple

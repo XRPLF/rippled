@@ -158,7 +158,7 @@ jobs:
         with:
           generator: Ninja
           configuration: ${{ matrix.configuration }}
-          cmake-args: ${{ matrix.cmake-args }}
+          cmake-args: "-Dassert=TRUE -Dwerr=TRUE ${{ matrix.cmake-args }}"
       - name: test
         run: |
           ${build_dir}/rippled --unittest --unittest-jobs $(nproc)
@@ -214,6 +214,8 @@ jobs:
           generator: Ninja
           configuration: ${{ matrix.configuration }}
           cmake-args: >-
+            -Dassert=TRUE
+            -Dwerr=TRUE
             -Dcoverage=ON
             -Dcoverage_format=xml
             -DCODE_COVERAGE_VERBOSE=ON
