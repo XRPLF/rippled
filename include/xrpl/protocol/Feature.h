@@ -76,11 +76,6 @@ allAmendments();
 
 namespace detail {
 
-// This value SHOULD be equal to the number of amendments registered in
-// Feature.cpp. Because it's only used to reserve storage, and determine how
-// large to make the FeatureBitset, it MAY be larger. It MUST NOT be less than
-// the actual number of amendments. A LogicError on startup will verify this.
-static constexpr std::size_t numFeatures = 0
 #pragma push_macro("XRPL_FEATURE")
 #undef XRPL_FEATURE
 #pragma push_macro("XRPL_FIX")
@@ -92,7 +87,14 @@ static constexpr std::size_t numFeatures = 0
 #define XRPL_FIX(name, supported, vote) +1
 #define XRPL_RETIRE(name) +1
 
+// This value SHOULD be equal to the number of amendments registered in
+// Feature.cpp. Because it's only used to reserve storage, and determine how
+// large to make the FeatureBitset, it MAY be larger. It MUST NOT be less than
+// the actual number of amendments. A LogicError on startup will verify this.
+static constexpr std::size_t numFeatures =
+    (0 +
 #include <xrpl/protocol/detail/features.macro>
+    );
 
 #undef XRPL_RETIRE
 #pragma pop_macro("XRPL_RETIRE")
@@ -100,7 +102,6 @@ static constexpr std::size_t numFeatures = 0
 #pragma pop_macro("XRPL_FIX")
 #undef XRPL_FEATURE
 #pragma pop_macro("XRPL_FEATURE")
-    ;
 
 /** Amendments that this server supports and the default voting behavior.
    Whether they are enabled depends on the Rules defined in the validated
