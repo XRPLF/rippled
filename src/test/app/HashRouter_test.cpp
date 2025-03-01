@@ -299,7 +299,7 @@ class HashRouter_test : public beast::unit_test::suite
             h.set("relay_time", "120");
             try
             {
-                auto const setup = setup_HashRouter(cfg);
+                setup_HashRouter(cfg);
                 fail();
             }
             catch (std::exception const& e)
@@ -318,7 +318,7 @@ class HashRouter_test : public beast::unit_test::suite
             h.set("relay_time", "120");
             try
             {
-                auto const setup = setup_HashRouter(cfg);
+                setup_HashRouter(cfg);
                 fail();
             }
             catch (std::exception const& e)
@@ -338,7 +338,7 @@ class HashRouter_test : public beast::unit_test::suite
             h.set("relay_time", "6");
             try
             {
-                auto const setup = setup_HashRouter(cfg);
+                setup_HashRouter(cfg);
                 fail();
             }
             catch (std::exception const& e)
