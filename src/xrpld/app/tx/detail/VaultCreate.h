@@ -17,39 +17,30 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_MPTOKENISSUANCEDESTROY_H_INCLUDED
-#define RIPPLE_TX_MPTOKENISSUANCEDESTROY_H_INCLUDED
+#ifndef RIPPLE_TX_VAULTCREATE_H_INCLUDED
+#define RIPPLE_TX_VAULTCREATE_H_INCLUDED
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
 namespace ripple {
 
-struct MPTDestroyArgs
-{
-    AccountID const& account;
-    MPTID issuanceID;
-};
-
-class MPTokenIssuanceDestroy : public Transactor
+class VaultCreate : public Transactor
 {
 public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
-    explicit MPTokenIssuanceDestroy(ApplyContext& ctx) : Transactor(ctx)
+    explicit VaultCreate(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
     static NotTEC
     preflight(PreflightContext const& ctx);
 
-    static TER
-    preclaim(PreclaimContext const& ctx);
+    static XRPAmount
+    calculateBaseFee(ReadView const& view, STTx const& tx);
 
     static TER
-    destroy(
-        ApplyView& view,
-        beast::Journal journal,
-        MPTDestroyArgs const& args);
+    preclaim(PreclaimContext const& ctx);
 
     TER
     doApply() override;

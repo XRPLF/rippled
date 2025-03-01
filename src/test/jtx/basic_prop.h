@@ -20,6 +20,8 @@
 #ifndef RIPPLE_TEST_JTX_BASIC_PROP_H_INCLUDED
 #define RIPPLE_TEST_JTX_BASIC_PROP_H_INCLUDED
 
+#include <memory>
+
 namespace ripple {
 namespace test {
 namespace jtx {
