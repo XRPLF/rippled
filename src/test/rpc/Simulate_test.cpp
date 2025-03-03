@@ -459,9 +459,21 @@ class Simulate_test : public beast::unit_test::suite
             {
                 BEAST_EXPECT(result[jss::error] == "highFee");
                 BEAST_EXPECT(result[jss::error_code] == rpcHIGH_FEE);
-                BEAST_EXPECT(
-                    result[jss::error_message] ==
-                    "Fee of 8889 exceeds the requested tx limit of 100");
+
+                auto const& view = *env.current();
+                metrics = env.app().getTxQ().getMetrics(view);
+                auto const base = [&view]() {
+                    auto base = view.fees().base;
+                    if (!base)
+                        base += 1;
+                    return base;
+                }();
+
+                std::stringstream ss;
+                ss << "Fee of " << toDrops(metrics.openLedgerFeeLevel, base) + 1
+                   << " exceeds the requested tx limit of "
+                   << view.fees().base.drops() * 10;
+                BEAST_EXPECT(result[jss::error_message] == ss.str());
             }
         }
     }
@@ -635,7 +647,9 @@ class Simulate_test : public beast::unit_test::suite
                                 auto finalFields = modifiedNode[sfFinalFields];
                                 BEAST_EXPECT(
                                     finalFields[sfBalance] ==
-                                    "99999999999999990");
+                                    std::to_string(
+                                        100'000'000'000'000'000 -
+                                        env.current()->fees().base.drops()));
                             }
                         }
                         BEAST_EXPECT(
