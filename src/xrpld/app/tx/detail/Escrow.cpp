@@ -249,8 +249,8 @@ escrowCreatePreclaimHelper<Issue>(
     if (balance < beast::zero && issuer > account)
         return tecNO_PERMISSION;
 
-    // If the issuer has no default ripple return tecNO_RIPPLE
-    if (noDefaultRipple(ctx.view, amount.issue()))
+    // If the issuer has no default ripple state return tecNO_RIPPLE
+    if (!(sleIssuer->getFlags() & lsfDefaultRipple))
         return terNO_RIPPLE;
 
     // If the issuer has requireAuth set, check if the account is authorized
@@ -442,28 +442,25 @@ EscrowCreate::doApply()
         }
     }
 
-    auto const account = ctx_.tx[sfAccount];
-    auto const sle = ctx_.view().peek(keylet::account(account));
+    auto const sle = ctx_.view().peek(keylet::account(account_));
     if (!sle)
         return tefINTERNAL;
 
     // Check reserve and funds availability
     STAmount const amount{ctx_.tx[sfAmount]};
 
-    auto const balance = STAmount((*sle)[sfBalance]).xrp();
     auto const reserve =
         ctx_.view().fees().accountReserve((*sle)[sfOwnerCount] + 1);
     AccountID const issuer = amount.getIssuer();
 
-    if (balance < reserve)
+    if (mSourceBalance < reserve)
         return tecINSUFFICIENT_RESERVE;
 
     // Check reserve and funds availability
     if (isXRP(amount))
     {
-        if (balance < reserve + STAmount(ctx_.tx[sfAmount]).xrp())
+        if (mSourceBalance < reserve + STAmount(ctx_.tx[sfAmount]).xrp())
             return tecUNFUNDED;
-        // pass
     }
 
     // Check destination account
@@ -486,10 +483,10 @@ EscrowCreate::doApply()
     // Create escrow in ledger.  Note that we we use the value from the
     // sequence or ticket.  For more explanation see comments in SeqProxy.h.
     Keylet const escrowKeylet =
-        keylet::escrow(account, ctx_.tx.getSeqProxy().value());
+        keylet::escrow(account_, ctx_.tx.getSeqProxy().value());
     auto const slep = std::make_shared<SLE>(escrowKeylet);
     (*slep)[sfAmount] = ctx_.tx[sfAmount];
-    (*slep)[sfAccount] = account;
+    (*slep)[sfAccount] = account_;
     (*slep)[~sfCondition] = ctx_.tx[~sfCondition];
     (*slep)[~sfSourceTag] = ctx_.tx[~sfSourceTag];
     (*slep)[sfDestination] = ctx_.tx[sfDestination];
@@ -509,7 +506,9 @@ EscrowCreate::doApply()
     // Add escrow to sender's owner directory
     {
         auto page = ctx_.view().dirInsert(
-            keylet::ownerDir(account), escrowKeylet, describeOwnerDir(account));
+            keylet::ownerDir(account_),
+            escrowKeylet,
+            describeOwnerDir(account_));
         if (!page)
             return tecDIR_FULL;
         (*slep)[sfOwnerNode] = *page;
@@ -517,7 +516,7 @@ EscrowCreate::doApply()
 
     // If it's not a self-send, add escrow to recipient's owner directory.
     AccountID const dest = ctx_.tx[sfDestination];
-    if (dest != ctx_.tx[sfAccount])
+    if (dest != account_)
     {
         auto page = ctx_.view().dirInsert(
             keylet::ownerDir(dest), escrowKeylet, describeOwnerDir(dest));
@@ -528,7 +527,7 @@ EscrowCreate::doApply()
 
     // If issuer is not source or destination, add escrow to issuers owner
     // directory.
-    if (!isXRP(amount) && issuer != account && issuer != dest)
+    if (!isXRP(amount) && issuer != account_ && issuer != dest)
     {
         auto page = ctx_.view().dirInsert(
             keylet::ownerDir(issuer), escrowKeylet, describeOwnerDir(issuer));
@@ -543,11 +542,11 @@ EscrowCreate::doApply()
     else
     {
         auto const issuer = amount.getIssuer();
-        if (issuer != account)
+        if (issuer != account_)
         {
             auto const ter = rippleCredit(
                 ctx_.view(),
-                account,
+                account_,
                 issuer,
                 amount,
                 amount.holds<MPTIssue>() ? false : true,
@@ -671,8 +670,8 @@ escrowFinishPreclaimHelper<Issue>(
     if (issuer == dest)
         return tesSUCCESS;
 
-    // If the issuer has no default ripple return tecNO_RIPPLE
-    if (noDefaultRipple(ctx.view, amount.issue()))
+    // If the issuer has no default ripple state return tecNO_RIPPLE
+    if (!isDefaultRipple(ctx.view, amount.issue()))
         return terNO_RIPPLE;
 
     // If the issuer has requireAuth set, check if the destination is authorized
@@ -767,7 +766,7 @@ escrowFinishApplyHelper(
     AccountID const& issuer,
     AccountID const& account,
     AccountID const& dest,
-    bool const& createAsset,
+    bool createAsset,
     beast::Journal journal);
 
 template <>
@@ -781,7 +780,7 @@ escrowFinishApplyHelper<Issue>(
     AccountID const& issuer,
     AccountID const& account,
     AccountID const& dest,
-    bool const& createAsset,
+    bool createAsset,
     beast::Journal journal)
 {
     Keylet const trustLineKey = keylet::line(dest, amount.issue());
@@ -877,7 +876,7 @@ escrowFinishApplyHelper<MPTIssue>(
     AccountID const& issuer,
     AccountID const& account,
     AccountID const& dest,
-    bool const& createAsset,
+    bool createAsset,
     beast::Journal journal)
 {
     bool const srcIssuer = issuer == account;
@@ -1164,8 +1163,8 @@ escrowCancelPreclaimHelper<Issue>(
     if (issuer == account)
         return tesSUCCESS;
 
-    // If the issuer has no default ripple return tecNO_RIPPLE
-    if (noDefaultRipple(ctx.view, amount.issue()))
+    // If the issuer has no default ripple state return tecNO_RIPPLE
+    if (!isDefaultRipple(ctx.view, amount.issue()))
         return terNO_RIPPLE;
 
     // If the issuer has requireAuth set, check if the account is authorized

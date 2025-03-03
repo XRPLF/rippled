@@ -170,13 +170,13 @@ hasExpired(ReadView const& view, std::optional<std::uint32_t> const& exp)
 }
 
 bool
-noDefaultRipple(ReadView const& view, Issue const& issue)
+isDefaultRipple(ReadView const& view, Issue const& issue)
 {
     if (isXRP(issue))
-        return false;
+        return true;
 
-    if (auto const issuerAccount = view.read(keylet::account(issue.account)))
-        return (issuerAccount->getFlags() & lsfDefaultRipple) == 0;
+    if (auto const sle = view.read(keylet::account(issue.account)))
+        return (sle->getFlags() & lsfDefaultRipple);
 
     return false;
 }
