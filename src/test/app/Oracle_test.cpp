@@ -42,7 +42,11 @@ private:
             Account const bad("bad");
             env.memoize(bad);
             Oracle oracle(
-                env, {.owner = bad, .seq = seq(1), .err = ter(terNO_ACCOUNT)});
+                env,
+                {.owner = bad,
+                 .seq = seq(1),
+                 .fee = static_cast<int>(env.current()->fees().base.drops()),
+                 .err = ter(terNO_ACCOUNT)});
         }
 
         // Insufficient reserve
@@ -50,7 +54,10 @@ private:
             Env env(*this);
             env.fund(env.current()->fees().accountReserve(0), owner);
             Oracle oracle(
-                env, {.owner = owner, .err = ter(tecINSUFFICIENT_RESERVE)});
+                env,
+                {.owner = owner,
+                 .fee = static_cast<int>(env.current()->fees().base.drops()),
+                 .err = ter(tecINSUFFICIENT_RESERVE)});
         }
         // Insufficient reserve if the data series extends to greater than 5
         {
@@ -59,7 +66,10 @@ private:
                 env.current()->fees().accountReserve(1) +
                     env.current()->fees().base * 2,
                 owner);
-            Oracle oracle(env, {.owner = owner});
+            Oracle oracle(
+                env,
+                {.owner = owner,
+                 .fee = static_cast<int>(env.current()->fees().base.drops())});
             BEAST_EXPECT(oracle.exists());
             oracle.set(UpdateArg{
                 .series =
@@ -186,7 +196,8 @@ private:
 
             // Asset class or provider are included on update
             // and don't match the current values
-            oracle.set(CreateArg{});
+            oracle.set(CreateArg{
+                .fee = static_cast<int>(env.current()->fees().base.drops())});
             BEAST_EXPECT(oracle.exists());
             oracle.set(UpdateArg{
                 .series = {{"XRP", "USD", 740, 1}},
@@ -376,7 +387,10 @@ private:
             env.fund(XRP(1'000), owner);
             Oracle oracle(
                 env, {.owner = owner, .fee = -1, .err = ter(temBAD_FEE)});
-            Oracle oracle1(env, {.owner = owner});
+            Oracle oracle1(
+                env,
+                {.owner = owner,
+                 .fee = static_cast<int>(env.current()->fees().base.drops())});
             oracle.set(
                 UpdateArg{.owner = owner, .fee = -1, .err = ter(temBAD_FEE)});
         }
