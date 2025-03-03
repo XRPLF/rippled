@@ -2040,6 +2040,299 @@ static constexpr TxnTestData txnTestArray[] = {
        "Cannot specify differing 'Amount' and 'DeliverMax'",
        "Cannot specify differing 'Amount' and 'DeliverMax'"}}},
 
+    {"If 'OnBehalfOf' is not supplied, 'DelegateSequence' cannot be supplied",
+     __LINE__,
+     R"({
+    "command": "doesnt_matter",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "tx_json": {
+        "Fee": 10,
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "TransactionType": "Payment",
+        "Sequence": 10,
+        "DelegateSequence": 100
+    }
+})",
+     {{"Invalid field 'tx_json.DelegateSequence'.",
+       "Invalid field 'tx_json.DelegateSequence'.",
+       "Invalid field 'tx_json.DelegateSequence'.",
+       "Invalid field 'tx_json.DelegateSequence'."}}},
+
+    {"If 'OnBehalfOf' is not supplied, 'DelegateTicketSequence' cannot be "
+     "supplied",
+     __LINE__,
+     R"({
+    "command": "doesnt_matter",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "tx_json": {
+        "Fee": 10,
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "TransactionType": "Payment",
+        "Sequence": 10,
+        "DelegateTicketSequence": 100
+    }
+})",
+     {{"Invalid field 'tx_json.DelegateTicketSequence'.",
+       "Invalid field 'tx_json.DelegateTicketSequence'.",
+       "Invalid field 'tx_json.DelegateTicketSequence'.",
+       "Invalid field 'tx_json.DelegateTicketSequence'."}}},
+
+    {"'OnBehalfOf' account needs to be well formed",
+     __LINE__,
+     R"({
+    "command": "doesnt_matter",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "tx_json": {
+        "Fee": 10,
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "TransactionType": "Payment",
+        "Sequence": 10,
+        "OnBehalfOf": "NotAnAccount",
+        "DelegateSequence": 100
+    }
+})",
+     {{"Invalid field 'tx_json.OnBehalfOf'.",
+       "Invalid field 'tx_json.OnBehalfOf'.",
+       "Invalid field 'tx_json.OnBehalfOf'.",
+       "Missing field 'tx_json.SigningPubKey'."}}},
+
+    {"'OnBehalfOf' account needs to exist",
+     __LINE__,
+     R"({
+    "command": "doesnt_matter",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "tx_json": {
+        "Fee": 10,
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "TransactionType": "Payment",
+        "Sequence": 10,
+        "OnBehalfOf": "r9zN9x52FiCFAcicCLMQKbj1nxYhxJbbSy",
+        "DelegateSequence": 100
+    }
+})",
+     {{"Source account not found.",
+       "Source account not found.",
+       "Source account not found.",
+       "Missing field 'tx_json.SigningPubKey'."}}},
+
+    {"If 'OnBehalfOf' is supplied, 'DelegateSequence' is auto filled for sign "
+     "and submit",
+     __LINE__,
+     R"({
+    "command": "doesnt_matter",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "tx_json": {
+        "Fee": 10,
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "TransactionType": "Payment",
+        "Sequence": 10,
+        "OnBehalfOf": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA"
+    }
+})",
+     {{"",
+       "",
+       "Missing field 'tx_json.DelegateSequence'.",
+       "Missing field 'tx_json.DelegateSequence'."}}},
+
+    {"If 'OnBehalfOf' is supplied, 'DelegateSequence' can be supplied (sign "
+     "and submit)",
+     __LINE__,
+     R"({
+    "command": "doesnt_matter",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "tx_json": {
+        "Fee": 10,
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "TransactionType": "Payment",
+        "Sequence": 10,
+        "OnBehalfOf": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "DelegateSequence": 100
+    }
+})",
+     {{"",
+       "",
+       "A Signer may not be the transaction's Account "
+       "(rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh).",
+       "Missing field 'tx_json.SigningPubKey'."}}},
+
+    {"If 'OnBehalfOf' is supplied, 'DelegateSequence' can be supplied "
+     "(sign_for and submit_multisigned)",
+     __LINE__,
+     R"({
+        "command": "doesnt_matter",
+        "account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+        "secret": "c",
+        "tx_json": {
+            "Fee": 10,
+            "Account": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+            "Amount": "1000000000",
+            "DeliverMax": "1000000000",
+            "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+            "TransactionType": "Payment",
+            "Signers" : [
+                {
+                    "Signer": {
+                        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+                        "SigningPubKey": "0330E7FC9D56BB25D6893BA3F317AE5BCF33B3291BD63DB32654A313222F7FD020",
+                        "TxnSignature": "304402205F3BC869370C1C1880514162482AD1063100BE2B0C12158D560066A94373D768022069F31C151362C5BCB1171208E2C3BCF0A40268F7CFF965159ED6E19970008F67"
+                    }
+                }
+            ],
+            "SigningPubKey" : "",
+            "Sequence": 10,
+            "OnBehalfOf": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+            "DelegateSequence": 100
+        }
+})",
+     {{"Already multisigned.", "Already multisigned.", "", ""}}},
+
+    {"If 'OnBehalfOf' is supplied, and 'DelegateTicketSequence' is supplied, "
+     "'DelegateSequence' is auto filled for sign and submit",
+     __LINE__,
+     R"({
+    "command": "doesnt_matter",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "tx_json": {
+        "Fee": 10,
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "TransactionType": "Payment",
+        "Sequence": 10,
+        "OnBehalfOf": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "DelegateTicketSequence": 100
+    }
+})",
+     {{"",
+       "",
+       "Missing field 'tx_json.DelegateSequence'.",
+       "Missing field 'tx_json.DelegateSequence'."}}},
+
+    {"If 'OnBehalfOf' is supplied, 'DelegateTicketSequence' and "
+     "'DelegateSequence' can be supplied together (sign and submit)",
+     __LINE__,
+     R"({
+    "command": "doesnt_matter",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "tx_json": {
+        "Fee": 10,
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "TransactionType": "Payment",
+        "Sequence": 10,
+        "OnBehalfOf": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "DelegateSequence": 101,
+        "DelegateTicketSequence": 100
+    }
+})",
+     {{"",
+       "",
+       "A Signer may not be the transaction's Account "
+       "(rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh).",
+       "Missing field 'tx_json.SigningPubKey'."}}},
+
+    {"If 'OnBehalfOf' is supplied, 'DelegateTicketSequence' and "
+     "'DelegateSequence' can be supplied together (sign_for and "
+     "submit_multisigned)",
+     __LINE__,
+     R"({
+    "command": "doesnt_matter",
+    "account": "rPcNzota6B8YBokhYtcTNqQVCngtbnWfux",
+    "secret": "c",
+    "tx_json": {
+        "Fee": 10,
+        "Account": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "Amount": "1000000000",
+        "DeliverMax": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment",
+        "Signers" : [
+            {
+                "Signer": {
+                    "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+                    "SigningPubKey": "0330E7FC9D56BB25D6893BA3F317AE5BCF33B3291BD63DB32654A313222F7FD020",
+                    "TxnSignature": "3045022100D3594E2F1FD552E2000AE146CED4EE6AC5CBAE9DD4C832A7D83FE971C1A83B6302205378DCC643C13E9B5CB8D15B8B03E06C73F5C61DB6A9AACE252310A934995E48"
+                }
+            }
+        ],
+        "SigningPubKey" : "",
+        "Sequence": 10,
+        "OnBehalfOf": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "DelegateSequence": 101,
+        "DelegateTicketSequence": 100
+    }
+})",
+     {{"Already multisigned.", "Already multisigned.", "", ""}}},
+
+    {"If 'OnBehalfOf' is supplied, and if 'offline' is true then a "
+     "'DelegateSequence' field must be supplied.",
+     __LINE__,
+     R"({
+    "command": "doesnt_matter",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "offline": 1,
+    "tx_json": {
+        "Fee": 10,
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "TransactionType": "Payment",
+        "Sequence": 10,
+        "OnBehalfOf": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA"
+    }
+})",
+     {{"Missing field 'tx_json.DelegateSequence'.",
+       "Missing field 'tx_json.DelegateSequence'.",
+       "Missing field 'tx_json.DelegateSequence'.",
+       "Missing field 'tx_json.DelegateSequence'."}}},
+
+    {"If 'OnBehalfOf' is supplied, and 'DelegateTicketSequence' is supplied, "
+     "and if 'offline' is true then a 'DelegateSequence' field must be "
+     "supplied.",
+     __LINE__,
+     R"({
+    "command": "doesnt_matter",
+    "account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+    "secret": "masterpassphrase",
+    "offline": 1,
+    "tx_json": {
+        "Fee": 10,
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "TransactionType": "Payment",
+        "Sequence": 10,
+        "OnBehalfOf": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "DelegateTicketSequence": 100
+    }
+})",
+     {{"Missing field 'tx_json.DelegateSequence'.",
+       "Missing field 'tx_json.DelegateSequence'.",
+       "Missing field 'tx_json.DelegateSequence'.",
+       "Missing field 'tx_json.DelegateSequence'."}}},
+
 };
 
 class JSONRPC_test : public beast::unit_test::suite

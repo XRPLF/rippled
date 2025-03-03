@@ -227,7 +227,7 @@ Transactor::checkPermissions(
 {
     if (!tx.isFieldPresent(sfOnBehalfOf) ||
         !view.exists(keylet::account(tx[sfOnBehalfOf])))
-        return terNO_ACCOUNT;
+        return terNO_ACCOUNT;  // LCOV_EXCL_LINE
 
     auto const accountPermissionKey =
         keylet::accountPermission(tx[sfOnBehalfOf], tx[sfAccount]);
@@ -433,26 +433,20 @@ Transactor::checkDelegateSeqProxy(
     STTx const& tx,
     beast::Journal j)
 {
-    if (!tx.isFieldPresent(sfDelegateSequence))
-    {
-        JLOG(j.trace()) << "applyTransaction: has no DelegateSequence";
-        return temBAD_SEQUENCE;
-    }
-
     // we only call this function when it is delegated, so this should not
     // happen
     if (!tx.isFieldPresent(sfOnBehalfOf))
-        return temMALFORMED;  // LCOV_EXEL_LINE
+        return temMALFORMED;  // LCOV_EXCL_LINE
 
     auto const id = tx.getAccountID(sfOnBehalfOf);
     auto const sle = view.read(keylet::account(id));
     if (!sle)
-        return terNO_ACCOUNT;  // LCOV_EXEL_LINE
+        return terNO_ACCOUNT;  // LCOV_EXCL_LINE
 
-    SeqProxy const t_seqProx = tx.getDelegateSeqProxy();
-    SeqProxy const a_seq = SeqProxy::sequence((*sle)[sfSequence]);
+    SeqProxy const tSeqProx = tx.getDelegateSeqProxy();
+    SeqProxy const aSeq = SeqProxy::sequence((*sle)[sfSequence]);
 
-    if (t_seqProx.isSeq())
+    if (tSeqProx.isSeq())
     {
         if (tx.isFieldPresent(sfDelegateTicketSequence) &&
             view.rules().enabled(featureTicketBatch))
@@ -462,37 +456,37 @@ Transactor::checkDelegateSeqProxy(
                    "and a non-zero DelegateSequence number";
             return temSEQ_AND_TICKET;
         }
-        if (t_seqProx != a_seq)
+        if (tSeqProx != aSeq)
         {
-            if (a_seq < t_seqProx)
+            if (aSeq < tSeqProx)
             {
                 JLOG(j.trace()) << "applyTransaction: has future delegating "
                                    "sequence number "
-                                << "a_seq=" << a_seq << " t_seq=" << t_seqProx;
+                                << "aSeq=" << aSeq << " tSeq=" << tSeqProx;
                 return terPRE_SEQ;
             }
-            // It's an already-used sequence number.
+
             JLOG(j.trace())
                 << "applyTransaction: has past delegating sequence number "
-                << "a_seq=" << a_seq << " t_seq=" << t_seqProx;
+                << "aSeq=" << aSeq << " tSeq=" << tSeqProx;
             return tefPAST_SEQ;
         }
     }
-    else if (t_seqProx.isTicket())
+    else if (tSeqProx.isTicket())
     {
-        if (a_seq.value() <= t_seqProx.value())
+        if (aSeq.value() <= tSeqProx.value())
         {
             JLOG(j.trace()) << "applyTransaction: has future ticket id "
-                            << "a_seq=" << a_seq << " t_seq=" << t_seqProx;
+                            << "aSeq=" << aSeq << " tSeq=" << tSeqProx;
             return terPRE_TICKET;
         }
 
         // Transaction can never succeed if the Ticket is not in the ledger.
-        if (!view.exists(keylet::ticket(id, t_seqProx)))
+        if (!view.exists(keylet::ticket(id, tSeqProx)))
         {
             JLOG(j.trace())
                 << "applyTransaction: ticket already used or never created "
-                << "a_seq=" << a_seq << " t_seq=" << t_seqProx;
+                << "aSeq=" << aSeq << " tSeq=" << tSeqProx;
             return tefNO_TICKET;
         }
     }

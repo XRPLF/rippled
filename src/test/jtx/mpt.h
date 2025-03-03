@@ -197,7 +197,8 @@ public:
         Account const& dest,
         std::int64_t amount,
         std::optional<TER> err = std::nullopt,
-        std::optional<std::vector<std::string>> credentials = std::nullopt);
+        std::optional<std::vector<std::string>> credentials = std::nullopt,
+        std::optional<Account> onBehalfOf = std::nullopt);
 
     void
     claw(

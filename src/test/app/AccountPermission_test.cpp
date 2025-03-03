@@ -37,7 +37,7 @@ class AccountPermission_test : public beast::unit_test::suite
     void
     testFeatureDisabled(FeatureBitset features)
     {
-        testcase("test featureAccountPermission is not enabled");
+        testcase("test featureAccountPermission not enabled");
         using namespace jtx;
 
         Env env(*this, features);
@@ -52,7 +52,7 @@ class AccountPermission_test : public beast::unit_test::suite
             ter(temDISABLED));
 
         // can not send transaction on behalf of other account when feature
-        // disabled, onBehalfOf, delegateSequence, and delegateTicketSequence
+        // disabled. onBehalfOf, delegateSequence, and delegateTicketSequence
         // should not appear in the request.
         env(pay(bob, alice, XRP(50)), onBehalfOf(gw), ter(temDISABLED));
         env(pay(bob, alice, XRP(50)), delegateSequence(1), ter(temDISABLED));
@@ -74,7 +74,7 @@ class AccountPermission_test : public beast::unit_test::suite
         env.close();
 
         // when permissions size exceeds the limit 10, should return
-        // temARRAY_TOO_LARGE.
+        // temARRAY_TOO_LARGE
         {
             env(account_permission::accountPermissionSet(
                     gw,
@@ -100,8 +100,8 @@ class AccountPermission_test : public beast::unit_test::suite
                 ter(temMALFORMED));
         }
 
-        // when provided permissions contains some permission which does not
-        // exists.
+        // when the provided permissions include a transaction that does not
+        // exist
         {
             try
             {
@@ -120,7 +120,7 @@ class AccountPermission_test : public beast::unit_test::suite
         }
 
         // when provided permissions contains duplicate values, should return
-        // temMALFORMED.
+        // temMALFORMED
         {
             env(account_permission::accountPermissionSet(
                     gw,
@@ -135,7 +135,7 @@ class AccountPermission_test : public beast::unit_test::suite
         }
 
         // when authorizing account which does not exist, should return
-        // terNO_ACCOUNT.
+        // terNO_ACCOUNT
         {
             env(account_permission::accountPermissionSet(
                     gw, Account("unknown"), {"Payment"}),
@@ -143,7 +143,8 @@ class AccountPermission_test : public beast::unit_test::suite
         }
 
         // for security reasons, AccountSet, SetRegularKey, SignerListSet,
-        // AccountPermissionSet are prohibited to be delegated to other accounts
+        // AccountDelete, AccountPermissionSet are prohibited to be delegated to
+        // other accounts.
         {
             auto testProhibitedTrans = [&](std::string const& permission) {
                 try
@@ -219,6 +220,7 @@ class AccountPermission_test : public beast::unit_test::suite
             // alice gives bob permission
             env(account_permission::accountPermissionSet(
                 alice, bob, {"DIDSet", "DIDDelete"}));
+            env.close();
 
             // bob set DID on behalf of alice, but alice does not have enough
             // reserve
@@ -236,7 +238,7 @@ class AccountPermission_test : public beast::unit_test::suite
     void
     testAccountDelete(FeatureBitset features)
     {
-        testcase("test delete account");
+        testcase("test deleting account");
         using namespace jtx;
 
         Env env(*this, features);
@@ -290,8 +292,8 @@ class AccountPermission_test : public beast::unit_test::suite
         env(account_permission::accountPermissionSet(gw, alice, permissions));
         env.close();
 
-        // this lambda function is used to error message when the user tries to
-        // get ledger entry with invalid parameters.
+        // this lambda function is used to get the error message when the user
+        // tries to get ledger entry with invalid parameters.
         auto testInvalidParams =
             [&](std::optional<std::string> const& account,
                 std::optional<std::string> const& authorize) -> std::string {
@@ -309,7 +311,7 @@ class AccountPermission_test : public beast::unit_test::suite
             return error;
         };
 
-        // get ledger entry with invalid parameters should return error.
+        // get ledger entry with invalid parameters
         BEAST_EXPECT(
             testInvalidParams(std::nullopt, alice.human()) ==
             "malformedRequest");
@@ -321,7 +323,7 @@ class AccountPermission_test : public beast::unit_test::suite
             testInvalidParams(gw.human(), "-") == "malformedAuthorize");
 
         // this lambda function is used to compare the json value of ledger
-        // entry response with the given list of permission strings.
+        // entry response with the given list of permissions.
         auto comparePermissions = [&](Json::Value const& jle,
                                       std::list<std::string> const& permissions,
                                       Account const& account,
@@ -368,7 +370,7 @@ class AccountPermission_test : public beast::unit_test::suite
             gw,
             alice);
 
-        // gw update permission
+        // gw updates permission
         auto const newPermissions = std::list<std::string>{
             "Payment", "AMMCreate", "AMMDeposit", "AMMWithdraw"};
         env(account_permission::accountPermissionSet(
@@ -383,7 +385,7 @@ class AccountPermission_test : public beast::unit_test::suite
             gw,
             alice);
 
-        // gw delete all permissions delegated to alice, this will delete the
+        // gw deletes all permissions delegated to alice, this will delete the
         // ledger entry
         env(account_permission::accountPermissionSet(gw, alice, {}));
         env.close();
@@ -399,8 +401,7 @@ class AccountPermission_test : public beast::unit_test::suite
             alice,
             gw);
         auto const response = account_permission::ledgerEntry(env, gw, alice);
-        // alice is not delegated any permissions by gw, should return
-        // entryNotFound
+        // alice has not been granted any permissions by gw
         BEAST_EXPECT(response[jss::result][jss::error] == "entryNotFound");
     }
 
@@ -417,19 +418,83 @@ class AccountPermission_test : public beast::unit_test::suite
         env.fund(XRP(10000), alice, bob, carol);
         env.close();
 
-        env(account_permission::accountPermissionSet(
-            alice, bob, {"CheckCreate"}));
-        env.close();
-
         // add initial sequences and add sequence distance between alice and bob
         for (int i = 0; i < 20; i++)
-        {
             env(check::create(alice, carol, XRP(1)));
-        }
+
         env(check::create(bob, carol, XRP(1)));
         env.close();
         auto aliceSequence = env.seq(alice);
         auto bobSequence = env.seq(bob);
+
+        // delegate sequence and ticket error should come before permission
+        // error, so that bad sequence or ticket are not consumed in transaction
+        // reset
+        env(check::create(bob, carol, XRP(1)),
+            onBehalfOf(alice),
+            delegateSequence(1),
+            ter(tefPAST_SEQ));
+        env.close();
+        env(check::create(bob, carol, XRP(1)),
+            onBehalfOf(alice),
+            delegateSequence(0),
+            delegateTicketSequence(1),
+            ter(tefNO_TICKET));
+        BEAST_EXPECT(env.seq(alice) == aliceSequence);
+        BEAST_EXPECT(env.seq(bob) == bobSequence);
+
+        // add permission
+        env(account_permission::accountPermissionSet(
+            alice, bob, {"CheckCreate"}));
+        env.close();
+        aliceSequence++;
+        BEAST_EXPECT(env.seq(alice) == aliceSequence);
+
+        // delegate sequence and ticket error should come before permission
+        // error, so that bad sequence or ticket are not consumed in transaction
+        // reset
+        env(check::create(bob, carol, XRP(1)),
+            onBehalfOf(alice),
+            delegateSequence(1),
+            ter(tefPAST_SEQ));
+        env.close();
+        env(check::create(bob, carol, XRP(1)),
+            onBehalfOf(alice),
+            delegateSequence(0),
+            delegateTicketSequence(1),
+            ter(tefNO_TICKET));
+        BEAST_EXPECT(env.seq(alice) == aliceSequence);
+        BEAST_EXPECT(env.seq(bob) == bobSequence);
+
+        // add permission
+        env(account_permission::accountPermissionSet(
+            alice, bob, {"CheckCreate"}));
+        env.close();
+        aliceSequence++;
+        BEAST_EXPECT(env.seq(alice) == aliceSequence);
+
+        // delegate sequence and ticket error should come before permission
+        // error, so that bad sequence or ticket are not consumed in transaction
+        // reset
+        env(check::create(bob, carol, XRP(1)),
+            onBehalfOf(alice),
+            delegateSequence(1),
+            ter(tefPAST_SEQ));
+        env.close();
+        env(check::create(bob, carol, XRP(1)),
+            onBehalfOf(alice),
+            delegateSequence(0),
+            delegateTicketSequence(1),
+            ter(tefNO_TICKET));
+        BEAST_EXPECT(env.seq(alice) == aliceSequence);
+        BEAST_EXPECT(env.seq(bob) == bobSequence);
+
+        // add permission
+        env(account_permission::accountPermissionSet(
+            alice, bob, {"CheckCreate"}));
+        env.close();
+        aliceSequence++;
+        BEAST_EXPECT(env.seq(alice) == aliceSequence);
 
         // non existing delegating account
         Account bad{"bad"};
@@ -437,15 +502,6 @@ class AccountPermission_test : public beast::unit_test::suite
             onBehalfOf(bad),
             delegateSequence(1),
             ter(terNO_ACCOUNT));
-        env.close();
-        BEAST_EXPECT(env.seq(alice) == aliceSequence);
-        BEAST_EXPECT(env.seq(bob) == bobSequence);
-
-        // missing delegating sequence
-        env(check::create(bob, carol, XRP(1)),
-            onBehalfOf(alice),
-            delegateSequence(none),
-            ter(temBAD_SEQUENCE));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSequence);
         BEAST_EXPECT(env.seq(bob) == bobSequence);
@@ -468,7 +524,7 @@ class AccountPermission_test : public beast::unit_test::suite
         BEAST_EXPECT(env.seq(alice) == aliceSequence);
         BEAST_EXPECT(env.seq(bob) == bobSequence);
 
-        // delegating sequence is consumed after transaction success
+        // delegating sequence is consumed after transaction succeds
         env(check::create(bob, carol, XRP(1)),
             onBehalfOf(alice),
             delegateSequence(aliceSequence),
@@ -480,7 +536,7 @@ class AccountPermission_test : public beast::unit_test::suite
         BEAST_EXPECT(env.seq(bob) == bobSequence);
 
         // delegating sequence is consumed if transaction calls
-        // Transactor::reset(XRPAmount) and return some special tec codes
+        // Transactor::reset(XRPAmount) and return some tec code
         env(check::create(bob, carol, XRP(1)),
             check::expiration(env.now()),
             onBehalfOf(alice),
@@ -492,7 +548,8 @@ class AccountPermission_test : public beast::unit_test::suite
         BEAST_EXPECT(env.seq(alice) == aliceSequence);
         BEAST_EXPECT(env.seq(bob) == bobSequence);
 
-        // use both delegating sequence and delegating ticket
+        // using both delegating sequence and delegating ticket
+        // is not allowed
         env(check::create(bob, carol, XRP(1)),
             onBehalfOf(alice),
             delegateSequence(autofill),
@@ -517,7 +574,6 @@ class AccountPermission_test : public beast::unit_test::suite
             delegateSequence(0),
             delegateTicketSequence(aliceSequence),
             ter(terPRE_TICKET));
-        env.close();
         env(check::create(bob, carol, XRP(1)),
             onBehalfOf(alice),
             delegateSequence(0),
@@ -526,9 +582,10 @@ class AccountPermission_test : public beast::unit_test::suite
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSequence);
         BEAST_EXPECT(env.seq(bob) == bobSequence);
-        // proceed one sequence so terPRE_TICKET won't be retried
+
+        // proceed alice's sequence so terPRE_TICKET won't be retried
         env(check::create(alice, carol, XRP(1)));
-        aliceSequence += 1;
+        aliceSequence++;
         BEAST_EXPECT(env.seq(alice) == aliceSequence);
 
         // degelating ticket is consumed after transaction success
@@ -2221,7 +2278,7 @@ class AccountPermission_test : public beast::unit_test::suite
             // bob pays alice 100 tokens
             mpt.pay(bob, alice, 100);
 
-            // alice hold token, can not unauthorize
+            // alice holds token, can not unauthorize
             mpt.authorize(
                 {.account = carol,
                  .flags = tfMPTUnauthorize,
@@ -2230,6 +2287,20 @@ class AccountPermission_test : public beast::unit_test::suite
 
             // alice pays back 100 tokens
             mpt.pay(alice, bob, 100);
+
+            // carol does not have permission to send token on behalf of bob
+            mpt.pay(carol, alice, 100, tecNO_PERMISSION, std::nullopt, bob);
+
+            env(account_permission::accountPermissionSet(
+                bob, carol, {"Payment"}));
+            env(account_permission::accountPermissionSet(
+                alice, bob, {"Payment"}));
+            env.close();
+
+            // carol pays alice 100 tokens on behalf of bob
+            mpt.pay(carol, alice, 100, tesSUCCESS, std::nullopt, bob);
+            // bob pays himself 100 tokens on behalf of alice
+            mpt.pay(bob, bob, 100, tesSUCCESS, std::nullopt, alice);
 
             // now alice can unauthorize, carol sent the request on behalf of
             // her
@@ -4061,17 +4132,15 @@ class AccountPermission_test : public beast::unit_test::suite
         env.require(owners(alice, 1), tickets(alice, 0));
         env.require(owners(bob, 0), tickets(bob, 0));
 
-        // add some distance for alice's sequence
         for (int i = 0; i < 20; i++)
-        {
             env(noop(alice));
-        }
         env.close();
 
         auto aliceSeq = env.seq(alice);
         auto bobSeq = env.seq(bob);
 
-        // create ticket
+        // bob creates ticket on behalf of alice,
+        // this ticket's owner is alice
         env(ticket::create(bob, 1), onBehalfOf(alice));
         env.close();
         auto aliceTicket1 = aliceSeq + 1;
@@ -4082,12 +4151,14 @@ class AccountPermission_test : public beast::unit_test::suite
         env.require(owners(alice, 2), tickets(alice, 1));
         env.require(owners(bob, 0), tickets(bob, 0));
 
-        // use ticket to create tickets
+        // use the ticket bob just created to create another 3 tickets,
+        // these tickets will still belong to alice.
         env(ticket::create(bob, 3),
             onBehalfOf(alice),
             delegateSequence(0),
             delegateTicketSequence(aliceTicket1));
         env.close();
+
         auto aliceTicket2 = aliceSeq;
         auto aliceTicket3 = aliceSeq + 1;
         auto aliceTicket4 = aliceSeq + 2;
@@ -4098,7 +4169,7 @@ class AccountPermission_test : public beast::unit_test::suite
         env.require(owners(alice, 4), tickets(alice, 3));
         env.require(owners(bob, 0), tickets(bob, 0));
 
-        // use tickets
+        // use the 3 tickets
         env(noop(alice), ticket::use(aliceTicket2));
         env(noop(alice), ticket::use(aliceTicket3));
         env(noop(alice), ticket::use(aliceTicket4));
@@ -4108,7 +4179,7 @@ class AccountPermission_test : public beast::unit_test::suite
         env.require(owners(alice, 1), tickets(alice, 0));
         env.require(owners(bob, 0), tickets(bob, 0));
 
-        // create ticket for delegated account
+        // bob creates ticket for himself
         env(ticket::create(bob, 2));
         env.close();
         auto bobTicket1 = bobSeq + 1;
@@ -4117,7 +4188,7 @@ class AccountPermission_test : public beast::unit_test::suite
         BEAST_EXPECT(env.seq(bob) == bobSeq);
         env.require(owners(bob, 2), tickets(bob, 2));
 
-        // create ticket with delegated ticket
+        // use the ticket created just now to create another ticket
         env(ticket::create(bob, 1), ticket::use(bobTicket1), onBehalfOf(alice));
         env.close();
         aliceTicket1 = aliceSeq + 1;
@@ -4127,7 +4198,7 @@ class AccountPermission_test : public beast::unit_test::suite
         env.require(owners(alice, 2), tickets(alice, 1));
         env.require(owners(bob, 1), tickets(bob, 1));
 
-        // use ticket to create tickets with delegated ticket
+        // use the ticket created just now to create tickets
         env(ticket::create(bob, 3),
             ticket::use(bobTicket2),
             onBehalfOf(alice),

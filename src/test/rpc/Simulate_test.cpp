@@ -18,8 +18,10 @@
 //==============================================================================
 
 #include <test/jtx.h>
+#include <test/jtx/AccountPermission.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/envconfig.h>
+#include <test/jtx/ticket.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/rpc/CTID.h>
 #include <xrpl/protocol/ErrorCodes.h>
@@ -1074,6 +1076,232 @@ class Simulate_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testOnBehalfOf()
+    {
+        testcase("OnBehalfOf");
+
+        using namespace jtx;
+        Env env{*this, envconfig([&](std::unique_ptr<Config> cfg) {
+                    cfg->NETWORK_ID = 0;
+                    return cfg;
+                })};
+
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        env.fund(XRP(10000), alice, bob);
+        env(account_permission::accountPermissionSet(alice, bob, {"Payment"}));
+        auto aliceTicket = env.seq(alice) + 1;
+        env(ticket::create(alice, 1));
+
+        {
+            auto validateOutput = [&](Json::Value const& resp,
+                                      Json::Value const& tx) {
+                auto result = resp[jss::result];
+                checkBasicReturnValidity(
+                    result, tx, env.seq(bob), env.current()->fees().base);
+
+                Json::Value tx_json;
+                if (result.isMember(jss::tx_json))
+                    tx_json = result[jss::tx_json];
+                else
+                {
+                    auto const unHexed =
+                        strUnHex(result[jss::tx_blob].asString());
+                    SerialIter sitTrans(makeSlice(*unHexed));
+                    tx_json = STObject(std::ref(sitTrans), sfGeneric)
+                                  .getJson(JsonOptions::none);
+                }
+
+                if (tx.isMember(jss::DelegateTicketSequence))
+                {
+                    BEAST_EXPECT(
+                        tx_json[jss::DelegateTicketSequence] ==
+                        tx[jss::DelegateTicketSequence]);
+                    BEAST_EXPECT(tx_json[jss::DelegateSequence] == 0);
+                }
+                else
+                    BEAST_EXPECT(
+                        tx_json[jss::DelegateSequence] == env.seq(alice));
+
+                BEAST_EXPECT(result[jss::engine_result] == "tesSUCCESS");
+                BEAST_EXPECT(result[jss::engine_result_code] == 0);
+                BEAST_EXPECT(
+                    result[jss::engine_result_message] ==
+                    "The simulated transaction would have been applied.");
+
+                if (BEAST_EXPECT(
+                        result.isMember(jss::meta) ||
+                        result.isMember(jss::meta_blob)))
+                {
+                    Json::Value const metadata = getJsonMetadata(result);
+
+                    if (BEAST_EXPECT(
+                            metadata.isMember(sfAffectedNodes.jsonName)))
+                    {
+                        auto nAffectedNodes =
+                            metadata[sfAffectedNodes.jsonName].size();
+                        BEAST_EXPECT(nAffectedNodes >= 2);
+
+                        auto nModifiedAccount = 0;
+                        for (Json::Value::UInt i = 0; i < nAffectedNodes; i++)
+                        {
+                            auto node = metadata[sfAffectedNodes.jsonName][i];
+                            if (node.isMember(sfModifiedNode.jsonName))
+                            {
+                                auto modifiedNode = node[sfModifiedNode];
+                                if (modifiedNode[sfLedgerEntryType] ==
+                                    "AccountRoot")
+                                {
+                                    nModifiedAccount++;
+                                }
+                            }
+                        }
+                        BEAST_EXPECT(nModifiedAccount == 2);
+                    }
+                    BEAST_EXPECT(metadata[sfTransactionIndex.jsonName] == 0);
+                    BEAST_EXPECT(
+                        metadata[sfTransactionResult.jsonName] == "tesSUCCESS");
+                }
+            };
+
+            Json::Value tx;
+            tx[jss::TransactionType] = jss::Payment;
+            tx[jss::Account] = bob.human();
+            tx[jss::Destination] = bob.human();
+            tx[jss::Amount] = 1;
+            tx[sfSigningPubKey] = "";
+            tx[sfTxnSignature] = "";
+            tx[sfSequence] = env.seq(bob);
+            tx[sfFee] = env.current()->fees().base.jsonClipped().asString();
+            tx[sfOnBehalfOf] = alice.human();
+
+            // test auto fill DelegateSequence
+            testTx(env, tx, validateOutput);
+
+            // test specifying DelegateSequence
+            tx[sfDelegateSequence] = env.seq(alice);
+            testTx(env, tx, validateOutput);
+
+            Json::Value tx2;
+            tx2[jss::TransactionType] = jss::Payment;
+            tx2[jss::Account] = bob.human();
+            tx2[jss::Destination] = bob.human();
+            tx2[jss::Amount] = 1;
+            tx2[sfSigningPubKey] = "";
+            tx2[sfTxnSignature] = "";
+            tx2[sfSequence] = env.seq(bob);
+            tx2[sfFee] = env.current()->fees().base.jsonClipped().asString();
+            tx2[sfOnBehalfOf] = alice.human();
+
+            // test auto fill DelegateSequence when DelegateTicketSequence is
+            // specified
+            tx2[sfDelegateTicketSequence] = aliceTicket;
+            testTx(env, tx2, validateOutput);
+
+            // test setting DelegateSequence to 0 when DelegateTicketSequence is
+            // specified
+            tx2[sfDelegateSequence] = 0;
+            testTx(env, tx2, validateOutput);
+        }
+    }
+
+    void
+    testOnBehalfOfParamErrors()
+    {
+        testcase("OnBehalfOf parameter errors");
+
+        using namespace jtx;
+        Env env(*this);
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        env.fund(XRP(10000), alice, bob);
+        env(account_permission::accountPermissionSet(alice, bob, {"Payment"}));
+        env.close();
+        Account const nonExist{"nonExist"};
+
+        {
+            // test specifying DelegateSequence without OnBehalfOf
+            Json::Value params;
+            Json::Value tx_json = Json::objectValue;
+            tx_json[jss::TransactionType] = jss::Payment;
+            tx_json[jss::Account] = bob.human();
+            tx_json[jss::Destination] = bob.human();
+            tx_json[jss::Amount] = 1;
+            tx_json[jss::DelegateSequence] = env.seq(alice);
+            params[jss::tx_json] = tx_json;
+
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Invalid field 'tx_json.DelegateSequence'.");
+        }
+        {
+            // test specifying DelegateTicketSequence without OnBehalfOf
+            Json::Value params;
+            Json::Value tx_json = Json::objectValue;
+            tx_json[jss::TransactionType] = jss::Payment;
+            tx_json[jss::Account] = alice.human();
+            tx_json[jss::Destination] = bob.human();
+            tx_json[jss::Amount] = 1;
+            tx_json[jss::DelegateTicketSequence] = env.seq(alice);
+            params[jss::tx_json] = tx_json;
+
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Invalid field 'tx_json.DelegateTicketSequence'.");
+        }
+        {
+            // test bad on behalf of account which is not string
+            Json::Value params;
+            Json::Value tx_json = Json::objectValue;
+            tx_json[jss::TransactionType] = jss::Payment;
+            tx_json[jss::Account] = bob.human();
+            tx_json[jss::Destination] = bob.human();
+            tx_json[jss::Amount] = 1;
+            tx_json[jss::OnBehalfOf] = 1;
+            params[jss::tx_json] = tx_json;
+
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Invalid field 'tx_json.OnBehalfOf'.");
+        }
+        {
+            // test bad on behalf of account
+            Json::Value params;
+            Json::Value tx_json = Json::objectValue;
+            tx_json[jss::TransactionType] = jss::Payment;
+            tx_json[jss::Account] = bob.human();
+            tx_json[jss::Destination] = bob.human();
+            tx_json[jss::Amount] = 1;
+            tx_json[jss::OnBehalfOf] = "badAccount";
+            params[jss::tx_json] = tx_json;
+
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Invalid field 'tx_json.OnBehalfOf'.");
+        }
+        {
+            // test non exist on behalf of account
+            Json::Value params;
+            Json::Value tx_json = Json::objectValue;
+            tx_json[jss::TransactionType] = jss::Payment;
+            tx_json[jss::Account] = bob.human();
+            tx_json[jss::Destination] = bob.human();
+            tx_json[jss::Amount] = 1;
+            tx_json[jss::OnBehalfOf] = nonExist.human();
+            params[jss::tx_json] = tx_json;
+
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Source account not found.");
+        }
+    }
+
 public:
     void
     run() override
@@ -1088,6 +1316,8 @@ public:
         testMultisignedBadPubKey();
         testDeleteExpiredCredentials();
         testSuccessfulTransactionNetworkID();
+        testOnBehalfOf();
+        testOnBehalfOfParamErrors();
     }
 };
 

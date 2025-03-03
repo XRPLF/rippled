@@ -330,34 +330,57 @@ MPTTester::pay(
     Account const& dest,
     std::int64_t amount,
     std::optional<TER> err,
-    std::optional<std::vector<std::string>> credentials)
+    std::optional<std::vector<std::string>> credentials,
+    std::optional<Account> onBehalfOf)
 {
     if (!id_)
         Throw<std::runtime_error>("MPT has not been created");
-    auto const srcAmt = getBalance(src);
+
+    Account realSrc = onBehalfOf ? *onBehalfOf : src;
+    auto const srcAmt = getBalance(realSrc);
     auto const destAmt = getBalance(dest);
     auto const outstnAmt = getBalance(issuer_);
 
     if (credentials)
-        env_(
-            jtx::pay(src, dest, mpt(amount)),
-            ter(err.value_or(tesSUCCESS)),
-            credentials::ids(*credentials));
+    {
+        if (onBehalfOf)
+            env_(
+                jtx::pay(src, dest, mpt(amount)),
+                ter(err.value_or(tesSUCCESS)),
+                credentials::ids(*credentials),
+                jtx::onBehalfOf(*onBehalfOf));
+        else
+            env_(
+                jtx::pay(src, dest, mpt(amount)),
+                ter(err.value_or(tesSUCCESS)),
+                credentials::ids(*credentials));
+    }
     else
-        env_(jtx::pay(src, dest, mpt(amount)), ter(err.value_or(tesSUCCESS)));
+    {
+        if (onBehalfOf)
+            env_(
+                jtx::pay(src, dest, mpt(amount)),
+                ter(err.value_or(tesSUCCESS)),
+                jtx::onBehalfOf(*onBehalfOf));
+        else
+            env_(
+                jtx::pay(src, dest, mpt(amount)),
+                ter(err.value_or(tesSUCCESS)));
+    }
 
     if (env_.ter() != tesSUCCESS)
         amount = 0;
     if (close_)
         env_.close();
-    if (src == issuer_)
+
+    if (realSrc == issuer_)
     {
-        env_.require(mptbalance(*this, src, srcAmt + amount));
+        env_.require(mptbalance(*this, realSrc, srcAmt + amount));
         env_.require(mptbalance(*this, dest, destAmt + amount));
     }
     else if (dest == issuer_)
     {
-        env_.require(mptbalance(*this, src, srcAmt - amount));
+        env_.require(mptbalance(*this, realSrc, srcAmt - amount));
         env_.require(mptbalance(*this, dest, destAmt - amount));
     }
     else
@@ -368,7 +391,7 @@ MPTTester::pay(
                 .mpt()
                 .value();
         // Sender pays the transfer fee if any
-        env_.require(mptbalance(*this, src, srcAmt - actual));
+        env_.require(mptbalance(*this, realSrc, srcAmt - actual));
         env_.require(mptbalance(*this, dest, destAmt + amount));
         // Outstanding amount is reduced by the transfer fee if any
         env_.require(mptbalance(*this, issuer_, outstnAmt - (actual - amount)));

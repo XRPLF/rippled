@@ -67,6 +67,44 @@ getAutofillSequence(Json::Value const& tx_json, RPC::JsonContext& context)
     return hasTicketSeq ? 0 : context.app.getTxQ().nextQueuableSeq(sle).value();
 }
 
+static Expected<std::uint32_t, Json::Value>
+getAutofillDelegateSequence(
+    Json::Value const& tx_json,
+    RPC::JsonContext& context)
+{
+    // autofill Sequence
+    bool const hasDelegateTicketSeq =
+        tx_json.isMember(sfDelegateTicketSequence.jsonName);
+    auto const& onBehalfOfAccountStr = tx_json[jss::OnBehalfOf];
+    if (!onBehalfOfAccountStr.isString())
+    {
+        return Unexpected(RPC::invalid_field_error("tx_json.OnBehalfOf"));
+    }
+    auto const onBehalfOfAccountId =
+        parseBase58<AccountID>(onBehalfOfAccountStr.asString());
+    if (!onBehalfOfAccountId.has_value())
+    {
+        return Unexpected(RPC::make_error(
+            rpcSRC_ACT_MALFORMED,
+            RPC::invalid_field_message("tx_json.OnBehalfOf")));
+    }
+    std::shared_ptr<SLE const> const onBehalfOfSle =
+        context.app.openLedger().current()->read(
+            keylet::account(*onBehalfOfAccountId));
+    if (!onBehalfOfSle)
+    {
+        JLOG(context.app.journal("Simulate").debug())
+            << "Failed to find on behalf of account "
+            << "in current ledger: " << toBase58(*onBehalfOfAccountId);
+
+        return Unexpected(rpcError(rpcSRC_ACT_NOT_FOUND));
+    }
+
+    return hasDelegateTicketSeq
+        ? 0
+        : context.app.getTxQ().nextQueuableSeq(onBehalfOfSle).value();
+}
+
 static std::optional<Json::Value>
 autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
 {
@@ -142,6 +180,25 @@ autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
         if (!seq)
             return seq.error();
         tx_json[sfSequence.jsonName] = *seq;
+    }
+
+    if (tx_json.isMember(jss::OnBehalfOf))
+    {
+        if (!tx_json.isMember(jss::DelegateSequence))
+        {
+            auto const delegateSeq =
+                getAutofillDelegateSequence(tx_json, context);
+            if (!delegateSeq)
+                return delegateSeq.error();
+            tx_json[sfDelegateSequence.jsonName] = *delegateSeq;
+        }
+    }
+    else
+    {
+        if (tx_json.isMember(jss::DelegateSequence))
+            return RPC::invalid_field_error("tx_json.DelegateSequence");
+        if (tx_json.isMember(jss::DelegateTicketSequence))
+            return RPC::invalid_field_error("tx_json.DelegateTicketSequence");
     }
 
     if (!tx_json.isMember(jss::NetworkID))

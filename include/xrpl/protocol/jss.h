@@ -60,8 +60,8 @@ JSS(BaseAsset);            // in: Oracle
 JSS(BidMax);               // in: AMM Bid
 JSS(BidMin);               // in: AMM Bid
 JSS(ClearFlag);            // field.
-JSS(DelegateTicketSequence); // in/out: OnBehalfOf; field.
-JSS(DelegateSequence);     // in/out: OnBehalfOf; field.
+JSS(DelegateTicketSequence); // in: Delegate transactions
+JSS(DelegateSequence);     // in: Delegate transactions
 JSS(DeliverMax);           // out: alias to Amount
 JSS(DeliverMin);           // in: TransactionSign
 JSS(Destination);          // in: TransactionSign; field.
