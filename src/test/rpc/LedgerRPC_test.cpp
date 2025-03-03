@@ -1640,24 +1640,9 @@ class LedgerRPC_test : public beast::unit_test::suite
         env.fund(XRP(10000), alice);
         env.close();
 
-        // Lambda to create an escrow.
-        auto escrowCreate = [](test::jtx::Account const& account,
-                               test::jtx::Account const& to,
-                               STAmount const& amount,
-                               NetClock::time_point const& cancelAfter) {
-            Json::Value jv;
-            jv[jss::TransactionType] = jss::EscrowCreate;
-            jv[jss::Flags] = tfUniversal;
-            jv[jss::Account] = account.human();
-            jv[jss::Destination] = to.human();
-            jv[jss::Amount] = amount.getJson(JsonOptions::none);
-            jv[sfFinishAfter.jsonName] =
-                cancelAfter.time_since_epoch().count() + 2;
-            return jv;
-        };
-
         using namespace std::chrono_literals;
-        env(escrowCreate(alice, alice, XRP(333), env.now() + 2s));
+        env(escrow::create(alice, alice, XRP(333)),
+            escrow::finish_time(env.now() + 4s));
         env.close();
 
         std::string const ledgerHash{to_string(env.closed()->info().hash)};
