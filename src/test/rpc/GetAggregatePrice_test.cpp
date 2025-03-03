@@ -162,12 +162,16 @@ public:
         // too many oracles
         {
             Env env(*this);
+            auto const baseFee =
+                static_cast<int>(env.current()->fees().base.drops());
+
             OraclesData oracles;
             for (int i = 0; i < 201; ++i)
             {
                 Account const owner(std::to_string(i));
                 env.fund(XRP(1'000), owner);
-                Oracle oracle(env, {.owner = owner, .documentID = i});
+                Oracle oracle(
+                    env, {.owner = owner, .documentID = i, .fee = baseFee});
                 oracles.emplace_back(owner, oracle.documentID());
             }
             auto const ret = Oracle::aggregatePrice(env, "XRP", "USD", oracles);
@@ -185,14 +189,18 @@ public:
             oracles.reserve(10);
             for (int i = 0; i < 10; ++i)
             {
+                auto const baseFee =
+                    static_cast<int>(env.current()->fees().base.drops());
+
                 Account const owner{std::to_string(i)};
                 env.fund(XRP(1'000), owner);
                 Oracle oracle(
                     env,
                     {.owner = owner,
                      .documentID = rand(),
-                     .series = {
-                         {"XRP", "USD", 740 + i, 1}, {"XRP", "EUR", 740, 1}}});
+                     .series =
+                         {{"XRP", "USD", 740 + i, 1}, {"XRP", "EUR", 740, 1}},
+                     .fee = baseFee});
                 oracles.emplace_back(owner, oracle.documentID());
             }
         };
@@ -250,7 +258,8 @@ public:
                 Oracle oracle(
                     env,
                     {.owner = oracles[i].first,
-                     .documentID = asUInt(*oracles[i].second)},
+                     .documentID = asUInt(*oracles[i].second),
+                     .fee = baseFee},
                     false);
                 // push XRP/USD by more than three ledgers, so this price
                 // oracle is not included in the dataset
@@ -266,7 +275,8 @@ public:
                 Oracle oracle(
                     env,
                     {.owner = oracles[i].first,
-                     .documentID = asUInt(*oracles[i].second)},
+                     .documentID = asUInt(*oracles[i].second),
+                     .fee = baseFee},
                     false);
                 // push XRP/USD by two ledgers, so this price
                 // is included in the dataset
@@ -306,7 +316,8 @@ public:
                 Oracle oracle(
                     env,
                     {.owner = oracles[i].first,
-                     .documentID = asUInt(*oracles[i].second)},
+                     .documentID = asUInt(*oracles[i].second),
+                     .fee = baseFee},
                     false);
                 // push XRP/USD by two ledgers, so this price
                 // is included in the dataset
