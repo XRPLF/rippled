@@ -190,17 +190,17 @@ invoke_preclaim(PreclaimContext const& ctx)
 
                 if (ctx.tx.isDelegated())
                 {
-                    // if this is a delegated transaction, check if the account
-                    // has authorization.
-                    result = T::checkPermissions(
-                        ctx.view, ctx.tx.getSTTx(), permissions);
+                    // check delegate sequence
+                    result = T::checkDelegateSeqProxy(
+                        ctx.view, ctx.tx.getSTTx(), ctx.j);
 
                     if (result != tesSUCCESS)
                         return std::make_pair(result, permissions);
 
-                    // check delegate sequence
-                    result = T::checkDelegateSeqProxy(
-                        ctx.view, ctx.tx.getSTTx(), ctx.j);
+                    // if this is a delegated transaction, check if the account
+                    // has authorization.
+                    result = T::checkPermissions(
+                        ctx.view, ctx.tx.getSTTx(), permissions);
 
                     if (result != tesSUCCESS)
                         return std::make_pair(result, permissions);
