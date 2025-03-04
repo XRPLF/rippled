@@ -21,6 +21,7 @@
 #define BEAST_UTILITY_PROPERTYSTREAM_H_INCLUDED
 
 #include <xrpl/beast/core/List.h>
+
 #include <mutex>
 #include <sstream>
 #include <string>

@@ -28,7 +28,9 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
+
 #include <boost/algorithm/string.hpp>
+
 #include <unordered_map>
 
 namespace ripple {

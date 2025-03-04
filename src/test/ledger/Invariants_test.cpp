@@ -25,6 +25,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/InnerObjectFormats.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+
 #include <boost/algorithm/string/predicate.hpp>
 
 namespace ripple {

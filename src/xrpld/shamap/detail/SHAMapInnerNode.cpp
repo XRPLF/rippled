@@ -25,6 +25,7 @@
 #include <xrpl/basics/spinlock.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/digest.h>
+
 #include <algorithm>
 #include <iterator>
 

@@ -19,6 +19,7 @@
 
 #include <xrpld/overlay/detail/TxMetrics.h>
 #include <xrpl/protocol/jss.h>
+
 #include <numeric>
 
 namespace ripple {

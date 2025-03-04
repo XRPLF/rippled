@@ -23,7 +23,9 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/tagged_integer.h>
 #include <xrpl/protocol/AccountID.h>
+
 #include <boost/endian/conversion.hpp>
+
 #include <cstdint>
 #include <cstring>
 

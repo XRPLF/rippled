@@ -25,6 +25,7 @@
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/nftPageMask.h>
+
 #include <functional>
 #include <memory>
 

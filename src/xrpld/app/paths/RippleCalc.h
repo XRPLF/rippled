@@ -24,6 +24,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
+
 #include <boost/container/flat_set.hpp>
 
 namespace ripple {

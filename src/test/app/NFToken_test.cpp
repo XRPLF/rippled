@@ -22,6 +22,7 @@
 #include <xrpl/basics/random.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
+
 #include <initializer_list>
 
 namespace ripple {

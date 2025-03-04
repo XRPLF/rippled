@@ -25,6 +25,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STVector256.h>
+
 #include <memory>
 #include <optional>
 #include <unordered_set>

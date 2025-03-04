@@ -22,8 +22,10 @@
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/strHex.h>
+
 #include <boost/format.hpp>
 #include <boost/utility/string_view.hpp>
+
 #include <array>
 #include <cstdint>
 #include <optional>

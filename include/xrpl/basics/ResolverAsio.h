@@ -22,6 +22,7 @@
 
 #include <xrpl/basics/Resolver.h>
 #include <xrpl/beast/utility/Journal.h>
+
 #include <boost/asio/io_service.hpp>
 
 namespace ripple {

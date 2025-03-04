@@ -31,6 +31,7 @@
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/jss.h>
+
 #include <functional>
 
 namespace ripple {

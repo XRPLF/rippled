@@ -30,7 +30,9 @@
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
+
 #include <boost/iterator/function_output_iterator.hpp>
+
 #include <algorithm>
 #include <random>
 

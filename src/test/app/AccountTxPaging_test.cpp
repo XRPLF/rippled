@@ -21,6 +21,7 @@
 #include <test/rpc/GRPCTestClientBase.h>
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/jss.h>
+
 #include <cstdlib>
 
 namespace ripple {

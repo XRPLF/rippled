@@ -23,6 +23,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/Serializer.h>
+
 #include <cstddef>
 #include <type_traits>
 

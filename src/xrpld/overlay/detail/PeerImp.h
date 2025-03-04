@@ -33,9 +33,11 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/resource/Fees.h>
+
 #include <boost/circular_buffer.hpp>
 #include <boost/endian/conversion.hpp>
 #include <boost/thread/shared_mutex.hpp>
+
 #include <cstdint>
 #include <optional>
 #include <queue>

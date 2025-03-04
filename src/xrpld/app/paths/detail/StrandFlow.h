@@ -32,7 +32,9 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/XRPAmount.h>
+
 #include <boost/container/flat_set.hpp>
+
 #include <algorithm>
 #include <iterator>
 #include <numeric>

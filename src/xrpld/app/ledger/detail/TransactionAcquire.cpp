@@ -23,6 +23,7 @@
 #include <xrpld/app/ledger/detail/TransactionAcquire.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/NetworkOPs.h>
+
 #include <memory>
 
 namespace ripple {

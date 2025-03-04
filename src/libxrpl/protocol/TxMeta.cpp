@@ -30,7 +30,9 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxMeta.h>
+
 #include <boost/container/flat_set.hpp>
+
 #include <cstdint>
 #include <stdexcept>
 #include <string>

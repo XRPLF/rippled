@@ -19,6 +19,7 @@
 
 #include <xrpld/shamap/SHAMap.h>
 #include <xrpl/basics/contract.h>
+
 #include <array>
 #include <stack>
 #include <vector>

@@ -22,6 +22,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/nftPageMask.h>
+
 #include <initializer_list>
 
 namespace ripple {

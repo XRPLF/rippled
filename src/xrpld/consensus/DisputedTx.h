@@ -24,6 +24,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_writer.h>
+
 #include <boost/container/flat_map.hpp>
 
 namespace ripple {

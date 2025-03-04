@@ -32,8 +32,10 @@
 #include <xrpl/protocol/detail/token_errors.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/tokens.h>
+
 #include <boost/container/small_vector.hpp>
 #include <boost/endian/conversion.hpp>
+
 #include <algorithm>
 #include <array>
 #include <cstdint>

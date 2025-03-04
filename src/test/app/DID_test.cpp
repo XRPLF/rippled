@@ -20,6 +20,7 @@
 #include <test/jtx.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+
 #include <algorithm>
 
 namespace ripple {

@@ -26,7 +26,9 @@
 #include <xrpl/protocol/QualityFunction.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
+
 #include <boost/container/flat_set.hpp>
+
 #include <optional>
 
 namespace ripple {

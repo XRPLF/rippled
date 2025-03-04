@@ -21,6 +21,7 @@
 #define RIPPLE_SHAMAP_SHAMAPSYNCFILTER_H_INCLUDED
 
 #include <xrpld/shamap/SHAMapTreeNode.h>
+
 #include <optional>
 
 /** Callback for filtering SHAMap during sync. */

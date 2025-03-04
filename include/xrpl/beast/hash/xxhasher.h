@@ -21,10 +21,11 @@
 #define BEAST_HASH_XXHASHER_H_INCLUDED
 
 #include <boost/endian/conversion.hpp>
+#include <xxhash.h>
+
 #include <cstddef>
 #include <new>
 #include <type_traits>
-#include <xxhash.h>
 
 namespace beast {
 

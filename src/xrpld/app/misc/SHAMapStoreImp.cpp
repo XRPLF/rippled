@@ -27,6 +27,7 @@
 #include <xrpld/nodestore/detail/DatabaseRotatingImp.h>
 #include <xrpld/shamap/SHAMapMissingNode.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
+
 #include <boost/algorithm/string/predicate.hpp>
 
 namespace ripple {

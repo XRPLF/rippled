@@ -22,6 +22,7 @@
 
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/messages.h>
+
 #include <array>
 #include <atomic>
 #include <cstdint>

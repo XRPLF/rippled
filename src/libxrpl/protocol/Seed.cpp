@@ -31,6 +31,7 @@
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/tokens.h>
+
 #include <algorithm>
 #include <array>
 #include <cstdint>

@@ -21,6 +21,7 @@
 #define RIPPLE_BASICS_SCOPE_H_INCLUDED
 
 #include <xrpl/beast/utility/instrumentation.h>
+
 #include <exception>
 #include <mutex>
 #include <type_traits>

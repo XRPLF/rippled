@@ -20,7 +20,6 @@
 #include <xrpld/unity/rocksdb.h>
 
 #if RIPPLE_ROCKSDB_AVAILABLE
-
 #include <xrpld/core/Config.h>  // VFALCO Bad dependency
 #include <xrpld/nodestore/Factory.h>
 #include <xrpld/nodestore/Manager.h>
@@ -31,6 +30,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
+
 #include <atomic>
 #include <memory>
 

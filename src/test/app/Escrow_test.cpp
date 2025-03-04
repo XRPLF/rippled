@@ -24,6 +24,7 @@
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+
 #include <algorithm>
 #include <iterator>
 

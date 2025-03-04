@@ -31,6 +31,7 @@
 #include <xrpld/shamap/SHAMap.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
+
 #include <atomic>
 #include <memory>
 #include <mutex>

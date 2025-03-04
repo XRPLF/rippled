@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpl/resource/Charge.h>
+
 #include <compare>
 #include <ostream>
 #include <sstream>

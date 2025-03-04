@@ -23,6 +23,7 @@
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/XRPAmount.h>
+
 #include <type_traits>
 
 namespace ripple {

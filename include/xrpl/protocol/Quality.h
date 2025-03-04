@@ -24,6 +24,7 @@
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/XRPAmount.h>
+
 #include <algorithm>
 #include <cstdint>
 #include <ostream>

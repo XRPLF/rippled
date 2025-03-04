@@ -27,7 +27,9 @@
 #include <xrpld/net/InfoSub.h>
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/messages.h>
+
 #include <boost/asio.hpp>
+
 #include <memory>
 
 namespace ripple {

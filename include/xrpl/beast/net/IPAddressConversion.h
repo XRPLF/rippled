@@ -21,6 +21,7 @@
 #define BEAST_NET_IPADDRESSCONVERSION_H_INCLUDED
 
 #include <xrpl/beast/net/IPEndpoint.h>
+
 #include <boost/asio.hpp>
 
 namespace beast {

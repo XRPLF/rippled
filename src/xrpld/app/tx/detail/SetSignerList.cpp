@@ -27,6 +27,7 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TxFlags.h>
+
 #include <algorithm>
 #include <cstdint>
 

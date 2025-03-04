@@ -27,8 +27,10 @@
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/container/aged_map.h>
 #include <xrpl/beast/utility/maybe_const.h>
+
 #include <boost/intrusive/list.hpp>
 #include <boost/iterator/transform_iterator.hpp>
+
 #include <algorithm>
 
 namespace ripple {

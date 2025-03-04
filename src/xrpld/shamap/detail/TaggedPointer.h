@@ -21,6 +21,7 @@
 #define RIPPLE_SHAMAP_TAGGEDPOINTER_H_INCLUDED
 
 #include <xrpld/shamap/SHAMapTreeNode.h>
+
 #include <array>
 #include <cstdint>
 #include <optional>

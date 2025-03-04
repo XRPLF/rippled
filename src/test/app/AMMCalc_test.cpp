@@ -20,6 +20,7 @@
 #include <test/jtx.h>
 #include <xrpld/app/misc/AMMHelpers.h>
 #include <xrpl/protocol/Quality.h>
+
 #include <boost/regex.hpp>
 
 namespace ripple {

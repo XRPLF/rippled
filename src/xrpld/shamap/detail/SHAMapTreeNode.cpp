@@ -28,6 +28,7 @@
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/digest.h>
+
 #include <openssl/sha.h>
 
 namespace ripple {
