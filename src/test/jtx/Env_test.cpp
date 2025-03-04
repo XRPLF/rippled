@@ -187,6 +187,7 @@ public:
         {
             Env env(*this);
             env.fund(n, "alice", "bob", gw);
+            env.close();
             env(trust("alice", USD(100)), require(lines("alice", 1)));
         }
 
@@ -197,6 +198,7 @@ public:
             BEAST_EXPECT(env.balance(alice, USD) != 0);
             BEAST_EXPECT(env.balance(alice, USD) == USD(0));
             env.fund(n, alice, gw);
+            env.close();
             BEAST_EXPECT(env.balance(alice) == n);
             BEAST_EXPECT(env.balance(gw) == n);
             env.trust(USD(1000), alice);
@@ -241,6 +243,7 @@ public:
         env.require(balance("alice", none));
         env.require(balance("alice", XRP(none)));
         env.fund(XRP(10000), "alice", gw);
+        env.close();
         env.require(balance("alice", USD(none)));
         env.trust(USD(100), "alice");
         env.require(balance("alice", XRP(10000)));  // fee refunded
@@ -678,6 +681,7 @@ public:
         auto const gw = Account("gw");
         auto const USD = gw["USD"];
         env.fund(XRP(10000), "alice", "bob");
+        env.close();
         env.json(
             pay("alice", "bob", USD(10)),
             path(Account("alice")),

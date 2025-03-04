@@ -346,6 +346,7 @@ private:
         Env env{*this, features};
 
         env.fund(XRP(200'000), gw, alice, bob);
+        env.close();
 
         env(trust(alice, USD(1'000)));
 
@@ -449,6 +450,7 @@ private:
         testAMM(
             [&](AMM& ammAlice, Env& env) {
                 env.fund(XRP(1'000), bob);
+                env.close();
                 env(trust(bob, USD(100)));
                 env.close();
                 env(pay(alice, bob, USD(100)), sendmax(XRP(100)));
@@ -472,6 +474,7 @@ private:
         testAMM(
             [&](AMM& ammAlice, Env& env) {
                 env.fund(XRP(1'000), bob);
+                env.close();
                 env(trust(bob, USD(100)));
                 env.close();
                 env(pay(alice, bob, XRP(100)), sendmax(USD(100)));
@@ -502,7 +505,6 @@ private:
         auto const EUR1 = gw2["EUR"];
 
         fund(env, gw1, {gw2, alice, bob, carol, dan}, XRP(60'000));
-
         env(trust(alice, USD1(1'000)));
         env.close();
         env(trust(bob, EUR1(1'000)));
@@ -567,6 +569,7 @@ private:
 
         env.fund(starting_xrp, gw1, gw2, gw3, alice);
         env.fund(XRP(2'000), bob);
+        env.close();
 
         env(trust(alice, USD1(1'000)));
         env(trust(alice, USD2(1'000)));
@@ -666,6 +669,7 @@ private:
 
         env.fund(starting_xrp, gw, alice);
         env.fund(XRP(2'000), bob);
+        env.close();
 
         env(trust(alice, USD(150)));
         env(trust(bob, USD(4'000)));
@@ -1525,6 +1529,7 @@ private:
         Env env = pathTestEnv();
         auto const AUD = gw["AUD"];
         env.fund(XRP(10'000), alice, bob, carol, gw);
+        env.close();
         env(rate(gw, 1.1));
         env.trust(AUD(2'000), bob, carol);
         env(pay(gw, carol, AUD(51)));
@@ -1901,6 +1906,7 @@ private:
         fund(env, gw, {carol}, XRP(10'000), {}, Fund::Acct);
         auto const AMMXRPPool = env.current()->fees().increment * 2;
         env.fund(reserve(env, 5) + ammCrtFee(env) + AMMXRPPool, bob);
+        env.close();
         env.trust(USD(1'000), alice, bob, carol);
         env.trust(EUR(1'000), alice, bob, carol);
 
@@ -1944,7 +1950,6 @@ private:
                 XRP(10'000),
                 {BTC(100), USD(150)},
                 Fund::All);
-            env.close();
 
             AMM ammBob(env, bob, BTC(100), USD(150));
 
@@ -1968,7 +1973,6 @@ private:
                 XRP(10'000),
                 {BTC(100), USD(150)},
                 Fund::All);
-            env.close();
 
             AMM ammBobBTC_XRP(env, bob, BTC(100), XRP(150));
             AMM ammBobXRP_USD(env, bob, XRP(100), USD(150));
@@ -1995,7 +1999,6 @@ private:
                 XRP(10'000),
                 {USD(150)},
                 Fund::All);
-            env.close();
 
             AMM ammBob(env, bob, XRP(100), USD(150));
 
@@ -2021,7 +2024,6 @@ private:
                 XRP(10'000),
                 {USD(100)},
                 Fund::All);
-            env.close();
 
             AMM ammBob(env, bob, USD(100), XRP(150));
 
@@ -2097,7 +2099,6 @@ private:
             // Sets rippling on, this is different from
             // the original test
             fund(env, gw, {alice}, XRP(10'000), {}, Fund::Acct);
-            env.close();
             env.trust(USD(1'000), alice, bob, carol);
             env.trust(BTC(1'000), alice, bob, carol);
             env.trust(EUR(1'000), alice, bob, carol);
@@ -2194,7 +2195,6 @@ private:
             env.fund(XRP(10'000), bob, carol, gw);
             env.close();
             fund(env, gw, {alice}, XRP(10'000), {}, Fund::Acct);
-            env.close();
             env.trust(USD(1'000), alice, bob, carol);
             env.trust(EUR(1'000), alice, bob, carol);
             env.close();
@@ -3180,6 +3180,7 @@ private:
 
         fund(env, gw, {ed}, XRP(100'000'000), {USD(11)});
         env.fund(XRP(100'000'000), alice, bob, carol, dan);
+        env.close();
         env.trust(USD(1), bob);
         env(pay(gw, bob, USD(1)));
         env.trust(USD(1), dan);
@@ -3298,6 +3299,7 @@ private:
             auto const dan = Account("dan");
             Env env(*this, features);
             fund(env, gw, {alice, bob, carol, dan}, XRP(10'000));
+            env.close();
             env.trust(USD(1'100), bob, carol, dan);
             env(pay(gw, bob, USD(100)));
             env(pay(gw, dan, USD(1'100)));
@@ -3924,12 +3926,14 @@ private:
             fund(env, gw, {alice, bob}, XRP(10'000));
             env.trust(USD(1'000), alice, bob);
             env.trust(EUR(1'000), alice, bob);
+            env.close();
             fund(
                 env,
                 bob,
                 {alice, gw},
                 {BobUSD(100), BobEUR(100)},
                 Fund::IOUOnly);
+            env.close();
 
             AMM ammBobXRP_USD(env, bob, XRP(100), BobUSD(100));
             env(offer(gw, XRP(100), USD(100)), txflags(tfPassive));
@@ -4016,6 +4020,7 @@ private:
             Env env(*this, features);
 
             env.fund(XRP(10'000), alice, bob, carol, gw);
+            env.close();
             env.trust(USD(10'000), alice, bob, carol);
             env.trust(EUR(10'000), alice, bob, carol);
             env.trust(CNY(10'000), alice, bob, carol);

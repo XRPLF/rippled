@@ -149,6 +149,7 @@ class Check_test : public beast::unit_test::suite
             Env env{*this, features - featureChecks};
 
             env.fund(XRP(1000), alice);
+            env.close();
 
             uint256 const checkId{
                 getCheckIndex(env.master, env.seq(env.master))};
@@ -167,6 +168,7 @@ class Check_test : public beast::unit_test::suite
             Env env{*this, features};
 
             env.fund(XRP(1000), alice);
+            env.close();
 
             uint256 const checkId1{
                 getCheckIndex(env.master, env.seq(env.master))};
@@ -203,6 +205,7 @@ class Check_test : public beast::unit_test::suite
 
         STAmount const startBalance{XRP(1000).value()};
         env.fund(startBalance, gw, alice, bob);
+        env.close();
 
         // Note that no trust line has been set up for alice, but alice can
         // still write a check for USD.  You don't have to have the funds
@@ -313,6 +316,7 @@ class Check_test : public beast::unit_test::suite
 
         STAmount const startBalance{XRP(1000).value()};
         env.fund(startBalance, gw, alice, bob);
+        env.close();
 
         /*
          * Attempt to create two checks from `from` to `to` and
@@ -397,6 +401,7 @@ class Check_test : public beast::unit_test::suite
 
         STAmount const startBalance{XRP(1000).value()};
         env.fund(startBalance, gw1, gwF, alice, bob);
+        env.close();
 
         // Bad fee.
         env(check::create(alice, bob, USD(50)),
@@ -550,6 +555,7 @@ class Check_test : public beast::unit_test::suite
         // Insufficient reserve.
         Account const cheri{"cheri"};
         env.fund(env.current()->fees().accountReserve(1) - drops(1), cheri);
+        env.close();
 
         env(check::create(cheri, bob, USD(50)),
             fee(drops(env.current()->fees().base)),
@@ -579,6 +585,7 @@ class Check_test : public beast::unit_test::suite
         XRPAmount const baseFeeDrops{env.current()->fees().base};
         STAmount const startBalance{XRP(300).value()};
         env.fund(startBalance, alice, bob);
+        env.close();
         {
             // Basic XRP check.
             uint256 const chkId{getCheckIndex(alice, env.seq(alice))};
@@ -702,6 +709,7 @@ class Check_test : public beast::unit_test::suite
             Env env{*this, features};
 
             env.fund(XRP(1000), gw, alice, bob);
+            env.close();
 
             // alice writes the check before she gets the funds.
             uint256 const chkId1{getCheckIndex(alice, env.seq(alice))};
@@ -862,6 +870,7 @@ class Check_test : public beast::unit_test::suite
             Env env{*this, features};
 
             env.fund(XRP(1000), gw, alice, bob);
+            env.close();
 
             env(trust(alice, USD(20)));
             env(trust(bob, USD(20)));
@@ -1015,6 +1024,7 @@ class Check_test : public beast::unit_test::suite
             Env env{*this, testFeatures};
 
             env.fund(XRP(1000), gw, alice, bob);
+            env.close();
 
             // alice creates her checks ahead of time.
             uint256 const chkId1{getCheckIndex(alice, env.seq(alice))};
@@ -1368,6 +1378,7 @@ class Check_test : public beast::unit_test::suite
         Env env(*this, features);
 
         env.fund(XRP(1000), gw, alice, bob, zoe);
+        env.close();
 
         // Now set up alice's trustline.
         env(trust(alice, USD(20)));
@@ -1672,6 +1683,7 @@ class Check_test : public beast::unit_test::suite
             Env env{*this, testFeatures};
 
             env.fund(XRP(1000), gw, alice, bob, zoe);
+            env.close();
 
             // alice creates her checks ahead of time.
             // Three ordinary checks with no expiration.
@@ -1833,6 +1845,7 @@ class Check_test : public beast::unit_test::suite
         Env env{*this, features};
 
         env.fund(XRP(1000), alice, bob);
+        env.close();
 
         // Bad fee.
         env(check::cancel(bob, getCheckIndex(alice, env.seq(alice))),

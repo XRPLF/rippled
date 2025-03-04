@@ -39,7 +39,9 @@ public:
         {
             Env env(*this, features);
             env.fund(XRP(10000), "alice", "bob", "carol", gw);
+            env.close();
             env.trust(USD(100), "alice", "bob", "carol");
+            env.close();
             env(pay("alice", "bob", USD(10)),
                 delivermin(USD(10)),
                 ter(temBAD_AMOUNT));
@@ -75,7 +77,9 @@ public:
         {
             Env env(*this, features);
             env.fund(XRP(10000), "alice", "bob", gw);
+            env.close();
             env.trust(USD(1000), "alice", "bob");
+            env.close();
             env(pay(gw, "bob", USD(100)));
             env(offer("bob", XRP(100), USD(100)));
             env(pay("alice", "alice", USD(10000)),
@@ -89,7 +93,9 @@ public:
         {
             Env env(*this, features);
             env.fund(XRP(10000), "alice", "bob", "carol", gw);
+            env.close();
             env.trust(USD(1000), "bob", "carol");
+            env.close();
             env(pay(gw, "bob", USD(200)));
             env(offer("bob", XRP(100), USD(100)));
             env(offer("bob", XRP(1000), USD(100)));
@@ -112,7 +118,9 @@ public:
         {
             Env env(*this, features);
             env.fund(XRP(10000), "alice", "bob", "carol", "dan", gw);
+            env.close();
             env.trust(USD(1000), "bob", "carol", "dan");
+            env.close();
             env(pay(gw, "bob", USD(100)));
             env(pay(gw, "dan", USD(100)));
             env(offer("bob", XRP(100), USD(100)));

@@ -96,6 +96,7 @@ struct DepositAuth_test : public beast::unit_test::suite
         Env env(*this);
 
         env.fund(XRP(10000), alice, bob, carol, gw);
+        env.close();
         env.trust(USD(1000), alice, bob);
         env.close();
 
@@ -189,6 +190,7 @@ struct DepositAuth_test : public beast::unit_test::suite
         auto const baseFee = env.current()->fees().base;
 
         env.fund(XRP(10000), alice, bob);
+        env.close();
 
         // bob sets the lsfDepositAuth flag.
         env(fset(bob, asfDepositAuth), fee(drops(baseFee)));
@@ -302,6 +304,7 @@ struct DepositAuth_test : public beast::unit_test::suite
             Env env(*this, features);
 
             env.fund(XRP(10000), gw1, alice, bob);
+            env.close();
             env(trust(gw1, alice["USD"](10), noRipplePrev ? tfSetNoRipple : 0));
             env(trust(gw1, bob["USD"](10), noRippleNext ? tfSetNoRipple : 0));
             env.trust(USD1(10), alice, bob);
@@ -325,6 +328,7 @@ struct DepositAuth_test : public beast::unit_test::suite
             Env env(*this, features);
 
             env.fund(XRP(10000), gw1, gw2, alice);
+            env.close();
             env(trust(alice, USD1(10), noRipplePrev ? tfSetNoRipple : 0));
             env(trust(alice, USD2(10), noRippleNext ? tfSetNoRipple : 0));
             env(pay(gw2, alice, USD2(10)));
@@ -662,6 +666,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
                 const char credType[] = "abcde";
                 Account const carol{"carol"};
                 env.fund(XRP(5000), carol);
+                env.close();
 
                 bool const supportsCredentials = features[featureCredentials];
 
@@ -1126,6 +1131,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
                 // not enough reserve
                 Account const john{"john"};
                 env.fund(env.current()->fees().accountReserve(0), john);
+                env.close();
                 auto jv = deposit::authCredentials(john, {{issuer, credType}});
                 env(jv, ter(tecINSUFFICIENT_RESERVE));
             }

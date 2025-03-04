@@ -95,6 +95,7 @@ public:
         Account const carol{"carol"};
 
         env.fund(XRP(10000), alice, bob, carol, gw);
+        env.close();
         env.trust(USD(1000), alice, bob, carol);
         env.trust(BTC(1000), alice, bob, carol);
 
@@ -230,6 +231,7 @@ public:
         Env env{*this, features};
 
         env.fund(XRP(10000), alice, bob, carol, gw);
+        env.close();
         env.trust(USD(1000), alice, bob, carol);
         env.trust(EUR(1000), alice, bob, carol);
         env(pay(gw, alice, USD(100)));
@@ -654,6 +656,7 @@ public:
             auto const USD2 = gw2["USD"];
 
             env.fund(XRP(10000), alice, noripple(bob), carol, dan, gw1, gw2);
+            env.close();
             env.trust(USD1(1000), alice, carol, dan);
             env(trust(bob, USD1(1000), tfSetNoRipple));
             env.trust(USD2(1000), alice, carol, dan);
@@ -681,6 +684,7 @@ public:
             auto const USD2 = gw2["USD"];
 
             env.fund(XRP(10000), alice, bob, carol, dan, gw1, gw2);
+            env.close();
             env.trust(USD1(1000), alice, bob, carol, dan);
             env.trust(USD2(1000), alice, bob, carol, dan);
 
@@ -755,8 +759,10 @@ public:
             auto const xrpOffer2 = XRP(500);
 
             env.fund(r + f + xrpOffer, bob);
+
             env(offer(bob, usdOffer2, xrpOffer2), ter(tesSUCCESS));
             env.fund(r + f, alice);
+
             env(trust(alice, usdOffer), ter(tesSUCCESS));
             env(pay(gw, alice, usdOffer), ter(tesSUCCESS));
             env(offer(alice, xrpOffer, usdOffer), ter(tesSUCCESS));
@@ -785,10 +791,12 @@ public:
             auto const xrpOffer2 = XRP(500);
 
             env.fund(r + f + xrpOffer, bob, carol);
+
             env(offer(bob, usdOffer2, xrpOffer2), ter(tesSUCCESS));
             env(offer(carol, usdOffer, xrpOffer), ter(tesSUCCESS));
 
             env.fund(r + f, alice);
+
             env(trust(alice, usdOffer), ter(tesSUCCESS));
             env(pay(gw, alice, usdOffer), ter(tesSUCCESS));
             env(offer(alice, xrpOffer, usdOffer), ter(tesSUCCESS));
@@ -848,6 +856,7 @@ public:
             auto const f = env.current()->fees().base;
 
             env.fund(startBalance, gw, alice, bob);
+            env.close();
 
             // bob creates an offer that expires before the next ledger close.
             env(offer(bob, USD(500), XRP(500)),
@@ -909,6 +918,7 @@ public:
             auto const f = env.current()->fees().base;
 
             env.fund(startBalance, gw, alice, bob);
+            env.close();
 
             env(trust(alice, USD(1000)), ter(tesSUCCESS));
             env(pay(gw, alice, USD(1000)), ter(tesSUCCESS));
@@ -1068,6 +1078,7 @@ public:
         Env env{*this, features};
 
         env.fund(startBalance, gw, alice);
+        env.close();
 
         // Order that has invalid flags
         env(offer(alice, USD(1000), XRP(1000)),
@@ -1224,6 +1235,7 @@ public:
         Env env{*this, features};
 
         env.fund(XRP(1000000), gw);
+        env.close();
 
         // The fee that's charged for transactions
         auto const f = env.current()->fees().base;
@@ -1231,12 +1243,14 @@ public:
         // Account is at the reserve, and will dip below once
         // fees are subtracted.
         env.fund(reserve(env, 0), "alice");
+        env.close();
         env(offer("alice", usdOffer, xrpOffer), ter(tecUNFUNDED_OFFER));
         env.require(balance("alice", reserve(env, 0) - f), owners("alice", 0));
 
         // Account has just enough for the reserve and the
         // fee.
         env.fund(reserve(env, 0) + f, "bob");
+        env.close();
         env(offer("bob", usdOffer, xrpOffer), ter(tecUNFUNDED_OFFER));
         env.require(balance("bob", reserve(env, 0)), owners("bob", 0));
 
@@ -1244,6 +1258,7 @@ public:
         // the offer, and a bit more, but not enough for the
         // reserve after the offer is placed.
         env.fund(reserve(env, 0) + f + XRP(1), "carol");
+        env.close();
         env(offer("carol", usdOffer, xrpOffer), ter(tecINSUF_RESERVE_OFFER));
         env.require(
             balance("carol", reserve(env, 0) + XRP(1)), owners("carol", 0));
@@ -1251,12 +1266,14 @@ public:
         // Account has enough for the reserve plus one
         // offer, and the fee.
         env.fund(reserve(env, 1) + f, "dan");
+        env.close();
         env(offer("dan", usdOffer, xrpOffer), ter(tesSUCCESS));
         env.require(balance("dan", reserve(env, 1)), owners("dan", 1));
 
         // Account has enough for the reserve plus one
         // offer, the fee and the entire offer amount.
         env.fund(reserve(env, 1) + f + xrpOffer, "eve");
+        env.close();
         env(offer("eve", usdOffer, xrpOffer), ter(tesSUCCESS));
         env.require(
             balance("eve", reserve(env, 1) + xrpOffer), owners("eve", 1));
@@ -1413,6 +1430,7 @@ public:
             env.fund(gw_initial_balance, gw);
             env.fund(alice_initial_balance, alice);
             env.fund(bob_initial_balance, bob);
+            env.close();
 
             env(rate(gw, 1.005));
 
@@ -1508,6 +1526,7 @@ public:
         auto const USD = gw["USD"];
 
         env.fund(XRP(10000), gw, alice, bob);
+        env.close();
 
         env(trust(alice, USD(1000)));
         env(trust(bob, USD(1000)));
@@ -1560,6 +1579,7 @@ public:
         auto const USD = gw["USD"];
 
         env.fund(XRP(100000), gw, alice, bob);
+        env.close();
 
         env(trust(alice, USD(1000)));
 
@@ -1622,6 +1642,7 @@ public:
 
         auto const nextOfferSeq = env.seq(env.master);
         env.fund(XRP(10000), alice);
+        env.close();
 
         env(offer_cancel(env.master, nextOfferSeq));
 
@@ -1649,6 +1670,7 @@ public:
         auto const USD = gw["USD"];
 
         env.fund(XRP(10000), gw, alice, bob);
+        env.close();
         env.require(owners(bob, 0));
 
         env(trust(alice, USD(100)));
@@ -1701,6 +1723,7 @@ public:
         auto const carol = Account{"carol"};
 
         env.fund(XRP(10000), alice, bob, carol);
+        env.close();
 
         env(trust(alice, carol["EUR"](2000)));
         env(trust(bob, alice["USD"](100)));
@@ -1731,6 +1754,7 @@ public:
         auto const USD = gw["USD"];
 
         env.fund(XRP(10000), gw, alice, bob);
+        env.close();
 
         env(trust(alice, USD(200)));
         env(trust(bob, USD(1000)));
@@ -1817,6 +1841,7 @@ public:
         auto const USD = gw["USD"];
 
         env.fund(XRP(10000), gw, alice, bob, carol);
+        env.close();
 
         env(trust(carol, USD(1000)));
         env(trust(bob, USD(2000)));
@@ -1858,6 +1883,7 @@ public:
         auto const USD = gw["USD"];
 
         env.fund(XRP(10000), gw, alice, bob, carol);
+        env.close();
 
         env(trust(alice, USD(1000)));
         env(trust(carol, USD(2000)));
@@ -1908,6 +1934,7 @@ public:
         auto const EUR = gw2["EUR"];
 
         env.fund(XRP(10000), gw1, gw2, alice, bob, carol, dan);
+        env.close();
 
         env(trust(alice, USD(1000)));
         env(trust(bob, EUR(1000)));
@@ -1973,6 +2000,7 @@ public:
         auto const EUR = gw["EUR"];
 
         env.fund(XRP(100000000), alice, bob, carol, gw);
+        env.close();
 
         env.trust(USD(10), alice);
         env.close();
@@ -2055,6 +2083,7 @@ public:
             env.current()->fees().base * 4;
 
         env.fund(starting_xrp, gw1, gw2, gw3, alice, bob);
+        env.close();
 
         env(trust(alice, USD1(1000)));
         env(trust(alice, USD2(1000)));
@@ -2101,6 +2130,7 @@ public:
             auto const USD = gw["USD"];
 
             env.fund(XRP(10000), gw, alice, bob);
+            env.close();
 
             env(rate(gw, 1.005));
 
@@ -2154,6 +2184,7 @@ public:
             env.current()->fees().base * 2;
 
         env.fund(starting_xrp, gw, alice, bob);
+        env.close();
 
         env(trust(alice, USD(1000)));
         env(trust(bob, USD(1000)));
@@ -2196,6 +2227,7 @@ public:
             env.current()->fees().base * 2;
 
         env.fund(starting_xrp, gw, alice, bob);
+        env.close();
 
         env(trust(alice, USD(150)));
         env(trust(bob, USD(1000)));
@@ -2241,6 +2273,7 @@ public:
             env.current()->fees().base * 2;
 
         env.fund(starting_xrp, gw, alice, bob);
+        env.close();
 
         env(trust(alice, XTS(1000)));
         env(trust(alice, XXX(1000)));
@@ -2797,6 +2830,7 @@ public:
         Env env{*this, features};
 
         env.fund(XRP(10000000), gw);
+        env.close();
 
         // The fee that's charged for transactions
         auto const f = env.current()->fees().base;
@@ -2986,6 +3020,7 @@ public:
         Env env{*this, features};
 
         env.fund(XRP(10000000), gw, alice, bob);
+        env.close();
 
         // Code returned if an offer is killed.
         TER const killedCode{
@@ -4661,6 +4696,7 @@ public:
         Env env{*this, features};
 
         env.fund(XRP(10000), alice, becky, carol, noripple(gw));
+        env.close();
         env.trust(USD(1000), becky);
         env(pay(gw, becky, USD(5)));
         env.close();
@@ -4754,6 +4790,7 @@ public:
             Env env{*this, features};
             auto const gw = Account{"gateway"};
             env.fund(XRP(10000), gw);
+            env.close();
 
             auto txn = noop(gw);
             txn[sfTickSize.fieldName] = Quality::minTickSize - 1;
@@ -4789,6 +4826,7 @@ public:
         auto const XXX = gw["XXX"];
 
         env.fund(XRP(10000), gw, alice);
+        env.close();
 
         {
             // Gateway sets its tick size to 5
