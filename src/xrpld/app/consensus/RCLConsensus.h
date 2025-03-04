@@ -32,8 +32,12 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <atomic>
+#include <memory>
 #include <mutex>
 #include <set>
+#include <sstream>
+#include <string>
+
 namespace ripple {
 
 class InboundTransactions;
@@ -312,6 +316,7 @@ class RCLConsensus
             @param mode Our participating mode at the time consensus was
                         declared
             @param consensusJson Json representation of consensus state
+            @param validating whether this is a validator
         */
         void
         onAccept(
@@ -320,7 +325,8 @@ class RCLConsensus
             NetClock::duration const& closeResolution,
             ConsensusCloseTimes const& rawCloseTimes,
             ConsensusMode const& mode,
-            Json::Value&& consensusJson);
+            Json::Value&& consensusJson,
+            const bool validating);
 
         /** Process the accepted ledger that was a result of simulation/force
             accept.
@@ -480,11 +486,14 @@ public:
         RCLCxLedger::ID const& prevLgrId,
         RCLCxLedger const& prevLgr,
         hash_set<NodeID> const& nowUntrusted,
-        hash_set<NodeID> const& nowTrusted);
+        hash_set<NodeID> const& nowTrusted,
+        std::unique_ptr<std::stringstream> const& clog);
 
     //! @see Consensus::timerEntry
     void
-    timerEntry(NetClock::time_point const& now);
+    timerEntry(
+        NetClock::time_point const& now,
+        std::unique_ptr<std::stringstream> const& clog = {});
 
     //! @see Consensus::gotTxSet
     void
@@ -525,6 +534,36 @@ private:
     Adaptor adaptor_;
     Consensus<Adaptor> consensus_;
     beast::Journal const j_;
+};
+
+/** Collects logging information.
+ *
+ * Eases correlating multiple data points together to
+ * help follow flow of a complex activity, such as
+ * consensus heartbeat timer. If we
+ * are a validator, then always write output to
+ * debug log on destruction. Otherwise, INFO
+ * level.
+ */
+class RclConsensusLogger
+{
+    std::string header_;
+    beast::Journal j_;
+    std::unique_ptr<std::stringstream> ss_;
+    std::chrono::steady_clock::time_point start_;
+
+public:
+    explicit RclConsensusLogger(
+        const char* label,
+        bool validating,
+        beast::Journal j);
+    ~RclConsensusLogger();
+
+    std::unique_ptr<std::stringstream> const&
+    ss()
+    {
+        return ss_;
+    }
 };
 }  // namespace ripple
 
