@@ -999,7 +999,7 @@ public:
                     jss::RippleState.c_str(),
                     jss::PayChannel.c_str(),
                     jss::PermissionedDomain.c_str()};
-                std::sort(v.begin(), v.end());
+                std::ranges::sort(v);
                 return v;
             }();
 
@@ -1016,7 +1016,7 @@ public:
                     gotLedgerTypes.push_back(
                         aobjs[i]["LedgerEntryType"].asString());
                 }
-                std::sort(gotLedgerTypes.begin(), gotLedgerTypes.end());
+                std::ranges::sort(gotLedgerTypes);
                 BEAST_EXPECT(gotLedgerTypes == expectedLedgerTypes);
             }
         }
@@ -1043,7 +1043,7 @@ public:
                 for (auto const& obj : resp[jss::result][jss::account_objects])
                     typesOut.push_back(
                         obj[sfLedgerEntryType.fieldName].asString());
-                std::sort(typesOut.begin(), typesOut.end());
+                std::ranges::sort(typesOut);
             };
             // Make a lambda we can use to check the number of fetched
             // account objects and their ledger type

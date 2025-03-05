@@ -164,9 +164,9 @@ public:
         BEAST_EXPECT(test < XRPAmount{1000});
         BEAST_EXPECT(test > XRPAmount{100});
 
-        test = std::int64_t(200);
+        test = static_cast<std::int64_t>(200);
         BEAST_EXPECT(test.drops() == 200);
-        test = std::uint32_t(300);
+        test = static_cast<std::uint32_t>(300);
         BEAST_EXPECT(test.drops() == 300);
 
         test = targetSame;

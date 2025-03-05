@@ -105,7 +105,8 @@ getCountsJson(Application& app, int minObjectCount)
         static_cast<int>(app.getInboundLedgers().fetchRate());
     ret[jss::SLE_hit_rate] = app.cachedSLEs().rate();
     ret[jss::ledger_hit_rate] = app.getLedgerMaster().getCacheHitRate();
-    ret[jss::AL_size] = Json::UInt(app.getAcceptedLedgerCache().size());
+    ret[jss::AL_size] =
+        static_cast<Json::UInt>(app.getAcceptedLedgerCache().size());
     ret[jss::AL_hit_rate] = app.getAcceptedLedgerCache().getHitRate();
 
     ret[jss::fullbelow_size] =

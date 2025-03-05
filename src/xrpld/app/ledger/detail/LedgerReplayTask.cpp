@@ -73,7 +73,7 @@ LedgerReplayTask::TaskParameter::canMergeInto(
         if (existingTask.full_)
         {
             auto const& exList = existingTask.skipList_;
-            if (auto i = std::find(exList.begin(), exList.end(), finishHash_);
+            if (auto i = std::ranges::find(exList, finishHash_);
                 i != exList.end())
             {
                 return existingTask.totalLedgers_ >=

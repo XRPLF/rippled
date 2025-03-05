@@ -403,7 +403,7 @@ class NFTokenBurnBaseUtil_test : public beast::unit_test::suite
 
             // Sort the NFTs so they are listed in storage order, not
             // creation order.
-            std::sort(nfts.begin(), nfts.end());
+            std::ranges::sort(nfts);
 
             // Verify that the ledger does indeed contain exactly three pages
             // of NFTs with 32 entries in each page.
@@ -682,7 +682,7 @@ class NFTokenBurnBaseUtil_test : public beast::unit_test::suite
                 return;
 
             // Burn all the tokens in the first page.
-            std::reverse(nfts.begin(), nfts.end());
+            std::ranges::reverse(nfts);
             for (int i = 0; i < 32; ++i)
             {
                 env(token::burn(alice, {nfts.back()}));
@@ -710,7 +710,7 @@ class NFTokenBurnBaseUtil_test : public beast::unit_test::suite
             BEAST_EXPECT(!lastNFTokenPage->isFieldPresent(sfNextPageMin));
 
             // Burn all the tokens in the last page.
-            std::reverse(nfts.begin(), nfts.end());
+            std::ranges::reverse(nfts);
             for (int i = 0; i < 32; ++i)
             {
                 env(token::burn(alice, {nfts.back()}));
@@ -1225,7 +1225,7 @@ class NFTokenBurnBaseUtil_test : public beast::unit_test::suite
 
             // Sort the NFTs so they are listed in storage order, not
             // creation order.
-            std::sort(nfts.begin(), nfts.end());
+            std::ranges::sort(nfts);
 
             // Verify that the ledger does indeed contain exactly three pages
             // of NFTs with 32 entries in each page.

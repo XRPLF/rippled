@@ -1276,7 +1276,7 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::suite
                             scoreTable[nodeIDs[nIdx++]] = score;
                             scoreTable[nodeIDs[nIdx++]] = score;
                         }
-                        for (; nIdx < unl_size;)
+                        while (nIdx < unl_size)
                         {
                             scoreTable[nodeIDs[nIdx++]] = scores.back();
                         }

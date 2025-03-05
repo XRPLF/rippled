@@ -41,8 +41,8 @@ static IOUAmount
 initialTokens(STAmount const& asset1, STAmount const& asset2)
 {
     auto const product = number(asset1) * number(asset2);
-    return (IOUAmount)(product.mantissa() >= 0 ? root2(product)
-                                               : root2(-product));
+    return static_cast<IOUAmount>(
+        product.mantissa() >= 0 ? root2(product) : root2(-product));
 }
 
 AMM::AMM(
@@ -296,10 +296,9 @@ AMM::expectAuctionSlot(std::vector<AccountID> const& authAccounts) const
                                  STArray const& accounts) {
         for (auto const& account : accounts)
         {
-            if (std::find(
-                    authAccounts.cbegin(),
-                    authAccounts.cend(),
-                    account.getAccountID(sfAccount)) == authAccounts.end())
+            if (std::ranges::find(
+                    authAccounts, account.getAccountID(sfAccount)) ==
+                authAccounts.end())
                 return false;
         }
         return true;

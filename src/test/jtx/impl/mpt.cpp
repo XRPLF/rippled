@@ -48,7 +48,7 @@ MPTTester::makeHolders(std::vector<Account> const& holders)
     std::unordered_map<std::string, Account> accounts;
     for (auto const& h : holders)
     {
-        if (accounts.find(h.human()) != accounts.cend())
+        if (accounts.contains(h.human()))
             Throw<std::runtime_error>("Duplicate holder");
         accounts.emplace(h.human(), h);
     }

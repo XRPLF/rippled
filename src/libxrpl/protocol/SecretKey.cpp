@@ -94,7 +94,7 @@ deriveDeterministicRootKey(Seed const& seed)
     //      |      seed      | seq|
 
     std::array<std::uint8_t, 20> buf;
-    std::copy(seed.begin(), seed.end(), buf.begin());
+    std::ranges::copy(seed, buf.begin());
 
     // The odds that this loop executes more than once are neglible
     // but *just* in case someone managed to generate a key that required
@@ -153,7 +153,7 @@ private:
         //      |            generator            | seq| cnt|
 
         std::array<std::uint8_t, 41> buf;
-        std::copy(generator_.begin(), generator_.end(), buf.begin());
+        std::ranges::copy(generator_, buf.begin());
         copy_uint32(buf.data() + 33, seq);
 
         // The odds that this loop executes more than once are neglible

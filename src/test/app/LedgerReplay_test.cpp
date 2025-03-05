@@ -518,7 +518,7 @@ struct LedgerServer
         auto updateIdx = [&]() {
             assert(fundedAccounts > senders.size());
             fromIdx = (fromIdx + r) % fundedAccounts;
-            while (senders.count(fromIdx) != 0)
+            while (senders.contains(fromIdx))
                 fromIdx = (fromIdx + 1) % fundedAccounts;
             senders.insert(fromIdx);
             toIdx = (toIdx + r * 2) % fundedAccounts;
@@ -676,11 +676,10 @@ public:
     findTask(uint256 const& hash, int totalReplay)
     {
         std::unique_lock<std::mutex> lock(replayer.mtx_);
-        auto i = std::find_if(
-            replayer.tasks_.begin(), replayer.tasks_.end(), [&](auto const& t) {
-                return t->parameter_.finishHash_ == hash &&
-                    t->parameter_.totalLedgers_ == totalReplay;
-            });
+        auto i = std::ranges::find_if(replayer.tasks_, [&](auto const& t) {
+            return t->parameter_.finishHash_ == hash &&
+                t->parameter_.totalLedgers_ == totalReplay;
+        });
         if (i == replayer.tasks_.end())
             return {};
         return *i;

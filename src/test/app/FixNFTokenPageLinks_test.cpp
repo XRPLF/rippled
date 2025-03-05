@@ -95,7 +95,7 @@ class FixNFTokenPageLinks_test : public beast::unit_test::suite
 
         // Sort the NFTs so they are listed in storage order, not
         // creation order.
-        std::sort(nfts.begin(), nfts.end());
+        std::ranges::sort(nfts);
 
         // Verify that the owner does indeed have exactly three pages
         // of NFTs with 32 entries in each page.

@@ -66,7 +66,7 @@ ApplyView::dirAdd(
     {
         if (preserveOrder)
         {
-            if (std::find(indexes.begin(), indexes.end(), key) != indexes.end())
+            if (std::ranges::find(indexes, key) != indexes.end())
                 LogicError("dirInsert: double insertion");
 
             indexes.push_back(key);
@@ -76,9 +76,9 @@ ApplyView::dirAdd(
             // We can't be sure if this page is already sorted because
             // it may be a legacy page we haven't yet touched. Take
             // the time to sort it.
-            std::sort(indexes.begin(), indexes.end());
+            std::ranges::sort(indexes);
 
-            auto pos = std::lower_bound(indexes.begin(), indexes.end(), key);
+            auto pos = std::ranges::lower_bound(indexes, key);
 
             if (pos != indexes.end() && key == *pos)
                 LogicError("dirInsert: double insertion");
@@ -202,7 +202,7 @@ ApplyView::dirRemove(
     {
         auto entries = node->getFieldV256(sfIndexes);
 
-        auto it = std::find(entries.begin(), entries.end(), key);
+        auto it = std::ranges::find(entries, key);
 
         if (entries.end() == it)
             return false;

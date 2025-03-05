@@ -228,7 +228,7 @@ public:
         {
             return;
         }
-        auto const rate = elapsed.count() / double(work);
+        auto const rate = elapsed.count() / static_cast<double>(work);
         clock_type::duration const remain(
             static_cast<clock_type::duration::rep>((work_ - work) * rate));
         log << "Remaining: " << detail::fmtdur(remain) << " (" << work << " of "
@@ -294,17 +294,17 @@ public:
         auto const args = parse_args(arg());
         bool usage = args.empty();
 
-        if (!usage && args.find("from") == args.end())
+        if (!usage && !args.contains("from"))
         {
             log << "Missing parameter: from";
             usage = true;
         }
-        if (!usage && args.find("to") == args.end())
+        if (!usage && !args.contains("to"))
         {
             log << "Missing parameter: to";
             usage = true;
         }
-        if (!usage && args.find("buffer") == args.end())
+        if (!usage && !args.contains("buffer"))
         {
             log << "Missing parameter: buffer";
             usage = true;

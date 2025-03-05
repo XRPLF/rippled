@@ -238,10 +238,9 @@ class Ticket_test : public beast::unit_test::suite
 
         // Verify that all the expected Tickets were created.
         BEAST_EXPECT(ticketSeqs.size() == count);
-        std::sort(ticketSeqs.begin(), ticketSeqs.end());
+        std::ranges::sort(ticketSeqs);
         BEAST_EXPECT(
-            std::adjacent_find(ticketSeqs.begin(), ticketSeqs.end()) ==
-            ticketSeqs.end());
+            std::ranges::adjacent_find(ticketSeqs) == ticketSeqs.end());
         BEAST_EXPECT(*ticketSeqs.rbegin() == acctRootFinalSeq - 1);
     }
 

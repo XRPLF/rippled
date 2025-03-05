@@ -99,8 +99,7 @@ public:
                     continue;
                 }
 
-                if (std::find(goodFlags.begin(), goodFlags.end(), flag) !=
-                    goodFlags.end())
+                if (std::ranges::find(goodFlags, flag) != goodFlags.end())
                 {
                     // Good flag
                     env.require(nflags(alice, flag));

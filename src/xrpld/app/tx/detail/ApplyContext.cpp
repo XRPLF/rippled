@@ -150,7 +150,7 @@ ApplyContext::checkInvariants(TER const result, XRPAmount const fee)
     return checkInvariantsHelper(
         result,
         fee,
-        std::make_index_sequence<std::tuple_size<InvariantChecks>::value>{});
+        std::make_index_sequence<std::tuple_size_v<InvariantChecks>>{});
 }
 
 }  // namespace ripple

@@ -185,7 +185,7 @@ SHAMap::gmn_ProcessNodes(MissingNodes& mn, MissingNodes::StackEntry& se)
 
         auto const& childHash = node->getChildHash(branch);
 
-        if (mn.missingHashes_.count(childHash) != 0)
+        if (mn.missingHashes_.contains(childHash))
         {
             // we already know this child node is missing
             fullBelow = false;
