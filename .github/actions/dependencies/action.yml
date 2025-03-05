@@ -14,7 +14,6 @@ runs:
       run: |
         conan config set general.revisions_enabled=1
         conan export external/snappy snappy/1.1.10@
-        conan export external/rocksdb rocksdb/6.29.5@
         conan export external/soci soci/4.0.3@
         conan export external/nudb nudb/2.0.8@
     - name: add Ripple Conan remote
