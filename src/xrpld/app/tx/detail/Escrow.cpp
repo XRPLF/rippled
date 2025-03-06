@@ -113,9 +113,9 @@ NotTEC
 EscrowCreate::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx.isFieldPresent(sfFinishFunction) &&
-        !ctx.rules.enabled(featureEscrowExtensions))
+        !ctx.rules.enabled(featureSmartEscrow))
     {
-        JLOG(ctx.j.debug()) << "EscrowExtensions not enabled";
+        JLOG(ctx.j.debug()) << "SmartEscrow not enabled";
         return temDISABLED;
     }
 
