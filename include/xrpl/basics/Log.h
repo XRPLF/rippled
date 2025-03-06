@@ -24,7 +24,6 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <boost/beast/core/string.hpp>
 #include <boost/filesystem.hpp>
-#include <fstream>
 #include <map>
 #include <memory>
 #include <mutex>
