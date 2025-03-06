@@ -168,7 +168,7 @@ closeChannel(
 TxConsequences
 PayChanCreate::makeTxConsequences(PreflightContext const& ctx)
 {
-    return TxConsequences{ctx.tx, ctx.tx[sfAmount].xrp()};
+    return TxConsequences{ctx.tx.getSTTx(), ctx.tx[sfAmount].xrp()};
 }
 
 NotTEC
@@ -259,7 +259,7 @@ PayChanCreate::doApply()
     // Note that we we use the value from the sequence or ticket as the
     // payChan sequence.  For more explanation see comments in SeqProxy.h.
     Keylet const payChanKeylet =
-        keylet::payChan(account, dst, ctx_.tx.getSeqProxy().value());
+        keylet::payChan(account, dst, ctx_.tx.getEffectiveSeq());
     auto const slep = std::make_shared<SLE>(payChanKeylet);
 
     // Funds held in this channel
@@ -310,7 +310,7 @@ PayChanCreate::doApply()
 TxConsequences
 PayChanFund::makeTxConsequences(PreflightContext const& ctx)
 {
-    return TxConsequences{ctx.tx, ctx.tx[sfAmount].xrp()};
+    return TxConsequences{ctx.tx.getSTTx(), ctx.tx[sfAmount].xrp()};
 }
 
 NotTEC

@@ -29,7 +29,11 @@ namespace check {
 
 // Cash a check requiring that a specific amount be delivered.
 Json::Value
-cash(jtx::Account const& dest, uint256 const& checkId, STAmount const& amount)
+cash(
+    jtx::Account const& dest,
+    uint256 const& checkId,
+    STAmount const& amount,
+    std::optional<jtx::Account> const& onBehalfOf)
 {
     Json::Value jv;
     jv[sfAccount.jsonName] = dest.human();
@@ -37,6 +41,8 @@ cash(jtx::Account const& dest, uint256 const& checkId, STAmount const& amount)
     jv[sfCheckID.jsonName] = to_string(checkId);
     jv[sfTransactionType.jsonName] = jss::CheckCash;
     jv[sfFlags.jsonName] = tfUniversal;
+    if (onBehalfOf)
+        jv[sfOnBehalfOf.jsonName] = onBehalfOf->human();
     return jv;
 }
 
@@ -45,7 +51,8 @@ Json::Value
 cash(
     jtx::Account const& dest,
     uint256 const& checkId,
-    DeliverMin const& atLeast)
+    DeliverMin const& atLeast,
+    std::optional<jtx::Account> const& onBehalfOf)
 {
     Json::Value jv;
     jv[sfAccount.jsonName] = dest.human();
@@ -53,19 +60,41 @@ cash(
     jv[sfCheckID.jsonName] = to_string(checkId);
     jv[sfTransactionType.jsonName] = jss::CheckCash;
     jv[sfFlags.jsonName] = tfUniversal;
+    if (onBehalfOf)
+        jv[sfOnBehalfOf.jsonName] = onBehalfOf->human();
     return jv;
 }
 
 // Cancel a check.
 Json::Value
-cancel(jtx::Account const& dest, uint256 const& checkId)
+cancel(
+    jtx::Account const& dest,
+    uint256 const& checkId,
+    std::optional<jtx::Account> const& onBehalfOf)
 {
     Json::Value jv;
     jv[sfAccount.jsonName] = dest.human();
     jv[sfCheckID.jsonName] = to_string(checkId);
     jv[sfTransactionType.jsonName] = jss::CheckCancel;
     jv[sfFlags.jsonName] = tfUniversal;
+    if (onBehalfOf)
+        jv[sfOnBehalfOf.jsonName] = onBehalfOf->human();
     return jv;
+}
+
+// Helper function that returns the Checks on an account.
+std::vector<std::shared_ptr<SLE const>>
+checksOnAccount(test::jtx::Env& env, test::jtx::Account account)
+{
+    std::vector<std::shared_ptr<SLE const>> result;
+    forEachItem(
+        *env.current(),
+        account,
+        [&result](std::shared_ptr<SLE const> const& sle) {
+            if (sle && sle->getType() == ltCHECK)
+                result.push_back(sle);
+        });
+    return result;
 }
 
 }  // namespace check

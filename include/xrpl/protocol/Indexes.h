@@ -280,6 +280,11 @@ Keylet
 amm(uint256 const& amm) noexcept;
 
 Keylet
+accountPermission(
+    AccountID const& account,
+    AccountID const& authorizedAccount) noexcept;
+
+Keylet
 bridge(STXChainBridge const& bridge, STXChainBridge::ChainType chainType);
 
 Keylet

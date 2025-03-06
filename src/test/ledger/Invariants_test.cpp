@@ -98,6 +98,7 @@ class Invariants_test : public beast::unit_test::suite
             tesSUCCESS,
             env.current()->fees().base,
             tapNONE,
+            std::unordered_set<GranularPermissionType>{},
             jlog};
 
         BEAST_EXPECT(precheck(A1, A2, ac));

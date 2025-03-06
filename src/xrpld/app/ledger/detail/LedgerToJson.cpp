@@ -206,7 +206,7 @@ fillJsonTx(
     if ((fill.options & LedgerFill::ownerFunds) &&
         txn->getTxnType() == ttOFFER_CREATE)
     {
-        auto const account = txn->getAccountID(sfAccount);
+        auto const& account = txn->getEffectiveAccountID();
         auto const amount = txn->getFieldAmount(sfTakerGets);
 
         // If the offer create is not self funded then add the

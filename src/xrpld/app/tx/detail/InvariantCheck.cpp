@@ -45,7 +45,7 @@ TransactionFeeCheck::visitEntry(
 
 bool
 TransactionFeeCheck::finalize(
-    STTx const& tx,
+    STTxDelegated const& tx,
     TER const,
     XRPAmount const fee,
     ReadView const&,
@@ -139,7 +139,7 @@ XRPNotCreated::visitEntry(
 
 bool
 XRPNotCreated::finalize(
-    STTx const& tx,
+    STTxDelegated const& tx,
     TER const,
     XRPAmount const fee,
     ReadView const&,
@@ -200,7 +200,7 @@ XRPBalanceChecks::visitEntry(
 
 bool
 XRPBalanceChecks::finalize(
-    STTx const&,
+    STTxDelegated const&,
     TER const,
     XRPAmount const,
     ReadView const&,
@@ -244,7 +244,7 @@ NoBadOffers::visitEntry(
 
 bool
 NoBadOffers::finalize(
-    STTx const&,
+    STTxDelegated const&,
     TER const,
     XRPAmount const,
     ReadView const&,
@@ -289,7 +289,7 @@ NoZeroEscrow::visitEntry(
 
 bool
 NoZeroEscrow::finalize(
-    STTx const&,
+    STTxDelegated const&,
     TER const,
     XRPAmount const,
     ReadView const&,
@@ -318,7 +318,7 @@ AccountRootsNotDeleted::visitEntry(
 
 bool
 AccountRootsNotDeleted::finalize(
-    STTx const& tx,
+    STTxDelegated const& tx,
     TER const result,
     XRPAmount const,
     ReadView const&,
@@ -373,7 +373,7 @@ AccountRootsDeletedClean::visitEntry(
 
 bool
 AccountRootsDeletedClean::finalize(
-    STTx const& tx,
+    STTxDelegated const& tx,
     TER const result,
     XRPAmount const,
     ReadView const& view,
@@ -463,6 +463,7 @@ LedgerEntryTypesMatch::visitEntry(
         switch (after->getType())
         {
             case ltACCOUNT_ROOT:
+            case ltACCOUNT_PERMISSION:
             case ltDIR_NODE:
             case ltRIPPLE_STATE:
             case ltTICKET:
@@ -498,7 +499,7 @@ LedgerEntryTypesMatch::visitEntry(
 
 bool
 LedgerEntryTypesMatch::finalize(
-    STTx const&,
+    STTxDelegated const&,
     TER const,
     XRPAmount const,
     ReadView const&,
@@ -541,7 +542,7 @@ NoXRPTrustLines::visitEntry(
 
 bool
 NoXRPTrustLines::finalize(
-    STTx const&,
+    STTxDelegated const&,
     TER const,
     XRPAmount const,
     ReadView const&,
@@ -578,7 +579,7 @@ NoDeepFreezeTrustLinesWithoutFreeze::visitEntry(
 
 bool
 NoDeepFreezeTrustLinesWithoutFreeze::finalize(
-    STTx const&,
+    STTxDelegated const&,
     TER const,
     XRPAmount const,
     ReadView const&,
@@ -626,7 +627,7 @@ TransfersNotFrozen::visitEntry(
 
 bool
 TransfersNotFrozen::finalize(
-    STTx const& tx,
+    STTxDelegated const& tx,
     TER const ter,
     XRPAmount const fee,
     ReadView const& view,
@@ -784,7 +785,7 @@ bool
 TransfersNotFrozen::validateIssuerChanges(
     std::shared_ptr<SLE const> const& issuer,
     IssuerChanges const& changes,
-    STTx const& tx,
+    STTxDelegated const& tx,
     beast::Journal const& j,
     bool enforce)
 {
@@ -827,7 +828,7 @@ bool
 TransfersNotFrozen::validateFrozenState(
     BalanceChange const& change,
     bool high,
-    STTx const& tx,
+    STTxDelegated const& tx,
     beast::Journal const& j,
     bool enforce,
     bool globalFreeze)
@@ -887,7 +888,7 @@ ValidNewAccountRoot::visitEntry(
 
 bool
 ValidNewAccountRoot::finalize(
-    STTx const& tx,
+    STTxDelegated const& tx,
     TER const result,
     XRPAmount const,
     ReadView const& view,
@@ -1038,7 +1039,7 @@ ValidNFTokenPage::visitEntry(
 
 bool
 ValidNFTokenPage::finalize(
-    STTx const& tx,
+    STTxDelegated const& tx,
     TER const result,
     XRPAmount const,
     ReadView const& view,
@@ -1114,7 +1115,7 @@ NFTokenCountTracking::visitEntry(
 
 bool
 NFTokenCountTracking::finalize(
-    STTx const& tx,
+    STTxDelegated const& tx,
     TER const result,
     XRPAmount const,
     ReadView const& view,
@@ -1215,7 +1216,7 @@ ValidClawback::visitEntry(
 
 bool
 ValidClawback::finalize(
-    STTx const& tx,
+    STTxDelegated const& tx,
     TER const result,
     XRPAmount const,
     ReadView const& view,
@@ -1303,7 +1304,7 @@ ValidMPTIssuance::visitEntry(
 
 bool
 ValidMPTIssuance::finalize(
-    STTx const& tx,
+    STTxDelegated const& tx,
     TER const result,
     XRPAmount const _fee,
     ReadView const& _view,
@@ -1494,7 +1495,7 @@ ValidPermissionedDomain::visitEntry(
 
 bool
 ValidPermissionedDomain::finalize(
-    STTx const& tx,
+    STTxDelegated const& tx,
     TER const result,
     XRPAmount const,
     ReadView const& view,
