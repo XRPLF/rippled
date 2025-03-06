@@ -240,17 +240,6 @@ public:
     Value&
     operator=(Value&& other);
 
-    template <typename T>
-    Value&
-    operator=(T const& rhs)
-        requires(
-            !std::is_convertible_v<T, Value> &&
-            std::is_convertible_v<decltype(to_json(std::declval<T>())), Value>)
-    {
-        *this = to_json(rhs);
-        return *this;
-    }
-
     Value(Value&& other) noexcept;
 
     /// Swap values.
