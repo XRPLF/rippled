@@ -1694,21 +1694,22 @@ struct Escrow_test : public beast::unit_test::suite
                 (env.now() + 1s).time_since_epoch().count();
             escrowCreate[sfFinishAfter.jsonName] = finishTime;
             escrowCreate[sfFinishFunction.jsonName] = wasmHex;
-            env(escrowCreate);
+            XRPAmount txnFees = env.current()->fees().base + 1000;
+            env(escrowCreate, fee(txnFees));
             env.close();
 
             BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 1);
-            env.require(balance(alice, XRP(4000) - drops(10)));
+            env.require(balance(alice, XRP(4000) - txnFees));
             env.require(balance(carol, XRP(5000)));
 
-            std::cout << "SEQ " << env.current()->seq() << std::endl;
+            std::cout << "SEQ1 " << env.current()->seq() << std::endl;
             env(finish(carol, alice, seq), ter(tecWASM_REJECTED));
             env(finish(alice, alice, seq), ter(tecWASM_REJECTED));
             env(finish(alice, alice, seq), ter(tecWASM_REJECTED));
             env(finish(carol, alice, seq), ter(tecWASM_REJECTED));
             env(finish(carol, alice, seq), ter(tecWASM_REJECTED));
             env.close();
-            std::cout << "SEQ " << env.current()->seq() << std::endl;
+            std::cout << "SEQ2 " << env.current()->seq() << std::endl;
             env(finish(alice, alice, seq), ter(tesSUCCESS));
             env.close();
         }

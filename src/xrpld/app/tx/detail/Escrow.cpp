@@ -98,7 +98,16 @@ EscrowCreate::makeTxConsequences(PreflightContext const& ctx)
     return TxConsequences{ctx.tx, ctx.tx[sfAmount].xrp()};
 }
 
-// TODO: add calculateBaseFee
+XRPAmount
+EscrowCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
+{
+    XRPAmount txnFees{view.fees().base};
+    if (tx.isFieldPresent(sfFinishFunction))
+    {
+        txnFees += 1000;
+    }
+    return txnFees;
+}
 
 NotTEC
 EscrowCreate::preflight(PreflightContext const& ctx)
