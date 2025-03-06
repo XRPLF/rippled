@@ -99,7 +99,7 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
         if (issuance->getFlags() & lsfMPTLocked)
             return tecLOCKED;
         if ((issuance->getFlags() & lsfMPTCanTransfer) == 0)
-            return tecLOCKED;
+            return tecNO_AUTH;
     }
 
     // Cannot create Vault for an Asset frozen for the vault owner

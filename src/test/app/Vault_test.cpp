@@ -490,7 +490,7 @@ class Vault_test : public beast::unit_test::suite
         mptt.create();
         Asset asset = mptt.issuanceID();
         auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
-        env(tx, ter(tecLOCKED));
+        env(tx, ter(tecNO_AUTH));
     }
 
     void
