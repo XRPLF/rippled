@@ -34,7 +34,7 @@ XRPL_FEATURE(TokenEscrow,                Supported::yes, VoteBehavior::DefaultNo
 XRPL_FIX    (InvalidTxFlags,             Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (FrozenLPTokenTransfer,      Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(DeepFreeze,                 Supported::yes, VoteBehavior::DefaultNo)
-XRPL_FEATURE(PermissionedDomains,        Supported::no,  VoteBehavior::DefaultNo)
+XRPL_FEATURE(PermissionedDomains,        Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(DynamicNFT,                 Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(Credentials,                Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(AMMClawback,                Supported::yes, VoteBehavior::DefaultNo)

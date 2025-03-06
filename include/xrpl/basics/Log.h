@@ -67,6 +67,10 @@ private:
         void
         write(beast::severities::Severity level, std::string const& text)
             override;
+
+        void
+        writeAlways(beast::severities::Severity level, std::string const& text)
+            override;
     };
 
     /** Manages a system file containing logged output.
@@ -254,6 +258,14 @@ private:
     }           \
     else        \
         x
+#endif
+
+#ifndef CLOG
+#define CLOG(ss) \
+    if (!ss)     \
+        ;        \
+    else         \
+        *ss
 #endif
 
 //------------------------------------------------------------------------------

@@ -44,11 +44,17 @@ public:
 
     /** Rotates the backends.
 
-        @param f A function executed before the rotation and under the same lock
+        @param newBackend New writable backend
+        @param f A function executed after the rotation outside of lock. The
+       values passed to f will be the new backend database names _after_
+       rotation.
     */
     virtual void
-    rotateWithLock(std::function<std::unique_ptr<NodeStore::Backend>(
-                       std::string const& writableBackendName)> const& f) = 0;
+    rotate(
+        std::unique_ptr<NodeStore::Backend>&& newBackend,
+        std::function<void(
+            std::string const& writableName,
+            std::string const& archiveName)> const& f) = 0;
 };
 
 }  // namespace NodeStore
