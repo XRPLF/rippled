@@ -130,7 +130,7 @@ walletPropose(Json::Value const& params)
     }
 
     if (!keyType)
-        keyType = KeyType::secp256k1;
+        keyType = KeyType::ed25519;
 
     auto const publicKey = generateKeyPair(*keyType, *seed).first;
 
