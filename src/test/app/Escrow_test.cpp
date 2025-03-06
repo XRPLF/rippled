@@ -1814,7 +1814,7 @@ struct Escrow_test : public beast::unit_test::suite
                 fee(txnFees));
             env.close();
 
-            if (BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 1))
+            if (BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 2))
             {
                 env.require(balance(alice, XRP(4000) - txnFees));
                 env.require(balance(carol, XRP(5000)));
@@ -1829,6 +1829,8 @@ struct Escrow_test : public beast::unit_test::suite
                 std::cout << "SEQ2 " << env.current()->seq() << std::endl;
                 env(finish(alice, alice, seq), ter(tesSUCCESS));
                 env.close();
+
+                BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
             }
         }
     }
@@ -1836,18 +1838,18 @@ struct Escrow_test : public beast::unit_test::suite
     void
     run() override
     {
-        // testEnablement();
-        // testTiming();
-        // testTags();
-        // testDisallowXRP();
-        // test1571();
-        // testFails();
-        // testLockup();
-        // testEscrowConditions();
-        // testMetaAndOwnership();
-        // testConsequences();
-        // testEscrowWithTickets();
-        // testCredentials();
+        testEnablement();
+        testTiming();
+        testTags();
+        testDisallowXRP();
+        test1571();
+        testFails();
+        testLockup();
+        testEscrowConditions();
+        testMetaAndOwnership();
+        testConsequences();
+        testEscrowWithTickets();
+        testCredentials();
         testFinishFunctionPreflight();
         testFinishFunction();
     }
