@@ -101,7 +101,7 @@ EscrowCreate::makeTxConsequences(PreflightContext const& ctx)
 XRPAmount
 EscrowCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
-    XRPAmount txnFees{view.fees().base};
+    XRPAmount txnFees{Transactor::calculateBaseFee(view, tx)};
     if (tx.isFieldPresent(sfFinishFunction))
     {
         txnFees += 1000;
@@ -407,6 +407,10 @@ EscrowFinish::calculateBaseFee(ReadView const& view, STTx const& tx)
     if (auto const fb = tx[~sfFulfillment])
     {
         extraFee += view.fees().base * (32 + (fb->size() / 16));
+    }
+    if (tx.isFieldPresent(sfFinishFunction))
+    {
+        extraFee += 1000;
     }
 
     return Transactor::calculateBaseFee(view, tx) + extraFee;
