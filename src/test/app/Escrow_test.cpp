@@ -1820,14 +1820,24 @@ struct Escrow_test : public beast::unit_test::suite
                 env.require(balance(carol, XRP(5000)));
 
                 std::cout << "SEQ1 " << env.current()->seq() << std::endl;
-                env(finish(carol, alice, seq), ter(tecWASM_REJECTED));
-                env(finish(alice, alice, seq), ter(tecWASM_REJECTED));
-                env(finish(alice, alice, seq), ter(tecWASM_REJECTED));
-                env(finish(carol, alice, seq), ter(tecWASM_REJECTED));
-                env(finish(carol, alice, seq), ter(tecWASM_REJECTED));
+                env(finish(carol, alice, seq),
+                    fee(txnFees),
+                    ter(tecWASM_REJECTED));
+                env(finish(alice, alice, seq),
+                    fee(txnFees),
+                    ter(tecWASM_REJECTED));
+                env(finish(alice, alice, seq),
+                    fee(txnFees),
+                    ter(tecWASM_REJECTED));
+                env(finish(carol, alice, seq),
+                    fee(txnFees),
+                    ter(tecWASM_REJECTED));
+                env(finish(carol, alice, seq),
+                    fee(txnFees),
+                    ter(tecWASM_REJECTED));
                 env.close();
                 std::cout << "SEQ2 " << env.current()->seq() << std::endl;
-                env(finish(alice, alice, seq), ter(tesSUCCESS));
+                env(finish(alice, alice, seq), fee(txnFees), ter(tesSUCCESS));
                 env.close();
 
                 BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
