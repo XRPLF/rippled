@@ -203,26 +203,45 @@ class Vault_test : public beast::unit_test::suite
             }
 
             {
-                testcase(prefix + " clawback");
+                testcase(prefix + " clawback some");
                 auto code = asset.raw().native() ? ter(tecNO_PERMISSION)
                                                  : ter(tesSUCCESS);
                 auto tx = vault.clawback(
                     {.issuer = issuer,
                      .id = keylet.key,
                      .holder = depositor,
-                     .amount = asset(50)});
+                     .amount = asset(10)});
                 env(tx, code);
             }
 
-            // TODO: redeem.
+            {
+                testcase(prefix + " clawback all");
+                auto code = asset.raw().native() ? ter(tecNO_PERMISSION)
+                                                 : ter(tesSUCCESS);
+                auto tx = vault.clawback(
+                    {.issuer = issuer,
+                     .id = keylet.key,
+                     .holder = depositor,
+                     .amount = std::nullopt});
+                env(tx, code);
+            }
+
+            if (!asset.raw().native())
+            {
+                testcase(prefix + " deposit again");
+                auto tx = vault.deposit(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = asset(200)});
+                env(tx);
+            }
 
             {
                 testcase(prefix + " withdraw non-zero assets");
-                auto number = asset.raw().native() ? 200 : 150;
                 auto tx = vault.withdraw(
                     {.depositor = depositor,
                      .id = keylet.key,
-                     .amount = asset(number)});
+                     .amount = asset(200)});
                 env(tx);
             }
 

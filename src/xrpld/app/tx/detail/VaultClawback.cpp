@@ -22,6 +22,7 @@
 #include <xrpld/ledger/View.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -41,7 +42,8 @@ VaultClawback::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
 
     // Note, zero amount is valid, it means "all". It is also the default.
-    if (ctx.tx[sfAmount] < beast::zero)
+    auto const amount = ctx.tx[~sfAmount];
+    if (amount && *amount < beast::zero)
         return temBAD_AMOUNT;
 
     return preflight2(ctx);
@@ -61,8 +63,8 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
     else if (asset.getIssuer() != account)
         return tecNO_PERMISSION;  // Only issuers can clawback.
 
-    STAmount const amount = ctx.tx[sfAmount];
-    if (asset != amount.asset())
+    auto const amount = ctx.tx[~sfAmount];
+    if (amount && asset != amount->asset())
         return tecWRONG_ASSET;
 
     return tesSUCCESS;
@@ -76,7 +78,17 @@ VaultClawback::doApply()
     if (!vault)
         return tecOBJECT_NOT_FOUND;
 
-    STAmount const amount = tx[sfAmount];
+    Asset const asset = vault->at(sfAsset);
+    STAmount const amount = [&]() -> STAmount {
+        auto const maybeAmount = tx[~sfAmount];
+        if (maybeAmount)
+            return *maybeAmount;
+        return {sfAmount, asset, 0};
+    }();
+    XRPL_ASSERT(
+        amount.asset() == asset,
+        "ripple::VaultClawback::doApply : matching asset");
+
     AccountID holder = tx[sfHolder];
     STAmount assets, shares;
     if (amount == beast::zero)

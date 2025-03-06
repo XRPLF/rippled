@@ -94,7 +94,8 @@ Vault::clawback(ClawbackArgs const& args)
     jv[jss::Account] = args.issuer.human();
     jv[jss::VaultID] = to_string(args.id);
     jv[jss::Holder] = args.holder.human();
-    jv[jss::Amount] = to_json(args.amount);
+    if (args.amount)
+        jv[jss::Amount] = to_json(*args.amount);
     return jv;
 }
 
