@@ -141,13 +141,18 @@ EscrowCreate::preflight(PreflightContext const& ctx)
         ctx.tx[sfCancelAfter] <= ctx.tx[sfFinishAfter])
         return temBAD_EXPIRATION;
 
+    if (ctx.tx.isFieldPresent(sfFinishFunction) &&
+        !ctx.tx.isFieldPresent(sfCancelAfter))
+        return temBAD_EXPIRATION;
+
     if (ctx.rules.enabled(fix1571))
     {
         // In the absence of a FinishAfter, the escrow can be finished
         // immediately, which can be confusing. When creating an escrow,
         // we want to ensure that either a FinishAfter time is explicitly
         // specified or a completion condition is attached.
-        if (!ctx.tx[~sfFinishAfter] && !ctx.tx[~sfCondition])
+        if (!ctx.tx[~sfFinishAfter] && !ctx.tx[~sfCondition] &&
+            !ctx.tx[~sfFinishFunction])
             return temMALFORMED;
     }
 
