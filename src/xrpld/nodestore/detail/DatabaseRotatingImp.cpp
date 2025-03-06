@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <xrpld/nodestore/detail/DatabaseRotatingImp.h>
-#include <xrpl/protocol/HashPrefix.h>
 
 namespace ripple {
 namespace NodeStore {

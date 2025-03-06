@@ -24,6 +24,7 @@
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/SecretKey.h>
+
 #include <utility>
 
 namespace ripple {

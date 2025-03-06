@@ -20,7 +20,7 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/amount.h>
 #include <xrpl/basics/safe_cast.h>
-#include <cmath>
+
 #include <iomanip>
 
 namespace ripple {

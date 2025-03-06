@@ -24,7 +24,6 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Quality.h>
-#include <xrpl/protocol/st.h>
 
 namespace {
 

@@ -26,7 +26,6 @@
 #include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/resource/Consumer.h>
-#include <mutex>
 
 namespace ripple {
 

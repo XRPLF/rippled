@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <xrpld/app/tx/detail/BookTip.h>
-#include <xrpl/basics/Log.h>
 
 namespace ripple {
 

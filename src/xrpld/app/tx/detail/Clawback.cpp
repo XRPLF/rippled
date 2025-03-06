@@ -24,7 +24,6 @@
 #include <xrpl/protocol/MPTAmount.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/st.h>
 
 namespace ripple {
 

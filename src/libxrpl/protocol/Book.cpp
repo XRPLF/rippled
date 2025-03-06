@@ -18,6 +18,10 @@
 //==============================================================================
 
 #include <xrpl/protocol/Book.h>
+#include <xrpl/protocol/Issue.h>
+
+#include <ostream>
+#include <string>
 
 namespace ripple {
 

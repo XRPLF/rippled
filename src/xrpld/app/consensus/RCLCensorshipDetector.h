@@ -22,6 +22,7 @@
 
 #include <xrpld/shamap/SHAMap.h>
 #include <xrpl/basics/algorithm.h>
+
 #include <algorithm>
 #include <utility>
 #include <vector>

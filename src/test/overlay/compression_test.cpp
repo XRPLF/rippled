@@ -24,7 +24,6 @@
 #include <test/jtx/pay.h>
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
-#include <xrpld/app/misc/Manifest.h>
 #include <xrpld/overlay/Compression.h>
 #include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/detail/Handshake.h>
@@ -41,9 +40,11 @@
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/messages.h>
+
 #include <boost/asio/ip/address_v4.hpp>
 #include <boost/beast/core/multi_buffer.hpp>
 #include <boost/endian/conversion.hpp>
+
 #include <algorithm>
 
 namespace ripple {

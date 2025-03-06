@@ -26,6 +26,7 @@
 #include <xrpl/resource/detail/Logic.h>
 
 #include <boost/utility/base_from_member.hpp>
+
 #include <functional>
 
 namespace ripple {

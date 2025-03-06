@@ -18,7 +18,6 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 //==============================================================================
 
 #include <test/jtx/Account.h>
-
 #include <xrpl/basics/join.h>
 #include <xrpl/beast/unit_test.h>
 

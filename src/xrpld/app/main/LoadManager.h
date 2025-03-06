@@ -21,8 +21,8 @@
 #define RIPPLE_APP_MAIN_LOADMANAGER_H_INCLUDED
 
 #include <xrpl/beast/utility/Journal.h>
+
 #include <atomic>
-#include <condition_variable>
 #include <memory>
 #include <mutex>
 #include <thread>

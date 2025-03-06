@@ -26,6 +26,7 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/instrumentation.h>
+
 #include <boost/smart_ptr/intrusive_ptr.hpp>
 
 namespace ripple {

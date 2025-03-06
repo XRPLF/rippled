@@ -19,7 +19,6 @@
 
 #include <test/jtx.h>
 #include <xrpl/beast/unit_test.h>
-#include <algorithm>
 
 namespace ripple {
 namespace test {

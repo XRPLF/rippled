@@ -22,7 +22,7 @@
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/CountedObject.h>
-#include <xrpl/protocol/Protocol.h>
+#include <xrpl/basics/base_uint.h>
 
 // VFALCO NOTE Intentionally not in the NodeStore namespace
 

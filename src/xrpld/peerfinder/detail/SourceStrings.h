@@ -21,6 +21,7 @@
 #define RIPPLE_PEERFINDER_SOURCESTRINGS_H_INCLUDED
 
 #include <xrpld/peerfinder/detail/Source.h>
+
 #include <memory>
 
 namespace ripple {

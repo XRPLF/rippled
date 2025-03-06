@@ -24,7 +24,6 @@
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
 #include <xrpld/app/main/Application.h>
 
-#include <memory>
 #include <vector>
 
 namespace ripple {

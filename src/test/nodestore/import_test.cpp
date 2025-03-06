@@ -18,23 +18,24 @@
 //==============================================================================
 
 #include <xrpld/nodestore/detail/codec.h>
+#include <xrpld/unity/rocksdb.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/clock/basic_seconds_clock.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/rfc2616.h>
 #include <xrpl/beast/unit_test.h>
+
 #include <boost/beast/core/string.hpp>
 #include <boost/regex.hpp>
+#include <nudb/create.hpp>
+#include <nudb/detail/format.hpp>
+#include <nudb/xxhasher.hpp>
+
 #include <algorithm>
 #include <chrono>
 #include <iomanip>
 #include <map>
-#include <nudb/create.hpp>
-#include <nudb/detail/format.hpp>
-#include <nudb/xxhasher.hpp>
 #include <sstream>
-
-#include <xrpld/unity/rocksdb.h>
 
 /*
 

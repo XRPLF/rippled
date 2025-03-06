@@ -30,7 +30,6 @@
 
 #include <boost/container/flat_set.hpp>
 
-#include <numeric>
 #include <sstream>
 
 namespace ripple {

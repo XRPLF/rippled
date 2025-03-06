@@ -21,9 +21,9 @@
 #define RIPPLE_BASICS_CONTRACT_H_INCLUDED
 
 #include <xrpl/beast/type_name.h>
+
 #include <exception>
 #include <string>
-#include <typeinfo>
 #include <utility>
 
 namespace ripple {

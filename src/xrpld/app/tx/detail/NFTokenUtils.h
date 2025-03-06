@@ -23,7 +23,6 @@
 #include <xrpld/app/tx/detail/Transactor.h>
 #include <xrpld/ledger/ApplyView.h>
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/basics/tagged_integer.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/nft.h>

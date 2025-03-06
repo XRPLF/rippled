@@ -21,7 +21,9 @@
 #define RIPPLE_PROTOCOL_FEATURE_H_INCLUDED
 
 #include <xrpl/basics/base_uint.h>
+
 #include <boost/container/flat_map.hpp>
+
 #include <array>
 #include <bitset>
 #include <map>

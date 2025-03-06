@@ -25,7 +25,6 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpl/beast/utility/Journal.h>
 
-#include <memory>
 #include <mutex>
 #include <vector>
 

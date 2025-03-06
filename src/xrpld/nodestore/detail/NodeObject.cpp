@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/nodestore/NodeObject.h>
+
 #include <memory>
 
 namespace ripple {

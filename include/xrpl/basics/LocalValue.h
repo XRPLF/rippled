@@ -21,6 +21,7 @@
 #define RIPPLE_BASICS_LOCALVALUE_H_INCLUDED
 
 #include <boost/thread/tss.hpp>
+
 #include <memory>
 #include <unordered_map>
 

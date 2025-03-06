@@ -21,9 +21,9 @@
 #define RIPPLE_APP_LEDGER_LEDGERREPLAY_H_INCLUDED
 
 #include <xrpl/basics/CountedObject.h>
+
 #include <cstdint>
 #include <map>
-#include <memory>
 
 namespace ripple {
 

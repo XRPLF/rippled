@@ -23,8 +23,6 @@
 #include <xrpld/ledger/ApplyView.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <chrono>
-#include <memory>
 
 namespace ripple {
 

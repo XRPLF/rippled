@@ -17,18 +17,13 @@
 */
 //==============================================================================
 
-#include <xrpld/rpc/DeliveredAmount.h>
-
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/misc/Transaction.h>
-#include <xrpld/ledger/View.h>
 #include <xrpld/rpc/Context.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
-#include <xrpl/protocol/AccountID.h>
+#include <xrpld/rpc/DeliveredAmount.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/RPCErr.h>
-#include <boost/algorithm/string/case_conv.hpp>
 
 namespace ripple {
 namespace RPC {

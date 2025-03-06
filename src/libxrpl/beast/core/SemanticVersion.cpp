@@ -22,7 +22,11 @@
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <algorithm>
+#include <cctype>
+#include <limits>
 #include <locale>
+#include <stdexcept>
+#include <string>
 
 namespace beast {
 

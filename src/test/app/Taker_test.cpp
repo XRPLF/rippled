@@ -18,9 +18,7 @@
 //==============================================================================
 
 #include <xrpld/app/tx/detail/Taker.h>
-#include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/unit_test.h>
-#include <type_traits>
 
 namespace ripple {
 

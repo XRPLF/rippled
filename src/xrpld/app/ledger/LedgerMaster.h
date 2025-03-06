@@ -29,17 +29,15 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/CanonicalTXSet.h>
 #include <xrpl/basics/RangeSet.h>
-#include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/insight/Collector.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
-#include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/messages.h>
-#include <optional>
 
 #include <mutex>
+#include <optional>
 
 namespace ripple {
 

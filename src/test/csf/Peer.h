@@ -16,6 +16,7 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
+
 #ifndef RIPPLE_TEST_CSF_PEER_H_INCLUDED
 #define RIPPLE_TEST_CSF_PEER_H_INCLUDED
 
@@ -30,8 +31,10 @@
 #include <xrpld/consensus/Validations.h>
 #include <xrpl/beast/utility/WrappedSink.h>
 #include <xrpl/protocol/PublicKey.h>
+
 #include <boost/container/flat_map.hpp>
 #include <boost/container/flat_set.hpp>
+
 #include <algorithm>
 
 namespace ripple {

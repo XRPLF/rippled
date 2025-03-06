@@ -23,8 +23,8 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
+
 #include <boost/program_options.hpp>
-#include <utility>
 
 namespace ripple {
 

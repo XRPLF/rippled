@@ -32,16 +32,13 @@
 #include <xrpld/rpc/detail/Handler.h>
 #include <xrpld/rpc/detail/Tuning.h>
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/contract.h>
-#include <xrpl/json/Object.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/ErrorCodes.h>
-#include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
+
 #include <atomic>
 #include <chrono>
-#include <variant>
 
 namespace ripple {
 namespace RPC {

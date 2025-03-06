@@ -26,7 +26,6 @@
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/base_uint.h>
 
-#include <list>
 #include <map>
 
 namespace ripple {

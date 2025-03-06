@@ -22,14 +22,14 @@
 
 #include <xrpld/core/Config.h>
 #include <xrpld/overlay/PeerReservationTable.h>
-#include <xrpld/shamap/FullBelowCache.h>
 #include <xrpld/shamap/TreeNodeCache.h>
 #include <xrpl/basics/TaggedCache.h>
 #include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/protocol/Protocol.h>
+
 #include <boost/asio.hpp>
 #include <boost/program_options.hpp>
-#include <memory>
+
 #include <mutex>
 
 namespace ripple {

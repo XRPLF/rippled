@@ -24,7 +24,6 @@
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/FileUtilities.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <cerrno>
 
 namespace ripple {
 

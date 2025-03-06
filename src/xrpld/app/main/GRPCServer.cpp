@@ -18,11 +18,10 @@
 //==============================================================================
 
 #include <xrpld/app/main/GRPCServer.h>
-#include <xrpl/beast/core/CurrentThreadName.h>
-#include <xrpl/resource/Fees.h>
-
 #include <xrpld/core/ConfigSections.h>
+#include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
+#include <xrpl/resource/Fees.h>
 
 namespace ripple {
 
@@ -447,8 +446,8 @@ GRPCServerImpl::handleRpcs()
 
         if (!ok)
         {
-            JLOG(journal_.debug()) << "Request listener cancelled. "
-                                   << "Destroying object";
+            JLOG(journal_.debug())
+                << "Request listener cancelled. " << "Destroying object";
             erase(ptr);
         }
         else

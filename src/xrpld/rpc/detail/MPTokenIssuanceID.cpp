@@ -19,11 +19,6 @@
 
 #include <xrpld/rpc/MPTokenIssuanceID.h>
 
-#include <xrpld/app/misc/Transaction.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/RPCErr.h>
-
 namespace ripple {
 
 namespace RPC {

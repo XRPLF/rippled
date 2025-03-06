@@ -22,13 +22,10 @@
 
 #include <xrpld/consensus/ConsensusParms.h>
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_writer.h>
-#include <xrpl/protocol/Serializer.h>
-#include <xrpl/protocol/UintTypes.h>
+
 #include <boost/container/flat_map.hpp>
-#include <memory>
 
 namespace ripple {
 

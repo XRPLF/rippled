@@ -16,6 +16,7 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
+
 #ifndef RIPPLE_TEST_JTX_AMMTEST_H_INCLUDED
 #define RIPPLE_TEST_JTX_AMMTEST_H_INCLUDED
 

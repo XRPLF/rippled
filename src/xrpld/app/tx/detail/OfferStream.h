@@ -26,7 +26,6 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/protocol/Quality.h>
 
 #include <boost/container/flat_set.hpp>
 

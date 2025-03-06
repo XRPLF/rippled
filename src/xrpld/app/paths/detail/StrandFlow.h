@@ -29,7 +29,6 @@
 #include <xrpld/app/paths/detail/FlowDebugInfo.h>
 #include <xrpld/app/paths/detail/Steps.h>
 #include <xrpl/basics/Log.h>
-#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/XRPAmount.h>
@@ -39,7 +38,6 @@
 #include <algorithm>
 #include <iterator>
 #include <numeric>
-#include <sstream>
 
 namespace ripple {
 

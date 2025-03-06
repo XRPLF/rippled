@@ -26,11 +26,11 @@
 #include <xrpld/net/InfoSub.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/UintTypes.h>
+
 #include <map>
 #include <mutex>
 #include <optional>
 #include <set>
-#include <utility>
 
 namespace ripple {
 

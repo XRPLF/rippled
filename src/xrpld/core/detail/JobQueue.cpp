@@ -20,6 +20,7 @@
 #include <xrpld/core/JobQueue.h>
 #include <xrpld/perflog/PerfLog.h>
 #include <xrpl/basics/contract.h>
+
 #include <mutex>
 
 namespace ripple {

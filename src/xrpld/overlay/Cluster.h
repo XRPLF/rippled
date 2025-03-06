@@ -20,18 +20,15 @@
 #ifndef RIPPLE_OVERLAY_CLUSTER_H_INCLUDED
 #define RIPPLE_OVERLAY_CLUSTER_H_INCLUDED
 
-#include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/ClusterNode.h>
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/chrono.h>
-#include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/PublicKey.h>
+
 #include <functional>
-#include <memory>
 #include <mutex>
 #include <set>
-#include <type_traits>
 
 namespace ripple {
 

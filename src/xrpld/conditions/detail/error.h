@@ -20,7 +20,6 @@
 #ifndef RIPPLE_CONDITIONS_ERROR_H
 #define RIPPLE_CONDITIONS_ERROR_H
 
-#include <string>
 #include <system_error>
 
 namespace ripple {

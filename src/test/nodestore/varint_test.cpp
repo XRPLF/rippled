@@ -19,6 +19,7 @@
 
 #include <xrpld/nodestore/detail/varint.h>
 #include <xrpl/beast/unit_test.h>
+
 #include <array>
 #include <vector>
 

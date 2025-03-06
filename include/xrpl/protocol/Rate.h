@@ -22,7 +22,9 @@
 
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/STAmount.h>
+
 #include <boost/operators.hpp>
+
 #include <cstdint>
 #include <ostream>
 

@@ -18,8 +18,14 @@
 //==============================================================================
 
 #include <xrpl/protocol/TER.h>
+
 #include <boost/range/adaptor/transformed.hpp>
-#include <type_traits>
+#include <boost/range/iterator_range_core.hpp>
+
+#include <optional>
+#include <string>
+#include <unordered_map>
+#include <utility>
 
 namespace ripple {
 

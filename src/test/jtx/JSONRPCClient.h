@@ -22,6 +22,7 @@
 
 #include <test/jtx/AbstractClient.h>
 #include <xrpld/core/Config.h>
+
 #include <memory>
 
 namespace ripple {

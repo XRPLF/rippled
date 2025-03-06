@@ -24,13 +24,15 @@
 #include <xrpld/nodestore/detail/codec.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
+
 #include <boost/filesystem.hpp>
+#include <nudb/nudb.hpp>
+
 #include <chrono>
 #include <cstdint>
 #include <cstdio>
 #include <exception>
 #include <memory>
-#include <nudb/nudb.hpp>
 
 namespace ripple {
 namespace NodeStore {

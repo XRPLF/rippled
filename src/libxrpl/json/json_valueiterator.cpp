@@ -19,6 +19,7 @@
 
 // included by json_value.cpp
 
+#include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
 
 namespace Json {

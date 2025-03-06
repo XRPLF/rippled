@@ -21,13 +21,13 @@
 #include <xrpld/net/HTTPClient.h>
 #include <xrpld/net/HTTPClientSSLContext.h>
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/StringUtilities.h>
-#include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/LexicalCast.h>
+
 #include <boost/asio.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/regex.hpp>
+
 #include <optional>
 
 namespace ripple {

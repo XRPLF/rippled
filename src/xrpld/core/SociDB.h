@@ -35,6 +35,7 @@
 
 #include <xrpld/core/JobQueue.h>
 #include <xrpl/basics/Log.h>
+
 #define SOCI_USE_BOOST
 #include <cstdint>
 #include <soci/soci.h>

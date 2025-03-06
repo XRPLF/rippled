@@ -18,10 +18,18 @@
 //==============================================================================
 
 #include <xrpl/basics/LocalValue.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/hardened_hash.h>
+#include <xrpl/beast/hash/uhash.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/STVector256.h>
 
+#include <memory>
 #include <optional>
+#include <unordered_set>
+#include <utility>
 
 namespace ripple {
 

@@ -26,8 +26,8 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/XRPAmount.h>
+
 #include <optional>
-#include <utility>
 
 namespace ripple {
 

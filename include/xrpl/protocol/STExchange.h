@@ -28,6 +28,7 @@
 #include <xrpl/protocol/STBlob.h>
 #include <xrpl/protocol/STInteger.h>
 #include <xrpl/protocol/STObject.h>
+
 #include <memory>
 #include <optional>
 #include <stdexcept>

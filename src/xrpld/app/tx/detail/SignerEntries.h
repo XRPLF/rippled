@@ -23,8 +23,6 @@
 #include <xrpld/app/tx/detail/Transactor.h>  // NotTEC
 #include <xrpl/basics/Expected.h>            //
 #include <xrpl/beast/utility/Journal.h>      // beast::Journal
-#include <xrpl/protocol/Rules.h>             // Rules
-#include <xrpl/protocol/STTx.h>              // STTx::maxMultiSigners
 #include <xrpl/protocol/TER.h>               // temMALFORMED
 #include <xrpl/protocol/UintTypes.h>         // AccountID
 

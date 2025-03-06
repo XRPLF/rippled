@@ -204,8 +204,7 @@ protected:
     logStringImpl(char const* name) const
     {
         std::ostringstream ostr;
-        ostr << name << ": "
-             << "\nSrc: " << src_ << "\nDst: " << dst_;
+        ostr << name << ": " << "\nSrc: " << src_ << "\nDst: " << dst_;
         return ostr.str();
     }
 
