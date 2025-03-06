@@ -66,6 +66,11 @@ public:
     write(severities::Severity, std::string const&) override
     {
     }
+
+    void
+    writeAlways(severities::Severity, std::string const&) override
+    {
+    }
 };
 
 //------------------------------------------------------------------------------
