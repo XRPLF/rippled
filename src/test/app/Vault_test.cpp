@@ -24,6 +24,7 @@
 #include <test/jtx/vault.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STNumber.h>
 
 namespace ripple {
@@ -36,6 +37,12 @@ class Vault_test : public beast::unit_test::suite
     testSequences()
     {
         using namespace test::jtx;
+
+        static auto constexpr negativeAmount =
+            [](PrettyAsset const& asset) -> PrettyAmount {
+            return {
+                STAmount{asset.raw(), 1ul, 0, true, STAmount::unchecked{}}, ""};
+        };
 
         auto const testSequence = [this](
                                       std::string const& prefix,
@@ -64,8 +71,7 @@ class Vault_test : public beast::unit_test::suite
                 auto tx = vault.deposit(
                     {.depositor = depositor,
                      .id = keylet.key,
-                     .amount = PrettyAmount(
-                         STAmount(asset.raw(), 1ul, 0, true), "")});
+                     .amount = negativeAmount(asset)});
                 env(tx, ter(temBAD_AMOUNT));
             }
 
@@ -144,8 +150,7 @@ class Vault_test : public beast::unit_test::suite
                 auto tx = vault.withdraw(
                     {.depositor = depositor,
                      .id = keylet.key,
-                     .amount = PrettyAmount(
-                         STAmount(asset.raw(), 1ul, 0, true), "")});
+                     .amount = negativeAmount(asset)});
                 env(tx, ter(temBAD_AMOUNT));
             }
 
@@ -193,8 +198,7 @@ class Vault_test : public beast::unit_test::suite
                     {.issuer = issuer,
                      .id = keylet.key,
                      .holder = depositor,
-                     .amount = PrettyAmount(
-                         STAmount(asset.raw(), 1ul, 0, true), "")});
+                     .amount = negativeAmount(asset)});
                 env(tx, ter(temBAD_AMOUNT));
             }
 
