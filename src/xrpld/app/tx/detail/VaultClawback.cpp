@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2022 Ripple Labs Inc.
+    Copyright (c) 2025 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -41,10 +41,23 @@ VaultClawback::preflight(PreflightContext const& ctx)
     if (ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
 
-    // Note, zero amount is valid, it means "all". It is also the default.
+    AccountID const issuer = ctx.tx[sfAccount];
+    AccountID const holder = ctx.tx[sfHolder];
+
+    if (issuer == holder)
+        return temMALFORMED;
+
     auto const amount = ctx.tx[~sfAmount];
-    if (amount && *amount < beast::zero)
-        return temBAD_AMOUNT;
+    if (amount)
+    {
+        // Note, zero amount is valid, it means "all". It is also the default.
+        if (*amount < beast::zero)
+            return temBAD_AMOUNT;
+        else if (isXRP(amount->asset()))
+            return temMALFORMED;
+        else if (amount->asset().getIssuer() != issuer)
+            return temMALFORMED;
+    }
 
     return preflight2(ctx);
 }
@@ -57,6 +70,10 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
         return tecOBJECT_NOT_FOUND;
 
     auto account = ctx.tx[sfAccount];
+    auto const issuer = ctx.view.read(keylet::account(account));
+    if (!issuer)
+        return tefINTERNAL;  // Transactor should have enforced this
+
     Asset const asset = vault->at(sfAsset);
     if (asset.native())
         return tecNO_PERMISSION;  // Cannot clawback XRP.
@@ -66,6 +83,14 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
     auto const amount = ctx.tx[~sfAmount];
     if (amount && asset != amount->asset())
         return tecWRONG_ASSET;
+
+    std::uint32_t const issuerFlags = issuer->getFieldU32(sfFlags);
+
+    // If AllowTrustLineClawback is not set or NoFreeze is set, return no
+    // permission
+    if (!(issuerFlags & lsfAllowTrustLineClawback) ||
+        (issuerFlags & lsfNoFreeze))
+        return tecNO_PERMISSION;
 
     return tesSUCCESS;
 }

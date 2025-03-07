@@ -95,7 +95,7 @@ struct Vault
         Account issuer;
         uint256 id;
         Account holder;
-        std::optional<STAmount> amount;
+        std::optional<STAmount> amount{};
     };
 
     Json::Value

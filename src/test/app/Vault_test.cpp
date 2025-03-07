@@ -18,14 +18,17 @@
 //==============================================================================
 
 #include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/utility.h>
 #include <test/jtx/vault.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/TER.h>
 
 namespace ripple {
 
@@ -137,6 +140,20 @@ class Vault_test : public beast::unit_test::suite
             }
 
             {
+                testcase(prefix + " fail to set zero domain");
+                auto tx = vault.set({.owner = owner, .id = keylet.key});
+                tx[sfDomainID] = to_string(base_uint<256>(beast::zero));
+                env(tx, ter(temMALFORMED));
+            }
+
+            {
+                testcase(prefix + " fail to set nonexistent domain");
+                auto tx = vault.set({.owner = owner, .id = keylet.key});
+                tx[sfDomainID] = to_string(base_uint<256>(42ul));
+                env(tx, ter(tecINVALID_DOMAIN));
+            }
+
+            {
                 testcase(prefix + " fail to deposit more than maximum");
                 auto tx = vault.deposit(
                     {.depositor = depositor,
@@ -189,7 +206,7 @@ class Vault_test : public beast::unit_test::suite
                      .id = keylet.key,
                      .holder = depositor,
                      .amount = asset(50)});
-                env(tx, ter(tecNO_PERMISSION));
+                env(tx, ter(temMALFORMED));
             }
 
             {
@@ -204,8 +221,8 @@ class Vault_test : public beast::unit_test::suite
 
             {
                 testcase(prefix + " clawback some");
-                auto code = asset.raw().native() ? ter(tecNO_PERMISSION)
-                                                 : ter(tesSUCCESS);
+                auto code =
+                    asset.raw().native() ? ter(temMALFORMED) : ter(tesSUCCESS);
                 auto tx = vault.clawback(
                     {.issuer = issuer,
                      .id = keylet.key,
@@ -219,10 +236,7 @@ class Vault_test : public beast::unit_test::suite
                 auto code = asset.raw().native() ? ter(tecNO_PERMISSION)
                                                  : ter(tesSUCCESS);
                 auto tx = vault.clawback(
-                    {.issuer = issuer,
-                     .id = keylet.key,
-                     .holder = depositor,
-                     .amount = std::nullopt});
+                    {.issuer = issuer, .id = keylet.key, .holder = depositor});
                 env(tx, code);
             }
 
@@ -272,6 +286,9 @@ class Vault_test : public beast::unit_test::suite
                 auto vault = env.vault();
                 env.fund(XRP(1000), issuer, owner, depositor);
                 env.close();
+                env(fset(issuer, asfAllowTrustLineClawback));
+                env.close();
+                env.require(flags(issuer, asfAllowTrustLineClawback));
 
                 PrettyAsset asset = setup(env, issuer, depositor);
                 testSequence(
