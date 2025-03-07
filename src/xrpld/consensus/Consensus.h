@@ -55,6 +55,7 @@ namespace ripple {
     @param idleInterval the network's desired idle interval
     @param parms        Consensus constant parameters
     @param j            journal for logging
+    @param clog         log object to which to append
 */
 bool
 shouldCloseLedger(
@@ -67,7 +68,8 @@ shouldCloseLedger(
     std::chrono::milliseconds openTime,
     std::chrono::milliseconds idleInterval,
     ConsensusParms const& parms,
-    beast::Journal j);
+    beast::Journal j,
+    std::unique_ptr<std::stringstream> const& clog = {});
 
 /** Determine whether the network reached consensus and whether we joined.
 
@@ -82,6 +84,7 @@ shouldCloseLedger(
     @param parms            Consensus constant parameters
     @param proposing        whether we should count ourselves
     @param j                journal for logging
+    @param clog             log object to which to append
 */
 ConsensusState
 checkConsensus(
@@ -93,7 +96,8 @@ checkConsensus(
     std::chrono::milliseconds currentAgreeTime,
     ConsensusParms const& parms,
     bool proposing,
-    beast::Journal j);
+    beast::Journal j,
+    std::unique_ptr<std::stringstream> const& clog = {});
 
 /** Generic implementation of consensus algorithm.
 
@@ -340,11 +344,13 @@ public:
 
         Called by the client code to start each round of consensus.
 
-        @param now The network adjusted time
+        @param now          The network adjusted time
         @param prevLedgerID the ID of the last ledger
-        @param prevLedger The last ledger
+        @param prevLedger   The last ledger
         @param nowUntrusted ID of nodes that are newly untrusted this round
-        @param proposing Whether we want to send proposals to peers this round.
+        @param proposing    Whether we want to send proposals to peers this
+       round.
+        @param clog         log object to which to append
 
         @note @b prevLedgerID is not required to the ID of @b prevLedger since
         the ID may be known locally before the contents of the ledger arrive
@@ -355,7 +361,8 @@ public:
         typename Ledger_t::ID const& prevLedgerID,
         Ledger_t prevLedger,
         hash_set<NodeID_t> const& nowUntrusted,
-        bool proposing);
+        bool proposing,
+        std::unique_ptr<std::stringstream> const& clog = {});
 
     /** A peer has proposed a new position, adjust our tracking.
 
@@ -370,10 +377,13 @@ public:
 
     /** Call periodically to drive consensus forward.
 
-        @param now The network adjusted time
+        @param now  The network adjusted time
+        @param clog log object to which to append
     */
     void
-    timerEntry(NetClock::time_point const& now);
+    timerEntry(
+        NetClock::time_point const& now,
+        std::unique_ptr<std::stringstream> const& clog = {});
 
     /** Process a transaction set acquired from the network
 
@@ -439,11 +449,14 @@ private:
         NetClock::time_point const& now,
         typename Ledger_t::ID const& prevLedgerID,
         Ledger_t const& prevLedger,
-        ConsensusMode mode);
+        ConsensusMode mode,
+        std::unique_ptr<std::stringstream> const& clog);
 
     // Change our view of the previous ledger
     void
-    handleWrongLedger(typename Ledger_t::ID const& lgrId);
+    handleWrongLedger(
+        typename Ledger_t::ID const& lgrId,
+        std::unique_ptr<std::stringstream> const& clog);
 
     /** Check if our previous ledger matches the network's.
 
@@ -451,7 +464,7 @@ private:
         the network and need to bow out/switch modes.
     */
     void
-    checkLedger();
+    checkLedger(std::unique_ptr<std::stringstream> const& clog);
 
     /** If we radically changed our consensus context for some reason,
         we need to replay recent proposals so that they're not lost.
@@ -473,7 +486,7 @@ private:
         switch to the establish phase and start the consensus process.
     */
     void
-    phaseOpen();
+    phaseOpen(std::unique_ptr<std::stringstream> const& clog);
 
     /** Handle establish phase.
 
@@ -484,7 +497,7 @@ private:
         If we have consensus, move to the accepted phase.
     */
     void
-    phaseEstablish();
+    phaseEstablish(std::unique_ptr<std::stringstream> const& clog);
 
     /** Evaluate whether pausing increases likelihood of validation.
      *
@@ -509,22 +522,24 @@ private:
      * @return Whether to pause to wait for lagging proposers.
      */
     bool
-    shouldPause() const;
+    shouldPause(std::unique_ptr<std::stringstream> const& clog) const;
 
     // Close the open ledger and establish initial position.
     void
-    closeLedger();
+    closeLedger(std::unique_ptr<std::stringstream> const& clog);
 
     // Adjust our positions to try to agree with other validators.
     void
-    updateOurPositions();
+    updateOurPositions(std::unique_ptr<std::stringstream> const& clog);
 
     bool
-    haveConsensus();
+    haveConsensus(std::unique_ptr<std::stringstream> const& clog);
 
     // Create disputes between our position and the provided one.
     void
-    createDisputes(TxSet_t const& o);
+    createDisputes(
+        TxSet_t const& o,
+        std::unique_ptr<std::stringstream> const& clog = {});
 
     // Update our disputes given that this node has adopted a new position.
     // Will call createDisputes as needed.
@@ -534,7 +549,7 @@ private:
     // Revoke our outstanding proposal, if any, and cease proposing
     // until this round ends.
     void
-    leaveConsensus();
+    leaveConsensus(std::unique_ptr<std::stringstream> const& clog);
 
     // The rounded or effective close time estimate from a proposer
     NetClock::time_point
@@ -621,7 +636,8 @@ Consensus<Adaptor>::startRound(
     typename Ledger_t::ID const& prevLedgerID,
     Ledger_t prevLedger,
     hash_set<NodeID_t> const& nowUntrusted,
-    bool proposing)
+    bool proposing,
+    std::unique_ptr<std::stringstream> const& clog)
 {
     if (firstRound_)
     {
@@ -658,7 +674,7 @@ Consensus<Adaptor>::startRound(
         }
     }
 
-    startRoundInternal(now, prevLedgerID, prevLedger, startMode);
+    startRoundInternal(now, prevLedgerID, prevLedger, startMode, clog);
 }
 template <class Adaptor>
 void
@@ -666,10 +682,14 @@ Consensus<Adaptor>::startRoundInternal(
     NetClock::time_point const& now,
     typename Ledger_t::ID const& prevLedgerID,
     Ledger_t const& prevLedger,
-    ConsensusMode mode)
+    ConsensusMode mode,
+    std::unique_ptr<std::stringstream> const& clog)
 {
     phase_ = ConsensusPhase::open;
-    JLOG(j_.debug()) << "transitioned to ConsensusPhase::open";
+    JLOG(j_.debug()) << "transitioned to ConsensusPhase::open ";
+    CLOG(clog) << "startRoundInternal transitioned to ConsensusPhase::open, "
+                  "previous ledgerID: "
+               << prevLedgerID << ", seq: " << prevLedger.seq() << ". ";
     mode_.set(mode, adaptor_);
     now_ = now;
     prevLedgerID_ = prevLedgerID;
@@ -690,11 +710,14 @@ Consensus<Adaptor>::startRoundInternal(
         previousLedger_.seq() + typename Ledger_t::Seq{1});
 
     playbackProposals();
+    CLOG(clog) << "number of peer proposals,previous proposers: "
+               << currPeerPositions_.size() << ',' << prevProposers_ << ". ";
     if (currPeerPositions_.size() > (prevProposers_ / 2))
     {
         // We may be falling behind, don't wait for the timer
         // consider closing the ledger immediately
-        timerEntry(now_);
+        CLOG(clog) << "consider closing the ledger immediately. ";
+        timerEntry(now_, clog);
     }
 }
 
@@ -704,6 +727,7 @@ Consensus<Adaptor>::peerProposal(
     NetClock::time_point const& now,
     PeerPosition_t const& newPeerPos)
 {
+    JLOG(j_.debug()) << "PROPOSAL " << newPeerPos.render();
     auto const& peerID = newPeerPos.proposal().nodeID();
 
     // Always need to store recent positions
@@ -815,25 +839,35 @@ Consensus<Adaptor>::peerProposalInternal(
 
 template <class Adaptor>
 void
-Consensus<Adaptor>::timerEntry(NetClock::time_point const& now)
+Consensus<Adaptor>::timerEntry(
+    NetClock::time_point const& now,
+    std::unique_ptr<std::stringstream> const& clog)
 {
+    CLOG(clog) << "Consensus<Adaptor>::timerEntry. ";
     // Nothing to do if we are currently working on a ledger
     if (phase_ == ConsensusPhase::accepted)
+    {
+        CLOG(clog) << "Nothing to do during accepted phase. ";
         return;
+    }
 
     now_ = now;
+    CLOG(clog) << "Set network adjusted time to " << to_string(now) << ". ";
 
     // Check we are on the proper ledger (this may change phase_)
-    checkLedger();
+    const auto phaseOrig = phase_;
+    CLOG(clog) << "Phase " << to_string(phaseOrig) << ". ";
+    checkLedger(clog);
+    if (phaseOrig != phase_)
+    {
+        CLOG(clog) << "Changed phase to << " << to_string(phase_) << ". ";
+    }
 
     if (phase_ == ConsensusPhase::open)
-    {
-        phaseOpen();
-    }
+        phaseOpen(clog);
     else if (phase_ == ConsensusPhase::establish)
-    {
-        phaseEstablish();
-    }
+        phaseEstablish(clog);
+    CLOG(clog) << "timerEntry finishing in phase " << to_string(phase_) << ". ";
 }
 
 template <class Adaptor>
@@ -893,7 +927,7 @@ Consensus<Adaptor>::simulate(
     using namespace std::chrono_literals;
     JLOG(j_.info()) << "Simulating consensus";
     now_ = now;
-    closeLedger();
+    closeLedger({});
     result_->roundTime.tick(consensusDelay.value_or(100ms));
     result_->proposers = prevProposers_ = currPeerPositions_.size();
     prevRoundTime_ = result_->roundTime.read();
@@ -1008,14 +1042,17 @@ Consensus<Adaptor>::getJson(bool full) const
 // Handle a change in the prior ledger during a consensus round
 template <class Adaptor>
 void
-Consensus<Adaptor>::handleWrongLedger(typename Ledger_t::ID const& lgrId)
+Consensus<Adaptor>::handleWrongLedger(
+    typename Ledger_t::ID const& lgrId,
+    std::unique_ptr<std::stringstream> const& clog)
 {
+    CLOG(clog) << "handleWrongLedger. ";
     XRPL_ASSERT(
         lgrId != prevLedgerID_ || previousLedger_.id() != lgrId,
         "ripple::Consensus::handleWrongLedger : have wrong ledger");
 
     // Stop proposing because we are out of sync
-    leaveConsensus();
+    leaveConsensus(clog);
 
     // First time switching to this ledger
     if (prevLedgerID_ != lgrId)
@@ -1038,41 +1075,58 @@ Consensus<Adaptor>::handleWrongLedger(typename Ledger_t::ID const& lgrId)
     }
 
     if (previousLedger_.id() == prevLedgerID_)
+    {
+        CLOG(clog) << "previousLedger_.id() == prevLeverID_ " << prevLedgerID_
+                   << ". ";
         return;
+    }
 
     // we need to switch the ledger we're working from
     if (auto newLedger = adaptor_.acquireLedger(prevLedgerID_))
     {
         JLOG(j_.info()) << "Have the consensus ledger " << prevLedgerID_;
+        CLOG(clog) << "Have the consensus ledger " << prevLedgerID_ << ". ";
         startRoundInternal(
-            now_, lgrId, *newLedger, ConsensusMode::switchedLedger);
+            now_, lgrId, *newLedger, ConsensusMode::switchedLedger, clog);
     }
     else
     {
+        CLOG(clog) << "Still on wrong ledger. ";
         mode_.set(ConsensusMode::wrongLedger, adaptor_);
     }
 }
 
 template <class Adaptor>
 void
-Consensus<Adaptor>::checkLedger()
+Consensus<Adaptor>::checkLedger(std::unique_ptr<std::stringstream> const& clog)
 {
+    CLOG(clog) << "checkLedger. ";
+
     auto netLgr =
         adaptor_.getPrevLedger(prevLedgerID_, previousLedger_, mode_.get());
+    CLOG(clog) << "network ledgerid " << netLgr << ",  " << "previous ledger "
+               << prevLedgerID_ << ". ";
 
     if (netLgr != prevLedgerID_)
     {
-        JLOG(j_.warn()) << "View of consensus changed during "
-                        << to_string(phase_) << " status=" << to_string(phase_)
-                        << ", " << " mode=" << to_string(mode_.get());
-        JLOG(j_.warn()) << prevLedgerID_ << " to " << netLgr;
-        JLOG(j_.warn()) << Json::Compact{previousLedger_.getJson()};
-        JLOG(j_.debug()) << "State on consensus change "
-                         << Json::Compact{getJson(true)};
-        handleWrongLedger(netLgr);
+        std::stringstream ss;
+        ss << "View of consensus changed during " << to_string(phase_)
+           << " mode=" << to_string(mode_.get()) << ", " << prevLedgerID_
+           << " to " << netLgr << ", "
+           << Json::Compact{previousLedger_.getJson()} << ". ";
+        JLOG(j_.warn()) << ss.str();
+        CLOG(clog) << ss.str();
+        CLOG(clog) << "State on consensus change "
+                   << Json::Compact{getJson(true)} << ". ";
+        handleWrongLedger(netLgr, clog);
     }
     else if (previousLedger_.id() != prevLedgerID_)
-        handleWrongLedger(netLgr);
+    {
+        CLOG(clog) << "previousLedger_.id() != prevLedgerID_: "
+                   << previousLedger_.id() << ',' << to_string(prevLedgerID_)
+                   << ". ";
+        handleWrongLedger(netLgr, clog);
+    }
 }
 
 template <class Adaptor>
@@ -1094,8 +1148,9 @@ Consensus<Adaptor>::playbackProposals()
 
 template <class Adaptor>
 void
-Consensus<Adaptor>::phaseOpen()
+Consensus<Adaptor>::phaseOpen(std::unique_ptr<std::stringstream> const& clog)
 {
+    CLOG(clog) << "phaseOpen. ";
     using namespace std::chrono;
 
     // it is shortly before ledger close time
@@ -1108,25 +1163,44 @@ Consensus<Adaptor>::phaseOpen()
     // This computes how long since last ledger's close time
     milliseconds sinceClose;
     {
-        bool previousCloseCorrect =
-            (mode_.get() != ConsensusMode::wrongLedger) &&
-            previousLedger_.closeAgree() &&
-            (previousLedger_.closeTime() !=
-             (previousLedger_.parentCloseTime() + 1s));
+        auto const mode = mode_.get();
+        bool const closeAgree = previousLedger_.closeAgree();
+        auto const prevCloseTime = previousLedger_.closeTime();
+        auto const prevParentCloseTimePlus1 =
+            previousLedger_.parentCloseTime() + 1s;
+        bool const previousCloseCorrect =
+            (mode != ConsensusMode::wrongLedger) && closeAgree &&
+            (prevCloseTime != prevParentCloseTimePlus1);
 
-        auto lastCloseTime = previousCloseCorrect
-            ? previousLedger_.closeTime()  // use consensus timing
-            : prevCloseTime_;              // use the time we saw internally
+        auto const lastCloseTime = previousCloseCorrect
+            ? prevCloseTime    // use consensus timing
+            : prevCloseTime_;  // use the time we saw internally
 
         if (now_ >= lastCloseTime)
             sinceClose = duration_cast<milliseconds>(now_ - lastCloseTime);
         else
             sinceClose = -duration_cast<milliseconds>(lastCloseTime - now_);
+        CLOG(clog) << "calculating how long since last ledger's close time "
+                      "based on mode : "
+                   << to_string(mode) << ", previous closeAgree: " << closeAgree
+                   << ", previous close time: " << to_string(prevCloseTime)
+                   << ", previous parent close time + 1s: "
+                   << to_string(prevParentCloseTimePlus1)
+                   << ", previous close time seen internally: "
+                   << to_string(prevCloseTime_)
+                   << ", last close time: " << to_string(lastCloseTime)
+                   << ", since close: " << sinceClose.count() << ". ";
     }
 
     auto const idleInterval = std::max<milliseconds>(
         adaptor_.parms().ledgerIDLE_INTERVAL,
         2 * previousLedger_.closeTimeResolution());
+    CLOG(clog) << "idle interval set to " << idleInterval.count()
+               << "ms based on "
+               << "ledgerIDLE_INTERVAL: "
+               << adaptor_.parms().ledgerIDLE_INTERVAL.count()
+               << ", previous ledger close time resolution: "
+               << previousLedger_.closeTimeResolution().count() << "ms. ";
 
     // Decide if we should close the ledger
     if (shouldCloseLedger(
@@ -1139,16 +1213,20 @@ Consensus<Adaptor>::phaseOpen()
             openTime_.read(),
             idleInterval,
             adaptor_.parms(),
-            j_))
+            j_,
+            clog))
     {
-        closeLedger();
+        CLOG(clog) << "closing ledger. ";
+        closeLedger(clog);
     }
 }
 
 template <class Adaptor>
 bool
-Consensus<Adaptor>::shouldPause() const
+Consensus<Adaptor>::shouldPause(
+    std::unique_ptr<std::stringstream> const& clog) const
 {
+    CLOG(clog) << "shouldPause? ";
     auto const& parms = adaptor_.parms();
     std::uint32_t const ahead(
         previousLedger_.seq() -
@@ -1175,6 +1253,7 @@ Consensus<Adaptor>::shouldPause() const
         result_->roundTime.read() > parms.ledgerMAX_CONSENSUS)
     {
         j_.debug() << "not pausing (early)" << vars.str();
+        CLOG(clog) << "Not pausing (early). ";
         return false;
     }
 
@@ -1252,16 +1331,24 @@ Consensus<Adaptor>::shouldPause() const
     }
 
     if (willPause)
+    {
         j_.warn() << "pausing" << vars.str();
+        CLOG(clog) << "pausing " << vars.str() << ". ";
+    }
     else
+    {
         j_.debug() << "not pausing" << vars.str();
+        CLOG(clog) << "not pausing. ";
+    }
     return willPause;
 }
 
 template <class Adaptor>
 void
-Consensus<Adaptor>::phaseEstablish()
+Consensus<Adaptor>::phaseEstablish(
+    std::unique_ptr<std::stringstream> const& clog)
 {
+    CLOG(clog) << "phaseEstablish. ";
     // can only establish consensus if we already took a stance
     XRPL_ASSERT(result_, "ripple::Consensus::phaseEstablish : result is set");
 
@@ -1273,25 +1360,39 @@ Consensus<Adaptor>::phaseEstablish()
 
     convergePercent_ = result_->roundTime.read() * 100 /
         std::max<milliseconds>(prevRoundTime_, parms.avMIN_CONSENSUS_TIME);
+    CLOG(clog) << "convergePercent_ " << convergePercent_
+               << " is based on round duration so far: "
+               << result_->roundTime.read().count() << "ms, "
+               << "previous round duration: " << prevRoundTime_.count()
+               << "ms, "
+               << "avMIN_CONSENSUS_TIME: " << parms.avMIN_CONSENSUS_TIME.count()
+               << "ms. ";
 
     // Give everyone a chance to take an initial position
     if (result_->roundTime.read() < parms.ledgerMIN_CONSENSUS)
+    {
+        CLOG(clog) << "ledgerMIN_CONSENSUS not reached: "
+                   << parms.ledgerMIN_CONSENSUS.count() << "ms. ";
         return;
+    }
 
-    updateOurPositions();
+    updateOurPositions(clog);
 
     // Nothing to do if too many laggards or we don't have consensus.
-    if (shouldPause() || !haveConsensus())
+    if (shouldPause(clog) || !haveConsensus(clog))
         return;
 
     if (!haveCloseTimeConsensus_)
     {
         JLOG(j_.info()) << "We have TX consensus but not CT consensus";
+        CLOG(clog) << "We have TX consensus but not CT consensus. ";
         return;
     }
 
     JLOG(j_.info()) << "Converge cutoff (" << currPeerPositions_.size()
                     << " participants)";
+    CLOG(clog) << "Converge cutoff (" << currPeerPositions_.size()
+               << " participants). Transitioned to ConsensusPhase::accepted. ";
     adaptor_.updateOperatingMode(currPeerPositions_.size());
     prevProposers_ = currPeerPositions_.size();
     prevRoundTime_ = result_->roundTime.read();
@@ -1303,12 +1404,13 @@ Consensus<Adaptor>::phaseEstablish()
         closeResolution_,
         rawCloseTimes_,
         mode_.get(),
-        getJson(true));
+        getJson(true),
+        adaptor_.validating());
 }
 
 template <class Adaptor>
 void
-Consensus<Adaptor>::closeLedger()
+Consensus<Adaptor>::closeLedger(std::unique_ptr<std::stringstream> const& clog)
 {
     // We should not be closing if we already have a position
     XRPL_ASSERT(!result_, "ripple::Consensus::closeLedger : result is not set");
@@ -1324,7 +1426,12 @@ Consensus<Adaptor>::closeLedger()
     if (acquired_.emplace(result_->txns.id(), result_->txns).second)
         adaptor_.share(result_->txns);
 
-    if (mode_.get() == ConsensusMode::proposing)
+    const auto mode = mode_.get();
+    CLOG(clog)
+        << "closeLedger transitioned to ConsensusPhase::establish, mode: "
+        << to_string(mode)
+        << ", number of peer positions: " << currPeerPositions_.size() << ". ";
+    if (mode == ConsensusMode::proposing)
         adaptor_.propose(result_->position);
 
     // Create disputes with any peer positions we have transactions for
@@ -1333,9 +1440,7 @@ Consensus<Adaptor>::closeLedger()
         auto const& pos = pit.second.proposal().position();
         auto const it = acquired_.find(pos);
         if (it != acquired_.end())
-        {
-            createDisputes(it->second);
-        }
+            createDisputes(it->second, clog);
     }
 }
 
@@ -1361,7 +1466,8 @@ participantsNeeded(int participants, int percent)
 
 template <class Adaptor>
 void
-Consensus<Adaptor>::updateOurPositions()
+Consensus<Adaptor>::updateOurPositions(
+    std::unique_ptr<std::stringstream> const& clog)
 {
     // We must have a position if we are updating it
     XRPL_ASSERT(
@@ -1371,6 +1477,8 @@ Consensus<Adaptor>::updateOurPositions()
     // Compute a cutoff time
     auto const peerCutoff = now_ - parms.proposeFRESHNESS;
     auto const ourCutoff = now_ - parms.proposeINTERVAL;
+    CLOG(clog) << "updateOurPositions. peerCutoff " << to_string(peerCutoff)
+               << ", ourCutoff " << to_string(ourCutoff) << ". ";
 
     // Verify freshness of peer positions and compute close times
     std::map<NetClock::time_point, int> closeTimeVotes;
@@ -1453,6 +1561,7 @@ Consensus<Adaptor>::updateOurPositions()
             neededWeight = parms.avLATE_CONSENSUS_PCT;
         else
             neededWeight = parms.avSTUCK_CONSENSUS_PCT;
+        CLOG(clog) << "neededWeight " << neededWeight << ". ";
 
         int participants = currPeerPositions_.size();
         if (mode_.get() == ConsensusMode::proposing)
@@ -1468,9 +1577,12 @@ Consensus<Adaptor>::updateOurPositions()
         int const threshConsensus =
             participantsNeeded(participants, parms.avCT_CONSENSUS_PCT);
 
-        JLOG(j_.info()) << "Proposers:" << currPeerPositions_.size()
-                        << " nw:" << neededWeight << " thrV:" << threshVote
-                        << " thrC:" << threshConsensus;
+        std::stringstream ss;
+        ss << "Proposers:" << currPeerPositions_.size()
+           << " nw:" << neededWeight << " thrV:" << threshVote
+           << " thrC:" << threshConsensus;
+        JLOG(j_.info()) << ss.str();
+        CLOG(clog) << ss.str();
 
         for (auto const& [t, v] : closeTimeVotes)
         {
@@ -1499,6 +1611,7 @@ Consensus<Adaptor>::updateOurPositions()
                 << " Mode:" << to_string(mode_.get())
                 << " Thresh:" << threshConsensus
                 << " Pos:" << consensusCloseTime.time_since_epoch().count();
+            CLOG(clog) << "No close time consensus. ";
         }
     }
 
@@ -1516,9 +1629,11 @@ Consensus<Adaptor>::updateOurPositions()
 
         result_->txns = std::move(*ourNewSet);
 
-        JLOG(j_.info()) << "Position change: CTime "
-                        << consensusCloseTime.time_since_epoch().count()
-                        << ", tx " << newID;
+        std::stringstream ss;
+        ss << "Position change: CTime "
+           << consensusCloseTime.time_since_epoch().count() << ", tx " << newID;
+        JLOG(j_.info()) << ss.str();
+        CLOG(clog) << ss.str();
 
         result_->position.changePosition(newID, consensusCloseTime, now_);
 
@@ -1546,7 +1661,8 @@ Consensus<Adaptor>::updateOurPositions()
 
 template <class Adaptor>
 bool
-Consensus<Adaptor>::haveConsensus()
+Consensus<Adaptor>::haveConsensus(
+    std::unique_ptr<std::stringstream> const& clog)
 {
     // Must have a stance if we are checking for consensus
     XRPL_ASSERT(result_, "ripple::Consensus::haveConsensus : has result");
@@ -1586,10 +1702,14 @@ Consensus<Adaptor>::haveConsensus()
         result_->roundTime.read(),
         adaptor_.parms(),
         mode_.get() == ConsensusMode::proposing,
-        j_);
+        j_,
+        clog);
 
     if (result_->state == ConsensusState::No)
+    {
+        CLOG(clog) << "No consensus. ";
         return false;
+    }
 
     // There is consensus, but we need to track if the network moved on
     // without us.
@@ -1597,14 +1717,18 @@ Consensus<Adaptor>::haveConsensus()
     {
         JLOG(j_.error()) << "Unable to reach consensus";
         JLOG(j_.error()) << Json::Compact{getJson(true)};
+        CLOG(clog) << "Unable to reach consensus "
+                   << Json::Compact{getJson(true)} << ". ";
     }
 
+    CLOG(clog) << "Consensus has been reached. ";
     return true;
 }
 
 template <class Adaptor>
 void
-Consensus<Adaptor>::leaveConsensus()
+Consensus<Adaptor>::leaveConsensus(
+    std::unique_ptr<std::stringstream> const& clog)
 {
     if (mode_.get() == ConsensusMode::proposing)
     {
@@ -1616,24 +1740,34 @@ Consensus<Adaptor>::leaveConsensus()
 
         mode_.set(ConsensusMode::observing, adaptor_);
         JLOG(j_.info()) << "Bowing out of consensus";
+        CLOG(clog) << "Bowing out of consensus. ";
     }
 }
 
 template <class Adaptor>
 void
-Consensus<Adaptor>::createDisputes(TxSet_t const& o)
+Consensus<Adaptor>::createDisputes(
+    TxSet_t const& o,
+    std::unique_ptr<std::stringstream> const& clog)
 {
     // Cannot create disputes without our stance
     XRPL_ASSERT(result_, "ripple::Consensus::createDisputes : result is set");
 
     // Only create disputes if this is a new set
-    if (!result_->compares.emplace(o.id()).second)
+    auto const emplaced = result_->compares.emplace(o.id()).second;
+    CLOG(clog) << "createDisputes: new set? " << !emplaced << ". ";
+    if (!emplaced)
         return;
 
     // Nothing to dispute if we agree
     if (result_->txns.id() == o.id())
+    {
+        CLOG(clog) << "both sets are identical. ";
         return;
+    }
 
+    CLOG(clog) << "comparing existing with new set: " << result_->txns.id()
+               << ',' << o.id() << ". ";
     JLOG(j_.debug()) << "createDisputes " << result_->txns.id() << " to "
                      << o.id();
 
@@ -1677,6 +1811,7 @@ Consensus<Adaptor>::createDisputes(TxSet_t const& o)
         result_->disputes.emplace(txID, std::move(dtx));
     }
     JLOG(j_.debug()) << dc << " differences found";
+    CLOG(clog) << "disputes: " << dc << ". ";
 }
 
 template <class Adaptor>
