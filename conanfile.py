@@ -32,7 +32,7 @@ class Xrpl(ConanFile):
         "openssl/1.1.1v",
         "soci/4.0.3",
         "xxhash/0.8.2",
-        "zlib/1.2.13",
+        "zlib/1.3.1",
         "wasmedge/0.14.1",
     ]
 
@@ -89,7 +89,7 @@ class Xrpl(ConanFile):
 
     def set_version(self):
         path = f"{self.recipe_folder}/src/libxrpl/protocol/BuildInfo.cpp"
-        regex = r"versionString\s?=\s?\"(.*)\""
+        regex = r"versionString\s?=\s?\'(.*)\'"
         with open(path, "r") as file:
             matches = (re.search(regex, line) for line in file)
             match = next(m for m in matches if m)
