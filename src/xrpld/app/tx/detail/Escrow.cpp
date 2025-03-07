@@ -182,10 +182,11 @@ EscrowCreate::preflight(PreflightContext const& ctx)
     if (ctx.tx.isFieldPresent(sfFinishFunction))
     {
         auto const code = ctx.tx.getFieldVL(sfFinishFunction);
-        if (code.size() == 0 &&
+        if (code.size() == 0 ||
             code.size() > ctx.app.config().FEES.extension_size_limit)
         {
-            JLOG(ctx.j.debug()) << "EscrowCreate.FinishFunction bad size";
+            JLOG(ctx.j.debug())
+                << "EscrowCreate.FinishFunction bad size " << code.size();
             return temMALFORMED;
         }
         // TODO: add check to ensure this is valid WASM code
@@ -453,7 +454,7 @@ EscrowFinish::doApply()
     if (!slep)
         return tecNO_TARGET;
 
-    // Order of processing the release conditions:
+    // Order of processing the release conditions (in order of performance):
     // FinishAfter/CancelAfter
     // Destination validity (after SmartEscrow is enabled)
     // Condition/Fulfillment

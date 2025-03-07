@@ -1682,16 +1682,30 @@ struct Escrow_test : public beast::unit_test::suite
             "726573042b0a6d756c746976616c75652b0f6d757461626c652d676c6f62616c73"
             "2b0f7265666572656e63652d74797065732b087369676e2d657874";
 
+        {
+            // featureSmartEscrow disabled
+            Env env(*this, supported_amendments() - featureSmartEscrow);
+            env.fund(XRP(5000), alice, carol);
+            XRPAmount const txnFees = env.current()->fees().base + 1000;
+            auto escrowCreate = escrow(alice, carol, XRP(1000));
+            env(escrowCreate,
+                finish_function(wasmHex),
+                cancel_time(env.now() + 100s),
+                fee(txnFees),
+                ter(temDISABLED));
+            env.close();
+        }
+
         Env env(*this);
         XRPAmount const txnFees = env.current()->fees().base + 1000;
         // create escrow
         env.fund(XRP(5000), alice, carol);
 
-        // Success situations
+        auto escrowCreate = escrow(alice, carol, XRP(1000));
 
+        // Success situations
         {
             // FinishFunction + CancelAfter
-            auto escrowCreate = escrow(alice, carol, XRP(1000));
             env(escrowCreate,
                 finish_function(wasmHex),
                 cancel_time(env.now() + 100s),
@@ -1700,7 +1714,6 @@ struct Escrow_test : public beast::unit_test::suite
         }
         {
             // FinishFunction + Condition + CancelAfter
-            auto escrowCreate = escrow(alice, carol, XRP(1000));
             env(escrowCreate,
                 finish_function(wasmHex),
                 cancel_time(env.now() + 100s),
@@ -1710,7 +1723,6 @@ struct Escrow_test : public beast::unit_test::suite
         }
         {
             // FinishFunction + FinishAfter + CancelAfter
-            auto escrowCreate = escrow(alice, carol, XRP(1000));
             env(escrowCreate,
                 finish_function(wasmHex),
                 cancel_time(env.now() + 100s),
@@ -1720,7 +1732,6 @@ struct Escrow_test : public beast::unit_test::suite
         }
         {
             // FinishFunction + FinishAfter + Condition + CancelAfter
-            auto escrowCreate = escrow(alice, carol, XRP(1000));
             env(escrowCreate,
                 finish_function(wasmHex),
                 cancel_time(env.now() + 100s),
@@ -1733,7 +1744,6 @@ struct Escrow_test : public beast::unit_test::suite
         // Failure situations (i.e. all other combinations)
         {
             // only FinishFunction
-            auto escrowCreate = escrow(alice, carol, XRP(1000));
             env(escrowCreate,
                 finish_function(wasmHex),
                 fee(txnFees),
@@ -1742,7 +1752,6 @@ struct Escrow_test : public beast::unit_test::suite
         }
         {
             // FinishFunction + FinishAfter
-            auto escrowCreate = escrow(alice, carol, XRP(1000));
             env(escrowCreate,
                 finish_function(wasmHex),
                 finish_time(env.now() + 2s),
@@ -1752,7 +1761,6 @@ struct Escrow_test : public beast::unit_test::suite
         }
         {
             // FinishFunction + Condition
-            auto escrowCreate = escrow(alice, carol, XRP(1000));
             env(escrowCreate,
                 finish_function(wasmHex),
                 condition(cb1),
@@ -1762,7 +1770,6 @@ struct Escrow_test : public beast::unit_test::suite
         }
         {
             // FinishFunction + FinishAfter + Condition
-            auto escrowCreate = escrow(alice, carol, XRP(1000));
             env(escrowCreate,
                 finish_function(wasmHex),
                 condition(cb1),
@@ -1771,6 +1778,32 @@ struct Escrow_test : public beast::unit_test::suite
                 ter(temBAD_EXPIRATION));
             env.close();
         }
+        {
+            // FinishFunction 0 length
+            env(escrowCreate,
+                finish_function(""),
+                cancel_time(env.now() + 100s),
+                fee(txnFees),
+                ter(temMALFORMED));
+            env.close();
+        }
+        // {
+        //     // FinishFunction > max length
+        //     std::string longWasmHex = "00";
+        //     // TODO: fix to use the config setting
+        //     // TODO: make this test more efficient
+        //     // uncomment when that's done
+        //     for (int i = 0; i < 0xffffffff; i++)
+        //     {
+        //         longWasmHex += "11";
+        //     }
+        //     env(escrowCreate,
+        //         finish_function(longWasmHex),
+        //         cancel_time(env.now() + 100s),
+        //         fee(txnFees),
+        //         ter(temMALFORMED));
+        //     env.close();
+        // }
     }
 
     void
@@ -1784,7 +1817,7 @@ struct Escrow_test : public beast::unit_test::suite
         Account const alice{"alice"};
         Account const carol{"carol"};
 
-        // P4
+        // Tests whether the ledger index is >= 5
         static auto wasmHex =
             "0061736d010000000105016000017f021b0108686f73745f6c69620e6765745f6c"
             "65646765725f73716e0000030201000405017001010105030100100619037f0141"
@@ -1801,6 +1834,7 @@ struct Escrow_test : public beast::unit_test::suite
             "2b0f7265666572656e63652d74797065732b087369676e2d657874";
 
         {
+            // basic FinishFunction situation
             Env env(*this);
             // create escrow
             env.fund(XRP(5000), alice, carol);
@@ -1836,6 +1870,140 @@ struct Escrow_test : public beast::unit_test::suite
                     ter(tecWASM_REJECTED));
                 env.close();
                 env(finish(alice, alice, seq), fee(txnFees), ter(tesSUCCESS));
+                env.close();
+
+                BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
+            }
+        }
+
+        {
+            // FinishFunction + Condition
+            Env env(*this);
+            // create escrow
+            env.fund(XRP(5000), alice, carol);
+            auto const seq = env.seq(alice);
+            BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
+            auto escrowCreate = escrow(alice, carol, XRP(1000));
+            XRPAmount txnFees = env.current()->fees().base + 1000;
+            env(escrowCreate,
+                finish_function(wasmHex),
+                condition(cb1),
+                cancel_time(env.now() + 100s),
+                fee(txnFees));
+            env.close();
+
+            if (BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 2))
+            {
+                env.require(balance(alice, XRP(4000) - txnFees));
+                env.require(balance(carol, XRP(5000)));
+
+                // no fulfillment provided, function fails
+                env(finish(carol, alice, seq),
+                    fee(txnFees),
+                    ter(tecCRYPTOCONDITION_ERROR));
+                // fulfillment provided, function fails
+                env(finish(carol, alice, seq),
+                    condition(cb1),
+                    fulfillment(fb1),
+                    fee(txnFees),
+                    ter(tecWASM_REJECTED));
+                env.close();
+                // no fulfillment provided, function succeeds
+                env(finish(alice, alice, seq),
+                    fee(txnFees),
+                    ter(tecCRYPTOCONDITION_ERROR));
+                // wrong fulfillment provided, function succeeds
+                env(finish(alice, alice, seq),
+                    condition(cb1),
+                    fulfillment(fb2),
+                    fee(txnFees),
+                    ter(tecCRYPTOCONDITION_ERROR));
+                // fulfillment provided, function succeeds, tx succeeds
+                env(finish(alice, alice, seq),
+                    condition(cb1),
+                    fulfillment(fb1),
+                    fee(txnFees),
+                    ter(tesSUCCESS));
+                env.close();
+
+                BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
+            }
+        }
+
+        {
+            // FinishFunction + FinishAfter
+            Env env(*this);
+            // create escrow
+            env.fund(XRP(5000), alice, carol);
+            auto const seq = env.seq(alice);
+            BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
+            auto escrowCreate = escrow(alice, carol, XRP(1000));
+            XRPAmount txnFees = env.current()->fees().base + 1000;
+            auto const ts = env.now() + 97s;
+            env(escrowCreate,
+                finish_function(wasmHex),
+                finish_time(ts),
+                cancel_time(env.now() + 1000s),
+                fee(txnFees));
+            env.close();
+
+            if (BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 2))
+            {
+                env.require(balance(alice, XRP(4000) - txnFees));
+                env.require(balance(carol, XRP(5000)));
+
+                // finish time hasn't passed, function fails
+                env(finish(carol, alice, seq),
+                    fee(txnFees + 1),
+                    ter(tecNO_PERMISSION));
+                env.close();
+                // finish time hasn't passed, function succeeds
+                for (; env.now() < ts; env.close())
+                    env(finish(carol, alice, seq),
+                        fee(txnFees + 2),
+                        ter(tecNO_PERMISSION));
+
+                env(finish(carol, alice, seq),
+                    fee(txnFees + 1),
+                    ter(tesSUCCESS));
+                BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
+            }
+        }
+
+        {
+            // FinishFunction + FinishAfter #2
+            Env env(*this);
+            // create escrow
+            env.fund(XRP(5000), alice, carol);
+            auto const seq = env.seq(alice);
+            BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
+            auto escrowCreate = escrow(alice, carol, XRP(1000));
+            XRPAmount txnFees = env.current()->fees().base + 1000;
+            env(escrowCreate,
+                finish_function(wasmHex),
+                finish_time(env.now() + 2s),
+                cancel_time(env.now() + 100s),
+                fee(txnFees));
+            // Don't close the ledger here
+
+            if (BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 2))
+            {
+                env.require(balance(alice, XRP(4000) - txnFees));
+                env.require(balance(carol, XRP(5000)));
+
+                // finish time hasn't passed, function fails
+                env(finish(carol, alice, seq),
+                    fee(txnFees),
+                    ter(tecNO_PERMISSION));
+                env.close();
+
+                // finish time has passed, function fails
+                env(finish(carol, alice, seq),
+                    fee(txnFees),
+                    ter(tecWASM_REJECTED));
+                env.close();
+                // finish time has passed, function succeeds, tx succeeds
+                env(finish(carol, alice, seq), fee(txnFees), ter(tesSUCCESS));
                 env.close();
 
                 BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
