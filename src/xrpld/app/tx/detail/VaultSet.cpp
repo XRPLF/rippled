@@ -48,8 +48,13 @@ VaultSet::preflight(PreflightContext const& ctx)
     }
 
     auto const domain = ctx.tx[~sfDomainID];
-    if (domain && *domain == beast::zero)
-        return temMALFORMED;
+    if (domain)
+    {
+        if (!ctx.rules.enabled(featurePermissionedDomains))
+            return temDISABLED;
+        else if (*domain == beast::zero)
+            return temMALFORMED;
+    }
 
     return preflight2(ctx);
 }

@@ -61,7 +61,9 @@ VaultCreate::preflight(PreflightContext const& ctx)
 
     if (auto const domain = ctx.tx[~sfDomainID])
     {
-        if (*domain == beast::zero)
+        if (!ctx.rules.enabled(featurePermissionedDomains))
+            return temDISABLED;
+        else if (*domain == beast::zero)
             return temMALFORMED;
         else if ((ctx.tx.getFlags() & tfVaultPrivate) == 0)
             return temMALFORMED;  // DomainID only allowed on private vaults
