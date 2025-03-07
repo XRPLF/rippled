@@ -39,8 +39,6 @@
 #include <memory>
 #include <utility>
 
-#include <vector>
-
 namespace ripple {
 
 enum class WaiveTransferFee : bool { No = false, Yes };
@@ -90,6 +88,9 @@ isGlobalFrozen(ReadView const& view, MPTIssue const& mptIssue);
 
 [[nodiscard]] bool
 isGlobalFrozen(ReadView const& view, Asset const& asset);
+
+[[nodiscard]] bool
+isVaultPseudoAccountFrozen(ReadView const& view, MPTIssue const& mptShare);
 
 [[nodiscard]] bool
 isIndividualFrozen(
@@ -154,6 +155,49 @@ isFrozen(ReadView const& view, AccountID const& account, Asset const& asset)
 }
 
 [[nodiscard]] bool
+isAnyFrozen(
+    ReadView const& view,
+    AccountID const& account1,
+    AccountID const& account2,
+    MPTIssue const& mptIssue);
+
+/*
+We do not have use a case for these (yet ?)
+
+[[nodiscard]] bool
+isAnyFrozen(
+    ReadView const& view,
+    AccountID const& account1,
+    AccountID const& account2,
+    Currency const& currency,
+    AccountID const& issuer);
+
+[[nodiscard]] inline bool
+isAnyFrozen(
+    ReadView const& view,
+    AccountID const& account1,
+    AccountID const& account2,
+    Issue const& issue)
+{
+    return isAnyFrozen(view, account1, account2, issue.currency, issue.account);
+}
+
+[[nodiscard]] inline bool
+isAnyFrozen(
+    ReadView const& view,
+    AccountID const& account1,
+    AccountID const& account2,
+    Asset const& asset)
+{
+    return std::visit(
+        [&](auto const& issue) {
+            return isAnyFrozen(view, account1, account2, issue);
+        },
+        asset.value());
+}
+*/
+
+[[nodiscard]] bool
 isDeepFrozen(
     ReadView const& view,
     AccountID const& account,
@@ -192,6 +236,15 @@ accountHolds(
     ReadView const& view,
     AccountID const& account,
     MPTIssue const& mptIssue,
+    FreezeHandling zeroIfFrozen,
+    AuthHandling zeroIfUnauthorized,
+    beast::Journal j);
+
+[[nodiscard]] STAmount
+accountHolds(
+    ReadView const& view,
+    AccountID const& account,
+    Asset const& asset,
     FreezeHandling zeroIfFrozen,
     AuthHandling zeroIfUnauthorized,
     beast::Journal j);
@@ -434,6 +487,18 @@ dirNext(
 [[nodiscard]] std::function<void(SLE::ref)>
 describeOwnerDir(AccountID const& account);
 
+[[nodiscard]] TER
+dirLink(ApplyView& view, AccountID const& owner, std::shared_ptr<SLE>& object);
+
+// Which of the owner-object fields should we set: sfAMMID, sfVaultID
+enum class PseudoAccountOwnerType : int { AMM, Vault };
+
+[[nodiscard]] Expected<std::shared_ptr<SLE>, TER>
+createPseudoAccount(
+    ApplyView& view,
+    uint256 const& pseudoOwnerKey,
+    PseudoAccountOwnerType type);
+
 // VFALCO NOTE Both STAmount parameters should just
 //             be "Amount", a unit-less number.
 //
@@ -468,6 +533,30 @@ trustDelete(
     AccountID const& uLowAccountID,
     AccountID const& uHighAccountID,
     beast::Journal j);
+
+/** Create the structures necessary for an account to hold an asset.
+ *
+ * If the asset is:
+ * - XRP: Do nothing.
+ * - IOU: Check that the asset is not globally frozen,
+ *   and create a trust line (with limit 0).
+ * - MPT: Check that the asset is not globally locked,
+ *   and create an MPToken.
+ */
+[[nodiscard]] TER
+addEmptyHolding(
+    ApplyView& view,
+    AccountID const& account,
+    XRPAmount priorBalance,
+    Asset const& asset,
+    beast::Journal journal);
+
+[[nodiscard]] TER
+removeEmptyHolding(
+    ApplyView& view,
+    AccountID const& account,
+    Asset const& asset,
+    beast::Journal journal);
 
 /** Delete an offer.
 
@@ -539,17 +628,50 @@ transferXRP(
     STAmount const& amount,
     beast::Journal j);
 
+struct TokenDescriptor
+{
+    std::shared_ptr<SLE const> token;
+    std::shared_ptr<SLE const> issuance;
+};
+
+[[nodiscard]] TER
+requireAuth(ReadView const& view, Issue const& issue, AccountID const& account);
+
 /** Check if the account lacks required authorization.
+ *
  *   Return tecNO_AUTH or tecNO_LINE if it does
  *   and tesSUCCESS otherwise.
  */
 [[nodiscard]] TER
 requireAuth(ReadView const& view, Issue const& issue, AccountID const& account);
+
+/** Check if the account lacks required authorization.
+ *
+ *   This will also check for expired credentials. If it is called directly
+ *   from preclaim, the user should convert result tecEXPIRED to tesSUCCESS and
+ *   proceed to also check permissions with verifyValidDomain inside doApply.
+ *   This will ensure that any expired credentials are deleted.
+ */
 [[nodiscard]] TER
 requireAuth(
     ReadView const& view,
     MPTIssue const& mptIssue,
     AccountID const& account);
+
+/** Check if the account lacks required authorization.
+ *
+ *   Called from doApply - it will check for expired (and delete if found any)
+ *   credentials maching DomainID set in MPTIssuance. Must be called if
+ *   requireAuth(...MPTIssue...) check passed in preclaim. Will create MPToken
+ *   if needed, on the basis of non-expired credentals found.
+ */
+[[nodiscard]] TER
+enforceMPTokenAuthorization(
+    ApplyView& view,
+    MPTIssue const& mptIssue,
+    AccountID const& account,
+    XRPAmount const& priorBalance,
+    beast::Journal j);
 
 /** Check if the destination account is allowed
  *  to receive MPT. Return tecNO_AUTH if it doesn't
@@ -595,6 +717,33 @@ deleteAMMTrustLine(
     std::shared_ptr<SLE> sleState,
     std::optional<AccountID> const& ammAccountID,
     beast::Journal j);
+
+// From the perspective of a vault,
+// return the number of shares to give the depositor
+// when they deposit a fixed amount of assets.
+[[nodiscard]] STAmount
+assetsToSharesDeposit(
+    ReadView const& view,
+    std::shared_ptr<SLE> const& vault,
+    STAmount const& assets);
+
+// From the perspective of a vault,
+// return the number of shares to demand from the depositor
+// when they ask to withdraw a fixed amount of assets.
+[[nodiscard]] STAmount
+assetsToSharesWithdraw(
+    ReadView const& view,
+    std::shared_ptr<SLE> const& vault,
+    STAmount const& assets);
+
+// From the perspective of a vault,
+// return the number of assets to give the depositor
+// when they redeem a fixed amount of shares.
+[[nodiscard]] STAmount
+sharesToAssetsWithdraw(
+    ReadView const& view,
+    std::shared_ptr<SLE> const& vault,
+    STAmount const& shares);
 
 }  // namespace ripple
 
