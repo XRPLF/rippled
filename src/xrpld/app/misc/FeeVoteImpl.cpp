@@ -29,10 +29,10 @@ namespace ripple {
 
 namespace detail {
 
+template <typename value_type>
 class VotableValue
 {
 private:
-    using value_type = XRPAmount;
     value_type const current_;  // The current setting
     value_type const target_;   // The setting we want
     std::map<value_type, int> voteMap_;
@@ -67,8 +67,9 @@ public:
     getVotes() const;
 };
 
-auto
-VotableValue::getVotes() const -> std::pair<value_type, bool>
+template <typename value_type>
+std::pair<value_type, bool>
+VotableValue<value_type>::getVotes() const
 {
     value_type ourVote = current_;
     int weight = 0;
@@ -191,6 +192,32 @@ FeeVoteImpl::doValidation(
             "reserve increment",
             sfReserveIncrement);
     }
+    if (rules.enabled(featureSmartEscrow))
+    {
+        auto vote = [&v, this](
+                        auto const current,
+                        std::uint32_t target,
+                        const char* name,
+                        auto const& sfield) {
+            if (current != target)
+            {
+                JLOG(journal_.info())
+                    << "Voting for " << name << " of " << target;
+
+                v[sfield] = target;
+            }
+        };
+        vote(
+            lastFees.extensionComputeLimit,
+            target_.extension_compute_limit,
+            "extension compute limit",
+            sfExtensionComputeLimit);
+        vote(
+            lastFees.extensionSizeLimit,
+            target_.extension_size_limit,
+            "extension size limit",
+            sfExtensionSizeLimit);
+    }
 }
 
 void
@@ -213,11 +240,19 @@ FeeVoteImpl::doVoting(
     detail::VotableValue incReserveVote(
         lastClosedLedger->fees().increment, target_.owner_reserve);
 
+    detail::VotableValue extensionComputeVote(
+        lastClosedLedger->fees().extensionComputeLimit,
+        target_.extension_compute_limit);
+
+    detail::VotableValue extensionSizeVote(
+        lastClosedLedger->fees().extensionSizeLimit,
+        target_.extension_size_limit);
+
     auto const& rules = lastClosedLedger->rules();
     if (rules.enabled(featureXRPFees))
     {
         auto doVote = [](std::shared_ptr<STValidation> const& val,
-                         detail::VotableValue& value,
+                         detail::VotableValue<XRPAmount>& value,
                          SF_AMOUNT const& xrpField) {
             if (auto const field = ~val->at(~xrpField);
                 field && field->native())
@@ -246,7 +281,7 @@ FeeVoteImpl::doVoting(
     else
     {
         auto doVote = [](std::shared_ptr<STValidation> const& val,
-                         detail::VotableValue& value,
+                         detail::VotableValue<XRPAmount>& value,
                          auto const& valueField) {
             if (auto const field = val->at(~valueField))
             {
@@ -277,6 +312,30 @@ FeeVoteImpl::doVoting(
             doVote(val, incReserveVote, sfReserveIncrement);
         }
     }
+    if (rules.enabled(featureSmartEscrow))
+    {
+        auto doVote = [](std::shared_ptr<STValidation> const& val,
+                         detail::VotableValue<std::uint32_t>& value,
+                         SF_UINT32 const& extensionField) {
+            if (auto const field = ~val->at(~extensionField); field)
+            {
+                auto const vote = field.value();
+                value.addVote(vote);
+            }
+            else
+            {
+                value.noVote();
+            }
+        };
+
+        for (auto const& val : set)
+        {
+            if (!val->isTrusted())
+                continue;
+            doVote(val, extensionComputeVote, sfExtensionComputeLimit);
+            doVote(val, extensionSizeVote, sfExtensionSizeLimit);
+        }
+    }
 
     // choose our positions
     // TODO: Use structured binding once LLVM 16 is the minimum supported
@@ -285,11 +344,14 @@ FeeVoteImpl::doVoting(
     auto const baseFee = baseFeeVote.getVotes();
     auto const baseReserve = baseReserveVote.getVotes();
     auto const incReserve = incReserveVote.getVotes();
+    auto const extensionCompute = extensionComputeVote.getVotes();
+    auto const extensionSize = extensionSizeVote.getVotes();
 
     auto const seq = lastClosedLedger->info().seq + 1;
 
     // add transactions to our position
-    if (baseFee.second || baseReserve.second || incReserve.second)
+    if (baseFee.second || baseReserve.second || incReserve.second ||
+        extensionCompute.second || extensionSize.second)
     {
         JLOG(journal_.warn())
             << "We are voting for a fee change: " << baseFee.first << "/"
@@ -316,6 +378,11 @@ FeeVoteImpl::doVoting(
                     incReserve.first.dropsAs<std::uint32_t>(
                         incReserveVote.current());
                 obj[sfReferenceFeeUnits] = Config::FEE_UNITS_DEPRECATED;
+            }
+            if (rules.enabled(featureSmartEscrow))
+            {
+                obj[sfExtensionComputeLimit] = extensionCompute.first;
+                obj[sfExtensionSizeLimit] = extensionSize.first;
             }
         });
 

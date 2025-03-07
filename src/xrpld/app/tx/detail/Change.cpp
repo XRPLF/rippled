@@ -128,6 +128,18 @@ Change::preclaim(PreclaimContext const& ctx)
                     ctx.tx.isFieldPresent(sfReserveIncrementDrops))
                     return temDISABLED;
             }
+            if (ctx.view.rules().enabled(featureSmartEscrow))
+            {
+                if (!ctx.tx.isFieldPresent(sfExtensionComputeLimit) ||
+                    !ctx.tx.isFieldPresent(sfExtensionSizeLimit))
+                    return temMALFORMED;
+            }
+            else
+            {
+                if (ctx.tx.isFieldPresent(sfExtensionComputeLimit) ||
+                    ctx.tx.isFieldPresent(sfExtensionSizeLimit))
+                    return temDISABLED;
+            }
             return tesSUCCESS;
         case ttAMENDMENT:
         case ttUNL_MODIFY:
@@ -374,6 +386,11 @@ Change::applyFee()
         set(feeObject, ctx_.tx, sfReferenceFeeUnits);
         set(feeObject, ctx_.tx, sfReserveBase);
         set(feeObject, ctx_.tx, sfReserveIncrement);
+    }
+    if (view().rules().enabled(featureSmartEscrow))
+    {
+        set(feeObject, ctx_.tx, sfExtensionComputeLimit);
+        set(feeObject, ctx_.tx, sfExtensionSizeLimit);
     }
 
     view().update(feeObject);
