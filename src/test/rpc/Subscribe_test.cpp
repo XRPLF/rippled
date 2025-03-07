@@ -169,6 +169,7 @@ public:
         using namespace std::chrono_literals;
         using namespace jtx;
         Env env(*this);
+        auto baseFee = env.current()->fees().base.drops();
         auto wsc = makeWSClient(env.app().config());
         Json::Value stream;
 
@@ -200,9 +201,9 @@ public:
                     jv[jss::transaction][jss::TransactionType]  //
                     == jss::Payment &&
                     jv[jss::transaction][jss::DeliverMax]  //
-                    == "10000000010" &&
+                    == std::to_string(10000000000 + baseFee) &&
                     jv[jss::transaction][jss::Fee]  //
-                    == "10" &&
+                    == std::to_string(baseFee) &&
                     jv[jss::transaction][jss::Sequence]  //
                     == 1;
             }));
@@ -225,9 +226,9 @@ public:
                     jv[jss::transaction][jss::TransactionType]  //
                     == jss::Payment &&
                     jv[jss::transaction][jss::DeliverMax]  //
-                    == "10000000010" &&
+                    == std::to_string(10000000000 + baseFee) &&
                     jv[jss::transaction][jss::Fee]  //
-                    == "10" &&
+                    == std::to_string(baseFee) &&
                     jv[jss::transaction][jss::Sequence]  //
                     == 2;
             }));
@@ -315,7 +316,10 @@ public:
 
         using namespace std::chrono_literals;
         using namespace jtx;
-        Env env(*this);
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg->FEES.reference_fee = 10;
+            return cfg;
+        }));
         auto wsc = makeWSClient(env.app().config());
         Json::Value stream{Json::objectValue};
 

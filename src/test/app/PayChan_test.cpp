@@ -1911,7 +1911,6 @@ struct PayChan_test : public beast::unit_test::suite
             Env env{*this, amd};
             env.fund(XRP(10000), alice, bob, carol);
             env.close();
-            auto const feeDrops = env.current()->fees().base;
 
             // Create a channel from alice to bob
             auto const pk = alice.pk();
@@ -1930,6 +1929,7 @@ struct PayChan_test : public beast::unit_test::suite
                 carol,
                 withOwnerDirFix ? TER(tecHAS_OBLIGATIONS) : TER(tesSUCCESS));
 
+            auto const feeDrops = env.current()->fees().base;
             auto chanBal = channelBalance(*env.current(), chan);
             auto chanAmt = channelAmount(*env.current(), chan);
             BEAST_EXPECT(chanBal == XRP(0));
@@ -2002,7 +2002,6 @@ struct PayChan_test : public beast::unit_test::suite
             Env env{*this, features - fixPayChanRecipientOwnerDir};
             env.fund(XRP(10000), alice, bob, carol);
             env.close();
-            auto const feeDrops = env.current()->fees().base;
 
             // Create a channel from alice to bob
             auto const pk = alice.pk();
@@ -2017,6 +2016,7 @@ struct PayChan_test : public beast::unit_test::suite
             rmAccount(env, bob, carol);
             BEAST_EXPECT(!env.closed()->exists(keylet::account(bob.id())));
 
+            auto const feeDrops = env.current()->fees().base;
             auto chanBal = channelBalance(*env.current(), chan);
             auto chanAmt = channelAmount(*env.current(), chan);
             BEAST_EXPECT(chanBal == XRP(0));

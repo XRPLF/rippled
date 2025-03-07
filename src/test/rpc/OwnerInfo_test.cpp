@@ -93,6 +93,7 @@ class OwnerInfo_test : public beast::unit_test::suite
         auto const alice = Account{"alice"};
         auto const gw = Account{"gateway"};
         env.fund(XRP(10000), alice, gw);
+        env.close();
         auto const USD = gw["USD"];
         auto const CNY = gw["CNY"];
         env(trust(alice, USD(1000)));
