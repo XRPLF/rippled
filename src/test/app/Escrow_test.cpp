@@ -1819,7 +1819,6 @@ struct Escrow_test : public beast::unit_test::suite
                 env.require(balance(alice, XRP(4000) - txnFees));
                 env.require(balance(carol, XRP(5000)));
 
-                std::cout << "SEQ1 " << env.current()->seq() << std::endl;
                 env(finish(carol, alice, seq),
                     fee(txnFees),
                     ter(tecWASM_REJECTED));
@@ -1836,7 +1835,6 @@ struct Escrow_test : public beast::unit_test::suite
                     fee(txnFees),
                     ter(tecWASM_REJECTED));
                 env.close();
-                std::cout << "SEQ2 " << env.current()->seq() << std::endl;
                 env(finish(alice, alice, seq), fee(txnFees), ter(tesSUCCESS));
                 env.close();
 
