@@ -23,8 +23,8 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/tags.h>
-#include <xrpl/basics/FeeUnits.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/protocol/FeeUnits.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/STAmount.h>
 #include <cstdint>

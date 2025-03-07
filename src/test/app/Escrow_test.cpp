@@ -1809,7 +1809,7 @@ struct Escrow_test : public beast::unit_test::suite
     void
     testFinishFunction()
     {
-        testcase("PoC escrow function");
+        testcase("Escrows with FinishFunction");
 
         using namespace jtx;
         using namespace std::chrono;

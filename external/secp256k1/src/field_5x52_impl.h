@@ -12,11 +12,7 @@
 #include "field.h"
 #include "modinv64_impl.h"
 
-#if defined(USE_ASM_X86_64)
-#include "field_5x52_asm_impl.h"
-#else
 #include "field_5x52_int128_impl.h"
-#endif
 
 #ifdef VERIFY
 static void secp256k1_fe_impl_verify(const secp256k1_fe *a) {
@@ -216,13 +212,6 @@ SECP256K1_INLINE static int secp256k1_fe_impl_is_odd(const secp256k1_fe *a) {
     return a->n[0] & 1;
 }
 
-SECP256K1_INLINE static void secp256k1_fe_impl_clear(secp256k1_fe *a) {
-    int i;
-    for (i=0; i<5; i++) {
-        a->n[i] = 0;
-    }
-}
-
 static int secp256k1_fe_impl_cmp_var(const secp256k1_fe *a, const secp256k1_fe *b) {
     int i;
     for (i = 4; i >= 0; i--) {
@@ -314,7 +303,7 @@ static void secp256k1_fe_impl_get_b32(unsigned char *r, const secp256k1_fe *a) {
     r[31] = a->n[0] & 0xFF;
 }
 
-SECP256K1_INLINE static void secp256k1_fe_impl_negate(secp256k1_fe *r, const secp256k1_fe *a, int m) {
+SECP256K1_INLINE static void secp256k1_fe_impl_negate_unchecked(secp256k1_fe *r, const secp256k1_fe *a, int m) {
     /* For all legal values of m (0..31), the following properties hold: */
     VERIFY_CHECK(0xFFFFEFFFFFC2FULL * 2 * (m + 1) >= 0xFFFFFFFFFFFFFULL * 2 * m);
     VERIFY_CHECK(0xFFFFFFFFFFFFFULL * 2 * (m + 1) >= 0xFFFFFFFFFFFFFULL * 2 * m);
@@ -329,7 +318,7 @@ SECP256K1_INLINE static void secp256k1_fe_impl_negate(secp256k1_fe *r, const sec
     r->n[4] = 0x0FFFFFFFFFFFFULL * 2 * (m + 1) - a->n[4];
 }
 
-SECP256K1_INLINE static void secp256k1_fe_impl_mul_int(secp256k1_fe *r, int a) {
+SECP256K1_INLINE static void secp256k1_fe_impl_mul_int_unchecked(secp256k1_fe *r, int a) {
     r->n[0] *= a;
     r->n[1] *= a;
     r->n[2] *= a;

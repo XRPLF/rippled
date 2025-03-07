@@ -34,7 +34,7 @@ namespace ripple {
 namespace nft {
 
 static std::shared_ptr<SLE const>
-locatePage(ReadView const& view, AccountID owner, uint256 const& id)
+locatePage(ReadView const& view, AccountID const& owner, uint256 const& id)
 {
     auto const first = keylet::nftpage(keylet::nftpage_min(owner), id);
     auto const last = keylet::nftpage_max(owner);
@@ -48,7 +48,7 @@ locatePage(ReadView const& view, AccountID owner, uint256 const& id)
 }
 
 static std::shared_ptr<SLE>
-locatePage(ApplyView& view, AccountID owner, uint256 const& id)
+locatePage(ApplyView& view, AccountID const& owner, uint256 const& id)
 {
     auto const first = keylet::nftpage(keylet::nftpage_min(owner), id);
     auto const last = keylet::nftpage_max(owner);
@@ -191,7 +191,9 @@ getPageForToken(
         : carr[0].getFieldH256(sfNFTokenID);
 
     auto np = std::make_shared<SLE>(keylet::nftpage(base, tokenIDForNewPage));
-    assert(np->key() > base.key);
+    XRPL_ASSERT(
+        np->key() > base.key,
+        "ripple::nft::getPageForToken : valid NFT page index");
     np->setFieldArray(sfNFTokens, narr);
     np->setFieldH256(sfNextPageMin, cp->key());
 
@@ -239,11 +241,46 @@ compareTokens(uint256 const& a, uint256 const& b)
     return a < b;
 }
 
+TER
+changeTokenURI(
+    ApplyView& view,
+    AccountID const& owner,
+    uint256 const& nftokenID,
+    std::optional<ripple::Slice> const& uri)
+{
+    std::shared_ptr<SLE> const page = locatePage(view, owner, nftokenID);
+
+    // If the page couldn't be found, the given NFT isn't owned by this account
+    if (!page)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    // Locate the NFT in the page
+    STArray& arr = page->peekFieldArray(sfNFTokens);
+
+    auto const nftIter =
+        std::find_if(arr.begin(), arr.end(), [&nftokenID](STObject const& obj) {
+            return (obj[sfNFTokenID] == nftokenID);
+        });
+
+    if (nftIter == arr.end())
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    if (uri)
+        nftIter->setFieldVL(sfURI, *uri);
+    else if (nftIter->isFieldPresent(sfURI))
+        nftIter->makeFieldAbsent(sfURI);
+
+    view.update(page);
+    return tesSUCCESS;
+}
+
 /** Insert the token in the owner's token directory. */
 TER
 insertToken(ApplyView& view, AccountID owner, STObject&& nft)
 {
-    assert(nft.isFieldPresent(sfNFTokenID));
+    XRPL_ASSERT(
+        nft.isFieldPresent(sfNFTokenID),
+        "ripple::nft::insertToken : has NFT token");
 
     // First, we need to locate the page the NFT belongs to, creating it
     // if necessary. This operation may fail if it is impossible to insert
@@ -783,7 +820,9 @@ repairNFTokenDirectoryLinks(ApplyView& view, AccountID const& owner)
         return didRepair;
     }
 
-    assert(nextPage);
+    XRPL_ASSERT(
+        nextPage,
+        "ripple::nft::repairNFTokenDirectoryLinks : next page is available");
     if (nextPage->isFieldPresent(sfNextPageMin))
     {
         didRepair = true;
@@ -891,7 +930,8 @@ tokenOfferCreatePreclaim(
     if (nftIssuer != acctID && !(nftFlags & nft::flagTransferable))
     {
         auto const root = view.read(keylet::account(nftIssuer));
-        assert(root);
+        XRPL_ASSERT(
+            root, "ripple::nft::tokenOfferCreatePreclaim : non-null account");
 
         if (auto minter = (*root)[~sfNFTokenMinter]; minter != acctID)
             return tefNFTOKEN_IS_NOT_TRANSFERABLE;

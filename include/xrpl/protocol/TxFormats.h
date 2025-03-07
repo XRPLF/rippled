@@ -30,7 +30,7 @@ namespace ripple {
 
     @ingroup protocol
 */
-/** Transaction type identifieers
+/** Transaction type identifiers
 
     Each ledger object requires a unique type identifier, which is stored
     within the object itself; this makes it possible to iterate the entire

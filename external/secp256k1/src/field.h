@@ -81,15 +81,14 @@ static const secp256k1_fe secp256k1_const_beta = SECP256K1_FE_CONST(
 #  define secp256k1_fe_normalizes_to_zero secp256k1_fe_impl_normalizes_to_zero
 #  define secp256k1_fe_normalizes_to_zero_var secp256k1_fe_impl_normalizes_to_zero_var
 #  define secp256k1_fe_set_int secp256k1_fe_impl_set_int
-#  define secp256k1_fe_clear secp256k1_fe_impl_clear
 #  define secp256k1_fe_is_zero secp256k1_fe_impl_is_zero
 #  define secp256k1_fe_is_odd secp256k1_fe_impl_is_odd
 #  define secp256k1_fe_cmp_var secp256k1_fe_impl_cmp_var
 #  define secp256k1_fe_set_b32_mod secp256k1_fe_impl_set_b32_mod
 #  define secp256k1_fe_set_b32_limit secp256k1_fe_impl_set_b32_limit
 #  define secp256k1_fe_get_b32 secp256k1_fe_impl_get_b32
-#  define secp256k1_fe_negate secp256k1_fe_impl_negate
-#  define secp256k1_fe_mul_int secp256k1_fe_impl_mul_int
+#  define secp256k1_fe_negate_unchecked secp256k1_fe_impl_negate_unchecked
+#  define secp256k1_fe_mul_int_unchecked secp256k1_fe_impl_mul_int_unchecked
 #  define secp256k1_fe_add secp256k1_fe_impl_add
 #  define secp256k1_fe_mul secp256k1_fe_impl_mul
 #  define secp256k1_fe_sqr secp256k1_fe_impl_sqr
@@ -144,11 +143,7 @@ static int secp256k1_fe_normalizes_to_zero_var(const secp256k1_fe *r);
  */
 static void secp256k1_fe_set_int(secp256k1_fe *r, int a);
 
-/** Set a field element to 0.
- *
- * On input, a does not need to be initialized.
- * On output, a represents 0, is normalized and has magnitude 0.
- */
+/** Clear a field element to prevent leaking sensitive information. */
 static void secp256k1_fe_clear(secp256k1_fe *a);
 
 /** Determine whether a represents field element 0.
@@ -176,12 +171,6 @@ static int secp256k1_fe_is_odd(const secp256k1_fe *a);
  */
 static int secp256k1_fe_equal(const secp256k1_fe *a, const secp256k1_fe *b);
 
-/** Determine whether two field elements are equal, without constant-time guarantee.
- *
- * Identical in behavior to secp256k1_fe_equal, but not constant time in either a or b.
- */
-static int secp256k1_fe_equal_var(const secp256k1_fe *a, const secp256k1_fe *b);
-
 /** Compare the values represented by 2 field elements, without constant-time guarantee.
  *
  * On input, a and b must be valid normalized field elements.
@@ -190,16 +179,17 @@ static int secp256k1_fe_equal_var(const secp256k1_fe *a, const secp256k1_fe *b);
  */
 static int secp256k1_fe_cmp_var(const secp256k1_fe *a, const secp256k1_fe *b);
 
-/** Set a field element equal to a provided 32-byte big endian value, reducing it.
+/** Set a field element equal to the element represented by a provided 32-byte big endian value
+ * interpreted modulo p.
  *
- * On input, r does not need to be initalized. a must be a pointer to an initialized 32-byte array.
+ * On input, r does not need to be initialized. a must be a pointer to an initialized 32-byte array.
  * On output, r = a (mod p). It will have magnitude 1, and not be normalized.
  */
 static void secp256k1_fe_set_b32_mod(secp256k1_fe *r, const unsigned char *a);
 
 /** Set a field element equal to a provided 32-byte big endian value, checking for overflow.
  *
- * On input, r does not need to be initalized. a must be a pointer to an initialized 32-byte array.
+ * On input, r does not need to be initialized. a must be a pointer to an initialized 32-byte array.
  * On output, r = a if (a < p), it will be normalized with magnitude 1, and 1 is returned.
  * If a >= p, 0 is returned, and r will be made invalid (and must not be used without overwriting).
  */
@@ -214,27 +204,39 @@ static void secp256k1_fe_get_b32(unsigned char *r, const secp256k1_fe *a);
 /** Negate a field element.
  *
  * On input, r does not need to be initialized. a must be a valid field element with
- * magnitude not exceeding m. m must be an integer in [0,31].
+ * magnitude not exceeding m. m must be an integer constant expression in [0,31].
  * Performs {r = -a}.
  * On output, r will not be normalized, and will have magnitude m+1.
  */
-static void secp256k1_fe_negate(secp256k1_fe *r, const secp256k1_fe *a, int m);
+#define secp256k1_fe_negate(r, a, m) ASSERT_INT_CONST_AND_DO(m, secp256k1_fe_negate_unchecked(r, a, m))
+
+/** Like secp256k1_fe_negate_unchecked but m is not checked to be an integer constant expression.
+ *
+ * Should not be called directly outside of tests.
+ */
+static void secp256k1_fe_negate_unchecked(secp256k1_fe *r, const secp256k1_fe *a, int m);
 
 /** Add a small integer to a field element.
  *
  * Performs {r += a}. The magnitude of r increases by 1, and normalized is cleared.
- * a must be in range [0,0xFFFF].
+ * a must be in range [0,0x7FFF].
  */
 static void secp256k1_fe_add_int(secp256k1_fe *r, int a);
 
 /** Multiply a field element with a small integer.
  *
- * On input, r must be a valid field element. a must be an integer in [0,32].
+ * On input, r must be a valid field element. a must be an integer constant expression in [0,32].
  * The magnitude of r times a must not exceed 32.
  * Performs {r *= a}.
  * On output, r's magnitude is multiplied by a, and r will not be normalized.
  */
-static void secp256k1_fe_mul_int(secp256k1_fe *r, int a);
+#define secp256k1_fe_mul_int(r, a) ASSERT_INT_CONST_AND_DO(a, secp256k1_fe_mul_int_unchecked(r, a))
+
+/** Like secp256k1_fe_mul_int but a is not checked to be an integer constant expression.
+ * 
+ * Should not be called directly outside of tests.
+ */
+static void secp256k1_fe_mul_int_unchecked(secp256k1_fe *r, int a);
 
 /** Increment a field element by another.
  *
@@ -248,8 +250,8 @@ static void secp256k1_fe_add(secp256k1_fe *r, const secp256k1_fe *a);
 /** Multiply two field elements.
  *
  * On input, a and b must be valid field elements; r does not need to be initialized.
- * r and a may point to the same object, but neither can be equal to b. The magnitudes
- * of a and b must not exceed 8.
+ * r and a may point to the same object, but neither may point to the object pointed
+ * to by b. The magnitudes of a and b must not exceed 8.
  * Performs {r = a * b}
  * On output, r will have magnitude 1, but won't be normalized.
  */
@@ -267,8 +269,10 @@ static void secp256k1_fe_sqr(secp256k1_fe *r, const secp256k1_fe *a);
 /** Compute a square root of a field element.
  *
  * On input, a must be a valid field element with magnitude<=8; r need not be initialized.
- * Performs {r = sqrt(a)} or {r = sqrt(-a)}, whichever exists. The resulting value
- * represented by r will be a square itself. Variables r and a must not point to the same object.
+ * If sqrt(a) exists, performs {r = sqrt(a)} and returns 1.
+ * Otherwise, sqrt(-a) exists. The function performs {r = sqrt(-a)} and returns 0.
+ * The resulting value represented by r will be a square itself.
+ * Variables r and a must not point to the same object.
  * On output, r will have magnitude 1 but will not be normalized.
  */
 static int secp256k1_fe_sqrt(secp256k1_fe * SECP256K1_RESTRICT r, const secp256k1_fe * SECP256K1_RESTRICT a);
@@ -310,7 +314,9 @@ static void secp256k1_fe_storage_cmov(secp256k1_fe_storage *r, const secp256k1_f
  *
  * On input, both r and a must be valid field elements. Flag must be 0 or 1.
  * Performs {r = flag ? a : r}.
- * On output, r's magnitude and normalized will equal a's in case of flag=1, unchanged otherwise.
+ *
+ * On output, r's magnitude will be the maximum of both input magnitudes.
+ * It will be normalized if and only if both inputs were normalized.
  */
 static void secp256k1_fe_cmov(secp256k1_fe *r, const secp256k1_fe *a, int flag);
 
@@ -335,5 +341,10 @@ static int secp256k1_fe_is_square_var(const secp256k1_fe *a);
 
 /** Check invariants on a field element (no-op unless VERIFY is enabled). */
 static void secp256k1_fe_verify(const secp256k1_fe *a);
+#define SECP256K1_FE_VERIFY(a) secp256k1_fe_verify(a)
+
+/** Check that magnitude of a is at most m (no-op unless VERIFY is enabled). */
+static void secp256k1_fe_verify_magnitude(const secp256k1_fe *a, int m);
+#define SECP256K1_FE_VERIFY_MAGNITUDE(a, m) secp256k1_fe_verify_magnitude(a, m)
 
 #endif /* SECP256K1_FIELD_H */

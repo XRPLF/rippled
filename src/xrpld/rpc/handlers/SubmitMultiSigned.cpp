@@ -33,7 +33,7 @@ namespace ripple {
 Json::Value
 doSubmitMultiSigned(RPC::JsonContext& context)
 {
-    context.loadType = Resource::feeHighBurdenRPC;
+    context.loadType = Resource::feeHeavyBurdenRPC;
     auto const failHard = context.params[jss::fail_hard].asBool();
     auto const failType = NetworkOPs::doFailHard(failHard);
 

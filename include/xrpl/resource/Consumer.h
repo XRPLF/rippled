@@ -67,7 +67,7 @@ public:
 
     /** Apply a load charge to the consumer. */
     Disposition
-    charge(Charge const& fee);
+    charge(Charge const& fee, std::string const& context = {});
 
     /** Returns `true` if the consumer should be warned.
         This consumes the warning.

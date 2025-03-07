@@ -198,6 +198,7 @@ populate(
 void
 parse_Port(ParsedPort& port, Section const& section, std::ostream& log)
 {
+    port.name = section.name();
     {
         auto const optResult = section.get("ip");
         if (optResult)
@@ -223,8 +224,8 @@ parse_Port(ParsedPort& port, Section const& section, std::ostream& log)
             {
                 port.port = beast::lexicalCastThrow<std::uint16_t>(*optResult);
 
-                // Port 0 is not supported
-                if (*port.port == 0)
+                // Port 0 is not supported for [server]
+                if ((*port.port == 0) && (port.name == "server"))
                     Throw<std::exception>();
             }
             catch (std::exception const&)

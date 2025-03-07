@@ -366,17 +366,17 @@ SHAMapStoreImp::run()
 
             lastRotated = validatedSeq;
 
-            dbRotating_->rotateWithLock(
-                [&](std::string const& writableBackendName) {
+            dbRotating_->rotate(
+                std::move(newBackend),
+                [&](std::string const& writableName,
+                    std::string const& archiveName) {
                     SavedState savedState;
-                    savedState.writableDb = newBackend->getName();
-                    savedState.archiveDb = writableBackendName;
+                    savedState.writableDb = writableName;
+                    savedState.archiveDb = archiveName;
                     savedState.lastRotated = lastRotated;
                     state_db_.setState(savedState);
 
                     clearCaches(validatedSeq);
-
-                    return std::move(newBackend);
                 });
 
             JLOG(journal_.warn()) << "finished rotation " << validatedSeq;
@@ -513,7 +513,9 @@ SHAMapStoreImp::clearSql(
     std::function<std::optional<LedgerIndex>()> const& getMinSeq,
     std::function<void(LedgerIndex)> const& deleteBeforeSeq)
 {
-    assert(deleteInterval_);
+    XRPL_ASSERT(
+        deleteInterval_,
+        "ripple::SHAMapStoreImp::clearSql : nonzero delete interval");
     LedgerIndex min = std::numeric_limits<LedgerIndex>::max();
 
     {

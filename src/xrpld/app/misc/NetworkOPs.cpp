@@ -75,6 +75,7 @@
 #include <mutex>
 #include <optional>
 #include <set>
+#include <sstream>
 #include <string>
 #include <tuple>
 #include <unordered_map>
@@ -105,7 +106,10 @@ class NetworkOPsImp final : public NetworkOPs
             FailHard f)
             : transaction(t), admin(a), local(l), failType(f)
         {
-            assert(local || failType == FailHard::no);
+            XRPL_ASSERT(
+                local || failType == FailHard::no,
+                "ripple::NetworkOPsImp::TransactionStatus::TransactionStatus : "
+                "valid inputs");
         }
     };
 
@@ -378,9 +382,11 @@ private:
 
 public:
     bool
-    beginConsensus(uint256 const& networkClosed) override;
+    beginConsensus(
+        uint256 const& networkClosed,
+        std::unique_ptr<std::stringstream> const& clog) override;
     void
-    endConsensus() override;
+    endConsensus(std::unique_ptr<std::stringstream> const& clog) override;
     void
     setStandAlone() override;
 
@@ -1005,6 +1011,8 @@ NetworkOPsImp::setAccountHistoryJobTimer(SubAccountHistoryInfoWeak subInfo)
 void
 NetworkOPsImp::processHeartbeatTimer()
 {
+    RclConsensusLogger clog(
+        "Heartbeat Timer", mConsensus.validating(), m_journal);
     {
         std::unique_lock lock{app_.getMasterMutex()};
 
@@ -1020,9 +1028,17 @@ NetworkOPsImp::processHeartbeatTimer()
             if (mMode != OperatingMode::DISCONNECTED)
             {
                 setMode(OperatingMode::DISCONNECTED);
-                JLOG(m_journal.warn())
-                    << "Node count (" << numPeers << ") has fallen "
-                    << "below required minimum (" << minPeerCount_ << ").";
+                std::stringstream ss;
+                ss << "Node count (" << numPeers << ") has fallen "
+                   << "below required minimum (" << minPeerCount_ << ").";
+                JLOG(m_journal.warn()) << ss.str();
+                CLOG(clog.ss()) << "set mode to DISCONNECTED: " << ss.str();
+            }
+            else
+            {
+                CLOG(clog.ss())
+                    << "already DISCONNECTED. too few peers (" << numPeers
+                    << "), need at least " << minPeerCount_;
             }
 
             // MasterMutex lock need not be held to call setHeartbeatTimer()
@@ -1030,6 +1046,7 @@ NetworkOPsImp::processHeartbeatTimer()
             // We do not call mConsensus.timerEntry until there are enough
             // peers providing meaningful inputs to consensus
             setHeartbeatTimer();
+
             return;
         }
 
@@ -1038,24 +1055,38 @@ NetworkOPsImp::processHeartbeatTimer()
             setMode(OperatingMode::CONNECTED);
             JLOG(m_journal.info())
                 << "Node count (" << numPeers << ") is sufficient.";
+            CLOG(clog.ss()) << "setting mode to CONNECTED based on " << numPeers
+                            << " peers. ";
         }
 
         // Check if the last validated ledger forces a change between these
         // states.
+        auto origMode = mMode.load();
+        CLOG(clog.ss()) << "mode: " << strOperatingMode(origMode, true);
         if (mMode == OperatingMode::SYNCING)
             setMode(OperatingMode::SYNCING);
         else if (mMode == OperatingMode::CONNECTED)
             setMode(OperatingMode::CONNECTED);
+        auto newMode = mMode.load();
+        if (origMode != newMode)
+        {
+            CLOG(clog.ss())
+                << ", changing to " << strOperatingMode(newMode, true);
+        }
+        CLOG(clog.ss()) << ". ";
     }
 
-    mConsensus.timerEntry(app_.timeKeeper().closeTime());
+    mConsensus.timerEntry(app_.timeKeeper().closeTime(), clog.ss());
 
+    CLOG(clog.ss()) << "consensus phase " << to_string(mLastConsensusPhase);
     const ConsensusPhase currPhase = mConsensus.phase();
     if (mLastConsensusPhase != currPhase)
     {
         reportConsensusStateChange(currPhase);
         mLastConsensusPhase = currPhase;
+        CLOG(clog.ss()) << " changed to " << to_string(mLastConsensusPhase);
     }
+    CLOG(clog.ss()) << ". ";
 
     setHeartbeatTimer();
 }
@@ -1210,7 +1241,9 @@ NetworkOPsImp::processTransaction(
         *transaction->getSTransaction(),
         view->rules(),
         app_.config());
-    assert(validity == Validity::Valid);
+    XRPL_ASSERT(
+        validity == Validity::Valid,
+        "ripple::NetworkOPsImp::processTransaction : valid validity");
 
     // Not concerned with local checks at this point.
     if (validity == Validity::SigBad)
@@ -1316,9 +1349,13 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
     std::vector<TransactionStatus> submit_held;
     std::vector<TransactionStatus> transactions;
     mTransactions.swap(transactions);
-    assert(!transactions.empty());
+    XRPL_ASSERT(
+        !transactions.empty(),
+        "ripple::NetworkOPsImp::apply : non-empty transactions");
+    XRPL_ASSERT(
+        mDispatchState != DispatchState::running,
+        "ripple::NetworkOPsImp::apply : is not running");
 
-    assert(mDispatchState != DispatchState::running);
     mDispatchState = DispatchState::running;
 
     batchLock.unlock();
@@ -1344,9 +1381,9 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
 
                     auto const result = app_.getTxQ().apply(
                         app_, view, e.transaction->getSTransaction(), flags, j);
-                    e.result = result.first;
-                    e.applied = result.second;
-                    changed = changed || result.second;
+                    e.result = result.ter;
+                    e.applied = result.applied;
+                    changed = changed || result.applied;
                 }
                 return changed;
             });
@@ -1534,7 +1571,9 @@ NetworkOPsImp::getOwnerInfo(
             for (auto const& uDirEntry : sleNode->getFieldV256(sfIndexes))
             {
                 auto sleCur = lpLedger->read(keylet::child(uDirEntry));
-                assert(sleCur);
+                XRPL_ASSERT(
+                    sleCur,
+                    "ripple::NetworkOPsImp::getOwnerInfo : non-null child SLE");
 
                 switch (sleCur->getType())
                 {
@@ -1561,7 +1600,9 @@ NetworkOPsImp::getOwnerInfo(
                     case ltACCOUNT_ROOT:
                     case ltDIR_NODE:
                     default:
-                        assert(false);
+                        UNREACHABLE(
+                            "ripple::NetworkOPsImp::getOwnerInfo : invalid "
+                            "type");
                         break;
                 }
             }
@@ -1571,7 +1612,9 @@ NetworkOPsImp::getOwnerInfo(
             if (uNodeDir)
             {
                 sleNode = lpLedger->read(keylet::page(root, uNodeDir));
-                assert(sleNode);
+                XRPL_ASSERT(
+                    sleNode,
+                    "ripple::NetworkOPsImp::getOwnerInfo : read next page");
             }
         } while (uNodeDir);
     }
@@ -1800,9 +1843,13 @@ NetworkOPsImp::switchLastClosedLedger(
 }
 
 bool
-NetworkOPsImp::beginConsensus(uint256 const& networkClosed)
+NetworkOPsImp::beginConsensus(
+    uint256 const& networkClosed,
+    std::unique_ptr<std::stringstream> const& clog)
 {
-    assert(networkClosed.isNonZero());
+    XRPL_ASSERT(
+        networkClosed.isNonZero(),
+        "ripple::NetworkOPsImp::beginConsensus : nonzero input");
 
     auto closingInfo = m_ledgerMaster.getCurrentLedger()->info();
 
@@ -1818,15 +1865,21 @@ NetworkOPsImp::beginConsensus(uint256 const& networkClosed)
         {
             JLOG(m_journal.warn()) << "Don't have LCL, going to tracking";
             setMode(OperatingMode::TRACKING);
+            CLOG(clog) << "beginConsensus Don't have LCL, going to tracking. ";
         }
 
+        CLOG(clog) << "beginConsensus no previous ledger. ";
         return false;
     }
 
-    assert(prevLedger->info().hash == closingInfo.parentHash);
-    assert(
-        closingInfo.parentHash ==
-        m_ledgerMaster.getClosedLedger()->info().hash);
+    XRPL_ASSERT(
+        prevLedger->info().hash == closingInfo.parentHash,
+        "ripple::NetworkOPsImp::beginConsensus : prevLedger hash matches "
+        "parent");
+    XRPL_ASSERT(
+        closingInfo.parentHash == m_ledgerMaster.getClosedLedger()->info().hash,
+        "ripple::NetworkOPsImp::beginConsensus : closedLedger parent matches "
+        "hash");
 
     if (prevLedger->rules().enabled(featureNegativeUNL))
         app_.validators().setNegativeUNL(prevLedger->negativeUNL());
@@ -1850,7 +1903,8 @@ NetworkOPsImp::beginConsensus(uint256 const& networkClosed)
         networkClosed,
         prevLedger,
         changes.removed,
-        changes.added);
+        changes.added,
+        clog);
 
     const ConsensusPhase currPhase = mConsensus.phase();
     if (mLastConsensusPhase != currPhase)
@@ -1889,7 +1943,7 @@ NetworkOPsImp::mapComplete(std::shared_ptr<SHAMap> const& map, bool fromAcquire)
 }
 
 void
-NetworkOPsImp::endConsensus()
+NetworkOPsImp::endConsensus(std::unique_ptr<std::stringstream> const& clog)
 {
     uint256 deadLedger = m_ledgerMaster.getClosedLedger()->info().parentHash;
 
@@ -1907,7 +1961,10 @@ NetworkOPsImp::endConsensus()
         checkLastClosedLedger(app_.overlay().getActivePeers(), networkClosed);
 
     if (networkClosed.isZero())
+    {
+        CLOG(clog) << "endConsensus last closed ledger is zero. ";
         return;
+    }
 
     // WRITEME: Unless we are in FULL and in the process of doing a consensus,
     // we must count how many nodes share our LCL, how many nodes disagree with
@@ -1941,7 +1998,7 @@ NetworkOPsImp::endConsensus()
         }
     }
 
-    beginConsensus(networkClosed);
+    beginConsensus(networkClosed, clog);
 }
 
 void
@@ -2343,6 +2400,21 @@ NetworkOPsImp::recvValidation(
 
     pubValidation(val);
 
+    JLOG(m_journal.debug()) << [this, &val]() -> auto {
+        std::stringstream ss;
+        ss << "VALIDATION: " << val->render() << " master_key: ";
+        auto master = app_.validators().getTrustedKey(val->getSignerPublic());
+        if (master)
+        {
+            ss << toBase58(TokenType::NodePublic, *master);
+        }
+        else
+        {
+            ss << "none";
+        }
+        return ss.str();
+    }();
+
     // We will always relay trusted validations; if configured, we will
     // also relay all untrusted validations.
     return app_.config().RELAY_UNTRUSTED_VALIDATIONS == 1 || val->isTrusted();
@@ -2481,6 +2553,18 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
                 x[jss::expiration] = "unknown";
             }
         }
+
+#if defined(GIT_COMMIT_HASH) || defined(GIT_BRANCH)
+        {
+            auto& x = (info[jss::git] = Json::objectValue);
+#ifdef GIT_COMMIT_HASH
+            x[jss::hash] = GIT_COMMIT_HASH;
+#endif
+#ifdef GIT_BRANCH
+            x[jss::branch] = GIT_BRANCH;
+#endif
+        }
+#endif
     }
     info[jss::io_latency_ms] =
         static_cast<Json::UInt>(app_.getIOLatency().count());
@@ -2823,7 +2907,9 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
             lpAccepted->info().hash, alpAccepted);
     }
 
-    assert(alpAccepted->getLedger().get() == lpAccepted.get());
+    XRPL_ASSERT(
+        alpAccepted->getLedger().get() == lpAccepted.get(),
+        "ripple::NetworkOPsImp::pubLedger : accepted input");
 
     {
         JLOG(m_journal.debug())
@@ -3233,9 +3319,11 @@ NetworkOPsImp::pubAccountTransaction(
         if (last)
             jvObj.set(jss::account_history_boundary, true);
 
-        assert(
+        XRPL_ASSERT(
             jvObj.isMember(jss::account_history_tx_stream) ==
-            MultiApiJson::none);
+                MultiApiJson::none,
+            "ripple::NetworkOPsImp::pubAccountTransaction : "
+            "account_history_tx_stream not set");
         for (auto& info : accountHistoryNotify)
         {
             auto& index = info.index_;
@@ -3308,9 +3396,11 @@ NetworkOPsImp::pubProposedAccountTransaction(
                 isrListener->getApiVersion(),  //
                 [&](Json::Value const& jv) { isrListener->send(jv, true); });
 
-        assert(
+        XRPL_ASSERT(
             jvObj.isMember(jss::account_history_tx_stream) ==
-            MultiApiJson::none);
+                MultiApiJson::none,
+            "ripple::NetworkOPs::pubProposedAccountTransaction : "
+            "account_history_tx_stream not set");
         for (auto& info : accountHistoryNotify)
         {
             auto& index = info.index_;
@@ -3531,7 +3621,9 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                         return db->newestAccountTxPage(options);
                     }
                     default: {
-                        assert(false);
+                        UNREACHABLE(
+                            "ripple::NetworkOPsImp::addAccountHistoryJob::"
+                            "getMoreTxns : invalid database type");
                         return {};
                     }
                 }
@@ -3727,7 +3819,9 @@ NetworkOPsImp::subAccountHistoryStart(
         }
         else
         {
-            assert(false);
+            UNREACHABLE(
+                "ripple::NetworkOPsImp::subAccountHistoryStart : failed to "
+                "access genesis account");
             return;
         }
     }
@@ -3835,7 +3929,7 @@ NetworkOPsImp::subBook(InfoSub::ref isrListener, Book const& book)
     if (auto listeners = app_.getOrderBookDB().makeBookListeners(book))
         listeners->addSubscriber(isrListener);
     else
-        assert(false);
+        UNREACHABLE("ripple::NetworkOPsImp::subBook : null book listeners");
     return true;
 }
 
@@ -3854,7 +3948,8 @@ NetworkOPsImp::acceptLedger(
 {
     // This code-path is exclusively used when the server is in standalone
     // mode via `ledger_accept`
-    assert(m_standalone);
+    XRPL_ASSERT(
+        m_standalone, "ripple::NetworkOPsImp::acceptLedger : is standalone");
 
     if (!m_standalone)
         Throw<std::runtime_error>(
@@ -3862,7 +3957,7 @@ NetworkOPsImp::acceptLedger(
 
     // FIXME Could we improve on this and remove the need for a specialized
     // API in Consensus?
-    beginConsensus(m_ledgerMaster.getClosedLedger()->info().hash);
+    beginConsensus(m_ledgerMaster.getClosedLedger()->info().hash, {});
     mConsensus.simulate(app_.timeKeeper().closeTime(), consensusDelay);
     return m_ledgerMaster.getCurrentLedger()->info().seq;
 }
