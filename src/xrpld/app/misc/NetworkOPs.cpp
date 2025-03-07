@@ -2262,6 +2262,11 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
             reserveIncXRP && reserveIncXRP->native())
             jvObj[jss::reserve_inc] = reserveIncXRP->xrp().jsonClipped();
 
+        if (auto const extensionComputeLimit =
+                ~val->at(~sfExtensionComputeLimit);
+            extensionComputeLimit)
+            jvObj[jss::extension_compute] = *extensionComputeLimit;
+
         // NOTE Use MultiApiJson to publish two slightly different JSON objects
         // for consumers supporting different API versions
         MultiApiJson multiObj{jvObj};

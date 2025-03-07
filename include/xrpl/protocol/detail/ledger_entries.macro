@@ -315,6 +315,11 @@ LEDGER_ENTRY(ltFEE_SETTINGS, 0x0073, FeeSettings, fee, ({
     {sfBaseFeeDrops,           soeOPTIONAL},
     {sfReserveBaseDrops,       soeOPTIONAL},
     {sfReserveIncrementDrops,  soeOPTIONAL},
+
+    // New fields
+    {sfExtensionComputeLimit,  soeOPTIONAL},
+    {sfExtensionSizeLimit,     soeOPTIONAL},
+
     {sfPreviousTxnID,          soeOPTIONAL},
     {sfPreviousTxnLgrSeq,      soeOPTIONAL},
 }))

@@ -36,6 +36,8 @@ setupConfigForUnitTests(Config& cfg)
     cfg.FEES.reference_fee = 10;
     cfg.FEES.account_reserve = XRP(200).value().xrp().drops();
     cfg.FEES.owner_reserve = XRP(50).value().xrp().drops();
+    cfg.FEES.extension_compute_limit = 0xffffffff;
+    cfg.FEES.extension_size_limit = 0xffffffff;
 
     // The Beta API (currently v2) is always available to tests
     cfg.BETA_RPC_API = true;
