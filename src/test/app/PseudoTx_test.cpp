@@ -119,9 +119,10 @@ struct PseudoTx_test : public beast::unit_test::suite
     {
         using namespace test::jtx;
         FeatureBitset const all{supported_amendments()};
-        FeatureBitset const xrpFees{featureXRPFees};
 
+        testPrevented(all - featureXRPFees - featureSmartEscrow);
         testPrevented(all - featureXRPFees);
+        testPrevented(all - featureSmartEscrow);
         testPrevented(all);
         testAllowed();
     }
