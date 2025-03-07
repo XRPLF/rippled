@@ -115,8 +115,8 @@ std::size_t constexpr maxMPTokenMetadataLength = 1024;
 /** The maximum amount of MPTokenIssuance */
 std::uint64_t constexpr maxMPTokenAmount = 0x7FFF'FFFF'FFFF'FFFFull;
 
-/** The maximum length of MPTokenMetadata */
-std::size_t constexpr maxVaultDataLength = 256;
+/** The maximum length of Data payload */
+std::size_t constexpr maxDataPayloadLength = 256;
 
 /** Vault withdrawal policies */
 std::uint8_t constexpr vaultStrategyFirstComeFirstServe = 1;

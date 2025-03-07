@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
   This file is part of rippled: https://github.com/ripple/rippled
-  Copyright (c) 2023 Ripple Labs Inc.
+  Copyright (c) 2025 Ripple Labs Inc.
 
   Permission to use, copy, modify, and/or distribute this software for any
   purpose  with  or without fee is hereby granted, provided that the above
@@ -48,7 +48,7 @@ VaultCreate::preflight(PreflightContext const& ctx)
 
     if (auto const data = ctx.tx[~sfData])
     {
-        if (data->empty() || data->length() > maxVaultDataLength)
+        if (data->empty() || data->length() > maxDataPayloadLength)
             return temMALFORMED;
     }
 
