@@ -453,6 +453,12 @@ EscrowFinish::doApply()
     if (!slep)
         return tecNO_TARGET;
 
+    // Order of processing the release conditions:
+    // FinishAfter/CancelAfter
+    // Condition/Fulfillment
+    // Destination validity
+    // FinishFunction
+
     // If a cancel time is present, a finish operation should only succeed prior
     // to that time. fix1571 corrects a logic error in the check that would make
     // a finish only succeed strictly after the cancel time.
@@ -492,6 +498,22 @@ EscrowFinish::doApply()
         {
             JLOG(j_.debug()) << "Too late?";
             return tecNO_PERMISSION;
+        }
+    }
+
+    if (ctx_.view().rules().enabled(featureSmartEscrow))
+    {
+        // NOTE: Escrow payments cannot be used to fund accounts.
+        AccountID const destID = (*slep)[sfDestination];
+        auto const sled = ctx_.view().peek(keylet::account(destID));
+        if (!sled)
+            return tecNO_DST;
+
+        if (ctx_.view().rules().enabled(featureDepositAuth))
+        {
+            if (auto err = verifyDepositPreauth(ctx_, account_, destID, sled);
+                !isTesSuccess(err))
+                return err;
         }
     }
 
@@ -542,20 +564,23 @@ EscrowFinish::doApply()
             return tecCRYPTOCONDITION_ERROR;
     }
 
-    // NOTE: Escrow payments cannot be used to fund accounts.
-    AccountID const destID = (*slep)[sfDestination];
-    auto const sled = ctx_.view().peek(keylet::account(destID));
-    if (!sled)
-        return tecNO_DST;
-
-    if (ctx_.view().rules().enabled(featureDepositAuth))
+    if (!ctx_.view().rules().enabled(featureSmartEscrow))
     {
-        if (auto err = verifyDepositPreauth(ctx_, account_, destID, sled);
-            !isTesSuccess(err))
-            return err;
+        // NOTE: Escrow payments cannot be used to fund accounts.
+        AccountID const destID = (*slep)[sfDestination];
+        auto const sled = ctx_.view().peek(keylet::account(destID));
+        if (!sled)
+            return tecNO_DST;
+
+        if (ctx_.view().rules().enabled(featureDepositAuth))
+        {
+            if (auto err = verifyDepositPreauth(ctx_, account_, destID, sled);
+                !isTesSuccess(err))
+                return err;
+        }
     }
 
-    // Execute extension
+    // Execute custom release function
     if ((*slep)[~sfFinishFunction])
     {
         JLOG(j_.trace())
