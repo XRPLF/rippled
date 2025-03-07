@@ -358,7 +358,8 @@ public:
              {2.1, temBAD_TRANSFER_RATE, 2.0},
              {0.0, tesSUCCESS, 1.0},
              {2.0, tesSUCCESS, 2.0},
-             {0.9, temBAD_TRANSFER_RATE, 2.0}});
+             {0.9, temBAD_TRANSFER_RATE, 2.0},
+             {-1.0, tesSUCCESS, 1.0}});
     }
 
     void
