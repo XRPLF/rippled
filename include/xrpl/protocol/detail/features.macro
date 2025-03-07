@@ -29,6 +29,12 @@
 // If you add an amendment here, then do not forget to increment `numFeatures`
 // in include/xrpl/protocol/Feature.h.
 
+// Check flags in Credential transactions
+XRPL_FIX    (InvalidTxFlags,             Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FIX    (FrozenLPTokenTransfer,      Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FEATURE(DeepFreeze,                 Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FEATURE(PermissionedDomains,        Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FEATURE(DynamicNFT,                 Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(Credentials,                Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(AMMClawback,                Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (AMMv1_2,                    Supported::yes, VoteBehavior::DefaultNo)
@@ -99,7 +105,6 @@ XRPL_FEATURE(FlowCross,                  Supported::yes, VoteBehavior::DefaultYe
 XRPL_FEATURE(Flow,                       Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(OwnerPaysFee,               Supported::no,  VoteBehavior::DefaultNo)
 
-
 // The following amendments are obsolete, but must remain supported
 // because they could potentially get enabled.
 //
@@ -115,3 +120,4 @@ XRPL_FIX    (NFTokenNegOffer,       Supported::yes, VoteBehavior::Obsolete)
 XRPL_FIX    (NFTokenDirV1,          Supported::yes, VoteBehavior::Obsolete)
 XRPL_FEATURE(NonFungibleTokensV1,   Supported::yes, VoteBehavior::Obsolete)
 XRPL_FEATURE(CryptoConditionsSuite, Supported::yes, VoteBehavior::Obsolete)
+

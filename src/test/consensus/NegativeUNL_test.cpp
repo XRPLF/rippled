@@ -1922,11 +1922,12 @@ negUnlSizeTest(
 bool
 applyAndTestResult(jtx::Env& env, OpenView& view, STTx const& tx, bool pass)
 {
-    auto res = apply(env.app(), view, tx, ApplyFlags::tapNONE, env.journal);
+    auto const res =
+        apply(env.app(), view, tx, ApplyFlags::tapNONE, env.journal);
     if (pass)
-        return res.first == tesSUCCESS;
+        return res.ter == tesSUCCESS;
     else
-        return res.first == tefFAILURE || res.first == temDISABLED;
+        return res.ter == tefFAILURE || res.ter == temDISABLED;
 }
 
 bool

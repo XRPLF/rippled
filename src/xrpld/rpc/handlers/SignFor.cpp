@@ -40,7 +40,7 @@ doSignFor(RPC::JsonContext& context)
             rpcNOT_SUPPORTED, "Signing is not supported by this server.");
     }
 
-    context.loadType = Resource::feeHighBurdenRPC;
+    context.loadType = Resource::feeHeavyBurdenRPC;
     auto const failHard = context.params[jss::fail_hard].asBool();
     auto const failType = NetworkOPs::doFailHard(failHard);
 

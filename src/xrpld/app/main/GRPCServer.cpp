@@ -268,7 +268,7 @@ template <class Request, class Response>
 std::optional<boost::asio::ip::tcp::endpoint>
 GRPCServerImpl::CallData<Request, Response>::getClientEndpoint()
 {
-    return getEndpoint(ctx_.peer());
+    return ripple::getEndpoint(ctx_.peer());
 }
 
 template <class Request, class Response>
@@ -447,8 +447,8 @@ GRPCServerImpl::handleRpcs()
 
         if (!ok)
         {
-            JLOG(journal_.debug())
-                << "Request listener cancelled. " << "Destroying object";
+            JLOG(journal_.debug()) << "Request listener cancelled. "
+                                   << "Destroying object";
             erase(ptr);
         }
         else
@@ -564,8 +564,12 @@ GRPCServerImpl::start()
     JLOG(journal_.info()) << "Starting gRPC server at " << serverAddress_;
 
     grpc::ServerBuilder builder;
+
     // Listen on the given address without any authentication mechanism.
-    builder.AddListeningPort(serverAddress_, grpc::InsecureServerCredentials());
+    // Actually binded port will be returned into "port" variable.
+    int port = 0;
+    builder.AddListeningPort(
+        serverAddress_, grpc::InsecureServerCredentials(), &port);
     // Register "service_" as the instance through which we'll communicate with
     // clients. In this case it corresponds to an *asynchronous* service.
     builder.RegisterService(&service_);
@@ -574,23 +578,33 @@ GRPCServerImpl::start()
     cq_ = builder.AddCompletionQueue();
     // Finally assemble the server.
     server_ = builder.BuildAndStart();
+    serverPort_ = static_cast<std::uint16_t>(port);
 
-    return true;
+    return static_cast<bool>(serverPort_);
 }
 
-void
+boost::asio::ip::tcp::endpoint
+GRPCServerImpl::getEndpoint() const
+{
+    std::string const addr =
+        serverAddress_.substr(0, serverAddress_.find_last_of(':'));
+    return boost::asio::ip::tcp::endpoint(
+        boost::asio::ip::make_address(addr), serverPort_);
+}
+
+bool
 GRPCServer::start()
 {
     // Start the server and setup listeners
     if (running_ = impl_.start(); running_)
     {
         thread_ = std::thread([this]() {
-            beast::setCurrentThreadName("rippled : GRPCServer");
             // Start the event loop and begin handling requests
             beast::setCurrentThreadName("rippled: grpc");
             this->impl_.handleRpcs();
         });
     }
+    return running_;
 }
 
 void
@@ -607,6 +621,12 @@ GRPCServer::stop()
 GRPCServer::~GRPCServer()
 {
     XRPL_ASSERT(!running_, "ripple::GRPCServer::~GRPCServer : is not running");
+}
+
+boost::asio::ip::tcp::endpoint
+GRPCServer::getEndpoint() const
+{
+    return impl_.getEndpoint();
 }
 
 }  // namespace ripple

@@ -204,7 +204,8 @@ protected:
     logStringImpl(char const* name) const
     {
         std::ostringstream ostr;
-        ostr << name << ": " << "\nSrc: " << src_ << "\nDst: " << dst_;
+        ostr << name << ": "
+             << "\nSrc: " << src_ << "\nDst: " << dst_;
         return ostr.str();
     }
 
@@ -336,7 +337,7 @@ DirectIPaymentStep::quality(ReadView const& sb, QualityDirection qDir) const
     if (!sle)
         return QUALITY_ONE;
 
-    auto const& field = [this, qDir]() -> SF_UINT32 const& {
+    auto const& field = [&, this]() -> SF_UINT32 const& {
         if (qDir == QualityDirection::in)
         {
             // compute dst quality in

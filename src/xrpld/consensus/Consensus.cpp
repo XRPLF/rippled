@@ -34,18 +34,32 @@ shouldCloseLedger(
     std::chrono::milliseconds openTime,  // Time waiting to close this ledger
     std::chrono::milliseconds idleInterval,
     ConsensusParms const& parms,
-    beast::Journal j)
+    beast::Journal j,
+    std::unique_ptr<std::stringstream> const& clog)
 {
+    CLOG(clog) << "shouldCloseLedger params anyTransactions: "
+               << anyTransactions << ", prevProposers: " << prevProposers
+               << ", proposersClosed: " << proposersClosed
+               << ", proposersValidated: " << proposersValidated
+               << ", prevRoundTime: " << prevRoundTime.count() << "ms"
+               << ", timeSincePrevClose: " << timeSincePrevClose.count() << "ms"
+               << ", openTime: " << openTime.count() << "ms"
+               << ", idleInterval: " << idleInterval.count() << "ms"
+               << ", ledgerMIN_CLOSE: " << parms.ledgerMIN_CLOSE.count() << "ms"
+               << ". ";
     using namespace std::chrono_literals;
     if ((prevRoundTime < -1s) || (prevRoundTime > 10min) ||
         (timeSincePrevClose > 10min))
     {
         // These are unexpected cases, we just close the ledger
-        JLOG(j.warn()) << "shouldCloseLedger Trans="
-                       << (anyTransactions ? "yes" : "no")
-                       << " Prop: " << prevProposers << "/" << proposersClosed
-                       << " Secs: " << timeSincePrevClose.count()
-                       << " (last: " << prevRoundTime.count() << ")";
+        std::stringstream ss;
+        ss << "shouldCloseLedger Trans=" << (anyTransactions ? "yes" : "no")
+           << " Prop: " << prevProposers << "/" << proposersClosed
+           << " Secs: " << timeSincePrevClose.count()
+           << " (last: " << prevRoundTime.count() << ")";
+
+        JLOG(j.warn()) << ss.str();
+        CLOG(clog) << "closing ledger: " << ss.str() << ". ";
         return true;
     }
 
@@ -53,12 +67,14 @@ shouldCloseLedger(
     {
         // If more than half of the network has closed, we close
         JLOG(j.trace()) << "Others have closed";
+        CLOG(clog) << "closing ledger because enough others have already. ";
         return true;
     }
 
     if (!anyTransactions)
     {
         // Only close at the end of the idle interval
+        CLOG(clog) << "no transactions, returning. ";
         return timeSincePrevClose >= idleInterval;  // normal idle
     }
 
@@ -66,6 +82,7 @@ shouldCloseLedger(
     if (openTime < parms.ledgerMIN_CLOSE)
     {
         JLOG(j.debug()) << "Must wait minimum time before closing";
+        CLOG(clog) << "not closing because under ledgerMIN_CLOSE. ";
         return false;
     }
 
@@ -75,10 +92,12 @@ shouldCloseLedger(
     if (openTime < (prevRoundTime / 2))
     {
         JLOG(j.debug()) << "Ledger has not been open long enough";
+        CLOG(clog) << "not closing because not open long enough. ";
         return false;
     }
 
     // Close the ledger
+    CLOG(clog) << "no reason to not close. ";
     return true;
 }
 
@@ -88,8 +107,14 @@ checkConsensusReached(
     std::size_t total,
     bool count_self,
     std::size_t minConsensusPct,
-    bool reachedMax)
+    bool reachedMax,
+    std::unique_ptr<std::stringstream> const& clog)
 {
+    CLOG(clog) << "checkConsensusReached params: agreeing: " << agreeing
+               << ", total: " << total << ", count_self: " << count_self
+               << ", minConsensusPct: " << minConsensusPct
+               << ", reachedMax: " << reachedMax << ". ";
+
     // If we are alone for too long, we have consensus.
     // Delaying consensus like this avoids a circumstance where a peer
     // gets ahead of proposers insofar as it has not received any proposals.
@@ -102,7 +127,13 @@ checkConsensusReached(
     if (total == 0)
     {
         if (reachedMax)
+        {
+            CLOG(clog)
+                << "Consensus reached because nobody shares our position and "
+                   "maximum duration has passed.";
             return true;
+        }
+        CLOG(clog) << "Consensus not reached and nobody shares our position. ";
         return false;
     }
 
@@ -110,11 +141,22 @@ checkConsensusReached(
     {
         ++agreeing;
         ++total;
+        CLOG(clog) << "agreeing and total adjusted: " << agreeing << ','
+                   << total << ". ";
     }
 
     std::size_t currentPercentage = (agreeing * 100) / total;
-
-    return currentPercentage >= minConsensusPct;
+    CLOG(clog) << "currentPercentage: " << currentPercentage;
+    bool const ret = currentPercentage >= minConsensusPct;
+    if (ret)
+    {
+        CLOG(clog) << ", consensus reached. ";
+    }
+    else
+    {
+        CLOG(clog) << ", consensus not reached. ";
+    }
+    return ret;
 }
 
 ConsensusState
@@ -127,22 +169,26 @@ checkConsensus(
     std::chrono::milliseconds currentAgreeTime,
     ConsensusParms const& parms,
     bool proposing,
-    beast::Journal j)
+    beast::Journal j,
+    std::unique_ptr<std::stringstream> const& clog)
 {
-    JLOG(j.trace()) << "checkConsensus: prop=" << currentProposers << "/"
-                    << prevProposers << " agree=" << currentAgree
-                    << " validated=" << currentFinished
-                    << " time=" << currentAgreeTime.count() << "/"
-                    << previousAgreeTime.count() << " proposing? " << proposing
-                    << " minimum duration to reach consensus: "
-                    << parms.ledgerMIN_CONSENSUS.count() << "ms"
-                    << " max consensus time "
-                    << parms.ledgerMAX_CONSENSUS.count() << "s"
-                    << " minimum consensus percentage: "
-                    << parms.minCONSENSUS_PCT;
+    CLOG(clog) << "checkConsensus: prop=" << currentProposers << "/"
+               << prevProposers << " agree=" << currentAgree
+               << " validated=" << currentFinished
+               << " time=" << currentAgreeTime.count() << "/"
+               << previousAgreeTime.count() << " proposing? " << proposing
+               << " minimum duration to reach consensus: "
+               << parms.ledgerMIN_CONSENSUS.count() << "ms"
+               << " max consensus time " << parms.ledgerMAX_CONSENSUS.count()
+               << "s"
+               << " minimum consensus percentage: " << parms.minCONSENSUS_PCT
+               << ". ";
 
     if (currentAgreeTime <= parms.ledgerMIN_CONSENSUS)
+    {
+        CLOG(clog) << "Not reached. ";
         return ConsensusState::No;
+    }
 
     if (currentProposers < (prevProposers * 3 / 4))
     {
@@ -151,6 +197,7 @@ checkConsensus(
         if (currentAgreeTime < (previousAgreeTime + parms.ledgerMIN_CONSENSUS))
         {
             JLOG(j.trace()) << "too fast, not enough proposers";
+            CLOG(clog) << "Too fast, not enough proposers. Not reached. ";
             return ConsensusState::No;
         }
     }
@@ -162,9 +209,11 @@ checkConsensus(
             currentProposers,
             proposing,
             parms.minCONSENSUS_PCT,
-            currentAgreeTime > parms.ledgerMAX_CONSENSUS))
+            currentAgreeTime > parms.ledgerMAX_CONSENSUS,
+            clog))
     {
         JLOG(j.debug()) << "normal consensus";
+        CLOG(clog) << "reached. ";
         return ConsensusState::Yes;
     }
 
@@ -175,14 +224,17 @@ checkConsensus(
             currentProposers,
             false,
             parms.minCONSENSUS_PCT,
-            currentAgreeTime > parms.ledgerMAX_CONSENSUS))
+            currentAgreeTime > parms.ledgerMAX_CONSENSUS,
+            clog))
     {
         JLOG(j.warn()) << "We see no consensus, but 80% of nodes have moved on";
+        CLOG(clog) << "We see no consensus, but 80% of nodes have moved on";
         return ConsensusState::MovedOn;
     }
 
     // no consensus yet
     JLOG(j.trace()) << "no consensus";
+    CLOG(clog) << "No consensus. ";
     return ConsensusState::No;
 }
 

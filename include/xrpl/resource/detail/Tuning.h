@@ -32,7 +32,7 @@ enum {
 
     // Balance at which the consumer is disconnected
     ,
-    dropThreshold = 15000
+    dropThreshold = 25000
 
     // The number of seconds in the exponential decay window
     // (This should be a power of two)
