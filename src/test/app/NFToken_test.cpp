@@ -1385,6 +1385,83 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
     }
 
     void
+    testAcceptOfferAuthorizedToken(FeatureBitset features)
+    {
+        auto const createNFTSellOffer =
+            [](test::jtx::Env& env,
+               test::jtx::Account const& account,
+               test::jtx::PrettyAmount const& currency) {
+                using namespace test::jtx;
+                uint256 const nftID{
+                    token::getNextID(env, account, 0u, tfTransferable)};
+                env(token::mint(account, 0), txflags(tfTransferable));
+                env.close();
+
+                uint256 const sellOfferIndex =
+                    keylet::nftoffer(account, env.seq(account)).key;
+                env(token::createOffer(account, nftID, currency),
+                    txflags(tfSellNFToken));
+                env.close();
+
+                return sellOfferIndex;
+            };
+
+        testcase("Accept offer for authorized trust lines.");
+        using namespace test::jtx;
+
+        Env env(*this, features);
+        Account G1{"G1"};
+        Account A1{"A1"};
+        Account A2{"A2"};
+        auto const USD{G1["USD"]};
+
+        env.fund(XRP(10000), G1, A1, A2);
+        env.close();
+
+        // G1 requires authorization for USD
+        env(fset(G1, asfRequireAuth));
+        env.close();
+
+        auto const limit = USD(10000);
+
+        env(trust(A1, limit));
+        env.close();
+        // G1 authorizes A1 to hold USD
+        env(trust(G1, limit, A1, tfSetfAuth));
+        env.close();
+
+        env(pay(G1, A1, USD(1000)));
+        // env(pay(G1, A2, USD(1000)), ter(tecPATH_DRY));
+        env.close();
+
+        if (features[fixEnforceNFTokenAuthTrustline])
+        {
+            auto const sellOfferIndex = createNFTSellOffer(env, A2, USD(10));
+
+            // test: G1 requires authorization, no trust line exists
+            env(token::acceptSellOffer(A1, sellOfferIndex), ter(tecNO_LINE));
+            env.close();
+
+            // trust line created, but not authorized
+            env(trust(A2, limit));
+
+            // test: G1 requires authorization
+            env(token::acceptSellOffer(A1, sellOfferIndex), ter(tecNO_AUTH));
+            env.close();
+        }
+        else
+        {
+            // Old behavior: it is possible to sell tokens and receive the
+            // currency without the authorization.
+            auto const sellOfferIndex = createNFTSellOffer(env, A2, USD(10));
+
+            // test: A2 can still receive USD for his NFT
+            env(token::acceptSellOffer(A1, sellOfferIndex));
+            env.close();
+        }
+    }
+
+    void
     testMintFlagBurnable(FeatureBitset features)
     {
         // Exercise NFTs with flagBurnable set and not set.
@@ -8030,6 +8107,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         testCreateOfferInvalid(features);
         testCancelOfferInvalid(features);
         testAcceptOfferInvalid(features);
+        testAcceptOfferAuthorizedToken(features);
         testMintFlagBurnable(features);
         testMintFlagOnlyXRP(features);
         testMintFlagCreateTrustLine(features);
@@ -8067,20 +8145,25 @@ public:
         static FeatureBitset const all{supported_amendments()};
         static FeatureBitset const fixNFTDir{fixNFTokenDirV1};
 
-        static std::array<FeatureBitset, 8> const feats{
+        static std::array<FeatureBitset, 9> const feats{
             all - fixNFTDir - fixNonFungibleTokensV1_2 - fixNFTokenRemint -
-                fixNFTokenReserve - featureNFTokenMintOffer - featureDynamicNFT,
+                fixNFTokenReserve - featureNFTokenMintOffer -
+                featureDynamicNFT - fixEnforceNFTokenAuthTrustline,
             all - disallowIncoming - fixNonFungibleTokensV1_2 -
                 fixNFTokenRemint - fixNFTokenReserve - featureNFTokenMintOffer -
-                featureDynamicNFT,
+                featureDynamicNFT - fixEnforceNFTokenAuthTrustline,
             all - fixNonFungibleTokensV1_2 - fixNFTokenRemint -
-                fixNFTokenReserve - featureNFTokenMintOffer - featureDynamicNFT,
+                fixNFTokenReserve - featureNFTokenMintOffer -
+                featureDynamicNFT - fixEnforceNFTokenAuthTrustline,
             all - fixNFTokenRemint - fixNFTokenReserve -
-                featureNFTokenMintOffer - featureDynamicNFT,
+                featureNFTokenMintOffer - featureDynamicNFT -
+                fixEnforceNFTokenAuthTrustline,
             all - fixNFTokenReserve - featureNFTokenMintOffer -
-                featureDynamicNFT,
-            all - featureNFTokenMintOffer - featureDynamicNFT,
-            all - featureDynamicNFT,
+                featureDynamicNFT - fixEnforceNFTokenAuthTrustline,
+            all - featureNFTokenMintOffer - featureDynamicNFT -
+                fixEnforceNFTokenAuthTrustline,
+            all - featureDynamicNFT - fixEnforceNFTokenAuthTrustline,
+            all - fixEnforceNFTokenAuthTrustline,
             all};
 
         if (BEAST_EXPECT(instance < feats.size()))
@@ -8151,12 +8234,21 @@ class NFTokenWOModify_test : public NFTokenBaseUtil_test
     }
 };
 
+class NFTokenWOEnforceAuth_test : public NFTokenBaseUtil_test
+{
+    void
+    run() override
+    {
+        NFTokenBaseUtil_test::run(7);
+    }
+};
+
 class NFTokenAllFeatures_test : public NFTokenBaseUtil_test
 {
     void
     run() override
     {
-        NFTokenBaseUtil_test::run(7, true);
+        NFTokenBaseUtil_test::run(8, true);
     }
 };
 
@@ -8167,6 +8259,7 @@ BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOTokenRemint, tx, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOTokenReserve, tx, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOMintOffer, tx, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOModify, tx, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(NFTokenWOEnforceAuth, tx, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(NFTokenAllFeatures, tx, ripple, 2);
 
 }  // namespace ripple
