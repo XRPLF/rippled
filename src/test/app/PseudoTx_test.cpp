@@ -48,6 +48,11 @@ struct PseudoTx_test : public beast::unit_test::suite
                 obj[sfReserveIncrement] = 0;
                 obj[sfReferenceFeeUnits] = 0;
             }
+            if (rules.enabled(featureSmartEscrow))
+            {
+                obj[sfExtensionComputeLimit] = 0;
+                obj[sfExtensionSizeLimit] = 0;
+            }
         }));
 
         res.emplace_back(STTx(ttAMENDMENT, [&](auto& obj) {
