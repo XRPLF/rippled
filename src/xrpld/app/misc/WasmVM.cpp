@@ -395,9 +395,15 @@ runEscrowWasmP4(
     }
 }
 
-WasmEdge_Result get_ledger_sqn(void * data, const WasmEdge_CallingFrameContext *,
-                    const WasmEdge_Value *In, WasmEdge_Value *Out) {
-    Out[0] = WasmEdge_ValueGenI32(((LedgerDataProvider *)data)->get_ledger_sqn());
+WasmEdge_Result
+get_ledger_sqn(
+    void* data,
+    const WasmEdge_CallingFrameContext*,
+    const WasmEdge_Value* In,
+    WasmEdge_Value* Out)
+{
+    Out[0] =
+        WasmEdge_ValueGenI32(((LedgerDataProvider*)data)->get_ledger_sqn());
     return WasmEdge_Result_Success;
 }
 
@@ -408,7 +414,7 @@ runEscrowWasm(
     LedgerDataProvider* ledgerDataProvider)
 {
     WasmEdge_VMContext* VMCxt = WasmEdge_VMCreate(NULL, NULL);
-    {//register host function
+    {  // register host function
         WasmEdge_ValType ReturnList[1] = {WasmEdge_ValTypeGenI32()};
         WasmEdge_FunctionTypeContext* HostFType =
             WasmEdge_FunctionTypeCreate(NULL, 0, ReturnList, 1);
@@ -482,8 +488,13 @@ runEscrowWasm(
         return Unexpected<TER>(tecFAILED_PROCESSING);
 }
 
-WasmEdge_Result constInt(void * data, const WasmEdge_CallingFrameContext *,
-                    const WasmEdge_Value *In, WasmEdge_Value *Out) {
+WasmEdge_Result
+constInt(
+    void* data,
+    const WasmEdge_CallingFrameContext*,
+    const WasmEdge_Value* In,
+    WasmEdge_Value* Out)
+{
     Out[0] = WasmEdge_ValueGenI32(5);
     return WasmEdge_Result_Success;
 }
@@ -571,7 +582,7 @@ runEscrowWasm(
 
     WasmEdge_VMDelete(VMCxt);
     WasmEdge_StringDelete(func);
-    //delete other obj allocated
+    // delete other obj allocated
     if (ok)
         return re;
     else

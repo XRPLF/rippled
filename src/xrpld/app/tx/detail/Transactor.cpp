@@ -1063,11 +1063,6 @@ Transactor::operator()()
                 if (doWasmData && before && after &&
                     (before->getType() == ltESCROW))
                 {
-                    // std::cout << "doWasmData " <<
-                    // strHex(before->getFieldVL(sfData)) << " " <<
-                    // strHex(after->getFieldVL(sfData)) << std::endl; std::cout
-                    // << "doWasmData \n" << before->getFullText() << std::endl
-                    // << after->getFullText() << std::endl;
                     modifiedWasmObjects.push_back(
                         std::make_pair(index, after->getFieldVL(sfData)));
                 }
