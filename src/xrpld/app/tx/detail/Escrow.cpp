@@ -182,7 +182,8 @@ EscrowCreate::preflight(PreflightContext const& ctx)
     if (ctx.tx.isFieldPresent(sfFinishFunction))
     {
         auto const code = ctx.tx.getFieldVL(sfFinishFunction);
-        if (code.size() == 0 && code.size() > view.fees().extensionSizeLimit)
+        if (code.size() == 0 &&
+            code.size() > ctx.app.config().FEES.extension_size_limit)
         {
             JLOG(ctx.j.debug()) << "EscrowCreate.FinishFunction bad size";
             return temMALFORMED;
@@ -411,7 +412,6 @@ EscrowFinish::calculateBaseFee(ReadView const& view, STTx const& tx)
         extraFee += view.fees().base * (32 + (fb->size() / 16));
     }
     // TODO: make this fee increase based on the extra compute run
-    extraFee += 1000;
 
     return Transactor::calculateBaseFee(view, tx) + extraFee;
 }
@@ -455,8 +455,9 @@ EscrowFinish::doApply()
 
     // Order of processing the release conditions:
     // FinishAfter/CancelAfter
+    // Destination validity (after SmartEscrow is enabled)
     // Condition/Fulfillment
-    // Destination validity
+    // Destination validity (before SmartEscrow is enabled)
     // FinishFunction
 
     // If a cancel time is present, a finish operation should only succeed prior
@@ -501,11 +502,11 @@ EscrowFinish::doApply()
         }
     }
 
+    AccountID const destID = (*slep)[sfDestination];
+    auto const sled = ctx_.view().peek(keylet::account(destID));
     if (ctx_.view().rules().enabled(featureSmartEscrow))
     {
         // NOTE: Escrow payments cannot be used to fund accounts.
-        AccountID const destID = (*slep)[sfDestination];
-        auto const sled = ctx_.view().peek(keylet::account(destID));
         if (!sled)
             return tecNO_DST;
 
@@ -567,8 +568,6 @@ EscrowFinish::doApply()
     if (!ctx_.view().rules().enabled(featureSmartEscrow))
     {
         // NOTE: Escrow payments cannot be used to fund accounts.
-        AccountID const destID = (*slep)[sfDestination];
-        auto const sled = ctx_.view().peek(keylet::account(destID));
         if (!sled)
             return tecNO_DST;
 
