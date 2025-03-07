@@ -841,11 +841,8 @@ modifyWasmDataFields(
     {
         auto const& index = value.first;
         auto const& data = value.second;
-        // JLOG(viewJ.fatal()) << index << strHex(data);
         if (auto const sle = view.peek(keylet::escrow(index)))
         {
-            // JLOG(viewJ.fatal()) << "modifyWasmDataFields: escrow " <<
-            // strHex(data);
             sle->setFieldVL(sfData, data);
             view.update(sle);
         }

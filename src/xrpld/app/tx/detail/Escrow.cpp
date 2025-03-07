@@ -104,6 +104,7 @@ EscrowCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
     XRPAmount txnFees{Transactor::calculateBaseFee(view, tx)};
     if (tx.isFieldPresent(sfFinishFunction))
     {
+        // TODO: make this fee increase based on the extra compute run
         txnFees += 1000;
     }
     return txnFees;
@@ -181,7 +182,7 @@ EscrowCreate::preflight(PreflightContext const& ctx)
     if (ctx.tx.isFieldPresent(sfFinishFunction))
     {
         auto const code = ctx.tx.getFieldVL(sfFinishFunction);
-        if (code.size() == 0 /* && code.size() > whateverTheMaxIs */)
+        if (code.size() == 0 && code.size() > view.fees().extensionSizeLimit)
         {
             JLOG(ctx.j.debug()) << "EscrowCreate.FinishFunction bad size";
             return temMALFORMED;
@@ -314,6 +315,7 @@ EscrowCreate::doApply()
     }
 
     // Deduct owner's balance, increment owner count
+    // TODO: determine actual reserve based on FinishFunction size
     (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
     adjustOwnerCount(
         ctx_.view(),
@@ -408,10 +410,8 @@ EscrowFinish::calculateBaseFee(ReadView const& view, STTx const& tx)
     {
         extraFee += view.fees().base * (32 + (fb->size() / 16));
     }
-    if (tx.isFieldPresent(sfFinishFunction))
-    {
-        extraFee += 1000;
-    }
+    // TODO: make this fee increase based on the extra compute run
+    extraFee += 1000;
 
     return Transactor::calculateBaseFee(view, tx) + extraFee;
 }
@@ -558,7 +558,8 @@ EscrowFinish::doApply()
     // Execute extension
     if ((*slep)[~sfFinishFunction])
     {
-        JLOG(j_.fatal()) << "HAS FINISH FUNCTION";
+        JLOG(j_.trace())
+            << "The escrow has a finish function, running WASM code...";
         // WASM execution
         auto const wasmStr = slep->getFieldVL(sfFinishFunction);
         std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
@@ -568,19 +569,17 @@ EscrowFinish::doApply()
             ctx_.tx.getJson(JsonOptions::none).toStyledString();
         auto const escrowObj =
             slep->getJson(JsonOptions::none).toStyledString();
-        // JLOG(j_.fatal()) << escrowTx;
-        // JLOG(j_.fatal()) << escrowObj;
         std::vector<uint8_t> escrowTxData(escrowTx.begin(), escrowTx.end());
         std::vector<uint8_t> escrowObjData(escrowObj.begin(), escrowObj.end());
 
         EscrowLedgerDataProvider ledgerDataProvider(ctx_.view());
 
         auto re = runEscrowWasm(wasm, funcName, &ledgerDataProvider);
-        JLOG(j_.fatal()) << "ESCROW RAN";
+        JLOG(j_.trace()) << "Escrow WASM ran";
         if (re.has_value())
         {
             auto reValue = re.value();
-            JLOG(j_.fatal()) << "Success: " + std::to_string(reValue);
+            JLOG(j_.debug()) << "WASM Success: " + std::to_string(reValue);
             if (!reValue)
             {
                 // ctx_.view().update(slep);
@@ -589,7 +588,7 @@ EscrowFinish::doApply()
         }
         else
         {
-            JLOG(j_.fatal()) << "Failure: " + transHuman(re.error());
+            JLOG(j_.debug()) << "WASM Failure: " + transHuman(re.error());
             return re.error();
         }
     }
