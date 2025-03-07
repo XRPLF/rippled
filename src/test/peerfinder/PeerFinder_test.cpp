@@ -239,52 +239,58 @@ public:
     }
 
     void
-    test_config()
+    test_peer_config()
     {
+        struct TestCase
+        {
+            std::string name;
+            std::optional<std::uint16_t> maxPeers;
+            std::optional<std::uint16_t> maxIn;
+            std::optional<std::uint16_t> maxOut;
+            std::uint16_t port;
+            std::uint16_t expectOut;
+            std::uint16_t expectIn;
+            std::uint16_t expectIpLimit;
+        };
+
         // if peers_max is configured then peers_in_max and peers_out_max are
         // ignored
-        auto run = [&](std::string const& test,
-                       std::optional<std::uint16_t> maxPeers,
-                       std::optional<std::uint16_t> maxIn,
-                       std::optional<std::uint16_t> maxOut,
-                       std::uint16_t port,
-                       std::uint16_t expectOut,
-                       std::uint16_t expectIn,
-                       std::uint16_t expectIpLimit) {
+        auto run = [&](TestCase const& tc) {
             ripple::Config c;
 
-            testcase(test);
+            testcase(tc.name);
 
             std::string toLoad = "";
             int max = 0;
-            if (maxPeers)
+            if (tc.maxPeers)
             {
-                max = maxPeers.value();
+                max = tc.maxPeers.value();
                 toLoad += "[peers_max]\n" + std::to_string(max) + "\n" +
-                    "[peers_in_max]\n" + std::to_string(maxIn.value_or(0)) +
+                    "[peers_in_max]\n" + std::to_string(tc.maxIn.value_or(0)) +
                     "\n" + "[peers_out_max]\n" +
-                    std::to_string(maxOut.value_or(0)) + "\n";
+                    std::to_string(tc.maxOut.value_or(0)) + "\n";
             }
-            else if (maxIn && maxOut)
+            else if (tc.maxIn && tc.maxOut)
             {
-                toLoad += "[peers_in_max]\n" + std::to_string(*maxIn) + "\n" +
-                    "[peers_out_max]\n" + std::to_string(*maxOut) + "\n";
+                toLoad += "[peers_in_max]\n" + std::to_string(*tc.maxIn) +
+                    "\n" + "[peers_out_max]\n" + std::to_string(*tc.maxOut) +
+                    "\n";
             }
 
             c.loadFromString(toLoad);
             BEAST_EXPECT(
                 (c.PEERS_MAX == max && c.PEERS_IN_MAX == 0 &&
                  c.PEERS_OUT_MAX == 0) ||
-                (c.PEERS_IN_MAX == *maxIn && c.PEERS_OUT_MAX == *maxOut));
+                (c.PEERS_IN_MAX == *tc.maxIn && c.PEERS_OUT_MAX == *tc.maxOut));
 
-            Config config = Config::makeConfig(c, port, false, 0);
+            Config config = Config::makeConfig(c, tc.port, false, 0);
 
             Counts counts;
             counts.onConfig(config);
             BEAST_EXPECT(
-                counts.out_max() == expectOut &&
-                counts.inboundSlots() == expectIn &&
-                config.ipLimit == expectIpLimit);
+                counts.out_max() == tc.expectOut &&
+                counts.inboundSlots() == tc.expectIn &&
+                config.ipLimit == tc.expectIpLimit);
         };
 
         // if max_peers == 0 => maxPeers = 21,
@@ -296,18 +302,129 @@ public:
         // ipLimit => if expectIn <= 21 => 2 else 2 + min(5, expectIn/21)
         // ipLimit = max(1, min(ipLimit, expectIn/2))
 
-        // legacy test with max_peers
-        run("legacy no config", {}, {}, {}, 4000, 10, 11, 2);
-        run("legacy max_peers 0", 0, 100, 10, 4000, 10, 11, 2);
-        run("legacy max_peers 5", 5, 100, 10, 4000, 10, 0, 1);
-        run("legacy max_peers 20", 20, 100, 10, 4000, 10, 10, 2);
-        run("legacy max_peers 100", 100, 100, 10, 4000, 15, 85, 6);
-        run("legacy max_peers 20, private", 20, 100, 10, 0, 20, 0, 1);
+        auto testcases = {
 
-        // test with max_in_peers and max_out_peers
-        run("new in 100/out 10", {}, 100, 10, 4000, 10, 100, 6);
-        run("new in 0/out 10", {}, 0, 10, 4000, 10, 0, 1);
-        run("new in 100/out 10, private", {}, 100, 10, 0, 10, 0, 6);
+            // legacy test with max_peers
+            TestCase{
+                .name = "legacy no config",
+                .maxPeers = {},
+                .maxIn = {},
+                .maxOut = {},
+                .port = 4000,
+                .expectOut = 10,
+                .expectIn = 11,
+                .expectIpLimit = 2,
+            },
+            TestCase{
+                .name = "legacy max_peers 0",
+                .maxPeers = 0,
+                .maxIn = 100,
+                .maxOut = 10,
+                .port = 4000,
+                .expectOut = 10,
+                .expectIn = 11,
+                .expectIpLimit = 2,
+            },
+            TestCase{
+                .name = "legacy max_peers 5",
+                .maxPeers = 5,
+                .maxIn = 100,
+                .maxOut = 10,
+                .port = 4000,
+                .expectOut = 10,
+                .expectIn = 0,
+                .expectIpLimit = 1,
+            },
+            TestCase{
+                .name = "legacy max_peers 20",
+                .maxPeers = 20,
+                .maxIn = 100,
+                .maxOut = 10,
+                .port = 4000,
+                .expectOut = 10,
+                .expectIn = 10,
+                .expectIpLimit = 2,
+            },
+            TestCase{
+                .name = "legacy max_peers 100",
+                .maxPeers = 100,
+                .maxIn = 100,
+                .maxOut = 10,
+                .port = 4000,
+                .expectOut = 15,
+                .expectIn = 85,
+                .expectIpLimit = 6,
+            },
+            TestCase{
+                .name = "legacy max_peers 20, private",
+                .maxPeers = 20,
+                .maxIn = 100,
+                .maxOut = 10,
+                .port = 0,
+                .expectOut = 20,
+                .expectIn = 0,
+                .expectIpLimit = 1,
+            },
+
+            // test with max_in_peers and max_out_peers
+            TestCase{
+                .name = "new in 100/out 10",
+                .maxPeers = {},
+                .maxIn = 100,
+                .maxOut = 10,
+                .port = 4000,
+                .expectOut = 10,
+                .expectIn = 100,
+                .expectIpLimit = 6,
+            },
+            TestCase{
+                .name = "new in 0/out 10",
+                .maxPeers = {},
+                .maxIn = 0,
+                .maxOut = 10,
+                .port = 4000,
+                .expectOut = 10,
+                .expectIn = 0,
+                .expectIpLimit = 1,
+            },
+            TestCase{
+                .name = "new in 100/out 10, private",
+                .maxPeers = {},
+                .maxIn = 100,
+                .maxOut = 10,
+                .port = 0,
+                .expectOut = 10,
+                .expectIn = 0,
+                .expectIpLimit = 6,
+            }};
+
+        for (auto const& tc : testcases)
+            run(tc);
+    }
+
+    void
+    test_private_ip_config()
+    {
+        testcase("private_ip_config");
+        auto run = [&](std::string const& toLoad) {
+            ripple::Config c;
+            c.loadFromString(toLoad);
+            Config config = Config::makeConfig(c, 0, false, 0);
+
+            BEAST_EXPECT(
+                config.allowPrivateEndpoints == c.ALLOW_PRIVATE_ENDPOINTS);
+        };
+        run(R"rippleConfig(
+[allow_private_endpoints]
+true
+)rippleConfig");
+
+        run(R"rippleConfig(
+[allow_private_endpoints]
+false
+)rippleConfig");
+
+        run(R"rippleConfig()rippleConfig");
     }
 
     void
@@ -356,14 +473,80 @@ public:
     }
 
     void
+    test_preprocess()
+    {
+        struct TestCase
+        {
+            std::string name;
+            bool allowPrivateEndpoints;
+            Endpoints endpoints;
+            int expectedSize;
+        };
+
+        auto run = [&](TestCase tc) {
+            testcase(tc.name);
+            TestStore store;
+            TestChecker checker;
+            TestStopwatch clock;
+            Config c{};
+            c.allowPrivateEndpoints = tc.allowPrivateEndpoints;
+
+            Logic<TestChecker> logic(clock, store, checker, journal_);
+            logic.config(c);
+
+            auto slot = logic.new_outbound_slot(
+                beast::IP::Endpoint::from_string("65.0.0.1:5"));
+
+            logic.preprocess(slot, tc.endpoints);
+
+            BEAST_EXPECT(tc.endpoints.size() == tc.expectedSize);
+        };
+
+        auto testcases = {
+            TestCase{
+                .name = "remove private IP",
+                .allowPrivateEndpoints = false,
+                .endpoints =
+                    Endpoints{
+                        Endpoint{
+                            beast::IP::Endpoint::from_string("10.1.1.1:5"), 1},
+                        Endpoint{
+                            beast::IP::Endpoint::from_string("300.1.1.1:5"), 1},
+                        Endpoint{
+                            beast::IP::Endpoint::from_string("65.1.1.1:5"), 1},
+                    },
+                .expectedSize = 1,
+            },
+            TestCase{
+                .name = "allow private IPs",
+                .allowPrivateEndpoints = true,
+                .endpoints =
+                    Endpoints{
+                        Endpoint{
+                            beast::IP::Endpoint::from_string("10.1.1.1:5"), 1},
+                        Endpoint{
+                            beast::IP::Endpoint::from_string("300.1.1.1:5"), 1},
+                        Endpoint{
+                            beast::IP::Endpoint::from_string("65.1.1.1:5"), 1},
+                    },
+                .expectedSize = 2,
+            }};
+
+        for (auto const& tc : testcases)
+            run(tc);
+    }
+
+    void
     run() override
     {
         test_backoff1();
         test_backoff2();
         test_duplicateOutIn();
         test_duplicateInOut();
-        test_config();
+        test_peer_config();
+        test_private_ip_config();
         test_invalid_config();
+        test_preprocess();
     }
 };
 

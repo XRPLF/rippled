@@ -1496,6 +1496,54 @@ r.ripple.com:51235
     }
 
     void
+    testAllowPrivateEndpoints()
+    {
+        testcase("allow private endpoints");
+        std::string error;
+        Config c;
+        try
+        {
+            c.loadFromString("");
+        }
+        catch (std::runtime_error& e)
+        {
+            error = e.what();
+        }
+
+        BEAST_EXPECT(error == "");
+        BEAST_EXPECT(c.ALLOW_PRIVATE_ENDPOINTS == false);
+
+        try
+        {
+            c.loadFromString(R"rippleConfig(
+[allow_private_endpoints]
+true
+)rippleConfig");
+        }
+        catch (std::runtime_error& e)
+        {
+            error = e.what();
+        }
+
+        BEAST_EXPECT(error == "");
+        BEAST_EXPECT(c.ALLOW_PRIVATE_ENDPOINTS == true);
+        try
+        {
+            c.loadFromString(R"rippleConfig(
+[allow_private_endpoints]
+false
+)rippleConfig");
+        }
+        catch (std::runtime_error& e)
+        {
+            error = e.what();
+        }
+
+        BEAST_EXPECT(error == "");
+        BEAST_EXPECT(c.ALLOW_PRIVATE_ENDPOINTS == false);
+    }
+
+    void
     run() override
     {
         testLegacy();
@@ -1513,6 +1561,7 @@ r.ripple.com:51235
         testAmendment();
         testOverlay();
         testNetworkID();
+        testAllowPrivateEndpoints();
     }
 };
 
