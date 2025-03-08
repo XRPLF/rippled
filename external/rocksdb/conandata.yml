@@ -1,0 +1,9 @@
+sources:
+  "9.7.3":
+    url: "https://github.com/facebook/rocksdb/archive/refs/tags/v9.7.3.tar.gz"
+    sha256: "acfabb989cbfb5b5c4d23214819b059638193ec33dad2d88373c46448d16d38b"
+patches:
+  "9.7.3":
+    - patch_file: "patches/9.7.3-0001-exclude-thirdparty.patch"
+      patch_description: "Do not include thirdparty.inc"
+      patch_type: "portability"

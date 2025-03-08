@@ -1,0 +1,24 @@
+diff --git i/CMakeLists.txt w/CMakeLists.txt
+index 93b884dd9..73cf78c78 100644
+--- i/CMakeLists.txt
++++ w/CMakeLists.txt
+@@ -106,9 +106,8 @@ endif()
+ include(CMakeDependentOption)
+
+ if(MSVC)
+-  option(WITH_GFLAGS "build with GFlags" OFF)
+   option(WITH_XPRESS "build with windows built in compression" OFF)
+-  option(ROCKSDB_SKIP_THIRDPARTY "skip thirdparty.inc" OFF)
++  option(ROCKSDB_SKIP_THIRDPARTY "skip thirdparty.inc" ON)
+
+   if(NOT ROCKSDB_SKIP_THIRDPARTY)
+     include(${CMAKE_CURRENT_SOURCE_DIR}/thirdparty.inc)
+@@ -126,7 +125,7 @@ else()
+     endif()
+   endif()
+
+-  if(MINGW)
++  if(MINGW OR MSVC)
+     option(WITH_GFLAGS "build with GFlags" OFF)
+   else()
+     option(WITH_GFLAGS "build with GFlags" ON)
