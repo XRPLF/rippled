@@ -93,6 +93,7 @@ find_package(SQLite3 REQUIRED)
 
 option(rocksdb "Enable RocksDB" ON)
 if(rocksdb)
+  set(ROCKSDB_SKIP_THIRDPARTY TRUE)
   find_package(RocksDB REQUIRED)
   set_target_properties(RocksDB::rocksdb PROPERTIES
     INTERFACE_COMPILE_DEFINITIONS RIPPLE_ROCKSDB_AVAILABLE=1
