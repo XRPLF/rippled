@@ -75,6 +75,7 @@ class Xrpl(ConanFile):
         'rocksdb/*:enable_sse': False,
         'rocksdb/*:lite': False,
         'rocksdb/*:shared': False,
+        'rocksdb/*:skip_thirdparty': True,
         'rocksdb/*:use_rtti': True,
         'rocksdb/*:with_jemalloc': False,
         'rocksdb/*:with_lz4': True,
