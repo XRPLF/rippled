@@ -50,10 +50,10 @@
 #include <xrpld/rpc/DeliveredAmount.h>
 #include <xrpld/rpc/MPTokenIssuanceID.h>
 #include <xrpld/rpc/ServerHandler.h>
-#include <xrpl/basics/CanProcess.h>
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/basics/mulDiv.h>
 #include <xrpl/basics/safe_cast.h>
+#include <xrpl/basics/scope.h>
 #include <xrpl/beast/rfc2616.h>
 #include <xrpl/beast/utility/rngfill.h>
 #include <xrpl/crypto/RFC1751.h>
@@ -76,6 +76,7 @@
 #include <mutex>
 #include <optional>
 #include <set>
+#include <sstream>
 #include <string>
 #include <tuple>
 #include <unordered_map>
@@ -382,9 +383,11 @@ private:
 
 public:
     bool
-    beginConsensus(uint256 const& networkClosed) override;
+    beginConsensus(
+        uint256 const& networkClosed,
+        std::unique_ptr<std::stringstream> const& clog) override;
     void
-    endConsensus() override;
+    endConsensus(std::unique_ptr<std::stringstream> const& clog) override;
     void
     setStandAlone() override;
 
@@ -404,7 +407,7 @@ public:
     isFull() override;
 
     void
-    setMode(OperatingMode om, const char* reason) override;
+    setMode(OperatingMode om) override;
 
     bool
     isBlocked() override;
@@ -875,7 +878,7 @@ NetworkOPsImp::strOperatingMode(bool const admin /* = false */) const
 inline void
 NetworkOPsImp::setStandAlone()
 {
-    setMode(OperatingMode::FULL, "setStandAlone");
+    setMode(OperatingMode::FULL);
 }
 
 inline void
@@ -1009,6 +1012,8 @@ NetworkOPsImp::setAccountHistoryJobTimer(SubAccountHistoryInfoWeak subInfo)
 void
 NetworkOPsImp::processHeartbeatTimer()
 {
+    RclConsensusLogger clog(
+        "Heartbeat Timer", mConsensus.validating(), m_journal);
     {
         std::unique_lock lock{app_.getMasterMutex()};
 
@@ -1023,12 +1028,18 @@ NetworkOPsImp::processHeartbeatTimer()
         {
             if (mMode != OperatingMode::DISCONNECTED)
             {
-                setMode(
-                    OperatingMode::DISCONNECTED,
-                    "Heartbeat: insufficient peers");
-                JLOG(m_journal.warn())
-                    << "Node count (" << numPeers << ") has fallen "
-                    << "below required minimum (" << minPeerCount_ << ").";
+                setMode(OperatingMode::DISCONNECTED);
+                std::stringstream ss;
+                ss << "Node count (" << numPeers << ") has fallen "
+                   << "below required minimum (" << minPeerCount_ << ").";
+                JLOG(m_journal.warn()) << ss.str();
+                CLOG(clog.ss()) << "set mode to DISCONNECTED: " << ss.str();
+            }
+            else
+            {
+                CLOG(clog.ss())
+                    << "already DISCONNECTED. too few peers (" << numPeers
+                    << "), need at least " << minPeerCount_;
             }
 
             // MasterMutex lock need not be held to call setHeartbeatTimer()
@@ -1036,32 +1047,47 @@ NetworkOPsImp::processHeartbeatTimer()
             // We do not call mConsensus.timerEntry until there are enough
             // peers providing meaningful inputs to consensus
             setHeartbeatTimer();
+
             return;
         }
 
         if (mMode == OperatingMode::DISCONNECTED)
         {
-            setMode(OperatingMode::CONNECTED, "Heartbeat: sufficient peers");
+            setMode(OperatingMode::CONNECTED);
             JLOG(m_journal.info())
                 << "Node count (" << numPeers << ") is sufficient.";
+            CLOG(clog.ss()) << "setting mode to CONNECTED based on " << numPeers
+                            << " peers. ";
         }
 
         // Check if the last validated ledger forces a change between these
         // states.
+        auto origMode = mMode.load();
+        CLOG(clog.ss()) << "mode: " << strOperatingMode(origMode, true);
         if (mMode == OperatingMode::SYNCING)
-            setMode(OperatingMode::SYNCING, "Heartbeat: check syncing");
+            setMode(OperatingMode::SYNCING);
         else if (mMode == OperatingMode::CONNECTED)
-            setMode(OperatingMode::CONNECTED, "Heartbeat: check connected");
+            setMode(OperatingMode::CONNECTED);
+        auto newMode = mMode.load();
+        if (origMode != newMode)
+        {
+            CLOG(clog.ss())
+                << ", changing to " << strOperatingMode(newMode, true);
+        }
+        CLOG(clog.ss()) << ". ";
     }
 
-    mConsensus.timerEntry(app_.timeKeeper().closeTime());
+    mConsensus.timerEntry(app_.timeKeeper().closeTime(), clog.ss());
 
+    CLOG(clog.ss()) << "consensus phase " << to_string(mLastConsensusPhase);
     const ConsensusPhase currPhase = mConsensus.phase();
     if (mLastConsensusPhase != currPhase)
     {
         reportConsensusStateChange(currPhase);
         mLastConsensusPhase = currPhase;
+        CLOG(clog.ss()) << " changed to " << to_string(mLastConsensusPhase);
     }
+    CLOG(clog.ss()) << ". ";
 
     setHeartbeatTimer();
 }
@@ -1638,7 +1664,7 @@ void
 NetworkOPsImp::setAmendmentBlocked()
 {
     amendmentBlocked_ = true;
-    setMode(OperatingMode::CONNECTED, "setAmendmentBlocked");
+    setMode(OperatingMode::CONNECTED);
 }
 
 inline bool
@@ -1669,7 +1695,7 @@ void
 NetworkOPsImp::setUNLBlocked()
 {
     unlBlocked_ = true;
-    setMode(OperatingMode::CONNECTED, "setUNLBlocked");
+    setMode(OperatingMode::CONNECTED);
 }
 
 inline void
@@ -1770,7 +1796,7 @@ NetworkOPsImp::checkLastClosedLedger(
 
     if ((mMode == OperatingMode::TRACKING) || (mMode == OperatingMode::FULL))
     {
-        setMode(OperatingMode::CONNECTED, "check LCL: not on consensus ledger");
+        setMode(OperatingMode::CONNECTED);
     }
 
     if (consensus)
@@ -1839,7 +1865,9 @@ NetworkOPsImp::switchLastClosedLedger(
 }
 
 bool
-NetworkOPsImp::beginConsensus(uint256 const& networkClosed)
+NetworkOPsImp::beginConsensus(
+    uint256 const& networkClosed,
+    std::unique_ptr<std::stringstream> const& clog)
 {
     XRPL_ASSERT(
         networkClosed.isNonZero(),
@@ -1857,11 +1885,12 @@ NetworkOPsImp::beginConsensus(uint256 const& networkClosed)
         // this shouldn't happen unless we jump ledgers
         if (mMode == OperatingMode::FULL)
         {
-            JLOG(m_journal.warn())
-                << "beginConsensus Don't have LCL, going to tracking";
-            setMode(OperatingMode::TRACKING, "beginConsensus: No LCL");
+            JLOG(m_journal.warn()) << "Don't have LCL, going to tracking";
+            setMode(OperatingMode::TRACKING);
+            CLOG(clog) << "beginConsensus Don't have LCL, going to tracking. ";
         }
 
+        CLOG(clog) << "beginConsensus no previous ledger. ";
         return false;
     }
 
@@ -1896,7 +1925,8 @@ NetworkOPsImp::beginConsensus(uint256 const& networkClosed)
         networkClosed,
         prevLedger,
         changes.removed,
-        changes.added);
+        changes.added,
+        clog);
 
     const ConsensusPhase currPhase = mConsensus.phase();
     if (mLastConsensusPhase != currPhase)
@@ -1935,7 +1965,7 @@ NetworkOPsImp::mapComplete(std::shared_ptr<SHAMap> const& map, bool fromAcquire)
 }
 
 void
-NetworkOPsImp::endConsensus()
+NetworkOPsImp::endConsensus(std::unique_ptr<std::stringstream> const& clog)
 {
     uint256 deadLedger = m_ledgerMaster.getClosedLedger()->info().parentHash;
 
@@ -1953,7 +1983,10 @@ NetworkOPsImp::endConsensus()
         checkLastClosedLedger(app_.overlay().getActivePeers(), networkClosed);
 
     if (networkClosed.isZero())
+    {
+        CLOG(clog) << "endConsensus last closed ledger is zero. ";
         return;
+    }
 
     // WRITEME: Unless we are in FULL and in the process of doing a consensus,
     // we must count how many nodes share our LCL, how many nodes disagree with
@@ -1969,7 +2002,7 @@ NetworkOPsImp::endConsensus()
         // validations we have for LCL.  If the ledger is good enough, go to
         // TRACKING - TODO
         if (!needNetworkLedger_)
-            setMode(OperatingMode::TRACKING, "endConsensus: check tracking");
+            setMode(OperatingMode::TRACKING);
     }
 
     if (((mMode == OperatingMode::CONNECTED) ||
@@ -1983,11 +2016,11 @@ NetworkOPsImp::endConsensus()
         if (app_.timeKeeper().now() < (current->info().parentCloseTime +
                                        2 * current->info().closeTimeResolution))
         {
-            setMode(OperatingMode::FULL, "endConsensus: check full");
+            setMode(OperatingMode::FULL);
         }
     }
 
-    beginConsensus(networkClosed);
+    beginConsensus(networkClosed, clog);
 }
 
 void
@@ -1995,7 +2028,7 @@ NetworkOPsImp::consensusViewChange()
 {
     if ((mMode == OperatingMode::FULL) || (mMode == OperatingMode::TRACKING))
     {
-        setMode(OperatingMode::CONNECTED, "consensusViewChange");
+        setMode(OperatingMode::CONNECTED);
     }
 }
 
@@ -2313,7 +2346,7 @@ NetworkOPsImp::pubPeerStatus(std::function<Json::Value(void)> const& func)
 }
 
 void
-NetworkOPsImp::setMode(OperatingMode om, const char* reason)
+NetworkOPsImp::setMode(OperatingMode om)
 {
     using namespace std::chrono_literals;
     if (om == OperatingMode::CONNECTED)
@@ -2333,12 +2366,11 @@ NetworkOPsImp::setMode(OperatingMode om, const char* reason)
     if (mMode == om)
         return;
 
-    auto const sink = om < mMode ? m_journal.warn() : m_journal.info();
     mMode = om;
 
     accounting_.mode(om);
 
-    JLOG(sink) << "STATE->" << strOperatingMode() << " - " << reason;
+    JLOG(m_journal.info()) << "STATE->" << strOperatingMode();
     pubServer();
 }
 
@@ -2350,28 +2382,34 @@ NetworkOPsImp::recvValidation(
     JLOG(m_journal.trace())
         << "recvValidation " << val->getLedgerHash() << " from " << source;
 
+    std::unique_lock lock(validationsMutex_);
+    BypassAccept bypassAccept = BypassAccept::no;
+    try
     {
-        CanProcess const check(
-            validationsMutex_, pendingValidations_, val->getLedgerHash());
-        try
-        {
-            BypassAccept bypassAccept =
-                check ? BypassAccept::no : BypassAccept::yes;
-            handleNewValidation(app_, val, source, bypassAccept, m_journal);
-        }
-        catch (std::exception const& e)
-        {
-            JLOG(m_journal.warn())
-                << "Exception thrown for handling new validation "
-                << val->getLedgerHash() << ": " << e.what();
-        }
-        catch (...)
-        {
-            JLOG(m_journal.warn())
-                << "Unknown exception thrown for handling new validation "
-                << val->getLedgerHash();
-        }
+        if (pendingValidations_.contains(val->getLedgerHash()))
+            bypassAccept = BypassAccept::yes;
+        else
+            pendingValidations_.insert(val->getLedgerHash());
+        scope_unlock unlock(lock);
+        handleNewValidation(app_, val, source, bypassAccept, m_journal);
     }
+    catch (std::exception const& e)
+    {
+        JLOG(m_journal.warn())
+            << "Exception thrown for handling new validation "
+            << val->getLedgerHash() << ": " << e.what();
+    }
+    catch (...)
+    {
+        JLOG(m_journal.warn())
+            << "Unknown exception thrown for handling new validation "
+            << val->getLedgerHash();
+    }
+    if (bypassAccept == BypassAccept::no)
+    {
+        pendingValidations_.erase(val->getLedgerHash());
+    }
+    lock.unlock();
 
     pubValidation(val);
 
@@ -3915,7 +3953,7 @@ NetworkOPsImp::acceptLedger(
 
     // FIXME Could we improve on this and remove the need for a specialized
     // API in Consensus?
-    beginConsensus(m_ledgerMaster.getClosedLedger()->info().hash);
+    beginConsensus(m_ledgerMaster.getClosedLedger()->info().hash, {});
     mConsensus.simulate(app_.timeKeeper().closeTime(), consensusDelay);
     return m_ledgerMaster.getCurrentLedger()->info().seq;
 }

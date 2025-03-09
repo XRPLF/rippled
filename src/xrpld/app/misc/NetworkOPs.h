@@ -180,9 +180,11 @@ public:
 
     // network state machine
     virtual bool
-    beginConsensus(uint256 const& netLCL) = 0;
+    beginConsensus(
+        uint256 const& netLCL,
+        std::unique_ptr<std::stringstream> const& clog) = 0;
     virtual void
-    endConsensus() = 0;
+    endConsensus(std::unique_ptr<std::stringstream> const& clog) = 0;
     virtual void
     setStandAlone() = 0;
     virtual void
@@ -197,7 +199,7 @@ public:
     virtual bool
     isFull() = 0;
     virtual void
-    setMode(OperatingMode om, const char* reason) = 0;
+    setMode(OperatingMode om) = 0;
     virtual bool
     isBlocked() = 0;
     virtual bool

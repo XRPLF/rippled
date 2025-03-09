@@ -154,7 +154,8 @@ private:
         update(Resource::Charge f, std::string const& add)
         {
             XRPL_ASSERT(
-                f >= fee, "ripple::PeerImp::ChargeWithContext fee increases");
+                f >= fee,
+                "ripple::PeerImp::ChargeWithContext::update : fee increases");
             fee = f;
             if (!context.empty())
             {
@@ -194,15 +195,6 @@ private:
     bool vpReduceRelayEnabled_ = false;
     bool ledgerReplayEnabled_ = false;
     LedgerReplayMsgHandler ledgerReplayMsgHandler_;
-
-    // Track message requests and responses
-    // TODO: Use an expiring cache or something
-    using MessageCookieMap =
-        std::map<uint256, std::set<std::optional<uint64_t>>>;
-    using PeerCookieMap =
-        std::map<std::shared_ptr<Peer>, std::set<std::optional<uint64_t>>>;
-    std::mutex mutable cookieLock_;
-    MessageCookieMap messageRequestCookies_;
 
     friend class OverlayImpl;
 
@@ -450,13 +442,6 @@ public:
         return txReduceRelayEnabled_;
     }
 
-    //
-    // Messages
-    //
-
-    std::set<std::optional<uint64_t>>
-    releaseRequestCookies(uint256 const& requestHash) override;
-
 private:
     void
     close();
@@ -655,28 +640,16 @@ private:
     void
     sendLedgerBase(
         std::shared_ptr<Ledger const> const& ledger,
-        protocol::TMLedgerData& ledgerData,
-        PeerCookieMap const& destinations);
-
-    void
-    sendToMultiple(
-        protocol::TMLedgerData& ledgerData,
-        PeerCookieMap const& destinations);
+        protocol::TMLedgerData& ledgerData);
 
     std::shared_ptr<Ledger const>
-    getLedger(
-        std::shared_ptr<protocol::TMGetLedger> const& m,
-        uint256 const& mHash);
+    getLedger(std::shared_ptr<protocol::TMGetLedger> const& m);
 
     std::shared_ptr<SHAMap const>
-    getTxSet(
-        std::shared_ptr<protocol::TMGetLedger> const& m,
-        uint256 const& mHash) const;
+    getTxSet(std::shared_ptr<protocol::TMGetLedger> const& m) const;
 
     void
-    processLedgerRequest(
-        std::shared_ptr<protocol::TMGetLedger> const& m,
-        uint256 const& mHash);
+    processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m);
 };
 
 //------------------------------------------------------------------------------
