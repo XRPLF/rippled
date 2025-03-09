@@ -76,6 +76,9 @@ enum class SkipEntry : bool { No = false, Yes };
 [[nodiscard]] bool
 hasExpired(ReadView const& view, std::optional<std::uint32_t> const& exp);
 
+[[nodiscard]] bool
+isDefaultRipple(ReadView const& view, Issue const& issue);
+
 /** Controls the treatment of frozen account balances */
 enum FreezeHandling { fhIGNORE_FREEZE, fhZERO_IF_FROZEN };
 
@@ -287,6 +290,13 @@ transferRate(ReadView const& view, AccountID const& issuer);
  */
 [[nodiscard]] Rate
 transferRate(ReadView const& view, MPTID const& issuanceID);
+
+/** Returns the transfer fee as Rate based on the type of token
+ * @param view The ledger view
+ * @param amount The amount to transfer
+ */
+[[nodiscard]] Rate
+transferRate(ReadView const& view, STAmount const& amount);
 
 /** Returns `true` if the directory is empty
     @param key The key of the directory
@@ -547,6 +557,11 @@ transferXRP(
 requireAuth(ReadView const& view, Issue const& issue, AccountID const& account);
 [[nodiscard]] TER
 requireAuth(
+    ReadView const& view,
+    MPTIssue const& mptIssue,
+    AccountID const& account);
+[[nodiscard]] TER
+requireAuthIfNeeded(
     ReadView const& view,
     MPTIssue const& mptIssue,
     AccountID const& account);

@@ -707,12 +707,12 @@ struct DepositPreauth_test : public beast::unit_test::suite
                 if (!supportsPreauth)
                 {
                     auto const seq1 = env.seq(alice);
-                    env(escrow(alice, becky, XRP(100)),
-                        finish_time(env.now() + 1s));
+                    env(escrow::create(alice, becky, XRP(100)),
+                        escrow::finish_time(env.now() + 1s));
                     env.close();
 
                     // Failed as rule is disabled
-                    env(finish(gw, alice, seq1),
+                    env(escrow::finish(gw, alice, seq1),
                         fee(1500),
                         ter(tecNO_PERMISSION));
                     env.close();
@@ -1379,12 +1379,13 @@ struct DepositPreauth_test : public beast::unit_test::suite
             env.close();
 
             auto const seq = env.seq(alice);
-            env(escrow(alice, bob, XRP(1000)), finish_time(env.now() + 1s));
+            env(escrow::create(alice, bob, XRP(1000)),
+                escrow::finish_time(env.now() + 1s));
             env.close();
 
             // zelda can't finish escrow with invalid credentials
             {
-                env(finish(zelda, alice, seq),
+                env(escrow::finish(zelda, alice, seq),
                     credentials::ids({}),
                     ter(temMALFORMED));
                 env.close();
@@ -1396,14 +1397,14 @@ struct DepositPreauth_test : public beast::unit_test::suite
                     "0E0B04ED60588A758B67E21FBBE95AC5A63598BA951761DC0EC9C08D7E"
                     "01E034";
 
-                env(finish(zelda, alice, seq),
+                env(escrow::finish(zelda, alice, seq),
                     credentials::ids({invalidIdx}),
                     ter(tecBAD_CREDENTIALS));
                 env.close();
             }
 
             {  // Ledger closed, time increased, zelda can't finish escrow
-                env(finish(zelda, alice, seq),
+                env(escrow::finish(zelda, alice, seq),
                     credentials::ids({credIdx}),
                     fee(1500),
                     ter(tecEXPIRED));

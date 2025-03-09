@@ -170,6 +170,18 @@ hasExpired(ReadView const& view, std::optional<std::uint32_t> const& exp)
 }
 
 bool
+isDefaultRipple(ReadView const& view, Issue const& issue)
+{
+    if (isXRP(issue))
+        return true;
+
+    if (auto const sle = view.read(keylet::account(issue.account)))
+        return (sle->getFlags() & lsfDefaultRipple);
+
+    return false;
+}
+
+bool
 isGlobalFrozen(ReadView const& view, AccountID const& issuer)
 {
     if (isXRP(issuer))
@@ -668,6 +680,19 @@ transferRate(ReadView const& view, MPTID const& issuanceID)
         return Rate{1'000'000'000u + 10'000 * sle->getFieldU16(sfTransferFee)};
 
     return parityRate;
+}
+
+Rate
+transferRate(ReadView const& view, STAmount const& amount)
+{
+    return std::visit(
+        [&]<ValidIssueType TIss>(TIss const& issue) {
+            if constexpr (std::is_same_v<TIss, Issue>)
+                return transferRate(view, issue.getIssuer());
+            else
+                return transferRate(view, issue.getMptID());
+        },
+        amount.asset().value());
 }
 
 bool
@@ -1945,6 +1970,37 @@ requireAuth(
         !(sleToken->getFlags() & lsfMPTAuthorized))
         return tecNO_AUTH;
 
+    return tesSUCCESS;
+}
+
+TER
+requireAuthIfNeeded(
+    ReadView const& view,
+    MPTIssue const& mptIssue,
+    AccountID const& account)
+{
+    auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
+    auto const sleIssuance = view.read(mptID);
+
+    if (!sleIssuance)
+        return tecOBJECT_NOT_FOUND;
+
+    auto const mptIssuer = sleIssuance->getAccountID(sfIssuer);
+
+    // issuer is always "authorized"
+    if (mptIssuer == account)
+        return tesSUCCESS;
+
+    if (sleIssuance->getFieldU32(sfFlags) & lsfMPTRequireAuth)
+    {
+        auto const mptokenID = keylet::mptoken(mptID.key, account);
+        auto const sleToken = view.read(mptokenID);
+        if (!sleToken)
+            return tecNO_AUTH;
+
+        if (!(sleToken->getFlags() & lsfMPTAuthorized))
+            return tecNO_AUTH;
+    }
     return tesSUCCESS;
 }
 

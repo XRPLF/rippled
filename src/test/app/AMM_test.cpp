@@ -3387,10 +3387,10 @@ private:
 
         // Can't pay into AMM with escrow.
         testAMM([&](AMM& ammAlice, Env& env) {
-            env(escrow(carol, ammAlice.ammAccount(), XRP(1)),
-                condition(cb1),
-                finish_time(env.now() + 1s),
-                cancel_time(env.now() + 2s),
+            env(escrow::create(carol, ammAlice.ammAccount(), XRP(1)),
+                escrow::condition(escrow::cb1),
+                escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 2s),
                 fee(1'500),
                 ter(tecNO_PERMISSION));
         });
