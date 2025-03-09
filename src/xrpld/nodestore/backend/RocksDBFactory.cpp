@@ -191,8 +191,12 @@ public:
 
         if (keyValues.exists("bbt_options"))
         {
+            rocksdb::ConfigOptions config_options;
             auto const s = rocksdb::GetBlockBasedTableOptionsFromString(
-                table_options, get(keyValues, "bbt_options"), &table_options);
+                config_options,
+                table_options,
+                get(keyValues, "bbt_options"),
+                &table_options);
             if (!s.ok())
                 Throw<std::runtime_error>(
                     std::string("Unable to set RocksDB bbt_options: ") +
