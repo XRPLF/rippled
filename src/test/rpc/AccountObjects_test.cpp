@@ -696,7 +696,6 @@ public:
             // gw creates an escrow that we can look for in the ledger.
             Json::Value jvEscrow;
             jvEscrow[jss::TransactionType] = jss::EscrowCreate;
-            jvEscrow[jss::Flags] = tfUniversal;
             jvEscrow[jss::Account] = gw.human();
             jvEscrow[jss::Destination] = gw.human();
             jvEscrow[jss::Amount] = XRP(100).value().getJson(JsonOptions::none);
@@ -910,7 +909,6 @@ public:
             // for.
             Json::Value jvPayChan;
             jvPayChan[jss::TransactionType] = jss::PaymentChannelCreate;
-            jvPayChan[jss::Flags] = tfUniversal;
             jvPayChan[jss::Account] = gw.human();
             jvPayChan[jss::Destination] = alice.human();
             jvPayChan[jss::Amount] =
@@ -936,7 +934,6 @@ public:
             // gw creates a DID that we can look for in the ledger.
             Json::Value jvDID;
             jvDID[jss::TransactionType] = jss::DIDSet;
-            jvDID[jss::Flags] = tfUniversal;
             jvDID[jss::Account] = gw.human();
             jvDID[sfURI.jsonName] = strHex(std::string{"uri"});
             env(jvDID);
