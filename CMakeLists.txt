@@ -16,6 +16,9 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+# Suppress unknown pragma warnings
+add_compile_options(-Wno-unknown-pragmas)
+
 # make GIT_COMMIT_HASH define available to all sources
 find_package(Git)
 if(Git_FOUND)
