@@ -19,7 +19,7 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if (MSVC)
     add_compile_options(/wd4068)  # Ignore unknown pragmas in MSVC
 else()
-    add_compile_options(-Wno-unknown-pragmas)
+    add_compile_options(-Wno-unknown-pragmas -Wno-subobject-linkage) #  -Wno-subobject-linkage can be removed when we upgrade GCC version to at least 13.3
 endif()
 
 # make GIT_COMMIT_HASH define available to all sources
