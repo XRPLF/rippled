@@ -188,6 +188,9 @@ STVar::constructST(SerializedTypeID id, int depth, Args&&... args)
         case STI_AMOUNT:
             construct<STAmount>(std::forward<Args>(args)...);
             return;
+        case STI_NUMBER:
+            construct<STNumber>(std::forward<Args>(args)...);
+            return;
         case STI_UINT128:
             construct<STUInt128>(std::forward<Args>(args)...);
             return;

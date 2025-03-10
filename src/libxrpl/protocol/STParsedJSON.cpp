@@ -32,6 +32,7 @@
 #include <xrpl/protocol/STBlob.h>
 #include <xrpl/protocol/STInteger.h>
 #include <xrpl/protocol/STIssue.h>
+#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/STVector256.h>
@@ -565,6 +566,20 @@ parseLeaf(
             {
                 ret =
                     detail::make_stvar<STAmount>(amountFromJson(field, value));
+            }
+            catch (std::exception const&)
+            {
+                error = invalid_data(json_name, fieldName);
+                return ret;
+            }
+
+            break;
+
+        case STI_NUMBER:
+            try
+            {
+                ret =
+                    detail::make_stvar<STNumber>(numberFromJson(field, value));
             }
             catch (std::exception const&)
             {

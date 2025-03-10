@@ -212,7 +212,7 @@ CashCheck::preclaim(PreclaimContext const& ctx)
                 if (!sleTrustLine)
                 {
                     // We can only create a trust line if the issuer does not
-                    // have requireAuth set.
+                    // have lsfRequireAuth set.
                     return tecNO_AUTH;
                 }
 

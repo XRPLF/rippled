@@ -95,11 +95,12 @@ JSS(SigningPubKey);                      // field.
 JSS(Subject);                            // in: Credential transactions
 JSS(TakerGets);                          // field.
 JSS(TakerPays);                          // field.
-JSS(TxnSignature);                       // field.
 JSS(TradingFee);                         // in/out: AMM trading fee
 JSS(TransactionType);                    // in: TransactionSign.
 JSS(TransferRate);                       // in: TransferRate.
+JSS(TxnSignature);                       // field.
 JSS(URI);                                // field.
+JSS(VaultID);                            // field.
 JSS(VoteSlots);                          // out: AMM Vote
 JSS(aborted);                            // out: InboundLedger
 JSS(accepted);               // out: LedgerToJson, OwnerInfo, SubmitTransaction
@@ -725,6 +726,8 @@ JSS(write_load);              // out: GetCounts
 #pragma pop_macro("LEDGER_ENTRY_DUPLICATE")
 
 #undef JSS
+
+// clang-format on
 
 }  // namespace jss
 }  // namespace ripple
