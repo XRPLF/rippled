@@ -344,6 +344,7 @@ enum TECcodes : TERUnderlyingType {
     tecARRAY_TOO_LARGE = 191,
     tecLOCKED = 192,
     tecBAD_CREDENTIALS = 193,
+    tecWASM_REJECTED = 194,
 };
 
 //------------------------------------------------------------------------------
