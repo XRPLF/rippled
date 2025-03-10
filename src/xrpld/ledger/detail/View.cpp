@@ -296,7 +296,7 @@ isAnyFrozen(
 bool
 isVaultPseudoAccountFrozen(ReadView const& view, MPTIssue const& mptShare)
 {
-    if (view.rules().enabled(featureSingleAssetVault))
+    if (!view.rules().enabled(featureSingleAssetVault))
         return false;
 
     auto const mptIssuance =
