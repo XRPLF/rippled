@@ -58,28 +58,28 @@ public:
     */
     ~LoadManager();
 
-    /** Turn on deadlock detection.
+    /** Turn on stall detection.
 
-        The deadlock detector begins in a disabled state. After this function
-        is called, it will report deadlocks using a separate thread whenever
+        The stall detector begins in a disabled state. After this function
+        is called, it will report stalls using a separate thread whenever
         the reset function is not called at least once per 10 seconds.
 
-        @see resetDeadlockDetector
+        @see resetStallDetector
     */
-    // VFALCO NOTE it seems that the deadlock detector has an "armed" state
+    // VFALCO NOTE it seems that the stall detector has an "armed" state
     //             to prevent it from going off during program startup if
     //             there's a lengthy initialization operation taking place?
     //
     void
-    activateDeadlockDetector();
+    activateStallDetector();
 
-    /** Reset the deadlock detection timer.
+    /** Reset the stall detection timer.
 
-        A dedicated thread monitors the deadlock timer, and if too much
+        A dedicated thread monitors the stall timer, and if too much
         time passes it will produce log warnings.
     */
     void
-    resetDeadlockDetector();
+    heartbeat();
 
     //--------------------------------------------------------------------------
 
@@ -98,12 +98,12 @@ private:
     beast::Journal const journal_;
 
     std::thread thread_;
-    std::mutex mutex_;  // Guards deadLock_, armed_, cv_
+    std::mutex mutex_;  // Guards lastHeartbeat_, armed_, cv_
     std::condition_variable cv_;
     bool stop_ = false;
 
-    std::chrono::steady_clock::time_point
-        deadLock_;  // Detect server deadlocks.
+    // Detect server stalls
+    std::chrono::steady_clock::time_point lastHeartbeat_;
     bool armed_;
 
     friend std::unique_ptr<LoadManager>

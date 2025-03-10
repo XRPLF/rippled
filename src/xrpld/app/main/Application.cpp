@@ -1557,10 +1557,10 @@ ApplicationImp::run()
     if (!config_->standalone())
     {
         // VFALCO NOTE This seems unnecessary. If we properly refactor the load
-        //             manager then the deadlock detector can just always be
+        //             manager then the stall detector can just always be
         //             "armed"
         //
-        getLoadManager().activateDeadlockDetector();
+        getLoadManager().activateStallDetector();
     }
 
     {
