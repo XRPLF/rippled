@@ -16,8 +16,11 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Suppress unknown pragma warnings
-add_compile_options(-Wno-unknown-pragmas)
+if (MSVC)
+    add_compile_options(/wd4068)  # Ignore unknown pragmas in MSVC
+else()
+    add_compile_options(-Wno-unknown-pragmas)
+endif()
 
 # make GIT_COMMIT_HASH define available to all sources
 find_package(Git)
