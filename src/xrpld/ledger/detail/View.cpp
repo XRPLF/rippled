@@ -2518,7 +2518,9 @@ assetsToSharesDeposit(
     std::shared_ptr<SLE> const& vault,
     STAmount const& assets)
 {
-    assert(assets.asset() == vault->at(sfAsset));
+    XRPL_ASSERT(
+        assets.asset() == vault->at(sfAsset),
+        "ripple::assetsToSharesDeposit : assets and vault match");
     Number assetTotal = *vault->at(sfAssetTotal);
     STAmount shares{
         vault->at(sfMPTokenIssuanceID), static_cast<Number>(assets)};
@@ -2535,7 +2537,9 @@ assetsToSharesWithdraw(
     std::shared_ptr<SLE> const& vault,
     STAmount const& assets)
 {
-    assert(assets.asset() == vault->at(sfAsset));
+    XRPL_ASSERT(
+        assets.asset() == vault->at(sfAsset),
+        "ripple::assetsToSharesWithdraw : assets and vault match");
     Number assetTotal = vault->at(sfAssetTotal);
     assetTotal -= vault->at(sfLossUnrealized);
     STAmount shares{vault->at(sfMPTokenIssuanceID)};
@@ -2552,7 +2556,9 @@ sharesToAssetsWithdraw(
     std::shared_ptr<SLE> const& vault,
     STAmount const& shares)
 {
-    assert(shares.asset() == vault->at(sfMPTokenIssuanceID));
+    XRPL_ASSERT(
+        shares.asset() == vault->at(sfMPTokenIssuanceID),
+        "ripple::sharesToAssetsWithdraw : shares and vault match");
     Number assetTotal = vault->at(sfAssetTotal);
     assetTotal -= vault->at(sfLossUnrealized);
     STAmount assets{vault->at(sfAsset)};
