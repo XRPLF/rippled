@@ -61,7 +61,7 @@ public:
     /** Turn on stall detection.
 
         The stall detector begins in a disabled state. After this function
-        is called, it will report deadlocks using a separate thread whenever
+        is called, it will report stalls using a separate thread whenever
         the reset function is not called at least once per 10 seconds.
 
         @see resetStallDetector
