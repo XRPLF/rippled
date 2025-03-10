@@ -82,6 +82,11 @@ VaultWithdraw::doApply()
     if (!vault)
         return tecOBJECT_NOT_FOUND;
 
+    auto const mptIssuanceID = (*vault)[sfMPTokenIssuanceID];
+    auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
+    if (!sleIssuance)
+        return tefINTERNAL;
+
     // Note, we intentionally do not check lsfVaultPrivate flag on the Vault. If
     // you have a share in the vault, it means you were at some point authorized
     // to deposit into it, and this means you are also indefinitely authorized
@@ -89,19 +94,19 @@ VaultWithdraw::doApply()
 
     auto amount = ctx_.tx[sfAmount];
     auto const asset = vault->at(sfAsset);
-    auto const share = MPTIssue(vault->at(sfMPTokenIssuanceID));
+    auto const share = MPTIssue(mptIssuanceID);
     STAmount shares, assets;
     if (amount.asset() == asset)
     {
         // Fixed assets, variable shares.
         assets = amount;
-        shares = assetsToSharesWithdraw(view(), vault, assets);
+        shares = assetsToSharesWithdraw(vault, sleIssuance, assets);
     }
     else if (amount.asset() == share)
     {
         // Fixed shares, variable assets.
         shares = amount;
-        assets = sharesToAssetsWithdraw(view(), vault, shares);
+        assets = sharesToAssetsWithdraw(vault, sleIssuance, shares);
     }
     else
         return tefINTERNAL;

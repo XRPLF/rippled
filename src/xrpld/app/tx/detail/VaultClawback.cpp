@@ -103,6 +103,11 @@ VaultClawback::doApply()
     if (!vault)
         return tecOBJECT_NOT_FOUND;
 
+    auto const mptIssuanceID = (*vault)[sfMPTokenIssuanceID];
+    auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
+    if (!sleIssuance)
+        return tefINTERNAL;
+
     Asset const asset = vault->at(sfAsset);
     STAmount const amount = [&]() -> STAmount {
         auto const maybeAmount = tx[~sfAmount];
@@ -126,12 +131,12 @@ VaultClawback::doApply()
             FreezeHandling::fhIGNORE_FREEZE,
             AuthHandling::ahIGNORE_AUTH,
             j_);
-        assets = sharesToAssetsWithdraw(view(), vault, shares);
+        assets = sharesToAssetsWithdraw(vault, sleIssuance, shares);
     }
     else
     {
         assets = amount;
-        shares = assetsToSharesWithdraw(view(), vault, assets);
+        shares = assetsToSharesWithdraw(vault, sleIssuance, assets);
     }
 
     // Clamp to maximum.
@@ -139,7 +144,7 @@ VaultClawback::doApply()
     if (assets > maxAssets)
     {
         assets = maxAssets;
-        shares = assetsToSharesWithdraw(view(), vault, assets);
+        shares = assetsToSharesWithdraw(vault, sleIssuance, assets);
     }
 
     if (shares == beast::zero)

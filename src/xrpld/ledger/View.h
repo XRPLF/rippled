@@ -723,8 +723,8 @@ deleteAMMTrustLine(
 // when they deposit a fixed amount of assets.
 [[nodiscard]] STAmount
 assetsToSharesDeposit(
-    ReadView const& view,
-    std::shared_ptr<SLE> const& vault,
+    std::shared_ptr<SLE const> const& vault,
+    std::shared_ptr<SLE const> const& issuance,
     STAmount const& assets);
 
 // From the perspective of a vault,
@@ -732,8 +732,8 @@ assetsToSharesDeposit(
 // when they ask to withdraw a fixed amount of assets.
 [[nodiscard]] STAmount
 assetsToSharesWithdraw(
-    ReadView const& view,
-    std::shared_ptr<SLE> const& vault,
+    std::shared_ptr<SLE const> const& vault,
+    std::shared_ptr<SLE const> const& issuance,
     STAmount const& assets);
 
 // From the perspective of a vault,
@@ -741,8 +741,8 @@ assetsToSharesWithdraw(
 // when they redeem a fixed amount of shares.
 [[nodiscard]] STAmount
 sharesToAssetsWithdraw(
-    ReadView const& view,
-    std::shared_ptr<SLE> const& vault,
+    std::shared_ptr<SLE const> const& vault,
+    std::shared_ptr<SLE const> const& issuance,
     STAmount const& shares);
 
 }  // namespace ripple

@@ -2504,37 +2504,29 @@ rippleCredit(
         saAmount.asset().value());
 }
 
-static Number
-getShareTotal(ReadView const& view, std::shared_ptr<SLE> const& vault)
-{
-    auto issuance =
-        view.read(keylet::mptIssuance(vault->at(sfMPTokenIssuanceID)));
-    return issuance->at(sfOutstandingAmount);
-}
-
 [[nodiscard]] STAmount
 assetsToSharesDeposit(
-    ReadView const& view,
-    std::shared_ptr<SLE> const& vault,
+    std::shared_ptr<SLE const> const& vault,
+    std::shared_ptr<SLE const> const& issuance,
     STAmount const& assets)
 {
     XRPL_ASSERT(
         assets.asset() == vault->at(sfAsset),
         "ripple::assetsToSharesDeposit : assets and vault match");
-    Number assetTotal = *vault->at(sfAssetTotal);
+    Number assetTotal = vault->at(sfAssetTotal);
     STAmount shares{
         vault->at(sfMPTokenIssuanceID), static_cast<Number>(assets)};
     if (assetTotal == 0)
         return shares;
-    Number shareTotal = getShareTotal(view, vault);
+    Number shareTotal = issuance->at(sfOutstandingAmount);
     shares = shareTotal * (assets / assetTotal);
     return shares;
 }
 
 [[nodiscard]] STAmount
 assetsToSharesWithdraw(
-    ReadView const& view,
-    std::shared_ptr<SLE> const& vault,
+    std::shared_ptr<SLE const> const& vault,
+    std::shared_ptr<SLE const> const& issuance,
     STAmount const& assets)
 {
     XRPL_ASSERT(
@@ -2545,15 +2537,15 @@ assetsToSharesWithdraw(
     STAmount shares{vault->at(sfMPTokenIssuanceID)};
     if (assetTotal == 0)
         return shares;
-    Number shareTotal = getShareTotal(view, vault);
+    Number shareTotal = issuance->at(sfOutstandingAmount);
     shares = shareTotal * (assets / assetTotal);
     return shares;
 }
 
 [[nodiscard]] STAmount
 sharesToAssetsWithdraw(
-    ReadView const& view,
-    std::shared_ptr<SLE> const& vault,
+    std::shared_ptr<SLE const> const& vault,
+    std::shared_ptr<SLE const> const& issuance,
     STAmount const& shares)
 {
     XRPL_ASSERT(
@@ -2564,7 +2556,7 @@ sharesToAssetsWithdraw(
     STAmount assets{vault->at(sfAsset)};
     if (assetTotal == 0)
         return assets;
-    Number shareTotal = getShareTotal(view, vault);
+    Number shareTotal = issuance->at(sfOutstandingAmount);
     assets = assetTotal * (shares / shareTotal);
     return assets;
 }
