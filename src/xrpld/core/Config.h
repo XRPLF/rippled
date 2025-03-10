@@ -78,7 +78,6 @@ struct FeeSetup
     XRPAmount account_reserve{10 * DROPS_PER_XRP};
 
     /** The per-owned item reserve requirement in drops. */
-    // equivalent of 0.2 * DROPS_PER_XRP but with integer math
     XRPAmount owner_reserve{2 * DROPS_PER_XRP};
 
     /** The compute limit for Feature Extensions. */
