@@ -482,12 +482,24 @@ accountHolds(
     {
         amount = STAmount{mptIssue, sleMpt->getFieldU64(sfMPTAmount)};
 
-        // only if auth check is needed, as it needs to do an additional read
-        // operation
-        if (zeroIfUnauthorized == ahZERO_IF_UNAUTHORIZED)
+        // Only if auth check is needed, as it needs to do an additional read
+        // operation. Note featureSingleAssetVault will affect error codes.
+        if (zeroIfUnauthorized == ahZERO_IF_UNAUTHORIZED &&
+            view.rules().enabled(featureSingleAssetVault))
         {
             if (auto const err = requireAuth(view, mptIssue, account);
                 !isTesSuccess(err))
+                amount.clear(mptIssue);
+        }
+        else if (zeroIfUnauthorized == ahZERO_IF_UNAUTHORIZED)
+        {
+            auto const sleIssuance =
+                view.read(keylet::mptIssuance(mptIssue.getMptID()));
+
+            // if auth is enabled on the issuance and mpt is not authorized,
+            // clear amount
+            if (sleIssuance && sleIssuance->isFlag(lsfMPTRequireAuth) &&
+                !sleMpt->isFlag(lsfMPTAuthorized))
                 amount.clear(mptIssue);
         }
     }
