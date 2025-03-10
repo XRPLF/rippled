@@ -31,7 +31,7 @@
 namespace ripple {
 
 LoadManager::LoadManager(Application& app, beast::Journal journal)
-    : app_(app), journal_(journal), deadLock_(), armed_(false)
+    : app_(app), journal_(journal), lastHeartbeat_(), armed_(false)
 {
 }
 
@@ -52,19 +52,19 @@ LoadManager::~LoadManager()
 //------------------------------------------------------------------------------
 
 void
-LoadManager::activateDeadlockDetector()
+LoadManager::activateStallDetector()
 {
     std::lock_guard sl(mutex_);
     armed_ = true;
-    deadLock_ = std::chrono::steady_clock::now();
+    lastHeartbeat_ = std::chrono::steady_clock::now();
 }
 
 void
-LoadManager::resetDeadlockDetector()
+LoadManager::heartbeat()
 {
-    auto const detector_start = std::chrono::steady_clock::now();
+    auto const heartbeat = std::chrono::steady_clock::now();
     std::lock_guard sl(mutex_);
-    deadLock_ = detector_start;
+    lastHeartbeat_ = heartbeat;
 }
 
 //------------------------------------------------------------------------------
@@ -117,63 +117,62 @@ LoadManager::run()
             break;
 
         // Copy out shared data under a lock.  Use copies outside lock.
-        auto const deadLock = deadLock_;
+        auto const lastHeartbeat = lastHeartbeat_;
         auto const armed = armed_;
         sl.unlock();
 
-        // Measure the amount of time we have been deadlocked, in seconds.
+        // Measure the amount of time we have been stalled, in seconds.
         using namespace std::chrono;
-        auto const timeSpentDeadlocked =
-            duration_cast<seconds>(steady_clock::now() - deadLock);
+        auto const timeSpentStalled =
+            duration_cast<seconds>(steady_clock::now() - lastHeartbeat);
 
         constexpr auto reportingIntervalSeconds = 10s;
-        constexpr auto deadlockFatalLogMessageTimeLimit = 90s;
-        constexpr auto deadlockLogicErrorTimeLimit = 600s;
+        constexpr auto stallFatalLogMessageTimeLimit = 90s;
+        constexpr auto stallLogicErrorTimeLimit = 600s;
 
-        if (armed && (timeSpentDeadlocked >= reportingIntervalSeconds))
+        if (armed && (timeSpentStalled >= reportingIntervalSeconds))
         {
-            // Report the deadlocked condition every
-            // reportingIntervalSeconds
-            if ((timeSpentDeadlocked % reportingIntervalSeconds) == 0s)
+            // Report the stalled condition every reportingIntervalSeconds
+            if ((timeSpentStalled % reportingIntervalSeconds) == 0s)
             {
-                if (timeSpentDeadlocked < deadlockFatalLogMessageTimeLimit)
+                if (timeSpentStalled < stallFatalLogMessageTimeLimit)
                 {
                     JLOG(journal_.warn())
-                        << "Server stalled for " << timeSpentDeadlocked.count()
+                        << "Server stalled for " << timeSpentStalled.count()
                         << " seconds.";
+
                     if (app_.getJobQueue().isOverloaded())
                     {
-                        JLOG(journal_.warn()) << app_.getJobQueue().getJson(0);
+                        JLOG(journal_.warn())
+                            << "JobQueue: " << app_.getJobQueue().getJson(0);
                     }
                 }
                 else
                 {
                     JLOG(journal_.fatal())
-                        << "Deadlock detected. Deadlocked time: "
-                        << timeSpentDeadlocked.count() << "s";
+                        << "Server stalled for " << timeSpentStalled.count()
+                        << " seconds.";
                     JLOG(journal_.fatal())
                         << "JobQueue: " << app_.getJobQueue().getJson(0);
                 }
             }
 
-            // If we go over the deadlockTimeLimit spent deadlocked, it
-            // means that the deadlock resolution code has failed, which
-            // qualifies as undefined behavior.
-            //
-            if (timeSpentDeadlocked >= deadlockLogicErrorTimeLimit)
+            // If we go over the stallLogicErrorTimeLimit spent stalled, it
+            // means that the stall resolution code has failed, which qualifies
+            // as a LogicError
+            if (timeSpentStalled >= stallLogicErrorTimeLimit)
             {
                 JLOG(journal_.fatal())
-                    << "LogicError: Deadlock detected. Deadlocked time: "
-                    << timeSpentDeadlocked.count() << "s";
+                    << "LogicError: Fatal server stall detected. Stalled time: "
+                    << timeSpentStalled.count() << "s";
                 JLOG(journal_.fatal())
                     << "JobQueue: " << app_.getJobQueue().getJson(0);
-                LogicError("Deadlock detected");
+                LogicError("Fatal server stall detected");
             }
         }
     }
 
-    bool change;
-
+    bool change = false;
     if (app_.getJobQueue().isOverloaded())
     {
         JLOG(journal_.info()) << "Raising local fee (JQ overload): "
