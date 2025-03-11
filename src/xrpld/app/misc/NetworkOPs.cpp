@@ -59,6 +59,7 @@
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/MultiApiJson.h>
+#include <xrpl/protocol/NFTSyntheticSerializer.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
@@ -3045,6 +3046,7 @@ NetworkOPsImp::transJson(
         jvObj[jss::meta] = meta->get().getJson(JsonOptions::none);
         RPC::insertDeliveredAmount(
             jvObj[jss::meta], *ledger, transaction, meta->get());
+        RPC::insertNFTSyntheticInJson(jvObj, transaction, meta->get());
         RPC::insertMPTokenIssuanceID(
             jvObj[jss::meta], transaction, meta->get());
     }
