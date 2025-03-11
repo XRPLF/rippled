@@ -3190,7 +3190,7 @@ class LedgerRPC_test : public beast::unit_test::suite
             params[jss::permissioned_domain][jss::account] = 1;
             params[jss::permissioned_domain][jss::seq] = seq;
             auto const jrr = env.rpc("json", "ledger_entry", to_string(params));
-            checkErrorValue(jrr[jss::result], "malformedRequest", "");
+            checkErrorValue(jrr[jss::result], "malformedAddress", "");
         }
 
         {
