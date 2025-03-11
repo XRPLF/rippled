@@ -26,7 +26,6 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/json_get_or_throw.h>
 #include <xrpl/protocol/tokens.h>
-
 #include <algorithm>
 #include <cstdint>
 #include <cstring>

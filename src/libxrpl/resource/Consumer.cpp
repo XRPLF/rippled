@@ -25,7 +25,6 @@
 #include <xrpl/resource/Disposition.h>
 #include <xrpl/resource/detail/Entry.h>
 #include <xrpl/resource/detail/Logic.h>
-
 #include <ostream>
 #include <string>
 

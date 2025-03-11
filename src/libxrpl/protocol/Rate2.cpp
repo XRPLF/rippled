@@ -23,7 +23,6 @@
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/STAmount.h>
-
 #include <cstdint>
 
 namespace ripple {

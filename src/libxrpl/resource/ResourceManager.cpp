@@ -29,10 +29,8 @@
 #include <xrpl/resource/Gossip.h>
 #include <xrpl/resource/ResourceManager.h>
 #include <xrpl/resource/detail/Logic.h>
-
 #include <boost/asio/ip/address.hpp>
 #include <boost/system/detail/error_code.hpp>
-
 #include <chrono>
 #include <condition_variable>
 #include <memory>

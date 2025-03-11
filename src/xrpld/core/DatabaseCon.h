@@ -24,9 +24,7 @@
 #include <xrpld/core/Config.h>
 #include <xrpld/core/SociDB.h>
 #include <xrpld/perflog/PerfLog.h>
-
 #include <boost/filesystem/path.hpp>
-
 #include <mutex>
 #include <optional>
 #include <string>

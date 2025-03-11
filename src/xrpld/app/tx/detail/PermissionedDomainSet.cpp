@@ -22,7 +22,6 @@
 #include <xrpld/ledger/View.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/TxFlags.h>
-
 #include <optional>
 
 namespace ripple {

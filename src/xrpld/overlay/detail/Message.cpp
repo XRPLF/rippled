@@ -19,7 +19,6 @@
 
 #include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/detail/TrafficCount.h>
-
 #include <cstdint>
 
 namespace ripple {

@@ -22,7 +22,6 @@
 
 #include <boost/filesystem.hpp>
 #include <boost/system/error_code.hpp>
-
 #include <optional>
 
 namespace ripple {

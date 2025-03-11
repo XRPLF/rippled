@@ -11,7 +11,6 @@
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/optional.hpp>
-
 #include <condition_variable>
 #include <functional>
 #include <mutex>

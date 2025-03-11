@@ -27,7 +27,6 @@
 #include <xrpl/protocol/Sign.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/messages.h>
-
 #include <regex>
 
 namespace ripple {

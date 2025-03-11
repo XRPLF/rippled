@@ -21,7 +21,6 @@
 #define RIPPLE_PROTOCOL_TXFLAGS_H_INCLUDED
 
 #include <xrpl/protocol/LedgerFormats.h>
-
 #include <cstdint>
 
 namespace ripple {

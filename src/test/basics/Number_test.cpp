@@ -21,7 +21,6 @@
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/STAmount.h>
-
 #include <sstream>
 #include <tuple>
 

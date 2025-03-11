@@ -23,7 +23,6 @@
 #include <xrpld/app/ledger/InboundLedger.h>
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
 #include <xrpld/app/main/Application.h>
-
 #include <vector>
 
 namespace ripple {

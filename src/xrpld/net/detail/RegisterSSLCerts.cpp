@@ -25,9 +25,8 @@
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 #include <openssl/x509.h>
-
-#include <memory>
 #include <wincrypt.h>
+#include <memory>
 #endif
 
 namespace ripple {

@@ -21,9 +21,7 @@
 #define BEAST_UTILITY_TAGGED_INTEGER_H_INCLUDED
 
 #include <xrpl/beast/hash/hash_append.h>
-
 #include <boost/operators.hpp>
-
 #include <functional>
 #include <iostream>
 #include <type_traits>

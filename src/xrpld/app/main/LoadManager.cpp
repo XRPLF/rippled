@@ -23,7 +23,6 @@
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/json/to_string.h>
-
 #include <memory>
 #include <mutex>
 #include <thread>

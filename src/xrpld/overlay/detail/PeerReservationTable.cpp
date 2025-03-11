@@ -23,7 +23,6 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/jss.h>
-
 #include <algorithm>
 #include <iterator>
 #include <mutex>

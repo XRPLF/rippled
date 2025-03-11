@@ -23,7 +23,6 @@
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_writer.h>
-
 #include <atomic>
 #include <cstdint>
 #include <cstdlib>

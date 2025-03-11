@@ -22,7 +22,6 @@
 
 #include <xrpl/basics/chrono.h>
 #include <xrpl/protocol/PublicKey.h>
-
 #include <cstdint>
 #include <string>
 

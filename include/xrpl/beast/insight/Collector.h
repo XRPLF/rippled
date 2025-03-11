@@ -25,7 +25,6 @@
 #include <xrpl/beast/insight/Gauge.h>
 #include <xrpl/beast/insight/Hook.h>
 #include <xrpl/beast/insight/Meter.h>
-
 #include <string>
 
 namespace beast {

@@ -25,10 +25,8 @@
 #include <xrpld/overlay/detail/ZeroCopyStream.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/messages.h>
-
 #include <boost/asio/buffer.hpp>
 #include <boost/asio/buffers_iterator.hpp>
-
 #include <cstdint>
 #include <optional>
 #include <type_traits>

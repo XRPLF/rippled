@@ -21,9 +21,7 @@
 #define RIPPLE_SERVER_PLAINWSPEER_H_INCLUDED
 
 #include <xrpl/server/detail/BaseWSPeer.h>
-
 #include <boost/beast/core/tcp_stream.hpp>
-
 #include <memory>
 
 namespace ripple {

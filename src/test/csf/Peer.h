@@ -31,10 +31,8 @@
 #include <xrpld/consensus/Validations.h>
 #include <xrpl/beast/utility/WrappedSink.h>
 #include <xrpl/protocol/PublicKey.h>
-
 #include <boost/container/flat_map.hpp>
 #include <boost/container/flat_set.hpp>
-
 #include <algorithm>
 
 namespace ripple {

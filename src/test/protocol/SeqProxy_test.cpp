@@ -19,7 +19,6 @@
 
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/SeqProxy.h>
-
 #include <limits>
 #include <sstream>
 

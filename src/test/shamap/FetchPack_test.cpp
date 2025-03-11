@@ -27,7 +27,6 @@
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/protocol/digest.h>
-
 #include <functional>
 #include <stdexcept>
 

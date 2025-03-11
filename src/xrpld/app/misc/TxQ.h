@@ -27,10 +27,8 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
-
 #include <boost/circular_buffer.hpp>
 #include <boost/intrusive/set.hpp>
-
 #include <optional>
 
 namespace ripple {

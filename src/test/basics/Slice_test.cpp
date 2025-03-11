@@ -19,7 +19,6 @@
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/beast/unit_test.h>
-
 #include <array>
 #include <cstdint>
 

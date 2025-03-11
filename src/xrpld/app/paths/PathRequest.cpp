@@ -32,7 +32,6 @@
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/UintTypes.h>
-
 #include <optional>
 #include <tuple>
 

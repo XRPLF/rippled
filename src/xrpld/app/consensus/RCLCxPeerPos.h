@@ -26,9 +26,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/PublicKey.h>
-
 #include <boost/container/static_vector.hpp>
-
 #include <cstdint>
 #include <string>
 

@@ -28,9 +28,7 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
-
 #include <boost/regex.hpp>
-
 #include <utility>
 #include <vector>
 

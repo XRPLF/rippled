@@ -30,10 +30,8 @@
 #include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/TER.h>
-
 #include <boost/container/flat_set.hpp>
 #include <boost/container/vector.hpp>
-
 #include <cstddef>
 #include <type_traits>
 #include <unordered_map>

@@ -21,7 +21,6 @@
 #define RIPPLE_NODESTORE_SCHEDULER_H_INCLUDED
 
 #include <xrpld/nodestore/Task.h>
-
 #include <chrono>
 
 namespace ripple {

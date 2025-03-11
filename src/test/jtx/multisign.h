@@ -24,7 +24,6 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/owners.h>
 #include <test/jtx/tags.h>
-
 #include <concepts>
 #include <cstdint>
 #include <optional>

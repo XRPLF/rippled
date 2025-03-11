@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <xrpl/basics/CountedObject.h>
-
 #include <algorithm>
 
 namespace ripple {

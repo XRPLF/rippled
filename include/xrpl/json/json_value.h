@@ -21,7 +21,6 @@
 #define RIPPLE_JSON_JSON_VALUE_H_INCLUDED
 
 #include <xrpl/json/json_forwards.h>
-
 #include <cstring>
 #include <map>
 #include <string>

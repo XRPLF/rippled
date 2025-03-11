@@ -26,9 +26,7 @@
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/digest.h>
-
 #include <boost/endian/conversion.hpp>
-
 #include <array>
 #include <cstddef>
 #include <cstdint>

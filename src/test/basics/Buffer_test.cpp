@@ -19,7 +19,6 @@
 
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/beast/unit_test.h>
-
 #include <cstdint>
 #include <type_traits>
 

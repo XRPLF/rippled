@@ -21,7 +21,6 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STNumber.h>
-
 #include <limits>
 #include <ostream>
 

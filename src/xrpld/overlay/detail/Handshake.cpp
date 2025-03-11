@@ -24,9 +24,7 @@
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/rfc2616.h>
 #include <xrpl/protocol/digest.h>
-
 #include <boost/regex.hpp>
-
 #include <algorithm>
 
 // VFALCO Shouldn't we have to include the OpenSSL

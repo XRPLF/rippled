@@ -22,7 +22,6 @@
 #include <xrpld/rpc/handlers/Handlers.h>
 #include <xrpld/rpc/handlers/Version.h>
 #include <xrpl/basics/contract.h>
-
 #include <map>
 
 namespace ripple {

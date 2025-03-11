@@ -22,7 +22,6 @@
 
 #include <xrpld/core/JobQueue.h>
 #include <xrpld/net/InfoSub.h>
-
 #include <boost/asio/io_service.hpp>
 
 namespace ripple {

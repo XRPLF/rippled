@@ -21,10 +21,8 @@
 #define RIPPLE_SERVER_HANDOFF_H_INCLUDED
 
 #include <xrpl/server/Writer.h>
-
 #include <boost/beast/http/dynamic_body.hpp>
 #include <boost/beast/http/message.hpp>
-
 #include <memory>
 
 namespace ripple {

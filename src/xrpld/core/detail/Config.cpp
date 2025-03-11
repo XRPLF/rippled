@@ -28,12 +28,10 @@
 #include <xrpl/json/json_reader.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/SystemParameters.h>
-
 #include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
 #include <boost/predef.h>
 #include <boost/regex.hpp>
-
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>

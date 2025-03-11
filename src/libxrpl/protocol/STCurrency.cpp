@@ -24,7 +24,6 @@
 #include <xrpl/protocol/STCurrency.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
-
 #include <cstddef>
 #include <memory>
 #include <stdexcept>

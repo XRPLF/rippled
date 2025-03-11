@@ -21,7 +21,6 @@
 #define BEAST_UTILITY_TEMP_DIR_H_INCLUDED
 
 #include <boost/filesystem.hpp>
-
 #include <string>
 
 namespace beast {

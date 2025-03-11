@@ -26,7 +26,6 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/UintTypes.h>
-
 #include <cstddef>
 #include <optional>
 

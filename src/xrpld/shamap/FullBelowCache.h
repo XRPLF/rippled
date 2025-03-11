@@ -25,7 +25,6 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/insight/Collector.h>
 #include <xrpl/beast/utility/Journal.h>
-
 #include <atomic>
 #include <string>
 

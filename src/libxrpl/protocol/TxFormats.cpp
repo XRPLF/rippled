@@ -21,7 +21,6 @@
 #include <xrpl/protocol/SOTemplate.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/jss.h>
-
 #include <initializer_list>
 
 namespace ripple {

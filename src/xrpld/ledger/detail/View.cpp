@@ -26,7 +26,6 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/st.h>
-
 #include <optional>
 
 namespace ripple {

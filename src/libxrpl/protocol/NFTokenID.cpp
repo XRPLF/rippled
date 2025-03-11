@@ -29,7 +29,6 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/TxMeta.h>
 #include <xrpl/protocol/jss.h>
-
 #include <algorithm>
 #include <iterator>
 #include <memory>

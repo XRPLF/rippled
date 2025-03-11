@@ -21,7 +21,6 @@
 #define RIPPLE_TEST_MANUALTIMEKEEPER_H_INCLUDED
 
 #include <xrpld/core/TimeKeeper.h>
-
 #include <atomic>
 
 namespace ripple {

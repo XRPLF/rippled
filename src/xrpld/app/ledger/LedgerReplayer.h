@@ -24,7 +24,6 @@
 #include <xrpld/app/ledger/LedgerReplayTask.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpl/beast/utility/Journal.h>
-
 #include <mutex>
 #include <vector>
 

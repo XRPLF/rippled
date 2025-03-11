@@ -21,7 +21,6 @@
 #define BEAST_RANDOM_RNGFILL_H_INCLUDED
 
 #include <xrpl/beast/utility/instrumentation.h>
-
 #include <array>
 #include <cstdint>
 #include <cstring>

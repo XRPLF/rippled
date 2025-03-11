@@ -25,7 +25,6 @@
 #include <xrpld/core/Config.h>
 #include <xrpld/core/DatabaseCon.h>
 #include <xrpld/peerfinder/detail/Store.h>
-
 #include <boost/filesystem.hpp>
 
 namespace ripple {

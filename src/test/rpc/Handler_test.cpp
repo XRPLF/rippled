@@ -20,7 +20,6 @@
 #include <test/jtx.h>
 #include <xrpld/rpc/detail/Handler.h>
 #include <xrpl/beast/unit_test.h>
-
 #include <chrono>
 #include <iostream>
 #include <limits>

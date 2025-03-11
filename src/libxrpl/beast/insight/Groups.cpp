@@ -27,7 +27,6 @@
 #include <xrpl/beast/insight/Hook.h>
 #include <xrpl/beast/insight/HookImpl.h>
 #include <xrpl/beast/insight/Meter.h>
-
 #include <memory>
 #include <string>
 #include <unordered_map>

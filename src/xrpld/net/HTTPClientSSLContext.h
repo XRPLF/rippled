@@ -24,7 +24,6 @@
 #include <xrpld/net/RegisterSSLCerts.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
-
 #include <boost/asio.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl.hpp>

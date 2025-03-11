@@ -22,7 +22,6 @@
 
 #include <xrpld/app/misc/CanonicalTXSet.h>
 #include <xrpld/ledger/ReadView.h>
-
 #include <memory>
 
 namespace ripple {

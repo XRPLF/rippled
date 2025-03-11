@@ -24,7 +24,6 @@
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
-
 #include <boost/algorithm/string/case_conv.hpp>
 
 namespace ripple {

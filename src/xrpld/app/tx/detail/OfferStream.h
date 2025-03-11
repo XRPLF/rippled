@@ -26,7 +26,6 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
-
 #include <boost/container/flat_set.hpp>
 
 namespace ripple {

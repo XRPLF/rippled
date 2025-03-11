@@ -27,7 +27,6 @@
 #include <xrpl/beast/container/aged_unordered_multiset.h>
 #include <xrpl/beast/container/aged_unordered_set.h>
 #include <xrpl/beast/unit_test.h>
-
 #include <list>
 #include <vector>
 

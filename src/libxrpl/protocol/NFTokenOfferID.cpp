@@ -28,7 +28,6 @@
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/TxMeta.h>
 #include <xrpl/protocol/jss.h>
-
 #include <memory>
 #include <optional>
 

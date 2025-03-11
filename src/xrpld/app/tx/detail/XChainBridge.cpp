@@ -41,7 +41,6 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XChainAttestations.h>
 #include <xrpl/protocol/XRPAmount.h>
-
 #include <unordered_map>
 #include <unordered_set>
 

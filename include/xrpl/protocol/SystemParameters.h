@@ -22,7 +22,6 @@
 
 #include <xrpl/basics/chrono.h>
 #include <xrpl/protocol/XRPAmount.h>
-
 #include <cstdint>
 #include <string>
 

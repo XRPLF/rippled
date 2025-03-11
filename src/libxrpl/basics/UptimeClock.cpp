@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <xrpl/basics/UptimeClock.h>
-
 #include <atomic>
 #include <chrono>
 #include <thread>

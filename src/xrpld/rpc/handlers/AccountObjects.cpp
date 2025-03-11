@@ -29,7 +29,6 @@
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/nftPageMask.h>
 #include <xrpl/resource/Fees.h>
-
 #include <string>
 
 namespace ripple {

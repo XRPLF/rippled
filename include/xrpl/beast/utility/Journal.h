@@ -21,7 +21,6 @@
 #define BEAST_UTILITY_JOURNAL_H_INCLUDED
 
 #include <xrpl/beast/utility/instrumentation.h>
-
 #include <sstream>
 
 namespace beast {

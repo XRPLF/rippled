@@ -28,7 +28,6 @@
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/jss.h>
-
 #include <cmath>
 #include <map>
 

@@ -33,9 +33,7 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/nftPageMask.h>
-
 #include <boost/endian/conversion.hpp>
-
 #include <algorithm>
 #include <array>
 #include <cstdint>

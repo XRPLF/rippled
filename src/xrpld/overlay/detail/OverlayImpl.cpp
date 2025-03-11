@@ -37,7 +37,6 @@
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/server/SimpleWriter.h>
-
 #include <boost/algorithm/string/predicate.hpp>
 
 namespace ripple {

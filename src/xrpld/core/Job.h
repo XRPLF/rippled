@@ -23,7 +23,6 @@
 #include <xrpld/core/ClosureCounter.h>
 #include <xrpld/core/LoadMonitor.h>
 #include <xrpl/basics/CountedObject.h>
-
 #include <functional>
 
 namespace ripple {

@@ -23,9 +23,7 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/Job.h>
 #include <xrpl/beast/utility/Journal.h>
-
 #include <boost/asio/basic_waitable_timer.hpp>
-
 #include <mutex>
 
 namespace ripple {

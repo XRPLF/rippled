@@ -27,9 +27,7 @@
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/XRPAmount.h>
-
 #include <boost/container/flat_set.hpp>
-
 #include <sstream>
 
 namespace ripple {

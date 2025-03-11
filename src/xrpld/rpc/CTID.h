@@ -21,7 +21,6 @@
 #define RIPPLE_RPC_CTID_H_INCLUDED
 
 #include <boost/regex.hpp>
-
 #include <optional>
 #include <regex>
 #include <sstream>

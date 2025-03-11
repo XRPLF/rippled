@@ -27,9 +27,7 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/Serializer.h>
-
 #include <boost/format/free_funcs.hpp>
-
 #include <cstddef>
 #include <memory>
 #include <stdexcept>

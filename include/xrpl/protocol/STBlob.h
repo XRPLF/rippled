@@ -25,7 +25,6 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/STBase.h>
-
 #include <cstring>
 #include <memory>
 

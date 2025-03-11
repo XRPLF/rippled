@@ -30,7 +30,6 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
-
 #include <cstdint>
 
 namespace ripple {

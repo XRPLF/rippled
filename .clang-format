@@ -53,8 +53,12 @@ IncludeCategories:
     Priority:        2
   - Regex:           '^<(boost)/'
     Priority:        3
-  - Regex:           '.*'
+  - Regex:           '^.*/'
     Priority:        4
+  - Regex:           '^.*\.h'
+    Priority:        5
+  - Regex:           '.*'
+    Priority:        6
 IncludeIsMainRegex: '$'
 IndentCaseLabels: true
 IndentFunctionDeclarationAfterType: false

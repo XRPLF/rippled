@@ -24,9 +24,7 @@
 #include <xrpl/beast/core/List.h>
 #include <xrpl/server/detail/Door.h>
 #include <xrpl/server/detail/io_list.h>
-
 #include <boost/asio.hpp>
-
 #include <array>
 #include <chrono>
 #include <mutex>

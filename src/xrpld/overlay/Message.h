@@ -24,7 +24,6 @@
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/messages.h>
-
 #include <algorithm>
 #include <cstdint>
 

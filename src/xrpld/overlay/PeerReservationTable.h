@@ -24,7 +24,6 @@
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/PublicKey.h>
-
 #include <mutex>
 #include <optional>
 #include <string>

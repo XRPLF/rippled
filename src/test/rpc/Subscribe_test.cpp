@@ -26,7 +26,6 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
-
 #include <tuple>
 
 namespace ripple {

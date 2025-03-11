@@ -19,7 +19,6 @@
 
 #include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/beast/utility/instrumentation.h>
-
 #include <algorithm>
 #include <iostream>
 #include <mutex>

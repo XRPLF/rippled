@@ -26,7 +26,6 @@
 #include <xrpld/core/detail/Workers.h>
 #include <xrpl/basics/LocalValue.h>
 #include <xrpl/json/json_value.h>
-
 #include <boost/coroutine/all.hpp>
 
 namespace ripple {

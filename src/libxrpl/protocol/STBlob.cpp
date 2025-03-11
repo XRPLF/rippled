@@ -23,7 +23,6 @@
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STBlob.h>
 #include <xrpl/protocol/Serializer.h>
-
 #include <cstddef>
 #include <string>
 #include <utility>

@@ -22,7 +22,6 @@
 
 #include <xrpld/core/detail/semaphore.h>
 #include <xrpl/beast/core/LockFreeStack.h>
-
 #include <atomic>
 #include <condition_variable>
 #include <mutex>

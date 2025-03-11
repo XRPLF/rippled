@@ -24,7 +24,6 @@
 #include <xrpld/app/tx/detail/Transactor.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STTx.h>
-
 #include <cstdint>
 #include <vector>
 

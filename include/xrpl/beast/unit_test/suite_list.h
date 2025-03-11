@@ -10,9 +10,7 @@
 
 #include <xrpl/beast/unit_test/detail/const_container.h>
 #include <xrpl/beast/unit_test/suite_info.h>
-
 #include <boost/assert.hpp>
-
 #include <set>
 #include <typeindex>
 #include <unordered_set>

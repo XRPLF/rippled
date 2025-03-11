@@ -25,7 +25,6 @@
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/unit_test.h>
-
 #include <algorithm>
 #include <string>
 #include <utility>

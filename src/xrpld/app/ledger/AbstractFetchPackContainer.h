@@ -22,7 +22,6 @@
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/base_uint.h>
-
 #include <optional>
 
 namespace ripple {

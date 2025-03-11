@@ -21,7 +21,6 @@
 #define RIPPLE_SERVER_IO_LIST_H_INCLUDED
 
 #include <boost/container/flat_map.hpp>
-
 #include <condition_variable>
 #include <functional>
 #include <memory>

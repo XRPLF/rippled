@@ -31,7 +31,6 @@
 #include <xrpld/shamap/SHAMapTreeNode.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
-
 #include <stack>
 #include <vector>
 

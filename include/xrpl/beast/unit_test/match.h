@@ -9,7 +9,6 @@
 #define BEAST_UNIT_TEST_MATCH_HPP
 
 #include <xrpl/beast/unit_test/suite_info.h>
-
 #include <string>
 
 namespace beast {

@@ -22,7 +22,6 @@
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
-
 #include <variant>
 
 namespace ripple {

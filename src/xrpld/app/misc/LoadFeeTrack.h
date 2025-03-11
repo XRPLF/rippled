@@ -23,7 +23,6 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/XRPAmount.h>
-
 #include <algorithm>
 #include <cstdint>
 #include <mutex>

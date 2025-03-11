@@ -23,7 +23,6 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/jss.h>
-
 #include <chrono>
 
 namespace ripple {

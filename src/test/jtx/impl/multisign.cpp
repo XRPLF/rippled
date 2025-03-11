@@ -22,7 +22,6 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/Sign.h>
 #include <xrpl/protocol/jss.h>
-
 #include <optional>
 
 namespace ripple {

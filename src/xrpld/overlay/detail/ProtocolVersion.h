@@ -21,7 +21,6 @@
 #define RIPPLE_OVERLAY_PROTOCOLVERSION_H_INCLUDED
 
 #include <boost/beast/core/string.hpp>
-
 #include <cstdint>
 #include <optional>
 #include <string>

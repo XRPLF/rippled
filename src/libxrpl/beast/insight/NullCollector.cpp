@@ -29,7 +29,6 @@
 #include <xrpl/beast/insight/Meter.h>
 #include <xrpl/beast/insight/MeterImpl.h>
 #include <xrpl/beast/insight/NullCollector.h>
-
 #include <memory>
 #include <string>
 

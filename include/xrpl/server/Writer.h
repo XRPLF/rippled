@@ -21,7 +21,6 @@
 #define RIPPLE_SERVER_WRITER_H_INCLUDED
 
 #include <boost/asio/buffer.hpp>
-
 #include <functional>
 #include <vector>
 

@@ -31,11 +31,9 @@
 #include <test/unit_test/multi_runner.h>
 #include <xrpl/beast/unit_test/match.h>
 #endif  // ENABLE_TESTS
-
 #include <boost/process.hpp>
 #include <boost/program_options.hpp>
 #include <google/protobuf/stubs/common.h>
-
 #include <cstdlib>
 #include <iostream>
 #include <stdexcept>

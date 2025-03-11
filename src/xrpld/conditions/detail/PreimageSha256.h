@@ -26,7 +26,6 @@
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/protocol/digest.h>
-
 #include <memory>
 
 namespace ripple {

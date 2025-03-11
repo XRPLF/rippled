@@ -23,7 +23,6 @@
 #include <xrpld/overlay/Peer.h>
 #include <xrpld/shamap/SHAMap.h>
 #include <xrpl/beast/clock/abstract_clock.h>
-
 #include <memory>
 
 namespace ripple {

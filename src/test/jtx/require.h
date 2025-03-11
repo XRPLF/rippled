@@ -21,7 +21,6 @@
 #define RIPPLE_TEST_JTX_REQUIRE_H_INCLUDED
 
 #include <test/jtx/requires.h>
-
 #include <functional>
 #include <vector>
 

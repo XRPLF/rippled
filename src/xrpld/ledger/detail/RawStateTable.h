@@ -22,10 +22,8 @@
 
 #include <xrpld/ledger/RawView.h>
 #include <xrpld/ledger/ReadView.h>
-
 #include <boost/container/pmr/monotonic_buffer_resource.hpp>
 #include <boost/container/pmr/polymorphic_allocator.hpp>
-
 #include <map>
 #include <utility>
 

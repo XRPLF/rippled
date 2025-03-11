@@ -22,7 +22,6 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #include <test/jtx/TestSuite.h>
 #include <xrpl/basics/contract.h>
-
 #include <boost/filesystem.hpp>
 
 namespace ripple {

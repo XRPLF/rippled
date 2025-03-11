@@ -21,7 +21,6 @@
 #define RIPPLE_BASICS_RESOLVER_H_INCLUDED
 
 #include <xrpl/beast/net/IPEndpoint.h>
-
 #include <functional>
 #include <vector>
 

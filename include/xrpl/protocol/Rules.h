@@ -23,7 +23,6 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/protocol/STVector256.h>
-
 #include <unordered_set>
 
 namespace ripple {

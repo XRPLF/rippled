@@ -23,7 +23,6 @@
 #include <xrpl/basics/Expected.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/detail/token_errors.h>
-
 #include <cstdint>
 #include <optional>
 #include <span>

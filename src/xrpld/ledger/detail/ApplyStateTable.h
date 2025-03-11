@@ -27,7 +27,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxMeta.h>
 #include <xrpl/protocol/XRPAmount.h>
-
 #include <memory>
 
 namespace ripple {

@@ -34,7 +34,6 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
-
 #include <algorithm>
 #include <functional>
 #include <map>

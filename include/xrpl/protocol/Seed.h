@@ -23,7 +23,6 @@
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/tokens.h>
-
 #include <array>
 #include <optional>
 

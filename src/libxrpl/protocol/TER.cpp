@@ -18,10 +18,8 @@
 //==============================================================================
 
 #include <xrpl/protocol/TER.h>
-
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/range/iterator_range_core.hpp>
-
 #include <optional>
 #include <string>
 #include <unordered_map>

@@ -21,7 +21,6 @@
 #define RIPPLE_OVERLAY_ZEROCOPYSTREAM_H_INCLUDED
 
 #include <xrpl/beast/utility/instrumentation.h>
-
 #include <boost/asio/buffer.hpp>
 #include <google/protobuf/io/zero_copy_stream.h>
 

@@ -23,7 +23,6 @@
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/jss.h>
-
 #include <functional>
 
 namespace ripple {

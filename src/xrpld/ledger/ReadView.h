@@ -32,7 +32,6 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
-
 #include <cstdint>
 #include <optional>
 #include <unordered_set>

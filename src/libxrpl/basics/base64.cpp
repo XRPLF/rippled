@@ -55,7 +55,6 @@
 */
 
 #include <xrpl/basics/base64.h>
-
 #include <cstddef>
 #include <cstdint>
 #include <string>

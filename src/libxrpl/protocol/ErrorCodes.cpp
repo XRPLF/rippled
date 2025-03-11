@@ -21,7 +21,6 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
-
 #include <array>
 #include <stdexcept>
 #include <string>

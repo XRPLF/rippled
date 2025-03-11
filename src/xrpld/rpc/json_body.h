@@ -22,7 +22,6 @@
 
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
-
 #include <boost/beast/core/multi_buffer.hpp>
 #include <boost/beast/http/message.hpp>
 

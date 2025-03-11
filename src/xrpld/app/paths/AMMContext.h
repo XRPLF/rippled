@@ -21,7 +21,6 @@
 #define RIPPLE_APP_PATHS_AMMCONTEXT_H_INCLUDED
 
 #include <xrpl/protocol/AccountID.h>
-
 #include <cstdint>
 
 namespace ripple {

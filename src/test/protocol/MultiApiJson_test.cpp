@@ -19,7 +19,6 @@
 
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/MultiApiJson.h>
-
 #include <cstdint>
 #include <limits>
 #include <optional>

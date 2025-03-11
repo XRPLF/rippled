@@ -21,7 +21,6 @@
 #define BEAST_INSIGHT_GAUGE_H_INCLUDED
 
 #include <xrpl/beast/insight/GaugeImpl.h>
-
 #include <memory>
 
 namespace beast {

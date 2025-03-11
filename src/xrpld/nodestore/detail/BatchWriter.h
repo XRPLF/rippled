@@ -23,7 +23,6 @@
 #include <xrpld/nodestore/Scheduler.h>
 #include <xrpld/nodestore/Task.h>
 #include <xrpld/nodestore/Types.h>
-
 #include <condition_variable>
 #include <mutex>
 

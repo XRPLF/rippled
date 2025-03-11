@@ -31,7 +31,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/digest.h>
-
 #include <algorithm>
 #include <cstdint>
 #include <optional>

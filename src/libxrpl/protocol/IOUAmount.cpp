@@ -22,9 +22,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/IOUAmount.h>
-
 #include <boost/multiprecision/cpp_int.hpp>
-
 #include <algorithm>
 #include <cstdint>
 #include <iterator>

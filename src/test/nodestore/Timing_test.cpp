@@ -28,9 +28,7 @@
 #include <xrpl/beast/unit_test/thread.h>
 #include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/beast/xor_shift_engine.h>
-
 #include <boost/algorithm/string.hpp>
-
 #include <atomic>
 #include <chrono>
 #include <iterator>

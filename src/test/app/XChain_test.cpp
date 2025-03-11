@@ -31,7 +31,6 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XChainAttestations.h>
-
 #include <functional>
 #include <limits>
 #include <optional>

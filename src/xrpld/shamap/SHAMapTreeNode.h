@@ -24,7 +24,6 @@
 #include <xrpld/shamap/SHAMapNodeID.h>
 #include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/protocol/Serializer.h>
-
 #include <cstdint>
 #include <string>
 

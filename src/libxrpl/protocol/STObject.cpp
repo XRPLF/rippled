@@ -46,7 +46,6 @@
 #include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/detail/STVar.h>
-
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>

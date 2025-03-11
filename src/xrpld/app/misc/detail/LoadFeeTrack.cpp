@@ -23,7 +23,6 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/protocol/FeeUnits.h>
-
 #include <cstdint>
 
 namespace ripple {

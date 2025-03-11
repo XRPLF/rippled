@@ -21,7 +21,6 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STObject.h>
-
 #include <cstdint>
 #include <optional>
 

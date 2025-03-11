@@ -20,7 +20,6 @@
 #include <test/jtx/AMMTest.h>
 #include <test/jtx/trust.h>
 #include <xrpl/protocol/Feature.h>
-
 #include <initializer_list>
 
 namespace ripple {

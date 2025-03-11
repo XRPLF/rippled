@@ -25,7 +25,6 @@
 #include <xrpld/ledger/PaymentSandbox.h>
 #include <xrpld/ledger/Sandbox.h>
 #include <xrpl/protocol/Feature.h>
-
 #include <type_traits>
 
 namespace ripple {

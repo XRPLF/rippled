@@ -25,11 +25,9 @@
 #include <xrpl/resource/ResourceManager.h>
 #include <xrpl/server/Handoff.h>
 #include <xrpl/server/Port.h>
-
 #include <boost/asio/ip/network_v4.hpp>
 #include <boost/asio/ip/network_v6.hpp>
 #include <boost/utility/string_view.hpp>
-
 #include <string>
 #include <vector>
 

@@ -43,7 +43,6 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
-
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
 #include <boost/multiprecision/detail/default_ops.hpp>
@@ -52,7 +51,6 @@
 #include <boost/regex/v5/regex.hpp>
 #include <boost/regex/v5/regex_fwd.hpp>
 #include <boost/regex/v5/regex_match.hpp>
-
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>

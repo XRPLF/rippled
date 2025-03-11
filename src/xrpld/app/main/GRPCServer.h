@@ -30,7 +30,6 @@
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpl/proto/org/xrpl/rpc/v1/xrp_ledger.grpc.pb.h>
 #include <xrpl/resource/Charge.h>
-
 #include <grpcpp/grpcpp.h>
 
 namespace ripple {

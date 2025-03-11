@@ -24,9 +24,7 @@
 
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_value.h>
-
 #include <boost/asio/buffer.hpp>
-
 #include <stack>
 
 namespace Json {

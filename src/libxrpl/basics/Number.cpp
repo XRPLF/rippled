@@ -19,7 +19,6 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/instrumentation.h>
-
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>

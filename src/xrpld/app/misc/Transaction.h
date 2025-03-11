@@ -28,7 +28,6 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxMeta.h>
-
 #include <optional>
 #include <variant>
 

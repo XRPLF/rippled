@@ -21,9 +21,7 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/hardened_hash.h>
 #include <xrpl/beast/unit_test.h>
-
 #include <boost/endian/conversion.hpp>
-
 #include <complex>
 #include <type_traits>
 

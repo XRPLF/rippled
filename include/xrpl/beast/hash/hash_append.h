@@ -23,7 +23,6 @@
 
 #include <boost/container/flat_set.hpp>
 #include <boost/endian/conversion.hpp>
-
 #include <array>
 #include <chrono>
 #include <cstdint>

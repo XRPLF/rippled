@@ -31,7 +31,6 @@
 #include <xrpld/ledger/PaymentSandbox.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STParsedJSON.h>
-
 #include <utility>
 #include <vector>
 

@@ -21,9 +21,7 @@
 #define RIPPLE_PEERFINDER_MAKE_MANAGER_H_INCLUDED
 
 #include <xrpld/peerfinder/PeerfinderManager.h>
-
 #include <boost/asio/io_service.hpp>
-
 #include <memory>
 
 namespace ripple {

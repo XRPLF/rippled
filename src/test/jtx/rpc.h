@@ -21,7 +21,6 @@
 #define RIPPLE_TEST_JTX_RPC_H_INCLUDED
 
 #include <test/jtx/Env.h>
-
 #include <tuple>
 
 namespace ripple {

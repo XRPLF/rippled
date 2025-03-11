@@ -26,7 +26,6 @@
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Seed.h>
 #include <xrpl/protocol/tokens.h>
-
 #include <array>
 #include <cstring>
 #include <string>

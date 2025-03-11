@@ -24,7 +24,6 @@
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/UintTypes.h>
-
 #include <string>
 #include <unordered_map>
 

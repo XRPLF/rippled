@@ -22,9 +22,7 @@
 #include <xrpld/peerfinder/detail/Logic.h>
 #include <xrpld/peerfinder/detail/SourceStrings.h>
 #include <xrpld/peerfinder/detail/StoreSqdb.h>
-
 #include <boost/asio/io_service.hpp>
-
 #include <memory>
 #include <optional>
 

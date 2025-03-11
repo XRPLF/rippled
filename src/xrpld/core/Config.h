@@ -25,9 +25,7 @@
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/SystemParameters.h>  // VFALCO Breaks levelization
-
 #include <boost/filesystem.hpp>  // VFALCO FIX: This include should not be here
-
 #include <cstdint>
 #include <optional>
 #include <string>

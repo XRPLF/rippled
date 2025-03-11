@@ -27,7 +27,6 @@
 #include <xrpld/core/DatabaseCon.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpl/beast/utility/instrumentation.h>
-
 #include <boost/filesystem.hpp>
 #include <boost/variant.hpp>
 

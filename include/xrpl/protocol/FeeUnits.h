@@ -23,10 +23,8 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
-
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/operators.hpp>
-
 #include <cmath>
 #include <ios>
 #include <iosfwd>

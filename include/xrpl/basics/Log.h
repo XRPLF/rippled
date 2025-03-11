@@ -22,10 +22,8 @@
 
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/beast/utility/Journal.h>
-
 #include <boost/beast/core/string.hpp>
 #include <boost/filesystem.hpp>
-
 #include <map>
 #include <memory>
 #include <mutex>

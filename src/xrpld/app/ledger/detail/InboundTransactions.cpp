@@ -26,7 +26,6 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/resource/Fees.h>
-
 #include <memory>
 #include <mutex>
 

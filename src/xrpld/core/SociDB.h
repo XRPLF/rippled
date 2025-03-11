@@ -37,8 +37,8 @@
 #include <xrpl/basics/Log.h>
 
 #define SOCI_USE_BOOST
-#include <cstdint>
 #include <soci/soci.h>
+#include <cstdint>
 #include <string>
 #include <vector>
 

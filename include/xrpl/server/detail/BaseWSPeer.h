@@ -28,12 +28,10 @@
 #include <xrpl/server/WSSession.h>
 #include <xrpl/server/detail/BasePeer.h>
 #include <xrpl/server/detail/LowestLayer.h>
-
 #include <boost/beast/core/multi_buffer.hpp>
 #include <boost/beast/http/message.hpp>
 #include <boost/beast/websocket.hpp>
 #include <boost/logic/tribool.hpp>
-
 #include <functional>
 #include <list>
 

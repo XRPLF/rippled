@@ -27,7 +27,6 @@
 #include <xrpl/protocol/STAccount.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/Serializer.h>
-
 #include <cstring>
 #include <stdexcept>
 #include <string>

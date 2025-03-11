@@ -24,7 +24,6 @@
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/UintTypes.h>
-
 #include <string>
 
 namespace ripple {

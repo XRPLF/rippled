@@ -25,7 +25,6 @@
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/Serializer.h>
-
 #include <cstddef>
 #include <stdexcept>
 #include <string>

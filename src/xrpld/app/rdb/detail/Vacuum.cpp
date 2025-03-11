@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <xrpld/app/rdb/Vacuum.h>
-
 #include <boost/format.hpp>
 
 namespace ripple {

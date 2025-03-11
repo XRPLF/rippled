@@ -22,7 +22,6 @@
 
 #include <xrpld/core/Job.h>
 #include <xrpld/core/JobTypeInfo.h>
-
 #include <map>
 #include <string>
 

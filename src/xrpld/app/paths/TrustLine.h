@@ -25,7 +25,6 @@
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
-
 #include <cstdint>
 #include <optional>
 

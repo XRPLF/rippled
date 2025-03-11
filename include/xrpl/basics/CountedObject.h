@@ -21,7 +21,6 @@
 #define RIPPLE_BASICS_COUNTEDOBJECT_H_INCLUDED
 
 #include <xrpl/beast/type_name.h>
-
 #include <atomic>
 #include <string>
 #include <utility>

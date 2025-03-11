@@ -25,7 +25,6 @@
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
-
 #include <cstdint>
 #include <stdexcept>
 #include <string>

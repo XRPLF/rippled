@@ -43,7 +43,6 @@
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/digest.h>
-
 #include <algorithm>
 #include <iomanip>
 #include <mutex>

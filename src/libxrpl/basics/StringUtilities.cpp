@@ -21,7 +21,6 @@
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/net/IPEndpoint.h>
-
 #include <boost/algorithm/hex.hpp>
 #include <boost/algorithm/string/case_conv.hpp>
 #include <boost/algorithm/string/trim.hpp>
@@ -29,7 +28,6 @@
 #include <boost/regex/v5/regex.hpp>
 #include <boost/regex/v5/regex_fwd.hpp>
 #include <boost/regex/v5/regex_match.hpp>
-
 #include <cstdint>
 #include <iterator>
 #include <optional>

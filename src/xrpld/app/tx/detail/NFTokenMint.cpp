@@ -24,9 +24,7 @@
 #include <xrpl/protocol/InnerObjectFormats.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/TxFlags.h>
-
 #include <boost/endian/conversion.hpp>
-
 #include <array>
 
 namespace ripple {

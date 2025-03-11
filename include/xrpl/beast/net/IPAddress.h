@@ -25,10 +25,8 @@
 #include <xrpl/beast/net/IPAddressV4.h>
 #include <xrpl/beast/net/IPAddressV6.h>
 #include <xrpl/beast/utility/instrumentation.h>
-
 #include <boost/asio/ip/address.hpp>
 #include <boost/functional/hash.hpp>
-
 #include <cstdint>
 #include <ios>
 #include <sstream>

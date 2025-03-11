@@ -24,12 +24,10 @@
 #include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/server/Handoff.h>
-
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/context.hpp>
 #include <boost/beast/core/tcp_stream.hpp>
 #include <boost/beast/ssl/ssl_stream.hpp>
-
 #include <functional>
 #include <optional>
 

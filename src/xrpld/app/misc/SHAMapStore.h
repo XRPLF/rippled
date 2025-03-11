@@ -22,7 +22,6 @@
 
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/nodestore/Manager.h>
-
 #include <optional>
 
 namespace ripple {

@@ -36,7 +36,6 @@
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/Sign.h>
 #include <xrpl/protocol/TxFlags.h>
-
 #include <algorithm>
 #include <iterator>
 

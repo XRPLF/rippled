@@ -9,11 +9,9 @@
 #define BEAST_UNIT_TEST_SUITE_HPP
 
 #include <xrpl/beast/unit_test/runner.h>
-
 #include <boost/filesystem.hpp>
 #include <boost/lexical_cast.hpp>
 #include <boost/throw_exception.hpp>
-
 #include <ostream>
 #include <sstream>
 #include <string>

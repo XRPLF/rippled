@@ -21,7 +21,6 @@
 #define RIPPLE_JSON_OUTPUT_H_INCLUDED
 
 #include <boost/beast/core/string.hpp>
-
 #include <functional>
 #include <string>
 

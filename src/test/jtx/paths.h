@@ -22,7 +22,6 @@
 
 #include <test/jtx/Env.h>
 #include <xrpl/protocol/Issue.h>
-
 #include <type_traits>
 
 namespace ripple {

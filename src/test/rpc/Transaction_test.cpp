@@ -26,7 +26,6 @@
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/serialize.h>
-
 #include <cctype>
 #include <optional>
 #include <tuple>

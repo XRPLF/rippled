@@ -23,7 +23,6 @@
 #include <xrpld/core/LoadEvent.h>
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/beast/utility/Journal.h>
-
 #include <chrono>
 #include <mutex>
 

@@ -31,7 +31,6 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
-
 #include <functional>
 #include <map>
 #include <utility>

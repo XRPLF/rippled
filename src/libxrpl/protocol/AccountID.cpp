@@ -25,7 +25,6 @@
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/tokens.h>
-
 #include <atomic>
 #include <cstdint>
 #include <cstring>

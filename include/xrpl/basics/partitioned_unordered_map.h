@@ -22,7 +22,6 @@
 
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/utility/instrumentation.h>
-
 #include <functional>
 #include <optional>
 #include <string>

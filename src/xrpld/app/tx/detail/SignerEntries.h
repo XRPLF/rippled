@@ -25,7 +25,6 @@
 #include <xrpl/beast/utility/Journal.h>      // beast::Journal
 #include <xrpl/protocol/TER.h>               // temMALFORMED
 #include <xrpl/protocol/UintTypes.h>         // AccountID
-
 #include <optional>
 #include <string_view>
 

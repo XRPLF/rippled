@@ -25,7 +25,6 @@
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/server/Session.h>
 #include <xrpl/server/detail/io_list.h>
-
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/spawn.hpp>
 #include <boost/asio/ssl/stream.hpp>
@@ -35,7 +34,6 @@
 #include <boost/beast/http/message.hpp>
 #include <boost/beast/http/parser.hpp>
 #include <boost/beast/http/read.hpp>
-
 #include <atomic>
 #include <chrono>
 #include <functional>

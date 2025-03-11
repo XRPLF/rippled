@@ -26,7 +26,6 @@
 #include <xrpl/resource/ResourceManager.h>
 #include <xrpl/resource/detail/Entry.h>
 #include <xrpl/resource/detail/Tuning.h>
-
 #include <boost/algorithm/string/predicate.hpp>
 
 namespace ripple {

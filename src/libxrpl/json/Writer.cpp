@@ -20,7 +20,6 @@
 #include <xrpl/basics/ToString.h>
 #include <xrpl/json/Output.h>
 #include <xrpl/json/Writer.h>
-
 #include <cstddef>
 #include <map>
 #include <memory>

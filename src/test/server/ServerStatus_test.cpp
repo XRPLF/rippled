@@ -28,13 +28,11 @@
 #include <xrpl/basics/base64.h>
 #include <xrpl/beast/test/yield_to.h>
 #include <xrpl/json/json_reader.h>
-
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio.hpp>
 #include <boost/asio/ssl.hpp>
 #include <boost/beast/core/multi_buffer.hpp>
 #include <boost/beast/http.hpp>
-
 #include <algorithm>
 #include <array>
 #include <random>

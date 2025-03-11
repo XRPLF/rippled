@@ -23,7 +23,6 @@
 #include <xrpld/app/misc/detail/Work.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/protocol/BuildInfo.h>
-
 #include <boost/asio.hpp>
 #include <boost/beast/core/multi_buffer.hpp>
 #include <boost/beast/http/empty_body.hpp>

@@ -19,7 +19,6 @@
 
 #include <xrpld/app/paths/TrustLine.h>
 #include <xrpl/protocol/STAmount.h>
-
 #include <memory>
 
 namespace ripple {

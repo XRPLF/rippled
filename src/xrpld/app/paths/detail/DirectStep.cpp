@@ -25,9 +25,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Quality.h>
-
 #include <boost/container/flat_set.hpp>
-
 #include <numeric>
 #include <sstream>
 

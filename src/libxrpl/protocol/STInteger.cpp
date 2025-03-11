@@ -28,7 +28,6 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
-
 #include <charconv>
 #include <cstdint>
 #include <iterator>
