@@ -22,7 +22,9 @@
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/crypto/secure_erase.h>
+
 #include <boost/endian/conversion.hpp>
+
 #include <algorithm>
 #include <array>
 

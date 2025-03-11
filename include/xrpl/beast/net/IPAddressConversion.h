@@ -22,8 +22,6 @@
 
 #include <xrpl/beast/net/IPEndpoint.h>
 
-#include <sstream>
-
 #include <boost/asio.hpp>
 
 namespace beast {

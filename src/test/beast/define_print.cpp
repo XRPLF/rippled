@@ -8,6 +8,7 @@
 #include <xrpl/beast/unit_test/amount.h>
 #include <xrpl/beast/unit_test/global_suites.h>
 #include <xrpl/beast/unit_test/suite.h>
+
 #include <string>
 
 // Include this .cpp in your project to gain access to the printing suite

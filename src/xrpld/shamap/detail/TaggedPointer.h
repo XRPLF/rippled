@@ -23,7 +23,6 @@
 #include <xrpld/shamap/SHAMapTreeNode.h>
 
 #include <array>
-#include <bit>
 #include <cstdint>
 #include <optional>
 

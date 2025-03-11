@@ -22,11 +22,11 @@
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/rpc/detail/Tuning.h>
 #include <xrpl/beast/utility/temp_dir.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/ResourceManager.h>
 #include <xrpl/resource/detail/Entry.h>
 #include <xrpl/resource/detail/Tuning.h>
+
 #include <boost/algorithm/string/predicate.hpp>
 
 namespace ripple {
