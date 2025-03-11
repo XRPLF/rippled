@@ -17,10 +17,9 @@
 */
 //==============================================================================
 
-#include <xrpld/app/misc/SHAMapStoreImp.h>
-
 #include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/app/misc/NetworkOPs.h>
+#include <xrpld/app/misc/SHAMapStoreImp.h>
 #include <xrpld/app/rdb/State.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/core/ConfigSections.h>

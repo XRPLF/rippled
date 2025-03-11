@@ -21,6 +21,7 @@
 #define RIPPLE_APP_BASICAPP_H_INCLUDED
 
 #include <boost/asio/io_service.hpp>
+
 #include <optional>
 #include <thread>
 #include <vector>

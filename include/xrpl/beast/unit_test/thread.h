@@ -9,6 +9,7 @@
 #define BEAST_UNIT_TEST_THREAD_HPP
 
 #include <xrpl/beast/unit_test/suite.h>
+
 #include <functional>
 #include <thread>
 #include <utility>

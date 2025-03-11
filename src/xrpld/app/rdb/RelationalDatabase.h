@@ -25,11 +25,10 @@
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/core/DatabaseCon.h>
-#include <xrpld/peerfinder/detail/Store.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpl/beast/utility/instrumentation.h>
+
 #include <boost/filesystem.hpp>
-#include <boost/optional.hpp>
 #include <boost/variant.hpp>
 
 namespace ripple {
