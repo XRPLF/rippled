@@ -47,8 +47,11 @@
  * 4) In general, any newly supported amendments (`Supported::yes`) should have
  *    a `VoteBehavior::DefaultNo` indefinitely so that external governance can
  *    make the decision on when to activate it. High priority bug fixes can be
- *    an exception to this rule. In such cases, change the macro parameter in
- *    features.macro to `VoteBehavior::DefaultYes`.
+ *    an exception to this rule. In such cases, ensure the fix has been
+ *    clearly communicated to the community using appropriate channels,
+ *    then change the macro parameter in features.macro to
+ *    `VoteBehavior::DefaultYes`. The communication process is beyond
+ *    the scope of these instructions.
  *
  *
  * When a feature has been enabled for several years, the conditional code
