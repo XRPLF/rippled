@@ -235,21 +235,21 @@ class beast::List&lt; T, Tag &gt;</div><p >Intrusive doubly linked list. </p>
 <div class="line"> </div>
 <div class="line">    <span class="keywordtype">int</span> m_value;</div>
 <div class="line">};</div>
-<div class="ttc" id="aclassbeast_1_1List_html"><div class="ttname"><a href="classbeast_1_1List.html">beast::List</a></div><div class="ttdoc">Intrusive doubly linked list.</div><div class="ttdef"><b>Definition:</b> <a href="List_8h_source.html#l00279">List.h:280</a></div></div>
-<div class="ttc" id="aclassbeast_1_1List_html_a9045c6eaf5485a33cc001e8845c47585"><div class="ttname"><a href="classbeast_1_1List.html#a9045c6eaf5485a33cc001e8845c47585">beast::List::Node</a></div><div class="ttdeci">typename detail::ListNode&lt; T, Tag &gt; Node</div><div class="ttdef"><b>Definition:</b> <a href="List_8h_source.html#l00282">List.h:282</a></div></div>
+<div class="ttc" id="aclassbeast_1_1List_html"><div class="ttname"><a href="classbeast_1_1List.html">beast::List</a></div><div class="ttdoc">Intrusive doubly linked list.</div><div class="ttdef"><b>Definition:</b> <a href="List_8h_source.html#l00278">List.h:279</a></div></div>
+<div class="ttc" id="aclassbeast_1_1List_html_a9045c6eaf5485a33cc001e8845c47585"><div class="ttname"><a href="classbeast_1_1List.html#a9045c6eaf5485a33cc001e8845c47585">beast::List::Node</a></div><div class="ttdeci">typename detail::ListNode&lt; T, Tag &gt; Node</div><div class="ttdef"><b>Definition:</b> <a href="List_8h_source.html#l00281">List.h:281</a></div></div>
 </div><!-- fragment --><p >Now we define the list, and add a couple of items.</p>
 <div class="fragment"><div class="line">List &lt;Object&gt; list;</div>
 <div class="line"> </div>
 <div class="line">list.<a class="code hl_function" href="classbeast_1_1List.html#a0ced815cdedb1b2323cd9adf97cca504">push_back</a> (* (<span class="keyword">new</span> Object (1)));</div>
 <div class="line">list.<a class="code hl_function" href="classbeast_1_1List.html#a0ced815cdedb1b2323cd9adf97cca504">push_back</a> (* (<span class="keyword">new</span> Object (2)));</div>
-<div class="ttc" id="aclassbeast_1_1List_html_a0ced815cdedb1b2323cd9adf97cca504"><div class="ttname"><a href="classbeast_1_1List.html#a0ced815cdedb1b2323cd9adf97cca504">beast::List::push_back</a></div><div class="ttdeci">iterator push_back(T &amp;element) noexcept</div><div class="ttdoc">Append an element at the end of the list.</div><div class="ttdef"><b>Definition:</b> <a href="List_8h_source.html#l00509">List.h:509</a></div></div>
+<div class="ttc" id="aclassbeast_1_1List_html_a0ced815cdedb1b2323cd9adf97cca504"><div class="ttname"><a href="classbeast_1_1List.html#a0ced815cdedb1b2323cd9adf97cca504">beast::List::push_back</a></div><div class="ttdeci">iterator push_back(T &amp;element) noexcept</div><div class="ttdoc">Append an element at the end of the list.</div><div class="ttdef"><b>Definition:</b> <a href="List_8h_source.html#l00508">List.h:508</a></div></div>
 </div><!-- fragment --><p >For compatibility with the standard containers, <a class="el" href="classbeast_1_1List.html#a0ced815cdedb1b2323cd9adf97cca504" title="Append an element at the end of the list.">push_back()</a> expects a reference to the object. Unlike the standard container, however, <a class="el" href="classbeast_1_1List.html#a0ced815cdedb1b2323cd9adf97cca504" title="Append an element at the end of the list.">push_back()</a> places the actual object in the list and not a copy-constructed duplicate.</p>
 <p >Iterating over the list follows the same idiom as the STL:</p>
 <div class="fragment"><div class="line"><span class="keywordflow">for</span> (<a class="code hl_typedef" href="classbeast_1_1List.html#a40627d0f3ad01d19dbd96caf06bbf65b">List &lt;Object&gt;::iterator</a> iter = list.<a class="code hl_function" href="classbeast_1_1List.html#a2d3c19a2ea6aba941902adcc0c1a5a73">begin</a>(); iter != list.<a class="code hl_function" href="classbeast_1_1List.html#a672d23adfca5d4a5e7c4443cf64a8a55">end</a>; ++iter)</div>
 <div class="line">    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/io/cout.html">std::cout</a> &lt;&lt; iter-&gt;m_value;</div>
-<div class="ttc" id="aclassbeast_1_1List_html_a2d3c19a2ea6aba941902adcc0c1a5a73"><div class="ttname"><a href="classbeast_1_1List.html#a2d3c19a2ea6aba941902adcc0c1a5a73">beast::List::begin</a></div><div class="ttdeci">iterator begin() noexcept</div><div class="ttdoc">Obtain an iterator to the beginning of the list.</div><div class="ttdef"><b>Definition:</b> <a href="List_8h_source.html#l00367">List.h:367</a></div></div>
-<div class="ttc" id="aclassbeast_1_1List_html_a40627d0f3ad01d19dbd96caf06bbf65b"><div class="ttname"><a href="classbeast_1_1List.html#a40627d0f3ad01d19dbd96caf06bbf65b">beast::List::iterator</a></div><div class="ttdeci">detail::ListIterator&lt; Node &gt; iterator</div><div class="ttdef"><b>Definition:</b> <a href="List_8h_source.html#l00292">List.h:292</a></div></div>
-<div class="ttc" id="aclassbeast_1_1List_html_a672d23adfca5d4a5e7c4443cf64a8a55"><div class="ttname"><a href="classbeast_1_1List.html#a672d23adfca5d4a5e7c4443cf64a8a55">beast::List::end</a></div><div class="ttdeci">iterator end() noexcept</div><div class="ttdoc">Obtain a iterator to the end of the list.</div><div class="ttdef"><b>Definition:</b> <a href="List_8h_source.html#l00394">List.h:394</a></div></div>
+<div class="ttc" id="aclassbeast_1_1List_html_a2d3c19a2ea6aba941902adcc0c1a5a73"><div class="ttname"><a href="classbeast_1_1List.html#a2d3c19a2ea6aba941902adcc0c1a5a73">beast::List::begin</a></div><div class="ttdeci">iterator begin() noexcept</div><div class="ttdoc">Obtain an iterator to the beginning of the list.</div><div class="ttdef"><b>Definition:</b> <a href="List_8h_source.html#l00366">List.h:366</a></div></div>
+<div class="ttc" id="aclassbeast_1_1List_html_a40627d0f3ad01d19dbd96caf06bbf65b"><div class="ttname"><a href="classbeast_1_1List.html#a40627d0f3ad01d19dbd96caf06bbf65b">beast::List::iterator</a></div><div class="ttdeci">detail::ListIterator&lt; Node &gt; iterator</div><div class="ttdef"><b>Definition:</b> <a href="List_8h_source.html#l00291">List.h:291</a></div></div>
+<div class="ttc" id="aclassbeast_1_1List_html_a672d23adfca5d4a5e7c4443cf64a8a55"><div class="ttname"><a href="classbeast_1_1List.html#a672d23adfca5d4a5e7c4443cf64a8a55">beast::List::end</a></div><div class="ttdeci">iterator end() noexcept</div><div class="ttdoc">Obtain a iterator to the end of the list.</div><div class="ttdef"><b>Definition:</b> <a href="List_8h_source.html#l00393">List.h:393</a></div></div>
 <div class="ttc" id="acout_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/io/cout.html">std::cout</a></div></div>
 </div><!-- fragment --><p >You can even use BOOST_FOREACH, or range based for loops:</p>
 <div class="fragment"><div class="line">BOOST_FOREACH (Object&amp; <span class="keywordtype">object</span>, list)  <span class="comment">// boost only</span></div>
@@ -284,7 +284,7 @@ class beast::List&lt; T, Tag &gt;</div><p >Intrusive doubly linked list. </p>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00279">279</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00278">278</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
 <a id="a9045c6eaf5485a33cc001e8845c47585" name="a9045c6eaf5485a33cc001e8845c47585"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a9045c6eaf5485a33cc001e8845c47585">&#9670;&#160;</a></span>Node</h2>
@@ -300,7 +300,7 @@ template&lt;typename T , typename Tag  = void&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00282">282</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00281">281</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
 
 </div>
 </div>
@@ -318,7 +318,7 @@ template&lt;typename T , typename Tag  = void&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00284">284</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00283">283</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
 
 </div>
 </div>
@@ -336,7 +336,7 @@ template&lt;typename T , typename Tag  = void&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00285">285</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00284">284</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
 
 </div>
 </div>
@@ -354,7 +354,7 @@ template&lt;typename T , typename Tag  = void&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00286">286</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00285">285</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
 
 </div>
 </div>
@@ -372,7 +372,7 @@ template&lt;typename T , typename Tag  = void&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00287">287</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00286">286</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
 
 </div>
 </div>
@@ -390,7 +390,7 @@ template&lt;typename T , typename Tag  = void&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00288">288</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00287">287</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
 
 </div>
 </div>
@@ -408,7 +408,7 @@ template&lt;typename T , typename Tag  = void&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00289">289</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00288">288</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
 
 </div>
 </div>
@@ -426,7 +426,7 @@ template&lt;typename T , typename Tag  = void&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00290">290</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00289">289</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
 
 </div>
 </div>
@@ -444,7 +444,7 @@ template&lt;typename T , typename Tag  = void&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00292">292</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00291">291</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
 
 </div>
 </div>
@@ -462,7 +462,7 @@ template&lt;typename T , typename Tag  = void&gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00293">293</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00292">292</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
 
 </div>
 </div>
@@ -486,7 +486,7 @@ template&lt;typename T , typename Tag  = void&gt; </div>
 
 <p>Create an empty list. </p>
 
-<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00296">296</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00295">295</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
 
 </div>
 </div>
@@ -575,7 +575,7 @@ template&lt;typename T , typename Tag  = void&gt; </div>
 <p>Determine if the list is empty. </p>
 <dl class="section return"><dt>Returns</dt><dd><code>true</code> if the list is empty. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00311">311</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00310">310</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
 
 </div>
 </div>
@@ -606,7 +606,7 @@ template&lt;typename T , typename Tag  = void&gt; </div>
 
 <p>Returns the number of elements in the list. </p>
 
-<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00318">318</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00317">317</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
 
 </div>
 </div>
@@ -639,7 +639,7 @@ template&lt;typename T , typename Tag  = void&gt; </div>
 <dl class="section invariant"><dt>Invariant</dt><dd>The list may not be empty. </dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>A reference to the first element. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00328">328</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00327">327</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
 
 </div>
 </div>
@@ -672,7 +672,7 @@ template&lt;typename T , typename Tag  = void&gt; </div>
 <dl class="section invariant"><dt>Invariant</dt><dd>The list may not be empty. </dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>A const reference to the first element. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00338">338</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00337">337</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
 
 </div>
 </div>
@@ -705,7 +705,7 @@ template&lt;typename T , typename Tag  = void&gt; </div>
 <dl class="section invariant"><dt>Invariant</dt><dd>The list may not be empty. </dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>A reference to the last element. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00348">348</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00347">347</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
 
 </div>
 </div>
@@ -738,7 +738,7 @@ template&lt;typename T , typename Tag  = void&gt; </div>
 <dl class="section invariant"><dt>Invariant</dt><dd>The list may not be empty. </dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>A const reference to the last element. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00358">358</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00357">357</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
 
 </div>
 </div>
@@ -770,7 +770,7 @@ template&lt;typename T , typename Tag  = void&gt; </div>
 <p>Obtain an iterator to the beginning of the list. </p>
 <dl class="section return"><dt>Returns</dt><dd>An iterator pointing to the beginning of the list. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00367">367</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00366">366</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
 
 </div>
 </div>
@@ -802,7 +802,7 @@ template&lt;typename T , typename Tag  = void&gt; </div>
 <p>Obtain a const iterator to the beginning of the list. </p>
 <dl class="section return"><dt>Returns</dt><dd>A const iterator pointing to the beginning of the list. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00376">376</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00375">375</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
 
 </div>
 </div>
@@ -834,7 +834,7 @@ template&lt;typename T , typename Tag  = void&gt; </div>
 <p>Obtain a const iterator to the beginning of the list. </p>
 <dl class="section return"><dt>Returns</dt><dd>A const iterator pointing to the beginning of the list. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00385">385</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00384">384</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
 
 </div>
 </div>
@@ -866,7 +866,7 @@ template&lt;typename T , typename Tag  = void&gt; </div>
 <p>Obtain a iterator to the end of the list. </p>
 <dl class="section return"><dt>Returns</dt><dd>An iterator pointing to the end of the list. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00394">394</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00393">393</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
 
 </div>
 </div>
@@ -898,7 +898,7 @@ template&lt;typename T , typename Tag  = void&gt; </div>
 <p>Obtain a const iterator to the end of the list. </p>
 <dl class="section return"><dt>Returns</dt><dd>A constiterator pointing to the end of the list. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00403">403</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00402">402</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
 
 </div>
 </div>
@@ -930,7 +930,7 @@ template&lt;typename T , typename Tag  = void&gt; </div>
 <p>Obtain a const iterator to the end of the list. </p>
 <dl class="section return"><dt>Returns</dt><dd>A constiterator pointing to the end of the list. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00412">412</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00411">411</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
 
 </div>
 </div>
@@ -962,7 +962,7 @@ template&lt;typename T , typename Tag  = void&gt; </div>
 <p>Clear the list. </p>
 <dl class="section note"><dt>Note</dt><dd>This does not free the elements. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00421">421</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00420">420</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
 
 </div>
 </div>
@@ -1013,7 +1013,7 @@ template&lt;typename T , typename Tag  = void&gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>An iterator pointing to the newly inserted element. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00435">435</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00434">434</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
 
 </div>
 </div>
@@ -1062,7 +1062,7 @@ template&lt;typename T , typename Tag  = void&gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00452">452</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00451">451</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
 
 </div>
 </div>
@@ -1102,7 +1102,7 @@ template&lt;typename T , typename Tag  = void&gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>An iterator pointing to the next element after the one removed. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00472">472</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00471">471</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
 
 </div>
 </div>
@@ -1141,7 +1141,7 @@ template&lt;typename T , typename Tag  = void&gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00487">487</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00486">486</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
 
 </div>
 </div>
@@ -1174,7 +1174,7 @@ template&lt;typename T , typename Tag  = void&gt; </div>
 <dl class="section invariant"><dt>Invariant</dt><dd>The list must not be empty. </dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>A reference to the popped element. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00497">497</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00496">496</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
 
 </div>
 </div>
@@ -1213,7 +1213,7 @@ template&lt;typename T , typename Tag  = void&gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00509">509</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00508">508</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
 
 </div>
 </div>
@@ -1246,7 +1246,7 @@ template&lt;typename T , typename Tag  = void&gt; </div>
 <dl class="section invariant"><dt>Invariant</dt><dd>The list must not be empty. </dd></dl>
 <dl class="section return"><dt>Returns</dt><dd>A reference to the popped element. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00519">519</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00518">518</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
 
 </div>
 </div>
@@ -1278,7 +1278,7 @@ template&lt;typename T , typename Tag  = void&gt; </div>
 
 <p>Swap contents with another list. </p>
 
-<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00528">528</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00527">527</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
 
 </div>
 </div>
@@ -1316,7 +1316,7 @@ template&lt;typename T , typename Tag  = void&gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00541">541</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00540">540</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
 
 </div>
 </div>
@@ -1354,7 +1354,7 @@ template&lt;typename T , typename Tag  = void&gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00551">551</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00550">550</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
 
 </div>
 </div>
@@ -1394,7 +1394,7 @@ template&lt;typename T , typename Tag  = void&gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>An iterator to the element. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00562">562</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00561">561</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
 
 </div>
 </div>
@@ -1434,7 +1434,7 @@ template&lt;typename T , typename Tag  = void&gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>A const iterator to the element. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00573">573</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00572">572</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
 
 </div>
 </div>
@@ -1464,7 +1464,7 @@ template&lt;typename T , typename Tag  = void&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00580">580</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00579">579</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
 
 </div>
 </div>
@@ -1494,7 +1494,7 @@ template&lt;typename T , typename Tag  = void&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00586">586</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00585">585</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
 
 </div>
 </div>
@@ -1521,7 +1521,7 @@ template&lt;typename T , typename Tag  = void&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00592">592</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00591">591</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
 
 </div>
 </div>
@@ -1547,7 +1547,7 @@ template&lt;typename T , typename Tag  = void&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00593">593</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00592">592</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
 
 </div>
 </div>
@@ -1573,7 +1573,7 @@ template&lt;typename T , typename Tag  = void&gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00594">594</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="List_8h_source.html#l00593">593</a> of file <a class="el" href="List_8h_source.html">List.h</a>.</p>
 
 </div>
 </div>

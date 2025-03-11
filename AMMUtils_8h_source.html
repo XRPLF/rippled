@@ -94,102 +94,103 @@ $(function() {
 <div class="line"><a id="l00016" name="l00016"></a><span class="lineno">   16</span><span class="comment">    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.</span></div>
 <div class="line"><a id="l00017" name="l00017"></a><span class="lineno">   17</span><span class="comment">*/</span></div>
 <div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span><span class="comment">//==============================================================================</span></div>
-<div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span><span class="preprocessor">#ifndef RIPPLE_APP_MISC_AMMUTILS_H_INLCUDED</span></div>
-<div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span><span class="preprocessor">#define RIPPLE_APP_MISC_AMMUTILS_H_INLCUDED</span></div>
-<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span> </div>
-<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span><span class="preprocessor">#include &lt;xrpld/ledger/View.h&gt;</span></div>
-<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="preprocessor">#include &lt;xrpl/basics/Expected.h&gt;</span></div>
-<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="preprocessor">#include &lt;xrpl/beast/utility/Journal.h&gt;</span></div>
-<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="preprocessor">#include &lt;xrpl/protocol/STAmount.h&gt;</span></div>
-<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><span class="preprocessor">#include &lt;xrpl/protocol/STLedgerEntry.h&gt;</span></div>
-<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span><span class="preprocessor">#include &lt;xrpl/protocol/TER.h&gt;</span></div>
-<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span> </div>
-<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceripple.html">ripple</a> {</div>
-<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span> </div>
-<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span><span class="keyword">class </span>ReadView;</div>
-<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span><span class="keyword">class </span>ApplyView;</div>
-<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span><span class="keyword">class </span>Sandbox;</div>
-<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span><span class="keyword">class </span>NetClock;</div>
-<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span> </div>
-<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span><a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;STAmount, STAmount&gt;</a></div>
-<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span><a class="code hl_function" href="namespaceripple.html#a887bf45d7cc0bf68aec6440746faca36">ammPoolHolds</a>(</div>
-<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>    ReadView <span class="keyword">const</span>&amp; view,</div>
-<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>    <a class="code hl_typedef" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> <span class="keyword">const</span>&amp; <a class="code hl_function" href="namespaceripple.html#a768092086ea18d2dbeb64efb9fa12ba5">ammAccountID</a>,</div>
-<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>    Issue <span class="keyword">const</span>&amp; issue1,</div>
-<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>    Issue <span class="keyword">const</span>&amp; issue2,</div>
-<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>    <a class="code hl_enumeration" href="namespaceripple.html#a17a9a9b903b66e49f5413d82ce79f085">FreezeHandling</a> freezeHandling,</div>
-<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>    <a class="code hl_class" href="classbeast_1_1Journal.html">beast::Journal</a> <span class="keyword">const</span> j);</div>
-<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span> </div>
-<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>Expected&lt;std::tuple&lt;STAmount, STAmount, STAmount&gt;, <a class="code hl_typedef" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&gt;</div>
-<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span><a class="code hl_function" href="namespaceripple.html#ab656cc4e3a94b007e52a53420c2d2460">ammHolds</a>(</div>
-<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>    ReadView <span class="keyword">const</span>&amp; view,</div>
-<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>    <a class="code hl_typedef" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> <span class="keyword">const</span>&amp; ammSle,</div>
-<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;Issue&gt;</a> <span class="keyword">const</span>&amp; optIssue1,</div>
-<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;Issue&gt;</a> <span class="keyword">const</span>&amp; optIssue2,</div>
-<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>    <a class="code hl_enumeration" href="namespaceripple.html#a17a9a9b903b66e49f5413d82ce79f085">FreezeHandling</a> freezeHandling,</div>
-<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>    <a class="code hl_class" href="classbeast_1_1Journal.html">beast::Journal</a> <span class="keyword">const</span> j);</div>
-<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span> </div>
-<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>STAmount</div>
-<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span><a class="code hl_function" href="namespaceripple.html#a7c5d3108f4942ebc53a3fa4f83c2d577">ammLPHolds</a>(</div>
-<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>    ReadView <span class="keyword">const</span>&amp; view,</div>
-<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>    <a class="code hl_typedef" href="namespaceripple.html#a8792cc3f99463ceba4e96dde34fe17a4">Currency</a> <span class="keyword">const</span>&amp; cur1,</div>
-<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>    <a class="code hl_typedef" href="namespaceripple.html#a8792cc3f99463ceba4e96dde34fe17a4">Currency</a> <span class="keyword">const</span>&amp; cur2,</div>
-<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>    <a class="code hl_typedef" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> <span class="keyword">const</span>&amp; ammAccount,</div>
-<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>    <a class="code hl_typedef" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> <span class="keyword">const</span>&amp; lpAccount,</div>
-<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>    <a class="code hl_class" href="classbeast_1_1Journal.html">beast::Journal</a> <span class="keyword">const</span> j);</div>
-<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span> </div>
-<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>STAmount</div>
-<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span><a class="code hl_function" href="namespaceripple.html#a7c5d3108f4942ebc53a3fa4f83c2d577">ammLPHolds</a>(</div>
-<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>    ReadView <span class="keyword">const</span>&amp; view,</div>
-<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>    <a class="code hl_typedef" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> <span class="keyword">const</span>&amp; ammSle,</div>
-<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>    <a class="code hl_typedef" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> <span class="keyword">const</span>&amp; lpAccount,</div>
-<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>    <a class="code hl_class" href="classbeast_1_1Journal.html">beast::Journal</a> <span class="keyword">const</span> j);</div>
-<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span> </div>
-<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span><a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint16_t</a></div>
-<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span><a class="code hl_function" href="namespaceripple.html#a308162f4d3c7b3c005ee6907ab576da1">getTradingFee</a>(</div>
-<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>    ReadView <span class="keyword">const</span>&amp; view,</div>
-<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>    <a class="code hl_typedef" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> <span class="keyword">const</span>&amp; ammSle,</div>
-<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>    <a class="code hl_typedef" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> <span class="keyword">const</span>&amp; account);</div>
-<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span> </div>
-<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>STAmount</div>
-<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span><a class="code hl_function" href="namespaceripple.html#ac7da6b05048137df6afafbcb4af6343a">ammAccountHolds</a>(</div>
-<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>    ReadView <span class="keyword">const</span>&amp; view,</div>
-<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>    <a class="code hl_typedef" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> <span class="keyword">const</span>&amp; <a class="code hl_function" href="namespaceripple.html#a768092086ea18d2dbeb64efb9fa12ba5">ammAccountID</a>,</div>
-<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>    Issue <span class="keyword">const</span>&amp; issue);</div>
-<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span> </div>
-<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span><a class="code hl_typedef" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a></div>
-<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span><a class="code hl_function" href="namespaceripple.html#a39496f811d81eeceaec4ab1fe9f877ac">deleteAMMAccount</a>(</div>
-<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>    Sandbox&amp; view,</div>
-<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>    Issue <span class="keyword">const</span>&amp; asset,</div>
-<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>    Issue <span class="keyword">const</span>&amp; asset2,</div>
-<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>    <a class="code hl_class" href="classbeast_1_1Journal.html">beast::Journal</a> j);</div>
-<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span> </div>
-<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span><span class="keywordtype">void</span></div>
-<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span><a class="code hl_function" href="namespaceripple.html#a78b3ccb8c17df3888bf47d05cb5376c1">initializeFeeAuctionVote</a>(</div>
-<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>    ApplyView&amp; view,</div>
-<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;SLE&gt;</a>&amp; ammSle,</div>
-<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span>    <a class="code hl_typedef" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> <span class="keyword">const</span>&amp; account,</div>
-<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span>    Issue <span class="keyword">const</span>&amp; lptIssue,</div>
-<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint16_t</a> tfee);</div>
-<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span> </div>
-<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>Expected&lt;bool, TER&gt;</div>
-<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span><a class="code hl_function" href="namespaceripple.html#a62e9ba0cf1379cc7c73007cafd91b972">isOnlyLiquidityProvider</a>(</div>
-<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>    ReadView <span class="keyword">const</span>&amp; view,</div>
-<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>    Issue <span class="keyword">const</span>&amp; ammIssue,</div>
-<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>    <a class="code hl_typedef" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> <span class="keyword">const</span>&amp; lpAccount);</div>
-<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span> </div>
-<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span>}  <span class="comment">// namespace ripple</span></div>
-<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span> </div>
-<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span><span class="preprocessor">#endif  </span><span class="comment">// RIPPLE_APP_MISC_AMMUTILS_H_INLCUDED</span></div>
-<div class="ttc" id="aclassbeast_1_1Journal_html"><div class="ttname"><a href="classbeast_1_1Journal.html">beast::Journal</a></div><div class="ttdoc">A generic endpoint for log messages.</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00058">Journal.h:59</a></div></div>
+<div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span> </div>
+<div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span><span class="preprocessor">#ifndef RIPPLE_APP_MISC_AMMUTILS_H_INLCUDED</span></div>
+<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span><span class="preprocessor">#define RIPPLE_APP_MISC_AMMUTILS_H_INLCUDED</span></div>
+<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span> </div>
+<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="preprocessor">#include &lt;xrpld/ledger/View.h&gt;</span></div>
+<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="preprocessor">#include &lt;xrpl/basics/Expected.h&gt;</span></div>
+<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="preprocessor">#include &lt;xrpl/beast/utility/Journal.h&gt;</span></div>
+<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><span class="preprocessor">#include &lt;xrpl/protocol/STAmount.h&gt;</span></div>
+<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span><span class="preprocessor">#include &lt;xrpl/protocol/STLedgerEntry.h&gt;</span></div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span><span class="preprocessor">#include &lt;xrpl/protocol/TER.h&gt;</span></div>
+<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span> </div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceripple.html">ripple</a> {</div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span> </div>
+<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span><span class="keyword">class </span>ReadView;</div>
+<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span><span class="keyword">class </span>ApplyView;</div>
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span><span class="keyword">class </span>Sandbox;</div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span><span class="keyword">class </span>NetClock;</div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span> </div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span><a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;STAmount, STAmount&gt;</a></div>
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span><a class="code hl_function" href="namespaceripple.html#a887bf45d7cc0bf68aec6440746faca36">ammPoolHolds</a>(</div>
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>    ReadView <span class="keyword">const</span>&amp; view,</div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>    <a class="code hl_typedef" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> <span class="keyword">const</span>&amp; <a class="code hl_function" href="namespaceripple.html#a768092086ea18d2dbeb64efb9fa12ba5">ammAccountID</a>,</div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>    Issue <span class="keyword">const</span>&amp; issue1,</div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>    Issue <span class="keyword">const</span>&amp; issue2,</div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>    <a class="code hl_enumeration" href="namespaceripple.html#a17a9a9b903b66e49f5413d82ce79f085">FreezeHandling</a> freezeHandling,</div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>    <a class="code hl_class" href="classbeast_1_1Journal.html">beast::Journal</a> <span class="keyword">const</span> j);</div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span> </div>
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>Expected&lt;std::tuple&lt;STAmount, STAmount, STAmount&gt;, <a class="code hl_typedef" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&gt;</div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span><a class="code hl_function" href="namespaceripple.html#ab656cc4e3a94b007e52a53420c2d2460">ammHolds</a>(</div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>    ReadView <span class="keyword">const</span>&amp; view,</div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>    <a class="code hl_typedef" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> <span class="keyword">const</span>&amp; ammSle,</div>
+<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;Issue&gt;</a> <span class="keyword">const</span>&amp; optIssue1,</div>
+<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;Issue&gt;</a> <span class="keyword">const</span>&amp; optIssue2,</div>
+<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>    <a class="code hl_enumeration" href="namespaceripple.html#a17a9a9b903b66e49f5413d82ce79f085">FreezeHandling</a> freezeHandling,</div>
+<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>    <a class="code hl_class" href="classbeast_1_1Journal.html">beast::Journal</a> <span class="keyword">const</span> j);</div>
+<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span> </div>
+<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>STAmount</div>
+<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span><a class="code hl_function" href="namespaceripple.html#a7c5d3108f4942ebc53a3fa4f83c2d577">ammLPHolds</a>(</div>
+<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>    ReadView <span class="keyword">const</span>&amp; view,</div>
+<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>    <a class="code hl_typedef" href="namespaceripple.html#a8792cc3f99463ceba4e96dde34fe17a4">Currency</a> <span class="keyword">const</span>&amp; cur1,</div>
+<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>    <a class="code hl_typedef" href="namespaceripple.html#a8792cc3f99463ceba4e96dde34fe17a4">Currency</a> <span class="keyword">const</span>&amp; cur2,</div>
+<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>    <a class="code hl_typedef" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> <span class="keyword">const</span>&amp; ammAccount,</div>
+<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>    <a class="code hl_typedef" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> <span class="keyword">const</span>&amp; lpAccount,</div>
+<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>    <a class="code hl_class" href="classbeast_1_1Journal.html">beast::Journal</a> <span class="keyword">const</span> j);</div>
+<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span> </div>
+<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>STAmount</div>
+<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span><a class="code hl_function" href="namespaceripple.html#a7c5d3108f4942ebc53a3fa4f83c2d577">ammLPHolds</a>(</div>
+<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>    ReadView <span class="keyword">const</span>&amp; view,</div>
+<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>    <a class="code hl_typedef" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> <span class="keyword">const</span>&amp; ammSle,</div>
+<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>    <a class="code hl_typedef" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> <span class="keyword">const</span>&amp; lpAccount,</div>
+<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>    <a class="code hl_class" href="classbeast_1_1Journal.html">beast::Journal</a> <span class="keyword">const</span> j);</div>
+<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span> </div>
+<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span><a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint16_t</a></div>
+<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span><a class="code hl_function" href="namespaceripple.html#a308162f4d3c7b3c005ee6907ab576da1">getTradingFee</a>(</div>
+<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>    ReadView <span class="keyword">const</span>&amp; view,</div>
+<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>    <a class="code hl_typedef" href="namespaceripple.html#abbba3966df1925ac76f6d04c0aa1abe3">SLE</a> <span class="keyword">const</span>&amp; ammSle,</div>
+<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>    <a class="code hl_typedef" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> <span class="keyword">const</span>&amp; account);</div>
+<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span> </div>
+<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>STAmount</div>
+<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span><a class="code hl_function" href="namespaceripple.html#ac7da6b05048137df6afafbcb4af6343a">ammAccountHolds</a>(</div>
+<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>    ReadView <span class="keyword">const</span>&amp; view,</div>
+<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>    <a class="code hl_typedef" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> <span class="keyword">const</span>&amp; <a class="code hl_function" href="namespaceripple.html#a768092086ea18d2dbeb64efb9fa12ba5">ammAccountID</a>,</div>
+<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>    Issue <span class="keyword">const</span>&amp; issue);</div>
+<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span> </div>
+<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span><a class="code hl_typedef" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a></div>
+<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span><a class="code hl_function" href="namespaceripple.html#a39496f811d81eeceaec4ab1fe9f877ac">deleteAMMAccount</a>(</div>
+<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>    Sandbox&amp; view,</div>
+<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>    Issue <span class="keyword">const</span>&amp; asset,</div>
+<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>    Issue <span class="keyword">const</span>&amp; asset2,</div>
+<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>    <a class="code hl_class" href="classbeast_1_1Journal.html">beast::Journal</a> j);</div>
+<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span> </div>
+<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span><span class="keywordtype">void</span></div>
+<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span><a class="code hl_function" href="namespaceripple.html#a78b3ccb8c17df3888bf47d05cb5376c1">initializeFeeAuctionVote</a>(</div>
+<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>    ApplyView&amp; view,</div>
+<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;SLE&gt;</a>&amp; ammSle,</div>
+<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span>    <a class="code hl_typedef" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> <span class="keyword">const</span>&amp; account,</div>
+<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>    Issue <span class="keyword">const</span>&amp; lptIssue,</div>
+<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint16_t</a> tfee);</div>
+<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span> </div>
+<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>Expected&lt;bool, TER&gt;</div>
+<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span><a class="code hl_function" href="namespaceripple.html#a62e9ba0cf1379cc7c73007cafd91b972">isOnlyLiquidityProvider</a>(</div>
+<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>    ReadView <span class="keyword">const</span>&amp; view,</div>
+<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>    Issue <span class="keyword">const</span>&amp; ammIssue,</div>
+<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>    <a class="code hl_typedef" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> <span class="keyword">const</span>&amp; lpAccount);</div>
+<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span> </div>
+<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span> </div>
+<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span><span class="preprocessor">#endif  </span><span class="comment">// RIPPLE_APP_MISC_AMMUTILS_H_INLCUDED</span></div>
+<div class="ttc" id="aclassbeast_1_1Journal_html"><div class="ttname"><a href="classbeast_1_1Journal.html">beast::Journal</a></div><div class="ttdoc">A generic endpoint for log messages.</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00059">Journal.h:60</a></div></div>
 <div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint16_t</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="algorithm_8h_source.html#l00026">algorithm.h:26</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a00ae0d729cb3e35b6bcac9a27ebb5284"><div class="ttname"><a href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">ripple::AccountID</a></div><div class="ttdeci">base_uint&lt; 160, detail::AccountIDTag &gt; AccountID</div><div class="ttdoc">A 160-bit unsigned that uniquely identifies an account.</div><div class="ttdef"><b>Definition:</b> <a href="AccountID_8h_source.html#l00049">AccountID.h:49</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a17a9a9b903b66e49f5413d82ce79f085"><div class="ttname"><a href="namespaceripple.html#a17a9a9b903b66e49f5413d82ce79f085">ripple::FreezeHandling</a></div><div class="ttdeci">FreezeHandling</div><div class="ttdoc">Controls the treatment of frozen account balances.</div><div class="ttdef"><b>Definition:</b> <a href="View_8h_source.html#l00080">View.h:80</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a17a9a9b903b66e49f5413d82ce79f085"><div class="ttname"><a href="namespaceripple.html#a17a9a9b903b66e49f5413d82ce79f085">ripple::FreezeHandling</a></div><div class="ttdeci">FreezeHandling</div><div class="ttdoc">Controls the treatment of frozen account balances.</div><div class="ttdef"><b>Definition:</b> <a href="View_8h_source.html#l00075">View.h:75</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a308162f4d3c7b3c005ee6907ab576da1"><div class="ttname"><a href="namespaceripple.html#a308162f4d3c7b3c005ee6907ab576da1">ripple::getTradingFee</a></div><div class="ttdeci">std::uint16_t getTradingFee(ReadView const &amp;view, SLE const &amp;ammSle, AccountID const &amp;account)</div><div class="ttdoc">Get AMM trading fee for the given account.</div><div class="ttdef"><b>Definition:</b> <a href="AMMUtils_8cpp_source.html#l00177">AMMUtils.cpp:177</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a39496f811d81eeceaec4ab1fe9f877ac"><div class="ttname"><a href="namespaceripple.html#a39496f811d81eeceaec4ab1fe9f877ac">ripple::deleteAMMAccount</a></div><div class="ttdeci">TER deleteAMMAccount(Sandbox &amp;view, Issue const &amp;asset, Issue const &amp;asset2, beast::Journal j)</div><div class="ttdoc">Delete trustlines to AMM.</div><div class="ttdef"><b>Definition:</b> <a href="AMMUtils_8cpp_source.html#l00281">AMMUtils.cpp:281</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a62e9ba0cf1379cc7c73007cafd91b972"><div class="ttname"><a href="namespaceripple.html#a62e9ba0cf1379cc7c73007cafd91b972">ripple::isOnlyLiquidityProvider</a></div><div class="ttdeci">Expected&lt; bool, TER &gt; isOnlyLiquidityProvider(ReadView const &amp;view, Issue const &amp;ammIssue, AccountID const &amp;lpAccount)</div><div class="ttdoc">Return true if the Liquidity Provider is the only AMM provider, false otherwise.</div><div class="ttdef"><b>Definition:</b> <a href="AMMUtils_8cpp_source.html#l00385">AMMUtils.cpp:385</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a768092086ea18d2dbeb64efb9fa12ba5"><div class="ttname"><a href="namespaceripple.html#a768092086ea18d2dbeb64efb9fa12ba5">ripple::ammAccountID</a></div><div class="ttdeci">AccountID ammAccountID(std::uint16_t prefix, uint256 const &amp;parentHash, uint256 const &amp;ammID)</div><div class="ttdoc">Calculate AMM account ID.</div><div class="ttdef"><b>Definition:</b> <a href="AMMCore_8cpp_source.html#l00030">AMMCore.cpp:30</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a768092086ea18d2dbeb64efb9fa12ba5"><div class="ttname"><a href="namespaceripple.html#a768092086ea18d2dbeb64efb9fa12ba5">ripple::ammAccountID</a></div><div class="ttdeci">AccountID ammAccountID(std::uint16_t prefix, uint256 const &amp;parentHash, uint256 const &amp;ammID)</div><div class="ttdoc">Calculate AMM account ID.</div><div class="ttdef"><b>Definition:</b> <a href="AMMCore_8cpp_source.html#l00043">AMMCore.cpp:43</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a78b3ccb8c17df3888bf47d05cb5376c1"><div class="ttname"><a href="namespaceripple.html#a78b3ccb8c17df3888bf47d05cb5376c1">ripple::initializeFeeAuctionVote</a></div><div class="ttdeci">void initializeFeeAuctionVote(ApplyView &amp;view, std::shared_ptr&lt; SLE &gt; &amp;ammSle, AccountID const &amp;account, Issue const &amp;lptIssue, std::uint16_t tfee)</div><div class="ttdoc">Initialize Auction and Voting slots and set the trading/discounted fee.</div><div class="ttdef"><b>Definition:</b> <a href="AMMUtils_8cpp_source.html#l00338">AMMUtils.cpp:338</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a7c5d3108f4942ebc53a3fa4f83c2d577"><div class="ttname"><a href="namespaceripple.html#a7c5d3108f4942ebc53a3fa4f83c2d577">ripple::ammLPHolds</a></div><div class="ttdeci">STAmount ammLPHolds(ReadView const &amp;view, Currency const &amp;cur1, Currency const &amp;cur2, AccountID const &amp;ammAccount, AccountID const &amp;lpAccount, beast::Journal const j)</div><div class="ttdoc">Get the balance of LP tokens.</div><div class="ttdef"><b>Definition:</b> <a href="AMMUtils_8cpp_source.html#l00111">AMMUtils.cpp:111</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a8792cc3f99463ceba4e96dde34fe17a4"><div class="ttname"><a href="namespaceripple.html#a8792cc3f99463ceba4e96dde34fe17a4">ripple::Currency</a></div><div class="ttdeci">base_uint&lt; 160, detail::CurrencyTag &gt; Currency</div><div class="ttdoc">Currency is a hash representing a specific currency.</div><div class="ttdef"><b>Definition:</b> <a href="UintTypes_8h_source.html#l00056">UintTypes.h:56</a></div></div>

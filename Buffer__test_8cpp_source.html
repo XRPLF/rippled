@@ -97,279 +97,280 @@ $(function() {
 <div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span> </div>
 <div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span><span class="preprocessor">#include &lt;xrpl/basics/Buffer.h&gt;</span></div>
 <div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span><span class="preprocessor">#include &lt;xrpl/beast/unit_test.h&gt;</span></div>
-<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span><span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/cstdint.html">cstdint</a>&gt;</span></div>
-<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/type_traits.html">type_traits</a>&gt;</span></div>
-<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span> </div>
-<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceripple.html">ripple</a> {</div>
-<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><span class="keyword">namespace </span>test {</div>
-<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span> </div>
-<div class="line"><a id="l00028" name="l00028"></a><span class="lineno"><a class="line" href="structripple_1_1test_1_1Buffer__test.html">   28</a></span><span class="keyword">struct </span><a class="code hl_struct" href="structripple_1_1test_1_1Buffer__test.html">Buffer_test</a> : <a class="code hl_class" href="classbeast_1_1unit__test_1_1suite.html">beast::unit_test::suite</a></div>
-<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span>{</div>
-<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span>    <span class="keywordtype">bool</span></div>
-<div class="line"><a id="l00031" name="l00031"></a><span class="lineno"><a class="line" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">   31</a></span>    <a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(<a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> <span class="keyword">const</span>&amp; b)<span class="keyword"> const</span></div>
-<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span><span class="keyword">    </span>{</div>
-<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>        <span class="keywordflow">if</span> (b.<a class="code hl_function" href="classripple_1_1Buffer.html#a76cd91377f761afdbb2dec0a39e44005">size</a>() == 0)</div>
-<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>            <span class="keywordflow">return</span> b.<a class="code hl_function" href="classripple_1_1Buffer.html#afacfc9c6af70702429653e85073ce5a4">data</a>() == <span class="keyword">nullptr</span>;</div>
-<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span> </div>
-<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>        <span class="keywordflow">return</span> b.<a class="code hl_function" href="classripple_1_1Buffer.html#afacfc9c6af70702429653e85073ce5a4">data</a>() != <span class="keyword">nullptr</span>;</div>
-<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>    }</div>
-<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span> </div>
-<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>    <span class="keywordtype">void</span></div>
-<div class="line"><a id="l00040" name="l00040"></a><span class="lineno"><a class="line" href="structripple_1_1test_1_1Buffer__test.html#acbbdef83110407c964184d8a7a26c422">   40</a></span>    <a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#acbbdef83110407c964184d8a7a26c422">run</a>()<span class="keyword"> override</span></div>
-<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span><span class="keyword">    </span>{</div>
-<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> <span class="keyword">const</span> data[] = {</div>
-<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>            0xa8, 0xa1, 0x38, 0x45, 0x23, 0xec, 0xe4, 0x23, 0x71, 0x6d, 0x2a,</div>
-<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>            0x18, 0xb4, 0x70, 0xcb, 0xf5, 0xac, 0x2d, 0x89, 0x4d, 0x19, 0x9c,</div>
-<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>            0xf0, 0x2c, 0x15, 0xd1, 0xf9, 0x9b, 0x66, 0xd2, 0x30, 0xd3};</div>
-<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span> </div>
-<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>        <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> b0;</div>
-<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>        BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(b0));</div>
-<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>        BEAST_EXPECT(b0.<a class="code hl_function" href="classripple_1_1Buffer.html#ae1a5452cda07734f4f43151b87a5e236">empty</a>());</div>
-<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span> </div>
-<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>        <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> b1{0};</div>
-<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>        BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(b1));</div>
-<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>        BEAST_EXPECT(b1.empty());</div>
-<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>        <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/byte/memcpy.html">std::memcpy</a>(b1.alloc(16), data, 16);</div>
-<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>        BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(b1));</div>
-<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>        BEAST_EXPECT(!b1.empty());</div>
-<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>        BEAST_EXPECT(b1.size() == 16);</div>
-<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span> </div>
-<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>        <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> b2{b1.<a class="code hl_function" href="classripple_1_1Buffer.html#a76cd91377f761afdbb2dec0a39e44005">size</a>()};</div>
-<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>        BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(b2));</div>
-<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>        BEAST_EXPECT(!b2.empty());</div>
-<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>        BEAST_EXPECT(b2.size() == b1.size());</div>
-<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>        <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/byte/memcpy.html">std::memcpy</a>(b2.data(), data + 16, 16);</div>
-<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span> </div>
-<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>        <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> b3{data, <span class="keyword">sizeof</span>(data)};</div>
-<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>        BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(b3));</div>
-<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>        BEAST_EXPECT(!b3.empty());</div>
-<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>        BEAST_EXPECT(b3.size() == <span class="keyword">sizeof</span>(data));</div>
-<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>        BEAST_EXPECT(<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/byte/memcmp.html">std::memcmp</a>(b3.data(), data, b3.size()) == 0);</div>
-<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span> </div>
-<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>        <span class="comment">// Check equality and inequality comparisons</span></div>
-<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>        BEAST_EXPECT(b0 == b0);</div>
-<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>        BEAST_EXPECT(b0 != b1);</div>
-<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>        BEAST_EXPECT(b1 == b1);</div>
-<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>        BEAST_EXPECT(b1 != b2);</div>
-<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>        BEAST_EXPECT(b2 != b3);</div>
-<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span> </div>
-<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>        <span class="comment">// Check copy constructors and copy assignments:</span></div>
-<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>        {</div>
-<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>            <a class="code hl_variable" href="classbeast_1_1unit__test_1_1suite.html#aaa1237d9b85c69d35fe86645cee094b5">testcase</a>(<span class="stringliteral">&quot;Copy Construction / Assignment&quot;</span>);</div>
-<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span> </div>
-<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>            <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> x{b0};</div>
-<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>            BEAST_EXPECT(x == b0);</div>
-<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>            BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(x));</div>
-<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>            <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> y{b1};</div>
-<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>            BEAST_EXPECT(y == b1);</div>
-<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>            BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(y));</div>
-<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>            x = b2;</div>
-<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>            BEAST_EXPECT(x == b2);</div>
-<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>            BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(x));</div>
-<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>            x = y;</div>
-<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>            BEAST_EXPECT(x == y);</div>
-<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>            BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(x));</div>
-<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>            y = b3;</div>
-<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>            BEAST_EXPECT(y == b3);</div>
-<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>            BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(y));</div>
-<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>            x = b0;</div>
-<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>            BEAST_EXPECT(x == b0);</div>
-<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span>            BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(x));</div>
-<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span><span class="preprocessor">#if defined(__clang__) &amp;&amp; (!defined(__APPLE__) &amp;&amp; (__clang_major__ &gt;= 7)) || \</span></div>
-<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span><span class="preprocessor">    (defined(__APPLE__) &amp;&amp; (__apple_build_version__ &gt;= 10010043))</span></div>
-<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span><span class="preprocessor">#pragma clang diagnostic push</span></div>
-<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span><span class="preprocessor">#pragma clang diagnostic ignored &quot;-Wself-assign-overloaded&quot;</span></div>
-<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span> </div>
-<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>            x = x;</div>
-<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>            BEAST_EXPECT(x == b0);</div>
-<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>            BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(x));</div>
-<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span>            y = y;</div>
-<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>            BEAST_EXPECT(y == b3);</div>
-<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>            BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(y));</div>
-<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span> </div>
-<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span><span class="preprocessor">#if defined(__clang__) &amp;&amp; (!defined(__APPLE__) &amp;&amp; (__clang_major__ &gt;= 7)) || \</span></div>
-<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span><span class="preprocessor">    (defined(__APPLE__) &amp;&amp; (__apple_build_version__ &gt;= 10010043))</span></div>
-<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span><span class="preprocessor">#pragma clang diagnostic pop</span></div>
-<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span><span class="preprocessor">#endif</span></div>
-<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>        }</div>
-<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span> </div>
-<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>        <span class="comment">// Check move constructor &amp; move assignments:</span></div>
-<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>        {</div>
-<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>            <a class="code hl_variable" href="classbeast_1_1unit__test_1_1suite.html#aaa1237d9b85c69d35fe86645cee094b5">testcase</a>(<span class="stringliteral">&quot;Move Construction / Assignment&quot;</span>);</div>
-<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span> </div>
-<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>            <span class="keyword">static_assert</span>(</div>
-<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>                <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/is_move_constructible.html">std::is_nothrow_move_constructible&lt;Buffer&gt;::value</a>, <span class="stringliteral">&quot;&quot;</span>);</div>
-<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>            <span class="keyword">static_assert</span>(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/is_move_assignable.html">std::is_nothrow_move_assignable&lt;Buffer&gt;::value</a>, <span class="stringliteral">&quot;&quot;</span>);</div>
-<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span> </div>
-<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>            {  <span class="comment">// Move-construct from empty buf</span></div>
-<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>                <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> x;</div>
-<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span>                <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> y{std::move(x)};</div>
-<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span>                BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(x));</div>
-<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span>                BEAST_EXPECT(x.<a class="code hl_function" href="classripple_1_1Buffer.html#ae1a5452cda07734f4f43151b87a5e236">empty</a>());</div>
-<div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span>                BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(y));</div>
-<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span>                BEAST_EXPECT(y.empty());</div>
-<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>                BEAST_EXPECT(x == y);</div>
-<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span>            }</div>
-<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span> </div>
-<div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span>            {  <span class="comment">// Move-construct from non-empty buf</span></div>
-<div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span>                <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> x{b1};</div>
-<div class="line"><a id="l00139" name="l00139"></a><span class="lineno">  139</span>                <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> y{std::move(x)};</div>
-<div class="line"><a id="l00140" name="l00140"></a><span class="lineno">  140</span>                BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(x));</div>
-<div class="line"><a id="l00141" name="l00141"></a><span class="lineno">  141</span>                BEAST_EXPECT(x.empty());</div>
-<div class="line"><a id="l00142" name="l00142"></a><span class="lineno">  142</span>                BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(y));</div>
-<div class="line"><a id="l00143" name="l00143"></a><span class="lineno">  143</span>                BEAST_EXPECT(y == b1);</div>
-<div class="line"><a id="l00144" name="l00144"></a><span class="lineno">  144</span>            }</div>
-<div class="line"><a id="l00145" name="l00145"></a><span class="lineno">  145</span> </div>
-<div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span>            {  <span class="comment">// Move assign empty buf to empty buf</span></div>
-<div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span>                <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> x;</div>
-<div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span>                <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> y;</div>
-<div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span> </div>
-<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span>                x = std::move(y);</div>
-<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span>                BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(x));</div>
-<div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span>                BEAST_EXPECT(x.<a class="code hl_function" href="classripple_1_1Buffer.html#ae1a5452cda07734f4f43151b87a5e236">empty</a>());</div>
-<div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span>                BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(y));</div>
-<div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span>                BEAST_EXPECT(y.<a class="code hl_function" href="classripple_1_1Buffer.html#ae1a5452cda07734f4f43151b87a5e236">empty</a>());</div>
-<div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span>            }</div>
-<div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span> </div>
-<div class="line"><a id="l00157" name="l00157"></a><span class="lineno">  157</span>            {  <span class="comment">// Move assign non-empty buf to empty buf</span></div>
-<div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span>                <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> x;</div>
-<div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span>                <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> y{b1};</div>
-<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span> </div>
-<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span>                x = std::move(y);</div>
-<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span>                BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(x));</div>
-<div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span>                BEAST_EXPECT(x == b1);</div>
-<div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span>                BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(y));</div>
-<div class="line"><a id="l00165" name="l00165"></a><span class="lineno">  165</span>                BEAST_EXPECT(y.empty());</div>
-<div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span>            }</div>
-<div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span> </div>
-<div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span>            {  <span class="comment">// Move assign empty buf to non-empty buf</span></div>
-<div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span>                <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> x{b1};</div>
-<div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span>                <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> y;</div>
-<div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span> </div>
-<div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span>                x = std::move(y);</div>
-<div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span>                BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(x));</div>
-<div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span>                BEAST_EXPECT(x.empty());</div>
-<div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span>                BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(y));</div>
-<div class="line"><a id="l00176" name="l00176"></a><span class="lineno">  176</span>                BEAST_EXPECT(y.<a class="code hl_function" href="classripple_1_1Buffer.html#ae1a5452cda07734f4f43151b87a5e236">empty</a>());</div>
-<div class="line"><a id="l00177" name="l00177"></a><span class="lineno">  177</span>            }</div>
-<div class="line"><a id="l00178" name="l00178"></a><span class="lineno">  178</span> </div>
-<div class="line"><a id="l00179" name="l00179"></a><span class="lineno">  179</span>            {  <span class="comment">// Move assign non-empty buf to non-empty buf</span></div>
-<div class="line"><a id="l00180" name="l00180"></a><span class="lineno">  180</span>                <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> x{b1};</div>
-<div class="line"><a id="l00181" name="l00181"></a><span class="lineno">  181</span>                <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> y{b2};</div>
-<div class="line"><a id="l00182" name="l00182"></a><span class="lineno">  182</span>                <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> z{b3};</div>
-<div class="line"><a id="l00183" name="l00183"></a><span class="lineno">  183</span> </div>
-<div class="line"><a id="l00184" name="l00184"></a><span class="lineno">  184</span>                x = std::move(y);</div>
-<div class="line"><a id="l00185" name="l00185"></a><span class="lineno">  185</span>                BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(x));</div>
-<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span>                BEAST_EXPECT(!x.empty());</div>
-<div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span>                BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(y));</div>
-<div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span>                BEAST_EXPECT(y.empty());</div>
-<div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span> </div>
-<div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span>                x = std::move(z);</div>
-<div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span>                BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(x));</div>
-<div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span>                BEAST_EXPECT(!x.empty());</div>
-<div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span>                BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(z));</div>
-<div class="line"><a id="l00194" name="l00194"></a><span class="lineno">  194</span>                BEAST_EXPECT(z.empty());</div>
-<div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span>            }</div>
-<div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span>        }</div>
-<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span> </div>
-<div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span>        {</div>
-<div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span>            <a class="code hl_variable" href="classbeast_1_1unit__test_1_1suite.html#aaa1237d9b85c69d35fe86645cee094b5">testcase</a>(<span class="stringliteral">&quot;Slice Conversion / Construction / Assignment&quot;</span>);</div>
-<div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span> </div>
-<div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span>            <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> w{<span class="keyword">static_cast&lt;</span><a class="code hl_class" href="classripple_1_1Slice.html">Slice</a><span class="keyword">&gt;</span>(b0)};</div>
-<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span>            BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(w));</div>
-<div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span>            BEAST_EXPECT(w == b0);</div>
-<div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span> </div>
-<div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span>            <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> x{<span class="keyword">static_cast&lt;</span><a class="code hl_class" href="classripple_1_1Slice.html">Slice</a><span class="keyword">&gt;</span>(b1)};</div>
-<div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span>            BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(x));</div>
-<div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span>            BEAST_EXPECT(x == b1);</div>
-<div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span> </div>
-<div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span>            <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> y{<span class="keyword">static_cast&lt;</span><a class="code hl_class" href="classripple_1_1Slice.html">Slice</a><span class="keyword">&gt;</span>(b2)};</div>
-<div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span>            BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(y));</div>
-<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span>            BEAST_EXPECT(y == b2);</div>
-<div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span> </div>
-<div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span>            <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> z{<span class="keyword">static_cast&lt;</span><a class="code hl_class" href="classripple_1_1Slice.html">Slice</a><span class="keyword">&gt;</span>(b3)};</div>
-<div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span>            BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(z));</div>
-<div class="line"><a id="l00215" name="l00215"></a><span class="lineno">  215</span>            BEAST_EXPECT(z == b3);</div>
-<div class="line"><a id="l00216" name="l00216"></a><span class="lineno">  216</span> </div>
-<div class="line"><a id="l00217" name="l00217"></a><span class="lineno">  217</span>            <span class="comment">// Assign empty slice to empty buffer</span></div>
-<div class="line"><a id="l00218" name="l00218"></a><span class="lineno">  218</span>            w = <span class="keyword">static_cast&lt;</span><a class="code hl_class" href="classripple_1_1Slice.html">Slice</a><span class="keyword">&gt;</span>(b0);</div>
-<div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span>            BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(w));</div>
-<div class="line"><a id="l00220" name="l00220"></a><span class="lineno">  220</span>            BEAST_EXPECT(w == b0);</div>
-<div class="line"><a id="l00221" name="l00221"></a><span class="lineno">  221</span> </div>
-<div class="line"><a id="l00222" name="l00222"></a><span class="lineno">  222</span>            <span class="comment">// Assign non-empty slice to empty buffer</span></div>
-<div class="line"><a id="l00223" name="l00223"></a><span class="lineno">  223</span>            w = <span class="keyword">static_cast&lt;</span><a class="code hl_class" href="classripple_1_1Slice.html">Slice</a><span class="keyword">&gt;</span>(b1);</div>
-<div class="line"><a id="l00224" name="l00224"></a><span class="lineno">  224</span>            BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(w));</div>
-<div class="line"><a id="l00225" name="l00225"></a><span class="lineno">  225</span>            BEAST_EXPECT(w == b1);</div>
-<div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span> </div>
-<div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span>            <span class="comment">// Assign non-empty slice to non-empty buffer</span></div>
-<div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span>            x = <span class="keyword">static_cast&lt;</span><a class="code hl_class" href="classripple_1_1Slice.html">Slice</a><span class="keyword">&gt;</span>(b2);</div>
-<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span>            BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(x));</div>
-<div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span>            BEAST_EXPECT(x == b2);</div>
-<div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span> </div>
-<div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span>            <span class="comment">// Assign non-empty slice to non-empty buffer</span></div>
-<div class="line"><a id="l00233" name="l00233"></a><span class="lineno">  233</span>            y = <span class="keyword">static_cast&lt;</span><a class="code hl_class" href="classripple_1_1Slice.html">Slice</a><span class="keyword">&gt;</span>(z);</div>
-<div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span>            BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(y));</div>
-<div class="line"><a id="l00235" name="l00235"></a><span class="lineno">  235</span>            BEAST_EXPECT(y == z);</div>
-<div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span> </div>
-<div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span>            <span class="comment">// Assign empty slice to non-empty buffer:</span></div>
-<div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span>            z = <span class="keyword">static_cast&lt;</span><a class="code hl_class" href="classripple_1_1Slice.html">Slice</a><span class="keyword">&gt;</span>(b0);</div>
-<div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span>            BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(z));</div>
-<div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span>            BEAST_EXPECT(z == b0);</div>
-<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span>        }</div>
-<div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span> </div>
-<div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span>        {</div>
-<div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span>            <a class="code hl_variable" href="classbeast_1_1unit__test_1_1suite.html#aaa1237d9b85c69d35fe86645cee094b5">testcase</a>(<span class="stringliteral">&quot;Allocation, Deallocation and Clearing&quot;</span>);</div>
-<div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span> </div>
-<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span>            <span class="keyword">auto</span> test = [<span class="keyword">this</span>](<a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> <span class="keyword">const</span>&amp; b, <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> i) {</div>
-<div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span>                <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> x{b};</div>
-<div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span> </div>
-<div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span>                <span class="comment">// Try to allocate some number of bytes, possibly</span></div>
-<div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span>                <span class="comment">// zero (which means clear) and sanity check</span></div>
-<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span>                x(i);</div>
-<div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span>                BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(x));</div>
-<div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span>                BEAST_EXPECT(x.size() == i);</div>
-<div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span>                BEAST_EXPECT((x.data() == <span class="keyword">nullptr</span>) == (i == 0));</div>
-<div class="line"><a id="l00255" name="l00255"></a><span class="lineno">  255</span> </div>
-<div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span>                <span class="comment">// Try to allocate some more data (always non-zero)</span></div>
-<div class="line"><a id="l00257" name="l00257"></a><span class="lineno">  257</span>                x(i + 1);</div>
-<div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span>                BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(x));</div>
-<div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span>                BEAST_EXPECT(x.size() == i + 1);</div>
-<div class="line"><a id="l00260" name="l00260"></a><span class="lineno">  260</span>                BEAST_EXPECT(x.data() != <span class="keyword">nullptr</span>);</div>
-<div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span> </div>
-<div class="line"><a id="l00262" name="l00262"></a><span class="lineno">  262</span>                <span class="comment">// Try to clear:</span></div>
-<div class="line"><a id="l00263" name="l00263"></a><span class="lineno">  263</span>                x.clear();</div>
-<div class="line"><a id="l00264" name="l00264"></a><span class="lineno">  264</span>                BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(x));</div>
-<div class="line"><a id="l00265" name="l00265"></a><span class="lineno">  265</span>                BEAST_EXPECT(x.size() == 0);</div>
-<div class="line"><a id="l00266" name="l00266"></a><span class="lineno">  266</span>                BEAST_EXPECT(x.data() == <span class="keyword">nullptr</span>);</div>
-<div class="line"><a id="l00267" name="l00267"></a><span class="lineno">  267</span> </div>
-<div class="line"><a id="l00268" name="l00268"></a><span class="lineno">  268</span>                <span class="comment">// Try to clear again:</span></div>
-<div class="line"><a id="l00269" name="l00269"></a><span class="lineno">  269</span>                x.clear();</div>
-<div class="line"><a id="l00270" name="l00270"></a><span class="lineno">  270</span>                BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(x));</div>
-<div class="line"><a id="l00271" name="l00271"></a><span class="lineno">  271</span>                BEAST_EXPECT(x.size() == 0);</div>
-<div class="line"><a id="l00272" name="l00272"></a><span class="lineno">  272</span>                BEAST_EXPECT(x.data() == <span class="keyword">nullptr</span>);</div>
-<div class="line"><a id="l00273" name="l00273"></a><span class="lineno">  273</span>            };</div>
-<div class="line"><a id="l00274" name="l00274"></a><span class="lineno">  274</span> </div>
-<div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span>            <span class="keywordflow">for</span> (<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> i = 0; i &lt; 16; ++i)</div>
-<div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span>            {</div>
-<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span>                test(b0, i);</div>
-<div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span>                test(b1, i);</div>
-<div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span>            }</div>
-<div class="line"><a id="l00280" name="l00280"></a><span class="lineno">  280</span>        }</div>
-<div class="line"><a id="l00281" name="l00281"></a><span class="lineno">  281</span>    }</div>
-<div class="line"><a id="l00282" name="l00282"></a><span class="lineno">  282</span>};</div>
-<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span> </div>
-<div class="line"><a id="l00284" name="l00284"></a><span class="lineno"><a class="line" href="namespaceripple_1_1test.html#ad3688cd1caeca5720b3f3cbfa15dfbb5">  284</a></span>BEAST_DEFINE_TESTSUITE(<a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a>, ripple_basics, <a class="code hl_namespace" href="namespaceripple.html">ripple</a>);</div>
-<div class="line"><a id="l00285" name="l00285"></a><span class="lineno">  285</span> </div>
-<div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span>}  <span class="comment">// namespace test</span></div>
-<div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span>}  <span class="comment">// namespace ripple</span></div>
-<div class="ttc" id="aclassbeast_1_1unit__test_1_1suite_html"><div class="ttname"><a href="classbeast_1_1unit__test_1_1suite.html">beast::unit_test::suite</a></div><div class="ttdoc">A testsuite class.</div><div class="ttdef"><b>Definition:</b> <a href="suite_8h_source.html#l00052">suite.h:53</a></div></div>
-<div class="ttc" id="aclassbeast_1_1unit__test_1_1suite_html_aaa1237d9b85c69d35fe86645cee094b5"><div class="ttname"><a href="classbeast_1_1unit__test_1_1suite.html#aaa1237d9b85c69d35fe86645cee094b5">beast::unit_test::suite::testcase</a></div><div class="ttdeci">testcase_t testcase</div><div class="ttdoc">Memberspace for declaring test cases.</div><div class="ttdef"><b>Definition:</b> <a href="suite_8h_source.html#l00153">suite.h:153</a></div></div>
-<div class="ttc" id="aclassripple_1_1Buffer_html"><div class="ttname"><a href="classripple_1_1Buffer.html">ripple::Buffer</a></div><div class="ttdoc">Like std::vector&lt;char&gt; but better.</div><div class="ttdef"><b>Definition:</b> <a href="Buffer_8h_source.html#l00035">Buffer.h:36</a></div></div>
-<div class="ttc" id="aclassripple_1_1Buffer_html_a76cd91377f761afdbb2dec0a39e44005"><div class="ttname"><a href="classripple_1_1Buffer.html#a76cd91377f761afdbb2dec0a39e44005">ripple::Buffer::size</a></div><div class="ttdeci">std::size_t size() const noexcept</div><div class="ttdoc">Returns the number of bytes in the buffer.</div><div class="ttdef"><b>Definition:</b> <a href="Buffer_8h_source.html#l00127">Buffer.h:127</a></div></div>
-<div class="ttc" id="aclassripple_1_1Buffer_html_ae1a5452cda07734f4f43151b87a5e236"><div class="ttname"><a href="classripple_1_1Buffer.html#ae1a5452cda07734f4f43151b87a5e236">ripple::Buffer::empty</a></div><div class="ttdeci">bool empty() const noexcept</div><div class="ttdef"><b>Definition:</b> <a href="Buffer_8h_source.html#l00133">Buffer.h:133</a></div></div>
-<div class="ttc" id="aclassripple_1_1Buffer_html_afacfc9c6af70702429653e85073ce5a4"><div class="ttname"><a href="classripple_1_1Buffer.html#afacfc9c6af70702429653e85073ce5a4">ripple::Buffer::data</a></div><div class="ttdeci">std::uint8_t const * data() const noexcept</div><div class="ttdoc">Return a pointer to beginning of the storage.</div><div class="ttdef"><b>Definition:</b> <a href="Buffer_8h_source.html#l00151">Buffer.h:151</a></div></div>
-<div class="ttc" id="aclassripple_1_1Slice_html"><div class="ttname"><a href="classripple_1_1Slice.html">ripple::Slice</a></div><div class="ttdoc">An immutable linear range of bytes.</div><div class="ttdef"><b>Definition:</b> <a href="Slice_8h_source.html#l00044">Slice.h:45</a></div></div>
+<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span> </div>
+<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/cstdint.html">cstdint</a>&gt;</span></div>
+<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/type_traits.html">type_traits</a>&gt;</span></div>
+<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span> </div>
+<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceripple.html">ripple</a> {</div>
+<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span><span class="keyword">namespace </span>test {</div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span> </div>
+<div class="line"><a id="l00029" name="l00029"></a><span class="lineno"><a class="line" href="structripple_1_1test_1_1Buffer__test.html">   29</a></span><span class="keyword">struct </span><a class="code hl_struct" href="structripple_1_1test_1_1Buffer__test.html">Buffer_test</a> : <a class="code hl_class" href="classbeast_1_1unit__test_1_1suite.html">beast::unit_test::suite</a></div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span>{</div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span>    <span class="keywordtype">bool</span></div>
+<div class="line"><a id="l00032" name="l00032"></a><span class="lineno"><a class="line" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">   32</a></span>    <a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(<a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> <span class="keyword">const</span>&amp; b)<span class="keyword"> const</span></div>
+<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span><span class="keyword">    </span>{</div>
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>        <span class="keywordflow">if</span> (b.<a class="code hl_function" href="classripple_1_1Buffer.html#a76cd91377f761afdbb2dec0a39e44005">size</a>() == 0)</div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>            <span class="keywordflow">return</span> b.<a class="code hl_function" href="classripple_1_1Buffer.html#afacfc9c6af70702429653e85073ce5a4">data</a>() == <span class="keyword">nullptr</span>;</div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span> </div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>        <span class="keywordflow">return</span> b.<a class="code hl_function" href="classripple_1_1Buffer.html#afacfc9c6af70702429653e85073ce5a4">data</a>() != <span class="keyword">nullptr</span>;</div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>    }</div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span> </div>
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>    <span class="keywordtype">void</span></div>
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno"><a class="line" href="structripple_1_1test_1_1Buffer__test.html#acbbdef83110407c964184d8a7a26c422">   41</a></span>    <a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#acbbdef83110407c964184d8a7a26c422">run</a>()<span class="keyword"> override</span></div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span><span class="keyword">    </span>{</div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a> <span class="keyword">const</span> data[] = {</div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>            0xa8, 0xa1, 0x38, 0x45, 0x23, 0xec, 0xe4, 0x23, 0x71, 0x6d, 0x2a,</div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>            0x18, 0xb4, 0x70, 0xcb, 0xf5, 0xac, 0x2d, 0x89, 0x4d, 0x19, 0x9c,</div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>            0xf0, 0x2c, 0x15, 0xd1, 0xf9, 0x9b, 0x66, 0xd2, 0x30, 0xd3};</div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span> </div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>        <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> b0;</div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>        BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(b0));</div>
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>        BEAST_EXPECT(b0.<a class="code hl_function" href="classripple_1_1Buffer.html#ae1a5452cda07734f4f43151b87a5e236">empty</a>());</div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span> </div>
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>        <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> b1{0};</div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>        BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(b1));</div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>        BEAST_EXPECT(b1.empty());</div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>        <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/byte/memcpy.html">std::memcpy</a>(b1.alloc(16), data, 16);</div>
+<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>        BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(b1));</div>
+<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>        BEAST_EXPECT(!b1.empty());</div>
+<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>        BEAST_EXPECT(b1.size() == 16);</div>
+<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span> </div>
+<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>        <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> b2{b1.<a class="code hl_function" href="classripple_1_1Buffer.html#a76cd91377f761afdbb2dec0a39e44005">size</a>()};</div>
+<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>        BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(b2));</div>
+<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>        BEAST_EXPECT(!b2.empty());</div>
+<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>        BEAST_EXPECT(b2.size() == b1.size());</div>
+<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>        <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/byte/memcpy.html">std::memcpy</a>(b2.data(), data + 16, 16);</div>
+<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span> </div>
+<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>        <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> b3{data, <span class="keyword">sizeof</span>(data)};</div>
+<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>        BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(b3));</div>
+<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>        BEAST_EXPECT(!b3.empty());</div>
+<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>        BEAST_EXPECT(b3.size() == <span class="keyword">sizeof</span>(data));</div>
+<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>        BEAST_EXPECT(<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/byte/memcmp.html">std::memcmp</a>(b3.data(), data, b3.size()) == 0);</div>
+<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span> </div>
+<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>        <span class="comment">// Check equality and inequality comparisons</span></div>
+<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>        BEAST_EXPECT(b0 == b0);</div>
+<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>        BEAST_EXPECT(b0 != b1);</div>
+<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>        BEAST_EXPECT(b1 == b1);</div>
+<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>        BEAST_EXPECT(b1 != b2);</div>
+<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>        BEAST_EXPECT(b2 != b3);</div>
+<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span> </div>
+<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>        <span class="comment">// Check copy constructors and copy assignments:</span></div>
+<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>        {</div>
+<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>            <a class="code hl_variable" href="classbeast_1_1unit__test_1_1suite.html#aaa1237d9b85c69d35fe86645cee094b5">testcase</a>(<span class="stringliteral">&quot;Copy Construction / Assignment&quot;</span>);</div>
+<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span> </div>
+<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>            <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> x{b0};</div>
+<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>            BEAST_EXPECT(x == b0);</div>
+<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>            BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(x));</div>
+<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>            <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> y{b1};</div>
+<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>            BEAST_EXPECT(y == b1);</div>
+<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>            BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(y));</div>
+<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>            x = b2;</div>
+<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>            BEAST_EXPECT(x == b2);</div>
+<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>            BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(x));</div>
+<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>            x = y;</div>
+<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>            BEAST_EXPECT(x == y);</div>
+<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>            BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(x));</div>
+<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>            y = b3;</div>
+<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>            BEAST_EXPECT(y == b3);</div>
+<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>            BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(y));</div>
+<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>            x = b0;</div>
+<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span>            BEAST_EXPECT(x == b0);</div>
+<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>            BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(x));</div>
+<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span><span class="preprocessor">#if defined(__clang__) &amp;&amp; (!defined(__APPLE__) &amp;&amp; (__clang_major__ &gt;= 7)) || \</span></div>
+<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span><span class="preprocessor">    (defined(__APPLE__) &amp;&amp; (__apple_build_version__ &gt;= 10010043))</span></div>
+<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span><span class="preprocessor">#pragma clang diagnostic push</span></div>
+<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span><span class="preprocessor">#pragma clang diagnostic ignored &quot;-Wself-assign-overloaded&quot;</span></div>
+<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span> </div>
+<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>            x = x;</div>
+<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>            BEAST_EXPECT(x == b0);</div>
+<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span>            BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(x));</div>
+<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>            y = y;</div>
+<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>            BEAST_EXPECT(y == b3);</div>
+<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span>            BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(y));</div>
+<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span> </div>
+<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span><span class="preprocessor">#if defined(__clang__) &amp;&amp; (!defined(__APPLE__) &amp;&amp; (__clang_major__ &gt;= 7)) || \</span></div>
+<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span><span class="preprocessor">    (defined(__APPLE__) &amp;&amp; (__apple_build_version__ &gt;= 10010043))</span></div>
+<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span><span class="preprocessor">#pragma clang diagnostic pop</span></div>
+<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>        }</div>
+<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span> </div>
+<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>        <span class="comment">// Check move constructor &amp; move assignments:</span></div>
+<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>        {</div>
+<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>            <a class="code hl_variable" href="classbeast_1_1unit__test_1_1suite.html#aaa1237d9b85c69d35fe86645cee094b5">testcase</a>(<span class="stringliteral">&quot;Move Construction / Assignment&quot;</span>);</div>
+<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span> </div>
+<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>            <span class="keyword">static_assert</span>(</div>
+<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>                <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/is_move_constructible.html">std::is_nothrow_move_constructible&lt;Buffer&gt;::value</a>, <span class="stringliteral">&quot;&quot;</span>);</div>
+<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span>            <span class="keyword">static_assert</span>(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/is_move_assignable.html">std::is_nothrow_move_assignable&lt;Buffer&gt;::value</a>, <span class="stringliteral">&quot;&quot;</span>);</div>
+<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span> </div>
+<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>            {  <span class="comment">// Move-construct from empty buf</span></div>
+<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span>                <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> x;</div>
+<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span>                <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> y{std::move(x)};</div>
+<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span>                BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(x));</div>
+<div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span>                BEAST_EXPECT(x.<a class="code hl_function" href="classripple_1_1Buffer.html#ae1a5452cda07734f4f43151b87a5e236">empty</a>());</div>
+<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span>                BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(y));</div>
+<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>                BEAST_EXPECT(y.empty());</div>
+<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span>                BEAST_EXPECT(x == y);</div>
+<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span>            }</div>
+<div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span> </div>
+<div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span>            {  <span class="comment">// Move-construct from non-empty buf</span></div>
+<div class="line"><a id="l00139" name="l00139"></a><span class="lineno">  139</span>                <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> x{b1};</div>
+<div class="line"><a id="l00140" name="l00140"></a><span class="lineno">  140</span>                <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> y{std::move(x)};</div>
+<div class="line"><a id="l00141" name="l00141"></a><span class="lineno">  141</span>                BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(x));</div>
+<div class="line"><a id="l00142" name="l00142"></a><span class="lineno">  142</span>                BEAST_EXPECT(x.empty());</div>
+<div class="line"><a id="l00143" name="l00143"></a><span class="lineno">  143</span>                BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(y));</div>
+<div class="line"><a id="l00144" name="l00144"></a><span class="lineno">  144</span>                BEAST_EXPECT(y == b1);</div>
+<div class="line"><a id="l00145" name="l00145"></a><span class="lineno">  145</span>            }</div>
+<div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span> </div>
+<div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span>            {  <span class="comment">// Move assign empty buf to empty buf</span></div>
+<div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span>                <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> x;</div>
+<div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span>                <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> y;</div>
+<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span> </div>
+<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span>                x = std::move(y);</div>
+<div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span>                BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(x));</div>
+<div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span>                BEAST_EXPECT(x.<a class="code hl_function" href="classripple_1_1Buffer.html#ae1a5452cda07734f4f43151b87a5e236">empty</a>());</div>
+<div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span>                BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(y));</div>
+<div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span>                BEAST_EXPECT(y.<a class="code hl_function" href="classripple_1_1Buffer.html#ae1a5452cda07734f4f43151b87a5e236">empty</a>());</div>
+<div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span>            }</div>
+<div class="line"><a id="l00157" name="l00157"></a><span class="lineno">  157</span> </div>
+<div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span>            {  <span class="comment">// Move assign non-empty buf to empty buf</span></div>
+<div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span>                <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> x;</div>
+<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span>                <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> y{b1};</div>
+<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span> </div>
+<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span>                x = std::move(y);</div>
+<div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span>                BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(x));</div>
+<div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span>                BEAST_EXPECT(x == b1);</div>
+<div class="line"><a id="l00165" name="l00165"></a><span class="lineno">  165</span>                BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(y));</div>
+<div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span>                BEAST_EXPECT(y.empty());</div>
+<div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span>            }</div>
+<div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span> </div>
+<div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span>            {  <span class="comment">// Move assign empty buf to non-empty buf</span></div>
+<div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span>                <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> x{b1};</div>
+<div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span>                <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> y;</div>
+<div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span> </div>
+<div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span>                x = std::move(y);</div>
+<div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span>                BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(x));</div>
+<div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span>                BEAST_EXPECT(x.empty());</div>
+<div class="line"><a id="l00176" name="l00176"></a><span class="lineno">  176</span>                BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(y));</div>
+<div class="line"><a id="l00177" name="l00177"></a><span class="lineno">  177</span>                BEAST_EXPECT(y.<a class="code hl_function" href="classripple_1_1Buffer.html#ae1a5452cda07734f4f43151b87a5e236">empty</a>());</div>
+<div class="line"><a id="l00178" name="l00178"></a><span class="lineno">  178</span>            }</div>
+<div class="line"><a id="l00179" name="l00179"></a><span class="lineno">  179</span> </div>
+<div class="line"><a id="l00180" name="l00180"></a><span class="lineno">  180</span>            {  <span class="comment">// Move assign non-empty buf to non-empty buf</span></div>
+<div class="line"><a id="l00181" name="l00181"></a><span class="lineno">  181</span>                <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> x{b1};</div>
+<div class="line"><a id="l00182" name="l00182"></a><span class="lineno">  182</span>                <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> y{b2};</div>
+<div class="line"><a id="l00183" name="l00183"></a><span class="lineno">  183</span>                <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> z{b3};</div>
+<div class="line"><a id="l00184" name="l00184"></a><span class="lineno">  184</span> </div>
+<div class="line"><a id="l00185" name="l00185"></a><span class="lineno">  185</span>                x = std::move(y);</div>
+<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span>                BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(x));</div>
+<div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span>                BEAST_EXPECT(!x.empty());</div>
+<div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span>                BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(y));</div>
+<div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span>                BEAST_EXPECT(y.empty());</div>
+<div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span> </div>
+<div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span>                x = std::move(z);</div>
+<div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span>                BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(x));</div>
+<div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span>                BEAST_EXPECT(!x.empty());</div>
+<div class="line"><a id="l00194" name="l00194"></a><span class="lineno">  194</span>                BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(z));</div>
+<div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span>                BEAST_EXPECT(z.empty());</div>
+<div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span>            }</div>
+<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span>        }</div>
+<div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span> </div>
+<div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span>        {</div>
+<div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span>            <a class="code hl_variable" href="classbeast_1_1unit__test_1_1suite.html#aaa1237d9b85c69d35fe86645cee094b5">testcase</a>(<span class="stringliteral">&quot;Slice Conversion / Construction / Assignment&quot;</span>);</div>
+<div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span> </div>
+<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span>            <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> w{<span class="keyword">static_cast&lt;</span><a class="code hl_class" href="classripple_1_1Slice.html">Slice</a><span class="keyword">&gt;</span>(b0)};</div>
+<div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span>            BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(w));</div>
+<div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span>            BEAST_EXPECT(w == b0);</div>
+<div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span> </div>
+<div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span>            <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> x{<span class="keyword">static_cast&lt;</span><a class="code hl_class" href="classripple_1_1Slice.html">Slice</a><span class="keyword">&gt;</span>(b1)};</div>
+<div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span>            BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(x));</div>
+<div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span>            BEAST_EXPECT(x == b1);</div>
+<div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span> </div>
+<div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span>            <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> y{<span class="keyword">static_cast&lt;</span><a class="code hl_class" href="classripple_1_1Slice.html">Slice</a><span class="keyword">&gt;</span>(b2)};</div>
+<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span>            BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(y));</div>
+<div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span>            BEAST_EXPECT(y == b2);</div>
+<div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span> </div>
+<div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span>            <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> z{<span class="keyword">static_cast&lt;</span><a class="code hl_class" href="classripple_1_1Slice.html">Slice</a><span class="keyword">&gt;</span>(b3)};</div>
+<div class="line"><a id="l00215" name="l00215"></a><span class="lineno">  215</span>            BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(z));</div>
+<div class="line"><a id="l00216" name="l00216"></a><span class="lineno">  216</span>            BEAST_EXPECT(z == b3);</div>
+<div class="line"><a id="l00217" name="l00217"></a><span class="lineno">  217</span> </div>
+<div class="line"><a id="l00218" name="l00218"></a><span class="lineno">  218</span>            <span class="comment">// Assign empty slice to empty buffer</span></div>
+<div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span>            w = <span class="keyword">static_cast&lt;</span><a class="code hl_class" href="classripple_1_1Slice.html">Slice</a><span class="keyword">&gt;</span>(b0);</div>
+<div class="line"><a id="l00220" name="l00220"></a><span class="lineno">  220</span>            BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(w));</div>
+<div class="line"><a id="l00221" name="l00221"></a><span class="lineno">  221</span>            BEAST_EXPECT(w == b0);</div>
+<div class="line"><a id="l00222" name="l00222"></a><span class="lineno">  222</span> </div>
+<div class="line"><a id="l00223" name="l00223"></a><span class="lineno">  223</span>            <span class="comment">// Assign non-empty slice to empty buffer</span></div>
+<div class="line"><a id="l00224" name="l00224"></a><span class="lineno">  224</span>            w = <span class="keyword">static_cast&lt;</span><a class="code hl_class" href="classripple_1_1Slice.html">Slice</a><span class="keyword">&gt;</span>(b1);</div>
+<div class="line"><a id="l00225" name="l00225"></a><span class="lineno">  225</span>            BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(w));</div>
+<div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span>            BEAST_EXPECT(w == b1);</div>
+<div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span> </div>
+<div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span>            <span class="comment">// Assign non-empty slice to non-empty buffer</span></div>
+<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span>            x = <span class="keyword">static_cast&lt;</span><a class="code hl_class" href="classripple_1_1Slice.html">Slice</a><span class="keyword">&gt;</span>(b2);</div>
+<div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span>            BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(x));</div>
+<div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span>            BEAST_EXPECT(x == b2);</div>
+<div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span> </div>
+<div class="line"><a id="l00233" name="l00233"></a><span class="lineno">  233</span>            <span class="comment">// Assign non-empty slice to non-empty buffer</span></div>
+<div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span>            y = <span class="keyword">static_cast&lt;</span><a class="code hl_class" href="classripple_1_1Slice.html">Slice</a><span class="keyword">&gt;</span>(z);</div>
+<div class="line"><a id="l00235" name="l00235"></a><span class="lineno">  235</span>            BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(y));</div>
+<div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span>            BEAST_EXPECT(y == z);</div>
+<div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span> </div>
+<div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span>            <span class="comment">// Assign empty slice to non-empty buffer:</span></div>
+<div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span>            z = <span class="keyword">static_cast&lt;</span><a class="code hl_class" href="classripple_1_1Slice.html">Slice</a><span class="keyword">&gt;</span>(b0);</div>
+<div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span>            BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(z));</div>
+<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span>            BEAST_EXPECT(z == b0);</div>
+<div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span>        }</div>
+<div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span> </div>
+<div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span>        {</div>
+<div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span>            <a class="code hl_variable" href="classbeast_1_1unit__test_1_1suite.html#aaa1237d9b85c69d35fe86645cee094b5">testcase</a>(<span class="stringliteral">&quot;Allocation, Deallocation and Clearing&quot;</span>);</div>
+<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span> </div>
+<div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span>            <span class="keyword">auto</span> test = [<span class="keyword">this</span>](<a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> <span class="keyword">const</span>&amp; b, <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> i) {</div>
+<div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span>                <a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a> x{b};</div>
+<div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span> </div>
+<div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span>                <span class="comment">// Try to allocate some number of bytes, possibly</span></div>
+<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span>                <span class="comment">// zero (which means clear) and sanity check</span></div>
+<div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span>                x(i);</div>
+<div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span>                BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(x));</div>
+<div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span>                BEAST_EXPECT(x.size() == i);</div>
+<div class="line"><a id="l00255" name="l00255"></a><span class="lineno">  255</span>                BEAST_EXPECT((x.data() == <span class="keyword">nullptr</span>) == (i == 0));</div>
+<div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span> </div>
+<div class="line"><a id="l00257" name="l00257"></a><span class="lineno">  257</span>                <span class="comment">// Try to allocate some more data (always non-zero)</span></div>
+<div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span>                x(i + 1);</div>
+<div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span>                BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(x));</div>
+<div class="line"><a id="l00260" name="l00260"></a><span class="lineno">  260</span>                BEAST_EXPECT(x.size() == i + 1);</div>
+<div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span>                BEAST_EXPECT(x.data() != <span class="keyword">nullptr</span>);</div>
+<div class="line"><a id="l00262" name="l00262"></a><span class="lineno">  262</span> </div>
+<div class="line"><a id="l00263" name="l00263"></a><span class="lineno">  263</span>                <span class="comment">// Try to clear:</span></div>
+<div class="line"><a id="l00264" name="l00264"></a><span class="lineno">  264</span>                x.clear();</div>
+<div class="line"><a id="l00265" name="l00265"></a><span class="lineno">  265</span>                BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(x));</div>
+<div class="line"><a id="l00266" name="l00266"></a><span class="lineno">  266</span>                BEAST_EXPECT(x.size() == 0);</div>
+<div class="line"><a id="l00267" name="l00267"></a><span class="lineno">  267</span>                BEAST_EXPECT(x.data() == <span class="keyword">nullptr</span>);</div>
+<div class="line"><a id="l00268" name="l00268"></a><span class="lineno">  268</span> </div>
+<div class="line"><a id="l00269" name="l00269"></a><span class="lineno">  269</span>                <span class="comment">// Try to clear again:</span></div>
+<div class="line"><a id="l00270" name="l00270"></a><span class="lineno">  270</span>                x.clear();</div>
+<div class="line"><a id="l00271" name="l00271"></a><span class="lineno">  271</span>                BEAST_EXPECT(<a class="code hl_function" href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">sane</a>(x));</div>
+<div class="line"><a id="l00272" name="l00272"></a><span class="lineno">  272</span>                BEAST_EXPECT(x.size() == 0);</div>
+<div class="line"><a id="l00273" name="l00273"></a><span class="lineno">  273</span>                BEAST_EXPECT(x.data() == <span class="keyword">nullptr</span>);</div>
+<div class="line"><a id="l00274" name="l00274"></a><span class="lineno">  274</span>            };</div>
+<div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span> </div>
+<div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span>            <span class="keywordflow">for</span> (<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> i = 0; i &lt; 16; ++i)</div>
+<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span>            {</div>
+<div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span>                test(b0, i);</div>
+<div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span>                test(b1, i);</div>
+<div class="line"><a id="l00280" name="l00280"></a><span class="lineno">  280</span>            }</div>
+<div class="line"><a id="l00281" name="l00281"></a><span class="lineno">  281</span>        }</div>
+<div class="line"><a id="l00282" name="l00282"></a><span class="lineno">  282</span>    }</div>
+<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span>};</div>
+<div class="line"><a id="l00284" name="l00284"></a><span class="lineno">  284</span> </div>
+<div class="line"><a id="l00285" name="l00285"></a><span class="lineno"><a class="line" href="namespaceripple_1_1test.html#ad3688cd1caeca5720b3f3cbfa15dfbb5">  285</a></span>BEAST_DEFINE_TESTSUITE(<a class="code hl_class" href="classripple_1_1Buffer.html">Buffer</a>, ripple_basics, <a class="code hl_namespace" href="namespaceripple.html">ripple</a>);</div>
+<div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span> </div>
+<div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span>}  <span class="comment">// namespace test</span></div>
+<div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span>}  <span class="comment">// namespace ripple</span></div>
+<div class="ttc" id="aclassbeast_1_1unit__test_1_1suite_html"><div class="ttname"><a href="classbeast_1_1unit__test_1_1suite.html">beast::unit_test::suite</a></div><div class="ttdoc">A testsuite class.</div><div class="ttdef"><b>Definition:</b> <a href="suite_8h_source.html#l00054">suite.h:55</a></div></div>
+<div class="ttc" id="aclassbeast_1_1unit__test_1_1suite_html_aaa1237d9b85c69d35fe86645cee094b5"><div class="ttname"><a href="classbeast_1_1unit__test_1_1suite.html#aaa1237d9b85c69d35fe86645cee094b5">beast::unit_test::suite::testcase</a></div><div class="ttdeci">testcase_t testcase</div><div class="ttdoc">Memberspace for declaring test cases.</div><div class="ttdef"><b>Definition:</b> <a href="suite_8h_source.html#l00155">suite.h:155</a></div></div>
+<div class="ttc" id="aclassripple_1_1Buffer_html"><div class="ttname"><a href="classripple_1_1Buffer.html">ripple::Buffer</a></div><div class="ttdoc">Like std::vector&lt;char&gt; but better.</div><div class="ttdef"><b>Definition:</b> <a href="Buffer_8h_source.html#l00034">Buffer.h:35</a></div></div>
+<div class="ttc" id="aclassripple_1_1Buffer_html_a76cd91377f761afdbb2dec0a39e44005"><div class="ttname"><a href="classripple_1_1Buffer.html#a76cd91377f761afdbb2dec0a39e44005">ripple::Buffer::size</a></div><div class="ttdeci">std::size_t size() const noexcept</div><div class="ttdoc">Returns the number of bytes in the buffer.</div><div class="ttdef"><b>Definition:</b> <a href="Buffer_8h_source.html#l00126">Buffer.h:126</a></div></div>
+<div class="ttc" id="aclassripple_1_1Buffer_html_ae1a5452cda07734f4f43151b87a5e236"><div class="ttname"><a href="classripple_1_1Buffer.html#ae1a5452cda07734f4f43151b87a5e236">ripple::Buffer::empty</a></div><div class="ttdeci">bool empty() const noexcept</div><div class="ttdef"><b>Definition:</b> <a href="Buffer_8h_source.html#l00132">Buffer.h:132</a></div></div>
+<div class="ttc" id="aclassripple_1_1Buffer_html_afacfc9c6af70702429653e85073ce5a4"><div class="ttname"><a href="classripple_1_1Buffer.html#afacfc9c6af70702429653e85073ce5a4">ripple::Buffer::data</a></div><div class="ttdeci">std::uint8_t const * data() const noexcept</div><div class="ttdoc">Return a pointer to beginning of the storage.</div><div class="ttdef"><b>Definition:</b> <a href="Buffer_8h_source.html#l00150">Buffer.h:150</a></div></div>
+<div class="ttc" id="aclassripple_1_1Slice_html"><div class="ttname"><a href="classripple_1_1Slice.html">ripple::Slice</a></div><div class="ttdoc">An immutable linear range of bytes.</div><div class="ttdef"><b>Definition:</b> <a href="Slice_8h_source.html#l00045">Slice.h:46</a></div></div>
 <div class="ttc" id="acstdint_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/cstdint.html">cstdint</a></div></div>
 <div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint8_t</a></div></div>
 <div class="ttc" id="ais_move_assignable_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/is_move_assignable.html">std::is_nothrow_move_assignable</a></div></div>
@@ -378,9 +379,9 @@ $(function() {
 <div class="ttc" id="amemcpy_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/byte/memcpy.html">std::memcpy</a></div><div class="ttdeci">T memcpy(T... args)</div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="algorithm_8h_source.html#l00026">algorithm.h:26</a></div></div>
 <div class="ttc" id="asize_t_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a></div></div>
-<div class="ttc" id="astructripple_1_1test_1_1Buffer__test_html"><div class="ttname"><a href="structripple_1_1test_1_1Buffer__test.html">ripple::test::Buffer_test</a></div><div class="ttdef"><b>Definition:</b> <a href="Buffer__test_8cpp_source.html#l00028">Buffer_test.cpp:29</a></div></div>
-<div class="ttc" id="astructripple_1_1test_1_1Buffer__test_html_a4ffb97a7f4b5e23f8c1608d406518a33"><div class="ttname"><a href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">ripple::test::Buffer_test::sane</a></div><div class="ttdeci">bool sane(Buffer const &amp;b) const</div><div class="ttdef"><b>Definition:</b> <a href="Buffer__test_8cpp_source.html#l00031">Buffer_test.cpp:31</a></div></div>
-<div class="ttc" id="astructripple_1_1test_1_1Buffer__test_html_acbbdef83110407c964184d8a7a26c422"><div class="ttname"><a href="structripple_1_1test_1_1Buffer__test.html#acbbdef83110407c964184d8a7a26c422">ripple::test::Buffer_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdoc">Runs the suite.</div><div class="ttdef"><b>Definition:</b> <a href="Buffer__test_8cpp_source.html#l00040">Buffer_test.cpp:40</a></div></div>
+<div class="ttc" id="astructripple_1_1test_1_1Buffer__test_html"><div class="ttname"><a href="structripple_1_1test_1_1Buffer__test.html">ripple::test::Buffer_test</a></div><div class="ttdef"><b>Definition:</b> <a href="Buffer__test_8cpp_source.html#l00029">Buffer_test.cpp:30</a></div></div>
+<div class="ttc" id="astructripple_1_1test_1_1Buffer__test_html_a4ffb97a7f4b5e23f8c1608d406518a33"><div class="ttname"><a href="structripple_1_1test_1_1Buffer__test.html#a4ffb97a7f4b5e23f8c1608d406518a33">ripple::test::Buffer_test::sane</a></div><div class="ttdeci">bool sane(Buffer const &amp;b) const</div><div class="ttdef"><b>Definition:</b> <a href="Buffer__test_8cpp_source.html#l00032">Buffer_test.cpp:32</a></div></div>
+<div class="ttc" id="astructripple_1_1test_1_1Buffer__test_html_acbbdef83110407c964184d8a7a26c422"><div class="ttname"><a href="structripple_1_1test_1_1Buffer__test.html#acbbdef83110407c964184d8a7a26c422">ripple::test::Buffer_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdoc">Runs the suite.</div><div class="ttdef"><b>Definition:</b> <a href="Buffer__test_8cpp_source.html#l00041">Buffer_test.cpp:41</a></div></div>
 <div class="ttc" id="atype_traits_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/type_traits.html">type_traits</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->

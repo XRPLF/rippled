@@ -154,7 +154,7 @@ Private Attributes</h2></td></tr>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p >Manages a set of objects performing asynchronous I/O. </p>
 
-<p class="definition">Definition at line <a class="el" href="io__list_8h_source.html#l00035">35</a> of file <a class="el" href="io__list_8h_source.html">io_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="io__list_8h_source.html#l00036">36</a> of file <a class="el" href="io__list_8h_source.html">io_list.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="ae90512448cc310a11d19a393bf8e48a2" name="ae90512448cc310a11d19a393bf8e48a2"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#ae90512448cc310a11d19a393bf8e48a2">&#9670;&#160;</a></span>io_list()</h2>
@@ -200,7 +200,7 @@ Private Attributes</h2></td></tr>
 <p >Effects: Closes the <a class="el" href="classripple_1_1io__list.html" title="Manages a set of objects performing asynchronous I/O.">io_list</a> if it was not previously closed. No finisher is invoked in this case.</p>
 <p >Blocks until all work is destroyed. </p>
 
-<p class="definition">Definition at line <a class="el" href="io__list_8h_source.html#l00092">92</a> of file <a class="el" href="io__list_8h_source.html">io_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="io__list_8h_source.html#l00093">93</a> of file <a class="el" href="io__list_8h_source.html">io_list.h</a>.</p>
 
 </div>
 </div>
@@ -227,7 +227,7 @@ template&lt;class &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="io__list_8h_source.html#l00202">202</a> of file <a class="el" href="io__list_8h_source.html">io_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="io__list_8h_source.html#l00203">203</a> of file <a class="el" href="io__list_8h_source.html">io_list.h</a>.</p>
 
 </div>
 </div>
@@ -249,7 +249,7 @@ template&lt;class &gt; </div>
 <p>Return <code>true</code> if the list is closed. </p>
 <p >Thread Safety: Undefined result if called concurrently with <a class="el" href="classripple_1_1io__list.html#a400fa8b9aa03428e1fcfb85cbbef7e50">close()</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="io__list_8h_source.html#l00104">104</a> of file <a class="el" href="io__list_8h_source.html">io_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="io__list_8h_source.html#l00105">105</a> of file <a class="el" href="io__list_8h_source.html">io_list.h</a>.</p>
 
 </div>
 </div>
@@ -277,7 +277,7 @@ template&lt;class T , class... Args&gt; </div>
 <p >Effects: Atomically creates, inserts, and returns new work T, or returns nullptr if the <a class="el" href="classripple_1_1io__list.html" title="Manages a set of objects performing asynchronous I/O.">io_list</a> is closed,</p>
 <p >If the call succeeds and returns a new object, it is guaranteed that a subsequent call to close will invoke <a class="el" href="classripple_1_1io__list_1_1work.html#a588fa17996479affa5d38963d475f74e">work::close</a> on the object. </p>
 
-<p class="definition">Definition at line <a class="el" href="io__list_8h_source.html#l00210">210</a> of file <a class="el" href="io__list_8h_source.html">io_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="io__list_8h_source.html#l00211">211</a> of file <a class="el" href="io__list_8h_source.html">io_list.h</a>.</p>
 
 </div>
 </div>
@@ -306,7 +306,7 @@ template&lt;class Finisher &gt; </div>
 <p >Only the first call to close will set the finisher.</p>
 <p >No effect after the first call. </p>
 
-<p class="definition">Definition at line <a class="el" href="io__list_8h_source.html#l00235">235</a> of file <a class="el" href="io__list_8h_source.html">io_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="io__list_8h_source.html#l00236">236</a> of file <a class="el" href="io__list_8h_source.html">io_list.h</a>.</p>
 
 </div>
 </div>
@@ -325,7 +325,7 @@ template&lt;class Finisher &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="io__list_8h_source.html#l00154">154</a> of file <a class="el" href="io__list_8h_source.html">io_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="io__list_8h_source.html#l00155">155</a> of file <a class="el" href="io__list_8h_source.html">io_list.h</a>.</p>
 
 </div>
 </div>
@@ -348,7 +348,7 @@ template&lt;class &gt; </div>
 <p >Thread safety: May be called concurrently.</p>
 <p >Preconditions: No call to io_service::run on any io_service used by work objects associated with this <a class="el" href="classripple_1_1io__list.html" title="Manages a set of objects performing asynchronous I/O.">io_list</a> exists in the caller's call stack. </p>
 
-<p class="definition">Definition at line <a class="el" href="io__list_8h_source.html#l00259">259</a> of file <a class="el" href="io__list_8h_source.html">io_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="io__list_8h_source.html#l00260">260</a> of file <a class="el" href="io__list_8h_source.html">io_list.h</a>.</p>
 
 </div>
 </div>
@@ -373,7 +373,7 @@ template&lt;class &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="io__list_8h_source.html#l00074">74</a> of file <a class="el" href="io__list_8h_source.html">io_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="io__list_8h_source.html#l00075">75</a> of file <a class="el" href="io__list_8h_source.html">io_list.h</a>.</p>
 
 </div>
 </div>
@@ -397,7 +397,7 @@ template&lt;class &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="io__list_8h_source.html#l00075">75</a> of file <a class="el" href="io__list_8h_source.html">io_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="io__list_8h_source.html#l00076">76</a> of file <a class="el" href="io__list_8h_source.html">io_list.h</a>.</p>
 
 </div>
 </div>
@@ -421,7 +421,7 @@ template&lt;class &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="io__list_8h_source.html#l00076">76</a> of file <a class="el" href="io__list_8h_source.html">io_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="io__list_8h_source.html#l00077">77</a> of file <a class="el" href="io__list_8h_source.html">io_list.h</a>.</p>
 
 </div>
 </div>
@@ -445,7 +445,7 @@ template&lt;class &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="io__list_8h_source.html#l00077">77</a> of file <a class="el" href="io__list_8h_source.html">io_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="io__list_8h_source.html#l00078">78</a> of file <a class="el" href="io__list_8h_source.html">io_list.h</a>.</p>
 
 </div>
 </div>
@@ -469,7 +469,7 @@ template&lt;class &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="io__list_8h_source.html#l00078">78</a> of file <a class="el" href="io__list_8h_source.html">io_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="io__list_8h_source.html#l00079">79</a> of file <a class="el" href="io__list_8h_source.html">io_list.h</a>.</p>
 
 </div>
 </div>
@@ -493,7 +493,7 @@ template&lt;class &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="io__list_8h_source.html#l00079">79</a> of file <a class="el" href="io__list_8h_source.html">io_list.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="io__list_8h_source.html#l00080">80</a> of file <a class="el" href="io__list_8h_source.html">io_list.h</a>.</p>
 
 </div>
 </div>

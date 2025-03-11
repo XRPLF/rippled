@@ -104,287 +104,285 @@ $(function() {
 <div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><span class="preprocessor">#include &lt;xrpl/json/json_value.h&gt;</span></div>
 <div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span><span class="preprocessor">#include &lt;xrpl/protocol/ErrorCodes.h&gt;</span></div>
 <div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span><span class="preprocessor">#include &lt;xrpl/protocol/Indexes.h&gt;</span></div>
-<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span><span class="preprocessor">#include &lt;xrpl/protocol/RPCErr.h&gt;</span></div>
-<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span><span class="preprocessor">#include &lt;xrpl/protocol/UintTypes.h&gt;</span></div>
-<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span><span class="preprocessor">#include &lt;xrpl/protocol/jss.h&gt;</span></div>
-<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span><span class="preprocessor">#include &lt;grpc/status.h&gt;</span></div>
+<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span><span class="preprocessor">#include &lt;xrpl/protocol/UintTypes.h&gt;</span></div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span><span class="preprocessor">#include &lt;xrpl/protocol/jss.h&gt;</span></div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span> </div>
+<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceripple.html">ripple</a> {</div>
 <div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span> </div>
-<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceripple.html">ripple</a> {</div>
-<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span> </div>
-<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span><span class="comment">// {</span></div>
-<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span><span class="comment">//   account: &lt;ident&gt;,</span></div>
-<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span><span class="comment">//   ledger_hash : &lt;ledger&gt;</span></div>
-<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span><span class="comment">//   ledger_index : &lt;ledger_index&gt;</span></div>
-<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span><span class="comment">//   signer_lists : &lt;bool&gt; // optional (default false)</span></div>
-<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span><span class="comment">//                         //   if true return SignerList(s).</span></div>
-<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span><span class="comment">//   queue : &lt;bool&gt;        // optional (default false)</span></div>
-<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span><span class="comment">//                         //   if true return information about transactions</span></div>
-<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span><span class="comment">//                         //   in the current TxQ, only if the requested</span></div>
-<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span><span class="comment">//                         //   ledger is open. Otherwise if true, returns an</span></div>
-<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span><span class="comment">//                         //   error.</span></div>
-<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span><span class="comment">// }</span></div>
-<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span> </div>
-<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span><span class="comment">// TODO(tom): what is that &quot;default&quot;?</span></div>
-<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span><a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a></div>
-<div class="line"><a id="l00051" name="l00051"></a><span class="lineno"><a class="line" href="namespaceripple.html#ad3181666a917aca45f4f288e690e9305">   51</a></span><a class="code hl_function" href="namespaceripple.html#ad3181666a917aca45f4f288e690e9305">doAccountInfo</a>(<a class="code hl_struct" href="structripple_1_1RPC_1_1JsonContext.html">RPC::JsonContext</a>&amp; context)</div>
-<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>{</div>
-<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>    <span class="keyword">auto</span>&amp; params = context.<a class="code hl_variable" href="structripple_1_1RPC_1_1JsonContext.html#a036b2c14552fbca49011c3d0e78017fa">params</a>;</div>
-<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span> </div>
-<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> strIdent;</div>
-<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>    <span class="keywordflow">if</span> (params.isMember(jss::account))</div>
-<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>    {</div>
-<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>        <span class="keywordflow">if</span> (!params[jss::account].isString())</div>
-<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>            <span class="keywordflow">return</span> <a class="code hl_function" href="namespaceripple_1_1RPC.html#a3f2a31e585bbecb3af3740d34d7df15f">RPC::invalid_field_error</a>(jss::account);</div>
-<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>        strIdent = params[jss::account].asString();</div>
-<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>    }</div>
-<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>    <span class="keywordflow">else</span> <span class="keywordflow">if</span> (params.isMember(jss::ident))</div>
-<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>    {</div>
-<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>        <span class="keywordflow">if</span> (!params[jss::ident].isString())</div>
-<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>            <span class="keywordflow">return</span> <a class="code hl_function" href="namespaceripple_1_1RPC.html#a3f2a31e585bbecb3af3740d34d7df15f">RPC::invalid_field_error</a>(jss::ident);</div>
-<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>        strIdent = params[jss::ident].asString();</div>
-<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>    }</div>
-<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>    <span class="keywordflow">else</span></div>
-<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>        <span class="keywordflow">return</span> <a class="code hl_function" href="namespaceripple_1_1RPC.html#aec2e1163b39a450d3917af9dd15b0f06">RPC::missing_field_error</a>(jss::account);</div>
-<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span> </div>
-<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a> ledger;</div>
-<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>    <span class="keyword">auto</span> result = <a class="code hl_function" href="namespaceripple_1_1RPC.html#aaebfaaee35308269fab499f4e203a8c9">RPC::lookupLedger</a>(ledger, context);</div>
-<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span> </div>
-<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>    <span class="keywordflow">if</span> (!ledger)</div>
-<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>        <span class="keywordflow">return</span> result;</div>
-<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span> </div>
-<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>    <span class="comment">// Get info on account.</span></div>
-<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>    <span class="keyword">auto</span> <span class="keywordtype">id</span> = parseBase58&lt;AccountID&gt;(strIdent);</div>
-<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>    <span class="keywordflow">if</span> (!<span class="keywordtype">id</span>)</div>
-<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>    {</div>
-<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>        <a class="code hl_function" href="namespaceripple_1_1RPC.html#a577bde9602a28f59e445c496f92a1ccf">RPC::inject_error</a>(<a class="code hl_enumvalue" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a4fba57dbbed9bfaa196e1a0e0915dc8a">rpcACT_MALFORMED</a>, result);</div>
-<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>        <span class="keywordflow">return</span> result;</div>
-<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>    }</div>
-<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>    <span class="keyword">auto</span> <span class="keyword">const</span> accountID{std::move(<span class="keywordtype">id</span>.value())};</div>
-<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span> </div>
-<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>    <span class="keyword">static</span> <span class="keyword">constexpr</span> std::</div>
-<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>        array&lt;std::pair&lt;std::string_view, LedgerSpecificFlags&gt;, 9&gt;</div>
-<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>            lsFlags{</div>
-<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>                {{<span class="stringliteral">&quot;defaultRipple&quot;</span>, <a class="code hl_enumvalue" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a3de81b62b486203f6b8e4f2cd0832ae1">lsfDefaultRipple</a>},</div>
-<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>                 {<span class="stringliteral">&quot;depositAuth&quot;</span>, <a class="code hl_enumvalue" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a873a48eb9d8f66315874a318df664f05">lsfDepositAuth</a>},</div>
-<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>                 {<span class="stringliteral">&quot;disableMasterKey&quot;</span>, <a class="code hl_enumvalue" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a74277ce2a45a0b253c18a4aa3c57b7c7">lsfDisableMaster</a>},</div>
-<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>                 {<span class="stringliteral">&quot;disallowIncomingXRP&quot;</span>, <a class="code hl_enumvalue" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5af697f2c85dc33c5831e82b69c6a4e7e9">lsfDisallowXRP</a>},</div>
-<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>                 {<span class="stringliteral">&quot;globalFreeze&quot;</span>, <a class="code hl_enumvalue" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5abe8166dd29a1d6890b51ce96af297f70">lsfGlobalFreeze</a>},</div>
-<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>                 {<span class="stringliteral">&quot;noFreeze&quot;</span>, <a class="code hl_enumvalue" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5abe71ed0ad6b450dd8c2ffc0314318b79">lsfNoFreeze</a>},</div>
-<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>                 {<span class="stringliteral">&quot;passwordSpent&quot;</span>, <a class="code hl_enumvalue" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a3023711a4bd27dad27a57290b0df1087">lsfPasswordSpent</a>},</div>
-<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>                 {<span class="stringliteral">&quot;requireAuthorization&quot;</span>, <a class="code hl_enumvalue" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a44c3bc643086a0beb87e3aaeb544e6ad">lsfRequireAuth</a>},</div>
-<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>                 {<span class="stringliteral">&quot;requireDestinationTag&quot;</span>, <a class="code hl_enumvalue" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a2243e81f83c4191286c8c46bdd86d6f3">lsfRequireDestTag</a>}}};</div>
-<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span> </div>
-<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span>    <span class="keyword">static</span> <span class="keyword">constexpr</span> std::</div>
-<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>        array&lt;std::pair&lt;std::string_view, LedgerSpecificFlags&gt;, 4&gt;</div>
-<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>            disallowIncomingFlags{</div>
-<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>                {{<span class="stringliteral">&quot;disallowIncomingNFTokenOffer&quot;</span>,</div>
-<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>                  <a class="code hl_enumvalue" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a9f25924b110b0f2debce6e0f71bc5a18">lsfDisallowIncomingNFTokenOffer</a>},</div>
-<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>                 {<span class="stringliteral">&quot;disallowIncomingCheck&quot;</span>, <a class="code hl_enumvalue" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a494f22c192b84673b1ff1e17e1b4304a">lsfDisallowIncomingCheck</a>},</div>
-<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>                 {<span class="stringliteral">&quot;disallowIncomingPayChan&quot;</span>, <a class="code hl_enumvalue" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a91c443238e7e5acef466bfb2fe9f1211">lsfDisallowIncomingPayChan</a>},</div>
-<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>                 {<span class="stringliteral">&quot;disallowIncomingTrustline&quot;</span>, <a class="code hl_enumvalue" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a99c52494bb88dab0264625ebc5c4206e">lsfDisallowIncomingTrustline</a>}}};</div>
-<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span> </div>
-<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>    <span class="keyword">static</span> <span class="keyword">constexpr</span> <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;std::string_view, LedgerSpecificFlags&gt;</a></div>
-<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span>        allowTrustLineClawbackFlag{</div>
-<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>            <span class="stringliteral">&quot;allowTrustLineClawback&quot;</span>, <a class="code hl_enumvalue" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a4dc02270bf68939f8033c9a985fb2dfb">lsfAllowTrustLineClawback</a>};</div>
-<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span> </div>
-<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span>    <span class="keyword">auto</span> <span class="keyword">const</span> sleAccepted = ledger-&gt;read(<a class="code hl_function" href="namespaceripple_1_1keylet.html#aa756e0f59b26042ed00a4d0ba6e96951">keylet::account</a>(accountID));</div>
-<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span>    <span class="keywordflow">if</span> (sleAccepted)</div>
-<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>    {</div>
-<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>        <span class="keyword">auto</span> <span class="keyword">const</span> queue =</div>
-<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>            params.isMember(jss::queue) &amp;&amp; params[jss::queue].asBool();</div>
-<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span> </div>
-<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>        <span class="keywordflow">if</span> (queue &amp;&amp; !ledger-&gt;open())</div>
-<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>        {</div>
-<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>            <span class="comment">// It doesn&#39;t make sense to request the queue</span></div>
-<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>            <span class="comment">// with any closed or validated ledger.</span></div>
-<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>            <a class="code hl_function" href="namespaceripple_1_1RPC.html#a577bde9602a28f59e445c496f92a1ccf">RPC::inject_error</a>(<a class="code hl_enumvalue" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a82ddebc5ec7a37ff38892487277bf9c4">rpcINVALID_PARAMS</a>, result);</div>
-<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>            <span class="keywordflow">return</span> result;</div>
-<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>        }</div>
-<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span> </div>
-<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span>        <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> jvAccepted(<a class="code hl_enumvalue" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6">Json::objectValue</a>);</div>
-<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>        <a class="code hl_function" href="namespaceripple_1_1RPC.html#a4ea6d08c0d50d738a6a55130a09ec238">RPC::injectSLE</a>(jvAccepted, *sleAccepted);</div>
-<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>        result[jss::account_data] = jvAccepted;</div>
-<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span> </div>
-<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span>        <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> acctFlags{<a class="code hl_enumvalue" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6">Json::objectValue</a>};</div>
-<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span>        <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; lsf : lsFlags)</div>
-<div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span>            acctFlags[lsf.first.data()] = sleAccepted-&gt;isFlag(lsf.second);</div>
-<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span> </div>
-<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>        <span class="keywordflow">if</span> (ledger-&gt;rules().enabled(featureDisallowIncoming))</div>
-<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span>        {</div>
-<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span>            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; lsf : disallowIncomingFlags)</div>
-<div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span>                acctFlags[lsf.first.data()] = sleAccepted-&gt;isFlag(lsf.second);</div>
-<div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span>        }</div>
-<div class="line"><a id="l00139" name="l00139"></a><span class="lineno">  139</span> </div>
-<div class="line"><a id="l00140" name="l00140"></a><span class="lineno">  140</span>        <span class="keywordflow">if</span> (ledger-&gt;rules().enabled(featureClawback))</div>
-<div class="line"><a id="l00141" name="l00141"></a><span class="lineno">  141</span>            acctFlags[allowTrustLineClawbackFlag.first.data()] =</div>
-<div class="line"><a id="l00142" name="l00142"></a><span class="lineno">  142</span>                sleAccepted-&gt;isFlag(allowTrustLineClawbackFlag.second);</div>
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span><span class="comment">// {</span></div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span><span class="comment">//   account: &lt;ident&gt;,</span></div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span><span class="comment">//   ledger_hash : &lt;ledger&gt;</span></div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span><span class="comment">//   ledger_index : &lt;ledger_index&gt;</span></div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span><span class="comment">//   signer_lists : &lt;bool&gt; // optional (default false)</span></div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span><span class="comment">//                         //   if true return SignerList(s).</span></div>
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span><span class="comment">//   queue : &lt;bool&gt;        // optional (default false)</span></div>
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span><span class="comment">//                         //   if true return information about transactions</span></div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span><span class="comment">//                         //   in the current TxQ, only if the requested</span></div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span><span class="comment">//                         //   ledger is open. Otherwise if true, returns an</span></div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span><span class="comment">//                         //   error.</span></div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span><span class="comment">// }</span></div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span> </div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span><span class="comment">// TODO(tom): what is that &quot;default&quot;?</span></div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span><a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a></div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno"><a class="line" href="namespaceripple.html#ad3181666a917aca45f4f288e690e9305">   49</a></span><a class="code hl_function" href="namespaceripple.html#ad3181666a917aca45f4f288e690e9305">doAccountInfo</a>(<a class="code hl_struct" href="structripple_1_1RPC_1_1JsonContext.html">RPC::JsonContext</a>&amp; context)</div>
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>{</div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>    <span class="keyword">auto</span>&amp; params = context.<a class="code hl_variable" href="structripple_1_1RPC_1_1JsonContext.html#a036b2c14552fbca49011c3d0e78017fa">params</a>;</div>
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span> </div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> strIdent;</div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>    <span class="keywordflow">if</span> (params.isMember(jss::account))</div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>    {</div>
+<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>        <span class="keywordflow">if</span> (!params[jss::account].isString())</div>
+<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>            <span class="keywordflow">return</span> <a class="code hl_function" href="namespaceripple_1_1RPC.html#a3f2a31e585bbecb3af3740d34d7df15f">RPC::invalid_field_error</a>(jss::account);</div>
+<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>        strIdent = params[jss::account].asString();</div>
+<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>    }</div>
+<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>    <span class="keywordflow">else</span> <span class="keywordflow">if</span> (params.isMember(jss::ident))</div>
+<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>    {</div>
+<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>        <span class="keywordflow">if</span> (!params[jss::ident].isString())</div>
+<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>            <span class="keywordflow">return</span> <a class="code hl_function" href="namespaceripple_1_1RPC.html#a3f2a31e585bbecb3af3740d34d7df15f">RPC::invalid_field_error</a>(jss::ident);</div>
+<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>        strIdent = params[jss::ident].asString();</div>
+<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>    }</div>
+<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>    <span class="keywordflow">else</span></div>
+<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>        <span class="keywordflow">return</span> <a class="code hl_function" href="namespaceripple_1_1RPC.html#aec2e1163b39a450d3917af9dd15b0f06">RPC::missing_field_error</a>(jss::account);</div>
+<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span> </div>
+<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a> ledger;</div>
+<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>    <span class="keyword">auto</span> result = <a class="code hl_function" href="namespaceripple_1_1RPC.html#aaebfaaee35308269fab499f4e203a8c9">RPC::lookupLedger</a>(ledger, context);</div>
+<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span> </div>
+<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>    <span class="keywordflow">if</span> (!ledger)</div>
+<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>        <span class="keywordflow">return</span> result;</div>
+<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span> </div>
+<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>    <span class="comment">// Get info on account.</span></div>
+<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>    <span class="keyword">auto</span> <span class="keywordtype">id</span> = parseBase58&lt;AccountID&gt;(strIdent);</div>
+<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>    <span class="keywordflow">if</span> (!<span class="keywordtype">id</span>)</div>
+<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>    {</div>
+<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>        <a class="code hl_function" href="namespaceripple_1_1RPC.html#a577bde9602a28f59e445c496f92a1ccf">RPC::inject_error</a>(<a class="code hl_enumvalue" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a4fba57dbbed9bfaa196e1a0e0915dc8a">rpcACT_MALFORMED</a>, result);</div>
+<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>        <span class="keywordflow">return</span> result;</div>
+<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>    }</div>
+<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>    <span class="keyword">auto</span> <span class="keyword">const</span> accountID{std::move(<span class="keywordtype">id</span>.value())};</div>
+<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span> </div>
+<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>    <span class="keyword">static</span> <span class="keyword">constexpr</span> std::</div>
+<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>        array&lt;std::pair&lt;std::string_view, LedgerSpecificFlags&gt;, 9&gt;</div>
+<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>            lsFlags{</div>
+<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>                {{<span class="stringliteral">&quot;defaultRipple&quot;</span>, <a class="code hl_enumvalue" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a3de81b62b486203f6b8e4f2cd0832ae1">lsfDefaultRipple</a>},</div>
+<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>                 {<span class="stringliteral">&quot;depositAuth&quot;</span>, <a class="code hl_enumvalue" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a873a48eb9d8f66315874a318df664f05">lsfDepositAuth</a>},</div>
+<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>                 {<span class="stringliteral">&quot;disableMasterKey&quot;</span>, <a class="code hl_enumvalue" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a74277ce2a45a0b253c18a4aa3c57b7c7">lsfDisableMaster</a>},</div>
+<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>                 {<span class="stringliteral">&quot;disallowIncomingXRP&quot;</span>, <a class="code hl_enumvalue" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5af697f2c85dc33c5831e82b69c6a4e7e9">lsfDisallowXRP</a>},</div>
+<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>                 {<span class="stringliteral">&quot;globalFreeze&quot;</span>, <a class="code hl_enumvalue" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5abe8166dd29a1d6890b51ce96af297f70">lsfGlobalFreeze</a>},</div>
+<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>                 {<span class="stringliteral">&quot;noFreeze&quot;</span>, <a class="code hl_enumvalue" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5abe71ed0ad6b450dd8c2ffc0314318b79">lsfNoFreeze</a>},</div>
+<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>                 {<span class="stringliteral">&quot;passwordSpent&quot;</span>, <a class="code hl_enumvalue" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a3023711a4bd27dad27a57290b0df1087">lsfPasswordSpent</a>},</div>
+<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>                 {<span class="stringliteral">&quot;requireAuthorization&quot;</span>, <a class="code hl_enumvalue" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a44c3bc643086a0beb87e3aaeb544e6ad">lsfRequireAuth</a>},</div>
+<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>                 {<span class="stringliteral">&quot;requireDestinationTag&quot;</span>, <a class="code hl_enumvalue" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a2243e81f83c4191286c8c46bdd86d6f3">lsfRequireDestTag</a>}}};</div>
+<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span> </div>
+<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>    <span class="keyword">static</span> <span class="keyword">constexpr</span> std::</div>
+<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>        array&lt;std::pair&lt;std::string_view, LedgerSpecificFlags&gt;, 4&gt;</div>
+<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span>            disallowIncomingFlags{</div>
+<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>                {{<span class="stringliteral">&quot;disallowIncomingNFTokenOffer&quot;</span>,</div>
+<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>                  <a class="code hl_enumvalue" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a9f25924b110b0f2debce6e0f71bc5a18">lsfDisallowIncomingNFTokenOffer</a>},</div>
+<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>                 {<span class="stringliteral">&quot;disallowIncomingCheck&quot;</span>, <a class="code hl_enumvalue" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a494f22c192b84673b1ff1e17e1b4304a">lsfDisallowIncomingCheck</a>},</div>
+<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>                 {<span class="stringliteral">&quot;disallowIncomingPayChan&quot;</span>, <a class="code hl_enumvalue" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a91c443238e7e5acef466bfb2fe9f1211">lsfDisallowIncomingPayChan</a>},</div>
+<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>                 {<span class="stringliteral">&quot;disallowIncomingTrustline&quot;</span>, <a class="code hl_enumvalue" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a99c52494bb88dab0264625ebc5c4206e">lsfDisallowIncomingTrustline</a>}}};</div>
+<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span> </div>
+<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>    <span class="keyword">static</span> <span class="keyword">constexpr</span> <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;std::string_view, LedgerSpecificFlags&gt;</a></div>
+<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>        allowTrustLineClawbackFlag{</div>
+<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>            <span class="stringliteral">&quot;allowTrustLineClawback&quot;</span>, <a class="code hl_enumvalue" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5a4dc02270bf68939f8033c9a985fb2dfb">lsfAllowTrustLineClawback</a>};</div>
+<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span> </div>
+<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>    <span class="keyword">auto</span> <span class="keyword">const</span> sleAccepted = ledger-&gt;read(<a class="code hl_function" href="namespaceripple_1_1keylet.html#aa756e0f59b26042ed00a4d0ba6e96951">keylet::account</a>(accountID));</div>
+<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>    <span class="keywordflow">if</span> (sleAccepted)</div>
+<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span>    {</div>
+<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span>        <span class="keyword">auto</span> <span class="keyword">const</span> queue =</div>
+<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>            params.isMember(jss::queue) &amp;&amp; params[jss::queue].asBool();</div>
+<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span> </div>
+<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>        <span class="keywordflow">if</span> (queue &amp;&amp; !ledger-&gt;open())</div>
+<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>        {</div>
+<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>            <span class="comment">// It doesn&#39;t make sense to request the queue</span></div>
+<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>            <span class="comment">// with any closed or validated ledger.</span></div>
+<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>            <a class="code hl_function" href="namespaceripple_1_1RPC.html#a577bde9602a28f59e445c496f92a1ccf">RPC::inject_error</a>(<a class="code hl_enumvalue" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a82ddebc5ec7a37ff38892487277bf9c4">rpcINVALID_PARAMS</a>, result);</div>
+<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>            <span class="keywordflow">return</span> result;</div>
+<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>        }</div>
+<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span> </div>
+<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>        <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> jvAccepted(<a class="code hl_enumvalue" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6">Json::objectValue</a>);</div>
+<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>        <a class="code hl_function" href="namespaceripple_1_1RPC.html#a4ea6d08c0d50d738a6a55130a09ec238">RPC::injectSLE</a>(jvAccepted, *sleAccepted);</div>
+<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span>        result[jss::account_data] = jvAccepted;</div>
+<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span> </div>
+<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>        <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> acctFlags{<a class="code hl_enumvalue" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6">Json::objectValue</a>};</div>
+<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span>        <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; lsf : lsFlags)</div>
+<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span>            acctFlags[lsf.first.data()] = sleAccepted-&gt;isFlag(lsf.second);</div>
+<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span> </div>
+<div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span>        <span class="keywordflow">if</span> (ledger-&gt;rules().enabled(featureDisallowIncoming))</div>
+<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span>        {</div>
+<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; lsf : disallowIncomingFlags)</div>
+<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span>                acctFlags[lsf.first.data()] = sleAccepted-&gt;isFlag(lsf.second);</div>
+<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span>        }</div>
+<div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span> </div>
+<div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span>        <span class="keywordflow">if</span> (ledger-&gt;rules().enabled(featureClawback))</div>
+<div class="line"><a id="l00139" name="l00139"></a><span class="lineno">  139</span>            acctFlags[allowTrustLineClawbackFlag.first.data()] =</div>
+<div class="line"><a id="l00140" name="l00140"></a><span class="lineno">  140</span>                sleAccepted-&gt;isFlag(allowTrustLineClawbackFlag.second);</div>
+<div class="line"><a id="l00141" name="l00141"></a><span class="lineno">  141</span> </div>
+<div class="line"><a id="l00142" name="l00142"></a><span class="lineno">  142</span>        result[jss::account_flags] = std::move(acctFlags);</div>
 <div class="line"><a id="l00143" name="l00143"></a><span class="lineno">  143</span> </div>
-<div class="line"><a id="l00144" name="l00144"></a><span class="lineno">  144</span>        result[jss::account_flags] = std::move(acctFlags);</div>
-<div class="line"><a id="l00145" name="l00145"></a><span class="lineno">  145</span> </div>
-<div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span>        <span class="comment">// The document[https://xrpl.org/account_info.html#account_info] states</span></div>
-<div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span>        <span class="comment">// that signer_lists is a bool, however assigning any string value</span></div>
-<div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span>        <span class="comment">// works. Do not allow this. This check is for api Version 2 onwards</span></div>
-<div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span>        <span class="comment">// only</span></div>
-<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span>        <span class="keywordflow">if</span> (context.<a class="code hl_variable" href="structripple_1_1RPC_1_1Context.html#a0eab3b46cc23d67a6d16d1fb6bcaf0a2">apiVersion</a> &gt; 1u &amp;&amp; params.isMember(jss::signer_lists) &amp;&amp;</div>
-<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span>            !params[jss::signer_lists].isBool())</div>
-<div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span>        {</div>
-<div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span>            <a class="code hl_function" href="namespaceripple_1_1RPC.html#a577bde9602a28f59e445c496f92a1ccf">RPC::inject_error</a>(<a class="code hl_enumvalue" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a82ddebc5ec7a37ff38892487277bf9c4">rpcINVALID_PARAMS</a>, result);</div>
-<div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span>            <span class="keywordflow">return</span> result;</div>
-<div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span>        }</div>
-<div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span> </div>
-<div class="line"><a id="l00157" name="l00157"></a><span class="lineno">  157</span>        <span class="comment">// Return SignerList(s) if that is requested.</span></div>
-<div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span>        <span class="keywordflow">if</span> (params.isMember(jss::signer_lists) &amp;&amp;</div>
-<div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span>            params[jss::signer_lists].asBool())</div>
-<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span>        {</div>
-<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span>            <span class="comment">// We put the SignerList in an array because of an anticipated</span></div>
-<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span>            <span class="comment">// future when we support multiple signer lists on one account.</span></div>
-<div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span>            <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> jvSignerList = <a class="code hl_enumvalue" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eadc8f264f36b55b063c78126b335415f4">Json::arrayValue</a>;</div>
-<div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span> </div>
-<div class="line"><a id="l00165" name="l00165"></a><span class="lineno">  165</span>            <span class="comment">// This code will need to be revisited if in the future we support</span></div>
-<div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span>            <span class="comment">// multiple SignerLists on one account.</span></div>
-<div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span>            <span class="keyword">auto</span> <span class="keyword">const</span> sleSigners = ledger-&gt;read(<a class="code hl_function" href="namespaceripple_1_1keylet.html#ad5c2136f2d2d711114702944633d4fa8">keylet::signers</a>(accountID));</div>
-<div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span>            <span class="keywordflow">if</span> (sleSigners)</div>
-<div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span>                jvSignerList.<a class="code hl_function" href="classJson_1_1Value.html#a7e49ac977e4bcf59745a09d426669f75">append</a>(sleSigners-&gt;getJson(<a class="code hl_enumvalue" href="structripple_1_1JsonOptions.html#ab85e43ec84df987200d3355c3ba89f0aa1917451e3686dfe8d5016670eb87ab33">JsonOptions::none</a>));</div>
-<div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span> </div>
-<div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span>            <span class="comment">// Documentation states this is returned as part of the account_info</span></div>
-<div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span>            <span class="comment">// response, but previously the code put it under account_data. We</span></div>
-<div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span>            <span class="comment">// can move this to the documentated location from apiVersion 2</span></div>
-<div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span>            <span class="comment">// onwards.</span></div>
-<div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span>            <span class="keywordflow">if</span> (context.<a class="code hl_variable" href="structripple_1_1RPC_1_1Context.html#a0eab3b46cc23d67a6d16d1fb6bcaf0a2">apiVersion</a> == 1)</div>
-<div class="line"><a id="l00176" name="l00176"></a><span class="lineno">  176</span>            {</div>
-<div class="line"><a id="l00177" name="l00177"></a><span class="lineno">  177</span>                result[jss::account_data][jss::signer_lists] =</div>
-<div class="line"><a id="l00178" name="l00178"></a><span class="lineno">  178</span>                    std::move(jvSignerList);</div>
-<div class="line"><a id="l00179" name="l00179"></a><span class="lineno">  179</span>            }</div>
-<div class="line"><a id="l00180" name="l00180"></a><span class="lineno">  180</span>            <span class="keywordflow">else</span></div>
-<div class="line"><a id="l00181" name="l00181"></a><span class="lineno">  181</span>            {</div>
-<div class="line"><a id="l00182" name="l00182"></a><span class="lineno">  182</span>                result[jss::signer_lists] = std::move(jvSignerList);</div>
-<div class="line"><a id="l00183" name="l00183"></a><span class="lineno">  183</span>            }</div>
-<div class="line"><a id="l00184" name="l00184"></a><span class="lineno">  184</span>        }</div>
-<div class="line"><a id="l00185" name="l00185"></a><span class="lineno">  185</span>        <span class="comment">// Return queue info if that is requested</span></div>
-<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span>        <span class="keywordflow">if</span> (queue)</div>
-<div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span>        {</div>
-<div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span>            <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> jvQueueData = <a class="code hl_enumvalue" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6">Json::objectValue</a>;</div>
-<div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span> </div>
-<div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span>            <span class="keyword">auto</span> <span class="keyword">const</span> txs = context.<a class="code hl_variable" href="structripple_1_1RPC_1_1Context.html#a7878751d68ed7fd43c385913c5e6ff04">app</a>.<a class="code hl_function" href="classripple_1_1Application.html#abcadc50f7bafb5f027e40e18191a7de0">getTxQ</a>().<a class="code hl_function" href="classripple_1_1TxQ.html#a459d2ac82dc4e7e5672db06df4618a96">getAccountTxs</a>(accountID);</div>
-<div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span>            <span class="keywordflow">if</span> (!txs.empty())</div>
-<div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span>            {</div>
-<div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span>                jvQueueData[jss::txn_count] =</div>
-<div class="line"><a id="l00194" name="l00194"></a><span class="lineno">  194</span>                    <span class="keyword">static_cast&lt;</span><a class="code hl_typedef" href="namespaceJson.html#ab1488c31a37eea2d37f36a0961372572">Json::UInt</a><span class="keyword">&gt;</span>(txs.size());</div>
-<div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span> </div>
-<div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span>                <span class="keyword">auto</span>&amp; jvQueueTx = jvQueueData[jss::transactions];</div>
-<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span>                jvQueueTx = <a class="code hl_enumvalue" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eadc8f264f36b55b063c78126b335415f4">Json::arrayValue</a>;</div>
-<div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span> </div>
-<div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span>                <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> seqCount = 0;</div>
-<div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span>                <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ticketCount = 0;</div>
-<div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span>                <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;std::uint32_t&gt;</a> lowestSeq;</div>
-<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span>                <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;std::uint32_t&gt;</a> highestSeq;</div>
-<div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span>                <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;std::uint32_t&gt;</a> lowestTicket;</div>
-<div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span>                <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;std::uint32_t&gt;</a> highestTicket;</div>
-<div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span>                <span class="keywordtype">bool</span> anyAuthChanged = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span>                <a class="code hl_class" href="classripple_1_1XRPAmount.html">XRPAmount</a> totalSpend(0);</div>
-<div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span> </div>
-<div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span>                <span class="comment">// We expect txs to be returned sorted by SeqProxy.  Verify</span></div>
-<div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span>                <span class="comment">// that with a couple of asserts.</span></div>
-<div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span>                <a class="code hl_class" href="classripple_1_1SeqProxy.html">SeqProxy</a> prevSeqProxy = <a class="code hl_function" href="classripple_1_1SeqProxy.html#a31a7a3c8298a38aaeee20ae08bb51643">SeqProxy::sequence</a>(0);</div>
-<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span>                <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; tx : txs)</div>
-<div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span>                {</div>
-<div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span>                    <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> jvTx = <a class="code hl_enumvalue" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6">Json::objectValue</a>;</div>
-<div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span> </div>
-<div class="line"><a id="l00215" name="l00215"></a><span class="lineno">  215</span>                    <span class="keywordflow">if</span> (tx.seqProxy.isSeq())</div>
-<div class="line"><a id="l00216" name="l00216"></a><span class="lineno">  216</span>                    {</div>
-<div class="line"><a id="l00217" name="l00217"></a><span class="lineno">  217</span>                        XRPL_ASSERT(</div>
-<div class="line"><a id="l00218" name="l00218"></a><span class="lineno">  218</span>                            prevSeqProxy &lt; tx.seqProxy,</div>
-<div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span>                            <span class="stringliteral">&quot;rpple::doAccountInfo : first sorted proxy&quot;</span>);</div>
-<div class="line"><a id="l00220" name="l00220"></a><span class="lineno">  220</span>                        prevSeqProxy = tx.seqProxy;</div>
-<div class="line"><a id="l00221" name="l00221"></a><span class="lineno">  221</span>                        jvTx[jss::seq] = tx.seqProxy.value();</div>
-<div class="line"><a id="l00222" name="l00222"></a><span class="lineno">  222</span>                        ++seqCount;</div>
-<div class="line"><a id="l00223" name="l00223"></a><span class="lineno">  223</span>                        <span class="keywordflow">if</span> (!lowestSeq)</div>
-<div class="line"><a id="l00224" name="l00224"></a><span class="lineno">  224</span>                            lowestSeq = tx.seqProxy.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/utility/optional/value.html">value</a>();</div>
-<div class="line"><a id="l00225" name="l00225"></a><span class="lineno">  225</span>                        highestSeq = tx.seqProxy.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/utility/optional/value.html">value</a>();</div>
-<div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span>                    }</div>
-<div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span>                    <span class="keywordflow">else</span></div>
-<div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span>                    {</div>
-<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span>                        XRPL_ASSERT(</div>
-<div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span>                            prevSeqProxy &lt; tx.seqProxy,</div>
-<div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span>                            <span class="stringliteral">&quot;rpple::doAccountInfo : second sorted proxy&quot;</span>);</div>
-<div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span>                        prevSeqProxy = tx.seqProxy;</div>
-<div class="line"><a id="l00233" name="l00233"></a><span class="lineno">  233</span>                        jvTx[jss::ticket] = tx.seqProxy.value();</div>
-<div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span>                        ++ticketCount;</div>
-<div class="line"><a id="l00235" name="l00235"></a><span class="lineno">  235</span>                        <span class="keywordflow">if</span> (!lowestTicket)</div>
-<div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span>                            lowestTicket = tx.seqProxy.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/utility/optional/value.html">value</a>();</div>
-<div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span>                        highestTicket = tx.seqProxy.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/utility/optional/value.html">value</a>();</div>
-<div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span>                    }</div>
-<div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span> </div>
-<div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span>                    jvTx[jss::fee_level] = <a class="code hl_function" href="namespaceripple.html#ac124fe6744b7fe887dec949b56b16d50">to_string</a>(tx.feeLevel);</div>
-<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span>                    <span class="keywordflow">if</span> (tx.lastValid)</div>
-<div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span>                        jvTx[jss::LastLedgerSequence] = *tx.lastValid;</div>
-<div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span> </div>
-<div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span>                    jvTx[jss::fee] = <a class="code hl_function" href="namespaceripple.html#ac124fe6744b7fe887dec949b56b16d50">to_string</a>(tx.consequences.fee());</div>
-<div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span>                    <span class="keyword">auto</span> <span class="keyword">const</span> spend = tx.consequences.potentialSpend() +</div>
-<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span>                        tx.consequences.fee();</div>
-<div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span>                    jvTx[jss::max_spend_drops] = <a class="code hl_function" href="namespaceripple.html#ac124fe6744b7fe887dec949b56b16d50">to_string</a>(spend);</div>
-<div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span>                    totalSpend += spend;</div>
-<div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span>                    <span class="keywordtype">bool</span> <span class="keyword">const</span> authChanged = tx.consequences.isBlocker();</div>
-<div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span>                    <span class="keywordflow">if</span> (authChanged)</div>
-<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span>                        anyAuthChanged = authChanged;</div>
-<div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span>                    jvTx[jss::auth_change] = authChanged;</div>
-<div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span> </div>
-<div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span>                    jvQueueTx.<a class="code hl_function" href="classJson_1_1Value.html#a7e49ac977e4bcf59745a09d426669f75">append</a>(std::move(jvTx));</div>
-<div class="line"><a id="l00255" name="l00255"></a><span class="lineno">  255</span>                }</div>
-<div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span> </div>
-<div class="line"><a id="l00257" name="l00257"></a><span class="lineno">  257</span>                <span class="keywordflow">if</span> (seqCount)</div>
-<div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span>                    jvQueueData[jss::sequence_count] = seqCount;</div>
-<div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span>                <span class="keywordflow">if</span> (ticketCount)</div>
-<div class="line"><a id="l00260" name="l00260"></a><span class="lineno">  260</span>                    jvQueueData[jss::ticket_count] = ticketCount;</div>
-<div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span>                <span class="keywordflow">if</span> (lowestSeq)</div>
-<div class="line"><a id="l00262" name="l00262"></a><span class="lineno">  262</span>                    jvQueueData[jss::lowest_sequence] = *lowestSeq;</div>
-<div class="line"><a id="l00263" name="l00263"></a><span class="lineno">  263</span>                <span class="keywordflow">if</span> (highestSeq)</div>
-<div class="line"><a id="l00264" name="l00264"></a><span class="lineno">  264</span>                    jvQueueData[jss::highest_sequence] = *highestSeq;</div>
-<div class="line"><a id="l00265" name="l00265"></a><span class="lineno">  265</span>                <span class="keywordflow">if</span> (lowestTicket)</div>
-<div class="line"><a id="l00266" name="l00266"></a><span class="lineno">  266</span>                    jvQueueData[jss::lowest_ticket] = *lowestTicket;</div>
-<div class="line"><a id="l00267" name="l00267"></a><span class="lineno">  267</span>                <span class="keywordflow">if</span> (highestTicket)</div>
-<div class="line"><a id="l00268" name="l00268"></a><span class="lineno">  268</span>                    jvQueueData[jss::highest_ticket] = *highestTicket;</div>
-<div class="line"><a id="l00269" name="l00269"></a><span class="lineno">  269</span> </div>
-<div class="line"><a id="l00270" name="l00270"></a><span class="lineno">  270</span>                jvQueueData[jss::auth_change_queued] = anyAuthChanged;</div>
-<div class="line"><a id="l00271" name="l00271"></a><span class="lineno">  271</span>                jvQueueData[jss::max_spend_drops_total] = <a class="code hl_function" href="namespaceripple.html#ac124fe6744b7fe887dec949b56b16d50">to_string</a>(totalSpend);</div>
-<div class="line"><a id="l00272" name="l00272"></a><span class="lineno">  272</span>            }</div>
-<div class="line"><a id="l00273" name="l00273"></a><span class="lineno">  273</span>            <span class="keywordflow">else</span></div>
-<div class="line"><a id="l00274" name="l00274"></a><span class="lineno">  274</span>                jvQueueData[jss::txn_count] = 0u;</div>
-<div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span> </div>
-<div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span>            result[jss::queue_data] = std::move(jvQueueData);</div>
-<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span>        }</div>
-<div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span>    }</div>
-<div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span>    <span class="keywordflow">else</span></div>
-<div class="line"><a id="l00280" name="l00280"></a><span class="lineno">  280</span>    {</div>
-<div class="line"><a id="l00281" name="l00281"></a><span class="lineno">  281</span>        result[jss::account] = <a class="code hl_function" href="namespaceripple.html#a08a13b62b18272366f788632359e8793">toBase58</a>(accountID);</div>
-<div class="line"><a id="l00282" name="l00282"></a><span class="lineno">  282</span>        <a class="code hl_function" href="namespaceripple_1_1RPC.html#a577bde9602a28f59e445c496f92a1ccf">RPC::inject_error</a>(<a class="code hl_enumvalue" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a044301ed3c32624aade5888d1c60566f">rpcACT_NOT_FOUND</a>, result);</div>
-<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span>    }</div>
-<div class="line"><a id="l00284" name="l00284"></a><span class="lineno">  284</span> </div>
-<div class="line"><a id="l00285" name="l00285"></a><span class="lineno">  285</span>    <span class="keywordflow">return</span> result;</div>
-<div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span>}</div>
-<div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span> </div>
-<div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span>}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a id="l00144" name="l00144"></a><span class="lineno">  144</span>        <span class="comment">// The document[https://xrpl.org/account_info.html#account_info] states</span></div>
+<div class="line"><a id="l00145" name="l00145"></a><span class="lineno">  145</span>        <span class="comment">// that signer_lists is a bool, however assigning any string value</span></div>
+<div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span>        <span class="comment">// works. Do not allow this. This check is for api Version 2 onwards</span></div>
+<div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span>        <span class="comment">// only</span></div>
+<div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span>        <span class="keywordflow">if</span> (context.<a class="code hl_variable" href="structripple_1_1RPC_1_1Context.html#a0eab3b46cc23d67a6d16d1fb6bcaf0a2">apiVersion</a> &gt; 1u &amp;&amp; params.isMember(jss::signer_lists) &amp;&amp;</div>
+<div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span>            !params[jss::signer_lists].isBool())</div>
+<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span>        {</div>
+<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span>            <a class="code hl_function" href="namespaceripple_1_1RPC.html#a577bde9602a28f59e445c496f92a1ccf">RPC::inject_error</a>(<a class="code hl_enumvalue" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a82ddebc5ec7a37ff38892487277bf9c4">rpcINVALID_PARAMS</a>, result);</div>
+<div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span>            <span class="keywordflow">return</span> result;</div>
+<div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span>        }</div>
+<div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span> </div>
+<div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span>        <span class="comment">// Return SignerList(s) if that is requested.</span></div>
+<div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span>        <span class="keywordflow">if</span> (params.isMember(jss::signer_lists) &amp;&amp;</div>
+<div class="line"><a id="l00157" name="l00157"></a><span class="lineno">  157</span>            params[jss::signer_lists].asBool())</div>
+<div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span>        {</div>
+<div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span>            <span class="comment">// We put the SignerList in an array because of an anticipated</span></div>
+<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span>            <span class="comment">// future when we support multiple signer lists on one account.</span></div>
+<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span>            <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> jvSignerList = <a class="code hl_enumvalue" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eadc8f264f36b55b063c78126b335415f4">Json::arrayValue</a>;</div>
+<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span> </div>
+<div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span>            <span class="comment">// This code will need to be revisited if in the future we support</span></div>
+<div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span>            <span class="comment">// multiple SignerLists on one account.</span></div>
+<div class="line"><a id="l00165" name="l00165"></a><span class="lineno">  165</span>            <span class="keyword">auto</span> <span class="keyword">const</span> sleSigners = ledger-&gt;read(<a class="code hl_function" href="namespaceripple_1_1keylet.html#ad5c2136f2d2d711114702944633d4fa8">keylet::signers</a>(accountID));</div>
+<div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span>            <span class="keywordflow">if</span> (sleSigners)</div>
+<div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span>                jvSignerList.<a class="code hl_function" href="classJson_1_1Value.html#a7e49ac977e4bcf59745a09d426669f75">append</a>(sleSigners-&gt;getJson(<a class="code hl_enumvalue" href="structripple_1_1JsonOptions.html#ab85e43ec84df987200d3355c3ba89f0aa1917451e3686dfe8d5016670eb87ab33">JsonOptions::none</a>));</div>
+<div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span> </div>
+<div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span>            <span class="comment">// Documentation states this is returned as part of the account_info</span></div>
+<div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span>            <span class="comment">// response, but previously the code put it under account_data. We</span></div>
+<div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span>            <span class="comment">// can move this to the documentated location from apiVersion 2</span></div>
+<div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span>            <span class="comment">// onwards.</span></div>
+<div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span>            <span class="keywordflow">if</span> (context.<a class="code hl_variable" href="structripple_1_1RPC_1_1Context.html#a0eab3b46cc23d67a6d16d1fb6bcaf0a2">apiVersion</a> == 1)</div>
+<div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span>            {</div>
+<div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span>                result[jss::account_data][jss::signer_lists] =</div>
+<div class="line"><a id="l00176" name="l00176"></a><span class="lineno">  176</span>                    std::move(jvSignerList);</div>
+<div class="line"><a id="l00177" name="l00177"></a><span class="lineno">  177</span>            }</div>
+<div class="line"><a id="l00178" name="l00178"></a><span class="lineno">  178</span>            <span class="keywordflow">else</span></div>
+<div class="line"><a id="l00179" name="l00179"></a><span class="lineno">  179</span>            {</div>
+<div class="line"><a id="l00180" name="l00180"></a><span class="lineno">  180</span>                result[jss::signer_lists] = std::move(jvSignerList);</div>
+<div class="line"><a id="l00181" name="l00181"></a><span class="lineno">  181</span>            }</div>
+<div class="line"><a id="l00182" name="l00182"></a><span class="lineno">  182</span>        }</div>
+<div class="line"><a id="l00183" name="l00183"></a><span class="lineno">  183</span>        <span class="comment">// Return queue info if that is requested</span></div>
+<div class="line"><a id="l00184" name="l00184"></a><span class="lineno">  184</span>        <span class="keywordflow">if</span> (queue)</div>
+<div class="line"><a id="l00185" name="l00185"></a><span class="lineno">  185</span>        {</div>
+<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span>            <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> jvQueueData = <a class="code hl_enumvalue" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6">Json::objectValue</a>;</div>
+<div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span> </div>
+<div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span>            <span class="keyword">auto</span> <span class="keyword">const</span> txs = context.<a class="code hl_variable" href="structripple_1_1RPC_1_1Context.html#a7878751d68ed7fd43c385913c5e6ff04">app</a>.<a class="code hl_function" href="classripple_1_1Application.html#abcadc50f7bafb5f027e40e18191a7de0">getTxQ</a>().<a class="code hl_function" href="classripple_1_1TxQ.html#a459d2ac82dc4e7e5672db06df4618a96">getAccountTxs</a>(accountID);</div>
+<div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span>            <span class="keywordflow">if</span> (!txs.empty())</div>
+<div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span>            {</div>
+<div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span>                jvQueueData[jss::txn_count] =</div>
+<div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span>                    <span class="keyword">static_cast&lt;</span><a class="code hl_typedef" href="namespaceJson.html#ab1488c31a37eea2d37f36a0961372572">Json::UInt</a><span class="keyword">&gt;</span>(txs.size());</div>
+<div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span> </div>
+<div class="line"><a id="l00194" name="l00194"></a><span class="lineno">  194</span>                <span class="keyword">auto</span>&amp; jvQueueTx = jvQueueData[jss::transactions];</div>
+<div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span>                jvQueueTx = <a class="code hl_enumvalue" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eadc8f264f36b55b063c78126b335415f4">Json::arrayValue</a>;</div>
+<div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span> </div>
+<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span>                <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> seqCount = 0;</div>
+<div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span>                <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ticketCount = 0;</div>
+<div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span>                <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;std::uint32_t&gt;</a> lowestSeq;</div>
+<div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span>                <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;std::uint32_t&gt;</a> highestSeq;</div>
+<div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span>                <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;std::uint32_t&gt;</a> lowestTicket;</div>
+<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span>                <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;std::uint32_t&gt;</a> highestTicket;</div>
+<div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span>                <span class="keywordtype">bool</span> anyAuthChanged = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span>                <a class="code hl_class" href="classripple_1_1XRPAmount.html">XRPAmount</a> totalSpend(0);</div>
+<div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span> </div>
+<div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span>                <span class="comment">// We expect txs to be returned sorted by SeqProxy.  Verify</span></div>
+<div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span>                <span class="comment">// that with a couple of asserts.</span></div>
+<div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span>                <a class="code hl_class" href="classripple_1_1SeqProxy.html">SeqProxy</a> prevSeqProxy = <a class="code hl_function" href="classripple_1_1SeqProxy.html#a31a7a3c8298a38aaeee20ae08bb51643">SeqProxy::sequence</a>(0);</div>
+<div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span>                <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; tx : txs)</div>
+<div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span>                {</div>
+<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span>                    <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> jvTx = <a class="code hl_enumvalue" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6">Json::objectValue</a>;</div>
+<div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span> </div>
+<div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span>                    <span class="keywordflow">if</span> (tx.seqProxy.isSeq())</div>
+<div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span>                    {</div>
+<div class="line"><a id="l00215" name="l00215"></a><span class="lineno">  215</span>                        XRPL_ASSERT(</div>
+<div class="line"><a id="l00216" name="l00216"></a><span class="lineno">  216</span>                            prevSeqProxy &lt; tx.seqProxy,</div>
+<div class="line"><a id="l00217" name="l00217"></a><span class="lineno">  217</span>                            <span class="stringliteral">&quot;rpple::doAccountInfo : first sorted proxy&quot;</span>);</div>
+<div class="line"><a id="l00218" name="l00218"></a><span class="lineno">  218</span>                        prevSeqProxy = tx.seqProxy;</div>
+<div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span>                        jvTx[jss::seq] = tx.seqProxy.value();</div>
+<div class="line"><a id="l00220" name="l00220"></a><span class="lineno">  220</span>                        ++seqCount;</div>
+<div class="line"><a id="l00221" name="l00221"></a><span class="lineno">  221</span>                        <span class="keywordflow">if</span> (!lowestSeq)</div>
+<div class="line"><a id="l00222" name="l00222"></a><span class="lineno">  222</span>                            lowestSeq = tx.seqProxy.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/utility/optional/value.html">value</a>();</div>
+<div class="line"><a id="l00223" name="l00223"></a><span class="lineno">  223</span>                        highestSeq = tx.seqProxy.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/utility/optional/value.html">value</a>();</div>
+<div class="line"><a id="l00224" name="l00224"></a><span class="lineno">  224</span>                    }</div>
+<div class="line"><a id="l00225" name="l00225"></a><span class="lineno">  225</span>                    <span class="keywordflow">else</span></div>
+<div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span>                    {</div>
+<div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span>                        XRPL_ASSERT(</div>
+<div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span>                            prevSeqProxy &lt; tx.seqProxy,</div>
+<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span>                            <span class="stringliteral">&quot;rpple::doAccountInfo : second sorted proxy&quot;</span>);</div>
+<div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span>                        prevSeqProxy = tx.seqProxy;</div>
+<div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span>                        jvTx[jss::ticket] = tx.seqProxy.value();</div>
+<div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span>                        ++ticketCount;</div>
+<div class="line"><a id="l00233" name="l00233"></a><span class="lineno">  233</span>                        <span class="keywordflow">if</span> (!lowestTicket)</div>
+<div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span>                            lowestTicket = tx.seqProxy.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/utility/optional/value.html">value</a>();</div>
+<div class="line"><a id="l00235" name="l00235"></a><span class="lineno">  235</span>                        highestTicket = tx.seqProxy.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/utility/optional/value.html">value</a>();</div>
+<div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span>                    }</div>
+<div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span> </div>
+<div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span>                    jvTx[jss::fee_level] = <a class="code hl_function" href="namespaceripple.html#ac124fe6744b7fe887dec949b56b16d50">to_string</a>(tx.feeLevel);</div>
+<div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span>                    <span class="keywordflow">if</span> (tx.lastValid)</div>
+<div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span>                        jvTx[jss::LastLedgerSequence] = *tx.lastValid;</div>
+<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span> </div>
+<div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span>                    jvTx[jss::fee] = <a class="code hl_function" href="namespaceripple.html#ac124fe6744b7fe887dec949b56b16d50">to_string</a>(tx.consequences.fee());</div>
+<div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span>                    <span class="keyword">auto</span> <span class="keyword">const</span> spend = tx.consequences.potentialSpend() +</div>
+<div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span>                        tx.consequences.fee();</div>
+<div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span>                    jvTx[jss::max_spend_drops] = <a class="code hl_function" href="namespaceripple.html#ac124fe6744b7fe887dec949b56b16d50">to_string</a>(spend);</div>
+<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span>                    totalSpend += spend;</div>
+<div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span>                    <span class="keywordtype">bool</span> <span class="keyword">const</span> authChanged = tx.consequences.isBlocker();</div>
+<div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span>                    <span class="keywordflow">if</span> (authChanged)</div>
+<div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span>                        anyAuthChanged = authChanged;</div>
+<div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span>                    jvTx[jss::auth_change] = authChanged;</div>
+<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span> </div>
+<div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span>                    jvQueueTx.<a class="code hl_function" href="classJson_1_1Value.html#a7e49ac977e4bcf59745a09d426669f75">append</a>(std::move(jvTx));</div>
+<div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span>                }</div>
+<div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span> </div>
+<div class="line"><a id="l00255" name="l00255"></a><span class="lineno">  255</span>                <span class="keywordflow">if</span> (seqCount)</div>
+<div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span>                    jvQueueData[jss::sequence_count] = seqCount;</div>
+<div class="line"><a id="l00257" name="l00257"></a><span class="lineno">  257</span>                <span class="keywordflow">if</span> (ticketCount)</div>
+<div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span>                    jvQueueData[jss::ticket_count] = ticketCount;</div>
+<div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span>                <span class="keywordflow">if</span> (lowestSeq)</div>
+<div class="line"><a id="l00260" name="l00260"></a><span class="lineno">  260</span>                    jvQueueData[jss::lowest_sequence] = *lowestSeq;</div>
+<div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span>                <span class="keywordflow">if</span> (highestSeq)</div>
+<div class="line"><a id="l00262" name="l00262"></a><span class="lineno">  262</span>                    jvQueueData[jss::highest_sequence] = *highestSeq;</div>
+<div class="line"><a id="l00263" name="l00263"></a><span class="lineno">  263</span>                <span class="keywordflow">if</span> (lowestTicket)</div>
+<div class="line"><a id="l00264" name="l00264"></a><span class="lineno">  264</span>                    jvQueueData[jss::lowest_ticket] = *lowestTicket;</div>
+<div class="line"><a id="l00265" name="l00265"></a><span class="lineno">  265</span>                <span class="keywordflow">if</span> (highestTicket)</div>
+<div class="line"><a id="l00266" name="l00266"></a><span class="lineno">  266</span>                    jvQueueData[jss::highest_ticket] = *highestTicket;</div>
+<div class="line"><a id="l00267" name="l00267"></a><span class="lineno">  267</span> </div>
+<div class="line"><a id="l00268" name="l00268"></a><span class="lineno">  268</span>                jvQueueData[jss::auth_change_queued] = anyAuthChanged;</div>
+<div class="line"><a id="l00269" name="l00269"></a><span class="lineno">  269</span>                jvQueueData[jss::max_spend_drops_total] = <a class="code hl_function" href="namespaceripple.html#ac124fe6744b7fe887dec949b56b16d50">to_string</a>(totalSpend);</div>
+<div class="line"><a id="l00270" name="l00270"></a><span class="lineno">  270</span>            }</div>
+<div class="line"><a id="l00271" name="l00271"></a><span class="lineno">  271</span>            <span class="keywordflow">else</span></div>
+<div class="line"><a id="l00272" name="l00272"></a><span class="lineno">  272</span>                jvQueueData[jss::txn_count] = 0u;</div>
+<div class="line"><a id="l00273" name="l00273"></a><span class="lineno">  273</span> </div>
+<div class="line"><a id="l00274" name="l00274"></a><span class="lineno">  274</span>            result[jss::queue_data] = std::move(jvQueueData);</div>
+<div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span>        }</div>
+<div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span>    }</div>
+<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span>    <span class="keywordflow">else</span></div>
+<div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span>    {</div>
+<div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span>        result[jss::account] = <a class="code hl_function" href="namespaceripple.html#a08a13b62b18272366f788632359e8793">toBase58</a>(accountID);</div>
+<div class="line"><a id="l00280" name="l00280"></a><span class="lineno">  280</span>        <a class="code hl_function" href="namespaceripple_1_1RPC.html#a577bde9602a28f59e445c496f92a1ccf">RPC::inject_error</a>(<a class="code hl_enumvalue" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a044301ed3c32624aade5888d1c60566f">rpcACT_NOT_FOUND</a>, result);</div>
+<div class="line"><a id="l00281" name="l00281"></a><span class="lineno">  281</span>    }</div>
+<div class="line"><a id="l00282" name="l00282"></a><span class="lineno">  282</span> </div>
+<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span>    <span class="keywordflow">return</span> result;</div>
+<div class="line"><a id="l00284" name="l00284"></a><span class="lineno">  284</span>}</div>
+<div class="line"><a id="l00285" name="l00285"></a><span class="lineno">  285</span> </div>
+<div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span>}  <span class="comment">// namespace ripple</span></div>
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div></div>
-<div class="ttc" id="aclassJson_1_1Value_html"><div class="ttname"><a href="classJson_1_1Value.html">Json::Value</a></div><div class="ttdoc">Represents a JSON value.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00146">json_value.h:147</a></div></div>
-<div class="ttc" id="aclassJson_1_1Value_html_a7e49ac977e4bcf59745a09d426669f75"><div class="ttname"><a href="classJson_1_1Value.html#a7e49ac977e4bcf59745a09d426669f75">Json::Value::append</a></div><div class="ttdeci">Value &amp; append(const Value &amp;value)</div><div class="ttdoc">Append value to array at the end.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8cpp_source.html#l00891">json_value.cpp:891</a></div></div>
+<div class="ttc" id="aclassJson_1_1Value_html"><div class="ttname"><a href="classJson_1_1Value.html">Json::Value</a></div><div class="ttdoc">Represents a JSON value.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00147">json_value.h:148</a></div></div>
+<div class="ttc" id="aclassJson_1_1Value_html_a7e49ac977e4bcf59745a09d426669f75"><div class="ttname"><a href="classJson_1_1Value.html#a7e49ac977e4bcf59745a09d426669f75">Json::Value::append</a></div><div class="ttdeci">Value &amp; append(const Value &amp;value)</div><div class="ttdoc">Append value to array at the end.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8cpp_source.html#l00897">json_value.cpp:897</a></div></div>
 <div class="ttc" id="aclassripple_1_1Application_html_abcadc50f7bafb5f027e40e18191a7de0"><div class="ttname"><a href="classripple_1_1Application.html#abcadc50f7bafb5f027e40e18191a7de0">ripple::Application::getTxQ</a></div><div class="ttdeci">virtual TxQ &amp; getTxQ()=0</div></div>
 <div class="ttc" id="aclassripple_1_1SeqProxy_html"><div class="ttname"><a href="classripple_1_1SeqProxy.html">ripple::SeqProxy</a></div><div class="ttdoc">A type that represents either a sequence value or a ticket value.</div><div class="ttdef"><b>Definition:</b> <a href="SeqProxy_8h_source.html#l00055">SeqProxy.h:56</a></div></div>
 <div class="ttc" id="aclassripple_1_1SeqProxy_html_a31a7a3c8298a38aaeee20ae08bb51643"><div class="ttname"><a href="classripple_1_1SeqProxy.html#a31a7a3c8298a38aaeee20ae08bb51643">ripple::SeqProxy::sequence</a></div><div class="ttdeci">static constexpr SeqProxy sequence(std::uint32_t v)</div><div class="ttdoc">Factory function to return a sequence-based SeqProxy.</div><div class="ttdef"><b>Definition:</b> <a href="SeqProxy_8h_source.html#l00076">SeqProxy.h:76</a></div></div>
 <div class="ttc" id="aclassripple_1_1TxQ_html_a459d2ac82dc4e7e5672db06df4618a96"><div class="ttname"><a href="classripple_1_1TxQ.html#a459d2ac82dc4e7e5672db06df4618a96">ripple::TxQ::getAccountTxs</a></div><div class="ttdeci">std::vector&lt; TxDetails &gt; getAccountTxs(AccountID const &amp;account) const</div><div class="ttdoc">Returns information about the transactions currently in the queue for the account.</div><div class="ttdef"><b>Definition:</b> <a href="TxQ_8cpp_source.html#l01823">TxQ.cpp:1823</a></div></div>
 <div class="ttc" id="aclassripple_1_1XRPAmount_html"><div class="ttname"><a href="classripple_1_1XRPAmount.html">ripple::XRPAmount</a></div><div class="ttdef"><b>Definition:</b> <a href="XRPAmount_8h_source.html#l00039">XRPAmount.h:43</a></div></div>
 <div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a></div></div>
-<div class="ttc" id="anamespaceJson_html_a7d654b75c16a57007925868e38212b4eadc8f264f36b55b063c78126b335415f4"><div class="ttname"><a href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eadc8f264f36b55b063c78126b335415f4">Json::arrayValue</a></div><div class="ttdeci">@ arrayValue</div><div class="ttdoc">array value (ordered list)</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00042">json_value.h:42</a></div></div>
-<div class="ttc" id="anamespaceJson_html_a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6"><div class="ttname"><a href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6">Json::objectValue</a></div><div class="ttdeci">@ objectValue</div><div class="ttdoc">object value (collection of name/value pairs).</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00044">json_value.h:43</a></div></div>
+<div class="ttc" id="anamespaceJson_html_a7d654b75c16a57007925868e38212b4eadc8f264f36b55b063c78126b335415f4"><div class="ttname"><a href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eadc8f264f36b55b063c78126b335415f4">Json::arrayValue</a></div><div class="ttdeci">@ arrayValue</div><div class="ttdoc">array value (ordered list)</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00043">json_value.h:43</a></div></div>
+<div class="ttc" id="anamespaceJson_html_a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6"><div class="ttname"><a href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6">Json::objectValue</a></div><div class="ttdeci">@ objectValue</div><div class="ttdoc">object value (collection of name/value pairs).</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00045">json_value.h:44</a></div></div>
 <div class="ttc" id="anamespaceJson_html_ab1488c31a37eea2d37f36a0961372572"><div class="ttname"><a href="namespaceJson.html#ab1488c31a37eea2d37f36a0961372572">Json::UInt</a></div><div class="ttdeci">unsigned int UInt</div><div class="ttdef"><b>Definition:</b> <a href="json__forwards_8h_source.html#l00027">json_forwards.h:27</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1RPC_html_a3f2a31e585bbecb3af3740d34d7df15f"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a3f2a31e585bbecb3af3740d34d7df15f">ripple::RPC::invalid_field_error</a></div><div class="ttdeci">Json::Value invalid_field_error(std::string const &amp;name)</div><div class="ttdef"><b>Definition:</b> <a href="ErrorCodes_8h_source.html#l00315">ErrorCodes.h:315</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1RPC_html_a4ea6d08c0d50d738a6a55130a09ec238"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a4ea6d08c0d50d738a6a55130a09ec238">ripple::RPC::injectSLE</a></div><div class="ttdeci">void injectSLE(Json::Value &amp;jv, SLE const &amp;sle)</div><div class="ttdoc">Inject JSON describing ledger entry.</div><div class="ttdef"><b>Definition:</b> <a href="RPCHelpers_8cpp_source.html#l00673">RPCHelpers.cpp:673</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1RPC_html_a4ea6d08c0d50d738a6a55130a09ec238"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a4ea6d08c0d50d738a6a55130a09ec238">ripple::RPC::injectSLE</a></div><div class="ttdeci">void injectSLE(Json::Value &amp;jv, SLE const &amp;sle)</div><div class="ttdoc">Inject JSON describing ledger entry.</div><div class="ttdef"><b>Definition:</b> <a href="RPCHelpers_8cpp_source.html#l00672">RPCHelpers.cpp:672</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1RPC_html_a577bde9602a28f59e445c496f92a1ccf"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a577bde9602a28f59e445c496f92a1ccf">ripple::RPC::inject_error</a></div><div class="ttdeci">void inject_error(error_code_i code, JsonValue &amp;json)</div><div class="ttdoc">Add or update the json update to reflect the error code.</div><div class="ttdef"><b>Definition:</b> <a href="ErrorCodes_8h_source.html#l00223">ErrorCodes.h:223</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1RPC_html_aaebfaaee35308269fab499f4e203a8c9"><div class="ttname"><a href="namespaceripple_1_1RPC.html#aaebfaaee35308269fab499f4e203a8c9">ripple::RPC::lookupLedger</a></div><div class="ttdeci">Status lookupLedger(std::shared_ptr&lt; ReadView const &gt; &amp;ledger, JsonContext &amp;context, Json::Value &amp;result)</div><div class="ttdoc">Look up a ledger from a request and fill a Json::Result with the data representing a ledger.</div><div class="ttdef"><b>Definition:</b> <a href="RPCHelpers_8cpp_source.html#l00622">RPCHelpers.cpp:622</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1RPC_html_aaebfaaee35308269fab499f4e203a8c9"><div class="ttname"><a href="namespaceripple_1_1RPC.html#aaebfaaee35308269fab499f4e203a8c9">ripple::RPC::lookupLedger</a></div><div class="ttdeci">Status lookupLedger(std::shared_ptr&lt; ReadView const &gt; &amp;ledger, JsonContext &amp;context, Json::Value &amp;result)</div><div class="ttdoc">Look up a ledger from a request and fill a Json::Result with the data representing a ledger.</div><div class="ttdef"><b>Definition:</b> <a href="RPCHelpers_8cpp_source.html#l00621">RPCHelpers.cpp:621</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1RPC_html_aec2e1163b39a450d3917af9dd15b0f06"><div class="ttname"><a href="namespaceripple_1_1RPC.html#aec2e1163b39a450d3917af9dd15b0f06">ripple::RPC::missing_field_error</a></div><div class="ttdeci">Json::Value missing_field_error(std::string const &amp;name)</div><div class="ttdef"><b>Definition:</b> <a href="ErrorCodes_8h_source.html#l00273">ErrorCodes.h:273</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1keylet_html_aa756e0f59b26042ed00a4d0ba6e96951"><div class="ttname"><a href="namespaceripple_1_1keylet.html#aa756e0f59b26042ed00a4d0ba6e96951">ripple::keylet::account</a></div><div class="ttdeci">Keylet account(AccountID const &amp;id) noexcept</div><div class="ttdoc">AccountID root.</div><div class="ttdef"><b>Definition:</b> <a href="Indexes_8cpp_source.html#l00160">Indexes.cpp:160</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1keylet_html_ad5c2136f2d2d711114702944633d4fa8"><div class="ttname"><a href="namespaceripple_1_1keylet.html#ad5c2136f2d2d711114702944633d4fa8">ripple::keylet::signers</a></div><div class="ttdeci">Keylet signers(AccountID const &amp;account) noexcept</div><div class="ttdoc">A SignerList.</div><div class="ttdef"><b>Definition:</b> <a href="Indexes_8cpp_source.html#l00306">Indexes.cpp:306</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1keylet_html_aa756e0f59b26042ed00a4d0ba6e96951"><div class="ttname"><a href="namespaceripple_1_1keylet.html#aa756e0f59b26042ed00a4d0ba6e96951">ripple::keylet::account</a></div><div class="ttdeci">Keylet account(AccountID const &amp;id) noexcept</div><div class="ttdoc">AccountID root.</div><div class="ttdef"><b>Definition:</b> <a href="Indexes_8cpp_source.html#l00175">Indexes.cpp:175</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1keylet_html_ad5c2136f2d2d711114702944633d4fa8"><div class="ttname"><a href="namespaceripple_1_1keylet.html#ad5c2136f2d2d711114702944633d4fa8">ripple::keylet::signers</a></div><div class="ttdeci">Keylet signers(AccountID const &amp;account) noexcept</div><div class="ttdoc">A SignerList.</div><div class="ttdef"><b>Definition:</b> <a href="Indexes_8cpp_source.html#l00321">Indexes.cpp:321</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="algorithm_8h_source.html#l00026">algorithm.h:26</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a08a13b62b18272366f788632359e8793"><div class="ttname"><a href="namespaceripple.html#a08a13b62b18272366f788632359e8793">ripple::toBase58</a></div><div class="ttdeci">std::string toBase58(AccountID const &amp;v)</div><div class="ttdoc">Convert AccountID to base58 checked string.</div><div class="ttdef"><b>Definition:</b> <a href="AccountID_8cpp_source.html#l00106">AccountID.cpp:106</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a08a13b62b18272366f788632359e8793"><div class="ttname"><a href="namespaceripple.html#a08a13b62b18272366f788632359e8793">ripple::toBase58</a></div><div class="ttdeci">std::string toBase58(AccountID const &amp;v)</div><div class="ttdoc">Convert AccountID to base58 checked string.</div><div class="ttdef"><b>Definition:</b> <a href="AccountID_8cpp_source.html#l00114">AccountID.cpp:114</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a32d6d3ce1a48272b677d2c88b1d30932a044301ed3c32624aade5888d1c60566f"><div class="ttname"><a href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a044301ed3c32624aade5888d1c60566f">ripple::rpcACT_NOT_FOUND</a></div><div class="ttdeci">@ rpcACT_NOT_FOUND</div><div class="ttdef"><b>Definition:</b> <a href="ErrorCodes_8h_source.html#l00070">ErrorCodes.h:70</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a32d6d3ce1a48272b677d2c88b1d30932a4fba57dbbed9bfaa196e1a0e0915dc8a"><div class="ttname"><a href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a4fba57dbbed9bfaa196e1a0e0915dc8a">ripple::rpcACT_MALFORMED</a></div><div class="ttdeci">@ rpcACT_MALFORMED</div><div class="ttdef"><b>Definition:</b> <a href="ErrorCodes_8h_source.html#l00090">ErrorCodes.h:90</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a32d6d3ce1a48272b677d2c88b1d30932a82ddebc5ec7a37ff38892487277bf9c4"><div class="ttname"><a href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a82ddebc5ec7a37ff38892487277bf9c4">ripple::rpcINVALID_PARAMS</a></div><div class="ttdeci">@ rpcINVALID_PARAMS</div><div class="ttdef"><b>Definition:</b> <a href="ErrorCodes_8h_source.html#l00084">ErrorCodes.h:84</a></div></div>
@@ -402,16 +400,16 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html_a4a9c7b33fef9015d6406302ef80b63c5abe71ed0ad6b450dd8c2ffc0314318b79"><div class="ttname"><a href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5abe71ed0ad6b450dd8c2ffc0314318b79">ripple::lsfNoFreeze</a></div><div class="ttdeci">@ lsfNoFreeze</div><div class="ttdef"><b>Definition:</b> <a href="LedgerFormats_8h_source.html#l00132">LedgerFormats.h:132</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a4a9c7b33fef9015d6406302ef80b63c5abe8166dd29a1d6890b51ce96af297f70"><div class="ttname"><a href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5abe8166dd29a1d6890b51ce96af297f70">ripple::lsfGlobalFreeze</a></div><div class="ttdeci">@ lsfGlobalFreeze</div><div class="ttdef"><b>Definition:</b> <a href="LedgerFormats_8h_source.html#l00133">LedgerFormats.h:133</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a4a9c7b33fef9015d6406302ef80b63c5af697f2c85dc33c5831e82b69c6a4e7e9"><div class="ttname"><a href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5af697f2c85dc33c5831e82b69c6a4e7e9">ripple::lsfDisallowXRP</a></div><div class="ttdeci">@ lsfDisallowXRP</div><div class="ttdef"><b>Definition:</b> <a href="LedgerFormats_8h_source.html#l00130">LedgerFormats.h:130</a></div></div>
-<div class="ttc" id="anamespaceripple_html_ac124fe6744b7fe887dec949b56b16d50"><div class="ttname"><a href="namespaceripple.html#ac124fe6744b7fe887dec949b56b16d50">ripple::to_string</a></div><div class="ttdeci">std::string to_string(base_uint&lt; Bits, Tag &gt; const &amp;a)</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00629">base_uint.h:629</a></div></div>
-<div class="ttc" id="anamespaceripple_html_ad3181666a917aca45f4f288e690e9305"><div class="ttname"><a href="namespaceripple.html#ad3181666a917aca45f4f288e690e9305">ripple::doAccountInfo</a></div><div class="ttdeci">Json::Value doAccountInfo(RPC::JsonContext &amp;context)</div><div class="ttdef"><b>Definition:</b> <a href="AccountInfo_8cpp_source.html#l00051">AccountInfo.cpp:51</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ac124fe6744b7fe887dec949b56b16d50"><div class="ttname"><a href="namespaceripple.html#ac124fe6744b7fe887dec949b56b16d50">ripple::to_string</a></div><div class="ttdeci">std::string to_string(base_uint&lt; Bits, Tag &gt; const &amp;a)</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00630">base_uint.h:630</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ad3181666a917aca45f4f288e690e9305"><div class="ttname"><a href="namespaceripple.html#ad3181666a917aca45f4f288e690e9305">ripple::doAccountInfo</a></div><div class="ttdeci">Json::Value doAccountInfo(RPC::JsonContext &amp;context)</div><div class="ttdef"><b>Definition:</b> <a href="AccountInfo_8cpp_source.html#l00049">AccountInfo.cpp:49</a></div></div>
 <div class="ttc" id="aoptional_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a></div></div>
 <div class="ttc" id="apair_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a></div></div>
 <div class="ttc" id="ashared_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a></div></div>
-<div class="ttc" id="astructripple_1_1JsonOptions_html_ab85e43ec84df987200d3355c3ba89f0aa1917451e3686dfe8d5016670eb87ab33"><div class="ttname"><a href="structripple_1_1JsonOptions.html#ab85e43ec84df987200d3355c3ba89f0aa1917451e3686dfe8d5016670eb87ab33">ripple::JsonOptions::none</a></div><div class="ttdeci">@ none</div><div class="ttdef"><b>Definition:</b> <a href="STBase_8h_source.html#l00042">STBase.h:42</a></div></div>
-<div class="ttc" id="astructripple_1_1RPC_1_1Context_html_a0eab3b46cc23d67a6d16d1fb6bcaf0a2"><div class="ttname"><a href="structripple_1_1RPC_1_1Context.html#a0eab3b46cc23d67a6d16d1fb6bcaf0a2">ripple::RPC::Context::apiVersion</a></div><div class="ttdeci">unsigned int apiVersion</div><div class="ttdef"><b>Definition:</b> <a href="Context_8h_source.html#l00050">Context.h:50</a></div></div>
-<div class="ttc" id="astructripple_1_1RPC_1_1Context_html_a7878751d68ed7fd43c385913c5e6ff04"><div class="ttname"><a href="structripple_1_1RPC_1_1Context.html#a7878751d68ed7fd43c385913c5e6ff04">ripple::RPC::Context::app</a></div><div class="ttdeci">Application &amp; app</div><div class="ttdef"><b>Definition:</b> <a href="Context_8h_source.html#l00042">Context.h:42</a></div></div>
-<div class="ttc" id="astructripple_1_1RPC_1_1JsonContext_html"><div class="ttname"><a href="structripple_1_1RPC_1_1JsonContext.html">ripple::RPC::JsonContext</a></div><div class="ttdef"><b>Definition:</b> <a href="Context_8h_source.html#l00053">Context.h:54</a></div></div>
-<div class="ttc" id="astructripple_1_1RPC_1_1JsonContext_html_a036b2c14552fbca49011c3d0e78017fa"><div class="ttname"><a href="structripple_1_1RPC_1_1JsonContext.html#a036b2c14552fbca49011c3d0e78017fa">ripple::RPC::JsonContext::params</a></div><div class="ttdeci">Json::Value params</div><div class="ttdef"><b>Definition:</b> <a href="Context_8h_source.html#l00064">Context.h:64</a></div></div>
+<div class="ttc" id="astructripple_1_1JsonOptions_html_ab85e43ec84df987200d3355c3ba89f0aa1917451e3686dfe8d5016670eb87ab33"><div class="ttname"><a href="structripple_1_1JsonOptions.html#ab85e43ec84df987200d3355c3ba89f0aa1917451e3686dfe8d5016670eb87ab33">ripple::JsonOptions::none</a></div><div class="ttdeci">@ none</div><div class="ttdef"><b>Definition:</b> <a href="STBase_8h_source.html#l00044">STBase.h:44</a></div></div>
+<div class="ttc" id="astructripple_1_1RPC_1_1Context_html_a0eab3b46cc23d67a6d16d1fb6bcaf0a2"><div class="ttname"><a href="structripple_1_1RPC_1_1Context.html#a0eab3b46cc23d67a6d16d1fb6bcaf0a2">ripple::RPC::Context::apiVersion</a></div><div class="ttdeci">unsigned int apiVersion</div><div class="ttdef"><b>Definition:</b> <a href="Context_8h_source.html#l00048">Context.h:48</a></div></div>
+<div class="ttc" id="astructripple_1_1RPC_1_1Context_html_a7878751d68ed7fd43c385913c5e6ff04"><div class="ttname"><a href="structripple_1_1RPC_1_1Context.html#a7878751d68ed7fd43c385913c5e6ff04">ripple::RPC::Context::app</a></div><div class="ttdeci">Application &amp; app</div><div class="ttdef"><b>Definition:</b> <a href="Context_8h_source.html#l00040">Context.h:40</a></div></div>
+<div class="ttc" id="astructripple_1_1RPC_1_1JsonContext_html"><div class="ttname"><a href="structripple_1_1RPC_1_1JsonContext.html">ripple::RPC::JsonContext</a></div><div class="ttdef"><b>Definition:</b> <a href="Context_8h_source.html#l00051">Context.h:52</a></div></div>
+<div class="ttc" id="astructripple_1_1RPC_1_1JsonContext_html_a036b2c14552fbca49011c3d0e78017fa"><div class="ttname"><a href="structripple_1_1RPC_1_1JsonContext.html#a036b2c14552fbca49011c3d0e78017fa">ripple::RPC::JsonContext::params</a></div><div class="ttdeci">Json::Value params</div><div class="ttdef"><b>Definition:</b> <a href="Context_8h_source.html#l00062">Context.h:62</a></div></div>
 <div class="ttc" id="avalue_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/optional/value.html">std::optional::value</a></div><div class="ttdeci">T value(T... args)</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->

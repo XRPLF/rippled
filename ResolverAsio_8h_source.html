@@ -100,25 +100,26 @@ $(function() {
 <div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span> </div>
 <div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="preprocessor">#include &lt;xrpl/basics/Resolver.h&gt;</span></div>
 <div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="preprocessor">#include &lt;xrpl/beast/utility/Journal.h&gt;</span></div>
-<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="preprocessor">#include &lt;boost/asio/io_service.hpp&gt;</span></div>
-<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span> </div>
-<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceripple.html">ripple</a> {</div>
-<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span> </div>
-<div class="line"><a id="l00029" name="l00029"></a><span class="lineno"><a class="line" href="classripple_1_1ResolverAsio.html">   29</a></span><span class="keyword">class </span><a class="code hl_class" href="classripple_1_1ResolverAsio.html">ResolverAsio</a> : <span class="keyword">public</span> <a class="code hl_class" href="classripple_1_1Resolver.html">Resolver</a></div>
-<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span>{</div>
-<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span><span class="keyword">public</span>:</div>
-<div class="line"><a id="l00032" name="l00032"></a><span class="lineno"><a class="line" href="classripple_1_1ResolverAsio.html#a1ce42cf118a62719eb66e2a7eff508a8">   32</a></span>    <span class="keyword">explicit</span> <a class="code hl_function" href="classripple_1_1ResolverAsio.html#a1ce42cf118a62719eb66e2a7eff508a8">ResolverAsio</a>() = <span class="keywordflow">default</span>;</div>
-<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span> </div>
-<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>    <span class="keyword">static</span> <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;ResolverAsio&gt;</a></div>
-<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>    <a class="code hl_function" href="classripple_1_1ResolverAsio.html#a030349688ad23f1b207319ddd6e1e8db">New</a>(boost::asio::io_service&amp;, <a class="code hl_class" href="classbeast_1_1Journal.html">beast::Journal</a>);</div>
-<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>};</div>
-<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span> </div>
-<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>}  <span class="comment">// namespace ripple</span></div>
-<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span> </div>
-<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span><span class="preprocessor">#endif</span></div>
-<div class="ttc" id="aclassbeast_1_1Journal_html"><div class="ttname"><a href="classbeast_1_1Journal.html">beast::Journal</a></div><div class="ttdoc">A generic endpoint for log messages.</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00058">Journal.h:59</a></div></div>
-<div class="ttc" id="aclassripple_1_1ResolverAsio_html"><div class="ttname"><a href="classripple_1_1ResolverAsio.html">ripple::ResolverAsio</a></div><div class="ttdef"><b>Definition:</b> <a href="ResolverAsio_8h_source.html#l00029">ResolverAsio.h:30</a></div></div>
-<div class="ttc" id="aclassripple_1_1ResolverAsio_html_a030349688ad23f1b207319ddd6e1e8db"><div class="ttname"><a href="classripple_1_1ResolverAsio.html#a030349688ad23f1b207319ddd6e1e8db">ripple::ResolverAsio::New</a></div><div class="ttdeci">static std::unique_ptr&lt; ResolverAsio &gt; New(boost::asio::io_service &amp;, beast::Journal)</div><div class="ttdef"><b>Definition:</b> <a href="ResolverAsio_8cpp_source.html#l00424">ResolverAsio.cpp:424</a></div></div>
+<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span> </div>
+<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><span class="preprocessor">#include &lt;boost/asio/io_service.hpp&gt;</span></div>
+<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span> </div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceripple.html">ripple</a> {</div>
+<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span> </div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno"><a class="line" href="classripple_1_1ResolverAsio.html">   30</a></span><span class="keyword">class </span><a class="code hl_class" href="classripple_1_1ResolverAsio.html">ResolverAsio</a> : <span class="keyword">public</span> <a class="code hl_class" href="classripple_1_1Resolver.html">Resolver</a></div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span>{</div>
+<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span><span class="keyword">public</span>:</div>
+<div class="line"><a id="l00033" name="l00033"></a><span class="lineno"><a class="line" href="classripple_1_1ResolverAsio.html#a1ce42cf118a62719eb66e2a7eff508a8">   33</a></span>    <span class="keyword">explicit</span> <a class="code hl_function" href="classripple_1_1ResolverAsio.html#a1ce42cf118a62719eb66e2a7eff508a8">ResolverAsio</a>() = <span class="keywordflow">default</span>;</div>
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span> </div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>    <span class="keyword">static</span> <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;ResolverAsio&gt;</a></div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>    <a class="code hl_function" href="classripple_1_1ResolverAsio.html#a030349688ad23f1b207319ddd6e1e8db">New</a>(boost::asio::io_service&amp;, <a class="code hl_class" href="classbeast_1_1Journal.html">beast::Journal</a>);</div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>};</div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span> </div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span> </div>
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span><span class="preprocessor">#endif</span></div>
+<div class="ttc" id="aclassbeast_1_1Journal_html"><div class="ttname"><a href="classbeast_1_1Journal.html">beast::Journal</a></div><div class="ttdoc">A generic endpoint for log messages.</div><div class="ttdef"><b>Definition:</b> <a href="Journal_8h_source.html#l00059">Journal.h:60</a></div></div>
+<div class="ttc" id="aclassripple_1_1ResolverAsio_html"><div class="ttname"><a href="classripple_1_1ResolverAsio.html">ripple::ResolverAsio</a></div><div class="ttdef"><b>Definition:</b> <a href="ResolverAsio_8h_source.html#l00030">ResolverAsio.h:31</a></div></div>
+<div class="ttc" id="aclassripple_1_1ResolverAsio_html_a030349688ad23f1b207319ddd6e1e8db"><div class="ttname"><a href="classripple_1_1ResolverAsio.html#a030349688ad23f1b207319ddd6e1e8db">ripple::ResolverAsio::New</a></div><div class="ttdeci">static std::unique_ptr&lt; ResolverAsio &gt; New(boost::asio::io_service &amp;, beast::Journal)</div><div class="ttdef"><b>Definition:</b> <a href="ResolverAsio_8cpp_source.html#l00438">ResolverAsio.cpp:438</a></div></div>
 <div class="ttc" id="aclassripple_1_1ResolverAsio_html_a1ce42cf118a62719eb66e2a7eff508a8"><div class="ttname"><a href="classripple_1_1ResolverAsio.html#a1ce42cf118a62719eb66e2a7eff508a8">ripple::ResolverAsio::ResolverAsio</a></div><div class="ttdeci">ResolverAsio()=default</div></div>
 <div class="ttc" id="aclassripple_1_1Resolver_html"><div class="ttname"><a href="classripple_1_1Resolver.html">ripple::Resolver</a></div><div class="ttdef"><b>Definition:</b> <a href="Resolver_8h_source.html#l00030">Resolver.h:31</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="algorithm_8h_source.html#l00026">algorithm.h:26</a></div></div>

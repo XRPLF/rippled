@@ -96,33 +96,39 @@ $(function() {
 <div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span><span class="comment">//==============================================================================</span></div>
 <div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span> </div>
 <div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span><span class="preprocessor">#include &lt;xrpl/basics/mulDiv.h&gt;</span></div>
-<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span><span class="preprocessor">#include &lt;boost/multiprecision/cpp_int.hpp&gt;</span></div>
-<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span><span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/optional.html">optional</a>&gt;</span></div>
-<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span> </div>
-<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceripple.html">ripple</a> {</div>
+<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span> </div>
+<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span><span class="preprocessor">#include &lt;boost/multiprecision/cpp_int.hpp&gt;</span></div>
+<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="preprocessor">#include &lt;boost/multiprecision/detail/default_ops.hpp&gt;</span></div>
+<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="preprocessor">#include &lt;boost/multiprecision/fwd.hpp&gt;</span></div>
 <div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span> </div>
-<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;std::uint64_t&gt;</a></div>
-<div class="line"><a id="l00027" name="l00027"></a><span class="lineno"><a class="line" href="namespaceripple.html#ad012d6a36cd38b19ab4d8b47521fbd5f">   27</a></span><a class="code hl_function" href="namespaceripple.html#ad012d6a36cd38b19ab4d8b47521fbd5f">mulDiv</a>(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> value, <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> mul, <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> div)</div>
-<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span>{</div>
-<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span>    <span class="keyword">using namespace </span>boost::multiprecision;</div>
+<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/cstdint.html">cstdint</a>&gt;</span></div>
+<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span><span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/optional.html">optional</a>&gt;</span></div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span> </div>
+<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceripple.html">ripple</a> {</div>
 <div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span> </div>
-<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span>    uint128_t result;</div>
-<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>    result = <a class="code hl_function" href="namespaceripple.html#a5adb540ae694e45bca2ad089fff15128">multiply</a>(result, value, mul);</div>
-<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span> </div>
-<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>    result /= div;</div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span><a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;std::uint64_t&gt;</a></div>
+<div class="line"><a id="l00032" name="l00032"></a><span class="lineno"><a class="line" href="namespaceripple.html#ad012d6a36cd38b19ab4d8b47521fbd5f">   32</a></span><a class="code hl_function" href="namespaceripple.html#ad012d6a36cd38b19ab4d8b47521fbd5f">mulDiv</a>(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> value, <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> mul, <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> div)</div>
+<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>{</div>
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>    <span class="keyword">using namespace </span>boost::multiprecision;</div>
 <div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span> </div>
-<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>    <span class="keywordflow">if</span> (result &gt; <a class="code hl_variable" href="namespaceripple.html#a35f7ac66150d292c46b69b25aca9d5ff">ripple::muldiv_max</a>)</div>
-<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>        <span class="keywordflow">return</span> std::nullopt;</div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>    uint128_t result;</div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>    result = <a class="code hl_function" href="namespaceripple.html#a5adb540ae694e45bca2ad089fff15128">multiply</a>(result, value, mul);</div>
 <div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span> </div>
-<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>    <span class="keywordflow">return</span> <span class="keyword">static_cast&lt;</span><a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a><span class="keyword">&gt;</span>(result);</div>
-<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>}</div>
-<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span> </div>
-<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>    result /= div;</div>
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span> </div>
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>    <span class="keywordflow">if</span> (result &gt; <a class="code hl_variable" href="namespaceripple.html#a35f7ac66150d292c46b69b25aca9d5ff">ripple::muldiv_max</a>)</div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>        <span class="keywordflow">return</span> std::nullopt;</div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span> </div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>    <span class="keywordflow">return</span> <span class="keyword">static_cast&lt;</span><a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a><span class="keyword">&gt;</span>(result);</div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>}</div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span> </div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>}  <span class="comment">// namespace ripple</span></div>
+<div class="ttc" id="acstdint_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/cstdint.html">cstdint</a></div></div>
 <div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="algorithm_8h_source.html#l00026">algorithm.h:26</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a35f7ac66150d292c46b69b25aca9d5ff"><div class="ttname"><a href="namespaceripple.html#a35f7ac66150d292c46b69b25aca9d5ff">ripple::muldiv_max</a></div><div class="ttdeci">auto constexpr muldiv_max</div><div class="ttdef"><b>Definition:</b> <a href="mulDiv_8h_source.html#l00029">mulDiv.h:29</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a5adb540ae694e45bca2ad089fff15128"><div class="ttname"><a href="namespaceripple.html#a5adb540ae694e45bca2ad089fff15128">ripple::multiply</a></div><div class="ttdeci">STAmount multiply(STAmount const &amp;amount, Rate const &amp;rate)</div><div class="ttdef"><b>Definition:</b> <a href="Rate2_8cpp_source.html#l00047">Rate2.cpp:47</a></div></div>
-<div class="ttc" id="anamespaceripple_html_ad012d6a36cd38b19ab4d8b47521fbd5f"><div class="ttname"><a href="namespaceripple.html#ad012d6a36cd38b19ab4d8b47521fbd5f">ripple::mulDiv</a></div><div class="ttdeci">std::optional&lt; std::uint64_t &gt; mulDiv(std::uint64_t value, std::uint64_t mul, std::uint64_t div)</div><div class="ttdoc">Return value*mul/div accurately.</div><div class="ttdef"><b>Definition:</b> <a href="mulDiv_8cpp_source.html#l00027">mulDiv.cpp:27</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a5adb540ae694e45bca2ad089fff15128"><div class="ttname"><a href="namespaceripple.html#a5adb540ae694e45bca2ad089fff15128">ripple::multiply</a></div><div class="ttdeci">STAmount multiply(STAmount const &amp;amount, Rate const &amp;rate)</div><div class="ttdef"><b>Definition:</b> <a href="Rate2_8cpp_source.html#l00053">Rate2.cpp:53</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ad012d6a36cd38b19ab4d8b47521fbd5f"><div class="ttname"><a href="namespaceripple.html#ad012d6a36cd38b19ab4d8b47521fbd5f">ripple::mulDiv</a></div><div class="ttdeci">std::optional&lt; std::uint64_t &gt; mulDiv(std::uint64_t value, std::uint64_t mul, std::uint64_t div)</div><div class="ttdoc">Return value*mul/div accurately.</div><div class="ttdef"><b>Definition:</b> <a href="mulDiv_8cpp_source.html#l00032">mulDiv.cpp:32</a></div></div>
 <div class="ttc" id="aoptional_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/optional.html">optional</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->

@@ -95,68 +95,69 @@ $(function() {
 <div class="line"><a id="l00017" name="l00017"></a><span class="lineno">   17</span><span class="comment">*/</span></div>
 <div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span><span class="comment">//==============================================================================</span></div>
 <div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span> </div>
-<div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span><span class="preprocessor">#include &lt;xrpl/protocol/TxFormats.h&gt;</span></div>
-<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span> </div>
-<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span><span class="preprocessor">#include &lt;xrpl/protocol/SField.h&gt;</span></div>
-<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="preprocessor">#include &lt;xrpl/protocol/SOTemplate.h&gt;</span></div>
-<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="preprocessor">#include &lt;xrpl/protocol/jss.h&gt;</span></div>
-<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span> </div>
-<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceripple.html">ripple</a> {</div>
-<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span> </div>
-<div class="line"><a id="l00028" name="l00028"></a><span class="lineno"><a class="line" href="classripple_1_1TxFormats.html#a54e184544beb0cd141f171aa7040e0d7">   28</a></span><a class="code hl_function" href="classripple_1_1TxFormats.html#a54e184544beb0cd141f171aa7040e0d7">TxFormats::TxFormats</a>()</div>
-<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span>{</div>
-<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span>    <span class="comment">// Fields shared by all txFormats:</span></div>
-<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span>    <span class="keyword">static</span> <span class="keyword">const</span> <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/utility/initializer_list.html">std::initializer_list&lt;SOElement&gt;</a> commonFields{</div>
-<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>        {sfTransactionType, <a class="code hl_enumvalue" href="namespaceripple.html#ad905dc8b70717f4492bebb6b7e189042a515d1dfe6cbb412fbbcece5bb23a0763">soeREQUIRED</a>},</div>
-<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>        {sfFlags, <a class="code hl_enumvalue" href="namespaceripple.html#ad905dc8b70717f4492bebb6b7e189042a148febf7586dd994c342f8279d664a12">soeOPTIONAL</a>},</div>
-<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>        {sfSourceTag, <a class="code hl_enumvalue" href="namespaceripple.html#ad905dc8b70717f4492bebb6b7e189042a148febf7586dd994c342f8279d664a12">soeOPTIONAL</a>},</div>
-<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>        {sfAccount, <a class="code hl_enumvalue" href="namespaceripple.html#ad905dc8b70717f4492bebb6b7e189042a515d1dfe6cbb412fbbcece5bb23a0763">soeREQUIRED</a>},</div>
-<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>        {sfSequence, <a class="code hl_enumvalue" href="namespaceripple.html#ad905dc8b70717f4492bebb6b7e189042a515d1dfe6cbb412fbbcece5bb23a0763">soeREQUIRED</a>},</div>
-<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>        {sfPreviousTxnID, <a class="code hl_enumvalue" href="namespaceripple.html#ad905dc8b70717f4492bebb6b7e189042a148febf7586dd994c342f8279d664a12">soeOPTIONAL</a>},  <span class="comment">// emulate027</span></div>
-<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>        {sfLastLedgerSequence, <a class="code hl_enumvalue" href="namespaceripple.html#ad905dc8b70717f4492bebb6b7e189042a148febf7586dd994c342f8279d664a12">soeOPTIONAL</a>},</div>
-<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>        {sfAccountTxnID, <a class="code hl_enumvalue" href="namespaceripple.html#ad905dc8b70717f4492bebb6b7e189042a148febf7586dd994c342f8279d664a12">soeOPTIONAL</a>},</div>
-<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>        {sfFee, <a class="code hl_enumvalue" href="namespaceripple.html#ad905dc8b70717f4492bebb6b7e189042a515d1dfe6cbb412fbbcece5bb23a0763">soeREQUIRED</a>},</div>
-<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>        {sfOperationLimit, <a class="code hl_enumvalue" href="namespaceripple.html#ad905dc8b70717f4492bebb6b7e189042a148febf7586dd994c342f8279d664a12">soeOPTIONAL</a>},</div>
-<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>        {sfMemos, <a class="code hl_enumvalue" href="namespaceripple.html#ad905dc8b70717f4492bebb6b7e189042a148febf7586dd994c342f8279d664a12">soeOPTIONAL</a>},</div>
-<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>        {sfSigningPubKey, <a class="code hl_enumvalue" href="namespaceripple.html#ad905dc8b70717f4492bebb6b7e189042a515d1dfe6cbb412fbbcece5bb23a0763">soeREQUIRED</a>},</div>
-<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>        {sfTicketSequence, <a class="code hl_enumvalue" href="namespaceripple.html#ad905dc8b70717f4492bebb6b7e189042a148febf7586dd994c342f8279d664a12">soeOPTIONAL</a>},</div>
-<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>        {sfTxnSignature, <a class="code hl_enumvalue" href="namespaceripple.html#ad905dc8b70717f4492bebb6b7e189042a148febf7586dd994c342f8279d664a12">soeOPTIONAL</a>},</div>
-<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>        {sfSigners, <a class="code hl_enumvalue" href="namespaceripple.html#ad905dc8b70717f4492bebb6b7e189042a148febf7586dd994c342f8279d664a12">soeOPTIONAL</a>},  <span class="comment">// submit_multisigned</span></div>
-<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>        {sfNetworkID, <a class="code hl_enumvalue" href="namespaceripple.html#ad905dc8b70717f4492bebb6b7e189042a148febf7586dd994c342f8279d664a12">soeOPTIONAL</a>},</div>
-<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>    };</div>
-<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span> </div>
-<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span><span class="preprocessor">#pragma push_macro(&quot;UNWRAP&quot;</span>)</div>
-<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span><span class="preprocessor">#undef UNWRAP</span></div>
-<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span><span class="preprocessor">#pragma push_macro(&quot;TRANSACTION&quot;</span>)</div>
-<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span><span class="preprocessor">#undef TRANSACTION</span></div>
-<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span> </div>
-<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span><span class="preprocessor">#define UNWRAP(...) __VA_ARGS__</span></div>
-<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span><span class="preprocessor">#define TRANSACTION(tag, value, name, fields) \</span></div>
-<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span><span class="preprocessor">    add(jss::name, tag, UNWRAP fields, commonFields);</span></div>
-<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span> </div>
-<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span><span class="preprocessor">#include &lt;xrpl/protocol/detail/transactions.macro&gt;</span></div>
-<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span> </div>
-<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span><span class="preprocessor">#undef TRANSACTION</span></div>
-<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span><span class="preprocessor">#pragma pop_macro(&quot;TRANSACTION&quot;</span>)</div>
-<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span><span class="preprocessor">#undef UNWRAP</span></div>
-<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span><span class="preprocessor">#pragma pop_macro(&quot;UNWRAP&quot;</span>)</div>
-<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>}</div>
-<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span> </div>
-<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span><a class="code hl_class" href="classripple_1_1TxFormats.html">TxFormats</a> <span class="keyword">const</span>&amp;</div>
-<div class="line"><a id="l00068" name="l00068"></a><span class="lineno"><a class="line" href="classripple_1_1TxFormats.html#a1db8e0fb64564b47c2c33ff763ccc8c3">   68</a></span><a class="code hl_function" href="classripple_1_1TxFormats.html#a1db8e0fb64564b47c2c33ff763ccc8c3">TxFormats::getInstance</a>()</div>
-<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>{</div>
-<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>    <span class="keyword">static</span> <a class="code hl_class" href="classripple_1_1TxFormats.html">TxFormats</a> <span class="keyword">const</span> instance;</div>
-<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>    <span class="keywordflow">return</span> instance;</div>
-<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>}</div>
-<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span> </div>
-<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span><span class="preprocessor">#include &lt;xrpl/protocol/SField.h&gt;</span></div>
+<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span><span class="preprocessor">#include &lt;xrpl/protocol/SOTemplate.h&gt;</span></div>
+<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span><span class="preprocessor">#include &lt;xrpl/protocol/TxFormats.h&gt;</span></div>
+<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="preprocessor">#include &lt;xrpl/protocol/jss.h&gt;</span></div>
+<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span> </div>
+<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/initializer_list.html">initializer_list</a>&gt;</span></div>
+<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span> </div>
+<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceripple.html">ripple</a> {</div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span> </div>
+<div class="line"><a id="l00029" name="l00029"></a><span class="lineno"><a class="line" href="classripple_1_1TxFormats.html#a54e184544beb0cd141f171aa7040e0d7">   29</a></span><a class="code hl_function" href="classripple_1_1TxFormats.html#a54e184544beb0cd141f171aa7040e0d7">TxFormats::TxFormats</a>()</div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span>{</div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span>    <span class="comment">// Fields shared by all txFormats:</span></div>
+<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>    <span class="keyword">static</span> <span class="keyword">const</span> <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/utility/initializer_list.html">std::initializer_list&lt;SOElement&gt;</a> commonFields{</div>
+<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>        {sfTransactionType, <a class="code hl_enumvalue" href="namespaceripple.html#ad905dc8b70717f4492bebb6b7e189042a515d1dfe6cbb412fbbcece5bb23a0763">soeREQUIRED</a>},</div>
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>        {sfFlags, <a class="code hl_enumvalue" href="namespaceripple.html#ad905dc8b70717f4492bebb6b7e189042a148febf7586dd994c342f8279d664a12">soeOPTIONAL</a>},</div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>        {sfSourceTag, <a class="code hl_enumvalue" href="namespaceripple.html#ad905dc8b70717f4492bebb6b7e189042a148febf7586dd994c342f8279d664a12">soeOPTIONAL</a>},</div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>        {sfAccount, <a class="code hl_enumvalue" href="namespaceripple.html#ad905dc8b70717f4492bebb6b7e189042a515d1dfe6cbb412fbbcece5bb23a0763">soeREQUIRED</a>},</div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>        {sfSequence, <a class="code hl_enumvalue" href="namespaceripple.html#ad905dc8b70717f4492bebb6b7e189042a515d1dfe6cbb412fbbcece5bb23a0763">soeREQUIRED</a>},</div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>        {sfPreviousTxnID, <a class="code hl_enumvalue" href="namespaceripple.html#ad905dc8b70717f4492bebb6b7e189042a148febf7586dd994c342f8279d664a12">soeOPTIONAL</a>},  <span class="comment">// emulate027</span></div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>        {sfLastLedgerSequence, <a class="code hl_enumvalue" href="namespaceripple.html#ad905dc8b70717f4492bebb6b7e189042a148febf7586dd994c342f8279d664a12">soeOPTIONAL</a>},</div>
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>        {sfAccountTxnID, <a class="code hl_enumvalue" href="namespaceripple.html#ad905dc8b70717f4492bebb6b7e189042a148febf7586dd994c342f8279d664a12">soeOPTIONAL</a>},</div>
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>        {sfFee, <a class="code hl_enumvalue" href="namespaceripple.html#ad905dc8b70717f4492bebb6b7e189042a515d1dfe6cbb412fbbcece5bb23a0763">soeREQUIRED</a>},</div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>        {sfOperationLimit, <a class="code hl_enumvalue" href="namespaceripple.html#ad905dc8b70717f4492bebb6b7e189042a148febf7586dd994c342f8279d664a12">soeOPTIONAL</a>},</div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>        {sfMemos, <a class="code hl_enumvalue" href="namespaceripple.html#ad905dc8b70717f4492bebb6b7e189042a148febf7586dd994c342f8279d664a12">soeOPTIONAL</a>},</div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>        {sfSigningPubKey, <a class="code hl_enumvalue" href="namespaceripple.html#ad905dc8b70717f4492bebb6b7e189042a515d1dfe6cbb412fbbcece5bb23a0763">soeREQUIRED</a>},</div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>        {sfTicketSequence, <a class="code hl_enumvalue" href="namespaceripple.html#ad905dc8b70717f4492bebb6b7e189042a148febf7586dd994c342f8279d664a12">soeOPTIONAL</a>},</div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>        {sfTxnSignature, <a class="code hl_enumvalue" href="namespaceripple.html#ad905dc8b70717f4492bebb6b7e189042a148febf7586dd994c342f8279d664a12">soeOPTIONAL</a>},</div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>        {sfSigners, <a class="code hl_enumvalue" href="namespaceripple.html#ad905dc8b70717f4492bebb6b7e189042a148febf7586dd994c342f8279d664a12">soeOPTIONAL</a>},  <span class="comment">// submit_multisigned</span></div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>        {sfNetworkID, <a class="code hl_enumvalue" href="namespaceripple.html#ad905dc8b70717f4492bebb6b7e189042a148febf7586dd994c342f8279d664a12">soeOPTIONAL</a>},</div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>    };</div>
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span> </div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span><span class="preprocessor">#pragma push_macro(&quot;UNWRAP&quot;</span>)</div>
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span><span class="preprocessor">#undef UNWRAP</span></div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span><span class="preprocessor">#pragma push_macro(&quot;TRANSACTION&quot;</span>)</div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span><span class="preprocessor">#undef TRANSACTION</span></div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span> </div>
+<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span><span class="preprocessor">#define UNWRAP(...) __VA_ARGS__</span></div>
+<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span><span class="preprocessor">#define TRANSACTION(tag, value, name, fields) \</span></div>
+<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span><span class="preprocessor">    add(jss::name, tag, UNWRAP fields, commonFields);</span></div>
+<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span> </div>
+<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span><span class="preprocessor">#include &lt;xrpl/protocol/detail/transactions.macro&gt;</span></div>
+<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span> </div>
+<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span><span class="preprocessor">#undef TRANSACTION</span></div>
+<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span><span class="preprocessor">#pragma pop_macro(&quot;TRANSACTION&quot;</span>)</div>
+<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span><span class="preprocessor">#undef UNWRAP</span></div>
+<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span><span class="preprocessor">#pragma pop_macro(&quot;UNWRAP&quot;</span>)</div>
+<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>}</div>
+<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span> </div>
+<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span><a class="code hl_class" href="classripple_1_1TxFormats.html">TxFormats</a> <span class="keyword">const</span>&amp;</div>
+<div class="line"><a id="l00069" name="l00069"></a><span class="lineno"><a class="line" href="classripple_1_1TxFormats.html#a1db8e0fb64564b47c2c33ff763ccc8c3">   69</a></span><a class="code hl_function" href="classripple_1_1TxFormats.html#a1db8e0fb64564b47c2c33ff763ccc8c3">TxFormats::getInstance</a>()</div>
+<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>{</div>
+<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>    <span class="keyword">static</span> <a class="code hl_class" href="classripple_1_1TxFormats.html">TxFormats</a> <span class="keyword">const</span> instance;</div>
+<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>    <span class="keywordflow">return</span> instance;</div>
+<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>}</div>
+<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span> </div>
+<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>}  <span class="comment">// namespace ripple</span></div>
 <div class="ttc" id="aclassripple_1_1TxFormats_html"><div class="ttname"><a href="classripple_1_1TxFormats.html">ripple::TxFormats</a></div><div class="ttdoc">Manages the list of known transaction formats.</div><div class="ttdef"><b>Definition:</b> <a href="TxFormats_8h_source.html#l00085">TxFormats.h:86</a></div></div>
-<div class="ttc" id="aclassripple_1_1TxFormats_html_a1db8e0fb64564b47c2c33ff763ccc8c3"><div class="ttname"><a href="classripple_1_1TxFormats.html#a1db8e0fb64564b47c2c33ff763ccc8c3">ripple::TxFormats::getInstance</a></div><div class="ttdeci">static TxFormats const &amp; getInstance()</div><div class="ttdef"><b>Definition:</b> <a href="TxFormats_8cpp_source.html#l00068">TxFormats.cpp:68</a></div></div>
-<div class="ttc" id="aclassripple_1_1TxFormats_html_a54e184544beb0cd141f171aa7040e0d7"><div class="ttname"><a href="classripple_1_1TxFormats.html#a54e184544beb0cd141f171aa7040e0d7">ripple::TxFormats::TxFormats</a></div><div class="ttdeci">TxFormats()</div><div class="ttdoc">Create the object.</div><div class="ttdef"><b>Definition:</b> <a href="TxFormats_8cpp_source.html#l00028">TxFormats.cpp:28</a></div></div>
-<div class="ttc" id="ainitializer_list_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/initializer_list.html">std::initializer_list</a></div></div>
+<div class="ttc" id="aclassripple_1_1TxFormats_html_a1db8e0fb64564b47c2c33ff763ccc8c3"><div class="ttname"><a href="classripple_1_1TxFormats.html#a1db8e0fb64564b47c2c33ff763ccc8c3">ripple::TxFormats::getInstance</a></div><div class="ttdeci">static TxFormats const &amp; getInstance()</div><div class="ttdef"><b>Definition:</b> <a href="TxFormats_8cpp_source.html#l00069">TxFormats.cpp:69</a></div></div>
+<div class="ttc" id="aclassripple_1_1TxFormats_html_a54e184544beb0cd141f171aa7040e0d7"><div class="ttname"><a href="classripple_1_1TxFormats.html#a54e184544beb0cd141f171aa7040e0d7">ripple::TxFormats::TxFormats</a></div><div class="ttdeci">TxFormats()</div><div class="ttdoc">Create the object.</div><div class="ttdef"><b>Definition:</b> <a href="TxFormats_8cpp_source.html#l00029">TxFormats.cpp:29</a></div></div>
+<div class="ttc" id="ainitializer_list_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/initializer_list.html">initializer_list</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="algorithm_8h_source.html#l00026">algorithm.h:26</a></div></div>
-<div class="ttc" id="anamespaceripple_html_ad905dc8b70717f4492bebb6b7e189042a148febf7586dd994c342f8279d664a12"><div class="ttname"><a href="namespaceripple.html#ad905dc8b70717f4492bebb6b7e189042a148febf7586dd994c342f8279d664a12">ripple::soeOPTIONAL</a></div><div class="ttdeci">@ soeOPTIONAL</div><div class="ttdef"><b>Definition:</b> <a href="SOTemplate_8h_source.html#l00036">SOTemplate.h:36</a></div></div>
-<div class="ttc" id="anamespaceripple_html_ad905dc8b70717f4492bebb6b7e189042a515d1dfe6cbb412fbbcece5bb23a0763"><div class="ttname"><a href="namespaceripple.html#ad905dc8b70717f4492bebb6b7e189042a515d1dfe6cbb412fbbcece5bb23a0763">ripple::soeREQUIRED</a></div><div class="ttdeci">@ soeREQUIRED</div><div class="ttdef"><b>Definition:</b> <a href="SOTemplate_8h_source.html#l00035">SOTemplate.h:35</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ad905dc8b70717f4492bebb6b7e189042a148febf7586dd994c342f8279d664a12"><div class="ttname"><a href="namespaceripple.html#ad905dc8b70717f4492bebb6b7e189042a148febf7586dd994c342f8279d664a12">ripple::soeOPTIONAL</a></div><div class="ttdeci">@ soeOPTIONAL</div><div class="ttdef"><b>Definition:</b> <a href="SOTemplate_8h_source.html#l00037">SOTemplate.h:37</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ad905dc8b70717f4492bebb6b7e189042a515d1dfe6cbb412fbbcece5bb23a0763"><div class="ttname"><a href="namespaceripple.html#ad905dc8b70717f4492bebb6b7e189042a515d1dfe6cbb412fbbcece5bb23a0763">ripple::soeREQUIRED</a></div><div class="ttdeci">@ soeREQUIRED</div><div class="ttdef"><b>Definition:</b> <a href="SOTemplate_8h_source.html#l00036">SOTemplate.h:36</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

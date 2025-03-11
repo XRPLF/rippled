@@ -101,29 +101,28 @@ $(function() {
 <div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="preprocessor">#include &lt;xrpld/overlay/Overlay.h&gt;</span></div>
 <div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="preprocessor">#include &lt;xrpld/rpc/ServerHandler.h&gt;</span></div>
 <div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="preprocessor">#include &lt;xrpl/basics/Resolver.h&gt;</span></div>
-<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><span class="preprocessor">#include &lt;xrpl/resource/ResourceManager.h&gt;</span></div>
+<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span> </div>
 <div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span><span class="preprocessor">#include &lt;boost/asio/io_service.hpp&gt;</span></div>
-<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span><span class="preprocessor">#include &lt;boost/asio/ssl/context.hpp&gt;</span></div>
-<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span> </div>
-<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceripple.html">ripple</a> {</div>
-<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span> </div>
-<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>Overlay::Setup</div>
-<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span><a class="code hl_function" href="namespaceripple.html#adc117aa1e40c420ae8c34dea1f2f1bf1">setup_Overlay</a>(BasicConfig <span class="keyword">const</span>&amp; config);</div>
-<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span> </div>
-<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span><a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;Overlay&gt;</a></div>
-<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span><a class="code hl_function" href="namespaceripple.html#afe217b6314ac671b777edb7917d8074d">make_Overlay</a>(</div>
-<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>    Application&amp; app,</div>
-<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>    Overlay::Setup <span class="keyword">const</span>&amp; setup,</div>
-<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>    ServerHandler&amp; serverHandler,</div>
-<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>    Resource::Manager&amp; resourceManager,</div>
-<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>    Resolver&amp; resolver,</div>
-<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>    boost::asio::io_service&amp; io_service,</div>
-<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>    BasicConfig <span class="keyword">const</span>&amp; config,</div>
-<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">beast::insight::Collector::ptr</a> <span class="keyword">const</span>&amp; collector);</div>
-<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span> </div>
-<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>}  <span class="comment">// namespace ripple</span></div>
-<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span> </div>
-<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span> </div>
+<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceripple.html">ripple</a> {</div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span> </div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span>Overlay::Setup</div>
+<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span><a class="code hl_function" href="namespaceripple.html#adc117aa1e40c420ae8c34dea1f2f1bf1">setup_Overlay</a>(BasicConfig <span class="keyword">const</span>&amp; config);</div>
+<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span> </div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span><a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;Overlay&gt;</a></div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span><a class="code hl_function" href="namespaceripple.html#afe217b6314ac671b777edb7917d8074d">make_Overlay</a>(</div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>    Application&amp; app,</div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>    Overlay::Setup <span class="keyword">const</span>&amp; setup,</div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>    ServerHandler&amp; serverHandler,</div>
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>    Resource::Manager&amp; resourceManager,</div>
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>    Resolver&amp; resolver,</div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>    boost::asio::io_service&amp; io_service,</div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>    BasicConfig <span class="keyword">const</span>&amp; config,</div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">beast::insight::Collector::ptr</a> <span class="keyword">const</span>&amp; collector);</div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span> </div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span> </div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span><span class="preprocessor">#endif</span></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="algorithm_8h_source.html#l00026">algorithm.h:26</a></div></div>
 <div class="ttc" id="anamespaceripple_html_adc117aa1e40c420ae8c34dea1f2f1bf1"><div class="ttname"><a href="namespaceripple.html#adc117aa1e40c420ae8c34dea1f2f1bf1">ripple::setup_Overlay</a></div><div class="ttdeci">Overlay::Setup setup_Overlay(BasicConfig const &amp;config)</div><div class="ttdef"><b>Definition:</b> <a href="OverlayImpl_8cpp_source.html#l01466">OverlayImpl.cpp:1466</a></div></div>
 <div class="ttc" id="anamespaceripple_html_afe217b6314ac671b777edb7917d8074d"><div class="ttname"><a href="namespaceripple.html#afe217b6314ac671b777edb7917d8074d">ripple::make_Overlay</a></div><div class="ttdeci">std::unique_ptr&lt; Overlay &gt; make_Overlay(Application &amp;app, Overlay::Setup const &amp;setup, ServerHandler &amp;serverHandler, Resource::Manager &amp;resourceManager, Resolver &amp;resolver, boost::asio::io_service &amp;io_service, BasicConfig const &amp;config, beast::insight::Collector::ptr const &amp;collector)</div><div class="ttdoc">Creates the implementation of Overlay.</div><div class="ttdef"><b>Definition:</b> <a href="OverlayImpl_8cpp_source.html#l01571">OverlayImpl.cpp:1571</a></div></div>

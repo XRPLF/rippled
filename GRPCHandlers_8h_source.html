@@ -100,38 +100,39 @@ $(function() {
 <div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span> </div>
 <div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="preprocessor">#include &lt;xrpld/rpc/Context.h&gt;</span></div>
 <div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="preprocessor">#include &lt;xrpl/proto/org/xrpl/rpc/v1/xrp_ledger.pb.h&gt;</span></div>
-<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="preprocessor">#include &lt;grpcpp/grpcpp.h&gt;</span></div>
-<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span> </div>
-<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceripple.html">ripple</a> {</div>
-<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span> </div>
-<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span><span class="comment">/*</span></div>
-<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span><span class="comment"> * These handlers are for gRPC. They each take in a protobuf message that is</span></div>
-<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span><span class="comment"> * nested inside RPC::GRPCContext&lt;T&gt;, where T is the request type</span></div>
-<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span><span class="comment"> * The return value is the response type, as well as a status</span></div>
-<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span><span class="comment"> * If the status is not Status::OK (meaning an error occurred), then only</span></div>
-<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span><span class="comment"> * the status will be sent to the client, and the response will be ommitted</span></div>
-<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span><span class="comment"> */</span></div>
-<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span> </div>
-<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span><a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;org::xrpl::rpc::v1::GetLedgerResponse, grpc::Status&gt;</a></div>
-<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span><a class="code hl_function" href="namespaceripple.html#a82ca6b1deeb34acfc5b0b4159b393786">doLedgerGrpc</a>(RPC::GRPCContext&lt;org::xrpl::rpc::v1::GetLedgerRequest&gt;&amp; context);</div>
-<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span> </div>
-<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span><a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;org::xrpl::rpc::v1::GetLedgerEntryResponse, grpc::Status&gt;</a></div>
-<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span><a class="code hl_function" href="namespaceripple.html#a8bbd46fdc8783ec29538b3d4a2e8178f">doLedgerEntryGrpc</a>(</div>
-<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>    RPC::GRPCContext&lt;org::xrpl::rpc::v1::GetLedgerEntryRequest&gt;&amp; context);</div>
-<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span> </div>
-<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span><a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;org::xrpl::rpc::v1::GetLedgerDataResponse, grpc::Status&gt;</a></div>
-<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span><a class="code hl_function" href="namespaceripple.html#af3192f02f7c3e68a904df994498c955d">doLedgerDataGrpc</a>(</div>
-<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>    RPC::GRPCContext&lt;org::xrpl::rpc::v1::GetLedgerDataRequest&gt;&amp; context);</div>
-<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span> </div>
-<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span><a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;org::xrpl::rpc::v1::GetLedgerDiffResponse, grpc::Status&gt;</a></div>
-<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span><a class="code hl_function" href="namespaceripple.html#aeaa95680c026e10fbdfbbb02300f89b8">doLedgerDiffGrpc</a>(</div>
-<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>    RPC::GRPCContext&lt;org::xrpl::rpc::v1::GetLedgerDiffRequest&gt;&amp; context);</div>
-<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span> </div>
-<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>}  <span class="comment">// namespace ripple</span></div>
-<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span> </div>
-<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span> </div>
+<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><span class="preprocessor">#include &lt;grpcpp/grpcpp.h&gt;</span></div>
+<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span> </div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceripple.html">ripple</a> {</div>
+<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span> </div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span><span class="comment">/*</span></div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span><span class="comment"> * These handlers are for gRPC. They each take in a protobuf message that is</span></div>
+<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span><span class="comment"> * nested inside RPC::GRPCContext&lt;T&gt;, where T is the request type</span></div>
+<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span><span class="comment"> * The return value is the response type, as well as a status</span></div>
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span><span class="comment"> * If the status is not Status::OK (meaning an error occurred), then only</span></div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span><span class="comment"> * the status will be sent to the client, and the response will be ommitted</span></div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span><span class="comment"> */</span></div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span> </div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span><a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;org::xrpl::rpc::v1::GetLedgerResponse, grpc::Status&gt;</a></div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span><a class="code hl_function" href="namespaceripple.html#a82ca6b1deeb34acfc5b0b4159b393786">doLedgerGrpc</a>(RPC::GRPCContext&lt;org::xrpl::rpc::v1::GetLedgerRequest&gt;&amp; context);</div>
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span> </div>
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span><a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;org::xrpl::rpc::v1::GetLedgerEntryResponse, grpc::Status&gt;</a></div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span><a class="code hl_function" href="namespaceripple.html#a8bbd46fdc8783ec29538b3d4a2e8178f">doLedgerEntryGrpc</a>(</div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>    RPC::GRPCContext&lt;org::xrpl::rpc::v1::GetLedgerEntryRequest&gt;&amp; context);</div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span> </div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span><a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;org::xrpl::rpc::v1::GetLedgerDataResponse, grpc::Status&gt;</a></div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span><a class="code hl_function" href="namespaceripple.html#af3192f02f7c3e68a904df994498c955d">doLedgerDataGrpc</a>(</div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>    RPC::GRPCContext&lt;org::xrpl::rpc::v1::GetLedgerDataRequest&gt;&amp; context);</div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span> </div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span><a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;org::xrpl::rpc::v1::GetLedgerDiffResponse, grpc::Status&gt;</a></div>
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span><a class="code hl_function" href="namespaceripple.html#aeaa95680c026e10fbdfbbb02300f89b8">doLedgerDiffGrpc</a>(</div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>    RPC::GRPCContext&lt;org::xrpl::rpc::v1::GetLedgerDiffRequest&gt;&amp; context);</div>
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span> </div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span> </div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span><span class="preprocessor">#endif</span></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="algorithm_8h_source.html#l00026">algorithm.h:26</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a82ca6b1deeb34acfc5b0b4159b393786"><div class="ttname"><a href="namespaceripple.html#a82ca6b1deeb34acfc5b0b4159b393786">ripple::doLedgerGrpc</a></div><div class="ttdeci">std::pair&lt; org::xrpl::rpc::v1::GetLedgerResponse, grpc::Status &gt; doLedgerGrpc(RPC::GRPCContext&lt; org::xrpl::rpc::v1::GetLedgerRequest &gt; &amp;context)</div><div class="ttdef"><b>Definition:</b> <a href="LedgerHandler_8cpp_source.html#l00103">LedgerHandler.cpp:103</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a82ca6b1deeb34acfc5b0b4159b393786"><div class="ttname"><a href="namespaceripple.html#a82ca6b1deeb34acfc5b0b4159b393786">ripple::doLedgerGrpc</a></div><div class="ttdeci">std::pair&lt; org::xrpl::rpc::v1::GetLedgerResponse, grpc::Status &gt; doLedgerGrpc(RPC::GRPCContext&lt; org::xrpl::rpc::v1::GetLedgerRequest &gt; &amp;context)</div><div class="ttdef"><b>Definition:</b> <a href="LedgerHandler_8cpp_source.html#l00102">LedgerHandler.cpp:102</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a8bbd46fdc8783ec29538b3d4a2e8178f"><div class="ttname"><a href="namespaceripple.html#a8bbd46fdc8783ec29538b3d4a2e8178f">ripple::doLedgerEntryGrpc</a></div><div class="ttdeci">std::pair&lt; org::xrpl::rpc::v1::GetLedgerEntryResponse, grpc::Status &gt; doLedgerEntryGrpc(RPC::GRPCContext&lt; org::xrpl::rpc::v1::GetLedgerEntryRequest &gt; &amp;context)</div><div class="ttdef"><b>Definition:</b> <a href="LedgerEntry_8cpp_source.html#l01003">LedgerEntry.cpp:1003</a></div></div>
 <div class="ttc" id="anamespaceripple_html_aeaa95680c026e10fbdfbbb02300f89b8"><div class="ttname"><a href="namespaceripple.html#aeaa95680c026e10fbdfbbb02300f89b8">ripple::doLedgerDiffGrpc</a></div><div class="ttdeci">std::pair&lt; org::xrpl::rpc::v1::GetLedgerDiffResponse, grpc::Status &gt; doLedgerDiffGrpc(RPC::GRPCContext&lt; org::xrpl::rpc::v1::GetLedgerDiffRequest &gt; &amp;context)</div><div class="ttdef"><b>Definition:</b> <a href="LedgerDiff_8cpp_source.html#l00006">LedgerDiff.cpp:6</a></div></div>
 <div class="ttc" id="anamespaceripple_html_af3192f02f7c3e68a904df994498c955d"><div class="ttname"><a href="namespaceripple.html#af3192f02f7c3e68a904df994498c955d">ripple::doLedgerDataGrpc</a></div><div class="ttdeci">std::pair&lt; org::xrpl::rpc::v1::GetLedgerDataResponse, grpc::Status &gt; doLedgerDataGrpc(RPC::GRPCContext&lt; org::xrpl::rpc::v1::GetLedgerDataRequest &gt; &amp;context)</div><div class="ttdef"><b>Definition:</b> <a href="LedgerData_8cpp_source.html#l00135">LedgerData.cpp:135</a></div></div>

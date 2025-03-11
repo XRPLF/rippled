@@ -184,7 +184,7 @@ Private Attributes</h2></td></tr>
 <p >When a waiting worker is woken, it checks whether <code><a class="el" href="classripple_1_1Workers.html" title="Workers is effectively a thread pool.">Workers</a></code> is trying to pause workers. If so, it changes its status from active to paused and blocks on its own condition variable. If not, then it calls <code>processTask</code> on the "callback" held by <code><a class="el" href="classripple_1_1Workers.html" title="Workers is effectively a thread pool.">Workers</a></code>.</p>
 <p >When a paused worker is woken, it checks whether it should exit. The signal to exit is only set in the destructor of <code><a class="el" href="classripple_1_1Workers_1_1Worker.html">Worker</a></code>, which unblocks the paused thread and waits for it to exit. A <code><a class="el" href="classripple_1_1Workers_1_1Worker.html#af22df5d3827a478181be99171dc05e45">Worker::run</a></code> thread checks whether it needs to exit only when it is woken from a pause (not when it is woken from waiting). This is why the destructor for <code><a class="el" href="classripple_1_1Workers.html" title="Workers is effectively a thread pool.">Workers</a></code> pauses all the workers before destroying them. </p>
 
-<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00079">79</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00080">80</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a2b7128de479945e72fca6f1fb069466f" name="a2b7128de479945e72fca6f1fb069466f"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a2b7128de479945e72fca6f1fb069466f">&#9670;&#160;</a></span>Workers()</h2>
@@ -444,7 +444,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00218">218</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00219">219</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
 
 </div>
 </div>
@@ -468,7 +468,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00219">219</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00220">220</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
 
 </div>
 </div>
@@ -492,7 +492,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00220">220</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00221">221</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
 
 </div>
 </div>
@@ -516,7 +516,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00221">221</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00222">222</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
 
 </div>
 </div>
@@ -540,7 +540,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00222">222</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00223">223</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
 
 </div>
 </div>
@@ -564,7 +564,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00223">223</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00224">224</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
 
 </div>
 </div>
@@ -588,7 +588,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00224">224</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00225">225</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
 
 </div>
 </div>
@@ -612,7 +612,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00225">225</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00226">226</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
 
 </div>
 </div>
@@ -636,7 +636,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00226">226</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00227">227</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
 
 </div>
 </div>
@@ -660,7 +660,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00227">227</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00228">228</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
 
 </div>
 </div>
@@ -684,7 +684,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00229">229</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00230">230</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
 
 </div>
 </div>
@@ -708,7 +708,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00230">230</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00231">231</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
 
 </div>
 </div>
@@ -732,7 +732,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00232">232</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Workers_8h_source.html#l00233">233</a> of file <a class="el" href="Workers_8h_source.html">Workers.h</a>.</p>
 
 </div>
 </div>

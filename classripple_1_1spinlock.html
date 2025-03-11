@@ -113,7 +113,7 @@ class ripple::spinlock&lt; T &gt;</div><p >A spinlock implemented on top of an a
 <dl class="section note"><dt>Note</dt><dd>Using <code><a class="el" href="classripple_1_1packed__spinlock.html" title="Classes to handle arrays of spinlocks packed into a single atomic integer:">packed_spinlock</a></code> and <code>spinlock</code> against the same underlying atomic integer can result in <code>spinlock</code> not being able to actually acquire the lock during periods of high contention, because of how the two locks operate: <code>spinlock</code> will spin trying to grab all the bits at once, whereas any given <code><a class="el" href="classripple_1_1packed__spinlock.html" title="Classes to handle arrays of spinlocks packed into a single atomic integer:">packed_spinlock</a></code> will only try to grab one bit at a time. Caveat emptor.</dd></dl>
 <p>This class meets the requirements of Lockable: <a href="https://en.cppreference.com/w/cpp/named_req/Lockable">https://en.cppreference.com/w/cpp/named_req/Lockable</a> </p>
 
-<p class="definition">Definition at line <a class="el" href="spinlock_8h_source.html#l00165">165</a> of file <a class="el" href="spinlock_8h_source.html">spinlock.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="spinlock_8h_source.html#l00166">166</a> of file <a class="el" href="spinlock_8h_source.html">spinlock.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a20d16e13b4586293281bcfeb06abe834" name="a20d16e13b4586293281bcfeb06abe834"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a20d16e13b4586293281bcfeb06abe834">&#9670;&#160;</a></span>spinlock() <span class="overload">[1/2]</span></h2>
@@ -170,7 +170,7 @@ template&lt;class T &gt; </div>
 </dl>
 <dl class="section note"><dt>Note</dt><dd>For performance reasons, you should strive to have <code>lock</code> be on a cacheline by itself. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="spinlock_8h_source.html#l00185">185</a> of file <a class="el" href="spinlock_8h_source.html">spinlock.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="spinlock_8h_source.html#l00186">186</a> of file <a class="el" href="spinlock_8h_source.html">spinlock.h</a>.</p>
 
 </div>
 </div>
@@ -220,7 +220,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="spinlock_8h_source.html#l00190">190</a> of file <a class="el" href="spinlock_8h_source.html">spinlock.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="spinlock_8h_source.html#l00191">191</a> of file <a class="el" href="spinlock_8h_source.html">spinlock.h</a>.</p>
 
 </div>
 </div>
@@ -241,7 +241,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="spinlock_8h_source.html#l00202">202</a> of file <a class="el" href="spinlock_8h_source.html">spinlock.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="spinlock_8h_source.html#l00203">203</a> of file <a class="el" href="spinlock_8h_source.html">spinlock.h</a>.</p>
 
 </div>
 </div>
@@ -262,7 +262,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="spinlock_8h_source.html#l00216">216</a> of file <a class="el" href="spinlock_8h_source.html">spinlock.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="spinlock_8h_source.html#l00217">217</a> of file <a class="el" href="spinlock_8h_source.html">spinlock.h</a>.</p>
 
 </div>
 </div>
@@ -289,7 +289,7 @@ template&lt;class T &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="spinlock_8h_source.html#l00171">171</a> of file <a class="el" href="spinlock_8h_source.html">spinlock.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="spinlock_8h_source.html#l00172">172</a> of file <a class="el" href="spinlock_8h_source.html">spinlock.h</a>.</p>
 
 </div>
 </div>

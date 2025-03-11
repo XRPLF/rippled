@@ -167,7 +167,7 @@ Private Attributes</h2></td></tr>
 <p >Amounts are stored as a normalized signed mantissa and an exponent. The range of the normalized exponent is [-96,80] and the range of the absolute value of the normalized mantissa is [1000000000000000, 9999999999999999].</p>
 <p >Arithmetic operations can throw <a class="elRef" href="http://en.cppreference.com/w/cpp/error/overflow_error.html">std::overflow_error</a> during normalization if the amount exceeds the largest representable amount, but underflows will silently trunctate to zero. </p>
 
-<p class="definition">Definition at line <a class="el" href="IOUAmount_8h_source.html#l00043">43</a> of file <a class="el" href="IOUAmount_8h_source.html">IOUAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IOUAmount_8h_source.html#l00045">45</a> of file <a class="el" href="IOUAmount_8h_source.html">IOUAmount.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a9ad31953488b4fc880a9700da03e2a71" name="a9ad31953488b4fc880a9700da03e2a71"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a9ad31953488b4fc880a9700da03e2a71">&#9670;&#160;</a></span>IOUAmount() <span class="overload">[1/4]</span></h2>
@@ -218,7 +218,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IOUAmount_8cpp_source.html#l00120">120</a> of file <a class="el" href="IOUAmount_8cpp_source.html">IOUAmount.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IOUAmount_8cpp_source.html#l00128">128</a> of file <a class="el" href="IOUAmount_8cpp_source.html">IOUAmount.cpp</a>.</p>
 
 </div>
 </div>
@@ -238,7 +238,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IOUAmount_8h_source.html#l00102">102</a> of file <a class="el" href="IOUAmount_8h_source.html">IOUAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IOUAmount_8h_source.html#l00104">104</a> of file <a class="el" href="IOUAmount_8h_source.html">IOUAmount.h</a>.</p>
 
 </div>
 </div>
@@ -268,7 +268,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IOUAmount_8h_source.html#l00107">107</a> of file <a class="el" href="IOUAmount_8h_source.html">IOUAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IOUAmount_8h_source.html#l00109">109</a> of file <a class="el" href="IOUAmount_8h_source.html">IOUAmount.h</a>.</p>
 
 </div>
 </div>
@@ -299,7 +299,7 @@ Private Attributes</h2></td></tr>
 <p>Adjusts the mantissa and exponent to the proper range. </p>
 <p >This can throw if the amount cannot be normalized, or is larger than the largest value that can be represented as an IOU amount. Amounts that are too small to be represented normalize to 0. </p>
 
-<p class="definition">Definition at line <a class="el" href="IOUAmount_8cpp_source.html#l00067">67</a> of file <a class="el" href="IOUAmount_8cpp_source.html">IOUAmount.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IOUAmount_8cpp_source.html#l00075">75</a> of file <a class="el" href="IOUAmount_8cpp_source.html">IOUAmount.cpp</a>.</p>
 
 </div>
 </div>
@@ -319,7 +319,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IOUAmount_8h_source.html#l00114">114</a> of file <a class="el" href="IOUAmount_8h_source.html">IOUAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IOUAmount_8h_source.html#l00116">116</a> of file <a class="el" href="IOUAmount_8h_source.html">IOUAmount.h</a>.</p>
 
 </div>
 </div>
@@ -338,7 +338,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IOUAmount_8h_source.html#l00123">123</a> of file <a class="el" href="IOUAmount_8h_source.html">IOUAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IOUAmount_8h_source.html#l00125">125</a> of file <a class="el" href="IOUAmount_8h_source.html">IOUAmount.h</a>.</p>
 
 </div>
 </div>
@@ -358,7 +358,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IOUAmount_8cpp_source.html#l00130">130</a> of file <a class="el" href="IOUAmount_8cpp_source.html">IOUAmount.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IOUAmount_8cpp_source.html#l00138">138</a> of file <a class="el" href="IOUAmount_8cpp_source.html">IOUAmount.cpp</a>.</p>
 
 </div>
 </div>
@@ -378,7 +378,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IOUAmount_8h_source.html#l00129">129</a> of file <a class="el" href="IOUAmount_8h_source.html">IOUAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IOUAmount_8h_source.html#l00131">131</a> of file <a class="el" href="IOUAmount_8h_source.html">IOUAmount.h</a>.</p>
 
 </div>
 </div>
@@ -397,7 +397,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IOUAmount_8h_source.html#l00136">136</a> of file <a class="el" href="IOUAmount_8h_source.html">IOUAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IOUAmount_8h_source.html#l00138">138</a> of file <a class="el" href="IOUAmount_8h_source.html">IOUAmount.h</a>.</p>
 
 </div>
 </div>
@@ -417,7 +417,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IOUAmount_8h_source.html#l00142">142</a> of file <a class="el" href="IOUAmount_8h_source.html">IOUAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IOUAmount_8h_source.html#l00144">144</a> of file <a class="el" href="IOUAmount_8h_source.html">IOUAmount.h</a>.</p>
 
 </div>
 </div>
@@ -437,7 +437,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IOUAmount_8h_source.html#l00147">147</a> of file <a class="el" href="IOUAmount_8h_source.html">IOUAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IOUAmount_8h_source.html#l00149">149</a> of file <a class="el" href="IOUAmount_8h_source.html">IOUAmount.h</a>.</p>
 
 </div>
 </div>
@@ -466,7 +466,7 @@ Private Attributes</h2></td></tr>
 
 <p>Returns true if the amount is not zero. </p>
 
-<p class="definition">Definition at line <a class="el" href="IOUAmount_8h_source.html#l00153">153</a> of file <a class="el" href="IOUAmount_8h_source.html">IOUAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IOUAmount_8h_source.html#l00155">155</a> of file <a class="el" href="IOUAmount_8h_source.html">IOUAmount.h</a>.</p>
 
 </div>
 </div>
@@ -495,7 +495,7 @@ Private Attributes</h2></td></tr>
 
 <p>Return the sign of the amount. </p>
 
-<p class="definition">Definition at line <a class="el" href="IOUAmount_8h_source.html#l00159">159</a> of file <a class="el" href="IOUAmount_8h_source.html">IOUAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IOUAmount_8h_source.html#l00161">161</a> of file <a class="el" href="IOUAmount_8h_source.html">IOUAmount.h</a>.</p>
 
 </div>
 </div>
@@ -522,7 +522,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IOUAmount_8h_source.html#l00165">165</a> of file <a class="el" href="IOUAmount_8h_source.html">IOUAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IOUAmount_8h_source.html#l00167">167</a> of file <a class="el" href="IOUAmount_8h_source.html">IOUAmount.h</a>.</p>
 
 </div>
 </div>
@@ -549,7 +549,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IOUAmount_8h_source.html#l00171">171</a> of file <a class="el" href="IOUAmount_8h_source.html">IOUAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IOUAmount_8h_source.html#l00173">173</a> of file <a class="el" href="IOUAmount_8h_source.html">IOUAmount.h</a>.</p>
 
 </div>
 </div>
@@ -576,7 +576,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IOUAmount_8cpp_source.html#l00061">61</a> of file <a class="el" href="IOUAmount_8cpp_source.html">IOUAmount.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IOUAmount_8cpp_source.html#l00069">69</a> of file <a class="el" href="IOUAmount_8cpp_source.html">IOUAmount.cpp</a>.</p>
 
 </div>
 </div>
@@ -601,7 +601,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IOUAmount_8h_source.html#l00047">47</a> of file <a class="el" href="IOUAmount_8h_source.html">IOUAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IOUAmount_8h_source.html#l00049">49</a> of file <a class="el" href="IOUAmount_8h_source.html">IOUAmount.h</a>.</p>
 
 </div>
 </div>
@@ -625,7 +625,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="IOUAmount_8h_source.html#l00048">48</a> of file <a class="el" href="IOUAmount_8h_source.html">IOUAmount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="IOUAmount_8h_source.html#l00050">50</a> of file <a class="el" href="IOUAmount_8h_source.html">IOUAmount.h</a>.</p>
 
 </div>
 </div>
