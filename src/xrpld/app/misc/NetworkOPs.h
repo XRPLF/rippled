@@ -27,10 +27,10 @@
 #include <xrpld/net/InfoSub.h>
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/messages.h>
+
 #include <boost/asio.hpp>
-#include <deque>
+
 #include <memory>
-#include <tuple>
 
 namespace ripple {
 

@@ -23,7 +23,9 @@
 #include <xrpl/beast/rfc2616.h>
 #include <xrpl/server/detail/BaseHTTPPeer.h>
 #include <xrpl/server/detail/PlainWSPeer.h>
+
 #include <boost/beast/core/tcp_stream.hpp>
+
 #include <memory>
 
 namespace ripple {

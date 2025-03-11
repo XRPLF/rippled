@@ -22,9 +22,9 @@
 
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/beast/xor_shift_engine.h>
+
 #include <cstddef>
 #include <cstdint>
-#include <cstring>
 #include <limits>
 #include <mutex>
 #include <random>

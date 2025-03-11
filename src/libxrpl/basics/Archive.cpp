@@ -20,10 +20,14 @@
 #include <xrpl/basics/Archive.h>
 #include <xrpl/basics/contract.h>
 
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+
 #include <archive.h>
 #include <archive_entry.h>
-
+#include <cstddef>
 #include <memory>
+#include <stdexcept>
 
 namespace ripple {
 

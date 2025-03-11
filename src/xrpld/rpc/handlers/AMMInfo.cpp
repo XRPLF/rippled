@@ -16,6 +16,7 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
+
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/misc/AMMUtils.h>
 #include <xrpld/ledger/ReadView.h>
@@ -24,7 +25,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Issue.h>
-#include <xrpl/protocol/RPCErr.h>
+
 #include <grpcpp/support/status.h>
 
 namespace ripple {
