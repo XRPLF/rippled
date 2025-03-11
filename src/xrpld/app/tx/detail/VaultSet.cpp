@@ -95,6 +95,11 @@ VaultSet::doApply()
     if (!vault)
         return tecOBJECT_NOT_FOUND;
 
+    auto const mptIssuanceID = (*vault)[sfMPTokenIssuanceID];
+    auto const sleIssuance = view().peek(keylet::mptIssuance(mptIssuanceID));
+    if (!sleIssuance)
+        return tefINTERNAL;
+
     // Update mutable flags and fields if given.
     if (tx.isFieldPresent(sfData))
         vault->at(sfData) = tx[sfData];
@@ -108,8 +113,10 @@ VaultSet::doApply()
     {
         // In VaultSet::preclaim we enforce that tfVaultPrivate must have been
         // set in the vault. We currently do not support making such a vault
-        // public (i.e. removal of tfVaultPrivate flag)
-        vault->setFieldH256(sfDomainID, tx.getFieldH256(sfDomainID));
+        // public (i.e. removal of tfVaultPrivate flag). The sfDomainID flag
+        // must be set in the MPTokenIssuance object and can be freely updated.
+        sleIssuance->setFieldH256(sfDomainID, tx.getFieldH256(sfDomainID));
+        view().update(sleIssuance);
     }
 
     view().update(vault);

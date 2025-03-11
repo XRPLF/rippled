@@ -116,7 +116,7 @@ VaultWithdraw::doApply()
             account_,
             share,
             FreezeHandling::fhZERO_IF_FROZEN,
-            AuthHandling::ahZERO_IF_UNAUTHORIZED,
+            AuthHandling::ahIGNORE_AUTH,
             j_) < shares)
     {
         return tecINSUFFICIENT_FUNDS;

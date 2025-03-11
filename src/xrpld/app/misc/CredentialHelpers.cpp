@@ -205,9 +205,10 @@ validDomain(ReadView const& view, uint256 domainID, AccountID const& subject)
             return tefINTERNAL;
 
         auto const issuer = h.getAccountID(sfIssuer);
-        auto const type = makeSlice(h.getFieldVL(sfCredentialType));
-        auto const sleCredential =
-            view.read(keylet::credential(subject, issuer, type));
+        auto const type = h.getFieldVL(sfCredentialType);
+        auto const keyletCredential =
+            keylet::credential(subject, issuer, makeSlice(type));
+        auto const sleCredential = view.read(keyletCredential);
 
         // We cannot delete expired credentials, that would require ApplyView&
         // However we can check if credentials are expired. Expected transaction
@@ -228,7 +229,7 @@ validDomain(ReadView const& view, uint256 domainID, AccountID const& subject)
         }
     }
 
-    return foundExpired ? tecEXPIRED : tecNO_PERMISSION;
+    return foundExpired ? tecEXPIRED : tecNO_AUTH;
 }
 
 TER
@@ -338,8 +339,9 @@ verifyValidDomain(
             return tefINTERNAL;
 
         auto const issuer = h.getAccountID(sfIssuer);
-        auto const type = makeSlice(h.getFieldVL(sfCredentialType));
-        auto const keyletCredential = keylet::credential(account, issuer, type);
+        auto const type = h.getFieldVL(sfCredentialType);
+        auto const keyletCredential =
+            keylet::credential(account, issuer, makeSlice(type));
         if (view.exists(keyletCredential))
             credentials.push_back(keyletCredential.key);
     }

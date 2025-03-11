@@ -19,8 +19,10 @@
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/credentials.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/mpt.h>
+#include <test/jtx/permissioned_domains.h>
 #include <test/jtx/utility.h>
 #include <test/jtx/vault.h>
 #include <xrpl/basics/base_uint.h>
@@ -605,6 +607,145 @@ class Vault_test : public beast::unit_test::suite
         });
     }
 
+    void
+    testWithDomainCheck()
+    {
+        testcase("private vault");
+
+        Env env{*this};
+        Account issuer{"issuer"};
+        Account owner{"owner"};
+        Account depositor{"depositor"};
+        Account pdOwner{"pdOwner"};
+        Account credIssuer1{"credIssuer1"};
+        Account credIssuer2{"credIssuer2"};
+        std::string const credType = "credential";
+        auto vault = env.vault();
+        env.fund(
+            XRP(1000),
+            issuer,
+            owner,
+            depositor,
+            pdOwner,
+            credIssuer1,
+            credIssuer2);
+        env.close();
+        env(fset(issuer, asfAllowTrustLineClawback));
+        env.close();
+        env.require(flags(issuer, asfAllowTrustLineClawback));
+
+        PrettyAsset asset{xrpIssue(), 1'000'000};
+        auto [tx, keylet] = vault.create(
+            {.owner = owner, .asset = asset, .flags = tfVaultPrivate});
+        env(tx);
+        env.close();
+        BEAST_EXPECT(env.le(keylet));
+
+        {
+            testcase("private vault owner can deposit");
+            auto tx = vault.deposit(
+                {.depositor = owner, .id = keylet.key, .amount = asset(50)});
+            env(tx);
+        }
+
+        {
+            testcase("private vault depositor not authorized yet");
+            auto tx = vault.deposit(
+                {.depositor = depositor,
+                 .id = keylet.key,
+                 .amount = asset(50)});
+            env(tx, ter{tecNO_AUTH});
+        }
+
+        {
+            testcase("private vault set domainId");
+
+            pdomain::Credentials const credentials{
+                {.issuer = credIssuer1, .credType = credType},
+                {.issuer = credIssuer2, .credType = credType}};
+
+            env(pdomain::setTx(pdOwner, credentials));
+            auto const domainId = [&]() {
+                auto tx = env.tx()->getJson(JsonOptions::none);
+                return pdomain::getNewDomain(env.meta());
+            }();
+
+            auto tx = vault.set({.owner = owner, .id = keylet.key});
+            tx[sfDomainID] = to_string(domainId);
+            env(tx);
+            env.close();
+        }
+
+        {
+            testcase("private vault depositor still not authorized");
+            auto tx = vault.deposit(
+                {.depositor = depositor,
+                 .id = keylet.key,
+                 .amount = asset(50)});
+            env(tx, ter{tecNO_AUTH});
+            env.close();
+        }
+
+        auto const credKeylet =
+            credentials::keylet(depositor, credIssuer1, credType);
+        {
+            testcase("private vault depositor now authorized");
+            env(credentials::create(depositor, credIssuer1, credType));
+            env(credentials::accept(depositor, credIssuer1, credType));
+            env.close();
+            auto credSle = env.le(credKeylet);
+            BEAST_EXPECT(credSle != nullptr);
+
+            auto tx = vault.deposit(
+                {.depositor = depositor,
+                 .id = keylet.key,
+                 .amount = asset(50)});
+            env(tx);
+            env.close();
+        }
+
+        {
+            testcase("private vault depositor lost authorization");
+            env(credentials::deleteCred(
+                credIssuer1, depositor, credIssuer1, credType));
+            env.close();
+            auto credSle = env.le(credKeylet);
+            BEAST_EXPECT(credSle == nullptr);
+
+            auto tx = vault.deposit(
+                {.depositor = depositor,
+                 .id = keylet.key,
+                 .amount = asset(50)});
+            env(tx, ter{tecNO_AUTH});
+        }
+
+        {
+            testcase("private vault depositor new authorization");
+            env(credentials::create(depositor, credIssuer2, credType));
+            env(credentials::accept(depositor, credIssuer2, credType));
+            env.close();
+
+            auto tx = vault.deposit(
+                {.depositor = depositor,
+                 .id = keylet.key,
+                 .amount = asset(50)});
+            env(tx);
+        }
+
+        {
+            testcase("private vault no authorization needed to withdraw");
+            env(credentials::deleteCred(
+                depositor, depositor, credIssuer2, credType));
+            env.close();
+
+            auto tx = vault.withdraw(
+                {.depositor = depositor,
+                 .id = keylet.key,
+                 .amount = asset(100)});
+            env(tx);
+        }
+    }
+
 public:
     void
     run() override
@@ -614,6 +755,7 @@ public:
         testCreateFailIOU();
         testCreateFailMPT();
         testWithMPT();
+        testWithDomainCheck();
     }
 };
 

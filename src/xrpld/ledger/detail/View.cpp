@@ -2216,7 +2216,7 @@ requireAuth(
         return tesSUCCESS;
     }
 
-    // err = tefINTERNAL | tecINVALID_DOMAIN | tecNO_PERMISSION | tecEXPIRED
+    // err = tefINTERNAL | tecINVALID_DOMAIN | tecNO_AUTH | tecEXPIRED
     if (auto const err =
             credentials::validDomain(view, *maybeDomainID, account);
         !isTesSuccess(err))
@@ -2239,6 +2239,10 @@ enforceMPTokenAuthorization(
     if (!sleIssuance)
         return tefINTERNAL;  // Should have called requireAuth earlier
 
+    XRPL_ASSERT(
+        sleIssuance->getFieldU32(sfFlags) & lsfMPTRequireAuth,
+        "ripple::verifyAuth : MPTokenIssuance requires authorization");
+
     if (account == sleIssuance->at(sfIssuer))
         return tesSUCCESS;  // Won't create MPToken for the token issuer
 
@@ -2250,8 +2254,15 @@ enforceMPTokenAuthorization(
     if (domainOwned || sleToken == nullptr)
     {
         // We check DomainID if:
+        //
         // 1. Token not found or
         // 2. Token found and has lsfMPTDomainCheck flag
+        //
+        // In case 1. we check authorization in order to create the token
+        // (below), but only if the account is authorized by the domain. In
+        // case 2. we re-check authorization in case the credentials are
+        // expired, in which case the token needs to be unauthorized (below)
+
         auto const maybeDomainID = sleIssuance->at(~sfDomainID);
         authorizedByDomain = maybeDomainID.has_value() &&
             verifyValidDomain(view, account, *maybeDomainID, j) == tesSUCCESS;
@@ -2260,33 +2271,47 @@ enforceMPTokenAuthorization(
     if (!authorizedByDomain && sleToken == nullptr)
     {
         // Intentionally empty. This could be either of:
-        // 1. DomainID not set in MPTokenIssuance or
-        // 2. account has no matching and accepted credentials or
-        // 3. only expired credentials (removed in verifyValidDomain)
-        // Either way, move to check at the end of this function
+        //
+        // 1. Field sfDomainID not set in MPTokenIssuance or
+        // 2. Account has no matching and accepted credentials or
+        // 3. Account has all expired credentials (removed in verifyValidDomain)
+        //
+        // Either way, will return tecNO_AUTH at the end of this function
     }
     else if (!authorizedByDomain && domainOwned)
     {
-        auto sleMpt = view.peek(keylet::mptoken(mptIssuanceID, account));
-        XRPL_ASSERT(sleMpt, "ripple::verifyAuth : non-null old MPToken");
-        std::uint32_t const flags = sleMpt->getFieldU32(sfFlags);
-        // Remove lsfMPTAuthorized flag
-        sleMpt->setFieldU32(sfFlags, flags & ~lsfMPTAuthorized);
-        view.update(sleMpt);
+        // We found an MPToken with lsfMPTDomainCheck flag, but the account is
+        // no longer authorized.
+        if (sleToken->getFieldU32(sfFlags) & lsfMPTAuthorized)
+        {
+            // Must reset lsfMPTAuthorized, no current credentials
+            auto sleMpt = view.peek(keylet::mptoken(mptIssuanceID, account));
+            XRPL_ASSERT(sleMpt, "ripple::verifyAuth : non-null bad MPToken");
+            std::uint32_t const flags = sleMpt->getFieldU32(sfFlags);
+            sleMpt->setFieldU32(sfFlags, flags & ~lsfMPTAuthorized);
+            view.update(sleMpt);
 
-        sleToken = nullptr;
+            sleToken = nullptr;  // return tecNO_AUTH at the end of function
+        }
     }
-    else if (authorizedByDomain && sleToken)
+    else if (!authorizedByDomain)
     {
         XRPL_ASSERT(
-            sleToken->getFlags() & lsfMPTDomainCheck,
-            "ripple::verifyAuth : MPToken owned by domain");
+            sleToken != nullptr && !domainOwned,
+            "ripple::verifyAuth : MPToken not owned by domain");
+        // MPToken was created by other means, we will check its authorization
+        // at the end of this function. No need to do anything here.
+    }
+    else if (authorizedByDomain && sleToken != nullptr)
+    {
+        XRPL_ASSERT(
+            domainOwned, "ripple::verifyAuth : MPToken owned by domain");
 
         if ((sleToken->getFlags() & lsfMPTAuthorized) == 0)
         {
             // Must set lsfMPTAuthorized, we found new credentials
             auto sleMpt = view.peek(keylet::mptoken(mptIssuanceID, account));
-            XRPL_ASSERT(sleMpt, "ripple::verifyAuth : non-null new MPToken");
+            XRPL_ASSERT(sleMpt, "ripple::verifyAuth : non-null good MPToken");
             std::uint32_t const flags = sleMpt->getFieldU32(sfFlags);
             sleMpt->setFieldU32(sfFlags, flags | lsfMPTAuthorized);
             view.update(sleMpt);
@@ -2310,7 +2335,7 @@ enforceMPTokenAuthorization(
             return err;
 
         auto sleMpt = view.peek(keylet::mptoken(mptIssuanceID, account));
-        XRPL_ASSERT(sleMpt, "ripple::verifyAuth : found new MPToken");
+        XRPL_ASSERT(sleMpt, "ripple::verifyAuth : non-null new MPToken");
         std::uint32_t const flags = sleMpt->getFieldU32(sfFlags);
         sleMpt->setFieldU32(
             sfFlags, flags | lsfMPTDomainCheck | lsfMPTAuthorized);
@@ -2319,11 +2344,7 @@ enforceMPTokenAuthorization(
         sleToken = sleMpt;  // with lsfMPTAuthorized
     }
 
-    if (!sleToken)
-        return tecNO_AUTH;
-
-    if (sleIssuance->getFieldU32(sfFlags) & lsfMPTRequireAuth &&
-        !(sleToken->getFlags() & lsfMPTAuthorized))
+    if (sleToken == nullptr || (sleToken->getFlags() & lsfMPTAuthorized) == 0)
         return tecNO_AUTH;
 
     return tesSUCCESS;

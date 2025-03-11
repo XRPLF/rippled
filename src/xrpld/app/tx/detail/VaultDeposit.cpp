@@ -119,7 +119,8 @@ VaultDeposit::doApply()
     auto const& vaultAccount = vault->at(sfAccount);
 
     MPTIssue const mptIssue(mptIssuanceID);
-    if (vault->getFlags() == tfVaultPrivate)
+    // Note, vault owner is always authorized
+    if (account_ != vault->at(sfOwner) && (vault->getFlags() & tfVaultPrivate))
     {
         if (auto const err = enforceMPTokenAuthorization(
                 ctx_.view(), mptIssue, account_, mPriorBalance, j_);
@@ -130,7 +131,7 @@ VaultDeposit::doApply()
     {
         // No authorization needed, but must ensure there is MPToken
         auto sleMpt = view().read(keylet::mptoken(mptIssuanceID, account_));
-        if (!sleMpt && account_ != vaultAccount)
+        if (!sleMpt)
         {
             if (auto const err = MPTokenAuthorize::authorize(
                     view(),
