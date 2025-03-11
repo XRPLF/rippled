@@ -17,10 +17,9 @@
 */
 //==============================================================================
 
-#include <test/jtx/xchain_bridge.h>
-
 #include <test/jtx/Env.h>
 #include <test/jtx/attester.h>
+#include <test/jtx/xchain_bridge.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/SField.h>

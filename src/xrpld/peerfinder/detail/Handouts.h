@@ -24,8 +24,6 @@
 #include <xrpld/peerfinder/detail/Tuning.h>
 #include <xrpl/beast/container/aged_set.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <iterator>
-#include <type_traits>
 
 namespace ripple {
 namespace PeerFinder {

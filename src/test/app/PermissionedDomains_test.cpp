@@ -19,11 +19,7 @@
 
 #include <test/jtx.h>
 #include <xrpld/app/tx/detail/PermissionedDomainSet.h>
-#include <xrpld/ledger/ApplyViewImpl.h>
-#include <xrpl/basics/Blob.h>
-#include <xrpl/basics/Slice.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/jss.h>
 
 #include <exception>

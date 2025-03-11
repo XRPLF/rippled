@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <test/jtx.h>
-#include <xrpld/app/misc/FeeVote.h>
 #include <xrpl/basics/BasicConfig.h>
 
 namespace ripple {

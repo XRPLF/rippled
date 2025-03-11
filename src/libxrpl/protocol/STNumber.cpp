@@ -17,12 +17,20 @@
 */
 //==============================================================================
 
-#include <xrpl/protocol/STNumber.h>
-
+#include <xrpl/basics/Number.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/Serializer.h>
+
 #include <boost/regex.hpp>
+
+#include <cstddef>
+#include <ostream>
+#include <string>
+#include <utility>
 
 namespace ripple {
 

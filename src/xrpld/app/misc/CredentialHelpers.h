@@ -17,7 +17,8 @@
 */
 //==============================================================================
 
-#pragma once
+#ifndef RIPPLE_APP_MISC_CREDENTIALHELPERS_H_INCLUDED
+#define RIPPLE_APP_MISC_CREDENTIALHELPERS_H_INCLUDED
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
@@ -98,3 +99,5 @@ verifyDepositPreauth(
     std::shared_ptr<SLE> const& sleDst);
 
 }  // namespace ripple
+
+#endif

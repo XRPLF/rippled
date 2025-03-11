@@ -17,7 +17,8 @@
 */
 //==============================================================================
 
-#pragma once
+#ifndef RIPPLE_TEST_JTX_CREDENTIALS_H_INCLUDED
+#define RIPPLE_TEST_JTX_CREDENTIALS_H_INCLUDED
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
@@ -107,8 +108,8 @@ Json::Value
 ledgerEntry(jtx::Env& env, std::string const& credIdx);
 
 }  // namespace credentials
-
 }  // namespace jtx
-
 }  // namespace test
 }  // namespace ripple
+
+#endif

@@ -23,7 +23,9 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/type_name.h>
 #include <xrpl/protocol/SOTemplate.h>
+
 #include <boost/container/flat_map.hpp>
+
 #include <algorithm>
 #include <forward_list>
 

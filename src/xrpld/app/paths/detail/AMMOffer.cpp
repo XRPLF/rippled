@@ -15,10 +15,10 @@
     ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
-//==============================================================================/
-#include <xrpld/app/paths/AMMOffer.h>
+//==============================================================================
 
 #include <xrpld/app/paths/AMMLiquidity.h>
+#include <xrpld/app/paths/AMMOffer.h>
 #include <xrpl/protocol/QualityFunction.h>
 
 namespace ripple {
