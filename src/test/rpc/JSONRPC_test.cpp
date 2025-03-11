@@ -27,7 +27,6 @@
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/protocol/ErrorCodes.h>
-#include <xrpl/protocol/Feature.h>
 
 namespace ripple {
 

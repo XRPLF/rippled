@@ -20,6 +20,12 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/Object.h>
+#include <xrpl/json/Output.h>
+#include <xrpl/json/Writer.h>
+#include <xrpl/json/json_value.h>
+
+#include <stdexcept>
+#include <utility>
 
 namespace Json {
 

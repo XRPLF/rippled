@@ -18,17 +18,31 @@
 //==============================================================================
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/Resolver.h>
 #include <xrpl/basics/ResolverAsio.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
 #include <xrpl/beast/net/IPEndpoint.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <boost/asio.hpp>
+
+#include <boost/asio/error.hpp>
+#include <boost/asio/io_service.hpp>
+#include <boost/asio/ip/tcp.hpp>
+#include <boost/system/detail/error_code.hpp>
+
+#include <algorithm>
 #include <atomic>
+#include <cctype>
 #include <condition_variable>
 #include <deque>
+#include <functional>
+#include <iterator>
 #include <locale>
 #include <memory>
 #include <mutex>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace ripple {
 

@@ -21,6 +21,7 @@
 #define RIPPLE_SHAMAP_TREENODECACHE_H_INCLUDED
 
 #include <xrpld/shamap/SHAMapTreeNode.h>
+#include <xrpl/basics/TaggedCache.h>
 
 namespace ripple {
 

@@ -22,7 +22,6 @@
 #include <xrpld/app/rdb/Wallet.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
-#include <boost/optional.hpp>
 
 namespace ripple {
 

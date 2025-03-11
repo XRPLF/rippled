@@ -17,15 +17,24 @@
 */
 //==============================================================================
 
-#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/Blob.h>
 #include <xrpl/basics/StringUtilities.h>
-#include <xrpl/basics/ToString.h>
-#include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/net/IPEndpoint.h>
-#include <boost/algorithm/string.hpp>
-#include <boost/regex.hpp>
-#include <algorithm>
+
+#include <boost/algorithm/hex.hpp>
+#include <boost/algorithm/string/case_conv.hpp>
+#include <boost/algorithm/string/trim.hpp>
+#include <boost/regex/v5/regbase.hpp>
+#include <boost/regex/v5/regex.hpp>
+#include <boost/regex/v5/regex_fwd.hpp>
+#include <boost/regex/v5/regex_match.hpp>
+
+#include <cstdint>
+#include <iterator>
+#include <optional>
+#include <string>
+#include <string_view>
 
 namespace ripple {
 
