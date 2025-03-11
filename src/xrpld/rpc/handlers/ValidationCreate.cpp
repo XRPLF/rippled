@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <xrpld/rpc/Context.h>
-#include <xrpl/basics/Log.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/Seed.h>

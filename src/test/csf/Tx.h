@@ -16,12 +16,16 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
+
 #ifndef RIPPLE_TEST_CSF_TX_H_INCLUDED
 #define RIPPLE_TEST_CSF_TX_H_INCLUDED
+
 #include <xrpl/beast/hash/hash_append.h>
 #include <xrpl/beast/hash/uhash.h>
+
 #include <boost/container/flat_set.hpp>
 #include <boost/iterator/function_output_iterator.hpp>
+
 #include <algorithm>
 #include <map>
 #include <ostream>

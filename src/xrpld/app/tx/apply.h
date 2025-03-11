@@ -25,8 +25,7 @@
 #include <xrpld/ledger/View.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/STTx.h>
-#include <xrpl/protocol/TER.h>
-#include <memory>
+
 #include <utility>
 
 namespace ripple {

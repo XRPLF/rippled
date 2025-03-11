@@ -29,7 +29,6 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_writer.h>
-#include <boost/logic/tribool.hpp>
 
 #include <algorithm>
 #include <chrono>
@@ -1213,8 +1212,7 @@ Consensus<Adaptor>::phaseOpen(std::unique_ptr<std::stringstream> const& clog)
         adaptor_.parms().ledgerIDLE_INTERVAL,
         2 * previousLedger_.closeTimeResolution());
     CLOG(clog) << "idle interval set to " << idleInterval.count()
-               << "ms based on "
-               << "ledgerIDLE_INTERVAL: "
+               << "ms based on " << "ledgerIDLE_INTERVAL: "
                << adaptor_.parms().ledgerIDLE_INTERVAL.count()
                << ", previous ledger close time resolution: "
                << previousLedger_.closeTimeResolution().count() << "ms. ";
