@@ -2179,4 +2179,132 @@ rippleCredit(
         saAmount.asset().value());
 }
 
+TER
+rippleLockEscrowMPT(
+    ApplyView& view,
+    AccountID const& uGrantorID,
+    STAmount const& saAmount,
+    beast::Journal j)
+{
+    auto const mptID = keylet::mptIssuance(saAmount.get<MPTIssue>().getMptID());
+    auto sleIssuance = view.peek(mptID);
+    if (!sleIssuance)
+        return tecOBJECT_NOT_FOUND;
+
+    // 1. Descrease the MPT Holder MPTAmount
+    // 2. Increase the MPT Holder EscrowedAmount
+    if (saAmount.getIssuer() != uGrantorID)
+    {
+        auto const mptokenID = keylet::mptoken(mptID.key, uGrantorID);
+        if (auto sle = view.peek(mptokenID))
+        {
+            auto const amt = sle->getFieldU64(sfMPTAmount);
+            auto const pay = saAmount.mpt().value();
+            if (amt < pay)
+                return tecINSUFFICIENT_FUNDS;
+            (*sle)[sfMPTAmount] = amt - pay;
+
+            if (sle->isFieldPresent(sfEscrowedAmount))
+                (*sle)[sfEscrowedAmount] += pay;
+            else
+                sle->setFieldU64(sfEscrowedAmount, pay);
+            view.update(sle);
+        }
+        else
+            return tecNO_AUTH;
+    }
+
+    // 1. Increase the Issuance EscrowedAmount
+    // 2. DO NOT change the Issuance OutstandingAmount
+    {
+        if (sleIssuance->isFieldPresent(sfEscrowedAmount))
+            (*sleIssuance)[sfEscrowedAmount] += saAmount.mpt().value();
+        else
+            sleIssuance->setFieldU64(sfEscrowedAmount, saAmount.mpt().value());
+        view.update(sleIssuance);
+    }
+    return tesSUCCESS;
+}
+
+TER
+rippleUnlockEscrowMPT(
+    ApplyView& view,
+    AccountID const& uGrantorID,
+    AccountID const& uGranteeID,
+    STAmount const& saAmount,
+    beast::Journal j)
+{
+    auto const issuer = saAmount.getIssuer();
+    auto const mptID = keylet::mptIssuance(saAmount.get<MPTIssue>().getMptID());
+    auto sleIssuance = view.peek(mptID);
+    if (!sleIssuance)
+        return tecOBJECT_NOT_FOUND;
+
+    // Decrease the Issuance EscrowedAmount
+    {
+        if (!sleIssuance->isFieldPresent(sfEscrowedAmount))
+            return tecINTERNAL;  // No escrowed amount to redeem
+        else
+        {
+            auto const escrowed = sleIssuance->getFieldU64(sfEscrowedAmount);
+            auto const redeem = saAmount.mpt().value();
+            if (escrowed >= redeem)
+            {
+                sleIssuance->setFieldU64(sfEscrowedAmount, escrowed - redeem);
+                view.update(sleIssuance);
+            }
+            else
+                return tecINTERNAL;
+        }
+    }
+
+    if (issuer != uGranteeID)
+    {
+        // Increase the MPT Holder MPTAmount
+        auto const mptokenID = keylet::mptoken(mptID.key, uGranteeID);
+        if (auto sle = view.peek(mptokenID))
+        {
+            (*sle)[sfMPTAmount] += saAmount.mpt().value();
+            view.update(sle);
+        }
+        else
+            return tecNO_AUTH;
+    }
+    else
+    {
+        // Decrease the Issuance OutstandingAmount
+        auto const outstanding = sleIssuance->getFieldU64(sfOutstandingAmount);
+        auto const redeem = saAmount.mpt().value();
+        if (outstanding >= redeem)
+        {
+            sleIssuance->setFieldU64(sfOutstandingAmount, outstanding - redeem);
+            view.update(sleIssuance);
+        }
+        else
+            return tecINTERNAL;
+    }
+
+    if (issuer != uGrantorID)
+    {
+        // Descrease the MPT Holder EscrowedAmount
+        auto const mptokenID = keylet::mptoken(mptID.key, uGrantorID);
+        if (auto sle = view.peek(mptokenID))
+        {
+            if (!sle->isFieldPresent(sfEscrowedAmount))
+                return tecINTERNAL;
+            (*sle)[sfEscrowedAmount] -= saAmount.mpt().value();
+            view.update(sle);
+        }
+        else
+            return tecNO_AUTH;
+    }
+    else
+    {
+        // Increase the Issuance OutstandingAmount
+        (*sleIssuance)[sfOutstandingAmount] += saAmount.mpt().value();
+        view.update(sleIssuance);
+    }
+    return tesSUCCESS;
+}
+
 }  // namespace ripple

@@ -82,6 +82,17 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
                 return tecHAS_OBLIGATIONS;
             }
 
+            if (ctx.view.rules().enabled(featureTokenEscrow) &&
+                (*sleMpt)[~sfEscrowedAmount] != 0)
+            {
+                auto const sleMptIssuance = ctx.view.read(
+                    keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
+                if (!sleMptIssuance)
+                    return tefINTERNAL;
+
+                return tecHAS_OBLIGATIONS;
+            }
+
             return tesSUCCESS;
         }
 

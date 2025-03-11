@@ -513,6 +513,22 @@ rippleCredit(
     bool bCheckIssuer,
     beast::Journal j);
 
+
+TER
+rippleLockEscrowMPT(
+    ApplyView& view,
+    AccountID const& uGrantorID,
+    STAmount const& saAmount,
+    beast::Journal j);
+
+TER
+rippleUnlockEscrowMPT(
+    ApplyView& view,
+    AccountID const& uGrantorID,
+    AccountID const& uGranteeID,
+    STAmount const& saAmount,
+    beast::Journal j);
+
 /** Calls static accountSendIOU if saAmount represents Issue.
  * Calls static accountSendMPT if saAmount represents MPTIssue.
  */
