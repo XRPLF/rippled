@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <test/jtx/AMM.h>
-
 #include <test/jtx/Env.h>
 #include <xrpld/app/misc/AMMUtils.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>

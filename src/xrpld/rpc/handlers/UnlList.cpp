@@ -21,7 +21,6 @@
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpl/protocol/ErrorCodes.h>
-#include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
 
 namespace ripple {

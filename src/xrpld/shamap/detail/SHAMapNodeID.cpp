@@ -21,7 +21,6 @@
 #include <xrpld/shamap/SHAMapNodeID.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/crypto/csprng.h>
 #include <xrpl/protocol/Serializer.h>
 
 namespace ripple {

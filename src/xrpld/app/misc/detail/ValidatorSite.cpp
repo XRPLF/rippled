@@ -22,11 +22,10 @@
 #include <xrpld/app/misc/detail/WorkFile.h>
 #include <xrpld/app/misc/detail/WorkPlain.h>
 #include <xrpld/app/misc/detail/WorkSSL.h>
-#include <xrpl/basics/Slice.h>
-#include <xrpl/basics/base64.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
+
 #include <algorithm>
 
 namespace ripple {
