@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/rpc/Status.h>
+
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/unit_test.h>
 

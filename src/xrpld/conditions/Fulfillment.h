@@ -21,6 +21,7 @@
 #define RIPPLE_CONDITIONS_FULFILLMENT_H
 
 #include <xrpld/conditions/Condition.h>
+
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
 

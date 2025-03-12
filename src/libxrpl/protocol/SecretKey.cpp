@@ -34,6 +34,7 @@
 #include <xrpl/protocol/tokens.h>
 
 #include <boost/utility/string_view.hpp>
+
 #include <ed25519.h>
 #include <secp256k1.h>
 

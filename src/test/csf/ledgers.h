@@ -21,7 +21,9 @@
 #define RIPPLE_TEST_CSF_LEDGERS_H_INCLUDED
 
 #include <test/csf/Tx.h>
+
 #include <xrpld/consensus/LedgerTiming.h>
+
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/comparators.h>

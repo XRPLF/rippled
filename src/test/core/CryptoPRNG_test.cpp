@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <test/jtx/Env.h>
+
 #include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/crypto/csprng.h>
 

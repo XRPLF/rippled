@@ -19,6 +19,7 @@
 
 #include <xrpld/app/tx/detail/DeleteOracle.h>
 #include <xrpld/ledger/View.h>
+
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/TxFlags.h>

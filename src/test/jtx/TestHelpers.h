@@ -21,6 +21,7 @@
 #define RIPPLE_TEST_JTX_TESTHELPERS_H_INCLUDED
 
 #include <test/jtx/Env.h>
+
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>

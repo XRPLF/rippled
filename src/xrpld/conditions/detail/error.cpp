@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/conditions/detail/error.h>
+
 #include <xrpl/basics/safe_cast.h>
 
 #include <string>

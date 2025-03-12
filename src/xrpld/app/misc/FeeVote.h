@@ -22,6 +22,7 @@
 
 #include <xrpld/ledger/ReadView.h>
 #include <xrpld/shamap/SHAMap.h>
+
 #include <xrpl/protocol/STValidation.h>
 
 namespace ripple {

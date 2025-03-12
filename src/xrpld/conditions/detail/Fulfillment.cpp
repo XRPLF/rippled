@@ -21,6 +21,7 @@
 #include <xrpld/conditions/Fulfillment.h>
 #include <xrpld/conditions/detail/PreimageSha256.h>
 #include <xrpld/conditions/detail/utils.h>
+
 #include <xrpl/basics/safe_cast.h>
 
 namespace ripple {

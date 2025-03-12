@@ -21,6 +21,7 @@
 #define RIPPLE_LEDGER_RAWVIEW_H_INCLUDED
 
 #include <xrpld/ledger/ReadView.h>
+
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/Serializer.h>
 

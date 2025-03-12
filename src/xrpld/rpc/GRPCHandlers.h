@@ -21,6 +21,7 @@
 #define RIPPLE_RPC_GRPCHANDLER_H_INCLUDED
 
 #include <xrpld/rpc/Context.h>
+
 #include <xrpl/proto/org/xrpl/rpc/v1/xrp_ledger.pb.h>
 
 #include <grpcpp/grpcpp.h>
