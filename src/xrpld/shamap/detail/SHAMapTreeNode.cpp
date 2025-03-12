@@ -22,6 +22,7 @@
 #include <xrpld/shamap/SHAMapTreeNode.h>
 #include <xrpld/shamap/SHAMapTxLeafNode.h>
 #include <xrpld/shamap/SHAMapTxPlusMetaLeafNode.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/contract.h>

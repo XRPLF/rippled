@@ -18,8 +18,10 @@
 //==============================================================================
 
 #include <test/jtx.h>
+
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/TxQ.h>
+
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/Feature.h>

@@ -18,7 +18,9 @@
 //==============================================================================
 
 #include <test/jtx/Env.h>
+
 #include <xrpld/app/tx/apply.h>
+
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/protocol/Feature.h>
 

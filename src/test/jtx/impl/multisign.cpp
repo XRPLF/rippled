@@ -19,6 +19,7 @@
 
 #include <test/jtx/multisign.h>
 #include <test/jtx/utility.h>
+
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/Sign.h>
 #include <xrpl/protocol/jss.h>

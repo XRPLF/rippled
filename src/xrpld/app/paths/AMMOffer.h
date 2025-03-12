@@ -22,6 +22,7 @@
 
 #include <xrpld/ledger/ApplyView.h>
 #include <xrpld/ledger/View.h>
+
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/TER.h>
 

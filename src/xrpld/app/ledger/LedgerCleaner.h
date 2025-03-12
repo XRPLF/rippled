@@ -21,6 +21,7 @@
 #define RIPPLE_APP_LEDGER_LEDGERCLEANER_H_INCLUDED
 
 #include <xrpld/app/main/Application.h>
+
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/PropertyStream.h>
 #include <xrpl/json/json_value.h>
