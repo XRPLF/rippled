@@ -300,8 +300,8 @@ DisputedTx<Tx_t, NodeID_t>::updateVote(
     if (newPosition == ourVote_)
     {
         ++currentVoteCounter_;
-        JLOG(j_.info()) << "No change (" << (ourVote_ ? "YES" : "NO")
-                        << ") : weight " << weight << ", percent "
+        JLOG(j_.info()) << "No change (" << (ourVote_ ? "YES" : "NO") << ") on "
+                        << tx_.id() << " : weight " << weight << ", percent "
                         << percentTime
                         << ", round(s) with this vote: " << currentVoteCounter_;
         JLOG(j_.debug()) << Json::Compact{getJson()};

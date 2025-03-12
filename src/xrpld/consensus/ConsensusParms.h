@@ -133,7 +133,7 @@ struct ConsensusParms
     enum AvalancheState { init, mid, late, stuck };
     struct AvalancheCutoff
     {
-        std::size_t const consensusTime;
+        int const consensusTime;
         std::size_t const consensusPct;
         AvalancheState const next;
     };
@@ -188,7 +188,7 @@ getNeededWeight(
         // See if enough time has passed to move on to the next.
         XRPL_ASSERT(
             nextCutoff.consensusTime >= currentCutoff.consensusTime,
-            "ripple::DisputedTx::updateVote next state valid");
+            "ripple::getNeededWeight next state valid");
         if (percentTime >= nextCutoff.consensusTime)
         {
             return {nextCutoff.consensusPct, currentCutoff.next};

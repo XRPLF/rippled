@@ -138,6 +138,17 @@ checkConsensusReached(
         return false;
     }
 
+    // We only get stalled when every disputed transaction unequivocally has 80%
+    // (minConsensusPct) agreement, either for or against. That is: either under
+    // 20% or over 80% consensus (repectively "nay" or "yay"). This prevents
+    // manipulation by a minority of byzantine peers of which transactions make
+    // the cut to get into the ledger.
+    if (stalled)
+    {
+        CLOG(clog) << "consensus stalled. ";
+        return true;
+    }
+
     if (count_self)
     {
         ++agreeing;
@@ -147,9 +158,9 @@ checkConsensusReached(
     }
 
     std::size_t currentPercentage = (agreeing * 100) / total;
-    CLOG(clog) << "currentPercentage: " << currentPercentage
-               << (stalled ? ", stalled" : "");
-    bool const ret = stalled || currentPercentage >= minConsensusPct;
+
+    CLOG(clog) << "currentPercentage: " << currentPercentage;
+    bool const ret = currentPercentage >= minConsensusPct;
     if (ret)
     {
         CLOG(clog) << ", consensus reached. ";
@@ -216,8 +227,8 @@ checkConsensus(
             stalled,
             clog))
     {
-        JLOG(j.debug()) << "normal consensus"
-                        << (stalled ? ", but stalled" : "");
+        JLOG((stalled ? j.warn() : j.debug()))
+            << "normal consensus" << (stalled ? ", but stalled" : "");
         CLOG(clog) << "reached" << (stalled ? ", but stalled." : ".");
         return ConsensusState::Yes;
     }
