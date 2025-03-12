@@ -35,8 +35,8 @@
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/TxQ.h>
-#include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/app/misc/ValidatorKeys.h>
+#include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/app/misc/detail/AccountTxPaging.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/app/tx/apply.h>
