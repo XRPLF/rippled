@@ -19,6 +19,7 @@
 
 #include <test/jtx.h>
 #include <test/jtx/trust.h>
+
 #include <xrpl/protocol/Feature.h>
 
 namespace ripple {

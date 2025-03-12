@@ -22,12 +22,14 @@
 #if BOOST_OS_WINDOWS
 #include <boost/asio/ssl/error.hpp>
 #include <boost/system/error_code.hpp>
+
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 #include <openssl/x509.h>
 
-#include <memory>
 #include <wincrypt.h>
+
+#include <memory>
 #endif
 
 namespace ripple {

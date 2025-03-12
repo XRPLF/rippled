@@ -23,17 +23,19 @@
 #include <xrpld/core/ConfigSections.h>
 #include <xrpld/core/TimeKeeper.h>
 #include <xrpld/net/RPCCall.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
 #include <xrpl/protocol/BuildInfo.h>
 
 #ifdef ENABLE_TESTS
 #include <test/unit_test/multi_runner.h>
+
 #include <xrpl/beast/unit_test/match.h>
 #endif  // ENABLE_TESTS
-
 #include <boost/process.hpp>
 #include <boost/program_options.hpp>
+
 #include <google/protobuf/stubs/common.h>
 
 #include <cstdlib>
