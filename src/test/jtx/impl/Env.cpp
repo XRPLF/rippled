@@ -27,10 +27,12 @@
 #include <test/jtx/sig.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/utility.h>
+
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/net/HTTPClient.h>
 #include <xrpld/net/RPCCall.h>
+
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/json/to_string.h>

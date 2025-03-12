@@ -19,6 +19,7 @@
 
 #include <xrpld/app/tx/detail/NFTokenBurn.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
+
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/TxFlags.h>

@@ -25,12 +25,14 @@
 
 #include <xrpld/nodestore/NodeObject.h>
 #include <xrpld/nodestore/detail/varint.h>
+
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/protocol/HashPrefix.h>
 
-#include <lz4.h>
 #include <nudb/detail/field.hpp>
+
+#include <lz4.h>
 
 #include <cstddef>
 #include <cstring>

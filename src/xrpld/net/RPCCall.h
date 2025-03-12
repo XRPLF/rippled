@@ -21,6 +21,7 @@
 #define RIPPLE_NET_RPCCALL_H_INCLUDED
 
 #include <xrpld/core/Config.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/json/json_value.h>
 

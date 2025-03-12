@@ -23,6 +23,7 @@
 #include <test/jtx.h>
 #include <test/jtx/ter.h>
 #include <test/jtx/txflags.h>
+
 #include <xrpl/protocol/UintTypes.h>
 
 namespace ripple {

@@ -27,8 +27,10 @@
 #include <test/csf/Validation.h>
 #include <test/csf/events.h>
 #include <test/csf/ledgers.h>
+
 #include <xrpld/consensus/Consensus.h>
 #include <xrpld/consensus/Validations.h>
+
 #include <xrpl/beast/utility/WrappedSink.h>
 #include <xrpl/protocol/PublicKey.h>
 
