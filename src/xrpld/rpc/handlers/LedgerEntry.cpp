@@ -827,6 +827,11 @@ parsePermissionedDomains(Json::Value const& pd, Json::Value& jvResult)
         return std::nullopt;
     }
 
+    if (!pd[jss::account].isString()) {
+        jvResult[jss::error] = "malformedAddress";
+        return std::nullopt;
+    }
+
     if (!pd.isMember(jss::seq) ||
         (pd[jss::seq].isInt() && pd[jss::seq].asInt() < 0) ||
         (!pd[jss::seq].isInt() && !pd[jss::seq].isUInt()))
