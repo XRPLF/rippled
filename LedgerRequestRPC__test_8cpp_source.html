@@ -96,375 +96,377 @@ $(function() {
 <div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span><span class="comment">//==============================================================================</span></div>
 <div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span> </div>
 <div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span><span class="preprocessor">#include &lt;test/jtx.h&gt;</span></div>
-<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span><span class="preprocessor">#include &lt;xrpld/app/ledger/LedgerMaster.h&gt;</span></div>
-<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span><span class="preprocessor">#include &lt;xrpld/rpc/detail/RPCHelpers.h&gt;</span></div>
-<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="preprocessor">#include &lt;xrpl/beast/unit_test.h&gt;</span></div>
-<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="preprocessor">#include &lt;xrpl/protocol/ErrorCodes.h&gt;</span></div>
-<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="preprocessor">#include &lt;xrpl/protocol/jss.h&gt;</span></div>
-<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span> </div>
-<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span><span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/functional.html">functional</a>&gt;</span></div>
+<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span> </div>
+<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span><span class="preprocessor">#include &lt;xrpld/app/ledger/LedgerMaster.h&gt;</span></div>
+<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="preprocessor">#include &lt;xrpld/rpc/detail/RPCHelpers.h&gt;</span></div>
+<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span> </div>
+<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="preprocessor">#include &lt;xrpl/beast/unit_test.h&gt;</span></div>
+<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><span class="preprocessor">#include &lt;xrpl/protocol/ErrorCodes.h&gt;</span></div>
+<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span><span class="preprocessor">#include &lt;xrpl/protocol/jss.h&gt;</span></div>
 <div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span> </div>
-<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceripple.html">ripple</a> {</div>
+<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span><span class="preprocessor">#include &lt;<a class="codeRef" href="http://en.cppreference.com/w/cpp/header/functional.html">functional</a>&gt;</span></div>
 <div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span> </div>
-<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span><span class="keyword">namespace </span>RPC {</div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceripple.html">ripple</a> {</div>
 <div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span> </div>
-<div class="line"><a id="l00033" name="l00033"></a><span class="lineno"><a class="line" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html">   33</a></span><span class="keyword">class </span><a class="code hl_class" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html">LedgerRequestRPC_test</a> : <span class="keyword">public</span> <a class="code hl_class" href="classbeast_1_1unit__test_1_1suite.html">beast::unit_test::suite</a></div>
-<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>{</div>
-<div class="line"><a id="l00035" name="l00035"></a><span class="lineno"><a class="line" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#a79be30726cf516e2255165cb9be0de32">   35</a></span>    <span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keywordtype">char</span> <span class="keyword">const</span>* <a class="code hl_variable" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#a79be30726cf516e2255165cb9be0de32">hash1</a> =</div>
-<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>        <span class="stringliteral">&quot;3020EB9E7BE24EF7D7A060CB051583EC117384636D1781AFB5B87F3E348DA489&quot;</span>;</div>
-<div class="line"><a id="l00037" name="l00037"></a><span class="lineno"><a class="line" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#ab18117c250789eba3695a6fbad518ce6">   37</a></span>    <span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keywordtype">char</span> <span class="keyword">const</span>* <a class="code hl_variable" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#ab18117c250789eba3695a6fbad518ce6">accounthash1</a> =</div>
-<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>        <span class="stringliteral">&quot;BD8A3D72CA73DDE887AD63666EC2BAD07875CBA997A102579B5B95ECDFFEAED8&quot;</span>;</div>
-<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span> </div>
-<div class="line"><a id="l00040" name="l00040"></a><span class="lineno"><a class="line" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#abcecdcec6422dc1575eed82af80462f7">   40</a></span>    <span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keywordtype">char</span> <span class="keyword">const</span>* <a class="code hl_variable" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#abcecdcec6422dc1575eed82af80462f7">zerohash</a> =</div>
-<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>        <span class="stringliteral">&quot;0000000000000000000000000000000000000000000000000000000000000000&quot;</span>;</div>
-<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span> </div>
-<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span><span class="keyword">public</span>:</div>
-<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>    <span class="keywordtype">void</span></div>
-<div class="line"><a id="l00045" name="l00045"></a><span class="lineno"><a class="line" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#adffe3428c832dbc95708058464df33a0">   45</a></span>    <a class="code hl_function" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#adffe3428c832dbc95708058464df33a0">testLedgerRequest</a>()</div>
-<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>    {</div>
-<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>        <span class="keyword">using namespace </span>test::jtx;</div>
-<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span> </div>
-<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>        Env env(*<span class="keyword">this</span>);</div>
+<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span><span class="keyword">namespace </span>RPC {</div>
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span> </div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno"><a class="line" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html">   35</a></span><span class="keyword">class </span><a class="code hl_class" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html">LedgerRequestRPC_test</a> : <span class="keyword">public</span> <a class="code hl_class" href="classbeast_1_1unit__test_1_1suite.html">beast::unit_test::suite</a></div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>{</div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno"><a class="line" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#a79be30726cf516e2255165cb9be0de32">   37</a></span>    <span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keywordtype">char</span> <span class="keyword">const</span>* <a class="code hl_variable" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#a79be30726cf516e2255165cb9be0de32">hash1</a> =</div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>        <span class="stringliteral">&quot;3020EB9E7BE24EF7D7A060CB051583EC117384636D1781AFB5B87F3E348DA489&quot;</span>;</div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno"><a class="line" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#ab18117c250789eba3695a6fbad518ce6">   39</a></span>    <span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keywordtype">char</span> <span class="keyword">const</span>* <a class="code hl_variable" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#ab18117c250789eba3695a6fbad518ce6">accounthash1</a> =</div>
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>        <span class="stringliteral">&quot;BD8A3D72CA73DDE887AD63666EC2BAD07875CBA997A102579B5B95ECDFFEAED8&quot;</span>;</div>
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span> </div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno"><a class="line" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#abcecdcec6422dc1575eed82af80462f7">   42</a></span>    <span class="keyword">static</span> <span class="keyword">constexpr</span> <span class="keywordtype">char</span> <span class="keyword">const</span>* <a class="code hl_variable" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#abcecdcec6422dc1575eed82af80462f7">zerohash</a> =</div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>        <span class="stringliteral">&quot;0000000000000000000000000000000000000000000000000000000000000000&quot;</span>;</div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span> </div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span><span class="keyword">public</span>:</div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>    <span class="keywordtype">void</span></div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno"><a class="line" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#adffe3428c832dbc95708058464df33a0">   47</a></span>    <a class="code hl_function" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#adffe3428c832dbc95708058464df33a0">testLedgerRequest</a>()</div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>    {</div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>        <span class="keyword">using namespace </span>test::jtx;</div>
 <div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span> </div>
-<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>        env.close();</div>
-<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>        env.close();</div>
-<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>        BEAST_EXPECT(env.current()-&gt;info().seq == 5);</div>
-<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span> </div>
-<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>        {</div>
-<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>            <span class="comment">// arbitrary text is converted to 0.</span></div>
-<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>            <span class="keyword">auto</span> <span class="keyword">const</span> result = env.rpc(<span class="stringliteral">&quot;ledger_request&quot;</span>, <span class="stringliteral">&quot;arbitrary_text&quot;</span>);</div>
-<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>            BEAST_EXPECT(</div>
-<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>                <a class="code hl_function" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">RPC::contains_error</a>(result[jss::result]) &amp;&amp;</div>
-<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>                result[jss::result][jss::error_message] ==</div>
-<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>                    <span class="stringliteral">&quot;Ledger index too small&quot;</span>);</div>
-<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>        }</div>
-<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span> </div>
-<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>        {</div>
-<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>            <span class="keyword">auto</span> <span class="keyword">const</span> result = env.rpc(<span class="stringliteral">&quot;ledger_request&quot;</span>, <span class="stringliteral">&quot;-1&quot;</span>);</div>
-<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>            BEAST_EXPECT(</div>
-<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>                <a class="code hl_function" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">RPC::contains_error</a>(result[jss::result]) &amp;&amp;</div>
-<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>                result[jss::result][jss::error_message] ==</div>
-<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>                    <span class="stringliteral">&quot;Ledger index too small&quot;</span>);</div>
-<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>        }</div>
-<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span> </div>
-<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>        {</div>
-<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>            <span class="keyword">auto</span> <span class="keyword">const</span> result = env.rpc(<span class="stringliteral">&quot;ledger_request&quot;</span>, <span class="stringliteral">&quot;0&quot;</span>);</div>
-<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>            BEAST_EXPECT(</div>
-<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>                <a class="code hl_function" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">RPC::contains_error</a>(result[jss::result]) &amp;&amp;</div>
-<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>                result[jss::result][jss::error_message] ==</div>
-<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>                    <span class="stringliteral">&quot;Ledger index too small&quot;</span>);</div>
-<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>        }</div>
-<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span> </div>
-<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>        {</div>
-<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>            <span class="keyword">auto</span> <span class="keyword">const</span> result = env.rpc(<span class="stringliteral">&quot;ledger_request&quot;</span>, <span class="stringliteral">&quot;1&quot;</span>);</div>
-<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>            BEAST_EXPECT(</div>
-<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>                !<a class="code hl_function" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">RPC::contains_error</a>(result[jss::result]) &amp;&amp;</div>
-<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>                result[jss::result][jss::ledger_index] == 1 &amp;&amp;</div>
-<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>                result[jss::result].isMember(jss::ledger));</div>
-<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>            BEAST_EXPECT(</div>
-<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>                result[jss::result][jss::ledger].isMember(jss::ledger_hash) &amp;&amp;</div>
-<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>                result[jss::result][jss::ledger][jss::ledger_hash].isString());</div>
-<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>        }</div>
-<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span> </div>
-<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>        {</div>
-<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>            <span class="keyword">auto</span> <span class="keyword">const</span> result = env.rpc(<span class="stringliteral">&quot;ledger_request&quot;</span>, <span class="stringliteral">&quot;2&quot;</span>);</div>
-<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>            BEAST_EXPECT(</div>
-<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>                !<a class="code hl_function" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">RPC::contains_error</a>(result[jss::result]) &amp;&amp;</div>
-<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>                result[jss::result][jss::ledger_index] == 2 &amp;&amp;</div>
-<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>                result[jss::result].isMember(jss::ledger));</div>
-<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>            BEAST_EXPECT(</div>
-<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>                result[jss::result][jss::ledger].isMember(jss::ledger_hash) &amp;&amp;</div>
-<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span>                result[jss::result][jss::ledger][jss::ledger_hash].isString());</div>
-<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>        }</div>
-<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span> </div>
-<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>        {</div>
-<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>            <span class="keyword">auto</span> <span class="keyword">const</span> result = env.rpc(<span class="stringliteral">&quot;ledger_request&quot;</span>, <span class="stringliteral">&quot;3&quot;</span>);</div>
-<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>            BEAST_EXPECT(</div>
-<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>                !<a class="code hl_function" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">RPC::contains_error</a>(result[jss::result]) &amp;&amp;</div>
-<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>                result[jss::result][jss::ledger_index] == 3 &amp;&amp;</div>
-<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>                result[jss::result].isMember(jss::ledger));</div>
-<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>            BEAST_EXPECT(</div>
-<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span>                result[jss::result][jss::ledger].isMember(jss::ledger_hash) &amp;&amp;</div>
-<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>                result[jss::result][jss::ledger][jss::ledger_hash].isString());</div>
-<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span> </div>
-<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span>            <span class="keyword">auto</span> <span class="keyword">const</span> ledgerHash =</div>
-<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span>                result[jss::result][jss::ledger][jss::ledger_hash].asString();</div>
-<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span> </div>
-<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>            {</div>
-<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>                <span class="keyword">auto</span> <span class="keyword">const</span> r = env.rpc(<span class="stringliteral">&quot;ledger_request&quot;</span>, ledgerHash);</div>
-<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>                BEAST_EXPECT(</div>
-<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>                    !<a class="code hl_function" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">RPC::contains_error</a>(r[jss::result]) &amp;&amp;</div>
-<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>                    r[jss::result][jss::ledger_index] == 3 &amp;&amp;</div>
-<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>                    r[jss::result].isMember(jss::ledger));</div>
-<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>                BEAST_EXPECT(</div>
-<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>                    r[jss::result][jss::ledger].isMember(jss::ledger_hash) &amp;&amp;</div>
-<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>                    r[jss::result][jss::ledger][jss::ledger_hash] ==</div>
-<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>                        ledgerHash);</div>
-<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>            }</div>
-<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span>        }</div>
-<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span> </div>
-<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>        {</div>
-<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> ledgerHash(64, <span class="charliteral">&#39;q&#39;</span>);</div>
-<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span> </div>
-<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span>            <span class="keyword">auto</span> <span class="keyword">const</span> result = env.rpc(<span class="stringliteral">&quot;ledger_request&quot;</span>, ledgerHash);</div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>        Env env(*<span class="keyword">this</span>);</div>
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span> </div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>        env.close();</div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>        env.close();</div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>        BEAST_EXPECT(env.current()-&gt;info().seq == 5);</div>
+<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span> </div>
+<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>        {</div>
+<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>            <span class="comment">// arbitrary text is converted to 0.</span></div>
+<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>            <span class="keyword">auto</span> <span class="keyword">const</span> result = env.rpc(<span class="stringliteral">&quot;ledger_request&quot;</span>, <span class="stringliteral">&quot;arbitrary_text&quot;</span>);</div>
+<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>            BEAST_EXPECT(</div>
+<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>                <a class="code hl_function" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">RPC::contains_error</a>(result[jss::result]) &amp;&amp;</div>
+<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>                result[jss::result][jss::error_message] ==</div>
+<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>                    <span class="stringliteral">&quot;Ledger index too small&quot;</span>);</div>
+<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>        }</div>
+<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span> </div>
+<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>        {</div>
+<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>            <span class="keyword">auto</span> <span class="keyword">const</span> result = env.rpc(<span class="stringliteral">&quot;ledger_request&quot;</span>, <span class="stringliteral">&quot;-1&quot;</span>);</div>
+<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>            BEAST_EXPECT(</div>
+<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>                <a class="code hl_function" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">RPC::contains_error</a>(result[jss::result]) &amp;&amp;</div>
+<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>                result[jss::result][jss::error_message] ==</div>
+<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>                    <span class="stringliteral">&quot;Ledger index too small&quot;</span>);</div>
+<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>        }</div>
+<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span> </div>
+<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>        {</div>
+<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>            <span class="keyword">auto</span> <span class="keyword">const</span> result = env.rpc(<span class="stringliteral">&quot;ledger_request&quot;</span>, <span class="stringliteral">&quot;0&quot;</span>);</div>
+<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>            BEAST_EXPECT(</div>
+<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>                <a class="code hl_function" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">RPC::contains_error</a>(result[jss::result]) &amp;&amp;</div>
+<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>                result[jss::result][jss::error_message] ==</div>
+<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>                    <span class="stringliteral">&quot;Ledger index too small&quot;</span>);</div>
+<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>        }</div>
+<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span> </div>
+<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>        {</div>
+<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>            <span class="keyword">auto</span> <span class="keyword">const</span> result = env.rpc(<span class="stringliteral">&quot;ledger_request&quot;</span>, <span class="stringliteral">&quot;1&quot;</span>);</div>
+<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>            BEAST_EXPECT(</div>
+<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>                !<a class="code hl_function" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">RPC::contains_error</a>(result[jss::result]) &amp;&amp;</div>
+<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>                result[jss::result][jss::ledger_index] == 1 &amp;&amp;</div>
+<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>                result[jss::result].isMember(jss::ledger));</div>
+<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>            BEAST_EXPECT(</div>
+<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>                result[jss::result][jss::ledger].isMember(jss::ledger_hash) &amp;&amp;</div>
+<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>                result[jss::result][jss::ledger][jss::ledger_hash].isString());</div>
+<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>        }</div>
+<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span> </div>
+<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>        {</div>
+<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>            <span class="keyword">auto</span> <span class="keyword">const</span> result = env.rpc(<span class="stringliteral">&quot;ledger_request&quot;</span>, <span class="stringliteral">&quot;2&quot;</span>);</div>
+<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>            BEAST_EXPECT(</div>
+<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>                !<a class="code hl_function" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">RPC::contains_error</a>(result[jss::result]) &amp;&amp;</div>
+<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>                result[jss::result][jss::ledger_index] == 2 &amp;&amp;</div>
+<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>                result[jss::result].isMember(jss::ledger));</div>
+<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span>            BEAST_EXPECT(</div>
+<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>                result[jss::result][jss::ledger].isMember(jss::ledger_hash) &amp;&amp;</div>
+<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>                result[jss::result][jss::ledger][jss::ledger_hash].isString());</div>
+<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>        }</div>
+<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span> </div>
+<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>        {</div>
+<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>            <span class="keyword">auto</span> <span class="keyword">const</span> result = env.rpc(<span class="stringliteral">&quot;ledger_request&quot;</span>, <span class="stringliteral">&quot;3&quot;</span>);</div>
+<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>            BEAST_EXPECT(</div>
+<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>                !<a class="code hl_function" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">RPC::contains_error</a>(result[jss::result]) &amp;&amp;</div>
+<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>                result[jss::result][jss::ledger_index] == 3 &amp;&amp;</div>
+<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span>                result[jss::result].isMember(jss::ledger));</div>
+<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>            BEAST_EXPECT(</div>
+<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>                result[jss::result][jss::ledger].isMember(jss::ledger_hash) &amp;&amp;</div>
+<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span>                result[jss::result][jss::ledger][jss::ledger_hash].isString());</div>
+<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span> </div>
+<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>            <span class="keyword">auto</span> <span class="keyword">const</span> ledgerHash =</div>
+<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>                result[jss::result][jss::ledger][jss::ledger_hash].asString();</div>
+<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span> </div>
+<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>            {</div>
+<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>                <span class="keyword">auto</span> <span class="keyword">const</span> r = env.rpc(<span class="stringliteral">&quot;ledger_request&quot;</span>, ledgerHash);</div>
+<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>                BEAST_EXPECT(</div>
+<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>                    !<a class="code hl_function" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">RPC::contains_error</a>(r[jss::result]) &amp;&amp;</div>
+<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>                    r[jss::result][jss::ledger_index] == 3 &amp;&amp;</div>
+<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>                    r[jss::result].isMember(jss::ledger));</div>
+<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>                BEAST_EXPECT(</div>
+<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>                    r[jss::result][jss::ledger].isMember(jss::ledger_hash) &amp;&amp;</div>
+<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>                    r[jss::result][jss::ledger][jss::ledger_hash] ==</div>
+<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span>                        ledgerHash);</div>
+<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>            }</div>
+<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>        }</div>
+<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span> </div>
+<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span>        {</div>
+<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> ledgerHash(64, <span class="charliteral">&#39;q&#39;</span>);</div>
 <div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span> </div>
-<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span>            BEAST_EXPECT(</div>
-<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>                <a class="code hl_function" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">RPC::contains_error</a>(result[jss::result]) &amp;&amp;</div>
-<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span>                result[jss::result][jss::error_message] ==</div>
-<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span>                    <span class="stringliteral">&quot;Invalid field &#39;ledger_hash&#39;.&quot;</span>);</div>
-<div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span>        }</div>
-<div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span> </div>
-<div class="line"><a id="l00139" name="l00139"></a><span class="lineno">  139</span>        {</div>
-<div class="line"><a id="l00140" name="l00140"></a><span class="lineno">  140</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> ledgerHash(64, <span class="charliteral">&#39;1&#39;</span>);</div>
-<div class="line"><a id="l00141" name="l00141"></a><span class="lineno">  141</span> </div>
-<div class="line"><a id="l00142" name="l00142"></a><span class="lineno">  142</span>            <span class="keyword">auto</span> <span class="keyword">const</span> result = env.rpc(<span class="stringliteral">&quot;ledger_request&quot;</span>, ledgerHash);</div>
+<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span>            <span class="keyword">auto</span> <span class="keyword">const</span> result = env.rpc(<span class="stringliteral">&quot;ledger_request&quot;</span>, ledgerHash);</div>
+<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span> </div>
+<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span>            BEAST_EXPECT(</div>
+<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span>                <a class="code hl_function" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">RPC::contains_error</a>(result[jss::result]) &amp;&amp;</div>
+<div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span>                result[jss::result][jss::error_message] ==</div>
+<div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span>                    <span class="stringliteral">&quot;Invalid field &#39;ledger_hash&#39;.&quot;</span>);</div>
+<div class="line"><a id="l00139" name="l00139"></a><span class="lineno">  139</span>        }</div>
+<div class="line"><a id="l00140" name="l00140"></a><span class="lineno">  140</span> </div>
+<div class="line"><a id="l00141" name="l00141"></a><span class="lineno">  141</span>        {</div>
+<div class="line"><a id="l00142" name="l00142"></a><span class="lineno">  142</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> ledgerHash(64, <span class="charliteral">&#39;1&#39;</span>);</div>
 <div class="line"><a id="l00143" name="l00143"></a><span class="lineno">  143</span> </div>
-<div class="line"><a id="l00144" name="l00144"></a><span class="lineno">  144</span>            BEAST_EXPECT(</div>
-<div class="line"><a id="l00145" name="l00145"></a><span class="lineno">  145</span>                !<a class="code hl_function" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">RPC::contains_error</a>(result[jss::result]) &amp;&amp;</div>
-<div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span>                result[jss::result][jss::have_header] == <span class="keyword">false</span>);</div>
-<div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span>        }</div>
-<div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span> </div>
-<div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span>        {</div>
-<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span>            <span class="keyword">auto</span> <span class="keyword">const</span> result = env.rpc(<span class="stringliteral">&quot;ledger_request&quot;</span>, <span class="stringliteral">&quot;4&quot;</span>);</div>
-<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span>            BEAST_EXPECT(</div>
-<div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span>                <a class="code hl_function" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">RPC::contains_error</a>(result[jss::result]) &amp;&amp;</div>
-<div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span>                result[jss::result][jss::error_message] ==</div>
-<div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span>                    <span class="stringliteral">&quot;Ledger index too large&quot;</span>);</div>
-<div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span>        }</div>
-<div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span> </div>
-<div class="line"><a id="l00157" name="l00157"></a><span class="lineno">  157</span>        {</div>
-<div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span>            <span class="keyword">auto</span> <span class="keyword">const</span> result = env.rpc(<span class="stringliteral">&quot;ledger_request&quot;</span>, <span class="stringliteral">&quot;5&quot;</span>);</div>
-<div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span>            BEAST_EXPECT(</div>
-<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span>                <a class="code hl_function" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">RPC::contains_error</a>(result[jss::result]) &amp;&amp;</div>
-<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span>                result[jss::result][jss::error_message] ==</div>
-<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span>                    <span class="stringliteral">&quot;Ledger index too large&quot;</span>);</div>
-<div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span>        }</div>
-<div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span>    }</div>
-<div class="line"><a id="l00165" name="l00165"></a><span class="lineno">  165</span> </div>
-<div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span>    <span class="keywordtype">void</span></div>
-<div class="line"><a id="l00167" name="l00167"></a><span class="lineno"><a class="line" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#a4a1c84ec940b5345b8a4eb5c3c10d2eb">  167</a></span>    <a class="code hl_function" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#a4a1c84ec940b5345b8a4eb5c3c10d2eb">testEvolution</a>()</div>
-<div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span>    {</div>
-<div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span>        <span class="keyword">using namespace </span>test::jtx;</div>
-<div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span>        Env env{*<span class="keyword">this</span>, <a class="code hl_class" href="classripple_1_1FeatureBitset.html">FeatureBitset</a>{}};  <span class="comment">// the hashes being checked below</span></div>
-<div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span>                                          <span class="comment">// assume no amendments</span></div>
-<div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span>        Account <span class="keyword">const</span> gw{<span class="stringliteral">&quot;gateway&quot;</span>};</div>
-<div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span>        <span class="keyword">auto</span> <span class="keyword">const</span> USD = gw[<span class="stringliteral">&quot;USD&quot;</span>];</div>
-<div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span>        env.fund(XRP(100000), gw);</div>
-<div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span>        env.close();</div>
-<div class="line"><a id="l00176" name="l00176"></a><span class="lineno">  176</span> </div>
-<div class="line"><a id="l00177" name="l00177"></a><span class="lineno">  177</span>        env.memoize(<span class="stringliteral">&quot;bob&quot;</span>);</div>
-<div class="line"><a id="l00178" name="l00178"></a><span class="lineno">  178</span>        env.fund(XRP(1000), <span class="stringliteral">&quot;bob&quot;</span>);</div>
-<div class="line"><a id="l00179" name="l00179"></a><span class="lineno">  179</span>        env.close();</div>
-<div class="line"><a id="l00180" name="l00180"></a><span class="lineno">  180</span> </div>
-<div class="line"><a id="l00181" name="l00181"></a><span class="lineno">  181</span>        env.memoize(<span class="stringliteral">&quot;alice&quot;</span>);</div>
-<div class="line"><a id="l00182" name="l00182"></a><span class="lineno">  182</span>        env.fund(XRP(1000), <span class="stringliteral">&quot;alice&quot;</span>);</div>
-<div class="line"><a id="l00183" name="l00183"></a><span class="lineno">  183</span>        env.close();</div>
-<div class="line"><a id="l00184" name="l00184"></a><span class="lineno">  184</span> </div>
-<div class="line"><a id="l00185" name="l00185"></a><span class="lineno">  185</span>        env.memoize(<span class="stringliteral">&quot;carol&quot;</span>);</div>
-<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span>        env.fund(XRP(1000), <span class="stringliteral">&quot;carol&quot;</span>);</div>
-<div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span>        env.close();</div>
-<div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span> </div>
-<div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span>        <span class="keyword">auto</span> result = env.rpc(<span class="stringliteral">&quot;ledger_request&quot;</span>, <span class="stringliteral">&quot;1&quot;</span>)[jss::result];</div>
-<div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span>        BEAST_EXPECT(result[jss::ledger][jss::ledger_index] == <span class="stringliteral">&quot;1&quot;</span>);</div>
-<div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span>            result[jss::ledger][jss::total_coins] == <span class="stringliteral">&quot;100000000000000000&quot;</span>);</div>
-<div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span>        BEAST_EXPECT(result[jss::ledger][jss::closed] == <span class="keyword">true</span>);</div>
-<div class="line"><a id="l00194" name="l00194"></a><span class="lineno">  194</span>        BEAST_EXPECT(result[jss::ledger][jss::ledger_hash] == <a class="code hl_variable" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#a79be30726cf516e2255165cb9be0de32">hash1</a>);</div>
-<div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span>        BEAST_EXPECT(result[jss::ledger][jss::parent_hash] == <a class="code hl_variable" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#abcecdcec6422dc1575eed82af80462f7">zerohash</a>);</div>
-<div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span>        BEAST_EXPECT(result[jss::ledger][jss::account_hash] == <a class="code hl_variable" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#ab18117c250789eba3695a6fbad518ce6">accounthash1</a>);</div>
-<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span>        BEAST_EXPECT(result[jss::ledger][jss::transaction_hash] == <a class="code hl_variable" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#abcecdcec6422dc1575eed82af80462f7">zerohash</a>);</div>
-<div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span> </div>
-<div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span>        result = env.rpc(<span class="stringliteral">&quot;ledger_request&quot;</span>, <span class="stringliteral">&quot;2&quot;</span>)[jss::result];</div>
-<div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span>        <span class="keyword">constexpr</span> <span class="keywordtype">char</span> <span class="keyword">const</span>* hash2 =</div>
-<div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span>            <span class="stringliteral">&quot;CCC3B3E88CCAC17F1BE6B4A648A55999411F19E3FE55EB721960EB0DF28EDDA5&quot;</span>;</div>
-<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span>        BEAST_EXPECT(result[jss::ledger][jss::ledger_index] == <span class="stringliteral">&quot;2&quot;</span>);</div>
-<div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span>            result[jss::ledger][jss::total_coins] == <span class="stringliteral">&quot;100000000000000000&quot;</span>);</div>
-<div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span>        BEAST_EXPECT(result[jss::ledger][jss::closed] == <span class="keyword">true</span>);</div>
-<div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span>        BEAST_EXPECT(result[jss::ledger][jss::ledger_hash] == hash2);</div>
-<div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span>        BEAST_EXPECT(result[jss::ledger][jss::parent_hash] == <a class="code hl_variable" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#a79be30726cf516e2255165cb9be0de32">hash1</a>);</div>
-<div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span>            result[jss::ledger][jss::account_hash] ==</div>
-<div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span>            <span class="stringliteral">&quot;3C834285F7F464FBE99AFEB84D354A968EB2CAA24523FF26797A973D906A3D29&quot;</span>);</div>
-<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span>        BEAST_EXPECT(result[jss::ledger][jss::transaction_hash] == <a class="code hl_variable" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#abcecdcec6422dc1575eed82af80462f7">zerohash</a>);</div>
-<div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span> </div>
-<div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span>        result = env.rpc(<span class="stringliteral">&quot;ledger_request&quot;</span>, <span class="stringliteral">&quot;3&quot;</span>)[jss::result];</div>
-<div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span>        <span class="keyword">constexpr</span> <span class="keywordtype">char</span> <span class="keyword">const</span>* hash3 =</div>
-<div class="line"><a id="l00215" name="l00215"></a><span class="lineno">  215</span>            <span class="stringliteral">&quot;8D631B20BC989AF568FBA97375290544B0703A5ADC1CF9E9053580461690C9EE&quot;</span>;</div>
-<div class="line"><a id="l00216" name="l00216"></a><span class="lineno">  216</span>        BEAST_EXPECT(result[jss::ledger][jss::ledger_index] == <span class="stringliteral">&quot;3&quot;</span>);</div>
-<div class="line"><a id="l00217" name="l00217"></a><span class="lineno">  217</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00218" name="l00218"></a><span class="lineno">  218</span>            result[jss::ledger][jss::total_coins] == <span class="stringliteral">&quot;99999999999999980&quot;</span>);</div>
-<div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span>        BEAST_EXPECT(result[jss::ledger][jss::closed] == <span class="keyword">true</span>);</div>
-<div class="line"><a id="l00220" name="l00220"></a><span class="lineno">  220</span>        BEAST_EXPECT(result[jss::ledger][jss::ledger_hash] == hash3);</div>
-<div class="line"><a id="l00221" name="l00221"></a><span class="lineno">  221</span>        BEAST_EXPECT(result[jss::ledger][jss::parent_hash] == hash2);</div>
-<div class="line"><a id="l00222" name="l00222"></a><span class="lineno">  222</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00223" name="l00223"></a><span class="lineno">  223</span>            result[jss::ledger][jss::account_hash] ==</div>
-<div class="line"><a id="l00224" name="l00224"></a><span class="lineno">  224</span>            <span class="stringliteral">&quot;BC9EF2A16BFF80BCFABA6FA84688D858D33BD0FA0435CAA9DF6DA4105A39A29E&quot;</span>);</div>
-<div class="line"><a id="l00225" name="l00225"></a><span class="lineno">  225</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span>            result[jss::ledger][jss::transaction_hash] ==</div>
-<div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span>            <span class="stringliteral">&quot;0213EC486C058B3942FBE3DAC6839949A5C5B02B8B4244C8998EFDF04DBD8222&quot;</span>);</div>
-<div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span> </div>
-<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span>        result = env.rpc(<span class="stringliteral">&quot;ledger_request&quot;</span>, <span class="stringliteral">&quot;4&quot;</span>)[jss::result];</div>
-<div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span>        <span class="keyword">constexpr</span> <span class="keywordtype">char</span> <span class="keyword">const</span>* hash4 =</div>
-<div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span>            <span class="stringliteral">&quot;1A8E7098B23597E73094DADA58C9D62F3AB93A12C6F7666D56CA85A6CFDE530F&quot;</span>;</div>
-<div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span>        BEAST_EXPECT(result[jss::ledger][jss::ledger_index] == <span class="stringliteral">&quot;4&quot;</span>);</div>
-<div class="line"><a id="l00233" name="l00233"></a><span class="lineno">  233</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span>            result[jss::ledger][jss::total_coins] == <span class="stringliteral">&quot;99999999999999960&quot;</span>);</div>
-<div class="line"><a id="l00235" name="l00235"></a><span class="lineno">  235</span>        BEAST_EXPECT(result[jss::ledger][jss::closed] == <span class="keyword">true</span>);</div>
-<div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span>        BEAST_EXPECT(result[jss::ledger][jss::ledger_hash] == hash4);</div>
-<div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span>        BEAST_EXPECT(result[jss::ledger][jss::parent_hash] == hash3);</div>
-<div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span>            result[jss::ledger][jss::account_hash] ==</div>
-<div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span>            <span class="stringliteral">&quot;C690188F123C91355ADA8BDF4AC5B5C927076D3590C215096868A5255264C6DD&quot;</span>);</div>
-<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span>            result[jss::ledger][jss::transaction_hash] ==</div>
-<div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span>            <span class="stringliteral">&quot;3CBDB8F42E04333E1642166BFB93AC9A7E1C6C067092CD5D881D6F3AB3D67E76&quot;</span>);</div>
-<div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span> </div>
-<div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span>        result = env.rpc(<span class="stringliteral">&quot;ledger_request&quot;</span>, <span class="stringliteral">&quot;5&quot;</span>)[jss::result];</div>
-<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span>        <span class="keyword">constexpr</span> <span class="keywordtype">char</span> <span class="keyword">const</span>* hash5 =</div>
-<div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span>            <span class="stringliteral">&quot;C6A222D71AE65D7B4F240009EAD5DEB20D7EEDE5A4064F28BBDBFEEB6FBE48E5&quot;</span>;</div>
-<div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span>        BEAST_EXPECT(result[jss::ledger][jss::ledger_index] == <span class="stringliteral">&quot;5&quot;</span>);</div>
-<div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span>            result[jss::ledger][jss::total_coins] == <span class="stringliteral">&quot;99999999999999940&quot;</span>);</div>
-<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span>        BEAST_EXPECT(result[jss::ledger][jss::closed] == <span class="keyword">true</span>);</div>
-<div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span>        BEAST_EXPECT(result[jss::ledger][jss::ledger_hash] == hash5);</div>
-<div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span>        BEAST_EXPECT(result[jss::ledger][jss::parent_hash] == hash4);</div>
-<div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00255" name="l00255"></a><span class="lineno">  255</span>            result[jss::ledger][jss::account_hash] ==</div>
-<div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span>            <span class="stringliteral">&quot;EA81CD9D36740736F00CB747E0D0E32D3C10B695823D961F0FB9A1CE7133DD4D&quot;</span>);</div>
-<div class="line"><a id="l00257" name="l00257"></a><span class="lineno">  257</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span>            result[jss::ledger][jss::transaction_hash] ==</div>
-<div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span>            <span class="stringliteral">&quot;C3D086CD6BDB9E97AD1D513B2C049EF2840BD21D0B3E22D84EBBB89B6D2EF59D&quot;</span>);</div>
-<div class="line"><a id="l00260" name="l00260"></a><span class="lineno">  260</span> </div>
-<div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span>        result = env.rpc(<span class="stringliteral">&quot;ledger_request&quot;</span>, <span class="stringliteral">&quot;6&quot;</span>)[jss::result];</div>
-<div class="line"><a id="l00262" name="l00262"></a><span class="lineno">  262</span>        BEAST_EXPECT(result[jss::error] == <span class="stringliteral">&quot;invalidParams&quot;</span>);</div>
-<div class="line"><a id="l00263" name="l00263"></a><span class="lineno">  263</span>        BEAST_EXPECT(result[jss::status] == <span class="stringliteral">&quot;error&quot;</span>);</div>
-<div class="line"><a id="l00264" name="l00264"></a><span class="lineno">  264</span>        BEAST_EXPECT(result[jss::error_message] == <span class="stringliteral">&quot;Ledger index too large&quot;</span>);</div>
-<div class="line"><a id="l00265" name="l00265"></a><span class="lineno">  265</span>    }</div>
-<div class="line"><a id="l00266" name="l00266"></a><span class="lineno">  266</span> </div>
-<div class="line"><a id="l00267" name="l00267"></a><span class="lineno">  267</span>    <span class="keywordtype">void</span></div>
-<div class="line"><a id="l00268" name="l00268"></a><span class="lineno"><a class="line" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#ad3ab9ff7582a3ff96268bfa97689e095">  268</a></span>    <a class="code hl_function" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#ad3ab9ff7582a3ff96268bfa97689e095">testBadInput</a>(<span class="keywordtype">unsigned</span> <a class="code hl_variable" href="namespaceripple_1_1RPC.html#a47dbdaa21d9c40b369424e671ccd7e20">apiVersion</a>)</div>
-<div class="line"><a id="l00269" name="l00269"></a><span class="lineno">  269</span>    {</div>
-<div class="line"><a id="l00270" name="l00270"></a><span class="lineno">  270</span>        <span class="keyword">using namespace </span>test::jtx;</div>
-<div class="line"><a id="l00271" name="l00271"></a><span class="lineno">  271</span>        Env env{*<span class="keyword">this</span>};</div>
-<div class="line"><a id="l00272" name="l00272"></a><span class="lineno">  272</span>        Account <span class="keyword">const</span> gw{<span class="stringliteral">&quot;gateway&quot;</span>};</div>
-<div class="line"><a id="l00273" name="l00273"></a><span class="lineno">  273</span>        <span class="keyword">auto</span> <span class="keyword">const</span> USD = gw[<span class="stringliteral">&quot;USD&quot;</span>];</div>
-<div class="line"><a id="l00274" name="l00274"></a><span class="lineno">  274</span>        env.fund(XRP(100000), gw);</div>
-<div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span>        env.close();</div>
-<div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span> </div>
-<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span>        <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> jvParams;</div>
-<div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span>        jvParams[jss::ledger_hash] =</div>
-<div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span>            <span class="stringliteral">&quot;AB868A6CFEEC779C2FF845C0AF00A642259986AF40C01976A7F842B6918936C7&quot;</span>;</div>
-<div class="line"><a id="l00280" name="l00280"></a><span class="lineno">  280</span>        jvParams[jss::ledger_index] = <span class="stringliteral">&quot;1&quot;</span>;</div>
-<div class="line"><a id="l00281" name="l00281"></a><span class="lineno">  281</span>        <span class="keyword">auto</span> result = env.rpc(</div>
-<div class="line"><a id="l00282" name="l00282"></a><span class="lineno">  282</span>            <span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;ledger_request&quot;</span>, jvParams.<a class="code hl_function" href="classJson_1_1Value.html#a3696d34c1a1833742b4bf8e5b247f125">toStyledString</a>())[jss::result];</div>
-<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span>        BEAST_EXPECT(result[jss::error] == <span class="stringliteral">&quot;invalidParams&quot;</span>);</div>
-<div class="line"><a id="l00284" name="l00284"></a><span class="lineno">  284</span>        BEAST_EXPECT(result[jss::status] == <span class="stringliteral">&quot;error&quot;</span>);</div>
-<div class="line"><a id="l00285" name="l00285"></a><span class="lineno">  285</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span>            result[jss::error_message] ==</div>
-<div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span>            <span class="stringliteral">&quot;Exactly one of ledger_hash and ledger_index can be set.&quot;</span>);</div>
-<div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span> </div>
-<div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span>        <span class="comment">// the purpose in this test is to force the ledger expiration/out of</span></div>
-<div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span>        <span class="comment">// date check to trigger</span></div>
-<div class="line"><a id="l00291" name="l00291"></a><span class="lineno">  291</span>        env.timeKeeper().adjustCloseTime(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">weeks</a>{3});</div>
-<div class="line"><a id="l00292" name="l00292"></a><span class="lineno">  292</span>        result = env.rpc(<a class="code hl_variable" href="namespaceripple_1_1RPC.html#a47dbdaa21d9c40b369424e671ccd7e20">apiVersion</a>, <span class="stringliteral">&quot;ledger_request&quot;</span>, <span class="stringliteral">&quot;1&quot;</span>)[jss::result];</div>
-<div class="line"><a id="l00293" name="l00293"></a><span class="lineno">  293</span>        BEAST_EXPECT(result[jss::status] == <span class="stringliteral">&quot;error&quot;</span>);</div>
-<div class="line"><a id="l00294" name="l00294"></a><span class="lineno">  294</span>        <span class="keywordflow">if</span> (<a class="code hl_variable" href="namespaceripple_1_1RPC.html#a47dbdaa21d9c40b369424e671ccd7e20">apiVersion</a> == 1)</div>
-<div class="line"><a id="l00295" name="l00295"></a><span class="lineno">  295</span>        {</div>
-<div class="line"><a id="l00296" name="l00296"></a><span class="lineno">  296</span>            BEAST_EXPECT(result[jss::error] == <span class="stringliteral">&quot;noCurrent&quot;</span>);</div>
-<div class="line"><a id="l00297" name="l00297"></a><span class="lineno">  297</span>            BEAST_EXPECT(</div>
-<div class="line"><a id="l00298" name="l00298"></a><span class="lineno">  298</span>                result[jss::error_message] == <span class="stringliteral">&quot;Current ledger is unavailable.&quot;</span>);</div>
-<div class="line"><a id="l00299" name="l00299"></a><span class="lineno">  299</span>        }</div>
-<div class="line"><a id="l00300" name="l00300"></a><span class="lineno">  300</span>        <span class="keywordflow">else</span></div>
-<div class="line"><a id="l00301" name="l00301"></a><span class="lineno">  301</span>        {</div>
-<div class="line"><a id="l00302" name="l00302"></a><span class="lineno">  302</span>            BEAST_EXPECT(result[jss::error] == <span class="stringliteral">&quot;notSynced&quot;</span>);</div>
-<div class="line"><a id="l00303" name="l00303"></a><span class="lineno">  303</span>            BEAST_EXPECT(</div>
-<div class="line"><a id="l00304" name="l00304"></a><span class="lineno">  304</span>                result[jss::error_message] == <span class="stringliteral">&quot;Not synced to the network.&quot;</span>);</div>
-<div class="line"><a id="l00305" name="l00305"></a><span class="lineno">  305</span>        }</div>
-<div class="line"><a id="l00306" name="l00306"></a><span class="lineno">  306</span>    }</div>
-<div class="line"><a id="l00307" name="l00307"></a><span class="lineno">  307</span> </div>
-<div class="line"><a id="l00308" name="l00308"></a><span class="lineno">  308</span>    <span class="keywordtype">void</span></div>
-<div class="line"><a id="l00309" name="l00309"></a><span class="lineno"><a class="line" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#a83fbf0e72cd38857729fc12899fa5c8d">  309</a></span>    <a class="code hl_function" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#a83fbf0e72cd38857729fc12899fa5c8d">testMoreThan256Closed</a>()</div>
-<div class="line"><a id="l00310" name="l00310"></a><span class="lineno">  310</span>    {</div>
-<div class="line"><a id="l00311" name="l00311"></a><span class="lineno">  311</span>        <span class="keyword">using namespace </span>test::jtx;</div>
-<div class="line"><a id="l00312" name="l00312"></a><span class="lineno">  312</span>        <span class="keyword">using namespace </span>std::chrono_literals;</div>
-<div class="line"><a id="l00313" name="l00313"></a><span class="lineno">  313</span>        Env env{*<span class="keyword">this</span>, envconfig([](<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;Config&gt;</a> cfg) {</div>
-<div class="line"><a id="l00314" name="l00314"></a><span class="lineno">  314</span>                    cfg-&gt;NODE_SIZE = 0;</div>
-<div class="line"><a id="l00315" name="l00315"></a><span class="lineno">  315</span>                    <span class="keywordflow">return</span> cfg;</div>
-<div class="line"><a id="l00316" name="l00316"></a><span class="lineno">  316</span>                })};</div>
-<div class="line"><a id="l00317" name="l00317"></a><span class="lineno">  317</span>        Account <span class="keyword">const</span> gw{<span class="stringliteral">&quot;gateway&quot;</span>};</div>
-<div class="line"><a id="l00318" name="l00318"></a><span class="lineno">  318</span>        <span class="keyword">auto</span> <span class="keyword">const</span> USD = gw[<span class="stringliteral">&quot;USD&quot;</span>];</div>
-<div class="line"><a id="l00319" name="l00319"></a><span class="lineno">  319</span>        env.fund(XRP(100000), gw);</div>
-<div class="line"><a id="l00320" name="l00320"></a><span class="lineno">  320</span> </div>
-<div class="line"><a id="l00321" name="l00321"></a><span class="lineno">  321</span>        <span class="keywordtype">int</span> <span class="keyword">const</span> max_limit = 256;</div>
+<div class="line"><a id="l00144" name="l00144"></a><span class="lineno">  144</span>            <span class="keyword">auto</span> <span class="keyword">const</span> result = env.rpc(<span class="stringliteral">&quot;ledger_request&quot;</span>, ledgerHash);</div>
+<div class="line"><a id="l00145" name="l00145"></a><span class="lineno">  145</span> </div>
+<div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span>            BEAST_EXPECT(</div>
+<div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span>                !<a class="code hl_function" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">RPC::contains_error</a>(result[jss::result]) &amp;&amp;</div>
+<div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span>                result[jss::result][jss::have_header] == <span class="keyword">false</span>);</div>
+<div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span>        }</div>
+<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span> </div>
+<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span>        {</div>
+<div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span>            <span class="keyword">auto</span> <span class="keyword">const</span> result = env.rpc(<span class="stringliteral">&quot;ledger_request&quot;</span>, <span class="stringliteral">&quot;4&quot;</span>);</div>
+<div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span>            BEAST_EXPECT(</div>
+<div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span>                <a class="code hl_function" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">RPC::contains_error</a>(result[jss::result]) &amp;&amp;</div>
+<div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span>                result[jss::result][jss::error_message] ==</div>
+<div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span>                    <span class="stringliteral">&quot;Ledger index too large&quot;</span>);</div>
+<div class="line"><a id="l00157" name="l00157"></a><span class="lineno">  157</span>        }</div>
+<div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span> </div>
+<div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span>        {</div>
+<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span>            <span class="keyword">auto</span> <span class="keyword">const</span> result = env.rpc(<span class="stringliteral">&quot;ledger_request&quot;</span>, <span class="stringliteral">&quot;5&quot;</span>);</div>
+<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span>            BEAST_EXPECT(</div>
+<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span>                <a class="code hl_function" href="namespaceripple_1_1RPC.html#a1a79f0c33d1405fe85c40d63a49658bd">RPC::contains_error</a>(result[jss::result]) &amp;&amp;</div>
+<div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span>                result[jss::result][jss::error_message] ==</div>
+<div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span>                    <span class="stringliteral">&quot;Ledger index too large&quot;</span>);</div>
+<div class="line"><a id="l00165" name="l00165"></a><span class="lineno">  165</span>        }</div>
+<div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span>    }</div>
+<div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span> </div>
+<div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span>    <span class="keywordtype">void</span></div>
+<div class="line"><a id="l00169" name="l00169"></a><span class="lineno"><a class="line" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#a4a1c84ec940b5345b8a4eb5c3c10d2eb">  169</a></span>    <a class="code hl_function" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#a4a1c84ec940b5345b8a4eb5c3c10d2eb">testEvolution</a>()</div>
+<div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span>    {</div>
+<div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span>        <span class="keyword">using namespace </span>test::jtx;</div>
+<div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span>        Env env{*<span class="keyword">this</span>, <a class="code hl_class" href="classripple_1_1FeatureBitset.html">FeatureBitset</a>{}};  <span class="comment">// the hashes being checked below</span></div>
+<div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span>                                          <span class="comment">// assume no amendments</span></div>
+<div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span>        Account <span class="keyword">const</span> gw{<span class="stringliteral">&quot;gateway&quot;</span>};</div>
+<div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span>        <span class="keyword">auto</span> <span class="keyword">const</span> USD = gw[<span class="stringliteral">&quot;USD&quot;</span>];</div>
+<div class="line"><a id="l00176" name="l00176"></a><span class="lineno">  176</span>        env.fund(XRP(100000), gw);</div>
+<div class="line"><a id="l00177" name="l00177"></a><span class="lineno">  177</span>        env.close();</div>
+<div class="line"><a id="l00178" name="l00178"></a><span class="lineno">  178</span> </div>
+<div class="line"><a id="l00179" name="l00179"></a><span class="lineno">  179</span>        env.memoize(<span class="stringliteral">&quot;bob&quot;</span>);</div>
+<div class="line"><a id="l00180" name="l00180"></a><span class="lineno">  180</span>        env.fund(XRP(1000), <span class="stringliteral">&quot;bob&quot;</span>);</div>
+<div class="line"><a id="l00181" name="l00181"></a><span class="lineno">  181</span>        env.close();</div>
+<div class="line"><a id="l00182" name="l00182"></a><span class="lineno">  182</span> </div>
+<div class="line"><a id="l00183" name="l00183"></a><span class="lineno">  183</span>        env.memoize(<span class="stringliteral">&quot;alice&quot;</span>);</div>
+<div class="line"><a id="l00184" name="l00184"></a><span class="lineno">  184</span>        env.fund(XRP(1000), <span class="stringliteral">&quot;alice&quot;</span>);</div>
+<div class="line"><a id="l00185" name="l00185"></a><span class="lineno">  185</span>        env.close();</div>
+<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span> </div>
+<div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span>        env.memoize(<span class="stringliteral">&quot;carol&quot;</span>);</div>
+<div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span>        env.fund(XRP(1000), <span class="stringliteral">&quot;carol&quot;</span>);</div>
+<div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span>        env.close();</div>
+<div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span> </div>
+<div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span>        <span class="keyword">auto</span> result = env.rpc(<span class="stringliteral">&quot;ledger_request&quot;</span>, <span class="stringliteral">&quot;1&quot;</span>)[jss::result];</div>
+<div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span>        BEAST_EXPECT(result[jss::ledger][jss::ledger_index] == <span class="stringliteral">&quot;1&quot;</span>);</div>
+<div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00194" name="l00194"></a><span class="lineno">  194</span>            result[jss::ledger][jss::total_coins] == <span class="stringliteral">&quot;100000000000000000&quot;</span>);</div>
+<div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span>        BEAST_EXPECT(result[jss::ledger][jss::closed] == <span class="keyword">true</span>);</div>
+<div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span>        BEAST_EXPECT(result[jss::ledger][jss::ledger_hash] == <a class="code hl_variable" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#a79be30726cf516e2255165cb9be0de32">hash1</a>);</div>
+<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span>        BEAST_EXPECT(result[jss::ledger][jss::parent_hash] == <a class="code hl_variable" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#abcecdcec6422dc1575eed82af80462f7">zerohash</a>);</div>
+<div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span>        BEAST_EXPECT(result[jss::ledger][jss::account_hash] == <a class="code hl_variable" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#ab18117c250789eba3695a6fbad518ce6">accounthash1</a>);</div>
+<div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span>        BEAST_EXPECT(result[jss::ledger][jss::transaction_hash] == <a class="code hl_variable" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#abcecdcec6422dc1575eed82af80462f7">zerohash</a>);</div>
+<div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span> </div>
+<div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span>        result = env.rpc(<span class="stringliteral">&quot;ledger_request&quot;</span>, <span class="stringliteral">&quot;2&quot;</span>)[jss::result];</div>
+<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span>        <span class="keyword">constexpr</span> <span class="keywordtype">char</span> <span class="keyword">const</span>* hash2 =</div>
+<div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span>            <span class="stringliteral">&quot;CCC3B3E88CCAC17F1BE6B4A648A55999411F19E3FE55EB721960EB0DF28EDDA5&quot;</span>;</div>
+<div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span>        BEAST_EXPECT(result[jss::ledger][jss::ledger_index] == <span class="stringliteral">&quot;2&quot;</span>);</div>
+<div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span>            result[jss::ledger][jss::total_coins] == <span class="stringliteral">&quot;100000000000000000&quot;</span>);</div>
+<div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span>        BEAST_EXPECT(result[jss::ledger][jss::closed] == <span class="keyword">true</span>);</div>
+<div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span>        BEAST_EXPECT(result[jss::ledger][jss::ledger_hash] == hash2);</div>
+<div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span>        BEAST_EXPECT(result[jss::ledger][jss::parent_hash] == <a class="code hl_variable" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#a79be30726cf516e2255165cb9be0de32">hash1</a>);</div>
+<div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span>            result[jss::ledger][jss::account_hash] ==</div>
+<div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span>            <span class="stringliteral">&quot;3C834285F7F464FBE99AFEB84D354A968EB2CAA24523FF26797A973D906A3D29&quot;</span>);</div>
+<div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span>        BEAST_EXPECT(result[jss::ledger][jss::transaction_hash] == <a class="code hl_variable" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#abcecdcec6422dc1575eed82af80462f7">zerohash</a>);</div>
+<div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span> </div>
+<div class="line"><a id="l00215" name="l00215"></a><span class="lineno">  215</span>        result = env.rpc(<span class="stringliteral">&quot;ledger_request&quot;</span>, <span class="stringliteral">&quot;3&quot;</span>)[jss::result];</div>
+<div class="line"><a id="l00216" name="l00216"></a><span class="lineno">  216</span>        <span class="keyword">constexpr</span> <span class="keywordtype">char</span> <span class="keyword">const</span>* hash3 =</div>
+<div class="line"><a id="l00217" name="l00217"></a><span class="lineno">  217</span>            <span class="stringliteral">&quot;8D631B20BC989AF568FBA97375290544B0703A5ADC1CF9E9053580461690C9EE&quot;</span>;</div>
+<div class="line"><a id="l00218" name="l00218"></a><span class="lineno">  218</span>        BEAST_EXPECT(result[jss::ledger][jss::ledger_index] == <span class="stringliteral">&quot;3&quot;</span>);</div>
+<div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00220" name="l00220"></a><span class="lineno">  220</span>            result[jss::ledger][jss::total_coins] == <span class="stringliteral">&quot;99999999999999980&quot;</span>);</div>
+<div class="line"><a id="l00221" name="l00221"></a><span class="lineno">  221</span>        BEAST_EXPECT(result[jss::ledger][jss::closed] == <span class="keyword">true</span>);</div>
+<div class="line"><a id="l00222" name="l00222"></a><span class="lineno">  222</span>        BEAST_EXPECT(result[jss::ledger][jss::ledger_hash] == hash3);</div>
+<div class="line"><a id="l00223" name="l00223"></a><span class="lineno">  223</span>        BEAST_EXPECT(result[jss::ledger][jss::parent_hash] == hash2);</div>
+<div class="line"><a id="l00224" name="l00224"></a><span class="lineno">  224</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00225" name="l00225"></a><span class="lineno">  225</span>            result[jss::ledger][jss::account_hash] ==</div>
+<div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span>            <span class="stringliteral">&quot;BC9EF2A16BFF80BCFABA6FA84688D858D33BD0FA0435CAA9DF6DA4105A39A29E&quot;</span>);</div>
+<div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span>            result[jss::ledger][jss::transaction_hash] ==</div>
+<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span>            <span class="stringliteral">&quot;0213EC486C058B3942FBE3DAC6839949A5C5B02B8B4244C8998EFDF04DBD8222&quot;</span>);</div>
+<div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span> </div>
+<div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span>        result = env.rpc(<span class="stringliteral">&quot;ledger_request&quot;</span>, <span class="stringliteral">&quot;4&quot;</span>)[jss::result];</div>
+<div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span>        <span class="keyword">constexpr</span> <span class="keywordtype">char</span> <span class="keyword">const</span>* hash4 =</div>
+<div class="line"><a id="l00233" name="l00233"></a><span class="lineno">  233</span>            <span class="stringliteral">&quot;1A8E7098B23597E73094DADA58C9D62F3AB93A12C6F7666D56CA85A6CFDE530F&quot;</span>;</div>
+<div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span>        BEAST_EXPECT(result[jss::ledger][jss::ledger_index] == <span class="stringliteral">&quot;4&quot;</span>);</div>
+<div class="line"><a id="l00235" name="l00235"></a><span class="lineno">  235</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span>            result[jss::ledger][jss::total_coins] == <span class="stringliteral">&quot;99999999999999960&quot;</span>);</div>
+<div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span>        BEAST_EXPECT(result[jss::ledger][jss::closed] == <span class="keyword">true</span>);</div>
+<div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span>        BEAST_EXPECT(result[jss::ledger][jss::ledger_hash] == hash4);</div>
+<div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span>        BEAST_EXPECT(result[jss::ledger][jss::parent_hash] == hash3);</div>
+<div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span>            result[jss::ledger][jss::account_hash] ==</div>
+<div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span>            <span class="stringliteral">&quot;C690188F123C91355ADA8BDF4AC5B5C927076D3590C215096868A5255264C6DD&quot;</span>);</div>
+<div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span>            result[jss::ledger][jss::transaction_hash] ==</div>
+<div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span>            <span class="stringliteral">&quot;3CBDB8F42E04333E1642166BFB93AC9A7E1C6C067092CD5D881D6F3AB3D67E76&quot;</span>);</div>
+<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span> </div>
+<div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span>        result = env.rpc(<span class="stringliteral">&quot;ledger_request&quot;</span>, <span class="stringliteral">&quot;5&quot;</span>)[jss::result];</div>
+<div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span>        <span class="keyword">constexpr</span> <span class="keywordtype">char</span> <span class="keyword">const</span>* hash5 =</div>
+<div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span>            <span class="stringliteral">&quot;C6A222D71AE65D7B4F240009EAD5DEB20D7EEDE5A4064F28BBDBFEEB6FBE48E5&quot;</span>;</div>
+<div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span>        BEAST_EXPECT(result[jss::ledger][jss::ledger_index] == <span class="stringliteral">&quot;5&quot;</span>);</div>
+<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span>            result[jss::ledger][jss::total_coins] == <span class="stringliteral">&quot;99999999999999940&quot;</span>);</div>
+<div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span>        BEAST_EXPECT(result[jss::ledger][jss::closed] == <span class="keyword">true</span>);</div>
+<div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span>        BEAST_EXPECT(result[jss::ledger][jss::ledger_hash] == hash5);</div>
+<div class="line"><a id="l00255" name="l00255"></a><span class="lineno">  255</span>        BEAST_EXPECT(result[jss::ledger][jss::parent_hash] == hash4);</div>
+<div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00257" name="l00257"></a><span class="lineno">  257</span>            result[jss::ledger][jss::account_hash] ==</div>
+<div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span>            <span class="stringliteral">&quot;EA81CD9D36740736F00CB747E0D0E32D3C10B695823D961F0FB9A1CE7133DD4D&quot;</span>);</div>
+<div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00260" name="l00260"></a><span class="lineno">  260</span>            result[jss::ledger][jss::transaction_hash] ==</div>
+<div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span>            <span class="stringliteral">&quot;C3D086CD6BDB9E97AD1D513B2C049EF2840BD21D0B3E22D84EBBB89B6D2EF59D&quot;</span>);</div>
+<div class="line"><a id="l00262" name="l00262"></a><span class="lineno">  262</span> </div>
+<div class="line"><a id="l00263" name="l00263"></a><span class="lineno">  263</span>        result = env.rpc(<span class="stringliteral">&quot;ledger_request&quot;</span>, <span class="stringliteral">&quot;6&quot;</span>)[jss::result];</div>
+<div class="line"><a id="l00264" name="l00264"></a><span class="lineno">  264</span>        BEAST_EXPECT(result[jss::error] == <span class="stringliteral">&quot;invalidParams&quot;</span>);</div>
+<div class="line"><a id="l00265" name="l00265"></a><span class="lineno">  265</span>        BEAST_EXPECT(result[jss::status] == <span class="stringliteral">&quot;error&quot;</span>);</div>
+<div class="line"><a id="l00266" name="l00266"></a><span class="lineno">  266</span>        BEAST_EXPECT(result[jss::error_message] == <span class="stringliteral">&quot;Ledger index too large&quot;</span>);</div>
+<div class="line"><a id="l00267" name="l00267"></a><span class="lineno">  267</span>    }</div>
+<div class="line"><a id="l00268" name="l00268"></a><span class="lineno">  268</span> </div>
+<div class="line"><a id="l00269" name="l00269"></a><span class="lineno">  269</span>    <span class="keywordtype">void</span></div>
+<div class="line"><a id="l00270" name="l00270"></a><span class="lineno"><a class="line" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#ad3ab9ff7582a3ff96268bfa97689e095">  270</a></span>    <a class="code hl_function" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#ad3ab9ff7582a3ff96268bfa97689e095">testBadInput</a>(<span class="keywordtype">unsigned</span> <a class="code hl_variable" href="namespaceripple_1_1RPC.html#a47dbdaa21d9c40b369424e671ccd7e20">apiVersion</a>)</div>
+<div class="line"><a id="l00271" name="l00271"></a><span class="lineno">  271</span>    {</div>
+<div class="line"><a id="l00272" name="l00272"></a><span class="lineno">  272</span>        <span class="keyword">using namespace </span>test::jtx;</div>
+<div class="line"><a id="l00273" name="l00273"></a><span class="lineno">  273</span>        Env env{*<span class="keyword">this</span>};</div>
+<div class="line"><a id="l00274" name="l00274"></a><span class="lineno">  274</span>        Account <span class="keyword">const</span> gw{<span class="stringliteral">&quot;gateway&quot;</span>};</div>
+<div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span>        <span class="keyword">auto</span> <span class="keyword">const</span> USD = gw[<span class="stringliteral">&quot;USD&quot;</span>];</div>
+<div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span>        env.fund(XRP(100000), gw);</div>
+<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span>        env.close();</div>
+<div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span> </div>
+<div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span>        <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> jvParams;</div>
+<div class="line"><a id="l00280" name="l00280"></a><span class="lineno">  280</span>        jvParams[jss::ledger_hash] =</div>
+<div class="line"><a id="l00281" name="l00281"></a><span class="lineno">  281</span>            <span class="stringliteral">&quot;AB868A6CFEEC779C2FF845C0AF00A642259986AF40C01976A7F842B6918936C7&quot;</span>;</div>
+<div class="line"><a id="l00282" name="l00282"></a><span class="lineno">  282</span>        jvParams[jss::ledger_index] = <span class="stringliteral">&quot;1&quot;</span>;</div>
+<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span>        <span class="keyword">auto</span> result = env.rpc(</div>
+<div class="line"><a id="l00284" name="l00284"></a><span class="lineno">  284</span>            <span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;ledger_request&quot;</span>, jvParams.<a class="code hl_function" href="classJson_1_1Value.html#a3696d34c1a1833742b4bf8e5b247f125">toStyledString</a>())[jss::result];</div>
+<div class="line"><a id="l00285" name="l00285"></a><span class="lineno">  285</span>        BEAST_EXPECT(result[jss::error] == <span class="stringliteral">&quot;invalidParams&quot;</span>);</div>
+<div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span>        BEAST_EXPECT(result[jss::status] == <span class="stringliteral">&quot;error&quot;</span>);</div>
+<div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span>            result[jss::error_message] ==</div>
+<div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span>            <span class="stringliteral">&quot;Exactly one of ledger_hash and ledger_index can be set.&quot;</span>);</div>
+<div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span> </div>
+<div class="line"><a id="l00291" name="l00291"></a><span class="lineno">  291</span>        <span class="comment">// the purpose in this test is to force the ledger expiration/out of</span></div>
+<div class="line"><a id="l00292" name="l00292"></a><span class="lineno">  292</span>        <span class="comment">// date check to trigger</span></div>
+<div class="line"><a id="l00293" name="l00293"></a><span class="lineno">  293</span>        env.timeKeeper().adjustCloseTime(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">weeks</a>{3});</div>
+<div class="line"><a id="l00294" name="l00294"></a><span class="lineno">  294</span>        result = env.rpc(<a class="code hl_variable" href="namespaceripple_1_1RPC.html#a47dbdaa21d9c40b369424e671ccd7e20">apiVersion</a>, <span class="stringliteral">&quot;ledger_request&quot;</span>, <span class="stringliteral">&quot;1&quot;</span>)[jss::result];</div>
+<div class="line"><a id="l00295" name="l00295"></a><span class="lineno">  295</span>        BEAST_EXPECT(result[jss::status] == <span class="stringliteral">&quot;error&quot;</span>);</div>
+<div class="line"><a id="l00296" name="l00296"></a><span class="lineno">  296</span>        <span class="keywordflow">if</span> (<a class="code hl_variable" href="namespaceripple_1_1RPC.html#a47dbdaa21d9c40b369424e671ccd7e20">apiVersion</a> == 1)</div>
+<div class="line"><a id="l00297" name="l00297"></a><span class="lineno">  297</span>        {</div>
+<div class="line"><a id="l00298" name="l00298"></a><span class="lineno">  298</span>            BEAST_EXPECT(result[jss::error] == <span class="stringliteral">&quot;noCurrent&quot;</span>);</div>
+<div class="line"><a id="l00299" name="l00299"></a><span class="lineno">  299</span>            BEAST_EXPECT(</div>
+<div class="line"><a id="l00300" name="l00300"></a><span class="lineno">  300</span>                result[jss::error_message] == <span class="stringliteral">&quot;Current ledger is unavailable.&quot;</span>);</div>
+<div class="line"><a id="l00301" name="l00301"></a><span class="lineno">  301</span>        }</div>
+<div class="line"><a id="l00302" name="l00302"></a><span class="lineno">  302</span>        <span class="keywordflow">else</span></div>
+<div class="line"><a id="l00303" name="l00303"></a><span class="lineno">  303</span>        {</div>
+<div class="line"><a id="l00304" name="l00304"></a><span class="lineno">  304</span>            BEAST_EXPECT(result[jss::error] == <span class="stringliteral">&quot;notSynced&quot;</span>);</div>
+<div class="line"><a id="l00305" name="l00305"></a><span class="lineno">  305</span>            BEAST_EXPECT(</div>
+<div class="line"><a id="l00306" name="l00306"></a><span class="lineno">  306</span>                result[jss::error_message] == <span class="stringliteral">&quot;Not synced to the network.&quot;</span>);</div>
+<div class="line"><a id="l00307" name="l00307"></a><span class="lineno">  307</span>        }</div>
+<div class="line"><a id="l00308" name="l00308"></a><span class="lineno">  308</span>    }</div>
+<div class="line"><a id="l00309" name="l00309"></a><span class="lineno">  309</span> </div>
+<div class="line"><a id="l00310" name="l00310"></a><span class="lineno">  310</span>    <span class="keywordtype">void</span></div>
+<div class="line"><a id="l00311" name="l00311"></a><span class="lineno"><a class="line" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#a83fbf0e72cd38857729fc12899fa5c8d">  311</a></span>    <a class="code hl_function" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#a83fbf0e72cd38857729fc12899fa5c8d">testMoreThan256Closed</a>()</div>
+<div class="line"><a id="l00312" name="l00312"></a><span class="lineno">  312</span>    {</div>
+<div class="line"><a id="l00313" name="l00313"></a><span class="lineno">  313</span>        <span class="keyword">using namespace </span>test::jtx;</div>
+<div class="line"><a id="l00314" name="l00314"></a><span class="lineno">  314</span>        <span class="keyword">using namespace </span>std::chrono_literals;</div>
+<div class="line"><a id="l00315" name="l00315"></a><span class="lineno">  315</span>        Env env{*<span class="keyword">this</span>, envconfig([](<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;Config&gt;</a> cfg) {</div>
+<div class="line"><a id="l00316" name="l00316"></a><span class="lineno">  316</span>                    cfg-&gt;NODE_SIZE = 0;</div>
+<div class="line"><a id="l00317" name="l00317"></a><span class="lineno">  317</span>                    <span class="keywordflow">return</span> cfg;</div>
+<div class="line"><a id="l00318" name="l00318"></a><span class="lineno">  318</span>                })};</div>
+<div class="line"><a id="l00319" name="l00319"></a><span class="lineno">  319</span>        Account <span class="keyword">const</span> gw{<span class="stringliteral">&quot;gateway&quot;</span>};</div>
+<div class="line"><a id="l00320" name="l00320"></a><span class="lineno">  320</span>        <span class="keyword">auto</span> <span class="keyword">const</span> USD = gw[<span class="stringliteral">&quot;USD&quot;</span>];</div>
+<div class="line"><a id="l00321" name="l00321"></a><span class="lineno">  321</span>        env.fund(XRP(100000), gw);</div>
 <div class="line"><a id="l00322" name="l00322"></a><span class="lineno">  322</span> </div>
-<div class="line"><a id="l00323" name="l00323"></a><span class="lineno">  323</span>        <span class="keywordflow">for</span> (<span class="keyword">auto</span> i = 0; i &lt; max_limit + 10; i++)</div>
-<div class="line"><a id="l00324" name="l00324"></a><span class="lineno">  324</span>        {</div>
-<div class="line"><a id="l00325" name="l00325"></a><span class="lineno">  325</span>            Account <span class="keyword">const</span> bob{<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(<span class="stringliteral">&quot;bob&quot;</span>) + <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(i)};</div>
-<div class="line"><a id="l00326" name="l00326"></a><span class="lineno">  326</span>            env.fund(XRP(1000), bob);</div>
-<div class="line"><a id="l00327" name="l00327"></a><span class="lineno">  327</span>            env.close();</div>
-<div class="line"><a id="l00328" name="l00328"></a><span class="lineno">  328</span>        }</div>
-<div class="line"><a id="l00329" name="l00329"></a><span class="lineno">  329</span> </div>
-<div class="line"><a id="l00330" name="l00330"></a><span class="lineno">  330</span>        <span class="keyword">auto</span> result = env.rpc(<span class="stringliteral">&quot;ledger_request&quot;</span>, <span class="stringliteral">&quot;1&quot;</span>)[jss::result];</div>
-<div class="line"><a id="l00331" name="l00331"></a><span class="lineno">  331</span>        BEAST_EXPECT(result[jss::ledger][jss::ledger_index] == <span class="stringliteral">&quot;1&quot;</span>);</div>
-<div class="line"><a id="l00332" name="l00332"></a><span class="lineno">  332</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00333" name="l00333"></a><span class="lineno">  333</span>            result[jss::ledger][jss::total_coins] == <span class="stringliteral">&quot;100000000000000000&quot;</span>);</div>
-<div class="line"><a id="l00334" name="l00334"></a><span class="lineno">  334</span>        BEAST_EXPECT(result[jss::ledger][jss::closed] == <span class="keyword">true</span>);</div>
-<div class="line"><a id="l00335" name="l00335"></a><span class="lineno">  335</span>        BEAST_EXPECT(result[jss::ledger][jss::ledger_hash] == <a class="code hl_variable" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#a79be30726cf516e2255165cb9be0de32">hash1</a>);</div>
-<div class="line"><a id="l00336" name="l00336"></a><span class="lineno">  336</span>        BEAST_EXPECT(result[jss::ledger][jss::parent_hash] == <a class="code hl_variable" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#abcecdcec6422dc1575eed82af80462f7">zerohash</a>);</div>
-<div class="line"><a id="l00337" name="l00337"></a><span class="lineno">  337</span>        BEAST_EXPECT(result[jss::ledger][jss::account_hash] == <a class="code hl_variable" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#ab18117c250789eba3695a6fbad518ce6">accounthash1</a>);</div>
-<div class="line"><a id="l00338" name="l00338"></a><span class="lineno">  338</span>        BEAST_EXPECT(result[jss::ledger][jss::transaction_hash] == <a class="code hl_variable" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#abcecdcec6422dc1575eed82af80462f7">zerohash</a>);</div>
-<div class="line"><a id="l00339" name="l00339"></a><span class="lineno">  339</span>    }</div>
-<div class="line"><a id="l00340" name="l00340"></a><span class="lineno">  340</span> </div>
-<div class="line"><a id="l00341" name="l00341"></a><span class="lineno">  341</span>    <span class="keywordtype">void</span></div>
-<div class="line"><a id="l00342" name="l00342"></a><span class="lineno"><a class="line" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#a97def29af9ee0c698564e887d4440ae7">  342</a></span>    <a class="code hl_function" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#a97def29af9ee0c698564e887d4440ae7">testNonAdmin</a>()</div>
-<div class="line"><a id="l00343" name="l00343"></a><span class="lineno">  343</span>    {</div>
-<div class="line"><a id="l00344" name="l00344"></a><span class="lineno">  344</span>        <span class="keyword">using namespace </span>test::jtx;</div>
-<div class="line"><a id="l00345" name="l00345"></a><span class="lineno">  345</span>        Env env{*<span class="keyword">this</span>, envconfig(no_admin)};</div>
-<div class="line"><a id="l00346" name="l00346"></a><span class="lineno">  346</span>        Account <span class="keyword">const</span> gw{<span class="stringliteral">&quot;gateway&quot;</span>};</div>
-<div class="line"><a id="l00347" name="l00347"></a><span class="lineno">  347</span>        <span class="keyword">auto</span> <span class="keyword">const</span> USD = gw[<span class="stringliteral">&quot;USD&quot;</span>];</div>
-<div class="line"><a id="l00348" name="l00348"></a><span class="lineno">  348</span>        env.fund(XRP(100000), gw);</div>
-<div class="line"><a id="l00349" name="l00349"></a><span class="lineno">  349</span> </div>
-<div class="line"><a id="l00350" name="l00350"></a><span class="lineno">  350</span>        env.set_retries(0);</div>
-<div class="line"><a id="l00351" name="l00351"></a><span class="lineno">  351</span>        <span class="keyword">auto</span> <span class="keyword">const</span> result = env.rpc(<span class="stringliteral">&quot;ledger_request&quot;</span>, <span class="stringliteral">&quot;1&quot;</span>)[jss::result];</div>
-<div class="line"><a id="l00352" name="l00352"></a><span class="lineno">  352</span>        <span class="comment">// The current HTTP/S ServerHandler returns an HTTP 403 error code here</span></div>
-<div class="line"><a id="l00353" name="l00353"></a><span class="lineno">  353</span>        <span class="comment">// rather than a noPermission JSON error.  The JSONRPCClient just eats</span></div>
-<div class="line"><a id="l00354" name="l00354"></a><span class="lineno">  354</span>        <span class="comment">// that error and returns an null result.</span></div>
-<div class="line"><a id="l00355" name="l00355"></a><span class="lineno">  355</span>        BEAST_EXPECT(result.type() == <a class="code hl_enumvalue" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4ea7d9899633b4409bd3fc107e6737f8391">Json::nullValue</a>);</div>
-<div class="line"><a id="l00356" name="l00356"></a><span class="lineno">  356</span>    }</div>
-<div class="line"><a id="l00357" name="l00357"></a><span class="lineno">  357</span> </div>
-<div class="line"><a id="l00358" name="l00358"></a><span class="lineno">  358</span>    <span class="keywordtype">void</span></div>
-<div class="line"><a id="l00359" name="l00359"></a><span class="lineno"><a class="line" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#a12d4d86acfd2f65a13c5153528a57040">  359</a></span>    <a class="code hl_function" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#a12d4d86acfd2f65a13c5153528a57040">run</a>()<span class="keyword"> override</span></div>
-<div class="line"><a id="l00360" name="l00360"></a><span class="lineno">  360</span><span class="keyword">    </span>{</div>
-<div class="line"><a id="l00361" name="l00361"></a><span class="lineno">  361</span>        <a class="code hl_function" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#adffe3428c832dbc95708058464df33a0">testLedgerRequest</a>();</div>
-<div class="line"><a id="l00362" name="l00362"></a><span class="lineno">  362</span>        <a class="code hl_function" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#a4a1c84ec940b5345b8a4eb5c3c10d2eb">testEvolution</a>();</div>
-<div class="line"><a id="l00363" name="l00363"></a><span class="lineno">  363</span>        <a class="code hl_function" href="namespaceripple.html#a9f8b4ebe6b42066b9e39967ed80daf79">forAllApiVersions</a>(</div>
-<div class="line"><a id="l00364" name="l00364"></a><span class="lineno">  364</span>            <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/utility/functional/bind_front.html">std::bind_front</a>(&amp;<a class="code hl_function" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#ad3ab9ff7582a3ff96268bfa97689e095">LedgerRequestRPC_test::testBadInput</a>, <span class="keyword">this</span>));</div>
-<div class="line"><a id="l00365" name="l00365"></a><span class="lineno">  365</span>        <a class="code hl_function" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#a83fbf0e72cd38857729fc12899fa5c8d">testMoreThan256Closed</a>();</div>
-<div class="line"><a id="l00366" name="l00366"></a><span class="lineno">  366</span>        <a class="code hl_function" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#a97def29af9ee0c698564e887d4440ae7">testNonAdmin</a>();</div>
-<div class="line"><a id="l00367" name="l00367"></a><span class="lineno">  367</span>    }</div>
-<div class="line"><a id="l00368" name="l00368"></a><span class="lineno">  368</span>};</div>
-<div class="line"><a id="l00369" name="l00369"></a><span class="lineno">  369</span> </div>
-<div class="line"><a id="l00370" name="l00370"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#aee37454a2bb81e1a39f9a5eada32f637">  370</a></span>BEAST_DEFINE_TESTSUITE(LedgerRequestRPC, app, <a class="code hl_namespace" href="namespaceripple.html">ripple</a>);</div>
+<div class="line"><a id="l00323" name="l00323"></a><span class="lineno">  323</span>        <span class="keywordtype">int</span> <span class="keyword">const</span> max_limit = 256;</div>
+<div class="line"><a id="l00324" name="l00324"></a><span class="lineno">  324</span> </div>
+<div class="line"><a id="l00325" name="l00325"></a><span class="lineno">  325</span>        <span class="keywordflow">for</span> (<span class="keyword">auto</span> i = 0; i &lt; max_limit + 10; i++)</div>
+<div class="line"><a id="l00326" name="l00326"></a><span class="lineno">  326</span>        {</div>
+<div class="line"><a id="l00327" name="l00327"></a><span class="lineno">  327</span>            Account <span class="keyword">const</span> bob{<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(<span class="stringliteral">&quot;bob&quot;</span>) + <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(i)};</div>
+<div class="line"><a id="l00328" name="l00328"></a><span class="lineno">  328</span>            env.fund(XRP(1000), bob);</div>
+<div class="line"><a id="l00329" name="l00329"></a><span class="lineno">  329</span>            env.close();</div>
+<div class="line"><a id="l00330" name="l00330"></a><span class="lineno">  330</span>        }</div>
+<div class="line"><a id="l00331" name="l00331"></a><span class="lineno">  331</span> </div>
+<div class="line"><a id="l00332" name="l00332"></a><span class="lineno">  332</span>        <span class="keyword">auto</span> result = env.rpc(<span class="stringliteral">&quot;ledger_request&quot;</span>, <span class="stringliteral">&quot;1&quot;</span>)[jss::result];</div>
+<div class="line"><a id="l00333" name="l00333"></a><span class="lineno">  333</span>        BEAST_EXPECT(result[jss::ledger][jss::ledger_index] == <span class="stringliteral">&quot;1&quot;</span>);</div>
+<div class="line"><a id="l00334" name="l00334"></a><span class="lineno">  334</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00335" name="l00335"></a><span class="lineno">  335</span>            result[jss::ledger][jss::total_coins] == <span class="stringliteral">&quot;100000000000000000&quot;</span>);</div>
+<div class="line"><a id="l00336" name="l00336"></a><span class="lineno">  336</span>        BEAST_EXPECT(result[jss::ledger][jss::closed] == <span class="keyword">true</span>);</div>
+<div class="line"><a id="l00337" name="l00337"></a><span class="lineno">  337</span>        BEAST_EXPECT(result[jss::ledger][jss::ledger_hash] == <a class="code hl_variable" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#a79be30726cf516e2255165cb9be0de32">hash1</a>);</div>
+<div class="line"><a id="l00338" name="l00338"></a><span class="lineno">  338</span>        BEAST_EXPECT(result[jss::ledger][jss::parent_hash] == <a class="code hl_variable" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#abcecdcec6422dc1575eed82af80462f7">zerohash</a>);</div>
+<div class="line"><a id="l00339" name="l00339"></a><span class="lineno">  339</span>        BEAST_EXPECT(result[jss::ledger][jss::account_hash] == <a class="code hl_variable" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#ab18117c250789eba3695a6fbad518ce6">accounthash1</a>);</div>
+<div class="line"><a id="l00340" name="l00340"></a><span class="lineno">  340</span>        BEAST_EXPECT(result[jss::ledger][jss::transaction_hash] == <a class="code hl_variable" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#abcecdcec6422dc1575eed82af80462f7">zerohash</a>);</div>
+<div class="line"><a id="l00341" name="l00341"></a><span class="lineno">  341</span>    }</div>
+<div class="line"><a id="l00342" name="l00342"></a><span class="lineno">  342</span> </div>
+<div class="line"><a id="l00343" name="l00343"></a><span class="lineno">  343</span>    <span class="keywordtype">void</span></div>
+<div class="line"><a id="l00344" name="l00344"></a><span class="lineno"><a class="line" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#a97def29af9ee0c698564e887d4440ae7">  344</a></span>    <a class="code hl_function" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#a97def29af9ee0c698564e887d4440ae7">testNonAdmin</a>()</div>
+<div class="line"><a id="l00345" name="l00345"></a><span class="lineno">  345</span>    {</div>
+<div class="line"><a id="l00346" name="l00346"></a><span class="lineno">  346</span>        <span class="keyword">using namespace </span>test::jtx;</div>
+<div class="line"><a id="l00347" name="l00347"></a><span class="lineno">  347</span>        Env env{*<span class="keyword">this</span>, envconfig(no_admin)};</div>
+<div class="line"><a id="l00348" name="l00348"></a><span class="lineno">  348</span>        Account <span class="keyword">const</span> gw{<span class="stringliteral">&quot;gateway&quot;</span>};</div>
+<div class="line"><a id="l00349" name="l00349"></a><span class="lineno">  349</span>        <span class="keyword">auto</span> <span class="keyword">const</span> USD = gw[<span class="stringliteral">&quot;USD&quot;</span>];</div>
+<div class="line"><a id="l00350" name="l00350"></a><span class="lineno">  350</span>        env.fund(XRP(100000), gw);</div>
+<div class="line"><a id="l00351" name="l00351"></a><span class="lineno">  351</span> </div>
+<div class="line"><a id="l00352" name="l00352"></a><span class="lineno">  352</span>        env.set_retries(0);</div>
+<div class="line"><a id="l00353" name="l00353"></a><span class="lineno">  353</span>        <span class="keyword">auto</span> <span class="keyword">const</span> result = env.rpc(<span class="stringliteral">&quot;ledger_request&quot;</span>, <span class="stringliteral">&quot;1&quot;</span>)[jss::result];</div>
+<div class="line"><a id="l00354" name="l00354"></a><span class="lineno">  354</span>        <span class="comment">// The current HTTP/S ServerHandler returns an HTTP 403 error code here</span></div>
+<div class="line"><a id="l00355" name="l00355"></a><span class="lineno">  355</span>        <span class="comment">// rather than a noPermission JSON error.  The JSONRPCClient just eats</span></div>
+<div class="line"><a id="l00356" name="l00356"></a><span class="lineno">  356</span>        <span class="comment">// that error and returns an null result.</span></div>
+<div class="line"><a id="l00357" name="l00357"></a><span class="lineno">  357</span>        BEAST_EXPECT(result.type() == <a class="code hl_enumvalue" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4ea7d9899633b4409bd3fc107e6737f8391">Json::nullValue</a>);</div>
+<div class="line"><a id="l00358" name="l00358"></a><span class="lineno">  358</span>    }</div>
+<div class="line"><a id="l00359" name="l00359"></a><span class="lineno">  359</span> </div>
+<div class="line"><a id="l00360" name="l00360"></a><span class="lineno">  360</span>    <span class="keywordtype">void</span></div>
+<div class="line"><a id="l00361" name="l00361"></a><span class="lineno"><a class="line" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#a12d4d86acfd2f65a13c5153528a57040">  361</a></span>    <a class="code hl_function" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#a12d4d86acfd2f65a13c5153528a57040">run</a>()<span class="keyword"> override</span></div>
+<div class="line"><a id="l00362" name="l00362"></a><span class="lineno">  362</span><span class="keyword">    </span>{</div>
+<div class="line"><a id="l00363" name="l00363"></a><span class="lineno">  363</span>        <a class="code hl_function" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#adffe3428c832dbc95708058464df33a0">testLedgerRequest</a>();</div>
+<div class="line"><a id="l00364" name="l00364"></a><span class="lineno">  364</span>        <a class="code hl_function" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#a4a1c84ec940b5345b8a4eb5c3c10d2eb">testEvolution</a>();</div>
+<div class="line"><a id="l00365" name="l00365"></a><span class="lineno">  365</span>        <a class="code hl_function" href="namespaceripple.html#a9f8b4ebe6b42066b9e39967ed80daf79">forAllApiVersions</a>(</div>
+<div class="line"><a id="l00366" name="l00366"></a><span class="lineno">  366</span>            <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/utility/functional/bind_front.html">std::bind_front</a>(&amp;<a class="code hl_function" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#ad3ab9ff7582a3ff96268bfa97689e095">LedgerRequestRPC_test::testBadInput</a>, <span class="keyword">this</span>));</div>
+<div class="line"><a id="l00367" name="l00367"></a><span class="lineno">  367</span>        <a class="code hl_function" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#a83fbf0e72cd38857729fc12899fa5c8d">testMoreThan256Closed</a>();</div>
+<div class="line"><a id="l00368" name="l00368"></a><span class="lineno">  368</span>        <a class="code hl_function" href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#a97def29af9ee0c698564e887d4440ae7">testNonAdmin</a>();</div>
+<div class="line"><a id="l00369" name="l00369"></a><span class="lineno">  369</span>    }</div>
+<div class="line"><a id="l00370" name="l00370"></a><span class="lineno">  370</span>};</div>
 <div class="line"><a id="l00371" name="l00371"></a><span class="lineno">  371</span> </div>
-<div class="line"><a id="l00372" name="l00372"></a><span class="lineno">  372</span>}  <span class="comment">// namespace RPC</span></div>
-<div class="line"><a id="l00373" name="l00373"></a><span class="lineno">  373</span>}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a id="l00372" name="l00372"></a><span class="lineno"><a class="line" href="namespaceripple_1_1RPC.html#aee37454a2bb81e1a39f9a5eada32f637">  372</a></span>BEAST_DEFINE_TESTSUITE(LedgerRequestRPC, app, <a class="code hl_namespace" href="namespaceripple.html">ripple</a>);</div>
+<div class="line"><a id="l00373" name="l00373"></a><span class="lineno">  373</span> </div>
+<div class="line"><a id="l00374" name="l00374"></a><span class="lineno">  374</span>}  <span class="comment">// namespace RPC</span></div>
+<div class="line"><a id="l00375" name="l00375"></a><span class="lineno">  375</span>}  <span class="comment">// namespace ripple</span></div>
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div></div>
 <div class="ttc" id="abind_front_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/functional/bind_front.html">std::bind_front</a></div><div class="ttdeci">T bind_front(T... args)</div></div>
 <div class="ttc" id="aclassJson_1_1Value_html"><div class="ttname"><a href="classJson_1_1Value.html">Json::Value</a></div><div class="ttdoc">Represents a JSON value.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00147">json_value.h:148</a></div></div>
 <div class="ttc" id="aclassJson_1_1Value_html_a3696d34c1a1833742b4bf8e5b247f125"><div class="ttname"><a href="classJson_1_1Value.html#a3696d34c1a1833742b4bf8e5b247f125">Json::Value::toStyledString</a></div><div class="ttdeci">std::string toStyledString() const</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8cpp_source.html#l01058">json_value.cpp:1058</a></div></div>
 <div class="ttc" id="aclassbeast_1_1unit__test_1_1suite_html"><div class="ttname"><a href="classbeast_1_1unit__test_1_1suite.html">beast::unit_test::suite</a></div><div class="ttdoc">A testsuite class.</div><div class="ttdef"><b>Definition:</b> <a href="suite_8h_source.html#l00054">suite.h:55</a></div></div>
 <div class="ttc" id="aclassripple_1_1FeatureBitset_html"><div class="ttname"><a href="classripple_1_1FeatureBitset.html">ripple::FeatureBitset</a></div><div class="ttdef"><b>Definition:</b> <a href="Feature_8h_source.html#l00146">Feature.h:147</a></div></div>
-<div class="ttc" id="aclassripple_1_1RPC_1_1LedgerRequestRPC__test_html"><div class="ttname"><a href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html">ripple::RPC::LedgerRequestRPC_test</a></div><div class="ttdef"><b>Definition:</b> <a href="LedgerRequestRPC__test_8cpp_source.html#l00033">LedgerRequestRPC_test.cpp:34</a></div></div>
-<div class="ttc" id="aclassripple_1_1RPC_1_1LedgerRequestRPC__test_html_a12d4d86acfd2f65a13c5153528a57040"><div class="ttname"><a href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#a12d4d86acfd2f65a13c5153528a57040">ripple::RPC::LedgerRequestRPC_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdoc">Runs the suite.</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRequestRPC__test_8cpp_source.html#l00359">LedgerRequestRPC_test.cpp:359</a></div></div>
-<div class="ttc" id="aclassripple_1_1RPC_1_1LedgerRequestRPC__test_html_a4a1c84ec940b5345b8a4eb5c3c10d2eb"><div class="ttname"><a href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#a4a1c84ec940b5345b8a4eb5c3c10d2eb">ripple::RPC::LedgerRequestRPC_test::testEvolution</a></div><div class="ttdeci">void testEvolution()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRequestRPC__test_8cpp_source.html#l00167">LedgerRequestRPC_test.cpp:167</a></div></div>
-<div class="ttc" id="aclassripple_1_1RPC_1_1LedgerRequestRPC__test_html_a79be30726cf516e2255165cb9be0de32"><div class="ttname"><a href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#a79be30726cf516e2255165cb9be0de32">ripple::RPC::LedgerRequestRPC_test::hash1</a></div><div class="ttdeci">static constexpr char const  * hash1</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRequestRPC__test_8cpp_source.html#l00035">LedgerRequestRPC_test.cpp:35</a></div></div>
-<div class="ttc" id="aclassripple_1_1RPC_1_1LedgerRequestRPC__test_html_a83fbf0e72cd38857729fc12899fa5c8d"><div class="ttname"><a href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#a83fbf0e72cd38857729fc12899fa5c8d">ripple::RPC::LedgerRequestRPC_test::testMoreThan256Closed</a></div><div class="ttdeci">void testMoreThan256Closed()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRequestRPC__test_8cpp_source.html#l00309">LedgerRequestRPC_test.cpp:309</a></div></div>
-<div class="ttc" id="aclassripple_1_1RPC_1_1LedgerRequestRPC__test_html_a97def29af9ee0c698564e887d4440ae7"><div class="ttname"><a href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#a97def29af9ee0c698564e887d4440ae7">ripple::RPC::LedgerRequestRPC_test::testNonAdmin</a></div><div class="ttdeci">void testNonAdmin()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRequestRPC__test_8cpp_source.html#l00342">LedgerRequestRPC_test.cpp:342</a></div></div>
-<div class="ttc" id="aclassripple_1_1RPC_1_1LedgerRequestRPC__test_html_ab18117c250789eba3695a6fbad518ce6"><div class="ttname"><a href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#ab18117c250789eba3695a6fbad518ce6">ripple::RPC::LedgerRequestRPC_test::accounthash1</a></div><div class="ttdeci">static constexpr char const  * accounthash1</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRequestRPC__test_8cpp_source.html#l00037">LedgerRequestRPC_test.cpp:37</a></div></div>
-<div class="ttc" id="aclassripple_1_1RPC_1_1LedgerRequestRPC__test_html_abcecdcec6422dc1575eed82af80462f7"><div class="ttname"><a href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#abcecdcec6422dc1575eed82af80462f7">ripple::RPC::LedgerRequestRPC_test::zerohash</a></div><div class="ttdeci">static constexpr char const  * zerohash</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRequestRPC__test_8cpp_source.html#l00040">LedgerRequestRPC_test.cpp:40</a></div></div>
-<div class="ttc" id="aclassripple_1_1RPC_1_1LedgerRequestRPC__test_html_ad3ab9ff7582a3ff96268bfa97689e095"><div class="ttname"><a href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#ad3ab9ff7582a3ff96268bfa97689e095">ripple::RPC::LedgerRequestRPC_test::testBadInput</a></div><div class="ttdeci">void testBadInput(unsigned apiVersion)</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRequestRPC__test_8cpp_source.html#l00268">LedgerRequestRPC_test.cpp:268</a></div></div>
-<div class="ttc" id="aclassripple_1_1RPC_1_1LedgerRequestRPC__test_html_adffe3428c832dbc95708058464df33a0"><div class="ttname"><a href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#adffe3428c832dbc95708058464df33a0">ripple::RPC::LedgerRequestRPC_test::testLedgerRequest</a></div><div class="ttdeci">void testLedgerRequest()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRequestRPC__test_8cpp_source.html#l00045">LedgerRequestRPC_test.cpp:45</a></div></div>
+<div class="ttc" id="aclassripple_1_1RPC_1_1LedgerRequestRPC__test_html"><div class="ttname"><a href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html">ripple::RPC::LedgerRequestRPC_test</a></div><div class="ttdef"><b>Definition:</b> <a href="LedgerRequestRPC__test_8cpp_source.html#l00035">LedgerRequestRPC_test.cpp:36</a></div></div>
+<div class="ttc" id="aclassripple_1_1RPC_1_1LedgerRequestRPC__test_html_a12d4d86acfd2f65a13c5153528a57040"><div class="ttname"><a href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#a12d4d86acfd2f65a13c5153528a57040">ripple::RPC::LedgerRequestRPC_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdoc">Runs the suite.</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRequestRPC__test_8cpp_source.html#l00361">LedgerRequestRPC_test.cpp:361</a></div></div>
+<div class="ttc" id="aclassripple_1_1RPC_1_1LedgerRequestRPC__test_html_a4a1c84ec940b5345b8a4eb5c3c10d2eb"><div class="ttname"><a href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#a4a1c84ec940b5345b8a4eb5c3c10d2eb">ripple::RPC::LedgerRequestRPC_test::testEvolution</a></div><div class="ttdeci">void testEvolution()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRequestRPC__test_8cpp_source.html#l00169">LedgerRequestRPC_test.cpp:169</a></div></div>
+<div class="ttc" id="aclassripple_1_1RPC_1_1LedgerRequestRPC__test_html_a79be30726cf516e2255165cb9be0de32"><div class="ttname"><a href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#a79be30726cf516e2255165cb9be0de32">ripple::RPC::LedgerRequestRPC_test::hash1</a></div><div class="ttdeci">static constexpr char const  * hash1</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRequestRPC__test_8cpp_source.html#l00037">LedgerRequestRPC_test.cpp:37</a></div></div>
+<div class="ttc" id="aclassripple_1_1RPC_1_1LedgerRequestRPC__test_html_a83fbf0e72cd38857729fc12899fa5c8d"><div class="ttname"><a href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#a83fbf0e72cd38857729fc12899fa5c8d">ripple::RPC::LedgerRequestRPC_test::testMoreThan256Closed</a></div><div class="ttdeci">void testMoreThan256Closed()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRequestRPC__test_8cpp_source.html#l00311">LedgerRequestRPC_test.cpp:311</a></div></div>
+<div class="ttc" id="aclassripple_1_1RPC_1_1LedgerRequestRPC__test_html_a97def29af9ee0c698564e887d4440ae7"><div class="ttname"><a href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#a97def29af9ee0c698564e887d4440ae7">ripple::RPC::LedgerRequestRPC_test::testNonAdmin</a></div><div class="ttdeci">void testNonAdmin()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRequestRPC__test_8cpp_source.html#l00344">LedgerRequestRPC_test.cpp:344</a></div></div>
+<div class="ttc" id="aclassripple_1_1RPC_1_1LedgerRequestRPC__test_html_ab18117c250789eba3695a6fbad518ce6"><div class="ttname"><a href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#ab18117c250789eba3695a6fbad518ce6">ripple::RPC::LedgerRequestRPC_test::accounthash1</a></div><div class="ttdeci">static constexpr char const  * accounthash1</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRequestRPC__test_8cpp_source.html#l00039">LedgerRequestRPC_test.cpp:39</a></div></div>
+<div class="ttc" id="aclassripple_1_1RPC_1_1LedgerRequestRPC__test_html_abcecdcec6422dc1575eed82af80462f7"><div class="ttname"><a href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#abcecdcec6422dc1575eed82af80462f7">ripple::RPC::LedgerRequestRPC_test::zerohash</a></div><div class="ttdeci">static constexpr char const  * zerohash</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRequestRPC__test_8cpp_source.html#l00042">LedgerRequestRPC_test.cpp:42</a></div></div>
+<div class="ttc" id="aclassripple_1_1RPC_1_1LedgerRequestRPC__test_html_ad3ab9ff7582a3ff96268bfa97689e095"><div class="ttname"><a href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#ad3ab9ff7582a3ff96268bfa97689e095">ripple::RPC::LedgerRequestRPC_test::testBadInput</a></div><div class="ttdeci">void testBadInput(unsigned apiVersion)</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRequestRPC__test_8cpp_source.html#l00270">LedgerRequestRPC_test.cpp:270</a></div></div>
+<div class="ttc" id="aclassripple_1_1RPC_1_1LedgerRequestRPC__test_html_adffe3428c832dbc95708058464df33a0"><div class="ttname"><a href="classripple_1_1RPC_1_1LedgerRequestRPC__test.html#adffe3428c832dbc95708058464df33a0">ripple::RPC::LedgerRequestRPC_test::testLedgerRequest</a></div><div class="ttdeci">void testLedgerRequest()</div><div class="ttdef"><b>Definition:</b> <a href="LedgerRequestRPC__test_8cpp_source.html#l00047">LedgerRequestRPC_test.cpp:47</a></div></div>
 <div class="ttc" id="aduration_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::duration</a></div></div>
 <div class="ttc" id="afunctional_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/functional.html">functional</a></div></div>
 <div class="ttc" id="anamespaceJson_html_a7d654b75c16a57007925868e38212b4ea7d9899633b4409bd3fc107e6737f8391"><div class="ttname"><a href="namespaceJson.html#a7d654b75c16a57007925868e38212b4ea7d9899633b4409bd3fc107e6737f8391">Json::nullValue</a></div><div class="ttdeci">@ nullValue</div><div class="ttdoc">'null' value</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00037">json_value.h:37</a></div></div>

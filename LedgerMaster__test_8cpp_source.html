@@ -97,140 +97,141 @@ $(function() {
 <div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span> </div>
 <div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span><span class="preprocessor">#include &lt;test/jtx.h&gt;</span></div>
 <div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span><span class="preprocessor">#include &lt;test/jtx/Env.h&gt;</span></div>
-<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span><span class="preprocessor">#include &lt;xrpld/app/ledger/LedgerMaster.h&gt;</span></div>
-<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span> </div>
-<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceripple.html">ripple</a> {</div>
-<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="keyword">namespace </span>test {</div>
-<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span> </div>
-<div class="line"><a id="l00027" name="l00027"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1LedgerMaster__test.html">   27</a></span><span class="keyword">class </span><a class="code hl_class" href="classripple_1_1test_1_1LedgerMaster__test.html">LedgerMaster_test</a> : <span class="keyword">public</span> <a class="code hl_class" href="classbeast_1_1unit__test_1_1suite.html">beast::unit_test::suite</a></div>
-<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span>{</div>
-<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;Config&gt;</a></div>
-<div class="line"><a id="l00030" name="l00030"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1LedgerMaster__test.html#a66d4f9a7aa6272ef69fd3a37273193cc">   30</a></span>    <a class="code hl_function" href="classripple_1_1test_1_1LedgerMaster__test.html#a66d4f9a7aa6272ef69fd3a37273193cc">makeNetworkConfig</a>(uint32_t networkID)</div>
-<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span>    {</div>
-<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>        <span class="keyword">using namespace </span>jtx;</div>
-<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>        <span class="keywordflow">return</span> <a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a7a4caa0465c555c5c59ce7c0d0d48d78">envconfig</a>([&amp;](<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;Config&gt;</a> cfg) {</div>
-<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>            cfg-&gt;NETWORK_ID = networkID;</div>
-<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>            <span class="keywordflow">return</span> cfg;</div>
-<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>        });</div>
-<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>    }</div>
-<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span> </div>
-<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>    <span class="keywordtype">void</span></div>
-<div class="line"><a id="l00040" name="l00040"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1LedgerMaster__test.html#a0aa8211e9f23df6a5da4d7f5c646d46a">   40</a></span>    <a class="code hl_function" href="classripple_1_1test_1_1LedgerMaster__test.html#a0aa8211e9f23df6a5da4d7f5c646d46a">testTxnIdFromIndex</a>(<a class="code hl_class" href="classripple_1_1FeatureBitset.html">FeatureBitset</a> features)</div>
-<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>    {</div>
-<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>        <a class="code hl_variable" href="classbeast_1_1unit__test_1_1suite.html#aaa1237d9b85c69d35fe86645cee094b5">testcase</a>(<span class="stringliteral">&quot;tx_id_from_index&quot;</span>);</div>
-<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span> </div>
-<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>        <span class="keyword">using namespace </span>test::jtx;</div>
-<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>        <span class="keyword">using namespace </span>std::literals;</div>
-<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span> </div>
-<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>        <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Env.html">test::jtx::Env</a> env{*<span class="keyword">this</span>, <a class="code hl_function" href="classripple_1_1test_1_1LedgerMaster__test.html#a66d4f9a7aa6272ef69fd3a37273193cc">makeNetworkConfig</a>(11111)};</div>
-<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span> </div>
-<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>        <span class="keyword">auto</span> <span class="keyword">const</span> alice = <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a>(<span class="stringliteral">&quot;alice&quot;</span>);</div>
-<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>        env.fund(<a class="code hl_variable" href="namespaceripple_1_1test_1_1jtx.html#aea9cd3d4e6b5df2e62d53b34b605957e">XRP</a>(1000), alice);</div>
-<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>        env.close();</div>
-<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span> </div>
-<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>        <span class="comment">// build ledgers</span></div>
-<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::shared_ptr&lt;STTx const&gt;</a>&gt; txns;</div>
-<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::shared_ptr&lt;STObject const&gt;</a>&gt; metas;</div>
-<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>        <span class="keyword">auto</span> <span class="keyword">const</span> startLegSeq = env.current()-&gt;info().seq;</div>
-<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>        <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; 2; ++i)</div>
-<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>        {</div>
-<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>            env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a95abf901db0a698e0c97d00476c95f34">noop</a>(alice));</div>
-<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>            txns.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/emplace_back.html">emplace_back</a>(env.tx());</div>
-<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>            env.close();</div>
-<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>            metas.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/emplace_back.html">emplace_back</a>(</div>
-<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>                env.closed()-&gt;txRead(env.tx()-&gt;getTransactionID()).second);</div>
-<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>        }</div>
-<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>        <span class="comment">// add last (empty) ledger</span></div>
-<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>        env.close();</div>
-<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>        <span class="keyword">auto</span> <span class="keyword">const</span> endLegSeq = env.closed()-&gt;info().seq;</div>
-<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span> </div>
-<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>        <span class="comment">// test invalid range</span></div>
-<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>        {</div>
-<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ledgerSeq = -1;</div>
-<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> txnIndex = 0;</div>
-<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>            <span class="keyword">auto</span> result =</div>
-<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>                env.app().getLedgerMaster().txnIdFromIndex(ledgerSeq, txnIndex);</div>
-<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>            BEAST_EXPECT(!result);</div>
-<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>        }</div>
-<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>        <span class="comment">// test not in ledger</span></div>
-<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>        {</div>
-<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>            uint32_t txnIndex = metas[0]-&gt;getFieldU32(sfTransactionIndex);</div>
-<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>            <span class="keyword">auto</span> result =</div>
-<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>                env.app().getLedgerMaster().txnIdFromIndex(0, txnIndex);</div>
-<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>            BEAST_EXPECT(!result);</div>
-<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>        }</div>
-<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>        <span class="comment">// test empty ledger</span></div>
-<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>        {</div>
-<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>            <span class="keyword">auto</span> result =</div>
-<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>                env.app().getLedgerMaster().txnIdFromIndex(endLegSeq, 0);</div>
-<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>            BEAST_EXPECT(!result);</div>
-<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>        }</div>
-<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>        <span class="comment">// ended without result</span></div>
-<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>        {</div>
-<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>            uint32_t txnIndex = metas[0]-&gt;getFieldU32(sfTransactionIndex);</div>
-<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>            <span class="keyword">auto</span> result = env.app().getLedgerMaster().txnIdFromIndex(</div>
-<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>                endLegSeq + 1, txnIndex);</div>
-<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>            BEAST_EXPECT(!result);</div>
-<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>        }</div>
-<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>        <span class="comment">// success (first tx)</span></div>
-<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>        {</div>
-<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span>            uint32_t txnIndex = metas[0]-&gt;getFieldU32(sfTransactionIndex);</div>
-<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>            <span class="keyword">auto</span> result = env.app().getLedgerMaster().txnIdFromIndex(</div>
-<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>                startLegSeq, txnIndex);</div>
-<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>            BEAST_EXPECT(</div>
-<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>                *result ==</div>
-<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>                <a class="code hl_typedef" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>(<span class="stringliteral">&quot;277F4FD89C20B92457FEF05FF63F6405563AD0563C73D967A29727&quot;</span></div>
-<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>                        <span class="stringliteral">&quot;72679ADC65&quot;</span>));</div>
-<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>        }</div>
-<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>        <span class="comment">// success (second tx)</span></div>
-<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>        {</div>
-<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span>            uint32_t txnIndex = metas[1]-&gt;getFieldU32(sfTransactionIndex);</div>
-<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>            <span class="keyword">auto</span> result = env.app().getLedgerMaster().txnIdFromIndex(</div>
-<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>                startLegSeq + 1, txnIndex);</div>
-<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span>            BEAST_EXPECT(</div>
-<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span>                *result ==</div>
-<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>                <a class="code hl_typedef" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>(<span class="stringliteral">&quot;293DF7335EBBAF4420D52E70ABF470EB4C5792CAEA2F91F76193C2&quot;</span></div>
-<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>                        <span class="stringliteral">&quot;819F538FDE&quot;</span>));</div>
-<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>        }</div>
-<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>    }</div>
-<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span> </div>
-<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span><span class="keyword">public</span>:</div>
-<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>    <span class="keywordtype">void</span></div>
-<div class="line"><a id="l00121" name="l00121"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1LedgerMaster__test.html#adfc9297e04956ff83377c960f1401024">  121</a></span>    <a class="code hl_function" href="classripple_1_1test_1_1LedgerMaster__test.html#adfc9297e04956ff83377c960f1401024">run</a>()<span class="keyword"> override</span></div>
-<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span><span class="keyword">    </span>{</div>
-<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>        <span class="keyword">using namespace </span>test::jtx;</div>
-<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>        <a class="code hl_class" href="classripple_1_1FeatureBitset.html">FeatureBitset</a> <span class="keyword">const</span> <a class="code hl_enumvalue" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66ccaa181a603769c1f98ad927e7367c7aa51">all</a>{<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#af5441d84d5977d52246c5226313560d4">supported_amendments</a>()};</div>
-<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>        <a class="code hl_function" href="classripple_1_1test_1_1LedgerMaster__test.html#a9582c2e2e7ea9ce5a2f5e00857920079">testWithFeats</a>(<a class="code hl_enumvalue" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66ccaa181a603769c1f98ad927e7367c7aa51">all</a>);</div>
-<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span>    }</div>
-<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span> </div>
-<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>    <span class="keywordtype">void</span></div>
-<div class="line"><a id="l00129" name="l00129"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1LedgerMaster__test.html#a9582c2e2e7ea9ce5a2f5e00857920079">  129</a></span>    <a class="code hl_function" href="classripple_1_1test_1_1LedgerMaster__test.html#a9582c2e2e7ea9ce5a2f5e00857920079">testWithFeats</a>(<a class="code hl_class" href="classripple_1_1FeatureBitset.html">FeatureBitset</a> features)</div>
-<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span>    {</div>
-<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span>        <a class="code hl_function" href="classripple_1_1test_1_1LedgerMaster__test.html#a0aa8211e9f23df6a5da4d7f5c646d46a">testTxnIdFromIndex</a>(features);</div>
-<div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span>    }</div>
-<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span>};</div>
-<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span> </div>
-<div class="line"><a id="l00135" name="l00135"></a><span class="lineno"><a class="line" href="namespaceripple_1_1test.html#af216a11ceb6ac8c67f77e95da47ea80b">  135</a></span>BEAST_DEFINE_TESTSUITE(<a class="code hl_class" href="classripple_1_1LedgerMaster.html">LedgerMaster</a>, app, <a class="code hl_namespace" href="namespaceripple.html">ripple</a>);</div>
-<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span> </div>
-<div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span>}  <span class="comment">// namespace test</span></div>
-<div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span>}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span> </div>
+<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="preprocessor">#include &lt;xrpld/app/ledger/LedgerMaster.h&gt;</span></div>
+<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span> </div>
+<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceripple.html">ripple</a> {</div>
+<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><span class="keyword">namespace </span>test {</div>
+<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span> </div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1LedgerMaster__test.html">   28</a></span><span class="keyword">class </span><a class="code hl_class" href="classripple_1_1test_1_1LedgerMaster__test.html">LedgerMaster_test</a> : <span class="keyword">public</span> <a class="code hl_class" href="classbeast_1_1unit__test_1_1suite.html">beast::unit_test::suite</a></div>
+<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span>{</div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;Config&gt;</a></div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1LedgerMaster__test.html#a66d4f9a7aa6272ef69fd3a37273193cc">   31</a></span>    <a class="code hl_function" href="classripple_1_1test_1_1LedgerMaster__test.html#a66d4f9a7aa6272ef69fd3a37273193cc">makeNetworkConfig</a>(uint32_t networkID)</div>
+<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>    {</div>
+<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>        <span class="keyword">using namespace </span>jtx;</div>
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>        <span class="keywordflow">return</span> <a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a7a4caa0465c555c5c59ce7c0d0d48d78">envconfig</a>([&amp;](<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;Config&gt;</a> cfg) {</div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>            cfg-&gt;NETWORK_ID = networkID;</div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>            <span class="keywordflow">return</span> cfg;</div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>        });</div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>    }</div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span> </div>
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>    <span class="keywordtype">void</span></div>
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1LedgerMaster__test.html#a0aa8211e9f23df6a5da4d7f5c646d46a">   41</a></span>    <a class="code hl_function" href="classripple_1_1test_1_1LedgerMaster__test.html#a0aa8211e9f23df6a5da4d7f5c646d46a">testTxnIdFromIndex</a>(<a class="code hl_class" href="classripple_1_1FeatureBitset.html">FeatureBitset</a> features)</div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>    {</div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>        <a class="code hl_variable" href="classbeast_1_1unit__test_1_1suite.html#aaa1237d9b85c69d35fe86645cee094b5">testcase</a>(<span class="stringliteral">&quot;tx_id_from_index&quot;</span>);</div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span> </div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>        <span class="keyword">using namespace </span>test::jtx;</div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>        <span class="keyword">using namespace </span>std::literals;</div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span> </div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>        <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Env.html">test::jtx::Env</a> env{*<span class="keyword">this</span>, <a class="code hl_function" href="classripple_1_1test_1_1LedgerMaster__test.html#a66d4f9a7aa6272ef69fd3a37273193cc">makeNetworkConfig</a>(11111)};</div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span> </div>
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>        <span class="keyword">auto</span> <span class="keyword">const</span> alice = <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a>(<span class="stringliteral">&quot;alice&quot;</span>);</div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>        env.fund(<a class="code hl_variable" href="namespaceripple_1_1test_1_1jtx.html#aea9cd3d4e6b5df2e62d53b34b605957e">XRP</a>(1000), alice);</div>
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>        env.close();</div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span> </div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>        <span class="comment">// build ledgers</span></div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::shared_ptr&lt;STTx const&gt;</a>&gt; txns;</div>
+<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;std::shared_ptr&lt;STObject const&gt;</a>&gt; metas;</div>
+<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>        <span class="keyword">auto</span> <span class="keyword">const</span> startLegSeq = env.current()-&gt;info().seq;</div>
+<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>        <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; 2; ++i)</div>
+<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>        {</div>
+<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>            env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a95abf901db0a698e0c97d00476c95f34">noop</a>(alice));</div>
+<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>            txns.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/emplace_back.html">emplace_back</a>(env.tx());</div>
+<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>            env.close();</div>
+<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>            metas.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/emplace_back.html">emplace_back</a>(</div>
+<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>                env.closed()-&gt;txRead(env.tx()-&gt;getTransactionID()).second);</div>
+<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>        }</div>
+<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>        <span class="comment">// add last (empty) ledger</span></div>
+<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>        env.close();</div>
+<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>        <span class="keyword">auto</span> <span class="keyword">const</span> endLegSeq = env.closed()-&gt;info().seq;</div>
+<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span> </div>
+<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>        <span class="comment">// test invalid range</span></div>
+<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>        {</div>
+<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ledgerSeq = -1;</div>
+<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> txnIndex = 0;</div>
+<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>            <span class="keyword">auto</span> result =</div>
+<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>                env.app().getLedgerMaster().txnIdFromIndex(ledgerSeq, txnIndex);</div>
+<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>            BEAST_EXPECT(!result);</div>
+<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>        }</div>
+<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>        <span class="comment">// test not in ledger</span></div>
+<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>        {</div>
+<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>            uint32_t txnIndex = metas[0]-&gt;getFieldU32(sfTransactionIndex);</div>
+<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>            <span class="keyword">auto</span> result =</div>
+<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>                env.app().getLedgerMaster().txnIdFromIndex(0, txnIndex);</div>
+<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>            BEAST_EXPECT(!result);</div>
+<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>        }</div>
+<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>        <span class="comment">// test empty ledger</span></div>
+<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>        {</div>
+<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>            <span class="keyword">auto</span> result =</div>
+<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>                env.app().getLedgerMaster().txnIdFromIndex(endLegSeq, 0);</div>
+<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>            BEAST_EXPECT(!result);</div>
+<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>        }</div>
+<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>        <span class="comment">// ended without result</span></div>
+<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>        {</div>
+<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>            uint32_t txnIndex = metas[0]-&gt;getFieldU32(sfTransactionIndex);</div>
+<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>            <span class="keyword">auto</span> result = env.app().getLedgerMaster().txnIdFromIndex(</div>
+<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>                endLegSeq + 1, txnIndex);</div>
+<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>            BEAST_EXPECT(!result);</div>
+<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>        }</div>
+<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>        <span class="comment">// success (first tx)</span></div>
+<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span>        {</div>
+<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>            uint32_t txnIndex = metas[0]-&gt;getFieldU32(sfTransactionIndex);</div>
+<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>            <span class="keyword">auto</span> result = env.app().getLedgerMaster().txnIdFromIndex(</div>
+<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>                startLegSeq, txnIndex);</div>
+<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>            BEAST_EXPECT(</div>
+<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>                *result ==</div>
+<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>                <a class="code hl_typedef" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>(<span class="stringliteral">&quot;277F4FD89C20B92457FEF05FF63F6405563AD0563C73D967A29727&quot;</span></div>
+<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>                        <span class="stringliteral">&quot;72679ADC65&quot;</span>));</div>
+<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>        }</div>
+<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>        <span class="comment">// success (second tx)</span></div>
+<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span>        {</div>
+<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>            uint32_t txnIndex = metas[1]-&gt;getFieldU32(sfTransactionIndex);</div>
+<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>            <span class="keyword">auto</span> result = env.app().getLedgerMaster().txnIdFromIndex(</div>
+<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span>                startLegSeq + 1, txnIndex);</div>
+<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span>            BEAST_EXPECT(</div>
+<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>                *result ==</div>
+<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>                <a class="code hl_typedef" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>(<span class="stringliteral">&quot;293DF7335EBBAF4420D52E70ABF470EB4C5792CAEA2F91F76193C2&quot;</span></div>
+<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>                        <span class="stringliteral">&quot;819F538FDE&quot;</span>));</div>
+<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>        }</div>
+<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>    }</div>
+<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span> </div>
+<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span><span class="keyword">public</span>:</div>
+<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>    <span class="keywordtype">void</span></div>
+<div class="line"><a id="l00122" name="l00122"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1LedgerMaster__test.html#adfc9297e04956ff83377c960f1401024">  122</a></span>    <a class="code hl_function" href="classripple_1_1test_1_1LedgerMaster__test.html#adfc9297e04956ff83377c960f1401024">run</a>()<span class="keyword"> override</span></div>
+<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span><span class="keyword">    </span>{</div>
+<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>        <span class="keyword">using namespace </span>test::jtx;</div>
+<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>        <a class="code hl_class" href="classripple_1_1FeatureBitset.html">FeatureBitset</a> <span class="keyword">const</span> <a class="code hl_enumvalue" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66ccaa181a603769c1f98ad927e7367c7aa51">all</a>{<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#af5441d84d5977d52246c5226313560d4">supported_amendments</a>()};</div>
+<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span>        <a class="code hl_function" href="classripple_1_1test_1_1LedgerMaster__test.html#a9582c2e2e7ea9ce5a2f5e00857920079">testWithFeats</a>(<a class="code hl_enumvalue" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66ccaa181a603769c1f98ad927e7367c7aa51">all</a>);</div>
+<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>    }</div>
+<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span> </div>
+<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span>    <span class="keywordtype">void</span></div>
+<div class="line"><a id="l00130" name="l00130"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1LedgerMaster__test.html#a9582c2e2e7ea9ce5a2f5e00857920079">  130</a></span>    <a class="code hl_function" href="classripple_1_1test_1_1LedgerMaster__test.html#a9582c2e2e7ea9ce5a2f5e00857920079">testWithFeats</a>(<a class="code hl_class" href="classripple_1_1FeatureBitset.html">FeatureBitset</a> features)</div>
+<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span>    {</div>
+<div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span>        <a class="code hl_function" href="classripple_1_1test_1_1LedgerMaster__test.html#a0aa8211e9f23df6a5da4d7f5c646d46a">testTxnIdFromIndex</a>(features);</div>
+<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span>    }</div>
+<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>};</div>
+<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span> </div>
+<div class="line"><a id="l00136" name="l00136"></a><span class="lineno"><a class="line" href="namespaceripple_1_1test.html#af216a11ceb6ac8c67f77e95da47ea80b">  136</a></span>BEAST_DEFINE_TESTSUITE(<a class="code hl_class" href="classripple_1_1LedgerMaster.html">LedgerMaster</a>, app, <a class="code hl_namespace" href="namespaceripple.html">ripple</a>);</div>
+<div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span> </div>
+<div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span>}  <span class="comment">// namespace test</span></div>
+<div class="line"><a id="l00139" name="l00139"></a><span class="lineno">  139</span>}  <span class="comment">// namespace ripple</span></div>
 <div class="ttc" id="aclassbeast_1_1unit__test_1_1suite_html"><div class="ttname"><a href="classbeast_1_1unit__test_1_1suite.html">beast::unit_test::suite</a></div><div class="ttdoc">A testsuite class.</div><div class="ttdef"><b>Definition:</b> <a href="suite_8h_source.html#l00054">suite.h:55</a></div></div>
 <div class="ttc" id="aclassbeast_1_1unit__test_1_1suite_html_aaa1237d9b85c69d35fe86645cee094b5"><div class="ttname"><a href="classbeast_1_1unit__test_1_1suite.html#aaa1237d9b85c69d35fe86645cee094b5">beast::unit_test::suite::testcase</a></div><div class="ttdeci">testcase_t testcase</div><div class="ttdoc">Memberspace for declaring test cases.</div><div class="ttdef"><b>Definition:</b> <a href="suite_8h_source.html#l00155">suite.h:155</a></div></div>
 <div class="ttc" id="aclassripple_1_1FeatureBitset_html"><div class="ttname"><a href="classripple_1_1FeatureBitset.html">ripple::FeatureBitset</a></div><div class="ttdef"><b>Definition:</b> <a href="Feature_8h_source.html#l00146">Feature.h:147</a></div></div>
-<div class="ttc" id="aclassripple_1_1LedgerMaster_html"><div class="ttname"><a href="classripple_1_1LedgerMaster.html">ripple::LedgerMaster</a></div><div class="ttdef"><b>Definition:</b> <a href="LedgerMaster_8h_source.html#l00050">LedgerMaster.h:51</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1LedgerMaster__test_html"><div class="ttname"><a href="classripple_1_1test_1_1LedgerMaster__test.html">ripple::test::LedgerMaster_test</a></div><div class="ttdef"><b>Definition:</b> <a href="LedgerMaster__test_8cpp_source.html#l00027">LedgerMaster_test.cpp:28</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1LedgerMaster__test_html_a0aa8211e9f23df6a5da4d7f5c646d46a"><div class="ttname"><a href="classripple_1_1test_1_1LedgerMaster__test.html#a0aa8211e9f23df6a5da4d7f5c646d46a">ripple::test::LedgerMaster_test::testTxnIdFromIndex</a></div><div class="ttdeci">void testTxnIdFromIndex(FeatureBitset features)</div><div class="ttdef"><b>Definition:</b> <a href="LedgerMaster__test_8cpp_source.html#l00040">LedgerMaster_test.cpp:40</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1LedgerMaster__test_html_a66d4f9a7aa6272ef69fd3a37273193cc"><div class="ttname"><a href="classripple_1_1test_1_1LedgerMaster__test.html#a66d4f9a7aa6272ef69fd3a37273193cc">ripple::test::LedgerMaster_test::makeNetworkConfig</a></div><div class="ttdeci">std::unique_ptr&lt; Config &gt; makeNetworkConfig(uint32_t networkID)</div><div class="ttdef"><b>Definition:</b> <a href="LedgerMaster__test_8cpp_source.html#l00030">LedgerMaster_test.cpp:30</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1LedgerMaster__test_html_a9582c2e2e7ea9ce5a2f5e00857920079"><div class="ttname"><a href="classripple_1_1test_1_1LedgerMaster__test.html#a9582c2e2e7ea9ce5a2f5e00857920079">ripple::test::LedgerMaster_test::testWithFeats</a></div><div class="ttdeci">void testWithFeats(FeatureBitset features)</div><div class="ttdef"><b>Definition:</b> <a href="LedgerMaster__test_8cpp_source.html#l00129">LedgerMaster_test.cpp:129</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1LedgerMaster__test_html_adfc9297e04956ff83377c960f1401024"><div class="ttname"><a href="classripple_1_1test_1_1LedgerMaster__test.html#adfc9297e04956ff83377c960f1401024">ripple::test::LedgerMaster_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdoc">Runs the suite.</div><div class="ttdef"><b>Definition:</b> <a href="LedgerMaster__test_8cpp_source.html#l00121">LedgerMaster_test.cpp:121</a></div></div>
+<div class="ttc" id="aclassripple_1_1LedgerMaster_html"><div class="ttname"><a href="classripple_1_1LedgerMaster.html">ripple::LedgerMaster</a></div><div class="ttdef"><b>Definition:</b> <a href="LedgerMaster_8h_source.html#l00051">LedgerMaster.h:52</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1LedgerMaster__test_html"><div class="ttname"><a href="classripple_1_1test_1_1LedgerMaster__test.html">ripple::test::LedgerMaster_test</a></div><div class="ttdef"><b>Definition:</b> <a href="LedgerMaster__test_8cpp_source.html#l00028">LedgerMaster_test.cpp:29</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1LedgerMaster__test_html_a0aa8211e9f23df6a5da4d7f5c646d46a"><div class="ttname"><a href="classripple_1_1test_1_1LedgerMaster__test.html#a0aa8211e9f23df6a5da4d7f5c646d46a">ripple::test::LedgerMaster_test::testTxnIdFromIndex</a></div><div class="ttdeci">void testTxnIdFromIndex(FeatureBitset features)</div><div class="ttdef"><b>Definition:</b> <a href="LedgerMaster__test_8cpp_source.html#l00041">LedgerMaster_test.cpp:41</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1LedgerMaster__test_html_a66d4f9a7aa6272ef69fd3a37273193cc"><div class="ttname"><a href="classripple_1_1test_1_1LedgerMaster__test.html#a66d4f9a7aa6272ef69fd3a37273193cc">ripple::test::LedgerMaster_test::makeNetworkConfig</a></div><div class="ttdeci">std::unique_ptr&lt; Config &gt; makeNetworkConfig(uint32_t networkID)</div><div class="ttdef"><b>Definition:</b> <a href="LedgerMaster__test_8cpp_source.html#l00031">LedgerMaster_test.cpp:31</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1LedgerMaster__test_html_a9582c2e2e7ea9ce5a2f5e00857920079"><div class="ttname"><a href="classripple_1_1test_1_1LedgerMaster__test.html#a9582c2e2e7ea9ce5a2f5e00857920079">ripple::test::LedgerMaster_test::testWithFeats</a></div><div class="ttdeci">void testWithFeats(FeatureBitset features)</div><div class="ttdef"><b>Definition:</b> <a href="LedgerMaster__test_8cpp_source.html#l00130">LedgerMaster_test.cpp:130</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1LedgerMaster__test_html_adfc9297e04956ff83377c960f1401024"><div class="ttname"><a href="classripple_1_1test_1_1LedgerMaster__test.html#adfc9297e04956ff83377c960f1401024">ripple::test::LedgerMaster_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdoc">Runs the suite.</div><div class="ttdef"><b>Definition:</b> <a href="LedgerMaster__test_8cpp_source.html#l00122">LedgerMaster_test.cpp:122</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Account_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Account.html">ripple::test::jtx::Account</a></div><div class="ttdoc">Immutable cryptographic account descriptor.</div><div class="ttdef"><b>Definition:</b> <a href="Account_8h_source.html#l00038">Account.h:39</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html">ripple::test::jtx::Env</a></div><div class="ttdoc">A transaction testing environment.</div><div class="ttdef"><b>Definition:</b> <a href="Env_8h_source.html#l00117">Env.h:118</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html">ripple::test::jtx::Env</a></div><div class="ttdoc">A transaction testing environment.</div><div class="ttdef"><b>Definition:</b> <a href="Env_8h_source.html#l00119">Env.h:120</a></div></div>
 <div class="ttc" id="aemplace_back_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/emplace_back.html">std::vector::emplace_back</a></div><div class="ttdeci">T emplace_back(T... args)</div></div>
 <div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1test_1_1jtx_html_a7a4caa0465c555c5c59ce7c0d0d48d78"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx.html#a7a4caa0465c555c5c59ce7c0d0d48d78">ripple::test::jtx::envconfig</a></div><div class="ttdeci">std::unique_ptr&lt; Config &gt; envconfig()</div><div class="ttdoc">creates and initializes a default configuration for jtx::Env</div><div class="ttdef"><b>Definition:</b> <a href="envconfig_8h_source.html#l00054">envconfig.h:54</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1test_1_1jtx_html_a95abf901db0a698e0c97d00476c95f34"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx.html#a95abf901db0a698e0c97d00476c95f34">ripple::test::jtx::noop</a></div><div class="ttdeci">Json::Value noop(Account const &amp;account)</div><div class="ttdoc">The null transaction.</div><div class="ttdef"><b>Definition:</b> <a href="noop_8h_source.html#l00031">noop.h:31</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1test_1_1jtx_html_aea9cd3d4e6b5df2e62d53b34b605957e"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx.html#aea9cd3d4e6b5df2e62d53b34b605957e">ripple::test::jtx::XRP</a></div><div class="ttdeci">XRP_t const XRP</div><div class="ttdoc">Converts to XRP Issue or STAmount.</div><div class="ttdef"><b>Definition:</b> <a href="amount_8cpp_source.html#l00104">amount.cpp:104</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1test_1_1jtx_html_af5441d84d5977d52246c5226313560d4"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx.html#af5441d84d5977d52246c5226313560d4">ripple::test::jtx::supported_amendments</a></div><div class="ttdeci">FeatureBitset supported_amendments()</div><div class="ttdef"><b>Definition:</b> <a href="Env_8h_source.html#l00071">Env.h:71</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1test_1_1jtx_html_aea9cd3d4e6b5df2e62d53b34b605957e"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx.html#aea9cd3d4e6b5df2e62d53b34b605957e">ripple::test::jtx::XRP</a></div><div class="ttdeci">XRP_t const XRP</div><div class="ttdoc">Converts to XRP Issue or STAmount.</div><div class="ttdef"><b>Definition:</b> <a href="amount_8cpp_source.html#l00105">amount.cpp:105</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1test_1_1jtx_html_af5441d84d5977d52246c5226313560d4"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx.html#af5441d84d5977d52246c5226313560d4">ripple::test::jtx::supported_amendments</a></div><div class="ttdeci">FeatureBitset supported_amendments()</div><div class="ttdef"><b>Definition:</b> <a href="Env_8h_source.html#l00073">Env.h:73</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="algorithm_8h_source.html#l00026">algorithm.h:26</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a356c68147333a9a48a344718038576d9"><div class="ttname"><a href="namespaceripple.html#a356c68147333a9a48a344718038576d9">ripple::uint256</a></div><div class="ttdeci">base_uint&lt; 256 &gt; uint256</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00558">base_uint.h:558</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a7ffb3f54d739bb8f967d695f08fb66ccaa181a603769c1f98ad927e7367c7aa51"><div class="ttname"><a href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66ccaa181a603769c1f98ad927e7367c7aa51">ripple::TxSearched::all</a></div><div class="ttdeci">@ all</div></div>

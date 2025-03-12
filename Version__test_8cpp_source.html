@@ -96,307 +96,309 @@ $(function() {
 <div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span><span class="comment">//==============================================================================</span></div>
 <div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span> </div>
 <div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span><span class="preprocessor">#include &lt;test/jtx.h&gt;</span></div>
-<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span><span class="preprocessor">#include &lt;xrpld/rpc/detail/RPCHelpers.h&gt;</span></div>
-<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span><span class="preprocessor">#include &lt;xrpl/protocol/jss.h&gt;</span></div>
+<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span> </div>
+<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span><span class="preprocessor">#include &lt;xrpld/rpc/detail/RPCHelpers.h&gt;</span></div>
 <div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span> </div>
-<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceripple.html">ripple</a> {</div>
+<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="preprocessor">#include &lt;xrpl/protocol/jss.h&gt;</span></div>
 <div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span> </div>
-<div class="line"><a id="l00026" name="l00026"></a><span class="lineno"><a class="line" href="classripple_1_1Version__test.html">   26</a></span><span class="keyword">class </span><a class="code hl_class" href="classripple_1_1Version__test.html">Version_test</a> : <span class="keyword">public</span> <a class="code hl_class" href="classbeast_1_1unit__test_1_1suite.html">beast::unit_test::suite</a></div>
-<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span>{</div>
-<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span>    <span class="keywordtype">void</span></div>
-<div class="line"><a id="l00029" name="l00029"></a><span class="lineno"><a class="line" href="classripple_1_1Version__test.html#a3ba253f2dbd4b9b73664b3cb4676807a">   29</a></span>    <a class="code hl_function" href="classripple_1_1Version__test.html#a3ba253f2dbd4b9b73664b3cb4676807a">testCorrectVersionNumber</a>()</div>
-<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span>    {</div>
-<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span>        <a class="code hl_variable" href="classbeast_1_1unit__test_1_1suite.html#aaa1237d9b85c69d35fe86645cee094b5">testcase</a>(<span class="stringliteral">&quot;right api_version: explicitly specified or filled by parser&quot;</span>);</div>
-<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span> </div>
-<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>        <span class="keyword">using namespace </span>test::jtx;</div>
-<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>        Env env{*<span class="keyword">this</span>};</div>
-<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span> </div>
-<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>        <span class="keyword">auto</span> isCorrectReply = [](<a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp; re) -&gt; <span class="keywordtype">bool</span> {</div>
-<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>            <span class="keywordflow">if</span> (re.isMember(jss::error))</div>
-<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>                <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>            <span class="keywordflow">return</span> re.isMember(jss::version);</div>
-<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>        };</div>
-<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span> </div>
-<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>        <span class="keyword">auto</span> jrr = env.rpc(</div>
-<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>            <span class="stringliteral">&quot;json&quot;</span>,</div>
-<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>            <span class="stringliteral">&quot;version&quot;</span>,</div>
-<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>            <span class="stringliteral">&quot;{\&quot;api_version\&quot;: &quot;</span> +</div>
-<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>                <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(<a class="code hl_variable" href="namespaceripple_1_1RPC.html#a2b3ccf6ba58d8b93038397557338bc32">RPC::apiMaximumSupportedVersion</a>) +</div>
-<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>                <span class="stringliteral">&quot;}&quot;</span>)[jss::result];</div>
-<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>        BEAST_EXPECT(isCorrectReply(jrr));</div>
-<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span> </div>
-<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>        jrr = env.rpc(<span class="stringliteral">&quot;version&quot;</span>)[jss::result];</div>
-<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>        BEAST_EXPECT(isCorrectReply(jrr));</div>
-<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>    }</div>
-<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span> </div>
-<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>    <span class="keywordtype">void</span></div>
-<div class="line"><a id="l00055" name="l00055"></a><span class="lineno"><a class="line" href="classripple_1_1Version__test.html#aed6c0df097557ae0cbfc8b22073ca693">   55</a></span>    <a class="code hl_function" href="classripple_1_1Version__test.html#aed6c0df097557ae0cbfc8b22073ca693">testWrongVersionNumber</a>()</div>
-<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>    {</div>
-<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>        <a class="code hl_variable" href="classbeast_1_1unit__test_1_1suite.html#aaa1237d9b85c69d35fe86645cee094b5">testcase</a>(<span class="stringliteral">&quot;wrong api_version: too low, too high, or wrong format&quot;</span>);</div>
-<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span> </div>
-<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>        <span class="keyword">using namespace </span>test::jtx;</div>
-<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>        Env env{*<span class="keyword">this</span>};</div>
-<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span> </div>
-<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>        <span class="keyword">auto</span> badVersion = [](<a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp; re) -&gt; <span class="keywordtype">bool</span> {</div>
-<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>            <span class="keywordflow">if</span> (re.isMember(<span class="stringliteral">&quot;error_what&quot;</span>))</div>
-<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>                <span class="keywordflow">if</span> (re[<span class="stringliteral">&quot;error_what&quot;</span>].isString())</div>
-<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>                {</div>
-<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>                    <span class="keywordflow">return</span> re[<span class="stringliteral">&quot;error_what&quot;</span>].asString().find(</div>
-<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>                               jss::invalid_API_version.c_str()) == 0;</div>
-<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>                }</div>
-<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>        };</div>
-<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span> </div>
-<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>        <span class="keyword">auto</span> re = env.rpc(</div>
-<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>            <span class="stringliteral">&quot;json&quot;</span>,</div>
-<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>            <span class="stringliteral">&quot;version&quot;</span>,</div>
-<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>            <span class="stringliteral">&quot;{\&quot;api_version\&quot;: &quot;</span> +</div>
-<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>                <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(<a class="code hl_variable" href="namespaceripple_1_1RPC.html#ad9e8e104e82c67f071a254fa6849afe6">RPC::apiMinimumSupportedVersion</a> - 1) + <span class="stringliteral">&quot;}&quot;</span>);</div>
-<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>        BEAST_EXPECT(badVersion(re));</div>
-<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span> </div>
-<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>        BEAST_EXPECT(env.app().config().BETA_RPC_API);</div>
-<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>        re = env.rpc(</div>
-<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>            <span class="stringliteral">&quot;json&quot;</span>,</div>
-<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>            <span class="stringliteral">&quot;version&quot;</span>,</div>
-<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>            <span class="stringliteral">&quot;{\&quot;api_version\&quot;: &quot;</span> +</div>
-<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>                <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(</div>
-<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>                    <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/algorithm/max.html">std::max</a>(</div>
-<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>                        <a class="code hl_variable" href="namespaceripple_1_1RPC.html#a2b3ccf6ba58d8b93038397557338bc32">RPC::apiMaximumSupportedVersion</a>.value,</div>
-<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>                        <a class="code hl_variable" href="namespaceripple_1_1RPC.html#a63c1a4ab8820cf80f6f0e49ca041e9a0">RPC::apiBetaVersion</a>.value) +</div>
-<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>                    1) +</div>
-<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>                <span class="stringliteral">&quot;}&quot;</span>);</div>
-<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>        BEAST_EXPECT(badVersion(re));</div>
-<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span> </div>
-<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>        re = env.rpc(<span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;version&quot;</span>, <span class="stringliteral">&quot;{\&quot;api_version\&quot;: \&quot;a\&quot;}&quot;</span>);</div>
-<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>        BEAST_EXPECT(badVersion(re));</div>
-<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>    }</div>
-<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span> </div>
-<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>    <span class="keywordtype">void</span></div>
-<div class="line"><a id="l00097" name="l00097"></a><span class="lineno"><a class="line" href="classripple_1_1Version__test.html#a27ad44417de2eb09222afe74f34bf072">   97</a></span>    <a class="code hl_function" href="classripple_1_1Version__test.html#a27ad44417de2eb09222afe74f34bf072">testGetAPIVersionNumber</a>()</div>
-<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>    {</div>
-<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span>        <a class="code hl_variable" href="classbeast_1_1unit__test_1_1suite.html#aaa1237d9b85c69d35fe86645cee094b5">testcase</a>(<span class="stringliteral">&quot;test getAPIVersionNumber function&quot;</span>);</div>
-<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span> </div>
-<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>        <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> versionIfUnspecified =</div>
-<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>            <a class="code hl_variable" href="namespaceripple_1_1RPC.html#a9e992ce4d974403f94f4daf62aa18761">RPC::apiVersionIfUnspecified</a> &lt; <a class="code hl_variable" href="namespaceripple_1_1RPC.html#ad9e8e104e82c67f071a254fa6849afe6">RPC::apiMinimumSupportedVersion</a></div>
-<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>            ? <a class="code hl_variable" href="namespaceripple_1_1RPC.html#ac444ee3babf6fcf2604699ee4ae2e777">RPC::apiInvalidVersion</a></div>
-<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>            : <a class="code hl_variable" href="namespaceripple_1_1RPC.html#a9e992ce4d974403f94f4daf62aa18761">RPC::apiVersionIfUnspecified</a>;</div>
-<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span> </div>
-<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>        <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> j_array = <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a>(<a class="code hl_enumvalue" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eadc8f264f36b55b063c78126b335415f4">Json::arrayValue</a>);</div>
-<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>        <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> j_null = <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a>(<a class="code hl_enumvalue" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4ea7d9899633b4409bd3fc107e6737f8391">Json::nullValue</a>);</div>
-<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span>            <a class="code hl_function" href="namespaceripple_1_1RPC.html#a1913cdcfd25a883affb49c4f40174cd6">RPC::getAPIVersionNumber</a>(j_array, <span class="keyword">false</span>) == versionIfUnspecified);</div>
+<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceripple.html">ripple</a> {</div>
+<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span> </div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno"><a class="line" href="classripple_1_1Version__test.html">   28</a></span><span class="keyword">class </span><a class="code hl_class" href="classripple_1_1Version__test.html">Version_test</a> : <span class="keyword">public</span> <a class="code hl_class" href="classbeast_1_1unit__test_1_1suite.html">beast::unit_test::suite</a></div>
+<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span>{</div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span>    <span class="keywordtype">void</span></div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno"><a class="line" href="classripple_1_1Version__test.html#a3ba253f2dbd4b9b73664b3cb4676807a">   31</a></span>    <a class="code hl_function" href="classripple_1_1Version__test.html#a3ba253f2dbd4b9b73664b3cb4676807a">testCorrectVersionNumber</a>()</div>
+<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>    {</div>
+<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>        <a class="code hl_variable" href="classbeast_1_1unit__test_1_1suite.html#aaa1237d9b85c69d35fe86645cee094b5">testcase</a>(<span class="stringliteral">&quot;right api_version: explicitly specified or filled by parser&quot;</span>);</div>
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span> </div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>        <span class="keyword">using namespace </span>test::jtx;</div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>        Env env{*<span class="keyword">this</span>};</div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span> </div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>        <span class="keyword">auto</span> isCorrectReply = [](<a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp; re) -&gt; <span class="keywordtype">bool</span> {</div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>            <span class="keywordflow">if</span> (re.isMember(jss::error))</div>
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>                <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>            <span class="keywordflow">return</span> re.isMember(jss::version);</div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>        };</div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span> </div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>        <span class="keyword">auto</span> jrr = env.rpc(</div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>            <span class="stringliteral">&quot;json&quot;</span>,</div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>            <span class="stringliteral">&quot;version&quot;</span>,</div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>            <span class="stringliteral">&quot;{\&quot;api_version\&quot;: &quot;</span> +</div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>                <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(<a class="code hl_variable" href="namespaceripple_1_1RPC.html#a2b3ccf6ba58d8b93038397557338bc32">RPC::apiMaximumSupportedVersion</a>) +</div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>                <span class="stringliteral">&quot;}&quot;</span>)[jss::result];</div>
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>        BEAST_EXPECT(isCorrectReply(jrr));</div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span> </div>
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>        jrr = env.rpc(<span class="stringliteral">&quot;version&quot;</span>)[jss::result];</div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>        BEAST_EXPECT(isCorrectReply(jrr));</div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>    }</div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span> </div>
+<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>    <span class="keywordtype">void</span></div>
+<div class="line"><a id="l00057" name="l00057"></a><span class="lineno"><a class="line" href="classripple_1_1Version__test.html#aed6c0df097557ae0cbfc8b22073ca693">   57</a></span>    <a class="code hl_function" href="classripple_1_1Version__test.html#aed6c0df097557ae0cbfc8b22073ca693">testWrongVersionNumber</a>()</div>
+<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>    {</div>
+<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>        <a class="code hl_variable" href="classbeast_1_1unit__test_1_1suite.html#aaa1237d9b85c69d35fe86645cee094b5">testcase</a>(<span class="stringliteral">&quot;wrong api_version: too low, too high, or wrong format&quot;</span>);</div>
+<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span> </div>
+<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>        <span class="keyword">using namespace </span>test::jtx;</div>
+<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>        Env env{*<span class="keyword">this</span>};</div>
+<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span> </div>
+<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>        <span class="keyword">auto</span> badVersion = [](<a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp; re) -&gt; <span class="keywordtype">bool</span> {</div>
+<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>            <span class="keywordflow">if</span> (re.isMember(<span class="stringliteral">&quot;error_what&quot;</span>))</div>
+<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>                <span class="keywordflow">if</span> (re[<span class="stringliteral">&quot;error_what&quot;</span>].isString())</div>
+<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>                {</div>
+<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>                    <span class="keywordflow">return</span> re[<span class="stringliteral">&quot;error_what&quot;</span>].asString().find(</div>
+<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>                               jss::invalid_API_version.c_str()) == 0;</div>
+<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>                }</div>
+<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>            <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>        };</div>
+<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span> </div>
+<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>        <span class="keyword">auto</span> re = env.rpc(</div>
+<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>            <span class="stringliteral">&quot;json&quot;</span>,</div>
+<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>            <span class="stringliteral">&quot;version&quot;</span>,</div>
+<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>            <span class="stringliteral">&quot;{\&quot;api_version\&quot;: &quot;</span> +</div>
+<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>                <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(<a class="code hl_variable" href="namespaceripple_1_1RPC.html#ad9e8e104e82c67f071a254fa6849afe6">RPC::apiMinimumSupportedVersion</a> - 1) + <span class="stringliteral">&quot;}&quot;</span>);</div>
+<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>        BEAST_EXPECT(badVersion(re));</div>
+<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span> </div>
+<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>        BEAST_EXPECT(env.app().config().BETA_RPC_API);</div>
+<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>        re = env.rpc(</div>
+<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>            <span class="stringliteral">&quot;json&quot;</span>,</div>
+<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>            <span class="stringliteral">&quot;version&quot;</span>,</div>
+<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>            <span class="stringliteral">&quot;{\&quot;api_version\&quot;: &quot;</span> +</div>
+<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>                <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(</div>
+<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>                    <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/algorithm/max.html">std::max</a>(</div>
+<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>                        <a class="code hl_variable" href="namespaceripple_1_1RPC.html#a2b3ccf6ba58d8b93038397557338bc32">RPC::apiMaximumSupportedVersion</a>.value,</div>
+<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>                        <a class="code hl_variable" href="namespaceripple_1_1RPC.html#a63c1a4ab8820cf80f6f0e49ca041e9a0">RPC::apiBetaVersion</a>.value) +</div>
+<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>                    1) +</div>
+<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>                <span class="stringliteral">&quot;}&quot;</span>);</div>
+<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>        BEAST_EXPECT(badVersion(re));</div>
+<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span> </div>
+<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>        re = env.rpc(<span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;version&quot;</span>, <span class="stringliteral">&quot;{\&quot;api_version\&quot;: \&quot;a\&quot;}&quot;</span>);</div>
+<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>        BEAST_EXPECT(badVersion(re));</div>
+<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>    }</div>
+<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span> </div>
+<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>    <span class="keywordtype">void</span></div>
+<div class="line"><a id="l00099" name="l00099"></a><span class="lineno"><a class="line" href="classripple_1_1Version__test.html#a27ad44417de2eb09222afe74f34bf072">   99</a></span>    <a class="code hl_function" href="classripple_1_1Version__test.html#a27ad44417de2eb09222afe74f34bf072">testGetAPIVersionNumber</a>()</div>
+<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>    {</div>
+<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>        <a class="code hl_variable" href="classbeast_1_1unit__test_1_1suite.html#aaa1237d9b85c69d35fe86645cee094b5">testcase</a>(<span class="stringliteral">&quot;test getAPIVersionNumber function&quot;</span>);</div>
+<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span> </div>
+<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>        <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> versionIfUnspecified =</div>
+<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>            <a class="code hl_variable" href="namespaceripple_1_1RPC.html#a9e992ce4d974403f94f4daf62aa18761">RPC::apiVersionIfUnspecified</a> &lt; <a class="code hl_variable" href="namespaceripple_1_1RPC.html#ad9e8e104e82c67f071a254fa6849afe6">RPC::apiMinimumSupportedVersion</a></div>
+<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>            ? <a class="code hl_variable" href="namespaceripple_1_1RPC.html#ac444ee3babf6fcf2604699ee4ae2e777">RPC::apiInvalidVersion</a></div>
+<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>            : <a class="code hl_variable" href="namespaceripple_1_1RPC.html#a9e992ce4d974403f94f4daf62aa18761">RPC::apiVersionIfUnspecified</a>;</div>
+<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span> </div>
+<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>        <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> j_array = <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a>(<a class="code hl_enumvalue" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eadc8f264f36b55b063c78126b335415f4">Json::arrayValue</a>);</div>
+<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span>        <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> j_null = <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a>(<a class="code hl_enumvalue" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4ea7d9899633b4409bd3fc107e6737f8391">Json::nullValue</a>);</div>
 <div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>            <a class="code hl_function" href="namespaceripple_1_1RPC.html#a1913cdcfd25a883affb49c4f40174cd6">RPC::getAPIVersionNumber</a>(j_null, <span class="keyword">false</span>) == versionIfUnspecified);</div>
-<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span> </div>
-<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span>        <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> j_object = <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a>(<a class="code hl_enumvalue" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6">Json::objectValue</a>);</div>
-<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>            <a class="code hl_function" href="namespaceripple_1_1RPC.html#a1913cdcfd25a883affb49c4f40174cd6">RPC::getAPIVersionNumber</a>(j_object, <span class="keyword">false</span>) == versionIfUnspecified);</div>
-<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>        j_object[jss::api_version] = <a class="code hl_variable" href="namespaceripple_1_1RPC.html#a9e992ce4d974403f94f4daf62aa18761">RPC::apiVersionIfUnspecified</a>.value;</div>
-<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>            <a class="code hl_function" href="namespaceripple_1_1RPC.html#a1913cdcfd25a883affb49c4f40174cd6">RPC::getAPIVersionNumber</a>(j_object, <span class="keyword">false</span>) == versionIfUnspecified);</div>
-<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span> </div>
-<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>        j_object[jss::api_version] = <a class="code hl_variable" href="namespaceripple_1_1RPC.html#ad9e8e104e82c67f071a254fa6849afe6">RPC::apiMinimumSupportedVersion</a>.value;</div>
-<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>            <a class="code hl_function" href="namespaceripple_1_1RPC.html#a1913cdcfd25a883affb49c4f40174cd6">RPC::getAPIVersionNumber</a>(j_object, <span class="keyword">false</span>) ==</div>
-<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>            <a class="code hl_variable" href="namespaceripple_1_1RPC.html#ad9e8e104e82c67f071a254fa6849afe6">RPC::apiMinimumSupportedVersion</a>);</div>
-<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>        j_object[jss::api_version] = <a class="code hl_variable" href="namespaceripple_1_1RPC.html#a2b3ccf6ba58d8b93038397557338bc32">RPC::apiMaximumSupportedVersion</a>.value;</div>
-<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span>            <a class="code hl_function" href="namespaceripple_1_1RPC.html#a1913cdcfd25a883affb49c4f40174cd6">RPC::getAPIVersionNumber</a>(j_object, <span class="keyword">false</span>) ==</div>
-<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>            <a class="code hl_variable" href="namespaceripple_1_1RPC.html#a2b3ccf6ba58d8b93038397557338bc32">RPC::apiMaximumSupportedVersion</a>);</div>
-<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span> </div>
-<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span>        j_object[jss::api_version] = <a class="code hl_variable" href="namespaceripple_1_1RPC.html#ad9e8e104e82c67f071a254fa6849afe6">RPC::apiMinimumSupportedVersion</a> - 1;</div>
-<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span>            <a class="code hl_function" href="namespaceripple_1_1RPC.html#a1913cdcfd25a883affb49c4f40174cd6">RPC::getAPIVersionNumber</a>(j_object, <span class="keyword">false</span>) ==</div>
-<div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span>            <a class="code hl_variable" href="namespaceripple_1_1RPC.html#ac444ee3babf6fcf2604699ee4ae2e777">RPC::apiInvalidVersion</a>);</div>
-<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span>        j_object[jss::api_version] = <a class="code hl_variable" href="namespaceripple_1_1RPC.html#a2b3ccf6ba58d8b93038397557338bc32">RPC::apiMaximumSupportedVersion</a> + 1;</div>
-<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span>            <a class="code hl_function" href="namespaceripple_1_1RPC.html#a1913cdcfd25a883affb49c4f40174cd6">RPC::getAPIVersionNumber</a>(j_object, <span class="keyword">false</span>) ==</div>
-<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span>            <a class="code hl_variable" href="namespaceripple_1_1RPC.html#ac444ee3babf6fcf2604699ee4ae2e777">RPC::apiInvalidVersion</a>);</div>
-<div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span>        j_object[jss::api_version] = <a class="code hl_variable" href="namespaceripple_1_1RPC.html#a63c1a4ab8820cf80f6f0e49ca041e9a0">RPC::apiBetaVersion</a>.value;</div>
-<div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00139" name="l00139"></a><span class="lineno">  139</span>            <a class="code hl_function" href="namespaceripple_1_1RPC.html#a1913cdcfd25a883affb49c4f40174cd6">RPC::getAPIVersionNumber</a>(j_object, <span class="keyword">true</span>) == <a class="code hl_variable" href="namespaceripple_1_1RPC.html#a63c1a4ab8820cf80f6f0e49ca041e9a0">RPC::apiBetaVersion</a>);</div>
-<div class="line"><a id="l00140" name="l00140"></a><span class="lineno">  140</span>        j_object[jss::api_version] = <a class="code hl_variable" href="namespaceripple_1_1RPC.html#a63c1a4ab8820cf80f6f0e49ca041e9a0">RPC::apiBetaVersion</a> + 1;</div>
-<div class="line"><a id="l00141" name="l00141"></a><span class="lineno">  141</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00142" name="l00142"></a><span class="lineno">  142</span>            <a class="code hl_function" href="namespaceripple_1_1RPC.html#a1913cdcfd25a883affb49c4f40174cd6">RPC::getAPIVersionNumber</a>(j_object, <span class="keyword">true</span>) == <a class="code hl_variable" href="namespaceripple_1_1RPC.html#ac444ee3babf6fcf2604699ee4ae2e777">RPC::apiInvalidVersion</a>);</div>
-<div class="line"><a id="l00143" name="l00143"></a><span class="lineno">  143</span> </div>
-<div class="line"><a id="l00144" name="l00144"></a><span class="lineno">  144</span>        j_object[jss::api_version] = <a class="code hl_variable" href="namespaceripple_1_1RPC.html#ac444ee3babf6fcf2604699ee4ae2e777">RPC::apiInvalidVersion</a>.value;</div>
-<div class="line"><a id="l00145" name="l00145"></a><span class="lineno">  145</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span>            <a class="code hl_function" href="namespaceripple_1_1RPC.html#a1913cdcfd25a883affb49c4f40174cd6">RPC::getAPIVersionNumber</a>(j_object, <span class="keyword">false</span>) ==</div>
-<div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span>            <a class="code hl_variable" href="namespaceripple_1_1RPC.html#ac444ee3babf6fcf2604699ee4ae2e777">RPC::apiInvalidVersion</a>);</div>
-<div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span>        j_object[jss::api_version] = <span class="stringliteral">&quot;a&quot;</span>;</div>
-<div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span>            <a class="code hl_function" href="namespaceripple_1_1RPC.html#a1913cdcfd25a883affb49c4f40174cd6">RPC::getAPIVersionNumber</a>(j_object, <span class="keyword">false</span>) ==</div>
-<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span>            <a class="code hl_variable" href="namespaceripple_1_1RPC.html#ac444ee3babf6fcf2604699ee4ae2e777">RPC::apiInvalidVersion</a>);</div>
-<div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span>    }</div>
-<div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span> </div>
-<div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span>    <span class="keywordtype">void</span></div>
-<div class="line"><a id="l00155" name="l00155"></a><span class="lineno"><a class="line" href="classripple_1_1Version__test.html#a458a3e460f03644e89742d691397eed6">  155</a></span>    <a class="code hl_function" href="classripple_1_1Version__test.html#a458a3e460f03644e89742d691397eed6">testBatch</a>()</div>
-<div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span>    {</div>
-<div class="line"><a id="l00157" name="l00157"></a><span class="lineno">  157</span>        <a class="code hl_variable" href="classbeast_1_1unit__test_1_1suite.html#aaa1237d9b85c69d35fe86645cee094b5">testcase</a>(<span class="stringliteral">&quot;batch, all good request&quot;</span>);</div>
-<div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span> </div>
-<div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span>        <span class="keyword">using namespace </span>test::jtx;</div>
-<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span>        Env env{*<span class="keyword">this</span>};</div>
-<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span> </div>
-<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span>        <span class="keyword">auto</span> <span class="keyword">const</span> without_api_verion = <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(<span class="stringliteral">&quot;{ &quot;</span>) +</div>
-<div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span>            <span class="stringliteral">&quot;\&quot;jsonrpc\&quot;: \&quot;2.0\&quot;, &quot;</span></div>
-<div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span>            <span class="stringliteral">&quot;\&quot;ripplerpc\&quot;: \&quot;2.0\&quot;, &quot;</span></div>
-<div class="line"><a id="l00165" name="l00165"></a><span class="lineno">  165</span>            <span class="stringliteral">&quot;\&quot;id\&quot;: 5, &quot;</span></div>
-<div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span>            <span class="stringliteral">&quot;\&quot;method\&quot;: \&quot;version\&quot;, &quot;</span></div>
-<div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span>            <span class="stringliteral">&quot;\&quot;params\&quot;: {}}&quot;</span>;</div>
-<div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span>        <span class="keyword">auto</span> <span class="keyword">const</span> with_api_verion = <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(<span class="stringliteral">&quot;{ &quot;</span>) +</div>
-<div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span>            <span class="stringliteral">&quot;\&quot;jsonrpc\&quot;: \&quot;2.0\&quot;, &quot;</span></div>
-<div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span>            <span class="stringliteral">&quot;\&quot;ripplerpc\&quot;: \&quot;2.0\&quot;, &quot;</span></div>
-<div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span>            <span class="stringliteral">&quot;\&quot;id\&quot;: 6, &quot;</span></div>
-<div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span>            <span class="stringliteral">&quot;\&quot;method\&quot;: \&quot;version\&quot;, &quot;</span></div>
-<div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span>            <span class="stringliteral">&quot;\&quot;params\&quot;: { &quot;</span></div>
-<div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span>            <span class="stringliteral">&quot;\&quot;api_version\&quot;: &quot;</span> +</div>
-<div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span>            <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(<a class="code hl_variable" href="namespaceripple_1_1RPC.html#a2b3ccf6ba58d8b93038397557338bc32">RPC::apiMaximumSupportedVersion</a>) + <span class="stringliteral">&quot;}}&quot;</span>;</div>
-<div class="line"><a id="l00176" name="l00176"></a><span class="lineno">  176</span>        <span class="keyword">auto</span> re = env.rpc(</div>
-<div class="line"><a id="l00177" name="l00177"></a><span class="lineno">  177</span>            <span class="stringliteral">&quot;json2&quot;</span>, <span class="charliteral">&#39;[&#39;</span> + without_api_verion + <span class="stringliteral">&quot;, &quot;</span> + with_api_verion + <span class="charliteral">&#39;]&#39;</span>);</div>
-<div class="line"><a id="l00178" name="l00178"></a><span class="lineno">  178</span> </div>
-<div class="line"><a id="l00179" name="l00179"></a><span class="lineno">  179</span>        <span class="keywordflow">if</span> (!BEAST_EXPECT(re.isArray()))</div>
-<div class="line"><a id="l00180" name="l00180"></a><span class="lineno">  180</span>            <span class="keywordflow">return</span>;</div>
-<div class="line"><a id="l00181" name="l00181"></a><span class="lineno">  181</span>        <span class="keywordflow">if</span> (!BEAST_EXPECT(re.size() == 2))</div>
+<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>            <a class="code hl_function" href="namespaceripple_1_1RPC.html#a1913cdcfd25a883affb49c4f40174cd6">RPC::getAPIVersionNumber</a>(j_array, <span class="keyword">false</span>) == versionIfUnspecified);</div>
+<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span>            <a class="code hl_function" href="namespaceripple_1_1RPC.html#a1913cdcfd25a883affb49c4f40174cd6">RPC::getAPIVersionNumber</a>(j_null, <span class="keyword">false</span>) == versionIfUnspecified);</div>
+<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span> </div>
+<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>        <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> j_object = <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a>(<a class="code hl_enumvalue" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6">Json::objectValue</a>);</div>
+<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>            <a class="code hl_function" href="namespaceripple_1_1RPC.html#a1913cdcfd25a883affb49c4f40174cd6">RPC::getAPIVersionNumber</a>(j_object, <span class="keyword">false</span>) == versionIfUnspecified);</div>
+<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>        j_object[jss::api_version] = <a class="code hl_variable" href="namespaceripple_1_1RPC.html#a9e992ce4d974403f94f4daf62aa18761">RPC::apiVersionIfUnspecified</a>.value;</div>
+<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>            <a class="code hl_function" href="namespaceripple_1_1RPC.html#a1913cdcfd25a883affb49c4f40174cd6">RPC::getAPIVersionNumber</a>(j_object, <span class="keyword">false</span>) == versionIfUnspecified);</div>
+<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span> </div>
+<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>        j_object[jss::api_version] = <a class="code hl_variable" href="namespaceripple_1_1RPC.html#ad9e8e104e82c67f071a254fa6849afe6">RPC::apiMinimumSupportedVersion</a>.value;</div>
+<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>            <a class="code hl_function" href="namespaceripple_1_1RPC.html#a1913cdcfd25a883affb49c4f40174cd6">RPC::getAPIVersionNumber</a>(j_object, <span class="keyword">false</span>) ==</div>
+<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>            <a class="code hl_variable" href="namespaceripple_1_1RPC.html#ad9e8e104e82c67f071a254fa6849afe6">RPC::apiMinimumSupportedVersion</a>);</div>
+<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span>        j_object[jss::api_version] = <a class="code hl_variable" href="namespaceripple_1_1RPC.html#a2b3ccf6ba58d8b93038397557338bc32">RPC::apiMaximumSupportedVersion</a>.value;</div>
+<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>            <a class="code hl_function" href="namespaceripple_1_1RPC.html#a1913cdcfd25a883affb49c4f40174cd6">RPC::getAPIVersionNumber</a>(j_object, <span class="keyword">false</span>) ==</div>
+<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span>            <a class="code hl_variable" href="namespaceripple_1_1RPC.html#a2b3ccf6ba58d8b93038397557338bc32">RPC::apiMaximumSupportedVersion</a>);</div>
+<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span> </div>
+<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span>        j_object[jss::api_version] = <a class="code hl_variable" href="namespaceripple_1_1RPC.html#ad9e8e104e82c67f071a254fa6849afe6">RPC::apiMinimumSupportedVersion</a> - 1;</div>
+<div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span>            <a class="code hl_function" href="namespaceripple_1_1RPC.html#a1913cdcfd25a883affb49c4f40174cd6">RPC::getAPIVersionNumber</a>(j_object, <span class="keyword">false</span>) ==</div>
+<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>            <a class="code hl_variable" href="namespaceripple_1_1RPC.html#ac444ee3babf6fcf2604699ee4ae2e777">RPC::apiInvalidVersion</a>);</div>
+<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span>        j_object[jss::api_version] = <a class="code hl_variable" href="namespaceripple_1_1RPC.html#a2b3ccf6ba58d8b93038397557338bc32">RPC::apiMaximumSupportedVersion</a> + 1;</div>
+<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span>            <a class="code hl_function" href="namespaceripple_1_1RPC.html#a1913cdcfd25a883affb49c4f40174cd6">RPC::getAPIVersionNumber</a>(j_object, <span class="keyword">false</span>) ==</div>
+<div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span>            <a class="code hl_variable" href="namespaceripple_1_1RPC.html#ac444ee3babf6fcf2604699ee4ae2e777">RPC::apiInvalidVersion</a>);</div>
+<div class="line"><a id="l00139" name="l00139"></a><span class="lineno">  139</span>        j_object[jss::api_version] = <a class="code hl_variable" href="namespaceripple_1_1RPC.html#a63c1a4ab8820cf80f6f0e49ca041e9a0">RPC::apiBetaVersion</a>.value;</div>
+<div class="line"><a id="l00140" name="l00140"></a><span class="lineno">  140</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00141" name="l00141"></a><span class="lineno">  141</span>            <a class="code hl_function" href="namespaceripple_1_1RPC.html#a1913cdcfd25a883affb49c4f40174cd6">RPC::getAPIVersionNumber</a>(j_object, <span class="keyword">true</span>) == <a class="code hl_variable" href="namespaceripple_1_1RPC.html#a63c1a4ab8820cf80f6f0e49ca041e9a0">RPC::apiBetaVersion</a>);</div>
+<div class="line"><a id="l00142" name="l00142"></a><span class="lineno">  142</span>        j_object[jss::api_version] = <a class="code hl_variable" href="namespaceripple_1_1RPC.html#a63c1a4ab8820cf80f6f0e49ca041e9a0">RPC::apiBetaVersion</a> + 1;</div>
+<div class="line"><a id="l00143" name="l00143"></a><span class="lineno">  143</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00144" name="l00144"></a><span class="lineno">  144</span>            <a class="code hl_function" href="namespaceripple_1_1RPC.html#a1913cdcfd25a883affb49c4f40174cd6">RPC::getAPIVersionNumber</a>(j_object, <span class="keyword">true</span>) == <a class="code hl_variable" href="namespaceripple_1_1RPC.html#ac444ee3babf6fcf2604699ee4ae2e777">RPC::apiInvalidVersion</a>);</div>
+<div class="line"><a id="l00145" name="l00145"></a><span class="lineno">  145</span> </div>
+<div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span>        j_object[jss::api_version] = <a class="code hl_variable" href="namespaceripple_1_1RPC.html#ac444ee3babf6fcf2604699ee4ae2e777">RPC::apiInvalidVersion</a>.value;</div>
+<div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span>            <a class="code hl_function" href="namespaceripple_1_1RPC.html#a1913cdcfd25a883affb49c4f40174cd6">RPC::getAPIVersionNumber</a>(j_object, <span class="keyword">false</span>) ==</div>
+<div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span>            <a class="code hl_variable" href="namespaceripple_1_1RPC.html#ac444ee3babf6fcf2604699ee4ae2e777">RPC::apiInvalidVersion</a>);</div>
+<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span>        j_object[jss::api_version] = <span class="stringliteral">&quot;a&quot;</span>;</div>
+<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span>            <a class="code hl_function" href="namespaceripple_1_1RPC.html#a1913cdcfd25a883affb49c4f40174cd6">RPC::getAPIVersionNumber</a>(j_object, <span class="keyword">false</span>) ==</div>
+<div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span>            <a class="code hl_variable" href="namespaceripple_1_1RPC.html#ac444ee3babf6fcf2604699ee4ae2e777">RPC::apiInvalidVersion</a>);</div>
+<div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span>    }</div>
+<div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span> </div>
+<div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span>    <span class="keywordtype">void</span></div>
+<div class="line"><a id="l00157" name="l00157"></a><span class="lineno"><a class="line" href="classripple_1_1Version__test.html#a458a3e460f03644e89742d691397eed6">  157</a></span>    <a class="code hl_function" href="classripple_1_1Version__test.html#a458a3e460f03644e89742d691397eed6">testBatch</a>()</div>
+<div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span>    {</div>
+<div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span>        <a class="code hl_variable" href="classbeast_1_1unit__test_1_1suite.html#aaa1237d9b85c69d35fe86645cee094b5">testcase</a>(<span class="stringliteral">&quot;batch, all good request&quot;</span>);</div>
+<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span> </div>
+<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span>        <span class="keyword">using namespace </span>test::jtx;</div>
+<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span>        Env env{*<span class="keyword">this</span>};</div>
+<div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span> </div>
+<div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span>        <span class="keyword">auto</span> <span class="keyword">const</span> without_api_verion = <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(<span class="stringliteral">&quot;{ &quot;</span>) +</div>
+<div class="line"><a id="l00165" name="l00165"></a><span class="lineno">  165</span>            <span class="stringliteral">&quot;\&quot;jsonrpc\&quot;: \&quot;2.0\&quot;, &quot;</span></div>
+<div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span>            <span class="stringliteral">&quot;\&quot;ripplerpc\&quot;: \&quot;2.0\&quot;, &quot;</span></div>
+<div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span>            <span class="stringliteral">&quot;\&quot;id\&quot;: 5, &quot;</span></div>
+<div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span>            <span class="stringliteral">&quot;\&quot;method\&quot;: \&quot;version\&quot;, &quot;</span></div>
+<div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span>            <span class="stringliteral">&quot;\&quot;params\&quot;: {}}&quot;</span>;</div>
+<div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span>        <span class="keyword">auto</span> <span class="keyword">const</span> with_api_verion = <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(<span class="stringliteral">&quot;{ &quot;</span>) +</div>
+<div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span>            <span class="stringliteral">&quot;\&quot;jsonrpc\&quot;: \&quot;2.0\&quot;, &quot;</span></div>
+<div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span>            <span class="stringliteral">&quot;\&quot;ripplerpc\&quot;: \&quot;2.0\&quot;, &quot;</span></div>
+<div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span>            <span class="stringliteral">&quot;\&quot;id\&quot;: 6, &quot;</span></div>
+<div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span>            <span class="stringliteral">&quot;\&quot;method\&quot;: \&quot;version\&quot;, &quot;</span></div>
+<div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span>            <span class="stringliteral">&quot;\&quot;params\&quot;: { &quot;</span></div>
+<div class="line"><a id="l00176" name="l00176"></a><span class="lineno">  176</span>            <span class="stringliteral">&quot;\&quot;api_version\&quot;: &quot;</span> +</div>
+<div class="line"><a id="l00177" name="l00177"></a><span class="lineno">  177</span>            <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(<a class="code hl_variable" href="namespaceripple_1_1RPC.html#a2b3ccf6ba58d8b93038397557338bc32">RPC::apiMaximumSupportedVersion</a>) + <span class="stringliteral">&quot;}}&quot;</span>;</div>
+<div class="line"><a id="l00178" name="l00178"></a><span class="lineno">  178</span>        <span class="keyword">auto</span> re = env.rpc(</div>
+<div class="line"><a id="l00179" name="l00179"></a><span class="lineno">  179</span>            <span class="stringliteral">&quot;json2&quot;</span>, <span class="charliteral">&#39;[&#39;</span> + without_api_verion + <span class="stringliteral">&quot;, &quot;</span> + with_api_verion + <span class="charliteral">&#39;]&#39;</span>);</div>
+<div class="line"><a id="l00180" name="l00180"></a><span class="lineno">  180</span> </div>
+<div class="line"><a id="l00181" name="l00181"></a><span class="lineno">  181</span>        <span class="keywordflow">if</span> (!BEAST_EXPECT(re.isArray()))</div>
 <div class="line"><a id="l00182" name="l00182"></a><span class="lineno">  182</span>            <span class="keywordflow">return</span>;</div>
-<div class="line"><a id="l00183" name="l00183"></a><span class="lineno">  183</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00184" name="l00184"></a><span class="lineno">  184</span>            re[0u].isMember(jss::result) &amp;&amp;</div>
-<div class="line"><a id="l00185" name="l00185"></a><span class="lineno">  185</span>            re[0u][jss::result].isMember(jss::version));</div>
-<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span>            re[1u].isMember(jss::result) &amp;&amp;</div>
-<div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span>            re[1u][jss::result].isMember(jss::version));</div>
-<div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span>    }</div>
-<div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span> </div>
-<div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span>    <span class="keywordtype">void</span></div>
-<div class="line"><a id="l00192" name="l00192"></a><span class="lineno"><a class="line" href="classripple_1_1Version__test.html#aa175284ddf104e88668c8774e8a6eda6">  192</a></span>    <a class="code hl_function" href="classripple_1_1Version__test.html#aa175284ddf104e88668c8774e8a6eda6">testBatchFail</a>()</div>
-<div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span>    {</div>
-<div class="line"><a id="l00194" name="l00194"></a><span class="lineno">  194</span>        <a class="code hl_variable" href="classbeast_1_1unit__test_1_1suite.html#aaa1237d9b85c69d35fe86645cee094b5">testcase</a>(<span class="stringliteral">&quot;batch, with a bad request&quot;</span>);</div>
-<div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span> </div>
-<div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span>        <span class="keyword">using namespace </span>test::jtx;</div>
-<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span>        Env env{*<span class="keyword">this</span>};</div>
-<div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span> </div>
-<div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span>        BEAST_EXPECT(env.app().config().BETA_RPC_API);</div>
-<div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span>        <span class="keyword">auto</span> <span class="keyword">const</span> without_api_verion = <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(<span class="stringliteral">&quot;{ &quot;</span>) +</div>
-<div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span>            <span class="stringliteral">&quot;\&quot;jsonrpc\&quot;: \&quot;2.0\&quot;, &quot;</span></div>
-<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span>            <span class="stringliteral">&quot;\&quot;ripplerpc\&quot;: \&quot;2.0\&quot;, &quot;</span></div>
-<div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span>            <span class="stringliteral">&quot;\&quot;id\&quot;: 5, &quot;</span></div>
-<div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span>            <span class="stringliteral">&quot;\&quot;method\&quot;: \&quot;version\&quot;, &quot;</span></div>
-<div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span>            <span class="stringliteral">&quot;\&quot;params\&quot;: {}}&quot;</span>;</div>
-<div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span>        <span class="keyword">auto</span> <span class="keyword">const</span> with_wrong_api_verion = <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(<span class="stringliteral">&quot;{ &quot;</span>) +</div>
-<div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span>            <span class="stringliteral">&quot;\&quot;jsonrpc\&quot;: \&quot;2.0\&quot;, &quot;</span></div>
-<div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span>            <span class="stringliteral">&quot;\&quot;ripplerpc\&quot;: \&quot;2.0\&quot;, &quot;</span></div>
-<div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span>            <span class="stringliteral">&quot;\&quot;id\&quot;: 6, &quot;</span></div>
-<div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span>            <span class="stringliteral">&quot;\&quot;method\&quot;: \&quot;version\&quot;, &quot;</span></div>
-<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span>            <span class="stringliteral">&quot;\&quot;params\&quot;: { &quot;</span></div>
-<div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span>            <span class="stringliteral">&quot;\&quot;api_version\&quot;: &quot;</span> +</div>
-<div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span>            <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/algorithm/max.html">std::max</a>(</div>
-<div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span>                               <a class="code hl_variable" href="namespaceripple_1_1RPC.html#a2b3ccf6ba58d8b93038397557338bc32">RPC::apiMaximumSupportedVersion</a>.value,</div>
-<div class="line"><a id="l00215" name="l00215"></a><span class="lineno">  215</span>                               <a class="code hl_variable" href="namespaceripple_1_1RPC.html#a63c1a4ab8820cf80f6f0e49ca041e9a0">RPC::apiBetaVersion</a>.value) +</div>
-<div class="line"><a id="l00216" name="l00216"></a><span class="lineno">  216</span>                           1) +</div>
-<div class="line"><a id="l00217" name="l00217"></a><span class="lineno">  217</span>            <span class="stringliteral">&quot;}}&quot;</span>;</div>
-<div class="line"><a id="l00218" name="l00218"></a><span class="lineno">  218</span>        <span class="keyword">auto</span> re = env.rpc(</div>
-<div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span>            <span class="stringliteral">&quot;json2&quot;</span>,</div>
-<div class="line"><a id="l00220" name="l00220"></a><span class="lineno">  220</span>            <span class="charliteral">&#39;[&#39;</span> + without_api_verion + <span class="stringliteral">&quot;, &quot;</span> + with_wrong_api_verion + <span class="charliteral">&#39;]&#39;</span>);</div>
-<div class="line"><a id="l00221" name="l00221"></a><span class="lineno">  221</span> </div>
-<div class="line"><a id="l00222" name="l00222"></a><span class="lineno">  222</span>        <span class="keywordflow">if</span> (!BEAST_EXPECT(re.isArray()))</div>
-<div class="line"><a id="l00223" name="l00223"></a><span class="lineno">  223</span>            <span class="keywordflow">return</span>;</div>
-<div class="line"><a id="l00224" name="l00224"></a><span class="lineno">  224</span>        <span class="keywordflow">if</span> (!BEAST_EXPECT(re.size() == 2))</div>
+<div class="line"><a id="l00183" name="l00183"></a><span class="lineno">  183</span>        <span class="keywordflow">if</span> (!BEAST_EXPECT(re.size() == 2))</div>
+<div class="line"><a id="l00184" name="l00184"></a><span class="lineno">  184</span>            <span class="keywordflow">return</span>;</div>
+<div class="line"><a id="l00185" name="l00185"></a><span class="lineno">  185</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span>            re[0u].isMember(jss::result) &amp;&amp;</div>
+<div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span>            re[0u][jss::result].isMember(jss::version));</div>
+<div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span>            re[1u].isMember(jss::result) &amp;&amp;</div>
+<div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span>            re[1u][jss::result].isMember(jss::version));</div>
+<div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span>    }</div>
+<div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span> </div>
+<div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span>    <span class="keywordtype">void</span></div>
+<div class="line"><a id="l00194" name="l00194"></a><span class="lineno"><a class="line" href="classripple_1_1Version__test.html#aa175284ddf104e88668c8774e8a6eda6">  194</a></span>    <a class="code hl_function" href="classripple_1_1Version__test.html#aa175284ddf104e88668c8774e8a6eda6">testBatchFail</a>()</div>
+<div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span>    {</div>
+<div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span>        <a class="code hl_variable" href="classbeast_1_1unit__test_1_1suite.html#aaa1237d9b85c69d35fe86645cee094b5">testcase</a>(<span class="stringliteral">&quot;batch, with a bad request&quot;</span>);</div>
+<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span> </div>
+<div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span>        <span class="keyword">using namespace </span>test::jtx;</div>
+<div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span>        Env env{*<span class="keyword">this</span>};</div>
+<div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span> </div>
+<div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span>        BEAST_EXPECT(env.app().config().BETA_RPC_API);</div>
+<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span>        <span class="keyword">auto</span> <span class="keyword">const</span> without_api_verion = <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(<span class="stringliteral">&quot;{ &quot;</span>) +</div>
+<div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span>            <span class="stringliteral">&quot;\&quot;jsonrpc\&quot;: \&quot;2.0\&quot;, &quot;</span></div>
+<div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span>            <span class="stringliteral">&quot;\&quot;ripplerpc\&quot;: \&quot;2.0\&quot;, &quot;</span></div>
+<div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span>            <span class="stringliteral">&quot;\&quot;id\&quot;: 5, &quot;</span></div>
+<div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span>            <span class="stringliteral">&quot;\&quot;method\&quot;: \&quot;version\&quot;, &quot;</span></div>
+<div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span>            <span class="stringliteral">&quot;\&quot;params\&quot;: {}}&quot;</span>;</div>
+<div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span>        <span class="keyword">auto</span> <span class="keyword">const</span> with_wrong_api_verion = <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(<span class="stringliteral">&quot;{ &quot;</span>) +</div>
+<div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span>            <span class="stringliteral">&quot;\&quot;jsonrpc\&quot;: \&quot;2.0\&quot;, &quot;</span></div>
+<div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span>            <span class="stringliteral">&quot;\&quot;ripplerpc\&quot;: \&quot;2.0\&quot;, &quot;</span></div>
+<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span>            <span class="stringliteral">&quot;\&quot;id\&quot;: 6, &quot;</span></div>
+<div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span>            <span class="stringliteral">&quot;\&quot;method\&quot;: \&quot;version\&quot;, &quot;</span></div>
+<div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span>            <span class="stringliteral">&quot;\&quot;params\&quot;: { &quot;</span></div>
+<div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span>            <span class="stringliteral">&quot;\&quot;api_version\&quot;: &quot;</span> +</div>
+<div class="line"><a id="l00215" name="l00215"></a><span class="lineno">  215</span>            <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/algorithm/max.html">std::max</a>(</div>
+<div class="line"><a id="l00216" name="l00216"></a><span class="lineno">  216</span>                               <a class="code hl_variable" href="namespaceripple_1_1RPC.html#a2b3ccf6ba58d8b93038397557338bc32">RPC::apiMaximumSupportedVersion</a>.value,</div>
+<div class="line"><a id="l00217" name="l00217"></a><span class="lineno">  217</span>                               <a class="code hl_variable" href="namespaceripple_1_1RPC.html#a63c1a4ab8820cf80f6f0e49ca041e9a0">RPC::apiBetaVersion</a>.value) +</div>
+<div class="line"><a id="l00218" name="l00218"></a><span class="lineno">  218</span>                           1) +</div>
+<div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span>            <span class="stringliteral">&quot;}}&quot;</span>;</div>
+<div class="line"><a id="l00220" name="l00220"></a><span class="lineno">  220</span>        <span class="keyword">auto</span> re = env.rpc(</div>
+<div class="line"><a id="l00221" name="l00221"></a><span class="lineno">  221</span>            <span class="stringliteral">&quot;json2&quot;</span>,</div>
+<div class="line"><a id="l00222" name="l00222"></a><span class="lineno">  222</span>            <span class="charliteral">&#39;[&#39;</span> + without_api_verion + <span class="stringliteral">&quot;, &quot;</span> + with_wrong_api_verion + <span class="charliteral">&#39;]&#39;</span>);</div>
+<div class="line"><a id="l00223" name="l00223"></a><span class="lineno">  223</span> </div>
+<div class="line"><a id="l00224" name="l00224"></a><span class="lineno">  224</span>        <span class="keywordflow">if</span> (!BEAST_EXPECT(re.isArray()))</div>
 <div class="line"><a id="l00225" name="l00225"></a><span class="lineno">  225</span>            <span class="keywordflow">return</span>;</div>
-<div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span>            re[0u].isMember(jss::result) &amp;&amp;</div>
-<div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span>            re[0u][jss::result].isMember(jss::version));</div>
-<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span>        BEAST_EXPECT(re[1u].isMember(jss::error));</div>
-<div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span>    }</div>
-<div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span> </div>
-<div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span>    <span class="keywordtype">void</span></div>
-<div class="line"><a id="l00233" name="l00233"></a><span class="lineno"><a class="line" href="classripple_1_1Version__test.html#ad77cb038578eae14dfc14d5d63c19b1e">  233</a></span>    <a class="code hl_function" href="classripple_1_1Version__test.html#ad77cb038578eae14dfc14d5d63c19b1e">testConfig</a>()</div>
-<div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span>    {</div>
-<div class="line"><a id="l00235" name="l00235"></a><span class="lineno">  235</span>        <a class="code hl_variable" href="classbeast_1_1unit__test_1_1suite.html#aaa1237d9b85c69d35fe86645cee094b5">testcase</a>(<span class="stringliteral">&quot;config test&quot;</span>);</div>
-<div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span>        {</div>
-<div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span>            <a class="code hl_class" href="classripple_1_1Config.html">Config</a> c;</div>
-<div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span>            BEAST_EXPECT(c.<a class="code hl_variable" href="classripple_1_1Config.html#a60e194c37b2e6e2a6cbaab170579fd15">BETA_RPC_API</a> == <span class="keyword">false</span>);</div>
-<div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span>        }</div>
-<div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span> </div>
-<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span>        {</div>
-<div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span>            <a class="code hl_class" href="classripple_1_1Config.html">Config</a> c;</div>
-<div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span>            c.<a class="code hl_function" href="classripple_1_1Config.html#acec216c5b37b6d4ac971e1ff62142963">loadFromString</a>(<span class="stringliteral">&quot;\n[beta_rpc_api]\n1\n&quot;</span>);</div>
-<div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span>            BEAST_EXPECT(c.<a class="code hl_variable" href="classripple_1_1Config.html#a60e194c37b2e6e2a6cbaab170579fd15">BETA_RPC_API</a> == <span class="keyword">true</span>);</div>
-<div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span>        }</div>
-<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span> </div>
-<div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span>        {</div>
-<div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span>            <a class="code hl_class" href="classripple_1_1Config.html">Config</a> c;</div>
-<div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span>            c.<a class="code hl_function" href="classripple_1_1Config.html#acec216c5b37b6d4ac971e1ff62142963">loadFromString</a>(<span class="stringliteral">&quot;\n[beta_rpc_api]\n0\n&quot;</span>);</div>
-<div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span>            BEAST_EXPECT(c.<a class="code hl_variable" href="classripple_1_1Config.html#a60e194c37b2e6e2a6cbaab170579fd15">BETA_RPC_API</a> == <span class="keyword">false</span>);</div>
-<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span>        }</div>
-<div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span>    }</div>
-<div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span> </div>
-<div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span>    <span class="keywordtype">void</span></div>
-<div class="line"><a id="l00255" name="l00255"></a><span class="lineno"><a class="line" href="classripple_1_1Version__test.html#a686e5be794567a121cdb78ac57d98a03">  255</a></span>    <a class="code hl_function" href="classripple_1_1Version__test.html#a686e5be794567a121cdb78ac57d98a03">testVersionRPCV2</a>()</div>
-<div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span>    {</div>
-<div class="line"><a id="l00257" name="l00257"></a><span class="lineno">  257</span>        <a class="code hl_variable" href="classbeast_1_1unit__test_1_1suite.html#aaa1237d9b85c69d35fe86645cee094b5">testcase</a>(<span class="stringliteral">&quot;test version RPC with api_version &gt;= 2&quot;</span>);</div>
-<div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span> </div>
-<div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span>        <span class="keyword">using namespace </span>test::jtx;</div>
-<div class="line"><a id="l00260" name="l00260"></a><span class="lineno">  260</span>        Env env{*<span class="keyword">this</span>, envconfig([](<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;Config&gt;</a> c) {</div>
-<div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span>                    c-&gt;loadFromString(<span class="stringliteral">&quot;\n[beta_rpc_api]\n1\n&quot;</span>);</div>
-<div class="line"><a id="l00262" name="l00262"></a><span class="lineno">  262</span>                    <span class="keywordflow">return</span> c;</div>
-<div class="line"><a id="l00263" name="l00263"></a><span class="lineno">  263</span>                })};</div>
-<div class="line"><a id="l00264" name="l00264"></a><span class="lineno">  264</span>        <span class="keywordflow">if</span> (!BEAST_EXPECT(env.app().config().BETA_RPC_API == <span class="keyword">true</span>))</div>
-<div class="line"><a id="l00265" name="l00265"></a><span class="lineno">  265</span>            <span class="keywordflow">return</span>;</div>
-<div class="line"><a id="l00266" name="l00266"></a><span class="lineno">  266</span> </div>
-<div class="line"><a id="l00267" name="l00267"></a><span class="lineno">  267</span>        <span class="keyword">auto</span> jrr = env.rpc(</div>
-<div class="line"><a id="l00268" name="l00268"></a><span class="lineno">  268</span>            <span class="stringliteral">&quot;json&quot;</span>,</div>
-<div class="line"><a id="l00269" name="l00269"></a><span class="lineno">  269</span>            <span class="stringliteral">&quot;version&quot;</span>,</div>
-<div class="line"><a id="l00270" name="l00270"></a><span class="lineno">  270</span>            <span class="stringliteral">&quot;{\&quot;api_version\&quot;: &quot;</span> + <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(<a class="code hl_variable" href="namespaceripple_1_1RPC.html#a63c1a4ab8820cf80f6f0e49ca041e9a0">RPC::apiBetaVersion</a>) +</div>
-<div class="line"><a id="l00271" name="l00271"></a><span class="lineno">  271</span>                <span class="stringliteral">&quot;}&quot;</span>)[jss::result];</div>
-<div class="line"><a id="l00272" name="l00272"></a><span class="lineno">  272</span> </div>
-<div class="line"><a id="l00273" name="l00273"></a><span class="lineno">  273</span>        <span class="keywordflow">if</span> (!BEAST_EXPECT(jrr.isMember(jss::version)))</div>
-<div class="line"><a id="l00274" name="l00274"></a><span class="lineno">  274</span>            <span class="keywordflow">return</span>;</div>
-<div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span>        <span class="keywordflow">if</span> (!BEAST_EXPECT(jrr[jss::version].isMember(jss::first)) &amp;&amp;</div>
-<div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span>            jrr[jss::version].isMember(jss::last))</div>
-<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span>            <span class="keywordflow">return</span>;</div>
-<div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span>            jrr[jss::version][jss::first] ==</div>
-<div class="line"><a id="l00280" name="l00280"></a><span class="lineno">  280</span>            <a class="code hl_variable" href="namespaceripple_1_1RPC.html#ad9e8e104e82c67f071a254fa6849afe6">RPC::apiMinimumSupportedVersion</a>.value);</div>
-<div class="line"><a id="l00281" name="l00281"></a><span class="lineno">  281</span>        BEAST_EXPECT(jrr[jss::version][jss::last] == <a class="code hl_variable" href="namespaceripple_1_1RPC.html#a63c1a4ab8820cf80f6f0e49ca041e9a0">RPC::apiBetaVersion</a>.value);</div>
-<div class="line"><a id="l00282" name="l00282"></a><span class="lineno">  282</span>    }</div>
-<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span> </div>
-<div class="line"><a id="l00284" name="l00284"></a><span class="lineno">  284</span><span class="keyword">public</span>:</div>
-<div class="line"><a id="l00285" name="l00285"></a><span class="lineno">  285</span>    <span class="keywordtype">void</span></div>
-<div class="line"><a id="l00286" name="l00286"></a><span class="lineno"><a class="line" href="classripple_1_1Version__test.html#a6fd877a257421344233f15cd6b0a209b">  286</a></span>    <a class="code hl_function" href="classripple_1_1Version__test.html#a6fd877a257421344233f15cd6b0a209b">run</a>()<span class="keyword"> override</span></div>
-<div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span><span class="keyword">    </span>{</div>
-<div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span>        <a class="code hl_function" href="classripple_1_1Version__test.html#a3ba253f2dbd4b9b73664b3cb4676807a">testCorrectVersionNumber</a>();</div>
-<div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span>        <a class="code hl_function" href="classripple_1_1Version__test.html#aed6c0df097557ae0cbfc8b22073ca693">testWrongVersionNumber</a>();</div>
-<div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span>        <a class="code hl_function" href="classripple_1_1Version__test.html#a27ad44417de2eb09222afe74f34bf072">testGetAPIVersionNumber</a>();</div>
-<div class="line"><a id="l00291" name="l00291"></a><span class="lineno">  291</span>        <a class="code hl_function" href="classripple_1_1Version__test.html#a458a3e460f03644e89742d691397eed6">testBatch</a>();</div>
-<div class="line"><a id="l00292" name="l00292"></a><span class="lineno">  292</span>        <a class="code hl_function" href="classripple_1_1Version__test.html#aa175284ddf104e88668c8774e8a6eda6">testBatchFail</a>();</div>
-<div class="line"><a id="l00293" name="l00293"></a><span class="lineno">  293</span>        <a class="code hl_function" href="classripple_1_1Version__test.html#ad77cb038578eae14dfc14d5d63c19b1e">testConfig</a>();</div>
-<div class="line"><a id="l00294" name="l00294"></a><span class="lineno">  294</span>        <a class="code hl_function" href="classripple_1_1Version__test.html#a686e5be794567a121cdb78ac57d98a03">testVersionRPCV2</a>();</div>
-<div class="line"><a id="l00295" name="l00295"></a><span class="lineno">  295</span>    }</div>
-<div class="line"><a id="l00296" name="l00296"></a><span class="lineno">  296</span>};</div>
-<div class="line"><a id="l00297" name="l00297"></a><span class="lineno">  297</span> </div>
-<div class="line"><a id="l00298" name="l00298"></a><span class="lineno"><a class="line" href="namespaceripple.html#a43d1826897d9c36f6873022d072be267">  298</a></span>BEAST_DEFINE_TESTSUITE(Version, rpc, <a class="code hl_namespace" href="namespaceripple.html">ripple</a>);</div>
+<div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span>        <span class="keywordflow">if</span> (!BEAST_EXPECT(re.size() == 2))</div>
+<div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span>            <span class="keywordflow">return</span>;</div>
+<div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span>            re[0u].isMember(jss::result) &amp;&amp;</div>
+<div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span>            re[0u][jss::result].isMember(jss::version));</div>
+<div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span>        BEAST_EXPECT(re[1u].isMember(jss::error));</div>
+<div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span>    }</div>
+<div class="line"><a id="l00233" name="l00233"></a><span class="lineno">  233</span> </div>
+<div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span>    <span class="keywordtype">void</span></div>
+<div class="line"><a id="l00235" name="l00235"></a><span class="lineno"><a class="line" href="classripple_1_1Version__test.html#ad77cb038578eae14dfc14d5d63c19b1e">  235</a></span>    <a class="code hl_function" href="classripple_1_1Version__test.html#ad77cb038578eae14dfc14d5d63c19b1e">testConfig</a>()</div>
+<div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span>    {</div>
+<div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span>        <a class="code hl_variable" href="classbeast_1_1unit__test_1_1suite.html#aaa1237d9b85c69d35fe86645cee094b5">testcase</a>(<span class="stringliteral">&quot;config test&quot;</span>);</div>
+<div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span>        {</div>
+<div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span>            <a class="code hl_class" href="classripple_1_1Config.html">Config</a> c;</div>
+<div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span>            BEAST_EXPECT(c.<a class="code hl_variable" href="classripple_1_1Config.html#a60e194c37b2e6e2a6cbaab170579fd15">BETA_RPC_API</a> == <span class="keyword">false</span>);</div>
+<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span>        }</div>
+<div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span> </div>
+<div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span>        {</div>
+<div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span>            <a class="code hl_class" href="classripple_1_1Config.html">Config</a> c;</div>
+<div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span>            c.<a class="code hl_function" href="classripple_1_1Config.html#acec216c5b37b6d4ac971e1ff62142963">loadFromString</a>(<span class="stringliteral">&quot;\n[beta_rpc_api]\n1\n&quot;</span>);</div>
+<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span>            BEAST_EXPECT(c.<a class="code hl_variable" href="classripple_1_1Config.html#a60e194c37b2e6e2a6cbaab170579fd15">BETA_RPC_API</a> == <span class="keyword">true</span>);</div>
+<div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span>        }</div>
+<div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span> </div>
+<div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span>        {</div>
+<div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span>            <a class="code hl_class" href="classripple_1_1Config.html">Config</a> c;</div>
+<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span>            c.<a class="code hl_function" href="classripple_1_1Config.html#acec216c5b37b6d4ac971e1ff62142963">loadFromString</a>(<span class="stringliteral">&quot;\n[beta_rpc_api]\n0\n&quot;</span>);</div>
+<div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span>            BEAST_EXPECT(c.<a class="code hl_variable" href="classripple_1_1Config.html#a60e194c37b2e6e2a6cbaab170579fd15">BETA_RPC_API</a> == <span class="keyword">false</span>);</div>
+<div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span>        }</div>
+<div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span>    }</div>
+<div class="line"><a id="l00255" name="l00255"></a><span class="lineno">  255</span> </div>
+<div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span>    <span class="keywordtype">void</span></div>
+<div class="line"><a id="l00257" name="l00257"></a><span class="lineno"><a class="line" href="classripple_1_1Version__test.html#a686e5be794567a121cdb78ac57d98a03">  257</a></span>    <a class="code hl_function" href="classripple_1_1Version__test.html#a686e5be794567a121cdb78ac57d98a03">testVersionRPCV2</a>()</div>
+<div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span>    {</div>
+<div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span>        <a class="code hl_variable" href="classbeast_1_1unit__test_1_1suite.html#aaa1237d9b85c69d35fe86645cee094b5">testcase</a>(<span class="stringliteral">&quot;test version RPC with api_version &gt;= 2&quot;</span>);</div>
+<div class="line"><a id="l00260" name="l00260"></a><span class="lineno">  260</span> </div>
+<div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span>        <span class="keyword">using namespace </span>test::jtx;</div>
+<div class="line"><a id="l00262" name="l00262"></a><span class="lineno">  262</span>        Env env{*<span class="keyword">this</span>, envconfig([](<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr&lt;Config&gt;</a> c) {</div>
+<div class="line"><a id="l00263" name="l00263"></a><span class="lineno">  263</span>                    c-&gt;loadFromString(<span class="stringliteral">&quot;\n[beta_rpc_api]\n1\n&quot;</span>);</div>
+<div class="line"><a id="l00264" name="l00264"></a><span class="lineno">  264</span>                    <span class="keywordflow">return</span> c;</div>
+<div class="line"><a id="l00265" name="l00265"></a><span class="lineno">  265</span>                })};</div>
+<div class="line"><a id="l00266" name="l00266"></a><span class="lineno">  266</span>        <span class="keywordflow">if</span> (!BEAST_EXPECT(env.app().config().BETA_RPC_API == <span class="keyword">true</span>))</div>
+<div class="line"><a id="l00267" name="l00267"></a><span class="lineno">  267</span>            <span class="keywordflow">return</span>;</div>
+<div class="line"><a id="l00268" name="l00268"></a><span class="lineno">  268</span> </div>
+<div class="line"><a id="l00269" name="l00269"></a><span class="lineno">  269</span>        <span class="keyword">auto</span> jrr = env.rpc(</div>
+<div class="line"><a id="l00270" name="l00270"></a><span class="lineno">  270</span>            <span class="stringliteral">&quot;json&quot;</span>,</div>
+<div class="line"><a id="l00271" name="l00271"></a><span class="lineno">  271</span>            <span class="stringliteral">&quot;version&quot;</span>,</div>
+<div class="line"><a id="l00272" name="l00272"></a><span class="lineno">  272</span>            <span class="stringliteral">&quot;{\&quot;api_version\&quot;: &quot;</span> + <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(<a class="code hl_variable" href="namespaceripple_1_1RPC.html#a63c1a4ab8820cf80f6f0e49ca041e9a0">RPC::apiBetaVersion</a>) +</div>
+<div class="line"><a id="l00273" name="l00273"></a><span class="lineno">  273</span>                <span class="stringliteral">&quot;}&quot;</span>)[jss::result];</div>
+<div class="line"><a id="l00274" name="l00274"></a><span class="lineno">  274</span> </div>
+<div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span>        <span class="keywordflow">if</span> (!BEAST_EXPECT(jrr.isMember(jss::version)))</div>
+<div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span>            <span class="keywordflow">return</span>;</div>
+<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span>        <span class="keywordflow">if</span> (!BEAST_EXPECT(jrr[jss::version].isMember(jss::first)) &amp;&amp;</div>
+<div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span>            jrr[jss::version].isMember(jss::last))</div>
+<div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span>            <span class="keywordflow">return</span>;</div>
+<div class="line"><a id="l00280" name="l00280"></a><span class="lineno">  280</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00281" name="l00281"></a><span class="lineno">  281</span>            jrr[jss::version][jss::first] ==</div>
+<div class="line"><a id="l00282" name="l00282"></a><span class="lineno">  282</span>            <a class="code hl_variable" href="namespaceripple_1_1RPC.html#ad9e8e104e82c67f071a254fa6849afe6">RPC::apiMinimumSupportedVersion</a>.value);</div>
+<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span>        BEAST_EXPECT(jrr[jss::version][jss::last] == <a class="code hl_variable" href="namespaceripple_1_1RPC.html#a63c1a4ab8820cf80f6f0e49ca041e9a0">RPC::apiBetaVersion</a>.value);</div>
+<div class="line"><a id="l00284" name="l00284"></a><span class="lineno">  284</span>    }</div>
+<div class="line"><a id="l00285" name="l00285"></a><span class="lineno">  285</span> </div>
+<div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span><span class="keyword">public</span>:</div>
+<div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span>    <span class="keywordtype">void</span></div>
+<div class="line"><a id="l00288" name="l00288"></a><span class="lineno"><a class="line" href="classripple_1_1Version__test.html#a6fd877a257421344233f15cd6b0a209b">  288</a></span>    <a class="code hl_function" href="classripple_1_1Version__test.html#a6fd877a257421344233f15cd6b0a209b">run</a>()<span class="keyword"> override</span></div>
+<div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span><span class="keyword">    </span>{</div>
+<div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span>        <a class="code hl_function" href="classripple_1_1Version__test.html#a3ba253f2dbd4b9b73664b3cb4676807a">testCorrectVersionNumber</a>();</div>
+<div class="line"><a id="l00291" name="l00291"></a><span class="lineno">  291</span>        <a class="code hl_function" href="classripple_1_1Version__test.html#aed6c0df097557ae0cbfc8b22073ca693">testWrongVersionNumber</a>();</div>
+<div class="line"><a id="l00292" name="l00292"></a><span class="lineno">  292</span>        <a class="code hl_function" href="classripple_1_1Version__test.html#a27ad44417de2eb09222afe74f34bf072">testGetAPIVersionNumber</a>();</div>
+<div class="line"><a id="l00293" name="l00293"></a><span class="lineno">  293</span>        <a class="code hl_function" href="classripple_1_1Version__test.html#a458a3e460f03644e89742d691397eed6">testBatch</a>();</div>
+<div class="line"><a id="l00294" name="l00294"></a><span class="lineno">  294</span>        <a class="code hl_function" href="classripple_1_1Version__test.html#aa175284ddf104e88668c8774e8a6eda6">testBatchFail</a>();</div>
+<div class="line"><a id="l00295" name="l00295"></a><span class="lineno">  295</span>        <a class="code hl_function" href="classripple_1_1Version__test.html#ad77cb038578eae14dfc14d5d63c19b1e">testConfig</a>();</div>
+<div class="line"><a id="l00296" name="l00296"></a><span class="lineno">  296</span>        <a class="code hl_function" href="classripple_1_1Version__test.html#a686e5be794567a121cdb78ac57d98a03">testVersionRPCV2</a>();</div>
+<div class="line"><a id="l00297" name="l00297"></a><span class="lineno">  297</span>    }</div>
+<div class="line"><a id="l00298" name="l00298"></a><span class="lineno">  298</span>};</div>
 <div class="line"><a id="l00299" name="l00299"></a><span class="lineno">  299</span> </div>
-<div class="line"><a id="l00300" name="l00300"></a><span class="lineno">  300</span>}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a id="l00300" name="l00300"></a><span class="lineno"><a class="line" href="namespaceripple.html#a43d1826897d9c36f6873022d072be267">  300</a></span>BEAST_DEFINE_TESTSUITE(Version, rpc, <a class="code hl_namespace" href="namespaceripple.html">ripple</a>);</div>
+<div class="line"><a id="l00301" name="l00301"></a><span class="lineno">  301</span> </div>
+<div class="line"><a id="l00302" name="l00302"></a><span class="lineno">  302</span>}  <span class="comment">// namespace ripple</span></div>
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div></div>
 <div class="ttc" id="aclassJson_1_1Value_html"><div class="ttname"><a href="classJson_1_1Value.html">Json::Value</a></div><div class="ttdoc">Represents a JSON value.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00147">json_value.h:148</a></div></div>
 <div class="ttc" id="aclassbeast_1_1unit__test_1_1suite_html"><div class="ttname"><a href="classbeast_1_1unit__test_1_1suite.html">beast::unit_test::suite</a></div><div class="ttdoc">A testsuite class.</div><div class="ttdef"><b>Definition:</b> <a href="suite_8h_source.html#l00054">suite.h:55</a></div></div>
 <div class="ttc" id="aclassbeast_1_1unit__test_1_1suite_html_aaa1237d9b85c69d35fe86645cee094b5"><div class="ttname"><a href="classbeast_1_1unit__test_1_1suite.html#aaa1237d9b85c69d35fe86645cee094b5">beast::unit_test::suite::testcase</a></div><div class="ttdeci">testcase_t testcase</div><div class="ttdoc">Memberspace for declaring test cases.</div><div class="ttdef"><b>Definition:</b> <a href="suite_8h_source.html#l00155">suite.h:155</a></div></div>
 <div class="ttc" id="aclassripple_1_1Config_html"><div class="ttname"><a href="classripple_1_1Config.html">ripple::Config</a></div><div class="ttdef"><b>Definition:</b> <a href="Config_8h_source.html#l00085">Config.h:86</a></div></div>
 <div class="ttc" id="aclassripple_1_1Config_html_a60e194c37b2e6e2a6cbaab170579fd15"><div class="ttname"><a href="classripple_1_1Config.html#a60e194c37b2e6e2a6cbaab170579fd15">ripple::Config::BETA_RPC_API</a></div><div class="ttdeci">bool BETA_RPC_API</div><div class="ttdef"><b>Definition:</b> <a href="Config_8h_source.html#l00288">Config.h:288</a></div></div>
-<div class="ttc" id="aclassripple_1_1Config_html_acec216c5b37b6d4ac971e1ff62142963"><div class="ttname"><a href="classripple_1_1Config.html#acec216c5b37b6d4ac971e1ff62142963">ripple::Config::loadFromString</a></div><div class="ttdeci">void loadFromString(std::string const &amp;fileContents)</div><div class="ttdoc">Load the config from the contents of the string.</div><div class="ttdef"><b>Definition:</b> <a href="Config_8cpp_source.html#l00477">Config.cpp:477</a></div></div>
-<div class="ttc" id="aclassripple_1_1Version__test_html"><div class="ttname"><a href="classripple_1_1Version__test.html">ripple::Version_test</a></div><div class="ttdef"><b>Definition:</b> <a href="Version__test_8cpp_source.html#l00026">Version_test.cpp:27</a></div></div>
-<div class="ttc" id="aclassripple_1_1Version__test_html_a27ad44417de2eb09222afe74f34bf072"><div class="ttname"><a href="classripple_1_1Version__test.html#a27ad44417de2eb09222afe74f34bf072">ripple::Version_test::testGetAPIVersionNumber</a></div><div class="ttdeci">void testGetAPIVersionNumber()</div><div class="ttdef"><b>Definition:</b> <a href="Version__test_8cpp_source.html#l00097">Version_test.cpp:97</a></div></div>
-<div class="ttc" id="aclassripple_1_1Version__test_html_a3ba253f2dbd4b9b73664b3cb4676807a"><div class="ttname"><a href="classripple_1_1Version__test.html#a3ba253f2dbd4b9b73664b3cb4676807a">ripple::Version_test::testCorrectVersionNumber</a></div><div class="ttdeci">void testCorrectVersionNumber()</div><div class="ttdef"><b>Definition:</b> <a href="Version__test_8cpp_source.html#l00029">Version_test.cpp:29</a></div></div>
-<div class="ttc" id="aclassripple_1_1Version__test_html_a458a3e460f03644e89742d691397eed6"><div class="ttname"><a href="classripple_1_1Version__test.html#a458a3e460f03644e89742d691397eed6">ripple::Version_test::testBatch</a></div><div class="ttdeci">void testBatch()</div><div class="ttdef"><b>Definition:</b> <a href="Version__test_8cpp_source.html#l00155">Version_test.cpp:155</a></div></div>
-<div class="ttc" id="aclassripple_1_1Version__test_html_a686e5be794567a121cdb78ac57d98a03"><div class="ttname"><a href="classripple_1_1Version__test.html#a686e5be794567a121cdb78ac57d98a03">ripple::Version_test::testVersionRPCV2</a></div><div class="ttdeci">void testVersionRPCV2()</div><div class="ttdef"><b>Definition:</b> <a href="Version__test_8cpp_source.html#l00255">Version_test.cpp:255</a></div></div>
-<div class="ttc" id="aclassripple_1_1Version__test_html_a6fd877a257421344233f15cd6b0a209b"><div class="ttname"><a href="classripple_1_1Version__test.html#a6fd877a257421344233f15cd6b0a209b">ripple::Version_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdoc">Runs the suite.</div><div class="ttdef"><b>Definition:</b> <a href="Version__test_8cpp_source.html#l00286">Version_test.cpp:286</a></div></div>
-<div class="ttc" id="aclassripple_1_1Version__test_html_aa175284ddf104e88668c8774e8a6eda6"><div class="ttname"><a href="classripple_1_1Version__test.html#aa175284ddf104e88668c8774e8a6eda6">ripple::Version_test::testBatchFail</a></div><div class="ttdeci">void testBatchFail()</div><div class="ttdef"><b>Definition:</b> <a href="Version__test_8cpp_source.html#l00192">Version_test.cpp:192</a></div></div>
-<div class="ttc" id="aclassripple_1_1Version__test_html_ad77cb038578eae14dfc14d5d63c19b1e"><div class="ttname"><a href="classripple_1_1Version__test.html#ad77cb038578eae14dfc14d5d63c19b1e">ripple::Version_test::testConfig</a></div><div class="ttdeci">void testConfig()</div><div class="ttdef"><b>Definition:</b> <a href="Version__test_8cpp_source.html#l00233">Version_test.cpp:233</a></div></div>
-<div class="ttc" id="aclassripple_1_1Version__test_html_aed6c0df097557ae0cbfc8b22073ca693"><div class="ttname"><a href="classripple_1_1Version__test.html#aed6c0df097557ae0cbfc8b22073ca693">ripple::Version_test::testWrongVersionNumber</a></div><div class="ttdeci">void testWrongVersionNumber()</div><div class="ttdef"><b>Definition:</b> <a href="Version__test_8cpp_source.html#l00055">Version_test.cpp:55</a></div></div>
+<div class="ttc" id="aclassripple_1_1Config_html_acec216c5b37b6d4ac971e1ff62142963"><div class="ttname"><a href="classripple_1_1Config.html#acec216c5b37b6d4ac971e1ff62142963">ripple::Config::loadFromString</a></div><div class="ttdeci">void loadFromString(std::string const &amp;fileContents)</div><div class="ttdoc">Load the config from the contents of the string.</div><div class="ttdef"><b>Definition:</b> <a href="Config_8cpp_source.html#l00478">Config.cpp:478</a></div></div>
+<div class="ttc" id="aclassripple_1_1Version__test_html"><div class="ttname"><a href="classripple_1_1Version__test.html">ripple::Version_test</a></div><div class="ttdef"><b>Definition:</b> <a href="Version__test_8cpp_source.html#l00028">Version_test.cpp:29</a></div></div>
+<div class="ttc" id="aclassripple_1_1Version__test_html_a27ad44417de2eb09222afe74f34bf072"><div class="ttname"><a href="classripple_1_1Version__test.html#a27ad44417de2eb09222afe74f34bf072">ripple::Version_test::testGetAPIVersionNumber</a></div><div class="ttdeci">void testGetAPIVersionNumber()</div><div class="ttdef"><b>Definition:</b> <a href="Version__test_8cpp_source.html#l00099">Version_test.cpp:99</a></div></div>
+<div class="ttc" id="aclassripple_1_1Version__test_html_a3ba253f2dbd4b9b73664b3cb4676807a"><div class="ttname"><a href="classripple_1_1Version__test.html#a3ba253f2dbd4b9b73664b3cb4676807a">ripple::Version_test::testCorrectVersionNumber</a></div><div class="ttdeci">void testCorrectVersionNumber()</div><div class="ttdef"><b>Definition:</b> <a href="Version__test_8cpp_source.html#l00031">Version_test.cpp:31</a></div></div>
+<div class="ttc" id="aclassripple_1_1Version__test_html_a458a3e460f03644e89742d691397eed6"><div class="ttname"><a href="classripple_1_1Version__test.html#a458a3e460f03644e89742d691397eed6">ripple::Version_test::testBatch</a></div><div class="ttdeci">void testBatch()</div><div class="ttdef"><b>Definition:</b> <a href="Version__test_8cpp_source.html#l00157">Version_test.cpp:157</a></div></div>
+<div class="ttc" id="aclassripple_1_1Version__test_html_a686e5be794567a121cdb78ac57d98a03"><div class="ttname"><a href="classripple_1_1Version__test.html#a686e5be794567a121cdb78ac57d98a03">ripple::Version_test::testVersionRPCV2</a></div><div class="ttdeci">void testVersionRPCV2()</div><div class="ttdef"><b>Definition:</b> <a href="Version__test_8cpp_source.html#l00257">Version_test.cpp:257</a></div></div>
+<div class="ttc" id="aclassripple_1_1Version__test_html_a6fd877a257421344233f15cd6b0a209b"><div class="ttname"><a href="classripple_1_1Version__test.html#a6fd877a257421344233f15cd6b0a209b">ripple::Version_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdoc">Runs the suite.</div><div class="ttdef"><b>Definition:</b> <a href="Version__test_8cpp_source.html#l00288">Version_test.cpp:288</a></div></div>
+<div class="ttc" id="aclassripple_1_1Version__test_html_aa175284ddf104e88668c8774e8a6eda6"><div class="ttname"><a href="classripple_1_1Version__test.html#aa175284ddf104e88668c8774e8a6eda6">ripple::Version_test::testBatchFail</a></div><div class="ttdeci">void testBatchFail()</div><div class="ttdef"><b>Definition:</b> <a href="Version__test_8cpp_source.html#l00194">Version_test.cpp:194</a></div></div>
+<div class="ttc" id="aclassripple_1_1Version__test_html_ad77cb038578eae14dfc14d5d63c19b1e"><div class="ttname"><a href="classripple_1_1Version__test.html#ad77cb038578eae14dfc14d5d63c19b1e">ripple::Version_test::testConfig</a></div><div class="ttdeci">void testConfig()</div><div class="ttdef"><b>Definition:</b> <a href="Version__test_8cpp_source.html#l00235">Version_test.cpp:235</a></div></div>
+<div class="ttc" id="aclassripple_1_1Version__test_html_aed6c0df097557ae0cbfc8b22073ca693"><div class="ttname"><a href="classripple_1_1Version__test.html#aed6c0df097557ae0cbfc8b22073ca693">ripple::Version_test::testWrongVersionNumber</a></div><div class="ttdeci">void testWrongVersionNumber()</div><div class="ttdef"><b>Definition:</b> <a href="Version__test_8cpp_source.html#l00057">Version_test.cpp:57</a></div></div>
 <div class="ttc" id="amax_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/max.html">std::max</a></div><div class="ttdeci">T max(T... args)</div></div>
 <div class="ttc" id="anamespaceJson_html_a7d654b75c16a57007925868e38212b4ea7d9899633b4409bd3fc107e6737f8391"><div class="ttname"><a href="namespaceJson.html#a7d654b75c16a57007925868e38212b4ea7d9899633b4409bd3fc107e6737f8391">Json::nullValue</a></div><div class="ttdeci">@ nullValue</div><div class="ttdoc">'null' value</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00037">json_value.h:37</a></div></div>
 <div class="ttc" id="anamespaceJson_html_a7d654b75c16a57007925868e38212b4eadc8f264f36b55b063c78126b335415f4"><div class="ttname"><a href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eadc8f264f36b55b063c78126b335415f4">Json::arrayValue</a></div><div class="ttdeci">@ arrayValue</div><div class="ttdoc">array value (ordered list)</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00043">json_value.h:43</a></div></div>
 <div class="ttc" id="anamespaceJson_html_a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6"><div class="ttname"><a href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6">Json::objectValue</a></div><div class="ttdeci">@ objectValue</div><div class="ttdoc">object value (collection of name/value pairs).</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00045">json_value.h:44</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1RPC_html_a1913cdcfd25a883affb49c4f40174cd6"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a1913cdcfd25a883affb49c4f40174cd6">ripple::RPC::getAPIVersionNumber</a></div><div class="ttdeci">unsigned int getAPIVersionNumber(Json::Value const &amp;jv, bool betaEnabled)</div><div class="ttdoc">Retrieve the api version number from the json value.</div><div class="ttdef"><b>Definition:</b> <a href="RPCHelpers_8cpp_source.html#l01005">RPCHelpers.cpp:1005</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1RPC_html_a1913cdcfd25a883affb49c4f40174cd6"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a1913cdcfd25a883affb49c4f40174cd6">ripple::RPC::getAPIVersionNumber</a></div><div class="ttdeci">unsigned int getAPIVersionNumber(Json::Value const &amp;jv, bool betaEnabled)</div><div class="ttdoc">Retrieve the api version number from the json value.</div><div class="ttdef"><b>Definition:</b> <a href="RPCHelpers_8cpp_source.html#l01006">RPCHelpers.cpp:1006</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1RPC_html_a2b3ccf6ba58d8b93038397557338bc32"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a2b3ccf6ba58d8b93038397557338bc32">ripple::RPC::apiMaximumSupportedVersion</a></div><div class="ttdeci">static constexpr auto apiMaximumSupportedVersion</div><div class="ttdef"><b>Definition:</b> <a href="ApiVersion_8h_source.html#l00058">ApiVersion.h:58</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1RPC_html_a63c1a4ab8820cf80f6f0e49ca041e9a0"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a63c1a4ab8820cf80f6f0e49ca041e9a0">ripple::RPC::apiBetaVersion</a></div><div class="ttdeci">static constexpr auto apiBetaVersion</div><div class="ttdef"><b>Definition:</b> <a href="ApiVersion_8h_source.html#l00062">ApiVersion.h:62</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1RPC_html_a9e992ce4d974403f94f4daf62aa18761"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a9e992ce4d974403f94f4daf62aa18761">ripple::RPC::apiVersionIfUnspecified</a></div><div class="ttdeci">static constexpr auto apiVersionIfUnspecified</div><div class="ttdef"><b>Definition:</b> <a href="ApiVersion_8h_source.html#l00059">ApiVersion.h:59</a></div></div>

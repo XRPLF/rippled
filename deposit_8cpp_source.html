@@ -96,88 +96,89 @@ $(function() {
 <div class="line"><a id="l00018" name="l00018"></a><span class="lineno">   18</span><span class="comment">//==============================================================================</span></div>
 <div class="line"><a id="l00019" name="l00019"></a><span class="lineno">   19</span> </div>
 <div class="line"><a id="l00020" name="l00020"></a><span class="lineno">   20</span><span class="preprocessor">#include &lt;test/jtx/deposit.h&gt;</span></div>
-<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span><span class="preprocessor">#include &lt;xrpl/protocol/jss.h&gt;</span></div>
-<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span> </div>
-<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceripple.html">ripple</a> {</div>
-<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="keyword">namespace </span>test {</div>
-<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="keyword">namespace </span>jtx {</div>
-<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span> </div>
-<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span><span class="keyword">namespace </span>deposit {</div>
-<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span> </div>
-<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span><span class="comment">// Add DepositPreauth.</span></div>
-<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span><a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a></div>
-<div class="line"><a id="l00031" name="l00031"></a><span class="lineno"><a class="line" href="namespaceripple_1_1test_1_1jtx_1_1deposit.html#a662867f42cb3f468f2e8830fbd7e0d8a">   31</a></span><a class="code hl_enumvalue" href="namespaceripple_1_1test.html#acf39cc44acdd6b5089f2076897fa3911afa53b91ccc1b78668d5af58e1ed3a485">auth</a>(<a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> <span class="keyword">const</span>&amp; account, <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> <span class="keyword">const</span>&amp; <a class="code hl_enumvalue" href="namespaceripple_1_1test.html#acf39cc44acdd6b5089f2076897fa3911afa53b91ccc1b78668d5af58e1ed3a485">auth</a>)</div>
-<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>{</div>
-<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>    <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> jv;</div>
-<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>    jv[sfAccount.jsonName] = account.human();</div>
-<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>    jv[sfAuthorize.jsonName] = <a class="code hl_enumvalue" href="namespaceripple_1_1test.html#acf39cc44acdd6b5089f2076897fa3911afa53b91ccc1b78668d5af58e1ed3a485">auth</a>.human();</div>
-<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>    jv[sfTransactionType.jsonName] = jss::DepositPreauth;</div>
-<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>    <span class="keywordflow">return</span> jv;</div>
-<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>}</div>
-<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span> </div>
-<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span><span class="comment">// Remove DepositPreauth.</span></div>
-<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span><a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a></div>
-<div class="line"><a id="l00042" name="l00042"></a><span class="lineno"><a class="line" href="namespaceripple_1_1test_1_1jtx_1_1deposit.html#a5e20a724bec47934d88c328af26c2541">   42</a></span><a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1deposit.html#a5e20a724bec47934d88c328af26c2541">unauth</a>(<a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> <span class="keyword">const</span>&amp; account, <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> <span class="keyword">const</span>&amp; <a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1deposit.html#a5e20a724bec47934d88c328af26c2541">unauth</a>)</div>
-<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>{</div>
-<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>    <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> jv;</div>
-<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>    jv[sfAccount.jsonName] = account.human();</div>
-<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>    jv[sfUnauthorize.jsonName] = <a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1deposit.html#a5e20a724bec47934d88c328af26c2541">unauth</a>.human();</div>
-<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>    jv[sfTransactionType.jsonName] = jss::DepositPreauth;</div>
-<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>    <span class="keywordflow">return</span> jv;</div>
-<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>}</div>
-<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span> </div>
-<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span><span class="comment">// Add DepositPreauth.</span></div>
-<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span><a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a></div>
-<div class="line"><a id="l00053" name="l00053"></a><span class="lineno"><a class="line" href="namespaceripple_1_1test_1_1jtx_1_1deposit.html#ac0c24df5082c3715d3be7a4a7617b9d5">   53</a></span><a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1deposit.html#ac0c24df5082c3715d3be7a4a7617b9d5">authCredentials</a>(</div>
-<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>    <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> <span class="keyword">const</span>&amp; account,</div>
-<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;AuthorizeCredentials&gt;</a> <span class="keyword">const</span>&amp; <a class="code hl_enumvalue" href="namespaceripple_1_1test.html#acf39cc44acdd6b5089f2076897fa3911afa53b91ccc1b78668d5af58e1ed3a485">auth</a>)</div>
-<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>{</div>
-<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>    <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> jv;</div>
-<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>    jv[sfAccount.jsonName] = account.human();</div>
-<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>    jv[sfAuthorizeCredentials.jsonName] = <a class="code hl_enumvalue" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eadc8f264f36b55b063c78126b335415f4">Json::arrayValue</a>;</div>
-<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>    <span class="keyword">auto</span>&amp; arr(jv[sfAuthorizeCredentials.jsonName]);</div>
-<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>    <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; o : <a class="code hl_enumvalue" href="namespaceripple_1_1test.html#acf39cc44acdd6b5089f2076897fa3911afa53b91ccc1b78668d5af58e1ed3a485">auth</a>)</div>
-<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>    {</div>
-<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>        <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> j2;</div>
-<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>        j2[jss::Credential] = o.toJson();</div>
-<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>        arr.<a class="code hl_function" href="classJson_1_1Value.html#a7e49ac977e4bcf59745a09d426669f75">append</a>(std::move(j2));</div>
-<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>    }</div>
-<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>    jv[sfTransactionType.jsonName] = jss::DepositPreauth;</div>
-<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>    <span class="keywordflow">return</span> jv;</div>
-<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>}</div>
-<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span> </div>
-<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span><span class="comment">// Remove DepositPreauth.</span></div>
-<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span><a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a></div>
-<div class="line"><a id="l00073" name="l00073"></a><span class="lineno"><a class="line" href="namespaceripple_1_1test_1_1jtx_1_1deposit.html#a6cd9fd52c782e497970241a61d76eb51">   73</a></span><a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1deposit.html#a6cd9fd52c782e497970241a61d76eb51">unauthCredentials</a>(</div>
-<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>    <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> <span class="keyword">const</span>&amp; account,</div>
-<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;AuthorizeCredentials&gt;</a> <span class="keyword">const</span>&amp; <a class="code hl_enumvalue" href="namespaceripple_1_1test.html#acf39cc44acdd6b5089f2076897fa3911afa53b91ccc1b78668d5af58e1ed3a485">auth</a>)</div>
-<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>{</div>
-<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>    <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> jv;</div>
-<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>    jv[sfAccount.jsonName] = account.human();</div>
-<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>    jv[sfUnauthorizeCredentials.jsonName] = <a class="code hl_enumvalue" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eadc8f264f36b55b063c78126b335415f4">Json::arrayValue</a>;</div>
-<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>    <span class="keyword">auto</span>&amp; arr(jv[sfUnauthorizeCredentials.jsonName]);</div>
-<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>    <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; o : <a class="code hl_enumvalue" href="namespaceripple_1_1test.html#acf39cc44acdd6b5089f2076897fa3911afa53b91ccc1b78668d5af58e1ed3a485">auth</a>)</div>
-<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>    {</div>
-<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>        <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> j2;</div>
-<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>        j2[jss::Credential] = o.toJson();</div>
-<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>        arr.<a class="code hl_function" href="classJson_1_1Value.html#a7e49ac977e4bcf59745a09d426669f75">append</a>(std::move(j2));</div>
-<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>    }</div>
-<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>    jv[sfTransactionType.jsonName] = jss::DepositPreauth;</div>
-<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>    <span class="keywordflow">return</span> jv;</div>
-<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>}</div>
-<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span> </div>
-<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>}  <span class="comment">// namespace deposit</span></div>
-<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span> </div>
-<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>}  <span class="comment">// namespace jtx</span></div>
-<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>}  <span class="comment">// namespace test</span></div>
-<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span> </div>
+<div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span><span class="preprocessor">#include &lt;xrpl/protocol/jss.h&gt;</span></div>
+<div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span> </div>
+<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceripple.html">ripple</a> {</div>
+<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="keyword">namespace </span>test {</div>
+<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><span class="keyword">namespace </span>jtx {</div>
+<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span> </div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span><span class="keyword">namespace </span>deposit {</div>
+<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span> </div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span><span class="comment">// Add DepositPreauth.</span></div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span><a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a></div>
+<div class="line"><a id="l00032" name="l00032"></a><span class="lineno"><a class="line" href="namespaceripple_1_1test_1_1jtx_1_1deposit.html#a662867f42cb3f468f2e8830fbd7e0d8a">   32</a></span><a class="code hl_enumvalue" href="namespaceripple_1_1test.html#acf39cc44acdd6b5089f2076897fa3911afa53b91ccc1b78668d5af58e1ed3a485">auth</a>(<a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> <span class="keyword">const</span>&amp; account, <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> <span class="keyword">const</span>&amp; <a class="code hl_enumvalue" href="namespaceripple_1_1test.html#acf39cc44acdd6b5089f2076897fa3911afa53b91ccc1b78668d5af58e1ed3a485">auth</a>)</div>
+<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>{</div>
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>    <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> jv;</div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>    jv[sfAccount.jsonName] = account.human();</div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>    jv[sfAuthorize.jsonName] = <a class="code hl_enumvalue" href="namespaceripple_1_1test.html#acf39cc44acdd6b5089f2076897fa3911afa53b91ccc1b78668d5af58e1ed3a485">auth</a>.human();</div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>    jv[sfTransactionType.jsonName] = jss::DepositPreauth;</div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>    <span class="keywordflow">return</span> jv;</div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>}</div>
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span> </div>
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span><span class="comment">// Remove DepositPreauth.</span></div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span><a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a></div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno"><a class="line" href="namespaceripple_1_1test_1_1jtx_1_1deposit.html#a5e20a724bec47934d88c328af26c2541">   43</a></span><a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1deposit.html#a5e20a724bec47934d88c328af26c2541">unauth</a>(<a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> <span class="keyword">const</span>&amp; account, <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> <span class="keyword">const</span>&amp; <a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1deposit.html#a5e20a724bec47934d88c328af26c2541">unauth</a>)</div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>{</div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>    <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> jv;</div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>    jv[sfAccount.jsonName] = account.human();</div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>    jv[sfUnauthorize.jsonName] = <a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1deposit.html#a5e20a724bec47934d88c328af26c2541">unauth</a>.human();</div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>    jv[sfTransactionType.jsonName] = jss::DepositPreauth;</div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>    <span class="keywordflow">return</span> jv;</div>
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>}</div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span> </div>
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span><span class="comment">// Add DepositPreauth.</span></div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span><a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a></div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno"><a class="line" href="namespaceripple_1_1test_1_1jtx_1_1deposit.html#ac0c24df5082c3715d3be7a4a7617b9d5">   54</a></span><a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1deposit.html#ac0c24df5082c3715d3be7a4a7617b9d5">authCredentials</a>(</div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>    <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> <span class="keyword">const</span>&amp; account,</div>
+<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;AuthorizeCredentials&gt;</a> <span class="keyword">const</span>&amp; <a class="code hl_enumvalue" href="namespaceripple_1_1test.html#acf39cc44acdd6b5089f2076897fa3911afa53b91ccc1b78668d5af58e1ed3a485">auth</a>)</div>
+<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>{</div>
+<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>    <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> jv;</div>
+<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>    jv[sfAccount.jsonName] = account.human();</div>
+<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>    jv[sfAuthorizeCredentials.jsonName] = <a class="code hl_enumvalue" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eadc8f264f36b55b063c78126b335415f4">Json::arrayValue</a>;</div>
+<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>    <span class="keyword">auto</span>&amp; arr(jv[sfAuthorizeCredentials.jsonName]);</div>
+<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>    <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; o : <a class="code hl_enumvalue" href="namespaceripple_1_1test.html#acf39cc44acdd6b5089f2076897fa3911afa53b91ccc1b78668d5af58e1ed3a485">auth</a>)</div>
+<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>    {</div>
+<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>        <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> j2;</div>
+<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>        j2[jss::Credential] = o.toJson();</div>
+<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>        arr.<a class="code hl_function" href="classJson_1_1Value.html#a7e49ac977e4bcf59745a09d426669f75">append</a>(std::move(j2));</div>
+<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>    }</div>
+<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>    jv[sfTransactionType.jsonName] = jss::DepositPreauth;</div>
+<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>    <span class="keywordflow">return</span> jv;</div>
+<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>}</div>
+<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span> </div>
+<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span><span class="comment">// Remove DepositPreauth.</span></div>
+<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span><a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a></div>
+<div class="line"><a id="l00074" name="l00074"></a><span class="lineno"><a class="line" href="namespaceripple_1_1test_1_1jtx_1_1deposit.html#a6cd9fd52c782e497970241a61d76eb51">   74</a></span><a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1deposit.html#a6cd9fd52c782e497970241a61d76eb51">unauthCredentials</a>(</div>
+<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>    <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> <span class="keyword">const</span>&amp; account,</div>
+<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;AuthorizeCredentials&gt;</a> <span class="keyword">const</span>&amp; <a class="code hl_enumvalue" href="namespaceripple_1_1test.html#acf39cc44acdd6b5089f2076897fa3911afa53b91ccc1b78668d5af58e1ed3a485">auth</a>)</div>
+<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>{</div>
+<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>    <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> jv;</div>
+<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>    jv[sfAccount.jsonName] = account.human();</div>
+<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>    jv[sfUnauthorizeCredentials.jsonName] = <a class="code hl_enumvalue" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eadc8f264f36b55b063c78126b335415f4">Json::arrayValue</a>;</div>
+<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>    <span class="keyword">auto</span>&amp; arr(jv[sfUnauthorizeCredentials.jsonName]);</div>
+<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>    <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; o : <a class="code hl_enumvalue" href="namespaceripple_1_1test.html#acf39cc44acdd6b5089f2076897fa3911afa53b91ccc1b78668d5af58e1ed3a485">auth</a>)</div>
+<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>    {</div>
+<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>        <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> j2;</div>
+<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>        j2[jss::Credential] = o.toJson();</div>
+<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>        arr.<a class="code hl_function" href="classJson_1_1Value.html#a7e49ac977e4bcf59745a09d426669f75">append</a>(std::move(j2));</div>
+<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>    }</div>
+<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>    jv[sfTransactionType.jsonName] = jss::DepositPreauth;</div>
+<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>    <span class="keywordflow">return</span> jv;</div>
+<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>}</div>
+<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span> </div>
+<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>}  <span class="comment">// namespace deposit</span></div>
+<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span> </div>
+<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>}  <span class="comment">// namespace jtx</span></div>
+<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>}  <span class="comment">// namespace test</span></div>
+<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>}  <span class="comment">// namespace ripple</span></div>
 <div class="ttc" id="aclassJson_1_1Value_html"><div class="ttname"><a href="classJson_1_1Value.html">Json::Value</a></div><div class="ttdoc">Represents a JSON value.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00147">json_value.h:148</a></div></div>
 <div class="ttc" id="aclassJson_1_1Value_html_a7e49ac977e4bcf59745a09d426669f75"><div class="ttname"><a href="classJson_1_1Value.html#a7e49ac977e4bcf59745a09d426669f75">Json::Value::append</a></div><div class="ttdeci">Value &amp; append(const Value &amp;value)</div><div class="ttdoc">Append value to array at the end.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8cpp_source.html#l00897">json_value.cpp:897</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Account_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Account.html">ripple::test::jtx::Account</a></div><div class="ttdoc">Immutable cryptographic account descriptor.</div><div class="ttdef"><b>Definition:</b> <a href="Account_8h_source.html#l00038">Account.h:39</a></div></div>
 <div class="ttc" id="anamespaceJson_html_a7d654b75c16a57007925868e38212b4eadc8f264f36b55b063c78126b335415f4"><div class="ttname"><a href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eadc8f264f36b55b063c78126b335415f4">Json::arrayValue</a></div><div class="ttdeci">@ arrayValue</div><div class="ttdoc">array value (ordered list)</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00043">json_value.h:43</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1test_1_1jtx_1_1deposit_html_a5e20a724bec47934d88c328af26c2541"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx_1_1deposit.html#a5e20a724bec47934d88c328af26c2541">ripple::test::jtx::deposit::unauth</a></div><div class="ttdeci">Json::Value unauth(Account const &amp;account, Account const &amp;unauth)</div><div class="ttdoc">Remove preauthorization for deposit.</div><div class="ttdef"><b>Definition:</b> <a href="deposit_8cpp_source.html#l00042">deposit.cpp:42</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1test_1_1jtx_1_1deposit_html_a6cd9fd52c782e497970241a61d76eb51"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx_1_1deposit.html#a6cd9fd52c782e497970241a61d76eb51">ripple::test::jtx::deposit::unauthCredentials</a></div><div class="ttdeci">Json::Value unauthCredentials(jtx::Account const &amp;account, std::vector&lt; AuthorizeCredentials &gt; const &amp;auth)</div><div class="ttdef"><b>Definition:</b> <a href="deposit_8cpp_source.html#l00073">deposit.cpp:73</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1test_1_1jtx_1_1deposit_html_ac0c24df5082c3715d3be7a4a7617b9d5"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx_1_1deposit.html#ac0c24df5082c3715d3be7a4a7617b9d5">ripple::test::jtx::deposit::authCredentials</a></div><div class="ttdeci">Json::Value authCredentials(jtx::Account const &amp;account, std::vector&lt; AuthorizeCredentials &gt; const &amp;auth)</div><div class="ttdef"><b>Definition:</b> <a href="deposit_8cpp_source.html#l00053">deposit.cpp:53</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1test_1_1jtx_1_1deposit_html_a5e20a724bec47934d88c328af26c2541"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx_1_1deposit.html#a5e20a724bec47934d88c328af26c2541">ripple::test::jtx::deposit::unauth</a></div><div class="ttdeci">Json::Value unauth(Account const &amp;account, Account const &amp;unauth)</div><div class="ttdoc">Remove preauthorization for deposit.</div><div class="ttdef"><b>Definition:</b> <a href="deposit_8cpp_source.html#l00043">deposit.cpp:43</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1test_1_1jtx_1_1deposit_html_a6cd9fd52c782e497970241a61d76eb51"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx_1_1deposit.html#a6cd9fd52c782e497970241a61d76eb51">ripple::test::jtx::deposit::unauthCredentials</a></div><div class="ttdeci">Json::Value unauthCredentials(jtx::Account const &amp;account, std::vector&lt; AuthorizeCredentials &gt; const &amp;auth)</div><div class="ttdef"><b>Definition:</b> <a href="deposit_8cpp_source.html#l00074">deposit.cpp:74</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1test_1_1jtx_1_1deposit_html_ac0c24df5082c3715d3be7a4a7617b9d5"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx_1_1deposit.html#ac0c24df5082c3715d3be7a4a7617b9d5">ripple::test::jtx::deposit::authCredentials</a></div><div class="ttdeci">Json::Value authCredentials(jtx::Account const &amp;account, std::vector&lt; AuthorizeCredentials &gt; const &amp;auth)</div><div class="ttdef"><b>Definition:</b> <a href="deposit_8cpp_source.html#l00054">deposit.cpp:54</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1test_html_acf39cc44acdd6b5089f2076897fa3911afa53b91ccc1b78668d5af58e1ed3a485"><div class="ttname"><a href="namespaceripple_1_1test.html#acf39cc44acdd6b5089f2076897fa3911afa53b91ccc1b78668d5af58e1ed3a485">ripple::test::TrustFlag::auth</a></div><div class="ttdeci">@ auth</div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="algorithm_8h_source.html#l00026">algorithm.h:26</a></div></div>
 <div class="ttc" id="avector_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a></div></div>

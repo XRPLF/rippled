@@ -99,39 +99,40 @@ $(function() {
 <div class="line"><a id="l00021" name="l00021"></a><span class="lineno">   21</span><span class="preprocessor">#define RIPPLE_TEST_JTX_SENDMAX_H_INCLUDED</span></div>
 <div class="line"><a id="l00022" name="l00022"></a><span class="lineno">   22</span> </div>
 <div class="line"><a id="l00023" name="l00023"></a><span class="lineno">   23</span><span class="preprocessor">#include &lt;test/jtx/Env.h&gt;</span></div>
-<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span><span class="preprocessor">#include &lt;xrpl/protocol/STAmount.h&gt;</span></div>
-<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span> </div>
-<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceripple.html">ripple</a> {</div>
-<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span><span class="keyword">namespace </span>test {</div>
-<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span><span class="keyword">namespace </span>jtx {</div>
-<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span> </div>
-<div class="line"><a id="l00031" name="l00031"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1jtx_1_1sendmax.html">   31</a></span><span class="keyword">class </span><a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1sendmax.html">sendmax</a></div>
-<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>{</div>
-<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span><span class="keyword">private</span>:</div>
-<div class="line"><a id="l00034" name="l00034"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1jtx_1_1sendmax.html#aa6a5fdbafe9773f87b2fee1a837d9d62">   34</a></span>    <a class="code hl_class" href="classripple_1_1STAmount.html">STAmount</a> <a class="code hl_variable" href="classripple_1_1test_1_1jtx_1_1sendmax.html#aa6a5fdbafe9773f87b2fee1a837d9d62">amount_</a>;</div>
-<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span> </div>
-<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span><span class="keyword">public</span>:</div>
-<div class="line"><a id="l00037" name="l00037"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1jtx_1_1sendmax.html#a92692f1e442c69ec310dbbc4f27eefa2">   37</a></span>    <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1sendmax.html#a92692f1e442c69ec310dbbc4f27eefa2">sendmax</a>(<a class="code hl_class" href="classripple_1_1STAmount.html">STAmount</a> <span class="keyword">const</span>&amp; amount) : <a class="code hl_variable" href="classripple_1_1test_1_1jtx_1_1sendmax.html#aa6a5fdbafe9773f87b2fee1a837d9d62">amount_</a>(amount)</div>
-<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>    {</div>
-<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>    }</div>
-<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span> </div>
-<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>    <span class="keywordtype">void</span></div>
-<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>    <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1sendmax.html#a380cd5fb0ff8bcf370eab7c5169d3384">operator()</a>(<a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a>&amp;, <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1JTx.html">JTx</a>&amp; jtx) <span class="keyword">const</span>;</div>
-<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>};</div>
-<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span> </div>
-<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>}  <span class="comment">// namespace jtx</span></div>
-<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>}  <span class="comment">// namespace test</span></div>
-<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>}  <span class="comment">// namespace ripple</span></div>
-<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span> </div>
-<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span><span class="preprocessor">#endif</span></div>
+<div class="line"><a id="l00024" name="l00024"></a><span class="lineno">   24</span> </div>
+<div class="line"><a id="l00025" name="l00025"></a><span class="lineno">   25</span><span class="preprocessor">#include &lt;xrpl/protocol/STAmount.h&gt;</span></div>
+<div class="line"><a id="l00026" name="l00026"></a><span class="lineno">   26</span> </div>
+<div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceripple.html">ripple</a> {</div>
+<div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span><span class="keyword">namespace </span>test {</div>
+<div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span><span class="keyword">namespace </span>jtx {</div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span> </div>
+<div class="line"><a id="l00032" name="l00032"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1jtx_1_1sendmax.html">   32</a></span><span class="keyword">class </span><a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1sendmax.html">sendmax</a></div>
+<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>{</div>
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span><span class="keyword">private</span>:</div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1jtx_1_1sendmax.html#aa6a5fdbafe9773f87b2fee1a837d9d62">   35</a></span>    <a class="code hl_class" href="classripple_1_1STAmount.html">STAmount</a> <a class="code hl_variable" href="classripple_1_1test_1_1jtx_1_1sendmax.html#aa6a5fdbafe9773f87b2fee1a837d9d62">amount_</a>;</div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span> </div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span><span class="keyword">public</span>:</div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1jtx_1_1sendmax.html#a92692f1e442c69ec310dbbc4f27eefa2">   38</a></span>    <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1sendmax.html#a92692f1e442c69ec310dbbc4f27eefa2">sendmax</a>(<a class="code hl_class" href="classripple_1_1STAmount.html">STAmount</a> <span class="keyword">const</span>&amp; amount) : <a class="code hl_variable" href="classripple_1_1test_1_1jtx_1_1sendmax.html#aa6a5fdbafe9773f87b2fee1a837d9d62">amount_</a>(amount)</div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>    {</div>
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>    }</div>
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span> </div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>    <span class="keywordtype">void</span></div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>    <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1sendmax.html#a380cd5fb0ff8bcf370eab7c5169d3384">operator()</a>(<a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a>&amp;, <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1JTx.html">JTx</a>&amp; jtx) <span class="keyword">const</span>;</div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>};</div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span> </div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>}  <span class="comment">// namespace jtx</span></div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>}  <span class="comment">// namespace test</span></div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span> </div>
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span><span class="preprocessor">#endif</span></div>
 <div class="ttc" id="aclassripple_1_1STAmount_html"><div class="ttname"><a href="classripple_1_1STAmount.html">ripple::STAmount</a></div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8h_source.html#l00049">STAmount.h:50</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html">ripple::test::jtx::Env</a></div><div class="ttdoc">A transaction testing environment.</div><div class="ttdef"><b>Definition:</b> <a href="Env_8h_source.html#l00117">Env.h:118</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1sendmax_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1sendmax.html">ripple::test::jtx::sendmax</a></div><div class="ttdoc">Sets the SendMax on a JTx.</div><div class="ttdef"><b>Definition:</b> <a href="sendmax_8h_source.html#l00031">sendmax.h:32</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1sendmax_html_a380cd5fb0ff8bcf370eab7c5169d3384"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1sendmax.html#a380cd5fb0ff8bcf370eab7c5169d3384">ripple::test::jtx::sendmax::operator()</a></div><div class="ttdeci">void operator()(Env &amp;, JTx &amp;jtx) const</div><div class="ttdef"><b>Definition:</b> <a href="sendmax_8cpp_source.html#l00028">sendmax.cpp:28</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1sendmax_html_a92692f1e442c69ec310dbbc4f27eefa2"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1sendmax.html#a92692f1e442c69ec310dbbc4f27eefa2">ripple::test::jtx::sendmax::sendmax</a></div><div class="ttdeci">sendmax(STAmount const &amp;amount)</div><div class="ttdef"><b>Definition:</b> <a href="sendmax_8h_source.html#l00037">sendmax.h:37</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1sendmax_html_aa6a5fdbafe9773f87b2fee1a837d9d62"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1sendmax.html#aa6a5fdbafe9773f87b2fee1a837d9d62">ripple::test::jtx::sendmax::amount_</a></div><div class="ttdeci">STAmount amount_</div><div class="ttdef"><b>Definition:</b> <a href="sendmax_8h_source.html#l00034">sendmax.h:34</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html">ripple::test::jtx::Env</a></div><div class="ttdoc">A transaction testing environment.</div><div class="ttdef"><b>Definition:</b> <a href="Env_8h_source.html#l00119">Env.h:120</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1sendmax_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1sendmax.html">ripple::test::jtx::sendmax</a></div><div class="ttdoc">Sets the SendMax on a JTx.</div><div class="ttdef"><b>Definition:</b> <a href="sendmax_8h_source.html#l00032">sendmax.h:33</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1sendmax_html_a380cd5fb0ff8bcf370eab7c5169d3384"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1sendmax.html#a380cd5fb0ff8bcf370eab7c5169d3384">ripple::test::jtx::sendmax::operator()</a></div><div class="ttdeci">void operator()(Env &amp;, JTx &amp;jtx) const</div><div class="ttdef"><b>Definition:</b> <a href="sendmax_8cpp_source.html#l00029">sendmax.cpp:29</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1sendmax_html_a92692f1e442c69ec310dbbc4f27eefa2"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1sendmax.html#a92692f1e442c69ec310dbbc4f27eefa2">ripple::test::jtx::sendmax::sendmax</a></div><div class="ttdeci">sendmax(STAmount const &amp;amount)</div><div class="ttdef"><b>Definition:</b> <a href="sendmax_8h_source.html#l00038">sendmax.h:38</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1sendmax_html_aa6a5fdbafe9773f87b2fee1a837d9d62"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1sendmax.html#aa6a5fdbafe9773f87b2fee1a837d9d62">ripple::test::jtx::sendmax::amount_</a></div><div class="ttdeci">STAmount amount_</div><div class="ttdef"><b>Definition:</b> <a href="sendmax_8h_source.html#l00035">sendmax.h:35</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="algorithm_8h_source.html#l00026">algorithm.h:26</a></div></div>
-<div class="ttc" id="astructripple_1_1test_1_1jtx_1_1JTx_html"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1JTx.html">ripple::test::jtx::JTx</a></div><div class="ttdoc">Execution context for applying a JSON transaction.</div><div class="ttdef"><b>Definition:</b> <a href="JTx_8h_source.html#l00043">JTx.h:44</a></div></div>
+<div class="ttc" id="astructripple_1_1test_1_1jtx_1_1JTx_html"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1JTx.html">ripple::test::jtx::JTx</a></div><div class="ttdoc">Execution context for applying a JSON transaction.</div><div class="ttdef"><b>Definition:</b> <a href="JTx_8h_source.html#l00044">JTx.h:45</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

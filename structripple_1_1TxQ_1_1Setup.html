@@ -156,7 +156,7 @@ towards".  <a href="structripple_1_1TxQ_1_1Setup.html#aa1bbdbb893cafa2a5ef126f72
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p >Structure used to customize <a class="el" href="classripple_1_1TxQ.html">TxQ</a> behavior. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00068">68</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00069">69</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 </div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a26a8d4ddac8283d07af3fd8005895acd" name="a26a8d4ddac8283d07af3fd8005895acd"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a26a8d4ddac8283d07af3fd8005895acd">&#9670;&#160;</a></span>Setup()</h2>
@@ -202,7 +202,7 @@ towards".  <a href="structripple_1_1TxQ_1_1Setup.html#aa1bbdbb893cafa2a5ef126f72
 <p >For example, if the last ledger had 150 transactions, then up to 3000 transactions can be queued.</p>
 <p >Can be overridden by <a class="el" href="structripple_1_1TxQ_1_1Setup.html#a6aa8f143fbe49895ac08279cfc0311e2">queueSizeMin</a> </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00080">80</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00081">81</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
@@ -221,7 +221,7 @@ towards".  <a href="structripple_1_1TxQ_1_1Setup.html#aa1bbdbb893cafa2a5ef126f72
 <p>The smallest limit the queue is allowed. </p>
 <p >Will allow more than <code>ledgersInQueue</code> in the queue if ledgers are small. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00086">86</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00087">87</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
@@ -240,7 +240,7 @@ towards".  <a href="structripple_1_1TxQ_1_1Setup.html#aa1bbdbb893cafa2a5ef126f72
 <p>Extra percentage required on the fee level of a queued transaction to replace that transaction with another with the same <a class="el" href="classripple_1_1SeqProxy.html" title="A type that represents either a sequence value or a ticket value.">SeqProxy</a>. </p>
 <p >If queued transaction for account "Alice" with seq 45 has a fee level of 512, a replacement transaction for "Alice" with seq 45 must have a fee level of at least 512 * (1 + 0.25) = 640 to be considered. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00096">96</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00097">97</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
@@ -258,7 +258,7 @@ towards".  <a href="structripple_1_1TxQ_1_1Setup.html#aa1bbdbb893cafa2a5ef126f72
 
 <p>Minimum value of the escalation multiplier, regardless of the prior ledger's median fee level. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00099">99</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00100">100</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
@@ -276,7 +276,7 @@ towards".  <a href="structripple_1_1TxQ_1_1Setup.html#aa1bbdbb893cafa2a5ef126f72
 
 <p>Minimum number of transactions to allow into the ledger before escalation, regardless of the prior ledger's size. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00102">102</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00103">103</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
@@ -295,7 +295,7 @@ towards".  <a href="structripple_1_1TxQ_1_1Setup.html#aa1bbdbb893cafa2a5ef126f72
 <p>Like <a class="el" href="structripple_1_1TxQ_1_1Setup.html#a2b11f9f54cac17f8f23c30e978742786">minimumTxnInLedger</a> for standalone mode. </p>
 <p >Primarily so that tests don't need to worry about queuing. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00105">105</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00106">106</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
@@ -314,7 +314,7 @@ towards".  <a href="structripple_1_1TxQ_1_1Setup.html#aa1bbdbb893cafa2a5ef126f72
 <p><a class="el" href="classripple_1_1Number.html">Number</a> of transactions per ledger that fee escalation "works
 towards". </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00108">108</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00109">109</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
@@ -333,7 +333,7 @@ towards". </p>
 <p>Optional maximum allowed value of transactions per ledger before fee escalation kicks in. </p>
 <p >By default, the maximum is an emergent property of network, validator, and consensus performance. This setting can override that behavior to prevent fee escalation from allowing more than <code>maximumTxnInLedger</code> "cheap" transactions into the open ledger.</p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00119">119</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00120">120</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
@@ -353,7 +353,7 @@ towards". </p>
 <p >Calculations are subject to configured limits, and the recent transactions counts buffer.</p>
 <p >Example: If the "expectation" is for 500 transactions, and a ledger is validated normally with 501 transactions, then the expected ledger size will be updated to 601. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00131">131</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00132">132</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
@@ -373,7 +373,7 @@ towards". </p>
 <p >Calculations are subject to configured limits.</p>
 <p >Example: If the ledger has 15000 transactions, and it is validated slowly, then the expected ledger size will be updated to 7500. If there are only 6 transactions, the expected ledger size will be updated to 5, assuming the default minimum. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00145">145</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00146">146</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
@@ -391,7 +391,7 @@ towards". </p>
 
 <p>Maximum number of transactions that can be queued by one account. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00147">147</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00148">148</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
@@ -410,7 +410,7 @@ towards". </p>
 <p>Minimum difference between the current ledger sequence and a transaction's <code>LastLedgerSequence</code> for the transaction to be queueable. </p>
 <p >Decreases the chance a transaction will get queued and broadcast only to expire before it gets a chance to be processed. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00154">154</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00155">155</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
@@ -428,7 +428,7 @@ towards". </p>
 
 <p>Use standalone mode behavior. </p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00156">156</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ_8h_source.html#l00157">157</a> of file <a class="el" href="TxQ_8h_source.html">TxQ.h</a>.</p>
 
 </div>
 </div>
