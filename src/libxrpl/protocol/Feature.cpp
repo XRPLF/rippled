@@ -259,12 +259,9 @@ FeatureCollections::registerFeature(
     Feature const* i = getByName(name);
     if (!i)
     {
-        // If this check fails, and you just added a feature, increase the
-        // numFeatures value in Feature.h
         check(
             features.size() < detail::numFeatures,
-            "More features defined than allocated. Adjust numFeatures in "
-            "Feature.h.");
+            "More features defined than allocated.");
 
         auto const f = sha512Half(Slice(name.data(), name.size()));
 
@@ -433,44 +430,25 @@ featureToName(uint256 const& f)
 #undef XRPL_FEATURE
 #pragma push_macro("XRPL_FIX")
 #undef XRPL_FIX
+#pragma push_macro("XRPL_RETIRE")
+#undef XRPL_RETIRE
 
 #define XRPL_FEATURE(name, supported, vote) \
     uint256 const feature##name = registerFeature(#name, supported, vote);
 #define XRPL_FIX(name, supported, vote) \
     uint256 const fix##name = registerFeature("fix" #name, supported, vote);
+#define XRPL_RETIRE(name)                                                     \
+    [[deprecated("The referenced amendment has been retired"), maybe_unused]] \
+    uint256 const retired##name = retireFeature(#name);
 
 #include <xrpl/protocol/detail/features.macro>
 
+#undef XRPL_RETIRE
+#pragma pop_macro("XRPL_RETIRE")
 #undef XRPL_FIX
 #pragma pop_macro("XRPL_FIX")
 #undef XRPL_FEATURE
 #pragma pop_macro("XRPL_FEATURE")
-
-// clang-format off
-
-// The following amendments have been active for at least two years. Their
-// pre-amendment code has been removed and the identifiers are deprecated.
-// All known amendments and amendments that may appear in a validated
-// ledger must be registered either here or above with the "active" amendments
-[[deprecated("The referenced amendment has been retired"), maybe_unused]]
-uint256 const
-    retiredMultiSign         = retireFeature("MultiSign"),
-    retiredTrustSetAuth      = retireFeature("TrustSetAuth"),
-    retiredFeeEscalation     = retireFeature("FeeEscalation"),
-    retiredPayChan           = retireFeature("PayChan"),
-    retiredCryptoConditions  = retireFeature("CryptoConditions"),
-    retiredTickSize          = retireFeature("TickSize"),
-    retiredFix1368           = retireFeature("fix1368"),
-    retiredEscrow            = retireFeature("Escrow"),
-    retiredFix1373           = retireFeature("fix1373"),
-    retiredEnforceInvariants = retireFeature("EnforceInvariants"),
-    retiredSortedDirectories = retireFeature("SortedDirectories"),
-    retiredFix1201           = retireFeature("fix1201"),
-    retiredFix1512           = retireFeature("fix1512"),
-    retiredFix1523           = retireFeature("fix1523"),
-    retiredFix1528           = retireFeature("fix1528");
-
-// clang-format on
 
 // All of the features should now be registered, since variables in a cpp file
 // are initialized from top to bottom.
