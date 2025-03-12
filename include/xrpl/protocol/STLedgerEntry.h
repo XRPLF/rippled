@@ -36,6 +36,8 @@ class STLedgerEntry final : public STObject, public CountedObject<STLedgerEntry>
 public:
     using pointer = std::shared_ptr<STLedgerEntry>;
     using ref = const std::shared_ptr<STLedgerEntry>&;
+    using const_pointer = std::shared_ptr<STLedgerEntry const>;
+    using const_ref = const std::shared_ptr<STLedgerEntry const>&;
 
     /** Create an empty object with the given key and type. */
     explicit STLedgerEntry(Keylet const& k);
