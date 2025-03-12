@@ -249,6 +249,10 @@ public:
                     gw1.human() + R"("})");
             BEAST_EXPECT(lines[jss::result][jss::lines].isArray());
             BEAST_EXPECT(lines[jss::result][jss::lines].size() == 26);
+
+            // Check no ripple is not set for trustlines between alice and gw1
+            auto const& line = lines[jss::result][jss::lines][0u];
+            BEAST_EXPECT(!line[jss::no_ripple].isMember(jss::no_ripple));
         }
         {
             // Use a malformed peer.
