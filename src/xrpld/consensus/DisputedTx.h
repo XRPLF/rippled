@@ -21,6 +21,7 @@
 #define RIPPLE_APP_CONSENSUS_IMPL_DISPUTEDTX_H_INCLUDED
 
 #include <xrpld/consensus/ConsensusParms.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_writer.h>

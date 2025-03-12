@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <test/unit_test/SuiteJournal.h>
+
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/unit_test.h>

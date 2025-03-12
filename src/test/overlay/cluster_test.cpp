@@ -19,7 +19,9 @@
 
 #include <test/jtx/TestSuite.h>
 #include <test/unit_test/SuiteJournal.h>
+
 #include <xrpld/overlay/Cluster.h>
+
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/protocol/SecretKey.h>
 

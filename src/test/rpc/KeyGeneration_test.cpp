@@ -18,8 +18,10 @@
 //==============================================================================
 
 #include <test/jtx/TestSuite.h>
+
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/handlers/WalletPropose.h>
+
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>
 #include <xrpl/protocol/ErrorCodes.h>

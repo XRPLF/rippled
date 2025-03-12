@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <test/jtx.h>
+
 #include <xrpl/basics/BasicConfig.h>
 
 namespace ripple {

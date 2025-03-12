@@ -21,6 +21,7 @@
 #define RIPPLE_APP_MAIN_NODEIDENTITY_H_INCLUDED
 
 #include <xrpld/app/main/Application.h>
+
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
 

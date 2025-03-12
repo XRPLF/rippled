@@ -23,6 +23,7 @@
 #include <xrpld/ledger/ApplyView.h>
 #include <xrpld/ledger/ReadView.h>
 #include <xrpld/ledger/detail/ApplyStateTable.h>
+
 #include <xrpl/protocol/XRPAmount.h>
 
 namespace ripple {

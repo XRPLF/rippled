@@ -18,7 +18,9 @@
 //==============================================================================
 
 #include <test/csf/ledgers.h>
+
 #include <xrpld/consensus/LedgerTrie.h>
+
 #include <xrpl/beast/unit_test.h>
 
 #include <random>

@@ -16,6 +16,7 @@
 //==============================================================================
 
 #include <test/jtx.h>
+
 #include <xrpld/core/JobQueue.h>
 
 namespace ripple {

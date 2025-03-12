@@ -19,7 +19,9 @@
 
 #include <test/csf.h>
 #include <test/unit_test/SuiteJournal.h>
+
 #include <xrpld/consensus/Consensus.h>
+
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/json/to_string.h>
 

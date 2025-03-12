@@ -21,6 +21,7 @@
 #define RIPPLE_CORE_LOADMONITOR_H_INCLUDED
 
 #include <xrpld/core/LoadEvent.h>
+
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/beast/utility/Journal.h>
 

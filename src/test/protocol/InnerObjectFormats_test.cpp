@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <test/jtx.h>
+
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/json/json_reader.h>       // Json::Reader
