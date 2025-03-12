@@ -1578,4 +1578,101 @@ ValidPermissionedDomain::finalize(
         (sleStatus_[1] ? check(*sleStatus_[1], j) : true);
 }
 
+//------------------------------------------------------------------------------
+
+void
+NoModifiedUnmodifiableFields::visitEntry(
+    bool isDelete,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
+{
+    if (isDelete || !before)
+        // Creation and deletion are ignored
+        return;
+
+    auto const type = after->getType();
+    if (knownTypes_.contains(type))
+    {
+        changedEntries_.emplace(before, after);
+    }
+}
+
+bool
+NoModifiedUnmodifiableFields::finalize(
+    STTx const& tx,
+    TER const,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    static auto const fieldChanged = [](auto const& before,
+                                        auto const& after,
+                                        auto const& field) {
+        return before->isFieldPresent(field) != after->isFieldPresent(field) ||
+            before->at(field) != after->at(field);
+    };
+    for (auto const& slePair : changedEntries_)
+    {
+        auto const& before = slePair.first;
+        auto const& after = slePair.second;
+        auto const type = after->getType();
+        bool bad = false;
+        [[maybe_unused]] bool enforce = false;
+        switch (type)
+        {
+            case ltLOAN_BROKER:
+                /*
+                 * We check this invariant regardless of lending protocol
+                 * amendment status, allowing for detection and logging of
+                 * potential issues even when the amendment is disabled.
+                 */
+                enforce = view.rules().enabled(featureLendingProtocol);
+                bad = fieldChanged(before, after, sfVaultID) ||
+                    fieldChanged(before, after, sfAccount) ||
+                    fieldChanged(before, after, sfOwner) ||
+                    fieldChanged(before, after, sfManagementFeeRate) ||
+                    fieldChanged(before, after, sfCoverRateMinimum) ||
+                    fieldChanged(before, after, sfCoverRateLiquidation);
+                break;
+            case ltLOAN:
+                /*
+                 * We check this invariant regardless of lending protocol
+                 * amendment status, allowing for detection and logging of
+                 * potential issues even when the amendment is disabled.
+                 */
+                enforce = view.rules().enabled(featureLendingProtocol);
+                bad = fieldChanged(before, after, sfLoanBrokerID) ||
+                    fieldChanged(before, after, sfBorrower) ||
+                    fieldChanged(before, after, sfLoanOriginationFee) ||
+                    fieldChanged(before, after, sfLoanServiceFee) ||
+                    fieldChanged(before, after, sfLatePaymentFee) ||
+                    fieldChanged(before, after, sfClosePaymentFee) ||
+                    fieldChanged(before, after, sfOverpaymentFee) ||
+                    fieldChanged(before, after, sfInterestRate) ||
+                    fieldChanged(before, after, sfLateInterestRate) ||
+                    fieldChanged(before, after, sfCloseInterestRate) ||
+                    fieldChanged(before, after, sfOverpaymentInterestRate) ||
+                    fieldChanged(before, after, sfPaymentInterval);
+                break;
+            default:
+                UNREACHABLE(
+                    "ripple::NoModifiedUnmodifiableFields::finalize : unknown "
+                    "SLE type");
+        }
+        XRPL_ASSERT(
+            !bad || enforce,
+            "ripple::NoModifiedUnmodifiableFields::finalize : no bad "
+            "changes or enforce invariant");
+        if (bad)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: changed an unchangable field for "
+                << tx.getTransactionID();
+            if (enforce)
+                return false;
+        }
+    }
+    return true;
+}
+
 }  // namespace ripple

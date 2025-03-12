@@ -340,6 +340,24 @@ vault(uint256 const& vaultKey)
 }
 
 Keylet
+loanbroker(AccountID const& owner, std::uint32_t seq) noexcept;
+
+inline Keylet
+loanbroker(uint256 const& vaultKey)
+{
+    return {ltLOAN_BROKER, vaultKey};
+}
+
+Keylet
+loan(AccountID const& owner, uint256 loanBrokerID, std::uint32_t seq) noexcept;
+
+inline Keylet
+loan(uint256 const& vaultKey)
+{
+    return {ltLOAN, vaultKey};
+}
+
+Keylet
 permissionedDomain(AccountID const& account, std::uint32_t seq) noexcept;
 
 Keylet

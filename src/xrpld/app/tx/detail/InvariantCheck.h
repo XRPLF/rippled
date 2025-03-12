@@ -618,6 +618,35 @@ public:
         beast::Journal const&);
 };
 
+/**
+ * @brief Invariants: Some fields are unmodifiable
+ *
+ * Check that any fields specified as unmodifiable are not modified when the
+ * object is modified. Creation and deletion are ignored.
+ *
+ */
+class NoModifiedUnmodifiableFields
+{
+    std::set<LedgerEntryType> const knownTypes_{ltLOAN_BROKER, ltLOAN};
+
+    std::set<std::pair<SLE::const_pointer, SLE::const_pointer>> changedEntries_;
+
+public:
+    void
+    visitEntry(
+        bool,
+        std::shared_ptr<SLE const> const&,
+        std::shared_ptr<SLE const> const&);
+
+    bool
+    finalize(
+        STTx const&,
+        TER const,
+        XRPAmount const,
+        ReadView const&,
+        beast::Journal const&);
+};
+
 // additional invariant checks can be declared above and then added to this
 // tuple
 using InvariantChecks = std::tuple<
@@ -637,7 +666,8 @@ using InvariantChecks = std::tuple<
     NFTokenCountTracking,
     ValidClawback,
     ValidMPTIssuance,
-    ValidPermissionedDomain>;
+    ValidPermissionedDomain,
+    NoModifiedUnmodifiableFields>;
 
 /**
  * @brief get a tuple of all invariant checks

@@ -95,6 +95,8 @@ enum class LedgerNameSpace : std::uint16_t {
     CREDENTIAL = 'D',
     PERMISSIONED_DOMAIN = 'm',
     VAULT = 'V',
+    LOAN_BROKER = 'l',  // lower-case L
+    LOAN = 'L',
 
     // No longer used or supported. Left here to reserve the space
     // to avoid accidental reuse.
@@ -548,6 +550,18 @@ Keylet
 vault(AccountID const& owner, std::uint32_t seq) noexcept
 {
     return vault(indexHash(LedgerNameSpace::VAULT, owner, seq));
+}
+
+Keylet
+loanbroker(AccountID const& owner, std::uint32_t seq) noexcept
+{
+    return loanbroker(indexHash(LedgerNameSpace::LOAN_BROKER, owner, seq));
+}
+
+Keylet
+loan(AccountID const& owner, uint256 loanBrokerID, std::uint32_t seq) noexcept
+{
+    return loan(indexHash(LedgerNameSpace::LOAN, loanBrokerID, seq));
 }
 
 Keylet
