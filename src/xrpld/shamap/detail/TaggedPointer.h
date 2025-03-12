@@ -24,7 +24,6 @@
 #include <xrpl/basics/IntrusivePointer.h>
 
 #include <array>
-#include <bit>
 #include <cstdint>
 #include <optional>
 

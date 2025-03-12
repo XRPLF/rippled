@@ -24,7 +24,6 @@
 #include <xrpl/protocol/jss.h>
 
 namespace ripple {
-
 namespace RPC {
 
 class AccountLines_test : public beast::unit_test::suite

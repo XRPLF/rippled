@@ -21,6 +21,7 @@
 #define RIPPLE_PROTOCOL_STPARSEDJSON_H_INCLUDED
 
 #include <xrpl/protocol/STArray.h>
+
 #include <optional>
 
 namespace ripple {

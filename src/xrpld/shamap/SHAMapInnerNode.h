@@ -20,7 +20,6 @@
 #ifndef RIPPLE_SHAMAP_SHAMAPINNERNODE_H_INCLUDED
 #define RIPPLE_SHAMAP_SHAMAPINNERNODE_H_INCLUDED
 
-#include <xrpld/shamap/SHAMapItem.h>
 #include <xrpld/shamap/SHAMapNodeID.h>
 #include <xrpld/shamap/SHAMapTreeNode.h>
 #include <xrpld/shamap/detail/TaggedPointer.h>
@@ -29,12 +28,7 @@
 #include <xrpl/beast/utility/Journal.h>
 
 #include <atomic>
-#include <bit>
-#include <bitset>
 #include <cstdint>
-#include <limits>
-#include <memory>
-#include <mutex>
 #include <optional>
 #include <string>
 

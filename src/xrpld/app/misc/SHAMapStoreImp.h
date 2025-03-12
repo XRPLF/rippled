@@ -22,14 +22,13 @@
 
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/misc/SHAMapStore.h>
-#include <xrpld/app/rdb/RelationalDatabase.h>
 #include <xrpld/app/rdb/State.h>
 #include <xrpld/core/DatabaseCon.h>
 #include <xrpld/nodestore/DatabaseRotating.h>
 #include <xrpld/nodestore/Scheduler.h>
+
 #include <atomic>
 #include <chrono>
-#include <condition_variable>
 #include <thread>
 
 namespace ripple {

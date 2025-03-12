@@ -26,13 +26,9 @@
 #include <xrpl/basics/IntrusivePointer.h>
 #include <xrpl/basics/IntrusiveRefCounts.h>
 #include <xrpl/basics/SHAMapHash.h>
-#include <xrpl/basics/TaggedCache.h>
-#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/Serializer.h>
 
 #include <cstdint>
-#include <memory>
-#include <mutex>
 #include <string>
 
 namespace ripple {

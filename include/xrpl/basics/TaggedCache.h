@@ -27,6 +27,7 @@
 #include <xrpl/basics/hardened_hash.h>
 #include <xrpl/beast/clock/abstract_clock.h>
 #include <xrpl/beast/insight/Insight.h>
+
 #include <atomic>
 #include <functional>
 #include <mutex>
