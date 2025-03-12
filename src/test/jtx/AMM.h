@@ -66,6 +66,7 @@ struct CreateArg
     std::optional<jtx::seq> seq = std::nullopt;
     std::optional<jtx::msig> ms = std::nullopt;
     std::optional<ter> err = std::nullopt;
+    std::optional<Account> onBehalfOf = std::nullopt;
     bool close = true;
 };
 
@@ -79,6 +80,7 @@ struct DepositArg
     std::optional<std::uint32_t> flags = std::nullopt;
     std::optional<std::pair<Issue, Issue>> assets = std::nullopt;
     std::optional<jtx::seq> seq = std::nullopt;
+    std::optional<Account> onBehalfOf = std::nullopt;
     std::optional<std::uint16_t> tfee = std::nullopt;
     std::optional<ter> err = std::nullopt;
 };
@@ -94,6 +96,7 @@ struct WithdrawArg
     std::optional<std::pair<Issue, Issue>> assets = std::nullopt;
     std::optional<jtx::seq> seq = std::nullopt;
     std::optional<ter> err = std::nullopt;
+    std::optional<Account> onBehalfOf = std::nullopt;
 };
 
 struct VoteArg
@@ -104,6 +107,7 @@ struct VoteArg
     std::optional<jtx::seq> seq = std::nullopt;
     std::optional<std::pair<Issue, Issue>> assets = std::nullopt;
     std::optional<ter> err = std::nullopt;
+    std::optional<Account> onBehalfOf = std::nullopt;
 };
 
 struct BidArg
@@ -114,6 +118,7 @@ struct BidArg
     std::vector<Account> authAccounts = {};
     std::optional<std::uint32_t> flags = std::nullopt;
     std::optional<std::pair<Issue, Issue>> assets = std::nullopt;
+    std::optional<Account> onBehalfOf = std::nullopt;
 };
 
 /** Convenience class to test AMM functionality.
@@ -151,6 +156,7 @@ public:
         std::optional<jtx::seq> seq = std::nullopt,
         std::optional<jtx::msig> ms = std::nullopt,
         std::optional<ter> const& ter = std::nullopt,
+        std::optional<Account> const& onBehalfOf = std::nullopt,
         bool close = true);
     AMM(Env& env,
         Account const& account,
@@ -159,6 +165,12 @@ public:
         ter const& ter,
         bool log = false,
         bool close = true);
+    AMM(Env& env,
+        Account const& account,
+        STAmount const& asset1,
+        STAmount const& asset2,
+        Account const& onBehalfOf,
+        ter const& ter);
     AMM(Env& env,
         Account const& account,
         STAmount const& asset1,
@@ -241,7 +253,8 @@ public:
         std::optional<STAmount> const& asset2InAmount = std::nullopt,
         std::optional<STAmount> const& maxEP = std::nullopt,
         std::optional<std::uint32_t> const& flags = std::nullopt,
-        std::optional<ter> const& ter = std::nullopt);
+        std::optional<ter> const& ter = std::nullopt,
+        std::optional<Account> const& onBehalfOf = std::nullopt);
 
     IOUAmount
     deposit(
@@ -254,7 +267,8 @@ public:
         std::optional<std::pair<Issue, Issue>> const& assets,
         std::optional<jtx::seq> const& seq,
         std::optional<std::uint16_t> const& tfee = std::nullopt,
-        std::optional<ter> const& ter = std::nullopt);
+        std::optional<ter> const& ter = std::nullopt,
+        std::optional<Account> const& onBehalfOf = std::nullopt);
 
     IOUAmount
     deposit(DepositArg const& arg);
@@ -287,7 +301,8 @@ public:
         STAmount const& asset1Out,
         std::optional<STAmount> const& asset2Out = std::nullopt,
         std::optional<IOUAmount> const& maxEP = std::nullopt,
-        std::optional<ter> const& ter = std::nullopt);
+        std::optional<ter> const& ter = std::nullopt,
+        std::optional<Account> const& onBehalfOf = std::nullopt);
 
     IOUAmount
     withdraw(
@@ -299,7 +314,8 @@ public:
         std::optional<std::uint32_t> const& flags,
         std::optional<std::pair<Issue, Issue>> const& assets,
         std::optional<jtx::seq> const& seq,
-        std::optional<ter> const& ter = std::nullopt);
+        std::optional<ter> const& ter = std::nullopt,
+        std::optional<Account> const& onBehalfOf = std::nullopt);
 
     IOUAmount
     withdraw(WithdrawArg const& arg);
@@ -311,7 +327,8 @@ public:
         std::optional<std::uint32_t> const& flags = std::nullopt,
         std::optional<jtx::seq> const& seq = std::nullopt,
         std::optional<std::pair<Issue, Issue>> const& assets = std::nullopt,
-        std::optional<ter> const& ter = std::nullopt);
+        std::optional<ter> const& ter = std::nullopt,
+        std::optional<Account> const& onBehalfOf = std::nullopt);
 
     void
     vote(VoteArg const& arg);
@@ -364,7 +381,8 @@ public:
     void
     ammDelete(
         AccountID const& deleter,
-        std::optional<ter> const& ter = std::nullopt);
+        std::optional<ter> const& ter = std::nullopt,
+        std::optional<Account> const& onBehalfOf = std::nullopt);
 
     void
     setClose(bool close)
@@ -389,7 +407,8 @@ private:
         std::uint32_t tfee = 0,
         std::optional<std::uint32_t> const& flags = std::nullopt,
         std::optional<jtx::seq> const& seq = std::nullopt,
-        std::optional<ter> const& ter = std::nullopt);
+        std::optional<ter> const& ter = std::nullopt,
+        std::optional<Account> const& onBehalfOf = std::nullopt);
 
     IOUAmount
     deposit(
@@ -397,7 +416,8 @@ private:
         Json::Value& jv,
         std::optional<std::pair<Issue, Issue>> const& assets = std::nullopt,
         std::optional<jtx::seq> const& seq = std::nullopt,
-        std::optional<ter> const& ter = std::nullopt);
+        std::optional<ter> const& ter = std::nullopt,
+        std::optional<Account> const& onBehalfOf = std::nullopt);
 
     IOUAmount
     withdraw(
@@ -405,7 +425,8 @@ private:
         Json::Value& jv,
         std::optional<jtx::seq> const& seq,
         std::optional<std::pair<Issue, Issue>> const& assets = std::nullopt,
-        std::optional<ter> const& ter = std::nullopt);
+        std::optional<ter> const& ter = std::nullopt,
+        std::optional<Account> const& onBehalfOf = std::nullopt);
 
     void
     log(bool log)
@@ -445,7 +466,8 @@ ammClawback(
     Account const& holder,
     Issue const& asset,
     Issue const& asset2,
-    std::optional<STAmount> const& amount);
+    std::optional<STAmount> const& amount,
+    std::optional<Account> const& onBehalfOf = std::nullopt);
 }  // namespace amm
 
 }  // namespace jtx

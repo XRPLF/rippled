@@ -94,6 +94,7 @@ enum class LedgerNameSpace : std::uint16_t {
     MPTOKEN = 't',
     CREDENTIAL = 'D',
     PERMISSIONED_DOMAIN = 'm',
+    ACCOUNT_PERMISSION = 'E',
 
     // No longer used or supported. Left here to reserve the space
     // to avoid accidental reuse.
@@ -450,6 +451,17 @@ Keylet
 amm(uint256 const& id) noexcept
 {
     return {ltAMM, id};
+}
+
+Keylet
+accountPermission(
+    AccountID const& account,
+    AccountID const& authorizedAccount) noexcept
+{
+    return {
+        ltACCOUNT_PERMISSION,
+        indexHash(
+            LedgerNameSpace::ACCOUNT_PERMISSION, account, authorizedAccount)};
 }
 
 Keylet

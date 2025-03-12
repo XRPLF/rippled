@@ -92,8 +92,11 @@ public:
 };
 
 Json::Value
-del(jtx::Account const& account);
+del(jtx::Account const& account,
+    std::optional<jtx::Account> const& onBehalfOf = std::nullopt);
 
+bool
+checkVL(Slice const& result, std::string expected);
 }  // namespace did
 
 }  // namespace jtx

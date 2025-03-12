@@ -24,7 +24,8 @@
 #include <xrpld/core/Config.h>
 #include <xrpld/ledger/ApplyViewImpl.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/Permissions.h>
+#include <xrpl/protocol/STTxDelegated.h>
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <optional>
@@ -42,12 +43,14 @@ public:
         TER preclaimResult,
         XRPAmount baseFee,
         ApplyFlags flags,
+        std::unordered_set<GranularPermissionType> const permissions,
         beast::Journal = beast::Journal{beast::Journal::getNullSink()});
 
     Application& app;
-    STTx const& tx;
+    STTxDelegated const tx;
     TER const preclaimResult;
     XRPAmount const baseFee;
+    std::unordered_set<GranularPermissionType> permissions;
     beast::Journal const journal;
 
     ApplyView&

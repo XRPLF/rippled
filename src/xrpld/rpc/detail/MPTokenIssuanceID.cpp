@@ -43,7 +43,7 @@ canHaveMPTokenIssuanceID(
 }
 
 std::optional<uint192>
-getIDFromCreatedIssuance(TxMeta const& transactionMeta)
+getIDFromCreatedIssuance(TxMeta const& transactionMeta, AccountID const& sender)
 {
     for (STObject const& node : transactionMeta.getNodes())
     {
@@ -53,8 +53,7 @@ getIDFromCreatedIssuance(TxMeta const& transactionMeta)
 
         auto const& mptNode =
             node.peekAtField(sfNewFields).downcast<STObject>();
-        return makeMptID(
-            mptNode.getFieldU32(sfSequence), mptNode.getAccountID(sfIssuer));
+        return makeMptID(mptNode.getFieldU32(sfSequence), sender);
     }
 
     return std::nullopt;
@@ -69,7 +68,9 @@ insertMPTokenIssuanceID(
     if (!canHaveMPTokenIssuanceID(transaction, transactionMeta))
         return;
 
-    std::optional<uint192> result = getIDFromCreatedIssuance(transactionMeta);
+    auto const sender = transaction->getAccountID(sfAccount);
+    std::optional<uint192> result =
+        getIDFromCreatedIssuance(transactionMeta, sender);
     if (result)
         response[jss::mpt_issuance_id] = to_string(result.value());
 }

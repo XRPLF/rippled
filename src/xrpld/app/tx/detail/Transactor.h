@@ -23,6 +23,7 @@
 #include <xrpld/app/tx/applySteps.h>
 #include <xrpld/app/tx/detail/ApplyContext.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/STAccount.h>
 #include <xrpl/protocol/XRPAmount.h>
 
 namespace ripple {
@@ -32,7 +33,7 @@ struct PreflightContext
 {
 public:
     Application& app;
-    STTx const& tx;
+    STTxDelegated const tx;
     Rules const rules;
     ApplyFlags flags;
     beast::Journal const j;
@@ -55,7 +56,7 @@ public:
     Application& app;
     ReadView const& view;
     TER preflightResult;
-    STTx const& tx;
+    STTxDelegated const tx;
     ApplyFlags flags;
     beast::Journal const j;
 
@@ -69,7 +70,7 @@ public:
         : app(app_)
         , view(view_)
         , preflightResult(preflightResult_)
-        , tx(tx_)
+        , tx(STTxDelegated(tx_, tx_.isFieldPresent(sfOnBehalfOf)))
         , flags(flags_)
         , j(j_)
     {
@@ -129,6 +130,12 @@ public:
     checkSeqProxy(ReadView const& view, STTx const& tx, beast::Journal j);
 
     static NotTEC
+    checkDelegateSeqProxy(
+        ReadView const& view,
+        STTx const& tx,
+        beast::Journal j);
+
+    static NotTEC
     checkPriorTxAndLastLedger(PreclaimContext const& ctx);
 
     static TER
@@ -140,6 +147,12 @@ public:
     // Returns the fee in fee units, not scaled for load.
     static XRPAmount
     calculateBaseFee(ReadView const& view, STTx const& tx);
+
+    static TER
+    checkPermissions(
+        ReadView const& view,
+        STTx const& tx,
+        std::unordered_set<GranularPermissionType>& permissions);
 
     static TER
     preclaim(PreclaimContext const& ctx)
@@ -191,7 +204,10 @@ private:
     reset(XRPAmount fee);
 
     TER
-    consumeSeqProxy(SLE::pointer const& sleAccount);
+    consumeSeqProxy(
+        AccountID const& account,
+        SLE::pointer const& sleAccount,
+        SeqProxy const& seqProx);
     TER
     payFee();
     static NotTEC

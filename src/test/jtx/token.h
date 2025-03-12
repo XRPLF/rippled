@@ -240,6 +240,9 @@ clearMinter(jtx::Account const& account);
 Json::Value
 modify(jtx::Account const& account, uint256 const& nftokenID);
 
+std::string
+randURI();
+
 }  // namespace token
 
 }  // namespace jtx

@@ -445,6 +445,47 @@ transactionPreProcessImpl(
         return rpcError(rpcSRC_ACT_NOT_FOUND);
     }
 
+    AccountID delegatingAccount;
+    std::shared_ptr<SLE const> delegatingAccountSle;
+    if (tx_json.isMember(jss::OnBehalfOf))
+    {
+        auto const onBehalfOf =
+            parseBase58<AccountID>(tx_json[jss::OnBehalfOf].asString());
+
+        if (!onBehalfOf)
+            return RPC::make_error(
+                rpcSRC_ACT_MALFORMED,
+                RPC::invalid_field_message("tx_json.OnBehalfOf"));
+
+        delegatingAccount = *onBehalfOf;
+
+        // If we're offline then the caller must provide the delegate sequence
+        // number
+        if (!verify && !tx_json.isMember(jss::DelegateSequence))
+            return RPC::missing_field_error("tx_json.DelegateSequence");
+
+        if (verify)
+            delegatingAccountSle = app.openLedger().current()->read(
+                keylet::account(delegatingAccount));
+
+        if (verify && !delegatingAccountSle)
+        {
+            // If not offline and did not find on behalf of account, error.
+            JLOG(j.debug())
+                << "transactionSign: Failed to find onBehalfOf account "
+                << "in current ledger: " << toBase58(delegatingAccount);
+
+            return rpcError(rpcSRC_ACT_NOT_FOUND);
+        }
+    }
+    else
+    {
+        if (tx_json.isMember(jss::DelegateSequence))
+            return RPC::invalid_field_error("tx_json.DelegateSequence");
+        if (tx_json.isMember(jss::DelegateTicketSequence))
+            return RPC::invalid_field_error("tx_json.DelegateTicketSequence");
+    }
+
     if (signingArgs.editFields())
     {
         if (!tx_json.isMember(jss::Sequence))
@@ -461,6 +502,16 @@ transactionPreProcessImpl(
             }
             tx_json[jss::Sequence] =
                 hasTicketSeq ? 0 : app.getTxQ().nextQueuableSeq(sle).value();
+        }
+
+        if (tx_json.isMember(jss::OnBehalfOf) &&
+            !tx_json.isMember(jss::DelegateSequence))
+        {
+            bool const hasDelegateTicketSeq =
+                tx_json.isMember(sfDelegateTicketSequence.jsonName);
+            tx_json[jss::DelegateSequence] = hasDelegateTicketSeq
+                ? 0
+                : app.getTxQ().nextQueuableSeq(delegatingAccountSle).value();
         }
 
         if (!tx_json.isMember(jss::Flags))
@@ -991,6 +1042,19 @@ checkMultiSignFields(Json::Value const& jvRequest)
     // error messages.
     if (!tx_json.isMember(jss::Sequence))
         return RPC::missing_field_error("tx_json.Sequence");
+
+    if (tx_json.isMember(jss::OnBehalfOf))
+    {
+        if (!tx_json.isMember(jss::DelegateSequence))
+            return RPC::missing_field_error("tx_json.DelegateSequence");
+    }
+    else
+    {
+        if (tx_json.isMember(jss::DelegateSequence))
+            return RPC::invalid_field_error("tx_json.DelegateSequence");
+        if (tx_json.isMember(jss::DelegateTicketSequence))
+            return RPC::invalid_field_error("tx_json.DelegateTicketSequence");
+    }
 
     if (!tx_json.isMember(sfSigningPubKey.getJsonName()))
         return RPC::missing_field_error("tx_json.SigningPubKey");

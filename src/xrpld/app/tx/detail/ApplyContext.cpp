@@ -32,11 +32,13 @@ ApplyContext::ApplyContext(
     TER preclaimResult_,
     XRPAmount baseFee_,
     ApplyFlags flags,
+    std::unordered_set<GranularPermissionType> const permissions,
     beast::Journal journal_)
     : app(app_)
-    , tx(tx_)
+    , tx(STTxDelegated(tx_, tx_.isFieldPresent(sfOnBehalfOf)))
     , preclaimResult(preclaimResult_)
     , baseFee(baseFee_)
+    , permissions(std::move(permissions))
     , journal(journal_)
     , base_(base)
     , flags_(flags)
@@ -53,7 +55,7 @@ ApplyContext::discard()
 std::optional<TxMeta>
 ApplyContext::apply(TER ter)
 {
-    return view_->apply(base_, tx, ter, flags_ & tapDRY_RUN, journal);
+    return view_->apply(base_, tx.getSTTx(), ter, flags_ & tapDRY_RUN, journal);
 }
 
 std::size_t

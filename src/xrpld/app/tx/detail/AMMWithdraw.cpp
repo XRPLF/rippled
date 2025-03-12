@@ -246,8 +246,7 @@ AMMWithdraw::preclaim(PreclaimContext const& ctx)
     if (auto const ter = checkAmount(amount2, amount2Balance))
         return ter;
 
-    auto const lpTokens =
-        ammLPHolds(ctx.view, *ammSle, ctx.tx[sfAccount], ctx.j);
+    auto const lpTokens = ammLPHolds(ctx.view, *ammSle, accountID, ctx.j);
     auto const lpTokensWithdraw =
         tokensWithdraw(lpTokens, ctx.tx[~sfLPTokenIn], ctx.tx.getFlags());
 
@@ -472,7 +471,7 @@ AMMWithdraw::withdraw(
         lpTokensWithdraw,
         tfee,
         FreezeHandling::fhZERO_IF_FROZEN,
-        isWithdrawAll(ctx_.tx),
+        isWithdrawAll(ctx_.tx.getSTTx()),
         mPriorBalance,
         j_);
     return {ter, newLPTokenBalance};
@@ -709,7 +708,7 @@ AMMWithdraw::equalWithdrawTokens(
             lpTokensWithdraw,
             tfee,
             FreezeHandling::fhZERO_IF_FROZEN,
-            isWithdrawAll(ctx_.tx),
+            isWithdrawAll(ctx_.tx.getSTTx()),
             mPriorBalance,
             ctx_.journal);
     return {ter, newLPTokenBalance};

@@ -130,7 +130,7 @@ MPTokenIssuanceCreate::doApply()
         ctx_.journal,
         {.priorBalance = mPriorBalance,
          .account = account_,
-         .sequence = tx.getSeqProxy().value(),
+         .sequence = tx.getEffectiveSeq(),
          .flags = tx.getFlags(),
          .maxAmount = tx[~sfMaximumAmount],
          .assetScale = tx[~sfAssetScale],

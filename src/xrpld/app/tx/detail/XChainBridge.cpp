@@ -1222,7 +1222,7 @@ attestationPreflight(PreflightContext const& ctx)
     if (!publicKeyType(ctx.tx[sfPublicKey]))
         return temMALFORMED;
 
-    auto const att = toClaim<TAttestation>(ctx.tx);
+    auto const att = toClaim<TAttestation>(ctx.tx.getSTTx());
     if (!att)
         return temMALFORMED;
 
@@ -1246,7 +1246,7 @@ template <class TAttestation>
 TER
 attestationPreclaim(PreclaimContext const& ctx)
 {
-    auto const att = toClaim<TAttestation>(ctx.tx);
+    auto const att = toClaim<TAttestation>(ctx.tx.getSTTx());
     if (!att)
         return tecINTERNAL;  // checked in preflight
 
@@ -1276,7 +1276,7 @@ template <class TAttestation>
 TER
 attestationDoApply(ApplyContext& ctx)
 {
-    auto const att = toClaim<TAttestation>(ctx.tx);
+    auto const att = toClaim<TAttestation>(ctx.tx.getSTTx());
     if (!att)
         // Should already be checked in preflight
         return tecINTERNAL;
@@ -1900,7 +1900,7 @@ XChainCommit::makeTxConsequences(PreflightContext const& ctx)
         return XRPAmount{beast::zero};
     }();
 
-    return TxConsequences{ctx.tx, maxSpend};
+    return TxConsequences{ctx.tx.getSTTx(), maxSpend};
 }
 
 NotTEC

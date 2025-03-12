@@ -137,7 +137,7 @@ CashCheck::preclaim(PreclaimContext const& ctx)
         STAmount const value{[](STTx const& tx) {
             auto const optAmount = tx[~sfAmount];
             return optAmount ? *optAmount : tx[sfDeliverMin];
-        }(ctx.tx)};
+        }(ctx.tx.getSTTx())};
 
         STAmount const sendMax = sleCheck->at(sfSendMax);
         Currency const currency{value.getCurrency()};

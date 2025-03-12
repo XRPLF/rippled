@@ -89,7 +89,7 @@ SetSignerList::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
     }
 
-    auto const result = determineOperation(ctx.tx, ctx.flags, ctx.j);
+    auto const result = determineOperation(ctx.tx.getSTTx(), ctx.flags, ctx.j);
 
     if (std::get<0>(result) != tesSUCCESS)
         return std::get<0>(result);
@@ -144,7 +144,7 @@ void
 SetSignerList::preCompute()
 {
     // Get the quorum and operation info.
-    auto result = determineOperation(ctx_.tx, view().flags(), j_);
+    auto result = determineOperation(ctx_.tx.getSTTx(), view().flags(), j_);
     XRPL_ASSERT(
         std::get<0>(result) == tesSUCCESS,
         "ripple::SetSignerList::preCompute : result is tesSUCCESS");
