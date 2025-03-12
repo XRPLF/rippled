@@ -21,8 +21,6 @@
 #include <xrpld/rpc/detail/Handler.h>
 #include <xrpl/json/json_value.h>
 
-#include <mutex>
-
 namespace ripple {
 
 namespace RPC {

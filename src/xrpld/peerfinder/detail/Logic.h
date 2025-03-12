@@ -33,7 +33,6 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/random.h>
-#include <xrpl/beast/container/aged_container_utility.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
 
 #include <algorithm>
