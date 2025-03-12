@@ -44,6 +44,7 @@ DerivePointerAlignment: false
 DisableFormat:   false
 ExperimentalAutoDetectBinPacking: false
 ForEachMacros:   [ Q_FOREACH,  BOOST_FOREACH ]
+IncludeBlocks:   Regroup
 IncludeCategories:
   - Regex:           '^<(test)/'
     Priority:        0

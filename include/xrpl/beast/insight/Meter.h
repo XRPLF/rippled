@@ -21,6 +21,7 @@
 #define BEAST_INSIGHT_METER_H_INCLUDED
 
 #include <xrpl/beast/insight/MeterImpl.h>
+
 #include <memory>
 
 namespace beast {

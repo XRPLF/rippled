@@ -19,14 +19,17 @@
 
 #include <test/jtx.h>
 #include <test/jtx/Env.h>
+
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
+
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
+
 #include <fstream>
 
 namespace ripple {

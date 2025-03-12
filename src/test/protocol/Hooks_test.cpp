@@ -18,7 +18,9 @@
 //==============================================================================
 
 #include <test/jtx.h>
+
 #include <xrpl/protocol/Feature.h>
+
 #include <functional>
 #include <vector>
 

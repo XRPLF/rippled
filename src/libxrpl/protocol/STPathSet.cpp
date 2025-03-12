@@ -28,6 +28,7 @@
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
+
 #include <cstddef>
 #include <stdexcept>
 #include <utility>

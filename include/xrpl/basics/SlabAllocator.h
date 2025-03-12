@@ -23,9 +23,11 @@
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/beast/type_name.h>
 #include <xrpl/beast/utility/instrumentation.h>
+
 #include <boost/align.hpp>
 #include <boost/container/static_vector.hpp>
 #include <boost/predef.h>
+
 #include <algorithm>
 #include <atomic>
 #include <cstdint>

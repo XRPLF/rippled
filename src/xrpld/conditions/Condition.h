@@ -21,8 +21,10 @@
 #define RIPPLE_CONDITIONS_CONDITION_H
 
 #include <xrpld/conditions/detail/utils.h>
+
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
+
 #include <cstdint>
 #include <set>
 

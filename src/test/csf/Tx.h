@@ -22,8 +22,10 @@
 
 #include <xrpl/beast/hash/hash_append.h>
 #include <xrpl/beast/hash/uhash.h>
+
 #include <boost/container/flat_set.hpp>
 #include <boost/iterator/function_output_iterator.hpp>
+
 #include <algorithm>
 #include <map>
 #include <ostream>

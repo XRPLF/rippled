@@ -21,6 +21,7 @@
 #define RIPPLE_NET_INFOSUB_H_INCLUDED
 
 #include <xrpld/app/misc/Manifest.h>
+
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/Book.h>

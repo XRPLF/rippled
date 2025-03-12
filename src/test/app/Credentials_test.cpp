@@ -18,14 +18,17 @@
 //==============================================================================
 
 #include <test/jtx.h>
+
 #include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/ledger/ApplyViewImpl.h>
+
 #include <xrpl/basics/strHex.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+
 #include <string_view>
 
 namespace ripple {

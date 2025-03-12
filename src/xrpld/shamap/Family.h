@@ -23,7 +23,9 @@
 #include <xrpld/nodestore/Database.h>
 #include <xrpld/shamap/FullBelowCache.h>
 #include <xrpld/shamap/TreeNodeCache.h>
+
 #include <xrpl/beast/utility/Journal.h>
+
 #include <cstdint>
 
 namespace ripple {

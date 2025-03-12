@@ -18,8 +18,10 @@
 //==============================================================================
 
 #include <xrpl/protocol/digest.h>
+
 #include <openssl/ripemd.h>
 #include <openssl/sha.h>
+
 #include <cstddef>
 
 namespace ripple {

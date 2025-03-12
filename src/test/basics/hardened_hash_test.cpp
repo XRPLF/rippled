@@ -19,6 +19,7 @@
 
 #include <xrpl/basics/hardened_hash.h>
 #include <xrpl/beast/unit_test.h>
+
 #include <array>
 #include <cstdint>
 #include <iomanip>

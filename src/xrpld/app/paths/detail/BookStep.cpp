@@ -24,6 +24,7 @@
 #include <xrpld/app/paths/detail/Steps.h>
 #include <xrpld/app/tx/detail/OfferStream.h>
 #include <xrpld/ledger/PaymentSandbox.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -32,7 +33,9 @@
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/XRPAmount.h>
+
 #include <boost/container/flat_set.hpp>
+
 #include <numeric>
 #include <sstream>
 

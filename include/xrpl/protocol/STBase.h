@@ -23,6 +23,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/Serializer.h>
+
 #include <memory>
 #include <ostream>
 #include <string>

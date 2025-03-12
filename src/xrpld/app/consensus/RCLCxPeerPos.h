@@ -21,12 +21,15 @@
 #define RIPPLE_APP_CONSENSUS_RCLCXPEERPOS_H_INCLUDED
 
 #include <xrpld/consensus/ConsensusProposal.h>
+
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/hash/hash_append.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/PublicKey.h>
+
 #include <boost/container/static_vector.hpp>
+
 #include <cstdint>
 #include <string>
 

@@ -22,6 +22,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/QualityFunction.h>
+
 #include <optional>
 #include <stdexcept>
 

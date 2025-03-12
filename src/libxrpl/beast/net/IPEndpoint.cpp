@@ -19,8 +19,10 @@
 
 #include <xrpl/beast/net/IPAddress.h>
 #include <xrpl/beast/net/IPEndpoint.h>
+
 #include <boost/algorithm/string/trim.hpp>
 #include <boost/system/detail/error_code.hpp>
+
 #include <cctype>
 #include <ios>
 #include <istream>

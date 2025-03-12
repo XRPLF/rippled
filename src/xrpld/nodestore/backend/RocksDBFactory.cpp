@@ -26,10 +26,12 @@
 #include <xrpld/nodestore/detail/BatchWriter.h>
 #include <xrpld/nodestore/detail/DecodedBlob.h>
 #include <xrpld/nodestore/detail/EncodedBlob.h>
+
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
+
 #include <atomic>
 #include <memory>
 

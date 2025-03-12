@@ -19,10 +19,12 @@
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/make_SSLContext.h>
+
 #include <boost/asio/ssl/context.hpp>
 #include <boost/asio/ssl/verify_mode.hpp>
 #include <boost/system/detail/error_code.hpp>
 #include <boost/system/detail/generic_category.hpp>
+
 #include <openssl/asn1.h>
 #include <openssl/bn.h>
 #include <openssl/evp.h>
@@ -33,6 +35,7 @@
 #include <openssl/ssl.h>
 #include <openssl/x509.h>
 #include <openssl/x509v3.h>
+
 #include <cerrno>
 #include <cstdio>
 #include <ctime>

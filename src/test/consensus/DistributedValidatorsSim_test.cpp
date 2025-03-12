@@ -18,9 +18,12 @@
 //==============================================================================
 
 #include <test/csf.h>
+
 #include <xrpl/beast/unit_test.h>
+
 #include <boost/algorithm/string/classification.hpp>
 #include <boost/algorithm/string/split.hpp>
+
 #include <algorithm>
 #include <fstream>
 #include <sstream>

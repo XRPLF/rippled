@@ -22,10 +22,12 @@
 
 #include <test/jtx/basic_prop.h>
 #include <test/jtx/requires.h>
+
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TER.h>
+
 #include <functional>
 #include <memory>
 #include <vector>

@@ -22,6 +22,7 @@
 
 #include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/Peer.h>
+
 #include <set>
 
 namespace ripple {

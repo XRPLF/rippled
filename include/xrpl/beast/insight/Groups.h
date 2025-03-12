@@ -22,6 +22,7 @@
 
 #include <xrpl/beast/insight/Collector.h>
 #include <xrpl/beast/insight/Group.h>
+
 #include <memory>
 #include <string>
 

@@ -24,6 +24,7 @@
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/Serializer.h>
+
 #include <algorithm>
 #include <cstddef>
 #include <stdexcept>

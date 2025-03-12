@@ -19,6 +19,7 @@
 
 #include <xrpld/app/tx/detail/SetTrust.h>
 #include <xrpld/ledger/View.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>

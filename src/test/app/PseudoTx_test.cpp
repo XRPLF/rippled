@@ -16,8 +16,11 @@
 //==============================================================================
 
 #include <test/jtx.h>
+
 #include <xrpld/app/tx/apply.h>
+
 #include <xrpl/protocol/Feature.h>
+
 #include <string>
 #include <vector>
 

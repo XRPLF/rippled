@@ -1,4 +1,5 @@
 #include <xrpl/protocol/BuildInfo.h>
+
 #include <cstdio>
 
 int main(int argc, char const** argv) {

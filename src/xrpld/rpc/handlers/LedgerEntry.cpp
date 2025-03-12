@@ -22,6 +22,7 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/GRPCHandlers.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
+
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/core/LexicalCast.h>
@@ -31,6 +32,7 @@
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/jss.h>
+
 #include <functional>
 
 namespace ripple {

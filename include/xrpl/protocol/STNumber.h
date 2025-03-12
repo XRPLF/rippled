@@ -23,6 +23,7 @@
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/protocol/STBase.h>
+
 #include <ostream>
 
 namespace ripple {

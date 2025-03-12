@@ -18,9 +18,12 @@
 //==============================================================================
 
 #include <test/jtx/Oracle.h>
+
 #include <xrpl/protocol/jss.h>
+
 #include <boost/lexical_cast/try_lexical_convert.hpp>
 #include <boost/regex.hpp>
+
 #include <vector>
 
 namespace ripple {

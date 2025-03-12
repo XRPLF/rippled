@@ -28,6 +28,7 @@
 #include <test/csf/Scheduler.h>
 #include <test/csf/SimTime.h>
 #include <test/csf/TrustGraph.h>
+
 #include <deque>
 #include <iostream>
 #include <random>

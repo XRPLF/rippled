@@ -21,6 +21,7 @@
 #define BEAST_NUDB_VARINT_H_INCLUDED
 
 #include <nudb/detail/stream.hpp>
+
 #include <cstdint>
 #include <type_traits>
 

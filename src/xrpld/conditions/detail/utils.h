@@ -21,9 +21,12 @@
 #define RIPPLE_CONDITIONS_UTILS_H
 
 #include <xrpld/conditions/detail/error.h>
+
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
+
 #include <boost/dynamic_bitset.hpp>
+
 #include <limits>
 
 namespace ripple {

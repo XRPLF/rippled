@@ -18,13 +18,16 @@
 //==============================================================================
 
 #include <test/unit_test/SuiteJournal.h>
+
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/resource/detail/Entry.h>
 #include <xrpl/resource/detail/Logic.h>
+
 #include <boost/utility/base_from_member.hpp>
+
 #include <functional>
 
 namespace ripple {

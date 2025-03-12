@@ -21,12 +21,14 @@
 #define RIPPLE_TEST_JTX_TESTHELPERS_H_INCLUDED
 
 #include <test/jtx/Env.h>
+
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+
 #include <vector>
 
 namespace ripple {

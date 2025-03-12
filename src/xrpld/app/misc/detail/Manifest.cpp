@@ -20,13 +20,16 @@
 #include <xrpld/app/misc/Manifest.h>
 #include <xrpld/app/rdb/Wallet.h>
 #include <xrpld/core/DatabaseCon.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base64.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/Sign.h>
+
 #include <boost/algorithm/string/trim.hpp>
+
 #include <numeric>
 #include <stdexcept>
 
