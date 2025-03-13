@@ -572,10 +572,9 @@ struct Peer
             prevRoundTime = result.roundTime.read();
             lastClosedLedger = newLedger;
 
-            auto const it = std::remove_if(
-                openTxs.begin(), openTxs.end(), [&](Tx const& tx) {
-                    return acceptedTxs.exists(tx.id());
-                });
+            auto const it = std::ranges::remove_if(openTxs, [&](Tx const& tx) {
+                                return acceptedTxs.exists(tx.id());
+                            }).begin();
             openTxs.erase(it, openTxs.end());
 
             // Only send validation if the new ledger is compatible with our
@@ -807,7 +806,7 @@ struct Peer
         // TODO: This always suppresses relay of peer positions already seen
         // Should it allow forwarding if for a recent ledger ?
         auto& dest = peerPositions[p.prevLedger()];
-        if (std::find(dest.begin(), dest.end(), p) != dest.end())
+        if (std::ranges::find(dest, p) != dest.end())
             return false;
 
         dest.push_back(p);

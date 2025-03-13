@@ -199,7 +199,7 @@ public:
         std::vector<std::string> v;
         boost::split(v, patterns, boost::algorithm::is_any_of(","));
         selectors_.reserve(v.size());
-        std::for_each(v.begin(), v.end(), [this](std::string s) {
+        std::ranges::for_each(v, [this](std::string s) {
             boost::trim(s);
             if (selectors_.empty() || !s.empty())
                 selectors_.emplace_back(
@@ -544,15 +544,15 @@ run(int argc, char** argv)
         bool unittestChild = false;
         if (vm.count("unittest-jobs"))
             numJobs = std::max(numJobs, vm["unittest-jobs"].as<std::size_t>());
-        unittestChild = bool(vm.count("unittest-child"));
+        unittestChild = static_cast<bool>(vm.count("unittest-child"));
 
         return runUnitTests(
             vm["unittest"].as<std::string>(),
             argument,
-            bool(vm.count("quiet")),
-            bool(vm.count("unittest-log")),
+            static_cast<bool>(vm.count("quiet")),
+            static_cast<bool>(vm.count("unittest-log")),
             unittestChild,
-            bool(vm.count("unittest-ipv6")),
+            static_cast<bool>(vm.count("unittest-ipv6")),
             numJobs,
             argc,
             argv);
@@ -580,9 +580,9 @@ run(int argc, char** argv)
     // config file, quiet flag.
     config->setup(
         configFile,
-        bool(vm.count("quiet")),
-        bool(vm.count("silent")),
-        bool(vm.count("standalone")));
+        static_cast<bool>(vm.count("quiet")),
+        static_cast<bool>(vm.count("silent")),
+        static_cast<bool>(vm.count("standalone")));
 
     if (vm.count("vacuum"))
     {

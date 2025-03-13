@@ -324,7 +324,7 @@ PropertyStream::Source::peel_name(std::string* path)
 
     std::string::const_iterator first = (*path).begin();
     std::string::const_iterator last = (*path).end();
-    std::string::const_iterator pos = std::find(first, last, '/');
+    std::string::const_iterator pos = std::ranges::find((*path), '/');
     std::string s(first, pos);
 
     if (pos != last)

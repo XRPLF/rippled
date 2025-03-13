@@ -502,8 +502,8 @@ Livecache<Allocator>::hops_t::shuffle()
     {
         std::vector<std::reference_wrapper<Element>> v;
         v.reserve(list.size());
-        std::copy(list.begin(), list.end(), std::back_inserter(v));
-        std::shuffle(v.begin(), v.end(), default_prng());
+        std::ranges::copy(list, std::back_inserter(v));
+        std::ranges::shuffle(v, default_prng());
         list.clear();
         for (auto& e : v)
             list.push_back(e);
@@ -527,7 +527,7 @@ Livecache<Allocator>::hops_t::histogram() const
 template <class Allocator>
 Livecache<Allocator>::hops_t::hops_t(Allocator const& alloc)
 {
-    std::fill(m_hist.begin(), m_hist.end(), 0);
+    std::ranges::fill(m_hist, 0);
 }
 
 template <class Allocator>

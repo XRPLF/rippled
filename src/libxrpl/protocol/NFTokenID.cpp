@@ -160,8 +160,7 @@ getNFTokenIDFromDeletedOffer(TxMeta const& transactionMeta)
     // and hence we would get duplicate NFT IDs
     std::ranges::sort(tokenIDResult);
     tokenIDResult.erase(
-        std::unique(tokenIDResult.begin(), tokenIDResult.end()),
-        tokenIDResult.end());
+        std::ranges::unique(tokenIDResult).begin(), tokenIDResult.end());
     return tokenIDResult;
 }
 

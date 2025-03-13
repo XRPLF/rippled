@@ -2140,9 +2140,8 @@ ValidatorList::negativeUNLFilter(
     if (!negativeUNL_.empty())
     {
         ret.erase(
-            std::remove_if(
-                ret.begin(),
-                ret.end(),
+            std::ranges::remove_if(
+                ret,
                 [&](auto const& v) -> bool {
                     if (auto const masterKey =
                             getTrustedKey(read_lock, v->getSignerPublic());
@@ -2154,7 +2153,8 @@ ValidatorList::negativeUNLFilter(
                     {
                         return false;
                     }
-                }),
+                })
+                .begin(),
             ret.end());
     }
 

@@ -62,7 +62,7 @@ public:
         //   return 0;
 
         if (length == unknown)
-            length = value ? (unsigned int)strlen(value) : 0;
+            length = value ? static_cast<unsigned int>(strlen(value)) : 0;
 
         char* newString = static_cast<char*>(malloc(length + 1));
         if (value)
@@ -240,7 +240,7 @@ Value::Value(const char* value) : type_(stringValue), allocated_(true)
 Value::Value(std::string const& value) : type_(stringValue), allocated_(true)
 {
     value_.string_ = valueAllocator()->duplicateStringValue(
-        value.c_str(), (unsigned int)value.length());
+        value.c_str(), static_cast<unsigned int>(value.length()));
 }
 
 Value::Value(const StaticString& value) : type_(stringValue), allocated_(false)
@@ -405,7 +405,8 @@ operator<(const Value& x, const Value& y)
 
         case arrayValue:
         case objectValue: {
-            if (int signum = int(x.value_.map_->size()) - y.value_.map_->size())
+            if (int signum = static_cast<int>(x.value_.map_->size()) -
+                    y.value_.map_->size())
                 return signum < 0;
 
             return *x.value_.map_ < *y.value_.map_;
@@ -518,7 +519,7 @@ Value::asInt() const
 
         case uintValue:
             JSON_ASSERT_MESSAGE(
-                value_.uint_ < (unsigned)maxInt,
+                value_.uint_ < static_cast<unsigned>(maxInt),
                 "integer out of signed integer range");
             return value_.uint_;
 
@@ -526,7 +527,7 @@ Value::asInt() const
             JSON_ASSERT_MESSAGE(
                 value_.real_ >= minInt && value_.real_ <= maxInt,
                 "Real out of signed integer range");
-            return Int(value_.real_);
+            return static_cast<Int>(value_.real_);
 
         case booleanValue:
             return value_.bool_ ? 1 : 0;
@@ -568,7 +569,7 @@ Value::asUInt() const
             JSON_ASSERT_MESSAGE(
                 value_.real_ >= 0 && value_.real_ <= maxUInt,
                 "Real out of unsigned integer range");
-            return UInt(value_.real_);
+            return static_cast<UInt>(value_.real_);
 
         case booleanValue:
             return value_.bool_ ? 1 : 0;
@@ -669,7 +670,8 @@ Value::isConvertibleTo(ValueType other) const
 
         case uintValue:
             return (other == nullValue && value_.uint_ == 0) ||
-                (other == intValue && value_.uint_ <= (unsigned)maxInt) ||
+                (other == intValue &&
+                 value_.uint_ <= static_cast<unsigned>(maxInt)) ||
                 other == uintValue || other == realValue ||
                 other == stringValue || other == booleanValue;
 
@@ -732,7 +734,7 @@ Value::size() const
             return 0;
 
         case objectValue:
-            return Int(value_.map_->size());
+            return static_cast<Int>(value_.map_->size());
 
         default:
             UNREACHABLE("Json::Value::size : invalid type");

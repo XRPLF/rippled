@@ -146,10 +146,8 @@ public:
                 double rhs =
                     2.0 * (1. - quorum) * std::max(unlA.size(), unlB.size());
 
-                int intersectionSize =
-                    std::count_if(unlA.begin(), unlA.end(), [&](Peer p) {
-                        return unlB.find(p) != unlB.end();
-                    });
+                int intersectionSize = std::ranges::count_if(
+                    unlA, [&](Peer p) { return unlB.find(p) != unlB.end(); });
 
                 if (intersectionSize < rhs)
                 {

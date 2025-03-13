@@ -143,9 +143,8 @@ reporter<_>::results::add(suite_results const& r)
     auto const elapsed = clock_type::now() - r.start;
     if (elapsed >= std::chrono::seconds{1})
     {
-        auto const iter = std::lower_bound(
-            top.begin(),
-            top.end(),
+        auto const iter = std::ranges::lower_bound(
+            top,
             elapsed,
             [](run_time const& t1, typename clock_type::duration const& t2) {
                 return t1.second > t2;

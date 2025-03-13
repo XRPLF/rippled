@@ -174,8 +174,10 @@ doTxHelp(RPC::Context& context, TxArgs args)
         uint32_t netID = context.app.config().NETWORK_ID;
 
         if (txnIdx <= 0xFFFFU && netID < 0xFFFFU && lgrSeq < 0x0FFF'FFFFUL)
-            result.ctid =
-                RPC::encodeCTID(lgrSeq, (uint16_t)txnIdx, (uint16_t)netID);
+            result.ctid = RPC::encodeCTID(
+                lgrSeq,
+                static_cast<uint16_t>(txnIdx),
+                static_cast<uint16_t>(netID));
     }
 
     return {result, rpcSUCCESS};

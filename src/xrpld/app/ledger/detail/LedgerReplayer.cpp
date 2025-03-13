@@ -235,7 +235,8 @@ LedgerReplayer::sweep()
                         return true;
                     }
                     return false;
-                }),
+                })
+                .begin(),
             tasks_.end());
 
         auto removeCannotLocked = [](auto& subTasks) {

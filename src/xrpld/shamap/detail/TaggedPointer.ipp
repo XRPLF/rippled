@@ -82,7 +82,7 @@ numAllocatedChildren(std::uint8_t n)
     XRPL_ASSERT(
         n <= SHAMapInnerNode::branchFactor,
         "ripple::numAllocatedChildren : valid input");
-    return *std::lower_bound(boundaries.begin(), boundaries.end(), n);
+    return *std::ranges::lower_bound(boundaries, n);
 }
 
 [[nodiscard]] inline std::size_t
@@ -93,7 +93,7 @@ boundariesIndex(std::uint8_t numChildren)
         "ripple::boundariesIndex : valid input");
     return std::distance(
         boundaries.begin(),
-        std::lower_bound(boundaries.begin(), boundaries.end(), numChildren));
+        std::ranges::lower_bound(boundaries, numChildren));
 }
 
 template <std::size_t... I>

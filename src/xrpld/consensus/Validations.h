@@ -982,14 +982,10 @@ public:
             });
 
         // Count parent ledgers as fallback
-        return std::count_if(
-            lastLedger_.begin(),
-            lastLedger_.end(),
-            [&ledgerID](auto const& it) {
-                auto const& curr = it.second;
-                return curr.seq() > Seq{0} &&
-                    curr[curr.seq() - Seq{1}] == ledgerID;
-            });
+        return std::ranges::count_if(lastLedger_, [&ledgerID](auto const& it) {
+            auto const& curr = it.second;
+            return curr.seq() > Seq{0} && curr[curr.seq() - Seq{1}] == ledgerID;
+        });
     }
 
     /** Get the currently trusted full validations

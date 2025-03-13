@@ -306,9 +306,8 @@ onNewAttestations(
         }
 
         auto const& claimSigningAccount = att->attestationSignerAccount;
-        if (auto i = std::find_if(
-                attestations.begin(),
-                attestations.end(),
+        if (auto i = std::ranges::find_if(
+                attestations,
                 [&](auto const& a) {
                     return a.keyAccount == claimSigningAccount;
                 });
