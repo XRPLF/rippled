@@ -25,6 +25,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/STVector256.h>
+
 #include <memory>
 #include <optional>
 #include <unordered_set>
@@ -86,9 +87,9 @@ public:
     bool
     enabled(uint256 const& feature) const
     {
-        if (presets_.contains(feature))
+        if (presets_.count(feature) > 0)
             return true;
-        return set_.contains(feature);
+        return set_.count(feature) > 0;
     }
 
     bool

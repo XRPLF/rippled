@@ -21,6 +21,7 @@
 #define BEAST_CONTAINER_AGED_SET_H_INCLUDED
 
 #include <xrpl/beast/container/detail/aged_ordered_container.h>
+
 #include <chrono>
 #include <functional>
 #include <memory>

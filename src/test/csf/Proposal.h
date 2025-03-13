@@ -23,6 +23,7 @@
 #include <test/csf/Tx.h>
 #include <test/csf/Validation.h>
 #include <test/csf/ledgers.h>
+
 #include <xrpld/consensus/ConsensusProposal.h>
 
 namespace ripple {

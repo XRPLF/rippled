@@ -24,6 +24,7 @@
 #include <xrpld/app/rdb/backend/detail/Node.h>
 #include <xrpld/core/DatabaseCon.h>
 #include <xrpld/core/SociDB.h>
+
 #include <xrpl/basics/StringUtilities.h>
 
 namespace ripple {

@@ -20,9 +20,11 @@
 #include <xrpld/app/rdb/RelationalDatabase.h>
 #include <xrpld/app/rdb/Wallet.h>
 #include <xrpld/overlay/PeerReservationTable.h>
+
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/jss.h>
+
 #include <algorithm>
 #include <iterator>
 #include <mutex>
@@ -50,7 +52,7 @@ PeerReservationTable::list() const -> std::vector<PeerReservation>
     {
         std::lock_guard lock(mutex_);
         list.reserve(table_.size());
-        std::ranges::copy(table_, std::back_inserter(list));
+        std::copy(table_.begin(), table_.end(), std::back_inserter(list));
     }
     std::sort(list.begin(), list.end());
     return list;

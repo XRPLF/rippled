@@ -25,9 +25,12 @@
 #include <xrpld/core/JobQueue.h>
 #include <xrpld/ledger/ReadView.h>
 #include <xrpld/net/InfoSub.h>
+
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/messages.h>
+
 #include <boost/asio.hpp>
+
 #include <memory>
 
 namespace ripple {
@@ -178,9 +181,11 @@ public:
 
     // network state machine
     virtual bool
-    beginConsensus(uint256 const& netLCL) = 0;
+    beginConsensus(
+        uint256 const& netLCL,
+        std::unique_ptr<std::stringstream> const& clog) = 0;
     virtual void
-    endConsensus() = 0;
+    endConsensus(std::unique_ptr<std::stringstream> const& clog) = 0;
     virtual void
     setStandAlone() = 0;
     virtual void

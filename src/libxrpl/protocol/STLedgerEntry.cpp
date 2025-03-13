@@ -34,7 +34,9 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
+
 #include <boost/format/free_funcs.hpp>
+
 #include <algorithm>
 #include <array>
 #include <cstddef>
@@ -151,7 +153,10 @@ STLedgerEntry::isThreadedType(Rules const& rules) const
     // Exclude PrevTxnID/PrevTxnLgrSeq if the fixPreviousTxnID amendment is not
     // enabled and the ledger object type is in the above set
     bool const excludePrevTxnID = !rules.enabled(fixPreviousTxnID) &&
-        std::ranges::count(newPreviousTxnIDTypes, type_);
+        std::count(
+            newPreviousTxnIDTypes.cbegin(),
+            newPreviousTxnIDTypes.cend(),
+            type_);
     return !excludePrevTxnID && getFieldIndex(sfPreviousTxnID) != -1;
 }
 

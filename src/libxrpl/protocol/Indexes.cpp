@@ -33,7 +33,9 @@
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/nftPageMask.h>
+
 #include <boost/endian/conversion.hpp>
+
 #include <algorithm>
 #include <array>
 #include <cstdint>
@@ -144,7 +146,8 @@ getQuality(uint256 const& uBase)
 uint256
 getTicketIndex(AccountID const& account, std::uint32_t ticketSeq)
 {
-    return indexHash(LedgerNameSpace::TICKET, account, ticketSeq);
+    return indexHash(
+        LedgerNameSpace::TICKET, account, std::uint32_t(ticketSeq));
 }
 
 uint256
@@ -192,7 +195,10 @@ Keylet
 skip(LedgerIndex ledger) noexcept
 {
     return {
-        ltLEDGER_HASHES, indexHash(LedgerNameSpace::SKIP_LIST, ledger >> 16)};
+        ltLEDGER_HASHES,
+        indexHash(
+            LedgerNameSpace::SKIP_LIST,
+            std::uint32_t(static_cast<std::uint32_t>(ledger) >> 16))};
 }
 
 Keylet const&

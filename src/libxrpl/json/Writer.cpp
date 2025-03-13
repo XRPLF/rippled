@@ -20,6 +20,7 @@
 #include <xrpl/basics/ToString.h>
 #include <xrpl/json/Output.h>
 #include <xrpl/json/Writer.h>
+
 #include <cstddef>
 #include <map>
 #include <memory>
@@ -169,7 +170,7 @@ public:
 #ifndef NDEBUG
         // Make sure we haven't already seen this tag.
         auto& tags = stack_.top().tags;
-        check(!tags.contains(tag), "Already seen tag " + tag);
+        check(tags.find(tag) == tags.end(), "Already seen tag " + tag);
         tags.insert(tag);
 #endif
 

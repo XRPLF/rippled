@@ -24,6 +24,7 @@
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/Serializer.h>
+
 #include <algorithm>
 #include <cstddef>
 #include <stdexcept>
@@ -195,7 +196,7 @@ STArray::isDefault() const
 void
 STArray::sort(bool (*compare)(const STObject&, const STObject&))
 {
-    std::ranges::sort(v_, compare);
+    std::sort(v_.begin(), v_.end(), compare);
 }
 
 }  // namespace ripple

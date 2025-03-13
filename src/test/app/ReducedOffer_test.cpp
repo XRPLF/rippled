@@ -18,9 +18,11 @@
 //==============================================================================
 
 #include <test/jtx.h>
+
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/jss.h>
+
 #include <initializer_list>
 
 namespace ripple {

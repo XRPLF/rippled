@@ -18,9 +18,12 @@
 //==============================================================================
 
 #include <test/jtx.h>
+
 #include <xrpld/app/tx/detail/PermissionedDomainSet.h>
+
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
+
 #include <exception>
 #include <map>
 #include <optional>

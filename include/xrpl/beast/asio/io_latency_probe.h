@@ -21,8 +21,10 @@
 #define BEAST_ASIO_IO_LATENCY_PROBE_H_INCLUDED
 
 #include <xrpl/beast/utility/instrumentation.h>
+
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/io_service.hpp>
+
 #include <chrono>
 #include <condition_variable>
 #include <mutex>

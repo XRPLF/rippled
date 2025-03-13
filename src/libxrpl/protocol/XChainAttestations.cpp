@@ -33,6 +33,7 @@
 #include <xrpl/protocol/XChainAttestations.h>
 #include <xrpl/protocol/json_get_or_throw.h>
 #include <xrpl/protocol/jss.h>
+
 #include <cstdint>
 #include <optional>
 #include <stdexcept>
@@ -111,7 +112,7 @@ AttestationBase::AttestationBase(STObject const& o)
     , sendingAccount{o[sfAccount]}
     , sendingAmount{o[sfAmount]}
     , rewardAccount{o[sfAttestationRewardAccount]}
-    , wasLockingChainSend{static_cast<bool>(o[sfWasLockingChainSend])}
+    , wasLockingChainSend{bool(o[sfWasLockingChainSend])}
 {
 }
 

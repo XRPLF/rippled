@@ -18,13 +18,13 @@
 //==============================================================================
 
 #include <test/jtx.h>
+
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
 namespace ripple {
-
 namespace RPC {
 
 class AccountLines_test : public beast::unit_test::suite

@@ -24,6 +24,7 @@
 #include <xrpld/app/rdb/RelationalDatabase.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/Role.h>
+
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>

@@ -21,10 +21,12 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/paths/PathRequests.h>
 #include <xrpld/core/JobQueue.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
+
 #include <algorithm>
 
 namespace ripple {
@@ -117,7 +119,7 @@ PathRequests::updateAll(std::shared_ptr<ReadView const> const& inLedger)
                     // This callback is used by doUpdate to determine whether to
                     // continue working. If getSubscriber returns null, that
                     // indicates that this request is no longer relevant.
-                    return static_cast<bool>(getSubscriber(request));
+                    return (bool)getSubscriber(request);
                 };
                 if (!request->needsUpdate(
                         newRequests, cache->getLedger()->seq()))
@@ -232,12 +234,13 @@ PathRequests::insertPathRequest(PathRequest::pointer const& req)
 
     // Insert after any older unserviced requests but before
     // any serviced requests
-    auto ret = std::ranges::find_if(requests_, [](auto const& wl) {
-        auto r = wl.lock();
+    auto ret =
+        std::find_if(requests_.begin(), requests_.end(), [](auto const& wl) {
+            auto r = wl.lock();
 
-        // We come before handled requests
-        return r && !r->isNew();
-    });
+            // We come before handled requests
+            return r && !r->isNew();
+        });
 
     requests_.emplace(ret, req);
 }

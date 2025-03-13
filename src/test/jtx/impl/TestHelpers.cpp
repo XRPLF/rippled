@@ -20,6 +20,7 @@
 #include <test/jtx/TestHelpers.h>
 #include <test/jtx/offer.h>
 #include <test/jtx/owners.h>
+
 #include <xrpl/protocol/TxFlags.h>
 
 namespace ripple {

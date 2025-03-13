@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <test/csf/ledgers.h>
+
 #include <algorithm>
 
 namespace ripple {

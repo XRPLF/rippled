@@ -19,6 +19,7 @@
 
 #include <xrpld/app/tx/detail/ApplyContext.h>
 #include <xrpld/app/tx/detail/InvariantCheck.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/to_string.h>
@@ -150,7 +151,7 @@ ApplyContext::checkInvariants(TER const result, XRPAmount const fee)
     return checkInvariantsHelper(
         result,
         fee,
-        std::make_index_sequence<std::tuple_size_v<InvariantChecks>>{});
+        std::make_index_sequence<std::tuple_size<InvariantChecks>::value>{});
 }
 
 }  // namespace ripple

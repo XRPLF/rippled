@@ -19,20 +19,24 @@
 
 #include <xrpld/nodestore/detail/codec.h>
 #include <xrpld/unity/rocksdb.h>
+
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/clock/basic_seconds_clock.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/rfc2616.h>
 #include <xrpl/beast/unit_test.h>
+
 #include <boost/beast/core/string.hpp>
 #include <boost/regex.hpp>
+
+#include <nudb/create.hpp>
+#include <nudb/detail/format.hpp>
+#include <nudb/xxhasher.hpp>
+
 #include <algorithm>
 #include <chrono>
 #include <iomanip>
 #include <map>
-#include <nudb/create.hpp>
-#include <nudb/detail/format.hpp>
-#include <nudb/xxhasher.hpp>
 #include <sstream>
 
 /*
@@ -226,7 +230,7 @@ public:
         {
             return;
         }
-        auto const rate = elapsed.count() / static_cast<double>(work);
+        auto const rate = elapsed.count() / double(work);
         clock_type::duration const remain(
             static_cast<clock_type::duration::rep>((work_ - work) * rate));
         log << "Remaining: " << detail::fmtdur(remain) << " (" << work << " of "
@@ -292,17 +296,17 @@ public:
         auto const args = parse_args(arg());
         bool usage = args.empty();
 
-        if (!usage && !args.contains("from"))
+        if (!usage && args.find("from") == args.end())
         {
             log << "Missing parameter: from";
             usage = true;
         }
-        if (!usage && !args.contains("to"))
+        if (!usage && args.find("to") == args.end())
         {
             log << "Missing parameter: to";
             usage = true;
         }
-        if (!usage && !args.contains("buffer"))
+        if (!usage && args.find("buffer") == args.end())
         {
             log << "Missing parameter: buffer";
             usage = true;

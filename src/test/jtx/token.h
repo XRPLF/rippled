@@ -23,7 +23,9 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/owners.h>
+
 #include <xrpl/basics/strHex.h>
+
 #include <initializer_list>
 
 namespace ripple {

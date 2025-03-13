@@ -22,9 +22,11 @@
 #include <xrpld/app/misc/detail/WorkFile.h>
 #include <xrpld/app/misc/detail/WorkPlain.h>
 #include <xrpld/app/misc/detail/WorkSSL.h>
+
 #include <xrpl/json/json_reader.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
+
 #include <algorithm>
 
 namespace ripple {
@@ -208,8 +210,8 @@ ValidatorSite::setTimer(
     std::lock_guard<std::mutex> const& site_lock,
     std::lock_guard<std::mutex> const& state_lock)
 {
-    auto next =
-        std::ranges::min_element(sites_, [](Site const& a, Site const& b) {
+    auto next = std::min_element(
+        sites_.begin(), sites_.end(), [](Site const& a, Site const& b) {
             return a.nextRefresh < b.nextRefresh;
         });
 

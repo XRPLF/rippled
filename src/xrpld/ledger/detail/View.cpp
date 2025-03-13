@@ -19,6 +19,7 @@
 
 #include <xrpld/ledger/ReadView.h>
 #include <xrpld/ledger/View.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -26,6 +27,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/st.h>
+
 #include <optional>
 
 namespace ripple {

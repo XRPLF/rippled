@@ -22,8 +22,10 @@
 
 #include <test/jtx/Env.h>
 #include <test/jtx/tags.h>
+
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/STAmount.h>
+
 #include <optional>
 
 namespace ripple {

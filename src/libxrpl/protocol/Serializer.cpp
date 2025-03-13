@@ -26,7 +26,9 @@
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/digest.h>
+
 #include <boost/endian/conversion.hpp>
+
 #include <array>
 #include <cstddef>
 #include <cstdint>
@@ -110,10 +112,7 @@ int
 Serializer::addRaw(const void* ptr, int len)
 {
     int ret = mData.size();
-    mData.insert(
-        mData.end(),
-        static_cast<const char*>(ptr),
-        static_cast<const char*>(ptr) + len);
+    mData.insert(mData.end(), (const char*)ptr, ((const char*)ptr) + len);
     return ret;
 }
 
@@ -328,7 +327,7 @@ Serializer::decodeVLLength(int b1, int b2, int b3)
 //------------------------------------------------------------------------------
 
 SerialIter::SerialIter(void const* data, std::size_t size) noexcept
-    : p_(static_cast<std::uint8_t const*>(data)), remain_(size)
+    : p_(reinterpret_cast<std::uint8_t const*>(data)), remain_(size)
 {
 }
 
@@ -371,8 +370,7 @@ SerialIter::get16()
     p_ += 2;
     used_ += 2;
     remain_ -= 2;
-    return (static_cast<std::uint64_t>(t[0]) << 8) +
-        static_cast<std::uint64_t>(t[1]);
+    return (std::uint64_t(t[0]) << 8) + std::uint64_t(t[1]);
 }
 
 std::uint32_t
@@ -384,10 +382,8 @@ SerialIter::get32()
     p_ += 4;
     used_ += 4;
     remain_ -= 4;
-    return (static_cast<std::uint64_t>(t[0]) << 24) +
-        (static_cast<std::uint64_t>(t[1]) << 16) +
-        (static_cast<std::uint64_t>(t[2]) << 8) +
-        static_cast<std::uint64_t>(t[3]);
+    return (std::uint64_t(t[0]) << 24) + (std::uint64_t(t[1]) << 16) +
+        (std::uint64_t(t[2]) << 8) + std::uint64_t(t[3]);
 }
 
 std::uint64_t
@@ -399,14 +395,10 @@ SerialIter::get64()
     p_ += 8;
     used_ += 8;
     remain_ -= 8;
-    return (static_cast<std::uint64_t>(t[0]) << 56) +
-        (static_cast<std::uint64_t>(t[1]) << 48) +
-        (static_cast<std::uint64_t>(t[2]) << 40) +
-        (static_cast<std::uint64_t>(t[3]) << 32) +
-        (static_cast<std::uint64_t>(t[4]) << 24) +
-        (static_cast<std::uint64_t>(t[5]) << 16) +
-        (static_cast<std::uint64_t>(t[6]) << 8) +
-        static_cast<std::uint64_t>(t[7]);
+    return (std::uint64_t(t[0]) << 56) + (std::uint64_t(t[1]) << 48) +
+        (std::uint64_t(t[2]) << 40) + (std::uint64_t(t[3]) << 32) +
+        (std::uint64_t(t[4]) << 24) + (std::uint64_t(t[5]) << 16) +
+        (std::uint64_t(t[6]) << 8) + std::uint64_t(t[7]);
 }
 
 std::int32_t
@@ -464,7 +456,8 @@ template <class T>
 T
 SerialIter::getRawHelper(int size)
 {
-    static_assert(std::is_same_v<T, Blob> || std::is_same_v<T, Buffer>, "");
+    static_assert(
+        std::is_same<T, Blob>::value || std::is_same<T, Buffer>::value, "");
     if (remain_ < size)
         Throw<std::runtime_error>("invalid SerialIter getRaw");
     T result(size);

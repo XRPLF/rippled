@@ -24,6 +24,7 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
+
 #include <ostream>
 #include <stdexcept>
 #include <string>

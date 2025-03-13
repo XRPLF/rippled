@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/app/ledger/AcceptedLedger.h>
+
 #include <algorithm>
 
 namespace ripple {
@@ -38,9 +39,12 @@ AcceptedLedger::AcceptedLedger(
     transactions_.reserve(256);
     insertAll(ledger->txs);
 
-    std::ranges::sort(transactions_, [](auto const& a, auto const& b) {
-        return a->getTxnSeq() < b->getTxnSeq();
-    });
+    std::sort(
+        transactions_.begin(),
+        transactions_.end(),
+        [](auto const& a, auto const& b) {
+            return a->getTxnSeq() < b->getTxnSeq();
+        });
 }
 
 }  // namespace ripple

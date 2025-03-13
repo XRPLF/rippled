@@ -24,10 +24,12 @@
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
+
 #include <boost/asio/error.hpp>
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/system/detail/error_code.hpp>
+
 #include <algorithm>
 #include <atomic>
 #include <cctype>
@@ -325,7 +327,8 @@ public:
             std::placeholders::_1,
             std::locale());
 
-        auto host_first = std::ranges::find_if_not(str, find_whitespace);
+        auto host_first =
+            std::find_if_not(str.begin(), str.end(), find_whitespace);
 
         auto port_last =
             std::find_if_not(str.rbegin(), str.rend(), find_whitespace).base();

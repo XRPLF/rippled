@@ -27,12 +27,16 @@
 #include <test/csf/Validation.h>
 #include <test/csf/events.h>
 #include <test/csf/ledgers.h>
+
 #include <xrpld/consensus/Consensus.h>
 #include <xrpld/consensus/Validations.h>
+
 #include <xrpl/beast/utility/WrappedSink.h>
 #include <xrpl/protocol/PublicKey.h>
+
 #include <boost/container/flat_map.hpp>
 #include <boost/container/flat_set.hpp>
+
 #include <algorithm>
 
 namespace ripple {
@@ -115,6 +119,10 @@ struct Peer
         {
             return recvValidation;
         }
+    };
+
+    class TestConsensusLogger
+    {
     };
 
     /** Generic Validations adaptor that simply ignores recently stale
@@ -533,7 +541,8 @@ struct Peer
             closeResolution,
             rawCloseTimes,
             mode,
-            std::move(consensusJson));
+            std::move(consensusJson),
+            validating());
     }
 
     void
@@ -543,7 +552,8 @@ struct Peer
         NetClock::duration const& closeResolution,
         ConsensusCloseTimes const& rawCloseTimes,
         ConsensusMode const& mode,
-        Json::Value&& consensusJson)
+        Json::Value&& consensusJson,
+        const bool validating)
     {
         schedule(delays.ledgerAccept, [=, this]() {
             const bool proposing = mode == ConsensusMode::proposing;
@@ -878,6 +888,13 @@ struct Peer
     {
     }
 
+    bool
+    validating() const
+    {
+        // does not matter
+        return false;
+    }
+
     //--------------------------------------------------------------------------
     //  A locally submitted transaction
     void
@@ -918,7 +935,7 @@ struct Peer
         // Not yet modeling dynamic UNL.
         hash_set<PeerID> nowUntrusted;
         consensus.startRound(
-            now(), bestLCL, lastClosedLedger, nowUntrusted, runAsValidator);
+            now(), bestLCL, lastClosedLedger, nowUntrusted, runAsValidator, {});
     }
 
     // Start the consensus process assuming it is not yet running

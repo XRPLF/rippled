@@ -18,15 +18,18 @@
 //==============================================================================
 
 #include <test/jtx.h>
+
 #include <xrpld/app/main/DBInit.h>
 #include <xrpld/app/misc/Manifest.h>
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/app/rdb/Wallet.h>
+
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/STExchange.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Sign.h>
+
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/utility/in_place_factory.hpp>
@@ -266,8 +269,10 @@ public:
             };
             auto sort = [](std::vector<Manifest const*> mv)
                 -> std::vector<Manifest const*> {
-                std::ranges::sort(
-                    mv, [](Manifest const* lhs, Manifest const* rhs) {
+                std::sort(
+                    mv.begin(),
+                    mv.end(),
+                    [](Manifest const* lhs, Manifest const* rhs) {
                         return lhs->serialized < rhs->serialized;
                     });
                 return mv;

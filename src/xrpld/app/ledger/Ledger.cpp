@@ -30,6 +30,7 @@
 #include <xrpld/core/SociDB.h>
 #include <xrpld/nodestore/Database.h>
 #include <xrpld/nodestore/detail/DatabaseNodeImp.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -41,6 +42,7 @@
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
+
 #include <utility>
 #include <vector>
 
@@ -54,15 +56,15 @@ calculateLedgerHash(LedgerInfo const& info)
     // VFALCO This has to match addRaw in View.h.
     return sha512Half(
         HashPrefix::ledgerMaster,
-        info.seq,
-        static_cast<std::uint64_t>(info.drops.drops()),
+        std::uint32_t(info.seq),
+        std::uint64_t(info.drops.drops()),
         info.parentHash,
         info.txHash,
         info.accountHash,
-        info.parentCloseTime.time_since_epoch().count(),
-        info.closeTime.time_since_epoch().count(),
-        static_cast<std::uint8_t>(info.closeTimeResolution.count()),
-        static_cast<std::uint8_t>(info.closeFlags));
+        std::uint32_t(info.parentCloseTime.time_since_epoch().count()),
+        std::uint32_t(info.closeTime.time_since_epoch().count()),
+        std::uint8_t(info.closeTimeResolution.count()),
+        std::uint8_t(info.closeFlags));
 }
 
 //------------------------------------------------------------------------------
@@ -199,7 +201,8 @@ Ledger::Ledger(
     {
         auto sle = std::make_shared<SLE>(keylet::fees());
         // Whether featureXRPFees is supported will depend on startup options.
-        if (std::ranges::find(amendments, featureXRPFees) != amendments.end())
+        if (std::find(amendments.begin(), amendments.end(), featureXRPFees) !=
+            amendments.end())
         {
             sle->at(sfBaseFeeDrops) = config.FEES.reference_fee;
             sle->at(sfReserveBaseDrops) = config.FEES.account_reserve;

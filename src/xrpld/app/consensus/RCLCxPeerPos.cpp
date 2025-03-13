@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/app/consensus/RCLCxPeerPos.h>
+
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
 

@@ -20,6 +20,7 @@
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/tx/detail/SetSignerList.h>
 #include <xrpld/ledger/ApplyView.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -27,6 +28,7 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TxFlags.h>
+
 #include <algorithm>
 #include <cstdint>
 

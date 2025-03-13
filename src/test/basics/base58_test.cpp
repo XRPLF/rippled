@@ -22,8 +22,10 @@
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/detail/b58_utils.h>
 #include <xrpl/protocol/tokens.h>
+
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/random.hpp>
+
 #include <array>
 #include <cstddef>
 #include <random>

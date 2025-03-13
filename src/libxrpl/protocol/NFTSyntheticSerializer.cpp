@@ -24,6 +24,7 @@
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/TxMeta.h>
 #include <xrpl/protocol/jss.h>
+
 #include <memory>
 
 namespace ripple {

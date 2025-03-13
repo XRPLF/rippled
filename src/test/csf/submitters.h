@@ -24,7 +24,9 @@
 #include <test/csf/Scheduler.h>
 #include <test/csf/SimTime.h>
 #include <test/csf/Tx.h>
+
 #include <type_traits>
+
 namespace ripple {
 namespace test {
 namespace csf {

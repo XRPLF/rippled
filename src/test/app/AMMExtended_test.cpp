@@ -23,14 +23,17 @@
 #include <test/jtx/PathSet.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/sendmax.h>
+
 #include <xrpld/app/misc/AMMUtils.h>
 #include <xrpld/app/paths/AMMContext.h>
 #include <xrpld/app/paths/AMMOffer.h>
 #include <xrpld/app/paths/Flow.h>
 #include <xrpld/app/paths/detail/StrandFlow.h>
 #include <xrpld/ledger/PaymentSandbox.h>
+
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STParsedJSON.h>
+
 #include <utility>
 #include <vector>
 
@@ -3660,7 +3663,7 @@ private:
             {
                 accounts.insert(offer[jss::Account].asString());
             }
-            BEAST_EXPECT(accounts.contains(A2.human()));
+            BEAST_EXPECT(accounts.find(A2.human()) != std::end(accounts));
 
             //    test: visible offers where taker_gets is unfrozen issuer
             offers = env.rpc(
@@ -3674,7 +3677,7 @@ private:
             {
                 accounts.insert(offer[jss::Account].asString());
             }
-            BEAST_EXPECT(accounts.contains(A1.human()));
+            BEAST_EXPECT(accounts.find(A1.human()) != std::end(accounts));
         }
 
         {

@@ -19,8 +19,10 @@
 
 #include <test/nodestore/TestBase.h>
 #include <test/unit_test/SuiteJournal.h>
+
 #include <xrpld/nodestore/DummyScheduler.h>
 #include <xrpld/nodestore/Manager.h>
+
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/safe_cast.h>
@@ -28,7 +30,9 @@
 #include <xrpl/beast/unit_test/thread.h>
 #include <xrpl/beast/utility/temp_dir.h>
 #include <xrpl/beast/xor_shift_engine.h>
+
 #include <boost/algorithm/string.hpp>
+
 #include <atomic>
 #include <chrono>
 #include <iterator>
@@ -66,7 +70,7 @@ rngcpy(void* buffer, std::size_t bytes, Generator& g)
     {
         auto const v = g();
         memcpy(buffer, &v, sizeof(v));
-        buffer = static_cast<std::uint8_t*>(buffer) + sizeof(v);
+        buffer = reinterpret_cast<std::uint8_t*>(buffer) + sizeof(v);
         bytes -= sizeof(v);
     }
 
@@ -358,8 +362,9 @@ public:
             {
                 try
                 {
+                    std::shared_ptr<NodeObject> obj;
                     std::shared_ptr<NodeObject> result;
-                    std::shared_ptr<NodeObject> obj = seq1_.obj(dist_(gen_));
+                    obj = seq1_.obj(dist_(gen_));
                     backend_.fetch(obj->getHash().data(), &result);
                     suite_.expect(result && isSame(result, obj));
                 }
@@ -516,9 +521,9 @@ public:
                     }
                     else
                     {
+                        std::shared_ptr<NodeObject> obj;
                         std::shared_ptr<NodeObject> result;
-                        std::shared_ptr<NodeObject> obj =
-                            seq1_.obj(dist_(gen_));
+                        obj = seq1_.obj(dist_(gen_));
                         backend_.fetch(obj->getHash().data(), &result);
                         suite_.expect(result && isSame(result, obj));
                     }
@@ -600,9 +605,10 @@ public:
                     if (rand_(gen_) < 200)
                     {
                         // historical lookup
+                        std::shared_ptr<NodeObject> obj;
                         std::shared_ptr<NodeObject> result;
                         auto const j = older_(gen_);
-                        std::shared_ptr<NodeObject> obj = seq1_.obj(j);
+                        obj = seq1_.obj(j);
                         std::shared_ptr<NodeObject> result1;
                         backend_.fetch(obj->getHash().data(), &result);
                         suite_.expect(result != nullptr);

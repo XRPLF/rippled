@@ -19,6 +19,7 @@
 
 #include <xrpl/basics/hardened_hash.h>
 #include <xrpl/beast/unit_test.h>
+
 #include <array>
 #include <cstdint>
 #include <iomanip>
@@ -98,7 +99,7 @@ class unsigned_integer
 {
 private:
     static_assert(
-        std::is_integral_v<UInt> && std::is_unsigned_v<UInt>,
+        std::is_integral<UInt>::value && std::is_unsigned<UInt>::value,
         "UInt must be an unsigned integral type");
 
     static_assert(

@@ -22,7 +22,9 @@
 #include <test/jtx/attester.h>
 #include <test/jtx/multisign.h>
 #include <test/jtx/xchain_bridge.h>
+
 #include <xrpld/app/misc/TxQ.h>
+
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
@@ -275,12 +277,12 @@ class LedgerRPC_XChain_test : public beast::unit_test::suite,
             auto attest = r[sfXChainCreateAccountAttestations.jsonName];
             BEAST_EXPECT(attest.isArray());
             BEAST_EXPECT(attest.size() == 3);
-            BEAST_EXPECT(attest[static_cast<Json::Value::UInt>(0)].isMember(
+            BEAST_EXPECT(attest[Json::Value::UInt(0)].isMember(
                 sfXChainCreateAccountProofSig.jsonName));
             Json::Value a[num_attest];
             for (size_t i = 0; i < num_attest; ++i)
             {
-                a[i] = attest[static_cast<Json::Value::UInt>(0)]
+                a[i] = attest[Json::Value::UInt(0)]
                              [sfXChainCreateAccountProofSig.jsonName];
                 BEAST_EXPECT(
                     a[i].isMember(jss::Amount) &&
@@ -290,16 +292,20 @@ class LedgerRPC_XChain_test : public beast::unit_test::suite,
                     a[i][jss::Destination] == scCarol.human());
                 BEAST_EXPECT(
                     a[i].isMember(sfAttestationSignerAccount.jsonName) &&
-                    std::ranges::any_of(signers, [&](signer const& s) {
-                        return a[i][sfAttestationSignerAccount.jsonName] ==
-                            s.account.human();
-                    }));
+                    std::any_of(
+                        signers.begin(), signers.end(), [&](signer const& s) {
+                            return a[i][sfAttestationSignerAccount.jsonName] ==
+                                s.account.human();
+                        }));
                 BEAST_EXPECT(
                     a[i].isMember(sfAttestationRewardAccount.jsonName) &&
-                    std::ranges::any_of(payee, [&](Account const& account) {
-                        return a[i][sfAttestationRewardAccount.jsonName] ==
-                            account.human();
-                    }));
+                    std::any_of(
+                        payee.begin(),
+                        payee.end(),
+                        [&](Account const& account) {
+                            return a[i][sfAttestationRewardAccount.jsonName] ==
+                                account.human();
+                        }));
                 BEAST_EXPECT(
                     a[i].isMember(sfWasLockingChainSend.jsonName) &&
                     a[i][sfWasLockingChainSend.jsonName] == 1);
@@ -1276,7 +1282,9 @@ class LedgerRPC_test : public beast::unit_test::suite
                 "cred7",
                 "cred8",
                 "cred9"};
-            static_assert(std::size(credTypes) > maxCredentialsArraySize);
+            static_assert(
+                sizeof(credTypes) / sizeof(credTypes[0]) >
+                maxCredentialsArraySize);
 
             Json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
@@ -1287,7 +1295,8 @@ class LedgerRPC_test : public beast::unit_test::suite
             auto& arr(
                 jvParams[jss::deposit_preauth][jss::authorized_credentials]);
 
-            for (unsigned i = 0; i < std::size(credTypes); ++i)
+            for (unsigned i = 0; i < sizeof(credTypes) / sizeof(credTypes[0]);
+                 ++i)
             {
                 Json::Value jo;
                 jo[jss::issuer] = issuer.human();

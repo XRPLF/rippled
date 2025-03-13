@@ -28,6 +28,7 @@
 #include <test/csf/Scheduler.h>
 #include <test/csf/SimTime.h>
 #include <test/csf/TrustGraph.h>
+
 #include <deque>
 #include <iostream>
 #include <random>
@@ -53,6 +54,14 @@ public:
         if (level < threshold())
             return;
 
+        std::cout << clock_.now().time_since_epoch().count() << " " << text
+                  << std::endl;
+    }
+
+    void
+    writeAlways(beast::severities::Severity level, std::string const& text)
+        override
+    {
         std::cout << clock_.now().time_since_epoch().count() << " " << text
                   << std::endl;
     }

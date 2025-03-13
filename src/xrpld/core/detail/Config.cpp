@@ -20,6 +20,7 @@
 #include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 #include <xrpld/net/HTTPClient.h>
+
 #include <xrpl/basics/FileUtilities.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>
@@ -28,10 +29,12 @@
 #include <xrpl/json/json_reader.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/SystemParameters.h>
+
 #include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
 #include <boost/predef.h>
 #include <boost/regex.hpp>
+
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
@@ -278,11 +281,12 @@ Config::setupControl(bool bQuiet, bool bSilent, bool bStandalone)
     {
         // First, check against 'minimum' RAM requirements per node size:
         auto const& threshold =
-            sizedItems[static_cast<std::underlying_type_t<SizedItem>>(
-                SizedItem::ramSizeGB)];
+            sizedItems[std::underlying_type_t<SizedItem>(SizedItem::ramSizeGB)];
 
-        auto ns =
-            std::ranges::find_if(threshold.second, [this](std::size_t limit) {
+        auto ns = std::find_if(
+            threshold.second.begin(),
+            threshold.second.end(),
+            [this](std::size_t limit) {
                 return (limit == 0) || (ramSize_ < limit);
             });
 
@@ -490,7 +494,7 @@ Config::loadFromString(std::string const& fileContents)
             for (auto& line : strVec)
             {
                 // skip anything that might be an ipv6 address
-                if (std::ranges::count(line, ':') != 1)
+                if (std::count(line.begin(), line.end(), ':') != 1)
                     continue;
 
                 std::string result = std::regex_replace(line, e, " $1");

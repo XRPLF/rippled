@@ -21,6 +21,7 @@
 #define RIPPLE_NODESTORE_BACKEND_H_INCLUDED
 
 #include <xrpld/nodestore/Types.h>
+
 #include <cstdint>
 
 namespace ripple {

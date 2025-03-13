@@ -21,12 +21,14 @@
 #define RIPPLE_CONSENSUS_VALIDATIONS_H_INCLUDED
 
 #include <xrpld/consensus/LedgerTrie.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/container/aged_container_utility.h>
 #include <xrpl/beast/container/aged_unordered_map.h>
 #include <xrpl/protocol/PublicKey.h>
+
 #include <mutex>
 #include <optional>
 #include <type_traits>

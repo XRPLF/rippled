@@ -20,8 +20,10 @@
 #include <xrpld/app/tx/detail/NFTokenCancelOffer.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
 #include <xrpld/ledger/View.h>
+
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TxFlags.h>
+
 #include <boost/endian/conversion.hpp>
 
 namespace ripple {

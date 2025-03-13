@@ -21,10 +21,12 @@
 #define RIPPLE_APP_PATHS_RIPPLESTATE_H_INCLUDED
 
 #include <xrpld/ledger/View.h>
+
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+
 #include <cstdint>
 #include <optional>
 

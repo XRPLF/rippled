@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <test/jtx.h>
+
 #include <xrpl/basics/strHex.h>
 
 namespace ripple {

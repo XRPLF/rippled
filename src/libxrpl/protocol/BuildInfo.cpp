@@ -21,6 +21,7 @@
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/core/SemanticVersion.h>
 #include <xrpl/protocol/BuildInfo.h>
+
 #include <algorithm>
 #include <cstdint>
 #include <string>
@@ -35,7 +36,7 @@ namespace BuildInfo {
 //  and follow the format described at http://semver.org/
 //------------------------------------------------------------------------------
 // clang-format off
-char const* const versionString = "2.4.0-rc2"
+char const* const versionString = "2.4.0"
 // clang-format on
 
 #if defined(DEBUG) || defined(SANITIZER)

@@ -18,12 +18,14 @@
 //==============================================================================
 
 #include <test/jtx.h>
+
 #include <xrpld/app/consensus/RCLValidations.h>
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/misc/NegativeUNLVote.h>
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/ledger/View.h>
+
 #include <xrpl/beast/unit_test.h>
 
 namespace ripple {
@@ -1276,7 +1278,7 @@ class NegativeUNLVoteInternal_test : public beast::unit_test::suite
                             scoreTable[nodeIDs[nIdx++]] = score;
                             scoreTable[nodeIDs[nIdx++]] = score;
                         }
-                        while (nIdx < unl_size)
+                        for (; nIdx < unl_size;)
                         {
                             scoreTable[nodeIDs[nIdx++]] = scores.back();
                         }

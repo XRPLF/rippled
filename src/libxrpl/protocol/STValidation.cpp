@@ -31,6 +31,7 @@
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/Serializer.h>
+
 #include <cstddef>
 #include <utility>
 

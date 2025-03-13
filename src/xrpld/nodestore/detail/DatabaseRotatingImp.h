@@ -21,6 +21,7 @@
 #define RIPPLE_NODESTORE_DATABASEROTATINGIMP_H_INCLUDED
 
 #include <xrpld/nodestore/DatabaseRotating.h>
+
 #include <mutex>
 
 namespace ripple {

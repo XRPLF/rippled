@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpl/beast/unit_test/suite.h>
+
 #include <exception>
 
 namespace ripple {

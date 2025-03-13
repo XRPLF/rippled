@@ -19,7 +19,9 @@
 
 #include <test/jtx/TestSuite.h>
 #include <test/unit_test/SuiteJournal.h>
+
 #include <xrpld/overlay/Cluster.h>
+
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/protocol/SecretKey.h>
 
@@ -99,7 +101,7 @@ public:
 
             for (auto const& n : network)
             {
-                auto found = std::ranges::find(cluster, n);
+                auto found = std::find(cluster.begin(), cluster.end(), n);
                 BEAST_EXPECT(
                     static_cast<bool>(c->member(n)) ==
                     (found != cluster.end()));
@@ -119,7 +121,7 @@ public:
 
             for (auto const& n : network)
             {
-                auto found = std::ranges::find(cluster, n);
+                auto found = std::find(cluster.begin(), cluster.end(), n);
                 BEAST_EXPECT(
                     static_cast<bool>(c->member(n)) ==
                     (found != cluster.end()));

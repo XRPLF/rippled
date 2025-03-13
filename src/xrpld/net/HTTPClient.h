@@ -21,9 +21,12 @@
 #define RIPPLE_NET_HTTPCLIENT_H_INCLUDED
 
 #include <xrpld/core/Config.h>
+
 #include <xrpl/basics/ByteUtilities.h>
+
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/streambuf.hpp>
+
 #include <chrono>
 #include <deque>
 #include <functional>

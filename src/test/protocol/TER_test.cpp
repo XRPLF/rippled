@@ -19,6 +19,7 @@
 
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/TER.h>
+
 #include <tuple>
 #include <type_traits>
 

@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpl/protocol/SField.h>
+
 #include <map>
 #include <string>
 

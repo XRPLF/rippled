@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <test/jtx.h>
+
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Quality.h>
@@ -99,7 +100,8 @@ public:
                     continue;
                 }
 
-                if (std::ranges::find(goodFlags, flag) != goodFlags.end())
+                if (std::find(goodFlags.begin(), goodFlags.end(), flag) !=
+                    goodFlags.end())
                 {
                     // Good flag
                     env.require(nflags(alice, flag));

@@ -19,7 +19,9 @@
 
 #include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/ledger/View.h>
+
 #include <xrpl/protocol/digest.h>
+
 #include <unordered_set>
 
 namespace ripple {

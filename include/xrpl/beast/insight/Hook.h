@@ -21,6 +21,7 @@
 #define BEAST_INSIGHT_HOOK_H_INCLUDED
 
 #include <xrpl/beast/insight/HookImpl.h>
+
 #include <memory>
 
 namespace beast {

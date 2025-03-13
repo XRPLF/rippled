@@ -19,11 +19,14 @@
 
 #include <test/nodestore/TestBase.h>
 #include <test/unit_test/SuiteJournal.h>
+
 #include <xrpld/nodestore/DummyScheduler.h>
 #include <xrpld/nodestore/Manager.h>
 #include <xrpld/unity/rocksdb.h>
+
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/beast/utility/temp_dir.h>
+
 #include <algorithm>
 
 namespace ripple {
@@ -76,7 +79,7 @@ public:
 
             {
                 // Reorder and read the copy again
-                std::ranges::shuffle(batch, rng);
+                std::shuffle(batch.begin(), batch.end(), rng);
                 Batch copy;
                 fetchCopyOfBatch(*backend, &copy, batch);
                 BEAST_EXPECT(areBatchesEqual(batch, copy));
@@ -93,8 +96,8 @@ public:
             Batch copy;
             fetchCopyOfBatch(*backend, &copy, batch);
             // Canonicalize the source and destination batches
-            std::ranges::sort(batch, LessThan{});
-            std::ranges::sort(copy, LessThan{});
+            std::sort(batch.begin(), batch.end(), LessThan{});
+            std::sort(copy.begin(), copy.end(), LessThan{});
             BEAST_EXPECT(areBatchesEqual(batch, copy));
         }
     }

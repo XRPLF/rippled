@@ -21,7 +21,9 @@
 #define RIPPLE_TEST_CSF_VALIDATION_H_INCLUDED
 
 #include <test/csf/ledgers.h>
+
 #include <xrpl/basics/tagged_integer.h>
+
 #include <memory>
 #include <optional>
 #include <utility>

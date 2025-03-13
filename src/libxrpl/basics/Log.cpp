@@ -21,8 +21,10 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/beast/utility/instrumentation.h>
+
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/filesystem/path.hpp>
+
 #include <chrono>
 #include <cstring>
 #include <fstream>
@@ -50,6 +52,14 @@ Logs::Sink::write(beast::severities::Severity level, std::string const& text)
     if (level < threshold())
         return;
 
+    logs_.write(level, partition_, text, console());
+}
+
+void
+Logs::Sink::writeAlways(
+    beast::severities::Severity level,
+    std::string const& text)
+{
     logs_.write(level, partition_, text, console());
 }
 

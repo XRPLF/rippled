@@ -19,12 +19,16 @@
 
 #include <test/jtx/TestSuite.h>
 #include <test/unit_test/FileDirGuard.h>
+
 #include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
+
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/server/Port.h>
+
 #include <boost/filesystem.hpp>
 #include <boost/format.hpp>
+
 #include <fstream>
 #include <regex>
 
@@ -580,7 +584,7 @@ trustthesevalidators.gov
                 1);
             BEAST_EXPECT(
                 c.section(SECTION_VALIDATOR_LIST_THRESHOLD).values()[0] == "1");
-            BEAST_EXPECT(c.VALIDATOR_LIST_THRESHOLD == 1);
+            BEAST_EXPECT(c.VALIDATOR_LIST_THRESHOLD == std::size_t(1));
         }
         {
             // load validator list sites and keys from config

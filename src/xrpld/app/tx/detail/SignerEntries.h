@@ -21,10 +21,11 @@
 #define RIPPLE_TX_IMPL_SIGNER_ENTRIES_H_INCLUDED
 
 #include <xrpld/app/tx/detail/Transactor.h>  // NotTEC
-#include <xrpl/basics/Expected.h>            //
-#include <xrpl/beast/utility/Journal.h>      // beast::Journal
-#include <xrpl/protocol/TER.h>               // temMALFORMED
-#include <xrpl/protocol/UintTypes.h>         // AccountID
+
+#include <xrpl/basics/Expected.h>        //
+#include <xrpl/beast/utility/Journal.h>  // beast::Journal
+#include <xrpl/protocol/TER.h>           // temMALFORMED
+#include <xrpl/protocol/UintTypes.h>     // AccountID
 
 #include <optional>
 #include <string_view>

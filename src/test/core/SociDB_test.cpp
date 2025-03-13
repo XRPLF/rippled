@@ -18,9 +18,12 @@
 //==============================================================================
 
 #include <test/jtx/TestSuite.h>
+
 #include <xrpld/core/SociDB.h>
+
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/contract.h>
+
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 
@@ -135,9 +138,11 @@ public:
             {
                 auto si = std::distance(
                     stringData.begin(),
-                    std::ranges::find(stringData, stringResult[i]));
+                    std::find(
+                        stringData.begin(), stringData.end(), stringResult[i]));
                 auto ii = std::distance(
-                    intData.begin(), std::ranges::find(intData, intResult[i]));
+                    intData.begin(),
+                    std::find(intData.begin(), intData.end(), intResult[i]));
                 BEAST_EXPECT(si == ii && si < stringResult.size());
             }
         };
@@ -179,10 +184,7 @@ public:
         setupSQLiteConfig(c, getDatabasePath());
         DBConfig sc(c, "SociTestDB");
         std::vector<std::uint64_t> const ubid(
-            {static_cast<std::uint64_t>(
-                 std::numeric_limits<std::int64_t>::max()),
-             20,
-             30});
+            {(std::uint64_t)std::numeric_limits<std::int64_t>::max(), 20, 30});
         std::vector<std::int64_t> const bid({-10, -20, -30});
         std::vector<std::uint32_t> const uid(
             {std::numeric_limits<std::uint32_t>::max(), 2, 3});

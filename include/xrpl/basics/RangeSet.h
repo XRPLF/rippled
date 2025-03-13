@@ -21,9 +21,11 @@
 #define RIPPLE_BASICS_RANGESET_H_INCLUDED
 
 #include <xrpl/beast/core/LexicalCast.h>
+
 #include <boost/algorithm/string.hpp>
 #include <boost/icl/closed_interval.hpp>
 #include <boost/icl/interval_set.hpp>
+
 #include <optional>
 #include <string>
 #include <vector>

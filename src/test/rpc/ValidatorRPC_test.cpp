@@ -19,12 +19,15 @@
 
 #include <test/jtx.h>
 #include <test/jtx/TrustedPublisherServer.h>
+
 #include <xrpld/app/main/BasicApp.h>
 #include <xrpld/app/misc/ValidatorSite.h>
 #include <xrpld/core/ConfigSections.h>
+
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/jss.h>
+
 #include <set>
 
 namespace ripple {
@@ -156,7 +159,8 @@ public:
                     TokenType::NodePublic, jrrnUnl[x].asString());
                 BEAST_EXPECT(parsedKey);
                 if (parsedKey)
-                    BEAST_EXPECT(disabledKeys.contains(*parsedKey));
+                    BEAST_EXPECT(
+                        disabledKeys.find(*parsedKey) != disabledKeys.end());
             }
 
             disabledKeys.clear();

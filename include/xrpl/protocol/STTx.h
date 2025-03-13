@@ -28,7 +28,9 @@
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TxFormats.h>
+
 #include <boost/container/flat_set.hpp>
+
 #include <functional>
 
 namespace ripple {

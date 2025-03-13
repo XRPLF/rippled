@@ -21,6 +21,7 @@
 #include <xrpld/app/misc/AmendmentTable.h>
 #include <xrpld/app/rdb/Wallet.h>
 #include <xrpld/core/ConfigSections.h>
+
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -30,6 +31,7 @@
 #include <boost/format.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/regex.hpp>
+
 #include <algorithm>
 #include <mutex>
 

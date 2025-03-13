@@ -21,10 +21,12 @@
 #define RIPPLE_APP_MISC_NEGATIVEUNLVOTE_H_INCLUDED
 
 #include <xrpld/app/ledger/Ledger.h>
+
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/UintTypes.h>
+
 #include <optional>
 
 namespace ripple {
