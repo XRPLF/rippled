@@ -23,6 +23,7 @@
 #include <xrpld/shamap/SHAMapNodeID.h>
 #include <xrpld/shamap/SHAMapTreeNode.h>
 #include <xrpld/shamap/detail/TaggedPointer.h>
+
 #include <xrpl/basics/IntrusivePointer.h>
 #include <xrpl/basics/TaggedCache.h>
 #include <xrpl/beast/utility/Journal.h>

@@ -1,4 +1,5 @@
 #include <test/unit_test/SuiteJournal.h>
+
 #include <xrpl/basics/IntrusivePointer.ipp>
 #include <xrpl/basics/IntrusiveRefCounts.h>
 #include <xrpl/beast/unit_test.h>
