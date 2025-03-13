@@ -19,6 +19,7 @@
 
 #include <xrpld/nodestore/detail/codec.h>
 #include <xrpld/unity/rocksdb.h>
+
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/clock/basic_seconds_clock.h>
 #include <xrpl/beast/core/LexicalCast.h>
@@ -27,6 +28,7 @@
 
 #include <boost/beast/core/string.hpp>
 #include <boost/regex.hpp>
+
 #include <nudb/create.hpp>
 #include <nudb/detail/format.hpp>
 #include <nudb/xxhasher.hpp>

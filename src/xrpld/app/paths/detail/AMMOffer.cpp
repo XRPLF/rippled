@@ -19,6 +19,7 @@
 
 #include <xrpld/app/paths/AMMLiquidity.h>
 #include <xrpld/app/paths/AMMOffer.h>
+
 #include <xrpl/protocol/QualityFunction.h>
 
 namespace ripple {

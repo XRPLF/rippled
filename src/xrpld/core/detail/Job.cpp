@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/core/Job.h>
+
 #include <xrpl/beast/core/CurrentThreadName.h>
 
 namespace ripple {

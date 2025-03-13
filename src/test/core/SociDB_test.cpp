@@ -18,7 +18,9 @@
 //==============================================================================
 
 #include <test/jtx/TestSuite.h>
+
 #include <xrpld/core/SociDB.h>
+
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/contract.h>
 

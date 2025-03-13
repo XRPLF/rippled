@@ -19,10 +19,6 @@
 
 #include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/ledger/View.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/LedgerFormats.h>
-#include <xrpl/protocol/STVector256.h>
-#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/digest.h>
 
 #include <unordered_set>

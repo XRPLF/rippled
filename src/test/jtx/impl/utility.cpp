@@ -18,7 +18,9 @@
 //==============================================================================
 
 #include <test/jtx/utility.h>
+
 #include <xrpld/net/RPCCall.h>
+
 #include <xrpl/basics/contract.h>
 #include <xrpl/json/Object.h>
 #include <xrpl/protocol/ErrorCodes.h>

@@ -22,6 +22,7 @@
 #include <xrpld/app/tx/detail/AMMBid.h>
 #include <xrpld/ledger/Sandbox.h>
 #include <xrpld/ledger/View.h>
+
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TER.h>
