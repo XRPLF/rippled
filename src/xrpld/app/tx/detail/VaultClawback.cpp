@@ -18,10 +18,11 @@
 //==============================================================================
 
 #include <xrpld/app/tx/detail/VaultClawback.h>
-
 #include <xrpld/ledger/View.h>
+
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TER.h>
@@ -88,9 +89,18 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
 
     // If AllowTrustLineClawback is not set or NoFreeze is set, return no
     // permission
-    if (!(issuerFlags & lsfAllowTrustLineClawback) ||
-        (issuerFlags & lsfNoFreeze))
-        return tecNO_PERMISSION;
+    if (asset.holds<Issue>())
+    {
+        if (!(issuerFlags & lsfMPTCanClawback) ||
+            !(issuerFlags & lsfMPTCanLock))
+            return tecNO_PERMISSION;
+    }
+    else if (asset.holds<MPTIssue>())
+    {
+        if (!(issuerFlags & lsfAllowTrustLineClawback) ||
+            (issuerFlags & lsfNoFreeze))
+            return tecNO_PERMISSION;
+    }
 
     return tesSUCCESS;
 }
