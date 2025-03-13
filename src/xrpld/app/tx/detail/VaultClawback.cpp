@@ -87,8 +87,6 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
 
     std::uint32_t const issuerFlags = issuer->getFieldU32(sfFlags);
 
-    // If AllowTrustLineClawback is not set or NoFreeze is set, return no
-    // permission
     if (asset.holds<Issue>())
     {
         if (!(issuerFlags & lsfMPTCanClawback) ||
