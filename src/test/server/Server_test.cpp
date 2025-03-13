@@ -21,7 +21,9 @@
 #include <test/jtx/CaptureLogs.h>
 #include <test/jtx/envconfig.h>
 #include <test/unit_test/SuiteJournal.h>
+
 #include <xrpld/core/ConfigSections.h>
+
 #include <xrpl/basics/make_SSLContext.h>
 #include <xrpl/beast/rfc2616.h>
 #include <xrpl/beast/unit_test.h>

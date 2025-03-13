@@ -20,6 +20,7 @@
 #include <xrpld/shamap/SHAMapInnerNode.h>
 #include <xrpld/shamap/SHAMapTreeNode.h>
 #include <xrpld/shamap/detail/TaggedPointer.ipp>
+
 #include <xrpl/basics/IntrusivePointer.ipp>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>

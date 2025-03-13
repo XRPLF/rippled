@@ -19,6 +19,7 @@
 
 #include <xrpld/shamap/SHAMapInnerNode.h>
 #include <xrpld/shamap/detail/TaggedPointer.h>
+
 #include <xrpl/basics/ByteUtilities.h>
 
 #include <boost/pool/pool_alloc.hpp>

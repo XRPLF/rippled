@@ -23,6 +23,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <boost/asio/buffer.hpp>
+
 #include <google/protobuf/io/zero_copy_stream.h>
 
 namespace ripple {

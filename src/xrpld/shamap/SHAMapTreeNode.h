@@ -22,6 +22,7 @@
 
 #include <xrpld/shamap/SHAMapItem.h>
 #include <xrpld/shamap/SHAMapNodeID.h>
+
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/IntrusivePointer.h>
 #include <xrpl/basics/IntrusiveRefCounts.h>

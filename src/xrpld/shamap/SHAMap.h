@@ -30,6 +30,7 @@
 #include <xrpld/shamap/SHAMapMissingNode.h>
 #include <xrpld/shamap/SHAMapTreeNode.h>
 #include <xrpld/shamap/TreeNodeCache.h>
+
 #include <xrpl/basics/IntrusivePointer.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/beast/utility/Journal.h>

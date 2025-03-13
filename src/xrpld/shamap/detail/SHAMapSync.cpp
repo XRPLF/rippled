@@ -19,6 +19,7 @@
 
 #include <xrpld/shamap/SHAMap.h>
 #include <xrpld/shamap/SHAMapSyncFilter.h>
+
 #include <xrpl/basics/TaggedCache.ipp>
 #include <xrpl/basics/random.h>
 

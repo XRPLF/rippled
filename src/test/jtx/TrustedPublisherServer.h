@@ -21,6 +21,7 @@
 #define RIPPLE_TEST_TRUSTED_PUBLISHER_SERVER_H_INCLUDED
 
 #include <test/jtx/envconfig.h>
+
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/basics/strHex.h>

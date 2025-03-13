@@ -19,7 +19,9 @@
 
 #include <test/csf/Validation.h>
 #include <test/unit_test/SuiteJournal.h>
+
 #include <xrpld/consensus/Validations.h>
+
 #include <xrpl/basics/tagged_integer.h>
 #include <xrpl/beast/clock/manual_clock.h>
 #include <xrpl/beast/unit_test.h>

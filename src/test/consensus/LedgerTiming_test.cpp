@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/consensus/LedgerTiming.h>
+
 #include <xrpl/beast/unit_test.h>
 
 namespace ripple {
