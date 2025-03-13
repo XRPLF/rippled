@@ -21,6 +21,7 @@
 #define RIPPLE_CONSENSUS_CONSENSUS_PARMS_H_INCLUDED
 
 #include <xrpl/beast/utility/instrumentation.h>
+
 #include <chrono>
 #include <cstddef>
 #include <functional>
