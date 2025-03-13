@@ -19,6 +19,7 @@
 
 #include <xrpld/app/tx/detail/VaultSet.h>
 #include <xrpld/ledger/View.h>
+
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/STNumber.h>

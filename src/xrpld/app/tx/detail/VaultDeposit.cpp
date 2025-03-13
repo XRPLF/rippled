@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-#include <xrpld/app/tx/detail/VaultDeposit.h>
-
 #include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/app/tx/detail/MPTokenAuthorize.h>
+#include <xrpld/app/tx/detail/VaultDeposit.h>
 #include <xrpld/ledger/View.h>
+
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>

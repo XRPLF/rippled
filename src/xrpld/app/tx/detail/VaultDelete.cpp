@@ -17,10 +17,10 @@
 */
 //==============================================================================
 
-#include <xrpld/app/tx/detail/VaultDelete.h>
-
 #include <xrpld/app/tx/detail/MPTokenIssuanceDestroy.h>
+#include <xrpld/app/tx/detail/VaultDelete.h>
 #include <xrpld/ledger/View.h>
+
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TxFlags.h>
