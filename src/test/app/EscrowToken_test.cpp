@@ -669,19 +669,19 @@ struct EscrowToken_test : public beast::unit_test::suite
         std::array<TestAccountData, 8> gwSrcTests = {{
             // src > dst && src > issuer && dst no trustline
             {Account("gw0"), Account{"alice2"}, false, true},
-            // // src < dst && src < issuer && dst no trustline
+            // src < dst && src < issuer && dst no trustline
             {Account("gw1"), Account{"carol0"}, false, false},
-            // // // // // dst > src && dst > issuer && dst no trustline
+            // dst > src && dst > issuer && dst no trustline
             {Account("gw0"), Account{"dan1"}, false, true},
-            // // // // // dst < src && dst < issuer && dst no trustline
+            // dst < src && dst < issuer && dst no trustline
             {Account("gw1"), Account{"bob0"}, false, false},
-            // // // // src > dst && src > issuer && dst has trustline
+            // src > dst && src > issuer && dst has trustline
             {Account("gw0"), Account{"alice2"}, true, true},
-            // // // // src < dst && src < issuer && dst has trustline
+            // src < dst && src < issuer && dst has trustline
             {Account("gw1"), Account{"carol0"}, true, false},
-            // // // // dst > src && dst > issuer && dst has trustline
+            // dst > src && dst > issuer && dst has trustline
             {Account("gw0"), Account{"dan1"}, true, true},
-            // // // // dst < src && dst < issuer && dst has trustline
+            // dst < src && dst < issuer && dst has trustline
             {Account("gw1"), Account{"bob0"}, true, false},
         }};
 
@@ -729,13 +729,13 @@ struct EscrowToken_test : public beast::unit_test::suite
         }
 
         std::array<TestAccountData, 4> gwDstTests = {{
-            // // // // src > dst && src > issuer && dst has trustline
+            // src > dst && src > issuer && dst has trustline
             {Account("alice2"), Account{"gw0"}, true, true},
-            // // // // src < dst && src < issuer && dst has trustline
+            // src < dst && src < issuer && dst has trustline
             {Account("carol0"), Account{"gw1"}, true, false},
-            // // // // dst > src && dst > issuer && dst has trustline
+            // dst > src && dst > issuer && dst has trustline
             {Account("dan1"), Account{"gw0"}, true, true},
-            // // // // dst < src && dst < issuer && dst has trustline
+            // dst < src && dst < issuer && dst has trustline
             {Account("bob0"), Account{"gw1"}, true, false},
         }};
 
@@ -1698,7 +1698,7 @@ public:
     {
         using namespace test::jtx;
         FeatureBitset const all{supported_amendments()};
-        // testIOUWithFeats(all);
+        testIOUWithFeats(all);
         testMPTWithFeats(all);
     }
 };
