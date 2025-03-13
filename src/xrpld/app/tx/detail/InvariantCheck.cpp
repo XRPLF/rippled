@@ -28,6 +28,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/FeeUnits.h>
 #include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/nftPageMask.h>
