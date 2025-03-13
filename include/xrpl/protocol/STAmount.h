@@ -700,6 +700,13 @@ isAddable(STAmount const& amt1, STAmount const& amt2)
         XRPAmount A = (amt1.signum() == -1 ? -(amt1.xrp()) : amt1.xrp());
         XRPAmount B = (amt2.signum() == -1 ? -(amt2.xrp()) : amt2.xrp());
 
+        if ((B > XRPAmount{0} &&
+             A > std::numeric_limits<XRPAmount>::max() - B) ||
+            (B < XRPAmount{0} && A < std::numeric_limits<XRPAmount>::min() - B))
+        {
+            return false;
+        }
+
         XRPAmount finalAmt = A + B;
         return (finalAmt >= A && finalAmt >= B);
     }
