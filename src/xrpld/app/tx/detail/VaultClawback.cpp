@@ -85,16 +85,21 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
     if (amount && asset != amount->asset())
         return tecWRONG_ASSET;
 
-    std::uint32_t const issuerFlags = issuer->getFieldU32(sfFlags);
-
-    if (asset.holds<Issue>())
+    if (asset.holds<MPTIssue>())
     {
-        if (!(issuerFlags & lsfMPTCanClawback) ||
-            !(issuerFlags & lsfMPTCanLock))
+        auto const mpt = asset.get<MPTIssue>();
+        auto const mptIssue =
+            ctx.view.read(keylet::mptIssuance(mpt.getMptID()));
+        if (mptIssue == nullptr)
+            return tecWRONG_ASSET;
+
+        std::uint32_t const issueFlags = mptIssue->getFieldU32(sfFlags);
+        if (!(issueFlags & lsfMPTCanClawback) || !(issueFlags & lsfMPTCanLock))
             return tecNO_PERMISSION;
     }
-    else if (asset.holds<MPTIssue>())
+    else if (asset.holds<Issue>())
     {
+        std::uint32_t const issuerFlags = issuer->getFieldU32(sfFlags);
         if (!(issuerFlags & lsfAllowTrustLineClawback) ||
             (issuerFlags & lsfNoFreeze))
             return tecNO_PERMISSION;

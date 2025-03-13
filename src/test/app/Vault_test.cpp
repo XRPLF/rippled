@@ -321,7 +321,9 @@ class Vault_test : public beast::unit_test::suite
                Account const& issuer,
                Account const& depositor) -> Asset {
                 MPTTester mptt{env, issuer, mptInitNoFund};
-                mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
+                mptt.create(
+                    {.flags =
+                         tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
                 PrettyAsset asset = mptt.issuanceID();
                 mptt.authorize({.account = depositor});
                 env(pay(issuer, depositor, asset(1000)));
