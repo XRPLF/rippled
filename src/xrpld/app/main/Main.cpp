@@ -503,13 +503,13 @@ run(int argc, char** argv)
         return 1;
     }
 
-    if (vm.count("help"))
+    if (vm.contains("help"))
     {
         printHelp(desc);
         return 0;
     }
 
-    if (vm.count("version"))
+    if (vm.contains("version"))
     {
         std::cout << "rippled version " << BuildInfo::getVersionString()
                   << std::endl;
@@ -523,7 +523,7 @@ run(int argc, char** argv)
     }
 
 #ifndef ENABLE_TESTS
-    if (vm.count("unittest") || vm.count("unittest-child"))
+    if (vm.contains("unittest") || vm.contains("unittest-child"))
     {
         std::cerr << "rippled: Tests disabled in this build." << std::endl;
         std::cerr << "Try 'rippled --help' for a list of options." << std::endl;
@@ -533,26 +533,26 @@ run(int argc, char** argv)
     // Run the unit tests if requested.
     // The unit tests will exit the application with an appropriate return code.
     //
-    if (vm.count("unittest"))
+    if (vm.contains("unittest"))
     {
         std::string argument;
 
-        if (vm.count("unittest-arg"))
+        if (vm.contains("unittest-arg"))
             argument = vm["unittest-arg"].as<std::string>();
 
         std::size_t numJobs = 1;
         bool unittestChild = false;
-        if (vm.count("unittest-jobs"))
+        if (vm.contains("unittest-jobs"))
             numJobs = std::max(numJobs, vm["unittest-jobs"].as<std::size_t>());
-        unittestChild = static_cast<bool>(vm.count("unittest-child"));
+        unittestChild = vm.contains("unittest-child");
 
         return runUnitTests(
             vm["unittest"].as<std::string>(),
             argument,
-            static_cast<bool>(vm.count("quiet")),
-            static_cast<bool>(vm.count("unittest-log")),
+            vm.contains("quiet"),
+            vm.contains("unittest-log"),
             unittestChild,
-            static_cast<bool>(vm.count("unittest-ipv6")),
+            vm.contains("unittest-ipv6"),
             numJobs,
             argc,
             argv);
@@ -560,7 +560,7 @@ run(int argc, char** argv)
     // LCOV_EXCL_START
     else
     {
-        if (vm.count("unittest-jobs"))
+        if (vm.contains("unittest-jobs"))
         {
             // unittest jobs only makes sense with `unittest`
             std::cerr << "rippled: '--unittest-jobs' specified without "
@@ -575,16 +575,16 @@ run(int argc, char** argv)
     auto config = std::make_unique<Config>();
 
     auto configFile =
-        vm.count("conf") ? vm["conf"].as<std::string>() : std::string();
+        vm.contains("conf") ? vm["conf"].as<std::string>() : std::string();
 
     // config file, quiet flag.
     config->setup(
         configFile,
-        static_cast<bool>(vm.count("quiet")),
-        static_cast<bool>(vm.count("silent")),
-        static_cast<bool>(vm.count("standalone")));
+        vm.contains("quiet"),
+        vm.contains("silent"),
+        vm.contains("standalone"));
 
-    if (vm.count("vacuum"))
+    if (vm.contains("vacuum"))
     {
         if (config->standalone())
         {
@@ -653,21 +653,21 @@ run(int argc, char** argv)
         }
     }
 
-    if (vm.count("start"))
+    if (vm.contains("start"))
     {
         config->START_UP = Config::FRESH;
     }
 
-    if (vm.count("import"))
+    if (vm.contains("import"))
         config->doImport = true;
 
-    if (vm.count("ledger"))
+    if (vm.contains("ledger"))
     {
         config->START_LEDGER = vm["ledger"].as<std::string>();
-        if (vm.count("replay"))
+        if (vm.contains("replay"))
         {
             config->START_UP = Config::REPLAY;
-            if (vm.count("trap_tx_hash"))
+            if (vm.contains("trap_tx_hash"))
             {
                 uint256 tmp = {};
                 auto hash = vm["trap_tx_hash"].as<std::string>();
@@ -687,24 +687,24 @@ run(int argc, char** argv)
         else
             config->START_UP = Config::LOAD;
     }
-    else if (vm.count("ledgerfile"))
+    else if (vm.contains("ledgerfile"))
     {
         config->START_LEDGER = vm["ledgerfile"].as<std::string>();
         config->START_UP = Config::LOAD_FILE;
     }
-    else if (vm.count("load") || config->FAST_LOAD)
+    else if (vm.contains("load") || config->FAST_LOAD)
     {
         config->START_UP = Config::LOAD;
     }
 
-    if (vm.count("trap_tx_hash") && vm.count("replay") == 0)
+    if (vm.contains("trap_tx_hash") && vm.contains("replay") == 0)
     {
         std::cerr << "Cannot use trap option without replay option"
                   << std::endl;
         return -1;
     }
 
-    if (vm.count("net") && !config->FAST_LOAD)
+    if (vm.contains("net") && !config->FAST_LOAD)
     {
         if ((config->START_UP == Config::LOAD) ||
             (config->START_UP == Config::REPLAY))
@@ -717,14 +717,14 @@ run(int argc, char** argv)
         config->START_UP = Config::NETWORK;
     }
 
-    if (vm.count("valid"))
+    if (vm.contains("valid"))
     {
         config->START_VALID = true;
     }
 
     // Override the RPC destination IP address. This must
     // happen after the config file is loaded.
-    if (vm.count("rpc_ip"))
+    if (vm.contains("rpc_ip"))
     {
         auto endpoint = beast::IP::Endpoint::from_string_checked(
             vm["rpc_ip"].as<std::string>());
@@ -738,7 +738,7 @@ run(int argc, char** argv)
         if (endpoint->port() == 0)
         {
             std::cerr << "No port specified in rpc_ip.\n";
-            if (vm.count("rpc_port"))
+            if (vm.contains("rpc_port"))
             {
                 std::cerr << "WARNING: using deprecated rpc_port param.\n";
                 try
@@ -761,7 +761,7 @@ run(int argc, char** argv)
         config->rpc_ip = std::move(*endpoint);
     }
 
-    if (vm.count("quorum"))
+    if (vm.contains("quorum"))
     {
         try
         {
@@ -783,15 +783,15 @@ run(int argc, char** argv)
     using namespace beast::severities;
     Severity thresh = kInfo;
 
-    if (vm.count("quiet"))
+    if (vm.contains("quiet"))
         thresh = kFatal;
-    else if (vm.count("verbose"))
+    else if (vm.contains("verbose"))
         thresh = kTrace;
 
     auto logs = std::make_unique<Logs>(thresh);
 
     // No arguments. Run server.
-    if (!vm.count("parameters"))
+    if (!vm.contains("parameters"))
     {
         // TODO: this comment can be removed in a future release -
         // say 1.7 or higher
@@ -811,7 +811,7 @@ run(int argc, char** argv)
         if (!adjustDescriptorLimit(1024, logs->journal("Application")))
             return -1;
 
-        if (vm.count("debug"))
+        if (vm.contains("debug"))
             setDebugLogSink(logs->makeSink("Debug", beast::severities::kTrace));
 
         auto app = make_Application(

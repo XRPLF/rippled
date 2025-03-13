@@ -159,8 +159,7 @@ public:
                     TokenType::NodePublic, jrrnUnl[x].asString());
                 BEAST_EXPECT(parsedKey);
                 if (parsedKey)
-                    BEAST_EXPECT(
-                        disabledKeys.find(*parsedKey) != disabledKeys.end());
+                    BEAST_EXPECT(disabledKeys.contains(*parsedKey));
             }
 
             disabledKeys.clear();
