@@ -306,6 +306,7 @@ public:
 private:
     static int num;
     static std::map<int, SField const*> knownCodeToField;
+    static std::map<std::string, SField const*> knownNameToField;
 };
 
 /** A field with a type known at compile time. */
