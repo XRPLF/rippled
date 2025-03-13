@@ -572,9 +572,10 @@ struct Peer
             prevRoundTime = result.roundTime.read();
             lastClosedLedger = newLedger;
 
-            auto const it = std::ranges::remove_if(openTxs, [&](Tx const& tx) {
-                                return acceptedTxs.exists(tx.id());
-                            }).begin();
+            auto const it = std::remove_if(
+                openTxs.begin(), openTxs.end(), [&](Tx const& tx) {
+                    return acceptedTxs.exists(tx.id());
+                });
             openTxs.erase(it, openTxs.end());
 
             // Only send validation if the new ledger is compatible with our

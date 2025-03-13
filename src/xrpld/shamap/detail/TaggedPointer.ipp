@@ -92,8 +92,7 @@ boundariesIndex(std::uint8_t numChildren)
         numChildren <= SHAMapInnerNode::branchFactor,
         "ripple::boundariesIndex : valid input");
     return std::distance(
-        boundaries.begin(),
-        std::ranges::lower_bound(boundaries, numChildren));
+        boundaries.begin(), std::ranges::lower_bound(boundaries, numChildren));
 }
 
 template <std::size_t... I>
