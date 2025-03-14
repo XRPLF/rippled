@@ -178,9 +178,9 @@ It does not override paths to dependencies when building with Visual Studio.
 
    ```
    # Conan 1.x
-   conan export external/rocksdb rocksdb/6.29.5@
+   conan export external/rocksdb rocksdb/9.7.3@
    # Conan 2.x
-   conan export --version 6.29.5 external/rocksdb
+   conan export --version 9.7.3 external/rocksdb
    ```
 
 Export our [Conan recipe for SOCI](./external/soci).
