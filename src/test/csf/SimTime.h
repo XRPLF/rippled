@@ -21,6 +21,7 @@
 #define RIPPLE_TEST_CSF_SIMTIME_H_INCLUDED
 
 #include <xrpl/beast/clock/manual_clock.h>
+
 #include <chrono>
 
 namespace ripple {

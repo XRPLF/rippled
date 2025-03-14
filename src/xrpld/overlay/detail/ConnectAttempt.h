@@ -21,7 +21,6 @@
 #define RIPPLE_OVERLAY_CONNECTATTEMPT_H_INCLUDED
 
 #include <xrpld/overlay/detail/OverlayImpl.h>
-#include <xrpld/overlay/detail/Tuning.h>
 
 namespace ripple {
 

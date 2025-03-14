@@ -21,6 +21,7 @@
 #define RIPPLE_APP_PATHS_IMPL_PAYSTEPS_H_INCLUDED
 
 #include <xrpld/app/paths/detail/AmountSpec.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/QualityFunction.h>
@@ -28,6 +29,7 @@
 #include <xrpl/protocol/TER.h>
 
 #include <boost/container/flat_set.hpp>
+
 #include <optional>
 
 namespace ripple {
