@@ -81,16 +81,14 @@ public:
         PrettyAmount(1u);
         PrettyAmount(-1);
         static_assert(
-            !std::is_trivially_constructible<PrettyAmount, char>::value, "");
+            !std::is_trivially_constructible_v<PrettyAmount, char>, "");
         static_assert(
-            !std::is_trivially_constructible<PrettyAmount, unsigned char>::
-                value,
+            !std::is_trivially_constructible_v<PrettyAmount, unsigned char>,
             "");
         static_assert(
-            !std::is_trivially_constructible<PrettyAmount, short>::value, "");
+            !std::is_trivially_constructible_v<PrettyAmount, short>, "");
         static_assert(
-            !std::is_trivially_constructible<PrettyAmount, unsigned short>::
-                value,
+            !std::is_trivially_constructible_v<PrettyAmount, unsigned short>,
             "");
 
         try
@@ -573,8 +571,7 @@ public:
         BEAST_EXPECT(jt2.get<int>());
         BEAST_EXPECT(*jt2.get<int>() == 7);
         BEAST_EXPECT(!jt2.get<UDT>());
-        JTx jt3;
-        jt3 = jt1;
+        JTx jt3 = jt1;
         BEAST_EXPECT(jt3.get<int>());
         BEAST_EXPECT(*jt3.get<int>() == 7);
         BEAST_EXPECT(!jt3.get<UDT>());
@@ -790,9 +787,7 @@ public:
         }
 
         auto hasFeature = [](Env& env, uint256 const& f) {
-            return (
-                env.app().config().features.find(f) !=
-                env.app().config().features.end());
+            return (env.app().config().features.contains(f));
         };
 
         {

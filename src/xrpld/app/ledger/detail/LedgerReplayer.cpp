@@ -122,10 +122,8 @@ LedgerReplayer::createDeltas(std::shared_ptr<LedgerReplayTask> task)
     JLOG(j_.trace()) << "Creating " << parameter.totalLedgers_ - 1 << " deltas";
     if (parameter.totalLedgers_ > 1)
     {
-        auto skipListItem = std::find(
-            parameter.skipList_.begin(),
-            parameter.skipList_.end(),
-            parameter.startHash_);
+        auto skipListItem =
+            std::ranges::find(parameter.skipList_, parameter.startHash_);
         if (skipListItem == parameter.skipList_.end() ||
             ++skipListItem == parameter.skipList_.end())
         {
@@ -267,8 +265,7 @@ LedgerReplayer::stop()
     JLOG(j_.info()) << "Stopping...";
     {
         std::lock_guard<std::mutex> lock(mtx_);
-        std::for_each(
-            tasks_.begin(), tasks_.end(), [](auto& i) { i->cancel(); });
+        std::ranges::for_each(tasks_, [](auto& i) { i->cancel(); });
         tasks_.clear();
         auto lockAndCancel = [](auto& i) {
             if (auto sptr = i.second.lock(); sptr)
@@ -276,9 +273,9 @@ LedgerReplayer::stop()
                 sptr->cancel();
             }
         };
-        std::for_each(skipLists_.begin(), skipLists_.end(), lockAndCancel);
+        std::ranges::for_each(skipLists_, lockAndCancel);
         skipLists_.clear();
-        std::for_each(deltas_.begin(), deltas_.end(), lockAndCancel);
+        std::ranges::for_each(deltas_, lockAndCancel);
         deltas_.clear();
     }
 

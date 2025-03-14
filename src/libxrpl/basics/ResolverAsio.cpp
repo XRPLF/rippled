@@ -147,8 +147,7 @@ public:
         {
             names.reserve(names_.size());
 
-            std::reverse_copy(
-                names_.begin(), names_.end(), std::back_inserter(names));
+            std::ranges::reverse_copy(names_, std::back_inserter(names));
         }
     };
 
@@ -327,8 +326,7 @@ public:
             std::placeholders::_1,
             std::locale());
 
-        auto host_first =
-            std::find_if_not(str.begin(), str.end(), find_whitespace);
+        auto host_first = std::ranges::find_if_not(str, find_whitespace);
 
         auto port_last =
             std::find_if_not(str.rbegin(), str.rend(), find_whitespace).base();

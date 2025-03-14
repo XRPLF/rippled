@@ -573,21 +573,21 @@ struct json_value_test : beast::unit_test::suite
 
         BEAST_EXPECT(!Json::Value(""));
 
-        BEAST_EXPECT(bool(Json::Value("empty")));
-        BEAST_EXPECT(bool(Json::Value(false)));
-        BEAST_EXPECT(bool(Json::Value(true)));
-        BEAST_EXPECT(bool(Json::Value(0)));
-        BEAST_EXPECT(bool(Json::Value(1)));
+        BEAST_EXPECT(static_cast<bool>(Json::Value("empty")));
+        BEAST_EXPECT(static_cast<bool>(Json::Value(false)));
+        BEAST_EXPECT(static_cast<bool>(Json::Value(true)));
+        BEAST_EXPECT(static_cast<bool>(Json::Value(0)));
+        BEAST_EXPECT(static_cast<bool>(Json::Value(1)));
 
         Json::Value array(Json::arrayValue);
         BEAST_EXPECT(!array);
         array.append(0);
-        BEAST_EXPECT(bool(array));
+        BEAST_EXPECT(static_cast<bool>(array));
 
         Json::Value object(Json::objectValue);
         BEAST_EXPECT(!object);
         object[""] = false;
-        BEAST_EXPECT(bool(object));
+        BEAST_EXPECT(static_cast<bool>(object));
     }
 
     void
@@ -641,7 +641,7 @@ struct json_value_test : beast::unit_test::suite
         BEAST_EXPECT(j1["a_small_int"] < a_uint);
 
         json = "{\"overflow\":";
-        json += std::to_string(std::uint64_t(max_uint) + 1);
+        json += std::to_string(static_cast<std::uint64_t>(max_uint) + 1);
         json += "}";
 
         Json::Value j2;
@@ -650,7 +650,7 @@ struct json_value_test : beast::unit_test::suite
         BEAST_EXPECT(!r2.parse(json, j2));
 
         json = "{\"underflow\":";
-        json += std::to_string(std::int64_t(min_int) - 1);
+        json += std::to_string(static_cast<std::int64_t>(min_int) - 1);
         json += "}";
 
         Json::Value j3;
@@ -801,11 +801,11 @@ struct json_value_test : beast::unit_test::suite
             BEAST_EXPECT(!(b > a));
         };
 
-        a["a"] = Json::UInt(0);
-        b["a"] = Json::Int(0);
+        a["a"] = static_cast<Json::UInt>(0);
+        b["a"] = static_cast<Json::Int>(0);
         testEquals("zero");
 
-        b["a"] = Json::Int(-1);
+        b["a"] = static_cast<Json::Int>(-1);
         testGreaterThan("negative");
 
         Json::Int big = std::numeric_limits<int>::max();
@@ -825,9 +825,8 @@ struct json_value_test : beast::unit_test::suite
         char const* s("{\"array\":[{\"12\":23},{},null,false,0.5]}");
 
         auto countLines = [](std::string const& str) {
-            return 1 + std::count_if(str.begin(), str.end(), [](char c) {
-                       return c == '\n';
-                   });
+            return 1 +
+                std::ranges::count_if(str, [](char c) { return c == '\n'; });
         };
 
         BEAST_EXPECT(r.parse(s, j));

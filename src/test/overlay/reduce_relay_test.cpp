@@ -381,7 +381,7 @@ public:
     {
         for (auto id : peers)
         {
-            assert(links_.find(id) != links_.end());
+            assert(links_.contains(id));
             f(*links_[id], message_);
         }
     }
@@ -390,13 +390,11 @@ public:
     for_links(LinkIterCB f, bool simulateSlow = false)
     {
         std::vector<LinkSPtr> v;
-        std::transform(
-            links_.begin(), links_.end(), std::back_inserter(v), [](auto& kv) {
-                return kv.second;
-            });
+        std::ranges::transform(
+            links_, std::back_inserter(v), [](auto& kv) { return kv.second; });
         std::random_device d;
         std::mt19937 g(d());
-        std::shuffle(v.begin(), v.end(), g);
+        std::ranges::shuffle(v, g);
 
         for (auto& link : v)
         {
@@ -641,7 +639,7 @@ public:
     isSelected(PublicKey const& validator, Peer::id_t peer)
     {
         auto selected = slots_.getSelected(validator);
-        return selected.find(peer) != selected.end();
+        return selected.contains(peer);
     }
 
     id_t
@@ -770,10 +768,8 @@ public:
     void
     enableLink(std::uint16_t validatorId, Peer::id_t peer, bool enable)
     {
-        auto it =
-            std::find_if(validators_.begin(), validators_.end(), [&](auto& v) {
-                return v.id() == validatorId;
-            });
+        auto it = std::ranges::find_if(
+            validators_, [&](auto& v) { return v.id() == validatorId; });
         assert(it != validators_.end());
         if (enable)
             it->linkUp(peer);
@@ -812,7 +808,7 @@ public:
         std::iota(s.begin(), s.end(), min);
         std::random_device d;
         std::mt19937 g(d());
-        std::shuffle(s.begin(), s.end(), g);
+        std::ranges::shuffle(s, g);
         for (auto v : s)
             f(v);
     }
@@ -894,9 +890,11 @@ protected:
     {
         auto peers = network_.overlay().getPeers(network_.validator(validator));
         std::cout << msg << " " << "num peers "
-                  << (int)network_.overlay().getNumPeers() << std::endl;
+                  << static_cast<int>(network_.overlay().getNumPeers())
+                  << std::endl;
         for (auto& [k, v] : peers)
-            std::cout << k << ":" << (int)std::get<reduce_relay::PeerState>(v)
+            std::cout << k << ":"
+                      << static_cast<int>(std::get<reduce_relay::PeerState>(v))
                       << " ";
         std::cout << std::endl;
     }
@@ -976,8 +974,8 @@ protected:
                     str << s << " ";
                 if (log)
                     std::cout
-                        << (double)reduce_relay::epoch<milliseconds>(now)
-                                .count() /
+                        << static_cast<double>(
+                               reduce_relay::epoch<milliseconds>(now).count()) /
                             1000.
                         << " random, squelched, validator: " << validator.id()
                         << " peers: " << str.str() << std::endl;
@@ -1012,8 +1010,8 @@ protected:
                             network_.isSelected(link.peerId());
                 };
                 auto r = rand_int(0, 1000);
-                if (r == (int)EventType::LinkDown ||
-                    r == (int)EventType::PeerDisconnected)
+                if (r == static_cast<int>(EventType::LinkDown) ||
+                    r == static_cast<int>(EventType::PeerDisconnected))
                 {
                     update(static_cast<EventType>(r));
                 }
@@ -1072,7 +1070,7 @@ protected:
                         network_.overlay().inState(
                             *event.key_, reduce_relay::PeerState::Squelched) >
                             0 &&
-                        peers.find(event.peer_) != peers.end();
+                        peers.contains(event.peer_);
                 }
                 network_.overlay().deleteIdlePeers(
                     [&](PublicKey const& v, PeerWPtr const& ptr) {
@@ -1295,7 +1293,7 @@ protected:
             ManualClock::advance(seconds(601));
             BEAST_EXPECT(propagateAndSquelch(log, true, false));
             auto peers = network_.overlay().getPeers(network_.validator(0));
-            auto it = std::find_if(peers.begin(), peers.end(), [&](auto it) {
+            auto it = std::ranges::find_if(peers, [&](auto it) {
                 return std::get<reduce_relay::PeerState>(it.second) ==
                     reduce_relay::PeerState::Squelched;
             });

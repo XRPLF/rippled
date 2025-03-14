@@ -605,8 +605,8 @@ public:
         }
 
         // Canonicalize the source and destination batches
-        std::sort(batch.begin(), batch.end(), LessThan{});
-        std::sort(copy.begin(), copy.end(), LessThan{});
+        std::ranges::sort(batch, LessThan{});
+        std::ranges::sort(copy, LessThan{});
         BEAST_EXPECT(areBatchesEqual(batch, copy));
     }
 
@@ -652,7 +652,7 @@ public:
 
             {
                 // Reorder and read the copy again
-                std::shuffle(batch.begin(), batch.end(), rng);
+                std::ranges::shuffle(batch, rng);
                 Batch copy;
                 fetchCopyOfBatch(*db, &copy, batch);
                 BEAST_EXPECT(areBatchesEqual(batch, copy));
@@ -670,8 +670,8 @@ public:
             fetchCopyOfBatch(*db, &copy, batch);
 
             // Canonicalize the source and destination batches
-            std::sort(batch.begin(), batch.end(), LessThan{});
-            std::sort(copy.begin(), copy.end(), LessThan{});
+            std::ranges::sort(batch, LessThan{});
+            std::ranges::sort(copy, LessThan{});
             BEAST_EXPECT(areBatchesEqual(batch, copy));
         }
 

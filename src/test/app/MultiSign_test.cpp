@@ -362,7 +362,7 @@ public:
         env.require(owners(alice, features[featureMultiSignReserve] ? 1 : 4));
 
         msig phantoms{bogie, demon};
-        std::reverse(phantoms.signers.begin(), phantoms.signers.end());
+        std::ranges::reverse(phantoms.signers);
         std::uint32_t const aliceSeq = env.seq(alice);
         env(noop(alice),
             phantoms,
@@ -1270,7 +1270,7 @@ public:
             STTx local = *(tx.stx);
             // Unsort the Signers array.
             auto& signers = local.peekFieldArray(sfSigners);
-            std::reverse(signers.begin(), signers.end());
+            std::ranges::reverse(signers);
             // Signature should fail.
             auto const info = submitSTTx(local);
             BEAST_EXPECT(

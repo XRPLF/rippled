@@ -196,7 +196,7 @@ STArray::isDefault() const
 void
 STArray::sort(bool (*compare)(const STObject&, const STObject&))
 {
-    std::sort(v_.begin(), v_.end(), compare);
+    std::ranges::sort(v_, compare);
 }
 
 }  // namespace ripple

@@ -76,7 +76,7 @@ public:
     write(std::string const& s)
     {
         if (!s.empty())
-            write(&s[0], std::distance(s.begin(), s.end()));
+            write(&s[0], std::ranges::distance(s));
     }
 
     template <typename BufferSequence>

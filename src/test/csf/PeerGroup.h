@@ -55,11 +55,11 @@ public:
     }
     PeerGroup(std::vector<Peer*>&& peers) : peers_{std::move(peers)}
     {
-        std::sort(peers_.begin(), peers_.end());
+        std::ranges::sort(peers_);
     }
     PeerGroup(std::vector<Peer*> const& peers) : peers_{peers}
     {
-        std::sort(peers_.begin(), peers_.end());
+        std::ranges::sort(peers_);
     }
 
     PeerGroup(std::set<Peer*> const& peers) : peers_{peers.begin(), peers.end()}
@@ -99,13 +99,13 @@ public:
     bool
     contains(Peer const* p)
     {
-        return std::find(peers_.begin(), peers_.end(), p) != peers_.end();
+        return std::ranges::find(peers_, p) != peers_.end();
     }
 
     bool
     contains(PeerID id)
     {
-        return std::find_if(peers_.begin(), peers_.end(), [id](Peer const* p) {
+        return std::ranges::find_if(peers_, [id](Peer const* p) {
                    return p->id == id;
                }) != peers_.end();
     }

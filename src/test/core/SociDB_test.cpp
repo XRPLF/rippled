@@ -138,11 +138,9 @@ public:
             {
                 auto si = std::distance(
                     stringData.begin(),
-                    std::find(
-                        stringData.begin(), stringData.end(), stringResult[i]));
+                    std::ranges::find(stringData, stringResult[i]));
                 auto ii = std::distance(
-                    intData.begin(),
-                    std::find(intData.begin(), intData.end(), intResult[i]));
+                    intData.begin(), std::ranges::find(intData, intResult[i]));
                 BEAST_EXPECT(si == ii && si < stringResult.size());
             }
         };
@@ -184,7 +182,10 @@ public:
         setupSQLiteConfig(c, getDatabasePath());
         DBConfig sc(c, "SociTestDB");
         std::vector<std::uint64_t> const ubid(
-            {(std::uint64_t)std::numeric_limits<std::int64_t>::max(), 20, 30});
+            {static_cast<std::uint64_t>(
+                 std::numeric_limits<std::int64_t>::max()),
+             20,
+             30});
         std::vector<std::int64_t> const bid({-10, -20, -30});
         std::vector<std::uint32_t> const uid(
             {std::numeric_limits<std::uint32_t>::max(), 2, 3});

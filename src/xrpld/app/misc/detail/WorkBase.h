@@ -202,8 +202,8 @@ WorkBase<Impl>::onResolve(error_code const& ec, results_type results)
     // use the last endpoint.
     lastEndpoint_ = [&]() -> endpoint_type {
         int foundIndex = 0;
-        auto const foundIt = std::find_if(
-            results.begin(), results.end(), [&](endpoint_type const& e) {
+        auto const foundIt =
+            std::ranges::find_if(results, [&](endpoint_type const& e) {
                 if (e == lastEndpoint_)
                     return true;
                 foundIndex++;
