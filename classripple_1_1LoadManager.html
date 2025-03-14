@@ -123,12 +123,12 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:addc5870bda058cbb1762db74f9a14f93"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LoadManager.html#addc5870bda058cbb1762db74f9a14f93">~LoadManager</a> ()</td></tr>
 <tr class="memdesc:addc5870bda058cbb1762db74f9a14f93"><td class="mdescLeft">&#160;</td><td class="mdescRight">Destroy the manager.  <a href="classripple_1_1LoadManager.html#addc5870bda058cbb1762db74f9a14f93">More...</a><br /></td></tr>
 <tr class="separator:addc5870bda058cbb1762db74f9a14f93"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abd24b0a39a5515ee1d40378813154f49"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LoadManager.html#abd24b0a39a5515ee1d40378813154f49">activateDeadlockDetector</a> ()</td></tr>
-<tr class="memdesc:abd24b0a39a5515ee1d40378813154f49"><td class="mdescLeft">&#160;</td><td class="mdescRight">Turn on deadlock detection.  <a href="classripple_1_1LoadManager.html#abd24b0a39a5515ee1d40378813154f49">More...</a><br /></td></tr>
-<tr class="separator:abd24b0a39a5515ee1d40378813154f49"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a05d263545f672d83d0aa224947e9105b"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LoadManager.html#a05d263545f672d83d0aa224947e9105b">resetDeadlockDetector</a> ()</td></tr>
-<tr class="memdesc:a05d263545f672d83d0aa224947e9105b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset the deadlock detection timer.  <a href="classripple_1_1LoadManager.html#a05d263545f672d83d0aa224947e9105b">More...</a><br /></td></tr>
-<tr class="separator:a05d263545f672d83d0aa224947e9105b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a49d6c077356ea1cd98cef9b7cb655a67"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LoadManager.html#a49d6c077356ea1cd98cef9b7cb655a67">activateStallDetector</a> ()</td></tr>
+<tr class="memdesc:a49d6c077356ea1cd98cef9b7cb655a67"><td class="mdescLeft">&#160;</td><td class="mdescRight">Turn on stall detection.  <a href="classripple_1_1LoadManager.html#a49d6c077356ea1cd98cef9b7cb655a67">More...</a><br /></td></tr>
+<tr class="separator:a49d6c077356ea1cd98cef9b7cb655a67"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab9419b74b7f45469879cdd5d0f843f10"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LoadManager.html#ab9419b74b7f45469879cdd5d0f843f10">heartbeat</a> ()</td></tr>
+<tr class="memdesc:ab9419b74b7f45469879cdd5d0f843f10"><td class="mdescLeft">&#160;</td><td class="mdescRight">Reset the stall detection timer.  <a href="classripple_1_1LoadManager.html#ab9419b74b7f45469879cdd5d0f843f10">More...</a><br /></td></tr>
+<tr class="separator:ab9419b74b7f45469879cdd5d0f843f10"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a698d070498451ffce36a31089f49b0c4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LoadManager.html#a698d070498451ffce36a31089f49b0c4">start</a> ()</td></tr>
 <tr class="separator:a698d070498451ffce36a31089f49b0c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad3f25821224b9b542a7190ede894d54c"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LoadManager.html#ad3f25821224b9b542a7190ede894d54c">stop</a> ()</td></tr>
@@ -155,8 +155,8 @@ Private Attributes</h2></td></tr>
 <tr class="separator:a3ed2de7fb1bbff5ca0db959b4dccb3de"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a069e423a326a67e34a82861795f35fd2"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LoadManager.html#a069e423a326a67e34a82861795f35fd2">stop_</a> = false</td></tr>
 <tr class="separator:a069e423a326a67e34a82861795f35fd2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac657593c728a6f001652b72cae894c0e"><td class="memItemLeft" align="right" valign="top">std::chrono::steady_clock::time_point&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LoadManager.html#ac657593c728a6f001652b72cae894c0e">deadLock_</a></td></tr>
-<tr class="separator:ac657593c728a6f001652b72cae894c0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2cdf0cd73e6a3f7d96ad86c2ed70824f"><td class="memItemLeft" align="right" valign="top">std::chrono::steady_clock::time_point&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LoadManager.html#a2cdf0cd73e6a3f7d96ad86c2ed70824f">lastHeartbeat_</a></td></tr>
+<tr class="separator:a2cdf0cd73e6a3f7d96ad86c2ed70824f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a69963f56530f2f03699a131faa019feb"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1LoadManager.html#a69963f56530f2f03699a131faa019feb">armed_</a></td></tr>
 <tr class="separator:a69963f56530f2f03699a131faa019feb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
@@ -311,14 +311,14 @@ Friends</h2></td></tr>
 
 </div>
 </div>
-<a id="abd24b0a39a5515ee1d40378813154f49" name="abd24b0a39a5515ee1d40378813154f49"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abd24b0a39a5515ee1d40378813154f49">&#9670;&#160;</a></span>activateDeadlockDetector()</h2>
+<a id="a49d6c077356ea1cd98cef9b7cb655a67" name="a49d6c077356ea1cd98cef9b7cb655a67"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a49d6c077356ea1cd98cef9b7cb655a67">&#9670;&#160;</a></span>activateStallDetector()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void ripple::LoadManager::activateDeadlockDetector </td>
+          <td class="memname">void ripple::LoadManager::activateStallDetector </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -326,22 +326,22 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Turn on deadlock detection. </p>
-<p >The deadlock detector begins in a disabled state. After this function is called, it will report deadlocks using a separate thread whenever the reset function is not called at least once per 10 seconds.</p>
-<dl class="section see"><dt>See also</dt><dd><a class="el" href="classripple_1_1LoadManager.html#a05d263545f672d83d0aa224947e9105b" title="Reset the deadlock detection timer.">resetDeadlockDetector</a> </dd></dl>
+<p>Turn on stall detection. </p>
+<p >The stall detector begins in a disabled state. After this function is called, it will report stalls using a separate thread whenever the reset function is not called at least once per 10 seconds.</p>
+<dl class="section see"><dt>See also</dt><dd>resetStallDetector </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="LoadManager_8cpp_source.html#l00056">56</a> of file <a class="el" href="LoadManager_8cpp_source.html">LoadManager.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a05d263545f672d83d0aa224947e9105b" name="a05d263545f672d83d0aa224947e9105b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a05d263545f672d83d0aa224947e9105b">&#9670;&#160;</a></span>resetDeadlockDetector()</h2>
+<a id="ab9419b74b7f45469879cdd5d0f843f10" name="ab9419b74b7f45469879cdd5d0f843f10"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab9419b74b7f45469879cdd5d0f843f10">&#9670;&#160;</a></span>heartbeat()</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname">void ripple::LoadManager::resetDeadlockDetector </td>
+          <td class="memname">void ripple::LoadManager::heartbeat </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -349,8 +349,8 @@ Friends</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p>Reset the deadlock detection timer. </p>
-<p >A dedicated thread monitors the deadlock timer, and if too much time passes it will produce log warnings. </p>
+<p>Reset the stall detection timer. </p>
+<p >A dedicated thread monitors the stall timer, and if too much time passes it will produce log warnings. </p>
 
 <p class="definition">Definition at line <a class="el" href="LoadManager_8cpp_source.html#l00064">64</a> of file <a class="el" href="LoadManager_8cpp_source.html">LoadManager.cpp</a>.</p>
 
@@ -456,7 +456,7 @@ Friends</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="LoadManager_8cpp_source.html#l00200">200</a> of file <a class="el" href="LoadManager_8cpp_source.html">LoadManager.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="LoadManager_8cpp_source.html#l00199">199</a> of file <a class="el" href="LoadManager_8cpp_source.html">LoadManager.cpp</a>.</p>
 
 </div>
 </div>
@@ -605,8 +605,8 @@ Friends</h2></td></tr>
 
 </div>
 </div>
-<a id="ac657593c728a6f001652b72cae894c0e" name="ac657593c728a6f001652b72cae894c0e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac657593c728a6f001652b72cae894c0e">&#9670;&#160;</a></span>deadLock_</h2>
+<a id="a2cdf0cd73e6a3f7d96ad86c2ed70824f" name="a2cdf0cd73e6a3f7d96ad86c2ed70824f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2cdf0cd73e6a3f7d96ad86c2ed70824f">&#9670;&#160;</a></span>lastHeartbeat_</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -615,7 +615,7 @@ Friends</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">std::chrono::steady_clock::time_point ripple::LoadManager::deadLock_</td>
+          <td class="memname">std::chrono::steady_clock::time_point ripple::LoadManager::lastHeartbeat_</td>
         </tr>
       </table>
   </td>
