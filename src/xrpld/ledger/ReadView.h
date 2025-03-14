@@ -21,11 +21,9 @@
 #define RIPPLE_LEDGER_READVIEW_H_INCLUDED
 
 #include <xrpld/ledger/detail/ReadViewFwdRange.h>
+
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/hash/uhash.h>
-#include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/protocol/FeeUnits.h>
 #include <xrpl/protocol/Fees.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/Indexes.h>
@@ -35,9 +33,8 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STTx.h>
-#include <xrpl/protocol/XRPAmount.h>
+
 #include <cstdint>
-#include <memory>
 #include <optional>
 #include <unordered_set>
 
