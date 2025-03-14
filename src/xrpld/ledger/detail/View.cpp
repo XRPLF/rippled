@@ -18,17 +18,29 @@
 //==============================================================================
 
 #include <xrpld/ledger/ReadView.h>
+// TODO: Move the helper out of the `app` module.
+#include <xrpld/app/misc/CredentialHelpers.h>
+#include <xrpld/app/tx/detail/MPTokenAuthorize.h>
 #include <xrpld/ledger/View.h>
 
+#include <xrpl/basics/Expected.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/st.h>
 
 #include <optional>
+#include <type_traits>
+#include <variant>
 
 namespace ripple {
 
@@ -265,7 +277,56 @@ isFrozen(
     MPTIssue const& mptIssue)
 {
     return isGlobalFrozen(view, mptIssue) ||
-        isIndividualFrozen(view, account, mptIssue);
+        isIndividualFrozen(view, account, mptIssue) ||
+        isVaultPseudoAccountFrozen(view, mptIssue);
+}
+
+[[nodiscard]] bool
+isAnyFrozen(
+    ReadView const& view,
+    AccountID const& account1,
+    AccountID const& account2,
+    MPTIssue const& mptIssue)
+{
+    return isGlobalFrozen(view, mptIssue) ||
+        isIndividualFrozen(view, account1, mptIssue) ||
+        isIndividualFrozen(view, account2, mptIssue) ||
+        isVaultPseudoAccountFrozen(view, mptIssue);
+}
+
+bool
+isVaultPseudoAccountFrozen(ReadView const& view, MPTIssue const& mptShare)
+{
+    if (!view.rules().enabled(featureSingleAssetVault))
+        return false;
+
+    auto const mptIssuance =
+        view.read(keylet::mptIssuance(mptShare.getMptID()));
+    XRPL_ASSERT(
+        mptIssuance,
+        "ripple::isVaultPseudoAccountFrozen : non-null MPTokenIssuance");
+    if (!mptIssuance)
+        return false;
+
+    auto const issuer = mptIssuance->getAccountID(sfIssuer);
+    auto const mptIssuer = view.read(keylet::account(issuer));
+    XRPL_ASSERT(
+        mptIssuer,
+        "ripple::isVaultPseudoAccountFrozen : non-null MPToken issuer");
+    if (!mptIssuer)
+        return false;
+
+    if (!mptIssuer->isFieldPresent(sfVaultID))
+        return false;  // not a Vault pseudo-account
+
+    auto const vault =
+        view.read(keylet::vault(mptIssuer->getFieldH256(sfVaultID)));
+    XRPL_ASSERT(vault, "ripple::isVaultPseudoAccountFrozen : non-null vault");
+    if (!vault)
+        return false;
+
+    Asset const asset{vault->at(sfAsset)};
+    return isFrozen(view, issuer, asset);
 }
 
 bool
@@ -412,6 +473,7 @@ accountHolds(
 
     auto const sleMpt =
         view.read(keylet::mptoken(mptIssue.getMptID(), account));
+
     if (!sleMpt)
         amount.clear(mptIssue);
     else if (
@@ -421,9 +483,16 @@ accountHolds(
     {
         amount = STAmount{mptIssue, sleMpt->getFieldU64(sfMPTAmount)};
 
-        // only if auth check is needed, as it needs to do an additional read
-        // operation
-        if (zeroIfUnauthorized == ahZERO_IF_UNAUTHORIZED)
+        // Only if auth check is needed, as it needs to do an additional read
+        // operation. Note featureSingleAssetVault will affect error codes.
+        if (zeroIfUnauthorized == ahZERO_IF_UNAUTHORIZED &&
+            view.rules().enabled(featureSingleAssetVault))
+        {
+            if (auto const err = requireAuth(view, mptIssue, account);
+                !isTesSuccess(err))
+                amount.clear(mptIssue);
+        }
+        else if (zeroIfUnauthorized == ahZERO_IF_UNAUTHORIZED)
         {
             auto const sleIssuance =
                 view.read(keylet::mptIssuance(mptIssue.getMptID()));
@@ -437,6 +506,29 @@ accountHolds(
     }
 
     return amount;
+}
+
+[[nodiscard]] STAmount
+accountHolds(
+    ReadView const& view,
+    AccountID const& account,
+    Asset const& asset,
+    FreezeHandling zeroIfFrozen,
+    AuthHandling zeroIfUnauthorized,
+    beast::Journal j)
+{
+    return std::visit(
+        [&](auto const& value) {
+            if constexpr (std::is_same_v<
+                              std::remove_cvref_t<decltype(value)>,
+                              Issue>)
+            {
+                return accountHolds(view, account, value, zeroIfFrozen, j);
+            }
+            return accountHolds(
+                view, account, value, zeroIfFrozen, zeroIfUnauthorized, j);
+        },
+        asset.value());
 }
 
 STAmount
@@ -930,6 +1022,61 @@ describeOwnerDir(AccountID const& account)
 }
 
 TER
+dirLink(ApplyView& view, AccountID const& owner, std::shared_ptr<SLE>& object)
+{
+    auto const page = view.dirInsert(
+        keylet::ownerDir(owner), object->key(), describeOwnerDir(owner));
+    if (!page)
+        return tecDIR_FULL;
+    object->setFieldU64(sfOwnerNode, *page);
+    return tesSUCCESS;
+}
+
+Expected<std::shared_ptr<SLE>, TER>
+createPseudoAccount(
+    ApplyView& view,
+    uint256 const& pseudoOwnerKey,
+    PseudoAccountOwnerType type)
+{
+    AccountID accountId;
+    for (auto i = 0;; ++i)
+    {
+        if (i >= 256)
+            return Unexpected(tecDUPLICATE);
+        ripesha_hasher rsh;
+        auto const hash = sha512Half(i, view.info().parentHash, pseudoOwnerKey);
+        rsh(hash.data(), hash.size());
+        accountId = static_cast<ripesha_hasher::result_type>(rsh);
+        if (!view.read(keylet::account(accountId)))
+            break;
+    }
+
+    // Create pseudo-account.
+    auto account = std::make_shared<SLE>(keylet::account(accountId));
+    account->setAccountID(sfAccount, accountId);
+    account->setFieldAmount(sfBalance, STAmount{});
+    std::uint32_t const seqno{
+        view.rules().enabled(featureDeletableAccounts) ? view.seq() : 1};
+    account->setFieldU32(sfSequence, seqno);
+    // Ignore reserves requirement, disable the master key, allow default
+    // rippling, and enable deposit authorization to prevent payments into
+    // pseudo-account.
+    account->setFieldU32(
+        sfFlags, lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth);
+    // Link the pseudo-account with its owner object.
+    if (type == PseudoAccountOwnerType::AMM)
+        account->setFieldH256(sfAMMID, pseudoOwnerKey);
+    else if (type == PseudoAccountOwnerType::Vault)
+        account->setFieldH256(sfVaultID, pseudoOwnerKey);
+    else
+        UNREACHABLE("ripple::createPseudoAccount : unknown owner key type");
+
+    view.insert(account);
+
+    return account;
+}
+
+TER
 trustCreate(
     ApplyView& view,
     const bool bSrcHigh,
@@ -1086,6 +1233,121 @@ trustDelete(
     view.erase(sleRippleState);
 
     return tesSUCCESS;
+}
+
+[[nodiscard]] TER
+addEmptyHolding(
+    ApplyView& view,
+    AccountID const& accountID,
+    XRPAmount priorBalance,
+    Asset const& asset,
+    beast::Journal journal)
+{
+    if (asset.holds<Issue>())
+    {
+        auto const& issue = asset.get<Issue>();
+        // Every account can hold XRP.
+        if (issue.native())
+            return tesSUCCESS;
+
+        auto const& issuerId = issue.getIssuer();
+        auto const& currency = issue.currency;
+        if (isGlobalFrozen(view, issuerId))
+            return tecFROZEN;
+
+        auto const& srcId = issuerId;
+        auto const& dstId = accountID;
+        auto const high = srcId > dstId;
+        auto const index = keylet::line(srcId, dstId, currency);
+        auto const sle = view.peek(keylet::account(accountID));
+        return trustCreate(
+            view,
+            high,
+            srcId,
+            dstId,
+            index.key,
+            sle,
+            /*auth=*/false,
+            /*noRipple=*/true,
+            /*freeze=*/false,
+            /*deepFreeze*/ false,
+            /*balance=*/STAmount{Issue{currency, noAccount()}},
+            /*limit=*/STAmount{Issue{currency, dstId}},
+            /*qualityIn=*/0,
+            /*qualityOut=*/0,
+            journal);
+    }
+
+    if (asset.holds<MPTIssue>())
+    {
+        auto const& mptIssue = asset.get<MPTIssue>();
+        auto const& mptID = mptIssue.getMptID();
+        auto const mpt = view.peek(keylet::mptIssuance(mptID));
+        if (mpt->getFlags() & lsfMPTLocked)
+            return tecLOCKED;
+        return MPTokenAuthorize::authorize(
+            view,
+            journal,
+            {.priorBalance = priorBalance,
+             .mptIssuanceID = mptID,
+             .accountID = accountID});
+    }
+
+    // Should be unreachable.
+    return tecINTERNAL;
+}
+
+[[nodiscard]] TER
+removeEmptyHolding(
+    ApplyView& view,
+    AccountID const& accountID,
+    Asset const& asset,
+    beast::Journal journal)
+{
+    if (asset.holds<Issue>())
+    {
+        auto const& issue = asset.get<Issue>();
+        if (issue.native())
+        {
+            auto const sle = view.read(keylet::account(accountID));
+            if (!sle)
+                return tecINTERNAL;
+            auto const balance = sle->getFieldAmount(sfBalance);
+            if (balance.xrp() != 0)
+                return tecHAS_OBLIGATIONS;
+            return tesSUCCESS;
+        }
+
+        // `asset` is an IOU.
+        auto const line = view.peek(keylet::line(accountID, issue));
+        if (!line)
+            return tecOBJECT_NOT_FOUND;
+        if (line->at(sfBalance)->iou() != beast::zero)
+            return tecHAS_OBLIGATIONS;
+        return trustDelete(
+            view,
+            line,
+            line->at(sfLowLimit)->getIssuer(),
+            line->at(sfHighLimit)->getIssuer(),
+            journal);
+    }
+
+    if (asset.holds<MPTIssue>())
+    {
+        auto const& mptIssue = asset.get<MPTIssue>();
+        auto const& mptID = mptIssue.getMptID();
+        // `MPTokenAuthorize::authorize` asserts that the balance is 0.
+        return MPTokenAuthorize::authorize(
+            view,
+            journal,
+            {.priorBalance = {},
+             .mptIssuanceID = mptID,
+             .accountID = accountID,
+             .flags = tfMPTUnauthorize});
+    }
+
+    // Should be unreachable.
+    return tecINTERNAL;
 }
 
 TER
@@ -1462,6 +1724,7 @@ rippleCreditMPT(
     STAmount const& saAmount,
     beast::Journal j)
 {
+    // Do not check MPT authorization here - it must have been checked earlier
     auto const mptID = keylet::mptIssuance(saAmount.get<MPTIssue>().getMptID());
     auto const issuer = saAmount.getIssuer();
     auto sleIssuance = view.peek(mptID);
@@ -1511,6 +1774,7 @@ rippleCreditMPT(
         else
             return tecNO_AUTH;
     }
+
     return tesSUCCESS;
 }
 
@@ -1923,26 +2187,164 @@ requireAuth(
 {
     auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
     auto const sleIssuance = view.read(mptID);
-
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
     auto const mptIssuer = sleIssuance->getAccountID(sfIssuer);
 
     // issuer is always "authorized"
-    if (mptIssuer == account)
+    if (mptIssuer == account)  // Issuer won't have MPToken
         return tesSUCCESS;
 
     auto const mptokenID = keylet::mptoken(mptID.key, account);
     auto const sleToken = view.read(mptokenID);
+    // Note, this is not amendment-gated because  we do not want to maintain in
+    // this file the list of all the amendments which can write to this field.
+    // Without additional amendments this field is always empty.
+    auto const maybeDomainID = sleIssuance->at(~sfDomainID);
+    if (!maybeDomainID)
+    {
+        // if account has no MPToken, fail
+        if (!sleToken)
+            return tecNO_AUTH;
 
-    // if account has no MPToken, fail
-    if (!sleToken)
-        return tecNO_AUTH;
+        // mptoken must be authorized if issuance enabled requireAuth
+        if (sleIssuance->getFieldU32(sfFlags) & lsfMPTRequireAuth &&
+            !(sleToken->getFlags() & lsfMPTAuthorized))
+            return tecNO_AUTH;
 
-    // mptoken must be authorized if issuance enabled requireAuth
-    if (sleIssuance->getFieldU32(sfFlags) & lsfMPTRequireAuth &&
-        !(sleToken->getFlags() & lsfMPTAuthorized))
+        return tesSUCCESS;
+    }
+
+    // err = tefINTERNAL | tecINVALID_DOMAIN | tecNO_AUTH | tecEXPIRED
+    if (auto const err =
+            credentials::validDomain(view, *maybeDomainID, account);
+        !isTesSuccess(err))
+        return err;
+
+    // We are authorized by permissioned domain.
+    return tesSUCCESS;
+}
+
+[[nodiscard]] TER
+enforceMPTokenAuthorization(
+    ApplyView& view,
+    MPTIssue const& mptIssue,
+    AccountID const& account,
+    XRPAmount const& priorBalance,  // for MPToken authorization
+    beast::Journal j)
+{
+    auto const mptIssuanceID = mptIssue.getMptID();
+    auto const sleIssuance = view.read(keylet::mptIssuance(mptIssuanceID));
+    if (!sleIssuance)
+        return tefINTERNAL;  // Should have called requireAuth earlier
+
+    XRPL_ASSERT(
+        sleIssuance->getFieldU32(sfFlags) & lsfMPTRequireAuth,
+        "ripple::verifyAuth : MPTokenIssuance requires authorization");
+
+    if (account == sleIssuance->at(sfIssuer))
+        return tesSUCCESS;  // Won't create MPToken for the token issuer
+
+    auto sleToken = view.read(keylet::mptoken(mptIssuanceID, account));
+    bool const domainOwned =
+        (sleToken && (sleToken->getFlags() & lsfMPTDomainCheck));
+
+    bool authorizedByDomain = false;
+    if (domainOwned || sleToken == nullptr)
+    {
+        // We check DomainID if:
+        //
+        // 1. Token not found or
+        // 2. Token found and has lsfMPTDomainCheck flag
+        //
+        // In case 1. we check authorization in order to create the token
+        // (below), but only if the account is authorized by the domain. In
+        // case 2. we re-check authorization in case the credentials are
+        // expired, in which case the token needs to be unauthorized (below)
+
+        auto const maybeDomainID = sleIssuance->at(~sfDomainID);
+        authorizedByDomain = maybeDomainID.has_value() &&
+            verifyValidDomain(view, account, *maybeDomainID, j) == tesSUCCESS;
+    }
+
+    if (!authorizedByDomain && sleToken == nullptr)
+    {
+        // Intentionally empty. This could be either of:
+        //
+        // 1. Field sfDomainID not set in MPTokenIssuance or
+        // 2. Account has no matching and accepted credentials or
+        // 3. Account has all expired credentials (removed in verifyValidDomain)
+        //
+        // Either way, will return tecNO_AUTH at the end of this function
+    }
+    else if (!authorizedByDomain && domainOwned)
+    {
+        // We found an MPToken with lsfMPTDomainCheck flag, but the account is
+        // no longer authorized.
+        if (sleToken->getFieldU32(sfFlags) & lsfMPTAuthorized)
+        {
+            // Must reset lsfMPTAuthorized, no current credentials
+            auto sleMpt = view.peek(keylet::mptoken(mptIssuanceID, account));
+            XRPL_ASSERT(sleMpt, "ripple::verifyAuth : non-null bad MPToken");
+            std::uint32_t const flags = sleMpt->getFieldU32(sfFlags);
+            sleMpt->setFieldU32(sfFlags, flags & ~lsfMPTAuthorized);
+            view.update(sleMpt);
+
+            sleToken = nullptr;  // return tecNO_AUTH at the end of function
+        }
+    }
+    else if (!authorizedByDomain)
+    {
+        XRPL_ASSERT(
+            sleToken != nullptr && !domainOwned,
+            "ripple::verifyAuth : MPToken not owned by domain");
+        // MPToken was created by other means, we will check its authorization
+        // at the end of this function. No need to do anything here.
+    }
+    else if (authorizedByDomain && sleToken != nullptr)
+    {
+        XRPL_ASSERT(
+            domainOwned, "ripple::verifyAuth : MPToken owned by domain");
+
+        if ((sleToken->getFlags() & lsfMPTAuthorized) == 0)
+        {
+            // Must set lsfMPTAuthorized, we found new credentials
+            auto sleMpt = view.peek(keylet::mptoken(mptIssuanceID, account));
+            XRPL_ASSERT(sleMpt, "ripple::verifyAuth : non-null good MPToken");
+            std::uint32_t const flags = sleMpt->getFieldU32(sfFlags);
+            sleMpt->setFieldU32(sfFlags, flags | lsfMPTAuthorized);
+            view.update(sleMpt);
+
+            sleToken = sleMpt;  // with lsfMPTAuthorized
+        }
+    }
+    else if (authorizedByDomain && sleToken == nullptr)
+    {
+        // Create MPToken with the lsfMPTDomainCheck flag set
+        if (auto const err = MPTokenAuthorize::authorize(
+                view,
+                j,
+                {
+                    .priorBalance = priorBalance,
+                    .mptIssuanceID = mptIssuanceID,
+                    .accountID = account,
+                    .flags = 0,
+                });
+            !isTesSuccess(err))
+            return err;
+
+        auto sleMpt = view.peek(keylet::mptoken(mptIssuanceID, account));
+        XRPL_ASSERT(sleMpt, "ripple::verifyAuth : non-null new MPToken");
+        std::uint32_t const flags = sleMpt->getFieldU32(sfFlags);
+        sleMpt->setFieldU32(
+            sfFlags, flags | lsfMPTDomainCheck | lsfMPTAuthorized);
+        view.update(sleMpt);
+
+        sleToken = sleMpt;  // with lsfMPTAuthorized
+    }
+
+    if (sleToken == nullptr || (sleToken->getFlags() & lsfMPTAuthorized) == 0)
         return tecNO_AUTH;
 
     return tesSUCCESS;
@@ -2121,6 +2523,63 @@ rippleCredit(
             }
         },
         saAmount.asset().value());
+}
+
+[[nodiscard]] STAmount
+assetsToSharesDeposit(
+    std::shared_ptr<SLE const> const& vault,
+    std::shared_ptr<SLE const> const& issuance,
+    STAmount const& assets)
+{
+    XRPL_ASSERT(
+        assets.asset() == vault->at(sfAsset),
+        "ripple::assetsToSharesDeposit : assets and vault match");
+    Number assetTotal = vault->at(sfAssetTotal);
+    STAmount shares{
+        vault->at(sfMPTokenIssuanceID), static_cast<Number>(assets)};
+    if (assetTotal == 0)
+        return shares;
+    Number shareTotal = issuance->at(sfOutstandingAmount);
+    shares = shareTotal * (assets / assetTotal);
+    return shares;
+}
+
+[[nodiscard]] STAmount
+assetsToSharesWithdraw(
+    std::shared_ptr<SLE const> const& vault,
+    std::shared_ptr<SLE const> const& issuance,
+    STAmount const& assets)
+{
+    XRPL_ASSERT(
+        assets.asset() == vault->at(sfAsset),
+        "ripple::assetsToSharesWithdraw : assets and vault match");
+    Number assetTotal = vault->at(sfAssetTotal);
+    assetTotal -= vault->at(sfLossUnrealized);
+    STAmount shares{vault->at(sfMPTokenIssuanceID)};
+    if (assetTotal == 0)
+        return shares;
+    Number shareTotal = issuance->at(sfOutstandingAmount);
+    shares = shareTotal * (assets / assetTotal);
+    return shares;
+}
+
+[[nodiscard]] STAmount
+sharesToAssetsWithdraw(
+    std::shared_ptr<SLE const> const& vault,
+    std::shared_ptr<SLE const> const& issuance,
+    STAmount const& shares)
+{
+    XRPL_ASSERT(
+        shares.asset() == vault->at(sfMPTokenIssuanceID),
+        "ripple::sharesToAssetsWithdraw : shares and vault match");
+    Number assetTotal = vault->at(sfAssetTotal);
+    assetTotal -= vault->at(sfLossUnrealized);
+    STAmount assets{vault->at(sfAsset)};
+    if (assetTotal == 0)
+        return assets;
+    Number shareTotal = issuance->at(sfOutstandingAmount);
+    assets = assetTotal * (shares / shareTotal);
+    return assets;
 }
 
 }  // namespace ripple

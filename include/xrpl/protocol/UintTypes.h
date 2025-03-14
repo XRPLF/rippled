@@ -61,7 +61,8 @@ using NodeID = base_uint<160, detail::NodeIDTag>;
 /** MPTID is a 192-bit value representing MPT Issuance ID,
  * which is a concatenation of a 32-bit sequence (big endian)
  * and a 160-bit account */
-using MPTID = base_uint<192>;
+// TODO - edhennis - Add a tag
+using MPTID = uint192;
 
 /** XRP currency. */
 Currency const&
