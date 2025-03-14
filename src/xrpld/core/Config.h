@@ -300,6 +300,9 @@ public:
 
     std::optional<std::size_t> VALIDATOR_LIST_THRESHOLD;
 
+    // Allow the use of private IPs in the PeerFinder Protocol
+    bool ALLOW_PRIVATE_ENDPOINTS = false;
+
 public:
     Config();
 

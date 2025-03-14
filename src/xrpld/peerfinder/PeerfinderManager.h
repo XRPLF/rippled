@@ -77,6 +77,11 @@ struct Config
     /** Limit how many incoming connections we allow per IP */
     int ipLimit;
 
+    /** `true` if we want for the peer finder to accept Endpoint
+        messages containing private IP addresses.
+    */
+    bool allowPrivateEndpoints = false;
+
     //--------------------------------------------------------------------------
 
     /** Create a configuration with default values. */
