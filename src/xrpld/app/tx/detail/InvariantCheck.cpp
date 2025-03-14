@@ -28,6 +28,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/FeeUnits.h>
 #include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/nftPageMask.h>
@@ -329,7 +330,8 @@ AccountRootsNotDeleted::finalize(
     // A successful AccountDelete or AMMDelete MUST delete exactly
     // one account root.
     if ((tx.getTxnType() == ttACCOUNT_DELETE ||
-         tx.getTxnType() == ttAMM_DELETE) &&
+         tx.getTxnType() == ttAMM_DELETE ||
+         tx.getTxnType() == ttVAULT_DELETE) &&
         result == tesSUCCESS)
     {
         if (accountsDeleted_ == 1)
@@ -488,6 +490,7 @@ LedgerEntryTypesMatch::visitEntry(
             case ltMPTOKEN:
             case ltCREDENTIAL:
             case ltPERMISSIONED_DOMAIN:
+            case ltVAULT:
                 break;
             default:
                 invalidTypeAdded_ = true;
@@ -905,6 +908,7 @@ ValidNewAccountRoot::finalize(
 
     // From this point on we know exactly one account was created.
     if ((tx.getTxnType() == ttPAYMENT || tx.getTxnType() == ttAMM_CREATE ||
+         tx.getTxnType() == ttVAULT_CREATE ||
          tx.getTxnType() == ttXCHAIN_ADD_CLAIM_ATTESTATION ||
          tx.getTxnType() == ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION) &&
         result == tesSUCCESS)
@@ -921,9 +925,7 @@ ValidNewAccountRoot::finalize(
         return true;
     }
 
-    JLOG(j.fatal()) << "Invariant failed: account root created "
-                       "by a non-Payment, by an unsuccessful transaction, "
-                       "or by AMM";
+    JLOG(j.fatal()) << "Invariant failed: account root created illegally";
     return false;
 }
 
@@ -1311,28 +1313,30 @@ ValidMPTIssuance::finalize(
 {
     if (result == tesSUCCESS)
     {
-        if (tx.getTxnType() == ttMPTOKEN_ISSUANCE_CREATE)
+        if (tx.getTxnType() == ttMPTOKEN_ISSUANCE_CREATE ||
+            tx.getTxnType() == ttVAULT_CREATE)
         {
             if (mptIssuancesCreated_ == 0)
             {
-                JLOG(j.fatal()) << "Invariant failed: MPT issuance creation "
+                JLOG(j.fatal()) << "Invariant failed: transaction "
                                    "succeeded without creating a MPT issuance";
             }
             else if (mptIssuancesDeleted_ != 0)
             {
-                JLOG(j.fatal()) << "Invariant failed: MPT issuance creation "
+                JLOG(j.fatal()) << "Invariant failed: transaction "
                                    "succeeded while removing MPT issuances";
             }
             else if (mptIssuancesCreated_ > 1)
             {
-                JLOG(j.fatal()) << "Invariant failed: MPT issuance creation "
+                JLOG(j.fatal()) << "Invariant failed: transaction "
                                    "succeeded but created multiple issuances";
             }
 
             return mptIssuancesCreated_ == 1 && mptIssuancesDeleted_ == 0;
         }
 
-        if (tx.getTxnType() == ttMPTOKEN_ISSUANCE_DESTROY)
+        if (tx.getTxnType() == ttMPTOKEN_ISSUANCE_DESTROY ||
+            tx.getTxnType() == ttVAULT_DELETE)
         {
             if (mptIssuancesDeleted_ == 0)
             {
@@ -1353,7 +1357,8 @@ ValidMPTIssuance::finalize(
             return mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 1;
         }
 
-        if (tx.getTxnType() == ttMPTOKEN_AUTHORIZE)
+        if (tx.getTxnType() == ttMPTOKEN_AUTHORIZE ||
+            tx.getTxnType() == ttVAULT_DEPOSIT)
         {
             bool const submittedByIssuer = tx.isFieldPresent(sfHolder);
 
@@ -1379,7 +1384,7 @@ ValidMPTIssuance::finalize(
                 return false;
             }
             else if (
-                !submittedByIssuer &&
+                !submittedByIssuer && (tx.getTxnType() != ttVAULT_DEPOSIT) &&
                 (mptokensCreated_ + mptokensDeleted_ != 1))
             {
                 // if the holder submitted this tx, then a mptoken must be
@@ -1541,6 +1546,103 @@ ValidPermissionedDomain::finalize(
 
     return (sleStatus_[0] ? check(*sleStatus_[0], j) : true) &&
         (sleStatus_[1] ? check(*sleStatus_[1], j) : true);
+}
+
+//------------------------------------------------------------------------------
+
+void
+NoModifiedUnmodifiableFields::visitEntry(
+    bool isDelete,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
+{
+    if (isDelete || !before)
+        // Creation and deletion are ignored
+        return;
+
+    auto const type = after->getType();
+    if (knownTypes_.contains(type))
+    {
+        changedEntries_.emplace(before, after);
+    }
+}
+
+bool
+NoModifiedUnmodifiableFields::finalize(
+    STTx const& tx,
+    TER const,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    static auto const fieldChanged = [](auto const& before,
+                                        auto const& after,
+                                        auto const& field) {
+        return before->isFieldPresent(field) != after->isFieldPresent(field) ||
+            before->at(field) != after->at(field);
+    };
+    for (auto const& slePair : changedEntries_)
+    {
+        auto const& before = slePair.first;
+        auto const& after = slePair.second;
+        auto const type = after->getType();
+        bool bad = false;
+        [[maybe_unused]] bool enforce = false;
+        switch (type)
+        {
+            case ltLOAN_BROKER:
+                /*
+                 * We check this invariant regardless of lending protocol
+                 * amendment status, allowing for detection and logging of
+                 * potential issues even when the amendment is disabled.
+                 */
+                enforce = view.rules().enabled(featureLendingProtocol);
+                bad = fieldChanged(before, after, sfVaultID) ||
+                    fieldChanged(before, after, sfAccount) ||
+                    fieldChanged(before, after, sfOwner) ||
+                    fieldChanged(before, after, sfManagementFeeRate) ||
+                    fieldChanged(before, after, sfCoverRateMinimum) ||
+                    fieldChanged(before, after, sfCoverRateLiquidation);
+                break;
+            case ltLOAN:
+                /*
+                 * We check this invariant regardless of lending protocol
+                 * amendment status, allowing for detection and logging of
+                 * potential issues even when the amendment is disabled.
+                 */
+                enforce = view.rules().enabled(featureLendingProtocol);
+                bad = fieldChanged(before, after, sfLoanBrokerID) ||
+                    fieldChanged(before, after, sfBorrower) ||
+                    fieldChanged(before, after, sfLoanOriginationFee) ||
+                    fieldChanged(before, after, sfLoanServiceFee) ||
+                    fieldChanged(before, after, sfLatePaymentFee) ||
+                    fieldChanged(before, after, sfClosePaymentFee) ||
+                    fieldChanged(before, after, sfOverpaymentFee) ||
+                    fieldChanged(before, after, sfInterestRate) ||
+                    fieldChanged(before, after, sfLateInterestRate) ||
+                    fieldChanged(before, after, sfCloseInterestRate) ||
+                    fieldChanged(before, after, sfOverpaymentInterestRate) ||
+                    fieldChanged(before, after, sfPaymentInterval);
+                break;
+            default:
+                UNREACHABLE(
+                    "ripple::NoModifiedUnmodifiableFields::finalize : unknown "
+                    "SLE type");
+        }
+        XRPL_ASSERT(
+            !bad || enforce,
+            "ripple::NoModifiedUnmodifiableFields::finalize : no bad "
+            "changes or enforce invariant");
+        if (bad)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: changed an unchangable field for "
+                << tx.getTransactionID();
+            if (enforce)
+                return false;
+        }
+    }
+    return true;
 }
 
 }  // namespace ripple

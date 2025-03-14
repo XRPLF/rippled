@@ -188,9 +188,13 @@ enum LedgerSpecificFlags {
 
     // ltMPTOKEN
     lsfMPTAuthorized = 0x00000002,
+    lsfMPTDomainCheck = 0x00000004,
 
     // ltCREDENTIAL
     lsfAccepted = 0x00010000,
+
+    // ltVAULT
+    lsfVaultPrivate = 0x00010000,
 };
 
 //------------------------------------------------------------------------------

@@ -21,7 +21,6 @@
 #define RIPPLE_TEST_JTX_AMOUNT_H_INCLUDED
 
 #include <test/jtx/Account.h>
-#include <test/jtx/amount.h>
 #include <test/jtx/tags.h>
 
 #include <xrpl/basics/contract.h>
@@ -128,12 +127,23 @@ public:
         return amount_;
     }
 
+    Number
+    number() const
+    {
+        return amount_;
+    }
+
     operator STAmount const&() const
     {
         return amount_;
     }
 
     operator AnyAmount() const;
+
+    operator Json::Value() const
+    {
+        return to_json(value());
+    }
 };
 
 inline bool
@@ -151,6 +161,49 @@ operator!=(PrettyAmount const& lhs, PrettyAmount const& rhs)
 std::ostream&
 operator<<(std::ostream& os, PrettyAmount const& amount);
 
+struct PrettyAsset
+{
+private:
+    Asset asset_;
+    unsigned int scale_;
+
+public:
+    template <typename A>
+        requires std::convertible_to<A, Asset>
+    PrettyAsset(A const& asset, unsigned int scale = 1)
+        : PrettyAsset{Asset{asset}, scale}
+    {
+    }
+
+    PrettyAsset(Asset const& asset, unsigned int scale = 1)
+        : asset_(asset), scale_(scale)
+    {
+    }
+
+    Asset const&
+    raw() const
+    {
+        return asset_;
+    }
+
+    operator Asset const&() const
+    {
+        return asset_;
+    }
+
+    operator Json::Value() const
+    {
+        return to_json(asset_);
+    }
+
+    template <std::integral T>
+    PrettyAmount
+    operator()(T v) const
+    {
+        STAmount amount{asset_, v * scale_};
+        return {amount, ""};
+    }
+};
 //------------------------------------------------------------------------------
 
 // Specifies an order book
