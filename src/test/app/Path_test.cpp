@@ -235,6 +235,7 @@ public:
         Env env = pathTestEnv();
         auto const gw = Account("gateway");
         env.fund(XRP(10000), "alice", "bob", gw);
+        env.close();
         env.trust(gw["USD"](100), "alice", "bob");
         env.close();
 
@@ -316,6 +317,7 @@ public:
         using namespace jtx;
         Env env = pathTestEnv();
         env.fund(XRP(10000), "alice", "bob");
+        env.close();
 
         auto const result =
             find_paths(env, "alice", "bob", Account("bob")["USD"](5));
@@ -329,6 +331,7 @@ public:
         using namespace jtx;
         Env env = pathTestEnv();
         env.fund(XRP(10000), "alice", "bob");
+        env.close();
         env.trust(Account("alice")["USD"](700), "bob");
 
         STPathSet st;
@@ -348,6 +351,7 @@ public:
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
         env.fund(XRP(10000), "alice", "bob", gw);
+        env.close();
         env.trust(USD(600), "alice");
         env.trust(USD(700), "bob");
         env(pay(gw, "alice", USD(70)));
@@ -367,6 +371,7 @@ public:
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
         env.fund(XRP(10000), "alice", "bob", gw);
+        env.close();
         env.trust(USD(600), "alice");
         env.trust(USD(700), "bob");
         env(pay(gw, "alice", USD(70)));
@@ -387,6 +392,7 @@ public:
         testcase("XRP to XRP");
         Env env = pathTestEnv();
         env.fund(XRP(10000), "alice", "bob");
+        env.close();
 
         auto const result = find_paths(env, "alice", "bob", XRP(5));
         BEAST_EXPECT(std::get<0>(result).empty());
@@ -401,6 +407,7 @@ public:
         {
             Env env = pathTestEnv();
             env.fund(XRP(10000), "alice", "bob", "carol", "dan", "edward");
+            env.close();
             env.trust(Account("alice")["USD"](10), "bob");
             env.trust(Account("bob")["USD"](10), "carol");
             env.trust(Account("carol")["USD"](10), "edward");
@@ -422,6 +429,7 @@ public:
             auto const gw = Account("gateway");
             auto const USD = gw["USD"];
             env.fund(XRP(10000), "alice", "bob", "carol", gw);
+            env.close();
             env.trust(USD(100), "bob", "carol");
             env(pay(gw, "carol", USD(100)));
             env(offer("carol", XRP(100), USD(100)));
@@ -458,6 +466,7 @@ public:
         auto const gw2 = Account("gateway2");
         auto const gw2_USD = gw2["USD"];
         env.fund(XRP(10000), "alice", "bob", gw, gw2);
+        env.close();
         env.trust(USD(600), "alice");
         env.trust(gw2_USD(800), "alice");
         env.trust(USD(700), "bob");
@@ -487,6 +496,7 @@ public:
         auto const gw2 = Account("gateway2");
         auto const gw2_USD = gw2["USD"];
         env.fund(XRP(10000), "alice", "bob", gw, gw2);
+        env.close();
         env(rate(gw2, 1.1));
         env.trust(USD(600), "alice");
         env.trust(gw2_USD(800), "alice");
@@ -516,6 +526,7 @@ public:
         auto const gw2 = Account("gateway2");
         auto const gw2_USD = gw2["USD"];
         env.fund(XRP(10000), "alice", "bob", gw, gw2);
+        env.close();
         env(rate(gw2, 1.1));
         env.trust(USD(600), "alice");
         env.trust(gw2_USD(800), "alice");
@@ -547,6 +558,7 @@ public:
         auto const gw2 = Account("gateway2");
         auto const gw2_USD = gw2["USD"];
         env.fund(XRP(10000), "alice", "bob", "carol", "dan", gw, gw2);
+        env.close();
         env(rate("carol", 1.1));
         env.trust(Account("carol")["USD"](800), "alice", "bob");
         env.trust(Account("dan")["USD"](800), "alice", "bob");
@@ -578,6 +590,7 @@ public:
         using namespace jtx;
         Env env = pathTestEnv();
         env.fund(XRP(10000), "alice", "bob", "carol", "dan");
+        env.close();
         env.trust(Account("bob")["USD"](100), "alice", "carol", "dan");
         env.trust(Account("alice")["USD"](100), "dan");
         env.trust(Account("carol")["USD"](100), "dan");
@@ -616,6 +629,7 @@ public:
         using namespace jtx;
         Env env = pathTestEnv();
         env.fund(XRP(10000), "alice", "bob", "carol", "dan");
+        env.close();
         env.trust(Account("alice")["USD"](40), "bob");
         env.trust(Account("dan")["USD"](20), "bob");
         env.trust(Account("alice")["USD"](20), "carol");
@@ -635,6 +649,7 @@ public:
         using namespace jtx;
         Env env = pathTestEnv();
         env.fund(XRP(10000), "alice", "bob", "carol", "dan", "edward");
+        env.close();
         env.trust(Account("alice")["USD"](120), "edward");
         env.trust(Account("edward")["USD"](25), "bob");
         env.trust(Account("dan")["USD"](100), "bob");
@@ -664,6 +679,7 @@ public:
         auto const gw = Account("gateway");
         auto const AUD = gw["AUD"];
         env.fund(XRP(10000), "alice", "bob", "carol", gw);
+        env.close();
         env(rate(gw, 1.1));
         env.trust(AUD(100), "bob", "carol");
         env(pay(gw, "carol", AUD(50)));
@@ -684,6 +700,7 @@ public:
         using namespace jtx;
         Env env = pathTestEnv();
         env.fund(XRP(10000), "alice", "bob", "carol");
+        env.close();
         env.trust(Account("alice")["USD"](1000), "bob");
         env.trust(Account("bob")["USD"](1000), "carol");
 
@@ -702,6 +719,7 @@ public:
         using namespace jtx;
         Env env = pathTestEnv();
         env.fund(XRP(10000), "alice", "bob");
+        env.close();
         env(trust("bob", Account("alice")["USD"](1000)),
             json("{\"" + sfQualityIn.fieldName + "\": 2000}"),
             json("{\"" + sfQualityOut.fieldName + "\": 1400000000}"));
@@ -748,6 +766,7 @@ public:
         using namespace jtx;
         Env env = pathTestEnv();
         env.fund(XRP(10000), "alice", "bob");
+        env.close();
         env.trust(Account("bob")["USD"](1000), "alice");
         env.trust(Account("alice")["USD"](1000), "bob");
 
@@ -798,6 +817,7 @@ public:
         using namespace jtx;
         Env env = pathTestEnv();
         env.fund(XRP(10000), "alice", "bob");
+        env.close();
         env.trust(Account("bob")["USD"](1000), "alice");
         env(pay("bob", "alice", Account("bob")["USD"](50)));
         env.trust(Account("bob")["USD"](0), "alice");

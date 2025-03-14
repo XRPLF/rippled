@@ -2554,7 +2554,8 @@ struct XChain_test : public beast::unit_test::suite,
             }
             {
                 // B1: disabled master key
-                scEnv.tx(fset(alt_signers[2].account, asfDisableMaster, 0));
+                scEnv.tx(fset(alt_signers[2].account, asfDisableMaster, 0))
+                    .close();
                 auto att = claim_attestation(
                     scAttester,
                     jvb,
