@@ -34,6 +34,11 @@ namespace ripple {
 class LocalTxs
 {
 public:
+    // The number of ledgers to hold a transaction is essentially
+    // arbitrary. It should be sufficient to allow the transaction to
+    // get into a fully-validated ledger.
+    static constexpr int holdLedgers = 5;
+
     virtual ~LocalTxs() = default;
 
     // Add a new local transaction
