@@ -162,17 +162,6 @@ Replace `<path>` with paths to the desired compilers:
 - `conan profile update env.CC=<path> default`
 - `conan profile update env.CXX=<path> default`
 
-Export our [Conan recipe for Snappy](./external/snappy).
-It does not explicitly link the C++ standard library,
-which allows you to statically link it with GCC, if you want.
-
-   ```
-   # Conan 1.x
-   conan export external/snappy snappy/1.1.10@
-   # Conan 2.x
-   conan export --version 1.1.10 external/snappy
-   ```
-
 Export our [Conan recipe for RocksDB](./external/rocksdb).
 It does not override paths to dependencies when building with Visual Studio.
 
