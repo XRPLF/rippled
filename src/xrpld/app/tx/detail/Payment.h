@@ -20,10 +20,7 @@
 #ifndef RIPPLE_TX_PAYMENT_H_INCLUDED
 #define RIPPLE_TX_PAYMENT_H_INCLUDED
 
-#include <xrpld/app/paths/RippleCalc.h>
 #include <xrpld/app/tx/detail/Transactor.h>
-#include <xrpl/basics/Log.h>
-#include <xrpl/protocol/TxFlags.h>
 
 namespace ripple {
 

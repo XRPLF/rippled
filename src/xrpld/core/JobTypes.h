@@ -22,10 +22,9 @@
 
 #include <xrpld/core/Job.h>
 #include <xrpld/core/JobTypeInfo.h>
+
 #include <map>
 #include <string>
-#include <type_traits>
-#include <unordered_map>
 
 namespace ripple {
 
