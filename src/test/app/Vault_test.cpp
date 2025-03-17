@@ -720,6 +720,7 @@ class Vault_test : public beast::unit_test::suite
                  .id = keylet.key,
                  .amount = asset(50)});
             env(tx, ter{tecNO_AUTH});
+            env.close();
         }
 
         {
@@ -733,6 +734,7 @@ class Vault_test : public beast::unit_test::suite
                  .id = keylet.key,
                  .amount = asset(50)});
             env(tx);
+            env.close();
         }
 
         {

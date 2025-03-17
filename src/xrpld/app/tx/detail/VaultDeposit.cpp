@@ -71,19 +71,27 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     if (isFrozen(ctx.view, account, share))
         return tecFROZEN;
 
-    if (vault->getFlags() == tfVaultPrivate && account != vault->at(sfOwner))
+    if ((vault->getFlags() & tfVaultPrivate) && account != vault->at(sfOwner))
     {
-        auto const err = requireAuth(
-            ctx.view, MPTIssue(vault->at(sfMPTokenIssuanceID)), account);
-        return err;
-
-        // The above will perform authorization check based on DomainID stored
-        // in MPTokenIssuance. Had this been a regular MPToken, it would also
-        // allow use of authorization granted by the issuer explicitly, but
-        // Vault does not have an MPT issuer (instead it uses pseudo-account).
+        // The authorization check below is based on DomainID stored in
+        // MPTokenIssuance. Had the vault shares been a regular MPToken, we
+        // would allow authorization granted by the issuer explicitly, but Vault
+        // does not have an MPT issuer (instead it uses pseudo-account, which is
+        // blackholed and cannot create any transactions).
         //
-        // If we passed the above check then we also need to do similar check
-        // inside doApply(), in order to check for expired credentials.
+        // We also need to do similar check inside doApply(), in order to remove
+        // expired credentials and/or adjust authorization flag on tokens owned
+        // by DomainID (i.e. with lsfMPTDomainCheck flag). This is why we
+        // suppress authorization errors if domainId is set.
+        uint256 domainId = beast::zero;
+        auto const err = requireAuth(
+            ctx.view,
+            MPTIssue(vault->at(sfMPTokenIssuanceID)),
+            account,
+            &domainId);
+
+        if (domainId == beast::zero)
+            return err;
     }
 
     return tesSUCCESS;
@@ -120,7 +128,7 @@ VaultDeposit::doApply()
 
     MPTIssue const mptIssue(mptIssuanceID);
     // Note, vault owner is always authorized
-    if (account_ != vault->at(sfOwner) && (vault->getFlags() & tfVaultPrivate))
+    if ((vault->getFlags() & tfVaultPrivate) && account_ != vault->at(sfOwner))
     {
         if (auto const err = enforceMPTokenAuthorization(
                 ctx_.view(), mptIssue, account_, mPriorBalance, j_);

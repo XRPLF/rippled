@@ -654,7 +654,8 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account);
 requireAuth(
     ReadView const& view,
     MPTIssue const& mptIssue,
-    AccountID const& account);
+    AccountID const& account,
+    uint256* domainId = nullptr);
 
 /** Check if the account lacks required authorization.
  *
