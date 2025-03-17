@@ -21,6 +21,7 @@
 #define RIPPLE_TEST_HTTPCLIENT_H_INCLUDED
 
 #include <test/jtx/AbstractClient.h>
+
 #include <xrpld/core/Config.h>
 
 #include <memory>

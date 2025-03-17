@@ -23,6 +23,7 @@
 #include <xrpld/core/JobQueue.h>
 #include <xrpld/net/InfoSub.h>
 #include <xrpld/rpc/Role.h>
+
 #include <xrpl/beast/utility/Journal.h>
 
 namespace ripple {

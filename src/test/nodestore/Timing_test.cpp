@@ -19,8 +19,10 @@
 
 #include <test/nodestore/TestBase.h>
 #include <test/unit_test/SuiteJournal.h>
+
 #include <xrpld/nodestore/DummyScheduler.h>
 #include <xrpld/nodestore/Manager.h>
+
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/safe_cast.h>

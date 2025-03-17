@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <test/jtx/trust.h>
+
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/jss.h>
 

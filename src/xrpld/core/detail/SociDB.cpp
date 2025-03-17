@@ -25,10 +25,12 @@
 #include <xrpld/core/Config.h>
 #include <xrpld/core/DatabaseCon.h>
 #include <xrpld/core/SociDB.h>
+
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/contract.h>
 
 #include <boost/filesystem.hpp>
+
 #include <soci/sqlite3/soci-sqlite3.h>
 
 #include <memory>

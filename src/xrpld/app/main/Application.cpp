@@ -56,6 +56,7 @@
 #include <xrpld/perflog/PerfLog.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/shamap/NodeFamily.h>
+
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/ResolverAsio.h>
 #include <xrpl/basics/random.h>
@@ -72,6 +73,7 @@
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/steady_timer.hpp>
 #include <boost/system/error_code.hpp>
+
 #include <date/date.h>
 
 #include <chrono>
@@ -1553,10 +1555,10 @@ ApplicationImp::run()
     if (!config_->standalone())
     {
         // VFALCO NOTE This seems unnecessary. If we properly refactor the load
-        //             manager then the deadlock detector can just always be
+        //             manager then the stall detector can just always be
         //             "armed"
         //
-        getLoadManager().activateDeadlockDetector();
+        getLoadManager().activateStallDetector();
     }
 
     {
