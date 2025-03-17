@@ -900,235 +900,241 @@ $(function() {
 <div class="line"><a id="l00822" name="l00822"></a><span class="lineno">  822</span>        <span class="keywordflow">return</span> std::nullopt;</div>
 <div class="line"><a id="l00823" name="l00823"></a><span class="lineno">  823</span>    }</div>
 <div class="line"><a id="l00824" name="l00824"></a><span class="lineno">  824</span> </div>
-<div class="line"><a id="l00825" name="l00825"></a><span class="lineno">  825</span>    <span class="keywordflow">if</span> (!pd.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::account) || !pd[jss::account].<a class="code hl_function" href="classJson_1_1Value.html#a71e1f82cf1c3eaf969d400dcffb163a6">isString</a>())</div>
+<div class="line"><a id="l00825" name="l00825"></a><span class="lineno">  825</span>    <span class="keywordflow">if</span> (!pd.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::account))</div>
 <div class="line"><a id="l00826" name="l00826"></a><span class="lineno">  826</span>    {</div>
 <div class="line"><a id="l00827" name="l00827"></a><span class="lineno">  827</span>        jvResult[jss::error] = <span class="stringliteral">&quot;malformedRequest&quot;</span>;</div>
 <div class="line"><a id="l00828" name="l00828"></a><span class="lineno">  828</span>        <span class="keywordflow">return</span> std::nullopt;</div>
 <div class="line"><a id="l00829" name="l00829"></a><span class="lineno">  829</span>    }</div>
 <div class="line"><a id="l00830" name="l00830"></a><span class="lineno">  830</span> </div>
-<div class="line"><a id="l00831" name="l00831"></a><span class="lineno">  831</span>    <span class="keywordflow">if</span> (!pd.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::seq) ||</div>
-<div class="line"><a id="l00832" name="l00832"></a><span class="lineno">  832</span>        (pd[jss::seq].<a class="code hl_function" href="classJson_1_1Value.html#aff51d8b52979ca06cf9d909accd5f695">isInt</a>() &amp;&amp; pd[jss::seq].<a class="code hl_function" href="classJson_1_1Value.html#a614d635bc248a592593feb322cd15ab8">asInt</a>() &lt; 0) ||</div>
-<div class="line"><a id="l00833" name="l00833"></a><span class="lineno">  833</span>        (!pd[jss::seq].<a class="code hl_function" href="classJson_1_1Value.html#aff51d8b52979ca06cf9d909accd5f695">isInt</a>() &amp;&amp; !pd[jss::seq].<a class="code hl_function" href="classJson_1_1Value.html#abdda463d3269015f883587349726cfbc">isUInt</a>()))</div>
-<div class="line"><a id="l00834" name="l00834"></a><span class="lineno">  834</span>    {</div>
-<div class="line"><a id="l00835" name="l00835"></a><span class="lineno">  835</span>        jvResult[jss::error] = <span class="stringliteral">&quot;malformedRequest&quot;</span>;</div>
-<div class="line"><a id="l00836" name="l00836"></a><span class="lineno">  836</span>        <span class="keywordflow">return</span> std::nullopt;</div>
-<div class="line"><a id="l00837" name="l00837"></a><span class="lineno">  837</span>    }</div>
-<div class="line"><a id="l00838" name="l00838"></a><span class="lineno">  838</span> </div>
-<div class="line"><a id="l00839" name="l00839"></a><span class="lineno">  839</span>    <span class="keyword">auto</span> <span class="keyword">const</span> account = parseBase58&lt;AccountID&gt;(pd[jss::account].asString());</div>
-<div class="line"><a id="l00840" name="l00840"></a><span class="lineno">  840</span>    <span class="keywordflow">if</span> (!account)</div>
-<div class="line"><a id="l00841" name="l00841"></a><span class="lineno">  841</span>    {</div>
-<div class="line"><a id="l00842" name="l00842"></a><span class="lineno">  842</span>        jvResult[jss::error] = <span class="stringliteral">&quot;malformedAddress&quot;</span>;</div>
-<div class="line"><a id="l00843" name="l00843"></a><span class="lineno">  843</span>        <span class="keywordflow">return</span> std::nullopt;</div>
-<div class="line"><a id="l00844" name="l00844"></a><span class="lineno">  844</span>    }</div>
-<div class="line"><a id="l00845" name="l00845"></a><span class="lineno">  845</span> </div>
-<div class="line"><a id="l00846" name="l00846"></a><span class="lineno">  846</span>    <span class="keywordflow">return</span> <a class="code hl_function" href="namespaceripple_1_1keylet.html#a51879ade5bc763231874ba4298bf17d3">keylet::permissionedDomain</a>(*account, pd[jss::seq].asUInt()).<a class="code hl_variable" href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">key</a>;</div>
-<div class="line"><a id="l00847" name="l00847"></a><span class="lineno">  847</span>}</div>
-<div class="line"><a id="l00848" name="l00848"></a><span class="lineno">  848</span> </div>
-<div class="line"><a id="l00849" name="l00849"></a><span class="lineno"><a class="line" href="namespaceripple.html#ad34071bf95df2c44736d6001df89d5ef">  849</a></span><span class="keyword">using </span><a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">FunctionType</a> =</div>
-<div class="line"><a id="l00850" name="l00850"></a><span class="lineno">  850</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function&lt;std::optional&lt;uint256&gt;</a>(<a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp;, <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a>&amp;)&gt;;</div>
+<div class="line"><a id="l00831" name="l00831"></a><span class="lineno">  831</span>    <span class="keywordflow">if</span> (!pd[jss::account].isString())</div>
+<div class="line"><a id="l00832" name="l00832"></a><span class="lineno">  832</span>    {</div>
+<div class="line"><a id="l00833" name="l00833"></a><span class="lineno">  833</span>        jvResult[jss::error] = <span class="stringliteral">&quot;malformedAddress&quot;</span>;</div>
+<div class="line"><a id="l00834" name="l00834"></a><span class="lineno">  834</span>        <span class="keywordflow">return</span> std::nullopt;</div>
+<div class="line"><a id="l00835" name="l00835"></a><span class="lineno">  835</span>    }</div>
+<div class="line"><a id="l00836" name="l00836"></a><span class="lineno">  836</span> </div>
+<div class="line"><a id="l00837" name="l00837"></a><span class="lineno">  837</span>    <span class="keywordflow">if</span> (!pd.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::seq) ||</div>
+<div class="line"><a id="l00838" name="l00838"></a><span class="lineno">  838</span>        (pd[jss::seq].<a class="code hl_function" href="classJson_1_1Value.html#aff51d8b52979ca06cf9d909accd5f695">isInt</a>() &amp;&amp; pd[jss::seq].<a class="code hl_function" href="classJson_1_1Value.html#a614d635bc248a592593feb322cd15ab8">asInt</a>() &lt; 0) ||</div>
+<div class="line"><a id="l00839" name="l00839"></a><span class="lineno">  839</span>        (!pd[jss::seq].<a class="code hl_function" href="classJson_1_1Value.html#aff51d8b52979ca06cf9d909accd5f695">isInt</a>() &amp;&amp; !pd[jss::seq].<a class="code hl_function" href="classJson_1_1Value.html#abdda463d3269015f883587349726cfbc">isUInt</a>()))</div>
+<div class="line"><a id="l00840" name="l00840"></a><span class="lineno">  840</span>    {</div>
+<div class="line"><a id="l00841" name="l00841"></a><span class="lineno">  841</span>        jvResult[jss::error] = <span class="stringliteral">&quot;malformedRequest&quot;</span>;</div>
+<div class="line"><a id="l00842" name="l00842"></a><span class="lineno">  842</span>        <span class="keywordflow">return</span> std::nullopt;</div>
+<div class="line"><a id="l00843" name="l00843"></a><span class="lineno">  843</span>    }</div>
+<div class="line"><a id="l00844" name="l00844"></a><span class="lineno">  844</span> </div>
+<div class="line"><a id="l00845" name="l00845"></a><span class="lineno">  845</span>    <span class="keyword">auto</span> <span class="keyword">const</span> account = parseBase58&lt;AccountID&gt;(pd[jss::account].asString());</div>
+<div class="line"><a id="l00846" name="l00846"></a><span class="lineno">  846</span>    <span class="keywordflow">if</span> (!account)</div>
+<div class="line"><a id="l00847" name="l00847"></a><span class="lineno">  847</span>    {</div>
+<div class="line"><a id="l00848" name="l00848"></a><span class="lineno">  848</span>        jvResult[jss::error] = <span class="stringliteral">&quot;malformedAddress&quot;</span>;</div>
+<div class="line"><a id="l00849" name="l00849"></a><span class="lineno">  849</span>        <span class="keywordflow">return</span> std::nullopt;</div>
+<div class="line"><a id="l00850" name="l00850"></a><span class="lineno">  850</span>    }</div>
 <div class="line"><a id="l00851" name="l00851"></a><span class="lineno">  851</span> </div>
-<div class="line"><a id="l00852" name="l00852"></a><span class="lineno"><a class="line" href="structripple_1_1LedgerEntry.html">  852</a></span><span class="keyword">struct </span><a class="code hl_struct" href="structripple_1_1LedgerEntry.html">LedgerEntry</a></div>
-<div class="line"><a id="l00853" name="l00853"></a><span class="lineno">  853</span>{</div>
-<div class="line"><a id="l00854" name="l00854"></a><span class="lineno"><a class="line" href="structripple_1_1LedgerEntry.html#ad9fb239b39c7340e81b4e2550df103cc">  854</a></span>    <a class="code hl_class" href="classJson_1_1StaticString.html">Json::StaticString</a> <a class="code hl_variable" href="structripple_1_1LedgerEntry.html#ad9fb239b39c7340e81b4e2550df103cc">fieldName</a>;</div>
-<div class="line"><a id="l00855" name="l00855"></a><span class="lineno"><a class="line" href="structripple_1_1LedgerEntry.html#aeec66da2c9afc6680bfe7ae633ecf8b1">  855</a></span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">FunctionType</a> <a class="code hl_variable" href="structripple_1_1LedgerEntry.html#aeec66da2c9afc6680bfe7ae633ecf8b1">parseFunction</a>;</div>
-<div class="line"><a id="l00856" name="l00856"></a><span class="lineno"><a class="line" href="structripple_1_1LedgerEntry.html#a3a47deed0dd3efc9856ecbdc4acfd6d6">  856</a></span>    <a class="code hl_enumeration" href="namespaceripple.html#ac151bf19e1f4daae2b04c65c65117139">LedgerEntryType</a> <a class="code hl_variable" href="structripple_1_1LedgerEntry.html#a3a47deed0dd3efc9856ecbdc4acfd6d6">expectedType</a>;</div>
-<div class="line"><a id="l00857" name="l00857"></a><span class="lineno">  857</span>};</div>
-<div class="line"><a id="l00858" name="l00858"></a><span class="lineno">  858</span> </div>
-<div class="line"><a id="l00859" name="l00859"></a><span class="lineno">  859</span><span class="comment">// {</span></div>
-<div class="line"><a id="l00860" name="l00860"></a><span class="lineno">  860</span><span class="comment">//   ledger_hash : &lt;ledger&gt;</span></div>
-<div class="line"><a id="l00861" name="l00861"></a><span class="lineno">  861</span><span class="comment">//   ledger_index : &lt;ledger_index&gt;</span></div>
-<div class="line"><a id="l00862" name="l00862"></a><span class="lineno">  862</span><span class="comment">//   ...</span></div>
-<div class="line"><a id="l00863" name="l00863"></a><span class="lineno">  863</span><span class="comment">// }</span></div>
-<div class="line"><a id="l00864" name="l00864"></a><span class="lineno">  864</span><a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a></div>
-<div class="line"><a id="l00865" name="l00865"></a><span class="lineno"><a class="line" href="namespaceripple.html#a24a33406a7f084c597b43440d319b388">  865</a></span><a class="code hl_function" href="namespaceripple.html#a24a33406a7f084c597b43440d319b388">doLedgerEntry</a>(<a class="code hl_struct" href="structripple_1_1RPC_1_1JsonContext.html">RPC::JsonContext</a>&amp; context)</div>
-<div class="line"><a id="l00866" name="l00866"></a><span class="lineno">  866</span>{</div>
-<div class="line"><a id="l00867" name="l00867"></a><span class="lineno">  867</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a> lpLedger;</div>
-<div class="line"><a id="l00868" name="l00868"></a><span class="lineno">  868</span>    <span class="keyword">auto</span> jvResult = <a class="code hl_function" href="namespaceripple_1_1RPC.html#aaebfaaee35308269fab499f4e203a8c9">RPC::lookupLedger</a>(lpLedger, context);</div>
-<div class="line"><a id="l00869" name="l00869"></a><span class="lineno">  869</span> </div>
-<div class="line"><a id="l00870" name="l00870"></a><span class="lineno">  870</span>    <span class="keywordflow">if</span> (!lpLedger)</div>
-<div class="line"><a id="l00871" name="l00871"></a><span class="lineno">  871</span>        <span class="keywordflow">return</span> jvResult;</div>
-<div class="line"><a id="l00872" name="l00872"></a><span class="lineno">  872</span> </div>
-<div class="line"><a id="l00873" name="l00873"></a><span class="lineno">  873</span>    <span class="keyword">static</span> <span class="keyword">auto</span> ledgerEntryParsers = std::to_array&lt;LedgerEntry&gt;({</div>
-<div class="line"><a id="l00874" name="l00874"></a><span class="lineno">  874</span>        {jss::index, <a class="code hl_function" href="namespaceripple.html#a14daff47b30997c39410c1920588318d">parseIndex</a>, <a class="code hl_enumvalue" href="namespaceripple.html#ac151bf19e1f4daae2b04c65c65117139a926f3c33237e0c1bb2d4cb8afc0c82b4">ltANY</a>},</div>
-<div class="line"><a id="l00875" name="l00875"></a><span class="lineno">  875</span>        {jss::account_root, <a class="code hl_function" href="namespaceripple.html#ac937f20fdf87ab6b1e3ece54f11cf8bb">parseAccountRoot</a>, ltACCOUNT_ROOT},</div>
-<div class="line"><a id="l00876" name="l00876"></a><span class="lineno">  876</span>        <span class="comment">// TODO: add amendments</span></div>
-<div class="line"><a id="l00877" name="l00877"></a><span class="lineno">  877</span>        {jss::amm, <a class="code hl_function" href="namespaceripple.html#a3bcd7621e12a7e4cad2626737f950d0f">parseAMM</a>, ltAMM},</div>
-<div class="line"><a id="l00878" name="l00878"></a><span class="lineno">  878</span>        {jss::bridge, <a class="code hl_function" href="namespaceripple.html#a3f461484540909c314d543d5bfc01e49">parseBridge</a>, ltBRIDGE},</div>
-<div class="line"><a id="l00879" name="l00879"></a><span class="lineno">  879</span>        {jss::check, <a class="code hl_function" href="namespaceripple.html#a691e32b08b44b10bdcec95e4b6f081d7">parseCheck</a>, ltCHECK},</div>
-<div class="line"><a id="l00880" name="l00880"></a><span class="lineno">  880</span>        {jss::credential, <a class="code hl_function" href="namespaceripple.html#a7c09ef92d877e967519cba821ea68e73">parseCredential</a>, ltCREDENTIAL},</div>
-<div class="line"><a id="l00881" name="l00881"></a><span class="lineno">  881</span>        {jss::deposit_preauth, <a class="code hl_function" href="namespaceripple.html#a4b10d56ba274533367ffe335e9a54e0a">parseDepositPreauth</a>, ltDEPOSIT_PREAUTH},</div>
-<div class="line"><a id="l00882" name="l00882"></a><span class="lineno">  882</span>        {jss::did, <a class="code hl_function" href="namespaceripple.html#aebba2b7ceb3ff56b395f36728c4ff891">parseDID</a>, ltDID},</div>
-<div class="line"><a id="l00883" name="l00883"></a><span class="lineno">  883</span>        {jss::directory, <a class="code hl_function" href="namespaceripple.html#ada7ed82ae90b5cef7da4139a4d377468">parseDirectory</a>, ltDIR_NODE},</div>
-<div class="line"><a id="l00884" name="l00884"></a><span class="lineno">  884</span>        {jss::escrow, <a class="code hl_function" href="namespaceripple.html#a877ac66fea02fe3284fed7308cb66442">parseEscrow</a>, ltESCROW},</div>
-<div class="line"><a id="l00885" name="l00885"></a><span class="lineno">  885</span>        <span class="comment">// TODO: add fee, hashes</span></div>
-<div class="line"><a id="l00886" name="l00886"></a><span class="lineno">  886</span>        {jss::mpt_issuance, <a class="code hl_function" href="namespaceripple.html#a3db948c59f30d455ddc10322f5c5fbe4">parseMPTokenIssuance</a>, ltMPTOKEN_ISSUANCE},</div>
-<div class="line"><a id="l00887" name="l00887"></a><span class="lineno">  887</span>        {jss::mptoken, <a class="code hl_function" href="namespaceripple.html#a06886f646a128c36db61fa27a2b7d7b3">parseMPToken</a>, ltMPTOKEN},</div>
-<div class="line"><a id="l00888" name="l00888"></a><span class="lineno">  888</span>        <span class="comment">// TODO: add NFT Offers</span></div>
-<div class="line"><a id="l00889" name="l00889"></a><span class="lineno">  889</span>        {jss::nft_page, <a class="code hl_function" href="namespaceripple.html#a55a96d706f6d4b715d8333ac89603849">parseNFTokenPage</a>, ltNFTOKEN_PAGE},</div>
-<div class="line"><a id="l00890" name="l00890"></a><span class="lineno">  890</span>        <span class="comment">// TODO: add NegativeUNL</span></div>
-<div class="line"><a id="l00891" name="l00891"></a><span class="lineno">  891</span>        {jss::offer, <a class="code hl_function" href="namespaceripple.html#ab76a39be63be5fb8619758f7cff04802">parseOffer</a>, ltOFFER},</div>
-<div class="line"><a id="l00892" name="l00892"></a><span class="lineno">  892</span>        {jss::oracle, <a class="code hl_function" href="namespaceripple.html#a81efc27e8fe6f8a4604bf49d181de96a">parseOracle</a>, ltORACLE},</div>
-<div class="line"><a id="l00893" name="l00893"></a><span class="lineno">  893</span>        {jss::payment_channel, <a class="code hl_function" href="namespaceripple.html#a271b71a040a8f7cc7994fab6d083e48b">parsePaymentChannel</a>, ltPAYCHAN},</div>
-<div class="line"><a id="l00894" name="l00894"></a><span class="lineno">  894</span>        {jss::permissioned_domain,</div>
-<div class="line"><a id="l00895" name="l00895"></a><span class="lineno">  895</span>         <a class="code hl_function" href="namespaceripple.html#af46627374c1fc1da4c4b99cf47283fa8">parsePermissionedDomains</a>,</div>
-<div class="line"><a id="l00896" name="l00896"></a><span class="lineno">  896</span>         ltPERMISSIONED_DOMAIN},</div>
-<div class="line"><a id="l00897" name="l00897"></a><span class="lineno">  897</span>        {jss::ripple_state, <a class="code hl_function" href="namespaceripple.html#ad07e4613a007aa94cb21458481f688f6">parseRippleState</a>, ltRIPPLE_STATE},</div>
-<div class="line"><a id="l00898" name="l00898"></a><span class="lineno">  898</span>        <span class="comment">// This is an alias, since the `ledger_data` filter uses jss::state</span></div>
-<div class="line"><a id="l00899" name="l00899"></a><span class="lineno">  899</span>        {jss::state, <a class="code hl_function" href="namespaceripple.html#ad07e4613a007aa94cb21458481f688f6">parseRippleState</a>, ltRIPPLE_STATE},</div>
-<div class="line"><a id="l00900" name="l00900"></a><span class="lineno">  900</span>        {jss::ticket, <a class="code hl_function" href="namespaceripple.html#a76cbc53db52c42e50575007a80c3ac52">parseTicket</a>, ltTICKET},</div>
-<div class="line"><a id="l00901" name="l00901"></a><span class="lineno">  901</span>        {jss::xchain_owned_claim_id,</div>
-<div class="line"><a id="l00902" name="l00902"></a><span class="lineno">  902</span>         <a class="code hl_function" href="namespaceripple.html#ad5bf699edf09688a73f5a5c4ce270835">parseXChainOwnedClaimID</a>,</div>
-<div class="line"><a id="l00903" name="l00903"></a><span class="lineno">  903</span>         ltXCHAIN_OWNED_CLAIM_ID},</div>
-<div class="line"><a id="l00904" name="l00904"></a><span class="lineno">  904</span>        {jss::xchain_owned_create_account_claim_id,</div>
-<div class="line"><a id="l00905" name="l00905"></a><span class="lineno">  905</span>         <a class="code hl_function" href="namespaceripple.html#a8c84645e06c562f292355cd97298f291">parseXChainOwnedCreateAccountClaimID</a>,</div>
-<div class="line"><a id="l00906" name="l00906"></a><span class="lineno">  906</span>         ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID},</div>
-<div class="line"><a id="l00907" name="l00907"></a><span class="lineno">  907</span>    });</div>
-<div class="line"><a id="l00908" name="l00908"></a><span class="lineno">  908</span> </div>
-<div class="line"><a id="l00909" name="l00909"></a><span class="lineno">  909</span>    <a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> uNodeIndex;</div>
-<div class="line"><a id="l00910" name="l00910"></a><span class="lineno">  910</span>    <a class="code hl_enumeration" href="namespaceripple.html#ac151bf19e1f4daae2b04c65c65117139">LedgerEntryType</a> expectedType = <a class="code hl_enumvalue" href="namespaceripple.html#ac151bf19e1f4daae2b04c65c65117139a926f3c33237e0c1bb2d4cb8afc0c82b4">ltANY</a>;</div>
-<div class="line"><a id="l00911" name="l00911"></a><span class="lineno">  911</span> </div>
-<div class="line"><a id="l00912" name="l00912"></a><span class="lineno">  912</span>    <span class="keywordflow">try</span></div>
-<div class="line"><a id="l00913" name="l00913"></a><span class="lineno">  913</span>    {</div>
-<div class="line"><a id="l00914" name="l00914"></a><span class="lineno">  914</span>        <span class="keywordtype">bool</span> found = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00915" name="l00915"></a><span class="lineno">  915</span>        <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; ledgerEntry : ledgerEntryParsers)</div>
-<div class="line"><a id="l00916" name="l00916"></a><span class="lineno">  916</span>        {</div>
-<div class="line"><a id="l00917" name="l00917"></a><span class="lineno">  917</span>            <span class="keywordflow">if</span> (context.<a class="code hl_variable" href="structripple_1_1RPC_1_1JsonContext.html#a036b2c14552fbca49011c3d0e78017fa">params</a>.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(ledgerEntry.fieldName))</div>
-<div class="line"><a id="l00918" name="l00918"></a><span class="lineno">  918</span>            {</div>
-<div class="line"><a id="l00919" name="l00919"></a><span class="lineno">  919</span>                expectedType = ledgerEntry.expectedType;</div>
-<div class="line"><a id="l00920" name="l00920"></a><span class="lineno">  920</span>                <span class="comment">// `Bridge` is the only type that involves two fields at the</span></div>
-<div class="line"><a id="l00921" name="l00921"></a><span class="lineno">  921</span>                <span class="comment">// `ledger_entry` param level.</span></div>
-<div class="line"><a id="l00922" name="l00922"></a><span class="lineno">  922</span>                <span class="comment">// So that parser needs to have the whole `params` field.</span></div>
-<div class="line"><a id="l00923" name="l00923"></a><span class="lineno">  923</span>                <span class="comment">// All other parsers only need the one field name&#39;s info.</span></div>
-<div class="line"><a id="l00924" name="l00924"></a><span class="lineno">  924</span>                <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp; params = ledgerEntry.fieldName == jss::bridge</div>
-<div class="line"><a id="l00925" name="l00925"></a><span class="lineno">  925</span>                    ? context.<a class="code hl_variable" href="structripple_1_1RPC_1_1JsonContext.html#a036b2c14552fbca49011c3d0e78017fa">params</a></div>
-<div class="line"><a id="l00926" name="l00926"></a><span class="lineno">  926</span>                    : context.<a class="code hl_variable" href="structripple_1_1RPC_1_1JsonContext.html#a036b2c14552fbca49011c3d0e78017fa">params</a>[ledgerEntry.fieldName];</div>
-<div class="line"><a id="l00927" name="l00927"></a><span class="lineno">  927</span>                uNodeIndex = ledgerEntry.parseFunction(params, jvResult)</div>
-<div class="line"><a id="l00928" name="l00928"></a><span class="lineno">  928</span>                                 .value_or(beast::zero);</div>
-<div class="line"><a id="l00929" name="l00929"></a><span class="lineno">  929</span>                <span class="keywordflow">if</span> (jvResult.isMember(jss::error))</div>
-<div class="line"><a id="l00930" name="l00930"></a><span class="lineno">  930</span>                {</div>
-<div class="line"><a id="l00931" name="l00931"></a><span class="lineno">  931</span>                    <span class="keywordflow">return</span> jvResult;</div>
-<div class="line"><a id="l00932" name="l00932"></a><span class="lineno">  932</span>                }</div>
-<div class="line"><a id="l00933" name="l00933"></a><span class="lineno">  933</span>                found = <span class="keyword">true</span>;</div>
-<div class="line"><a id="l00934" name="l00934"></a><span class="lineno">  934</span>                <span class="keywordflow">break</span>;</div>
-<div class="line"><a id="l00935" name="l00935"></a><span class="lineno">  935</span>            }</div>
-<div class="line"><a id="l00936" name="l00936"></a><span class="lineno">  936</span>        }</div>
-<div class="line"><a id="l00937" name="l00937"></a><span class="lineno">  937</span> </div>
-<div class="line"><a id="l00938" name="l00938"></a><span class="lineno">  938</span>        <span class="keywordflow">if</span> (!found)</div>
-<div class="line"><a id="l00939" name="l00939"></a><span class="lineno">  939</span>        {</div>
-<div class="line"><a id="l00940" name="l00940"></a><span class="lineno">  940</span>            <span class="keywordflow">if</span> (context.<a class="code hl_variable" href="structripple_1_1RPC_1_1Context.html#a0eab3b46cc23d67a6d16d1fb6bcaf0a2">apiVersion</a> &lt; 2u)</div>
-<div class="line"><a id="l00941" name="l00941"></a><span class="lineno">  941</span>                jvResult[jss::error] = <span class="stringliteral">&quot;unknownOption&quot;</span>;</div>
-<div class="line"><a id="l00942" name="l00942"></a><span class="lineno">  942</span>            <span class="keywordflow">else</span></div>
-<div class="line"><a id="l00943" name="l00943"></a><span class="lineno">  943</span>                jvResult[jss::error] = <span class="stringliteral">&quot;invalidParams&quot;</span>;</div>
-<div class="line"><a id="l00944" name="l00944"></a><span class="lineno">  944</span>            <span class="keywordflow">return</span> jvResult;</div>
-<div class="line"><a id="l00945" name="l00945"></a><span class="lineno">  945</span>        }</div>
-<div class="line"><a id="l00946" name="l00946"></a><span class="lineno">  946</span>    }</div>
-<div class="line"><a id="l00947" name="l00947"></a><span class="lineno">  947</span>    <span class="keywordflow">catch</span> (<a class="code hl_struct" href="structJson_1_1error.html">Json::error</a>&amp; e)</div>
-<div class="line"><a id="l00948" name="l00948"></a><span class="lineno">  948</span>    {</div>
-<div class="line"><a id="l00949" name="l00949"></a><span class="lineno">  949</span>        <span class="keywordflow">if</span> (context.<a class="code hl_variable" href="structripple_1_1RPC_1_1Context.html#a0eab3b46cc23d67a6d16d1fb6bcaf0a2">apiVersion</a> &gt; 1u)</div>
-<div class="line"><a id="l00950" name="l00950"></a><span class="lineno">  950</span>        {</div>
-<div class="line"><a id="l00951" name="l00951"></a><span class="lineno">  951</span>            <span class="comment">// For apiVersion 2 onwards, any parsing failures that throw this</span></div>
-<div class="line"><a id="l00952" name="l00952"></a><span class="lineno">  952</span>            <span class="comment">// exception return an invalidParam error.</span></div>
-<div class="line"><a id="l00953" name="l00953"></a><span class="lineno">  953</span>            jvResult[jss::error] = <span class="stringliteral">&quot;invalidParams&quot;</span>;</div>
-<div class="line"><a id="l00954" name="l00954"></a><span class="lineno">  954</span>            <span class="keywordflow">return</span> jvResult;</div>
-<div class="line"><a id="l00955" name="l00955"></a><span class="lineno">  955</span>        }</div>
-<div class="line"><a id="l00956" name="l00956"></a><span class="lineno">  956</span>        <span class="keywordflow">else</span></div>
-<div class="line"><a id="l00957" name="l00957"></a><span class="lineno">  957</span>            <span class="keywordflow">throw</span>;</div>
-<div class="line"><a id="l00958" name="l00958"></a><span class="lineno">  958</span>    }</div>
-<div class="line"><a id="l00959" name="l00959"></a><span class="lineno">  959</span> </div>
-<div class="line"><a id="l00960" name="l00960"></a><span class="lineno">  960</span>    <span class="keywordflow">if</span> (uNodeIndex.isZero())</div>
-<div class="line"><a id="l00961" name="l00961"></a><span class="lineno">  961</span>    {</div>
-<div class="line"><a id="l00962" name="l00962"></a><span class="lineno">  962</span>        jvResult[jss::error] = <span class="stringliteral">&quot;entryNotFound&quot;</span>;</div>
-<div class="line"><a id="l00963" name="l00963"></a><span class="lineno">  963</span>        <span class="keywordflow">return</span> jvResult;</div>
+<div class="line"><a id="l00852" name="l00852"></a><span class="lineno">  852</span>    <span class="keywordflow">return</span> <a class="code hl_function" href="namespaceripple_1_1keylet.html#a51879ade5bc763231874ba4298bf17d3">keylet::permissionedDomain</a>(*account, pd[jss::seq].asUInt()).<a class="code hl_variable" href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">key</a>;</div>
+<div class="line"><a id="l00853" name="l00853"></a><span class="lineno">  853</span>}</div>
+<div class="line"><a id="l00854" name="l00854"></a><span class="lineno">  854</span> </div>
+<div class="line"><a id="l00855" name="l00855"></a><span class="lineno"><a class="line" href="namespaceripple.html#ad34071bf95df2c44736d6001df89d5ef">  855</a></span><span class="keyword">using </span><a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">FunctionType</a> =</div>
+<div class="line"><a id="l00856" name="l00856"></a><span class="lineno">  856</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function&lt;std::optional&lt;uint256&gt;</a>(<a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp;, <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a>&amp;)&gt;;</div>
+<div class="line"><a id="l00857" name="l00857"></a><span class="lineno">  857</span> </div>
+<div class="line"><a id="l00858" name="l00858"></a><span class="lineno"><a class="line" href="structripple_1_1LedgerEntry.html">  858</a></span><span class="keyword">struct </span><a class="code hl_struct" href="structripple_1_1LedgerEntry.html">LedgerEntry</a></div>
+<div class="line"><a id="l00859" name="l00859"></a><span class="lineno">  859</span>{</div>
+<div class="line"><a id="l00860" name="l00860"></a><span class="lineno"><a class="line" href="structripple_1_1LedgerEntry.html#ad9fb239b39c7340e81b4e2550df103cc">  860</a></span>    <a class="code hl_class" href="classJson_1_1StaticString.html">Json::StaticString</a> <a class="code hl_variable" href="structripple_1_1LedgerEntry.html#ad9fb239b39c7340e81b4e2550df103cc">fieldName</a>;</div>
+<div class="line"><a id="l00861" name="l00861"></a><span class="lineno"><a class="line" href="structripple_1_1LedgerEntry.html#aeec66da2c9afc6680bfe7ae633ecf8b1">  861</a></span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">FunctionType</a> <a class="code hl_variable" href="structripple_1_1LedgerEntry.html#aeec66da2c9afc6680bfe7ae633ecf8b1">parseFunction</a>;</div>
+<div class="line"><a id="l00862" name="l00862"></a><span class="lineno"><a class="line" href="structripple_1_1LedgerEntry.html#a3a47deed0dd3efc9856ecbdc4acfd6d6">  862</a></span>    <a class="code hl_enumeration" href="namespaceripple.html#ac151bf19e1f4daae2b04c65c65117139">LedgerEntryType</a> <a class="code hl_variable" href="structripple_1_1LedgerEntry.html#a3a47deed0dd3efc9856ecbdc4acfd6d6">expectedType</a>;</div>
+<div class="line"><a id="l00863" name="l00863"></a><span class="lineno">  863</span>};</div>
+<div class="line"><a id="l00864" name="l00864"></a><span class="lineno">  864</span> </div>
+<div class="line"><a id="l00865" name="l00865"></a><span class="lineno">  865</span><span class="comment">// {</span></div>
+<div class="line"><a id="l00866" name="l00866"></a><span class="lineno">  866</span><span class="comment">//   ledger_hash : &lt;ledger&gt;</span></div>
+<div class="line"><a id="l00867" name="l00867"></a><span class="lineno">  867</span><span class="comment">//   ledger_index : &lt;ledger_index&gt;</span></div>
+<div class="line"><a id="l00868" name="l00868"></a><span class="lineno">  868</span><span class="comment">//   ...</span></div>
+<div class="line"><a id="l00869" name="l00869"></a><span class="lineno">  869</span><span class="comment">// }</span></div>
+<div class="line"><a id="l00870" name="l00870"></a><span class="lineno">  870</span><a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a></div>
+<div class="line"><a id="l00871" name="l00871"></a><span class="lineno"><a class="line" href="namespaceripple.html#a24a33406a7f084c597b43440d319b388">  871</a></span><a class="code hl_function" href="namespaceripple.html#a24a33406a7f084c597b43440d319b388">doLedgerEntry</a>(<a class="code hl_struct" href="structripple_1_1RPC_1_1JsonContext.html">RPC::JsonContext</a>&amp; context)</div>
+<div class="line"><a id="l00872" name="l00872"></a><span class="lineno">  872</span>{</div>
+<div class="line"><a id="l00873" name="l00873"></a><span class="lineno">  873</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a> lpLedger;</div>
+<div class="line"><a id="l00874" name="l00874"></a><span class="lineno">  874</span>    <span class="keyword">auto</span> jvResult = <a class="code hl_function" href="namespaceripple_1_1RPC.html#aaebfaaee35308269fab499f4e203a8c9">RPC::lookupLedger</a>(lpLedger, context);</div>
+<div class="line"><a id="l00875" name="l00875"></a><span class="lineno">  875</span> </div>
+<div class="line"><a id="l00876" name="l00876"></a><span class="lineno">  876</span>    <span class="keywordflow">if</span> (!lpLedger)</div>
+<div class="line"><a id="l00877" name="l00877"></a><span class="lineno">  877</span>        <span class="keywordflow">return</span> jvResult;</div>
+<div class="line"><a id="l00878" name="l00878"></a><span class="lineno">  878</span> </div>
+<div class="line"><a id="l00879" name="l00879"></a><span class="lineno">  879</span>    <span class="keyword">static</span> <span class="keyword">auto</span> ledgerEntryParsers = std::to_array&lt;LedgerEntry&gt;({</div>
+<div class="line"><a id="l00880" name="l00880"></a><span class="lineno">  880</span>        {jss::index, <a class="code hl_function" href="namespaceripple.html#a14daff47b30997c39410c1920588318d">parseIndex</a>, <a class="code hl_enumvalue" href="namespaceripple.html#ac151bf19e1f4daae2b04c65c65117139a926f3c33237e0c1bb2d4cb8afc0c82b4">ltANY</a>},</div>
+<div class="line"><a id="l00881" name="l00881"></a><span class="lineno">  881</span>        {jss::account_root, <a class="code hl_function" href="namespaceripple.html#ac937f20fdf87ab6b1e3ece54f11cf8bb">parseAccountRoot</a>, ltACCOUNT_ROOT},</div>
+<div class="line"><a id="l00882" name="l00882"></a><span class="lineno">  882</span>        <span class="comment">// TODO: add amendments</span></div>
+<div class="line"><a id="l00883" name="l00883"></a><span class="lineno">  883</span>        {jss::amm, <a class="code hl_function" href="namespaceripple.html#a3bcd7621e12a7e4cad2626737f950d0f">parseAMM</a>, ltAMM},</div>
+<div class="line"><a id="l00884" name="l00884"></a><span class="lineno">  884</span>        {jss::bridge, <a class="code hl_function" href="namespaceripple.html#a3f461484540909c314d543d5bfc01e49">parseBridge</a>, ltBRIDGE},</div>
+<div class="line"><a id="l00885" name="l00885"></a><span class="lineno">  885</span>        {jss::check, <a class="code hl_function" href="namespaceripple.html#a691e32b08b44b10bdcec95e4b6f081d7">parseCheck</a>, ltCHECK},</div>
+<div class="line"><a id="l00886" name="l00886"></a><span class="lineno">  886</span>        {jss::credential, <a class="code hl_function" href="namespaceripple.html#a7c09ef92d877e967519cba821ea68e73">parseCredential</a>, ltCREDENTIAL},</div>
+<div class="line"><a id="l00887" name="l00887"></a><span class="lineno">  887</span>        {jss::deposit_preauth, <a class="code hl_function" href="namespaceripple.html#a4b10d56ba274533367ffe335e9a54e0a">parseDepositPreauth</a>, ltDEPOSIT_PREAUTH},</div>
+<div class="line"><a id="l00888" name="l00888"></a><span class="lineno">  888</span>        {jss::did, <a class="code hl_function" href="namespaceripple.html#aebba2b7ceb3ff56b395f36728c4ff891">parseDID</a>, ltDID},</div>
+<div class="line"><a id="l00889" name="l00889"></a><span class="lineno">  889</span>        {jss::directory, <a class="code hl_function" href="namespaceripple.html#ada7ed82ae90b5cef7da4139a4d377468">parseDirectory</a>, ltDIR_NODE},</div>
+<div class="line"><a id="l00890" name="l00890"></a><span class="lineno">  890</span>        {jss::escrow, <a class="code hl_function" href="namespaceripple.html#a877ac66fea02fe3284fed7308cb66442">parseEscrow</a>, ltESCROW},</div>
+<div class="line"><a id="l00891" name="l00891"></a><span class="lineno">  891</span>        <span class="comment">// TODO: add fee, hashes</span></div>
+<div class="line"><a id="l00892" name="l00892"></a><span class="lineno">  892</span>        {jss::mpt_issuance, <a class="code hl_function" href="namespaceripple.html#a3db948c59f30d455ddc10322f5c5fbe4">parseMPTokenIssuance</a>, ltMPTOKEN_ISSUANCE},</div>
+<div class="line"><a id="l00893" name="l00893"></a><span class="lineno">  893</span>        {jss::mptoken, <a class="code hl_function" href="namespaceripple.html#a06886f646a128c36db61fa27a2b7d7b3">parseMPToken</a>, ltMPTOKEN},</div>
+<div class="line"><a id="l00894" name="l00894"></a><span class="lineno">  894</span>        <span class="comment">// TODO: add NFT Offers</span></div>
+<div class="line"><a id="l00895" name="l00895"></a><span class="lineno">  895</span>        {jss::nft_page, <a class="code hl_function" href="namespaceripple.html#a55a96d706f6d4b715d8333ac89603849">parseNFTokenPage</a>, ltNFTOKEN_PAGE},</div>
+<div class="line"><a id="l00896" name="l00896"></a><span class="lineno">  896</span>        <span class="comment">// TODO: add NegativeUNL</span></div>
+<div class="line"><a id="l00897" name="l00897"></a><span class="lineno">  897</span>        {jss::offer, <a class="code hl_function" href="namespaceripple.html#ab76a39be63be5fb8619758f7cff04802">parseOffer</a>, ltOFFER},</div>
+<div class="line"><a id="l00898" name="l00898"></a><span class="lineno">  898</span>        {jss::oracle, <a class="code hl_function" href="namespaceripple.html#a81efc27e8fe6f8a4604bf49d181de96a">parseOracle</a>, ltORACLE},</div>
+<div class="line"><a id="l00899" name="l00899"></a><span class="lineno">  899</span>        {jss::payment_channel, <a class="code hl_function" href="namespaceripple.html#a271b71a040a8f7cc7994fab6d083e48b">parsePaymentChannel</a>, ltPAYCHAN},</div>
+<div class="line"><a id="l00900" name="l00900"></a><span class="lineno">  900</span>        {jss::permissioned_domain,</div>
+<div class="line"><a id="l00901" name="l00901"></a><span class="lineno">  901</span>         <a class="code hl_function" href="namespaceripple.html#af46627374c1fc1da4c4b99cf47283fa8">parsePermissionedDomains</a>,</div>
+<div class="line"><a id="l00902" name="l00902"></a><span class="lineno">  902</span>         ltPERMISSIONED_DOMAIN},</div>
+<div class="line"><a id="l00903" name="l00903"></a><span class="lineno">  903</span>        {jss::ripple_state, <a class="code hl_function" href="namespaceripple.html#ad07e4613a007aa94cb21458481f688f6">parseRippleState</a>, ltRIPPLE_STATE},</div>
+<div class="line"><a id="l00904" name="l00904"></a><span class="lineno">  904</span>        <span class="comment">// This is an alias, since the `ledger_data` filter uses jss::state</span></div>
+<div class="line"><a id="l00905" name="l00905"></a><span class="lineno">  905</span>        {jss::state, <a class="code hl_function" href="namespaceripple.html#ad07e4613a007aa94cb21458481f688f6">parseRippleState</a>, ltRIPPLE_STATE},</div>
+<div class="line"><a id="l00906" name="l00906"></a><span class="lineno">  906</span>        {jss::ticket, <a class="code hl_function" href="namespaceripple.html#a76cbc53db52c42e50575007a80c3ac52">parseTicket</a>, ltTICKET},</div>
+<div class="line"><a id="l00907" name="l00907"></a><span class="lineno">  907</span>        {jss::xchain_owned_claim_id,</div>
+<div class="line"><a id="l00908" name="l00908"></a><span class="lineno">  908</span>         <a class="code hl_function" href="namespaceripple.html#ad5bf699edf09688a73f5a5c4ce270835">parseXChainOwnedClaimID</a>,</div>
+<div class="line"><a id="l00909" name="l00909"></a><span class="lineno">  909</span>         ltXCHAIN_OWNED_CLAIM_ID},</div>
+<div class="line"><a id="l00910" name="l00910"></a><span class="lineno">  910</span>        {jss::xchain_owned_create_account_claim_id,</div>
+<div class="line"><a id="l00911" name="l00911"></a><span class="lineno">  911</span>         <a class="code hl_function" href="namespaceripple.html#a8c84645e06c562f292355cd97298f291">parseXChainOwnedCreateAccountClaimID</a>,</div>
+<div class="line"><a id="l00912" name="l00912"></a><span class="lineno">  912</span>         ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID},</div>
+<div class="line"><a id="l00913" name="l00913"></a><span class="lineno">  913</span>    });</div>
+<div class="line"><a id="l00914" name="l00914"></a><span class="lineno">  914</span> </div>
+<div class="line"><a id="l00915" name="l00915"></a><span class="lineno">  915</span>    <a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> uNodeIndex;</div>
+<div class="line"><a id="l00916" name="l00916"></a><span class="lineno">  916</span>    <a class="code hl_enumeration" href="namespaceripple.html#ac151bf19e1f4daae2b04c65c65117139">LedgerEntryType</a> expectedType = <a class="code hl_enumvalue" href="namespaceripple.html#ac151bf19e1f4daae2b04c65c65117139a926f3c33237e0c1bb2d4cb8afc0c82b4">ltANY</a>;</div>
+<div class="line"><a id="l00917" name="l00917"></a><span class="lineno">  917</span> </div>
+<div class="line"><a id="l00918" name="l00918"></a><span class="lineno">  918</span>    <span class="keywordflow">try</span></div>
+<div class="line"><a id="l00919" name="l00919"></a><span class="lineno">  919</span>    {</div>
+<div class="line"><a id="l00920" name="l00920"></a><span class="lineno">  920</span>        <span class="keywordtype">bool</span> found = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00921" name="l00921"></a><span class="lineno">  921</span>        <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; ledgerEntry : ledgerEntryParsers)</div>
+<div class="line"><a id="l00922" name="l00922"></a><span class="lineno">  922</span>        {</div>
+<div class="line"><a id="l00923" name="l00923"></a><span class="lineno">  923</span>            <span class="keywordflow">if</span> (context.<a class="code hl_variable" href="structripple_1_1RPC_1_1JsonContext.html#a036b2c14552fbca49011c3d0e78017fa">params</a>.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(ledgerEntry.fieldName))</div>
+<div class="line"><a id="l00924" name="l00924"></a><span class="lineno">  924</span>            {</div>
+<div class="line"><a id="l00925" name="l00925"></a><span class="lineno">  925</span>                expectedType = ledgerEntry.expectedType;</div>
+<div class="line"><a id="l00926" name="l00926"></a><span class="lineno">  926</span>                <span class="comment">// `Bridge` is the only type that involves two fields at the</span></div>
+<div class="line"><a id="l00927" name="l00927"></a><span class="lineno">  927</span>                <span class="comment">// `ledger_entry` param level.</span></div>
+<div class="line"><a id="l00928" name="l00928"></a><span class="lineno">  928</span>                <span class="comment">// So that parser needs to have the whole `params` field.</span></div>
+<div class="line"><a id="l00929" name="l00929"></a><span class="lineno">  929</span>                <span class="comment">// All other parsers only need the one field name&#39;s info.</span></div>
+<div class="line"><a id="l00930" name="l00930"></a><span class="lineno">  930</span>                <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp; params = ledgerEntry.fieldName == jss::bridge</div>
+<div class="line"><a id="l00931" name="l00931"></a><span class="lineno">  931</span>                    ? context.<a class="code hl_variable" href="structripple_1_1RPC_1_1JsonContext.html#a036b2c14552fbca49011c3d0e78017fa">params</a></div>
+<div class="line"><a id="l00932" name="l00932"></a><span class="lineno">  932</span>                    : context.<a class="code hl_variable" href="structripple_1_1RPC_1_1JsonContext.html#a036b2c14552fbca49011c3d0e78017fa">params</a>[ledgerEntry.fieldName];</div>
+<div class="line"><a id="l00933" name="l00933"></a><span class="lineno">  933</span>                uNodeIndex = ledgerEntry.parseFunction(params, jvResult)</div>
+<div class="line"><a id="l00934" name="l00934"></a><span class="lineno">  934</span>                                 .value_or(beast::zero);</div>
+<div class="line"><a id="l00935" name="l00935"></a><span class="lineno">  935</span>                <span class="keywordflow">if</span> (jvResult.isMember(jss::error))</div>
+<div class="line"><a id="l00936" name="l00936"></a><span class="lineno">  936</span>                {</div>
+<div class="line"><a id="l00937" name="l00937"></a><span class="lineno">  937</span>                    <span class="keywordflow">return</span> jvResult;</div>
+<div class="line"><a id="l00938" name="l00938"></a><span class="lineno">  938</span>                }</div>
+<div class="line"><a id="l00939" name="l00939"></a><span class="lineno">  939</span>                found = <span class="keyword">true</span>;</div>
+<div class="line"><a id="l00940" name="l00940"></a><span class="lineno">  940</span>                <span class="keywordflow">break</span>;</div>
+<div class="line"><a id="l00941" name="l00941"></a><span class="lineno">  941</span>            }</div>
+<div class="line"><a id="l00942" name="l00942"></a><span class="lineno">  942</span>        }</div>
+<div class="line"><a id="l00943" name="l00943"></a><span class="lineno">  943</span> </div>
+<div class="line"><a id="l00944" name="l00944"></a><span class="lineno">  944</span>        <span class="keywordflow">if</span> (!found)</div>
+<div class="line"><a id="l00945" name="l00945"></a><span class="lineno">  945</span>        {</div>
+<div class="line"><a id="l00946" name="l00946"></a><span class="lineno">  946</span>            <span class="keywordflow">if</span> (context.<a class="code hl_variable" href="structripple_1_1RPC_1_1Context.html#a0eab3b46cc23d67a6d16d1fb6bcaf0a2">apiVersion</a> &lt; 2u)</div>
+<div class="line"><a id="l00947" name="l00947"></a><span class="lineno">  947</span>                jvResult[jss::error] = <span class="stringliteral">&quot;unknownOption&quot;</span>;</div>
+<div class="line"><a id="l00948" name="l00948"></a><span class="lineno">  948</span>            <span class="keywordflow">else</span></div>
+<div class="line"><a id="l00949" name="l00949"></a><span class="lineno">  949</span>                jvResult[jss::error] = <span class="stringliteral">&quot;invalidParams&quot;</span>;</div>
+<div class="line"><a id="l00950" name="l00950"></a><span class="lineno">  950</span>            <span class="keywordflow">return</span> jvResult;</div>
+<div class="line"><a id="l00951" name="l00951"></a><span class="lineno">  951</span>        }</div>
+<div class="line"><a id="l00952" name="l00952"></a><span class="lineno">  952</span>    }</div>
+<div class="line"><a id="l00953" name="l00953"></a><span class="lineno">  953</span>    <span class="keywordflow">catch</span> (<a class="code hl_struct" href="structJson_1_1error.html">Json::error</a>&amp; e)</div>
+<div class="line"><a id="l00954" name="l00954"></a><span class="lineno">  954</span>    {</div>
+<div class="line"><a id="l00955" name="l00955"></a><span class="lineno">  955</span>        <span class="keywordflow">if</span> (context.<a class="code hl_variable" href="structripple_1_1RPC_1_1Context.html#a0eab3b46cc23d67a6d16d1fb6bcaf0a2">apiVersion</a> &gt; 1u)</div>
+<div class="line"><a id="l00956" name="l00956"></a><span class="lineno">  956</span>        {</div>
+<div class="line"><a id="l00957" name="l00957"></a><span class="lineno">  957</span>            <span class="comment">// For apiVersion 2 onwards, any parsing failures that throw this</span></div>
+<div class="line"><a id="l00958" name="l00958"></a><span class="lineno">  958</span>            <span class="comment">// exception return an invalidParam error.</span></div>
+<div class="line"><a id="l00959" name="l00959"></a><span class="lineno">  959</span>            jvResult[jss::error] = <span class="stringliteral">&quot;invalidParams&quot;</span>;</div>
+<div class="line"><a id="l00960" name="l00960"></a><span class="lineno">  960</span>            <span class="keywordflow">return</span> jvResult;</div>
+<div class="line"><a id="l00961" name="l00961"></a><span class="lineno">  961</span>        }</div>
+<div class="line"><a id="l00962" name="l00962"></a><span class="lineno">  962</span>        <span class="keywordflow">else</span></div>
+<div class="line"><a id="l00963" name="l00963"></a><span class="lineno">  963</span>            <span class="keywordflow">throw</span>;</div>
 <div class="line"><a id="l00964" name="l00964"></a><span class="lineno">  964</span>    }</div>
 <div class="line"><a id="l00965" name="l00965"></a><span class="lineno">  965</span> </div>
-<div class="line"><a id="l00966" name="l00966"></a><span class="lineno">  966</span>    <span class="keyword">auto</span> <span class="keyword">const</span> sleNode = lpLedger-&gt;read(<a class="code hl_function" href="namespaceripple_1_1keylet.html#aaaeecce79e0ef09bd851bce0c0f2dfde">keylet::unchecked</a>(uNodeIndex));</div>
-<div class="line"><a id="l00967" name="l00967"></a><span class="lineno">  967</span> </div>
-<div class="line"><a id="l00968" name="l00968"></a><span class="lineno">  968</span>    <span class="keywordtype">bool</span> bNodeBinary = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00969" name="l00969"></a><span class="lineno">  969</span>    <span class="keywordflow">if</span> (context.<a class="code hl_variable" href="structripple_1_1RPC_1_1JsonContext.html#a036b2c14552fbca49011c3d0e78017fa">params</a>.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::binary))</div>
-<div class="line"><a id="l00970" name="l00970"></a><span class="lineno">  970</span>        bNodeBinary = context.<a class="code hl_variable" href="structripple_1_1RPC_1_1JsonContext.html#a036b2c14552fbca49011c3d0e78017fa">params</a>[jss::binary].<a class="code hl_function" href="classJson_1_1Value.html#ab693fb7b9b1595bb0adc49658bbf780d">asBool</a>();</div>
+<div class="line"><a id="l00966" name="l00966"></a><span class="lineno">  966</span>    <span class="keywordflow">if</span> (uNodeIndex.isZero())</div>
+<div class="line"><a id="l00967" name="l00967"></a><span class="lineno">  967</span>    {</div>
+<div class="line"><a id="l00968" name="l00968"></a><span class="lineno">  968</span>        jvResult[jss::error] = <span class="stringliteral">&quot;entryNotFound&quot;</span>;</div>
+<div class="line"><a id="l00969" name="l00969"></a><span class="lineno">  969</span>        <span class="keywordflow">return</span> jvResult;</div>
+<div class="line"><a id="l00970" name="l00970"></a><span class="lineno">  970</span>    }</div>
 <div class="line"><a id="l00971" name="l00971"></a><span class="lineno">  971</span> </div>
-<div class="line"><a id="l00972" name="l00972"></a><span class="lineno">  972</span>    <span class="keywordflow">if</span> (!sleNode)</div>
-<div class="line"><a id="l00973" name="l00973"></a><span class="lineno">  973</span>    {</div>
-<div class="line"><a id="l00974" name="l00974"></a><span class="lineno">  974</span>        <span class="comment">// Not found.</span></div>
-<div class="line"><a id="l00975" name="l00975"></a><span class="lineno">  975</span>        jvResult[jss::error] = <span class="stringliteral">&quot;entryNotFound&quot;</span>;</div>
-<div class="line"><a id="l00976" name="l00976"></a><span class="lineno">  976</span>        <span class="keywordflow">return</span> jvResult;</div>
-<div class="line"><a id="l00977" name="l00977"></a><span class="lineno">  977</span>    }</div>
-<div class="line"><a id="l00978" name="l00978"></a><span class="lineno">  978</span> </div>
-<div class="line"><a id="l00979" name="l00979"></a><span class="lineno">  979</span>    <span class="keywordflow">if</span> ((expectedType != <a class="code hl_enumvalue" href="namespaceripple.html#ac151bf19e1f4daae2b04c65c65117139a926f3c33237e0c1bb2d4cb8afc0c82b4">ltANY</a>) &amp;&amp; (expectedType != sleNode-&gt;getType()))</div>
-<div class="line"><a id="l00980" name="l00980"></a><span class="lineno">  980</span>    {</div>
-<div class="line"><a id="l00981" name="l00981"></a><span class="lineno">  981</span>        jvResult[jss::error] = <span class="stringliteral">&quot;unexpectedLedgerType&quot;</span>;</div>
+<div class="line"><a id="l00972" name="l00972"></a><span class="lineno">  972</span>    <span class="keyword">auto</span> <span class="keyword">const</span> sleNode = lpLedger-&gt;read(<a class="code hl_function" href="namespaceripple_1_1keylet.html#aaaeecce79e0ef09bd851bce0c0f2dfde">keylet::unchecked</a>(uNodeIndex));</div>
+<div class="line"><a id="l00973" name="l00973"></a><span class="lineno">  973</span> </div>
+<div class="line"><a id="l00974" name="l00974"></a><span class="lineno">  974</span>    <span class="keywordtype">bool</span> bNodeBinary = <span class="keyword">false</span>;</div>
+<div class="line"><a id="l00975" name="l00975"></a><span class="lineno">  975</span>    <span class="keywordflow">if</span> (context.<a class="code hl_variable" href="structripple_1_1RPC_1_1JsonContext.html#a036b2c14552fbca49011c3d0e78017fa">params</a>.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::binary))</div>
+<div class="line"><a id="l00976" name="l00976"></a><span class="lineno">  976</span>        bNodeBinary = context.<a class="code hl_variable" href="structripple_1_1RPC_1_1JsonContext.html#a036b2c14552fbca49011c3d0e78017fa">params</a>[jss::binary].<a class="code hl_function" href="classJson_1_1Value.html#ab693fb7b9b1595bb0adc49658bbf780d">asBool</a>();</div>
+<div class="line"><a id="l00977" name="l00977"></a><span class="lineno">  977</span> </div>
+<div class="line"><a id="l00978" name="l00978"></a><span class="lineno">  978</span>    <span class="keywordflow">if</span> (!sleNode)</div>
+<div class="line"><a id="l00979" name="l00979"></a><span class="lineno">  979</span>    {</div>
+<div class="line"><a id="l00980" name="l00980"></a><span class="lineno">  980</span>        <span class="comment">// Not found.</span></div>
+<div class="line"><a id="l00981" name="l00981"></a><span class="lineno">  981</span>        jvResult[jss::error] = <span class="stringliteral">&quot;entryNotFound&quot;</span>;</div>
 <div class="line"><a id="l00982" name="l00982"></a><span class="lineno">  982</span>        <span class="keywordflow">return</span> jvResult;</div>
 <div class="line"><a id="l00983" name="l00983"></a><span class="lineno">  983</span>    }</div>
 <div class="line"><a id="l00984" name="l00984"></a><span class="lineno">  984</span> </div>
-<div class="line"><a id="l00985" name="l00985"></a><span class="lineno">  985</span>    <span class="keywordflow">if</span> (bNodeBinary)</div>
+<div class="line"><a id="l00985" name="l00985"></a><span class="lineno">  985</span>    <span class="keywordflow">if</span> ((expectedType != <a class="code hl_enumvalue" href="namespaceripple.html#ac151bf19e1f4daae2b04c65c65117139a926f3c33237e0c1bb2d4cb8afc0c82b4">ltANY</a>) &amp;&amp; (expectedType != sleNode-&gt;getType()))</div>
 <div class="line"><a id="l00986" name="l00986"></a><span class="lineno">  986</span>    {</div>
-<div class="line"><a id="l00987" name="l00987"></a><span class="lineno">  987</span>        <a class="code hl_class" href="classripple_1_1Serializer.html">Serializer</a> s;</div>
-<div class="line"><a id="l00988" name="l00988"></a><span class="lineno">  988</span> </div>
-<div class="line"><a id="l00989" name="l00989"></a><span class="lineno">  989</span>        sleNode-&gt;add(s);</div>
+<div class="line"><a id="l00987" name="l00987"></a><span class="lineno">  987</span>        jvResult[jss::error] = <span class="stringliteral">&quot;unexpectedLedgerType&quot;</span>;</div>
+<div class="line"><a id="l00988" name="l00988"></a><span class="lineno">  988</span>        <span class="keywordflow">return</span> jvResult;</div>
+<div class="line"><a id="l00989" name="l00989"></a><span class="lineno">  989</span>    }</div>
 <div class="line"><a id="l00990" name="l00990"></a><span class="lineno">  990</span> </div>
-<div class="line"><a id="l00991" name="l00991"></a><span class="lineno">  991</span>        jvResult[jss::node_binary] = <a class="code hl_function" href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">strHex</a>(s.<a class="code hl_function" href="classripple_1_1Serializer.html#a4be06995bf7f2abee9df8a411303ca99">peekData</a>());</div>
-<div class="line"><a id="l00992" name="l00992"></a><span class="lineno">  992</span>        jvResult[jss::index] = <a class="code hl_function" href="namespaceripple.html#ac124fe6744b7fe887dec949b56b16d50">to_string</a>(uNodeIndex);</div>
-<div class="line"><a id="l00993" name="l00993"></a><span class="lineno">  993</span>    }</div>
-<div class="line"><a id="l00994" name="l00994"></a><span class="lineno">  994</span>    <span class="keywordflow">else</span></div>
-<div class="line"><a id="l00995" name="l00995"></a><span class="lineno">  995</span>    {</div>
-<div class="line"><a id="l00996" name="l00996"></a><span class="lineno">  996</span>        jvResult[jss::node] = sleNode-&gt;getJson(<a class="code hl_enumvalue" href="structripple_1_1JsonOptions.html#ab85e43ec84df987200d3355c3ba89f0aa1917451e3686dfe8d5016670eb87ab33">JsonOptions::none</a>);</div>
-<div class="line"><a id="l00997" name="l00997"></a><span class="lineno">  997</span>        jvResult[jss::index] = <a class="code hl_function" href="namespaceripple.html#ac124fe6744b7fe887dec949b56b16d50">to_string</a>(uNodeIndex);</div>
-<div class="line"><a id="l00998" name="l00998"></a><span class="lineno">  998</span>    }</div>
-<div class="line"><a id="l00999" name="l00999"></a><span class="lineno">  999</span> </div>
-<div class="line"><a id="l01000" name="l01000"></a><span class="lineno"> 1000</span>    <span class="keywordflow">return</span> jvResult;</div>
-<div class="line"><a id="l01001" name="l01001"></a><span class="lineno"> 1001</span>}</div>
-<div class="line"><a id="l01002" name="l01002"></a><span class="lineno"> 1002</span> </div>
-<div class="line"><a id="l01003" name="l01003"></a><span class="lineno"> 1003</span><a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;org::xrpl::rpc::v1::GetLedgerEntryResponse, grpc::Status&gt;</a></div>
-<div class="line"><a id="l01004" name="l01004"></a><span class="lineno"><a class="line" href="namespaceripple.html#a8bbd46fdc8783ec29538b3d4a2e8178f"> 1004</a></span><a class="code hl_function" href="namespaceripple.html#a8bbd46fdc8783ec29538b3d4a2e8178f">doLedgerEntryGrpc</a>(</div>
-<div class="line"><a id="l01005" name="l01005"></a><span class="lineno"> 1005</span>    <a class="code hl_struct" href="structripple_1_1RPC_1_1GRPCContext.html">RPC::GRPCContext&lt;org::xrpl::rpc::v1::GetLedgerEntryRequest&gt;</a>&amp; context)</div>
-<div class="line"><a id="l01006" name="l01006"></a><span class="lineno"> 1006</span>{</div>
-<div class="line"><a id="l01007" name="l01007"></a><span class="lineno"> 1007</span>    org::xrpl::rpc::v1::GetLedgerEntryRequest&amp; request = context.<a class="code hl_variable" href="structripple_1_1RPC_1_1GRPCContext.html#af072cfd1412032444cefd2f4dcf29555">params</a>;</div>
-<div class="line"><a id="l01008" name="l01008"></a><span class="lineno"> 1008</span>    org::xrpl::rpc::v1::GetLedgerEntryResponse response;</div>
-<div class="line"><a id="l01009" name="l01009"></a><span class="lineno"> 1009</span>    grpc::Status status = grpc::Status::OK;</div>
-<div class="line"><a id="l01010" name="l01010"></a><span class="lineno"> 1010</span> </div>
-<div class="line"><a id="l01011" name="l01011"></a><span class="lineno"> 1011</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a> ledger;</div>
-<div class="line"><a id="l01012" name="l01012"></a><span class="lineno"> 1012</span>    <span class="keywordflow">if</span> (<span class="keyword">auto</span> <span class="keyword">const</span> status = <a class="code hl_function" href="namespaceripple_1_1RPC.html#a104dbc5195143f3a17ab8b9af1ada0fc">RPC::ledgerFromRequest</a>(ledger, context))</div>
-<div class="line"><a id="l01013" name="l01013"></a><span class="lineno"> 1013</span>    {</div>
-<div class="line"><a id="l01014" name="l01014"></a><span class="lineno"> 1014</span>        grpc::Status errorStatus;</div>
-<div class="line"><a id="l01015" name="l01015"></a><span class="lineno"> 1015</span>        <span class="keywordflow">if</span> (status.toErrorCode() == <a class="code hl_enumvalue" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a82ddebc5ec7a37ff38892487277bf9c4">rpcINVALID_PARAMS</a>)</div>
-<div class="line"><a id="l01016" name="l01016"></a><span class="lineno"> 1016</span>        {</div>
-<div class="line"><a id="l01017" name="l01017"></a><span class="lineno"> 1017</span>            errorStatus = grpc::Status(</div>
-<div class="line"><a id="l01018" name="l01018"></a><span class="lineno"> 1018</span>                grpc::StatusCode::INVALID_ARGUMENT, status.message());</div>
-<div class="line"><a id="l01019" name="l01019"></a><span class="lineno"> 1019</span>        }</div>
-<div class="line"><a id="l01020" name="l01020"></a><span class="lineno"> 1020</span>        <span class="keywordflow">else</span></div>
-<div class="line"><a id="l01021" name="l01021"></a><span class="lineno"> 1021</span>        {</div>
-<div class="line"><a id="l01022" name="l01022"></a><span class="lineno"> 1022</span>            errorStatus =</div>
-<div class="line"><a id="l01023" name="l01023"></a><span class="lineno"> 1023</span>                grpc::Status(grpc::StatusCode::NOT_FOUND, status.message());</div>
-<div class="line"><a id="l01024" name="l01024"></a><span class="lineno"> 1024</span>        }</div>
-<div class="line"><a id="l01025" name="l01025"></a><span class="lineno"> 1025</span>        <span class="keywordflow">return</span> {response, errorStatus};</div>
-<div class="line"><a id="l01026" name="l01026"></a><span class="lineno"> 1026</span>    }</div>
-<div class="line"><a id="l01027" name="l01027"></a><span class="lineno"> 1027</span> </div>
-<div class="line"><a id="l01028" name="l01028"></a><span class="lineno"> 1028</span>    <span class="keyword">auto</span> <span class="keyword">const</span> key = <a class="code hl_function" href="classripple_1_1base__uint.html#a4276e5c625a8033b0050251cddba741e">uint256::fromVoidChecked</a>(request.key());</div>
-<div class="line"><a id="l01029" name="l01029"></a><span class="lineno"> 1029</span>    <span class="keywordflow">if</span> (!key)</div>
-<div class="line"><a id="l01030" name="l01030"></a><span class="lineno"> 1030</span>    {</div>
-<div class="line"><a id="l01031" name="l01031"></a><span class="lineno"> 1031</span>        grpc::Status errorStatus{</div>
-<div class="line"><a id="l01032" name="l01032"></a><span class="lineno"> 1032</span>            grpc::StatusCode::INVALID_ARGUMENT, <span class="stringliteral">&quot;index malformed&quot;</span>};</div>
-<div class="line"><a id="l01033" name="l01033"></a><span class="lineno"> 1033</span>        <span class="keywordflow">return</span> {response, errorStatus};</div>
-<div class="line"><a id="l01034" name="l01034"></a><span class="lineno"> 1034</span>    }</div>
-<div class="line"><a id="l01035" name="l01035"></a><span class="lineno"> 1035</span> </div>
-<div class="line"><a id="l01036" name="l01036"></a><span class="lineno"> 1036</span>    <span class="keyword">auto</span> <span class="keyword">const</span> sleNode = ledger-&gt;read(<a class="code hl_function" href="namespaceripple_1_1keylet.html#aaaeecce79e0ef09bd851bce0c0f2dfde">keylet::unchecked</a>(*key));</div>
-<div class="line"><a id="l01037" name="l01037"></a><span class="lineno"> 1037</span>    <span class="keywordflow">if</span> (!sleNode)</div>
-<div class="line"><a id="l01038" name="l01038"></a><span class="lineno"> 1038</span>    {</div>
-<div class="line"><a id="l01039" name="l01039"></a><span class="lineno"> 1039</span>        grpc::Status errorStatus{</div>
-<div class="line"><a id="l01040" name="l01040"></a><span class="lineno"> 1040</span>            grpc::StatusCode::NOT_FOUND, <span class="stringliteral">&quot;object not found&quot;</span>};</div>
-<div class="line"><a id="l01041" name="l01041"></a><span class="lineno"> 1041</span>        <span class="keywordflow">return</span> {response, errorStatus};</div>
-<div class="line"><a id="l01042" name="l01042"></a><span class="lineno"> 1042</span>    }</div>
-<div class="line"><a id="l01043" name="l01043"></a><span class="lineno"> 1043</span> </div>
-<div class="line"><a id="l01044" name="l01044"></a><span class="lineno"> 1044</span>    <a class="code hl_class" href="classripple_1_1Serializer.html">Serializer</a> s;</div>
-<div class="line"><a id="l01045" name="l01045"></a><span class="lineno"> 1045</span>    sleNode-&gt;add(s);</div>
-<div class="line"><a id="l01046" name="l01046"></a><span class="lineno"> 1046</span> </div>
-<div class="line"><a id="l01047" name="l01047"></a><span class="lineno"> 1047</span>    <span class="keyword">auto</span>&amp; stateObject = *response.mutable_ledger_object();</div>
-<div class="line"><a id="l01048" name="l01048"></a><span class="lineno"> 1048</span>    stateObject.set_data(s.<a class="code hl_function" href="classripple_1_1Serializer.html#a4be06995bf7f2abee9df8a411303ca99">peekData</a>().<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/data.html">data</a>(), s.<a class="code hl_function" href="classripple_1_1Serializer.html#aa5c7aa53db0c7c90c6a86dd5144e9255">getLength</a>());</div>
-<div class="line"><a id="l01049" name="l01049"></a><span class="lineno"> 1049</span>    stateObject.set_key(request.key());</div>
-<div class="line"><a id="l01050" name="l01050"></a><span class="lineno"> 1050</span>    *(response.mutable_ledger()) = request.ledger();</div>
-<div class="line"><a id="l01051" name="l01051"></a><span class="lineno"> 1051</span>    <span class="keywordflow">return</span> {response, status};</div>
-<div class="line"><a id="l01052" name="l01052"></a><span class="lineno"> 1052</span>}</div>
-<div class="line"><a id="l01053" name="l01053"></a><span class="lineno"> 1053</span>}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a id="l00991" name="l00991"></a><span class="lineno">  991</span>    <span class="keywordflow">if</span> (bNodeBinary)</div>
+<div class="line"><a id="l00992" name="l00992"></a><span class="lineno">  992</span>    {</div>
+<div class="line"><a id="l00993" name="l00993"></a><span class="lineno">  993</span>        <a class="code hl_class" href="classripple_1_1Serializer.html">Serializer</a> s;</div>
+<div class="line"><a id="l00994" name="l00994"></a><span class="lineno">  994</span> </div>
+<div class="line"><a id="l00995" name="l00995"></a><span class="lineno">  995</span>        sleNode-&gt;add(s);</div>
+<div class="line"><a id="l00996" name="l00996"></a><span class="lineno">  996</span> </div>
+<div class="line"><a id="l00997" name="l00997"></a><span class="lineno">  997</span>        jvResult[jss::node_binary] = <a class="code hl_function" href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">strHex</a>(s.<a class="code hl_function" href="classripple_1_1Serializer.html#a4be06995bf7f2abee9df8a411303ca99">peekData</a>());</div>
+<div class="line"><a id="l00998" name="l00998"></a><span class="lineno">  998</span>        jvResult[jss::index] = <a class="code hl_function" href="namespaceripple.html#ac124fe6744b7fe887dec949b56b16d50">to_string</a>(uNodeIndex);</div>
+<div class="line"><a id="l00999" name="l00999"></a><span class="lineno">  999</span>    }</div>
+<div class="line"><a id="l01000" name="l01000"></a><span class="lineno"> 1000</span>    <span class="keywordflow">else</span></div>
+<div class="line"><a id="l01001" name="l01001"></a><span class="lineno"> 1001</span>    {</div>
+<div class="line"><a id="l01002" name="l01002"></a><span class="lineno"> 1002</span>        jvResult[jss::node] = sleNode-&gt;getJson(<a class="code hl_enumvalue" href="structripple_1_1JsonOptions.html#ab85e43ec84df987200d3355c3ba89f0aa1917451e3686dfe8d5016670eb87ab33">JsonOptions::none</a>);</div>
+<div class="line"><a id="l01003" name="l01003"></a><span class="lineno"> 1003</span>        jvResult[jss::index] = <a class="code hl_function" href="namespaceripple.html#ac124fe6744b7fe887dec949b56b16d50">to_string</a>(uNodeIndex);</div>
+<div class="line"><a id="l01004" name="l01004"></a><span class="lineno"> 1004</span>    }</div>
+<div class="line"><a id="l01005" name="l01005"></a><span class="lineno"> 1005</span> </div>
+<div class="line"><a id="l01006" name="l01006"></a><span class="lineno"> 1006</span>    <span class="keywordflow">return</span> jvResult;</div>
+<div class="line"><a id="l01007" name="l01007"></a><span class="lineno"> 1007</span>}</div>
+<div class="line"><a id="l01008" name="l01008"></a><span class="lineno"> 1008</span> </div>
+<div class="line"><a id="l01009" name="l01009"></a><span class="lineno"> 1009</span><a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;org::xrpl::rpc::v1::GetLedgerEntryResponse, grpc::Status&gt;</a></div>
+<div class="line"><a id="l01010" name="l01010"></a><span class="lineno"><a class="line" href="namespaceripple.html#a8bbd46fdc8783ec29538b3d4a2e8178f"> 1010</a></span><a class="code hl_function" href="namespaceripple.html#a8bbd46fdc8783ec29538b3d4a2e8178f">doLedgerEntryGrpc</a>(</div>
+<div class="line"><a id="l01011" name="l01011"></a><span class="lineno"> 1011</span>    <a class="code hl_struct" href="structripple_1_1RPC_1_1GRPCContext.html">RPC::GRPCContext&lt;org::xrpl::rpc::v1::GetLedgerEntryRequest&gt;</a>&amp; context)</div>
+<div class="line"><a id="l01012" name="l01012"></a><span class="lineno"> 1012</span>{</div>
+<div class="line"><a id="l01013" name="l01013"></a><span class="lineno"> 1013</span>    org::xrpl::rpc::v1::GetLedgerEntryRequest&amp; request = context.<a class="code hl_variable" href="structripple_1_1RPC_1_1GRPCContext.html#af072cfd1412032444cefd2f4dcf29555">params</a>;</div>
+<div class="line"><a id="l01014" name="l01014"></a><span class="lineno"> 1014</span>    org::xrpl::rpc::v1::GetLedgerEntryResponse response;</div>
+<div class="line"><a id="l01015" name="l01015"></a><span class="lineno"> 1015</span>    grpc::Status status = grpc::Status::OK;</div>
+<div class="line"><a id="l01016" name="l01016"></a><span class="lineno"> 1016</span> </div>
+<div class="line"><a id="l01017" name="l01017"></a><span class="lineno"> 1017</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;ReadView const&gt;</a> ledger;</div>
+<div class="line"><a id="l01018" name="l01018"></a><span class="lineno"> 1018</span>    <span class="keywordflow">if</span> (<span class="keyword">auto</span> <span class="keyword">const</span> status = <a class="code hl_function" href="namespaceripple_1_1RPC.html#a104dbc5195143f3a17ab8b9af1ada0fc">RPC::ledgerFromRequest</a>(ledger, context))</div>
+<div class="line"><a id="l01019" name="l01019"></a><span class="lineno"> 1019</span>    {</div>
+<div class="line"><a id="l01020" name="l01020"></a><span class="lineno"> 1020</span>        grpc::Status errorStatus;</div>
+<div class="line"><a id="l01021" name="l01021"></a><span class="lineno"> 1021</span>        <span class="keywordflow">if</span> (status.toErrorCode() == <a class="code hl_enumvalue" href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a82ddebc5ec7a37ff38892487277bf9c4">rpcINVALID_PARAMS</a>)</div>
+<div class="line"><a id="l01022" name="l01022"></a><span class="lineno"> 1022</span>        {</div>
+<div class="line"><a id="l01023" name="l01023"></a><span class="lineno"> 1023</span>            errorStatus = grpc::Status(</div>
+<div class="line"><a id="l01024" name="l01024"></a><span class="lineno"> 1024</span>                grpc::StatusCode::INVALID_ARGUMENT, status.message());</div>
+<div class="line"><a id="l01025" name="l01025"></a><span class="lineno"> 1025</span>        }</div>
+<div class="line"><a id="l01026" name="l01026"></a><span class="lineno"> 1026</span>        <span class="keywordflow">else</span></div>
+<div class="line"><a id="l01027" name="l01027"></a><span class="lineno"> 1027</span>        {</div>
+<div class="line"><a id="l01028" name="l01028"></a><span class="lineno"> 1028</span>            errorStatus =</div>
+<div class="line"><a id="l01029" name="l01029"></a><span class="lineno"> 1029</span>                grpc::Status(grpc::StatusCode::NOT_FOUND, status.message());</div>
+<div class="line"><a id="l01030" name="l01030"></a><span class="lineno"> 1030</span>        }</div>
+<div class="line"><a id="l01031" name="l01031"></a><span class="lineno"> 1031</span>        <span class="keywordflow">return</span> {response, errorStatus};</div>
+<div class="line"><a id="l01032" name="l01032"></a><span class="lineno"> 1032</span>    }</div>
+<div class="line"><a id="l01033" name="l01033"></a><span class="lineno"> 1033</span> </div>
+<div class="line"><a id="l01034" name="l01034"></a><span class="lineno"> 1034</span>    <span class="keyword">auto</span> <span class="keyword">const</span> key = <a class="code hl_function" href="classripple_1_1base__uint.html#a4276e5c625a8033b0050251cddba741e">uint256::fromVoidChecked</a>(request.key());</div>
+<div class="line"><a id="l01035" name="l01035"></a><span class="lineno"> 1035</span>    <span class="keywordflow">if</span> (!key)</div>
+<div class="line"><a id="l01036" name="l01036"></a><span class="lineno"> 1036</span>    {</div>
+<div class="line"><a id="l01037" name="l01037"></a><span class="lineno"> 1037</span>        grpc::Status errorStatus{</div>
+<div class="line"><a id="l01038" name="l01038"></a><span class="lineno"> 1038</span>            grpc::StatusCode::INVALID_ARGUMENT, <span class="stringliteral">&quot;index malformed&quot;</span>};</div>
+<div class="line"><a id="l01039" name="l01039"></a><span class="lineno"> 1039</span>        <span class="keywordflow">return</span> {response, errorStatus};</div>
+<div class="line"><a id="l01040" name="l01040"></a><span class="lineno"> 1040</span>    }</div>
+<div class="line"><a id="l01041" name="l01041"></a><span class="lineno"> 1041</span> </div>
+<div class="line"><a id="l01042" name="l01042"></a><span class="lineno"> 1042</span>    <span class="keyword">auto</span> <span class="keyword">const</span> sleNode = ledger-&gt;read(<a class="code hl_function" href="namespaceripple_1_1keylet.html#aaaeecce79e0ef09bd851bce0c0f2dfde">keylet::unchecked</a>(*key));</div>
+<div class="line"><a id="l01043" name="l01043"></a><span class="lineno"> 1043</span>    <span class="keywordflow">if</span> (!sleNode)</div>
+<div class="line"><a id="l01044" name="l01044"></a><span class="lineno"> 1044</span>    {</div>
+<div class="line"><a id="l01045" name="l01045"></a><span class="lineno"> 1045</span>        grpc::Status errorStatus{</div>
+<div class="line"><a id="l01046" name="l01046"></a><span class="lineno"> 1046</span>            grpc::StatusCode::NOT_FOUND, <span class="stringliteral">&quot;object not found&quot;</span>};</div>
+<div class="line"><a id="l01047" name="l01047"></a><span class="lineno"> 1047</span>        <span class="keywordflow">return</span> {response, errorStatus};</div>
+<div class="line"><a id="l01048" name="l01048"></a><span class="lineno"> 1048</span>    }</div>
+<div class="line"><a id="l01049" name="l01049"></a><span class="lineno"> 1049</span> </div>
+<div class="line"><a id="l01050" name="l01050"></a><span class="lineno"> 1050</span>    <a class="code hl_class" href="classripple_1_1Serializer.html">Serializer</a> s;</div>
+<div class="line"><a id="l01051" name="l01051"></a><span class="lineno"> 1051</span>    sleNode-&gt;add(s);</div>
+<div class="line"><a id="l01052" name="l01052"></a><span class="lineno"> 1052</span> </div>
+<div class="line"><a id="l01053" name="l01053"></a><span class="lineno"> 1053</span>    <span class="keyword">auto</span>&amp; stateObject = *response.mutable_ledger_object();</div>
+<div class="line"><a id="l01054" name="l01054"></a><span class="lineno"> 1054</span>    stateObject.set_data(s.<a class="code hl_function" href="classripple_1_1Serializer.html#a4be06995bf7f2abee9df8a411303ca99">peekData</a>().<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/data.html">data</a>(), s.<a class="code hl_function" href="classripple_1_1Serializer.html#aa5c7aa53db0c7c90c6a86dd5144e9255">getLength</a>());</div>
+<div class="line"><a id="l01055" name="l01055"></a><span class="lineno"> 1055</span>    stateObject.set_key(request.key());</div>
+<div class="line"><a id="l01056" name="l01056"></a><span class="lineno"> 1056</span>    *(response.mutable_ledger()) = request.ledger();</div>
+<div class="line"><a id="l01057" name="l01057"></a><span class="lineno"> 1057</span>    <span class="keywordflow">return</span> {response, status};</div>
+<div class="line"><a id="l01058" name="l01058"></a><span class="lineno"> 1058</span>}</div>
+<div class="line"><a id="l01059" name="l01059"></a><span class="lineno"> 1059</span>}  <span class="comment">// namespace ripple</span></div>
 <div class="ttc" id="aclassJson_1_1StaticString_html"><div class="ttname"><a href="classJson_1_1StaticString.html">Json::StaticString</a></div><div class="ttdoc">Lightweight wrapper to tag static string.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00061">json_value.h:62</a></div></div>
 <div class="ttc" id="aclassJson_1_1Value_html"><div class="ttname"><a href="classJson_1_1Value.html">Json::Value</a></div><div class="ttdoc">Represents a JSON value.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00147">json_value.h:148</a></div></div>
 <div class="ttc" id="aclassJson_1_1Value_html_a1627eb9d6568d6d0252fa8bb711c0a59"><div class="ttname"><a href="classJson_1_1Value.html#a1627eb9d6568d6d0252fa8bb711c0a59">Json::Value::isArray</a></div><div class="ttdeci">bool isArray() const</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8cpp_source.html#l01034">json_value.cpp:1034</a></div></div>
@@ -1195,7 +1201,7 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html_a14daff47b30997c39410c1920588318d"><div class="ttname"><a href="namespaceripple.html#a14daff47b30997c39410c1920588318d">ripple::parseIndex</a></div><div class="ttdeci">static std::optional&lt; uint256 &gt; parseIndex(Json::Value const &amp;params, Json::Value &amp;jvResult)</div><div class="ttdef"><b>Definition:</b> <a href="LedgerEntry_8cpp_source.html#l00072">LedgerEntry.cpp:72</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a19d245e6bd5e15444887eaa9b37062e3"><div class="ttname"><a href="namespaceripple.html#a19d245e6bd5e15444887eaa9b37062e3">ripple::parseAuthorizeCredentials</a></div><div class="ttdeci">static STArray parseAuthorizeCredentials(Json::Value const &amp;jv)</div><div class="ttdef"><b>Definition:</b> <a href="LedgerEntry_8cpp_source.html#l00041">LedgerEntry.cpp:41</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a2127aa882d06ad6aaae928d2e80fb395"><div class="ttname"><a href="namespaceripple.html#a2127aa882d06ad6aaae928d2e80fb395">ripple::strUnHex</a></div><div class="ttdeci">std::optional&lt; Blob &gt; strUnHex(std::size_t strSize, Iterator begin, Iterator end)</div><div class="ttdef"><b>Definition:</b> <a href="StringUtilities_8h_source.html#l00052">StringUtilities.h:52</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a24a33406a7f084c597b43440d319b388"><div class="ttname"><a href="namespaceripple.html#a24a33406a7f084c597b43440d319b388">ripple::doLedgerEntry</a></div><div class="ttdeci">Json::Value doLedgerEntry(RPC::JsonContext &amp;)</div><div class="ttdef"><b>Definition:</b> <a href="LedgerEntry_8cpp_source.html#l00865">LedgerEntry.cpp:865</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a24a33406a7f084c597b43440d319b388"><div class="ttname"><a href="namespaceripple.html#a24a33406a7f084c597b43440d319b388">ripple::doLedgerEntry</a></div><div class="ttdeci">Json::Value doLedgerEntry(RPC::JsonContext &amp;)</div><div class="ttdef"><b>Definition:</b> <a href="LedgerEntry_8cpp_source.html#l00871">LedgerEntry.cpp:871</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a271b71a040a8f7cc7994fab6d083e48b"><div class="ttname"><a href="namespaceripple.html#a271b71a040a8f7cc7994fab6d083e48b">ripple::parsePaymentChannel</a></div><div class="ttdeci">static std::optional&lt; uint256 &gt; parsePaymentChannel(Json::Value const &amp;params, Json::Value &amp;jvResult)</div><div class="ttdef"><b>Definition:</b> <a href="LedgerEntry_8cpp_source.html#l00306">LedgerEntry.cpp:306</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a32d6d3ce1a48272b677d2c88b1d30932a82ddebc5ec7a37ff38892487277bf9c4"><div class="ttname"><a href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a82ddebc5ec7a37ff38892487277bf9c4">ripple::rpcINVALID_PARAMS</a></div><div class="ttdeci">@ rpcINVALID_PARAMS</div><div class="ttdef"><b>Definition:</b> <a href="ErrorCodes_8h_source.html#l00084">ErrorCodes.h:84</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a3bcd7621e12a7e4cad2626737f950d0f"><div class="ttname"><a href="namespaceripple.html#a3bcd7621e12a7e4cad2626737f950d0f">ripple::parseAMM</a></div><div class="ttdeci">static std::optional&lt; uint256 &gt; parseAMM(Json::Value const &amp;params, Json::Value &amp;jvResult)</div><div class="ttdef"><b>Definition:</b> <a href="LedgerEntry_8cpp_source.html#l00405">LedgerEntry.cpp:405</a></div></div>
@@ -1211,7 +1217,7 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html_a86e358ce3f06ff049af13c2342791cf8"><div class="ttname"><a href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">ripple::strHex</a></div><div class="ttdeci">std::string strHex(FwdIt begin, FwdIt end)</div><div class="ttdef"><b>Definition:</b> <a href="strHex_8h_source.html#l00030">strHex.h:30</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a877ac66fea02fe3284fed7308cb66442"><div class="ttname"><a href="namespaceripple.html#a877ac66fea02fe3284fed7308cb66442">ripple::parseEscrow</a></div><div class="ttdeci">static std::optional&lt; uint256 &gt; parseEscrow(Json::Value const &amp;params, Json::Value &amp;jvResult)</div><div class="ttdef"><b>Definition:</b> <a href="LedgerEntry_8cpp_source.html#l00242">LedgerEntry.cpp:242</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a887b5df2b9a0afab88825b055004c7ce"><div class="ttname"><a href="namespaceripple.html#a887b5df2b9a0afab88825b055004c7ce">ripple::maxCredentialsArraySize</a></div><div class="ttdeci">std::size_t constexpr maxCredentialsArraySize</div><div class="ttdoc">The maximum number of credentials can be passed in array.</div><div class="ttdef"><b>Definition:</b> <a href="Protocol_8h_source.html#l00107">Protocol.h:107</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a8bbd46fdc8783ec29538b3d4a2e8178f"><div class="ttname"><a href="namespaceripple.html#a8bbd46fdc8783ec29538b3d4a2e8178f">ripple::doLedgerEntryGrpc</a></div><div class="ttdeci">std::pair&lt; org::xrpl::rpc::v1::GetLedgerEntryResponse, grpc::Status &gt; doLedgerEntryGrpc(RPC::GRPCContext&lt; org::xrpl::rpc::v1::GetLedgerEntryRequest &gt; &amp;context)</div><div class="ttdef"><b>Definition:</b> <a href="LedgerEntry_8cpp_source.html#l01004">LedgerEntry.cpp:1004</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a8bbd46fdc8783ec29538b3d4a2e8178f"><div class="ttname"><a href="namespaceripple.html#a8bbd46fdc8783ec29538b3d4a2e8178f">ripple::doLedgerEntryGrpc</a></div><div class="ttdeci">std::pair&lt; org::xrpl::rpc::v1::GetLedgerEntryResponse, grpc::Status &gt; doLedgerEntryGrpc(RPC::GRPCContext&lt; org::xrpl::rpc::v1::GetLedgerEntryRequest &gt; &amp;context)</div><div class="ttdef"><b>Definition:</b> <a href="LedgerEntry_8cpp_source.html#l01010">LedgerEntry.cpp:1010</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a8c84645e06c562f292355cd97298f291"><div class="ttname"><a href="namespaceripple.html#a8c84645e06c562f292355cd97298f291">ripple::parseXChainOwnedCreateAccountClaimID</a></div><div class="ttdeci">static std::optional&lt; uint256 &gt; parseXChainOwnedCreateAccountClaimID(Json::Value const &amp;claim_id, Json::Value &amp;jvResult)</div><div class="ttdef"><b>Definition:</b> <a href="LedgerEntry_8cpp_source.html#l00561">LedgerEntry.cpp:561</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a8ca5cc08ba7dc69eee680ce9f3e26d80"><div class="ttname"><a href="namespaceripple.html#a8ca5cc08ba7dc69eee680ce9f3e26d80">ripple::maxCredentialTypeLength</a></div><div class="ttdeci">std::size_t constexpr maxCredentialTypeLength</div><div class="ttdoc">The maximum length of a CredentialType inside a Credential.</div><div class="ttdef"><b>Definition:</b> <a href="Protocol_8h_source.html#l00104">Protocol.h:104</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ab2bc2775fea3f2fd9210def82b415178"><div class="ttname"><a href="namespaceripple.html#ab2bc2775fea3f2fd9210def82b415178">ripple::getTicketIndex</a></div><div class="ttdeci">uint256 getTicketIndex(AccountID const &amp;account, std::uint32_t uSequence)</div><div class="ttdef"><b>Definition:</b> <a href="Indexes_8cpp_source.html#l00147">Indexes.cpp:147</a></div></div>
@@ -1235,10 +1241,10 @@ $(function() {
 <div class="ttc" id="astructripple_1_1JsonOptions_html_ab85e43ec84df987200d3355c3ba89f0aa1917451e3686dfe8d5016670eb87ab33"><div class="ttname"><a href="structripple_1_1JsonOptions.html#ab85e43ec84df987200d3355c3ba89f0aa1917451e3686dfe8d5016670eb87ab33">ripple::JsonOptions::none</a></div><div class="ttdeci">@ none</div><div class="ttdef"><b>Definition:</b> <a href="STBase_8h_source.html#l00044">STBase.h:44</a></div></div>
 <div class="ttc" id="astructripple_1_1Keylet_html"><div class="ttname"><a href="structripple_1_1Keylet.html">ripple::Keylet</a></div><div class="ttdoc">A pair of SHAMap key and LedgerEntryType.</div><div class="ttdef"><b>Definition:</b> <a href="Keylet_8h_source.html#l00038">Keylet.h:39</a></div></div>
 <div class="ttc" id="astructripple_1_1Keylet_html_a482983062843a8682fcea76a309c73db"><div class="ttname"><a href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">ripple::Keylet::key</a></div><div class="ttdeci">uint256 key</div><div class="ttdef"><b>Definition:</b> <a href="Keylet_8h_source.html#l00040">Keylet.h:40</a></div></div>
-<div class="ttc" id="astructripple_1_1LedgerEntry_html"><div class="ttname"><a href="structripple_1_1LedgerEntry.html">ripple::LedgerEntry</a></div><div class="ttdef"><b>Definition:</b> <a href="LedgerEntry_8cpp_source.html#l00852">LedgerEntry.cpp:853</a></div></div>
-<div class="ttc" id="astructripple_1_1LedgerEntry_html_a3a47deed0dd3efc9856ecbdc4acfd6d6"><div class="ttname"><a href="structripple_1_1LedgerEntry.html#a3a47deed0dd3efc9856ecbdc4acfd6d6">ripple::LedgerEntry::expectedType</a></div><div class="ttdeci">LedgerEntryType expectedType</div><div class="ttdef"><b>Definition:</b> <a href="LedgerEntry_8cpp_source.html#l00856">LedgerEntry.cpp:856</a></div></div>
-<div class="ttc" id="astructripple_1_1LedgerEntry_html_ad9fb239b39c7340e81b4e2550df103cc"><div class="ttname"><a href="structripple_1_1LedgerEntry.html#ad9fb239b39c7340e81b4e2550df103cc">ripple::LedgerEntry::fieldName</a></div><div class="ttdeci">Json::StaticString fieldName</div><div class="ttdef"><b>Definition:</b> <a href="LedgerEntry_8cpp_source.html#l00854">LedgerEntry.cpp:854</a></div></div>
-<div class="ttc" id="astructripple_1_1LedgerEntry_html_aeec66da2c9afc6680bfe7ae633ecf8b1"><div class="ttname"><a href="structripple_1_1LedgerEntry.html#aeec66da2c9afc6680bfe7ae633ecf8b1">ripple::LedgerEntry::parseFunction</a></div><div class="ttdeci">FunctionType parseFunction</div><div class="ttdef"><b>Definition:</b> <a href="LedgerEntry_8cpp_source.html#l00855">LedgerEntry.cpp:855</a></div></div>
+<div class="ttc" id="astructripple_1_1LedgerEntry_html"><div class="ttname"><a href="structripple_1_1LedgerEntry.html">ripple::LedgerEntry</a></div><div class="ttdef"><b>Definition:</b> <a href="LedgerEntry_8cpp_source.html#l00858">LedgerEntry.cpp:859</a></div></div>
+<div class="ttc" id="astructripple_1_1LedgerEntry_html_a3a47deed0dd3efc9856ecbdc4acfd6d6"><div class="ttname"><a href="structripple_1_1LedgerEntry.html#a3a47deed0dd3efc9856ecbdc4acfd6d6">ripple::LedgerEntry::expectedType</a></div><div class="ttdeci">LedgerEntryType expectedType</div><div class="ttdef"><b>Definition:</b> <a href="LedgerEntry_8cpp_source.html#l00862">LedgerEntry.cpp:862</a></div></div>
+<div class="ttc" id="astructripple_1_1LedgerEntry_html_ad9fb239b39c7340e81b4e2550df103cc"><div class="ttname"><a href="structripple_1_1LedgerEntry.html#ad9fb239b39c7340e81b4e2550df103cc">ripple::LedgerEntry::fieldName</a></div><div class="ttdeci">Json::StaticString fieldName</div><div class="ttdef"><b>Definition:</b> <a href="LedgerEntry_8cpp_source.html#l00860">LedgerEntry.cpp:860</a></div></div>
+<div class="ttc" id="astructripple_1_1LedgerEntry_html_aeec66da2c9afc6680bfe7ae633ecf8b1"><div class="ttname"><a href="structripple_1_1LedgerEntry.html#aeec66da2c9afc6680bfe7ae633ecf8b1">ripple::LedgerEntry::parseFunction</a></div><div class="ttdeci">FunctionType parseFunction</div><div class="ttdef"><b>Definition:</b> <a href="LedgerEntry_8cpp_source.html#l00861">LedgerEntry.cpp:861</a></div></div>
 <div class="ttc" id="astructripple_1_1RPC_1_1Context_html_a0eab3b46cc23d67a6d16d1fb6bcaf0a2"><div class="ttname"><a href="structripple_1_1RPC_1_1Context.html#a0eab3b46cc23d67a6d16d1fb6bcaf0a2">ripple::RPC::Context::apiVersion</a></div><div class="ttdeci">unsigned int apiVersion</div><div class="ttdef"><b>Definition:</b> <a href="Context_8h_source.html#l00049">Context.h:49</a></div></div>
 <div class="ttc" id="astructripple_1_1RPC_1_1GRPCContext_html"><div class="ttname"><a href="structripple_1_1RPC_1_1GRPCContext.html">ripple::RPC::GRPCContext</a></div><div class="ttdef"><b>Definition:</b> <a href="Context_8h_source.html#l00069">Context.h:70</a></div></div>
 <div class="ttc" id="astructripple_1_1RPC_1_1GRPCContext_html_af072cfd1412032444cefd2f4dcf29555"><div class="ttname"><a href="structripple_1_1RPC_1_1GRPCContext.html#af072cfd1412032444cefd2f4dcf29555">ripple::RPC::GRPCContext::params</a></div><div class="ttdeci">RequestType params</div><div class="ttdef"><b>Definition:</b> <a href="Context_8h_source.html#l00071">Context.h:71</a></div></div>
