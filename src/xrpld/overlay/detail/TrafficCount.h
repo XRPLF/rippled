@@ -75,6 +75,11 @@ public:
         proposal,
         validation,
         validatorlist,
+        proposal_untrusted,
+        validation_untrusted,
+        proposal_duplicate,
+        validation_duplicate,
+        transaction_duplicate,
 
         // TMHaveSet message:
         get_set,    // transaction sets we try to get
@@ -202,16 +207,21 @@ public:
 
 protected:
     std::array<TrafficStats, category::unknown + 1> counts_{{
-        {"overhead"},           // category::base
-        {"overhead_cluster"},   // category::cluster
-        {"overhead_overlay"},   // category::overlay
-        {"overhead_manifest"},  // category::manifests
-        {"transactions"},       // category::transaction
-        {"proposals"},          // category::proposal
-        {"validations"},        // category::validation
-        {"validator_lists"},    // category::validatorlist
-        {"set_get"},            // category::get_set
-        {"set_share"},          // category::share_set
+        {"overhead"},               // category::base
+        {"overhead_cluster"},       // category::cluster
+        {"overhead_overlay"},       // category::overlay
+        {"overhead_manifest"},      // category::manifests
+        {"transactions"},           // category::transaction
+        {"proposals"},              // category::proposal
+        {"validations"},            // category::validation
+        {"validator_lists"},        // category::validatorlist
+        {"proposals_untrusted"},    // category::proposal_untrusted
+        {"validations_untrusted"},  // category::validation_untrusted
+        {"proposal_duplicate"},     // category::proposal_duplicate
+        {"validation_duplicate"},   // category::validation_duplicate
+        {"transaction_duplicate"},  // category::transaction_duplicate
+        {"set_get"},                // category::get_set
+        {"set_share"},              // category::share_set
         {"ledger_data_Transaction_Set_candidate_get"},  // category::ld_tsc_get
         {"ledger_data_Transaction_Set_candidate_share"},  // category::ld_tsc_share
         {"ledger_data_Transaction_Node_get"},        // category::ld_txn_get

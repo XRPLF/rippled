@@ -1013,8 +1013,10 @@ PeerImp::onMessageBegin(
     auto const name = protocolMessageName(type);
     load_event_ = app_.getJobQueue().makeLoadEvent(jtPEER, name);
     fee_ = {Resource::feeTrivialPeer, name};
+
     auto const category = TrafficCount::categorize(*m, type, true);
     overlay_.reportTraffic(category, true, static_cast<int>(size));
+
     using namespace protocol;
     if ((type == MessageType::mtTRANSACTION ||
          type == MessageType::mtHAVE_TRANSACTIONS ||
@@ -1281,6 +1283,11 @@ PeerImp::handleTransaction(
             // seen this tx then the tx could not has been queued for this peer.
             else if (eraseTxQueue && txReduceRelayEnabled())
                 removeTxQueue(txID);
+
+            overlay_.reportTraffic(
+                TrafficCount::category::transaction_duplicate,
+                true,
+                Message::totalSize(*m));
 
             return;
         }
@@ -1669,8 +1676,16 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
     // If the operator has specified that untrusted proposals be dropped then
     // this happens here I.e. before further wasting CPU verifying the signature
     // of an untrusted key
-    if (!isTrusted && app_.config().RELAY_UNTRUSTED_PROPOSALS == -1)
-        return;
+    if (!isTrusted)
+    {
+        overlay_.reportTraffic(
+            TrafficCount::category::proposal_untrusted,
+            true,
+            Message::totalSize(*m));
+
+        if (app_.config().RELAY_UNTRUSTED_PROPOSALS == -1)
+            return;
+    }
 
     uint256 const proposeHash{set.currenttxhash()};
     uint256 const prevLedger{set.previousledger()};
@@ -1695,7 +1710,14 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
             (stopwatch().now() - *relayed) < reduce_relay::IDLED)
             overlay_.updateSlotAndSquelch(
                 suppression, publicKey, id_, protocol::mtPROPOSE_LEDGER);
+
+        overlay_.reportTraffic(
+            TrafficCount::category::proposal_duplicate,
+            true,
+            Message::totalSize(*m));
+
         JLOG(p_journal_.trace()) << "Proposal: duplicate";
+
         return;
     }
 
@@ -2309,17 +2331,26 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
         auto const isTrusted =
             app_.validators().trusted(val->getSignerPublic());
 
-        // If the operator has specified that untrusted validations be dropped
-        // then this happens here I.e. before further wasting CPU verifying the
-        // signature of an untrusted key
-        if (!isTrusted && app_.config().RELAY_UNTRUSTED_VALIDATIONS == -1)
-            return;
+        // If the operator has specified that untrusted validations be
+        // dropped then this happens here I.e. before further wasting CPU
+        // verifying the signature of an untrusted key
+        if (!isTrusted)
+        {
+            overlay_.reportTraffic(
+                TrafficCount::category::validation_untrusted,
+                true,
+                Message::totalSize(*m));
+
+            if (app_.config().RELAY_UNTRUSTED_VALIDATIONS == -1)
+                return;
+        }
 
         auto key = sha512Half(makeSlice(m->validation()));
 
-        if (auto [added, relayed] =
-                app_.getHashRouter().addSuppressionPeerWithStatus(key, id_);
-            !added)
+        auto [added, relayed] =
+            app_.getHashRouter().addSuppressionPeerWithStatus(key, id_);
+
+        if (!added)
         {
             // Count unique messages (Slots has it's own 'HashRouter'), which a
             // peer receives within IDLED seconds since the message has been
@@ -2329,6 +2360,12 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
                 (stopwatch().now() - *relayed) < reduce_relay::IDLED)
                 overlay_.updateSlotAndSquelch(
                     key, val->getSignerPublic(), id_, protocol::mtVALIDATION);
+
+            overlay_.reportTraffic(
+                TrafficCount::category::validation_duplicate,
+                true,
+                Message::totalSize(*m));
+
             JLOG(p_journal_.trace()) << "Validation: duplicate";
             return;
         }
