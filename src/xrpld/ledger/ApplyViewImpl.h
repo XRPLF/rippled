@@ -22,6 +22,7 @@
 
 #include <xrpld/ledger/OpenView.h>
 #include <xrpld/ledger/detail/ApplyViewBase.h>
+
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
 

@@ -16,10 +16,12 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
+
 #ifndef RIPPLE_TEST_CSF_VALIDATION_H_INCLUDED
 #define RIPPLE_TEST_CSF_VALIDATION_H_INCLUDED
 
 #include <test/csf/ledgers.h>
+
 #include <xrpl/basics/tagged_integer.h>
 
 #include <memory>

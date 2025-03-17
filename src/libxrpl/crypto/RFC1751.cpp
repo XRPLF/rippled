@@ -19,10 +19,19 @@
 
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/crypto/RFC1751.h>
-#include <boost/algorithm/string.hpp>
+
+#include <boost/algorithm/string/classification.hpp>
+#include <boost/algorithm/string/constants.hpp>
+#include <boost/algorithm/string/split.hpp>
+#include <boost/algorithm/string/trim.hpp>
 #include <boost/range/adaptor/copied.hpp>
+
+#include <cctype>
+#include <cstddef>
 #include <cstdint>
+#include <cstring>
 #include <string>
+#include <vector>
 
 namespace ripple {
 

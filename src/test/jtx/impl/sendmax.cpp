@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <test/jtx/sendmax.h>
+
 #include <xrpl/protocol/jss.h>
 
 namespace ripple {

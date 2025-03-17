@@ -53,6 +53,12 @@ public:
             if (level >= threshold())
                 ++m_count;
         }
+
+        void
+        writeAlways(severities::Severity level, std::string const&) override
+        {
+            ++m_count;
+        }
     };
 
     void

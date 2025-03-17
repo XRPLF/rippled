@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/app/tx/detail/OfferStream.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/Feature.h>
 

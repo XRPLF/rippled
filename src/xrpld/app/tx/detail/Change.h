@@ -20,12 +20,7 @@
 #ifndef RIPPLE_TX_CHANGE_H_INCLUDED
 #define RIPPLE_TX_CHANGE_H_INCLUDED
 
-#include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/AmendmentTable.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/tx/detail/Transactor.h>
-#include <xrpl/basics/Log.h>
-#include <xrpl/protocol/Indexes.h>
 
 namespace ripple {
 

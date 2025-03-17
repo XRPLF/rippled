@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_TEST_JTX_CHECKMESSAGELOGS_H_INCLUDED
+#define RIPPLE_TEST_JTX_CHECKMESSAGELOGS_H_INCLUDED
+
 #include <xrpl/basics/Log.h>
 
 namespace ripple {
@@ -48,6 +51,13 @@ class CheckMessageLogs : public Logs
             if (text.find(owner_.msg_) != std::string::npos)
                 *owner_.pFound_ = true;
         }
+
+        void
+        writeAlways(beast::severities::Severity level, std::string const& text)
+            override
+        {
+            write(level, text);
+        }
     };
 
 public:
@@ -73,3 +83,5 @@ public:
 
 }  // namespace test
 }  // namespace ripple
+
+#endif

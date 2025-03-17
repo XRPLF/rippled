@@ -20,10 +20,10 @@
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/beast/utility/rngfill.h>
-#include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Seed.h>
+
 #include <algorithm>
 
 namespace ripple {

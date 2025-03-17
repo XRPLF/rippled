@@ -17,8 +17,16 @@
 */
 //==============================================================================
 
-#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/strHex.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STBlob.h>
+#include <xrpl/protocol/Serializer.h>
+
+#include <cstddef>
+#include <string>
+#include <utility>
 
 namespace ripple {
 

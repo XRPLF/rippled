@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <test/jtx/acctdelete.h>
+
 #include <xrpl/protocol/jss.h>
 
 namespace ripple {

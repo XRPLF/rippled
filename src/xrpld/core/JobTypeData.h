@@ -21,6 +21,7 @@
 #define RIPPLE_CORE_JOBTYPEDATA_H_INCLUDED
 
 #include <xrpld/core/JobTypeInfo.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/insight/Collector.h>
 

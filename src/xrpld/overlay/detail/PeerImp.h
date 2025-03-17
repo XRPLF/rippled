@@ -24,11 +24,10 @@
 #include <xrpld/app/ledger/detail/LedgerReplayMsgHandler.h>
 #include <xrpld/overlay/Squelch.h>
 #include <xrpld/overlay/detail/OverlayImpl.h>
-#include <xrpld/overlay/detail/ProtocolMessage.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
 #include <xrpld/peerfinder/PeerfinderManager.h>
+
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/RangeSet.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/beast/utility/WrappedSink.h>
 #include <xrpl/protocol/Protocol.h>
@@ -39,6 +38,7 @@
 #include <boost/circular_buffer.hpp>
 #include <boost/endian/conversion.hpp>
 #include <boost/thread/shared_mutex.hpp>
+
 #include <cstdint>
 #include <optional>
 #include <queue>
@@ -154,7 +154,8 @@ private:
         update(Resource::Charge f, std::string const& add)
         {
             XRPL_ASSERT(
-                f >= fee, "ripple::PeerImp::ChargeWithContext fee increases");
+                f >= fee,
+                "ripple::PeerImp::ChargeWithContext::update : fee increases");
             fee = f;
             if (!context.empty())
             {

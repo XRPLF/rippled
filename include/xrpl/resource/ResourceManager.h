@@ -27,6 +27,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/resource/Consumer.h>
 #include <xrpl/resource/Gossip.h>
+
 #include <boost/utility/string_view.hpp>
 
 namespace ripple {

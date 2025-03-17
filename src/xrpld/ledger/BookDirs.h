@@ -22,6 +22,8 @@
 
 #include <xrpld/ledger/ReadView.h>
 
+#include <xrpl/beast/utility/Journal.h>
+
 namespace ripple {
 
 class BookDirs

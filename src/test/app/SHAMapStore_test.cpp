@@ -19,12 +19,14 @@
 
 #include <test/jtx.h>
 #include <test/jtx/envconfig.h>
+
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/main/NodeStoreScheduler.h>
 #include <xrpld/app/misc/SHAMapStore.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/core/ConfigSections.h>
 #include <xrpld/nodestore/detail/DatabaseRotatingImp.h>
+
 #include <xrpl/protocol/jss.h>
 
 namespace ripple {

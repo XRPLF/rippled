@@ -21,6 +21,7 @@
 #define RIPPLE_PEERFINDER_SOURCE_H_INCLUDED
 
 #include <xrpld/peerfinder/PeerfinderManager.h>
+
 #include <boost/system/error_code.hpp>
 
 namespace ripple {

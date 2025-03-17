@@ -20,8 +20,8 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/TransactionSign.h>
+
 #include <xrpl/protocol/ErrorCodes.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/resource/Fees.h>
 
 namespace ripple {

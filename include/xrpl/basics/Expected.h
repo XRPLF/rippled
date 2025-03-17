@@ -24,9 +24,7 @@
 
 #include <boost/outcome.hpp>
 
-#include <concepts>
 #include <stdexcept>
-#include <type_traits>
 
 namespace ripple {
 

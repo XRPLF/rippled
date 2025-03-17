@@ -20,10 +20,6 @@
 #ifndef BEAST_RFC2616_HPP
 #define BEAST_RFC2616_HPP
 
-// TODO: This include <cstdint> is a workaround for beast compilation bug.
-// Remove when fix https://github.com/boostorg/beast/pull/2682/ is available.
-#include <cstdint>
-
 #include <boost/beast/http/message.hpp>
 #include <boost/beast/http/rfc7230.hpp>
 #include <boost/range/algorithm/equal.hpp>
@@ -32,6 +28,7 @@
 
 #include <algorithm>
 #include <cctype>
+#include <cstdint>
 #include <iterator>
 #include <string>
 #include <utility>

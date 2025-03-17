@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/app/tx/detail/SetRegularKey.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TxFlags.h>

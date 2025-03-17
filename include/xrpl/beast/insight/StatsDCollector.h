@@ -21,7 +21,6 @@
 #define BEAST_INSIGHT_STATSDCOLLECTOR_H_INCLUDED
 
 #include <xrpl/beast/insight/Collector.h>
-
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/utility/Journal.h>
 

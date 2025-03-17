@@ -19,6 +19,7 @@
 
 #include <test/jtx/Account.h>
 #include <test/jtx/amount.h>
+
 #include <xrpl/protocol/UintTypes.h>
 
 namespace ripple {

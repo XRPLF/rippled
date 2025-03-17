@@ -11,6 +11,7 @@
 #define BEAST_CONTAINER_DETAIL_EMPTY_BASE_OPTIMIZATION_H_INCLUDED
 
 #include <boost/type_traits/is_final.hpp>
+
 #include <type_traits>
 #include <utility>
 

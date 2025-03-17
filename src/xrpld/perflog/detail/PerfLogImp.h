@@ -22,20 +22,18 @@
 
 #include <xrpld/perflog/PerfLog.h>
 #include <xrpld/rpc/detail/Handler.h>
-#include <xrpl/basics/chrono.h>
+
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/protocol/jss.h>
+
 #include <boost/asio/ip/host_name.hpp>
+
 #include <condition_variable>
 #include <cstdint>
 #include <fstream>
 #include <memory>
-#include <mutex>
 #include <string>
 #include <thread>
-#include <type_traits>
 #include <unordered_map>
-#include <utility>
 #include <vector>
 
 namespace ripple {

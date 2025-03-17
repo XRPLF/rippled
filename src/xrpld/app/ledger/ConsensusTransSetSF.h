@@ -22,6 +22,7 @@
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/shamap/SHAMapSyncFilter.h>
+
 #include <xrpl/basics/TaggedCache.h>
 
 namespace ripple {

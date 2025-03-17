@@ -19,9 +19,8 @@
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/rpc/detail/Handler.h>
-#include <xrpl/json/json_value.h>
 
-#include <mutex>
+#include <xrpl/json/json_value.h>
 
 namespace ripple {
 

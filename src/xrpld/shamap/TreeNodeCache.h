@@ -22,6 +22,8 @@
 
 #include <xrpld/shamap/SHAMapTreeNode.h>
 
+#include <xrpl/basics/TaggedCache.h>
+
 namespace ripple {
 
 using TreeNodeCache = TaggedCache<uint256, SHAMapTreeNode>;

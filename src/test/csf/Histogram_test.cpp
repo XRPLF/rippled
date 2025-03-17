@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <test/csf/Histogram.h>
+
 #include <xrpl/beast/unit_test.h>
 
 namespace ripple {

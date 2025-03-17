@@ -22,11 +22,12 @@
 
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/consensus/Validations.h>
+
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/STValidation.h>
+
 #include <optional>
-#include <set>
 #include <vector>
 
 namespace ripple {

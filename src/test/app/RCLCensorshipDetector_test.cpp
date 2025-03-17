@@ -18,7 +18,9 @@
 //==============================================================================
 
 #include <xrpld/app/consensus/RCLCensorshipDetector.h>
+
 #include <xrpl/beast/unit_test.h>
+
 #include <algorithm>
 #include <vector>
 

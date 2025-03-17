@@ -18,11 +18,11 @@
 //==============================================================================
 
 #include <test/unit_test/SuiteJournal.h>
+
 #include <xrpl/basics/TaggedCache.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/clock/manual_clock.h>
 #include <xrpl/beast/unit_test.h>
-#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/Protocol.h>
 
 namespace ripple {

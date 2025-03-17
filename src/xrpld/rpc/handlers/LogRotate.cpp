@@ -20,6 +20,7 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/perflog/PerfLog.h>
 #include <xrpld/rpc/detail/Handler.h>
+
 #include <xrpl/basics/Log.h>
 
 namespace ripple {

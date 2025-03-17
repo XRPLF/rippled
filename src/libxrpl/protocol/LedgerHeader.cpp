@@ -17,7 +17,10 @@
 */
 //==============================================================================
 
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/chrono.h>
 #include <xrpl/protocol/LedgerHeader.h>
+#include <xrpl/protocol/Serializer.h>
 
 namespace ripple {
 

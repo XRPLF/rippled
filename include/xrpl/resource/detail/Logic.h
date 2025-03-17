@@ -32,6 +32,7 @@
 #include <xrpl/resource/Fees.h>
 #include <xrpl/resource/Gossip.h>
 #include <xrpl/resource/detail/Import.h>
+
 #include <mutex>
 
 namespace ripple {

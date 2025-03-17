@@ -21,8 +21,6 @@
 #define RIPPLE_TX_LEDGER_STATE_FIX_H_INCLUDED
 
 #include <xrpld/app/tx/detail/Transactor.h>
-#include <xrpl/basics/Log.h>
-#include <xrpl/protocol/Indexes.h>
 
 namespace ripple {
 

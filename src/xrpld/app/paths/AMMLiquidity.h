@@ -25,9 +25,9 @@
 #include <xrpld/app/paths/AMMContext.h>
 #include <xrpld/ledger/ReadView.h>
 #include <xrpld/ledger/View.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/Quality.h>
-#include <xrpl/protocol/STLedgerEntry.h>
 
 namespace ripple {
 

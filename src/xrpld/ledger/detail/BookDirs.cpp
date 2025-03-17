@@ -20,6 +20,7 @@
 
 #include <xrpld/ledger/BookDirs.h>
 #include <xrpld/ledger/View.h>
+
 #include <xrpl/protocol/Indexes.h>
 
 namespace ripple {

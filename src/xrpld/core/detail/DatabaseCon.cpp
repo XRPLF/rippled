@@ -19,6 +19,7 @@
 
 #include <xrpld/core/DatabaseCon.h>
 #include <xrpld/core/SociDB.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 

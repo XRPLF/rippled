@@ -22,7 +22,6 @@
 
 #include <xrpld/core/JobQueue.h>
 #include <xrpld/nodestore/Scheduler.h>
-#include <atomic>
 
 namespace ripple {
 

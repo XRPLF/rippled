@@ -18,14 +18,11 @@
 //==============================================================================
 
 #include <test/jtx.h>
-#include <xrpl/basics/strHex.h>
+
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/jss.h>
 
 #include <algorithm>
-#include <iterator>
 
 namespace ripple {
 namespace test {

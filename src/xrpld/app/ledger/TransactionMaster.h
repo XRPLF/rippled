@@ -23,7 +23,9 @@
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/shamap/SHAMapItem.h>
 #include <xrpld/shamap/SHAMapTreeNode.h>
+
 #include <xrpl/basics/RangeSet.h>
+#include <xrpl/basics/TaggedCache.h>
 #include <xrpl/protocol/ErrorCodes.h>
 
 namespace ripple {

@@ -20,6 +20,7 @@
 #include <xrpld/app/misc/Manifest.h>
 #include <xrpld/app/rdb/Wallet.h>
 #include <xrpld/core/DatabaseCon.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base64.h>

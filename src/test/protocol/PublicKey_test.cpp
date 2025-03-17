@@ -20,6 +20,7 @@
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SecretKey.h>
+
 #include <vector>
 
 namespace ripple {

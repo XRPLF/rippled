@@ -37,6 +37,7 @@
 #include <xrpld/consensus/LedgerTiming.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/predicates.h>
+
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -45,6 +46,7 @@
 #include <xrpl/protocol/digest.h>
 
 #include <algorithm>
+#include <iomanip>
 #include <mutex>
 
 namespace ripple {
@@ -434,7 +436,8 @@ RCLConsensus::Adaptor::onAccept(
     NetClock::duration const& closeResolution,
     ConsensusCloseTimes const& rawCloseTimes,
     ConsensusMode const& mode,
-    Json::Value&& consensusJson)
+    Json::Value&& consensusJson,
+    const bool validating)
 {
     app_.getJobQueue().addJob(
         jtACCEPT,
@@ -445,6 +448,7 @@ RCLConsensus::Adaptor::onAccept(
             // is accepted, the consensus results and capture by reference state
             // will not change until startRound is called (which happens via
             // endConsensus).
+            RclConsensusLogger clog("onAccept", validating, j_);
             this->doAccept(
                 result,
                 prevLedger,
@@ -452,7 +456,7 @@ RCLConsensus::Adaptor::onAccept(
                 rawCloseTimes,
                 mode,
                 std::move(cj));
-            this->app_.getOPs().endConsensus();
+            this->app_.getOPs().endConsensus(clog.ss());
         });
 }
 
@@ -935,17 +939,22 @@ RCLConsensus::getJson(bool full) const
 }
 
 void
-RCLConsensus::timerEntry(NetClock::time_point const& now)
+RCLConsensus::timerEntry(
+    NetClock::time_point const& now,
+    std::unique_ptr<std::stringstream> const& clog)
 {
     try
     {
         std::lock_guard _{mutex_};
-        consensus_.timerEntry(now);
+        consensus_.timerEntry(now, clog);
     }
     catch (SHAMapMissingNode const& mn)
     {
         // This should never happen
-        JLOG(j_.error()) << "During consensus timerEntry: " << mn.what();
+        std::stringstream ss;
+        ss << "During consensus timerEntry: " << mn.what();
+        JLOG(j_.error()) << ss.str();
+        CLOG(clog) << ss.str();
         Rethrow();
     }
 }
@@ -1082,7 +1091,8 @@ RCLConsensus::startRound(
     RCLCxLedger::ID const& prevLgrId,
     RCLCxLedger const& prevLgr,
     hash_set<NodeID> const& nowUntrusted,
-    hash_set<NodeID> const& nowTrusted)
+    hash_set<NodeID> const& nowTrusted,
+    std::unique_ptr<std::stringstream> const& clog)
 {
     std::lock_guard _{mutex_};
     consensus_.startRound(
@@ -1090,6 +1100,36 @@ RCLConsensus::startRound(
         prevLgrId,
         prevLgr,
         nowUntrusted,
-        adaptor_.preStartRound(prevLgr, nowTrusted));
+        adaptor_.preStartRound(prevLgr, nowTrusted),
+        clog);
 }
+
+RclConsensusLogger::RclConsensusLogger(
+    const char* label,
+    const bool validating,
+    beast::Journal j)
+    : j_(j)
+{
+    if (!validating && !j.info())
+        return;
+    start_ = std::chrono::steady_clock::now();
+    ss_ = std::make_unique<std::stringstream>();
+    header_ = "ConsensusLogger ";
+    header_ += label;
+    header_ += ": ";
+}
+
+RclConsensusLogger::~RclConsensusLogger()
+{
+    if (!ss_)
+        return;
+    auto const duration = std::chrono::duration_cast<std::chrono::milliseconds>(
+        std::chrono::steady_clock::now() - start_);
+    std::stringstream outSs;
+    outSs << header_ << "duration " << (duration.count() / 1000) << '.'
+          << std::setw(3) << std::setfill('0') << (duration.count() % 1000)
+          << "s. " << ss_->str();
+    j_.sink().writeAlways(beast::severities::kInfo, outSs.str());
+}
+
 }  // namespace ripple

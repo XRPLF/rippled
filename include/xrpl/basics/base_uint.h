@@ -33,12 +33,13 @@
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+
 #include <boost/endian/conversion.hpp>
 #include <boost/functional/hash.hpp>
+
 #include <algorithm>
 #include <array>
 #include <cstring>
-#include <functional>
 #include <type_traits>
 
 namespace ripple {

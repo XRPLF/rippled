@@ -26,6 +26,7 @@
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/SecretKey.h>
+
 #include <cstdint>
 #include <functional>
 #include <memory>
@@ -146,8 +147,7 @@ public:
     render() const
     {
         std::stringstream ss;
-        ss << "validation: "
-           << " ledger_hash: " << getLedgerHash()
+        ss << "validation: " << " ledger_hash: " << getLedgerHash()
            << " consensus_hash: " << getConsensusHash()
            << " sign_time: " << to_string(getSignTime())
            << " seen_time: " << to_string(getSeenTime())

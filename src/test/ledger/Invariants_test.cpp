@@ -20,9 +20,10 @@
 #include <test/jtx.h>
 #include <test/jtx/AMM.h>
 #include <test/jtx/Env.h>
+
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/app/tx/detail/ApplyContext.h>
-#include <xrpld/app/tx/detail/Transactor.h>
+
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/InnerObjectFormats.h>
 #include <xrpl/protocol/STLedgerEntry.h>

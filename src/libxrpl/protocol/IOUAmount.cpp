@@ -17,13 +17,21 @@
 */
 //==============================================================================
 
+#include <xrpl/basics/LocalValue.h>
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/IOUAmount.h>
+
 #include <boost/multiprecision/cpp_int.hpp>
+
 #include <algorithm>
+#include <cstdint>
 #include <iterator>
-#include <numeric>
+#include <limits>
 #include <stdexcept>
+#include <string>
+#include <vector>
 
 namespace ripple {
 

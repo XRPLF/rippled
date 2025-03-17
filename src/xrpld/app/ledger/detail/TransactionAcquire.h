@@ -20,7 +20,6 @@
 #ifndef RIPPLE_APP_LEDGER_TRANSACTIONACQUIRE_H_INCLUDED
 #define RIPPLE_APP_LEDGER_TRANSACTIONACQUIRE_H_INCLUDED
 
-#include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/PeerSet.h>
 #include <xrpld/shamap/SHAMap.h>
 

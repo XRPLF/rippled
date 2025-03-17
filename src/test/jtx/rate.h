@@ -21,6 +21,7 @@
 #define RIPPLE_TEST_JTX_RATE_H_INCLUDED
 
 #include <test/jtx/Account.h>
+
 #include <xrpl/json/json_value.h>
 
 namespace ripple {

@@ -21,7 +21,9 @@
 #define RIPPLED_GRPCTESTCLIENTBASE_H
 
 #include <test/jtx/envconfig.h>
+
 #include <xrpl/proto/org/xrpl/rpc/v1/xrp_ledger.grpc.pb.h>
+
 #include <grpcpp/grpcpp.h>
 
 namespace ripple {

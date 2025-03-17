@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/app/main/BasicApp.h>
+
 #include <xrpl/beast/core/CurrentThreadName.h>
 
 BasicApp::BasicApp(std::size_t numberOfThreads)

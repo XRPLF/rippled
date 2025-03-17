@@ -17,16 +17,13 @@
 */
 //==============================================================================
 
-#include <xrpld/overlay/PeerReservationTable.h>
-
 #include <xrpld/app/rdb/RelationalDatabase.h>
 #include <xrpld/app/rdb/Wallet.h>
-#include <xrpl/basics/Log.h>
+#include <xrpld/overlay/PeerReservationTable.h>
+
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/jss.h>
-
-#include <boost/optional.hpp>
 
 #include <algorithm>
 #include <iterator>

@@ -18,8 +18,10 @@
 //==============================================================================
 
 #include <test/jtx.h>
+
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/overlay/detail/ProtocolMessage.h>
+
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/strHex.h>

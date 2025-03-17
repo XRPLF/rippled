@@ -18,8 +18,10 @@
 //==============================================================================
 
 #include <test/jtx/rate.h>
+
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/jss.h>
+
 #include <stdexcept>
 
 namespace ripple {

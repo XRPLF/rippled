@@ -22,6 +22,7 @@
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/contract.h>
+
 #include <mutex>
 
 namespace ripple {

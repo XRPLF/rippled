@@ -23,11 +23,6 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/detail/ProtocolMessage.h>
-#include <xrpl/beast/clock/abstract_clock.h>
-#include <xrpl/beast/utility/Journal.h>
-#include <boost/asio/basic_waitable_timer.hpp>
-#include <mutex>
-#include <set>
 
 namespace ripple {
 

@@ -21,10 +21,9 @@
 #define RIPPLE_APP_BOOK_BOOKTIP_H_INCLUDED
 
 #include <xrpld/ledger/View.h>
+
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Quality.h>
-
-#include <functional>
 
 namespace ripple {
 

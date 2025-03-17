@@ -18,7 +18,9 @@
 //==============================================================================
 
 #include <test/jtx/Env.h>
+
 #include <xrpld/core/JobQueue.h>
+
 #include <xrpl/beast/unit_test.h>
 
 namespace ripple {

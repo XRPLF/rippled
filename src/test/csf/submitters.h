@@ -16,6 +16,7 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
+
 #ifndef RIPPLE_TEST_CSF_SUBMITTERS_H_INCLUDED
 #define RIPPLE_TEST_CSF_SUBMITTERS_H_INCLUDED
 
@@ -23,7 +24,9 @@
 #include <test/csf/Scheduler.h>
 #include <test/csf/SimTime.h>
 #include <test/csf/Tx.h>
+
 #include <type_traits>
+
 namespace ripple {
 namespace test {
 namespace csf {

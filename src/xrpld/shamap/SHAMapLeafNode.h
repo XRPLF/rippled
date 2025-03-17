@@ -25,7 +25,6 @@
 #include <xrpld/shamap/SHAMapTreeNode.h>
 
 #include <cstdint>
-#include <memory>
 
 namespace ripple {
 

@@ -56,7 +56,10 @@
 
 #include <xrpl/basics/base64.h>
 
-#include <cctype>
+#include <cstddef>
+#include <cstdint>
+#include <string>
+#include <string_view>
 #include <utility>
 
 namespace ripple {

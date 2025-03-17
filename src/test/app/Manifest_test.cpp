@@ -18,16 +18,18 @@
 //==============================================================================
 
 #include <test/jtx.h>
+
 #include <xrpld/app/main/DBInit.h>
 #include <xrpld/app/misc/Manifest.h>
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/app/rdb/Wallet.h>
-#include <xrpl/basics/StringUtilities.h>
+
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/STExchange.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/Sign.h>
+
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 #include <boost/utility/in_place_factory.hpp>

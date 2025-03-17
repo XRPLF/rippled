@@ -35,7 +35,9 @@
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/detail/STVar.h>
+
 #include <boost/iterator/transform_iterator.hpp>
+
 #include <optional>
 #include <stdexcept>
 #include <type_traits>

@@ -21,10 +21,10 @@
 #define RIPPLE_APP_MISC_DETAIL_WORKFILE_H_INCLUDED
 
 #include <xrpld/app/misc/detail/Work.h>
+
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/FileUtilities.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <cerrno>
 
 namespace ripple {
 

@@ -61,6 +61,7 @@
 #include <xrpld/app/tx/detail/SetSignerList.h>
 #include <xrpld/app/tx/detail/SetTrust.h>
 #include <xrpld/app/tx/detail/XChainBridge.h>
+
 #include <xrpl/protocol/TxFormats.h>
 
 #include <stdexcept>

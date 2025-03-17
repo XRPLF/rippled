@@ -22,8 +22,8 @@
 
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
+
 #include <chrono>
-#include <cstdint>
 
 namespace ripple {
 

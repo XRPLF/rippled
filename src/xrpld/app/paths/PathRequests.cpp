@@ -21,11 +21,12 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/paths/PathRequests.h>
 #include <xrpld/core/JobQueue.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/resource/Fees.h>
+
 #include <algorithm>
 
 namespace ripple {

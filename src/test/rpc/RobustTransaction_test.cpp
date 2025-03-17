@@ -19,7 +19,9 @@
 
 #include <test/jtx.h>
 #include <test/jtx/WSClient.h>
+
 #include <xrpld/core/JobQueue.h>
+
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/jss.h>
 

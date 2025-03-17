@@ -18,12 +18,11 @@
 //==============================================================================
 
 #include <xrpld/app/tx/detail/LedgerStateFix.h>
-
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
 #include <xrpld/ledger/View.h>
+
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/TxFlags.h>
 
 namespace ripple {

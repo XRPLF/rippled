@@ -17,13 +17,14 @@
 */
 //==============================================================================
 
-#include <test/jtx/AMMTest.h>
-
 #include <test/jtx/AMM.h>
+#include <test/jtx/AMMTest.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/pay.h>
+
 #include <xrpld/rpc/RPCHandler.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
+
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/resource/Fees.h>
 

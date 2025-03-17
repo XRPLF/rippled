@@ -17,9 +17,8 @@
 */
 //==============================================================================
 
-#include <xrpl/beast/utility/Zero.h>
-
 #include <xrpl/beast/unit_test.h>
+#include <xrpl/beast/utility/Zero.h>
 
 namespace beast {
 

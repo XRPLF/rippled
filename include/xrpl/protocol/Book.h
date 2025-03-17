@@ -22,6 +22,7 @@
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/protocol/Issue.h>
+
 #include <boost/utility/base_from_member.hpp>
 
 namespace ripple {

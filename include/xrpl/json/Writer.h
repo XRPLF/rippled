@@ -24,6 +24,7 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/json/Output.h>
 #include <xrpl/json/json_value.h>
+
 #include <memory>
 
 namespace Json {

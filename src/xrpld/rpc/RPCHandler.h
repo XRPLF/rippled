@@ -20,8 +20,6 @@
 #ifndef RIPPLE_RPC_RPCHANDLER_H_INCLUDED
 #define RIPPLE_RPC_RPCHANDLER_H_INCLUDED
 
-#include <xrpld/core/Config.h>
-#include <xrpld/net/InfoSub.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/Status.h>
 

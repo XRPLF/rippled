@@ -25,7 +25,6 @@
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/shamap/SHAMap.h>
-#include <queue>
 
 namespace ripple {
 class InboundLedgers;

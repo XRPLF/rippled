@@ -23,12 +23,15 @@
 #include <xrpld/nodestore/Backend.h>
 #include <xrpld/nodestore/Database.h>
 #include <xrpld/nodestore/Types.h>
+
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/beast/utility/rngfill.h>
 #include <xrpl/beast/xor_shift_engine.h>
+
 #include <boost/algorithm/string.hpp>
+
 #include <iomanip>
 
 namespace ripple {

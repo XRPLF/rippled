@@ -21,6 +21,7 @@
 #define RIPPLE_CONSENSUS_VALIDATIONS_H_INCLUDED
 
 #include <xrpld/consensus/LedgerTrie.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/chrono.h>

@@ -32,6 +32,7 @@
 #include <xrpld/overlay/detail/PeerImp.h>
 #include <xrpld/overlay/detail/Tuning.h>
 #include <xrpld/perflog/PerfLog.h>
+
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/random.h>
@@ -1247,7 +1248,7 @@ PeerImp::handleTransaction(
 {
     XRPL_ASSERT(
         eraseTxQueue != batch,
-        ("ripple::PeerImp::handleTransaction correct function params"));
+        ("ripple::PeerImp::handleTransaction : valid inputs"));
     if (tracking_.load() == Tracking::diverged)
         return;
 

@@ -23,14 +23,10 @@
 #include <xrpld/app/paths/detail/AmountSpec.h>
 #include <xrpld/app/paths/detail/Steps.h>
 #include <xrpld/app/paths/detail/StrandFlow.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/XRPAmount.h>
-
-#include <boost/container/flat_set.hpp>
-
-#include <numeric>
-#include <sstream>
 
 namespace ripple {
 

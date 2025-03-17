@@ -17,7 +17,9 @@
 */
 //==============================================================================
 
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 
 namespace ripple {

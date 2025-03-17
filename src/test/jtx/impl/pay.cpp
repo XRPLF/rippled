@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <test/jtx/pay.h>
+
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 

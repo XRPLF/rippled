@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <xrpl/resource/Charge.h>
 #include <xrpl/resource/Fees.h>
 
 namespace ripple {
