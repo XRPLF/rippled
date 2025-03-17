@@ -1029,7 +1029,7 @@ NetworkOPsImp::processHeartbeatTimer()
 
         // VFALCO NOTE This is for diagnosing a crash on exit
         LoadManager& mgr(app_.getLoadManager());
-        mgr.resetDeadlockDetector();
+        mgr.heartbeat();
 
         std::size_t const numPeers = app_.overlay().size();
 
