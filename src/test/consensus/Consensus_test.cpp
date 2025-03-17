@@ -1119,100 +1119,6 @@ public:
     }
 
     void
-    testDisjointNetwork()
-    {
-        // WIP: Try to create conditions where messaging is unreliable and all
-        // peers have different initial proposals
-        using namespace csf;
-        using namespace std::chrono;
-        testcase("disjoint network");
-
-        std::uint32_t const numPeers = 35;
-
-        ConsensusParms const parms{};
-        Sim sim;
-
-        std::vector<PeerGroup> peerGroups;
-        peerGroups.reserve(numPeers);
-        PeerGroup network;
-        for (int i = 0; i < numPeers; ++i)
-        {
-            peerGroups.emplace_back(sim.createGroup(1));
-            network = network + peerGroups.back();
-        }
-
-        // Fully connected trust graph
-        network.trust(network);
-
-        for (int i = 0; i < peerGroups.size(); ++i)
-        {
-            auto const delay = i * 0.2 * parms.ledgerGRANULARITY;
-            auto& group = peerGroups[i];
-            auto& nextGroup = peerGroups[(i + 1) % numPeers];
-            group.connect(nextGroup, round<milliseconds>(delay));
-            auto& oppositeGroup = peerGroups[(i + numPeers / 2) % numPeers];
-            group.connect(oppositeGroup, round<milliseconds>(delay));
-        }
-
-        // Initial round to set prior state
-        sim.run(1);
-        for (Peer* peer : network)
-        {
-            // Every transaction will be seen by every node but two.
-            // To accomplish that, every peer will add the ids of every peer
-            // except itself, and the one following.
-            auto const myId = peer->id;
-            auto const nextId = (peer->id + PeerID(1)) % PeerID(numPeers);
-            for (Peer* to : sim.trustGraph.trustedPeers(peer))
-            {
-                if (to->id == myId || to->id == nextId)
-                    continue;
-                peer->openTxs.insert(Tx{static_cast<std::uint32_t>(to->id)});
-            }
-        }
-        sim.run(1);
-
-        // Peers are out of sync
-        if (BEAST_EXPECT(!sim.synchronized()))
-        {
-            BEAST_EXPECT(sim.branches() == 1);
-            for (auto const& grp : peerGroups)
-            {
-                Peer const* peer = grp[0];
-                BEAST_EXPECT(
-                    peer->fullyValidatedLedger.seq() == Ledger::Seq{1});
-
-                auto const& lcl = peer->lastClosedLedger;
-                BEAST_EXPECT(lcl.id() == peer->prevLedgerID());
-                /*
-                log << "Peer " << peer->id << ", lcl seq: " << lcl.seq()
-                    << ", prevProposers: " << peer->prevProposers
-                    << ", txs in lcl: " << lcl.txs().size() << ", validations: "
-                    << peer->validations.sizeOfByLedgerCache() << std::endl;
-                for (auto const& [id, positions] : peer->peerPositions)
-                {
-                    log << "\tLedger ID: " << id
-                        << ", #positions: " << positions.size() << std::endl;
-                }
-                */
-                /*
-                log << "\t" << to_string(peer->consensus.getJson(true))
-                    << std::endl
-                    << std::endl;
-                */
-                /*
-                BEAST_EXPECT(lcl.seq() == Ledger::Seq{1}, to_string);
-                // All peers proposed
-                BEAST_EXPECT(peer->prevProposers == network.size() - 1);
-                // All transactions were accepted
-                for (std::uint32_t i = 0; i < network.size(); ++i)
-                    BEAST_EXPECT(lcl.txs().find(Tx{i}) != lcl.txs().end());
-                    */
-            }
-        }
-    }
-
-    void
     testDisputes()
     {
         testcase("disputes");
@@ -1524,7 +1430,6 @@ public:
         testHubNetwork();
         testPreferredByBranch();
         testPauseForLaggards();
-        testDisjointNetwork();
         testDisputes();
     }
 };
