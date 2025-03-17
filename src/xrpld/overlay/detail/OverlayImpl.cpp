@@ -690,12 +690,9 @@ OverlayImpl::onManifests(
 }
 
 void
-OverlayImpl::reportTraffic(
-    TrafficCount::category cat,
-    bool isInbound,
-    int number)
+OverlayImpl::reportTraffic(TrafficCount::category cat, bool isInbound, int size)
 {
-    m_traffic.addCount(cat, isInbound, number);
+    m_traffic.addCount(cat, isInbound, size);
 }
 
 /** The number of active peers on the network
