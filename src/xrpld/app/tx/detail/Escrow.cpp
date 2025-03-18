@@ -410,7 +410,7 @@ static TER
 escrowLockApplyHelper(
     ApplyView& view,
     AccountID const& issuer,
-    AccountID const& account,
+    AccountID const& sender,
     STAmount const& amount,
     beast::Journal journal);
 
@@ -419,19 +419,19 @@ TER
 escrowLockApplyHelper<Issue>(
     ApplyView& view,
     AccountID const& issuer,
-    AccountID const& account,
+    AccountID const& sender,
     STAmount const& amount,
     beast::Journal journal)
 {
     // Defensive: Issuer cannot create an escrow
     // LCOV_EXCL_START
-    if (issuer == account)
+    if (issuer == sender)
         return tecINTERNAL;
     // LCOV_EXCL_STOP
 
     auto const ter = rippleCredit(
         view,
-        account,
+        sender,
         issuer,
         amount,
         amount.holds<MPTIssue>() ? false : true,
@@ -446,17 +446,17 @@ TER
 escrowLockApplyHelper<MPTIssue>(
     ApplyView& view,
     AccountID const& issuer,
-    AccountID const& account,
+    AccountID const& sender,
     STAmount const& amount,
     beast::Journal journal)
 {
     // Defensive: Issuer cannot create an escrow
     // LCOV_EXCL_START
-    if (issuer == account)
+    if (issuer == sender)
         return tecINTERNAL;
     // LCOV_EXCL_STOP
 
-    auto const ter = rippleLockEscrowMPT(view, account, amount, journal);
+    auto const ter = rippleLockEscrowMPT(view, sender, amount, journal);
     if (ter != tesSUCCESS)
         return ter;  // LCOV_EXCL_LINE
     return tesSUCCESS;

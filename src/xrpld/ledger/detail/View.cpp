@@ -2182,24 +2182,24 @@ rippleCredit(
 TER
 rippleLockEscrowMPT(
     ApplyView& view,
-    AccountID const& grantor,
-    STAmount const& saAmount,
+    AccountID const& sender,
+    STAmount const& amount,
     beast::Journal j)
 {
-    auto const mptID = keylet::mptIssuance(saAmount.get<MPTIssue>().getMptID());
+    auto const mptID = keylet::mptIssuance(amount.get<MPTIssue>().getMptID());
     auto sleIssuance = view.peek(mptID);
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
     // 1. Descrease the MPT Holder MPTAmount
     // 2. Increase the MPT Holder EscrowedAmount
-    if (saAmount.getIssuer() != grantor)
+    if (amount.getIssuer() != sender)
     {
-        auto const mptokenID = keylet::mptoken(mptID.key, grantor);
+        auto const mptokenID = keylet::mptoken(mptID.key, sender);
         if (auto sle = view.peek(mptokenID))
         {
             auto const amt = sle->getFieldU64(sfMPTAmount);
-            auto const pay = saAmount.mpt().value();
+            auto const pay = amount.mpt().value();
             if (amt < pay)
                 return tecINSUFFICIENT_FUNDS;
             (*sle)[sfMPTAmount] = amt - pay;
@@ -2218,9 +2218,9 @@ rippleLockEscrowMPT(
     // 2. DO NOT change the Issuance OutstandingAmount
     {
         if (sleIssuance->isFieldPresent(sfEscrowedAmount))
-            (*sleIssuance)[sfEscrowedAmount] += saAmount.mpt().value();
+            (*sleIssuance)[sfEscrowedAmount] += amount.mpt().value();
         else
-            sleIssuance->setFieldU64(sfEscrowedAmount, saAmount.mpt().value());
+            sleIssuance->setFieldU64(sfEscrowedAmount, amount.mpt().value());
         view.update(sleIssuance);
     }
     return tesSUCCESS;
@@ -2229,13 +2229,13 @@ rippleLockEscrowMPT(
 TER
 rippleUnlockEscrowMPT(
     ApplyView& view,
-    AccountID const& grantor,
-    AccountID const& grantee,
-    STAmount const& saAmount,
+    AccountID const& sender,
+    AccountID const& receiver,
+    STAmount const& amount,
     beast::Journal j)
 {
-    auto const issuer = saAmount.getIssuer();
-    auto const mptID = keylet::mptIssuance(saAmount.get<MPTIssue>().getMptID());
+    auto const issuer = amount.getIssuer();
+    auto const mptID = keylet::mptIssuance(amount.get<MPTIssue>().getMptID());
     auto sleIssuance = view.peek(mptID);
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
@@ -2247,7 +2247,7 @@ rippleUnlockEscrowMPT(
         else
         {
             auto const escrowed = sleIssuance->getFieldU64(sfEscrowedAmount);
-            auto const redeem = saAmount.mpt().value();
+            auto const redeem = amount.mpt().value();
             if (escrowed >= redeem)
             {
                 sleIssuance->setFieldU64(sfEscrowedAmount, escrowed - redeem);
@@ -2258,13 +2258,13 @@ rippleUnlockEscrowMPT(
         }
     }
 
-    if (issuer != grantee)
+    if (issuer != receiver)
     {
         // Increase the MPT Holder MPTAmount
-        auto const mptokenID = keylet::mptoken(mptID.key, grantee);
+        auto const mptokenID = keylet::mptoken(mptID.key, receiver);
         if (auto sle = view.peek(mptokenID))
         {
-            (*sle)[sfMPTAmount] += saAmount.mpt().value();
+            (*sle)[sfMPTAmount] += amount.mpt().value();
             view.update(sle);
         }
         else
@@ -2274,7 +2274,7 @@ rippleUnlockEscrowMPT(
     {
         // Decrease the Issuance OutstandingAmount
         auto const outstanding = sleIssuance->getFieldU64(sfOutstandingAmount);
-        auto const redeem = saAmount.mpt().value();
+        auto const redeem = amount.mpt().value();
         if (outstanding >= redeem)
         {
             sleIssuance->setFieldU64(sfOutstandingAmount, outstanding - redeem);
@@ -2284,15 +2284,15 @@ rippleUnlockEscrowMPT(
             return tecINTERNAL;
     }
 
-    if (issuer != grantor)
+    if (issuer != sender)
     {
         // Descrease the MPT Holder EscrowedAmount
-        auto const mptokenID = keylet::mptoken(mptID.key, grantor);
+        auto const mptokenID = keylet::mptoken(mptID.key, sender);
         if (auto sle = view.peek(mptokenID))
         {
             if (!sle->isFieldPresent(sfEscrowedAmount))
                 return tecINTERNAL;
-            (*sle)[sfEscrowedAmount] -= saAmount.mpt().value();
+            (*sle)[sfEscrowedAmount] -= amount.mpt().value();
             view.update(sle);
         }
         else
