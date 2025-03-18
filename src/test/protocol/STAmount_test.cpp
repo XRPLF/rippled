@@ -669,6 +669,88 @@ public:
         }
     }
 
+    void
+    testIsAddable()
+    {
+        testcase("is addable");
+
+        // Adding zero
+        {
+            STAmount amt1(XRPAmount(0));
+            STAmount amt2(XRPAmount(1000));
+            BEAST_EXPECT(isAddable(amt1, amt2) == true);
+        }
+
+        // Adding zero
+        {
+            STAmount amt1(XRPAmount(1000));
+            STAmount amt2(XRPAmount(0));
+            BEAST_EXPECT(isAddable(amt1, amt2) == true);
+        }
+
+        // Adding two positive XRP amounts
+        {
+            STAmount xrp1(XRPAmount(500));
+            STAmount xrp2(XRPAmount(1500));
+            BEAST_EXPECT(isAddable(xrp1, xrp2) == true);
+        }
+
+        // Adding two negative XRP amounts
+        {
+            STAmount negXRP1(XRPAmount(-500));
+            STAmount negXRP2(XRPAmount(-1500));
+            BEAST_EXPECT(isAddable(negXRP1, negXRP2) == true);
+        }
+
+        // Adding a positive and a negative XRP amount
+        {
+            STAmount amt1(XRPAmount(1000));
+            STAmount amt2(XRPAmount(-1000));
+            BEAST_EXPECT(isAddable(amt1, amt2) == true);
+        }
+
+        // Overflow check for max XRP amounts
+        {
+            STAmount maxXRP(std::numeric_limits<std::int64_t>::max());
+            STAmount smallXRP(XRPAmount(1));
+            BEAST_EXPECT(isAddable(maxXRP, smallXRP) == false);
+        }
+
+        // Overflow check for min XRP amounts
+        // DA: This is not a valid test case, as the min value is not
+        // representable in STAmount.
+
+        Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
+
+        // Adding two IOU amounts
+        {
+            STAmount iou1(usd, 500);
+            STAmount iou2(usd, 1500);
+            BEAST_EXPECT(isAddable(iou1, iou2) == true);
+        }
+
+        // Adding a positive and a negative IOU amount
+        {
+            STAmount amt1(usd, 1000);
+            STAmount amt2(usd, -1000);
+            BEAST_EXPECT(isAddable(amt1, amt2) == true);
+        }
+
+        // Overflow check for max IOU amounts
+        {
+            STAmount maxIOU(usd, std::numeric_limits<int64_t>::max());
+            STAmount smallIOU(usd, 1);
+            BEAST_EXPECT(isAddable(maxIOU, smallIOU) == false);
+        }
+
+        // Overflow check for min IOU amounts
+        {
+            STAmount minIOU(usd, std::numeric_limits<std::int64_t>::min());
+            STAmount smallIOU(usd, -1);
+            BEAST_EXPECT(isAddable(minIOU, smallIOU) == false);
+        }
+    }
+
     //--------------------------------------------------------------------------
 
     void
@@ -682,6 +764,7 @@ public:
         testRounding();
         testConvertXRP();
         testConvertIOU();
+        testIsAddable();
     }
 };
 
