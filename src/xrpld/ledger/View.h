@@ -513,7 +513,6 @@ rippleCredit(
     bool bCheckIssuer,
     beast::Journal j);
 
-
 TER
 rippleLockEscrowMPT(
     ApplyView& view,
