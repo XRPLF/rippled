@@ -113,7 +113,6 @@ struct EscrowToken_test : public beast::unit_test::suite
         Json::Value params;
         params[jss::account] = account.human();
         auto jrr = env.rpc("json", "gateway_balances", to_string(params));
-        std::cout << jrr << std::endl;
         auto const result = jrr[jss::result];
         auto const actualOutstanding =
             result[jss::obligations][to_string(currency)];
