@@ -503,6 +503,9 @@ OverlayImpl::start()
 
         // Pool of servers operated by @Xrpkuwait - https://xrpkuwait.com
         bootstrapIps.push_back("hubs.xrpkuwait.com 51235");
+
+        // Pool of servers operated by XRPL Commons - https://xrpl-commons.org
+        bootstrapIps.push_back("hub.xrpl-commons.org 51235");
     }
 
     m_resolver.resolve(

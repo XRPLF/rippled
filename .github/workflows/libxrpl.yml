@@ -85,4 +85,5 @@ jobs:
         run: |
           gh api --method POST -H "Accept: application/vnd.github+json" -H "X-GitHub-Api-Version: 2022-11-28" \
           /repos/xrplf/clio/dispatches -f "event_type=check_libxrpl" \
-          -F "client_payload[version]=${{ needs.publish.outputs.version }}@${{ needs.publish.outputs.channel }}"
+          -F "client_payload[version]=${{ needs.publish.outputs.version }}@${{ needs.publish.outputs.channel }}" \
+          -F "client_payload[pr]=${{ github.event.pull_request.number }}"
