@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <test/jtx.h>
+
 #include <xrpl/protocol/Feature.h>
 
 #include <algorithm>
@@ -1070,7 +1071,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
             {
                 // AuthorizeCredentials is empty
                 auto jv = deposit::authCredentials(bob, {});
-                env(jv, ter(temMALFORMED));
+                env(jv, ter(temARRAY_EMPTY));
             }
 
             {
@@ -1110,7 +1111,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
                      {g, z},
                      {h, z},
                      {i, z}});
-                env(jv, ter(temMALFORMED));
+                env(jv, ter(temARRAY_TOO_LARGE));
             }
 
             {
@@ -1507,12 +1508,14 @@ struct DepositPreauth_test : public beast::unit_test::suite
         testcase("Check duplicate credentials.");
         {
             // check duplicates in depositPreauth params
-            std::ranges::shuffle(credentials, gen);
-            for (auto const& c : credentials)
-            {
-                auto credentials2 = credentials;
-                credentials2.push_back(c);
+            std::vector<deposit::AuthorizeCredentials> copyCredentials(
+                credentials.begin(), credentials.end() - 1);
 
+            std::ranges::shuffle(copyCredentials, gen);
+            for (auto const& c : copyCredentials)
+            {
+                auto credentials2 = copyCredentials;
+                credentials2.push_back(c);
                 env(deposit::authCredentials(stock, credentials2),
                     ter(temMALFORMED));
             }

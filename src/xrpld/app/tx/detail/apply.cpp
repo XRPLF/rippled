@@ -20,6 +20,7 @@
 #include <xrpld/app/misc/HashRouter.h>
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/app/tx/applySteps.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/Feature.h>
 
@@ -105,7 +106,7 @@ forceValidity(HashRouter& router, uint256 const& txid, Validity validity)
         router.setFlags(txid, flags);
 }
 
-std::pair<TER, bool>
+ApplyResult
 apply(
     Application& app,
     OpenView& view,
@@ -121,7 +122,7 @@ apply(
     return doApply(pcresult, app, view);
 }
 
-ApplyResult
+ApplyTransactionResult
 applyTransaction(
     Application& app,
     OpenView& view,
@@ -140,29 +141,29 @@ applyTransaction(
     try
     {
         auto const result = apply(app, view, txn, flags, j);
-        if (result.second)
+        if (result.applied)
         {
             JLOG(j.debug())
-                << "Transaction applied: " << transHuman(result.first);
-            return ApplyResult::Success;
+                << "Transaction applied: " << transHuman(result.ter);
+            return ApplyTransactionResult::Success;
         }
 
-        if (isTefFailure(result.first) || isTemMalformed(result.first) ||
-            isTelLocal(result.first))
+        if (isTefFailure(result.ter) || isTemMalformed(result.ter) ||
+            isTelLocal(result.ter))
         {
             // failure
             JLOG(j.debug())
-                << "Transaction failure: " << transHuman(result.first);
-            return ApplyResult::Fail;
+                << "Transaction failure: " << transHuman(result.ter);
+            return ApplyTransactionResult::Fail;
         }
 
-        JLOG(j.debug()) << "Transaction retry: " << transHuman(result.first);
-        return ApplyResult::Retry;
+        JLOG(j.debug()) << "Transaction retry: " << transHuman(result.ter);
+        return ApplyTransactionResult::Retry;
     }
     catch (std::exception const& ex)
     {
         JLOG(j.warn()) << "Throws: " << ex.what();
-        return ApplyResult::Fail;
+        return ApplyTransactionResult::Fail;
     }
 }
 

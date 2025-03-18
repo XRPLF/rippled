@@ -19,8 +19,17 @@
 
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/StringUtilities.h>
-#include <boost/regex.hpp>
-#include <algorithm>
+
+#include <boost/regex/v5/regbase.hpp>
+#include <boost/regex/v5/regex.hpp>
+#include <boost/regex/v5/regex_fwd.hpp>
+#include <boost/regex/v5/regex_match.hpp>
+
+#include <ostream>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 namespace ripple {
 
@@ -104,7 +113,7 @@ Section::append(std::vector<std::string> const& lines)
 bool
 Section::exists(std::string const& name) const
 {
-    return lookup_.find(name) != lookup_.end();
+    return lookup_.contains(name);
 }
 
 std::ostream&
@@ -120,13 +129,13 @@ operator<<(std::ostream& os, Section const& section)
 bool
 BasicConfig::exists(std::string const& name) const
 {
-    return map_.find(name) != map_.end();
+    return map_.contains(name);
 }
 
 Section&
 BasicConfig::section(std::string const& name)
 {
-    return map_[name];
+    return map_.emplace(name, name).first->second;
 }
 
 Section const&
@@ -163,7 +172,7 @@ BasicConfig::deprecatedClearSection(std::string const& section)
 void
 BasicConfig::legacy(std::string const& section, std::string value)
 {
-    map_[section].legacy(std::move(value));
+    map_.emplace(section, section).first->second.legacy(std::move(value));
 }
 
 std::string

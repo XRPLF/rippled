@@ -19,12 +19,10 @@
 
 #include <xrpld/app/tx/detail/ApplyContext.h>
 #include <xrpld/app/tx/detail/InvariantCheck.h>
-#include <xrpld/app/tx/detail/Transactor.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/to_string.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
 
 namespace ripple {
 
@@ -53,10 +51,10 @@ ApplyContext::discard()
     view_.emplace(&base_, flags_);
 }
 
-void
+std::optional<TxMeta>
 ApplyContext::apply(TER ter)
 {
-    view_->apply(base_, tx, ter, journal);
+    return view_->apply(base_, tx, ter, flags_ & tapDRY_RUN, journal);
 }
 
 std::size_t

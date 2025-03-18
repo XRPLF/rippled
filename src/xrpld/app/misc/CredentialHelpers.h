@@ -17,11 +17,10 @@
 */
 //==============================================================================
 
-#pragma once
+#ifndef RIPPLE_APP_MISC_CREDENTIALHELPERS_H_INCLUDED
+#define RIPPLE_APP_MISC_CREDENTIALHELPERS_H_INCLUDED
 
 #include <xrpld/app/tx/detail/Transactor.h>
-
-#include <optional>
 
 namespace ripple {
 namespace credentials {
@@ -60,9 +59,14 @@ valid(PreclaimContext const& ctx, AccountID const& src);
 TER
 authorized(ApplyContext const& ctx, AccountID const& dst);
 
-// return empty set if there are duplicates
+// Sort credentials array, return empty set if there are duplicates
 std::set<std::pair<AccountID, Slice>>
-makeSorted(STArray const& in);
+makeSorted(STArray const& credentials);
+
+// Check credentials array passed to DepositPreauth/PermissionedDomainSet
+// transactions
+NotTEC
+checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j);
 
 }  // namespace credentials
 
@@ -75,3 +79,5 @@ verifyDepositPreauth(
     std::shared_ptr<SLE> const& sleDst);
 
 }  // namespace ripple
+
+#endif

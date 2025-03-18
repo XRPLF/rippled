@@ -21,6 +21,7 @@
 #define RIPPLE_OVERLAY_PEER_H_INCLUDED
 
 #include <xrpld/overlay/Message.h>
+
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/json/json_value.h>
@@ -77,7 +78,7 @@ public:
 
     /** Adjust this peer's load balance based on the type of load imposed. */
     virtual void
-    charge(Resource::Charge const& fee) = 0;
+    charge(Resource::Charge const& fee, std::string const& context) = 0;
 
     //
     // Identity

@@ -20,26 +20,22 @@
 #ifndef RIPPLE_LEDGER_VIEW_H_INCLUDED
 #define RIPPLE_LEDGER_VIEW_H_INCLUDED
 
-#include <xrpld/core/Config.h>
 #include <xrpld/ledger/ApplyView.h>
 #include <xrpld/ledger/OpenView.h>
-#include <xrpld/ledger/RawView.h>
 #include <xrpld/ledger/ReadView.h>
+
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
-#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
+
 #include <functional>
 #include <map>
-#include <memory>
 #include <utility>
-
-#include <vector>
 
 namespace ripple {
 
@@ -152,6 +148,20 @@ isFrozen(ReadView const& view, AccountID const& account, Asset const& asset)
         [&](auto const& issue) { return isFrozen(view, account, issue); },
         asset.value());
 }
+
+[[nodiscard]] bool
+isDeepFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Currency const& currency,
+    AccountID const& issuer);
+
+[[nodiscard]] bool
+isLPTokenFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Issue const& asset,
+    Issue const& asset2);
 
 // Returns the amount an account can spend without going into debt.
 //
@@ -438,6 +448,7 @@ trustCreate(
     const bool bAuth,           // --> authorize account.
     const bool bNoRipple,       // --> others cannot ripple through
     const bool bFreeze,         // --> funds cannot leave
+    bool bDeepFreeze,           // --> can neither receive nor send funds
     STAmount const& saBalance,  // --> balance of account being set.
                                 // Issuer should be noAccount()
     STAmount const& saLimit,    // --> limit for account being set.

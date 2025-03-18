@@ -18,8 +18,10 @@
 //==============================================================================
 
 #include <test/jtx.h>
+
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
+
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
@@ -347,6 +349,7 @@ public:
         auto const USD = gw["USD"];
         env.fund(XRP(100000), gw);
 
+        env.set_retries(0);
         auto const result = env.rpc("ledger_request", "1")[jss::result];
         // The current HTTP/S ServerHandler returns an HTTP 403 error code here
         // rather than a noPermission JSON error.  The JSONRPCClient just eats

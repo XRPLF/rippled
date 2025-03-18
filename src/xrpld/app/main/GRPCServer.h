@@ -28,11 +28,10 @@
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/Handler.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
-#include <xrpld/rpc/detail/Tuning.h>
-#include <xrpl/protocol/ErrorCodes.h>
-#include <xrpl/resource/Charge.h>
 
 #include <xrpl/proto/org/xrpl/rpc/v1/xrp_ledger.grpc.pb.h>
+#include <xrpl/resource/Charge.h>
+
 #include <grpcpp/grpcpp.h>
 
 namespace ripple {
@@ -84,6 +83,7 @@ private:
     Application& app_;
 
     std::string serverAddress_;
+    std::uint16_t serverPort_ = 0;
 
     std::vector<boost::asio::ip::address> secureGatewayIPs_;
 
@@ -140,6 +140,10 @@ public:
     // Create a CallData object for each RPC. Return created objects in vector
     std::vector<std::shared_ptr<Processor>>
     setupListeners();
+
+    // Obtaining actually binded endpoint (if port 0 was used for server setup).
+    boost::asio::ip::tcp::endpoint
+    getEndpoint() const;
 
 private:
     // Class encompasing the state and logic needed to serve a request.
@@ -305,13 +309,16 @@ public:
     GRPCServer&
     operator=(const GRPCServer&) = delete;
 
-    void
+    bool
     start();
 
     void
     stop();
 
     ~GRPCServer();
+
+    boost::asio::ip::tcp::endpoint
+    getEndpoint() const;
 
 private:
     GRPCServerImpl impl_;

@@ -20,6 +20,7 @@
 #include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 #include <xrpld/net/HTTPClient.h>
+
 #include <xrpl/basics/FileUtilities.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>
@@ -28,11 +29,12 @@
 #include <xrpl/json/json_reader.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/SystemParameters.h>
+
 #include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
 #include <boost/predef.h>
 #include <boost/regex.hpp>
-#include <boost/system/error_code.hpp>
+
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
@@ -420,6 +422,35 @@ Config::setup(
     get_if_exists(nodeDbSection, "fast_load", FAST_LOAD);
 }
 
+// 0 ports are allowed for unit tests, but still not allowed to be present in
+// config file
+static void
+checkZeroPorts(Config const& config)
+{
+    if (!config.exists("server"))
+        return;
+
+    for (auto const& name : config.section("server").values())
+    {
+        if (!config.exists(name))
+            return;
+
+        auto const& section = config[name];
+        auto const optResult = section.get("port");
+        if (optResult)
+        {
+            auto const port = beast::lexicalCast<std::uint16_t>(*optResult);
+            if (!port)
+            {
+                std::stringstream ss;
+                ss << "Invalid value '" << *optResult << "' for key 'port' in ["
+                   << name << "]";
+                Throw<std::runtime_error>(ss.str());
+            }
+        }
+    }
+}
+
 void
 Config::load()
 {
@@ -440,6 +471,7 @@ Config::load()
     }
 
     loadFromString(fileContents);
+    checkZeroPorts(*this);
 }
 
 void
@@ -912,6 +944,13 @@ Config::loadFromString(std::string const& fileContents)
             if (valListKeys)
                 section(SECTION_VALIDATOR_LIST_KEYS).append(*valListKeys);
 
+            auto valListThreshold =
+                getIniFileSection(iniFile, SECTION_VALIDATOR_LIST_THRESHOLD);
+
+            if (valListThreshold)
+                section(SECTION_VALIDATOR_LIST_THRESHOLD)
+                    .append(*valListThreshold);
+
             if (!entries && !valKeyEntries && !valListKeys)
                 Throw<std::runtime_error>(
                     "The file specified in [" SECTION_VALIDATORS_FILE
@@ -925,6 +964,38 @@ Config::loadFromString(std::string const& fileContents)
                     " section: " +
                     validatorsFile.string());
         }
+
+        VALIDATOR_LIST_THRESHOLD = [&]() -> std::optional<std::size_t> {
+            auto const& listThreshold =
+                section(SECTION_VALIDATOR_LIST_THRESHOLD);
+            if (listThreshold.lines().empty())
+                return std::nullopt;
+            else if (listThreshold.values().size() == 1)
+            {
+                auto strTemp = listThreshold.values()[0];
+                auto const listThreshold =
+                    beast::lexicalCastThrow<std::size_t>(strTemp);
+                if (listThreshold == 0)
+                    return std::nullopt;  // NOTE: Explicitly ask for computed
+                else if (
+                    listThreshold >
+                    section(SECTION_VALIDATOR_LIST_KEYS).values().size())
+                {
+                    Throw<std::runtime_error>(
+                        "Value in config section "
+                        "[" SECTION_VALIDATOR_LIST_THRESHOLD
+                        "] exceeds the number of configured list keys");
+                }
+                return listThreshold;
+            }
+            else
+            {
+                Throw<std::runtime_error>(
+                    "Config section "
+                    "[" SECTION_VALIDATOR_LIST_THRESHOLD
+                    "] should contain single value only");
+            }
+        }();
 
         // Consolidate [validator_keys] and [validators]
         section(SECTION_VALIDATORS)

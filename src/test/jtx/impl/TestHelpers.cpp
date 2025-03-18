@@ -18,9 +18,9 @@
 //==============================================================================
 
 #include <test/jtx/TestHelpers.h>
-
 #include <test/jtx/offer.h>
 #include <test/jtx/owners.h>
+
 #include <xrpl/protocol/TxFlags.h>
 
 namespace ripple {
@@ -53,10 +53,7 @@ checkArraySize(Json::Value const& val, unsigned int size)
 std::uint32_t
 ownerCount(Env const& env, Account const& account)
 {
-    std::uint32_t ret{0};
-    if (auto const sleAccount = env.le(account))
-        ret = sleAccount->getFieldU32(sfOwnerCount);
-    return ret;
+    return env.ownerCount(account);
 }
 
 /* Path finding */

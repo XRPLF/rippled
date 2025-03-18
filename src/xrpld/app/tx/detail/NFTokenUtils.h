@@ -22,8 +22,8 @@
 
 #include <xrpld/app/tx/detail/Transactor.h>
 #include <xrpld/ledger/ApplyView.h>
+
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/basics/tagged_integer.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/nft.h>
@@ -104,6 +104,13 @@ repairNFTokenDirectoryLinks(ApplyView& view, AccountID const& owner);
 
 bool
 compareTokens(uint256 const& a, uint256 const& b);
+
+TER
+changeTokenURI(
+    ApplyView& view,
+    AccountID const& owner,
+    uint256 const& nftokenID,
+    std::optional<ripple::Slice> const& uri);
 
 /** Preflight checks shared by NFTokenCreateOffer and NFTokenMint */
 NotTEC

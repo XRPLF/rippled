@@ -18,8 +18,6 @@
 //==============================================================================
 
 #include <xrpld/ledger/CachedView.h>
-#include <xrpl/basics/contract.h>
-#include <xrpl/protocol/Serializer.h>
 
 namespace ripple {
 namespace detail {
@@ -57,6 +55,10 @@ CachedViewImpl::read(Keylet const& k) const
         baseRead = true;
         return base_.read(k);
     });
+    // If the sle is null, then a failure must have occurred in base_.read()
+    XRPL_ASSERT(
+        sle || baseRead,
+        "ripple::CachedView::read : null SLE result from base");
     if (cacheHit && baseRead)
         hitsexpired.increment();
     else if (cacheHit)

@@ -23,7 +23,7 @@
 #include <xrpld/rpc/GRPCHandlers.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/handlers/LedgerHandler.h>
-#include <xrpl/json/Object.h>
+
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
@@ -80,7 +80,7 @@ LedgerHandler::check()
             return rpcTOO_BUSY;
         }
         context_.loadType =
-            binary ? Resource::feeMediumBurdenRPC : Resource::feeHighBurdenRPC;
+            binary ? Resource::feeMediumBurdenRPC : Resource::feeHeavyBurdenRPC;
     }
     if (queue)
     {

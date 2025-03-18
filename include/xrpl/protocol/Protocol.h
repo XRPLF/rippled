@@ -23,6 +23,7 @@
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/partitioned_unordered_map.h>
+
 #include <cstdint>
 
 namespace ripple {
@@ -104,6 +105,10 @@ std::size_t constexpr maxCredentialTypeLength = 64;
 
 /** The maximum number of credentials can be passed in array */
 std::size_t constexpr maxCredentialsArraySize = 8;
+
+/** The maximum number of credentials can be passed in array for permissioned
+ * domain */
+std::size_t constexpr maxPermissionedDomainCredentialsArraySize = 10;
 
 /** The maximum length of MPTokenMetadata */
 std::size_t constexpr maxMPTokenMetadataLength = 1024;

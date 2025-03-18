@@ -20,9 +20,10 @@
 #include <test/jtx.h>
 #include <test/jtx/AMM.h>
 #include <test/jtx/Env.h>
+
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/app/tx/detail/ApplyContext.h>
-#include <xrpld/app/tx/detail/Transactor.h>
+
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/InnerObjectFormats.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -406,6 +407,183 @@ class Invariants_test : public beast::unit_test::suite
                 ac.view().insert(sleNew);
                 return true;
             });
+    }
+
+    void
+    testNoDeepFreezeTrustLinesWithoutFreeze()
+    {
+        using namespace test::jtx;
+        testcase << "trust lines with deep freeze flag without freeze "
+                    "not allowed";
+        doInvariantCheck(
+            {{"a trust line with deep freeze flag without normal freeze was "
+              "created"}},
+            [](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const sleNew = std::make_shared<SLE>(
+                    keylet::line(A1, A2, A1["USD"].currency));
+                sleNew->setFieldAmount(sfLowLimit, A1["USD"](0));
+                sleNew->setFieldAmount(sfHighLimit, A1["USD"](0));
+
+                std::uint32_t uFlags = 0u;
+                uFlags |= lsfLowDeepFreeze;
+                sleNew->setFieldU32(sfFlags, uFlags);
+                ac.view().insert(sleNew);
+                return true;
+            });
+
+        doInvariantCheck(
+            {{"a trust line with deep freeze flag without normal freeze was "
+              "created"}},
+            [](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const sleNew = std::make_shared<SLE>(
+                    keylet::line(A1, A2, A1["USD"].currency));
+                sleNew->setFieldAmount(sfLowLimit, A1["USD"](0));
+                sleNew->setFieldAmount(sfHighLimit, A1["USD"](0));
+                std::uint32_t uFlags = 0u;
+                uFlags |= lsfHighDeepFreeze;
+                sleNew->setFieldU32(sfFlags, uFlags);
+                ac.view().insert(sleNew);
+                return true;
+            });
+
+        doInvariantCheck(
+            {{"a trust line with deep freeze flag without normal freeze was "
+              "created"}},
+            [](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const sleNew = std::make_shared<SLE>(
+                    keylet::line(A1, A2, A1["USD"].currency));
+                sleNew->setFieldAmount(sfLowLimit, A1["USD"](0));
+                sleNew->setFieldAmount(sfHighLimit, A1["USD"](0));
+                std::uint32_t uFlags = 0u;
+                uFlags |= lsfLowDeepFreeze | lsfHighDeepFreeze;
+                sleNew->setFieldU32(sfFlags, uFlags);
+                ac.view().insert(sleNew);
+                return true;
+            });
+
+        doInvariantCheck(
+            {{"a trust line with deep freeze flag without normal freeze was "
+              "created"}},
+            [](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const sleNew = std::make_shared<SLE>(
+                    keylet::line(A1, A2, A1["USD"].currency));
+                sleNew->setFieldAmount(sfLowLimit, A1["USD"](0));
+                sleNew->setFieldAmount(sfHighLimit, A1["USD"](0));
+                std::uint32_t uFlags = 0u;
+                uFlags |= lsfLowDeepFreeze | lsfHighFreeze;
+                sleNew->setFieldU32(sfFlags, uFlags);
+                ac.view().insert(sleNew);
+                return true;
+            });
+
+        doInvariantCheck(
+            {{"a trust line with deep freeze flag without normal freeze was "
+              "created"}},
+            [](Account const& A1, Account const& A2, ApplyContext& ac) {
+                auto const sleNew = std::make_shared<SLE>(
+                    keylet::line(A1, A2, A1["USD"].currency));
+                sleNew->setFieldAmount(sfLowLimit, A1["USD"](0));
+                sleNew->setFieldAmount(sfHighLimit, A1["USD"](0));
+                std::uint32_t uFlags = 0u;
+                uFlags |= lsfLowFreeze | lsfHighDeepFreeze;
+                sleNew->setFieldU32(sfFlags, uFlags);
+                ac.view().insert(sleNew);
+                return true;
+            });
+    }
+
+    void
+    testTransfersNotFrozen()
+    {
+        using namespace test::jtx;
+        testcase << "transfers when frozen";
+
+        Account G1{"G1"};
+        // Helper function to establish the trustlines
+        auto const createTrustlines =
+            [&](Account const& A1, Account const& A2, Env& env) {
+                // Preclose callback to establish trust lines with gateway
+                env.fund(XRP(1000), G1);
+
+                env.trust(G1["USD"](10000), A1);
+                env.trust(G1["USD"](10000), A2);
+                env.close();
+
+                env(pay(G1, A1, G1["USD"](1000)));
+                env(pay(G1, A2, G1["USD"](1000)));
+                env.close();
+
+                return true;
+            };
+
+        auto const A1FrozenByIssuer =
+            [&](Account const& A1, Account const& A2, Env& env) {
+                createTrustlines(A1, A2, env);
+                env(trust(G1, A1["USD"](10000), tfSetFreeze));
+                env.close();
+
+                return true;
+            };
+
+        auto const A1DeepFrozenByIssuer =
+            [&](Account const& A1, Account const& A2, Env& env) {
+                A1FrozenByIssuer(A1, A2, env);
+                env(trust(G1, A1["USD"](10000), tfSetDeepFreeze));
+                env.close();
+
+                return true;
+            };
+
+        auto const changeBalances = [&](Account const& A1,
+                                        Account const& A2,
+                                        ApplyContext& ac,
+                                        int A1Balance,
+                                        int A2Balance) {
+            auto const sleA1 = ac.view().peek(keylet::line(A1, G1["USD"]));
+            auto const sleA2 = ac.view().peek(keylet::line(A2, G1["USD"]));
+
+            sleA1->setFieldAmount(sfBalance, G1["USD"](A1Balance));
+            sleA2->setFieldAmount(sfBalance, G1["USD"](A2Balance));
+
+            ac.view().update(sleA1);
+            ac.view().update(sleA2);
+        };
+
+        // test: imitating frozen A1 making a payment to A2.
+        doInvariantCheck(
+            {{"Attempting to move frozen funds"}},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                changeBalances(A1, A2, ac, -900, -1100);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttPAYMENT, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            A1FrozenByIssuer);
+
+        // test: imitating deep frozen A1 making a payment to A2.
+        doInvariantCheck(
+            {{"Attempting to move frozen funds"}},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                changeBalances(A1, A2, ac, -900, -1100);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttPAYMENT, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            A1DeepFrozenByIssuer);
+
+        // test: imitating A2 making a payment to deep frozen A1.
+        doInvariantCheck(
+            {{"Attempting to move frozen funds"}},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                changeBalances(A1, A2, ac, -1100, -900);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttPAYMENT, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+            A1DeepFrozenByIssuer);
     }
 
     void
@@ -798,6 +976,260 @@ class Invariants_test : public beast::unit_test::suite
             });
     }
 
+    void
+    testPermissionedDomainInvariants()
+    {
+        using namespace test::jtx;
+
+        testcase << "PermissionedDomain";
+        doInvariantCheck(
+            {{"permissioned domain with no rules."}},
+            [](Account const& A1, Account const&, ApplyContext& ac) {
+                Keylet const pdKeylet = keylet::permissionedDomain(A1.id(), 10);
+                auto slePd = std::make_shared<SLE>(pdKeylet);
+                slePd->setAccountID(sfOwner, A1);
+                slePd->setFieldU32(sfSequence, 10);
+
+                ac.view().insert(slePd);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+
+        testcase << "PermissionedDomain 2";
+
+        auto constexpr tooBig = maxPermissionedDomainCredentialsArraySize + 1;
+        doInvariantCheck(
+            {{"permissioned domain bad credentials size " +
+              std::to_string(tooBig)}},
+            [](Account const& A1, Account const& A2, ApplyContext& ac) {
+                Keylet const pdKeylet = keylet::permissionedDomain(A1.id(), 10);
+                auto slePd = std::make_shared<SLE>(pdKeylet);
+                slePd->setAccountID(sfOwner, A1);
+                slePd->setFieldU32(sfSequence, 10);
+
+                STArray credentials(sfAcceptedCredentials, tooBig);
+                for (std::size_t n = 0; n < tooBig; ++n)
+                {
+                    auto cred = STObject::makeInnerObject(sfCredential);
+                    cred.setAccountID(sfIssuer, A2);
+                    auto credType =
+                        std::string("cred_type") + std::to_string(n);
+                    cred.setFieldVL(
+                        sfCredentialType,
+                        Slice(credType.c_str(), credType.size()));
+                    credentials.push_back(std::move(cred));
+                }
+                slePd->setFieldArray(sfAcceptedCredentials, credentials);
+                ac.view().insert(slePd);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+
+        testcase << "PermissionedDomain 3";
+        doInvariantCheck(
+            {{"permissioned domain credentials aren't sorted"}},
+            [](Account const& A1, Account const& A2, ApplyContext& ac) {
+                Keylet const pdKeylet = keylet::permissionedDomain(A1.id(), 10);
+                auto slePd = std::make_shared<SLE>(pdKeylet);
+                slePd->setAccountID(sfOwner, A1);
+                slePd->setFieldU32(sfSequence, 10);
+
+                STArray credentials(sfAcceptedCredentials, 2);
+                for (std::size_t n = 0; n < 2; ++n)
+                {
+                    auto cred = STObject::makeInnerObject(sfCredential);
+                    cred.setAccountID(sfIssuer, A2);
+                    auto credType =
+                        std::string("cred_type") + std::to_string(9 - n);
+                    cred.setFieldVL(
+                        sfCredentialType,
+                        Slice(credType.c_str(), credType.size()));
+                    credentials.push_back(std::move(cred));
+                }
+                slePd->setFieldArray(sfAcceptedCredentials, credentials);
+                ac.view().insert(slePd);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject&) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+
+        testcase << "PermissionedDomain 4";
+        doInvariantCheck(
+            {{"permissioned domain credentials aren't unique"}},
+            [](Account const& A1, Account const& A2, ApplyContext& ac) {
+                Keylet const pdKeylet = keylet::permissionedDomain(A1.id(), 10);
+                auto slePd = std::make_shared<SLE>(pdKeylet);
+                slePd->setAccountID(sfOwner, A1);
+                slePd->setFieldU32(sfSequence, 10);
+
+                STArray credentials(sfAcceptedCredentials, 2);
+                for (std::size_t n = 0; n < 2; ++n)
+                {
+                    auto cred = STObject::makeInnerObject(sfCredential);
+                    cred.setAccountID(sfIssuer, A2);
+                    cred.setFieldVL(sfCredentialType, Slice("cred_type", 9));
+                    credentials.push_back(std::move(cred));
+                }
+                slePd->setFieldArray(sfAcceptedCredentials, credentials);
+                ac.view().insert(slePd);
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+
+        auto const createPD = [](ApplyContext& ac,
+                                 std::shared_ptr<SLE>& sle,
+                                 Account const& A1,
+                                 Account const& A2) {
+            sle->setAccountID(sfOwner, A1);
+            sle->setFieldU32(sfSequence, 10);
+
+            STArray credentials(sfAcceptedCredentials, 2);
+            for (std::size_t n = 0; n < 2; ++n)
+            {
+                auto cred = STObject::makeInnerObject(sfCredential);
+                cred.setAccountID(sfIssuer, A2);
+                auto credType = "cred_type" + std::to_string(n);
+                cred.setFieldVL(
+                    sfCredentialType, Slice(credType.c_str(), credType.size()));
+                credentials.push_back(std::move(cred));
+            }
+            sle->setFieldArray(sfAcceptedCredentials, credentials);
+            ac.view().insert(sle);
+        };
+
+        testcase << "PermissionedDomain Set 1";
+        doInvariantCheck(
+            {{"permissioned domain with no rules."}},
+            [createPD](Account const& A1, Account const& A2, ApplyContext& ac) {
+                Keylet const pdKeylet = keylet::permissionedDomain(A1.id(), 10);
+                auto slePd = std::make_shared<SLE>(pdKeylet);
+
+                // create PD
+                createPD(ac, slePd, A1, A2);
+
+                // update PD with empty rules
+                {
+                    STArray credentials(sfAcceptedCredentials, 2);
+                    slePd->setFieldArray(sfAcceptedCredentials, credentials);
+                    ac.view().update(slePd);
+                }
+
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+
+        testcase << "PermissionedDomain Set 2";
+        doInvariantCheck(
+            {{"permissioned domain bad credentials size " +
+              std::to_string(tooBig)}},
+            [createPD](Account const& A1, Account const& A2, ApplyContext& ac) {
+                Keylet const pdKeylet = keylet::permissionedDomain(A1.id(), 10);
+                auto slePd = std::make_shared<SLE>(pdKeylet);
+
+                // create PD
+                createPD(ac, slePd, A1, A2);
+
+                // update PD
+                {
+                    STArray credentials(sfAcceptedCredentials, tooBig);
+
+                    for (std::size_t n = 0; n < tooBig; ++n)
+                    {
+                        auto cred = STObject::makeInnerObject(sfCredential);
+                        cred.setAccountID(sfIssuer, A2);
+                        auto credType = "cred_type2" + std::to_string(n);
+                        cred.setFieldVL(
+                            sfCredentialType,
+                            Slice(credType.c_str(), credType.size()));
+                        credentials.push_back(std::move(cred));
+                    }
+
+                    slePd->setFieldArray(sfAcceptedCredentials, credentials);
+                    ac.view().update(slePd);
+                }
+
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+
+        testcase << "PermissionedDomain Set 3";
+        doInvariantCheck(
+            {{"permissioned domain credentials aren't sorted"}},
+            [createPD](Account const& A1, Account const& A2, ApplyContext& ac) {
+                Keylet const pdKeylet = keylet::permissionedDomain(A1.id(), 10);
+                auto slePd = std::make_shared<SLE>(pdKeylet);
+
+                // create PD
+                createPD(ac, slePd, A1, A2);
+
+                // update PD
+                {
+                    STArray credentials(sfAcceptedCredentials, 2);
+                    for (std::size_t n = 0; n < 2; ++n)
+                    {
+                        auto cred = STObject::makeInnerObject(sfCredential);
+                        cred.setAccountID(sfIssuer, A2);
+                        auto credType =
+                            std::string("cred_type2") + std::to_string(9 - n);
+                        cred.setFieldVL(
+                            sfCredentialType,
+                            Slice(credType.c_str(), credType.size()));
+                        credentials.push_back(std::move(cred));
+                    }
+
+                    slePd->setFieldArray(sfAcceptedCredentials, credentials);
+                    ac.view().update(slePd);
+                }
+
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+
+        testcase << "PermissionedDomain Set 4";
+        doInvariantCheck(
+            {{"permissioned domain credentials aren't unique"}},
+            [createPD](Account const& A1, Account const& A2, ApplyContext& ac) {
+                Keylet const pdKeylet = keylet::permissionedDomain(A1.id(), 10);
+                auto slePd = std::make_shared<SLE>(pdKeylet);
+
+                // create PD
+                createPD(ac, slePd, A1, A2);
+
+                // update PD
+                {
+                    STArray credentials(sfAcceptedCredentials, 2);
+                    for (std::size_t n = 0; n < 2; ++n)
+                    {
+                        auto cred = STObject::makeInnerObject(sfCredential);
+                        cred.setAccountID(sfIssuer, A2);
+                        cred.setFieldVL(
+                            sfCredentialType, Slice("cred_type", 9));
+                        credentials.push_back(std::move(cred));
+                    }
+                    slePd->setFieldArray(sfAcceptedCredentials, credentials);
+                    ac.view().update(slePd);
+                }
+
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttPERMISSIONED_DOMAIN_SET, [](STObject& tx) {}},
+            {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
+    }
+
 public:
     void
     run() override
@@ -807,12 +1239,15 @@ public:
         testAccountRootsDeletedClean();
         testTypesMatch();
         testNoXRPTrustLine();
+        testNoDeepFreezeTrustLinesWithoutFreeze();
+        testTransfersNotFrozen();
         testXRPBalanceCheck();
         testTransactionFeeCheck();
         testNoBadOffers();
         testNoZeroEscrow();
         testValidNewAccountRoot();
         testNFTokenPageInvariants();
+        testPermissionedDomainInvariants();
     }
 };
 

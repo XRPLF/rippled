@@ -20,9 +20,9 @@
 #ifndef RIPPLE_PROTOCOL_TXFLAGS_H_INCLUDED
 #define RIPPLE_PROTOCOL_TXFLAGS_H_INCLUDED
 
-#include <cstdint>
-
 #include <xrpl/protocol/LedgerFormats.h>
+
+#include <cstdint>
 
 namespace ripple {
 
@@ -114,9 +114,11 @@ constexpr std::uint32_t tfSetNoRipple                      = 0x00020000;
 constexpr std::uint32_t tfClearNoRipple                    = 0x00040000;
 constexpr std::uint32_t tfSetFreeze                        = 0x00100000;
 constexpr std::uint32_t tfClearFreeze                      = 0x00200000;
+constexpr std::uint32_t tfSetDeepFreeze                    = 0x00400000;
+constexpr std::uint32_t tfClearDeepFreeze                  = 0x00800000;
 constexpr std::uint32_t tfTrustSetMask =
     ~(tfUniversal | tfSetfAuth | tfSetNoRipple | tfClearNoRipple | tfSetFreeze |
-      tfClearFreeze);
+      tfClearFreeze | tfSetDeepFreeze | tfClearDeepFreeze);
 
 // EnableAmendment flags:
 constexpr std::uint32_t tfGotMajority                      = 0x00010000;
@@ -132,6 +134,7 @@ constexpr std::uint32_t const tfBurnable                   = 0x00000001;
 constexpr std::uint32_t const tfOnlyXRP                    = 0x00000002;
 constexpr std::uint32_t const tfTrustLine                  = 0x00000004;
 constexpr std::uint32_t const tfTransferable               = 0x00000008;
+constexpr std::uint32_t const tfMutable                    = 0x00000010;
 
 // MPTokenIssuanceCreate flags:
 // NOTE - there is intentionally no flag here for lsfMPTLocked, which this transaction cannot mutate. 
@@ -169,11 +172,18 @@ constexpr std::uint32_t const tfMPTokenIssuanceDestroyMask  = ~tfUniversal;
 // The fixRemoveNFTokenAutoTrustLine amendment disables minting with the
 // tfTrustLine flag as a way to prevent the attack.  But until the
 // amendment passes we still need to keep the old behavior available.
-constexpr std::uint32_t const tfNFTokenMintOldMask =
-    ~(tfUniversal | tfBurnable | tfOnlyXRP | tfTrustLine | tfTransferable);
-
 constexpr std::uint32_t const tfNFTokenMintMask =
     ~(tfUniversal | tfBurnable | tfOnlyXRP | tfTransferable);
+
+constexpr std::uint32_t const tfNFTokenMintOldMask =
+    ~( ~tfNFTokenMintMask | tfTrustLine);
+
+// if featureDynamicNFT enabled then new flag allowing mutable URI available.
+constexpr std::uint32_t const tfNFTokenMintOldMaskWithMutable =
+    ~( ~tfNFTokenMintOldMask | tfMutable);
+
+constexpr std::uint32_t const tfNFTokenMintMaskWithMutable =
+    ~( ~tfNFTokenMintMask | tfMutable);
 
 // NFTokenCreateOffer flags:
 constexpr std::uint32_t const tfSellNFToken                = 0x00000001;
@@ -181,23 +191,23 @@ constexpr std::uint32_t const tfNFTokenCreateOfferMask =
     ~(tfUniversal | tfSellNFToken);
 
 // NFTokenCancelOffer flags:
-constexpr std::uint32_t const tfNFTokenCancelOfferMask     = ~(tfUniversal);
+constexpr std::uint32_t const tfNFTokenCancelOfferMask     = ~tfUniversal;
 
 // NFTokenAcceptOffer flags:
 constexpr std::uint32_t const tfNFTokenAcceptOfferMask     = ~tfUniversal;
 
 // Clawback flags:
-constexpr std::uint32_t const tfClawbackMask     = ~tfUniversal;
+constexpr std::uint32_t const tfClawbackMask               = ~tfUniversal;
 
 // AMM Flags:
-constexpr std::uint32_t tfLPToken                      = 0x00010000;
-constexpr std::uint32_t tfWithdrawAll                  = 0x00020000;
-constexpr std::uint32_t tfOneAssetWithdrawAll          = 0x00040000;
-constexpr std::uint32_t tfSingleAsset                  = 0x00080000;
-constexpr std::uint32_t tfTwoAsset                     = 0x00100000;
-constexpr std::uint32_t tfOneAssetLPToken              = 0x00200000;
-constexpr std::uint32_t tfLimitLPToken                 = 0x00400000;
-constexpr std::uint32_t tfTwoAssetIfEmpty              = 0x00800000;
+constexpr std::uint32_t tfLPToken                          = 0x00010000;
+constexpr std::uint32_t tfWithdrawAll                      = 0x00020000;
+constexpr std::uint32_t tfOneAssetWithdrawAll              = 0x00040000;
+constexpr std::uint32_t tfSingleAsset                      = 0x00080000;
+constexpr std::uint32_t tfTwoAsset                         = 0x00100000;
+constexpr std::uint32_t tfOneAssetLPToken                  = 0x00200000;
+constexpr std::uint32_t tfLimitLPToken                     = 0x00400000;
+constexpr std::uint32_t tfTwoAssetIfEmpty                  = 0x00800000;
 constexpr std::uint32_t tfWithdrawSubTx =
     tfLPToken | tfSingleAsset | tfTwoAsset | tfOneAssetLPToken |
     tfLimitLPToken | tfWithdrawAll | tfOneAssetWithdrawAll;

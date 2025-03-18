@@ -18,13 +18,13 @@
 //==============================================================================
 
 #include <test/jtx.h>
+
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
 namespace ripple {
-
 namespace RPC {
 
 class AccountLines_test : public beast::unit_test::suite
@@ -167,7 +167,11 @@ public:
             env.close();
 
             // Set flags on gw2 trust lines so we can look for them.
-            env(trust(alice, gw2Currency(0), gw2, tfSetNoRipple | tfSetFreeze));
+            env(trust(
+                alice,
+                gw2Currency(0),
+                gw2,
+                tfSetNoRipple | tfSetFreeze | tfSetDeepFreeze));
         }
         env.close();
         LedgerInfo const ledger58Info = env.closed()->info();
@@ -246,6 +250,10 @@ public:
                     gw1.human() + R"("})");
             BEAST_EXPECT(lines[jss::result][jss::lines].isArray());
             BEAST_EXPECT(lines[jss::result][jss::lines].size() == 26);
+
+            // Check no ripple is not set for trustlines between alice and gw1
+            auto const& line = lines[jss::result][jss::lines][0u];
+            BEAST_EXPECT(!line[jss::no_ripple].isMember(jss::no_ripple));
         }
         {
             // Use a malformed peer.
@@ -344,6 +352,7 @@ public:
                     gw2.human() + R"("})");
             auto const& line = lines[jss::result][jss::lines][0u];
             BEAST_EXPECT(line[jss::freeze].asBool() == true);
+            BEAST_EXPECT(line[jss::deep_freeze].asBool() == true);
             BEAST_EXPECT(line[jss::no_ripple].asBool() == true);
             BEAST_EXPECT(line[jss::peer_authorized].asBool() == true);
         }
@@ -359,6 +368,7 @@ public:
                     alice.human() + R"("})");
             auto const& lineA = linesA[jss::result][jss::lines][0u];
             BEAST_EXPECT(lineA[jss::freeze_peer].asBool() == true);
+            BEAST_EXPECT(lineA[jss::deep_freeze_peer].asBool() == true);
             BEAST_EXPECT(lineA[jss::no_ripple_peer].asBool() == true);
             BEAST_EXPECT(lineA[jss::authorized].asBool() == true);
 
@@ -981,7 +991,11 @@ public:
             env.close();
 
             // Set flags on gw2 trust lines so we can look for them.
-            env(trust(alice, gw2Currency(0), gw2, tfSetNoRipple | tfSetFreeze));
+            env(trust(
+                alice,
+                gw2Currency(0),
+                gw2,
+                tfSetNoRipple | tfSetFreeze | tfSetDeepFreeze));
         }
         env.close();
         LedgerInfo const ledger58Info = env.closed()->info();
@@ -1311,6 +1325,7 @@ public:
                     gw2.human() + R"("}})");
             auto const& line = lines[jss::result][jss::lines][0u];
             BEAST_EXPECT(line[jss::freeze].asBool() == true);
+            BEAST_EXPECT(line[jss::deep_freeze].asBool() == true);
             BEAST_EXPECT(line[jss::no_ripple].asBool() == true);
             BEAST_EXPECT(line[jss::peer_authorized].asBool() == true);
             BEAST_EXPECT(
@@ -1338,6 +1353,7 @@ public:
                     alice.human() + R"("}})");
             auto const& lineA = linesA[jss::result][jss::lines][0u];
             BEAST_EXPECT(lineA[jss::freeze_peer].asBool() == true);
+            BEAST_EXPECT(lineA[jss::deep_freeze_peer].asBool() == true);
             BEAST_EXPECT(lineA[jss::no_ripple_peer].asBool() == true);
             BEAST_EXPECT(lineA[jss::authorized].asBool() == true);
             BEAST_EXPECT(

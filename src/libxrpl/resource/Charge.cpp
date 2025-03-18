@@ -18,7 +18,11 @@
 //==============================================================================
 
 #include <xrpl/resource/Charge.h>
+
+#include <compare>
+#include <ostream>
 #include <sstream>
+#include <string>
 
 namespace ripple {
 namespace Resource {
@@ -61,10 +65,16 @@ Charge::operator==(Charge const& c) const
     return c.m_cost == m_cost;
 }
 
-bool
-Charge::operator!=(Charge const& c) const
+std::strong_ordering
+Charge::operator<=>(Charge const& c) const
 {
-    return c.m_cost != m_cost;
+    return m_cost <=> c.m_cost;
+}
+
+Charge
+Charge::operator*(value_type m) const
+{
+    return Charge(m_cost * m, m_label);
 }
 
 }  // namespace Resource

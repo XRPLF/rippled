@@ -18,33 +18,25 @@
 //==============================================================================
 
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/main/DBInit.h>
 #include <xrpld/app/rdb/Vacuum.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 #include <xrpld/core/TimeKeeper.h>
 #include <xrpld/net/RPCCall.h>
-#include <xrpld/rpc/RPCHandler.h>
+
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/StringUtilities.h>
-#include <xrpl/basics/contract.h>
-#include <xrpl/beast/clock/basic_seconds_clock.h>
 #include <xrpl/beast/core/CurrentThreadName.h>
-#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/BuildInfo.h>
-#include <xrpl/resource/Fees.h>
 
 #ifdef ENABLE_TESTS
 #include <test/unit_test/multi_runner.h>
+
 #include <xrpl/beast/unit_test/match.h>
 #endif  // ENABLE_TESTS
-
-#include <google/protobuf/stubs/common.h>
-
-#include <boost/filesystem.hpp>
-#include <boost/predef.h>
 #include <boost/process.hpp>
 #include <boost/program_options.hpp>
+
+#include <google/protobuf/stubs/common.h>
 
 #include <cstdlib>
 #include <iostream>
@@ -56,7 +48,7 @@
 #include <sys/types.h>
 #endif
 
-// Do we know the plaform we're compiling on? If you're adding new platforms
+// Do we know the platform we're compiling on? If you're adding new platforms
 // modify this check accordingly.
 #if !BOOST_OS_LINUX && !BOOST_OS_WINDOWS && !BOOST_OS_MACOS
 #error Supported platforms are: Linux, Windows and MacOS
@@ -178,6 +170,7 @@ printHelp(const po::options_description& desc)
            "     sign_for <signer_address> <signer_private_key> <tx_json> "
            "[offline]\n"
            "     stop\n"
+           "     simulate [<tx_blob>|<tx_json>] [<binary>]\n"
            "     submit <tx_blob>|[<private_key> <tx_json>]\n"
            "     submit_multisigned <tx_json>\n"
            "     tx <id>\n"
@@ -520,6 +513,12 @@ run(int argc, char** argv)
     {
         std::cout << "rippled version " << BuildInfo::getVersionString()
                   << std::endl;
+#ifdef GIT_COMMIT_HASH
+        std::cout << "Git commit hash: " << GIT_COMMIT_HASH << std::endl;
+#endif
+#ifdef GIT_BRANCH
+        std::cout << "Git build branch: " << GIT_BRANCH << std::endl;
+#endif
         return 0;
     }
 

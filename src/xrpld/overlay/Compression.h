@@ -22,7 +22,6 @@
 
 #include <xrpl/basics/CompressionAlgorithms.h>
 #include <xrpl/basics/Log.h>
-#include <lz4frame.h>
 
 namespace ripple {
 

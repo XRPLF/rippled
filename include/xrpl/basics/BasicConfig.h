@@ -21,18 +21,20 @@
 #define RIPPLE_BASICS_BASICCONFIG_H_INCLUDED
 
 #include <xrpl/basics/contract.h>
+
 #include <boost/beast/core/string.hpp>
 #include <boost/lexical_cast.hpp>
+
 #include <algorithm>
-#include <map>
 #include <optional>
-#include <ostream>
 #include <string>
+#include <unordered_map>
 #include <vector>
 
 namespace ripple {
 
-using IniFileSections = std::map<std::string, std::vector<std::string>>;
+using IniFileSections =
+    std::unordered_map<std::string, std::vector<std::string>>;
 
 //------------------------------------------------------------------------------
 
@@ -43,7 +45,7 @@ class Section
 {
 private:
     std::string name_;
-    std::map<std::string, std::string> lookup_;
+    std::unordered_map<std::string, std::string> lookup_;
     std::vector<std::string> lines_;
     std::vector<std::string> values_;
     bool had_trailing_comments_ = false;
@@ -215,7 +217,7 @@ public:
 class BasicConfig
 {
 private:
-    std::map<std::string, Section, boost::beast::iless> map_;
+    std::unordered_map<std::string, Section> map_;
 
 public:
     /** Returns `true` if a section with the given name exists. */

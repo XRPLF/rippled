@@ -21,6 +21,7 @@
 #define RIPPLE_TX_APPLYSTEPS_H_INCLUDED
 
 #include <xrpld/ledger/ApplyViewImpl.h>
+
 #include <xrpl/beast/utility/Journal.h>
 
 namespace ripple {
@@ -28,6 +29,18 @@ namespace ripple {
 class Application;
 class STTx;
 class TxQ;
+
+struct ApplyResult
+{
+    TER ter;
+    bool applied;
+    std::optional<TxMeta> metadata;
+
+    ApplyResult(TER t, bool a, std::optional<TxMeta> m = std::nullopt)
+        : ter(t), applied(a), metadata(std::move(m))
+    {
+    }
+};
 
 /** Return true if the transaction can claim a fee (tec),
     and the `ApplyFlags` do not allow soft failures.
@@ -333,7 +346,7 @@ calculateDefaultBaseFee(ReadView const& view, STTx const& tx);
     @return A pair with the `TER` and a `bool` indicating
     whether or not the transaction was applied.
 */
-std::pair<TER, bool>
+ApplyResult
 doApply(PreclaimResult const& preclaimResult, Application& app, OpenView& view);
 
 }  // namespace ripple

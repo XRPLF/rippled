@@ -21,6 +21,7 @@
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/overlay/Overlay.h>
+
 #include <xrpl/basics/FileUtilities.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
@@ -31,6 +32,7 @@
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/messages.h>
+
 #include <boost/regex.hpp>
 
 #include <cmath>
@@ -129,6 +131,7 @@ ValidatorList::ValidatorList(
     , j_(j)
     , quorum_(minimumQuorum.value_or(1))  // Genesis ledger quorum
     , minimumQuorum_(minimumQuorum)
+    , listThreshold_(1)
 {
 }
 
@@ -136,7 +139,8 @@ bool
 ValidatorList::load(
     std::optional<PublicKey> const& localSigningKey,
     std::vector<std::string> const& configKeys,
-    std::vector<std::string> const& publisherKeys)
+    std::vector<std::string> const& publisherKeys,
+    std::optional<std::size_t> listThreshold)
 {
     static boost::regex const re(
         "[[:space:]]*"       // skip leading whitespace
@@ -190,6 +194,26 @@ ValidatorList::load(
         ++count;
     }
 
+    if (listThreshold)
+    {
+        listThreshold_ = *listThreshold;
+        // This should be enforced by Config class
+        XRPL_ASSERT(
+            listThreshold_ > 0 && listThreshold_ <= publisherLists_.size(),
+            "ripple::ValidatorList::load : list threshold inside range");
+        JLOG(j_.debug()) << "Validator list threshold set in configuration to "
+                         << listThreshold_;
+    }
+    else
+    {
+        // Want truncated result when dividing an odd integer
+        listThreshold_ = (publisherLists_.size() < 3)
+            ? 1  //
+            : publisherLists_.size() / 2 + 1;
+        JLOG(j_.debug()) << "Validator list threshold computed as "
+                         << listThreshold_;
+    }
+
     JLOG(j_.debug()) << "Loaded " << count << " keys";
 
     if (localSigningKey)
@@ -197,7 +221,17 @@ ValidatorList::load(
 
     // Treat local validator key as though it was listed in the config
     if (localPubKey_)
-        keyListings_.insert({*localPubKey_, 1});
+    {
+        // The local validator must meet listThreshold_ so the validator does
+        // not ignore itself.
+        auto const [_, inserted] =
+            keyListings_.insert({*localPubKey_, listThreshold_});
+        if (inserted)
+        {
+            JLOG(j_.debug()) << "Added own master key "
+                             << toBase58(TokenType::NodePublic, *localPubKey_);
+        }
+    }
 
     JLOG(j_.debug()) << "Loading configured validator keys";
 
@@ -227,7 +261,7 @@ ValidatorList::load(
         if (*id == localPubKey_ || *id == localSigningKey)
             continue;
 
-        auto ret = keyListings_.insert({*id, 1});
+        auto ret = keyListings_.insert({*id, listThreshold_});
         if (!ret.second)
         {
             JLOG(j_.warn()) << "Duplicate node identity: " << match[1];
@@ -1615,6 +1649,8 @@ ValidatorList::getJson() const
             x[jss::status] = "unknown";
             x[jss::expiration] = "unknown";
         }
+
+        x[jss::validator_list_threshold] = Json::UInt(listThreshold_);
     }
 
     // Validator keys listed in the local config file
@@ -1794,11 +1830,42 @@ ValidatorList::calculateQuorum(
         return *minimumQuorum_;
     }
 
-    // Do not use achievable quorum until lists from all configured
-    // publishers are available
-    for (auto const& list : publisherLists_)
+    if (!publisherLists_.empty())
     {
-        if (list.second.status != PublisherStatus::available)
+        // Do not use achievable quorum until lists from a sufficient number of
+        // configured publishers are available
+        std::size_t unavailable = 0;
+        for (auto const& list : publisherLists_)
+        {
+            if (list.second.status != PublisherStatus::available)
+                unavailable += 1;
+        }
+        // There are two, subtly different, sides to list threshold:
+        //
+        // 1. The minimum required intersection between lists listThreshold_
+        //    for a validator to be included in trustedMasterKeys_.
+        //    If this many (or more) publishers are unavailable, we are likely
+        //    to NOT include a validator which otherwise would have been used.
+        //    We disable quorum if this happens.
+        // 2. The minimum number of publishers which, when unavailable, will
+        //    prevent us from hitting the above threshold on ANY validator.
+        //    This is calculated as:
+        //      N - M + 1
+        //    where
+        //      N: number of publishers i.e. publisherLists_.size()
+        //      M: minimum required intersection i.e. listThreshold_
+        //    If this happens, we still have this local validator and we do not
+        //    want it to form a quorum of 1, so we disable quorum as well.
+        //
+        // We disable quorum if the number of unavailable publishers exceeds
+        // either of the above thresholds
+        auto const errorThreshold = std::min(
+            listThreshold_,  //
+            publisherLists_.size() - listThreshold_ + 1);
+        XRPL_ASSERT(
+            errorThreshold > 0,
+            "ripple::ValidatorList::calculateQuorum : nonzero error threshold");
+        if (unavailable >= errorThreshold)
             return std::numeric_limits<std::size_t>::max();
     }
 
@@ -1943,20 +2010,27 @@ ValidatorList::updateTrusted(
     auto it = trustedMasterKeys_.cbegin();
     while (it != trustedMasterKeys_.cend())
     {
-        if (!keyListings_.count(*it) || validatorManifests_.revoked(*it))
+        auto const kit = keyListings_.find(*it);
+        if (kit == keyListings_.end() ||     //
+            kit->second < listThreshold_ ||  //
+            validatorManifests_.revoked(*it))
         {
             trustChanges.removed.insert(calcNodeID(*it));
             it = trustedMasterKeys_.erase(it);
         }
         else
         {
+            XRPL_ASSERT(
+                kit->second >= listThreshold_,
+                "ripple::ValidatorList::updateTrusted : count meets threshold");
             ++it;
         }
     }
 
     for (auto const& val : keyListings_)
     {
-        if (!validatorManifests_.revoked(val.first) &&
+        if (val.second >= listThreshold_ &&
+            !validatorManifests_.revoked(val.first) &&
             trustedMasterKeys_.emplace(val.first).second)
             trustChanges.added.insert(calcNodeID(val.first));
     }
@@ -2034,6 +2108,13 @@ ValidatorList::getTrustedMasterKeys() const
 {
     std::shared_lock read_lock{mutex_};
     return trustedMasterKeys_;
+}
+
+std::size_t
+ValidatorList::getListThreshold() const
+{
+    std::shared_lock read_lock{mutex_};
+    return listThreshold_;
 }
 
 hash_set<PublicKey>

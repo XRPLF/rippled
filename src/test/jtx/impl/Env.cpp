@@ -23,31 +23,27 @@
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/pay.h>
-#include <test/jtx/require.h>
 #include <test/jtx/seq.h>
 #include <test/jtx/sig.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/utility.h>
+
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/misc/NetworkOPs.h>
-#include <xrpld/app/misc/TxQ.h>
-#include <xrpld/consensus/LedgerTiming.h>
 #include <xrpld/net/HTTPClient.h>
 #include <xrpld/net/RPCCall.h>
+
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/ErrorCodes.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Serializer.h>
-#include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
+
 #include <memory>
 
 namespace ripple {
@@ -204,6 +200,15 @@ Env::balance(Account const& account, Issue const& issue) const
 }
 
 std::uint32_t
+Env::ownerCount(Account const& account) const
+{
+    auto const sle = le(account);
+    if (!sle)
+        Throw<std::runtime_error>("missing account root");
+    return sle->getFieldU32(sfOwnerCount);
+}
+
+std::uint32_t
 Env::seq(Account const& account) const
 {
     auto const sle = le(account);
@@ -317,24 +322,16 @@ Env::submit(JTx const& jt)
     auto const jr = [&]() {
         if (jt.stx)
         {
-            // We shouldn't need to retry, but it fixes the test on macOS for
-            // the moment.
-            int retries = 3;
-            do
-            {
-                txid_ = jt.stx->getTransactionID();
-                Serializer s;
-                jt.stx->add(s);
-                auto const jr = rpc("submit", strHex(s.slice()));
+            txid_ = jt.stx->getTransactionID();
+            Serializer s;
+            jt.stx->add(s);
+            auto const jr = rpc("submit", strHex(s.slice()));
 
-                parsedResult = parseResult(jr);
-                test.expect(parsedResult.ter, "ter uninitialized!");
-                ter_ = parsedResult.ter.value_or(telENV_RPC_FAILED);
-                if (ter_ != telENV_RPC_FAILED ||
-                    parsedResult.rpcCode != rpcINTERNAL ||
-                    jt.ter == telENV_RPC_FAILED || --retries <= 0)
-                    return jr;
-            } while (true);
+            parsedResult = parseResult(jr);
+            test.expect(parsedResult.ter, "ter uninitialized!");
+            ter_ = parsedResult.ter.value_or(telENV_RPC_FAILED);
+
+            return jr;
         }
         else
         {
@@ -492,9 +489,12 @@ Env::autofill(JTx& jt)
     if (jt.fill_seq)
         jtx::fill_seq(jv, *current());
 
-    uint32_t networkID = app().config().NETWORK_ID;
-    if (!jv.isMember(jss::NetworkID) && networkID > 1024)
-        jv[jss::NetworkID] = std::to_string(networkID);
+    if (jt.fill_netid)
+    {
+        uint32_t networkID = app().config().NETWORK_ID;
+        if (!jv.isMember(jss::NetworkID) && networkID > 1024)
+            jv[jss::NetworkID] = std::to_string(networkID);
+    }
 
     // Must come last
     try
@@ -503,7 +503,8 @@ Env::autofill(JTx& jt)
     }
     catch (parse_error const&)
     {
-        test.log << "parse failed:\n" << pretty(jv) << std::endl;
+        if (!parseFailureExpected_)
+            test.log << "parse failed:\n" << pretty(jv) << std::endl;
         Rethrow();
     }
 }
@@ -566,8 +567,21 @@ Env::do_rpc(
     std::vector<std::string> const& args,
     std::unordered_map<std::string, std::string> const& headers)
 {
-    return rpcClient(args, app().config(), app().logs(), apiVersion, headers)
-        .second;
+    auto response =
+        rpcClient(args, app().config(), app().logs(), apiVersion, headers);
+
+    for (unsigned ctr = 0; (ctr < retries_) and (response.first == rpcINTERNAL);
+         ++ctr)
+    {
+        JLOG(journal.error())
+            << "Env::do_rpc error, retrying, attempt #" << ctr + 1 << " ...";
+        std::this_thread::sleep_for(std::chrono::milliseconds(500));
+
+        response =
+            rpcClient(args, app().config(), app().logs(), apiVersion, headers);
+    }
+
+    return response.second;
 }
 
 void

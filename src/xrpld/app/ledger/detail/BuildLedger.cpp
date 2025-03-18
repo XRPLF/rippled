@@ -21,9 +21,9 @@
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/LedgerReplay.h>
 #include <xrpld/app/ledger/OpenLedger.h>
-#include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/CanonicalTXSet.h>
 #include <xrpld/app/tx/apply.h>
+
 #include <xrpl/protocol/Feature.h>
 
 namespace ripple {
@@ -131,17 +131,17 @@ applyTransactions(
                 switch (applyTransaction(
                     app, view, *it->second, certainRetry, tapNONE, j))
                 {
-                    case ApplyResult::Success:
+                    case ApplyTransactionResult::Success:
                         it = txns.erase(it);
                         ++changes;
                         break;
 
-                    case ApplyResult::Fail:
+                    case ApplyTransactionResult::Fail:
                         failed.insert(txid);
                         it = txns.erase(it);
                         break;
 
-                    case ApplyResult::Retry:
+                    case ApplyTransactionResult::Retry:
                         ++it;
                 }
             }

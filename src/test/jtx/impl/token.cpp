@@ -21,6 +21,7 @@
 #include <test/jtx/token.h>
 
 #include <xrpld/app/tx/detail/NFTokenMint.h>
+
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
 
@@ -230,6 +231,16 @@ Json::Value
 clearMinter(jtx::Account const& account)
 {
     return fclear(account, asfAuthorizedNFTokenMinter);
+}
+
+Json::Value
+modify(jtx::Account const& account, uint256 const& nftokenID)
+{
+    Json::Value jv;
+    jv[sfAccount.jsonName] = account.human();
+    jv[sfNFTokenID.jsonName] = to_string(nftokenID);
+    jv[jss::TransactionType] = jss::NFTokenModify;
+    return jv;
 }
 
 }  // namespace token

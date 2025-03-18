@@ -20,6 +20,8 @@
 #include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/ledger/View.h>
 
+#include <xrpl/protocol/digest.h>
+
 #include <unordered_set>
 
 namespace ripple {
@@ -166,7 +168,7 @@ valid(PreclaimContext const& ctx, AccountID const& src)
         if (sleCred->getAccountID(sfSubject) != src)
         {
             JLOG(ctx.j.trace())
-                << "Credential doesn’t belong to the source account. Cred: "
+                << "Credential doesn't belong to the source account. Cred: "
                 << h;
             return tecBAD_CREDENTIALS;
         }
@@ -213,16 +215,60 @@ authorized(ApplyContext const& ctx, AccountID const& dst)
 }
 
 std::set<std::pair<AccountID, Slice>>
-makeSorted(STArray const& in)
+makeSorted(STArray const& credentials)
 {
     std::set<std::pair<AccountID, Slice>> out;
-    for (auto const& cred : in)
+    for (auto const& cred : credentials)
     {
         auto [it, ins] = out.emplace(cred[sfIssuer], cred[sfCredentialType]);
         if (!ins)
             return {};
     }
     return out;
+}
+
+NotTEC
+checkArray(STArray const& credentials, unsigned maxSize, beast::Journal j)
+{
+    if (credentials.empty() || (credentials.size() > maxSize))
+    {
+        JLOG(j.trace()) << "Malformed transaction: "
+                           "Invalid credentials size: "
+                        << credentials.size();
+        return credentials.empty() ? temARRAY_EMPTY : temARRAY_TOO_LARGE;
+    }
+
+    std::unordered_set<uint256> duplicates;
+    for (auto const& credential : credentials)
+    {
+        auto const& issuer = credential[sfIssuer];
+        if (!issuer)
+        {
+            JLOG(j.trace()) << "Malformed transaction: "
+                               "Issuer account is invalid: "
+                            << to_string(issuer);
+            return temINVALID_ACCOUNT_ID;
+        }
+
+        auto const ct = credential[sfCredentialType];
+        if (ct.empty() || (ct.size() > maxCredentialTypeLength))
+        {
+            JLOG(j.trace()) << "Malformed transaction: "
+                               "Invalid credentialType size: "
+                            << ct.size();
+            return temMALFORMED;
+        }
+
+        auto [it, ins] = duplicates.insert(sha512Half(issuer, ct));
+        if (!ins)
+        {
+            JLOG(j.trace()) << "Malformed transaction: "
+                               "duplicates in credenentials.";
+            return temMALFORMED;
+        }
+    }
+
+    return tesSUCCESS;
 }
 
 }  // namespace credentials

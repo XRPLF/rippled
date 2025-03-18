@@ -22,6 +22,7 @@
 
 #include <xrpld/app/tx/applySteps.h>
 #include <xrpld/app/tx/detail/ApplyContext.h>
+
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/XRPAmount.h>
 
@@ -100,7 +101,7 @@ protected:
 public:
     enum ConsequencesFactoryType { Normal, Blocker, Custom };
     /** Process the transaction. */
-    std::pair<TER, bool>
+    ApplyResult
     operator()();
 
     ApplyView&

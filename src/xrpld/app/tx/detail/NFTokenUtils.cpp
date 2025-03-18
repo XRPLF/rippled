@@ -20,12 +20,13 @@
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
 #include <xrpld/ledger/Dir.h>
 #include <xrpld/ledger/View.h>
+
 #include <xrpl/basics/algorithm.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/STAccount.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/nftPageMask.h>
+
 #include <functional>
 #include <memory>
 
@@ -34,7 +35,7 @@ namespace ripple {
 namespace nft {
 
 static std::shared_ptr<SLE const>
-locatePage(ReadView const& view, AccountID owner, uint256 const& id)
+locatePage(ReadView const& view, AccountID const& owner, uint256 const& id)
 {
     auto const first = keylet::nftpage(keylet::nftpage_min(owner), id);
     auto const last = keylet::nftpage_max(owner);
@@ -48,7 +49,7 @@ locatePage(ReadView const& view, AccountID owner, uint256 const& id)
 }
 
 static std::shared_ptr<SLE>
-locatePage(ApplyView& view, AccountID owner, uint256 const& id)
+locatePage(ApplyView& view, AccountID const& owner, uint256 const& id)
 {
     auto const first = keylet::nftpage(keylet::nftpage_min(owner), id);
     auto const last = keylet::nftpage_max(owner);
@@ -239,6 +240,39 @@ compareTokens(uint256 const& a, uint256 const& b)
         return lowBitsCmp < 0;
 
     return a < b;
+}
+
+TER
+changeTokenURI(
+    ApplyView& view,
+    AccountID const& owner,
+    uint256 const& nftokenID,
+    std::optional<ripple::Slice> const& uri)
+{
+    std::shared_ptr<SLE> const page = locatePage(view, owner, nftokenID);
+
+    // If the page couldn't be found, the given NFT isn't owned by this account
+    if (!page)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    // Locate the NFT in the page
+    STArray& arr = page->peekFieldArray(sfNFTokens);
+
+    auto const nftIter =
+        std::find_if(arr.begin(), arr.end(), [&nftokenID](STObject const& obj) {
+            return (obj[sfNFTokenID] == nftokenID);
+        });
+
+    if (nftIter == arr.end())
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    if (uri)
+        nftIter->setFieldVL(sfURI, *uri);
+    else if (nftIter->isFieldPresent(sfURI))
+        nftIter->makeFieldAbsent(sfURI);
+
+    view.update(page);
+    return tesSUCCESS;
 }
 
 /** Insert the token in the owner's token directory. */

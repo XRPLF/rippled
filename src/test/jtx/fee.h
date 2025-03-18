@@ -22,6 +22,7 @@
 
 #include <test/jtx/Env.h>
 #include <test/jtx/tags.h>
+
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/STAmount.h>
 
@@ -53,7 +54,8 @@ public:
             Throw<std::runtime_error>("fee: not XRP");
     }
 
-    explicit fee(std::uint64_t amount) : fee{STAmount{amount}}
+    explicit fee(std::uint64_t amount, bool negative = false)
+        : fee{STAmount{amount, negative}}
     {
     }
 

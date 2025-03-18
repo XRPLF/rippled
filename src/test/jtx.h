@@ -50,6 +50,7 @@
 #include <test/jtx/owners.h>
 #include <test/jtx/paths.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/permissioned_domains.h>
 #include <test/jtx/prop.h>
 #include <test/jtx/quality.h>
 #include <test/jtx/rate.h>
@@ -68,6 +69,7 @@
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
 #include <test/jtx/utility.h>
+
 #include <xrpl/json/to_string.h>
 
 #endif

@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/misc/HashRouter.h>
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/ValidatorList.h>
@@ -27,14 +26,17 @@
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/detail/ConnectAttempt.h>
 #include <xrpld/overlay/detail/PeerImp.h>
+#include <xrpld/overlay/detail/Tuning.h>
 #include <xrpld/overlay/predicates.h>
 #include <xrpld/peerfinder/make_Manager.h>
 #include <xrpld/rpc/handlers/GetCounts.h>
 #include <xrpld/rpc/json_body.h>
+
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/make_SSLContext.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/protocol/STTx.h>
 #include <xrpl/server/SimpleWriter.h>
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -477,7 +479,7 @@ OverlayImpl::start()
 {
     PeerFinder::Config config = PeerFinder::Config::makeConfig(
         app_.config(),
-        serverHandler_.setup().overlay.port,
+        serverHandler_.setup().overlay.port(),
         app_.getValidationPublicKey().has_value(),
         setup_.ipLimit);
 
@@ -501,6 +503,9 @@ OverlayImpl::start()
 
         // Pool of servers operated by @Xrpkuwait - https://xrpkuwait.com
         bootstrapIps.push_back("hubs.xrpkuwait.com 51235");
+
+        // Pool of servers operated by XRPL Commons - https://xrpl-commons.org
+        bootstrapIps.push_back("hub.xrpl-commons.org 51235");
     }
 
     m_resolver.resolve(
@@ -1211,17 +1216,39 @@ OverlayImpl::getManifestsMessage()
 void
 OverlayImpl::relay(
     uint256 const& hash,
-    protocol::TMTransaction& m,
+    std::optional<std::reference_wrapper<protocol::TMTransaction>> tx,
     std::set<Peer::id_t> const& toSkip)
 {
-    auto const sm = std::make_shared<Message>(m, protocol::mtTRANSACTION);
+    bool relay = tx.has_value();
+    if (relay)
+    {
+        auto& txn = tx->get();
+        SerialIter sit(makeSlice(txn.rawtransaction()));
+        relay = !isPseudoTx(STTx{sit});
+    }
+
+    Overlay::PeerSequence peers = {};
     std::size_t total = 0;
     std::size_t disabled = 0;
     std::size_t enabledInSkip = 0;
 
-    // total peers excluding peers in toSkip
-    auto peers = getActivePeers(toSkip, total, disabled, enabledInSkip);
-    auto minRelay = app_.config().TX_REDUCE_RELAY_MIN_PEERS + disabled;
+    if (!relay)
+    {
+        if (!app_.config().TX_REDUCE_RELAY_ENABLE)
+            return;
+
+        peers = getActivePeers(toSkip, total, disabled, enabledInSkip);
+        JLOG(journal_.trace())
+            << "not relaying tx, total peers " << peers.size();
+        for (auto const& p : peers)
+            p->addTxQueue(hash);
+        return;
+    }
+
+    auto& txn = tx->get();
+    auto const sm = std::make_shared<Message>(txn, protocol::mtTRANSACTION);
+    peers = getActivePeers(toSkip, total, disabled, enabledInSkip);
+    auto const minRelay = app_.config().TX_REDUCE_RELAY_MIN_PEERS + disabled;
 
     if (!app_.config().TX_REDUCE_RELAY_ENABLE || total <= minRelay)
     {
@@ -1236,7 +1263,7 @@ OverlayImpl::relay(
     // We have more peers than the minimum (disabled + minimum enabled),
     // relay to all disabled and some randomly selected enabled that
     // do not have the transaction.
-    auto enabledTarget = app_.config().TX_REDUCE_RELAY_MIN_PEERS +
+    auto const enabledTarget = app_.config().TX_REDUCE_RELAY_MIN_PEERS +
         (total - minRelay) * app_.config().TX_RELAY_PERCENTAGE / 100;
 
     txMetrics_.addMetrics(enabledTarget, toSkip.size(), disabled);

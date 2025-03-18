@@ -21,10 +21,10 @@
 #include <xrpld/app/paths/Flow.h>
 #include <xrpld/app/tx/detail/CreateOffer.h>
 #include <xrpld/ledger/PaymentSandbox.h>
+
 #include <xrpl/beast/utility/WrappedSink.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Quality.h>
-#include <xrpl/protocol/st.h>
 
 namespace ripple {
 
@@ -257,6 +257,32 @@ CreateOffer::checkAcceptAsset(
 
             return (flags & tapRETRY) ? TER{terNO_AUTH} : TER{tecNO_AUTH};
         }
+    }
+
+    // An account can not create a trustline to itself, so no line can exist
+    // to be frozen. Additionally, an issuer can always accept its own
+    // issuance.
+    if (issue.account == id)
+    {
+        return tesSUCCESS;
+    }
+
+    auto const trustLine =
+        view.read(keylet::line(id, issue.account, issue.currency));
+
+    if (!trustLine)
+    {
+        return tesSUCCESS;
+    }
+
+    // There's no difference which side enacted deep freeze, accepting
+    // tokens shouldn't be possible.
+    bool const deepFrozen =
+        (*trustLine)[sfFlags] & (lsfLowDeepFreeze | lsfHighDeepFreeze);
+
+    if (deepFrozen)
+    {
+        return tecFROZEN;
     }
 
     return tesSUCCESS;

@@ -21,6 +21,7 @@
 #define RIPPLE_TEST_JTX_ORACLE_H_INCLUDED
 
 #include <test/jtx.h>
+
 #include <date/date.h>
 
 namespace ripple {

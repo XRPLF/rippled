@@ -19,6 +19,7 @@
 
 #include <test/jtx.h>
 #include <test/jtx/envconfig.h>
+
 #include <xrpld/app/ledger/BuildLedger.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/LedgerReplay.h>
@@ -29,6 +30,7 @@
 #include <xrpld/app/ledger/detail/SkipListAcquire.h>
 #include <xrpld/overlay/PeerSet.h>
 #include <xrpld/overlay/detail/PeerImp.h>
+
 #include <xrpl/basics/Slice.h>
 
 #include <chrono>
@@ -221,7 +223,8 @@ public:
         return {};
     }
     void
-    charge(Resource::Charge const& fee) override
+    charge(Resource::Charge const& fee, std::string const& context = {})
+        override
     {
     }
     id_t
@@ -583,10 +586,7 @@ public:
         PeerSetBehavior behavior = PeerSetBehavior::Good,
         InboundLedgersBehavior inboundBhvr = InboundLedgersBehavior::Good,
         PeerFeature peerFeature = PeerFeature::LedgerReplayEnabled)
-        : env(suite,
-              jtx::envconfig(jtx::port_increment, 3),
-              nullptr,
-              beast::severities::kDisabled)
+        : env(suite, jtx::envconfig(), nullptr, beast::severities::kDisabled)
         , app(env.app())
         , ledgerMaster(env.app().getLedgerMaster())
         , inboundLedgers(

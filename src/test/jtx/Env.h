@@ -29,12 +29,14 @@
 #include <test/jtx/require.h>
 #include <test/jtx/tags.h>
 #include <test/unit_test/SuiteJournal.h>
+
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/paths/Pathfinder.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -46,6 +48,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
+
 #include <functional>
 #include <string>
 #include <tuple>
@@ -406,11 +409,31 @@ public:
         trace_ = 0;
     }
 
+    void
+    set_parse_failure_expected(bool b)
+    {
+        parseFailureExpected_ = b;
+    }
+
     /** Turn off signature checks. */
     void
     disable_sigs()
     {
         app().checkSigs(false);
+    }
+
+    // set rpc retries
+    void
+    set_retries(unsigned r = 5)
+    {
+        retries_ = r;
+    }
+
+    // get rpc retries
+    unsigned
+    retries() const
+    {
+        return retries_;
     }
 
     /** Associate AccountID with account. */
@@ -693,6 +716,8 @@ protected:
     TestStopwatch stopwatch_;
     uint256 txid_;
     TER ter_ = tesSUCCESS;
+    bool parseFailureExpected_ = false;
+    unsigned retries_ = 5;
 
     Json::Value
     do_rpc(

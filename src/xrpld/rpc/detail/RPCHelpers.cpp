@@ -28,15 +28,14 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/DeliveredAmount.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
+
 #include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/nftPageMask.h>
 #include <xrpl/resource/Fees.h>
 
 #include <boost/algorithm/string/case_conv.hpp>
-
-#include <regex>
+#include <boost/algorithm/string/predicate.hpp>
 
 namespace ripple {
 namespace RPC {
@@ -934,34 +933,19 @@ chooseLedgerEntryType(Json::Value const& params)
     std::pair<RPC::Status, LedgerEntryType> result{RPC::Status::OK, ltANY};
     if (params.isMember(jss::type))
     {
-        static constexpr std::array<std::pair<char const*, LedgerEntryType>, 25>
-            types{
-                {{jss::account, ltACCOUNT_ROOT},
-                 {jss::amendments, ltAMENDMENTS},
-                 {jss::amm, ltAMM},
-                 {jss::bridge, ltBRIDGE},
-                 {jss::check, ltCHECK},
-                 {jss::credential, ltCREDENTIAL},
-                 {jss::deposit_preauth, ltDEPOSIT_PREAUTH},
-                 {jss::did, ltDID},
-                 {jss::directory, ltDIR_NODE},
-                 {jss::escrow, ltESCROW},
-                 {jss::fee, ltFEE_SETTINGS},
-                 {jss::hashes, ltLEDGER_HASHES},
-                 {jss::mpt_issuance, ltMPTOKEN_ISSUANCE},
-                 {jss::mptoken, ltMPTOKEN},
-                 {jss::nft_offer, ltNFTOKEN_OFFER},
-                 {jss::nft_page, ltNFTOKEN_PAGE},
-                 {jss::nunl, ltNEGATIVE_UNL},
-                 {jss::offer, ltOFFER},
-                 {jss::oracle, ltORACLE},
-                 {jss::payment_channel, ltPAYCHAN},
-                 {jss::signer_list, ltSIGNER_LIST},
-                 {jss::state, ltRIPPLE_STATE},
-                 {jss::ticket, ltTICKET},
-                 {jss::xchain_owned_claim_id, ltXCHAIN_OWNED_CLAIM_ID},
-                 {jss::xchain_owned_create_account_claim_id,
-                  ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID}}};
+        static constexpr auto types = std::to_array<
+            std::tuple<char const*, char const*, LedgerEntryType>>({
+#pragma push_macro("LEDGER_ENTRY")
+#undef LEDGER_ENTRY
+
+#define LEDGER_ENTRY(tag, value, name, rpcName, fields) \
+    {jss::name, jss::rpcName, tag},
+
+#include <xrpl/protocol/detail/ledger_entries.macro>
+
+#undef LEDGER_ENTRY
+#pragma pop_macro("LEDGER_ENTRY")
+        });
 
         auto const& p = params[jss::type];
         if (!p.isString())
@@ -974,10 +958,14 @@ chooseLedgerEntryType(Json::Value const& params)
             return result;
         }
 
+        // Use the passed in parameter to find a ledger type based on matching
+        // against the canonical name (case-insensitive) or the RPC name
+        // (case-sensitive).
         auto const filter = p.asString();
-        auto iter = std::find_if(
-            types.begin(), types.end(), [&filter](decltype(types.front())& t) {
-                return t.first == filter;
+        const auto iter =
+            std::ranges::find_if(types, [&filter](decltype(types.front())& t) {
+                return boost::iequals(std::get<0>(t), filter) ||
+                    std::get<1>(t) == filter;
             });
         if (iter == types.end())
         {
@@ -989,7 +977,7 @@ chooseLedgerEntryType(Json::Value const& params)
                 "type");
             return result;
         }
-        result.second = iter->second;
+        result.second = std::get<2>(*iter);
     }
     return result;
 }
@@ -1051,7 +1039,7 @@ getLedgerByContext(RPC::JsonContext& context)
             "Exactly one of ledger_hash and ledger_index can be set.");
     }
 
-    context.loadType = Resource::feeHighBurdenRPC;
+    context.loadType = Resource::feeHeavyBurdenRPC;
 
     if (hasHash)
     {

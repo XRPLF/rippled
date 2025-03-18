@@ -16,9 +16,11 @@
 //==============================================================================
 
 #include <test/jtx.h>
+
 #include <xrpld/app/tx/apply.h>
+
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/STAccount.h>
+
 #include <string>
 #include <vector>
 
@@ -92,8 +94,8 @@ struct PseudoTx_test : public beast::unit_test::suite
                 [&](OpenView& view, beast::Journal j) {
                     auto const result =
                         ripple::apply(env.app(), view, stx, tapNONE, j);
-                    BEAST_EXPECT(!result.second && result.first == temINVALID);
-                    return result.second;
+                    BEAST_EXPECT(!result.applied && result.ter == temINVALID);
+                    return result.applied;
                 });
         }
     }

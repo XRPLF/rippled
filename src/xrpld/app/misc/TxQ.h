@@ -23,12 +23,15 @@
 #include <xrpld/app/tx/applySteps.h>
 #include <xrpld/ledger/ApplyView.h>
 #include <xrpld/ledger/OpenView.h>
+
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
+
 #include <boost/circular_buffer.hpp>
 #include <boost/intrusive/set.hpp>
+
 #include <optional>
 
 namespace ripple {
@@ -267,7 +270,7 @@ public:
                 the open ledger. If the transaction is queued,
                 will return `{ terQUEUED, false }`.
     */
-    std::pair<TER, bool>
+    ApplyResult
     apply(
         Application& app,
         OpenView& view,
@@ -596,7 +599,7 @@ private:
             PreflightResult const& pfresult);
 
         /// Attempt to apply the queued transaction to the open ledger.
-        std::pair<TER, bool>
+        ApplyResult
         apply(Application& app, OpenView& view, beast::Journal j);
 
         /// Potential @ref TxConsequences of applying this transaction
@@ -730,7 +733,7 @@ private:
 
     // Helper function for TxQ::apply.  If a transaction's fee is high enough,
     // attempt to directly apply that transaction to the ledger.
-    std::optional<std::pair<TER, bool>>
+    std::optional<ApplyResult>
     tryDirectApply(
         Application& app,
         OpenView& view,
@@ -785,13 +788,10 @@ private:
     */
     std::optional<size_t> maxSize_;
 
-#if !NDEBUG
     /**
-        parentHash_ checks that no unexpected ledger transitions
-        happen, and is only checked via debug asserts.
+        parentHash_ used for logging only
     */
     LedgerHash parentHash_{beast::zero};
-#endif
 
     /** Most queue operations are done under the master lock,
         but use this mutex for the RPC "fee" command, which isn't.
@@ -837,7 +837,7 @@ private:
         `accountIter` up to and including `tx`.  Transactions following
         `tx` are not cleared.
     */
-    std::pair<TER, bool>
+    ApplyResult
     tryClearAccountQueueUpThruTx(
         Application& app,
         OpenView& view,

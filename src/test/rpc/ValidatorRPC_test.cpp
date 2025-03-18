@@ -19,13 +19,13 @@
 
 #include <test/jtx.h>
 #include <test/jtx/TrustedPublisherServer.h>
+
 #include <xrpld/app/main/BasicApp.h>
 #include <xrpld/app/misc/ValidatorSite.h>
 #include <xrpld/core/ConfigSections.h>
-#include <xrpl/basics/base64.h>
+
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/json/json_value.h>
-#include <xrpl/protocol/Sign.h>
 #include <xrpl/protocol/jss.h>
 
 #include <set>
@@ -49,6 +49,7 @@ public:
             for (std::string cmd : {"validators", "validator_list_sites"})
             {
                 Env env{*this, isAdmin ? envconfig() : envconfig(no_admin)};
+                env.set_retries(isAdmin ? 5 : 0);
                 auto const jrr = env.rpc(cmd)[jss::result];
                 if (isAdmin)
                 {

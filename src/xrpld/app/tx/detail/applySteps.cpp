@@ -50,14 +50,18 @@
 #include <xrpld/app/tx/detail/NFTokenCancelOffer.h>
 #include <xrpld/app/tx/detail/NFTokenCreateOffer.h>
 #include <xrpld/app/tx/detail/NFTokenMint.h>
+#include <xrpld/app/tx/detail/NFTokenModify.h>
 #include <xrpld/app/tx/detail/PayChan.h>
 #include <xrpld/app/tx/detail/Payment.h>
+#include <xrpld/app/tx/detail/PermissionedDomainDelete.h>
+#include <xrpld/app/tx/detail/PermissionedDomainSet.h>
 #include <xrpld/app/tx/detail/SetAccount.h>
 #include <xrpld/app/tx/detail/SetOracle.h>
 #include <xrpld/app/tx/detail/SetRegularKey.h>
 #include <xrpld/app/tx/detail/SetSignerList.h>
 #include <xrpld/app/tx/detail/SetTrust.h>
 #include <xrpld/app/tx/detail/XChainBridge.h>
+
 #include <xrpl/protocol/TxFormats.h>
 
 #include <stdexcept>
@@ -269,7 +273,7 @@ TxConsequences::TxConsequences(STTx const& tx, std::uint32_t sequencesConsumed)
     sequencesConsumed_ = sequencesConsumed;
 }
 
-static std::pair<TER, bool>
+static ApplyResult
 invoke_apply(ApplyContext& ctx)
 {
     try
@@ -367,7 +371,7 @@ calculateDefaultBaseFee(ReadView const& view, STTx const& tx)
     return Transactor::calculateBaseFee(view, tx);
 }
 
-std::pair<TER, bool>
+ApplyResult
 doApply(PreclaimResult const& preclaimResult, Application& app, OpenView& view)
 {
     if (preclaimResult.view.seq() != view.seq())

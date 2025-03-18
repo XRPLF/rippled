@@ -21,6 +21,7 @@
 #include <xrpld/app/paths/detail/StepChecks.h>
 #include <xrpld/app/paths/detail/Steps.h>
 #include <xrpld/ledger/PaymentSandbox.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
@@ -336,7 +337,7 @@ DirectIPaymentStep::quality(ReadView const& sb, QualityDirection qDir) const
     if (!sle)
         return QUALITY_ONE;
 
-    auto const& field = [this, qDir]() -> SF_UINT32 const& {
+    auto const& field = [&, this]() -> SF_UINT32 const& {
         if (qDir == QualityDirection::in)
         {
             // compute dst quality in

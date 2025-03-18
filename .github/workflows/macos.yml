@@ -41,6 +41,24 @@ jobs:
       - name: install Ninja
         if: matrix.generator == 'Ninja'
         run: brew install ninja
+      - name: install python
+        run: | 
+          if which python > /dev/null 2>&1; then
+              echo "Python executable exists"
+          else
+              brew install python@3.13
+              ln -s /opt/homebrew/bin/python3 /opt/homebrew/bin/python
+          fi
+      - name: install cmake
+        run: |
+          if which cmake > /dev/null 2>&1; then
+              echo "cmake executable exists"
+          else
+              brew install cmake
+          fi
+      - name: install nproc
+        run: |
+          brew install coreutils
       - name: check environment
         run: |
           env | sort
@@ -48,11 +66,13 @@ jobs:
           python --version
           conan --version
           cmake --version
+          nproc --version
+          echo -n "nproc returns: "
+          nproc
       - name: configure Conan
         run : |
           conan profile new default --detect || true
           conan profile update settings.compiler.cppstd=20 default
-          conan profile update 'conf.tools.build:cxxflags+=["-DBOOST_ASIO_DISABLE_CONCEPTS"]' default
       - name: build dependencies
         uses: ./.github/actions/dependencies
         env:
@@ -66,6 +86,9 @@ jobs:
         with:
           generator: ${{ matrix.generator }}
           configuration: ${{ matrix.configuration }}
+          cmake-args: "-Dassert=TRUE -Dwerr=TRUE ${{ matrix.cmake-args }}"
       - name: test
         run: |
-          ${build_dir}/rippled --unittest
+          n=$(nproc)
+          echo "Using $n test jobs"
+          ${build_dir}/rippled --unittest --unittest-jobs $n

@@ -17,6 +17,12 @@
 */
 //==============================================================================
 
+#include <test/jtx.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/attester.h>
+#include <test/jtx/multisign.h>
+#include <test/jtx/xchain_bridge.h>
+
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -27,12 +33,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XChainAttestations.h>
 
-#include <test/jtx.h>
-#include <test/jtx/Env.h>
-#include <test/jtx/attester.h>
-#include <test/jtx/multisign.h>
-#include <test/jtx/xchain_bridge.h>
-
 #include <functional>
 #include <limits>
 #include <optional>
@@ -41,9 +41,6 @@
 #include <tuple>
 #include <variant>
 #include <vector>
-
-#include <fstream>
-#include <iostream>
 
 namespace ripple::test {
 
@@ -201,11 +198,7 @@ struct SEnv
 template <class T>
 struct XEnv : public jtx::XChainBridgeObjects, public SEnv<T>
 {
-    XEnv(T& s, bool side = false)
-        : SEnv<T>(
-              s,
-              jtx::envconfig(jtx::port_increment, side ? 3 : 0),
-              features)
+    XEnv(T& s, bool side = false) : SEnv<T>(s, jtx::envconfig(), features)
     {
         using namespace jtx;
         STAmount xrp_funds{XRP(10000)};

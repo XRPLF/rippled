@@ -20,10 +20,10 @@
 #include <xrpld/app/tx/detail/NFTokenAcceptOffer.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
 #include <xrpld/ledger/View.h>
+
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/st.h>
 
 namespace ripple {
 
@@ -268,6 +268,20 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
                     ctx.j) < needed)
                 return tecINSUFFICIENT_FUNDS;
         }
+
+        // Make sure that we are allowed to hold what the taker will pay us.
+        // This is a similar approach taken by usual offers.
+        if (!needed.native())
+        {
+            auto const result = checkAcceptAsset(
+                ctx.view,
+                ctx.flags,
+                (*so)[sfOwner],
+                ctx.j,
+                needed.asset().get<Issue>());
+            if (result != tesSUCCESS)
+                return result;
+        }
     }
 
     // Fix a bug where the transfer of an NFToken with a transfer fee could
@@ -508,6 +522,64 @@ NFTokenAcceptOffer::doApply()
         return acceptOffer(so);
 
     return tecINTERNAL;
+}
+
+TER
+NFTokenAcceptOffer::checkAcceptAsset(
+    ReadView const& view,
+    ApplyFlags const flags,
+    AccountID const id,
+    beast::Journal const j,
+    Issue const& issue)
+{
+    // Only valid for custom currencies
+
+    if (!view.rules().enabled(featureDeepFreeze))
+    {
+        return tesSUCCESS;
+    }
+
+    XRPL_ASSERT(
+        !isXRP(issue.currency),
+        "NFTokenAcceptOffer::checkAcceptAsset : valid to check.");
+    auto const issuerAccount = view.read(keylet::account(issue.account));
+
+    if (!issuerAccount)
+    {
+        JLOG(j.debug())
+            << "delay: can't receive IOUs from non-existent issuer: "
+            << to_string(issue.account);
+
+        return tecNO_ISSUER;
+    }
+
+    // An account can not create a trustline to itself, so no line can exist
+    // to be frozen. Additionally, an issuer can always accept its own
+    // issuance.
+    if (issue.account == id)
+    {
+        return tesSUCCESS;
+    }
+
+    auto const trustLine =
+        view.read(keylet::line(id, issue.account, issue.currency));
+
+    if (!trustLine)
+    {
+        return tesSUCCESS;
+    }
+
+    // There's no difference which side enacted deep freeze, accepting
+    // tokens shouldn't be possible.
+    bool const deepFrozen =
+        (*trustLine)[sfFlags] & (lsfLowDeepFreeze | lsfHighDeepFreeze);
+
+    if (deepFrozen)
+    {
+        return tecFROZEN;
+    }
+
+    return tesSUCCESS;
 }
 
 }  // namespace ripple

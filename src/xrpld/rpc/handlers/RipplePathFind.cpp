@@ -22,6 +22,7 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/LegacyPathFind.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
+
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/resource/Fees.h>
 
@@ -34,7 +35,7 @@ doRipplePathFind(RPC::JsonContext& context)
     if (context.app.config().PATH_SEARCH_MAX == 0)
         return rpcError(rpcNOT_SUPPORTED);
 
-    context.loadType = Resource::feeHighBurdenRPC;
+    context.loadType = Resource::feeHeavyBurdenRPC;
 
     std::shared_ptr<ReadView const> lpLedger;
     Json::Value jvResult;

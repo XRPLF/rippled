@@ -21,6 +21,7 @@
 #define RIPPLE_BASICS_MAKE_SSLCONTEXT_H_INCLUDED
 
 #include <boost/asio/ssl/context.hpp>
+
 #include <string>
 
 namespace ripple {
