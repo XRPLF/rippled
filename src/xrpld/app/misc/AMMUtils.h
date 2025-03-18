@@ -16,10 +16,12 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
+
 #ifndef RIPPLE_APP_MISC_AMMUTILS_H_INLCUDED
 #define RIPPLE_APP_MISC_AMMUTILS_H_INLCUDED
 
 #include <xrpld/ledger/View.h>
+
 #include <xrpl/basics/Expected.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/STAmount.h>
