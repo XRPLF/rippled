@@ -105,51 +105,37 @@ $(function() {
 <div class="line"><a id="l00027" name="l00027"></a><span class="lineno">   27</span> </div>
 <div class="line"><a id="l00028" name="l00028"></a><span class="lineno">   28</span><span class="keyword">namespace </span><a class="code hl_namespace" href="namespaceripple.html">ripple</a> {</div>
 <div class="line"><a id="l00029" name="l00029"></a><span class="lineno">   29</span> </div>
-<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span><span class="keyword">namespace </span>detail {</div>
-<div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span> </div>
-<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>[[noreturn]] <span class="keywordtype">void</span></div>
-<div class="line"><a id="l00033" name="l00033"></a><span class="lineno"><a class="line" href="namespaceripple_1_1detail.html#a7d97f07e5b7bfe169282ff5bacde87b5">   33</a></span><a class="code hl_function" href="namespaceripple_1_1detail.html#a7d97f07e5b7bfe169282ff5bacde87b5">accessViolation</a>() noexcept</div>
-<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>{</div>
-<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>    <span class="comment">// dereference memory location zero</span></div>
-<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>    <span class="keywordtype">int</span> <span class="keyword">volatile</span>* j = 0;</div>
-<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>    (void)*j;</div>
-<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>    <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/utility/program/abort.html">std::abort</a>();</div>
-<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>}</div>
-<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span> </div>
-<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>}  <span class="comment">// namespace detail</span></div>
-<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span> </div>
-<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span><span class="keywordtype">void</span></div>
-<div class="line"><a id="l00044" name="l00044"></a><span class="lineno"><a class="line" href="namespaceripple.html#a9685b5bd8afdfb40bdf25cf24f877f0f">   44</a></span><a class="code hl_function" href="namespaceripple.html#a9685b5bd8afdfb40bdf25cf24f877f0f">LogThrow</a>(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; title)</div>
-<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>{</div>
-<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>    JLOG(<a class="code hl_function" href="namespaceripple.html#a94e13759bd026c8ac305482e17f05adb">debugLog</a>().warn()) &lt;&lt; title;</div>
-<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>}</div>
-<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span> </div>
-<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>[[noreturn]] <span class="keywordtype">void</span></div>
-<div class="line"><a id="l00050" name="l00050"></a><span class="lineno"><a class="line" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">   50</a></span><a class="code hl_function" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; s) <span class="keyword">noexcept</span></div>
-<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>{</div>
-<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>    JLOG(<a class="code hl_function" href="namespaceripple.html#a94e13759bd026c8ac305482e17f05adb">debugLog</a>().fatal()) &lt;&lt; s;</div>
-<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/io/cerr.html">std::cerr</a> &lt;&lt; <span class="stringliteral">&quot;Logic error: &quot;</span> &lt;&lt; s &lt;&lt; <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/io/manip/endl.html">std::endl</a>;</div>
-<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>    <span class="comment">// Use a non-standard contract naming here (without namespace) because</span></div>
-<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>    <span class="comment">// it&#39;s the only location where various unrelated execution paths may</span></div>
-<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>    <span class="comment">// register an error; this is also why the &quot;message&quot; parameter is passed</span></div>
-<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>    <span class="comment">// here.</span></div>
-<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>    <span class="comment">// For the above reasons, we want this contract to stand out.</span></div>
-<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>    UNREACHABLE(<span class="stringliteral">&quot;LogicError&quot;</span>, {{<span class="stringliteral">&quot;message&quot;</span>, s}});</div>
-<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>    <a class="code hl_function" href="namespaceripple_1_1detail.html#a7d97f07e5b7bfe169282ff5bacde87b5">detail::accessViolation</a>();</div>
-<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>}</div>
-<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span> </div>
-<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a id="l00030" name="l00030"></a><span class="lineno">   30</span><span class="keywordtype">void</span></div>
+<div class="line"><a id="l00031" name="l00031"></a><span class="lineno"><a class="line" href="namespaceripple.html#a9685b5bd8afdfb40bdf25cf24f877f0f">   31</a></span><a class="code hl_function" href="namespaceripple.html#a9685b5bd8afdfb40bdf25cf24f877f0f">LogThrow</a>(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; title)</div>
+<div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>{</div>
+<div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>    JLOG(<a class="code hl_function" href="namespaceripple.html#a94e13759bd026c8ac305482e17f05adb">debugLog</a>().warn()) &lt;&lt; title;</div>
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>}</div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span> </div>
+<div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>[[noreturn]] <span class="keywordtype">void</span></div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno"><a class="line" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">   37</a></span><a class="code hl_function" href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">LogicError</a>(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span>&amp; s) <span class="keyword">noexcept</span></div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>{</div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>    JLOG(<a class="code hl_function" href="namespaceripple.html#a94e13759bd026c8ac305482e17f05adb">debugLog</a>().fatal()) &lt;&lt; s;</div>
+<div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/io/cerr.html">std::cerr</a> &lt;&lt; <span class="stringliteral">&quot;Logic error: &quot;</span> &lt;&lt; s &lt;&lt; <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/io/manip/endl.html">std::endl</a>;</div>
+<div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>    <span class="comment">// Use a non-standard contract naming here (without namespace) because</span></div>
+<div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>    <span class="comment">// it&#39;s the only location where various unrelated execution paths may</span></div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>    <span class="comment">// register an error; this is also why the &quot;message&quot; parameter is passed</span></div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>    <span class="comment">// here.</span></div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>    <span class="comment">// For the above reasons, we want this contract to stand out.</span></div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>    UNREACHABLE(<span class="stringliteral">&quot;LogicError&quot;</span>, {{<span class="stringliteral">&quot;message&quot;</span>, s}});</div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>    <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/utility/program/abort.html">std::abort</a>();</div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>}</div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span> </div>
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>}  <span class="comment">// namespace ripple</span></div>
 <div class="ttc" id="aabort_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/program/abort.html">std::abort</a></div><div class="ttdeci">T abort(T... args)</div></div>
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div></div>
 <div class="ttc" id="acerr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/io/cerr.html">std::cerr</a></div></div>
 <div class="ttc" id="acstdlib_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/cstdlib.html">cstdlib</a></div></div>
 <div class="ttc" id="aendl_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/io/manip/endl.html">std::endl</a></div><div class="ttdeci">T endl(T... args)</div></div>
 <div class="ttc" id="aiostream_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/iostream.html">iostream</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1detail_html_a7d97f07e5b7bfe169282ff5bacde87b5"><div class="ttname"><a href="namespaceripple_1_1detail.html#a7d97f07e5b7bfe169282ff5bacde87b5">ripple::detail::accessViolation</a></div><div class="ttdeci">void accessViolation() noexcept</div><div class="ttdef"><b>Definition:</b> <a href="contract_8cpp_source.html#l00033">contract.cpp:33</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="algorithm_8h_source.html#l00026">algorithm.h:26</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a94e13759bd026c8ac305482e17f05adb"><div class="ttname"><a href="namespaceripple.html#a94e13759bd026c8ac305482e17f05adb">ripple::debugLog</a></div><div class="ttdeci">beast::Journal debugLog()</div><div class="ttdoc">Returns a debug journal.</div><div class="ttdef"><b>Definition:</b> <a href="Log_8cpp_source.html#l00468">Log.cpp:468</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a9685b5bd8afdfb40bdf25cf24f877f0f"><div class="ttname"><a href="namespaceripple.html#a9685b5bd8afdfb40bdf25cf24f877f0f">ripple::LogThrow</a></div><div class="ttdeci">void LogThrow(std::string const &amp;title)</div><div class="ttdoc">Generates and logs a call stack.</div><div class="ttdef"><b>Definition:</b> <a href="contract_8cpp_source.html#l00044">contract.cpp:44</a></div></div>
-<div class="ttc" id="anamespaceripple_html_aefd2f77338ce3c9a2fffc4f0b289b483"><div class="ttname"><a href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">ripple::LogicError</a></div><div class="ttdeci">void LogicError(std::string const &amp;how) noexcept</div><div class="ttdoc">Called when faulty logic causes a broken invariant.</div><div class="ttdef"><b>Definition:</b> <a href="contract_8cpp_source.html#l00050">contract.cpp:50</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a9685b5bd8afdfb40bdf25cf24f877f0f"><div class="ttname"><a href="namespaceripple.html#a9685b5bd8afdfb40bdf25cf24f877f0f">ripple::LogThrow</a></div><div class="ttdeci">void LogThrow(std::string const &amp;title)</div><div class="ttdoc">Generates and logs a call stack.</div><div class="ttdef"><b>Definition:</b> <a href="contract_8cpp_source.html#l00031">contract.cpp:31</a></div></div>
+<div class="ttc" id="anamespaceripple_html_aefd2f77338ce3c9a2fffc4f0b289b483"><div class="ttname"><a href="namespaceripple.html#aefd2f77338ce3c9a2fffc4f0b289b483">ripple::LogicError</a></div><div class="ttdeci">void LogicError(std::string const &amp;how) noexcept</div><div class="ttdoc">Called when faulty logic causes a broken invariant.</div><div class="ttdef"><b>Definition:</b> <a href="contract_8cpp_source.html#l00037">contract.cpp:37</a></div></div>
 <div class="ttc" id="astring_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/string.html">string</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
