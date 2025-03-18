@@ -897,7 +897,8 @@ escrowUnlockApplyHelper<Issue>(
         lockedRate = xferRate;
 
     // Transfer Rate only applies when:
-    // 1. Issuer is not involved in the transfer (senderIssuer or receiverIssuer)
+    // 1. Issuer is not involved in the transfer (senderIssuer or
+    // receiverIssuer)
     // 2. The locked rate is different from the parity rate
     auto finalAmt = amount;
     if ((!senderIssuer && !receiverIssuer) && lockedRate != parityRate)
@@ -957,9 +958,7 @@ escrowUnlockApplyHelper<MPTIssue>(
         */
         auto const mptokenKey = keylet::mptoken(issuanceKey.key, receiver);
         auto const ownerNode = view.dirInsert(
-            keylet::ownerDir(receiver),
-            mptokenKey,
-            describeOwnerDir(receiver));
+            keylet::ownerDir(receiver), mptokenKey, describeOwnerDir(receiver));
 
         if (!ownerNode)
             return tecDIR_FULL;
@@ -985,7 +984,8 @@ escrowUnlockApplyHelper<MPTIssue>(
         lockedRate = xferRate;
 
     // Transfer Rate only applies when:
-    // 1. Issuer is not involved in the transfer (senderIssuer or receiverIssuer)
+    // 1. Issuer is not involved in the transfer (senderIssuer or
+    // receiverIssuer)
     // 2. The locked rate is different from the parity rate
 
     auto finalAmt = amount;
@@ -998,8 +998,7 @@ escrowUnlockApplyHelper<MPTIssue>(
         finalAmt = amount.value() - xferFee;
     }
 
-    return rippleUnlockEscrowMPT(
-        view, sender, receiver, finalAmt, journal);
+    return rippleUnlockEscrowMPT(view, sender, receiver, finalAmt, journal);
     return tesSUCCESS;
 }
 
