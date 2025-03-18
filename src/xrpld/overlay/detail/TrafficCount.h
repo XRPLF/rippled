@@ -161,6 +161,9 @@ public:
         // TMTransactions
         requested_transactions,
 
+        // The total p2p bytes
+        total,
+
         unknown  // must be last
     };
 
@@ -184,11 +187,17 @@ public:
         {
             counts_[cat].bytesIn += bytes;
             ++counts_[cat].messagesIn;
+
+            counts_[category::total].bytesIn += bytes;
+            ++counts_[category::total].messagesIn;
         }
         else
         {
             counts_[cat].bytesOut += bytes;
             ++counts_[cat].messagesOut;
+
+            counts_[category::total].bytesOut += bytes;
+            ++counts_[category::total].messagesOut;
         }
     }
 
@@ -206,21 +215,21 @@ public:
 
 protected:
     std::array<TrafficStats, category::unknown + 1> counts_{{
-        {"overhead"},               // category::base
-        {"overhead_cluster"},       // category::cluster
-        {"overhead_overlay"},       // category::overlay
-        {"overhead_manifest"},      // category::manifests
-        {"transactions"},           // category::transaction
-        {"proposals"},              // category::proposal
-        {"validations"},            // category::validation
-        {"validator_lists"},        // category::validatorlist
-        {"proposals_untrusted"},    // category::proposal_untrusted
-        {"validations_untrusted"},  // category::validation_untrusted
-        {"proposal_duplicate"},     // category::proposal_duplicate
-        {"validation_duplicate"},   // category::validation_duplicate
-        {"transaction_duplicate"},  // category::transaction_duplicate
-        {"set_get"},                // category::get_set
-        {"set_share"},              // category::share_set
+        {"overhead"},                // category::base
+        {"overhead_cluster"},        // category::cluster
+        {"overhead_overlay"},        // category::overlay
+        {"overhead_manifest"},       // category::manifests
+        {"transactions"},            // category::transaction
+        {"proposals"},               // category::proposal
+        {"validations"},             // category::validation
+        {"validator_lists"},         // category::validatorlist
+        {"proposals_untrusted"},     // category::proposal_untrusted
+        {"validations_untrusted"},   // category::validation_untrusted
+        {"proposals_duplicate"},     // category::proposal_duplicate
+        {"validations_duplicate"},   // category::validation_duplicate
+        {"transactions_duplicate"},  // category::transaction_duplicate
+        {"set_get"},                 // category::get_set
+        {"set_share"},               // category::share_set
         {"ledger_data_Transaction_Set_candidate_get"},  // category::ld_tsc_get
         {"ledger_data_Transaction_Set_candidate_share"},  // category::ld_tsc_share
         {"ledger_data_Transaction_Node_get"},        // category::ld_txn_get
@@ -258,6 +267,7 @@ protected:
         {"replay_delta_response"},   // category::replay_delta_response
         {"have_transactions"},       // category::have_transactions
         {"requested_transactions"},  // category::transactions
+        {"total"},                   // category::total
         {"unknown"}                  // category::unknown
     }};
 };
