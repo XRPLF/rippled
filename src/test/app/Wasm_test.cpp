@@ -18,9 +18,12 @@
 //==============================================================================
 
 #include <test/jtx.h>
+
 #include <xrpld/app/misc/WasmVM.h>
-#include <iterator>
+
 #include <wasmedge/wasmedge.h>
+
+#include <iterator>
 
 namespace ripple {
 namespace test {
