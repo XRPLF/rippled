@@ -154,7 +154,11 @@ EscrowCreate::preflight(PreflightContext const& ctx)
         // specified or a completion condition is attached.
         if (!ctx.tx[~sfFinishAfter] && !ctx.tx[~sfCondition] &&
             !ctx.tx[~sfFinishFunction])
+        {
+            JLOG(ctx.j.debug()) << "Must have at least one of FinishAfter, "
+                                   "Condition, or FinishFunction.";
             return temMALFORMED;
+        }
     }
 
     if (auto const cb = ctx.tx[~sfCondition])
@@ -368,7 +372,10 @@ EscrowFinish::preflight(PreflightContext const& ctx)
     // If you specify a condition, then you must also specify
     // a fulfillment.
     if (static_cast<bool>(cb) != static_cast<bool>(fb))
+    {
+        JLOG(ctx.j.debug()) << "Condition != Fulfillment";
         return temMALFORMED;
+    }
 
     // Verify the transaction signature. If it doesn't work
     // then don't do any more work.
