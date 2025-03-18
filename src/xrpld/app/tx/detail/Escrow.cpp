@@ -817,8 +817,8 @@ escrowUnlockApplyHelper(
     STAmount const& balance,
     STAmount const& amount,
     AccountID const& issuer,
-    AccountID const& uSenderID,
-    AccountID const& uReceiverID,
+    AccountID const& sender,
+    AccountID const& receiver,
     bool createAsset,
     beast::Journal journal);
 
@@ -831,22 +831,22 @@ escrowUnlockApplyHelper<Issue>(
     STAmount const& balance,
     STAmount const& amount,
     AccountID const& issuer,
-    AccountID const& uSenderID,
-    AccountID const& uReceiverID,
+    AccountID const& sender,
+    AccountID const& receiver,
     bool createAsset,
     beast::Journal journal)
 {
-    Keylet const trustLineKey = keylet::line(uReceiverID, amount.issue());
-    bool const recvLow = issuer > uReceiverID;
-    bool const sendIssuer = issuer == uSenderID;
-    bool const recvIssuer = issuer == uReceiverID;
+    Keylet const trustLineKey = keylet::line(receiver, amount.issue());
+    bool const recvLow = issuer > receiver;
+    bool const senderIssuer = issuer == sender;
+    bool const receiverIssuer = issuer == receiver;
 
-    if (recvIssuer)
+    if (receiverIssuer)
         return tesSUCCESS;
 
     // Review Note: We could remove this and just say to use batch to auth the
     // token first
-    if (!view.exists(trustLineKey) && createAsset && !recvIssuer)
+    if (!view.exists(trustLineKey) && createAsset && !receiverIssuer)
     {
         // Can the account cover the trust line's reserve?
         if (std::uint32_t const ownerCount = {sleDest->at(sfOwnerCount)};
@@ -867,7 +867,7 @@ escrowUnlockApplyHelper<Issue>(
                 view,                            // payment sandbox
                 recvLow,                        // is dest low?
                 issuer,                         // source
-                uReceiverID,                           // destination
+                receiver,                           // destination
                 trustLineKey.key,               // ledger index
                 sleDest,                        // Account to add to
                 false,                          // authorize account
@@ -875,7 +875,7 @@ escrowUnlockApplyHelper<Issue>(
                 false,                          // freeze trust line
                 false,                          // deep freeze trust line
                 initialBalance,                 // zero initial balance
-                Issue(currency, uReceiverID),   // limit of zero
+                Issue(currency, receiver),   // limit of zero
                 0,                              // quality in
                 0,                              // quality out
                 journal);                       // journal
@@ -888,7 +888,7 @@ escrowUnlockApplyHelper<Issue>(
         view.update(sleDest);
     }
 
-    if (!view.exists(trustLineKey) && !recvIssuer)
+    if (!view.exists(trustLineKey) && !receiverIssuer)
         return tecNO_LINE;
 
     auto const xferRate = transferRate(view, amount);
@@ -897,10 +897,10 @@ escrowUnlockApplyHelper<Issue>(
         lockedRate = xferRate;
 
     // Transfer Rate only applies when:
-    // 1. Issuer is not involved in the transfer (sendIssuer or recvIssuer)
+    // 1. Issuer is not involved in the transfer (senderIssuer or receiverIssuer)
     // 2. The locked rate is different from the parity rate
     auto finalAmt = amount;
-    if ((!sendIssuer && !recvIssuer) && lockedRate != parityRate)
+    if ((!senderIssuer && !receiverIssuer) && lockedRate != parityRate)
     {
         // compute transfer fee, if any
         auto const xferFee = amount.value() -
@@ -910,10 +910,10 @@ escrowUnlockApplyHelper<Issue>(
     }
 
     // If destination is not the issuer then transfer funds
-    if (!recvIssuer)
+    if (!receiverIssuer)
     {
         auto const ter =
-            rippleCredit(view, issuer, uReceiverID, finalAmt, true, journal);
+            rippleCredit(view, issuer, receiver, finalAmt, true, journal);
         if (ter != tesSUCCESS)
             return ter;  // LCOV_EXCL_LINE
     }
@@ -929,20 +929,20 @@ escrowUnlockApplyHelper<MPTIssue>(
     STAmount const& balance,
     STAmount const& amount,
     AccountID const& issuer,
-    AccountID const& uSenderID,
-    AccountID const& uReceiverID,
+    AccountID const& sender,
+    AccountID const& receiver,
     bool createAsset,
     beast::Journal journal)
 {
-    bool const sendIssuer = issuer == uSenderID;
-    bool const recvIssuer = issuer == uReceiverID;
+    bool const senderIssuer = issuer == sender;
+    bool const receiverIssuer = issuer == receiver;
 
     // Review Note: We could remove this and just say to use batch to auth the
     // token first
     auto const issuanceKey =
         keylet::mptIssuance(amount.get<MPTIssue>().getMptID());
-    if (!view.exists(keylet::mptoken(issuanceKey.key, uReceiverID)) &&
-        createAsset && !recvIssuer)
+    if (!view.exists(keylet::mptoken(issuanceKey.key, receiver)) &&
+        createAsset && !receiverIssuer)
     {
         if (std::uint32_t const ownerCount = {sleDest->at(sfOwnerCount)};
             balance < view.fees().accountReserve(ownerCount + 1))
@@ -955,17 +955,17 @@ escrowUnlockApplyHelper<MPTIssue>(
         /*
         TODO: Replace with helper function from MPTDex PR
         */
-        auto const mptokenKey = keylet::mptoken(issuanceKey.key, uReceiverID);
+        auto const mptokenKey = keylet::mptoken(issuanceKey.key, receiver);
         auto const ownerNode = view.dirInsert(
-            keylet::ownerDir(uReceiverID),
+            keylet::ownerDir(receiver),
             mptokenKey,
-            describeOwnerDir(uReceiverID));
+            describeOwnerDir(receiver));
 
         if (!ownerNode)
             return tecDIR_FULL;
 
         auto mptoken = std::make_shared<SLE>(mptokenKey);
-        (*mptoken)[sfAccount] = uReceiverID;
+        (*mptoken)[sfAccount] = receiver;
         (*mptoken)[sfMPTokenIssuanceID] = amount.get<MPTIssue>().getMptID();
         (*mptoken)[sfFlags] = 0;
         (*mptoken)[sfOwnerNode] = *ownerNode;
@@ -975,8 +975,8 @@ escrowUnlockApplyHelper<MPTIssue>(
         adjustOwnerCount(view, sleDest, 1, journal);
     }
 
-    if (!view.exists(keylet::mptoken(issuanceKey.key, uReceiverID)) &&
-        !recvIssuer)
+    if (!view.exists(keylet::mptoken(issuanceKey.key, receiver)) &&
+        !receiverIssuer)
         return tecNO_AUTH;
 
     auto const xferRate = transferRate(view, amount);
@@ -985,11 +985,11 @@ escrowUnlockApplyHelper<MPTIssue>(
         lockedRate = xferRate;
 
     // Transfer Rate only applies when:
-    // 1. Issuer is not involved in the transfer (sendIssuer or recvIssuer)
+    // 1. Issuer is not involved in the transfer (senderIssuer or receiverIssuer)
     // 2. The locked rate is different from the parity rate
 
     auto finalAmt = amount;
-    if ((!sendIssuer && !recvIssuer) && lockedRate != parityRate)
+    if ((!senderIssuer && !receiverIssuer) && lockedRate != parityRate)
     {
         // compute transfer fee, if any
         auto const xferFee = amount.value() -
@@ -999,7 +999,7 @@ escrowUnlockApplyHelper<MPTIssue>(
     }
 
     return rippleUnlockEscrowMPT(
-        view, uSenderID, uReceiverID, finalAmt, journal);
+        view, sender, receiver, finalAmt, journal);
     return tesSUCCESS;
 }
 

@@ -2182,7 +2182,7 @@ rippleCredit(
 TER
 rippleLockEscrowMPT(
     ApplyView& view,
-    AccountID const& uGrantorID,
+    AccountID const& grantor,
     STAmount const& saAmount,
     beast::Journal j)
 {
@@ -2193,9 +2193,9 @@ rippleLockEscrowMPT(
 
     // 1. Descrease the MPT Holder MPTAmount
     // 2. Increase the MPT Holder EscrowedAmount
-    if (saAmount.getIssuer() != uGrantorID)
+    if (saAmount.getIssuer() != grantor)
     {
-        auto const mptokenID = keylet::mptoken(mptID.key, uGrantorID);
+        auto const mptokenID = keylet::mptoken(mptID.key, grantor);
         if (auto sle = view.peek(mptokenID))
         {
             auto const amt = sle->getFieldU64(sfMPTAmount);
@@ -2229,8 +2229,8 @@ rippleLockEscrowMPT(
 TER
 rippleUnlockEscrowMPT(
     ApplyView& view,
-    AccountID const& uGrantorID,
-    AccountID const& uGranteeID,
+    AccountID const& grantor,
+    AccountID const& grantee,
     STAmount const& saAmount,
     beast::Journal j)
 {
@@ -2258,10 +2258,10 @@ rippleUnlockEscrowMPT(
         }
     }
 
-    if (issuer != uGranteeID)
+    if (issuer != grantee)
     {
         // Increase the MPT Holder MPTAmount
-        auto const mptokenID = keylet::mptoken(mptID.key, uGranteeID);
+        auto const mptokenID = keylet::mptoken(mptID.key, grantee);
         if (auto sle = view.peek(mptokenID))
         {
             (*sle)[sfMPTAmount] += saAmount.mpt().value();
@@ -2284,10 +2284,10 @@ rippleUnlockEscrowMPT(
             return tecINTERNAL;
     }
 
-    if (issuer != uGrantorID)
+    if (issuer != grantor)
     {
         // Descrease the MPT Holder EscrowedAmount
-        auto const mptokenID = keylet::mptoken(mptID.key, uGrantorID);
+        auto const mptokenID = keylet::mptoken(mptID.key, grantor);
         if (auto sle = view.peek(mptokenID))
         {
             if (!sle->isFieldPresent(sfEscrowedAmount))
@@ -2297,12 +2297,6 @@ rippleUnlockEscrowMPT(
         }
         else
             return tecNO_AUTH;
-    }
-    else
-    {
-        // Increase the Issuance OutstandingAmount
-        (*sleIssuance)[sfOutstandingAmount] += saAmount.mpt().value();
-        view.update(sleIssuance);
     }
     return tesSUCCESS;
 }
