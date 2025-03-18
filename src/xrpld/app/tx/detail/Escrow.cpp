@@ -222,9 +222,9 @@ escrowCreatePreclaimHelper<Issue>(
     AccountID const& dest,
     STAmount const& amount)
 {
-    // If the issuer is the same as the account, return tesSUCCESS
+    // If the issuer is the same as the account, return tecNO_PERMISSION
     if (issuer == account)
-        return tesSUCCESS;
+        return tecNO_PERMISSION;
 
     // If the lsfAllowTokenEscrow is not enabled, return tecNO_PERMISSION
     auto const sleIssuer = ctx.view.read(keylet::account(issuer));
@@ -304,9 +304,9 @@ escrowCreatePreclaimHelper<MPTIssue>(
     AccountID const& dest,
     STAmount const& amount)
 {
-    // If the issuer is the same as the account, return tesSUCCESS
+    // If the issuer is the same as the account, return tecNO_PERMISSION
     if (issuer == account)
-        return tesSUCCESS;
+        return tecNO_PERMISSION;
 
     // If the mpt does not exist, return tecOBJECT_NOT_FOUND
     auto const issuanceKey =
@@ -423,9 +423,11 @@ escrowLockApplyHelper<Issue>(
     STAmount const& amount,
     beast::Journal journal)
 {
-    // If the issuer is the same as the account, return tesSUCCESS
+    // Defensive: Issuer cannot create an escrow
+    // LCOV_EXCL_START
     if (issuer == account)
-        return tesSUCCESS;
+        return tecINTERNAL;
+    // LCOV_EXCL_STOP
 
     auto const ter = rippleCredit(
         view,
@@ -448,6 +450,12 @@ escrowLockApplyHelper<MPTIssue>(
     STAmount const& amount,
     beast::Journal journal)
 {
+    // Defensive: Issuer cannot create an escrow
+    // LCOV_EXCL_START
+    if (issuer == account)
+        return tecINTERNAL;
+    // LCOV_EXCL_STOP
+
     auto const ter = rippleLockEscrowMPT(view, account, amount, journal);
     if (ter != tesSUCCESS)
         return ter;  // LCOV_EXCL_LINE
@@ -833,7 +841,7 @@ escrowUnlockApplyHelper<Issue>(
     bool const sendIssuer = issuer == uSenderID;
     bool const recvIssuer = issuer == uReceiverID;
 
-    if (uReceiverID == issuer)
+    if (recvIssuer)
         return tesSUCCESS;
 
     // Review Note: We could remove this and just say to use batch to auth the
@@ -891,7 +899,6 @@ escrowUnlockApplyHelper<Issue>(
     // Transfer Rate only applies when:
     // 1. Issuer is not involved in the transfer (sendIssuer or recvIssuer)
     // 2. The locked rate is different from the parity rate
-
     auto finalAmt = amount;
     if ((!sendIssuer && !recvIssuer) && lockedRate != parityRate)
     {
