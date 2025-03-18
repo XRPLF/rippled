@@ -21,6 +21,7 @@
 #define RIPPLE_APP_CONSENSUS_RCLCENSORSHIPDETECTOR_H_INCLUDED
 
 #include <xrpld/shamap/SHAMap.h>
+
 #include <xrpl/basics/algorithm.h>
 
 #include <algorithm>

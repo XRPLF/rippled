@@ -22,6 +22,7 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/GRPCHandlers.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
+
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/strHex.h>
 #include <xrpl/beast/core/LexicalCast.h>
@@ -821,9 +822,15 @@ parsePermissionedDomains(Json::Value const& pd, Json::Value& jvResult)
         return std::nullopt;
     }
 
-    if (!pd.isMember(jss::account) || !pd[jss::account].isString())
+    if (!pd.isMember(jss::account))
     {
         jvResult[jss::error] = "malformedRequest";
+        return std::nullopt;
+    }
+
+    if (!pd[jss::account].isString())
+    {
+        jvResult[jss::error] = "malformedAddress";
         return std::nullopt;
     }
 

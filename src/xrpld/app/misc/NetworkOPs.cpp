@@ -49,6 +49,7 @@
 #include <xrpld/rpc/DeliveredAmount.h>
 #include <xrpld/rpc/MPTokenIssuanceID.h>
 #include <xrpld/rpc/ServerHandler.h>
+
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/basics/mulDiv.h>
 #include <xrpl/basics/safe_cast.h>
@@ -1014,7 +1015,7 @@ NetworkOPsImp::processHeartbeatTimer()
 
         // VFALCO NOTE This is for diagnosing a crash on exit
         LoadManager& mgr(app_.getLoadManager());
-        mgr.resetDeadlockDetector();
+        mgr.heartbeat();
 
         std::size_t const numPeers = app_.overlay().size();
 

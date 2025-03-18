@@ -24,6 +24,7 @@
 #include <xrpld/core/JobTypeData.h>
 #include <xrpld/core/JobTypes.h>
 #include <xrpld/core/detail/Workers.h>
+
 #include <xrpl/basics/LocalValue.h>
 #include <xrpl/json/json_value.h>
 

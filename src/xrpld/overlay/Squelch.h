@@ -21,6 +21,7 @@
 #define RIPPLE_OVERLAY_SQUELCH_H_INCLUDED
 
 #include <xrpld/overlay/ReduceRelayCommon.h>
+
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/PublicKey.h>
 

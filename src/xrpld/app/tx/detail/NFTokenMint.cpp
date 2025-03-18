@@ -19,6 +19,7 @@
 
 #include <xrpld/app/tx/detail/NFTokenMint.h>
 #include <xrpld/ledger/View.h>
+
 #include <xrpl/basics/Expected.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/InnerObjectFormats.h>

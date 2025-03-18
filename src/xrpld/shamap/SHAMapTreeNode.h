@@ -22,6 +22,7 @@
 
 #include <xrpld/shamap/SHAMapItem.h>
 #include <xrpld/shamap/SHAMapNodeID.h>
+
 #include <xrpl/basics/SHAMapHash.h>
 #include <xrpl/protocol/Serializer.h>
 

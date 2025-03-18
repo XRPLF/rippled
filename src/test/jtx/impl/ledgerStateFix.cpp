@@ -18,7 +18,9 @@
 //==============================================================================
 
 #include <test/jtx/ledgerStateFix.h>
+
 #include <xrpld/app/tx/detail/LedgerStateFix.h>
+
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
