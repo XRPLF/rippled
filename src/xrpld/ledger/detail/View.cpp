@@ -2200,7 +2200,7 @@ requireAuth(
     auto const sleToken = view.read(mptokenID);
     // Note, this is not amendment-gated because  we do not want to maintain in
     // this file the list of all the amendments which can write to this field.
-    // Without additional amendments this field is always empty.
+    // This field is empty unless writing to it has been enabled by an amendment
     auto const maybeDomainID = sleIssuance->at(~sfDomainID);
     if (!maybeDomainID)
     {
@@ -2220,14 +2220,7 @@ requireAuth(
     if (auto const err =
             credentials::validDomain(view, *maybeDomainID, account);
         !isTesSuccess(err))
-    {
-        // Force tecEXPIRED error if there's an sleToken but no authorization -
-        // i.e. an expired MPToken which should be deleted (if zero balance)
-        if (sleToken)
-            return tecEXPIRED;
-        else
-            return err;
-    }
+        return err;
 
     // We are authorized by permissioned domain.
     return tesSUCCESS;
@@ -2275,29 +2268,6 @@ enforceMPTokenAuthorization(
         // Found an MPToken but the account is not authorized and we expect
         // it to have been authorized by the domain. This could be because the
         // credentials used to create the MPToken have expired or been deleted.
-        //
-        // Delete the expired MPToken but only if it has zero balance, then
-        // return tecNO_AUTH
-
-        auto sleMpt = view.peek(keylet);
-        auto sleAcct = view.peek(keylet::account(account));
-
-        XRPL_ASSERT(
-            sleMpt != nullptr && sleAcct != nullptr,
-            "ripple::enforceMPTokenAuthorization : found expired MPToken");
-        if ((*sleMpt)[sfMPTAmount] == 0)
-        {
-            if (!view.dirRemove(
-                    keylet::ownerDir(account),
-                    (*sleMpt)[sfOwnerNode],
-                    sleMpt->key(),
-                    false))
-                return tecINTERNAL;
-
-            adjustOwnerCount(view, sleAcct, -1, j);
-            view.erase(sleMpt);
-        }
-
         return tecNO_AUTH;
     }
     else if (!authorizedByDomain)
