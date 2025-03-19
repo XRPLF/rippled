@@ -40,7 +40,9 @@ std::map<protocol::MessageType, TrafficCount::category> const type_lookup = {
     {protocol::mtREPLAY_DELTA_RESPONSE,
      TrafficCount::category::replay_delta_response},
     {protocol::mtHAVE_TRANSACTIONS, TrafficCount::category::have_transactions},
-    {protocol::mtTRANSACTIONS, TrafficCount::category::requested_transactions}};
+    {protocol::mtTRANSACTIONS, TrafficCount::category::requested_transactions},
+    {protocol::mtSQUELCH, TrafficCount::category::squelch},
+};
 
 TrafficCount::category
 TrafficCount::categorize(
@@ -50,10 +52,6 @@ TrafficCount::categorize(
 {
     if (auto item = type_lookup.find(type); item != type_lookup.end())
         return item->second;
-
-    if (type == protocol::mtSQUELCH)
-        return inbound ? TrafficCount::category::squelch_in
-                       : TrafficCount::category::squelch_out;
 
     if (type == protocol::mtHAVE_SET)
         return inbound ? TrafficCount::category::get_set

@@ -249,7 +249,13 @@ PeerImp::send(std::shared_ptr<Message> const& m)
 
     auto validator = m->getValidatorKey();
     if (validator && !squelch_.expireSquelch(*validator))
+    {
+        overlay_.reportTraffic(
+            TrafficCount::category::squelch_saved,
+            false,
+            static_cast<int>(m->getBuffer(compressionEnabled_).size()));
         return;
+    }
 
     overlay_.reportTraffic(
         safe_cast<TrafficCount::category>(m->getCategory()),
@@ -3483,9 +3489,9 @@ bool
 PeerImp::reduceRelayReady()
 {
     if (!reduceRelayReady_)
-        reduceRelayReady_ =
-            reduce_relay::epoch<std::chrono::minutes>(UptimeClock::now()) >
-            reduce_relay::WAIT_ON_BOOTUP;
+        reduceRelayReady_ = true;
+    // reduce_relay::epoch<std::chrono::minutes>(UptimeClock::now()) >
+    // reduce_relay::WAIT_ON_BOOTUP;
     return vpReduceRelayEnabled_ && reduceRelayReady_;
 }
 
