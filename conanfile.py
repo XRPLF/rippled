@@ -51,6 +51,7 @@ class Xrpl(ConanFile):
         'tests': False,
         'unity': False,
         'xrpld': False,
+
         'date/*:header_only': True,
         'grpc/*:shared': False,
         'grpc/*:secure': True,
@@ -89,7 +90,7 @@ class Xrpl(ConanFile):
 
     def set_version(self):
         path = f'{self.recipe_folder}/src/libxrpl/protocol/BuildInfo.cpp'
-        regex = r'versionString\s?=\s?\'(.*)\''
+        regex = r'versionString\s?=\s?\"(.*)\"'
         with open(path, 'r') as file:
             matches = (re.search(regex, line) for line in file)
             match = next(m for m in matches if m)
