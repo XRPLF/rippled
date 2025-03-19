@@ -2720,7 +2720,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
         l[jss::seq] = Json::UInt(lpClosed->info().seq);
         l[jss::hash] = to_string(lpClosed->info().hash);
 
-        bool smartEscrowEnabled =
+        bool const smartEscrowEnabled =
             m_ledgerMaster.getValidatedLedger()->rules().enabled(
                 featureSmartEscrow);
         if (!human)
