@@ -704,10 +704,7 @@ PeerImp::PeerImp(
           headers_,
           FEATURE_TXRR,
           app_.config().TX_REDUCE_RELAY_ENABLE))
-    , vpReduceRelayEnabled_(peerFeatureEnabled(
-          headers_,
-          FEATURE_VPRR,
-          app_.config().VP_REDUCE_RELAY_ENABLE))
+    , vpReduceRelayEnabled_(app_.config().VP_REDUCE_RELAY_ENABLE)
     , ledgerReplayEnabled_(peerFeatureEnabled(
           headers_,
           FEATURE_LEDGER_REPLAY,

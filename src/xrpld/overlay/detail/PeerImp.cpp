@@ -111,10 +111,7 @@ PeerImp::PeerImp(
           headers_,
           FEATURE_TXRR,
           app_.config().TX_REDUCE_RELAY_ENABLE))
-    , vpReduceRelayEnabled_(peerFeatureEnabled(
-          headers_,
-          FEATURE_VPRR,
-          app_.config().VP_REDUCE_RELAY_ENABLE))
+    , vpReduceRelayEnabled_(app_.config().VP_REDUCE_RELAY_ENABLE)
     , ledgerReplayEnabled_(peerFeatureEnabled(
           headers_,
           FEATURE_LEDGER_REPLAY,
@@ -2650,16 +2647,6 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMSquelch> const& m)
         return;
     }
     PublicKey key(slice);
-
-    // Ignore non-validator squelch
-    if (!app_.validators().listed(key))
-    {
-        fee_.update(Resource::feeInvalidData, "squelch non-validator");
-        JLOG(p_journal_.debug())
-            << "onMessage: TMSquelch discarding non-validator squelch "
-            << slice;
-        return;
-    }
 
     // Ignore the squelch for validator's own messages.
     if (key == app_.getValidationPublicKey())
