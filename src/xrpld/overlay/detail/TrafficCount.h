@@ -79,7 +79,8 @@ public:
         proposal_duplicate,
         validation_duplicate,
         transaction_duplicate,
-        squelch,
+        squelch_in,
+        squelch_out,
 
         // TMHaveSet message:
         get_set,    // transaction sets we try to get
@@ -229,7 +230,8 @@ protected:
         {"validations_untrusted"},   // category::validation_untrusted
         {"validations_duplicate"},   // category::validation_duplicate
         {"validator_lists"},         // category::validatorlist
-        {"squelch"},                 // category::squelch
+        {"squelch_in"},              // category::squelch_in
+        {"squelch_out"},             // category::squelch_ou
         {"set_get"},                 // category::get_set
         {"set_share"},               // category::share_set
         {"ledger_data_Transaction_Set_candidate_get"},  // category::ld_tsc_get
