@@ -138,7 +138,8 @@ VaultSet::doApply()
         vault->at(sfData) = tx[sfData];
     if (tx.isFieldPresent(sfAssetMaximum))
     {
-        if (tx[sfAssetMaximum] < *vault->at(sfAssetTotal))
+        if (tx[sfAssetMaximum] != 0 &&
+            tx[sfAssetMaximum] < *vault->at(sfAssetTotal))
             return tecLIMIT_EXCEEDED;
         vault->at(sfAssetMaximum) = tx[sfAssetMaximum];
     }

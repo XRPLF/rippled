@@ -139,7 +139,7 @@ class Vault_test : public beast::unit_test::suite
             {
                 testcase(prefix + " set maximum higher than current amount");
                 auto tx = vault.set({.owner = owner, .id = keylet.key});
-                tx[sfAssetMaximum] = asset(200).number();
+                tx[sfAssetMaximum] = asset(150).number();
                 env(tx);
             }
 
@@ -162,8 +162,15 @@ class Vault_test : public beast::unit_test::suite
                 auto tx = vault.deposit(
                     {.depositor = depositor,
                      .id = keylet.key,
-                     .amount = asset(200)});
+                     .amount = asset(100)});
                 env(tx, ter(tecLIMIT_EXCEEDED));
+            }
+
+            {
+                testcase(prefix + " reset maximum to zero i.e. not enforced");
+                auto tx = vault.set({.owner = owner, .id = keylet.key});
+                tx[sfAssetMaximum] = asset(0).number();
+                env(tx);
             }
 
             {
@@ -194,7 +201,7 @@ class Vault_test : public beast::unit_test::suite
             }
 
             {
-                testcase(prefix + " deposit up to maximum");
+                testcase(prefix + " deposit some more");
                 auto tx = vault.deposit(
                     {.depositor = depositor,
                      .id = keylet.key,
