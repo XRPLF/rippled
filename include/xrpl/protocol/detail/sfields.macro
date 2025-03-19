@@ -126,6 +126,7 @@ TYPED_SFIELD(sfGracePeriod,              UINT32,    54)
 TYPED_SFIELD(sfPreviousPaymentDate,      UINT32,    55)
 TYPED_SFIELD(sfNextPaymentDueDate,       UINT32,    56)
 TYPED_SFIELD(sfPaymentRemaining,         UINT32,    57)
+TYPED_SFIELD(sfPaymentTotal,             UINT32,    58)
 
 // 64-bit integers (common)
 TYPED_SFIELD(sfIndexNext,                UINT64,     1)
@@ -226,6 +227,7 @@ TYPED_SFIELD(sfLatePaymentFee,           NUMBER,     11)
 TYPED_SFIELD(sfClosePaymentFee,          NUMBER,     12)
 TYPED_SFIELD(sfOverpaymentFee,           NUMBER,     13)
 TYPED_SFIELD(sfPrincipalOutstanding,     NUMBER,     14)
+TYPED_SFIELD(sfPrincipalRequested,       NUMBER,     15)
 
 // currency amount (common)
 TYPED_SFIELD(sfAmount,                   AMOUNT,     1)
@@ -321,6 +323,7 @@ TYPED_SFIELD(sfLockingChainDoor,         ACCOUNT,   22)
 TYPED_SFIELD(sfIssuingChainDoor,         ACCOUNT,   23)
 TYPED_SFIELD(sfSubject,                  ACCOUNT,   24)
 TYPED_SFIELD(sfBorrower,                 ACCOUNT,   25)
+TYPED_SFIELD(sfCounterparty,             ACCOUNT,   26)
 
 // vector of 256-bit
 TYPED_SFIELD(sfIndexes,                  VECTOR256,  1, SField::sMD_Never)
@@ -380,6 +383,7 @@ UNTYPED_SFIELD(sfXChainClaimAttestationCollectionElement, OBJECT, 30)
 UNTYPED_SFIELD(sfXChainCreateAccountAttestationCollectionElement, OBJECT, 31)
 UNTYPED_SFIELD(sfPriceData,              OBJECT,    32)
 UNTYPED_SFIELD(sfCredential,             OBJECT,    33)
+UNTYPED_SFIELD(sfCounterpartySignature,  OBJECT,    34)
 
 // array of objects (common)
 // ARRAY/1 is reserved for end of array

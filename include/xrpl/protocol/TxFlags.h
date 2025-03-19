@@ -230,6 +230,11 @@ constexpr std::uint32_t const tfVaultPrivate               = 0x00010000;
 static_assert(tfVaultPrivate == lsfVaultPrivate);
 constexpr std::uint32_t const tfVaultShareNonTransferable  = 0x00020000;
 constexpr std::uint32_t const tfVaultCreateMask = ~(tfUniversal | tfVaultPrivate | tfVaultShareNonTransferable);
+
+// LoanSet flags:
+// True, indicates the load supports overpayments
+constexpr std::uint32_t const tfLoanOverpayment = 0x00010000;
+constexpr std::uint32_t const tfLoanSetMask = ~(tfUniversal | tfLoanOverpayment);
 // clang-format on
 
 }  // namespace ripple
