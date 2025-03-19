@@ -1153,6 +1153,11 @@ Transactor::operator()()
         metadata = ctx_.apply(result);
     }
 
+    if (ctx_.flags() & tapDRY_RUN)
+    {
+        applied = false;
+    }
+
     JLOG(j_.trace()) << (applied ? "applied " : "not applied ")
                      << transToken(result);
 
