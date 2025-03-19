@@ -463,6 +463,7 @@ LedgerEntryTypesMatch::visitEntry(
         switch (after->getType())
         {
             case ltACCOUNT_ROOT:
+            case ltDELEGATE:
             case ltDIR_NODE:
             case ltRIPPLE_STATE:
             case ltTICKET:

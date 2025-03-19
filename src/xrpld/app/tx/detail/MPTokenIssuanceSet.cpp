@@ -51,6 +51,47 @@ MPTokenIssuanceSet::preflight(PreflightContext const& ctx)
 }
 
 TER
+MPTokenIssuanceSet::checkPermission(ReadView const& view, STTx const& tx)
+{
+    auto const delegate = tx[~sfDelegate];
+    if (!delegate)
+        return temMALFORMED;  // LCOV_EXCL_LINE
+
+    auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
+    auto const sle = view.read(delegateKey);
+
+    if (!sle)
+        return tecNO_PERMISSION;
+
+    std::unordered_set<GranularPermissionType> granularPermissions;
+    auto const permissionArray = sle->getFieldArray(sfPermissions);
+    for (auto const& permission : permissionArray)
+    {
+        auto const permissionValue = permission[sfPermissionValue];
+        if (permissionValue == ttMPTOKEN_ISSUANCE_SET + 1)
+            return tesSUCCESS;
+
+        auto const granularValue =
+            static_cast<GranularPermissionType>(permissionValue);
+        auto const& type =
+            Permission::getInstance().getGranularTxType(granularValue);
+        if (type && *type == ttMPTOKEN_ISSUANCE_SET)
+            granularPermissions.insert(granularValue);
+    }
+
+    auto const txFlags = tx.getFlags();
+    if (txFlags & tfMPTLock &&
+        !granularPermissions.contains(MPTokenIssuanceLock))
+        return tecNO_PERMISSION;
+
+    if (txFlags & tfMPTUnlock &&
+        !granularPermissions.contains(MPTokenIssuanceUnlock))
+        return tecNO_PERMISSION;
+
+    return tesSUCCESS;
+}
+
+TER
 MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
 {
     // ensure that issuance exists

@@ -128,6 +128,88 @@ SetTrust::preflight(PreflightContext const& ctx)
 }
 
 TER
+SetTrust::checkPermission(ReadView const& view, STTx const& tx)
+{
+    auto const delegate = tx[~sfDelegate];
+    if (!delegate)
+        return temMALFORMED;  // LCOV_EXCL_LINE
+
+    auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
+    auto const sle = view.read(delegateKey);
+
+    if (!sle)
+        return tecNO_PERMISSION;
+
+    std::unordered_set<GranularPermissionType> granularPermissions;
+    auto const permissionArray = sle->getFieldArray(sfPermissions);
+    for (auto const& permission : permissionArray)
+    {
+        auto const permissionValue = permission[sfPermissionValue];
+        if (permissionValue == ttTRUST_SET + 1)
+            return tesSUCCESS;
+
+        auto const granularValue =
+            static_cast<GranularPermissionType>(permissionValue);
+        auto const& type =
+            Permission::getInstance().getGranularTxType(granularValue);
+        if (type && *type == ttTRUST_SET)
+            granularPermissions.insert(granularValue);
+    }
+
+    auto const saLimitAmount = tx.getFieldAmount(sfLimitAmount);
+    auto const sleRippleState = view.read(keylet::line(
+        tx[sfAccount], saLimitAmount.getIssuer(), saLimitAmount.getCurrency()));
+
+    if (sleRippleState)
+    {
+        // updating LimitAmount is not allowed only with granular permissions,
+        // unless there's a new granular permission for this in the future.
+        auto const curLimit = tx[sfAccount] > saLimitAmount.getIssuer()
+            ? sleRippleState->getFieldAmount(sfHighLimit)
+            : sleRippleState->getFieldAmount(sfLowLimit);
+
+        STAmount saLimitAllow = saLimitAmount;
+        saLimitAllow.setIssuer(tx[sfAccount]);
+
+        if (curLimit != saLimitAllow)
+            return tecNO_PERMISSION;
+    }
+    else
+    {
+        // if the trustline does not exist, granular permissions are
+        // not allowed to create trustline
+        return tecNO_PERMISSION;
+    }
+
+    std::uint32_t const uTxFlags = tx.getFlags();
+
+    bool const bSetAuth = (uTxFlags & tfSetfAuth);
+    bool const bSetNoRipple = (uTxFlags & tfSetNoRipple);
+    bool const bClearNoRipple = (uTxFlags & tfClearNoRipple);
+    bool const bSetFreeze = (uTxFlags & tfSetFreeze);
+    bool const bClearFreeze = (uTxFlags & tfClearFreeze);
+    bool const bSetDeepFreeze = (uTxFlags & tfSetDeepFreeze);
+    bool const bClearDeepFreeze = (uTxFlags & tfClearDeepFreeze);
+
+    // Currently we only support TrustlineAuthorize, TrustlineFreeze and
+    // TrustlineUnfreeze granular permission. If a new flag is added, developer
+    // should also modify code here.
+    bool const bQualityIn = tx.isFieldPresent(sfQualityIn);
+    bool const bQualityOut = tx.isFieldPresent(sfQualityOut);
+    if (bSetNoRipple || bClearNoRipple || bQualityIn || bQualityOut ||
+        bSetDeepFreeze || bClearDeepFreeze)
+        return tecNO_PERMISSION;
+    if (bSetAuth && !granularPermissions.contains(TrustlineAuthorize))
+        return tecNO_PERMISSION;
+    if (bSetFreeze && !granularPermissions.contains(TrustlineFreeze))
+        return tecNO_PERMISSION;
+    if (bClearFreeze && !granularPermissions.contains(TrustlineUnfreeze))
+        return tecNO_PERMISSION;
+
+    return tesSUCCESS;
+}
+
+TER
 SetTrust::preclaim(PreclaimContext const& ctx)
 {
     auto const id = ctx.tx[sfAccount];

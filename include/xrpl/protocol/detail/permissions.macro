@@ -1,0 +1,68 @@
+//------------------------------------------------------------------------------
+/*
+    This file is part of rippled: https://github.com/ripple/rippled
+    Copyright (c) 2025 Ripple Labs Inc.
+
+    Permission to use, copy, modify, and/or distribute this software for any
+    purpose  with  or without fee is hereby granted, provided that the above
+    copyright notice and this permission notice appear in all copies.
+
+    THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
+    WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
+    MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
+    ANY  SPECIAL ,  DIRECT, INDIRECT, OR CONSEQUENTIAL DAMAGES OR ANY DAMAGES
+    WHATSOEVER  RESULTING  FROM  LOSS  OF USE, DATA OR PROFITS, WHETHER IN AN
+    ACTION  OF  CONTRACT, NEGLIGENCE OR OTHER TORTIOUS ACTION, ARISING OUT OF
+    OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
+*/
+//==============================================================================
+
+#if !defined(PERMISSION)
+#error "undefined macro: PERMISSION"
+#endif
+
+/**
+ * PERMISSION(name, type, txType, value)
+ *
+ * This macro defines a permission:
+ * name: the name of the permission.
+ * type: the GranularPermissionType enum.
+ * txType: the corresponding TxType for this permission.
+ * value: the uint32 numeric value for the enum type.
+ */
+
+/** This permission grants the delegated account the ability to authorize a trustline. */
+PERMISSION("TrustlineAuthorize", TrustlineAuthorize, ttTRUST_SET, 65537)
+
+/** This permission grants the delegated account the ability to freeze a trustline. */
+PERMISSION("TrustlineFreeze", TrustlineFreeze, ttTRUST_SET, 65538)
+
+/** This permission grants the delegated account the ability to unfreeze a trustline. */
+PERMISSION("TrustlineUnfreeze", TrustlineUnfreeze, ttTRUST_SET, 65539)
+
+/** This permission grants the delegated account the ability to set Domain. */
+PERMISSION("AccountDomainSet", AccountDomainSet, ttACCOUNT_SET, 65540)
+
+/** This permission grants the delegated account the ability to set EmailHashSet. */
+PERMISSION("AccountEmailHashSet", AccountEmailHashSet, ttACCOUNT_SET, 65541)
+
+/** This permission grants the delegated account the ability to set MessageKey. */
+PERMISSION("AccountMessageKeySet", AccountMessageKeySet, ttACCOUNT_SET, 65542)
+
+/** This permission grants the delegated account the ability to set TransferRate. */
+PERMISSION("AccountTransferRateSet", AccountTransferRateSet, ttACCOUNT_SET, 65543)
+
+/** This permission grants the delegated account the ability to set TickSize. */
+PERMISSION("AccountTickSizeSet", AccountTickSizeSet, ttACCOUNT_SET, 65544)
+
+/** This permission grants the delegated account the ability to mint payment, which means sending a payment for a currency where the sending account is the issuer. */
+PERMISSION("PaymentMint", PaymentMint, ttPAYMENT, 65545)
+
+/** This permission grants the delegated account the ability to burn payment, which means sending a payment for a currency where the destination account is the issuer */
+PERMISSION("PaymentBurn", PaymentBurn, ttPAYMENT, 65546)
+
+/** This permission grants the delegated account the ability to lock MPToken. */
+PERMISSION("MPTokenIssuanceLock", MPTokenIssuanceLock, ttMPTOKEN_ISSUANCE_SET, 65547)
+
+/** This permission grants the delegated account the ability to unlock MPToken. */
+PERMISSION("MPTokenIssuanceUnlock", MPTokenIssuanceUnlock, ttMPTOKEN_ISSUANCE_SET, 65548)

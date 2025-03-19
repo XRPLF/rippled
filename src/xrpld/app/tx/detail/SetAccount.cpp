@@ -189,6 +189,71 @@ SetAccount::preflight(PreflightContext const& ctx)
 }
 
 TER
+SetAccount::checkPermission(ReadView const& view, STTx const& tx)
+{
+    auto const delegate = tx[~sfDelegate];
+    if (!delegate)
+        return temMALFORMED;  // LCOV_EXCL_LINE
+
+    auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
+    auto const sle = view.read(delegateKey);
+
+    if (!sle)
+        return tecNO_PERMISSION;
+
+    std::unordered_set<GranularPermissionType> granularPermissions;
+    auto const permissionArray = sle->getFieldArray(sfPermissions);
+    for (auto const& permission : permissionArray)
+    {
+        auto const permissionValue = permission[sfPermissionValue];
+        if (permissionValue == ttACCOUNT_SET + 1)
+            return tesSUCCESS;
+
+        auto const granularValue =
+            static_cast<GranularPermissionType>(permissionValue);
+        auto const& type =
+            Permission::getInstance().getGranularTxType(granularValue);
+        if (type && *type == ttACCOUNT_SET)
+            granularPermissions.insert(granularValue);
+    }
+
+    auto const uSetFlag = tx.getFieldU32(sfSetFlag);
+    auto const uClearFlag = tx.getFieldU32(sfClearFlag);
+    auto const uTxFlags = tx.getFlags();
+    // We don't support any flag based granular permission under
+    // AccountSet transaction. If any delegated account is trying to
+    // update the flag onbehalf of another account, it is not
+    // authorized.
+    if (uSetFlag != 0 || uClearFlag != 0 || uTxFlags != 0)
+        return tecNO_PERMISSION;
+
+    if (tx.isFieldPresent(sfEmailHash) &&
+        !granularPermissions.contains(AccountEmailHashSet))
+        return tecNO_PERMISSION;
+
+    if (tx.isFieldPresent(sfWalletLocator))
+        return tecNO_PERMISSION;
+
+    if (tx.isFieldPresent(sfMessageKey) &&
+        !granularPermissions.contains(AccountMessageKeySet))
+        return tecNO_PERMISSION;
+
+    if (tx.isFieldPresent(sfDomain) &&
+        !granularPermissions.contains(AccountDomainSet))
+        return tecNO_PERMISSION;
+
+    if (tx.isFieldPresent(sfTransferRate) &&
+        !granularPermissions.contains(AccountTransferRateSet))
+        return tecNO_PERMISSION;
+
+    if (tx.isFieldPresent(sfTickSize) &&
+        !granularPermissions.contains(AccountTickSizeSet))
+        return tecNO_PERMISSION;
+
+    return tesSUCCESS;
+}
+
+TER
 SetAccount::preclaim(PreclaimContext const& ctx)
 {
     auto const id = ctx.tx[sfAccount];

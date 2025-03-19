@@ -36,6 +36,7 @@
 #include <xrpld/app/tx/detail/CreateTicket.h>
 #include <xrpld/app/tx/detail/Credentials.h>
 #include <xrpld/app/tx/detail/DID.h>
+#include <xrpld/app/tx/detail/DelegateSet.h>
 #include <xrpld/app/tx/detail/DeleteAccount.h>
 #include <xrpld/app/tx/detail/DeleteOracle.h>
 #include <xrpld/app/tx/detail/DepositPreauth.h>
@@ -195,6 +196,16 @@ invoke_preclaim(PreclaimContext const& ctx)
 
                 if (result != tesSUCCESS)
                     return result;
+
+                // if this is a delegated transaction, check if the account
+                // has permission.
+                if (ctx.tx.isFieldPresent(sfDelegate))
+                {
+                    result = T::checkPermission(ctx.view, ctx.tx);
+
+                    if (result != tesSUCCESS)
+                        return result;
+                }
 
                 result = T::checkSign(ctx);
 

@@ -239,6 +239,49 @@ Payment::preflight(PreflightContext const& ctx)
 }
 
 TER
+Payment::checkPermission(ReadView const& view, STTx const& tx)
+{
+    auto const delegate = tx[~sfDelegate];
+    if (!delegate)
+        return temMALFORMED;  // LCOV_EXCL_LINE
+
+    auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
+    auto const sle = view.read(delegateKey);
+
+    if (!sle)
+        return tecNO_PERMISSION;
+
+    std::unordered_set<GranularPermissionType> granularPermissions;
+    auto const permissionArray = sle->getFieldArray(sfPermissions);
+    for (auto const& permission : permissionArray)
+    {
+        auto const permissionValue = permission[sfPermissionValue];
+        if (permissionValue == ttPAYMENT + 1)
+            return tesSUCCESS;
+
+        auto const granularValue =
+            static_cast<GranularPermissionType>(permissionValue);
+        auto const& type =
+            Permission::getInstance().getGranularTxType(granularValue);
+        if (type && *type == ttPAYMENT)
+            granularPermissions.insert(granularValue);
+    }
+
+    auto const dstAmount = tx.getFieldAmount(sfAmount);
+    auto const amountIssue = dstAmount.issue();
+
+    if (granularPermissions.contains(PaymentMint) && !isXRP(amountIssue) &&
+        amountIssue.account == tx[sfAccount])
+        return tesSUCCESS;
+
+    if (granularPermissions.contains(PaymentBurn) && !isXRP(amountIssue) &&
+        amountIssue.account == tx[sfDestination])
+        return tesSUCCESS;
+
+    return tecNO_PERMISSION;
+}
+
+TER
 Payment::preclaim(PreclaimContext const& ctx)
 {
     // Ripple if source or destination is non-native or if there are paths.
