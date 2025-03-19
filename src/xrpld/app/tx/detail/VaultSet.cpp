@@ -52,9 +52,17 @@ VaultSet::preflight(PreflightContext const& ctx)
             return temMALFORMED;
     }
 
-    auto const domain = ctx.tx[~sfDomainID];
-    if (domain && *domain == beast::zero)
-        return temMALFORMED;
+    if (auto const domain = ctx.tx[~sfDomainID])
+    {
+        if (*domain == beast::zero)
+            return temMALFORMED;
+    }
+
+    if (auto const assetMax = ctx.tx[~sfAssetMaximum])
+    {
+        if (*assetMax < beast::zero)
+            return temMALFORMED;
+    }
 
     if (!ctx.tx.isFieldPresent(sfDomainID) &&
         !ctx.tx.isFieldPresent(sfAssetMaximum) &&

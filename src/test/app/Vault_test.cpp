@@ -64,6 +64,13 @@ class Vault_test : public beast::unit_test::suite
             BEAST_EXPECT(env.le(keylet));
 
             {
+                testcase(prefix + " fail to set negative maximum");
+                auto tx = vault.set({.owner = owner, .id = keylet.key});
+                tx[sfAssetMaximum] = negativeAmount(asset).number();
+                env(tx, ter{temMALFORMED});
+            }
+
+            {
                 testcase(prefix + " fail to deposit more than assets held");
                 auto tx = vault.deposit(
                     {.depositor = depositor,

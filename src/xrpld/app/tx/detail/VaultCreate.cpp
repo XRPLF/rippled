@@ -68,6 +68,12 @@ VaultCreate::preflight(PreflightContext const& ctx)
             return temMALFORMED;  // DomainID only allowed on private vaults
     }
 
+    if (auto const assetMax = ctx.tx[~sfAssetMaximum])
+    {
+        if (*assetMax < beast::zero)
+            return temMALFORMED;
+    }
+
     if (auto const metadata = ctx.tx[~sfMPTokenMetadata])
     {
         if (metadata->length() == 0 ||
