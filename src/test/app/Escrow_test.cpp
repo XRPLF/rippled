@@ -1798,7 +1798,7 @@ struct Escrow_test : public beast::unit_test::suite
         //     // TODO: fix to use the config setting
         //     // TODO: make this test more efficient
         //     // uncomment when that's done
-        //     for (int i = 0; i < 0xffffffff; i++)
+        //     for (int i = 0; i < 4294967295; i++)
         //     {
         //         longWasmHex += "11";
         //     }

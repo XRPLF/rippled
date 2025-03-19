@@ -319,8 +319,7 @@ FeeVoteImpl::doVoting(
                          SF_UINT32 const& extensionField) {
             if (auto const field = ~val->at(~extensionField); field)
             {
-                auto const vote = field.value();
-                value.addVote(vote);
+                value.addVote(field.value());
             }
             else
             {

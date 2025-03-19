@@ -837,10 +837,8 @@ modifyWasmDataFields(
     std::vector<std::pair<uint256, Blob>> const& wasmObjects,
     beast::Journal viewJ)
 {
-    for (auto const& value : wasmObjects)
+    for (auto const& [index, data] : wasmObjects)
     {
-        auto const& index = value.first;
-        auto const& data = value.second;
         if (auto const sle = view.peek(keylet::escrow(index)))
         {
             sle->setFieldVL(sfData, data);
