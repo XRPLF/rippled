@@ -1591,11 +1591,7 @@ NoModifiedUnmodifiableFields::visitEntry(
         // Creation and deletion are ignored
         return;
 
-    auto const type = after->getType();
-    if (knownTypes_.contains(type))
-    {
-        changedEntries_.emplace(before, after);
-    }
+    changedEntries_.emplace(before, after);
 }
 
 bool
@@ -1628,7 +1624,12 @@ NoModifiedUnmodifiableFields::finalize(
                  * potential issues even when the amendment is disabled.
                  */
                 enforce = view.rules().enabled(featureLendingProtocol);
-                bad = fieldChanged(before, after, sfVaultID) ||
+                bad = fieldChanged(before, after, sfLedgerEntryType) ||
+                    fieldChanged(before, after, sfLedgerIndex) ||
+                    fieldChanged(before, after, sfSequence) ||
+                    fieldChanged(before, after, sfOwnerNode) ||
+                    fieldChanged(before, after, sfVaultNode) ||
+                    fieldChanged(before, after, sfVaultID) ||
                     fieldChanged(before, after, sfAccount) ||
                     fieldChanged(before, after, sfOwner) ||
                     fieldChanged(before, after, sfManagementFeeRate) ||
@@ -1642,7 +1643,12 @@ NoModifiedUnmodifiableFields::finalize(
                  * potential issues even when the amendment is disabled.
                  */
                 enforce = view.rules().enabled(featureLendingProtocol);
-                bad = fieldChanged(before, after, sfLoanBrokerID) ||
+                bad = fieldChanged(before, after, sfLedgerEntryType) ||
+                    fieldChanged(before, after, sfLedgerIndex) ||
+                    fieldChanged(before, after, sfSequence) ||
+                    fieldChanged(before, after, sfOwnerNode) ||
+                    fieldChanged(before, after, sfLoanBrokerNode) ||
+                    fieldChanged(before, after, sfLoanBrokerID) ||
                     fieldChanged(before, after, sfBorrower) ||
                     fieldChanged(before, after, sfLoanOriginationFee) ||
                     fieldChanged(before, after, sfLoanServiceFee) ||
@@ -1653,12 +1659,23 @@ NoModifiedUnmodifiableFields::finalize(
                     fieldChanged(before, after, sfLateInterestRate) ||
                     fieldChanged(before, after, sfCloseInterestRate) ||
                     fieldChanged(before, after, sfOverpaymentInterestRate) ||
-                    fieldChanged(before, after, sfPaymentInterval);
+                    fieldChanged(before, after, sfStartDate) ||
+                    fieldChanged(before, after, sfPaymentInterval)
+                        fieldChanged(before, after, sfGracePeriod);
                 break;
             default:
-                UNREACHABLE(
-                    "ripple::NoModifiedUnmodifiableFields::finalize : unknown "
-                    "SLE type");
+                /*
+                 * We check this invariant regardless of lending protocol
+                 * amendment status, allowing for detection and logging of
+                 * potential issues even when the amendment is disabled.
+                 *
+                 * We use the lending protocol as a gate, even though
+                 * all transactions are affected because that's when it
+                 * was added.
+                 */
+                enforce = view.rules().enabled(featureLendingProtocol);
+                bad = fieldChanged(before, after, sfLedgerEntryType) ||
+                    fieldChanged(before, after, sfLedgerIndex);
         }
         XRPL_ASSERT(
             !bad || enforce,

@@ -627,8 +627,6 @@ public:
  */
 class NoModifiedUnmodifiableFields
 {
-    std::set<LedgerEntryType> const knownTypes_{ltLOAN_BROKER, ltLOAN};
-
     std::set<std::pair<SLE::const_pointer, SLE::const_pointer>> changedEntries_;
 
 public:
