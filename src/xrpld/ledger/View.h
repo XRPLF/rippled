@@ -647,22 +647,22 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account);
  *
  *   This will also check for expired credentials. If it is called directly
  *   from preclaim, the user should convert result tecEXPIRED to tesSUCCESS and
- *   proceed to also check permissions with verifyValidDomain inside doApply.
- *   This will ensure that any expired credentials are deleted.
+ *   proceed to also check permissions with enforceMPTokenAuthorization inside
+ *   doApply. This will ensure that any expired credentials are deleted.
  */
 [[nodiscard]] TER
 requireAuth(
     ReadView const& view,
     MPTIssue const& mptIssue,
-    AccountID const& account,
-    uint256* domainId = nullptr);
+    AccountID const& account);
 
-/** Check if the account lacks required authorization.
+/** Enforce account has MPToken to match its authorization.
  *
  *   Called from doApply - it will check for expired (and delete if found any)
  *   credentials maching DomainID set in MPTIssuance. Must be called if
- *   requireAuth(...MPTIssue...) check passed in preclaim. Will create MPToken
- *   if needed, on the basis of non-expired credentals found.
+ *   requireAuth(...MPTIssue...) returned tesSUCCESS or tecEXPIRED in preclaim.
+ *   Will create MPToken (if needed) on the basis of any non-expired credentals
+ *   and delete any expried credentials (indirectly via verifyValidDomain)
  */
 [[nodiscard]] TER
 enforceMPTokenAuthorization(

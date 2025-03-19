@@ -78,19 +78,12 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         // would allow authorization granted by the issuer explicitly, but Vault
         // does not have an MPT issuer (instead it uses pseudo-account, which is
         // blackholed and cannot create any transactions).
-        //
-        // We also need to do similar check inside doApply(), in order to remove
-        // expired credentials and/or adjust authorization flag on tokens owned
-        // by DomainID (i.e. with lsfMPTDomainCheck flag). This is why we
-        // suppress authorization errors if domainId is set.
-        uint256 domainId = beast::zero;
         auto const err = requireAuth(
-            ctx.view,
-            MPTIssue(vault->at(sfMPTokenIssuanceID)),
-            account,
-            &domainId);
+            ctx.view, MPTIssue(vault->at(sfMPTokenIssuanceID)), account);
 
-        if (domainId == beast::zero)
+        // As per requireAuth spec, we suppress tecEXPIRED error here, so we can
+        // delete any expired credentials inside doApply.
+        if (err != tecEXPIRED)
             return err;
     }
 

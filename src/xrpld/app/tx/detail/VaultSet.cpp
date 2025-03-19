@@ -64,19 +64,33 @@ TER
 VaultSet::preclaim(PreclaimContext const& ctx)
 {
     auto const id = ctx.tx[sfVaultID];
-    auto const sle = ctx.view.read(keylet::vault(id));
-    if (!sle)
+    auto const vault = ctx.view.read(keylet::vault(id));
+    if (!vault)
         return tecOBJECT_NOT_FOUND;
 
     // Assert that submitter is the Owner.
-    if (ctx.tx[sfAccount] != sle->at(sfOwner))
+    if (ctx.tx[sfAccount] != vault->at(sfOwner))
         return tecNO_PERMISSION;
 
     // We can only set domain if private flag was originally set
     if (auto const domain = ctx.tx[~sfDomainID])
     {
-        if ((sle->getFlags() & tfVaultPrivate) == 0)
+        if ((vault->getFlags() & tfVaultPrivate) == 0)
             return tecINVALID_DOMAIN;
+
+        auto const sleDomain =
+            ctx.view.read(keylet::permissionedDomain(*domain));
+        if (!sleDomain)
+            return tecNO_ENTRY;
+
+        // Sanity checks, all this should be enforced by VaultCreate
+        auto const mptIssuanceID = (*vault)[sfMPTokenIssuanceID];
+        auto const sleIssuance =
+            ctx.view.read(keylet::mptIssuance(mptIssuanceID));
+        if (!sleIssuance)
+            return tefINTERNAL;
+        if ((sleIssuance->getFlags() & lsfMPTRequireAuth) == 0)
+            return tefINTERNAL;
     }
 
     return tesSUCCESS;

@@ -749,6 +749,16 @@ class Vault_test : public beast::unit_test::suite
                  .amount = asset(100)});
             env(tx);
         }
+
+        {
+            testcase("private vault depositor not authorized");
+            auto tx = vault.deposit(
+                {.depositor = depositor,
+                 .id = keylet.key,
+                 .amount = asset(50)});
+            env(tx, ter{tecNO_AUTH});
+            env.close();
+        }
     }
 
 public:
