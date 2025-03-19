@@ -30,6 +30,11 @@
 // in include/xrpl/protocol/Feature.h.
 
 XRPL_FEATURE(SmartEscrow,                Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FIX    (InvalidTxFlags,             Supported::yes, VoteBehavior::DefaultNo)	
+XRPL_FIX    (FrozenLPTokenTransfer,      Supported::yes, VoteBehavior::DefaultNo)	
+XRPL_FEATURE(DeepFreeze,                 Supported::yes, VoteBehavior::DefaultNo)	
+XRPL_FEATURE(PermissionedDomains,        Supported::yes, VoteBehavior::DefaultNo)	
+XRPL_FEATURE(DynamicNFT,                 Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(Credentials,                Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(AMMClawback,                Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (AMMv1_2,                    Supported::yes, VoteBehavior::DefaultNo)
