@@ -1015,7 +1015,8 @@ PeerImp::onMessageBegin(
     load_event_ = app_.getJobQueue().makeLoadEvent(jtPEER, name);
     fee_ = {Resource::feeTrivialPeer, name};
 
-    auto const category = TrafficCount::categorize(*m, type, true);
+    auto const category = TrafficCount::categorize(
+        *m, static_cast<protocol::MessageType>(type), true);
     overlay_.reportTraffic(category, true, static_cast<int>(size));
 
     using namespace protocol;
