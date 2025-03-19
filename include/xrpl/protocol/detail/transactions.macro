@@ -508,6 +508,54 @@ TRANSACTION(ttVAULT_CLAWBACK, 69, VaultClawback, ({
     {sfAmount, soeOPTIONAL, soeMPTSupported},
 }))
 
+/** This transaction creates and updates a Loan Broker */
+TRANSACTION(ttLOAN_BROKER_SET, 70, LoanBrokerSet, ({
+    {sfVaultID, soeREQUIRED},
+    {sfLoanBrokerID, soeOPTIONAL},
+    {sfData, soeOPTIONAL},
+    {sfManagementFeeRate, soeDEFAULT},
+    {sfDebtMaximum, soeDEFAULT},
+    {sfCoverRateMinimum, soeDEFAULT},
+    {sfCoverRateLiquidation, soeDEFAULT},
+}))
+
+/** This transaction deletes a Loan Broker */
+TRANSACTION(ttLOAN_BROKER_DELETE, 71, LoanBrokerDelete, ({
+    {sfLoanBrokerID, soeREQUIRED},
+}))
+
+/** This transaction deposits First Loss Capital into a Loan Broker */
+TRANSACTION(ttLOAN_BROKER_COVER_DEPOSIT, 72, LoanBrokerCoverDeposit, ({
+    {sfLoanBrokerID, soeREQUIRED},
+    {sfNumber, soeREQUIRED},
+}))
+
+/** This transaction withdraws First Loss Capital from a Loan Broker */
+TRANSACTION(ttLOAN_BROKER_COVER_WITHDRAW, 73, LoanBrokerCoverWithdraw, ({
+    {sfLoanBrokerID, soeREQUIRED},
+    {sfNumber, soeREQUIRED},
+}))
+
+/** This transaction creates a Loan */
+TRANSACTION(ttLOAN_CREATE, 74, LoanCreate, ({
+    {sfLoanBrokerID, soeREQUIRED},
+    {sfData, soeOPTIONAL},
+    {sfCounterparty, soeOPTIONAL},
+    {sfCounterpartySignature, soeREQUIRED},
+    {sfLoanOriginationFee, soeDEFAULT},
+    {sfLoanServiceFee, soeDEFAULT},
+    {sfLatePaymentFee, soeDEFAULT},
+    {sfClosePaymentFee, soeDEFAULT},
+    {sfInterestRate, soeDEFAULT},
+    {sfLateInterestRate, soeDEFAULT},
+    {sfCloseInterestRate, soeDEFAULT},
+    {sfPrincipalRequested, soeREQUIRED},
+    {sfStartDate, soeREQUIRED},
+    {sfPaymentTotal, soeOPTIONAL},
+    {sfPaymentInterval, soeOPTIONAL},
+    {sfGracePeriod, soeOPTIONAL},
+}))
+
 /** This system-generated transaction type is used to update the status of the various amendments.
 
     For details, see: https://xrpl.org/amendments.html
