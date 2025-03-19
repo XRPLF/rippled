@@ -163,6 +163,13 @@ jobs:
         run: |
           ${build_dir}/rippled --unittest --unittest-jobs $(nproc)
 
+  success:
+    name: nix test success
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - run: true
+
   coverage:
     strategy:
       fail-fast: false
