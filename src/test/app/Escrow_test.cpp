@@ -1667,6 +1667,11 @@ struct Escrow_test : public beast::unit_test::suite
         Account const alice{"alice"};
         Account const carol{"carol"};
 
+        // Tests whether the ledger index is >= 5
+        // #[no_mangle]
+        // pub fn ready() -> bool {
+        //     unsafe { host_lib::get_ledger_sqn() >= 5}
+        // }
         static auto wasmHex =
             "0061736d010000000105016000017f021b0108686f73745f6c69620e6765745f6c"
             "65646765725f73716e0000030201000405017001010105030100100619037f0141"
@@ -1818,6 +1823,10 @@ struct Escrow_test : public beast::unit_test::suite
         Account const carol{"carol"};
 
         // Tests whether the ledger index is >= 5
+        // #[no_mangle]
+        // pub fn ready() -> bool {
+        //     unsafe { host_lib::get_ledger_sqn() >= 5}
+        // }
         static auto wasmHex =
             "0061736d010000000105016000017f021b0108686f73745f6c69620e6765745f6c"
             "65646765725f73716e0000030201000405017001010105030100100619037f0141"
