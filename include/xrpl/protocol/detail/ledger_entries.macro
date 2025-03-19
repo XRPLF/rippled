@@ -473,7 +473,7 @@ LEDGER_ENTRY(ltVAULT, 0x0083, Vault, vault, ({
     {sfOwnerNode,            soeREQUIRED},
     {sfOwner,                soeREQUIRED},
     {sfAccount,              soeREQUIRED},
-    {sfData,                 soeDEFAULT},
+    {sfData,                 soeOPTIONAL},
     {sfAsset,                soeREQUIRED},
     {sfAssetTotal,           soeDEFAULT},
     {sfAssetAvailable,       soeDEFAULT},

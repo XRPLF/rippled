@@ -117,6 +117,7 @@ class Vault_test : public beast::unit_test::suite
             {
                 testcase(prefix + " fail to update because wrong owner");
                 auto tx = vault.set({.owner = issuer, .id = keylet.key});
+                tx[sfAssetMaximum] = asset(50).number();
                 env(tx, ter(tecNO_PERMISSION));
             }
 
@@ -576,7 +577,7 @@ class Vault_test : public beast::unit_test::suite
             testcase("global lock");
             mptt.set({.account = issuer, .flags = tfMPTLock});
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
-            env(tx, ter(tecLOCKED));
+            env(tx, ter(tecFROZEN));
         });
 
         testCase([this](

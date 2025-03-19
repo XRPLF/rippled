@@ -57,19 +57,24 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     if (!vault)
         return tecOBJECT_NOT_FOUND;
 
-    auto account = ctx.tx[sfAccount];
+    auto const account = ctx.tx[sfAccount];
     auto const assets = ctx.tx[sfAmount];
-    auto asset = vault->at(sfAsset);
-    if (assets.asset() != asset)
+    auto const vaultAsset = vault->at(sfAsset);
+    if (assets.asset() != vaultAsset)
         return tecWRONG_ASSET;
 
     // Cannot deposit inside Vault an Asset frozen for the depositor
-    if (isFrozen(ctx.view, account, asset))
+    if (isFrozen(ctx.view, account, vaultAsset))
         return tecFROZEN;
 
     auto const share = MPTIssue(vault->at(sfMPTokenIssuanceID));
+    // Cannot deposit if the shares of the vault are frozen
     if (isFrozen(ctx.view, account, share))
         return tecFROZEN;
+
+    // Defensive check, given above `if (asset.asset() != vaultAsset)`
+    if (share == assets.asset())
+        return tecWRONG_ASSET;
 
     if ((vault->getFlags() & tfVaultPrivate) && account != vault->at(sfOwner))
     {
@@ -78,14 +83,32 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         // would allow authorization granted by the issuer explicitly, but Vault
         // does not have an MPT issuer (instead it uses pseudo-account, which is
         // blackholed and cannot create any transactions).
-        auto const err = requireAuth(
-            ctx.view, MPTIssue(vault->at(sfMPTokenIssuanceID)), account);
+        auto const err = requireAuth(ctx.view, share, account);
 
         // As per requireAuth spec, we suppress tecEXPIRED error here, so we can
         // delete any expired credentials inside doApply.
         if (err != tecEXPIRED)
             return err;
     }
+
+    if (assets.holds<MPTIssue>())
+    {
+        auto mptID = assets.get<MPTIssue>().getMptID();
+        auto issuance = ctx.view.read(keylet::mptIssuance(mptID));
+        if (!issuance)
+            return tecNO_ENTRY;
+        if ((issuance->getFlags() & lsfMPTCanTransfer) == 0)
+            return tecNO_AUTH;
+    }
+
+    if (accountHolds(
+            ctx.view,
+            account,
+            vaultAsset,
+            FreezeHandling::fhZERO_IF_FROZEN,
+            AuthHandling::ahZERO_IF_UNAUTHORIZED,
+            ctx.j) < assets)
+        return tecINSUFFICIENT_FUNDS;
 
     return tesSUCCESS;
 }
@@ -95,21 +118,9 @@ VaultDeposit::doApply()
 {
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
     if (!vault)
-        return tecOBJECT_NOT_FOUND;
+        return tefINTERNAL;
 
     auto const assets = ctx_.tx[sfAmount];
-    Asset const& asset = vault->at(sfAsset);
-
-    if (accountHolds(
-            view(),
-            account_,
-            asset,
-            FreezeHandling::fhZERO_IF_FROZEN,
-            AuthHandling::ahZERO_IF_UNAUTHORIZED,
-            j_) < assets)
-    {
-        return tecINSUFFICIENT_FUNDS;
-    }
 
     // Make sure the depositor can hold shares.
     auto const mptIssuanceID = (*vault)[sfMPTokenIssuanceID];
@@ -118,7 +129,6 @@ VaultDeposit::doApply()
         return tefINTERNAL;
 
     auto const& vaultAccount = vault->at(sfAccount);
-
     MPTIssue const mptIssue(mptIssuanceID);
     // Note, vault owner is always authorized
     if ((vault->getFlags() & tfVaultPrivate) && account_ != vault->at(sfOwner))

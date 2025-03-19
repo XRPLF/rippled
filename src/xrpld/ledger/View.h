@@ -160,7 +160,7 @@ isAnyFrozen(
     MPTIssue const& mptIssue);
 
 /*
-We do not have use a case for these (yet ?)
+We do not have a use case for these (yet ?)
 
 [[nodiscard]] bool
 isAnyFrozen(

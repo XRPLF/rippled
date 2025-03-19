@@ -62,9 +62,7 @@ VaultCreate::preflight(PreflightContext const& ctx)
 
     if (auto const domain = ctx.tx[~sfDomainID])
     {
-        if (!ctx.rules.enabled(featurePermissionedDomains))
-            return temDISABLED;
-        else if (*domain == beast::zero)
+        if (*domain == beast::zero)
             return temMALFORMED;
         else if ((ctx.tx.getFlags() & tfVaultPrivate) == 0)
             return temMALFORMED;  // DomainID only allowed on private vaults
@@ -99,8 +97,6 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
         auto issuance = ctx.view.read(keylet::mptIssuance(mptID));
         if (!issuance)
             return tecNO_ENTRY;
-        if (issuance->getFlags() & lsfMPTLocked)
-            return tecLOCKED;
         if ((issuance->getFlags() & lsfMPTCanTransfer) == 0)
             return tecNO_AUTH;
     }
@@ -160,6 +156,10 @@ VaultCreate::doApply()
     if (txFlags & tfVaultPrivate)
         mptFlags |= lsfMPTRequireAuth;
 
+    // Note, here we are **not** creating an MPToken for the assets held in the
+    // vault. That MPToken or TrustLine/RippleState is created above, in
+    // addEmptyHolding. Here we are creating MPTokenIssuance for the shares in
+    // the vault
     auto maybeShare = MPTokenIssuanceCreate::create(
         view(),
         j_,

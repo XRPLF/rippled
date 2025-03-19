@@ -302,28 +302,31 @@ isVaultPseudoAccountFrozen(ReadView const& view, MPTIssue const& mptShare)
 
     auto const mptIssuance =
         view.read(keylet::mptIssuance(mptShare.getMptID()));
-    XRPL_ASSERT(
-        mptIssuance,
-        "ripple::isVaultPseudoAccountFrozen : non-null MPTokenIssuance");
-    if (!mptIssuance)
+    if (mptIssuance == nullptr)
+    {
+        UNREACHABLE(
+            "ripple::isVaultPseudoAccountFrozen : null MPTokenIssuance");
         return false;
+    }
 
     auto const issuer = mptIssuance->getAccountID(sfIssuer);
     auto const mptIssuer = view.read(keylet::account(issuer));
-    XRPL_ASSERT(
-        mptIssuer,
-        "ripple::isVaultPseudoAccountFrozen : non-null MPToken issuer");
-    if (!mptIssuer)
+    if (mptIssuer == nullptr)
+    {
+        UNREACHABLE("ripple::isVaultPseudoAccountFrozen : null MPToken issuer");
         return false;
+    }
 
     if (!mptIssuer->isFieldPresent(sfVaultID))
-        return false;  // not a Vault pseudo-account
+        return false;  // not a Vault pseudo-account, common case
 
     auto const vault =
         view.read(keylet::vault(mptIssuer->getFieldH256(sfVaultID)));
-    XRPL_ASSERT(vault, "ripple::isVaultPseudoAccountFrozen : non-null vault");
-    if (!vault)
+    if (vault == nullptr)
+    {
+        UNREACHABLE("ripple::isVaultPseudoAccountFrozen : null vault");
         return false;
+    }
 
     Asset const asset{vault->at(sfAsset)};
     return isFrozen(view, issuer, asset);

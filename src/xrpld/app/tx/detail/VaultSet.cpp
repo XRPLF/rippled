@@ -20,8 +20,10 @@
 #include <xrpld/app/tx/detail/VaultSet.h>
 #include <xrpld/ledger/View.h>
 
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -40,8 +42,10 @@ VaultSet::preflight(PreflightContext const& ctx)
 
     if (auto const ter = preflight1(ctx))
         return ter;
+
     if (ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
+
     if (auto const data = ctx.tx[~sfData])
     {
         if (data->empty() || data->length() > maxDataPayloadLength)
@@ -49,13 +53,13 @@ VaultSet::preflight(PreflightContext const& ctx)
     }
 
     auto const domain = ctx.tx[~sfDomainID];
-    if (domain)
-    {
-        if (!ctx.rules.enabled(featurePermissionedDomains))
-            return temDISABLED;
-        else if (*domain == beast::zero)
-            return temMALFORMED;
-    }
+    if (domain && *domain == beast::zero)
+        return temMALFORMED;
+
+    if (!ctx.tx.isFieldPresent(sfDomainID) &&
+        !ctx.tx.isFieldPresent(sfAssetMaximum) &&
+        !ctx.tx.isFieldPresent(sfData))
+        return temMALFORMED;
 
     return preflight2(ctx);
 }
@@ -63,8 +67,7 @@ VaultSet::preflight(PreflightContext const& ctx)
 TER
 VaultSet::preclaim(PreclaimContext const& ctx)
 {
-    auto const id = ctx.tx[sfVaultID];
-    auto const vault = ctx.view.read(keylet::vault(id));
+    auto const vault = ctx.view.read(keylet::vault(ctx.tx[sfVaultID]));
     if (!vault)
         return tecOBJECT_NOT_FOUND;
 
@@ -72,9 +75,29 @@ VaultSet::preclaim(PreclaimContext const& ctx)
     if (ctx.tx[sfAccount] != vault->at(sfOwner))
         return tecNO_PERMISSION;
 
-    // We can only set domain if private flag was originally set
-    if (auto const domain = ctx.tx[~sfDomainID])
+    auto const mptIssuanceID = (*vault)[sfMPTokenIssuanceID];
+    auto const sleIssuance = ctx.view.read(keylet::mptIssuance(mptIssuanceID));
+    if (!sleIssuance)
+        return tefINTERNAL;
+
+    auto const domain = ctx.tx[~sfDomainID];
+    auto const oldDomain = sleIssuance->at(~sfDomainID);
+    auto const data = ctx.tx[~sfData];
+    auto const oldData = vault->at(~sfData);
+    auto const assetMax = ctx.tx[~sfAssetMaximum];
+    auto const oldAssetMax = vault->at(sfAssetMaximum);
+    int const changes =                      //
+        (domain && (domain != oldDomain)) +  //
+        (data && (data != oldData)) +        //
+        (assetMax && (*assetMax != oldAssetMax));
+
+    // This transaction would change nothing
+    if (!changes)
+        return tecNO_PERMISSION;
+
+    if (domain)
     {
+        // We can only set domain if private flag was originally set
         if ((vault->getFlags() & tfVaultPrivate) == 0)
             return tecINVALID_DOMAIN;
 
@@ -83,12 +106,7 @@ VaultSet::preclaim(PreclaimContext const& ctx)
         if (!sleDomain)
             return tecNO_ENTRY;
 
-        // Sanity checks, all this should be enforced by VaultCreate
-        auto const mptIssuanceID = (*vault)[sfMPTokenIssuanceID];
-        auto const sleIssuance =
-            ctx.view.read(keylet::mptIssuance(mptIssuanceID));
-        if (!sleIssuance)
-            return tefINTERNAL;
+        // Sanity check only, this should be enforced by VaultCreate
         if ((sleIssuance->getFlags() & lsfMPTRequireAuth) == 0)
             return tefINTERNAL;
     }
