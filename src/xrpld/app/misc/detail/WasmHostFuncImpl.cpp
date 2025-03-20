@@ -17,8 +17,8 @@
 */
 //==============================================================================
 
-#include <xrpld/app/tx/detail/ApplyContext.h>
 #include <xrpld/app/misc/WasmVM.h>
+#include <xrpld/app/tx/detail/ApplyContext.h>
 
 #include "xrpl/protocol/digest.h"
 
@@ -26,7 +26,8 @@ namespace ripple {
 class WasmHostFunctionsImpl : HostFunctions
 {
 public:
-    WasmHostFunctionsImpl(ApplyContext& ctx, Keylet leKey) : ctx(ctx), leKey(leKey)
+    WasmHostFunctionsImpl(ApplyContext& ctx, Keylet leKey)
+        : ctx(ctx), leKey(leKey)
     {
     }
 
@@ -68,16 +69,16 @@ WasmHostFunctionsImpl::getLedgerSqn()
 int32_t
 WasmHostFunctionsImpl::getParentLedgerTime()
 {
-    return ctx.view().parentCloseTime().time_since_epoch().count();//TODO try
+    return ctx.view().parentCloseTime().time_since_epoch().count();  // TODO try
 }
 
-//TODO remove json code after deciding encoding scheme
+// TODO remove json code after deciding encoding scheme
 
 std::optional<Bytes>
 WasmHostFunctionsImpl::getTxField(const std::string& fname)
 {
     auto js = ctx.tx.getJson(JsonOptions::none);
-    if(js.isMember(fname))
+    if (js.isMember(fname))
     {
         auto s = js.get(fname, Json::Value::null).asString();
         return Bytes{s.begin(), s.end()};
@@ -109,7 +110,7 @@ WasmHostFunctionsImpl::getLedgerEntryField(
         return std::nullopt;
 
     auto js = ctx.view().read(kl.value())->getJson(JsonOptions::none);
-    if(js.isMember(fname))
+    if (js.isMember(fname))
     {
         auto s = js.get(fname, Json::Value::null).asString();
         return Bytes{s.begin(), s.end()};
@@ -121,10 +122,11 @@ WasmHostFunctionsImpl::getLedgerEntryField(
 std::optional<Bytes>
 WasmHostFunctionsImpl::getCurrentLedgerEntryField(const std::string& fname)
 {
-    if(!ctx.view().exists(leKey)) return std::nullopt;
+    if (!ctx.view().exists(leKey))
+        return std::nullopt;
 
     auto js = ctx.view().read(leKey)->getJson(JsonOptions::none);
-    if(js.isMember(fname))
+    if (js.isMember(fname))
     {
         auto s = js.get(fname, Json::Value::null).asString();
         return Bytes{s.begin(), s.end()};
@@ -136,7 +138,8 @@ WasmHostFunctionsImpl::getCurrentLedgerEntryField(const std::string& fname)
 bool
 WasmHostFunctionsImpl::updateData(const Bytes& data)
 {
-    if(!ctx.view().exists(leKey)) return false;
+    if (!ctx.view().exists(leKey))
+        return false;
     auto sle = ctx.view().peek(leKey);
     sle->setFieldVL(sfData, data);
     ctx.view().update(sle);

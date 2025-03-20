@@ -5866,7 +5866,8 @@ struct Wasm_test : public beast::unit_test::suite
             int clock_drift = 0;
 
         public:
-            explicit TestHostFunctions(Env* env, int cd = 0) : env(env), clock_drift(cd)
+            explicit TestHostFunctions(Env* env, int cd = 0)
+                : env(env), clock_drift(cd)
             {
                 std::string s = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
                 accountID = Bytes{s.begin(), s.end()};
@@ -5884,9 +5885,10 @@ struct Wasm_test : public beast::unit_test::suite
             getParentLedgerTime() override
             {
                 return env->current()
-                    ->parentCloseTime()
-                    .time_since_epoch()
-                    .count() + clock_drift;
+                           ->parentCloseTime()
+                           .time_since_epoch()
+                           .count() +
+                    clock_drift;
             }
 
             std::optional<Bytes>
@@ -5933,7 +5935,8 @@ struct Wasm_test : public beast::unit_test::suite
             if (BEAST_EXPECT(re.has_value()))
             {
                 BEAST_EXPECT(re.value().result);
-                std::cout << "good case result " << re.value().result << " cost: " << re.value().cost << std::endl;
+                std::cout << "good case result " << re.value().result
+                          << " cost: " << re.value().cost << std::endl;
             }
         }
 
@@ -5949,7 +5952,8 @@ struct Wasm_test : public beast::unit_test::suite
             if (BEAST_EXPECT(re.has_value()))
             {
                 BEAST_EXPECT(!re.value().result);
-                std::cout << "bad case result " << re.value().result << " cost: " << re.value().cost << std::endl;
+                std::cout << "bad case result " << re.value().result
+                          << " cost: " << re.value().cost << std::endl;
             }
         }
     }
