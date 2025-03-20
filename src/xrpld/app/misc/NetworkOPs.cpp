@@ -35,6 +35,7 @@
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/TxQ.h>
+#include <xrpld/app/misc/ValidatorKeys.h>
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/app/misc/detail/AccountTxPaging.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
@@ -249,6 +250,12 @@ public:
               beast::get_abstract_clock<std::chrono::steady_clock>(),
               validatorKeys,
               app_.logs().journal("LedgerConsensus"))
+        , validatorPK_(
+              validatorKeys.keys ? validatorKeys.keys->publicKey
+                                 : decltype(validatorPK_){})
+        , validatorMasterPK_(
+              validatorKeys.keys ? validatorKeys.keys->masterPublicKey
+                                 : decltype(validatorMasterPK_){})
         , m_ledgerMaster(ledgerMaster)
         , m_job_queue(job_queue)
         , m_standalone(standalone)
@@ -731,6 +738,9 @@ private:
     boost::asio::steady_timer accountHistoryTxTimer_;
 
     RCLConsensus mConsensus;
+
+    std::optional<PublicKey> const validatorPK_;
+    std::optional<PublicKey> const validatorMasterPK_;
 
     ConsensusPhase mLastConsensusPhase;
 
@@ -1917,6 +1927,23 @@ NetworkOPsImp::beginConsensus(
 bool
 NetworkOPsImp::processTrustedProposal(RCLCxPeerPos peerPos)
 {
+    auto const& peerKey = peerPos.publicKey();
+    if (validatorPK_ == peerKey || validatorMasterPK_ == peerKey)
+    {
+        // Could indicate a operator misconfiguration where two nodes are
+        // running with the same validator key configured, so this isn't fatal,
+        // and it doesn't necessarily indicate peer misbehavior. But since this
+        // is a trusted message, it could be a very big deal. Either way, we
+        // don't want to relay the proposal. Note that the byzantine behavior
+        // detection in handleNewValidation will notify other peers.
+        UNREACHABLE(
+            "ripple::NetworkOPsImp::processTrustedProposal : received own "
+            "proposal");
+        JLOG(m_journal.error())
+            << "Received a TRUSTED proposal signed with my key from a peer";
+        return false;
+    }
+
     return mConsensus.peerProposal(app_.timeKeeper().closeTime(), peerPos);
 }
 

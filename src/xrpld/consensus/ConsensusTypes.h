@@ -188,6 +188,7 @@ struct ConsensusCloseTimes
 enum class ConsensusState {
     No,       //!< We do not have consensus
     MovedOn,  //!< The network has consensus without us
+    Expired,  //!< Consensus time limit has hard-expired
     Yes       //!< We have consensus along with the network
 };
 
@@ -237,7 +238,7 @@ struct ConsensusResult
     ConsensusTimer roundTime;
 
     // Indicates state in which consensus ended.  Once in the accept phase
-    // will be either Yes or MovedOn
+    // will be either Yes or MovedOn or Expired
     ConsensusState state = ConsensusState::No;
 
     // The number of peers proposing during the round
