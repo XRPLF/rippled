@@ -1170,8 +1170,8 @@ NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
     }
 
     // Enforce Network bar for batch txn
-    if (auto const view = m_ledgerMaster.getCurrentLedger();
-        view->rules().enabled(featureBatch) && iTrans->isFlag(tfInnerBatchTxn))
+    if (iTrans->isFlag(tfInnerBatchTxn) &&
+        m_ledgerMaster.getValidatedRules().enabled(featureBatch))
     {
         JLOG(m_journal.error())
             << "Submitted transaction invalid: tfInnerBatchTxn flag present.";
@@ -1248,7 +1248,7 @@ NetworkOPsImp::processTransaction(
     // under no circumstances will we ever accept an inner txn within a batch
     // txn from the network.
     auto const sttx = *transaction->getSTransaction();
-    if (view->rules().enabled(featureBatch) && sttx.isFlag(tfInnerBatchTxn))
+    if (sttx.isFlag(tfInnerBatchTxn) && view->rules().enabled(featureBatch))
     {
         transaction->setStatus(INVALID);
         transaction->setResult(temINVALID_FLAG);
@@ -1522,10 +1522,12 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
             {
                 auto const toSkip =
                     app_.getHashRouter().shouldRelay(e.transaction->getID());
-
                 if (auto const sttx = *(e.transaction->getSTransaction());
-                    toSkip && !sttx.isFlag(tfInnerBatchTxn) &&
-                    newOL->rules().enabled(featureBatch))
+                    toSkip &&
+                    // Skip relaying if it's an inner batch txn and batch
+                    // feature is enabled
+                    !(sttx.isFlag(tfInnerBatchTxn) &&
+                      newOL->rules().enabled(featureBatch)))
                 {
                     protocol::TMTransaction tx;
                     Serializer s;
