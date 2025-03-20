@@ -19,7 +19,9 @@
 
 #include <test/jtx.h>
 #include <test/jtx/utility.h>
+
 #include <xrpld/app/tx/apply.h>
+
 #include <xrpl/protocol/Batch.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STParsedJSON.h>

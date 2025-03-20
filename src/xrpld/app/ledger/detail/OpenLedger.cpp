@@ -25,7 +25,9 @@
 #include <xrpld/ledger/CachedView.h>
 #include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/Overlay.h>
+
 #include <xrpl/protocol/TxFlags.h>
+
 #include <boost/range/adaptor/transformed.hpp>
 
 namespace ripple {

@@ -19,11 +19,13 @@
 
 #include <test/jtx/batch.h>
 #include <test/jtx/utility.h>
+
 #include <xrpl/protocol/Batch.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Sign.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
+
 #include <optional>
 #include <sstream>
 

@@ -2,6 +2,7 @@
 #define RIPPLE_TEST_JTX_SIGNERUTILS_H_INCLUDED
 
 #include <test/jtx/Account.h>
+
 #include <vector>
 
 namespace ripple {
