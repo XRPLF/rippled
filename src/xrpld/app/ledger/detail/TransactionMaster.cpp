@@ -38,14 +38,18 @@ TransactionMaster::TransactionMaster(Application& app)
 }
 
 bool
-TransactionMaster::inLedger(uint256 const& hash, std::uint32_t ledger)
+TransactionMaster::inLedger(
+    uint256 const& hash,
+    std::uint32_t ledger,
+    std::optional<uint32_t> tseq,
+    std::optional<uint32_t> netID)
 {
     auto txn = mCache.fetch(hash);
 
     if (!txn)
         return false;
 
-    txn->setStatus(COMMITTED, ledger);
+    txn->setStatus(COMMITTED, ledger, tseq, netID);
     return true;
 }
 
