@@ -479,18 +479,16 @@ template <typename clock_type>
 std::uint16_t
 Slot<clock_type>::inState(PeerState state) const
 {
-    return std::count_if(peers_.begin(), peers_.end(), [&](auto const& it) {
-        return (it.second.state == state);
-    });
+    return std::ranges::count_if(
+        peers_, [&](auto const& it) { return (it.second.state == state); });
 }
 
 template <typename clock_type>
 std::uint16_t
 Slot<clock_type>::notInState(PeerState state) const
 {
-    return std::count_if(peers_.begin(), peers_.end(), [&](auto const& it) {
-        return (it.second.state != state);
-    });
+    return std::ranges::count_if(
+        peers_, [&](auto const& it) { return (it.second.state != state); });
 }
 
 template <typename clock_type>

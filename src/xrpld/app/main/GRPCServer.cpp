@@ -159,7 +159,7 @@ GRPCServerImpl::CallData<Request, Response>::process(
 
             {
                 std::stringstream toLog;
-                toLog << "role = " << (int)role;
+                toLog << "role = " << static_cast<int>(role);
 
                 toLog << " address = ";
                 if (auto clientIp = getClientIpAddress())
@@ -412,10 +412,8 @@ GRPCServerImpl::handleRpcs()
     std::vector<std::shared_ptr<Processor>> requests = setupListeners();
 
     auto erase = [&requests](Processor* ptr) {
-        auto it = std::find_if(
-            requests.begin(),
-            requests.end(),
-            [ptr](std::shared_ptr<Processor>& sPtr) {
+        auto it = std::ranges::find_if(
+            requests, [ptr](std::shared_ptr<Processor>& sPtr) {
                 return sPtr.get() == ptr;
             });
         BOOST_ASSERT(it != requests.end());

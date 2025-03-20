@@ -807,7 +807,7 @@ struct Peer
         // TODO: This always suppresses relay of peer positions already seen
         // Should it allow forwarding if for a recent ledger ?
         auto& dest = peerPositions[p.prevLedger()];
-        if (std::find(dest.begin(), dest.end(), p) != dest.end())
+        if (std::ranges::find(dest, p) != dest.end())
             return false;
 
         dest.push_back(p);

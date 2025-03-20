@@ -295,12 +295,11 @@ Door<Handler>::Door(
     , acceptor_(io_context)
     , strand_(io_context)
     , ssl_(
-          port_.protocol.count("https") > 0 ||
-          port_.protocol.count("wss") > 0 || port_.protocol.count("wss2") > 0 ||
-          port_.protocol.count("peer") > 0)
+          port_.protocol.contains("https") || port_.protocol.contains("wss") ||
+          port_.protocol.contains("wss2") || port_.protocol.contains("peer"))
     , plain_(
-          port_.protocol.count("http") > 0 || port_.protocol.count("ws") > 0 ||
-          port_.protocol.count("ws2"))
+          port_.protocol.contains("http") || port_.protocol.contains("ws") ||
+          port_.protocol.contains("ws2"))
 {
     reOpen();
 }

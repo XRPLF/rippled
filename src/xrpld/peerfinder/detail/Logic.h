@@ -620,21 +620,17 @@ public:
                 // build list of active slots
                 std::vector<SlotImp::ptr> slots;
                 slots.reserve(slots_.size());
-                std::for_each(
-                    slots_.cbegin(),
-                    slots_.cend(),
-                    [&slots](Slots::value_type const& value) {
+                std::ranges::for_each(
+                    slots_, [&slots](Slots::value_type const& value) {
                         if (value.second->state() == Slot::active)
                             slots.emplace_back(value.second);
                     });
-                std::shuffle(slots.begin(), slots.end(), default_prng());
+                std::ranges::shuffle(slots, default_prng());
 
                 // build target vector
                 targets.reserve(slots.size());
-                std::for_each(
-                    slots.cbegin(),
-                    slots.cend(),
-                    [&targets](SlotImp::ptr const& slot) {
+                std::ranges::for_each(
+                    slots, [&targets](SlotImp::ptr const& slot) {
                         targets.emplace_back(slot);
                     });
             }
@@ -791,7 +787,7 @@ public:
         // If we're sent too many endpoints, sample them at random:
         if (list.size() > Tuning::numberOfEndpointsMax)
         {
-            std::shuffle(list.begin(), list.end(), default_prng());
+            std::ranges::shuffle(list, default_prng());
             list.resize(Tuning::numberOfEndpointsMax);
         }
 

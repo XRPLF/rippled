@@ -216,9 +216,9 @@ private:
             BEAST_EXPECT(test.fee() == 300);
             BEAST_EXPECT(test == targetOther);
 
-            test = std::uint64_t(200);
+            test = static_cast<std::uint64_t>(200);
             BEAST_EXPECT(test.fee() == 200);
-            test = std::uint32_t(300);
+            test = static_cast<std::uint32_t>(300);
             BEAST_EXPECT(test.fee() == 300);
 
             test = targetSame;
@@ -305,7 +305,7 @@ private:
 
             test = 200.0;
             BEAST_EXPECT(test.fee() == 200);
-            test = std::uint64_t(300);
+            test = static_cast<std::uint64_t>(300);
             BEAST_EXPECT(test.fee() == 300);
 
             test = targetSame;

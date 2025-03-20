@@ -150,7 +150,7 @@ PathRequest::needsUpdate(bool newOnly, LedgerIndex index)
 bool
 PathRequest::hasCompletion()
 {
-    return bool(fCompletion);
+    return static_cast<bool>(fCompletion);
 }
 
 void

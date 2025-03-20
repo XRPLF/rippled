@@ -153,10 +153,7 @@ STLedgerEntry::isThreadedType(Rules const& rules) const
     // Exclude PrevTxnID/PrevTxnLgrSeq if the fixPreviousTxnID amendment is not
     // enabled and the ledger object type is in the above set
     bool const excludePrevTxnID = !rules.enabled(fixPreviousTxnID) &&
-        std::count(
-            newPreviousTxnIDTypes.cbegin(),
-            newPreviousTxnIDTypes.cend(),
-            type_);
+        std::ranges::count(newPreviousTxnIDTypes, type_);
     return !excludePrevTxnID && getFieldIndex(sfPreviousTxnID) != -1;
 }
 

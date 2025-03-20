@@ -94,7 +94,7 @@ Reader::parse(std::istream& sin, Value& root)
     // Since std::string is reference-counted, this at least does not
     // create an extra copy.
     std::string doc;
-    std::getline(sin, doc, (char)EOF);
+    std::getline(sin, doc, static_cast<char>(EOF));
     return parse(doc, root);
 }
 
@@ -380,10 +380,7 @@ Reader::readNumber()
         {
             if (!std::isdigit(static_cast<unsigned char>(*current_)))
             {
-                auto ret = std::find(
-                    std::begin(extended_tokens),
-                    std::end(extended_tokens),
-                    *current_);
+                auto ret = std::ranges::find(extended_tokens, *current_);
 
                 if (ret == std::end(extended_tokens))
                     break;
@@ -631,7 +628,7 @@ Reader::decodeDouble(Token& token)
     double value = 0;
     const int bufferSize = 32;
     int count;
-    int length = int(token.end_ - token.start_);
+    int length = static_cast<int>(token.end_ - token.start_);
     // Sanity check to avoid buffer overflow exploits.
     if (length < 0)
     {
@@ -848,7 +845,7 @@ Reader::addError(std::string const& message, Token& token, Location extra)
 bool
 Reader::recoverFromError(TokenType skipUntilToken)
 {
-    int errorCount = int(errors_.size());
+    int errorCount = static_cast<int>(errors_.size());
     Token skip;
 
     while (true)
@@ -917,7 +914,7 @@ Reader::getLocationLineAndColumn(Location location, int& line, int& column)
     }
 
     // column & line start at 1
-    column = int(location - lastLineStart) + 1;
+    column = static_cast<int>(location - lastLineStart) + 1;
     ++line;
 }
 

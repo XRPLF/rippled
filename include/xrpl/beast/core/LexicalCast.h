@@ -100,10 +100,9 @@ struct LexicalCast<Out, std::string_view>
         std::string result;
 
         // Convert the input to lowercase
-        std::transform(
-            in.begin(), in.end(), std::back_inserter(result), [](auto c) {
-                return std::tolower(static_cast<unsigned char>(c));
-            });
+        std::ranges::transform(in, std::back_inserter(result), [](auto c) {
+            return std::tolower(static_cast<unsigned char>(c));
+        });
 
         if (result == "1" || result == "true")
         {

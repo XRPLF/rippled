@@ -52,7 +52,7 @@ PeerReservationTable::list() const -> std::vector<PeerReservation>
     {
         std::lock_guard lock(mutex_);
         list.reserve(table_.size());
-        std::copy(table_.begin(), table_.end(), std::back_inserter(list));
+        std::ranges::copy(table_, std::back_inserter(list));
     }
     std::sort(list.begin(), list.end());
     return list;

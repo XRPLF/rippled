@@ -118,7 +118,7 @@ parseProtocolVersions(boost::beast::string_view const& value)
     }
 
     // We guarantee that the returned list is sorted and contains no duplicates:
-    std::sort(result.begin(), result.end());
+    std::ranges::sort(result);
     result.erase(std::unique(result.begin(), result.end()), result.end());
 
     return result;
@@ -177,10 +177,7 @@ bool
 isProtocolSupported(ProtocolVersion const& v)
 {
     return std::end(supportedProtocolList) !=
-        std::find(
-               std::begin(supportedProtocolList),
-               std::end(supportedProtocolList),
-               v);
+        std::ranges::find(supportedProtocolList, v);
 }
 
 }  // namespace ripple

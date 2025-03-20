@@ -75,7 +75,7 @@ class Handler_test : public beast::unit_test::suite
                 samples[k] = (std::chrono::steady_clock::now() - start).count();
             }
 
-            std::sort(samples.begin(), samples.end());
+            std::ranges::sort(samples);
             for (std::size_t k = 35; k < 65; ++k)
             {
                 j += 1;
@@ -110,7 +110,7 @@ class Handler_test : public beast::unit_test::suite
             1'000'000,
             [&](std::size_t i) {
                 auto const d = RPC::getHandler(1, false, names[i]);
-                dummy = dummy + i + (int)d->role_;
+                dummy = dummy + i + static_cast<int>(d->role_);
             },
             [&]() -> std::size_t { return distr(prng); });
 

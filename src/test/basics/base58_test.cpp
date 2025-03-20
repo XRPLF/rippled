@@ -98,7 +98,7 @@ randomB256TestData(std::span<std::uint8_t> d)
     auto& rng = randEngine();
     std::uniform_int_distribution<std::uint8_t> dist(0, 255);
     auto [tokType, tokSize] = randomTokenTypeAndSize();
-    std::generate(d.begin(), d.begin() + tokSize, [&] { return dist(rng); });
+    std::generate_n(d.begin(), tokSize, [&] { return dist(rng); });
     return {tokType, d.subspan(0, tokSize)};
 }
 
@@ -108,7 +108,7 @@ printAsChar(std::span<std::uint8_t> a, std::span<std::uint8_t> b)
     auto asString = [](std::span<std::uint8_t> s) {
         std::string r;
         r.resize(s.size());
-        std::copy(s.begin(), s.end(), r.begin());
+        std::ranges::copy(s, r.begin());
         return r;
     };
     auto sa = asString(a);
@@ -123,7 +123,7 @@ printAsInt(std::span<std::uint8_t> a, std::span<std::uint8_t> b)
         std::stringstream sstr;
         for (auto i : s)
         {
-            sstr << std::setw(3) << int(i) << ',';
+            sstr << std::setw(3) << i << ',';
         }
         return sstr.str();
     };
@@ -301,7 +301,7 @@ class base58_test : public beast::unit_test::suite
                         tmpBuf.size());
                     BEAST_EXPECT(s.size());
                     b58Result[i] = outBuf.subspan(0, s.size());
-                    std::copy(s.begin(), s.end(), b58Result[i].begin());
+                    std::ranges::copy(s, b58Result[i].begin());
                 }
             }
             if (BEAST_EXPECT(b58Result[0].size() == b58Result[1].size()))
@@ -338,7 +338,7 @@ class base58_test : public beast::unit_test::suite
                         ripple::b58_ref::detail::decodeBase58(st);
                     BEAST_EXPECT(s.size());
                     b256Result[i] = outBuf.subspan(0, s.size());
-                    std::copy(s.begin(), s.end(), b256Result[i].begin());
+                    std::ranges::copy(s, b256Result[i].begin());
                 }
             }
 
@@ -379,7 +379,7 @@ class base58_test : public beast::unit_test::suite
                         tokType, b256Data.data(), b256Data.size());
                     BEAST_EXPECT(s.size());
                     b58Result[i] = outBuf.subspan(0, s.size());
-                    std::copy(s.begin(), s.end(), b58Result[i].begin());
+                    std::ranges::copy(s, b58Result[i].begin());
                 }
             }
             if (BEAST_EXPECT(b58Result[0].size() == b58Result[1].size()))
@@ -416,7 +416,7 @@ class base58_test : public beast::unit_test::suite
                         ripple::b58_ref::decodeBase58Token(st, tokType);
                     BEAST_EXPECT(s.size());
                     b256Result[i] = outBuf.subspan(0, s.size());
-                    std::copy(s.begin(), s.end(), b256Result[i].begin());
+                    std::ranges::copy(s, b256Result[i].begin());
                 }
             }
 
