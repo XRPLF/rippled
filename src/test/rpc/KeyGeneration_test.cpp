@@ -115,8 +115,8 @@ public:
 
         expectEquals(
             result[jss::key_type],
-            params.isMember(jss::key_type) ? params[jss::key_type]
-                                           : "secp256k1");
+            params.isMember(jss::key_type) ? params[jss::key_type] : "ed25519",
+            "Logs from testRandomWallet unit test: ");
         BEAST_EXPECT(!result.isMember(jss::warning));
 
         std::string seed = result[jss::master_seed].asString();
@@ -140,8 +140,8 @@ public:
         expectEquals(result[jss::public_key_hex], s.public_key_hex);
         expectEquals(
             result[jss::key_type],
-            params.isMember(jss::key_type) ? params[jss::key_type]
-                                           : "secp256k1");
+            params.isMember(jss::key_type) ? params[jss::key_type] : "ed25519",
+            "Logs from testSecretWallet unit test: ");
         return result;
     }
 
@@ -877,7 +877,7 @@ public:
     void
     run() override
     {
-        testKeyType(std::nullopt, secp256k1_strings);
+        testKeyType(std::nullopt, ed25519_strings);
         testKeyType(std::string("secp256k1"), secp256k1_strings);
         testKeyType(std::string("ed25519"), ed25519_strings);
         testKeyType(std::string("secp256k1"), strong_brain_strings);
