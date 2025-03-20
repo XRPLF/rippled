@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/app/misc/WasmVM.h>
+
 #include "xrpl/protocol/AccountID.h"
 #include "xrpl/protocol/LedgerFormats.h"
 
@@ -152,7 +153,7 @@ getTxField(
         return fname.error();
 
     auto fieldData = ((HostFunctions*)data)->getTxField(fname.value());
-    if(!fieldData)
+    if (!fieldData)
         return WasmEdge_Result_Fail;
 
     auto pointer = setData(fm, fieldData.value());
@@ -183,7 +184,7 @@ getLedgerEntryField(
     auto fieldData =
         ((HostFunctions*)data)
             ->getLedgerEntryField(type, lkData.value(), fname.value());
-    if(!fieldData)
+    if (!fieldData)
         return WasmEdge_Result_Fail;
     auto pointer = setData(fm, fieldData.value());
     if (!pointer)
@@ -207,7 +208,7 @@ getCurrentLedgerEntryField(
 
     auto fieldData =
         ((HostFunctions*)data)->getCurrentLedgerEntryField(fname.value());
-    if(!fieldData)
+    if (!fieldData)
         return WasmEdge_Result_Fail;
 
     auto pointer = setData(fm, fieldData.value());
@@ -269,7 +270,7 @@ print(
     if (!f)
         return f.error();
     std::string s(f.value().begin(), f.value().end());
-    std::cout <<  s << std::endl;
+    std::cout << s << std::endl;
     return WasmEdge_Result_Success;
 }
 
@@ -434,13 +435,11 @@ runEscrowWasm(
             WasmEdge_FunctionTypeContext* hostFuncType =
                 WasmEdge_FunctionTypeCreate(inputList, 2, NULL, 0);
             WasmEdge_FunctionInstanceContext* hostFunc =
-                WasmEdge_FunctionInstanceCreate(
-                    hostFuncType, print, hfs, 100);
+                WasmEdge_FunctionInstanceCreate(hostFuncType, print, hfs, 100);
             //            WasmEdge_FunctionTypeDelete(hostFuncType);
             //            WasmEdge_FunctionInstanceDelete(hostFunc);
 
-            WasmEdge_String fName =
-                WasmEdge_StringCreateByCString("print");
+            WasmEdge_String fName = WasmEdge_StringCreateByCString("print");
             WasmEdge_ModuleInstanceAddFunction(hostMod, fName, hostFunc);
             //            WasmEdge_StringDelete(fName);
         }
@@ -474,7 +473,8 @@ runEscrowWasm(
     }
     WasmEdge_Value funcReturns[1];
     WasmEdge_String func = WasmEdge_StringCreateByCString(funcName.c_str());
-    WasmEdge_Result funcRes = WasmEdge_VMExecute(VMCxt, func, NULL, 0, funcReturns, 1);
+    WasmEdge_Result funcRes =
+        WasmEdge_VMExecute(VMCxt, func, NULL, 0, funcReturns, 1);
 
     bool ok = WasmEdge_ResultOK(funcRes);
     EscrowResult re;
