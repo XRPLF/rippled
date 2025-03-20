@@ -402,6 +402,52 @@ struct PayChan_test : public beast::unit_test::suite
             BEAST_EXPECT(!channelExists(*env.current(), chan));
             BEAST_EXPECT(env.balance(alice) == preAlice + channelFunds);
         }
+        // fixPayChanCancelAfter
+        // CancelAfter should be greater than close time
+        {
+            for (bool const withFixPayChan : {true, false})
+            {
+                auto const amend = withFixPayChan
+                    ? features
+                    : features - fixPayChanCancelAfter;
+                Env env{*this, amend};
+                env.fund(XRP(10000), alice, bob);
+                env.close();
+
+                auto const pk = alice.pk();
+                auto const settleDelay = 100s;
+                auto const channelFunds = XRP(1000);
+                NetClock::time_point const cancelAfter =
+                    env.current()->info().parentCloseTime - 1s;
+                auto const txResult =
+                    withFixPayChan ? ter(tecEXPIRED) : ter(tesSUCCESS);
+                env(create(
+                        alice, bob, channelFunds, settleDelay, pk, cancelAfter),
+                    txResult);
+            }
+        }
+        // fixPayChanCancelAfter
+        // CancelAfter can be equal to the close time
+        {
+            for (bool const withFixPayChan : {true, false})
+            {
+                auto const amend = withFixPayChan
+                    ? features
+                    : features - fixPayChanCancelAfter;
+                Env env{*this, amend};
+                env.fund(XRP(10000), alice, bob);
+                env.close();
+
+                auto const pk = alice.pk();
+                auto const settleDelay = 100s;
+                auto const channelFunds = XRP(1000);
+                NetClock::time_point const cancelAfter =
+                    env.current()->info().parentCloseTime;
+                env(create(
+                        alice, bob, channelFunds, settleDelay, pk, cancelAfter),
+                    ter(tesSUCCESS));
+            }
+        }
     }
 
     void
