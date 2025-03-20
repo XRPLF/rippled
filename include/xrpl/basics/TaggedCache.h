@@ -210,7 +210,7 @@ public:
         std::vector<SweptPointersVector> allStuffToSweep(m_cache.partitions());
 
         clock_type::time_point const now(m_clock.now());
-        clock_type::time_point when_expire;
+        clock_type::time_point expire_before_this;
 
         auto const start = std::chrono::steady_clock::now();
         {
@@ -219,21 +219,21 @@ public:
             if (m_target_size == 0 ||
                 (static_cast<int>(m_cache.size()) <= m_target_size))
             {
-                when_expire = now - m_target_age;
+                expire_before_this = now - m_target_age;
             }
             else
             {
-                when_expire =
+                expire_before_this =
                     now - m_target_age * m_target_size / m_cache.size();
 
                 clock_type::duration const minimumAge(std::chrono::seconds(1));
-                if (when_expire > (now - minimumAge))
-                    when_expire = now - minimumAge;
+                if (expire_before_this > (now - minimumAge))
+                    expire_before_this = now - minimumAge;
 
                 JLOG(m_journal.trace())
                     << m_name << " is growing fast " << m_cache.size() << " of "
                     << m_target_size << " aging at "
-                    << (now - when_expire).count() << " of "
+                    << (now - expire_before_this).count() << " of "
                     << m_target_age.count();
             }
 
@@ -244,7 +244,7 @@ public:
             for (std::size_t p = 0; p < m_cache.partitions(); ++p)
             {
                 workers.push_back(sweepHelper(
-                    when_expire,
+                    expire_before_this,
                     now,
                     m_cache.map()[p],
                     allStuffToSweep[p],
@@ -653,7 +653,7 @@ private:
 
     [[nodiscard]] std::thread
     sweepHelper(
-        clock_type::time_point const& when_expire,
+        clock_type::time_point const& expire_before_this,
         [[maybe_unused]] clock_type::time_point const& now,
         typename KeyValueCacheType::map_type& partition,
         SweptPointersVector& stuffToSweep,
@@ -677,6 +677,8 @@ private:
                         // weak
                         if (cit->second.isExpired())
                         {
+                            // No strong references remain, and it has expired →
+                            // remove it
                             stuffToSweep.second.push_back(
                                 std::move(cit->second.weak_ptr));
                             ++mapRemovals;
@@ -684,15 +686,17 @@ private:
                         }
                         else
                         {
+                            // Still weakly referenced but not expired → keep it
                             ++cit;
                         }
                     }
-                    else if (cit->second.last_access <= when_expire)
+                    else if (cit->second.last_access <= expire_before_this)
                     {
                         // strong, expired
                         ++cacheRemovals;
                         if (cit->second.ptr.use_count() == 1)
                         {
+                            // No external references exist → remove from cache
                             stuffToSweep.first.push_back(
                                 std::move(cit->second.ptr));
                             ++mapRemovals;
@@ -700,7 +704,8 @@ private:
                         }
                         else
                         {
-                            // remains weakly cached
+                            // Still in use elsewhere → demote to weak reference
+                            // for future cleanup
                             cit->second.ptr.reset();
                             ++cit;
                         }
@@ -727,7 +732,7 @@ private:
 
     [[nodiscard]] std::thread
     sweepHelper(
-        clock_type::time_point const& when_expire,
+        clock_type::time_point const& expire_before_this,
         clock_type::time_point const& now,
         typename KeyOnlyCacheType::map_type& partition,
         SweptPointersVector&,
@@ -749,7 +754,7 @@ private:
                         cit->second.last_access = now;
                         ++cit;
                     }
-                    else if (cit->second.last_access <= when_expire)
+                    else if (cit->second.last_access <= expire_before_this)
                     {
                         cit = partition.erase(cit);
                     }
