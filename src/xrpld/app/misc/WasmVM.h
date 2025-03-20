@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2023 Ripple Labs Inc.
+    Copyright (c) 2025 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -16,8 +16,8 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#ifndef RIPPLE_APP_MISC_WASMVM_H_INLCUDED
-#define RIPPLE_APP_MISC_WASMVM_H_INLCUDED
+#ifndef RIPPLE_APP_MISC_WASMVM_H_INCLUDED
+#define RIPPLE_APP_MISC_WASMVM_H_INCLUDED
 
 #include <xrpl/basics/Expected.h>
 // #include <xrpl/beast/utility/Journal.h>
@@ -81,8 +81,15 @@ Expected<EscrowResultP6, TER>
 runEscrowWasm(
     std::vector<uint8_t> const& wasmCode,
     std::string const& funcName,
-    int32_t gasLimit,
+    uint32_t gasLimit,
     int32_t input);
+
+Expected<EscrowResultP6, TER>
+runEscrowWasm(
+    std::vector<uint8_t> const& wasmCode,
+    std::string const& funcName,
+    LedgerDataProvider* ledgerDataProvider,
+    uint32_t gasLimit);
 
 /////////////// Devnet 1 /////////////////
 typedef std::vector<uint8_t> Bytes;
@@ -154,7 +161,7 @@ runEscrowWasm(
     uint64_t gasLimit);
 
 }  // namespace ripple
-#endif  // RIPPLE_APP_MISC_WASMVM_H_INLCUDED
+#endif  // RIPPLE_APP_MISC_WASMVM_H_INCLUDED
 
 // class WasmVM final
 //{

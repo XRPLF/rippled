@@ -506,7 +506,7 @@ Expected<EscrowResultP6, TER>
 runEscrowWasm(
     std::vector<uint8_t> const& wasmCode,
     std::string const& funcName,
-    int32_t gasLimit,
+    uint32_t gasLimit,
     int32_t input)
 {
     WasmEdge_ConfigureContext* conf = WasmEdge_ConfigureCreate();
