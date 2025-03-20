@@ -193,6 +193,15 @@ Batch::preflight(PreflightContext const& ctx)
             return temINVALID_INNER_BATCH;
         }
 
+        if (!(stx.getFlags() & tfInnerBatchTxn))
+        {
+            JLOG(ctx.j.trace())
+                << "BatchTrace[" << parentBatchId << "]: "
+                << "inner txn must have the tfInnerBatchTxn flag. "
+                << "txID: " << hash;
+            return temINVALID_INNER_BATCH;
+        }
+
         if (stx.isFieldPresent(sfTxnSignature) ||
             stx.isFieldPresent(sfSigners) || !stx.getSigningPubKey().empty())
         {
