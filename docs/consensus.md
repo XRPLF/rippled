@@ -558,7 +558,7 @@ struct ConsensusResult
     ConsensusTimer roundTime;
 
     // Indicates state in which consensus ended.  Once in the accept phase
-    // will be either Yes or MovedOn
+    // will be either Yes or MovedOn or Expired
     ConsensusState state = ConsensusState::No;
 };
 

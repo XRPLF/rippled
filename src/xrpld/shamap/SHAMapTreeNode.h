@@ -22,15 +22,11 @@
 
 #include <xrpld/shamap/SHAMapItem.h>
 #include <xrpld/shamap/SHAMapNodeID.h>
-#include <xrpl/basics/CountedObject.h>
+
 #include <xrpl/basics/SHAMapHash.h>
-#include <xrpl/basics/TaggedCache.h>
-#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/Serializer.h>
 
 #include <cstdint>
-#include <memory>
-#include <mutex>
 #include <string>
 
 namespace ripple {

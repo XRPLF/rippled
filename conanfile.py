@@ -108,7 +108,7 @@ class Xrpl(ConanFile):
         if self.options.jemalloc:
             self.requires('jemalloc/5.3.0')
         if self.options.rocksdb:
-            self.requires('rocksdb/6.29.5')
+            self.requires('rocksdb/9.7.3')
 
     exports_sources = (
         'CMakeLists.txt',

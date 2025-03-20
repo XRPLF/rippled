@@ -50,23 +50,22 @@
 #include <xrpld/rpc/DeliveredAmount.h>
 #include <xrpld/rpc/MPTokenIssuanceID.h>
 #include <xrpld/rpc/ServerHandler.h>
+
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/basics/mulDiv.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/basics/scope.h>
-#include <xrpl/beast/rfc2616.h>
 #include <xrpl/beast/utility/rngfill.h>
 #include <xrpl/crypto/RFC1751.h>
 #include <xrpl/crypto/csprng.h>
-#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/MultiApiJson.h>
 #include <xrpl/protocol/RPCErr.h>
-#include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/resource/ResourceManager.h>
+
 #include <boost/asio/ip/host_name.hpp>
 #include <boost/asio/steady_timer.hpp>
 
@@ -79,7 +78,6 @@
 #include <string>
 #include <tuple>
 #include <unordered_map>
-#include <utility>
 
 namespace ripple {
 
@@ -252,6 +250,12 @@ public:
               beast::get_abstract_clock<std::chrono::steady_clock>(),
               validatorKeys,
               app_.logs().journal("LedgerConsensus"))
+        , validatorPK_(
+              validatorKeys.keys ? validatorKeys.keys->publicKey
+                                 : decltype(validatorPK_){})
+        , validatorMasterPK_(
+              validatorKeys.keys ? validatorKeys.keys->masterPublicKey
+                                 : decltype(validatorMasterPK_){})
         , m_ledgerMaster(ledgerMaster)
         , m_job_queue(job_queue)
         , m_standalone(standalone)
@@ -735,6 +739,9 @@ private:
 
     RCLConsensus mConsensus;
 
+    std::optional<PublicKey> const validatorPK_;
+    std::optional<PublicKey> const validatorMasterPK_;
+
     ConsensusPhase mLastConsensusPhase;
 
     LedgerMaster& m_ledgerMaster;
@@ -1018,7 +1025,7 @@ NetworkOPsImp::processHeartbeatTimer()
 
         // VFALCO NOTE This is for diagnosing a crash on exit
         LoadManager& mgr(app_.getLoadManager());
-        mgr.resetDeadlockDetector();
+        mgr.heartbeat();
 
         std::size_t const numPeers = app_.overlay().size();
 
@@ -1920,6 +1927,23 @@ NetworkOPsImp::beginConsensus(
 bool
 NetworkOPsImp::processTrustedProposal(RCLCxPeerPos peerPos)
 {
+    auto const& peerKey = peerPos.publicKey();
+    if (validatorPK_ == peerKey || validatorMasterPK_ == peerKey)
+    {
+        // Could indicate a operator misconfiguration where two nodes are
+        // running with the same validator key configured, so this isn't fatal,
+        // and it doesn't necessarily indicate peer misbehavior. But since this
+        // is a trusted message, it could be a very big deal. Either way, we
+        // don't want to relay the proposal. Note that the byzantine behavior
+        // detection in handleNewValidation will notify other peers.
+        UNREACHABLE(
+            "ripple::NetworkOPsImp::processTrustedProposal : received own "
+            "proposal");
+        JLOG(m_journal.error())
+            << "Received a TRUSTED proposal signed with my key from a peer";
+        return false;
+    }
+
     return mConsensus.peerProposal(app_.timeKeeper().closeTime(), peerPos);
 }
 

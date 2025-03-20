@@ -19,11 +19,13 @@
 
 #include <test/beast/IPEndpointCommon.h>
 #include <test/unit_test/SuiteJournal.h>
+
 #include <xrpld/peerfinder/detail/Livecache.h>
+
 #include <xrpl/basics/chrono.h>
-#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/clock/manual_clock.h>
 #include <xrpl/beast/unit_test.h>
+
 #include <boost/algorithm/string.hpp>
 
 namespace ripple {

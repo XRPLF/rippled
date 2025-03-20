@@ -20,23 +20,12 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
+
 #include <cstdlib>
 #include <iostream>
+#include <string>
 
 namespace ripple {
-
-namespace detail {
-
-[[noreturn]] void
-accessViolation() noexcept
-{
-    // dereference memory location zero
-    int volatile* j = 0;
-    (void)*j;
-    std::abort();
-}
-
-}  // namespace detail
 
 void
 LogThrow(std::string const& title)
@@ -55,7 +44,7 @@ LogicError(std::string const& s) noexcept
     // here.
     // For the above reasons, we want this contract to stand out.
     UNREACHABLE("LogicError", {{"message", s}});
-    detail::accessViolation();
+    std::abort();
 }
 
 }  // namespace ripple
