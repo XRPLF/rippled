@@ -832,6 +832,22 @@ removeExpiredCredentials(
 }
 
 static void
+modifyWasmDataFields(
+    ApplyView& view,
+    std::vector<std::pair<uint256, Blob>> const& wasmObjects,
+    beast::Journal viewJ)
+{
+    for (auto const& [index, data] : wasmObjects)
+    {
+        if (auto const sle = view.peek(keylet::escrow(index)))
+        {
+            sle->setFieldVL(sfData, data);
+            view.update(sle);
+        }
+    }
+}
+
+static void
 removeDeletedTrustLines(
     ApplyView& view,
     std::vector<uint256> const& trustLines,
@@ -973,6 +989,7 @@ Transactor::operator()()
     else if (
         (result == tecOVERSIZE) || (result == tecKILLED) ||
         (result == tecINCOMPLETE) || (result == tecEXPIRED) ||
+        (result == tecWASM_REJECTED) ||
         (isTecClaimHardFail(result, view().flags())))
     {
         JLOG(j_.trace()) << "reapplying because of " << transToken(result);
@@ -985,13 +1002,16 @@ Transactor::operator()()
         std::vector<uint256> removedTrustLines;
         std::vector<uint256> expiredNFTokenOffers;
         std::vector<uint256> expiredCredentials;
+        std::vector<std::pair<uint256, Blob>> modifiedWasmObjects;
 
         bool const doOffers =
             ((result == tecOVERSIZE) || (result == tecKILLED));
         bool const doLines = (result == tecINCOMPLETE);
         bool const doNFTokenOffers = (result == tecEXPIRED);
         bool const doCredentials = (result == tecEXPIRED);
-        if (doOffers || doLines || doNFTokenOffers || doCredentials)
+        bool const doWasmData = (result == tecWASM_REJECTED);
+        if (doOffers || doLines || doNFTokenOffers || doCredentials ||
+            doWasmData)
         {
             ctx_.visit([doOffers,
                         &removedOffers,
@@ -1000,7 +1020,9 @@ Transactor::operator()()
                         doNFTokenOffers,
                         &expiredNFTokenOffers,
                         doCredentials,
-                        &expiredCredentials](
+                        &expiredCredentials,
+                        doWasmData,
+                        &modifiedWasmObjects](
                            uint256 const& index,
                            bool isDelete,
                            std::shared_ptr<SLE const> const& before,
@@ -1035,6 +1057,13 @@ Transactor::operator()()
                         (before->getType() == ltCREDENTIAL))
                         expiredCredentials.push_back(index);
                 }
+
+                if (doWasmData && before && after &&
+                    (before->getType() == ltESCROW))
+                {
+                    modifiedWasmObjects.push_back(
+                        std::make_pair(index, after->getFieldVL(sfData)));
+                }
             });
         }
 
@@ -1063,6 +1092,10 @@ Transactor::operator()()
         if (result == tecEXPIRED)
             removeExpiredCredentials(
                 view(), expiredCredentials, ctx_.app.journal("View"));
+
+        if (result == tecWASM_REJECTED)
+            modifyWasmDataFields(
+                view(), modifiedWasmObjects, ctx_.app.journal("View"));
 
         applied = isTecClaim(result);
     }

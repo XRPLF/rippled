@@ -80,6 +80,12 @@ struct FeeSetup
     /** The per-owned item reserve requirement in drops. */
     XRPAmount owner_reserve{2 * DROPS_PER_XRP};
 
+    /** The compute limit for Feature Extensions. */
+    std::uint32_t extension_compute_limit{4294967295};
+
+    /** The WASM size limit for Feature Extensions. */
+    std::uint32_t extension_size_limit{4294967295};
+
     /* (Remember to update the example cfg files when changing any of these
      * values.) */
 };
