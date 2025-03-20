@@ -588,7 +588,8 @@ EscrowFinish::doApply()
 
         WasmHostFunctionsImpl ledgerDataProvider(ctx_, k);
 
-        auto re = runEscrowWasm(wasm, funcName, &ledgerDataProvider, 100000);
+        std::uint32_t gasLimit = ctx_.app.config().FEES.extension_compute_limit;
+        auto re = runEscrowWasm(wasm, funcName, &ledgerDataProvider, gasLimit);
         JLOG(j_.trace()) << "Escrow WASM ran";
         if (re.has_value())
         {
