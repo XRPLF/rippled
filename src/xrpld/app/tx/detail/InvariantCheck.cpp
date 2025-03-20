@@ -1602,12 +1602,13 @@ NoModifiedUnmodifiableFields::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
-    static auto const fieldChanged = [](auto const& before,
-                                        auto const& after,
-                                        auto const& field) {
-        return before->isFieldPresent(field) != after->isFieldPresent(field) ||
-            before->at(field) != after->at(field);
-    };
+    static auto const fieldChanged =
+        [](auto const& before, auto const& after, auto const& field) {
+            bool const beforeField = before->isFieldPresent(field);
+            bool const afterField = after->isFieldPresent(field);
+            return beforeField != afterField ||
+                (afterField && before->at(field) != after->at(field));
+        };
     for (auto const& slePair : changedEntries_)
     {
         auto const& before = slePair.first;
