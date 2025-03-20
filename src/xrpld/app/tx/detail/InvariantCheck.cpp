@@ -1636,8 +1636,8 @@ NoModifiedUnmodifiableFields::finalize(
                     fieldChanged(before, after, sfCloseInterestRate) ||
                     fieldChanged(before, after, sfOverpaymentInterestRate) ||
                     fieldChanged(before, after, sfStartDate) ||
-                    fieldChanged(before, after, sfPaymentInterval)
-                        fieldChanged(before, after, sfGracePeriod);
+                    fieldChanged(before, after, sfPaymentInterval) ||
+                    fieldChanged(before, after, sfGracePeriod);
                 break;
             default:
                 /*

@@ -123,6 +123,8 @@ constexpr std::uint32_t tfTrustSetMask =
 // EnableAmendment flags:
 constexpr std::uint32_t tfGotMajority                      = 0x00010000;
 constexpr std::uint32_t tfLostMajority                     = 0x00020000;
+constexpr std::uint32_t tfChangeMask =
+    ~( tfUniversal | tfGotMajority | tfLostMajority);
 
 // PaymentChannelClaim flags:
 constexpr std::uint32_t tfRenew                            = 0x00010000;

@@ -33,11 +33,8 @@ NFTokenAcceptOffer::preflight(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureNonFungibleTokensV1))
         return temDISABLED;
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
+    if (auto const ret = preflight1(ctx, tfNFTokenAcceptOfferMask))
         return ret;
-
-    if (ctx.tx.getFlags() & tfNFTokenAcceptOfferMask)
-        return temINVALID_FLAG;
 
     auto const bo = ctx.tx[~sfNFTokenBuyOffer];
     auto const so = ctx.tx[~sfNFTokenSellOffer];

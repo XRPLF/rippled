@@ -47,10 +47,7 @@ DeleteAccount::preflight(PreflightContext const& ctx)
         !ctx.rules.enabled(featureCredentials))
         return temDISABLED;
 
-    if (ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
+    if (auto const ret = preflight1(ctx, tfUniversalMask))
         return ret;
 
     if (ctx.tx[sfAccount] == ctx.tx[sfDestination])

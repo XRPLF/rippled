@@ -45,16 +45,8 @@ DepositPreauth::preflight(PreflightContext const& ctx)
     if (authCredPresent && !ctx.rules.enabled(featureCredentials))
         return temDISABLED;
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
+    if (auto const ret = preflight1(ctx, tfUniversalMask))
         return ret;
-
-    auto& tx = ctx.tx;
-
-    if (tx.getFlags() & tfUniversalMask)
-    {
-        JLOG(ctx.j.trace()) << "Malformed transaction: Invalid flags set.";
-        return temINVALID_FLAG;
-    }
 
     auto const optAuth = ctx.tx[~sfAuthorize];
     auto const optUnauth = ctx.tx[~sfUnauthorize];

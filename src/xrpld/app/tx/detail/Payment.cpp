@@ -70,27 +70,20 @@ Payment::preflight(PreflightContext const& ctx)
         !ctx.rules.enabled(featureCredentials))
         return temDISABLED;
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
     auto& tx = ctx.tx;
     auto& j = ctx.j;
 
     STAmount const dstAmount(tx.getFieldAmount(sfAmount));
     bool const mptDirect = dstAmount.holds<MPTIssue>();
 
+    if (auto const ret =
+            preflight1(ctx, mptDirect ? tfMPTPaymentMask : tfPaymentMask))
+        return ret;
+
     if (mptDirect && !ctx.rules.enabled(featureMPTokensV1))
         return temDISABLED;
 
     std::uint32_t const txFlags = tx.getFlags();
-
-    std::uint32_t paymentMask = mptDirect ? tfMPTPaymentMask : tfPaymentMask;
-
-    if (txFlags & paymentMask)
-    {
-        JLOG(j.trace()) << "Malformed transaction: Invalid flags set.";
-        return temINVALID_FLAG;
-    }
 
     if (mptDirect && ctx.tx.isFieldPresent(sfPaths))
         return temMALFORMED;

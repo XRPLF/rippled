@@ -1214,11 +1214,8 @@ attestationPreflight(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureXChainBridge))
         return temDISABLED;
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
+    if (auto const ret = preflight1(ctx, tfUniversalMask))
         return ret;
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
 
     if (!publicKeyType(ctx.tx[sfPublicKey]))
         return temMALFORMED;
@@ -1381,11 +1378,8 @@ XChainCreateBridge::preflight(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureXChainBridge))
         return temDISABLED;
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
+    if (auto const ret = preflight1(ctx, tfUniversalMask))
         return ret;
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
 
     auto const account = ctx.tx[sfAccount];
     auto const reward = ctx.tx[sfSignatureReward];
@@ -1562,11 +1556,8 @@ BridgeModify::preflight(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureXChainBridge))
         return temDISABLED;
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
+    if (auto const ret = preflight1(ctx, tfBridgeModifyMask))
         return ret;
-
-    if (ctx.tx.getFlags() & tfBridgeModifyMask)
-        return temINVALID_FLAG;
 
     auto const account = ctx.tx[sfAccount];
     auto const reward = ctx.tx[~sfSignatureReward];
@@ -1672,11 +1663,8 @@ XChainClaim::preflight(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureXChainBridge))
         return temDISABLED;
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
+    if (auto const ret = preflight1(ctx, tfUniversalMask))
         return ret;
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
 
     STXChainBridge const bridgeSpec = ctx.tx[sfXChainBridge];
     auto const amount = ctx.tx[sfAmount];
@@ -1910,11 +1898,8 @@ XChainCommit::preflight(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureXChainBridge))
         return temDISABLED;
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
+    if (auto const ret = preflight1(ctx, tfUniversalMask))
         return ret;
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
 
     auto const amount = ctx.tx[sfAmount];
     auto const bridgeSpec = ctx.tx[sfXChainBridge];
@@ -2024,11 +2009,8 @@ XChainCreateClaimID::preflight(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureXChainBridge))
         return temDISABLED;
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
+    if (auto const ret = preflight1(ctx, tfUniversalMask))
         return ret;
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
 
     auto const reward = ctx.tx[sfSignatureReward];
 
@@ -2179,11 +2161,8 @@ XChainCreateAccountCommit::preflight(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureXChainBridge))
         return temDISABLED;
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
+    if (auto const ret = preflight1(ctx, tfUniversalMask))
         return ret;
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
 
     auto const amount = ctx.tx[sfAmount];
 
