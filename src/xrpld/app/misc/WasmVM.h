@@ -96,7 +96,8 @@ struct WasmResult
 };
 typedef WasmResult<bool> EscrowResult;
 
-struct HostFunctions{
+struct HostFunctions
+{
     virtual int32_t
     getLedgerSqn()
     {
@@ -137,8 +138,9 @@ struct HostFunctions{
     }
 
     virtual Hash
-    computeSha512HalfHash(Bytes const& data){
-        return Hash {};
+    computeSha512HalfHash(Bytes const& data)
+    {
+        return Hash{};
     }
 
     virtual ~HostFunctions() = default;
@@ -163,5 +165,3 @@ runEscrowWasm(
 // private:
 //     beast::Journal j_;
 // };
-
-
