@@ -88,22 +88,7 @@ VaultSet::preclaim(PreclaimContext const& ctx)
     if (!sleIssuance)
         return tefINTERNAL;
 
-    auto const domain = ctx.tx[~sfDomainID];
-    auto const oldDomain = sleIssuance->at(~sfDomainID);
-    auto const data = ctx.tx[~sfData];
-    auto const oldData = vault->at(~sfData);
-    auto const assetMax = ctx.tx[~sfAssetMaximum];
-    auto const oldAssetMax = vault->at(sfAssetMaximum);
-    int const changes =                      //
-        (domain && (domain != oldDomain)) +  //
-        (data && (data != oldData)) +        //
-        (assetMax && (*assetMax != oldAssetMax));
-
-    // This transaction would change nothing
-    if (!changes)
-        return tecNO_PERMISSION;
-
-    if (domain)
+    if (auto const domain = ctx.tx[~sfDomainID])
     {
         // We can only set domain if private flag was originally set
         if ((vault->getFlags() & tfVaultPrivate) == 0)
