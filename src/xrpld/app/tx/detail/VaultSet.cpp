@@ -40,14 +40,11 @@ VaultSet::preflight(PreflightContext const& ctx)
         !ctx.rules.enabled(featurePermissionedDomains))
         return temDISABLED;
 
-    if (auto const ter = preflight1(ctx))
+    if (auto const ter = preflight1(ctx, tfUniversalMask))
         return ter;
 
     if (ctx.tx[sfVaultID] == beast::zero)
         return temMALFORMED;
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
 
     if (auto const data = ctx.tx[~sfData])
     {

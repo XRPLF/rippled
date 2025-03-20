@@ -28,17 +28,8 @@ namespace ripple {
 NotTEC
 CancelOffer::preflight(PreflightContext const& ctx)
 {
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
+    if (auto const ret = preflight1(ctx, tfUniversalMask))
         return ret;
-
-    auto const uTxFlags = ctx.tx.getFlags();
-
-    if (uTxFlags & tfUniversalMask)
-    {
-        JLOG(ctx.j.trace())
-            << "Malformed transaction: " << "Invalid flags set.";
-        return temINVALID_FLAG;
-    }
 
     if (!ctx.tx[sfOfferSequence])
     {

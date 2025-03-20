@@ -174,10 +174,9 @@ PayChanCreate::makeTxConsequences(PreflightContext const& ctx)
 NotTEC
 PayChanCreate::preflight(PreflightContext const& ctx)
 {
-    if (ctx.rules.enabled(fix1543) && ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
+    // 0 means "Allow any flags"
+    if (auto const ret =
+            preflight1(ctx, ctx.rules.enabled(fix1543) ? tfUniversalMask : 0))
         return ret;
 
     if (!isXRP(ctx.tx[sfAmount]) || (ctx.tx[sfAmount] <= beast::zero))
@@ -329,10 +328,9 @@ PayChanFund::makeTxConsequences(PreflightContext const& ctx)
 NotTEC
 PayChanFund::preflight(PreflightContext const& ctx)
 {
-    if (ctx.rules.enabled(fix1543) && ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
+    // 0 means "Allow any flags"
+    if (auto const ret =
+            preflight1(ctx, ctx.rules.enabled(fix1543) ? tfUniversalMask : 0))
         return ret;
 
     if (!isXRP(ctx.tx[sfAmount]) || (ctx.tx[sfAmount] <= beast::zero))
@@ -423,7 +421,9 @@ PayChanClaim::preflight(PreflightContext const& ctx)
         !ctx.rules.enabled(featureCredentials))
         return temDISABLED;
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
+    // 0 means "Allow any flags"
+    if (auto const ret = preflight1(
+            ctx, ctx.rules.enabled(fix1543) ? tfPayChanClaimMask : 0))
         return ret;
 
     auto const bal = ctx.tx[~sfBalance];
@@ -439,9 +439,6 @@ PayChanClaim::preflight(PreflightContext const& ctx)
 
     {
         auto const flags = ctx.tx.getFlags();
-
-        if (ctx.rules.enabled(fix1543) && (flags & tfPayChanClaimMask))
-            return temINVALID_FLAG;
 
         if ((flags & tfClose) && (flags & tfRenew))
             return temMALFORMED;

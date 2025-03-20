@@ -31,11 +31,8 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureMPTokensV1))
         return temDISABLED;
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
+    if (auto const ret = preflight1(ctx, tfMPTokenIssuanceCreateMask))
         return ret;
-
-    if (ctx.tx.getFlags() & tfMPTokenIssuanceCreateMask)
-        return temINVALID_FLAG;
 
     if (auto const fee = ctx.tx[~sfTransferFee])
     {

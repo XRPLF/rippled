@@ -38,16 +38,8 @@ CashCheck::preflight(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureChecks))
         return temDISABLED;
 
-    NotTEC const ret{preflight1(ctx)};
-    if (!isTesSuccess(ret))
+    if (auto const ret = preflight1(ctx, tfUniversalMask))
         return ret;
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-    {
-        // There are no flags (other than universal) for CashCheck yet.
-        JLOG(ctx.j.warn()) << "Malformed transaction: Invalid flags set.";
-        return temINVALID_FLAG;
-    }
 
     // Exactly one of Amount or DeliverMin must be present.
     auto const optAmount = ctx.tx[~sfAmount];

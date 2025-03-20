@@ -30,14 +30,8 @@ PermissionedDomainDelete::preflight(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featurePermissionedDomains))
         return temDISABLED;
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
+    if (auto const ret = preflight1(ctx, tfUniversalMask))
         return ret;
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-    {
-        JLOG(ctx.j.debug()) << "PermissionedDomainDelete: invalid flags.";
-        return temINVALID_FLAG;
-    }
 
     auto const domain = ctx.tx.getFieldH256(sfDomainID);
     if (domain == beast::zero)

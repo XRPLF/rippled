@@ -32,11 +32,8 @@ MPTokenIssuanceDestroy::preflight(PreflightContext const& ctx)
         return temDISABLED;
 
     // check flags
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
+    if (auto const ret = preflight1(ctx, tfMPTokenIssuanceDestroyMask))
         return ret;
-
-    if (ctx.tx.getFlags() & tfMPTokenIssuanceDestroyMask)
-        return temINVALID_FLAG;
 
     return preflight2(ctx);
 }

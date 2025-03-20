@@ -39,7 +39,7 @@ namespace ripple {
 
 /** Performs early sanity checks on the txid */
 NotTEC
-preflight0(PreflightContext const& ctx)
+preflight0(PreflightContext const& ctx, std::uint32_t flagMask)
 {
     if (!isPseudoTx(ctx.tx) || ctx.tx.isFieldPresent(sfNetworkID))
     {
@@ -74,12 +74,20 @@ preflight0(PreflightContext const& ctx)
         return temINVALID;
     }
 
+    if (ctx.tx.getFlags() & flagMask)
+    {
+        JLOG(ctx.j.debug())
+            << ctx.tx.peekAtField(sfTransactionType).getFullText()
+            << ": invalid flags.";
+        return temINVALID_FLAG;
+    }
+
     return tesSUCCESS;
 }
 
 /** Performs early sanity checks on the account and fee fields */
 NotTEC
-preflight1(PreflightContext const& ctx)
+preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
 {
     // This is inappropriate in preflight0, because only Change transactions
     // skip this function, and those do not allow an sfTicketSequence field.
@@ -89,7 +97,7 @@ preflight1(PreflightContext const& ctx)
         return temMALFORMED;
     }
 
-    auto const ret = preflight0(ctx);
+    auto const ret = preflight0(ctx, flagMask);
     if (!isTesSuccess(ret))
         return ret;
 
@@ -186,7 +194,10 @@ PreflightContext::PreflightContext(
 //------------------------------------------------------------------------------
 
 Transactor::Transactor(ApplyContext& ctx)
-    : ctx_(ctx), j_(ctx.journal), account_(ctx.tx.getAccountID(sfAccount))
+    : ctx_(ctx)
+    , sink_(ctx.journal, to_short_string(ctx.tx.getTransactionID()) + " ")
+    , j_(sink_)
+    , account_(ctx.tx.getAccountID(sfAccount))
 {
 }
 

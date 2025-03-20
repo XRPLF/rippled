@@ -39,12 +39,8 @@ AMMClawback::preflight(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureAMMClawback))
         return temDISABLED;
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
+    if (auto const ret = preflight1(ctx, tfAMMClawbackMask))
         return ret;  // LCOV_EXCL_LINE
-
-    auto const flags = ctx.tx.getFlags();
-    if (flags & tfAMMClawbackMask)
-        return temINVALID_FLAG;
 
     AccountID const issuer = ctx.tx[sfAccount];
     AccountID const holder = ctx.tx[sfHolder];
@@ -62,6 +58,8 @@ AMMClawback::preflight(PreflightContext const& ctx)
 
     if (isXRP(asset))
         return temMALFORMED;
+
+    auto const flags = ctx.tx.getFlags();
 
     if (flags & tfClawTwoAssets && asset.account != asset2.account)
     {

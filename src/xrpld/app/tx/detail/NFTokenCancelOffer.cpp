@@ -34,11 +34,8 @@ NFTokenCancelOffer::preflight(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureNonFungibleTokensV1))
         return temDISABLED;
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
+    if (auto const ret = preflight1(ctx, tfNFTokenCancelOfferMask))
         return ret;
-
-    if (ctx.tx.getFlags() & tfNFTokenCancelOfferMask)
-        return temINVALID_FLAG;
 
     if (auto const& ids = ctx.tx[sfNFTokenOffers];
         ids.empty() || (ids.size() > maxTokenOfferCancelCount))

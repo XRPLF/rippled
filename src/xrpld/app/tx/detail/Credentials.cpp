@@ -57,18 +57,13 @@ CredentialCreate::preflight(PreflightContext const& ctx)
         return temDISABLED;
     }
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
+    // 0 means "Allow any flags"
+    if (auto const ret = preflight1(
+            ctx, ctx.rules.enabled(fixInvalidTxFlags) ? tfUniversalMask : 0))
         return ret;
 
     auto const& tx = ctx.tx;
     auto& j = ctx.j;
-
-    if (ctx.rules.enabled(fixInvalidTxFlags) &&
-        (tx.getFlags() & tfUniversalMask))
-    {
-        JLOG(ctx.j.debug()) << "CredentialCreate: invalid flags.";
-        return temINVALID_FLAG;
-    }
 
     if (!tx[sfSubject])
     {
@@ -211,15 +206,10 @@ CredentialDelete::preflight(PreflightContext const& ctx)
         return temDISABLED;
     }
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
+    // 0 means "Allow any flags"
+    if (auto const ret = preflight1(
+            ctx, ctx.rules.enabled(fixInvalidTxFlags) ? tfUniversalMask : 0))
         return ret;
-
-    if (ctx.rules.enabled(fixInvalidTxFlags) &&
-        (ctx.tx.getFlags() & tfUniversalMask))
-    {
-        JLOG(ctx.j.debug()) << "CredentialDelete: invalid flags.";
-        return temINVALID_FLAG;
-    }
 
     auto const subject = ctx.tx[~sfSubject];
     auto const issuer = ctx.tx[~sfIssuer];
@@ -298,15 +288,10 @@ CredentialAccept::preflight(PreflightContext const& ctx)
         return temDISABLED;
     }
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
+    // 0 means "Allow any flags"
+    if (auto const ret = preflight1(
+            ctx, ctx.rules.enabled(fixInvalidTxFlags) ? tfUniversalMask : 0))
         return ret;
-
-    if (ctx.rules.enabled(fixInvalidTxFlags) &&
-        (ctx.tx.getFlags() & tfUniversalMask))
-    {
-        JLOG(ctx.j.debug()) << "CredentialAccept: invalid flags.";
-        return temINVALID_FLAG;
-    }
 
     if (!ctx.tx[sfIssuer])
     {

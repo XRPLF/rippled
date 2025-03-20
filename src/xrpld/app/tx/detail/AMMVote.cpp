@@ -33,7 +33,7 @@ AMMVote::preflight(PreflightContext const& ctx)
     if (!ammEnabled(ctx.rules))
         return temDISABLED;
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
+    if (auto const ret = preflight1(ctx, tfUniversalMask))
         return ret;
 
     if (auto const res = invalidAMMAssetPair(
@@ -41,12 +41,6 @@ AMMVote::preflight(PreflightContext const& ctx)
     {
         JLOG(ctx.j.debug()) << "AMM Vote: invalid asset pair.";
         return res;
-    }
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-    {
-        JLOG(ctx.j.debug()) << "AMM Vote: invalid flags.";
-        return temINVALID_FLAG;
     }
 
     if (ctx.tx[sfTradingFee] > TRADING_FEE_THRESHOLD)

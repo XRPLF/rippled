@@ -633,6 +633,13 @@ to_string(base_uint<Bits, Tag> const& a)
 }
 
 template <std::size_t Bits, class Tag>
+inline std::string
+to_short_string(base_uint<Bits, Tag> const& a)
+{
+    return to_string(a).substr(0, 8) + "...";
+}
+
+template <std::size_t Bits, class Tag>
 inline std::ostream&
 operator<<(std::ostream& out, base_uint<Bits, Tag> const& u)
 {

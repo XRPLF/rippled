@@ -85,10 +85,9 @@ EscrowCreate::makeTxConsequences(PreflightContext const& ctx)
 NotTEC
 EscrowCreate::preflight(PreflightContext const& ctx)
 {
-    if (ctx.rules.enabled(fix1543) && ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
+    // 0 means "Allow any flags"
+    if (auto const ret =
+            preflight1(ctx, ctx.rules.enabled(fix1543) ? tfUniversalMask : 0))
         return ret;
 
     if (!isXRP(ctx.tx[sfAmount]))
@@ -296,14 +295,13 @@ checkCondition(Slice f, Slice c)
 NotTEC
 EscrowFinish::preflight(PreflightContext const& ctx)
 {
-    if (ctx.rules.enabled(fix1543) && ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
-
     if (ctx.tx.isFieldPresent(sfCredentialIDs) &&
         !ctx.rules.enabled(featureCredentials))
         return temDISABLED;
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
+    // 0 means "Allow any flags"
+    if (auto const ret =
+            preflight1(ctx, ctx.rules.enabled(fix1543) ? tfUniversalMask : 0))
         return ret;
 
     auto const cb = ctx.tx[~sfCondition];
@@ -515,10 +513,9 @@ EscrowFinish::doApply()
 NotTEC
 EscrowCancel::preflight(PreflightContext const& ctx)
 {
-    if (ctx.rules.enabled(fix1543) && ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
+    // 0 means "Allow any flags"
+    if (auto const ret =
+            preflight1(ctx, ctx.rules.enabled(fix1543) ? tfUniversalMask : 0))
         return ret;
 
     return preflight2(ctx);

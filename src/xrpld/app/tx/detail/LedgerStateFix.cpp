@@ -33,10 +33,7 @@ LedgerStateFix::preflight(PreflightContext const& ctx)
     if (!ctx.rules.enabled(fixNFTokenPageLinks))
         return temDISABLED;
 
-    if (ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
+    if (auto const ret = preflight1(ctx, tfUniversalMask))
         return ret;
 
     switch (ctx.tx[sfLedgerFixType])

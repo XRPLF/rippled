@@ -35,15 +35,10 @@ AMMDeposit::preflight(PreflightContext const& ctx)
     if (!ammEnabled(ctx.rules))
         return temDISABLED;
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
+    if (auto const ret = preflight1(ctx, tfDepositMask))
         return ret;
 
     auto const flags = ctx.tx.getFlags();
-    if (flags & tfDepositMask)
-    {
-        JLOG(ctx.j.debug()) << "AMM Deposit: invalid flags.";
-        return temINVALID_FLAG;
-    }
 
     auto const amount = ctx.tx[~sfAmount];
     auto const amount2 = ctx.tx[~sfAmount2];

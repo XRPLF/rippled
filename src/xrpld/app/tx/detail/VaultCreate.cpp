@@ -44,11 +44,8 @@ VaultCreate::preflight(PreflightContext const& ctx)
         !ctx.rules.enabled(featurePermissionedDomains))
         return temDISABLED;
 
-    if (auto const ter = preflight1(ctx))
+    if (auto const ter = preflight1(ctx, tfVaultCreateMask))
         return ter;
-
-    if (ctx.tx.getFlags() & tfVaultCreateMask)
-        return temINVALID_FLAG;
 
     if (auto const data = ctx.tx[~sfData])
     {

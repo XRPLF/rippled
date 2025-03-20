@@ -80,15 +80,10 @@ SetSignerList::determineOperation(
 NotTEC
 SetSignerList::preflight(PreflightContext const& ctx)
 {
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
+    // 0 means "Allow any flags"
+    if (auto const ret = preflight1(
+            ctx, ctx.rules.enabled(fixInvalidTxFlags) ? tfUniversalMask : 0))
         return ret;
-
-    if (ctx.rules.enabled(fixInvalidTxFlags) &&
-        (ctx.tx.getFlags() & tfUniversalMask))
-    {
-        JLOG(ctx.j.debug()) << "SetSignerList: invalid flags.";
-        return temINVALID_FLAG;
-    }
 
     auto const result = determineOperation(ctx.tx, ctx.flags, ctx.j);
 

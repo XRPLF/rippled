@@ -24,6 +24,7 @@
 #include <xrpld/app/tx/detail/ApplyContext.h>
 
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/beast/utility/WrappedSink.h>
 #include <xrpl/protocol/XRPAmount.h>
 
 namespace ripple {
@@ -87,6 +88,7 @@ class Transactor
 {
 protected:
     ApplyContext& ctx_;
+    beast::WrappedSink sink_;
     beast::Journal const j_;
 
     AccountID const account_;
@@ -203,13 +205,16 @@ private:
     void trapTransaction(uint256) const;
 };
 
-/** Performs early sanity checks on the txid */
+/** Performs early sanity checks on the txid and flags */
 NotTEC
-preflight0(PreflightContext const& ctx);
+preflight0(PreflightContext const& ctx, std::uint32_t flagMask);
 
-/** Performs early sanity checks on the account and fee fields */
+/** Performs early sanity checks on the account and fee fields.
+
+    (And passes flagMask to preflight0)
+*/
 NotTEC
-preflight1(PreflightContext const& ctx);
+preflight1(PreflightContext const& ctx, std::uint32_t flagMask);
 
 /** Checks whether the signature appears valid */
 NotTEC

@@ -32,11 +32,8 @@ NFTokenModify::preflight(PreflightContext const& ctx)
         !ctx.rules.enabled(featureDynamicNFT))
         return temDISABLED;
 
-    if (NotTEC const ret = preflight1(ctx); !isTesSuccess(ret))
+    if (NotTEC const ret = preflight1(ctx, tfUniversalMask))
         return ret;
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
 
     if (auto owner = ctx.tx[~sfOwner]; owner == ctx.tx[sfAccount])
         return temMALFORMED;

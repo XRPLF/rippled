@@ -48,10 +48,7 @@ DIDSet::preflight(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureDID))
         return temDISABLED;
 
-    if (ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
+    if (auto const ret = preflight1(ctx, tfUniversalMask))
         return ret;
 
     if (!ctx.tx.isFieldPresent(sfURI) &&
@@ -177,10 +174,7 @@ DIDDelete::preflight(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureDID))
         return temDISABLED;
 
-    if (ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
-
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
+    if (auto const ret = preflight1(ctx, tfUniversalMask))
         return ret;
 
     return preflight2(ctx);
