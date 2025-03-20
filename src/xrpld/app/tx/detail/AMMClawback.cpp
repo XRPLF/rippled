@@ -23,12 +23,12 @@
 #include <xrpld/app/tx/detail/AMMWithdraw.h>
 #include <xrpld/ledger/Sandbox.h>
 #include <xrpld/ledger/View.h>
-#include <xrpl/protocol/AMMCore.h>
+
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/st.h>
+
 #include <tuple>
 
 namespace ripple {

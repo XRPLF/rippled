@@ -19,13 +19,12 @@
 
 #include <test/jtx/multisign.h>
 #include <test/jtx/utility.h>
+
 #include <xrpl/basics/contract.h>
-#include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Sign.h>
-#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
+
 #include <optional>
-#include <sstream>
 
 namespace ripple {
 namespace test {

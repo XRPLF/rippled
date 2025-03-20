@@ -21,6 +21,7 @@
 #define RIPPLE_BASICS_TESTSUITE_H_INCLUDED
 
 #include <xrpl/beast/unit_test.h>
+
 #include <string>
 
 namespace ripple {

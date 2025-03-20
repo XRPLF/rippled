@@ -19,12 +19,10 @@
 
 #include <xrpld/app/tx/detail/ApplyContext.h>
 #include <xrpld/app/tx/detail/InvariantCheck.h>
-#include <xrpld/app/tx/detail/Transactor.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/to_string.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
 
 namespace ripple {
 

@@ -21,6 +21,7 @@
 #define RIPPLE_NODESTORE_DATABASENODEIMP_H_INCLUDED
 
 #include <xrpld/nodestore/Database.h>
+
 #include <xrpl/basics/TaggedCache.h>
 #include <xrpl/basics/chrono.h>
 

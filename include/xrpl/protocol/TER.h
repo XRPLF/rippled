@@ -42,7 +42,7 @@ using TERUnderlyingType = int;
 enum TELcodes : TERUnderlyingType {
     // Note: Range is stable.
     // Exact numbers are used in ripple-binary-codec:
-    //     https://github.com/ripple/ripple-binary-codec/blob/master/src/enums/definitions.json
+    //     https://github.com/XRPLF/xrpl.js/blob/main/packages/ripple-binary-codec/src/enums/definitions.json
     // Use tokens.
 
     // -399 .. -300: L Local error (transaction fee inadequate, exceeds local
@@ -73,7 +73,7 @@ enum TELcodes : TERUnderlyingType {
 enum TEMcodes : TERUnderlyingType {
     // Note: Range is stable.
     // Exact numbers are used in ripple-binary-codec:
-    //     https://github.com/ripple/ripple-binary-codec/blob/master/src/enums/definitions.json
+    //     https://github.com/XRPLF/xrpl.js/blob/main/packages/ripple-binary-codec/src/enums/definitions.json
     // Use tokens.
 
     // -299 .. -200: M Malformed (bad signature)
@@ -148,7 +148,7 @@ enum TEMcodes : TERUnderlyingType {
 enum TEFcodes : TERUnderlyingType {
     // Note: Range is stable.
     // Exact numbers are used in ripple-binary-codec:
-    //     https://github.com/ripple/ripple-binary-codec/blob/master/src/enums/definitions.json
+    //     https://github.com/XRPLF/xrpl.js/blob/main/packages/ripple-binary-codec/src/enums/definitions.json
     // Use tokens.
 
     // -199 .. -100: F
@@ -192,7 +192,7 @@ enum TEFcodes : TERUnderlyingType {
 enum TERcodes : TERUnderlyingType {
     // Note: Range is stable.
     // Exact numbers are used in ripple-binary-codec:
-    //     https://github.com/ripple/ripple-binary-codec/blob/master/src/enums/definitions.json
+    //     https://github.com/XRPLF/xrpl.js/blob/main/packages/ripple-binary-codec/src/enums/definitions.json
     // Use tokens.
 
     // -99 .. -1: R Retry

@@ -18,10 +18,10 @@
 //==============================================================================
 
 #include <xrpld/conditions/detail/error.h>
+
 #include <xrpl/basics/safe_cast.h>
+
 #include <string>
-#include <system_error>
-#include <type_traits>
 
 namespace ripple {
 namespace cryptoconditions {

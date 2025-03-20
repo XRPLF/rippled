@@ -17,13 +17,14 @@
 */
 //==============================================================================
 
+#include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/LoadFeeTrack.h>
 #include <xrpld/core/TimeKeeper.h>
 #include <xrpld/overlay/Cluster.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/rpc/Context.h>
+
 #include <xrpl/protocol/ErrorCodes.h>
-#include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
 
 namespace ripple {

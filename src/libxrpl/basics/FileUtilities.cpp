@@ -19,6 +19,20 @@
 
 #include <xrpl/basics/FileUtilities.h>
 
+#include <boost/filesystem/fstream.hpp>
+#include <boost/filesystem/operations.hpp>
+#include <boost/filesystem/path.hpp>
+#include <boost/system/detail/errc.hpp>
+#include <boost/system/detail/error_code.hpp>
+#include <boost/system/errc.hpp>
+
+#include <cerrno>
+#include <cstddef>
+#include <ios>
+#include <iterator>
+#include <optional>
+#include <string>
+
 namespace ripple {
 
 std::string

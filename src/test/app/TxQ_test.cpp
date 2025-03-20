@@ -22,11 +22,12 @@
 #include <test/jtx/WSClient.h>
 #include <test/jtx/envconfig.h>
 #include <test/jtx/ticket.h>
+
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/LoadFeeTrack.h>
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/app/tx/apply.h>
-#include <xrpl/basics/Log.h>
+
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/st.h>
