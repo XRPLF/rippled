@@ -26,6 +26,8 @@
 #include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/Overlay.h>
 
+#include <xrpl/protocol/TxFlags.h>
+
 #include <boost/range/adaptor/transformed.hpp>
 
 namespace ripple {
@@ -120,6 +122,16 @@ OpenLedger::accept(
     {
         auto const& tx = txpair.first;
         auto const txId = tx->getTransactionID();
+
+        // skip batch txns
+        if (tx->isFlag(tfInnerBatchTxn) && rules.enabled(featureBatch))
+        {
+            XRPL_ASSERT(
+                txpair.second && txpair.second->isFieldPresent(sfParentBatchID),
+                "Inner Batch transaction missing sfParentBatchID");
+            continue;
+        }
+
         if (auto const toSkip = app.getHashRouter().shouldRelay(txId))
         {
             JLOG(j_.debug()) << "Relaying recovered tx " << txId;

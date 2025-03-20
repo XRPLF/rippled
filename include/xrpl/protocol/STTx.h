@@ -121,9 +121,15 @@ public:
         @return `true` if valid signature. If invalid, the error message string.
     */
     enum class RequireFullyCanonicalSig : bool { no, yes };
+
     Expected<void, std::string>
     checkSign(RequireFullyCanonicalSig requireCanonicalSig, Rules const& rules)
         const;
+
+    Expected<void, std::string>
+    checkBatchSign(
+        RequireFullyCanonicalSig requireCanonicalSig,
+        Rules const& rules) const;
 
     // SQL Functions with metadata.
     static std::string const&
@@ -140,6 +146,9 @@ public:
         char status,
         std::string const& escapedMetaData) const;
 
+    std::vector<uint256>
+    getBatchTransactionIDs() const;
+
 private:
     Expected<void, std::string>
     checkSingleSign(RequireFullyCanonicalSig requireCanonicalSig) const;
@@ -149,12 +158,24 @@ private:
         RequireFullyCanonicalSig requireCanonicalSig,
         Rules const& rules) const;
 
+    Expected<void, std::string>
+    checkBatchSingleSign(
+        STObject const& batchSigner,
+        RequireFullyCanonicalSig requireCanonicalSig) const;
+
+    Expected<void, std::string>
+    checkBatchMultiSign(
+        STObject const& batchSigner,
+        RequireFullyCanonicalSig requireCanonicalSig,
+        Rules const& rules) const;
+
     STBase*
     copy(std::size_t n, void* buf) const override;
     STBase*
     move(std::size_t n, void* buf) override;
 
     friend class detail::STVar;
+    mutable std::vector<uint256> batch_txn_ids_;
 };
 
 bool
