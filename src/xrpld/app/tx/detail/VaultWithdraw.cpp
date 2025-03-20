@@ -21,6 +21,7 @@
 #include <xrpld/app/tx/detail/VaultWithdraw.h>
 #include <xrpld/ledger/View.h>
 
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STNumber.h>
@@ -44,6 +45,13 @@ VaultWithdraw::preflight(PreflightContext const& ctx)
     if (ctx.tx[sfAmount] <= beast::zero)
         return temBAD_AMOUNT;
 
+    if (ctx.tx.isFieldPresent(sfDestination))
+    {
+        if (auto const dstAccountID = ctx.tx.getAccountID(sfDestination);
+            dstAccountID == beast::zero)
+            return temMALFORMED;
+    }
+
     return preflight2(ctx);
 }
 
@@ -53,6 +61,14 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     auto const vault = ctx.view.read(keylet::vault(ctx.tx[sfVaultID]));
     if (!vault)
         return tecOBJECT_NOT_FOUND;
+
+    if (ctx.tx.isFieldPresent(sfDestination))
+    {
+        auto const dstAccountID = ctx.tx.getAccountID(sfDestination);
+        if (auto const sleDst = ctx.view.read(keylet::account(dstAccountID));
+            sleDst == nullptr)
+            return tecNO_DST;
+    }
 
     // Enforce valid withdrawal policy
     if (vault->at(sfWithdrawalPolicy) != vaultStrategyFirstComeFirstServe)
@@ -65,8 +81,24 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         return tecWRONG_ASSET;
 
     auto const account = ctx.tx[sfAccount];
-    // Cannot withdraw from a Vault an Asset frozen for the account
-    if (isFrozen(ctx.view, account, asset))
+    auto const dstAcct = [&]() -> AccountID {
+        if (ctx.tx.isFieldPresent(sfDestination))
+            return ctx.tx.getAccountID(sfDestination);
+        return account;
+    }();
+
+    if (account != dstAcct && assets.holds<MPTIssue>())
+    {
+        auto mptID = assets.get<MPTIssue>().getMptID();
+        auto issuance = ctx.view.read(keylet::mptIssuance(mptID));
+        if (!issuance)
+            return tecNO_ENTRY;
+        if ((issuance->getFlags() & lsfMPTCanTransfer) == 0)
+            return tecNO_AUTH;
+    }
+
+    // Cannot withdraw from a Vault an Asset frozen for the destination account
+    if (isFrozen(ctx.view, dstAcct, asset))
         return tecFROZEN;
 
     if (isFrozen(ctx.view, account, share))
@@ -80,7 +112,7 @@ VaultWithdraw::doApply()
 {
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
     if (!vault)
-        return tecOBJECT_NOT_FOUND;
+        return tefINTERNAL;  // Enforced in preclaim
 
     auto const mptIssuanceID = (*vault)[sfMPTokenIssuanceID];
     auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
@@ -138,9 +170,15 @@ VaultWithdraw::doApply()
             view(), account_, vaultAccount, shares, j_, WaiveTransferFee::Yes))
         return ter;
 
-    // Transfer assets from vault to depositor.
+    auto const dstAcct = [&]() -> AccountID {
+        if (ctx_.tx.isFieldPresent(sfDestination))
+            return ctx_.tx.getAccountID(sfDestination);
+        return account_;
+    }();
+
+    // Transfer assets from vault to depositor or destination account.
     if (auto ter = accountSend(
-            view(), vaultAccount, account_, assets, j_, WaiveTransferFee::Yes))
+            view(), vaultAccount, dstAcct, assets, j_, WaiveTransferFee::Yes))
         return ter;
 
     return tesSUCCESS;

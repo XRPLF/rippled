@@ -785,8 +785,9 @@ class Vault_test : public beast::unit_test::suite
         Env env{*this};
         Account const owner{"owner"};
         Account const issuer{"issuer"};
+        Account const charlie{"charlie"};
         auto vault = env.vault();
-        env.fund(XRP(1000), issuer, owner);
+        env.fund(XRP(1000), issuer, owner, charlie);
         env.close();
 
         PrettyAsset asset = issuer["IOU"];
@@ -839,6 +840,19 @@ class Vault_test : public beast::unit_test::suite
 
             BEAST_EXPECT(env.balance(owner, issue) == asset(160));
             BEAST_EXPECT(vaultBalance() == asset(40));
+        }
+
+        {
+            testcase("zero IOU fee on withdraw for 3rd party");
+            auto tx = vault.withdraw(
+                {.depositor = owner, .id = keylet.key, .amount = asset(40)});
+            tx[sfDestination] = charlie.human();
+            env(tx);
+            env.close();
+
+            BEAST_EXPECT(env.balance(owner, issue) == asset(160));
+            BEAST_EXPECT(env.balance(charlie, issue) == asset(40));
+            BEAST_EXPECT(vaultBalance() == asset(0));
         }
     }
 
