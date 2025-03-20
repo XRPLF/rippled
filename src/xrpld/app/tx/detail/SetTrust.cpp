@@ -67,19 +67,13 @@ namespace ripple {
 NotTEC
 SetTrust::preflight(PreflightContext const& ctx)
 {
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
+    if (auto const ret = preflight1(ctx, tfTrustSetMask))
         return ret;
 
     auto& tx = ctx.tx;
     auto& j = ctx.j;
 
     std::uint32_t const uTxFlags = tx.getFlags();
-
-    if (uTxFlags & tfTrustSetMask)
-    {
-        JLOG(j.trace()) << "Malformed transaction: Invalid flags set.";
-        return temINVALID_FLAG;
-    }
 
     if (!ctx.rules.enabled(featureDeepFreeze))
     {

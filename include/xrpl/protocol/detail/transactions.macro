@@ -508,6 +508,7 @@ TRANSACTION(ttVAULT_CLAWBACK, 69, VaultClawback, ({
     {sfAmount, soeOPTIONAL, soeMPTSupported},
 }))
 
+#if 0
 /** This transaction creates and updates a Loan Broker */
 TRANSACTION(ttLOAN_BROKER_SET, 70, LoanBrokerSet, ({
     {sfVaultID, soeREQUIRED},
@@ -537,7 +538,7 @@ TRANSACTION(ttLOAN_BROKER_COVER_WITHDRAW, 73, LoanBrokerCoverWithdraw, ({
 }))
 
 /** This transaction creates a Loan */
-TRANSACTION(ttLOAN_CREATE, 74, LoanCreate, ({
+TRANSACTION(ttLOAN_SET, 74, LoanSet, ({
     {sfLoanBrokerID, soeREQUIRED},
     {sfData, soeOPTIONAL},
     {sfCounterparty, soeOPTIONAL},
@@ -555,6 +556,7 @@ TRANSACTION(ttLOAN_CREATE, 74, LoanCreate, ({
     {sfPaymentInterval, soeOPTIONAL},
     {sfGracePeriod, soeOPTIONAL},
 }))
+#endif
 
 /** This system-generated transaction type is used to update the status of the various amendments.
 

@@ -32,11 +32,8 @@ MPTokenAuthorize::preflight(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureMPTokensV1))
         return temDISABLED;
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
+    if (auto const ret = preflight1(ctx, tfMPTokenAuthorizeMask))
         return ret;
-
-    if (ctx.tx.getFlags() & tfMPTokenAuthorizeMask)
-        return temINVALID_FLAG;
 
     if (ctx.tx[sfAccount] == ctx.tx[~sfHolder])
         return temMALFORMED;

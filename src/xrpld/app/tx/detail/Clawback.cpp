@@ -81,11 +81,8 @@ Clawback::preflight(PreflightContext const& ctx)
     if (!ctx.rules.enabled(featureClawback))
         return temDISABLED;
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
+    if (auto const ret = preflight1(ctx, tfClawbackMask))
         return ret;
-
-    if (ctx.tx.getFlags() & tfClawbackMask)
-        return temINVALID_FLAG;
 
     if (auto const ret = std::visit(
             [&]<typename T>(T const&) { return preflightHelper<T>(ctx); },
