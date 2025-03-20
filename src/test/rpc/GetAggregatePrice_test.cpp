@@ -43,6 +43,7 @@ public:
 
         {
             Env env(*this);
+            auto const baseFee = env.current()->fees().base;
             // missing base_asset
             auto ret =
                 Oracle::aggregatePrice(env, std::nullopt, "USD", oracles);
@@ -126,7 +127,10 @@ public:
             // oracles have wrong asset pair
             env.fund(XRP(1'000), owner);
             Oracle oracle(
-                env, {.owner = owner, .series = {{"XRP", "EUR", 740, 1}}});
+                env,
+                {.owner = owner,
+                 .series = {{"XRP", "EUR", 740, 1}},
+                 .fee = static_cast<int>(baseFee.drops())});
             ret = Oracle::aggregatePrice(
                 env, "XRP", "USD", {{{owner, oracle.documentID()}}});
             BEAST_EXPECT(ret[jss::error].asString() == "objectNotFound");
@@ -160,12 +164,16 @@ public:
         // too many oracles
         {
             Env env(*this);
+            auto const baseFee =
+                static_cast<int>(env.current()->fees().base.drops());
+
             OraclesData oracles;
             for (int i = 0; i < 201; ++i)
             {
                 Account const owner(std::to_string(i));
                 env.fund(XRP(1'000), owner);
-                Oracle oracle(env, {.owner = owner, .documentID = i});
+                Oracle oracle(
+                    env, {.owner = owner, .documentID = i, .fee = baseFee});
                 oracles.emplace_back(owner, oracle.documentID());
             }
             auto const ret = Oracle::aggregatePrice(env, "XRP", "USD", oracles);
@@ -183,14 +191,18 @@ public:
             oracles.reserve(10);
             for (int i = 0; i < 10; ++i)
             {
+                auto const baseFee =
+                    static_cast<int>(env.current()->fees().base.drops());
+
                 Account const owner{std::to_string(i)};
                 env.fund(XRP(1'000), owner);
                 Oracle oracle(
                     env,
                     {.owner = owner,
                      .documentID = rand(),
-                     .series = {
-                         {"XRP", "USD", 740 + i, 1}, {"XRP", "EUR", 740, 1}}});
+                     .series =
+                         {{"XRP", "USD", 740 + i, 1}, {"XRP", "EUR", 740, 1}},
+                     .fee = baseFee});
                 oracles.emplace_back(owner, oracle.documentID());
             }
         };
@@ -238,6 +250,9 @@ public:
         // updated ledgers
         {
             Env env(*this);
+            auto const baseFee =
+                static_cast<int>(env.current()->fees().base.drops());
+
             OraclesData oracles;
             prep(env, oracles);
             for (int i = 0; i < 3; ++i)
@@ -245,25 +260,32 @@ public:
                 Oracle oracle(
                     env,
                     {.owner = oracles[i].first,
-                     .documentID = asUInt(*oracles[i].second)},
+                     .documentID = asUInt(*oracles[i].second),
+                     .fee = baseFee},
                     false);
                 // push XRP/USD by more than three ledgers, so this price
                 // oracle is not included in the dataset
-                oracle.set(UpdateArg{.series = {{"XRP", "EUR", 740, 1}}});
-                oracle.set(UpdateArg{.series = {{"XRP", "EUR", 740, 1}}});
-                oracle.set(UpdateArg{.series = {{"XRP", "EUR", 740, 1}}});
+                oracle.set(UpdateArg{
+                    .series = {{"XRP", "EUR", 740, 1}}, .fee = baseFee});
+                oracle.set(UpdateArg{
+                    .series = {{"XRP", "EUR", 740, 1}}, .fee = baseFee});
+                oracle.set(UpdateArg{
+                    .series = {{"XRP", "EUR", 740, 1}}, .fee = baseFee});
             }
             for (int i = 3; i < 6; ++i)
             {
                 Oracle oracle(
                     env,
                     {.owner = oracles[i].first,
-                     .documentID = asUInt(*oracles[i].second)},
+                     .documentID = asUInt(*oracles[i].second),
+                     .fee = baseFee},
                     false);
                 // push XRP/USD by two ledgers, so this price
                 // is included in the dataset
-                oracle.set(UpdateArg{.series = {{"XRP", "EUR", 740, 1}}});
-                oracle.set(UpdateArg{.series = {{"XRP", "EUR", 740, 1}}});
+                oracle.set(UpdateArg{
+                    .series = {{"XRP", "EUR", 740, 1}}, .fee = baseFee});
+                oracle.set(UpdateArg{
+                    .series = {{"XRP", "EUR", 740, 1}}, .fee = baseFee});
             }
 
             // entire and trimmed stats
@@ -286,6 +308,9 @@ public:
         // Reduced data set because of the time threshold
         {
             Env env(*this);
+            auto const baseFee =
+                static_cast<int>(env.current()->fees().base.drops());
+
             OraclesData oracles;
             prep(env, oracles);
             for (int i = 0; i < oracles.size(); ++i)
@@ -293,11 +318,13 @@ public:
                 Oracle oracle(
                     env,
                     {.owner = oracles[i].first,
-                     .documentID = asUInt(*oracles[i].second)},
+                     .documentID = asUInt(*oracles[i].second),
+                     .fee = baseFee},
                     false);
                 // push XRP/USD by two ledgers, so this price
                 // is included in the dataset
-                oracle.set(UpdateArg{.series = {{"XRP", "USD", 740, 1}}});
+                oracle.set(UpdateArg{
+                    .series = {{"XRP", "USD", 740, 1}}, .fee = baseFee});
             }
 
             // entire stats only, limit lastUpdateTime to {200, 125}
