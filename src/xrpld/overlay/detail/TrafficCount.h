@@ -189,17 +189,11 @@ public:
         {
             counts_[cat].bytesIn += bytes;
             ++counts_[cat].messagesIn;
-
-            counts_[category::total].bytesIn += bytes;
-            ++counts_[category::total].messagesIn;
         }
         else
         {
             counts_[cat].bytesOut += bytes;
             ++counts_[cat].messagesOut;
-
-            counts_[category::total].bytesOut += bytes;
-            ++counts_[category::total].messagesOut;
         }
     }
 

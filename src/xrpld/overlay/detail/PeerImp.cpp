@@ -257,8 +257,15 @@ PeerImp::send(std::shared_ptr<Message> const& m)
         return;
     }
 
+    // report categorized outgoing traffic
     overlay_.reportTraffic(
         safe_cast<TrafficCount::category>(m->getCategory()),
+        false,
+        static_cast<int>(m->getBuffer(compressionEnabled_).size()));
+
+    // report total outgoing traffic
+    overlay_.reportTraffic(
+        TrafficCount::category::total,
         false,
         static_cast<int>(m->getBuffer(compressionEnabled_).size()));
 
@@ -1023,7 +1030,12 @@ PeerImp::onMessageBegin(
 
     auto const category = TrafficCount::categorize(
         *m, static_cast<protocol::MessageType>(type), true);
+    // report specific category traffic
     overlay_.reportTraffic(category, true, static_cast<int>(size));
+
+    // retport total incoming traffic
+    overlay_.reportTraffic(
+        TrafficCount::category::total, true, static_cast<int>(size));
 
     using namespace protocol;
     if ((type == MessageType::mtTRANSACTION ||
