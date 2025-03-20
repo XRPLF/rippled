@@ -74,6 +74,13 @@ public:
         proposal,
         validation,
         validatorlist,
+        proposal_untrusted,
+        validation_untrusted,
+        proposal_duplicate,
+        validation_duplicate,
+        transaction_duplicate,
+        squelch,
+        squelch_saved,
 
         // TMHaveSet message:
         get_set,    // transaction sets we try to get
@@ -156,6 +163,9 @@ public:
         // TMTransactions
         requested_transactions,
 
+        // The total p2p bytes
+        total,
+
         unknown  // must be last
     };
 
@@ -164,7 +174,7 @@ public:
     static category
     categorize(
         ::google::protobuf::Message const& message,
-        int type,
+        protocol::MessageType type,
         bool inbound);
 
     /** Account for traffic associated with the given category */
@@ -201,16 +211,23 @@ public:
 
 protected:
     std::array<TrafficStats, category::unknown + 1> counts_{{
-        {"overhead"},           // category::base
-        {"overhead_cluster"},   // category::cluster
-        {"overhead_overlay"},   // category::overlay
-        {"overhead_manifest"},  // category::manifests
-        {"transactions"},       // category::transaction
-        {"proposals"},          // category::proposal
-        {"validations"},        // category::validation
-        {"validator_lists"},    // category::validatorlist
-        {"set_get"},            // category::get_set
-        {"set_share"},          // category::share_set
+        {"overhead"},                // category::base
+        {"overhead_cluster"},        // category::cluster
+        {"overhead_overlay"},        // category::overlay
+        {"overhead_manifest"},       // category::manifests
+        {"transactions"},            // category::transaction
+        {"transactions_duplicate"},  // category::transaction_duplicate
+        {"proposals"},               // category::proposal
+        {"proposals_untrusted"},     // category::proposal_untrusted
+        {"proposals_duplicate"},     // category::proposal_duplicate
+        {"validations"},             // category::validation
+        {"validations_untrusted"},   // category::validation_untrusted
+        {"validations_duplicate"},   // category::validation_duplicate
+        {"validator_lists"},         // category::validatorlist
+        {"squelch"},                 // category::squelch
+        {"squelch_saved"},           // category::squelch_saved
+        {"set_get"},                 // category::get_set
+        {"set_share"},               // category::share_set
         {"ledger_data_Transaction_Set_candidate_get"},  // category::ld_tsc_get
         {"ledger_data_Transaction_Set_candidate_share"},  // category::ld_tsc_share
         {"ledger_data_Transaction_Node_get"},        // category::ld_txn_get
@@ -248,6 +265,7 @@ protected:
         {"replay_delta_response"},   // category::replay_delta_response
         {"have_transactions"},       // category::have_transactions
         {"requested_transactions"},  // category::transactions
+        {"total"},                   // category::total
         {"unknown"}                  // category::unknown
     }};
 };

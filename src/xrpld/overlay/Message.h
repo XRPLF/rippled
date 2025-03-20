@@ -60,7 +60,7 @@ public:
      */
     Message(
         ::google::protobuf::Message const& message,
-        int type,
+        protocol::MessageType type,
         std::optional<PublicKey> const& validator = {});
 
     /** Retrieve the size of the packed but uncompressed message data. */
