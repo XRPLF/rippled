@@ -1,6 +1,8 @@
 <map id="ripple::ConsensusParms" name="ripple::ConsensusParms">
-<area shape="rect" id="node1" title="Consensus algorithm parameters." alt="" coords="178,211,355,236"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="5,5,160,31"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="223,5,311,31"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="393,5,577,31"/>
+<area shape="rect" id="node1" title="Consensus algorithm parameters." alt="" coords="1101,127,1279,153"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="679,59,834,85"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="5,138,93,163"/>
+<area shape="rect" id="node6" href="$structripple_1_1ConsensusParms_1_1AvalancheCutoff.html" title=" " alt="" coords="235,161,412,201"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/chrono/duration.html" title=" " alt="" coords="665,278,849,303"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="657,161,856,215"/>
 </map>

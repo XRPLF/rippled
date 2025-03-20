@@ -1,5 +1,6 @@
 <map id="ripple::DisputedTx&lt; Tx_t, NodeID_t &gt;" name="ripple::DisputedTx&lt; Tx_t, NodeID_t &gt;">
-<area shape="rect" id="node1" title="A transaction discovered to be in dispute during consensus." alt="" coords="5,181,153,221"/>
-<area shape="rect" id="node2" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="24,93,135,119"/>
-<area shape="rect" id="node3" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="6,5,153,31"/>
+<area shape="rect" id="node1" title="A transaction discovered to be in dispute during consensus." alt="" coords="57,196,205,236"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="5,93,93,119"/>
+<area shape="rect" id="node3" href="$classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="158,93,269,119"/>
+<area shape="rect" id="node4" href="$classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="140,5,287,31"/>
 </map>

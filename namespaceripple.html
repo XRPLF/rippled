@@ -2478,6 +2478,7 @@ Enumerations</h2></td></tr>
 <tr class="separator:a77adb10ef53a2e25195ccd38b46bfe9b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a79cc3b590c118bd551b693bb333fb9d1"><td class="memItemLeft" align="right" valign="top">enum class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a79cc3b590c118bd551b693bb333fb9d1">ConsensusState</a> { <a class="el" href="namespaceripple.html#a79cc3b590c118bd551b693bb333fb9d1abafd7322c6e97d25b6299b5d6fe8920b">No</a>
 , <a class="el" href="namespaceripple.html#a79cc3b590c118bd551b693bb333fb9d1a6978081a12147518207c7512374c5c80">MovedOn</a>
+, <a class="el" href="namespaceripple.html#a79cc3b590c118bd551b693bb333fb9d1a24fe48030f7d3097d5882535b04c3fa8">Expired</a>
 , <a class="el" href="namespaceripple.html#a79cc3b590c118bd551b693bb333fb9d1a93cba07454f06a4a960172bbd6e2a435">Yes</a>
  }</td></tr>
 <tr class="memdesc:a79cc3b590c118bd551b693bb333fb9d1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Whether we have or don't have a consensus.  <a href="namespaceripple.html#a79cc3b590c118bd551b693bb333fb9d1">More...</a><br /></td></tr>
@@ -4450,14 +4451,16 @@ requires (T::ConsequencesFactory == <a class="el" href="classripple_1_1Transacto
 <tr class="memitem:ac61c1aa91487dffa1a13eeeea5931aad"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ac61c1aa91487dffa1a13eeeea5931aad">shouldCloseLedger</a> (bool anyTransactions, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> prevProposers, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> proposersClosed, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> proposersValidated, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> prevRoundTime, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> timeSincePrevClose, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> openTime, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> idleInterval, <a class="el" href="structripple_1_1ConsensusParms.html">ConsensusParms</a> const  &amp;parms, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> &gt; const  &amp;clog={})</td></tr>
 <tr class="memdesc:ac61c1aa91487dffa1a13eeeea5931aad"><td class="mdescLeft">&#160;</td><td class="mdescRight">Determines whether the current ledger should close at this time.  <a href="namespaceripple.html#ac61c1aa91487dffa1a13eeeea5931aad">More...</a><br /></td></tr>
 <tr class="separator:ac61c1aa91487dffa1a13eeeea5931aad"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a901872543064528674237f9ba88ef363"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a901872543064528674237f9ba88ef363">checkConsensusReached</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> agreeing, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> total, bool count_self, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> minConsensusPct, bool reachedMax, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> &gt; const &amp;clog)</td></tr>
-<tr class="separator:a901872543064528674237f9ba88ef363"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a267339957aef0e7752c9e45ed6665322"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a79cc3b590c118bd551b693bb333fb9d1">ConsensusState</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a267339957aef0e7752c9e45ed6665322">checkConsensus</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> prevProposers, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> currentProposers, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> currentAgree, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> currentFinished, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> previousAgreeTime, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> currentAgreeTime, <a class="el" href="structripple_1_1ConsensusParms.html">ConsensusParms</a> const  &amp;parms, bool <a class="el" href="namespaceripple.html#a33f8b6e68b5f63faf2e9755cc251563ea80dcf57f5ecd4be3cbfa37eccbcb6f44">proposing</a>, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> &gt; const  &amp;clog={})</td></tr>
-<tr class="memdesc:a267339957aef0e7752c9e45ed6665322"><td class="mdescLeft">&#160;</td><td class="mdescRight">Determine whether the network reached consensus and whether we joined.  <a href="namespaceripple.html#a267339957aef0e7752c9e45ed6665322">More...</a><br /></td></tr>
-<tr class="separator:a267339957aef0e7752c9e45ed6665322"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5ce354b7ded861ca27fa83033dad4253"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a5ce354b7ded861ca27fa83033dad4253">checkConsensusReached</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> agreeing, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> total, bool count_self, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> minConsensusPct, bool reachedMax, bool stalled, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> &gt; const &amp;clog)</td></tr>
+<tr class="separator:a5ce354b7ded861ca27fa83033dad4253"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3f77b20f5195322940dad13117249178"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a79cc3b590c118bd551b693bb333fb9d1">ConsensusState</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a3f77b20f5195322940dad13117249178">checkConsensus</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> prevProposers, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> currentProposers, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> currentAgree, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> currentFinished, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> previousAgreeTime, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> currentAgreeTime, bool stalled, <a class="el" href="structripple_1_1ConsensusParms.html">ConsensusParms</a> const  &amp;parms, bool <a class="el" href="namespaceripple.html#a33f8b6e68b5f63faf2e9755cc251563ea80dcf57f5ecd4be3cbfa37eccbcb6f44">proposing</a>, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> &gt; const  &amp;clog={})</td></tr>
+<tr class="memdesc:a3f77b20f5195322940dad13117249178"><td class="mdescLeft">&#160;</td><td class="mdescRight">Determine whether the network reached consensus and whether we joined.  <a href="namespaceripple.html#a3f77b20f5195322940dad13117249178">More...</a><br /></td></tr>
+<tr class="separator:a3f77b20f5195322940dad13117249178"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aeb66127505ef68a84f565f5a84927229"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aeb66127505ef68a84f565f5a84927229">participantsNeeded</a> (int participants, int percent)</td></tr>
 <tr class="memdesc:aeb66127505ef68a84f565f5a84927229"><td class="mdescLeft">&#160;</td><td class="mdescRight">How many of the participants must agree to reach a given threshold?  <a href="namespaceripple.html#aeb66127505ef68a84f565f5a84927229">More...</a><br /></td></tr>
 <tr class="separator:aeb66127505ef68a84f565f5a84927229"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a02f1abf2c7137874dca7e87e5d2b6cb5"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="structripple_1_1ConsensusParms.html#a57f6518dd29b3e8224b4ef9fe1692230">ConsensusParms::AvalancheState</a> &gt; &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a02f1abf2c7137874dca7e87e5d2b6cb5">getNeededWeight</a> (<a class="el" href="structripple_1_1ConsensusParms.html">ConsensusParms</a> const &amp;p, <a class="el" href="structripple_1_1ConsensusParms.html#a57f6518dd29b3e8224b4ef9fe1692230">ConsensusParms::AvalancheState</a> currentState, int percentTime, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> currentRounds, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> minimumRounds)</td></tr>
+<tr class="separator:a02f1abf2c7137874dca7e87e5d2b6cb5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9bf3dd371c9291c917d56626c6f599a1"><td class="memTemplParams" colspan="2">template&lt;class NodeID_t , class LedgerID_t , class Position_t &gt; </td></tr>
 <tr class="memitem:a9bf3dd371c9291c917d56626c6f599a1"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a9bf3dd371c9291c917d56626c6f599a1">operator==</a> (<a class="el" href="classripple_1_1ConsensusProposal.html">ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t &gt; const &amp;a, <a class="el" href="classripple_1_1ConsensusProposal.html">ConsensusProposal</a>&lt; NodeID_t, LedgerID_t, Position_t &gt; const &amp;b)</td></tr>
 <tr class="separator:a9bf3dd371c9291c917d56626c6f599a1"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -9534,6 +9537,8 @@ ledger.
 <tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a79cc3b590c118bd551b693bb333fb9d1abafd7322c6e97d25b6299b5d6fe8920b" name="a79cc3b590c118bd551b693bb333fb9d1abafd7322c6e97d25b6299b5d6fe8920b"></a>No&#160;</td><td class="fielddoc"><p >We do not have consensus. </p>
 </td></tr>
 <tr><td class="fieldname"><a id="a79cc3b590c118bd551b693bb333fb9d1a6978081a12147518207c7512374c5c80" name="a79cc3b590c118bd551b693bb333fb9d1a6978081a12147518207c7512374c5c80"></a>MovedOn&#160;</td><td class="fielddoc"><p >The network has consensus without us. </p>
+</td></tr>
+<tr><td class="fieldname"><a id="a79cc3b590c118bd551b693bb333fb9d1a24fe48030f7d3097d5882535b04c3fa8" name="a79cc3b590c118bd551b693bb333fb9d1a24fe48030f7d3097d5882535b04c3fa8"></a>Expired&#160;</td><td class="fielddoc"><p ><a class="el" href="classripple_1_1Consensus.html" title="Generic implementation of consensus algorithm.">Consensus</a> time limit has hard-expired. </p>
 </td></tr>
 <tr><td class="fieldname"><a id="a79cc3b590c118bd551b693bb333fb9d1a93cba07454f06a4a960172bbd6e2a435" name="a79cc3b590c118bd551b693bb333fb9d1a93cba07454f06a4a960172bbd6e2a435"></a>Yes&#160;</td><td class="fielddoc"><p >We have consensus along with the network. </p>
 </td></tr>
@@ -29986,7 +29991,7 @@ template&lt;class T , class  = std::enable_if_t&lt;        std::is_same&lt;T, ch
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l02082">2082</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l02109">2109</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
 
 </div>
 </div>
@@ -30070,7 +30075,7 @@ template&lt;class T , class  = std::enable_if_t&lt;        std::is_same&lt;T, ch
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l04612">4612</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l04639">4639</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
 
 </div>
 </div>
@@ -35652,8 +35657,8 @@ template&lt;class TIn , class TOut &gt; </div>
 
 </div>
 </div>
-<a id="a901872543064528674237f9ba88ef363" name="a901872543064528674237f9ba88ef363"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a901872543064528674237f9ba88ef363">&#9670;&#160;</a></span>checkConsensusReached()</h2>
+<a id="a5ce354b7ded861ca27fa83033dad4253" name="a5ce354b7ded861ca27fa83033dad4253"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5ce354b7ded861ca27fa83033dad4253">&#9670;&#160;</a></span>checkConsensusReached()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -35691,6 +35696,12 @@ template&lt;class TIn , class TOut &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>stalled</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html">std::stringstream</a> &gt; const &amp;&#160;</td>
           <td class="paramname"><em>clog</em>&#160;</td>
         </tr>
@@ -35706,8 +35717,8 @@ template&lt;class TIn , class TOut &gt; </div>
 
 </div>
 </div>
-<a id="a267339957aef0e7752c9e45ed6665322" name="a267339957aef0e7752c9e45ed6665322"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a267339957aef0e7752c9e45ed6665322">&#9670;&#160;</a></span>checkConsensus()</h2>
+<a id="a3f77b20f5195322940dad13117249178" name="a3f77b20f5195322940dad13117249178"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3f77b20f5195322940dad13117249178">&#9670;&#160;</a></span>checkConsensus()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -35751,6 +35762,12 @@ template&lt;class TIn , class TOut &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>stalled</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
           <td class="paramtype"><a class="el" href="structripple_1_1ConsensusParms.html">ConsensusParms</a> const &amp;&#160;</td>
           <td class="paramname"><em>parms</em>, </td>
         </tr>
@@ -35789,6 +35806,7 @@ template&lt;class TIn , class TOut &gt; </div>
     <tr><td class="paramname">currentFinished</td><td>proposers who have validated a ledger after this one </td></tr>
     <tr><td class="paramname">previousAgreeTime</td><td>how long, in milliseconds, it took to agree on the last ledger </td></tr>
     <tr><td class="paramname">currentAgreeTime</td><td>how long, in milliseconds, we've been trying to agree </td></tr>
+    <tr><td class="paramname">stalled</td><td>the network appears to be stalled, where neither we nor our peers have changed their vote on any disputes in a while. This is undesirable, and will cause us to end consensus without 80% agreement. </td></tr>
     <tr><td class="paramname">parms</td><td><a class="el" href="classripple_1_1Consensus.html" title="Generic implementation of consensus algorithm.">Consensus</a> constant parameters </td></tr>
     <tr><td class="paramname">proposing</td><td>whether we should count ourselves </td></tr>
     <tr><td class="paramname">j</td><td>journal for logging </td></tr>
@@ -35797,7 +35815,7 @@ template&lt;class TIn , class TOut &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8cpp_source.html#l00164">164</a> of file <a class="el" href="Consensus_8cpp_source.html">Consensus.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8cpp_source.html#l00177">177</a> of file <a class="el" href="Consensus_8cpp_source.html">Consensus.cpp</a>.</p>
 
 </div>
 </div>
@@ -35838,7 +35856,55 @@ template&lt;class TIn , class TOut &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>the number of participants which must agree </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01459">1459</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01481">1481</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+
+</div>
+</div>
+<a id="a02f1abf2c7137874dca7e87e5d2b6cb5" name="a02f1abf2c7137874dca7e87e5d2b6cb5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a02f1abf2c7137874dca7e87e5d2b6cb5">&#9670;&#160;</a></span>getNeededWeight()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="structripple_1_1ConsensusParms.html#a57f6518dd29b3e8224b4ef9fe1692230">ConsensusParms::AvalancheState</a> &gt; &gt; ripple::getNeededWeight </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structripple_1_1ConsensusParms.html">ConsensusParms</a> const &amp;&#160;</td>
+          <td class="paramname"><em>p</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="structripple_1_1ConsensusParms.html#a57f6518dd29b3e8224b4ef9fe1692230">ConsensusParms::AvalancheState</a>&#160;</td>
+          <td class="paramname"><em>currentState</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>percentTime</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td>
+          <td class="paramname"><em>currentRounds</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td>
+          <td class="paramname"><em>minimumRounds</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="ConsensusParms_8h_source.html#l00173">173</a> of file <a class="el" href="ConsensusParms_8h_source.html">ConsensusParms.h</a>.</p>
 
 </div>
 </div>
@@ -50633,7 +50699,7 @@ template&lt;class Dest , class Src &gt; </div>
 <b>Initial value:</b><div class="fragment"><div class="line">{</div>
 <div class="line">    {<span class="stringliteral">&quot;disconnected&quot;</span>, <span class="stringliteral">&quot;connected&quot;</span>, <span class="stringliteral">&quot;syncing&quot;</span>, <span class="stringliteral">&quot;tracking&quot;</span>, <span class="stringliteral">&quot;full&quot;</span>}}</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l00844">844</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l00854">854</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
 
 </div>
 </div>
@@ -50663,7 +50729,7 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="ttc" id="anamespaceripple_html_a614d8681c8dff84ac2257939751987c5"><div class="ttname"><a href="namespaceripple.html#a614d8681c8dff84ac2257939751987c5">ripple::calcAccountID</a></div><div class="ttdeci">AccountID calcAccountID(PublicKey const &amp;pk)</div><div class="ttdef"><b>Definition:</b> <a href="AccountID_8cpp_source.html#l00168">AccountID.cpp:168</a></div></div>
 <div class="ttc" id="anamespaceripple_html_adb9531b2a54f33b8227d9b029be9439b"><div class="ttname"><a href="namespaceripple.html#adb9531b2a54f33b8227d9b029be9439b">ripple::generateSeed</a></div><div class="ttdeci">Seed generateSeed(std::string const &amp;passPhrase)</div><div class="ttdoc">Generate a seed deterministically.</div><div class="ttdef"><b>Definition:</b> <a href="Seed_8cpp_source.html#l00076">Seed.cpp:76</a></div></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l00857">857</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l00867">867</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
 
 </div>
 </div>

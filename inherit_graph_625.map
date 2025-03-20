@@ -1,3 +1,5 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$structripple_1_1STObject_1_1Transform.html" title=" " alt="" coords="5,5,204,31"/>
+<area shape="rect" id="node1" href="$classripple_1_1STObject_1_1Proxy.html" title=" " alt="" coords="5,42,213,67"/>
+<area shape="rect" id="node2" href="$classripple_1_1STObject_1_1OptionalProxy.html" title=" " alt="" coords="289,5,477,45"/>
+<area shape="rect" id="node3" href="$classripple_1_1STObject_1_1ValueProxy.html" title=" " alt="" coords="261,70,505,95"/>
 </map>

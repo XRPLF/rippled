@@ -10,5 +10,6 @@ var searchData=
   ['applyflags_7',['ApplyFlags',['../namespaceripple.html#ad2487abbcc1a5d6064b72144b461df6e',1,'ripple']]],
   ['applytransactionresult_8',['ApplyTransactionResult',['../namespaceripple.html#a3352ead78ab1510016d3f728004acd63',1,'ripple']]],
   ['attestationmatch_9',['AttestationMatch',['../namespaceripple.html#aad512dea42da4cc179f20c67de593c26',1,'ripple']]],
-  ['authhandling_10',['AuthHandling',['../namespaceripple.html#a5b188f8f22827b2e24b506ef852ffd69',1,'ripple']]]
+  ['authhandling_10',['AuthHandling',['../namespaceripple.html#a5b188f8f22827b2e24b506ef852ffd69',1,'ripple']]],
+  ['avalanchestate_11',['AvalancheState',['../structripple_1_1ConsensusParms.html#a57f6518dd29b3e8224b4ef9fe1692230',1,'ripple::ConsensusParms']]]
 ];

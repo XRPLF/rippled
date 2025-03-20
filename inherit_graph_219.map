@@ -1,4 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="5,5,177,45"/>
-<area shape="rect" id="node2" href="$classripple_1_1AcceptedLedgerTx.html" title="A transaction that is in a closed ledger." alt="" coords="225,13,412,38"/>
+<area shape="rect" id="node1" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="5,5,168,45"/>
+<area shape="rect" id="node2" href="$classripple_1_1AcceptedLedger.html" title="A ledger that has become irrevocable." alt="" coords="216,13,387,38"/>
 </map>

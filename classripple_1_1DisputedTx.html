@@ -91,9 +91,10 @@ Collaboration diagram for ripple::DisputedTx&lt; Tx_t, NodeID_t &gt;:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1DisputedTx__coll__graph.png" border="0" usemap="#aripple_1_1DisputedTx_3_01Tx__t_00_01NodeID__t_01_4_coll__map" alt="Collaboration graph"/></div>
 <map name="aripple_1_1DisputedTx_3_01Tx__t_00_01NodeID__t_01_4_coll__map" id="aripple_1_1DisputedTx_3_01Tx__t_00_01NodeID__t_01_4_coll__map">
-<area shape="rect" title="A transaction discovered to be in dispute during consensus." alt="" coords="5,181,153,221"/>
-<area shape="rect" href="classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="24,93,135,119"/>
-<area shape="rect" href="classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="6,5,153,31"/>
+<area shape="rect" title="A transaction discovered to be in dispute during consensus." alt="" coords="57,196,205,236"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/types/size_t.html" title=" " alt="" coords="5,93,93,119"/>
+<area shape="rect" href="classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="158,93,269,119"/>
+<area shape="rect" href="classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="140,5,287,31"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -108,15 +109,18 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:ac3ffc63a830314ccb7187751260b7573"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1DisputedTx.html#ac3ffc63a830314ccb7187751260b7573">getOurVote</a> () const</td></tr>
 <tr class="memdesc:ac3ffc63a830314ccb7187751260b7573"><td class="mdescLeft">&#160;</td><td class="mdescRight">Our vote on whether the transaction should be included.  <a href="classripple_1_1DisputedTx.html#ac3ffc63a830314ccb7187751260b7573">More...</a><br /></td></tr>
 <tr class="separator:ac3ffc63a830314ccb7187751260b7573"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af909c25e25539ba94a3f87f3ea228416"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1DisputedTx.html#af909c25e25539ba94a3f87f3ea228416">stalled</a> (<a class="el" href="structripple_1_1ConsensusParms.html">ConsensusParms</a> const &amp;p, bool <a class="el" href="namespaceripple.html#a33f8b6e68b5f63faf2e9755cc251563ea80dcf57f5ecd4be3cbfa37eccbcb6f44">proposing</a>, int peersUnchanged) const</td></tr>
+<tr class="memdesc:af909c25e25539ba94a3f87f3ea228416"><td class="mdescLeft">&#160;</td><td class="mdescRight">Are we and our peers "stalled" where we probably won't change our vote?  <a href="classripple_1_1DisputedTx.html#af909c25e25539ba94a3f87f3ea228416">More...</a><br /></td></tr>
+<tr class="separator:af909c25e25539ba94a3f87f3ea228416"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8a381b39854e9dc11cee3d0e5e2ddffc"><td class="memItemLeft" align="right" valign="top">Tx_t const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1DisputedTx.html#a8a381b39854e9dc11cee3d0e5e2ddffc">tx</a> () const</td></tr>
 <tr class="memdesc:a8a381b39854e9dc11cee3d0e5e2ddffc"><td class="mdescLeft">&#160;</td><td class="mdescRight">The disputed transaction.  <a href="classripple_1_1DisputedTx.html#a8a381b39854e9dc11cee3d0e5e2ddffc">More...</a><br /></td></tr>
 <tr class="separator:a8a381b39854e9dc11cee3d0e5e2ddffc"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac4dae1ccf89f9bea6bbcfcc3e539131d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1DisputedTx.html#ac4dae1ccf89f9bea6bbcfcc3e539131d">setOurVote</a> (bool o)</td></tr>
 <tr class="memdesc:ac4dae1ccf89f9bea6bbcfcc3e539131d"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classripple_1_1Change.html">Change</a> our vote.  <a href="classripple_1_1DisputedTx.html#ac4dae1ccf89f9bea6bbcfcc3e539131d">More...</a><br /></td></tr>
 <tr class="separator:ac4dae1ccf89f9bea6bbcfcc3e539131d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a90b2a5fd5a4c3d65e0a0a5ac7bbbb633"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1DisputedTx.html#a90b2a5fd5a4c3d65e0a0a5ac7bbbb633">setVote</a> (NodeID_t const &amp;peer, bool votesYes)</td></tr>
-<tr class="memdesc:a90b2a5fd5a4c3d65e0a0a5ac7bbbb633"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classripple_1_1Change.html">Change</a> a peer's vote.  <a href="classripple_1_1DisputedTx.html#a90b2a5fd5a4c3d65e0a0a5ac7bbbb633">More...</a><br /></td></tr>
-<tr class="separator:a90b2a5fd5a4c3d65e0a0a5ac7bbbb633"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6b0856be34a73054ff683cf4dd41805c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1DisputedTx.html#a6b0856be34a73054ff683cf4dd41805c">setVote</a> (NodeID_t const &amp;peer, bool votesYes)</td></tr>
+<tr class="memdesc:a6b0856be34a73054ff683cf4dd41805c"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classripple_1_1Change.html">Change</a> a peer's vote.  <a href="classripple_1_1DisputedTx.html#a6b0856be34a73054ff683cf4dd41805c">More...</a><br /></td></tr>
+<tr class="separator:a6b0856be34a73054ff683cf4dd41805c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aea762d9cfa471687ff7a87a3f011745a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1DisputedTx.html#aea762d9cfa471687ff7a87a3f011745a">unVote</a> (NodeID_t const &amp;peer)</td></tr>
 <tr class="memdesc:aea762d9cfa471687ff7a87a3f011745a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Remove a peer's vote.  <a href="classripple_1_1DisputedTx.html#aea762d9cfa471687ff7a87a3f011745a">More...</a><br /></td></tr>
 <tr class="separator:aea762d9cfa471687ff7a87a3f011745a"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -146,6 +150,15 @@ Private Attributes</h2></td></tr>
 <tr class="separator:ab7197c18716286663c783fcd2dc017f2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a001d3207155517f2e004cb46bd4d69a0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1DisputedTx.html#a539cd934ccda2e0791874fb105e5f873">Map_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1DisputedTx.html#a001d3207155517f2e004cb46bd4d69a0">votes_</a></td></tr>
 <tr class="separator:a001d3207155517f2e004cb46bd4d69a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a138947b04571b1e84aee438aa9576fe0"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1DisputedTx.html#a138947b04571b1e84aee438aa9576fe0">currentVoteCounter_</a> = 0</td></tr>
+<tr class="memdesc:a138947b04571b1e84aee438aa9576fe0"><td class="mdescLeft">&#160;</td><td class="mdescRight">The number of rounds we've gone without changing our vote.  <a href="classripple_1_1DisputedTx.html#a138947b04571b1e84aee438aa9576fe0">More...</a><br /></td></tr>
+<tr class="separator:a138947b04571b1e84aee438aa9576fe0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a757b311154a4528bd51b7503c311c051"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1ConsensusParms.html#a57f6518dd29b3e8224b4ef9fe1692230">ConsensusParms::AvalancheState</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1DisputedTx.html#a757b311154a4528bd51b7503c311c051">avalancheState_</a> = <a class="el" href="structripple_1_1ConsensusParms.html#a57f6518dd29b3e8224b4ef9fe1692230a907197a76ed91ac8d083b6ffe144db83">ConsensusParms::init</a></td></tr>
+<tr class="memdesc:a757b311154a4528bd51b7503c311c051"><td class="mdescLeft">&#160;</td><td class="mdescRight">Which minimum acceptance percentage phase we are currently in.  <a href="classripple_1_1DisputedTx.html#a757b311154a4528bd51b7503c311c051">More...</a><br /></td></tr>
+<tr class="separator:a757b311154a4528bd51b7503c311c051"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0a35b2f6fee817af369de165112d91d3"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1DisputedTx.html#a0a35b2f6fee817af369de165112d91d3">avalancheCounter_</a> = 0</td></tr>
+<tr class="memdesc:a0a35b2f6fee817af369de165112d91d3"><td class="mdescLeft">&#160;</td><td class="mdescRight">How long we have been in the current acceptance phase.  <a href="classripple_1_1DisputedTx.html#a0a35b2f6fee817af369de165112d91d3">More...</a><br /></td></tr>
+<tr class="separator:a0a35b2f6fee817af369de165112d91d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a1c3f0027f9b12d15c6936401b3284c02"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1DisputedTx.html#a1c3f0027f9b12d15c6936401b3284c02">j_</a></td></tr>
 <tr class="separator:a1c3f0027f9b12d15c6936401b3284c02"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
@@ -320,6 +333,46 @@ template&lt;class Tx_t , class NodeID_t &gt; </div>
 
 </div>
 </div>
+<a id="af909c25e25539ba94a3f87f3ea228416" name="af909c25e25539ba94a3f87f3ea228416"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af909c25e25539ba94a3f87f3ea228416">&#9670;&#160;</a></span>stalled()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class Tx_t , class NodeID_t &gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">bool <a class="el" href="classripple_1_1DisputedTx.html">ripple::DisputedTx</a>&lt; Tx_t, NodeID_t &gt;::stalled </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="structripple_1_1ConsensusParms.html">ConsensusParms</a> const &amp;&#160;</td>
+          <td class="paramname"><em>p</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">bool&#160;</td>
+          <td class="paramname"><em>proposing</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">int&#160;</td>
+          <td class="paramname"><em>peersUnchanged</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td> const</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Are we and our peers "stalled" where we probably won't change our vote? </p>
+
+<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00088">88</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
+
+</div>
+</div>
 <a id="a8a381b39854e9dc11cee3d0e5e2ddffc" name="a8a381b39854e9dc11cee3d0e5e2ddffc"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a8a381b39854e9dc11cee3d0e5e2ddffc">&#9670;&#160;</a></span>tx()</h2>
 
@@ -339,7 +392,7 @@ template&lt;class Tx_t , class NodeID_t &gt; </div>
 
 <p>The disputed transaction. </p>
 
-<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00087">87</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00132">132</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
 
 </div>
 </div>
@@ -363,12 +416,12 @@ template&lt;class Tx_t , class NodeID_t &gt; </div>
 
 <p><a class="el" href="classripple_1_1Change.html">Change</a> our vote. </p>
 
-<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00094">94</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00139">139</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
 
 </div>
 </div>
-<a id="a90b2a5fd5a4c3d65e0a0a5ac7bbbb633" name="a90b2a5fd5a4c3d65e0a0a5ac7bbbb633"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a90b2a5fd5a4c3d65e0a0a5ac7bbbb633">&#9670;&#160;</a></span>setVote()</h2>
+<a id="a6b0856be34a73054ff683cf4dd41805c" name="a6b0856be34a73054ff683cf4dd41805c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6b0856be34a73054ff683cf4dd41805c">&#9670;&#160;</a></span>setVote()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -376,7 +429,7 @@ template&lt;class Tx_t , class NodeID_t &gt; </div>
 template&lt;class Tx_t , class NodeID_t &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classripple_1_1DisputedTx.html">ripple::DisputedTx</a>&lt; Tx_t, NodeID_t &gt;::setVote </td>
+          <td class="memname">bool <a class="el" href="classripple_1_1DisputedTx.html">ripple::DisputedTx</a>&lt; Tx_t, NodeID_t &gt;::setVote </td>
           <td>(</td>
           <td class="paramtype">NodeID_t const &amp;&#160;</td>
           <td class="paramname"><em>peer</em>, </td>
@@ -399,12 +452,13 @@ template&lt;class Tx_t , class NodeID_t &gt; </div>
 <dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">peer</td><td>Identifier of peer. </td></tr>
-    <tr><td class="paramname">votesYes</td><td>Whether peer votes to include the disputed transaction. </td></tr>
+    <tr><td class="paramname">votesYes</td><td>Whether peer votes to include the disputed transaction.</td></tr>
   </table>
   </dd>
 </dl>
+<dl class="section return"><dt>Returns</dt><dd>bool Whether the peer changed its vote. (A new vote counts as a change.) </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00144">144</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00199">199</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
 
 </div>
 </div>
@@ -434,7 +488,7 @@ template&lt;class Tx_t , class NodeID_t &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00183">183</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00242">242</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
 
 </div>
 </div>
@@ -484,7 +538,7 @@ template&lt;class Tx_t , class NodeID_t &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>Whether our vote changed </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00200">200</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00259">259</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
 
 </div>
 </div>
@@ -504,7 +558,7 @@ template&lt;class Tx_t , class NodeID_t &gt; </div>
 
 <p>JSON representation of dispute, used for debugging. </p>
 
-<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00255">255</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00322">322</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
 
 </div>
 </div>
@@ -531,7 +585,7 @@ template&lt;class Tx_t , class NodeID_t &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00133">133</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00182">182</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
 
 </div>
 </div>
@@ -557,7 +611,7 @@ template&lt;class Tx_t , class NodeID_t &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00134">134</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00183">183</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
 
 </div>
 </div>
@@ -583,7 +637,7 @@ template&lt;class Tx_t , class NodeID_t &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00135">135</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00184">184</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
 
 </div>
 </div>
@@ -609,7 +663,7 @@ template&lt;class Tx_t , class NodeID_t &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00136">136</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00185">185</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
 
 </div>
 </div>
@@ -635,7 +689,91 @@ template&lt;class Tx_t , class NodeID_t &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00137">137</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00186">186</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
+
+</div>
+</div>
+<a id="a138947b04571b1e84aee438aa9576fe0" name="a138947b04571b1e84aee438aa9576fe0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a138947b04571b1e84aee438aa9576fe0">&#9670;&#160;</a></span>currentVoteCounter_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class Tx_t , class NodeID_t &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> <a class="el" href="classripple_1_1DisputedTx.html">ripple::DisputedTx</a>&lt; Tx_t, NodeID_t &gt;::currentVoteCounter_ = 0</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>The number of rounds we've gone without changing our vote. </p>
+
+<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00188">188</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
+
+</div>
+</div>
+<a id="a757b311154a4528bd51b7503c311c051" name="a757b311154a4528bd51b7503c311c051"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a757b311154a4528bd51b7503c311c051">&#9670;&#160;</a></span>avalancheState_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class Tx_t , class NodeID_t &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="structripple_1_1ConsensusParms.html#a57f6518dd29b3e8224b4ef9fe1692230">ConsensusParms::AvalancheState</a> <a class="el" href="classripple_1_1DisputedTx.html">ripple::DisputedTx</a>&lt; Tx_t, NodeID_t &gt;::avalancheState_ = <a class="el" href="structripple_1_1ConsensusParms.html#a57f6518dd29b3e8224b4ef9fe1692230a907197a76ed91ac8d083b6ffe144db83">ConsensusParms::init</a></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>Which minimum acceptance percentage phase we are currently in. </p>
+
+<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00190">190</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
+
+</div>
+</div>
+<a id="a0a35b2f6fee817af369de165112d91d3" name="a0a35b2f6fee817af369de165112d91d3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0a35b2f6fee817af369de165112d91d3">&#9670;&#160;</a></span>avalancheCounter_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class Tx_t , class NodeID_t &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> <a class="el" href="classripple_1_1DisputedTx.html">ripple::DisputedTx</a>&lt; Tx_t, NodeID_t &gt;::avalancheCounter_ = 0</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p>How long we have been in the current acceptance phase. </p>
+
+<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00192">192</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
 
 </div>
 </div>
@@ -661,7 +799,7 @@ template&lt;class Tx_t , class NodeID_t &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00138">138</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="DisputedTx_8h_source.html#l00193">193</a> of file <a class="el" href="DisputedTx_8h_source.html">DisputedTx.h</a>.</p>
 
 </div>
 </div>

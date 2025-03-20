@@ -74,6 +74,8 @@ $(function() {
 </div><!-- top -->
 <div class="header">
   <div class="summary">
+<a href="#nested-classes">Classes</a> &#124;
+<a href="#pub-types">Public Types</a> &#124;
 <a href="#pub-methods">Public Member Functions</a> &#124;
 <a href="#pub-attribs">Public Attributes</a> &#124;
 <a href="structripple_1_1ConsensusParms-members.html">List of all members</a>  </div>
@@ -90,13 +92,29 @@ Collaboration diagram for ripple::ConsensusParms:</div>
 <div class="dyncontent">
 <div class="center"><img src="structripple_1_1ConsensusParms__coll__graph.png" border="0" usemap="#aripple_1_1ConsensusParms_coll__map" alt="Collaboration graph"/></div>
 <map name="aripple_1_1ConsensusParms_coll__map" id="aripple_1_1ConsensusParms_coll__map">
-<area shape="rect" title="Consensus algorithm parameters." alt="" coords="178,211,355,236"/>
-<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/chrono/duration.html" title=" " alt="" coords="5,5,160,31"/>
-<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/types/size_t.html" title=" " alt="" coords="223,5,311,31"/>
-<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/chrono/duration.html" title=" " alt="" coords="393,5,577,31"/>
+<area shape="rect" title="Consensus algorithm parameters." alt="" coords="1101,127,1279,153"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/chrono/duration.html" title=" " alt="" coords="679,59,834,85"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/types/size_t.html" title=" " alt="" coords="5,138,93,163"/>
+<area shape="rect" href="structripple_1_1ConsensusParms_1_1AvalancheCutoff.html" title=" " alt="" coords="235,161,412,201"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/chrono/duration.html" title=" " alt="" coords="665,278,849,303"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/container/map.html" title=" " alt="" coords="657,161,856,215"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="nested-classes" name="nested-classes"></a>
+Classes</h2></td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ConsensusParms_1_1AvalancheCutoff.html">AvalancheCutoff</a></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
+Public Types</h2></td></tr>
+<tr class="memitem:a57f6518dd29b3e8224b4ef9fe1692230"><td class="memItemLeft" align="right" valign="top">enum &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ConsensusParms.html#a57f6518dd29b3e8224b4ef9fe1692230">AvalancheState</a> { <a class="el" href="structripple_1_1ConsensusParms.html#a57f6518dd29b3e8224b4ef9fe1692230a907197a76ed91ac8d083b6ffe144db83">init</a>
+, <a class="el" href="structripple_1_1ConsensusParms.html#a57f6518dd29b3e8224b4ef9fe1692230a1c440f383401d07e4b74381cc5f30028">mid</a>
+, <a class="el" href="structripple_1_1ConsensusParms.html#a57f6518dd29b3e8224b4ef9fe1692230a7efc64592308ed2a8e3f219f2c888076">late</a>
+, <a class="el" href="structripple_1_1ConsensusParms.html#a57f6518dd29b3e8224b4ef9fe1692230a2445825cab6adf8a89376e71f7ac1f3f">stuck</a>
+ }</td></tr>
+<tr class="separator:a57f6518dd29b3e8224b4ef9fe1692230"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
 <tr class="memitem:a9ac9d2698f75ff667ac3a95d61bd1d7a"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ConsensusParms.html#a9ac9d2698f75ff667ac3a95d61bd1d7a">ConsensusParms</a> ()=default</td></tr>
@@ -104,73 +122,90 @@ Public Member Functions</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-attribs" name="pub-attribs"></a>
 Public Attributes</h2></td></tr>
-<tr class="memitem:a3e40877fb010dfca02909d191412a773"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ConsensusParms.html#a3e40877fb010dfca02909d191412a773">validationVALID_WALL</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::minutes</a>{5}</td></tr>
-<tr class="memdesc:a3e40877fb010dfca02909d191412a773"><td class="mdescLeft">&#160;</td><td class="mdescRight">The duration a validation remains current after its ledger's close time.  <a href="structripple_1_1ConsensusParms.html#a3e40877fb010dfca02909d191412a773">More...</a><br /></td></tr>
-<tr class="separator:a3e40877fb010dfca02909d191412a773"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2b063686198b0f4bf2f46ccfe08d7bcb"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ConsensusParms.html#a2b063686198b0f4bf2f46ccfe08d7bcb">validationVALID_LOCAL</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::minutes</a>{3}</td></tr>
-<tr class="memdesc:a2b063686198b0f4bf2f46ccfe08d7bcb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Duration a validation remains current after first observed.  <a href="structripple_1_1ConsensusParms.html#a2b063686198b0f4bf2f46ccfe08d7bcb">More...</a><br /></td></tr>
-<tr class="separator:a2b063686198b0f4bf2f46ccfe08d7bcb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a435fdb2c3c08b84da69fdb396d55b41a"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ConsensusParms.html#a435fdb2c3c08b84da69fdb396d55b41a">validationVALID_EARLY</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::minutes</a>{3}</td></tr>
-<tr class="memdesc:a435fdb2c3c08b84da69fdb396d55b41a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Duration pre-close in which validations are acceptable.  <a href="structripple_1_1ConsensusParms.html#a435fdb2c3c08b84da69fdb396d55b41a">More...</a><br /></td></tr>
-<tr class="separator:a435fdb2c3c08b84da69fdb396d55b41a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5df0bb4c2f0d244e323f1f5e9339418d"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ConsensusParms.html#a5df0bb4c2f0d244e323f1f5e9339418d">proposeFRESHNESS</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>{20}</td></tr>
-<tr class="memdesc:a5df0bb4c2f0d244e323f1f5e9339418d"><td class="mdescLeft">&#160;</td><td class="mdescRight">How long we consider a proposal fresh.  <a href="structripple_1_1ConsensusParms.html#a5df0bb4c2f0d244e323f1f5e9339418d">More...</a><br /></td></tr>
-<tr class="separator:a5df0bb4c2f0d244e323f1f5e9339418d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9cb822397f9939b90e97a267f02c64a0"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ConsensusParms.html#a9cb822397f9939b90e97a267f02c64a0">proposeINTERVAL</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>{12}</td></tr>
-<tr class="memdesc:a9cb822397f9939b90e97a267f02c64a0"><td class="mdescLeft">&#160;</td><td class="mdescRight">How often we force generating a new proposal to keep ours fresh.  <a href="structripple_1_1ConsensusParms.html#a9cb822397f9939b90e97a267f02c64a0">More...</a><br /></td></tr>
-<tr class="separator:a9cb822397f9939b90e97a267f02c64a0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0520be4c7ae7e150218c24cfa09fb2a3"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ConsensusParms.html#a0520be4c7ae7e150218c24cfa09fb2a3">minCONSENSUS_PCT</a> = 80</td></tr>
-<tr class="memdesc:a0520be4c7ae7e150218c24cfa09fb2a3"><td class="mdescLeft">&#160;</td><td class="mdescRight">The percentage threshold above which we can declare consensus.  <a href="structripple_1_1ConsensusParms.html#a0520be4c7ae7e150218c24cfa09fb2a3">More...</a><br /></td></tr>
-<tr class="separator:a0520be4c7ae7e150218c24cfa09fb2a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a14ceaf40f7aa169b4288a4242d890622"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ConsensusParms.html#a14ceaf40f7aa169b4288a4242d890622">ledgerIDLE_INTERVAL</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>{15}</td></tr>
-<tr class="memdesc:a14ceaf40f7aa169b4288a4242d890622"><td class="mdescLeft">&#160;</td><td class="mdescRight">The duration a ledger may remain idle before closing.  <a href="structripple_1_1ConsensusParms.html#a14ceaf40f7aa169b4288a4242d890622">More...</a><br /></td></tr>
-<tr class="separator:a14ceaf40f7aa169b4288a4242d890622"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0939202b250b3e1577d24a0c5723aaed"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ConsensusParms.html#a0939202b250b3e1577d24a0c5723aaed">ledgerMIN_CONSENSUS</a></td></tr>
-<tr class="memdesc:a0939202b250b3e1577d24a0c5723aaed"><td class="mdescLeft">&#160;</td><td class="mdescRight">The number of seconds we wait minimum to ensure participation.  <a href="structripple_1_1ConsensusParms.html#a0939202b250b3e1577d24a0c5723aaed">More...</a><br /></td></tr>
-<tr class="separator:a0939202b250b3e1577d24a0c5723aaed"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6b184628a2010c17241711b652a9536a"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ConsensusParms.html#a6b184628a2010c17241711b652a9536a">ledgerMAX_CONSENSUS</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>{15}</td></tr>
-<tr class="memdesc:a6b184628a2010c17241711b652a9536a"><td class="mdescLeft">&#160;</td><td class="mdescRight">The maximum amount of time to spend pausing for laggards.  <a href="structripple_1_1ConsensusParms.html#a6b184628a2010c17241711b652a9536a">More...</a><br /></td></tr>
-<tr class="separator:a6b184628a2010c17241711b652a9536a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8b3b41a8faceadfb268d0baefaaf64d3"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ConsensusParms.html#a8b3b41a8faceadfb268d0baefaaf64d3">ledgerMIN_CLOSE</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>{2}</td></tr>
-<tr class="memdesc:a8b3b41a8faceadfb268d0baefaaf64d3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Minimum number of seconds to wait to ensure others have computed the LCL.  <a href="structripple_1_1ConsensusParms.html#a8b3b41a8faceadfb268d0baefaaf64d3">More...</a><br /></td></tr>
-<tr class="separator:a8b3b41a8faceadfb268d0baefaaf64d3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a418547e353c28850e08e49b5831ea0db"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ConsensusParms.html#a418547e353c28850e08e49b5831ea0db">ledgerGRANULARITY</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>{1}</td></tr>
-<tr class="memdesc:a418547e353c28850e08e49b5831ea0db"><td class="mdescLeft">&#160;</td><td class="mdescRight">How often we check state or change positions.  <a href="structripple_1_1ConsensusParms.html#a418547e353c28850e08e49b5831ea0db">More...</a><br /></td></tr>
-<tr class="separator:a418547e353c28850e08e49b5831ea0db"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a21638a3d3caa47a696b645f8e6f007d6"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ConsensusParms.html#a21638a3d3caa47a696b645f8e6f007d6">avMIN_CONSENSUS_TIME</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>{5}</td></tr>
-<tr class="memdesc:a21638a3d3caa47a696b645f8e6f007d6"><td class="mdescLeft">&#160;</td><td class="mdescRight">The minimum amount of time to consider the previous round to have taken.  <a href="structripple_1_1ConsensusParms.html#a21638a3d3caa47a696b645f8e6f007d6">More...</a><br /></td></tr>
-<tr class="separator:a21638a3d3caa47a696b645f8e6f007d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a004108774cadaf48b592ab0c5805b865"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ConsensusParms.html#a004108774cadaf48b592ab0c5805b865">avINIT_CONSENSUS_PCT</a> = 50</td></tr>
-<tr class="memdesc:a004108774cadaf48b592ab0c5805b865"><td class="mdescLeft">&#160;</td><td class="mdescRight">Percentage of nodes on our UNL that must vote yes.  <a href="structripple_1_1ConsensusParms.html#a004108774cadaf48b592ab0c5805b865">More...</a><br /></td></tr>
-<tr class="separator:a004108774cadaf48b592ab0c5805b865"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afd06939a6c18d834a0e35c537390b863"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ConsensusParms.html#afd06939a6c18d834a0e35c537390b863">avMID_CONSENSUS_TIME</a> = 50</td></tr>
-<tr class="memdesc:afd06939a6c18d834a0e35c537390b863"><td class="mdescLeft">&#160;</td><td class="mdescRight">Percentage of previous round duration before we advance.  <a href="structripple_1_1ConsensusParms.html#afd06939a6c18d834a0e35c537390b863">More...</a><br /></td></tr>
-<tr class="separator:afd06939a6c18d834a0e35c537390b863"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acc255d46ba3f6c893013ca5b79ba838e"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ConsensusParms.html#acc255d46ba3f6c893013ca5b79ba838e">avMID_CONSENSUS_PCT</a> = 65</td></tr>
-<tr class="memdesc:acc255d46ba3f6c893013ca5b79ba838e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Percentage of nodes that most vote yes after advancing.  <a href="structripple_1_1ConsensusParms.html#acc255d46ba3f6c893013ca5b79ba838e">More...</a><br /></td></tr>
-<tr class="separator:acc255d46ba3f6c893013ca5b79ba838e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a755e41d0905719463a7964d728b1d435"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ConsensusParms.html#a755e41d0905719463a7964d728b1d435">avLATE_CONSENSUS_TIME</a> = 85</td></tr>
-<tr class="memdesc:a755e41d0905719463a7964d728b1d435"><td class="mdescLeft">&#160;</td><td class="mdescRight">Percentage of previous round duration before we advance.  <a href="structripple_1_1ConsensusParms.html#a755e41d0905719463a7964d728b1d435">More...</a><br /></td></tr>
-<tr class="separator:a755e41d0905719463a7964d728b1d435"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2a87c13cce111e3e3e9797bdaa9fdd6c"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ConsensusParms.html#a2a87c13cce111e3e3e9797bdaa9fdd6c">avLATE_CONSENSUS_PCT</a> = 70</td></tr>
-<tr class="memdesc:a2a87c13cce111e3e3e9797bdaa9fdd6c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Percentage of nodes that most vote yes after advancing.  <a href="structripple_1_1ConsensusParms.html#a2a87c13cce111e3e3e9797bdaa9fdd6c">More...</a><br /></td></tr>
-<tr class="separator:a2a87c13cce111e3e3e9797bdaa9fdd6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad02cd693fc6dffda8c60be0ca778d00b"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ConsensusParms.html#ad02cd693fc6dffda8c60be0ca778d00b">avSTUCK_CONSENSUS_TIME</a> = 200</td></tr>
-<tr class="memdesc:ad02cd693fc6dffda8c60be0ca778d00b"><td class="mdescLeft">&#160;</td><td class="mdescRight">Percentage of previous round duration before we are stuck.  <a href="structripple_1_1ConsensusParms.html#ad02cd693fc6dffda8c60be0ca778d00b">More...</a><br /></td></tr>
-<tr class="separator:ad02cd693fc6dffda8c60be0ca778d00b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5c07d50213acde142cb02e9a8a1045a6"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ConsensusParms.html#a5c07d50213acde142cb02e9a8a1045a6">avSTUCK_CONSENSUS_PCT</a> = 95</td></tr>
-<tr class="memdesc:a5c07d50213acde142cb02e9a8a1045a6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Percentage of nodes that must vote yes after we are stuck.  <a href="structripple_1_1ConsensusParms.html#a5c07d50213acde142cb02e9a8a1045a6">More...</a><br /></td></tr>
-<tr class="separator:a5c07d50213acde142cb02e9a8a1045a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab293aad447acb327c2d38c91e71084c4"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ConsensusParms.html#ab293aad447acb327c2d38c91e71084c4">avCT_CONSENSUS_PCT</a> = 75</td></tr>
-<tr class="memdesc:ab293aad447acb327c2d38c91e71084c4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Percentage of nodes required to reach agreement on ledger close time.  <a href="structripple_1_1ConsensusParms.html#ab293aad447acb327c2d38c91e71084c4">More...</a><br /></td></tr>
-<tr class="separator:ab293aad447acb327c2d38c91e71084c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:af46f6719fa81b76f50a00f3a358da031"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ConsensusParms.html#af46f6719fa81b76f50a00f3a358da031">validationVALID_WALL</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::minutes</a>{5}</td></tr>
+<tr class="memdesc:af46f6719fa81b76f50a00f3a358da031"><td class="mdescLeft">&#160;</td><td class="mdescRight">The duration a validation remains current after its ledger's close time.  <a href="structripple_1_1ConsensusParms.html#af46f6719fa81b76f50a00f3a358da031">More...</a><br /></td></tr>
+<tr class="separator:af46f6719fa81b76f50a00f3a358da031"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad12757c0ae7c8c18c900f390280e61d4"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ConsensusParms.html#ad12757c0ae7c8c18c900f390280e61d4">validationVALID_LOCAL</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::minutes</a>{3}</td></tr>
+<tr class="memdesc:ad12757c0ae7c8c18c900f390280e61d4"><td class="mdescLeft">&#160;</td><td class="mdescRight">Duration a validation remains current after first observed.  <a href="structripple_1_1ConsensusParms.html#ad12757c0ae7c8c18c900f390280e61d4">More...</a><br /></td></tr>
+<tr class="separator:ad12757c0ae7c8c18c900f390280e61d4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a43982f132566fd7dfdd43569c4a42c87"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ConsensusParms.html#a43982f132566fd7dfdd43569c4a42c87">validationVALID_EARLY</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::minutes</a>{3}</td></tr>
+<tr class="memdesc:a43982f132566fd7dfdd43569c4a42c87"><td class="mdescLeft">&#160;</td><td class="mdescRight">Duration pre-close in which validations are acceptable.  <a href="structripple_1_1ConsensusParms.html#a43982f132566fd7dfdd43569c4a42c87">More...</a><br /></td></tr>
+<tr class="separator:a43982f132566fd7dfdd43569c4a42c87"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad04895adffa45b3b605d3f30d7172ff8"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ConsensusParms.html#ad04895adffa45b3b605d3f30d7172ff8">proposeFRESHNESS</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>{20}</td></tr>
+<tr class="memdesc:ad04895adffa45b3b605d3f30d7172ff8"><td class="mdescLeft">&#160;</td><td class="mdescRight">How long we consider a proposal fresh.  <a href="structripple_1_1ConsensusParms.html#ad04895adffa45b3b605d3f30d7172ff8">More...</a><br /></td></tr>
+<tr class="separator:ad04895adffa45b3b605d3f30d7172ff8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a392f7d79814a23f396da7081deb41f9f"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ConsensusParms.html#a392f7d79814a23f396da7081deb41f9f">proposeINTERVAL</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>{12}</td></tr>
+<tr class="memdesc:a392f7d79814a23f396da7081deb41f9f"><td class="mdescLeft">&#160;</td><td class="mdescRight">How often we force generating a new proposal to keep ours fresh.  <a href="structripple_1_1ConsensusParms.html#a392f7d79814a23f396da7081deb41f9f">More...</a><br /></td></tr>
+<tr class="separator:a392f7d79814a23f396da7081deb41f9f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa5f2c78f795fbefc6efcac714eafd82a"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ConsensusParms.html#aa5f2c78f795fbefc6efcac714eafd82a">minCONSENSUS_PCT</a> = 80</td></tr>
+<tr class="memdesc:aa5f2c78f795fbefc6efcac714eafd82a"><td class="mdescLeft">&#160;</td><td class="mdescRight">The percentage threshold above which we can declare consensus.  <a href="structripple_1_1ConsensusParms.html#aa5f2c78f795fbefc6efcac714eafd82a">More...</a><br /></td></tr>
+<tr class="separator:aa5f2c78f795fbefc6efcac714eafd82a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a629550655bbc39863563d5bb95b4d9e1"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ConsensusParms.html#a629550655bbc39863563d5bb95b4d9e1">ledgerIDLE_INTERVAL</a></td></tr>
+<tr class="memdesc:a629550655bbc39863563d5bb95b4d9e1"><td class="mdescLeft">&#160;</td><td class="mdescRight">The duration a ledger may remain idle before closing.  <a href="structripple_1_1ConsensusParms.html#a629550655bbc39863563d5bb95b4d9e1">More...</a><br /></td></tr>
+<tr class="separator:a629550655bbc39863563d5bb95b4d9e1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a69ab92aaa5be4cdba15d367996db0555"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ConsensusParms.html#a69ab92aaa5be4cdba15d367996db0555">ledgerMIN_CONSENSUS</a></td></tr>
+<tr class="memdesc:a69ab92aaa5be4cdba15d367996db0555"><td class="mdescLeft">&#160;</td><td class="mdescRight">The number of seconds we wait minimum to ensure participation.  <a href="structripple_1_1ConsensusParms.html#a69ab92aaa5be4cdba15d367996db0555">More...</a><br /></td></tr>
+<tr class="separator:a69ab92aaa5be4cdba15d367996db0555"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeb14363fa9caf4cf957b9028392db7b6"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ConsensusParms.html#aeb14363fa9caf4cf957b9028392db7b6">ledgerMAX_CONSENSUS</a></td></tr>
+<tr class="memdesc:aeb14363fa9caf4cf957b9028392db7b6"><td class="mdescLeft">&#160;</td><td class="mdescRight">The maximum amount of time to spend pausing for laggards.  <a href="structripple_1_1ConsensusParms.html#aeb14363fa9caf4cf957b9028392db7b6">More...</a><br /></td></tr>
+<tr class="separator:aeb14363fa9caf4cf957b9028392db7b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:abd59cb71be3e0076df2282c0b7dc8d88"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ConsensusParms.html#abd59cb71be3e0076df2282c0b7dc8d88">ledgerMIN_CLOSE</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>{2}</td></tr>
+<tr class="memdesc:abd59cb71be3e0076df2282c0b7dc8d88"><td class="mdescLeft">&#160;</td><td class="mdescRight">Minimum number of seconds to wait to ensure others have computed the LCL.  <a href="structripple_1_1ConsensusParms.html#abd59cb71be3e0076df2282c0b7dc8d88">More...</a><br /></td></tr>
+<tr class="separator:abd59cb71be3e0076df2282c0b7dc8d88"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0f51900eb407dde2619c639882d564e7"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ConsensusParms.html#a0f51900eb407dde2619c639882d564e7">ledgerGRANULARITY</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>{1}</td></tr>
+<tr class="memdesc:a0f51900eb407dde2619c639882d564e7"><td class="mdescLeft">&#160;</td><td class="mdescRight">How often we check state or change positions.  <a href="structripple_1_1ConsensusParms.html#a0f51900eb407dde2619c639882d564e7">More...</a><br /></td></tr>
+<tr class="separator:a0f51900eb407dde2619c639882d564e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:afdb49c849cdb9c00be47fb5bd68b9932"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ConsensusParms.html#afdb49c849cdb9c00be47fb5bd68b9932">ledgerABANDON_CONSENSUS_FACTOR</a> = 10</td></tr>
+<tr class="memdesc:afdb49c849cdb9c00be47fb5bd68b9932"><td class="mdescLeft">&#160;</td><td class="mdescRight">How long to wait before completely abandoning consensus.  <a href="structripple_1_1ConsensusParms.html#afdb49c849cdb9c00be47fb5bd68b9932">More...</a><br /></td></tr>
+<tr class="separator:afdb49c849cdb9c00be47fb5bd68b9932"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a74632c7113c812ae6b021a7cabdda8ab"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ConsensusParms.html#a74632c7113c812ae6b021a7cabdda8ab">ledgerABANDON_CONSENSUS</a></td></tr>
+<tr class="memdesc:a74632c7113c812ae6b021a7cabdda8ab"><td class="mdescLeft">&#160;</td><td class="mdescRight">Maximum amount of time to give a consensus round.  <a href="structripple_1_1ConsensusParms.html#a74632c7113c812ae6b021a7cabdda8ab">More...</a><br /></td></tr>
+<tr class="separator:a74632c7113c812ae6b021a7cabdda8ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4300146c39d22dcd8e84918a7674071c"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ConsensusParms.html#a4300146c39d22dcd8e84918a7674071c">avMIN_CONSENSUS_TIME</a></td></tr>
+<tr class="memdesc:a4300146c39d22dcd8e84918a7674071c"><td class="mdescLeft">&#160;</td><td class="mdescRight">The minimum amount of time to consider the previous round to have taken.  <a href="structripple_1_1ConsensusParms.html#a4300146c39d22dcd8e84918a7674071c">More...</a><br /></td></tr>
+<tr class="separator:a4300146c39d22dcd8e84918a7674071c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaf825acb654ae3666751f4c5c2e55e0e"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map</a>&lt; <a class="el" href="structripple_1_1ConsensusParms.html#a57f6518dd29b3e8224b4ef9fe1692230">AvalancheState</a>, <a class="el" href="structripple_1_1ConsensusParms_1_1AvalancheCutoff.html">AvalancheCutoff</a> &gt; const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ConsensusParms.html#aaf825acb654ae3666751f4c5c2e55e0e">avalancheCutoffs</a></td></tr>
+<tr class="memdesc:aaf825acb654ae3666751f4c5c2e55e0e"><td class="mdescLeft">&#160;</td><td class="mdescRight">Map the consensus requirement avalanche state to the amount of time that must pass before moving to that state, the agreement percentage required at that state, and the next state.  <a href="structripple_1_1ConsensusParms.html#aaf825acb654ae3666751f4c5c2e55e0e">More...</a><br /></td></tr>
+<tr class="separator:aaf825acb654ae3666751f4c5c2e55e0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2be96ccac4dda56b1b1c4e041975c55f"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ConsensusParms.html#a2be96ccac4dda56b1b1c4e041975c55f">avCT_CONSENSUS_PCT</a> = 75</td></tr>
+<tr class="memdesc:a2be96ccac4dda56b1b1c4e041975c55f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Percentage of nodes required to reach agreement on ledger close time.  <a href="structripple_1_1ConsensusParms.html#a2be96ccac4dda56b1b1c4e041975c55f">More...</a><br /></td></tr>
+<tr class="separator:a2be96ccac4dda56b1b1c4e041975c55f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3ce38535601e5bc5bb757b66458482e8"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ConsensusParms.html#a3ce38535601e5bc5bb757b66458482e8">avMIN_ROUNDS</a> = 2</td></tr>
+<tr class="memdesc:a3ce38535601e5bc5bb757b66458482e8"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classripple_1_1Number.html">Number</a> of rounds before certain actions can happen.  <a href="structripple_1_1ConsensusParms.html#a3ce38535601e5bc5bb757b66458482e8">More...</a><br /></td></tr>
+<tr class="separator:a3ce38535601e5bc5bb757b66458482e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a04c4f92ab68e9fa35863881e267e484c"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1ConsensusParms.html#a04c4f92ab68e9fa35863881e267e484c">avSTALLED_ROUNDS</a> = 4</td></tr>
+<tr class="memdesc:a04c4f92ab68e9fa35863881e267e484c"><td class="mdescLeft">&#160;</td><td class="mdescRight"><a class="el" href="classripple_1_1Number.html">Number</a> of rounds before a stuck vote is considered unlikely to change because voting stalled.  <a href="structripple_1_1ConsensusParms.html#a04c4f92ab68e9fa35863881e267e484c">More...</a><br /></td></tr>
+<tr class="separator:a04c4f92ab68e9fa35863881e267e484c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p ><a class="el" href="classripple_1_1Consensus.html" title="Generic implementation of consensus algorithm.">Consensus</a> algorithm parameters. </p>
 <p >Parameters which control the consensus algorithm. This are not meant to be changed arbitrarily. </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusParms_8h_source.html#l00033">33</a> of file <a class="el" href="ConsensusParms_8h_source.html">ConsensusParms.h</a>.</p>
-</div><h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
+<p class="definition">Definition at line <a class="el" href="ConsensusParms_8h_source.html#l00038">38</a> of file <a class="el" href="ConsensusParms_8h_source.html">ConsensusParms.h</a>.</p>
+</div><h2 class="groupheader">Member Enumeration Documentation</h2>
+<a id="a57f6518dd29b3e8224b4ef9fe1692230" name="a57f6518dd29b3e8224b4ef9fe1692230"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a57f6518dd29b3e8224b4ef9fe1692230">&#9670;&#160;</a></span>AvalancheState</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">enum <a class="el" href="structripple_1_1ConsensusParms.html#a57f6518dd29b3e8224b4ef9fe1692230">ripple::ConsensusParms::AvalancheState</a></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<table class="fieldtable">
+<tr><th colspan="2">Enumerator</th></tr><tr><td class="fieldname"><a id="a57f6518dd29b3e8224b4ef9fe1692230a907197a76ed91ac8d083b6ffe144db83" name="a57f6518dd29b3e8224b4ef9fe1692230a907197a76ed91ac8d083b6ffe144db83"></a>init&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a57f6518dd29b3e8224b4ef9fe1692230a1c440f383401d07e4b74381cc5f30028" name="a57f6518dd29b3e8224b4ef9fe1692230a1c440f383401d07e4b74381cc5f30028"></a>mid&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a57f6518dd29b3e8224b4ef9fe1692230a7efc64592308ed2a8e3f219f2c888076" name="a57f6518dd29b3e8224b4ef9fe1692230a7efc64592308ed2a8e3f219f2c888076"></a>late&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="a57f6518dd29b3e8224b4ef9fe1692230a2445825cab6adf8a89376e71f7ac1f3f" name="a57f6518dd29b3e8224b4ef9fe1692230a2445825cab6adf8a89376e71f7ac1f3f"></a>stuck&#160;</td><td class="fielddoc"></td></tr>
+</table>
+
+<p class="definition">Definition at line <a class="el" href="ConsensusParms_8h_source.html#l00134">134</a> of file <a class="el" href="ConsensusParms_8h_source.html">ConsensusParms.h</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
 <a id="a9ac9d2698f75ff667ac3a95d61bd1d7a" name="a9ac9d2698f75ff667ac3a95d61bd1d7a"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a9ac9d2698f75ff667ac3a95d61bd1d7a">&#9670;&#160;</a></span>ConsensusParms()</h2>
 
@@ -197,14 +232,14 @@ Public Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="a3e40877fb010dfca02909d191412a773" name="a3e40877fb010dfca02909d191412a773"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3e40877fb010dfca02909d191412a773">&#9670;&#160;</a></span>validationVALID_WALL</h2>
+<a id="af46f6719fa81b76f50a00f3a358da031" name="af46f6719fa81b76f50a00f3a358da031"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#af46f6719fa81b76f50a00f3a358da031">&#9670;&#160;</a></span>validationVALID_WALL</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> ripple::ConsensusParms::validationVALID_WALL = <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::minutes</a>{5}</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> const ripple::ConsensusParms::validationVALID_WALL = <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::minutes</a>{5}</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -212,18 +247,18 @@ Public Attributes</h2></td></tr>
 <p>The duration a validation remains current after its ledger's close time. </p>
 <p >This is a safety to protect against very old validations and the time it takes to adjust the close time accuracy window. </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusParms_8h_source.html#l00046">46</a> of file <a class="el" href="ConsensusParms_8h_source.html">ConsensusParms.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusParms_8h_source.html#l00051">51</a> of file <a class="el" href="ConsensusParms_8h_source.html">ConsensusParms.h</a>.</p>
 
 </div>
 </div>
-<a id="a2b063686198b0f4bf2f46ccfe08d7bcb" name="a2b063686198b0f4bf2f46ccfe08d7bcb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2b063686198b0f4bf2f46ccfe08d7bcb">&#9670;&#160;</a></span>validationVALID_LOCAL</h2>
+<a id="ad12757c0ae7c8c18c900f390280e61d4" name="ad12757c0ae7c8c18c900f390280e61d4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad12757c0ae7c8c18c900f390280e61d4">&#9670;&#160;</a></span>validationVALID_LOCAL</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> ripple::ConsensusParms::validationVALID_LOCAL = <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::minutes</a>{3}</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> const ripple::ConsensusParms::validationVALID_LOCAL = <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::minutes</a>{3}</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -231,18 +266,18 @@ Public Attributes</h2></td></tr>
 <p>Duration a validation remains current after first observed. </p>
 <p >The duration a validation remains current after the time we first saw it. This provides faster recovery in very rare cases where the number of validations produced by the network is lower than normal </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusParms_8h_source.html#l00054">54</a> of file <a class="el" href="ConsensusParms_8h_source.html">ConsensusParms.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusParms_8h_source.html#l00059">59</a> of file <a class="el" href="ConsensusParms_8h_source.html">ConsensusParms.h</a>.</p>
 
 </div>
 </div>
-<a id="a435fdb2c3c08b84da69fdb396d55b41a" name="a435fdb2c3c08b84da69fdb396d55b41a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a435fdb2c3c08b84da69fdb396d55b41a">&#9670;&#160;</a></span>validationVALID_EARLY</h2>
+<a id="a43982f132566fd7dfdd43569c4a42c87" name="a43982f132566fd7dfdd43569c4a42c87"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a43982f132566fd7dfdd43569c4a42c87">&#9670;&#160;</a></span>validationVALID_EARLY</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> ripple::ConsensusParms::validationVALID_EARLY = <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::minutes</a>{3}</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> const ripple::ConsensusParms::validationVALID_EARLY = <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::minutes</a>{3}</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -250,318 +285,308 @@ Public Attributes</h2></td></tr>
 <p>Duration pre-close in which validations are acceptable. </p>
 <p >The number of seconds before a close time that we consider a validation acceptable. This protects against extreme clock errors </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusParms_8h_source.html#l00061">61</a> of file <a class="el" href="ConsensusParms_8h_source.html">ConsensusParms.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusParms_8h_source.html#l00066">66</a> of file <a class="el" href="ConsensusParms_8h_source.html">ConsensusParms.h</a>.</p>
 
 </div>
 </div>
-<a id="a5df0bb4c2f0d244e323f1f5e9339418d" name="a5df0bb4c2f0d244e323f1f5e9339418d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5df0bb4c2f0d244e323f1f5e9339418d">&#9670;&#160;</a></span>proposeFRESHNESS</h2>
+<a id="ad04895adffa45b3b605d3f30d7172ff8" name="ad04895adffa45b3b605d3f30d7172ff8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad04895adffa45b3b605d3f30d7172ff8">&#9670;&#160;</a></span>proposeFRESHNESS</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> ripple::ConsensusParms::proposeFRESHNESS = <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>{20}</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> const ripple::ConsensusParms::proposeFRESHNESS = <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>{20}</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 <p>How long we consider a proposal fresh. </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusParms_8h_source.html#l00064">64</a> of file <a class="el" href="ConsensusParms_8h_source.html">ConsensusParms.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusParms_8h_source.html#l00069">69</a> of file <a class="el" href="ConsensusParms_8h_source.html">ConsensusParms.h</a>.</p>
 
 </div>
 </div>
-<a id="a9cb822397f9939b90e97a267f02c64a0" name="a9cb822397f9939b90e97a267f02c64a0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9cb822397f9939b90e97a267f02c64a0">&#9670;&#160;</a></span>proposeINTERVAL</h2>
+<a id="a392f7d79814a23f396da7081deb41f9f" name="a392f7d79814a23f396da7081deb41f9f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a392f7d79814a23f396da7081deb41f9f">&#9670;&#160;</a></span>proposeINTERVAL</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> ripple::ConsensusParms::proposeINTERVAL = <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>{12}</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a> const ripple::ConsensusParms::proposeINTERVAL = <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>{12}</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 <p>How often we force generating a new proposal to keep ours fresh. </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusParms_8h_source.html#l00067">67</a> of file <a class="el" href="ConsensusParms_8h_source.html">ConsensusParms.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusParms_8h_source.html#l00072">72</a> of file <a class="el" href="ConsensusParms_8h_source.html">ConsensusParms.h</a>.</p>
 
 </div>
 </div>
-<a id="a0520be4c7ae7e150218c24cfa09fb2a3" name="a0520be4c7ae7e150218c24cfa09fb2a3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0520be4c7ae7e150218c24cfa09fb2a3">&#9670;&#160;</a></span>minCONSENSUS_PCT</h2>
+<a id="aa5f2c78f795fbefc6efcac714eafd82a" name="aa5f2c78f795fbefc6efcac714eafd82a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa5f2c78f795fbefc6efcac714eafd82a">&#9670;&#160;</a></span>minCONSENSUS_PCT</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> ripple::ConsensusParms::minCONSENSUS_PCT = 80</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> const ripple::ConsensusParms::minCONSENSUS_PCT = 80</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 <p>The percentage threshold above which we can declare consensus. </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusParms_8h_source.html#l00074">74</a> of file <a class="el" href="ConsensusParms_8h_source.html">ConsensusParms.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusParms_8h_source.html#l00079">79</a> of file <a class="el" href="ConsensusParms_8h_source.html">ConsensusParms.h</a>.</p>
 
 </div>
 </div>
-<a id="a14ceaf40f7aa169b4288a4242d890622" name="a14ceaf40f7aa169b4288a4242d890622"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a14ceaf40f7aa169b4288a4242d890622">&#9670;&#160;</a></span>ledgerIDLE_INTERVAL</h2>
+<a id="a629550655bbc39863563d5bb95b4d9e1" name="a629550655bbc39863563d5bb95b4d9e1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a629550655bbc39863563d5bb95b4d9e1">&#9670;&#160;</a></span>ledgerIDLE_INTERVAL</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> ripple::ConsensusParms::ledgerIDLE_INTERVAL = <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>{15}</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> const ripple::ConsensusParms::ledgerIDLE_INTERVAL</td>
         </tr>
       </table>
 </div><div class="memdoc">
-
+<b>Initial value:</b><div class="fragment"><div class="line">=</div>
+<div class="line">        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>{15}</div>
+<div class="ttc" id="aduration_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a></div></div>
+</div><!-- fragment -->
 <p>The duration a ledger may remain idle before closing. </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusParms_8h_source.html#l00077">77</a> of file <a class="el" href="ConsensusParms_8h_source.html">ConsensusParms.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusParms_8h_source.html#l00082">82</a> of file <a class="el" href="ConsensusParms_8h_source.html">ConsensusParms.h</a>.</p>
 
 </div>
 </div>
-<a id="a0939202b250b3e1577d24a0c5723aaed" name="a0939202b250b3e1577d24a0c5723aaed"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0939202b250b3e1577d24a0c5723aaed">&#9670;&#160;</a></span>ledgerMIN_CONSENSUS</h2>
+<a id="a69ab92aaa5be4cdba15d367996db0555" name="a69ab92aaa5be4cdba15d367996db0555"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a69ab92aaa5be4cdba15d367996db0555">&#9670;&#160;</a></span>ledgerMIN_CONSENSUS</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> ripple::ConsensusParms::ledgerMIN_CONSENSUS</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> const ripple::ConsensusParms::ledgerMIN_CONSENSUS</td>
         </tr>
       </table>
 </div><div class="memdoc">
 <b>Initial value:</b><div class="fragment"><div class="line">=</div>
 <div class="line">        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a>{1950}</div>
-<div class="ttc" id="aduration_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a></div></div>
 </div><!-- fragment -->
 <p>The number of seconds we wait minimum to ensure participation. </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusParms_8h_source.html#l00080">80</a> of file <a class="el" href="ConsensusParms_8h_source.html">ConsensusParms.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusParms_8h_source.html#l00086">86</a> of file <a class="el" href="ConsensusParms_8h_source.html">ConsensusParms.h</a>.</p>
 
 </div>
 </div>
-<a id="a6b184628a2010c17241711b652a9536a" name="a6b184628a2010c17241711b652a9536a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6b184628a2010c17241711b652a9536a">&#9670;&#160;</a></span>ledgerMAX_CONSENSUS</h2>
+<a id="aeb14363fa9caf4cf957b9028392db7b6" name="aeb14363fa9caf4cf957b9028392db7b6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeb14363fa9caf4cf957b9028392db7b6">&#9670;&#160;</a></span>ledgerMAX_CONSENSUS</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> ripple::ConsensusParms::ledgerMAX_CONSENSUS = <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>{15}</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> const ripple::ConsensusParms::ledgerMAX_CONSENSUS</td>
         </tr>
       </table>
 </div><div class="memdoc">
-
+<b>Initial value:</b><div class="fragment"><div class="line">=</div>
+<div class="line">        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>{15}</div>
+</div><!-- fragment -->
 <p>The maximum amount of time to spend pausing for laggards. </p>
 <p >This should be sufficiently less than validationFRESHNESS so that validators don't appear to be offline that are merely waiting for laggards. </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusParms_8h_source.html#l00089">89</a> of file <a class="el" href="ConsensusParms_8h_source.html">ConsensusParms.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusParms_8h_source.html#l00095">95</a> of file <a class="el" href="ConsensusParms_8h_source.html">ConsensusParms.h</a>.</p>
 
 </div>
 </div>
-<a id="a8b3b41a8faceadfb268d0baefaaf64d3" name="a8b3b41a8faceadfb268d0baefaaf64d3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8b3b41a8faceadfb268d0baefaaf64d3">&#9670;&#160;</a></span>ledgerMIN_CLOSE</h2>
+<a id="abd59cb71be3e0076df2282c0b7dc8d88" name="abd59cb71be3e0076df2282c0b7dc8d88"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#abd59cb71be3e0076df2282c0b7dc8d88">&#9670;&#160;</a></span>ledgerMIN_CLOSE</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> ripple::ConsensusParms::ledgerMIN_CLOSE = <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>{2}</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> const ripple::ConsensusParms::ledgerMIN_CLOSE = <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>{2}</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 <p>Minimum number of seconds to wait to ensure others have computed the LCL. </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusParms_8h_source.html#l00092">92</a> of file <a class="el" href="ConsensusParms_8h_source.html">ConsensusParms.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusParms_8h_source.html#l00099">99</a> of file <a class="el" href="ConsensusParms_8h_source.html">ConsensusParms.h</a>.</p>
 
 </div>
 </div>
-<a id="a418547e353c28850e08e49b5831ea0db" name="a418547e353c28850e08e49b5831ea0db"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a418547e353c28850e08e49b5831ea0db">&#9670;&#160;</a></span>ledgerGRANULARITY</h2>
+<a id="a0f51900eb407dde2619c639882d564e7" name="a0f51900eb407dde2619c639882d564e7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0f51900eb407dde2619c639882d564e7">&#9670;&#160;</a></span>ledgerGRANULARITY</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> ripple::ConsensusParms::ledgerGRANULARITY = <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>{1}</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> const ripple::ConsensusParms::ledgerGRANULARITY = <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>{1}</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 <p>How often we check state or change positions. </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusParms_8h_source.html#l00095">95</a> of file <a class="el" href="ConsensusParms_8h_source.html">ConsensusParms.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusParms_8h_source.html#l00102">102</a> of file <a class="el" href="ConsensusParms_8h_source.html">ConsensusParms.h</a>.</p>
 
 </div>
 </div>
-<a id="a21638a3d3caa47a696b645f8e6f007d6" name="a21638a3d3caa47a696b645f8e6f007d6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a21638a3d3caa47a696b645f8e6f007d6">&#9670;&#160;</a></span>avMIN_CONSENSUS_TIME</h2>
+<a id="afdb49c849cdb9c00be47fb5bd68b9932" name="afdb49c849cdb9c00be47fb5bd68b9932"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#afdb49c849cdb9c00be47fb5bd68b9932">&#9670;&#160;</a></span>ledgerABANDON_CONSENSUS_FACTOR</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> ripple::ConsensusParms::avMIN_CONSENSUS_TIME = <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>{5}</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> const ripple::ConsensusParms::ledgerABANDON_CONSENSUS_FACTOR = 10</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
+<p>How long to wait before completely abandoning consensus. </p>
+
+<p class="definition">Definition at line <a class="el" href="ConsensusParms_8h_source.html#l00105">105</a> of file <a class="el" href="ConsensusParms_8h_source.html">ConsensusParms.h</a>.</p>
+
+</div>
+</div>
+<a id="a74632c7113c812ae6b021a7cabdda8ab" name="a74632c7113c812ae6b021a7cabdda8ab"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a74632c7113c812ae6b021a7cabdda8ab">&#9670;&#160;</a></span>ledgerABANDON_CONSENSUS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> const ripple::ConsensusParms::ledgerABANDON_CONSENSUS</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<b>Initial value:</b><div class="fragment"><div class="line">=</div>
+<div class="line">        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>{120}</div>
+</div><!-- fragment -->
+<p>Maximum amount of time to give a consensus round. </p>
+<p >Does not include the time to build the LCL, so there is no reason for a round to go this long, regardless of how big the ledger is. </p>
+
+<p class="definition">Definition at line <a class="el" href="ConsensusParms_8h_source.html#l00113">113</a> of file <a class="el" href="ConsensusParms_8h_source.html">ConsensusParms.h</a>.</p>
+
+</div>
+</div>
+<a id="a4300146c39d22dcd8e84918a7674071c" name="a4300146c39d22dcd8e84918a7674071c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4300146c39d22dcd8e84918a7674071c">&#9670;&#160;</a></span>avMIN_CONSENSUS_TIME</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::milliseconds</a> const ripple::ConsensusParms::avMIN_CONSENSUS_TIME</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+<b>Initial value:</b><div class="fragment"><div class="line">=</div>
+<div class="line">        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::seconds</a>{5}</div>
+</div><!-- fragment -->
 <p>The minimum amount of time to consider the previous round to have taken. </p>
 <p >The minimum amount of time to consider the previous round to have taken. This ensures that there is an opportunity for a round at each avalanche threshold even if the previous consensus was very fast. This should be at least twice the interval between proposals (0.7s) divided by the interval between mid and late consensus ([85-50]/100). </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusParms_8h_source.html#l00107">107</a> of file <a class="el" href="ConsensusParms_8h_source.html">ConsensusParms.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusParms_8h_source.html#l00126">126</a> of file <a class="el" href="ConsensusParms_8h_source.html">ConsensusParms.h</a>.</p>
 
 </div>
 </div>
-<a id="a004108774cadaf48b592ab0c5805b865" name="a004108774cadaf48b592ab0c5805b865"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a004108774cadaf48b592ab0c5805b865">&#9670;&#160;</a></span>avINIT_CONSENSUS_PCT</h2>
+<a id="aaf825acb654ae3666751f4c5c2e55e0e" name="aaf825acb654ae3666751f4c5c2e55e0e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaf825acb654ae3666751f4c5c2e55e0e">&#9670;&#160;</a></span>avalancheCutoffs</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> ripple::ConsensusParms::avINIT_CONSENSUS_PCT = 50</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map</a>&lt;<a class="el" href="structripple_1_1ConsensusParms.html#a57f6518dd29b3e8224b4ef9fe1692230">AvalancheState</a>, <a class="el" href="structripple_1_1ConsensusParms_1_1AvalancheCutoff.html">AvalancheCutoff</a>&gt; const ripple::ConsensusParms::avalancheCutoffs</td>
         </tr>
       </table>
 </div><div class="memdoc">
+<b>Initial value:</b><div class="fragment"><div class="line">{</div>
+<div class="line">        </div>
+<div class="line">        </div>
+<div class="line">        {<a class="code hl_enumvalue" href="structripple_1_1ConsensusParms.html#a57f6518dd29b3e8224b4ef9fe1692230a907197a76ed91ac8d083b6ffe144db83">init</a>, {0, 50, <a class="code hl_enumvalue" href="structripple_1_1ConsensusParms.html#a57f6518dd29b3e8224b4ef9fe1692230a1c440f383401d07e4b74381cc5f30028">mid</a>}},</div>
+<div class="line">        </div>
+<div class="line">        </div>
+<div class="line">        {<a class="code hl_enumvalue" href="structripple_1_1ConsensusParms.html#a57f6518dd29b3e8224b4ef9fe1692230a1c440f383401d07e4b74381cc5f30028">mid</a>, {50, 65, <a class="code hl_enumvalue" href="structripple_1_1ConsensusParms.html#a57f6518dd29b3e8224b4ef9fe1692230a7efc64592308ed2a8e3f219f2c888076">late</a>}},</div>
+<div class="line">        </div>
+<div class="line">        {<a class="code hl_enumvalue" href="structripple_1_1ConsensusParms.html#a57f6518dd29b3e8224b4ef9fe1692230a7efc64592308ed2a8e3f219f2c888076">late</a>, {85, 70, <a class="code hl_enumvalue" href="structripple_1_1ConsensusParms.html#a57f6518dd29b3e8224b4ef9fe1692230a2445825cab6adf8a89376e71f7ac1f3f">stuck</a>}},</div>
+<div class="line">        </div>
+<div class="line">        {<a class="code hl_enumvalue" href="structripple_1_1ConsensusParms.html#a57f6518dd29b3e8224b4ef9fe1692230a2445825cab6adf8a89376e71f7ac1f3f">stuck</a>, {200, 95, <a class="code hl_enumvalue" href="structripple_1_1ConsensusParms.html#a57f6518dd29b3e8224b4ef9fe1692230a2445825cab6adf8a89376e71f7ac1f3f">stuck</a>}},</div>
+<div class="line">    }</div>
+<div class="ttc" id="astructripple_1_1ConsensusParms_html_a57f6518dd29b3e8224b4ef9fe1692230a1c440f383401d07e4b74381cc5f30028"><div class="ttname"><a href="structripple_1_1ConsensusParms.html#a57f6518dd29b3e8224b4ef9fe1692230a1c440f383401d07e4b74381cc5f30028">ripple::ConsensusParms::mid</a></div><div class="ttdeci">@ mid</div><div class="ttdef"><b>Definition:</b> <a href="ConsensusParms_8h_source.html#l00134">ConsensusParms.h:134</a></div></div>
+<div class="ttc" id="astructripple_1_1ConsensusParms_html_a57f6518dd29b3e8224b4ef9fe1692230a2445825cab6adf8a89376e71f7ac1f3f"><div class="ttname"><a href="structripple_1_1ConsensusParms.html#a57f6518dd29b3e8224b4ef9fe1692230a2445825cab6adf8a89376e71f7ac1f3f">ripple::ConsensusParms::stuck</a></div><div class="ttdeci">@ stuck</div><div class="ttdef"><b>Definition:</b> <a href="ConsensusParms_8h_source.html#l00134">ConsensusParms.h:134</a></div></div>
+<div class="ttc" id="astructripple_1_1ConsensusParms_html_a57f6518dd29b3e8224b4ef9fe1692230a7efc64592308ed2a8e3f219f2c888076"><div class="ttname"><a href="structripple_1_1ConsensusParms.html#a57f6518dd29b3e8224b4ef9fe1692230a7efc64592308ed2a8e3f219f2c888076">ripple::ConsensusParms::late</a></div><div class="ttdeci">@ late</div><div class="ttdef"><b>Definition:</b> <a href="ConsensusParms_8h_source.html#l00134">ConsensusParms.h:134</a></div></div>
+<div class="ttc" id="astructripple_1_1ConsensusParms_html_a57f6518dd29b3e8224b4ef9fe1692230a907197a76ed91ac8d083b6ffe144db83"><div class="ttname"><a href="structripple_1_1ConsensusParms.html#a57f6518dd29b3e8224b4ef9fe1692230a907197a76ed91ac8d083b6ffe144db83">ripple::ConsensusParms::init</a></div><div class="ttdeci">@ init</div><div class="ttdef"><b>Definition:</b> <a href="ConsensusParms_8h_source.html#l00134">ConsensusParms.h:134</a></div></div>
+</div><!-- fragment -->
+<p>Map the consensus requirement avalanche state to the amount of time that must pass before moving to that state, the agreement percentage required at that state, and the next state. </p>
+<p >"stuck" loops back on itself because once we're stuck, we're stuck. This structure allows for "looping" of states if needed. </p>
 
-<p>Percentage of nodes on our UNL that must vote yes. </p>
-
-<p class="definition">Definition at line <a class="el" href="ConsensusParms_8h_source.html#l00116">116</a> of file <a class="el" href="ConsensusParms_8h_source.html">ConsensusParms.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusParms_8h_source.html#l00146">146</a> of file <a class="el" href="ConsensusParms_8h_source.html">ConsensusParms.h</a>.</p>
 
 </div>
 </div>
-<a id="afd06939a6c18d834a0e35c537390b863" name="afd06939a6c18d834a0e35c537390b863"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afd06939a6c18d834a0e35c537390b863">&#9670;&#160;</a></span>avMID_CONSENSUS_TIME</h2>
+<a id="a2be96ccac4dda56b1b1c4e041975c55f" name="a2be96ccac4dda56b1b1c4e041975c55f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2be96ccac4dda56b1b1c4e041975c55f">&#9670;&#160;</a></span>avCT_CONSENSUS_PCT</h2>
 
 <div class="memitem">
 <div class="memproto">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> ripple::ConsensusParms::avMID_CONSENSUS_TIME = 50</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Percentage of previous round duration before we advance. </p>
-
-<p class="definition">Definition at line <a class="el" href="ConsensusParms_8h_source.html#l00119">119</a> of file <a class="el" href="ConsensusParms_8h_source.html">ConsensusParms.h</a>.</p>
-
-</div>
-</div>
-<a id="acc255d46ba3f6c893013ca5b79ba838e" name="acc255d46ba3f6c893013ca5b79ba838e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acc255d46ba3f6c893013ca5b79ba838e">&#9670;&#160;</a></span>avMID_CONSENSUS_PCT</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> ripple::ConsensusParms::avMID_CONSENSUS_PCT = 65</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Percentage of nodes that most vote yes after advancing. </p>
-
-<p class="definition">Definition at line <a class="el" href="ConsensusParms_8h_source.html#l00122">122</a> of file <a class="el" href="ConsensusParms_8h_source.html">ConsensusParms.h</a>.</p>
-
-</div>
-</div>
-<a id="a755e41d0905719463a7964d728b1d435" name="a755e41d0905719463a7964d728b1d435"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a755e41d0905719463a7964d728b1d435">&#9670;&#160;</a></span>avLATE_CONSENSUS_TIME</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> ripple::ConsensusParms::avLATE_CONSENSUS_TIME = 85</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Percentage of previous round duration before we advance. </p>
-
-<p class="definition">Definition at line <a class="el" href="ConsensusParms_8h_source.html#l00125">125</a> of file <a class="el" href="ConsensusParms_8h_source.html">ConsensusParms.h</a>.</p>
-
-</div>
-</div>
-<a id="a2a87c13cce111e3e3e9797bdaa9fdd6c" name="a2a87c13cce111e3e3e9797bdaa9fdd6c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2a87c13cce111e3e3e9797bdaa9fdd6c">&#9670;&#160;</a></span>avLATE_CONSENSUS_PCT</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> ripple::ConsensusParms::avLATE_CONSENSUS_PCT = 70</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Percentage of nodes that most vote yes after advancing. </p>
-
-<p class="definition">Definition at line <a class="el" href="ConsensusParms_8h_source.html#l00128">128</a> of file <a class="el" href="ConsensusParms_8h_source.html">ConsensusParms.h</a>.</p>
-
-</div>
-</div>
-<a id="ad02cd693fc6dffda8c60be0ca778d00b" name="ad02cd693fc6dffda8c60be0ca778d00b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad02cd693fc6dffda8c60be0ca778d00b">&#9670;&#160;</a></span>avSTUCK_CONSENSUS_TIME</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> ripple::ConsensusParms::avSTUCK_CONSENSUS_TIME = 200</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Percentage of previous round duration before we are stuck. </p>
-
-<p class="definition">Definition at line <a class="el" href="ConsensusParms_8h_source.html#l00131">131</a> of file <a class="el" href="ConsensusParms_8h_source.html">ConsensusParms.h</a>.</p>
-
-</div>
-</div>
-<a id="a5c07d50213acde142cb02e9a8a1045a6" name="a5c07d50213acde142cb02e9a8a1045a6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5c07d50213acde142cb02e9a8a1045a6">&#9670;&#160;</a></span>avSTUCK_CONSENSUS_PCT</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> ripple::ConsensusParms::avSTUCK_CONSENSUS_PCT = 95</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Percentage of nodes that must vote yes after we are stuck. </p>
-
-<p class="definition">Definition at line <a class="el" href="ConsensusParms_8h_source.html#l00134">134</a> of file <a class="el" href="ConsensusParms_8h_source.html">ConsensusParms.h</a>.</p>
-
-</div>
-</div>
-<a id="ab293aad447acb327c2d38c91e71084c4" name="ab293aad447acb327c2d38c91e71084c4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab293aad447acb327c2d38c91e71084c4">&#9670;&#160;</a></span>avCT_CONSENSUS_PCT</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> ripple::ConsensusParms::avCT_CONSENSUS_PCT = 75</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> const ripple::ConsensusParms::avCT_CONSENSUS_PCT = 75</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
 <p>Percentage of nodes required to reach agreement on ledger close time. </p>
 
-<p class="definition">Definition at line <a class="el" href="ConsensusParms_8h_source.html#l00137">137</a> of file <a class="el" href="ConsensusParms_8h_source.html">ConsensusParms.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="ConsensusParms_8h_source.html#l00160">160</a> of file <a class="el" href="ConsensusParms_8h_source.html">ConsensusParms.h</a>.</p>
+
+</div>
+</div>
+<a id="a3ce38535601e5bc5bb757b66458482e8" name="a3ce38535601e5bc5bb757b66458482e8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3ce38535601e5bc5bb757b66458482e8">&#9670;&#160;</a></span>avMIN_ROUNDS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> const ripple::ConsensusParms::avMIN_ROUNDS = 2</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><a class="el" href="classripple_1_1Number.html">Number</a> of rounds before certain actions can happen. </p>
+
+<p class="definition">Definition at line <a class="el" href="ConsensusParms_8h_source.html#l00165">165</a> of file <a class="el" href="ConsensusParms_8h_source.html">ConsensusParms.h</a>.</p>
+
+</div>
+</div>
+<a id="a04c4f92ab68e9fa35863881e267e484c" name="a04c4f92ab68e9fa35863881e267e484c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a04c4f92ab68e9fa35863881e267e484c">&#9670;&#160;</a></span>avSTALLED_ROUNDS</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> const ripple::ConsensusParms::avSTALLED_ROUNDS = 4</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p><a class="el" href="classripple_1_1Number.html">Number</a> of rounds before a stuck vote is considered unlikely to change because voting stalled. </p>
+
+<p class="definition">Definition at line <a class="el" href="ConsensusParms_8h_source.html#l00169">169</a> of file <a class="el" href="ConsensusParms_8h_source.html">ConsensusParms.h</a>.</p>
 
 </div>
 </div>

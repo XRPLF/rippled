@@ -1,3 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$structripple_1_1SField_1_1private__access__tag__t.html" title=" " alt="" coords="5,5,165,45"/>
+<area shape="rect" id="node1" href="$classripple_1_1SField.html" title="Identifies fields." alt="" coords="5,5,112,31"/>
+<area shape="rect" id="node2" href="$structripple_1_1TypedField.html" title="A field with a type known at compile time." alt="" coords="160,5,335,31"/>
 </map>
