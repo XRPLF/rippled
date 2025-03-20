@@ -21,11 +21,12 @@
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/misc/HashRouter.h>
 #include <xrpld/app/misc/Transaction.h>
+#include <xrpld/app/misc/TxQ.h>
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/GRPCHandlers.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/TransactionSign.h>
+
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/STParsedJSON.h>
@@ -142,6 +143,13 @@ autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
         if (!seq)
             return seq.error();
         tx_json[sfSequence.jsonName] = *seq;
+    }
+
+    if (!tx_json.isMember(jss::NetworkID))
+    {
+        auto const networkId = context.app.config().NETWORK_ID;
+        if (networkId > 1024)
+            tx_json[jss::NetworkID] = to_string(networkId);
     }
 
     return std::nullopt;
@@ -297,6 +305,15 @@ doSimulate(RPC::JsonContext& context)
         !context.params[jss::binary].isBool())
     {
         return RPC::invalid_field_error(jss::binary);
+    }
+
+    for (auto const field :
+         {jss::secret, jss::seed, jss::seed_hex, jss::passphrase})
+    {
+        if (context.params.isMember(field))
+        {
+            return RPC::invalid_field_error(field);
+        }
     }
 
     // get JSON equivalent of transaction

@@ -15,10 +15,10 @@ required_conan_version = ">=1.53.0"
 
 class RocksDBConan(ConanFile):
     name = "rocksdb"
-    homepage = "https://github.com/facebook/rocksdb"
+    description = "A library that provides an embeddable, persistent key-value store for fast storage"
     license = ("GPL-2.0-only", "Apache-2.0")
     url = "https://github.com/conan-io/conan-center-index"
-    description = "A library that provides an embeddable, persistent key-value store for fast storage"
+    homepage = "https://github.com/facebook/rocksdb"
     topics = ("database", "leveldb", "facebook", "key-value")
     package_type = "library"
     settings = "os", "arch", "compiler", "build_type"
@@ -58,12 +58,12 @@ class RocksDBConan(ConanFile):
     @property
     def _compilers_minimum_version(self):
         return {} if self._min_cppstd == "11" else {
-                "apple-clang": "10",
-                "clang": "7",
-                "gcc": "7",
-                "msvc": "191",
-                "Visual Studio": "15",
-            }
+            "apple-clang": "10",
+            "clang": "7",
+            "gcc": "7",
+            "msvc": "191",
+            "Visual Studio": "15",
+        }
 
     def export_sources(self):
         export_conandata_patches(self)
@@ -89,13 +89,13 @@ class RocksDBConan(ConanFile):
         if self.options.with_snappy:
             self.requires("snappy/1.1.10")
         if self.options.with_lz4:
-            self.requires("lz4/1.9.4")
+            self.requires("lz4/1.10.0")
         if self.options.with_zlib:
             self.requires("zlib/[>=1.2.11 <2]")
         if self.options.with_zstd:
-            self.requires("zstd/1.5.5")
+            self.requires("zstd/1.5.6")
         if self.options.get_safe("with_tbb"):
-            self.requires("onetbb/2021.10.0")
+            self.requires("onetbb/2021.12.0")
         if self.options.with_jemalloc:
             self.requires("jemalloc/5.3.0")
 
@@ -115,9 +115,9 @@ class RocksDBConan(ConanFile):
         check_min_vs(self, "191")
 
         if self.version == "6.20.3" and \
-           self.settings.os == "Linux" and \
-           self.settings.compiler == "gcc" and \
-           Version(self.settings.compiler.version) < "5":
+                self.settings.os == "Linux" and \
+                self.settings.compiler == "gcc" and \
+                Version(self.settings.compiler.version) < "5":
             raise ConanInvalidConfiguration("Rocksdb 6.20.3 is not compilable with gcc <5.") # See https://github.com/facebook/rocksdb/issues/3522
 
     def source(self):
@@ -163,6 +163,8 @@ class RocksDBConan(ConanFile):
         if self.options.with_jemalloc:
             deps.set_property("jemalloc", "cmake_file_name", "JeMalloc")
             deps.set_property("jemalloc", "cmake_target_name", "JeMalloc::JeMalloc")
+        if self.options.with_zstd:
+            deps.set_property("zstd", "cmake_target_name", "zstd::zstd")
         deps.generate()
 
     def build(self):

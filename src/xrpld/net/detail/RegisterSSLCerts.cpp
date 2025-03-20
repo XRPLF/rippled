@@ -16,17 +16,20 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
+
 #include <xrpld/net/RegisterSSLCerts.h>
-#include <boost/predef.h>
 
 #if BOOST_OS_WINDOWS
 #include <boost/asio/ssl/error.hpp>
 #include <boost/system/error_code.hpp>
-#include <memory>
+
 #include <openssl/err.h>
 #include <openssl/ssl.h>
 #include <openssl/x509.h>
+
 #include <wincrypt.h>
+
+#include <memory>
 #endif
 
 namespace ripple {

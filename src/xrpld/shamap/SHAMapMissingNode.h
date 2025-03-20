@@ -21,7 +21,9 @@
 #define RIPPLE_SHAMAP_SHAMAPMISSINGNODE_H_INCLUDED
 
 #include <xrpld/shamap/SHAMapTreeNode.h>
+
 #include <xrpl/basics/base_uint.h>
+
 #include <iosfwd>
 #include <stdexcept>
 #include <string>

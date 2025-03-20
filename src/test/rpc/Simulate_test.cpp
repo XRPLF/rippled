@@ -20,8 +20,10 @@
 #include <test/jtx.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/envconfig.h>
+
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/rpc/CTID.h>
+
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STParsedJSON.h>
@@ -93,13 +95,17 @@ class Simulate_test : public beast::unit_test::suite
             validate,
         bool testSerialized = true)
     {
+        env.close();
+
         Json::Value params;
         params[jss::tx_json] = tx;
         validate(env.rpc("json", "simulate", to_string(params)), tx);
+
         params[jss::binary] = true;
         validate(env.rpc("json", "simulate", to_string(params)), tx);
         validate(env.rpc("simulate", to_string(tx)), tx);
         validate(env.rpc("simulate", to_string(tx), "binary"), tx);
+
         if (testSerialized)
         {
             // This cannot be tested in the multisign autofill scenario
@@ -119,6 +125,10 @@ class Simulate_test : public beast::unit_test::suite
             validate(env.rpc("simulate", tx_blob), tx);
             validate(env.rpc("simulate", tx_blob, "binary"), tx);
         }
+
+        BEAST_EXPECTS(
+            env.current()->txCount() == 0,
+            std::to_string(env.current()->txCount()));
     }
 
     Json::Value
@@ -234,6 +244,58 @@ class Simulate_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 resp[jss::result][jss::error_message] ==
                 "Invalid field 'tx_json', not object.");
+        }
+        {
+            // `seed` field included
+            Json::Value params = Json::objectValue;
+            params[jss::seed] = "doesnt_matter";
+            Json::Value tx_json = Json::objectValue;
+            tx_json[jss::TransactionType] = jss::AccountSet;
+            tx_json[jss::Account] = env.master.human();
+            params[jss::tx_json] = tx_json;
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Invalid field 'seed'.");
+        }
+        {
+            // `secret` field included
+            Json::Value params = Json::objectValue;
+            params[jss::secret] = "doesnt_matter";
+            Json::Value tx_json = Json::objectValue;
+            tx_json[jss::TransactionType] = jss::AccountSet;
+            tx_json[jss::Account] = env.master.human();
+            params[jss::tx_json] = tx_json;
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Invalid field 'secret'.");
+        }
+        {
+            // `seed_hex` field included
+            Json::Value params = Json::objectValue;
+            params[jss::seed_hex] = "doesnt_matter";
+            Json::Value tx_json = Json::objectValue;
+            tx_json[jss::TransactionType] = jss::AccountSet;
+            tx_json[jss::Account] = env.master.human();
+            params[jss::tx_json] = tx_json;
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Invalid field 'seed_hex'.");
+        }
+        {
+            // `passphrase` field included
+            Json::Value params = Json::objectValue;
+            params[jss::passphrase] = "doesnt_matter";
+            Json::Value tx_json = Json::objectValue;
+            tx_json[jss::TransactionType] = jss::AccountSet;
+            tx_json[jss::Account] = env.master.human();
+            params[jss::tx_json] = tx_json;
+            auto const resp = env.rpc("json", "simulate", to_string(params));
+            BEAST_EXPECT(
+                resp[jss::result][jss::error_message] ==
+                "Invalid field 'passphrase'.");
         }
         {
             // Invalid transaction
@@ -412,7 +474,10 @@ class Simulate_test : public beast::unit_test::suite
         testcase("Successful transaction");
 
         using namespace jtx;
-        Env env(*this);
+        Env env{*this, envconfig([&](std::unique_ptr<Config> cfg) {
+                    cfg->NETWORK_ID = 0;
+                    return cfg;
+                })};
         static auto const newDomain = "123ABC";
 
         {
@@ -473,8 +538,6 @@ class Simulate_test : public beast::unit_test::suite
 
             // test without autofill
             testTx(env, tx, validateOutput);
-
-            // TODO: check that the ledger wasn't affected
         }
     }
 
@@ -523,8 +586,6 @@ class Simulate_test : public beast::unit_test::suite
 
             // test without autofill
             testTx(env, tx, testSimulation);
-
-            // TODO: check that the ledger wasn't affected
         }
     }
 
@@ -604,8 +665,6 @@ class Simulate_test : public beast::unit_test::suite
 
             // test without autofill
             testTx(env, tx, testSimulation);
-
-            // TODO: check that the ledger wasn't affected
         }
     }
 
@@ -625,6 +684,7 @@ class Simulate_test : public beast::unit_test::suite
 
         // set up valid multisign
         env(signers(alice, 1, {{becky, 1}, {carol, 1}}));
+        env.close();
 
         {
             auto validateOutput = [&](Json::Value const& resp,
@@ -662,7 +722,7 @@ class Simulate_test : public beast::unit_test::suite
                             BEAST_EXPECT(finalFields[sfDomain] == newDomain);
                         }
                     }
-                    BEAST_EXPECT(metadata[sfTransactionIndex.jsonName] == 1);
+                    BEAST_EXPECT(metadata[sfTransactionIndex.jsonName] == 0);
                     BEAST_EXPECT(
                         metadata[sfTransactionResult.jsonName] == "tesSUCCESS");
                 }
@@ -697,8 +757,6 @@ class Simulate_test : public beast::unit_test::suite
 
             // test without autofill
             testTx(env, tx, validateOutput);
-
-            // TODO: check that the ledger wasn't affected
         }
     }
 
@@ -754,8 +812,6 @@ class Simulate_test : public beast::unit_test::suite
 
             // test without autofill
             testTx(env, tx, testSimulation);
-
-            // TODO: check that the ledger wasn't affected
         }
     }
 
@@ -825,8 +881,6 @@ class Simulate_test : public beast::unit_test::suite
 
             // test without autofill
             testTx(env, tx, validateOutput);
-
-            // TODO: check that the ledger wasn't affected
         }
     }
 
@@ -948,6 +1002,80 @@ class Simulate_test : public beast::unit_test::suite
         BEAST_EXPECT(ownerCount(env, subject) == 0);
     }
 
+    void
+    testSuccessfulTransactionNetworkID()
+    {
+        testcase("Successful transaction with a custom network ID");
+
+        using namespace jtx;
+        Env env{*this, envconfig([&](std::unique_ptr<Config> cfg) {
+                    cfg->NETWORK_ID = 1025;
+                    return cfg;
+                })};
+        static auto const newDomain = "123ABC";
+
+        {
+            auto validateOutput = [&](Json::Value const& resp,
+                                      Json::Value const& tx) {
+                auto result = resp[jss::result];
+                checkBasicReturnValidity(
+                    result, tx, 1, env.current()->fees().base);
+
+                BEAST_EXPECT(result[jss::engine_result] == "tesSUCCESS");
+                BEAST_EXPECT(result[jss::engine_result_code] == 0);
+                BEAST_EXPECT(
+                    result[jss::engine_result_message] ==
+                    "The simulated transaction would have been applied.");
+
+                if (BEAST_EXPECT(
+                        result.isMember(jss::meta) ||
+                        result.isMember(jss::meta_blob)))
+                {
+                    Json::Value const metadata = getJsonMetadata(result);
+
+                    if (BEAST_EXPECT(
+                            metadata.isMember(sfAffectedNodes.jsonName)))
+                    {
+                        BEAST_EXPECT(
+                            metadata[sfAffectedNodes.jsonName].size() == 1);
+                        auto node = metadata[sfAffectedNodes.jsonName][0u];
+                        if (BEAST_EXPECT(
+                                node.isMember(sfModifiedNode.jsonName)))
+                        {
+                            auto modifiedNode = node[sfModifiedNode];
+                            BEAST_EXPECT(
+                                modifiedNode[sfLedgerEntryType] ==
+                                "AccountRoot");
+                            auto finalFields = modifiedNode[sfFinalFields];
+                            BEAST_EXPECT(finalFields[sfDomain] == newDomain);
+                        }
+                    }
+                    BEAST_EXPECT(metadata[sfTransactionIndex.jsonName] == 0);
+                    BEAST_EXPECT(
+                        metadata[sfTransactionResult.jsonName] == "tesSUCCESS");
+                }
+            };
+
+            Json::Value tx;
+
+            tx[jss::Account] = env.master.human();
+            tx[jss::TransactionType] = jss::AccountSet;
+            tx[sfDomain] = newDomain;
+
+            // test with autofill
+            testTx(env, tx, validateOutput);
+
+            tx[sfSigningPubKey] = "";
+            tx[sfTxnSignature] = "";
+            tx[sfSequence] = 1;
+            tx[sfFee] = env.current()->fees().base.jsonClipped().asString();
+            tx[sfNetworkID] = 1025;
+
+            // test without autofill
+            testTx(env, tx, validateOutput);
+        }
+    }
+
 public:
     void
     run() override
@@ -961,6 +1089,7 @@ public:
         testTransactionSigningFailure();
         testMultisignedBadPubKey();
         testDeleteExpiredCredentials();
+        testSuccessfulTransactionNetworkID();
     }
 };
 

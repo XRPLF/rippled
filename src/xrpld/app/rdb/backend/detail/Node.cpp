@@ -22,16 +22,17 @@
 #include <xrpld/app/ledger/LedgerToJson.h>
 #include <xrpld/app/ledger/PendingSaves.h>
 #include <xrpld/app/ledger/TransactionMaster.h>
-#include <xrpld/app/misc/Manifest.h>
 #include <xrpld/app/rdb/RelationalDatabase.h>
 #include <xrpld/app/rdb/backend/detail/Node.h>
 #include <xrpld/core/DatabaseCon.h>
 #include <xrpld/core/SociDB.h>
+
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/json/to_string.h>
-#include <boost/algorithm/string.hpp>
+
 #include <boost/range/adaptor/transformed.hpp>
+
 #include <soci/sqlite3/soci-sqlite3.h>
 
 namespace ripple {

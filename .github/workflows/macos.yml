@@ -73,7 +73,6 @@ jobs:
         run : |
           conan profile new default --detect || true
           conan profile update settings.compiler.cppstd=20 default
-          conan profile update 'conf.tools.build:cxxflags+=["-DBOOST_ASIO_DISABLE_CONCEPTS"]' default
       - name: build dependencies
         uses: ./.github/actions/dependencies
         env:
@@ -87,7 +86,7 @@ jobs:
         with:
           generator: ${{ matrix.generator }}
           configuration: ${{ matrix.configuration }}
-          cmake-args: ${{ matrix.cmake-args }}
+          cmake-args: "-Dassert=TRUE -Dwerr=TRUE ${{ matrix.cmake-args }}"
       - name: test
         run: |
           n=$(nproc)

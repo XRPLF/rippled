@@ -19,14 +19,15 @@
 
 #include <xrpld/ledger/ReadView.h>
 #include <xrpld/ledger/View.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
-#include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/st.h>
+
 #include <optional>
 
 namespace ripple {
@@ -293,6 +294,17 @@ isDeepFrozen(
     return sle->isFlag(lsfHighDeepFreeze) || sle->isFlag(lsfLowDeepFreeze);
 }
 
+bool
+isLPTokenFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Issue const& asset,
+    Issue const& asset2)
+{
+    return isFrozen(view, account, asset.currency, asset.account) ||
+        isFrozen(view, account, asset2.currency, asset2.account);
+}
+
 STAmount
 accountHolds(
     ReadView const& view,
@@ -322,6 +334,32 @@ accountHolds(
                 isDeepFrozen(view, account, currency, issuer))
             {
                 return false;
+            }
+
+            // when fixFrozenLPTokenTransfer is enabled, if currency is lptoken,
+            // we need to check if the associated assets have been frozen
+            if (view.rules().enabled(fixFrozenLPTokenTransfer))
+            {
+                auto const sleIssuer = view.read(keylet::account(issuer));
+                if (!sleIssuer)
+                {
+                    return false;  // LCOV_EXCL_LINE
+                }
+                else if (sleIssuer->isFieldPresent(sfAMMID))
+                {
+                    auto const sleAmm =
+                        view.read(keylet::amm((*sleIssuer)[sfAMMID]));
+
+                    if (!sleAmm ||
+                        isLPTokenFrozen(
+                            view,
+                            account,
+                            (*sleAmm)[sfAsset].get<Issue>(),
+                            (*sleAmm)[sfAsset2].get<Issue>()))
+                    {
+                        return false;
+                    }
+                }
             }
         }
 
