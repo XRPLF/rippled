@@ -373,7 +373,7 @@ ledgerFromRequest(T& ledger, JsonContext& context)
             indexValue = legacyLedger;
     }
 
-    if (hashValue)
+    if (!hashValue.isNull())
     {
         if (!hashValue.isString())
             return {rpcINVALID_PARAMS, "ledgerHashNotString"};
@@ -384,20 +384,23 @@ ledgerFromRequest(T& ledger, JsonContext& context)
         return getLedger(ledger, ledgerHash, context);
     }
 
-    auto const index = indexValue.asString();
+    if (indexValue.isConvertibleTo(Json::stringValue))
+    {
+        auto const index = indexValue.asString();
 
-    if (index == "current" || index.empty())
-        return getLedger(ledger, LedgerShortcut::CURRENT, context);
+        if (index == "current" || index.empty())
+            return getLedger(ledger, LedgerShortcut::CURRENT, context);
 
-    if (index == "validated")
-        return getLedger(ledger, LedgerShortcut::VALIDATED, context);
+        if (index == "validated")
+            return getLedger(ledger, LedgerShortcut::VALIDATED, context);
 
-    if (index == "closed")
-        return getLedger(ledger, LedgerShortcut::CLOSED, context);
+        if (index == "closed")
+            return getLedger(ledger, LedgerShortcut::CLOSED, context);
 
-    std::uint32_t iVal;
-    if (beast::lexicalCastChecked(iVal, index))
-        return getLedger(ledger, iVal, context);
+        std::uint32_t iVal;
+        if (beast::lexicalCastChecked(iVal, index))
+            return getLedger(ledger, iVal, context);
+    }
 
     return {rpcINVALID_PARAMS, "ledgerIndexMalformed"};
 }
