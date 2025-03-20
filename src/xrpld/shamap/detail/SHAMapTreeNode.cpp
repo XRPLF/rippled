@@ -19,18 +19,16 @@
 
 #include <xrpld/shamap/SHAMapAccountStateLeafNode.h>
 #include <xrpld/shamap/SHAMapInnerNode.h>
-#include <xrpld/shamap/SHAMapLeafNode.h>
 #include <xrpld/shamap/SHAMapTreeNode.h>
 #include <xrpld/shamap/SHAMapTxLeafNode.h>
 #include <xrpld/shamap/SHAMapTxPlusMetaLeafNode.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
-#include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/digest.h>
-#include <mutex>
 
 #include <openssl/sha.h>
 

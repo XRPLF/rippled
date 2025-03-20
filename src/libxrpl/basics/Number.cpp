@@ -19,10 +19,15 @@
 
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <boost/predef.h>
+
 #include <algorithm>
+#include <cstddef>
+#include <cstdint>
+#include <iterator>
+#include <limits>
 #include <numeric>
 #include <stdexcept>
+#include <string>
 #include <type_traits>
 #include <utility>
 
