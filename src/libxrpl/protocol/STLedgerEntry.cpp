@@ -141,6 +141,13 @@ STLedgerEntry::getJson(JsonOptions options) const
     if (getType() == ltMPTOKEN_ISSUANCE)
         ret[jss::mpt_issuance_id] = to_string(
             makeMptID(getFieldU32(sfSequence), getAccountID(sfIssuer)));
+    else if (getType() == ltVAULT)
+    {
+        // Replace "MPTokenIssuanceID" with functionally equivalent "Share"
+        const char* const fieldMptIssue = sfMPTokenIssuanceID.fieldName.c_str();
+        ret.removeMember(fieldMptIssue);
+        ret[jss::Share] = to_json(MPTIssue(getFieldH192(sfMPTokenIssuanceID)));
+    }
 
     return ret;
 }
