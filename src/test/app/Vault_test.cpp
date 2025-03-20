@@ -800,10 +800,10 @@ class Vault_test : public beast::unit_test::suite
         env(tx);
         env.close();
 
-        AccountID const vaultAccount = [&]() {
+        AccountID const vaultAccount = [&env, key = keylet.key]() {
             Json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
-            jvParams[jss::vault] = strHex(keylet.key);
+            jvParams[jss::vault] = strHex(key);
             auto const jvVault =
                 env.rpc("json", "ledger_entry", to_string(jvParams));
             return parseBase58<AccountID>(
