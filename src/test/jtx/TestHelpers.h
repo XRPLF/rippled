@@ -345,6 +345,33 @@ public:
     }
 };
 
+struct finish_function
+{
+private:
+    std::string value_;
+
+public:
+    explicit finish_function(std::string func) : value_(func)
+    {
+    }
+
+    explicit finish_function(Slice const& func) : value_(strHex(func))
+    {
+    }
+
+    template <size_t N>
+    explicit finish_function(std::array<std::uint8_t, N> const& f)
+        : finish_function(makeSlice(f))
+    {
+    }
+
+    void
+    operator()(Env&, JTx& jt) const
+    {
+        jt.jv[sfFinishFunction.jsonName] = value_;
+    }
+};
+
 /* Payment Channel */
 /******************************************************************************/
 
