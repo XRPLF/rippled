@@ -29,6 +29,7 @@
 #include <xrpl/json/json_errors.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/jss.h>
@@ -852,6 +853,37 @@ parsePermissionedDomains(Json::Value const& pd, Json::Value& jvResult)
     return keylet::permissionedDomain(*account, pd[jss::seq].asUInt()).key;
 }
 
+static std::optional<uint256>
+parseVault(Json::Value const& params, Json::Value& jvResult)
+{
+    if (!params.isObject())
+    {
+        uint256 uNodeIndex;
+        if (!uNodeIndex.parseHex(params.asString()))
+        {
+            jvResult[jss::error] = "malformedRequest";
+            return std::nullopt;
+        }
+        return uNodeIndex;
+    }
+
+    if (!params.isMember(jss::owner) || !params.isMember(jss::seq) ||
+        !params[jss::seq].isIntegral())
+    {
+        jvResult[jss::error] = "malformedRequest";
+        return std::nullopt;
+    }
+
+    auto const id = parseBase58<AccountID>(params[jss::owner].asString());
+    if (!id)
+    {
+        jvResult[jss::error] = "malformedOwner";
+        return std::nullopt;
+    }
+
+    return keylet::vault(*id, params[jss::seq].asUInt()).key;
+}
+
 using FunctionType =
     std::function<std::optional<uint256>(Json::Value const&, Json::Value&)>;
 
@@ -910,6 +942,7 @@ doLedgerEntry(RPC::JsonContext& context)
         {jss::xchain_owned_create_account_claim_id,
          parseXChainOwnedCreateAccountClaimID,
          ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID},
+        {jss::vault, parseVault, ltVAULT},
     });
 
     uint256 uNodeIndex;

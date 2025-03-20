@@ -27,11 +27,13 @@
 #include <test/jtx/vault.h>
 
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/jss.h>
 
 namespace ripple {
 
@@ -776,6 +778,70 @@ class Vault_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testTransactionFees()
+    {
+        testcase("IOU fees");
+        Env env{*this};
+        Account const owner{"owner"};
+        Account const issuer{"issuer"};
+        auto vault = env.vault();
+        env.fund(XRP(1000), issuer, owner);
+        env.close();
+
+        PrettyAsset asset = issuer["IOU"];
+        env.trust(asset(1000), owner);
+        env(pay(issuer, owner, asset(200)));
+        env(rate(issuer, 1.25));
+        env.close();
+        auto const issue = asset.raw().get<Issue>();
+
+        auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+        env(tx);
+        env.close();
+
+        AccountID const vaultAccount = [&]() {
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = jss::validated;
+            jvParams[jss::vault] = strHex(keylet.key);
+            auto const jvVault =
+                env.rpc("json", "ledger_entry", to_string(jvParams));
+            return parseBase58<AccountID>(
+                       jvVault[jss::result][jss::node][jss::Account].asString())
+                .value();
+        }();
+        auto const vaultBalance = [&]() -> PrettyAmount {
+            auto const sle = env.le(keylet::line(vaultAccount, issue));
+            BEAST_EXPECT(sle != nullptr);
+            auto amount = sle->getFieldAmount(sfBalance);
+            amount.setIssuer(issue.account);
+            if (vaultAccount > issue.account)
+                amount.negate();
+            return {amount, env.lookup(issue.account).name()};
+        };
+        BEAST_EXPECT(vaultBalance() == asset(0));
+
+        {
+            testcase("zero IOU fee on deposit");
+            env(vault.deposit(
+                {.depositor = owner, .id = keylet.key, .amount = asset(100)}));
+            env.close();
+
+            BEAST_EXPECT(env.balance(owner, issue) == asset(100));
+            BEAST_EXPECT(vaultBalance() == asset(100));
+        }
+
+        {
+            testcase("zero IOU fee on withdraw");
+            env(vault.withdraw(
+                {.depositor = owner, .id = keylet.key, .amount = asset(60)}));
+            env.close();
+
+            BEAST_EXPECT(env.balance(owner, issue) == asset(160));
+            BEAST_EXPECT(vaultBalance() == asset(40));
+        }
+    }
+
 public:
     void
     run() override
@@ -786,6 +852,7 @@ public:
         testCreateFailMPT();
         testWithMPT();
         testWithDomainCheck();
+        testTransactionFees();
     }
 };
 

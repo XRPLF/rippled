@@ -134,11 +134,13 @@ VaultWithdraw::doApply()
 
     auto const& vaultAccount = vault->at(sfAccount);
     // Transfer shares from depositor to vault.
-    if (auto ter = accountSend(view(), account_, vaultAccount, shares, j_))
+    if (auto ter = accountSend(
+            view(), account_, vaultAccount, shares, j_, WaiveTransferFee::Yes))
         return ter;
 
     // Transfer assets from vault to depositor.
-    if (auto ter = accountSend(view(), vaultAccount, account_, assets, j_))
+    if (auto ter = accountSend(
+            view(), vaultAccount, account_, assets, j_, WaiveTransferFee::Yes))
         return ter;
 
     return tesSUCCESS;

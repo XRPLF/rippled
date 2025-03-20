@@ -173,11 +173,13 @@ VaultDeposit::doApply()
         return tecLIMIT_EXCEEDED;
 
     // Transfer assets from depositor to vault.
-    if (auto ter = accountSend(view(), account_, vaultAccount, assets, j_))
+    if (auto ter = accountSend(
+            view(), account_, vaultAccount, assets, j_, WaiveTransferFee::Yes))
         return ter;
 
     // Transfer shares from vault to depositor.
-    if (auto ter = accountSend(view(), vaultAccount, account_, shares, j_))
+    if (auto ter = accountSend(
+            view(), vaultAccount, account_, shares, j_, WaiveTransferFee::Yes))
         return ter;
 
     return tesSUCCESS;
