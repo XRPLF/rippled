@@ -45,8 +45,8 @@ static constexpr auto IDLED = std::chrono::seconds{8};
 // of messages from the validator. We add peers who reach
 // MIN_MESSAGE_THRESHOLD to considered pool once MAX_SELECTED_PEERS
 // reach MAX_MESSAGE_THRESHOLD.
-static constexpr uint16_t MIN_MESSAGE_THRESHOLD = 9;
-static constexpr uint16_t MAX_MESSAGE_THRESHOLD = 10;
+static constexpr uint16_t MIN_MESSAGE_THRESHOLD = 19;
+static constexpr uint16_t MAX_MESSAGE_THRESHOLD = 20;
 // Max selected peers to choose as the source of messages from validator
 static constexpr uint16_t MAX_SELECTED_PEERS = 5;
 // Wait before reduce-relay feature is enabled on boot up to let
