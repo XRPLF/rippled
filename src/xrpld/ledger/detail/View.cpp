@@ -2123,4 +2123,10 @@ rippleCredit(
         saAmount.asset().value());
 }
 
+bool
+after(NetClock::time_point now, std::uint32_t mark)
+{
+    return now.time_since_epoch().count() > mark;
+}
+
 }  // namespace ripple
