@@ -195,7 +195,7 @@ PreflightContext::PreflightContext(
 
 Transactor::Transactor(ApplyContext& ctx)
     : ctx_(ctx)
-    , sink_(ctx.journal, to_short_string(ctx.tx.getTransactionID()))
+    , sink_(ctx.journal, to_short_string(ctx.tx.getTransactionID()) + " ")
     , j_(sink_)
     , account_(ctx.tx.getAccountID(sfAccount))
 {
