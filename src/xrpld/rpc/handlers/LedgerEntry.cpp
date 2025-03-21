@@ -69,6 +69,43 @@ parseAuthorizeCredentials(Json::Value const& jv)
 }
 
 static std::optional<uint256>
+parseDelegate(Json::Value const& params, Json::Value& jvResult)
+{
+    // LCOV_EXCL_START
+    if (!params.isObject())
+    {
+        uint256 uNodeIndex;
+        if (!uNodeIndex.parseHex(params.asString()))
+        {
+            jvResult[jss::error] = "malformedRequest";
+            return std::nullopt;
+        }
+        return uNodeIndex;
+    }
+    // LCOV_EXCL_STOP
+    if (!params.isMember(jss::account) || !params.isMember(jss::authorize))
+    {
+        jvResult[jss::error] = "malformedRequest";
+        return std::nullopt;
+    }
+    auto const account =
+        parseBase58<AccountID>(params[jss::account].asString());
+    if (!account)
+    {
+        jvResult[jss::error] = "malformedAddress";
+        return std::nullopt;
+    }
+    auto const authorize =
+        parseBase58<AccountID>(params[jss::authorize].asString());
+    if (!authorize)
+    {
+        jvResult[jss::error] = "malformedAddress";
+        return std::nullopt;
+    }
+    return keylet::delegate(*account, *authorize).key;
+}
+
+static std::optional<uint256>
 parseIndex(Json::Value const& params, Json::Value& jvResult)
 {
     uint256 uNodeIndex;
@@ -884,6 +921,7 @@ doLedgerEntry(RPC::JsonContext& context)
         {jss::bridge, parseBridge, ltBRIDGE},
         {jss::check, parseCheck, ltCHECK},
         {jss::credential, parseCredential, ltCREDENTIAL},
+        {jss::delegate, parseDelegate, ltDELEGATE},
         {jss::deposit_preauth, parseDepositPreauth, ltDEPOSIT_PREAUTH},
         {jss::did, parseDID, ltDID},
         {jss::directory, parseDirectory, ltDIR_NODE},

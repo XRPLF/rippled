@@ -27,6 +27,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAccount.h>
 #include <xrpl/protocol/STAmount.h>
@@ -373,10 +374,34 @@ parseLeaf(
             {
                 if (value.isString())
                 {
-                    ret = detail::make_stvar<STUInt32>(
-                        field,
-                        beast::lexicalCastThrow<std::uint32_t>(
-                            value.asString()));
+                    if (field == sfPermissionValue)
+                    {
+                        std::string const strValue = value.asString();
+                        auto const granularPermission =
+                            Permission::getInstance().getGranularValue(
+                                strValue);
+                        if (granularPermission)
+                        {
+                            ret = detail::make_stvar<STUInt32>(
+                                field, *granularPermission);
+                        }
+                        else
+                        {
+                            ret = detail::make_stvar<STUInt32>(
+                                field,
+                                static_cast<std::uint32_t>(
+                                    TxFormats::getInstance().findTypeByName(
+                                        strValue) +
+                                    1));
+                        }
+                    }
+                    else
+                    {
+                        ret = detail::make_stvar<STUInt32>(
+                            field,
+                            beast::lexicalCastThrow<std::uint32_t>(
+                                value.asString()));
+                    }
                 }
                 else if (value.isInt())
                 {

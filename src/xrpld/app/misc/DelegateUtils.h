@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2025 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,44 +17,25 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_PAYMENT_H_INCLUDED
-#define RIPPLE_TX_PAYMENT_H_INCLUDED
+#ifndef RIPPLE_APP_MISC_DELEGATEUTILS_H_INLCUDED
+#define RIPPLE_APP_MISC_DELEGATEUTILS_H_INLCUDED
 
-#include <xrpld/app/tx/detail/Transactor.h>
+#include <xrpl/protocol/Permissions.h>
+#include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
 
 namespace ripple {
 
-class Payment : public Transactor
-{
-    /* The largest number of paths we allow */
-    static std::size_t const MaxPathSize = 6;
+TER
+checkTxPermission(std::shared_ptr<SLE const> const& delegate, STTx const& tx);
 
-    /* The longest path we allow */
-    static std::size_t const MaxPathLength = 8;
-
-public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Custom};
-
-    explicit Payment(ApplyContext& ctx) : Transactor(ctx)
-    {
-    }
-
-    static TxConsequences
-    makeTxConsequences(PreflightContext const& ctx);
-
-    static NotTEC
-    preflight(PreflightContext const& ctx);
-
-    static TER
-    checkPermission(ReadView const& view, STTx const& tx);
-
-    static TER
-    preclaim(PreclaimContext const& ctx);
-
-    TER
-    doApply() override;
-};
+void
+loadGranularPermission(
+    std::shared_ptr<SLE const> const& delegate,
+    TxType const& type,
+    std::unordered_set<GranularPermissionType>& granularPermissions);
 
 }  // namespace ripple
 
-#endif
+#endif  // RIPPLE_APP_MISC_DELEGATEUTILS_H_INLCUDED

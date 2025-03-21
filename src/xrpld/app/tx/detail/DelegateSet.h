@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2025 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,42 +17,38 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_PAYMENT_H_INCLUDED
-#define RIPPLE_TX_PAYMENT_H_INCLUDED
+#ifndef RIPPLE_TX_DELEGATESET_H_INCLUDED
+#define RIPPLE_TX_DELEGATESET_H_INCLUDED
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
 namespace ripple {
 
-class Payment : public Transactor
+class DelegateSet : public Transactor
 {
-    /* The largest number of paths we allow */
-    static std::size_t const MaxPathSize = 6;
-
-    /* The longest path we allow */
-    static std::size_t const MaxPathLength = 8;
-
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Custom};
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
-    explicit Payment(ApplyContext& ctx) : Transactor(ctx)
+    explicit DelegateSet(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
-    static TxConsequences
-    makeTxConsequences(PreflightContext const& ctx);
-
     static NotTEC
     preflight(PreflightContext const& ctx);
-
-    static TER
-    checkPermission(ReadView const& view, STTx const& tx);
 
     static TER
     preclaim(PreclaimContext const& ctx);
 
     TER
     doApply() override;
+
+    // Interface used by DeleteAccount
+    static TER
+    deleteDelegate(
+        ApplyView& view,
+        std::shared_ptr<SLE> const& sle,
+        AccountID const& account,
+        beast::Journal j);
 };
 
 }  // namespace ripple
