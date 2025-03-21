@@ -31,7 +31,7 @@ Json::Value
 delegateSet(
     jtx::Account const& account,
     jtx::Account const& authorize,
-    std::list<std::string> const& permissions)
+    std::vector<std::string> const& permissions)
 {
     Json::Value jv;
     jv[jss::TransactionType] = jss::DelegateSet;

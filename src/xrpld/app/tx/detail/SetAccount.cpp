@@ -212,7 +212,7 @@ SetAccount::checkPermission(ReadView const& view, STTx const& tx)
     auto const uTxFlags = tx.getFlags();
     // We don't support any flag based granular permission under
     // AccountSet transaction. If any delegated account is trying to
-    // update the flag onbehalf of another account, it is not
+    // update the flag on behalf of another account, it is not
     // authorized.
     if (uSetFlag != 0 || uClearFlag != 0 || uTxFlags != 0)
         return tecNO_PERMISSION;

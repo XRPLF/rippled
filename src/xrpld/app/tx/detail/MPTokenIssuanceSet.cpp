@@ -71,7 +71,7 @@ MPTokenIssuanceSet::checkPermission(ReadView const& view, STTx const& tx)
 
     // this is added in case more flags will be added for MPTokenIssuanceSet
     // in the future. Currently unreachable.
-    if (txFlags & tfTrustSetPermissionMask)
+    if (txFlags & tfMPTokenIssuanceSetPermissionMask)
         return tecNO_PERMISSION;  // LCOV_EXCL_LINE
 
     std::unordered_set<GranularPermissionType> granularPermissions;

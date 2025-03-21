@@ -258,8 +258,8 @@ Payment::checkPermission(ReadView const& view, STTx const& tx)
     std::unordered_set<GranularPermissionType> granularPermissions;
     loadGranularPermission(sle, ttPAYMENT, granularPermissions);
 
-    auto const dstAmount = tx.getFieldAmount(sfAmount);
-    auto const amountIssue = dstAmount.issue();
+    auto const& dstAmount = tx.getFieldAmount(sfAmount);
+    auto const& amountIssue = dstAmount.issue();
 
     if (granularPermissions.contains(PaymentMint) && !isXRP(amountIssue) &&
         amountIssue.account == tx[sfAccount])

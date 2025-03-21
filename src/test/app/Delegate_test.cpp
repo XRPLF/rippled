@@ -55,7 +55,7 @@ class Delegate_test : public beast::unit_test::suite
         env.fund(XRP(100000), gw, alice);
         env.close();
 
-        auto const permissions = std::list<std::string>{
+        auto const permissions = std::vector<std::string>{
             "Payment",
             "EscrowCreate",
             "EscrowFinish",
@@ -95,54 +95,56 @@ class Delegate_test : public beast::unit_test::suite
         BEAST_EXPECT(testInvalidParams(gw.human(), "-") == "malformedAddress");
 
         // this lambda function is used to compare the json value of ledger
-        // entry response with the given list of permissions.
-        auto comparePermissions = [&](Json::Value const& jle,
-                                      std::list<std::string> const& permissions,
-                                      Account const& account,
-                                      Account const& authorize) {
-            BEAST_EXPECT(
-                !jle[jss::result].isMember(jss::error) &&
-                jle[jss::result].isMember(jss::node));
-            BEAST_EXPECT(
-                jle[jss::result][jss::node]["LedgerEntryType"] ==
-                jss::Delegate);
-            BEAST_EXPECT(
-                jle[jss::result][jss::node][jss::Account] == account.human());
-            BEAST_EXPECT(
-                jle[jss::result][jss::node][jss::Authorize] ==
-                authorize.human());
+        // entry response with the given vector of permissions.
+        auto comparePermissions =
+            [&](Json::Value const& jle,
+                std::vector<std::string> const& permissions,
+                Account const& account,
+                Account const& authorize) {
+                BEAST_EXPECT(
+                    !jle[jss::result].isMember(jss::error) &&
+                    jle[jss::result].isMember(jss::node));
+                BEAST_EXPECT(
+                    jle[jss::result][jss::node]["LedgerEntryType"] ==
+                    jss::Delegate);
+                BEAST_EXPECT(
+                    jle[jss::result][jss::node][jss::Account] ==
+                    account.human());
+                BEAST_EXPECT(
+                    jle[jss::result][jss::node][jss::Authorize] ==
+                    authorize.human());
 
-            auto const& jPermissions =
-                jle[jss::result][jss::node][sfPermissions.jsonName];
-            unsigned i = 0;
-            for (auto const& permission : permissions)
-            {
-                auto const granularVal =
-                    Permission::getInstance().getGranularValue(permission);
-                if (granularVal)
-                    BEAST_EXPECT(
-                        jPermissions[i][sfPermission.jsonName]
-                                    [sfPermissionValue.jsonName] ==
-                        *granularVal);
-                else
+                auto const& jPermissions =
+                    jle[jss::result][jss::node][sfPermissions.jsonName];
+                unsigned i = 0;
+                for (auto const& permission : permissions)
                 {
-                    auto const transVal =
-                        TxFormats::getInstance().findTypeByName(permission);
-                    BEAST_EXPECT(
-                        jPermissions[i][sfPermission.jsonName]
-                                    [sfPermissionValue.jsonName] ==
-                        transVal + 1);
+                    auto const granularVal =
+                        Permission::getInstance().getGranularValue(permission);
+                    if (granularVal)
+                        BEAST_EXPECT(
+                            jPermissions[i][sfPermission.jsonName]
+                                        [sfPermissionValue.jsonName] ==
+                            *granularVal);
+                    else
+                    {
+                        auto const transVal =
+                            TxFormats::getInstance().findTypeByName(permission);
+                        BEAST_EXPECT(
+                            jPermissions[i][sfPermission.jsonName]
+                                        [sfPermissionValue.jsonName] ==
+                            transVal + 1);
+                    }
+                    i++;
                 }
-                i++;
-            }
-        };
+            };
 
         // get ledger entry with valid parameter
         comparePermissions(
             delegate_set::ledgerEntry(env, gw, alice), permissions, gw, alice);
 
         // gw updates permission
-        auto const newPermissions = std::list<std::string>{
+        auto const newPermissions = std::vector<std::string>{
             "Payment", "AMMCreate", "AMMDeposit", "AMMWithdraw"};
         env(delegate_set::delegateSet(gw, alice, newPermissions));
         env.close();
