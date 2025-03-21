@@ -85,6 +85,8 @@ preflight0(PreflightContext const& ctx, std::uint32_t flagMask)
     return tesSUCCESS;
 }
 
+namespace detail {
+
 /** Performs early sanity checks on the account and fee fields */
 NotTEC
 preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
@@ -178,6 +180,8 @@ preflight2(PreflightContext const& ctx)
     }
     return tesSUCCESS;
 }
+
+}  // namespace detail
 
 //------------------------------------------------------------------------------
 

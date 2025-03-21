@@ -27,16 +27,22 @@
 
 namespace ripple {
 
-NotTEC
-VaultDelete::preflight(PreflightContext const& ctx)
+bool
+VaultDelete::isEnabled(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureSingleAssetVault))
-        return temDISABLED;
+    return ctx.rules.enabled(featureSingleAssetVault);
+}
 
-    if (auto const ter = preflight1(ctx, tfUniversalMask))
-        return ter;
+std::uint32_t
+VaultDelete::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfUniversalMask;
+}
 
-    return preflight2(ctx);
+NotTEC
+VaultDelete::doPreflight(PreflightContext const& ctx)
+{
+    return tesSUCCESS;
 }
 
 TER

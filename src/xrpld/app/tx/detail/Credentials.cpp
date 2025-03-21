@@ -48,20 +48,22 @@ using namespace credentials;
 
 // ------- CREATE --------------------------
 
-NotTEC
-CredentialCreate::preflight(PreflightContext const& ctx)
+bool
+CredentialCreate::isEnabled(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureCredentials))
-    {
-        JLOG(ctx.j.trace()) << "featureCredentials is disabled.";
-        return temDISABLED;
-    }
+    return ctx.rules.enabled(featureCredentials);
+}
 
+std::uint32_t
+CredentialCreate::getFlagsMask(PreflightContext const& ctx)
+{
     // 0 means "Allow any flags"
-    if (auto const ret = preflight1(
-            ctx, ctx.rules.enabled(fixInvalidTxFlags) ? tfUniversalMask : 0))
-        return ret;
+    return ctx.rules.enabled(fixInvalidTxFlags) ? tfUniversalMask : 0;
+}
 
+NotTEC
+CredentialCreate::doPreflight(PreflightContext const& ctx)
+{
     auto const& tx = ctx.tx;
     auto& j = ctx.j;
 
@@ -86,7 +88,7 @@ CredentialCreate::preflight(PreflightContext const& ctx)
         return temMALFORMED;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER
@@ -197,20 +199,22 @@ CredentialCreate::doApply()
 }
 
 // ------- DELETE --------------------------
-NotTEC
-CredentialDelete::preflight(PreflightContext const& ctx)
+bool
+CredentialDelete::isEnabled(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureCredentials))
-    {
-        JLOG(ctx.j.trace()) << "featureCredentials is disabled.";
-        return temDISABLED;
-    }
+    return ctx.rules.enabled(featureCredentials);
+}
 
+std::uint32_t
+CredentialDelete::getFlagsMask(PreflightContext const& ctx)
+{
     // 0 means "Allow any flags"
-    if (auto const ret = preflight1(
-            ctx, ctx.rules.enabled(fixInvalidTxFlags) ? tfUniversalMask : 0))
-        return ret;
+    return ctx.rules.enabled(fixInvalidTxFlags) ? tfUniversalMask : 0;
+}
 
+NotTEC
+CredentialDelete::doPreflight(PreflightContext const& ctx)
+{
     auto const subject = ctx.tx[~sfSubject];
     auto const issuer = ctx.tx[~sfIssuer];
 
@@ -238,7 +242,7 @@ CredentialDelete::preflight(PreflightContext const& ctx)
         return temMALFORMED;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER
@@ -279,20 +283,22 @@ CredentialDelete::doApply()
 
 // ------- APPLY --------------------------
 
-NotTEC
-CredentialAccept::preflight(PreflightContext const& ctx)
+bool
+CredentialAccept::isEnabled(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureCredentials))
-    {
-        JLOG(ctx.j.trace()) << "featureCredentials is disabled.";
-        return temDISABLED;
-    }
+    return ctx.rules.enabled(featureCredentials);
+}
 
+std::uint32_t
+CredentialAccept::getFlagsMask(PreflightContext const& ctx)
+{
     // 0 means "Allow any flags"
-    if (auto const ret = preflight1(
-            ctx, ctx.rules.enabled(fixInvalidTxFlags) ? tfUniversalMask : 0))
-        return ret;
+    return ctx.rules.enabled(fixInvalidTxFlags) ? tfUniversalMask : 0;
+}
 
+NotTEC
+CredentialAccept::doPreflight(PreflightContext const& ctx)
+{
     if (!ctx.tx[sfIssuer])
     {
         JLOG(ctx.j.trace()) << "Malformed transaction: Issuer field zeroed.";
@@ -307,7 +313,7 @@ CredentialAccept::preflight(PreflightContext const& ctx)
         return temMALFORMED;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER

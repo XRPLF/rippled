@@ -39,12 +39,15 @@ CreateOffer::makeTxConsequences(PreflightContext const& ctx)
     return TxConsequences{ctx.tx, calculateMaxXRPSpend(ctx.tx)};
 }
 
-NotTEC
-CreateOffer::preflight(PreflightContext const& ctx)
+std::uint32_t
+CreateOffer::getFlagsMask(PreflightContext const& ctx)
 {
-    if (auto const ret = preflight1(ctx, tfOfferCreateMask))
-        return ret;
+    return tfOfferCreateMask;
+}
 
+NotTEC
+CreateOffer::doPreflight(PreflightContext const& ctx)
+{
     auto& tx = ctx.tx;
     auto& j = ctx.j;
 
@@ -116,7 +119,7 @@ CreateOffer::preflight(PreflightContext const& ctx)
         return temBAD_ISSUER;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER

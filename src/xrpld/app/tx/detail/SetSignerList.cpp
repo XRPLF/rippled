@@ -77,14 +77,16 @@ SetSignerList::determineOperation(
     return std::make_tuple(tesSUCCESS, quorum, sign, op);
 }
 
-NotTEC
-SetSignerList::preflight(PreflightContext const& ctx)
+std::uint32_t
+SetSignerList::getFlagsMask(PreflightContext const& ctx)
 {
     // 0 means "Allow any flags"
-    if (auto const ret = preflight1(
-            ctx, ctx.rules.enabled(fixInvalidTxFlags) ? tfUniversalMask : 0))
-        return ret;
+    return ctx.rules.enabled(fixInvalidTxFlags) ? tfUniversalMask : 0;
+}
 
+NotTEC
+SetSignerList::doPreflight(PreflightContext const& ctx)
+{
     auto const result = determineOperation(ctx.tx, ctx.flags, ctx.j);
 
     if (std::get<0>(result) != tesSUCCESS)
@@ -114,7 +116,7 @@ SetSignerList::preflight(PreflightContext const& ctx)
         }
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER

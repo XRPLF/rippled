@@ -33,20 +33,26 @@ CreateTicket::makeTxConsequences(PreflightContext const& ctx)
     return TxConsequences{ctx.tx, ctx.tx[sfTicketCount]};
 }
 
-NotTEC
-CreateTicket::preflight(PreflightContext const& ctx)
+bool
+CreateTicket::isEnabled(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureTicketBatch))
-        return temDISABLED;
+    return ctx.rules.enabled(featureTicketBatch);
+}
 
-    if (NotTEC const ret{preflight1(ctx, tfUniversalMask)})
-        return ret;
+std::uint32_t
+CreateTicket::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfUniversalMask;
+}
 
+NotTEC
+CreateTicket::doPreflight(PreflightContext const& ctx)
+{
     if (std::uint32_t const count = ctx.tx[sfTicketCount];
         count < minValidCount || count > maxValidCount)
         return temINVALID_COUNT;
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER

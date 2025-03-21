@@ -31,15 +31,21 @@
 
 namespace ripple {
 
-NotTEC
-AMMCreate::preflight(PreflightContext const& ctx)
+bool
+AMMCreate::isEnabled(PreflightContext const& ctx)
 {
-    if (!ammEnabled(ctx.rules))
-        return temDISABLED;
+    return ammEnabled(ctx.rules);
+}
 
-    if (auto const ret = preflight1(ctx, tfUniversalMask))
-        return ret;
+std::uint32_t
+AMMCreate::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfUniversalMask;
+}
 
+NotTEC
+AMMCreate::doPreflight(PreflightContext const& ctx)
+{
     auto const amount = ctx.tx[sfAmount];
     auto const amount2 = ctx.tx[sfAmount2];
 
@@ -68,7 +74,7 @@ AMMCreate::preflight(PreflightContext const& ctx)
         return temBAD_FEE;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 XRPAmount
