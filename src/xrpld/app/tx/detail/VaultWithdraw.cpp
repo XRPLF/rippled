@@ -181,6 +181,16 @@ VaultWithdraw::doApply()
             view(), vaultAccount, dstAcct, assets, j_, WaiveTransferFee::Yes))
         return ter;
 
+    // Sanity check
+    if (accountHolds(
+            view(),
+            vaultAccount,
+            assets.asset(),
+            FreezeHandling::fhIGNORE_FREEZE,
+            AuthHandling::ahIGNORE_AUTH,
+            j_) < beast::zero)
+        return tefINTERNAL;
+
     return tesSUCCESS;
 }
 

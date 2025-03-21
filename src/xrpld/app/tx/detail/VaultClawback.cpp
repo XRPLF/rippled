@@ -176,6 +176,16 @@ VaultClawback::doApply()
     if (auto ter = accountSend(view(), vaultAccount, account_, assets, j_))
         return ter;
 
+    // Sanity check
+    if (accountHolds(
+            view(),
+            vaultAccount,
+            assets.asset(),
+            FreezeHandling::fhIGNORE_FREEZE,
+            AuthHandling::ahIGNORE_AUTH,
+            j_) < beast::zero)
+        return tefINTERNAL;
+
     return tesSUCCESS;
 }
 

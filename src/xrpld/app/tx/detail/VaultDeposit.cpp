@@ -177,6 +177,16 @@ VaultDeposit::doApply()
             view(), account_, vaultAccount, assets, j_, WaiveTransferFee::Yes))
         return ter;
 
+    // Sanity check
+    if (accountHolds(
+            view(),
+            account_,
+            assets.asset(),
+            FreezeHandling::fhIGNORE_FREEZE,
+            AuthHandling::ahIGNORE_AUTH,
+            j_) < beast::zero)
+        return tefINTERNAL;
+
     // Transfer shares from vault to depositor.
     if (auto ter = accountSend(
             view(), vaultAccount, account_, shares, j_, WaiveTransferFee::Yes))
