@@ -43,7 +43,6 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/MathUtilities.h>
-#include <xrpl/basics/TaggedCache.h>
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
