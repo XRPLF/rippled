@@ -17,48 +17,11 @@
 */
 //==============================================================================
 
-#include <xrpld/app/misc/WasmVM.h>
-#include <xrpld/app/tx/detail/ApplyContext.h>
+#include "xrpld/app/misc/WasmHostFuncImpl.h"
 
 #include "xrpl/protocol/digest.h"
 
 namespace ripple {
-class WasmHostFunctionsImpl : HostFunctions
-{
-public:
-    WasmHostFunctionsImpl(ApplyContext& ctx, Keylet leKey)
-        : ctx(ctx), leKey(leKey)
-    {
-    }
-
-    int32_t
-    getLedgerSqn() override;
-
-    int32_t
-    getParentLedgerTime() override;
-
-    std::optional<Bytes>
-    getTxField(std::string const& fname) override;
-
-    std::optional<Bytes>
-    getLedgerEntryField(
-        int32_t type,
-        Bytes const& kdata,
-        std::string const& fname) override;
-
-    std::optional<Bytes>
-    getCurrentLedgerEntryField(std::string const& fname) override;
-
-    bool
-    updateData(Bytes const& data) override;
-
-    Hash
-    computeSha512HalfHash(Bytes const& data) override;
-
-private:
-    ApplyContext& ctx;
-    Keylet leKey;
-};
 
 int32_t
 WasmHostFunctionsImpl::getLedgerSqn()
