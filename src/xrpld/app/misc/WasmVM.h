@@ -26,6 +26,7 @@
 #include <wasmedge/wasmedge.h>
 
 namespace ripple {
+const uint32_t MAX_PAGES = 128;  // 8MB = 64KB*128
 
 typedef std::vector<uint8_t> Bytes;
 typedef ripple::uint256 Hash;

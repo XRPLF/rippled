@@ -281,12 +281,13 @@ runEscrowWasm(
     HostFunctions* hfs,
     uint64_t gasLimit)
 {
+    //    WasmEdge_LogOff();
     // TODO deletes
     //  create VM and set cost limit
     WasmEdge_ConfigureContext* conf = WasmEdge_ConfigureCreate();
     WasmEdge_ConfigureStatisticsSetInstructionCounting(conf, true);
     WasmEdge_ConfigureStatisticsSetCostMeasuring(conf, true);
-    WasmEdge_ConfigureSetMaxMemoryPage(conf, 128);  // 8MB = 64KB*128
+    WasmEdge_ConfigureSetMaxMemoryPage(conf, MAX_PAGES);
 
     WasmEdge_VMContext* VMCxt = WasmEdge_VMCreate(conf, NULL);
     WasmEdge_StatisticsContext* StatCxt =
