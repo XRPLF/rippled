@@ -28,15 +28,21 @@
 
 namespace ripple {
 
-NotTEC
-AMMWithdraw::preflight(PreflightContext const& ctx)
+bool
+AMMWithdraw::isEnabled(PreflightContext const& ctx)
 {
-    if (!ammEnabled(ctx.rules))
-        return temDISABLED;
+    return ammEnabled(ctx.rules);
+}
 
-    if (auto const ret = preflight1(ctx, tfWithdrawMask))
-        return ret;
+std::uint32_t
+AMMWithdraw::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfWithdrawMask;
+}
 
+NotTEC
+AMMWithdraw::doPreflight(PreflightContext const& ctx)
+{
     auto const flags = ctx.tx.getFlags();
 
     auto const amount = ctx.tx[~sfAmount];
@@ -145,7 +151,7 @@ AMMWithdraw::preflight(PreflightContext const& ctx)
         }
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 static std::optional<STAmount>

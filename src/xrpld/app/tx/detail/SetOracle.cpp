@@ -36,15 +36,21 @@ tokenPairKey(STObject const& pair)
         pair.getFieldCurrency(sfQuoteAsset).currency());
 }
 
-NotTEC
-SetOracle::preflight(PreflightContext const& ctx)
+bool
+SetOracle::isEnabled(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featurePriceOracle))
-        return temDISABLED;
+    return ctx.rules.enabled(featurePriceOracle);
+}
 
-    if (auto const ret = preflight1(ctx, tfUniversalMask))
-        return ret;
+std::uint32_t
+SetOracle::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfUniversalMask;
+}
 
+NotTEC
+SetOracle::doPreflight(PreflightContext const& ctx)
+{
     auto const& dataSeries = ctx.tx.getFieldArray(sfPriceDataSeries);
     if (dataSeries.empty())
         return temARRAY_EMPTY;
@@ -61,7 +67,7 @@ SetOracle::preflight(PreflightContext const& ctx)
         isInvalidLength(sfAssetClass, maxOracleSymbolClass))
         return temMALFORMED;
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER

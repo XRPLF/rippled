@@ -171,14 +171,16 @@ PayChanCreate::makeTxConsequences(PreflightContext const& ctx)
     return TxConsequences{ctx.tx, ctx.tx[sfAmount].xrp()};
 }
 
-NotTEC
-PayChanCreate::preflight(PreflightContext const& ctx)
+std::uint32_t
+PayChanCreate::getFlagsMask(PreflightContext const& ctx)
 {
     // 0 means "Allow any flags"
-    if (auto const ret =
-            preflight1(ctx, ctx.rules.enabled(fix1543) ? tfUniversalMask : 0))
-        return ret;
+    return ctx.rules.enabled(fix1543) ? tfUniversalMask : 0;
+}
 
+NotTEC
+PayChanCreate::doPreflight(PreflightContext const& ctx)
+{
     if (!isXRP(ctx.tx[sfAmount]) || (ctx.tx[sfAmount] <= beast::zero))
         return temBAD_AMOUNT;
 
@@ -188,7 +190,7 @@ PayChanCreate::preflight(PreflightContext const& ctx)
     if (!publicKeyType(ctx.tx[sfPublicKey]))
         return temMALFORMED;
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER
@@ -325,18 +327,20 @@ PayChanFund::makeTxConsequences(PreflightContext const& ctx)
     return TxConsequences{ctx.tx, ctx.tx[sfAmount].xrp()};
 }
 
-NotTEC
-PayChanFund::preflight(PreflightContext const& ctx)
+std::uint32_t
+PayChanFund::getFlagsMask(PreflightContext const& ctx)
 {
     // 0 means "Allow any flags"
-    if (auto const ret =
-            preflight1(ctx, ctx.rules.enabled(fix1543) ? tfUniversalMask : 0))
-        return ret;
+    return ctx.rules.enabled(fix1543) ? tfUniversalMask : 0;
+}
 
+NotTEC
+PayChanFund::doPreflight(PreflightContext const& ctx)
+{
     if (!isXRP(ctx.tx[sfAmount]) || (ctx.tx[sfAmount] <= beast::zero))
         return temBAD_AMOUNT;
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER
@@ -414,18 +418,23 @@ PayChanFund::doApply()
 
 //------------------------------------------------------------------------------
 
-NotTEC
-PayChanClaim::preflight(PreflightContext const& ctx)
+bool
+PayChanClaim::isEnabled(PreflightContext const& ctx)
 {
-    if (ctx.tx.isFieldPresent(sfCredentialIDs) &&
-        !ctx.rules.enabled(featureCredentials))
-        return temDISABLED;
+    return !ctx.tx.isFieldPresent(sfCredentialIDs) ||
+        ctx.rules.enabled(featureCredentials);
+}
 
+std::uint32_t
+PayChanClaim::getFlagsMask(PreflightContext const& ctx)
+{
     // 0 means "Allow any flags"
-    if (auto const ret = preflight1(
-            ctx, ctx.rules.enabled(fix1543) ? tfPayChanClaimMask : 0))
-        return ret;
+    return ctx.rules.enabled(fix1543) ? tfPayChanClaimMask : 0;
+}
 
+NotTEC
+PayChanClaim::doPreflight(PreflightContext const& ctx)
+{
     auto const bal = ctx.tx[~sfBalance];
     if (bal && (!isXRP(*bal) || *bal <= beast::zero))
         return temBAD_AMOUNT;
@@ -473,7 +482,7 @@ PayChanClaim::preflight(PreflightContext const& ctx)
     if (auto const err = credentials::checkFields(ctx); !isTesSuccess(err))
         return err;
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER

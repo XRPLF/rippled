@@ -63,22 +63,32 @@ getMaxSourceAmount(
             dstAmount < beast::zero);
 }
 
-NotTEC
-Payment::preflight(PreflightContext const& ctx)
+bool
+Payment::isEnabled(PreflightContext const& ctx)
 {
-    if (ctx.tx.isFieldPresent(sfCredentialIDs) &&
-        !ctx.rules.enabled(featureCredentials))
-        return temDISABLED;
+    return !ctx.tx.isFieldPresent(sfCredentialIDs) ||
+        ctx.rules.enabled(featureCredentials);
+}
 
+std::uint32_t
+Payment::getFlagsMask(PreflightContext const& ctx)
+{
+    auto& tx = ctx.tx;
+
+    STAmount const dstAmount(tx.getFieldAmount(sfAmount));
+    bool const mptDirect = dstAmount.holds<MPTIssue>();
+
+    return mptDirect ? tfMPTPaymentMask : tfPaymentMask;
+}
+
+NotTEC
+Payment::doPreflight(PreflightContext const& ctx)
+{
     auto& tx = ctx.tx;
     auto& j = ctx.j;
 
     STAmount const dstAmount(tx.getFieldAmount(sfAmount));
     bool const mptDirect = dstAmount.holds<MPTIssue>();
-
-    if (auto const ret =
-            preflight1(ctx, mptDirect ? tfMPTPaymentMask : tfPaymentMask))
-        return ret;
 
     if (mptDirect && !ctx.rules.enabled(featureMPTokensV1))
         return temDISABLED;
@@ -228,7 +238,7 @@ Payment::preflight(PreflightContext const& ctx)
     if (auto const err = credentials::checkFields(ctx); !isTesSuccess(err))
         return err;
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER

@@ -66,12 +66,15 @@ computeFreezeFlags(
 
 namespace ripple {
 
-NotTEC
-SetTrust::preflight(PreflightContext const& ctx)
+std::uint32_t
+SetTrust::getFlagsMask(PreflightContext const& ctx)
 {
-    if (auto const ret = preflight1(ctx, tfTrustSetMask))
-        return ret;
+    return tfTrustSetMask;
+}
 
+NotTEC
+SetTrust::doPreflight(PreflightContext const& ctx)
+{
     auto& tx = ctx.tx;
     auto& j = ctx.j;
 
@@ -120,7 +123,7 @@ SetTrust::preflight(PreflightContext const& ctx)
         return temDST_NEEDED;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER

@@ -33,15 +33,21 @@
 
 namespace ripple {
 
-NotTEC
-AMMClawback::preflight(PreflightContext const& ctx)
+bool
+AMMClawback::isEnabled(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureAMMClawback))
-        return temDISABLED;
+    return ctx.rules.enabled(featureAMMClawback);
+}
 
-    if (auto const ret = preflight1(ctx, tfAMMClawbackMask))
-        return ret;  // LCOV_EXCL_LINE
+std::uint32_t
+AMMClawback::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfAMMClawbackMask;
+}
 
+NotTEC
+AMMClawback::doPreflight(PreflightContext const& ctx)
+{
     AccountID const issuer = ctx.tx[sfAccount];
     AccountID const holder = ctx.tx[sfHolder];
 
@@ -86,7 +92,7 @@ AMMClawback::preflight(PreflightContext const& ctx)
     if (clawAmount && *clawAmount <= beast::zero)
         return temBAD_AMOUNT;
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER

@@ -32,22 +32,28 @@
 
 namespace ripple {
 
-NotTEC
-VaultDeposit::preflight(PreflightContext const& ctx)
+bool
+VaultDeposit::isEnabled(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureSingleAssetVault))
-        return temDISABLED;
+    return ctx.rules.enabled(featureSingleAssetVault);
+}
 
-    if (auto const ter = preflight1(ctx, tfUniversalMask))
-        return ter;
+std::uint32_t
+VaultDeposit::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfUniversalMask;
+}
 
+NotTEC
+VaultDeposit::doPreflight(PreflightContext const& ctx)
+{
     if (ctx.tx[sfVaultID] == beast::zero)
         return temMALFORMED;
 
     if (ctx.tx[sfAmount] <= beast::zero)
         return temBAD_AMOUNT;
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER

@@ -25,19 +25,22 @@
 
 namespace ripple {
 
-NotTEC
-CancelOffer::preflight(PreflightContext const& ctx)
+std::uint32_t
+CancelOffer::getFlagsMask(PreflightContext const& ctx)
 {
-    if (auto const ret = preflight1(ctx, tfUniversalMask))
-        return ret;
+    return tfUniversalMask;
+}
 
+NotTEC
+CancelOffer::doPreflight(PreflightContext const& ctx)
+{
     if (!ctx.tx[sfOfferSequence])
     {
         JLOG(ctx.j.trace()) << "CancelOffer::preflight: missing sequence";
         return temBAD_SEQUENCE;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 //------------------------------------------------------------------------------

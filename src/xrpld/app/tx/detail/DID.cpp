@@ -42,15 +42,21 @@ namespace ripple {
 
 //------------------------------------------------------------------------------
 
-NotTEC
-DIDSet::preflight(PreflightContext const& ctx)
+bool
+DIDSet::isEnabled(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureDID))
-        return temDISABLED;
+    return ctx.rules.enabled(featureDID);
+}
 
-    if (auto const ret = preflight1(ctx, tfUniversalMask))
-        return ret;
+std::uint32_t
+DIDSet::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfUniversalMask;
+}
 
+NotTEC
+DIDSet::doPreflight(PreflightContext const& ctx)
+{
     if (!ctx.tx.isFieldPresent(sfURI) &&
         !ctx.tx.isFieldPresent(sfDIDDocument) && !ctx.tx.isFieldPresent(sfData))
         return temEMPTY_DID;
@@ -71,7 +77,7 @@ DIDSet::preflight(PreflightContext const& ctx)
         isTooLong(sfData, maxDIDAttestationLength))
         return temMALFORMED;
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER
@@ -168,16 +174,22 @@ DIDSet::doApply()
     return addSLE(ctx_, sleDID, account_);
 }
 
-NotTEC
-DIDDelete::preflight(PreflightContext const& ctx)
+bool
+DIDDelete::isEnabled(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureDID))
-        return temDISABLED;
+    return ctx.rules.enabled(featureDID);
+}
 
-    if (auto const ret = preflight1(ctx, tfUniversalMask))
-        return ret;
+std::uint32_t
+DIDDelete::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfUniversalMask;
+}
 
-    return preflight2(ctx);
+NotTEC
+DIDDelete::doPreflight(PreflightContext const& ctx)
+{
+    return tesSUCCESS;
 }
 
 TER

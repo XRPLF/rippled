@@ -29,16 +29,22 @@
 
 namespace ripple {
 
-NotTEC
-CancelCheck::preflight(PreflightContext const& ctx)
+bool
+CancelCheck::isEnabled(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureChecks))
-        return temDISABLED;
+    return ctx.rules.enabled(featureChecks);
+}
 
-    if (auto const ret = preflight1(ctx, tfUniversalMask))
-        return ret;
+std::uint32_t
+CancelCheck::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfUniversalMask;
+}
 
-    return preflight2(ctx);
+NotTEC
+CancelCheck::doPreflight(PreflightContext const& ctx)
+{
+    return tesSUCCESS;
 }
 
 TER

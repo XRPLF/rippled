@@ -30,15 +30,21 @@
 
 namespace ripple {
 
-NotTEC
-AMMBid::preflight(PreflightContext const& ctx)
+bool
+AMMBid::isEnabled(PreflightContext const& ctx)
 {
-    if (!ammEnabled(ctx.rules))
-        return temDISABLED;
+    return ammEnabled(ctx.rules);
+}
 
-    if (auto const ret = preflight1(ctx, tfUniversalMask))
-        return ret;
+std::uint32_t
+AMMBid::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfUniversalMask;
+}
 
+NotTEC
+AMMBid::doPreflight(PreflightContext const& ctx)
+{
     if (auto const res = invalidAMMAssetPair(
             ctx.tx[sfAsset].get<Issue>(), ctx.tx[sfAsset2].get<Issue>()))
     {
@@ -74,7 +80,7 @@ AMMBid::preflight(PreflightContext const& ctx)
         }
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER

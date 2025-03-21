@@ -30,19 +30,25 @@
 
 namespace ripple {
 
-NotTEC
-VaultSet::preflight(PreflightContext const& ctx)
+bool
+VaultSet::isEnabled(PreflightContext const& ctx)
 {
     if (!ctx.rules.enabled(featureSingleAssetVault))
-        return temDISABLED;
+        return false;
 
-    if (ctx.tx.isFieldPresent(sfDomainID) &&
-        !ctx.rules.enabled(featurePermissionedDomains))
-        return temDISABLED;
+    return !ctx.tx.isFieldPresent(sfDomainID) ||
+        ctx.rules.enabled(featurePermissionedDomains);
+}
 
-    if (auto const ter = preflight1(ctx, tfUniversalMask))
-        return ter;
+std::uint32_t
+VaultSet::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfUniversalMask;
+}
 
+NotTEC
+VaultSet::doPreflight(PreflightContext const& ctx)
+{
     if (ctx.tx[sfVaultID] == beast::zero)
         return temMALFORMED;
 
@@ -63,7 +69,7 @@ VaultSet::preflight(PreflightContext const& ctx)
         !ctx.tx.isFieldPresent(sfData))
         return temMALFORMED;
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER

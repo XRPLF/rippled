@@ -83,6 +83,8 @@ public:
 
 class TxConsequences;
 struct PreflightResult;
+// Needed for preflight specialization
+class Change;
 
 class Transactor
 {
@@ -143,6 +145,27 @@ public:
     // Returns the fee in fee units, not scaled for load.
     static XRPAmount
     calculateBaseFee(ReadView const& view, STTx const& tx);
+
+    // Base class always returns true
+    static bool
+    isEnabled(PreflightContext const& ctx);
+
+    /* Do NOT define a preflight function in a derived class.
+       Instead, define
+
+        // Optional if the transaction is gated on an amendment
+        static bool
+        isEnabled(PreflightContext const& ctx);
+
+        static std::uint32_t
+        getFlagsMask(PreflightContext const& ctx);
+
+        static NotTEC
+        doPreflight(PreflightContext const& ctx);
+    */
+    template <class T>
+    static NotTEC
+    preflight(PreflightContext const& ctx);
 
     static TER
     preclaim(PreclaimContext const& ctx)
@@ -205,10 +228,17 @@ private:
     void trapTransaction(uint256) const;
 };
 
+inline bool
+Transactor::isEnabled(PreflightContext const& ctx)
+{
+    return true;
+}
+
 /** Performs early sanity checks on the txid and flags */
 NotTEC
 preflight0(PreflightContext const& ctx, std::uint32_t flagMask);
 
+namespace detail {
 /** Performs early sanity checks on the account and fee fields.
 
     (And passes flagMask to preflight0)
@@ -219,6 +249,28 @@ preflight1(PreflightContext const& ctx, std::uint32_t flagMask);
 /** Checks whether the signature appears valid */
 NotTEC
 preflight2(PreflightContext const& ctx);
+}  // namespace detail
+
+// Defined in Change.cpp
+template <>
+NotTEC
+Transactor::preflight<Change>(PreflightContext const& ctx);
+
+template <class T>
+NotTEC
+Transactor::preflight(PreflightContext const& ctx)
+{
+    if (!T::isEnabled(ctx))
+        return temDISABLED;
+
+    if (auto const ret = detail::preflight1(ctx, T::getFlagsMask(ctx)))
+        return ret;
+
+    if (auto const ret = T::doPreflight(ctx))
+        return ret;
+
+    return detail::preflight2(ctx);
+}
 
 }  // namespace ripple
 

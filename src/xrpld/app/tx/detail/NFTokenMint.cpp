@@ -38,19 +38,26 @@ extractNFTokenFlagsFromTxFlags(std::uint32_t txFlags)
     return static_cast<std::uint16_t>(txFlags & 0x0000FFFF);
 }
 
-NotTEC
-NFTokenMint::preflight(PreflightContext const& ctx)
+static bool
+hasOfferFields(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureNonFungibleTokensV1))
-        return temDISABLED;
-
-    bool const hasOfferFields = ctx.tx.isFieldPresent(sfAmount) ||
+    return ctx.tx.isFieldPresent(sfAmount) ||
         ctx.tx.isFieldPresent(sfDestination) ||
         ctx.tx.isFieldPresent(sfExpiration);
+}
 
-    if (!ctx.rules.enabled(featureNFTokenMintOffer) && hasOfferFields)
-        return temDISABLED;
+bool
+NFTokenMint::isEnabled(PreflightContext const& ctx)
+{
+    if (!ctx.rules.enabled(featureNonFungibleTokensV1))
+        return false;
 
+    return ctx.rules.enabled(featureNFTokenMintOffer) || !hasOfferFields(ctx);
+}
+
+std::uint32_t
+NFTokenMint::getFlagsMask(PreflightContext const& ctx)
+{
     // Prior to fixRemoveNFTokenAutoTrustLine, transfer of an NFToken between
     // accounts allowed a TrustLine to be added to the issuer of that token
     // without explicit permission from that issuer.  This was enabled by
@@ -73,9 +80,12 @@ NFTokenMint::preflight(PreflightContext const& ctx)
         : ctx.rules.enabled(featureDynamicNFT) ? tfNFTokenMintOldMaskWithMutable
                                                : tfNFTokenMintOldMask;
 
-    if (auto const ret = preflight1(ctx, nfTokenMintMask))
-        return ret;
+    return nfTokenMintMask;
+}
 
+NotTEC
+NFTokenMint::doPreflight(PreflightContext const& ctx)
+{
     if (auto const f = ctx.tx[~sfTransferFee])
     {
         if (f > maxTransferFee)
@@ -97,7 +107,7 @@ NFTokenMint::preflight(PreflightContext const& ctx)
             return temMALFORMED;
     }
 
-    if (hasOfferFields)
+    if (hasOfferFields(ctx))
     {
         // The Amount field must be present if either the Destination or
         // Expiration fields are present.
@@ -120,7 +130,7 @@ NFTokenMint::preflight(PreflightContext const& ctx)
         }
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 uint256

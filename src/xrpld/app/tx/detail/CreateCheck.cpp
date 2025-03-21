@@ -28,15 +28,21 @@
 
 namespace ripple {
 
-NotTEC
-CreateCheck::preflight(PreflightContext const& ctx)
+bool
+CreateCheck::isEnabled(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureChecks))
-        return temDISABLED;
+    return ctx.rules.enabled(featureChecks);
+}
 
-    if (auto const ret = preflight1(ctx, tfUniversalMask))
-        return ret;
+std::uint32_t
+CreateCheck::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfUniversalMask;
+}
 
+NotTEC
+CreateCheck::doPreflight(PreflightContext const& ctx)
+{
     if (ctx.tx[sfAccount] == ctx.tx[sfDestination])
     {
         // They wrote a check to themselves.
@@ -69,7 +75,7 @@ CreateCheck::preflight(PreflightContext const& ctx)
         }
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER

@@ -33,20 +33,26 @@
 
 namespace ripple {
 
-NotTEC
-VaultCreate::preflight(PreflightContext const& ctx)
+bool
+VaultCreate::isEnabled(PreflightContext const& ctx)
 {
     if (!ctx.rules.enabled(featureSingleAssetVault) ||
         !ctx.rules.enabled(featureMPTokensV1))
-        return temDISABLED;
+        return false;
 
-    if (ctx.tx.isFieldPresent(sfDomainID) &&
-        !ctx.rules.enabled(featurePermissionedDomains))
-        return temDISABLED;
+    return !ctx.tx.isFieldPresent(sfDomainID) ||
+        ctx.rules.enabled(featurePermissionedDomains);
+}
 
-    if (auto const ter = preflight1(ctx, tfVaultCreateMask))
-        return ter;
+std::uint32_t
+VaultCreate::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfVaultCreateMask;
+}
 
+NotTEC
+VaultCreate::doPreflight(PreflightContext const& ctx)
+{
     if (auto const data = ctx.tx[~sfData])
     {
         if (data->empty() || data->length() > maxDataPayloadLength)
@@ -81,7 +87,7 @@ VaultCreate::preflight(PreflightContext const& ctx)
             return temMALFORMED;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 XRPAmount
