@@ -157,7 +157,7 @@ std::size_t constexpr maxTrim = 25;
 
 /** The maximum number of delegate permissions an account can grant
  */
-constexpr std::size_t permissionMaxSize = 10;
+std::size_t constexpr permissionMaxSize = 10;
 
 }  // namespace ripple
 

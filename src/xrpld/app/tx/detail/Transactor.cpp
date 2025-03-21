@@ -19,6 +19,7 @@
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/CredentialHelpers.h>
+#include <xrpld/app/misc/DelegateUtils.h>
 #include <xrpld/app/misc/LoadFeeTrack.h>
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
@@ -195,24 +196,15 @@ Transactor::checkPermission(ReadView const& view, STTx const& tx)
 {
     auto const delegate = tx[~sfDelegate];
     if (!delegate)
-        return temMALFORMED;  // LCOV_EXCL_LINE
+        return tesSUCCESS;
 
     auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
     auto const sle = view.read(delegateKey);
+
     if (!sle)
         return tecNO_PERMISSION;
 
-    auto const permissionArray = sle->getFieldArray(sfPermissions);
-    auto const transactionType = tx.getTxnType();
-
-    for (auto const& permission : permissionArray)
-    {
-        auto const permissionValue = permission[sfPermissionValue];
-        if (permissionValue == transactionType + 1)
-            return tesSUCCESS;
-    }
-
-    return tecNO_PERMISSION;
+    return checkTxPermission(sle, tx);
 }
 
 XRPAmount

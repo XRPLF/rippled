@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <xrpld/app/misc/DelegateUtils.h>
 #include <xrpld/app/tx/detail/SetAccount.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/ledger/View.h>
@@ -191,9 +192,11 @@ SetAccount::preflight(PreflightContext const& ctx)
 TER
 SetAccount::checkPermission(ReadView const& view, STTx const& tx)
 {
+    // SetAccount is prohibited to be granted on a transaction level,
+    // but some granular permissions are allowed.
     auto const delegate = tx[~sfDelegate];
     if (!delegate)
-        return temMALFORMED;  // LCOV_EXCL_LINE
+        return tesSUCCESS;
 
     auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
     auto const sle = view.read(delegateKey);
@@ -202,20 +205,7 @@ SetAccount::checkPermission(ReadView const& view, STTx const& tx)
         return tecNO_PERMISSION;
 
     std::unordered_set<GranularPermissionType> granularPermissions;
-    auto const permissionArray = sle->getFieldArray(sfPermissions);
-    for (auto const& permission : permissionArray)
-    {
-        auto const permissionValue = permission[sfPermissionValue];
-        if (permissionValue == ttACCOUNT_SET + 1)
-            return tesSUCCESS;
-
-        auto const granularValue =
-            static_cast<GranularPermissionType>(permissionValue);
-        auto const& type =
-            Permission::getInstance().getGranularTxType(granularValue);
-        if (type && *type == ttACCOUNT_SET)
-            granularPermissions.insert(granularValue);
-    }
+    loadGranularPermission(sle, ttACCOUNT_SET, granularPermissions);
 
     auto const uSetFlag = tx.getFieldU32(sfSetFlag);
     auto const uClearFlag = tx.getFieldU32(sfClearFlag);
@@ -231,7 +221,8 @@ SetAccount::checkPermission(ReadView const& view, STTx const& tx)
         !granularPermissions.contains(AccountEmailHashSet))
         return tecNO_PERMISSION;
 
-    if (tx.isFieldPresent(sfWalletLocator))
+    if (tx.isFieldPresent(sfWalletLocator) ||
+        tx.isFieldPresent(sfNFTokenMinter))
         return tecNO_PERMISSION;
 
     if (tx.isFieldPresent(sfMessageKey) &&

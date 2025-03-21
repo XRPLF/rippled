@@ -92,14 +92,14 @@ parseDelegate(Json::Value const& params, Json::Value& jvResult)
         parseBase58<AccountID>(params[jss::account].asString());
     if (!account)
     {
-        jvResult[jss::error] = "malformedAccount";
+        jvResult[jss::error] = "malformedAddress";
         return std::nullopt;
     }
     auto const authorize =
         parseBase58<AccountID>(params[jss::authorize].asString());
     if (!authorize)
     {
-        jvResult[jss::error] = "malformedAuthorize";
+        jvResult[jss::error] = "malformedAddress";
         return std::nullopt;
     }
     return keylet::delegate(*account, *authorize).key;
@@ -917,11 +917,11 @@ doLedgerEntry(RPC::JsonContext& context)
         {jss::index, parseIndex, ltANY},
         {jss::account_root, parseAccountRoot, ltACCOUNT_ROOT},
         // TODO: add amendments
-        {jss::delegate, parseDelegate, ltDELEGATE},
         {jss::amm, parseAMM, ltAMM},
         {jss::bridge, parseBridge, ltBRIDGE},
         {jss::check, parseCheck, ltCHECK},
         {jss::credential, parseCredential, ltCREDENTIAL},
+        {jss::delegate, parseDelegate, ltDELEGATE},
         {jss::deposit_preauth, parseDepositPreauth, ltDEPOSIT_PREAUTH},
         {jss::did, parseDID, ltDID},
         {jss::directory, parseDirectory, ltDIR_NODE},

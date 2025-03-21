@@ -35,7 +35,7 @@ DelegateSet::preflight(PreflightContext const& ctx)
         return temDISABLED;
 
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;  // LCOV_EXCL_LINE
+        return ret;
 
     auto const& permissions = ctx.tx.getFieldArray(sfPermissions);
     if (permissions.size() > permissionMaxSize)

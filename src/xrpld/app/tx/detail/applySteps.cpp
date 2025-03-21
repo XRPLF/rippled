@@ -197,15 +197,10 @@ invoke_preclaim(PreclaimContext const& ctx)
                 if (result != tesSUCCESS)
                     return result;
 
-                // if this is a delegated transaction, check if the account
-                // has permission.
-                if (ctx.tx.isFieldPresent(sfDelegate))
-                {
-                    result = T::checkPermission(ctx.view, ctx.tx);
+                result = T::checkPermission(ctx.view, ctx.tx);
 
-                    if (result != tesSUCCESS)
-                        return result;
-                }
+                if (result != tesSUCCESS)
+                    return result;
 
                 result = T::checkSign(ctx);
 

@@ -29,7 +29,7 @@ Permission::Permission()
 #pragma push_macro("PERMISSION")
 #undef PERMISSION
 
-#define PERMISSION(name, type, txType, value) {name, type},
+#define PERMISSION(type, txType, value) {#type, type},
 
 #include <xrpl/protocol/detail/permissions.macro>
 
@@ -41,7 +41,7 @@ Permission::Permission()
 #pragma push_macro("PERMISSION")
 #undef PERMISSION
 
-#define PERMISSION(name, type, txType, value) {type, txType},
+#define PERMISSION(type, txType, value) {type, txType},
 
 #include <xrpl/protocol/detail/permissions.macro>
 

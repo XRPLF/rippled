@@ -91,9 +91,8 @@ class Delegate_test : public beast::unit_test::suite
         BEAST_EXPECT(
             testInvalidParams(gw.human(), std::nullopt) == "malformedRequest");
         BEAST_EXPECT(
-            testInvalidParams("-", alice.human()) == "malformedAccount");
-        BEAST_EXPECT(
-            testInvalidParams(gw.human(), "-") == "malformedAuthorize");
+            testInvalidParams("-", alice.human()) == "malformedAddress");
+        BEAST_EXPECT(testInvalidParams(gw.human(), "-") == "malformedAddress");
 
         // this lambda function is used to compare the json value of ledger
         // entry response with the given list of permissions.
@@ -210,6 +209,23 @@ class Delegate_test : public beast::unit_test::suite
         {
             env(delegate_set::delegateSet(alice, alice, {"Payment"}),
                 ter(temMALFORMED));
+        }
+
+        // bad fee
+        {
+            Json::Value jv;
+            jv[jss::TransactionType] = jss::DelegateSet;
+            jv[jss::Account] = gw.human();
+            jv[jss::Authorize] = alice.human();
+            Json::Value permissionsJson(Json::arrayValue);
+            Json::Value permissionValue;
+            permissionValue[sfPermissionValue.jsonName] = "Payment";
+            Json::Value permissionObj;
+            permissionObj[sfPermission.jsonName] = permissionValue;
+            permissionsJson.append(permissionObj);
+            jv[sfPermissions.jsonName] = permissionsJson;
+            jv[sfFee.jsonName] = -1;
+            env(jv, ter(temBAD_FEE));
         }
 
         // when the provided permissions include a transaction that does not
@@ -495,6 +511,11 @@ class Delegate_test : public beast::unit_test::suite
         // bob pay 50 XRP to alice herself on behalf of alice
         env(pay(alice, alice, XRP(50)), delegate(bob), ter(temREDUNDANT));
         env.close();
+
+        // bob does not have permission to create check
+        env(check::create(alice, bob, XRP(10)),
+            delegate(bob),
+            ter(tecNO_PERMISSION));
     }
 
     void

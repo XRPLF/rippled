@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/app/misc/CredentialHelpers.h>
+#include <xrpld/app/misc/DelegateUtils.h>
 #include <xrpld/app/paths/RippleCalc.h>
 #include <xrpld/app/tx/detail/Payment.h>
 #include <xrpld/ledger/View.h>
@@ -243,7 +244,7 @@ Payment::checkPermission(ReadView const& view, STTx const& tx)
 {
     auto const delegate = tx[~sfDelegate];
     if (!delegate)
-        return temMALFORMED;  // LCOV_EXCL_LINE
+        return tesSUCCESS;
 
     auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
     auto const sle = view.read(delegateKey);
@@ -251,21 +252,11 @@ Payment::checkPermission(ReadView const& view, STTx const& tx)
     if (!sle)
         return tecNO_PERMISSION;
 
-    std::unordered_set<GranularPermissionType> granularPermissions;
-    auto const permissionArray = sle->getFieldArray(sfPermissions);
-    for (auto const& permission : permissionArray)
-    {
-        auto const permissionValue = permission[sfPermissionValue];
-        if (permissionValue == ttPAYMENT + 1)
-            return tesSUCCESS;
+    if (checkTxPermission(sle, tx) == tesSUCCESS)
+        return tesSUCCESS;
 
-        auto const granularValue =
-            static_cast<GranularPermissionType>(permissionValue);
-        auto const& type =
-            Permission::getInstance().getGranularTxType(granularValue);
-        if (type && *type == ttPAYMENT)
-            granularPermissions.insert(granularValue);
-    }
+    std::unordered_set<GranularPermissionType> granularPermissions;
+    loadGranularPermission(sle, ttPAYMENT, granularPermissions);
 
     auto const dstAmount = tx.getFieldAmount(sfAmount);
     auto const amountIssue = dstAmount.issue();

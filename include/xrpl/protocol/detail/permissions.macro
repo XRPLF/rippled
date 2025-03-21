@@ -32,37 +32,37 @@
  */
 
 /** This permission grants the delegated account the ability to authorize a trustline. */
-PERMISSION("TrustlineAuthorize", TrustlineAuthorize, ttTRUST_SET, 65537)
+PERMISSION(TrustlineAuthorize, ttTRUST_SET, 65537)
 
 /** This permission grants the delegated account the ability to freeze a trustline. */
-PERMISSION("TrustlineFreeze", TrustlineFreeze, ttTRUST_SET, 65538)
+PERMISSION(TrustlineFreeze, ttTRUST_SET, 65538)
 
 /** This permission grants the delegated account the ability to unfreeze a trustline. */
-PERMISSION("TrustlineUnfreeze", TrustlineUnfreeze, ttTRUST_SET, 65539)
+PERMISSION(TrustlineUnfreeze, ttTRUST_SET, 65539)
 
 /** This permission grants the delegated account the ability to set Domain. */
-PERMISSION("AccountDomainSet", AccountDomainSet, ttACCOUNT_SET, 65540)
+PERMISSION(AccountDomainSet, ttACCOUNT_SET, 65540)
 
 /** This permission grants the delegated account the ability to set EmailHashSet. */
-PERMISSION("AccountEmailHashSet", AccountEmailHashSet, ttACCOUNT_SET, 65541)
+PERMISSION(AccountEmailHashSet, ttACCOUNT_SET, 65541)
 
 /** This permission grants the delegated account the ability to set MessageKey. */
-PERMISSION("AccountMessageKeySet", AccountMessageKeySet, ttACCOUNT_SET, 65542)
+PERMISSION(AccountMessageKeySet, ttACCOUNT_SET, 65542)
 
 /** This permission grants the delegated account the ability to set TransferRate. */
-PERMISSION("AccountTransferRateSet", AccountTransferRateSet, ttACCOUNT_SET, 65543)
+PERMISSION(AccountTransferRateSet, ttACCOUNT_SET, 65543)
 
 /** This permission grants the delegated account the ability to set TickSize. */
-PERMISSION("AccountTickSizeSet", AccountTickSizeSet, ttACCOUNT_SET, 65544)
+PERMISSION(AccountTickSizeSet, ttACCOUNT_SET, 65544)
 
 /** This permission grants the delegated account the ability to mint payment, which means sending a payment for a currency where the sending account is the issuer. */
-PERMISSION("PaymentMint", PaymentMint, ttPAYMENT, 65545)
+PERMISSION(PaymentMint, ttPAYMENT, 65545)
 
 /** This permission grants the delegated account the ability to burn payment, which means sending a payment for a currency where the destination account is the issuer */
-PERMISSION("PaymentBurn", PaymentBurn, ttPAYMENT, 65546)
+PERMISSION(PaymentBurn, ttPAYMENT, 65546)
 
 /** This permission grants the delegated account the ability to lock MPToken. */
-PERMISSION("MPTokenIssuanceLock", MPTokenIssuanceLock, ttMPTOKEN_ISSUANCE_SET, 65547)
+PERMISSION(MPTokenIssuanceLock, ttMPTOKEN_ISSUANCE_SET, 65547)
 
 /** This permission grants the delegated account the ability to unlock MPToken. */
-PERMISSION("MPTokenIssuanceUnlock", MPTokenIssuanceUnlock, ttMPTOKEN_ISSUANCE_SET, 65548)
+PERMISSION(MPTokenIssuanceUnlock, ttMPTOKEN_ISSUANCE_SET, 65548)

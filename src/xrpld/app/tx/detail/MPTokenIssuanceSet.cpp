@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <xrpld/app/misc/DelegateUtils.h>
 #include <xrpld/app/tx/detail/MPTokenIssuanceSet.h>
 
 #include <xrpl/protocol/Feature.h>
@@ -55,7 +56,7 @@ MPTokenIssuanceSet::checkPermission(ReadView const& view, STTx const& tx)
 {
     auto const delegate = tx[~sfDelegate];
     if (!delegate)
-        return temMALFORMED;  // LCOV_EXCL_LINE
+        return tesSUCCESS;
 
     auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
     auto const sle = view.read(delegateKey);
@@ -63,23 +64,19 @@ MPTokenIssuanceSet::checkPermission(ReadView const& view, STTx const& tx)
     if (!sle)
         return tecNO_PERMISSION;
 
-    std::unordered_set<GranularPermissionType> granularPermissions;
-    auto const permissionArray = sle->getFieldArray(sfPermissions);
-    for (auto const& permission : permissionArray)
-    {
-        auto const permissionValue = permission[sfPermissionValue];
-        if (permissionValue == ttMPTOKEN_ISSUANCE_SET + 1)
-            return tesSUCCESS;
-
-        auto const granularValue =
-            static_cast<GranularPermissionType>(permissionValue);
-        auto const& type =
-            Permission::getInstance().getGranularTxType(granularValue);
-        if (type && *type == ttMPTOKEN_ISSUANCE_SET)
-            granularPermissions.insert(granularValue);
-    }
+    if (checkTxPermission(sle, tx) == tesSUCCESS)
+        return tesSUCCESS;
 
     auto const txFlags = tx.getFlags();
+
+    // this is added in case more flags will be added for MPTokenIssuanceSet
+    // in the future. Currently unreachable.
+    if (txFlags & tfTrustSetPermissionMask)
+        return tecNO_PERMISSION;  // LCOV_EXCL_LINE
+
+    std::unordered_set<GranularPermissionType> granularPermissions;
+    loadGranularPermission(sle, ttMPTOKEN_ISSUANCE_SET, granularPermissions);
+
     if (txFlags & tfMPTLock &&
         !granularPermissions.contains(MPTokenIssuanceLock))
         return tecNO_PERMISSION;
