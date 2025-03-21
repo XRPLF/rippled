@@ -87,15 +87,6 @@ public:
     std::size_t
     size() const;
 
-    void
-    setTargetSize(int s);
-
-    clock_type::duration
-    getTargetAge() const;
-
-    void
-    setTargetAge(clock_type::duration s);
-
     int
     getCacheSize() const;
 
@@ -331,10 +322,10 @@ private:
     std::string m_name;
 
     // Desired number of cache entries (0 = ignore)
-    int m_target_size;
+    const int m_target_size;
 
     // Desired maximum cache age
-    clock_type::duration m_target_age;
+    const clock_type::duration m_target_age;
 
     // Number of items cached
     int m_cache_count;
