@@ -31,7 +31,7 @@ namespace ripple {
 NotTEC
 DelegateSet::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureDelegate))
+    if (!ctx.rules.enabled(featurePermissionDelegation))
         return temDISABLED;
 
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))

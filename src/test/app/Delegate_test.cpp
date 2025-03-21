@@ -28,7 +28,7 @@ class Delegate_test : public beast::unit_test::suite
     void
     testFeatureDisabled(FeatureBitset features)
     {
-        testcase("test featureDelegate not enabled");
+        testcase("test featurePermissionDelegation not enabled");
         using namespace jtx;
 
         Env env(*this, features);
@@ -1286,7 +1286,7 @@ class Delegate_test : public beast::unit_test::suite
     run() override
     {
         FeatureBitset const all{jtx::supported_amendments()};
-        testFeatureDisabled(all - featureDelegate);
+        testFeatureDisabled(all - featurePermissionDelegation);
         testDelegateSet(all);
         testInvalidRequest(all);
         testReserve(all);
