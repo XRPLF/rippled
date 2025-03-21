@@ -894,6 +894,37 @@ struct LedgerEntry
     LedgerEntryType expectedType;
 };
 
+template <LedgerEntryType Type>
+static void
+supplementJson(
+    ReadView const&,
+    std::shared_ptr<SLE const> const& sle,
+    Json::Value&)
+{
+    XRPL_ASSERT(
+        sle->getType() == Type, "ripple::supplementJson : matching type");
+}
+
+template <>
+void
+supplementJson<ltVAULT>(
+    ReadView const& view,
+    std::shared_ptr<SLE const> const& vault,
+    Json::Value& node)
+{
+    XRPL_ASSERT(
+        vault->getType() == ltVAULT,
+        "ripple::supplementJson<ltVAULT> : matching type");
+
+    auto const share = vault->at(sfMPTokenIssuanceID);
+    auto const sleIssuance = view.read(keylet::mptIssuance(share));
+    if (!sleIssuance)
+        return;
+
+    node[jss::ShareTotal] =
+        Number(sleIssuance->getFieldU64(sfOutstandingAmount));
+}
+
 // {
 //   ledger_hash : <ledger>
 //   ledger_index : <ledger_index>
@@ -1033,6 +1064,8 @@ doLedgerEntry(RPC::JsonContext& context)
     else
     {
         jvResult[jss::node] = sleNode->getJson(JsonOptions::none);
+        if (sleNode->getType() == ltVAULT)
+            supplementJson<ltVAULT>(*lpLedger, sleNode, jvResult[jss::node]);
         jvResult[jss::index] = to_string(uNodeIndex);
     }
 

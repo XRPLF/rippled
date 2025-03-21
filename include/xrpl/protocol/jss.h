@@ -90,6 +90,7 @@ JSS(SendMax);                            // in: TransactionSign
 JSS(Sequence);                           // in/out: TransactionSign; field.
 JSS(SetFlag);                            // field.
 JSS(Share);                              // out: Vault
+JSS(ShareTotal);                         // out: Vault
 JSS(Signer);                             // field.
 JSS(Signers);                            // field.
 JSS(SigningPubKey);                      // field.
