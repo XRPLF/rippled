@@ -75,22 +75,28 @@ preflightHelper<MPTIssue>(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
-NotTEC
-Clawback::preflight(PreflightContext const& ctx)
+bool
+Clawback::isEnabled(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureClawback))
-        return temDISABLED;
+    return ctx.rules.enabled(featureClawback);
+}
 
-    if (auto const ret = preflight1(ctx, tfClawbackMask))
-        return ret;
+std::uint32_t
+Clawback::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfClawbackMask;
+}
 
+NotTEC
+Clawback::doPreflight(PreflightContext const& ctx)
+{
     if (auto const ret = std::visit(
             [&]<typename T>(T const&) { return preflightHelper<T>(ctx); },
             ctx.tx[sfAmount].asset().value());
         !isTesSuccess(ret))
         return ret;
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 template <ValidIssueType T>

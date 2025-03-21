@@ -25,16 +25,22 @@
 
 namespace ripple {
 
-NotTEC
-NFTokenModify::preflight(PreflightContext const& ctx)
+bool
+NFTokenModify::isEnabled(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureNonFungibleTokensV1_1) ||
-        !ctx.rules.enabled(featureDynamicNFT))
-        return temDISABLED;
+    return ctx.rules.enabled(featureNonFungibleTokensV1_1) &&
+        ctx.rules.enabled(featureDynamicNFT);
+}
 
-    if (NotTEC const ret = preflight1(ctx, tfUniversalMask))
-        return ret;
+std::uint32_t
+NFTokenModify::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfUniversalMask;
+}
 
+NotTEC
+NFTokenModify::doPreflight(PreflightContext const& ctx)
+{
     if (auto owner = ctx.tx[~sfOwner]; owner == ctx.tx[sfAccount])
         return temMALFORMED;
 
@@ -44,7 +50,7 @@ NFTokenModify::preflight(PreflightContext const& ctx)
             return temMALFORMED;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER

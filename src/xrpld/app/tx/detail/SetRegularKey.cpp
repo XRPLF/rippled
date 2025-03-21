@@ -48,12 +48,15 @@ SetRegularKey::calculateBaseFee(ReadView const& view, STTx const& tx)
     return Transactor::calculateBaseFee(view, tx);
 }
 
-NotTEC
-SetRegularKey::preflight(PreflightContext const& ctx)
+std::uint32_t
+SetRegularKey::getFlagsMask(PreflightContext const& ctx)
 {
-    if (auto const ret = preflight1(ctx, tfUniversalMask))
-        return ret;
+    return tfUniversalMask;
+}
 
+NotTEC
+SetRegularKey::doPreflight(PreflightContext const& ctx)
+{
     if (ctx.rules.enabled(fixMasterKeyAsRegularKey) &&
         ctx.tx.isFieldPresent(sfRegularKey) &&
         (ctx.tx.getAccountID(sfRegularKey) == ctx.tx.getAccountID(sfAccount)))
@@ -61,7 +64,7 @@ SetRegularKey::preflight(PreflightContext const& ctx)
         return temBAD_REGKEY;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER

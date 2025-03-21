@@ -32,15 +32,21 @@
 
 namespace ripple {
 
-NotTEC
-CashCheck::preflight(PreflightContext const& ctx)
+bool
+CashCheck::isEnabled(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureChecks))
-        return temDISABLED;
+    return ctx.rules.enabled(featureChecks);
+}
 
-    if (auto const ret = preflight1(ctx, tfUniversalMask))
-        return ret;
+std::uint32_t
+CashCheck::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfUniversalMask;
+}
 
+NotTEC
+CashCheck::doPreflight(PreflightContext const& ctx)
+{
     // Exactly one of Amount or DeliverMin must be present.
     auto const optAmount = ctx.tx[~sfAmount];
     auto const optDeliverMin = ctx.tx[~sfDeliverMin];
@@ -68,7 +74,7 @@ CashCheck::preflight(PreflightContext const& ctx)
         return temBAD_CURRENCY;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER

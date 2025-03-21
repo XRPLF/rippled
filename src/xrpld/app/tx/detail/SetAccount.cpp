@@ -56,12 +56,15 @@ SetAccount::makeTxConsequences(PreflightContext const& ctx)
     return TxConsequences{ctx.tx, getTxConsequencesCategory(ctx.tx)};
 }
 
-NotTEC
-SetAccount::preflight(PreflightContext const& ctx)
+std::uint32_t
+SetAccount::getFlagsMask(PreflightContext const& ctx)
 {
-    if (auto const ret = preflight1(ctx, tfAccountSetMask))
-        return ret;
+    return tfAccountSetMask;
+}
 
+NotTEC
+SetAccount::doPreflight(PreflightContext const& ctx)
+{
     auto& tx = ctx.tx;
     auto& j = ctx.j;
 
@@ -179,7 +182,7 @@ SetAccount::preflight(PreflightContext const& ctx)
             return temMALFORMED;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER

@@ -30,15 +30,21 @@
 
 namespace ripple {
 
-NotTEC
-VaultClawback::preflight(PreflightContext const& ctx)
+bool
+VaultClawback::isEnabled(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureSingleAssetVault))
-        return temDISABLED;
+    return ctx.rules.enabled(featureSingleAssetVault);
+}
 
-    if (auto const ter = preflight1(ctx, tfUniversalMask))
-        return ter;
+std::uint32_t
+VaultClawback::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfUniversalMask;
+}
 
+NotTEC
+VaultClawback::doPreflight(PreflightContext const& ctx)
+{
     if (ctx.tx[sfVaultID] == beast::zero)
         return temMALFORMED;
 
@@ -60,7 +66,7 @@ VaultClawback::preflight(PreflightContext const& ctx)
             return temMALFORMED;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER

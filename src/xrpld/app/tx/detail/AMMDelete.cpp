@@ -27,16 +27,22 @@
 
 namespace ripple {
 
-NotTEC
-AMMDelete::preflight(PreflightContext const& ctx)
+bool
+AMMDelete::isEnabled(PreflightContext const& ctx)
 {
-    if (!ammEnabled(ctx.rules))
-        return temDISABLED;
+    return ammEnabled(ctx.rules);
+}
 
-    if (auto const ret = preflight1(ctx, tfUniversalMask))
-        return ret;
+std::uint32_t
+AMMDelete::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfUniversalMask;
+}
 
-    return preflight2(ctx);
+NotTEC
+AMMDelete::doPreflight(PreflightContext const& ctx)
+{
+    return tesSUCCESS;
 }
 
 TER

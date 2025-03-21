@@ -28,15 +28,21 @@
 
 namespace ripple {
 
-NotTEC
-NFTokenCancelOffer::preflight(PreflightContext const& ctx)
+bool
+NFTokenCancelOffer::isEnabled(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureNonFungibleTokensV1))
-        return temDISABLED;
+    return ctx.rules.enabled(featureNonFungibleTokensV1);
+}
 
-    if (auto const ret = preflight1(ctx, tfNFTokenCancelOfferMask))
-        return ret;
+std::uint32_t
+NFTokenCancelOffer::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfNFTokenCancelOfferMask;
+}
 
+NotTEC
+NFTokenCancelOffer::doPreflight(PreflightContext const& ctx)
+{
     if (auto const& ids = ctx.tx[sfNFTokenOffers];
         ids.empty() || (ids.size() > maxTokenOfferCancelCount))
         return temMALFORMED;
@@ -48,7 +54,7 @@ NFTokenCancelOffer::preflight(PreflightContext const& ctx)
     if (std::adjacent_find(ids.begin(), ids.end()) != ids.end())
         return temMALFORMED;
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER
