@@ -119,22 +119,9 @@ class Delegate_test : public beast::unit_test::suite
                 unsigned i = 0;
                 for (auto const& permission : permissions)
                 {
-                    auto const granularVal =
-                        Permission::getInstance().getGranularValue(permission);
-                    if (granularVal)
-                        BEAST_EXPECT(
-                            jPermissions[i][sfPermission.jsonName]
-                                        [sfPermissionValue.jsonName] ==
-                            *granularVal);
-                    else
-                    {
-                        auto const transVal =
-                            TxFormats::getInstance().findTypeByName(permission);
-                        BEAST_EXPECT(
-                            jPermissions[i][sfPermission.jsonName]
-                                        [sfPermissionValue.jsonName] ==
-                            transVal + 1);
-                    }
+                    BEAST_EXPECT(
+                        jPermissions[i][sfPermission.jsonName]
+                                    [sfPermissionValue.jsonName] == permission);
                     i++;
                 }
             };

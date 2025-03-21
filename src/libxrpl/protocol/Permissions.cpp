@@ -37,6 +37,18 @@ Permission::Permission()
 #pragma pop_macro("PERMISSION")
     };
 
+    granularNameMap = {
+#pragma push_macro("PERMISSION")
+#undef PERMISSION
+
+#define PERMISSION(type, txType, value) {type, #type},
+
+#include <xrpl/protocol/detail/permissions.macro>
+
+#undef PERMISSION
+#pragma pop_macro("PERMISSION")
+    };
+
     granularTxTypeMap = {
 #pragma push_macro("PERMISSION")
 #undef PERMISSION
@@ -69,6 +81,16 @@ Permission::getGranularValue(std::string const& name) const
     auto const it = granularPermissionMap.find(name);
     if (it != granularPermissionMap.end())
         return static_cast<uint32_t>(it->second);
+
+    return std::nullopt;
+}
+
+std::optional<std::string>
+Permission::getGranularName(GranularPermissionType const& value) const
+{
+    auto const it = granularNameMap.find(value);
+    if (it != granularNameMap.end())
+        return it->second;
 
     return std::nullopt;
 }

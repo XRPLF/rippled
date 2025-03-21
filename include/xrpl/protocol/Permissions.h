@@ -55,6 +55,8 @@ private:
     std::unordered_map<std::string, GranularPermissionType>
         granularPermissionMap;
 
+    std::unordered_map<GranularPermissionType, std::string> granularNameMap;
+
     std::unordered_map<GranularPermissionType, TxType> granularTxTypeMap;
 
     std::unordered_set<std::string> supportedTransactions;
@@ -69,6 +71,9 @@ public:
 
     std::optional<std::uint32_t>
     getGranularValue(std::string const& name) const;
+
+    std::optional<std::string>
+    getGranularName(GranularPermissionType const& value) const;
 
     std::optional<TxType>
     getGranularTxType(GranularPermissionType const& gpType) const;
