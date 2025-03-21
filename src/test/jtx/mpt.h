@@ -88,11 +88,12 @@ public:
 struct MPTInit
 {
     std::vector<Account> holders = {};
-    PrettyAmount const& xrp = XRP(10'000);
-    PrettyAmount const& xrpHolders = XRP(10'000);
+    PrettyAmount const xrp = XRP(10'000);
+    PrettyAmount const xrpHolders = XRP(10'000);
     bool fund = true;
     bool close = true;
 };
+static MPTInit const mptInitNoFund{.fund = false};
 
 struct MPTCreate
 {

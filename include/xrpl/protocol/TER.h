@@ -344,6 +344,9 @@ enum TECcodes : TERUnderlyingType {
     tecARRAY_TOO_LARGE = 191,
     tecLOCKED = 192,
     tecBAD_CREDENTIALS = 193,
+    tecWRONG_ASSET = 194,
+    tecLIMIT_EXCEEDED = 195,
+    tecINVALID_DOMAIN = 196,
 };
 
 //------------------------------------------------------------------------------
