@@ -24,6 +24,14 @@
 
 namespace ripple {
 
+struct Gap
+{
+    uint64_t const page;
+    SLE::pointer node;
+    uint64_t const nextPage;
+    SLE::pointer next;
+};
+
 std::optional<std::uint64_t>
 ApplyView::dirAdd(
     bool preserveOrder,
@@ -31,39 +39,44 @@ ApplyView::dirAdd(
     uint256 const& key,
     std::function<void(std::shared_ptr<SLE> const&)> const& describe)
 {
-    auto root = peek(directory);
+    auto createRoot =
+        [this](
+            Keylet const& directory,
+            uint256 const& key,
+            std::function<void(std::shared_ptr<SLE> const&)> const& describe) {
+            auto newRoot = std::make_shared<SLE>(directory);
+            newRoot->setFieldH256(sfRootIndex, directory.key);
+            describe(newRoot);
 
-    if (!root)
-    {
-        // No root, make it.
-        root = std::make_shared<SLE>(directory);
-        root->setFieldH256(sfRootIndex, directory.key);
-        describe(root);
+            STVector256 v;
+            v.push_back(key);
+            newRoot->setFieldV256(sfIndexes, v);
 
-        STVector256 v;
-        v.push_back(key);
-        root->setFieldV256(sfIndexes, v);
+            insert(newRoot);
+            return std::uint64_t{0};
+        };
 
-        insert(root);
-        return std::uint64_t{0};
-    }
+    auto findPreviousPage = [this](Keylet const& directory, SLE::ref start) {
+        std::uint64_t page = start->getFieldU64(sfIndexPrevious);
 
-    std::uint64_t page = root->getFieldU64(sfIndexPrevious);
+        auto node = start;
 
-    auto node = root;
+        if (page)
+        {
+            node = peek(keylet::page(directory, page));
+            if (!node)
+                LogicError("Directory chain: root back-pointer broken.");
+        }
 
-    if (page)
-    {
-        node = peek(keylet::page(directory, page));
-        if (!node)
-            LogicError("Directory chain: root back-pointer broken.");
-    }
-
-    auto indexes = node->getFieldV256(sfIndexes);
-
-    // If there's space, we use it:
-    if (indexes.size() < dirNodeMaxEntries)
-    {
+        auto indexes = node->getFieldV256(sfIndexes);
+        return std::make_tuple(page, node, indexes);
+    };
+    auto insertKey = [this](
+                         SLE::ref node,
+                         std::uint64_t page,
+                         bool preserveOrder,
+                         STVector256& indexes,
+                         uint256 const& key) {
         if (preserveOrder)
         {
             if (std::find(indexes.begin(), indexes.end(), key) != indexes.end())
@@ -89,36 +102,106 @@ ApplyView::dirAdd(
         node->setFieldV256(sfIndexes, indexes);
         update(node);
         return page;
+    };
+    auto insertPage =
+        [this](
+            std::uint64_t page,
+            SLE::pointer node,
+            std::uint64_t nextPage,
+            SLE::ref next,
+            uint256 const& key,
+            STVector256& indexes,
+            Keylet const& directory,
+            std::function<void(std::shared_ptr<SLE> const&)> const& describe)
+        -> std::optional<std::uint64_t> {
+        // Check whether we're out of pages.
+        if (++page >= dirNodeMaxPages)
+        {
+            return std::nullopt;
+        }
+
+        // We are about to create a new node; we'll link it to
+        // the chain first:
+        node->setFieldU64(sfIndexNext, page);
+        update(node);
+
+        next->setFieldU64(sfIndexPrevious, page);
+        update(next);
+
+        // Insert the new key:
+        indexes.clear();
+        indexes.push_back(key);
+
+        node = std::make_shared<SLE>(keylet::page(directory, page));
+        node->setFieldH256(sfRootIndex, directory.key);
+        node->setFieldV256(sfIndexes, indexes);
+
+        // Save some space by not specifying the value 0 since
+        // it's the default.
+        if (page != 1)
+            node->setFieldU64(sfIndexPrevious, page - 1);
+        if (nextPage)
+            node->setFieldU64(sfIndexNext, nextPage);
+        describe(node);
+        insert(node);
+
+        return page;
+    };
+
+    auto const root = peek(directory);
+
+    if (!root)
+    {
+        // No root, make it.
+        return createRoot(directory, key, describe);
     }
 
-    // Check whether we're out of pages.
-    if (++page >= dirNodeMaxPages)
-        return std::nullopt;
+    auto [page, node, indexes] = findPreviousPage(directory, root);
 
-    // We are about to create a new node; we'll link it to
-    // the chain first:
-    node->setFieldU64(sfIndexNext, page);
-    update(node);
+    if (rules().enabled(featureDefragDirectories))
+    {
+        // If there are more nodes than just the root, and there's no space in
+        // the last one, walk backwards to find one with space, or to find one
+        // missing.
+        std::optional<Gap> gapPages;
+        while (page && indexes.size() >= dirNodeMaxEntries)
+        {
+            // Find a page with space, or a gap in pages.
+            auto [prevPage, prevNode, prevIndexes] =
+                findPreviousPage(directory, node);
+            if (!gapPages && prevPage != page - 1)
+                gapPages.emplace(prevPage, prevNode, page, node);
+            page = prevPage;
+            node = prevNode;
+            indexes = prevIndexes;
+        }
+        // We looped through all the pages back to the root.
+        if (!page)
+        {
+            // If we found a gap, use it.
+            if (gapPages)
+            {
+                return insertPage(
+                    gapPages->page,
+                    gapPages->node,
+                    gapPages->nextPage,
+                    gapPages->node,
+                    key,
+                    indexes,
+                    directory,
+                    describe);
+            }
+            std::tie(page, node, indexes) = findPreviousPage(directory, root);
+        }
+    }
 
-    root->setFieldU64(sfIndexPrevious, page);
-    update(root);
+    // If there's space, we use it:
+    if (indexes.size() < dirNodeMaxEntries)
+    {
+        return insertKey(node, page, preserveOrder, indexes, key);
+    }
 
-    // Insert the new key:
-    indexes.clear();
-    indexes.push_back(key);
-
-    node = std::make_shared<SLE>(keylet::page(directory, page));
-    node->setFieldH256(sfRootIndex, directory.key);
-    node->setFieldV256(sfIndexes, indexes);
-
-    // Save some space by not specifying the value 0 since
-    // it's the default.
-    if (page != 1)
-        node->setFieldU64(sfIndexPrevious, page - 1);
-    describe(node);
-    insert(node);
-
-    return page;
+    return insertPage(page, node, 0, root, key, indexes, directory, describe);
 }
 
 bool
