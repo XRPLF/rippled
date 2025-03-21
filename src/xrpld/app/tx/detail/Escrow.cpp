@@ -19,6 +19,7 @@
 
 #include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/app/misc/HashRouter.h>
+#include <xrpld/app/misc/WasmHostFunctionImpl.h>
 #include <xrpld/app/misc/WasmVM.h>
 #include <xrpld/app/tx/detail/Escrow.h>
 #include <xrpld/conditions/Condition.h>
@@ -601,15 +602,17 @@ EscrowFinish::doApply()
         std::vector<uint8_t> escrowTxData(escrowTx.begin(), escrowTx.end());
         std::vector<uint8_t> escrowObjData(escrowObj.begin(), escrowObj.end());
 
-        EscrowLedgerDataProvider ledgerDataProvider(ctx_.view());
+        WasmHostFunctionsImpl ledgerDataProvider(ctx_, k);
 
-        auto re = runEscrowWasm(wasm, funcName, &ledgerDataProvider);
+        std::uint32_t gasLimit = ctx_.app.config().FEES.extension_compute_limit;
+        auto re = runEscrowWasm(wasm, funcName, &ledgerDataProvider, gasLimit);
         JLOG(j_.trace()) << "Escrow WASM ran";
         if (re.has_value())
         {
             auto reValue = re.value();
-            JLOG(j_.debug()) << "WASM Success: " + std::to_string(reValue);
-            if (!reValue)
+            JLOG(j_.debug())
+                << "WASM Success: " + std::to_string(reValue.result);
+            if (!reValue.result)
             {
                 // ctx_.view().update(slep);
                 return tecWASM_REJECTED;
