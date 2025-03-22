@@ -146,10 +146,6 @@ public:
     static XRPAmount
     calculateBaseFee(ReadView const& view, STTx const& tx);
 
-    // Base class always returns true
-    static bool
-    isEnabled(PreflightContext const& ctx);
-
     /* Do NOT define a preflight function in a derived class.
        Instead, define
 
@@ -212,6 +208,17 @@ protected:
         Fees const& fees,
         ApplyFlags flags);
 
+    // Base class always returns true
+    static bool
+    isEnabled(PreflightContext const& ctx);
+
+    static bool
+    validDataLength(std::optional<Slice> const& slice, std::size_t maxLength);
+
+    template <class T>
+    static bool
+    validNumericRange(std::optional<T> value, T min, T max);
+
 private:
     std::pair<TER, XRPAmount>
     reset(XRPAmount fee);
@@ -270,6 +277,15 @@ Transactor::preflight(PreflightContext const& ctx)
         return ret;
 
     return detail::preflight2(ctx);
+}
+
+template <class T>
+bool
+Transactor::validNumericRange(std::optional<T> value, T min, T max)
+{
+    if (!value)
+        return true;
+    return value >= min && value <= max;
 }
 
 }  // namespace ripple

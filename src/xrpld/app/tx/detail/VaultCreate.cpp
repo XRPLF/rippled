@@ -53,11 +53,8 @@ VaultCreate::getFlagsMask(PreflightContext const& ctx)
 NotTEC
 VaultCreate::doPreflight(PreflightContext const& ctx)
 {
-    if (auto const data = ctx.tx[~sfData])
-    {
-        if (data->empty() || data->length() > maxDataPayloadLength)
-            return temMALFORMED;
-    }
+    if (!validDataLength(ctx.tx[~sfData], maxDataPayloadLength))
+        return temMALFORMED;
 
     if (auto const withdrawalPolicy = ctx.tx[~sfWithdrawalPolicy])
     {

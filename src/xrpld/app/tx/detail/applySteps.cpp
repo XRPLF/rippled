@@ -41,6 +41,7 @@
 #include <xrpld/app/tx/detail/DepositPreauth.h>
 #include <xrpld/app/tx/detail/Escrow.h>
 #include <xrpld/app/tx/detail/LedgerStateFix.h>
+#include <xrpld/app/tx/detail/LoanBroker.h>
 #include <xrpld/app/tx/detail/MPTokenAuthorize.h>
 #include <xrpld/app/tx/detail/MPTokenIssuanceCreate.h>
 #include <xrpld/app/tx/detail/MPTokenIssuanceDestroy.h>

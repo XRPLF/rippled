@@ -211,6 +211,7 @@ TYPED_SFIELD(sfHookSetTxnID,             UINT256,   33)
 TYPED_SFIELD(sfDomainID,                 UINT256,   34)
 TYPED_SFIELD(sfVaultID,                  UINT256,   35)
 TYPED_SFIELD(sfLoanBrokerID,             UINT256,   36)
+TYPED_SFIELD(sfLoanID,                   UINT256,   37)
 
 // number (common)
 TYPED_SFIELD(sfNumber,                   NUMBER,     1)
