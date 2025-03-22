@@ -30,18 +30,21 @@
 
 namespace ripple {
 
-NotTEC
-VaultClawback::preflight(PreflightContext const& ctx)
+bool
+VaultClawback::isEnabled(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureSingleAssetVault))
-        return temDISABLED;
+    return ctx.rules.enabled(featureSingleAssetVault);
+}
 
-    if (auto const ter = preflight1(ctx))
-        return ter;
+std::uint32_t
+VaultClawback::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfUniversalMask;
+}
 
-    if (ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
-
+NotTEC
+VaultClawback::doPreflight(PreflightContext const& ctx)
+{
     AccountID const issuer = ctx.tx[sfAccount];
     AccountID const holder = ctx.tx[sfHolder];
 
@@ -60,7 +63,7 @@ VaultClawback::preflight(PreflightContext const& ctx)
             return temMALFORMED;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER

@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2022 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,23 +17,28 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_SETTRUST_H_INCLUDED
-#define RIPPLE_TX_SETTRUST_H_INCLUDED
+#ifndef RIPPLE_TX_LOANBROKER_H_INCLUDED
+#define RIPPLE_TX_LOANBROKER_H_INCLUDED
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
-#include <xrpl/protocol/TxFlags.h>
-
 namespace ripple {
 
-class SetTrust : public Transactor
+// Lending protocol has dependencies, so capture them here.
+bool
+lendingProtocolEnabled(PreflightContext const& ctx);
+
+class LoanBrokerSet : public Transactor
 {
 public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
-    explicit SetTrust(ApplyContext& ctx) : Transactor(ctx)
+    explicit LoanBrokerSet(ApplyContext& ctx) : Transactor(ctx)
     {
     }
+
+    static bool
+    isEnabled(PreflightContext const& ctx);
 
     static std::uint32_t
     getFlagsMask(PreflightContext const& ctx);
@@ -48,7 +53,7 @@ public:
     doApply() override;
 };
 
-using TrustSet = SetTrust;
+//------------------------------------------------------------------------------
 
 }  // namespace ripple
 

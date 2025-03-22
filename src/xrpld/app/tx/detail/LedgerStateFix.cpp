@@ -27,18 +27,21 @@
 
 namespace ripple {
 
-NotTEC
-LedgerStateFix::preflight(PreflightContext const& ctx)
+bool
+LedgerStateFix::isEnabled(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(fixNFTokenPageLinks))
-        return temDISABLED;
+    return ctx.rules.enabled(fixNFTokenPageLinks);
+}
 
-    if (ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
+std::uint32_t
+LedgerStateFix::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfUniversalMask;
+}
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
+NotTEC
+LedgerStateFix::doPreflight(PreflightContext const& ctx)
+{
     switch (ctx.tx[sfLedgerFixType])
     {
         case FixType::nfTokenPageLink:
@@ -50,7 +53,7 @@ LedgerStateFix::preflight(PreflightContext const& ctx)
             return tefINVALID_LEDGER_FIX_TYPE;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 XRPAmount

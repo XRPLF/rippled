@@ -41,6 +41,7 @@
 #include <xrpld/app/tx/detail/DepositPreauth.h>
 #include <xrpld/app/tx/detail/Escrow.h>
 #include <xrpld/app/tx/detail/LedgerStateFix.h>
+#include <xrpld/app/tx/detail/LoanBroker.h>
 #include <xrpld/app/tx/detail/MPTokenAuthorize.h>
 #include <xrpld/app/tx/detail/MPTokenIssuanceCreate.h>
 #include <xrpld/app/tx/detail/MPTokenIssuanceDestroy.h>
@@ -155,7 +156,7 @@ invoke_preflight(PreflightContext const& ctx)
     try
     {
         return with_txn_type(ctx.tx.getTxnType(), [&]<typename T>() {
-            auto const tec = T::preflight(ctx);
+            auto const tec = Transactor::preflight<T>(ctx);
             return std::make_pair(
                 tec,
                 isTesSuccess(tec) ? consequences_helper<T>(ctx)

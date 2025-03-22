@@ -56,22 +56,19 @@ SetAccount::makeTxConsequences(PreflightContext const& ctx)
     return TxConsequences{ctx.tx, getTxConsequencesCategory(ctx.tx)};
 }
 
-NotTEC
-SetAccount::preflight(PreflightContext const& ctx)
+std::uint32_t
+SetAccount::getFlagsMask(PreflightContext const& ctx)
 {
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
+    return tfAccountSetMask;
+}
 
+NotTEC
+SetAccount::doPreflight(PreflightContext const& ctx)
+{
     auto& tx = ctx.tx;
     auto& j = ctx.j;
 
     std::uint32_t const uTxFlags = tx.getFlags();
-
-    if (uTxFlags & tfAccountSetMask)
-    {
-        JLOG(j.trace()) << "Malformed transaction: Invalid flags set.";
-        return temINVALID_FLAG;
-    }
 
     std::uint32_t const uSetFlag = tx.getFieldU32(sfSetFlag);
     std::uint32_t const uClearFlag = tx.getFieldU32(sfClearFlag);
@@ -185,7 +182,7 @@ SetAccount::preflight(PreflightContext const& ctx)
             return temMALFORMED;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER
