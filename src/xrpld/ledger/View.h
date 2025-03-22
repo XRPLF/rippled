@@ -488,8 +488,12 @@ describeOwnerDir(AccountID const& account);
 [[nodiscard]] TER
 dirLink(ApplyView& view, AccountID const& owner, std::shared_ptr<SLE>& object);
 
-// Which of the owner-object fields should we set: sfAMMID, sfVaultID
-enum class PseudoAccountOwnerType : int { AMM, Vault };
+// Which of the owner-object fields should we set: sfAMMID, sfVaultID,
+// sfLoanBrokerID
+enum class PseudoAccountOwnerType : int { AMM, Vault, LoanBroker };
+
+std::map<PseudoAccountOwnerType, SF_UINT256 const&> const&
+getPseudoAccountOwnerFields();
 
 [[nodiscard]] Expected<std::shared_ptr<SLE>, TER>
 createPseudoAccount(

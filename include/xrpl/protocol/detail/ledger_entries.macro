@@ -501,12 +501,12 @@ LEDGER_ENTRY(ltLOAN_BROKER, 0x0084, LoanBroker, loan_broker, ({
     {sfOwner,                soeREQUIRED},
     {sfData,                 soeDEFAULT},
     {sfManagementFeeRate,    soeDEFAULT},
-    {sfOwnerCount,           soeREQUIRED},
-    {sfDebtTotal,            soeREQUIRED},
-    {sfDebtMaximum,          soeREQUIRED},
-    {sfCoverAvailable,       soeREQUIRED},
-    {sfCoverRateMinimum,     soeREQUIRED},
-    {sfCoverRateLiquidation, soeREQUIRED},
+    {sfOwnerCount,           soeDEFAULT},
+    {sfDebtTotal,            soeDEFAULT},
+    {sfDebtMaximum,          soeDEFAULT},
+    {sfCoverAvailable,       soeDEFAULT},
+    {sfCoverRateMinimum,     soeDEFAULT},
+    {sfCoverRateLiquidation, soeDEFAULT},
 }))
 
 /** A ledger object representing a loan between a Borrower and a Loan Broker

@@ -508,7 +508,6 @@ TRANSACTION(ttVAULT_CLAWBACK, 69, VaultClawback, ({
     {sfAmount, soeOPTIONAL, soeMPTSupported},
 }))
 
-#if 0
 /** This transaction creates and updates a Loan Broker */
 TRANSACTION(ttLOAN_BROKER_SET, 70, LoanBrokerSet, ({
     {sfVaultID, soeREQUIRED},
@@ -520,6 +519,7 @@ TRANSACTION(ttLOAN_BROKER_SET, 70, LoanBrokerSet, ({
     {sfCoverRateLiquidation, soeDEFAULT},
 }))
 
+#if 0
 /** This transaction deletes a Loan Broker */
 TRANSACTION(ttLOAN_BROKER_DELETE, 71, LoanBrokerDelete, ({
     {sfLoanBrokerID, soeREQUIRED},
@@ -555,6 +555,28 @@ TRANSACTION(ttLOAN_SET, 74, LoanSet, ({
     {sfPaymentTotal, soeOPTIONAL},
     {sfPaymentInterval, soeOPTIONAL},
     {sfGracePeriod, soeOPTIONAL},
+}))
+
+/** This transaction deletes an existing Loan */
+TRANSACTION(ttLOAN_DELETE, 75, LoanDelete, ({
+    {sfLoanID, soeREQUIRED},
+}))
+
+/** This transaction is used to change the delinquency status of an existing Loan */
+TRANSACTION(ttLOAN_MANAGE, 76, LoanManage, ({
+    {sfLoanID, soeREQUIRED},
+}))
+
+/** The Borrower uses this transaction to draws funds from the Loan. */
+TRANSACTION(ttLOAN_DRAW, 77, LoanDraw, ({
+    {sfLoanID, soeREQUIRED},
+    {sfAmount, soeREQUIRED},
+}))
+
+/** The Borrower uses this transaction to make a Payment on the Loan. */
+TRANSACTION(ttLOAN_PAY, 77, LoanPay, ({
+    {sfLoanID, soeREQUIRED},
+    {sfAmount, soeREQUIRED},
 }))
 #endif
 

@@ -205,6 +205,16 @@ Transactor::Transactor(ApplyContext& ctx)
 {
 }
 
+bool
+Transactor::validDataLength(
+    std::optional<Slice> const& slice,
+    std::size_t maxLength)
+{
+    if (!slice)
+        return true;
+    return !slice->empty() && slice->length() <= maxLength;
+}
+
 XRPAmount
 Transactor::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
