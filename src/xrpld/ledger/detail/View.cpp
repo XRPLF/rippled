@@ -1035,6 +1035,16 @@ dirLink(ApplyView& view, AccountID const& owner, std::shared_ptr<SLE>& object)
     return tesSUCCESS;
 }
 
+std::map<PseudoAccountOwnerType, SF_UINT256 const&> const&
+getPseudoAccountOwnerFields()
+{
+    static std::map<PseudoAccountOwnerType, SF_UINT256 const&> const fields{
+        {PseudoAccountOwnerType::AMM, sfAMMID},
+        {PseudoAccountOwnerType::Vault, sfVaultID},
+        {PseudoAccountOwnerType::LoanBroker, sfLoanBrokerID}};
+    return fields;
+}
+
 Expected<std::shared_ptr<SLE>, TER>
 createPseudoAccount(
     ApplyView& view,
@@ -1059,7 +1069,12 @@ createPseudoAccount(
     account->setAccountID(sfAccount, accountId);
     account->setFieldAmount(sfBalance, STAmount{});
     std::uint32_t const seqno{
-        view.rules().enabled(featureDeletableAccounts) ? view.seq() : 1};
+        // Pseudo-accounts can't submit transactions, so set the sequence number
+        // to 0 to make them easier to spot and verify, and add an extra level
+        // of protection.
+        view.rules().enabled(featureLendingProtocol)         ? 0
+            : view.rules().enabled(featureDeletableAccounts) ? view.seq()
+                                                             : 1};
     account->setFieldU32(sfSequence, seqno);
     // Ignore reserves requirement, disable the master key, allow default
     // rippling, and enable deposit authorization to prevent payments into
@@ -1067,12 +1082,15 @@ createPseudoAccount(
     account->setFieldU32(
         sfFlags, lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth);
     // Link the pseudo-account with its owner object.
-    if (type == PseudoAccountOwnerType::AMM)
-        account->setFieldH256(sfAMMID, pseudoOwnerKey);
-    else if (type == PseudoAccountOwnerType::Vault)
-        account->setFieldH256(sfVaultID, pseudoOwnerKey);
+    auto const& fields = getPseudoAccountOwnerFields();
+    auto const it = fields.find(type);
+    if (it != fields.end())
+        account->setFieldH256(it->second, pseudoOwnerKey);
     else
+    {
         UNREACHABLE("ripple::createPseudoAccount : unknown owner key type");
+        return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+    }
 
     view.insert(account);
 

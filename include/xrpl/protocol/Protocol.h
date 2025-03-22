@@ -82,6 +82,26 @@ std::size_t constexpr maxDeletableTokenOfferEntries = 500;
  */
 std::uint16_t constexpr maxTransferFee = 50000;
 
+/** The maximum management fee rate allowed in lending.
+
+    TODO: Is this a good name?
+
+    Valid values for the the management fee charged by the Lending Protocol are
+    between 0 and 10000 inclusive. A value of 1 is equivalent to 1/10 basis
+    point fee or 0.001%.
+*/
+std::uint16_t constexpr maxFeeRate = 10'000;
+
+/** The maximum coverage rate allowed in lending.
+
+    TODO: Is this a good name?
+
+    Valid values for the coverage rate charged by the Lending Protocol for first
+    loss capital operations are between 0 and 100000 inclusive. A value of 1 is
+    equivalent to 1/10 bps or 0.001%.
+*/
+std::uint16_t constexpr maxCoverRate = 100'000;
+
 /** The maximum length of a URI inside an NFT */
 std::size_t constexpr maxTokenURILength = 256;
 
