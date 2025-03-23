@@ -23,11 +23,12 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/ledger/ApplyViewImpl.h>
+
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/XRPAmount.h>
+
 #include <optional>
-#include <utility>
 
 namespace ripple {
 
