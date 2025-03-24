@@ -21,8 +21,6 @@
 #define RIPPLE_CRYPTO_RANDOM_H_INCLUDED
 
 #include <mutex>
-#include <string>
-#include <type_traits>
 
 namespace ripple {
 

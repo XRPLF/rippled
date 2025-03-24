@@ -22,7 +22,10 @@
 
 #include <xrpld/nodestore/Backend.h>
 #include <xrpld/nodestore/Scheduler.h>
+
+#include <xrpl/basics/BasicConfig.h>
 #include <xrpl/beast/utility/Journal.h>
+
 #include <nudb/store.hpp>
 
 namespace ripple {

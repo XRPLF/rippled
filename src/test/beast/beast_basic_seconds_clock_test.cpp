@@ -17,9 +17,8 @@
 */
 //==============================================================================
 
-#include <xrpl/beast/unit_test.h>
-
 #include <xrpl/beast/clock/basic_seconds_clock.h>
+#include <xrpl/beast/unit_test.h>
 
 namespace beast {
 

@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <test/jtx/ticket.h>
+
 #include <xrpl/protocol/jss.h>
 
 namespace ripple {

@@ -20,13 +20,13 @@
 #include <xrpld/unity/rocksdb.h>
 
 #if RIPPLE_ROCKSDB_AVAILABLE
-
 #include <xrpld/core/Config.h>  // VFALCO Bad dependency
 #include <xrpld/nodestore/Factory.h>
 #include <xrpld/nodestore/Manager.h>
 #include <xrpld/nodestore/detail/BatchWriter.h>
 #include <xrpld/nodestore/detail/DecodedBlob.h>
 #include <xrpld/nodestore/detail/EncodedBlob.h>
+
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
@@ -191,8 +191,12 @@ public:
 
         if (keyValues.exists("bbt_options"))
         {
+            rocksdb::ConfigOptions config_options;
             auto const s = rocksdb::GetBlockBasedTableOptionsFromString(
-                table_options, get(keyValues, "bbt_options"), &table_options);
+                config_options,
+                table_options,
+                get(keyValues, "bbt_options"),
+                &table_options);
             if (!s.ok())
                 Throw<std::runtime_error>(
                     std::string("Unable to set RocksDB bbt_options: ") +
