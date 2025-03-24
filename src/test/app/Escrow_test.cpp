@@ -3164,8 +3164,9 @@ struct Escrow_test : public beast::unit_test::suite
             XRPAmount txnFees = env.current()->fees().base + 1000;
             env(escrowCreate,
                 finish_function(wasmHex),
-                cancel_time(env.now() + 10s),
-                data("1000"),
+                finish_time(env.now() + 11s),
+                cancel_time(env.now() + 100s),
+                data("1000000000"),  // 1000 XRP in drops
                 fee(txnFees));
             env.close();
 
@@ -3173,6 +3174,12 @@ struct Escrow_test : public beast::unit_test::suite
             {
                 env.require(balance(alice, XRP(4000) - txnFees));
                 env.require(balance(carol, XRP(5000)));
+
+                // FinishAfter time hasn't passed
+                env(finish(carol, alice, seq),
+                    fee(txnFees),
+                    ter(tecNO_PERMISSION));
+                env.close();
 
                 // tx sender not escrow creator (alice)
                 env(finish(carol, alice, seq),
@@ -3194,21 +3201,8 @@ struct Escrow_test : public beast::unit_test::suite
                 env(finish(carol, alice, seq),
                     fee(txnFees),
                     ter(tecWASM_REJECTED));
-
-                // FinishAfter time hasn't passed
-                env(finish(alice, alice, seq),
-                    fee(txnFees),
-                    ter(tecWASM_REJECTED));
-                env(finish(alice, alice, seq),
-                    fee(txnFees),
-                    ter(tecWASM_REJECTED));
-                env(finish(carol, alice, seq),
-                    fee(txnFees),
-                    ter(tecWASM_REJECTED));
-                env(finish(carol, alice, seq),
-                    fee(txnFees),
-                    ter(tecWASM_REJECTED));
                 env.close();
+
                 env(finish(alice, alice, seq), fee(txnFees), ter(tesSUCCESS));
                 env.close();
 
