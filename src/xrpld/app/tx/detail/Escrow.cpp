@@ -19,6 +19,7 @@
 
 #include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/app/misc/HashRouter.h>
+#include <xrpld/app/misc/WasmHostFuncImpl.h>
 #include <xrpld/app/misc/WasmVM.h>
 #include <xrpld/app/tx/detail/Escrow.h>
 #include <xrpld/conditions/Condition.h>
@@ -434,22 +435,6 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-struct EscrowLedgerDataProvider : public LedgerDataProvider
-{
-    ApplyView& view_;
-
-public:
-    EscrowLedgerDataProvider(ApplyView& view) : view_(view)
-    {
-    }
-
-    int32_t
-    get_ledger_sqn() override
-    {
-        return (int32_t)view_.seq();
-    }
-};
-
 TER
 EscrowFinish::doApply()
 {
@@ -601,14 +586,15 @@ EscrowFinish::doApply()
         std::vector<uint8_t> escrowTxData(escrowTx.begin(), escrowTx.end());
         std::vector<uint8_t> escrowObjData(escrowObj.begin(), escrowObj.end());
 
-        EscrowLedgerDataProvider ledgerDataProvider(ctx_.view());
+        WasmHostFunctionsImpl ledgerDataProvider(ctx_, k);
 
-        auto re = runEscrowWasm(wasm, funcName, &ledgerDataProvider);
+        auto re = runEscrowWasm(wasm, funcName, &ledgerDataProvider, 100000);
         JLOG(j_.trace()) << "Escrow WASM ran";
         if (re.has_value())
         {
-            auto reValue = re.value();
-            JLOG(j_.debug()) << "WASM Success: " + std::to_string(reValue);
+            auto reValue = re.value().result;
+            JLOG(j_.debug()) << "WASM Success: " + std::to_string(reValue)
+                             << ", cost: " << re.value().cost;
             if (!reValue)
             {
                 // ctx_.view().update(slep);

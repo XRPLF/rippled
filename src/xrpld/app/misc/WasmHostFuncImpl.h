@@ -16,85 +16,54 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#ifndef RIPPLE_APP_MISC_WASMVM_H_INLCUDED
-#define RIPPLE_APP_MISC_WASMVM_H_INLCUDED
+#ifndef RIPPLE_APP_MISC_WASMHOSTFUNCIMPL_H_INLCUDED
+#define RIPPLE_APP_MISC_WASMHOSTFUNCIMPL_H_INLCUDED
 
 #include <xrpl/basics/Expected.h>
 #include <xrpl/protocol/TER.h>
 
 #include "xrpl/basics/base_uint.h"
+#include "xrpld/app/misc/WasmVM.h"
+#include "xrpld/app/tx/detail/ApplyContext.h"
 #include <wasmedge/wasmedge.h>
 
 namespace ripple {
-const uint32_t MAX_PAGES = 128;  // 8MB = 64KB*128
-
-typedef std::vector<uint8_t> Bytes;
-typedef ripple::uint256 Hash;
-
-template <typename T>
-struct WasmResult
+class WasmHostFunctionsImpl : public HostFunctions
 {
-    T result;
-    uint64_t cost;
-};
-typedef WasmResult<bool> EscrowResult;
-
-struct HostFunctions
-{
-    virtual int32_t
-    getLedgerSqn()
+public:
+    WasmHostFunctionsImpl(ApplyContext& ctx, Keylet leKey)
+        : ctx(ctx), leKey(leKey)
     {
-        return 1;
     }
 
-    virtual int32_t
-    getParentLedgerTime()
-    {
-        return 1;
-    }
+    int32_t
+    getLedgerSqn() override;
 
-    virtual std::optional<Bytes>
-    getTxField(std::string const& fname)
-    {
-        return Bytes{};
-    }
+    int32_t
+    getParentLedgerTime() override;
 
-    virtual std::optional<Bytes>
+    std::optional<Bytes>
+    getTxField(std::string const& fname) override;
+
+    std::optional<Bytes>
     getLedgerEntryField(
         int32_t type,
         Bytes const& kdata,
-        std::string const& fname)
-    {
-        return Bytes{};
-    }
+        std::string const& fname) override;
 
-    virtual std::optional<Bytes>
-    getCurrentLedgerEntryField(std::string const& fname)
-    {
-        return Bytes{};
-    }
+    std::optional<Bytes>
+    getCurrentLedgerEntryField(std::string const& fname) override;
 
-    virtual bool
-    updateData(Bytes const& data)
-    {
-        return true;
-    }
+    bool
+    updateData(Bytes const& data) override;
 
-    virtual Hash
-    computeSha512HalfHash(Bytes const& data)
-    {
-        return Hash{};
-    }
+    Hash
+    computeSha512HalfHash(Bytes const& data) override;
 
-    virtual ~HostFunctions() = default;
+private:
+    ApplyContext& ctx;
+    Keylet leKey;
 };
 
-Expected<EscrowResult, TER>
-runEscrowWasm(
-    std::vector<uint8_t> const& wasmCode,
-    std::string const& funcName,
-    HostFunctions* hfs,
-    uint64_t gasLimit);
-
 }  // namespace ripple
-#endif  // RIPPLE_APP_MISC_WASMVM_H_INLCUDED
+#endif  // RIPPLE_APP_MISC_WASMHOSTFUNCIMPL_H_INLCUDED
