@@ -32,17 +32,20 @@ namespace ripple {
 class TrafficCount
 {
 public:
+    enum category : std::size_t;
+
     class TrafficStats
     {
     public:
-        char const* name;
+        std::string name;
 
         std::atomic<std::uint64_t> bytesIn{0};
         std::atomic<std::uint64_t> bytesOut{0};
         std::atomic<std::uint64_t> messagesIn{0};
         std::atomic<std::uint64_t> messagesOut{0};
 
-        TrafficStats(char const* n) : name(n)
+        TrafficStats(TrafficCount::category cat)
+            : name(TrafficCount::category_to_string(cat))
         {
         }
 
@@ -174,6 +177,8 @@ public:
         unknown  // must be last
     };
 
+    TrafficCount() = default;
+
     /** Given a protocol message, determine which traffic category it belongs to
      */
     static category
@@ -190,19 +195,23 @@ public:
             cat <= category::unknown,
             "ripple::TrafficCount::addCount : valid category input");
 
+        const auto& it = counts_.find(cat);
+
+        // nothing to do, the category does not exist
+        if (it == counts_.end())
+            return;
+
         if (inbound)
         {
-            counts_[cat].bytesIn += bytes;
-            ++counts_[cat].messagesIn;
+            it->second.bytesIn += bytes;
+            ++it->second.messagesIn;
         }
         else
         {
-            counts_[cat].bytesOut += bytes;
-            ++counts_[cat].messagesOut;
+            it->second.bytesOut += bytes;
+            ++it->second.messagesOut;
         }
     }
-
-    TrafficCount() = default;
 
     /** An up-to-date copy of all the counters
 
@@ -214,65 +223,185 @@ public:
         return counts_;
     }
 
+    static std::string
+    category_to_string(category cat)
+    {
+        switch (cat)
+        {
+            case base:
+                return "overhead";
+            case cluster:
+                return "overhead_cluster";
+            case overlay:
+                return "overhead_overlay";
+            case manifests:
+                return "overhead_manifest";
+            case transaction:
+                return "transactions";
+            case transaction_duplicate:
+                return "transactions_duplicate";
+            case proposal:
+                return "proposals";
+            case proposal_untrusted:
+                return "proposals_untrusted";
+            case proposal_duplicate:
+                return "proposals_duplicate";
+            case validation:
+                return "validations";
+            case validation_untrusted:
+                return "validations_untrusted";
+            case validation_duplicate:
+                return "validations_duplicate";
+            case validatorlist:
+                return "validator_lists";
+            case squelch:
+                return "squelch";
+            case squelch_saved:
+                return "squelch_saved";
+            case get_set:
+                return "set_get";
+            case share_set:
+                return "set_share";
+            case ld_tsc_get:
+                return "ledger_data_Transaction_Set_candidate_get";
+            case ld_tsc_share:
+                return "ledger_data_Transaction_Set_candidate_share";
+            case ld_txn_get:
+                return "ledger_data_Transaction_Node_get";
+            case ld_txn_share:
+                return "ledger_data_Transaction_Node_share";
+            case ld_asn_get:
+                return "ledger_data_Account_State_Node_get";
+            case ld_asn_share:
+                return "ledger_data_Account_State_Node_share";
+            case ld_get:
+                return "ledger_data_get";
+            case ld_share:
+                return "ledger_data_share";
+            case gl_tsc_share:
+                return "ledger_Transaction_Set_candidate_share";
+            case gl_tsc_get:
+                return "ledger_Transaction_Set_candidate_get";
+            case gl_txn_share:
+                return "ledger_Transaction_node_share";
+            case gl_txn_get:
+                return "ledger_Transaction_node_get";
+            case gl_asn_share:
+                return "ledger_Account_State_node_share";
+            case gl_asn_get:
+                return "ledger_Account_State_node_get";
+            case gl_share:
+                return "ledger_share";
+            case gl_get:
+                return "ledger_get";
+            case share_hash_ledger:
+                return "getobject_Ledger_share";
+            case get_hash_ledger:
+                return "getobject_Ledger_get";
+            case share_hash_tx:
+                return "getobject_Transaction_share";
+            case get_hash_tx:
+                return "getobject_Transaction_get";
+            case share_hash_txnode:
+                return "getobject_Transaction_node_share";
+            case get_hash_txnode:
+                return "getobject_Transaction_node_get";
+            case share_hash_asnode:
+                return "getobject_Account_State_node_share";
+            case get_hash_asnode:
+                return "getobject_Account_State_node_get";
+            case share_cas_object:
+                return "getobject_CAS_share";
+            case get_cas_object:
+                return "getobject_CAS_get";
+            case share_fetch_pack:
+                return "getobject_Fetch_Pack_share";
+            case get_fetch_pack:
+                return "getobject_Fetch Pack_get";
+            case get_transactions:
+                return "getobject_Transactions_get";
+            case share_hash:
+                return "getobject_share";
+            case get_hash:
+                return "getobject_get";
+            case proof_path_request:
+                return "proof_path_request";
+            case proof_path_response:
+                return "proof_path_response";
+            case replay_delta_request:
+                return "replay_delta_request";
+            case replay_delta_response:
+                return "replay_delta_response";
+            case have_transactions:
+                return "have_transactions";
+            case requested_transactions:
+                return "requested_transactions";
+            case total:
+                return "total";
+            default:
+                return "unknown";
+        }
+    }
+
 protected:
-    std::array<TrafficStats, category::unknown + 1> counts_{{
-        {"overhead"},                // category::base
-        {"overhead_cluster"},        // category::cluster
-        {"overhead_overlay"},        // category::overlay
-        {"overhead_manifest"},       // category::manifests
-        {"transactions"},            // category::transaction
-        {"transactions_duplicate"},  // category::transaction_duplicate
-        {"proposals"},               // category::proposal
-        {"proposals_untrusted"},     // category::proposal_untrusted
-        {"proposals_duplicate"},     // category::proposal_duplicate
-        {"validations"},             // category::validation
-        {"validations_untrusted"},   // category::validation_untrusted
-        {"validations_duplicate"},   // category::validation_duplicate
-        {"validator_lists"},         // category::validatorlist
-        {"squelch"},                 // category::squelch
-        {"squelch_saved"},           // category::squelch_saved
-        {"set_get"},                 // category::get_set
-        {"set_share"},               // category::share_set
-        {"ledger_data_Transaction_Set_candidate_get"},  // category::ld_tsc_get
-        {"ledger_data_Transaction_Set_candidate_share"},  // category::ld_tsc_share
-        {"ledger_data_Transaction_Node_get"},        // category::ld_txn_get
-        {"ledger_data_Transaction_Node_share"},      // category::ld_txn_share
-        {"ledger_data_Account_State_Node_get"},      // category::ld_asn_get
-        {"ledger_data_Account_State_Node_share"},    // category::ld_asn_share
-        {"ledger_data_get"},                         // category::ld_get
-        {"ledger_data_share"},                       // category::ld_share
-        {"ledger_Transaction_Set_candidate_share"},  // category::gl_tsc_share
-        {"ledger_Transaction_Set_candidate_get"},    // category::gl_tsc_get
-        {"ledger_Transaction_node_share"},           // category::gl_txn_share
-        {"ledger_Transaction_node_get"},             // category::gl_txn_get
-        {"ledger_Account_State_node_share"},         // category::gl_asn_share
-        {"ledger_Account_State_node_get"},           // category::gl_asn_get
-        {"ledger_share"},                            // category::gl_share
-        {"ledger_get"},                              // category::gl_get
-        {"getobject_Ledger_share"},              // category::share_hash_ledger
-        {"getobject_Ledger_get"},                // category::get_hash_ledger
-        {"getobject_Transaction_share"},         // category::share_hash_tx
-        {"getobject_Transaction_get"},           // category::get_hash_tx
-        {"getobject_Transaction_node_share"},    // category::share_hash_txnode
-        {"getobject_Transaction_node_get"},      // category::get_hash_txnode
-        {"getobject_Account_State_node_share"},  // category::share_hash_asnode
-        {"getobject_Account_State_node_get"},    // category::get_hash_asnode
-        {"getobject_CAS_share"},                 // category::share_cas_object
-        {"getobject_CAS_get"},                   // category::get_cas_object
-        {"getobject_Fetch_Pack_share"},          // category::share_fetch_pack
-        {"getobject_Fetch Pack_get"},            // category::get_fetch_pack
-        {"getobject_Transactions_get"},          // category::get_transactions
-        {"getobject_share"},                     // category::share_hash
-        {"getobject_get"},                       // category::get_hash
-        {"proof_path_request"},                  // category::proof_path_request
-        {"proof_path_response"},     // category::proof_path_response
-        {"replay_delta_request"},    // category::replay_delta_request
-        {"replay_delta_response"},   // category::replay_delta_response
-        {"have_transactions"},       // category::have_transactions
-        {"requested_transactions"},  // category::transactions
-        {"total"},                   // category::total
-        {"unknown"}                  // category::unknown
-    }};
+    std::unordered_map<category, TrafficStats> counts_{
+        {base, {base}},
+        {cluster, {cluster}},
+        {overlay, {overlay}},
+        {manifests, {manifests}},
+        {transaction, {transaction}},
+        {transaction_duplicate, {transaction_duplicate}},
+        {proposal, {proposal}},
+        {proposal_untrusted, {proposal_untrusted}},
+        {proposal_duplicate, {proposal_duplicate}},
+        {validation, {validation}},
+        {validation_untrusted, {validation_untrusted}},
+        {validation_duplicate, {validation_duplicate}},
+        {validatorlist, {validatorlist}},
+        {squelch, {squelch}},
+        {squelch_saved, {squelch_saved}},
+        {get_set, {get_set}},
+        {share_set, {share_set}},
+        {ld_tsc_get, {ld_tsc_get}},
+        {ld_tsc_share, {ld_tsc_share}},
+        {ld_txn_get, {ld_txn_get}},
+        {ld_txn_share, {ld_txn_share}},
+        {ld_asn_get, {ld_asn_get}},
+        {ld_asn_share, {ld_asn_share}},
+        {ld_get, {ld_get}},
+        {ld_share, {ld_share}},
+        {gl_tsc_share, {gl_tsc_share}},
+        {gl_tsc_get, {gl_tsc_get}},
+        {gl_txn_share, {gl_txn_share}},
+        {gl_txn_get, {gl_txn_get}},
+        {gl_asn_share, {gl_asn_share}},
+        {gl_asn_get, {gl_asn_get}},
+        {gl_share, {gl_share}},
+        {gl_get, {gl_get}},
+        {share_hash_ledger, {share_hash_ledger}},
+        {get_hash_ledger, {get_hash_ledger}},
+        {share_hash_tx, {share_hash_tx}},
+        {get_hash_tx, {get_hash_tx}},
+        {share_hash_txnode, {share_hash_txnode}},
+        {get_hash_txnode, {get_hash_txnode}},
+        {share_hash_asnode, {share_hash_asnode}},
+        {get_hash_asnode, {get_hash_asnode}},
+        {share_cas_object, {share_cas_object}},
+        {get_cas_object, {get_cas_object}},
+        {share_fetch_pack, {share_fetch_pack}},
+        {get_fetch_pack, {get_fetch_pack}},
+        {get_transactions, {get_transactions}},
+        {share_hash, {share_hash}},
+        {get_hash, {get_hash}},
+        {proof_path_request, {proof_path_request}},
+        {proof_path_response, {proof_path_response}},
+        {replay_delta_request, {replay_delta_request}},
+        {replay_delta_response, {replay_delta_response}},
+        {have_transactions, {have_transactions}},
+        {requested_transactions, {requested_transactions}},
+        {total, {total}},
+        {unknown, {unknown}},
+    };
 };
 
 }  // namespace ripple

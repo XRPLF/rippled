@@ -148,10 +148,8 @@ OverlayImpl::OverlayImpl(
               std::vector<TrafficGauges> ret;
               ret.reserve(counts.size());
 
-              for (size_t i = 0; i < counts.size(); ++i)
-              {
-                  ret.push_back(TrafficGauges(counts[i].name, collector));
-              }
+              for (const auto& pair : counts)
+                  ret.push_back(TrafficGauges(pair.second.name, collector));
 
               return ret;
           }())
@@ -580,17 +578,14 @@ OverlayImpl::onWrite(beast::PropertyStream::Map& stream)
 {
     beast::PropertyStream::Set set("traffic", stream);
     auto const stats = m_traffic.getCounts();
-    for (auto const& i : stats)
+    for (auto const& pair : stats)
     {
-        if (i)
-        {
-            beast::PropertyStream::Map item(set);
-            item["category"] = i.name;
-            item["bytes_in"] = std::to_string(i.bytesIn.load());
-            item["messages_in"] = std::to_string(i.messagesIn.load());
-            item["bytes_out"] = std::to_string(i.bytesOut.load());
-            item["messages_out"] = std::to_string(i.messagesOut.load());
-        }
+        beast::PropertyStream::Map item(set);
+        item["category"] = pair.second.name;
+        item["bytes_in"] = std::to_string(pair.second.bytesIn.load());
+        item["messages_in"] = std::to_string(pair.second.messagesIn.load());
+        item["bytes_out"] = std::to_string(pair.second.bytesOut.load());
+        item["messages_out"] = std::to_string(pair.second.messagesOut.load());
     }
 }
 

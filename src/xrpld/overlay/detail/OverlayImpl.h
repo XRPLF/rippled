@@ -561,7 +561,7 @@ private:
     struct TrafficGauges
     {
         TrafficGauges(
-            char const* name,
+            std::string name,
             beast::insight::Collector::ptr const& collector)
             : bytesIn(collector->make_gauge(name, "Bytes_In"))
             , bytesOut(collector->make_gauge(name, "Bytes_Out"))
@@ -607,13 +607,15 @@ private:
             counts.size() == m_stats.trafficGauges.size(),
             "ripple::OverlayImpl::collect_metrics : counts size do match");
 
-        for (std::size_t i = 0; i < counts.size(); ++i)
-        {
-            m_stats.trafficGauges[i].bytesIn = counts[i].bytesIn;
-            m_stats.trafficGauges[i].bytesOut = counts[i].bytesOut;
-            m_stats.trafficGauges[i].messagesIn = counts[i].messagesIn;
-            m_stats.trafficGauges[i].messagesOut = counts[i].messagesOut;
-        }
+        auto i = 0;
+        std::for_each(counts.begin(), counts.end(), [&](const auto& pair) {
+            m_stats.trafficGauges[i].bytesIn = pair.second.bytesIn;
+            m_stats.trafficGauges[i].bytesOut = pair.second.bytesOut;
+            m_stats.trafficGauges[i].messagesIn = pair.second.messagesIn;
+            m_stats.trafficGauges[i].messagesOut = pair.second.messagesOut;
+            ++i;
+        });
+
         m_stats.peerDisconnects = getPeerDisconnect();
     }
 };

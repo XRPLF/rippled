@@ -21,27 +21,31 @@
 
 namespace ripple {
 
-std::map<protocol::MessageType, TrafficCount::category> const type_lookup = {
-    {protocol::mtPING, TrafficCount::category::base},
-    {protocol::mtSTATUS_CHANGE, TrafficCount::category::base},
-    {protocol::mtMANIFESTS, TrafficCount::category::manifests},
-    {protocol::mtENDPOINTS, TrafficCount::category::overlay},
-    {protocol::mtTRANSACTION, TrafficCount::category::transaction},
-    {protocol::mtVALIDATORLIST, TrafficCount::category::validatorlist},
-    {protocol::mtVALIDATORLISTCOLLECTION,
-     TrafficCount::category::validatorlist},
-    {protocol::mtVALIDATION, TrafficCount::category::validation},
-    {protocol::mtPROPOSE_LEDGER, TrafficCount::category::proposal},
-    {protocol::mtPROOF_PATH_REQ, TrafficCount::category::proof_path_request},
-    {protocol::mtPROOF_PATH_RESPONSE,
-     TrafficCount::category::proof_path_response},
-    {protocol::mtREPLAY_DELTA_REQ,
-     TrafficCount::category::replay_delta_request},
-    {protocol::mtREPLAY_DELTA_RESPONSE,
-     TrafficCount::category::replay_delta_response},
-    {protocol::mtHAVE_TRANSACTIONS, TrafficCount::category::have_transactions},
-    {protocol::mtTRANSACTIONS, TrafficCount::category::requested_transactions},
-    {protocol::mtSQUELCH, TrafficCount::category::squelch},
+std::unordered_map<protocol::MessageType, TrafficCount::category> const
+    type_lookup = {
+        {protocol::mtPING, TrafficCount::category::base},
+        {protocol::mtSTATUS_CHANGE, TrafficCount::category::base},
+        {protocol::mtMANIFESTS, TrafficCount::category::manifests},
+        {protocol::mtENDPOINTS, TrafficCount::category::overlay},
+        {protocol::mtTRANSACTION, TrafficCount::category::transaction},
+        {protocol::mtVALIDATORLIST, TrafficCount::category::validatorlist},
+        {protocol::mtVALIDATORLISTCOLLECTION,
+         TrafficCount::category::validatorlist},
+        {protocol::mtVALIDATION, TrafficCount::category::validation},
+        {protocol::mtPROPOSE_LEDGER, TrafficCount::category::proposal},
+        {protocol::mtPROOF_PATH_REQ,
+         TrafficCount::category::proof_path_request},
+        {protocol::mtPROOF_PATH_RESPONSE,
+         TrafficCount::category::proof_path_response},
+        {protocol::mtREPLAY_DELTA_REQ,
+         TrafficCount::category::replay_delta_request},
+        {protocol::mtREPLAY_DELTA_RESPONSE,
+         TrafficCount::category::replay_delta_response},
+        {protocol::mtHAVE_TRANSACTIONS,
+         TrafficCount::category::have_transactions},
+        {protocol::mtTRANSACTIONS,
+         TrafficCount::category::requested_transactions},
+        {protocol::mtSQUELCH, TrafficCount::category::squelch},
 };
 
 TrafficCount::category
