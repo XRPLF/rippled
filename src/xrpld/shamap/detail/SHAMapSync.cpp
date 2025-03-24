@@ -20,7 +20,6 @@
 #include <xrpld/shamap/SHAMap.h>
 #include <xrpld/shamap/SHAMapSyncFilter.h>
 
-#include <xrpl/basics/TaggedCache.ipp>
 #include <xrpl/basics/random.h>
 
 namespace ripple {
@@ -402,8 +401,9 @@ SHAMap::getMissingNodes(int max, SHAMapSyncFilter* filter)
                 // Recheck nodes we could not finish before
                 for (auto const& [innerNode, nodeId] : mn.resumes_)
                     if (!innerNode->isFullBelow(mn.generation_))
-                        mn.stack_.push(std::make_tuple(
-                            innerNode, nodeId, rand_int(255), 0, true));
+                        mn.stack_.push(
+                            std::make_tuple(
+                                innerNode, nodeId, rand_int(255), 0, true));
 
                 mn.resumes_.clear();
             }

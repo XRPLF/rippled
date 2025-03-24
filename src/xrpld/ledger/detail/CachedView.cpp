@@ -20,8 +20,6 @@
 #include <xrpld/ledger/CachedView.h>
 
 #include <xrpl/basics/TaggedCache.ipp>
-#include <xrpl/basics/contract.h>
-#include <xrpl/protocol/Serializer.h>
 
 namespace ripple {
 namespace detail {

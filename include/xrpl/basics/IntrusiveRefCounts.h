@@ -20,6 +20,8 @@
 #ifndef RIPPLE_BASICS_INTRUSIVEREFCOUNTS_H_INCLUDED
 #define RIPPLE_BASICS_INTRUSIVEREFCOUNTS_H_INCLUDED
 
+#include <xrpl/beast/utility/instrumentation.h>
+
 #include <atomic>
 #include <cstdint>
 

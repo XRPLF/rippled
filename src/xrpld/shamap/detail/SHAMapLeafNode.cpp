@@ -19,10 +19,6 @@
 
 #include <xrpld/shamap/SHAMapLeafNode.h>
 
-#include <xrpl/basics/IntrusivePointer.ipp>
-#include <xrpl/basics/contract.h>
-#include <xrpl/beast/core/LexicalCast.h>
-
 namespace ripple {
 
 SHAMapLeafNode::SHAMapLeafNode(

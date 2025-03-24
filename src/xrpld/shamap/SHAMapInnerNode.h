@@ -21,12 +21,9 @@
 #define RIPPLE_SHAMAP_SHAMAPINNERNODE_H_INCLUDED
 
 #include <xrpld/shamap/SHAMapNodeID.h>
-#include <xrpld/shamap/SHAMapTreeNode.h>
 #include <xrpld/shamap/detail/TaggedPointer.h>
 
 #include <xrpl/basics/IntrusivePointer.h>
-#include <xrpl/basics/TaggedCache.h>
-#include <xrpl/beast/utility/Journal.h>
 
 #include <atomic>
 #include <cstdint>
