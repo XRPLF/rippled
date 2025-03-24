@@ -80,6 +80,7 @@ $(function() {
 <a href="#pri-methods">Private Member Functions</a> &#124;
 <a href="#pri-static-methods">Static Private Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
+<a href="#pri-static-attribs">Static Private Attributes</a> &#124;
 <a href="classripple_1_1test_1_1TxQPosNegFlows__test-members.html">List of all members</a>  </div>
   <div class="headertitle"><div class="title">ripple::test::TxQPosNegFlows_test Class Reference</div></div>
 </div><!--header-->
@@ -99,24 +100,31 @@ Collaboration diagram for ripple::test::TxQPosNegFlows_test:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1test_1_1TxQPosNegFlows__test__coll__graph.png" border="0" usemap="#aripple_1_1test_1_1TxQPosNegFlows__test_coll__map" alt="Collaboration graph"/></div>
 <map name="aripple_1_1test_1_1TxQPosNegFlows__test_coll__map" id="aripple_1_1test_1_1TxQPosNegFlows__test_coll__map">
-<area shape="rect" title=" " alt="" coords="1537,137,1783,162"/>
-<area shape="rect" href="classbeast_1_1unit__test_1_1suite.html" title="A testsuite class." alt="" coords="1261,189,1424,214"/>
-<area shape="rect" href="classbeast_1_1unit__test_1_1suite_1_1log__buf.html" title=" " alt="" coords="1571,43,1749,112"/>
-<area shape="rect" href="classbeast_1_1unit__test_1_1suite_1_1testcase__t.html" title=" " alt="" coords="1579,261,1741,301"/>
-<area shape="rect" href="classbeast_1_1unit__test_1_1runner.html" title="Unit test runner interface." alt="" coords="981,189,1154,214"/>
-<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/string/basic_string.html" title=" " alt="" coords="756,142,843,167"/>
-<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/string/basic_string.html" title=" " alt="" coords="385,135,523,175"/>
-<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/thread/recursive_mutex.html" title=" " alt="" coords="720,191,879,217"/>
-<area shape="rect" href="classbeast_1_1unit__test_1_1suite_1_1log__os.html" title=" " alt="" coords="1864,57,2027,97"/>
-<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/io/basic_ostream.html" title=" " alt="" coords="551,9,696,49"/>
-<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/io/basic_ios.html" title=" " alt="" coords="161,207,332,233"/>
-<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/io/basic_istream.html" title=" " alt="" coords="383,264,525,304"/>
-<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/io/basic_ostream.html" title=" " alt="" coords="381,200,527,240"/>
-<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/io/ios_base.html" title=" " alt="" coords="5,207,112,233"/>
-<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/io/basic_stringbuf.html" title=" " alt="" coords="1256,43,1429,112"/>
-<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html" title=" " alt="" coords="1276,309,1409,334"/>
-<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html" title=" " alt="" coords="980,267,1155,307"/>
-<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/io/basic_iostream.html" title=" " alt="" coords="725,264,874,304"/>
+<area shape="rect" title=" " alt="" coords="1703,369,1948,394"/>
+<area shape="rect" href="classbeast_1_1unit__test_1_1suite.html" title="A testsuite class." alt="" coords="1327,230,1490,255"/>
+<area shape="rect" href="classbeast_1_1unit__test_1_1suite_1_1log__buf.html" title=" " alt="" coords="1737,84,1914,153"/>
+<area shape="rect" href="classbeast_1_1unit__test_1_1suite_1_1testcase__t.html" title=" " alt="" coords="1744,200,1907,240"/>
+<area shape="rect" href="classbeast_1_1unit__test_1_1runner.html" title="Unit test runner interface." alt="" coords="1009,215,1183,241"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/string/basic_string.html" title=" " alt="" coords="756,203,843,229"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/string/basic_string.html" title=" " alt="" coords="385,196,523,236"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/thread/recursive_mutex.html" title=" " alt="" coords="720,253,879,278"/>
+<area shape="rect" href="classbeast_1_1unit__test_1_1suite_1_1log__os.html" title=" " alt="" coords="2029,99,2192,139"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/io/basic_ostream.html" title=" " alt="" coords="551,5,696,45"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/io/basic_ios.html" title=" " alt="" coords="161,73,332,98"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/io/basic_istream.html" title=" " alt="" coords="383,65,525,105"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/io/basic_ostream.html" title=" " alt="" coords="381,129,527,169"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/io/ios_base.html" title=" " alt="" coords="5,73,112,98"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/io/basic_stringbuf.html" title=" " alt="" coords="1322,60,1495,129"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html" title=" " alt="" coords="1342,154,1475,179"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/io/basic_stringstream.html" title=" " alt="" coords="1009,135,1183,175"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/io/basic_iostream.html" title=" " alt="" coords="725,129,874,169"/>
+<area shape="rect" href="classripple_1_1feeunit_1_1TaggedFee.html" title=" " alt="" coords="1313,401,1504,441"/>
+<area shape="rect" title=" " alt="" coords="988,473,1204,513"/>
+<area shape="rect" title=" " alt="" coords="995,537,1197,577"/>
+<area shape="rect" title=" " alt="" coords="980,601,1212,641"/>
+<area shape="rect" title=" " alt="" coords="1003,265,1189,305"/>
+<area shape="rect" title=" " alt="" coords="993,329,1199,369"/>
+<area shape="rect" title=" " alt="" coords="1009,394,1183,449"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -194,12 +202,12 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a9de8a3bed4f4bcc482f479cae5c53b9a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2e160703ceb439e0f485219b9cd113e5"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a2e160703ceb439e0f485219b9cd113e5">BEAST_EXPECT</a> (!queue_data.isMember(jss::transactions))</td></tr>
 <tr class="separator:a2e160703ceb439e0f485219b9cd113e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a851c2e833226154eb3180bff82486d56"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a851c2e833226154eb3180bff82486d56">checkMetrics</a> (__LINE__, env, 0, 6, 0, 3, 256)</td></tr>
-<tr class="separator:a851c2e833226154eb3180bff82486d56"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae29e6b5416d0693e1daa4774dbb6cf0c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#ae29e6b5416d0693e1daa4774dbb6cf0c">checkMetrics</a> (__LINE__, env, 0, 6, 0, 3)</td></tr>
+<tr class="separator:ae29e6b5416d0693e1daa4774dbb6cf0c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ae079c34b465ec9cf586846eaa637267b"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#ae079c34b465ec9cf586846eaa637267b">fillQueue</a> (env, alice)</td></tr>
 <tr class="separator:ae079c34b465ec9cf586846eaa637267b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a50b47bf0b47b8c61cb3347160ac79e22"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a50b47bf0b47b8c61cb3347160ac79e22">checkMetrics</a> (__LINE__, env, 0, 6, 4, 3, 256)</td></tr>
-<tr class="separator:a50b47bf0b47b8c61cb3347160ac79e22"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6ddd09d489a70d352411bafc034449a6"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a6ddd09d489a70d352411bafc034449a6">checkMetrics</a> (__LINE__, env, 0, 6, 4, 3)</td></tr>
+<tr class="separator:a6ddd09d489a70d352411bafc034449a6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a74f7533281b66332d4da8617e5cea76c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a74f7533281b66332d4da8617e5cea76c">BEAST_EXPECT</a> (info.isMember(jss::result) &amp;&amp;info[jss::result].isMember(jss::account_data))</td></tr>
 <tr class="separator:a74f7533281b66332d4da8617e5cea76c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8746256d93719fa59a6120bdfb4b27d5"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a8746256d93719fa59a6120bdfb4b27d5">BEAST_EXPECT</a> (result.isMember(jss::queue_data))</td></tr>
@@ -220,16 +228,16 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a9de8a3bed4f4bcc482f479cae5c53b9a"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a2e160703ceb439e0f485219b9cd113e5"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a2e160703ceb439e0f485219b9cd113e5">BEAST_EXPECT</a> (!queue_data.isMember(jss::transactions))</td></tr>
 <tr class="separator:a2e160703ceb439e0f485219b9cd113e5"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a04933e1c85b954f18b699f3e2e6b4757"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a04933e1c85b954f18b699f3e2e6b4757">envs</a> (<a class="el" href="namespaceripple_1_1test_1_1jtx.html#a95abf901db0a698e0c97d00476c95f34">noop</a>(alice), <a class="el" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(100), <a class="el" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>(<a class="el" href="namespaceripple_1_1test_1_1jtx.html#a3456c2965b84d7eb0beeee1d4b9fbc3a">none</a>), <a class="el" href="classripple_1_1test_1_1jtx_1_1ter.html">ter</a>(<a class="el" href="namespaceripple.html#adebe4d783be9c979e67fdbb2bc27162fac6476cc82d6799d4a026dfa2f430e06e">terQUEUED</a>))(<a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#ad04376943325640a0f05baf448403ed9">submitParams</a>)</td></tr>
-<tr class="separator:a04933e1c85b954f18b699f3e2e6b4757"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a04933e1c85b954f18b699f3e2e6b4757"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a04933e1c85b954f18b699f3e2e6b4757">envs</a> (<a class="el" href="namespaceripple_1_1test_1_1jtx.html#a95abf901db0a698e0c97d00476c95f34">noop</a>(alice), <a class="el" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(100), <a class="el" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>(<a class="el" href="namespaceripple_1_1test_1_1jtx.html#a3456c2965b84d7eb0beeee1d4b9fbc3a">none</a>), <a class="el" href="classripple_1_1test_1_1jtx_1_1ter.html">ter</a>(<a class="el" href="namespaceripple.html#adebe4d783be9c979e67fdbb2bc27162fac6476cc82d6799d4a026dfa2f430e06e">terQUEUED</a>))(<a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#ad04376943325640a0f05baf448403ed9">submitParams</a>)</td></tr>
-<tr class="separator:a04933e1c85b954f18b699f3e2e6b4757"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a04933e1c85b954f18b699f3e2e6b4757"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a04933e1c85b954f18b699f3e2e6b4757">envs</a> (<a class="el" href="namespaceripple_1_1test_1_1jtx.html#a95abf901db0a698e0c97d00476c95f34">noop</a>(alice), <a class="el" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(100), <a class="el" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>(<a class="el" href="namespaceripple_1_1test_1_1jtx.html#a3456c2965b84d7eb0beeee1d4b9fbc3a">none</a>), <a class="el" href="classripple_1_1test_1_1jtx_1_1ter.html">ter</a>(<a class="el" href="namespaceripple.html#adebe4d783be9c979e67fdbb2bc27162fac6476cc82d6799d4a026dfa2f430e06e">terQUEUED</a>))(<a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#ad04376943325640a0f05baf448403ed9">submitParams</a>)</td></tr>
-<tr class="separator:a04933e1c85b954f18b699f3e2e6b4757"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a04933e1c85b954f18b699f3e2e6b4757"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a04933e1c85b954f18b699f3e2e6b4757">envs</a> (<a class="el" href="namespaceripple_1_1test_1_1jtx.html#a95abf901db0a698e0c97d00476c95f34">noop</a>(alice), <a class="el" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(100), <a class="el" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>(<a class="el" href="namespaceripple_1_1test_1_1jtx.html#a3456c2965b84d7eb0beeee1d4b9fbc3a">none</a>), <a class="el" href="classripple_1_1test_1_1jtx_1_1ter.html">ter</a>(<a class="el" href="namespaceripple.html#adebe4d783be9c979e67fdbb2bc27162fac6476cc82d6799d4a026dfa2f430e06e">terQUEUED</a>))(<a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#ad04376943325640a0f05baf448403ed9">submitParams</a>)</td></tr>
-<tr class="separator:a04933e1c85b954f18b699f3e2e6b4757"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abcfa3b5f9779aaf6b9d5ee79bba9b9db"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#abcfa3b5f9779aaf6b9d5ee79bba9b9db">checkMetrics</a> (__LINE__, env, 4, 6, 4, 3, 256)</td></tr>
-<tr class="separator:abcfa3b5f9779aaf6b9d5ee79bba9b9db"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a40bfabce4c6984bb9b2f3861c66ef5ac"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a40bfabce4c6984bb9b2f3861c66ef5ac">envs</a> (<a class="el" href="namespaceripple_1_1test_1_1jtx.html#a95abf901db0a698e0c97d00476c95f34">noop</a>(alice), <a class="el" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(baseFee *10), <a class="el" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>(<a class="el" href="namespaceripple_1_1test_1_1jtx.html#a3456c2965b84d7eb0beeee1d4b9fbc3a">none</a>), <a class="el" href="classripple_1_1test_1_1jtx_1_1ter.html">ter</a>(<a class="el" href="namespaceripple.html#adebe4d783be9c979e67fdbb2bc27162fac6476cc82d6799d4a026dfa2f430e06e">terQUEUED</a>))(<a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#ad04376943325640a0f05baf448403ed9">submitParams</a>)</td></tr>
+<tr class="separator:a40bfabce4c6984bb9b2f3861c66ef5ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a40bfabce4c6984bb9b2f3861c66ef5ac"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a40bfabce4c6984bb9b2f3861c66ef5ac">envs</a> (<a class="el" href="namespaceripple_1_1test_1_1jtx.html#a95abf901db0a698e0c97d00476c95f34">noop</a>(alice), <a class="el" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(baseFee *10), <a class="el" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>(<a class="el" href="namespaceripple_1_1test_1_1jtx.html#a3456c2965b84d7eb0beeee1d4b9fbc3a">none</a>), <a class="el" href="classripple_1_1test_1_1jtx_1_1ter.html">ter</a>(<a class="el" href="namespaceripple.html#adebe4d783be9c979e67fdbb2bc27162fac6476cc82d6799d4a026dfa2f430e06e">terQUEUED</a>))(<a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#ad04376943325640a0f05baf448403ed9">submitParams</a>)</td></tr>
+<tr class="separator:a40bfabce4c6984bb9b2f3861c66ef5ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a40bfabce4c6984bb9b2f3861c66ef5ac"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a40bfabce4c6984bb9b2f3861c66ef5ac">envs</a> (<a class="el" href="namespaceripple_1_1test_1_1jtx.html#a95abf901db0a698e0c97d00476c95f34">noop</a>(alice), <a class="el" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(baseFee *10), <a class="el" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>(<a class="el" href="namespaceripple_1_1test_1_1jtx.html#a3456c2965b84d7eb0beeee1d4b9fbc3a">none</a>), <a class="el" href="classripple_1_1test_1_1jtx_1_1ter.html">ter</a>(<a class="el" href="namespaceripple.html#adebe4d783be9c979e67fdbb2bc27162fac6476cc82d6799d4a026dfa2f430e06e">terQUEUED</a>))(<a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#ad04376943325640a0f05baf448403ed9">submitParams</a>)</td></tr>
+<tr class="separator:a40bfabce4c6984bb9b2f3861c66ef5ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a40bfabce4c6984bb9b2f3861c66ef5ac"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a40bfabce4c6984bb9b2f3861c66ef5ac">envs</a> (<a class="el" href="namespaceripple_1_1test_1_1jtx.html#a95abf901db0a698e0c97d00476c95f34">noop</a>(alice), <a class="el" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(baseFee *10), <a class="el" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>(<a class="el" href="namespaceripple_1_1test_1_1jtx.html#a3456c2965b84d7eb0beeee1d4b9fbc3a">none</a>), <a class="el" href="classripple_1_1test_1_1jtx_1_1ter.html">ter</a>(<a class="el" href="namespaceripple.html#adebe4d783be9c979e67fdbb2bc27162fac6476cc82d6799d4a026dfa2f430e06e">terQUEUED</a>))(<a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#ad04376943325640a0f05baf448403ed9">submitParams</a>)</td></tr>
+<tr class="separator:a40bfabce4c6984bb9b2f3861c66ef5ac"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a777473e130d649ca1b1776f0e749c5e2"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a777473e130d649ca1b1776f0e749c5e2">checkMetrics</a> (__LINE__, env, 4, 6, 4, 3)</td></tr>
+<tr class="separator:a777473e130d649ca1b1776f0e749c5e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a74f7533281b66332d4da8617e5cea76c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a74f7533281b66332d4da8617e5cea76c">BEAST_EXPECT</a> (info.isMember(jss::result) &amp;&amp;info[jss::result].isMember(jss::account_data))</td></tr>
 <tr class="separator:a74f7533281b66332d4da8617e5cea76c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8746256d93719fa59a6120bdfb4b27d5"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a8746256d93719fa59a6120bdfb4b27d5">BEAST_EXPECT</a> (result.isMember(jss::queue_data))</td></tr>
@@ -254,8 +262,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a94067246410123c391dd9527adbf6f31"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a924fc86cf3b90a59c8d810bd13a9d288"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a924fc86cf3b90a59c8d810bd13a9d288">BEAST_EXPECT</a> (queue_data.isMember(jss::max_spend_drops_total))</td></tr>
 <tr class="separator:a924fc86cf3b90a59c8d810bd13a9d288"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab43d4a54572429e9e602dd32cebe76a4"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#ab43d4a54572429e9e602dd32cebe76a4">BEAST_EXPECT</a> (<a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#aab5bcfc5936b581b93c63cbfe33802d8">queue_data</a>[jss::max_spend_drops_total]==&quot;400&quot;)</td></tr>
-<tr class="separator:ab43d4a54572429e9e602dd32cebe76a4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adb1a9a0ced8bd421eb6a676edf382726"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#adb1a9a0ced8bd421eb6a676edf382726">BEAST_EXPECT</a> (<a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#aab5bcfc5936b581b93c63cbfe33802d8">queue_data</a>[jss::max_spend_drops_total]==<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(baseFee *40))</td></tr>
+<tr class="separator:adb1a9a0ced8bd421eb6a676edf382726"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6420c6678be5cf115bef8d2b1e355e2c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a6420c6678be5cf115bef8d2b1e355e2c">BEAST_EXPECT</a> (queue_data.isMember(jss::transactions))</td></tr>
 <tr class="separator:a6420c6678be5cf115bef8d2b1e355e2c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9f61409425daa4ae007b3f51034b2646"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a9f61409425daa4ae007b3f51034b2646">BEAST_EXPECT</a> (queued.size()==<a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#aab5bcfc5936b581b93c63cbfe33802d8">queue_data</a>[jss::txn_count])</td></tr>
@@ -264,14 +272,14 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a6b4163939169a7e3c27ea36de3b954ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a71f5fb263f865908cd45744c26e3883d"><td class="memItemLeft" align="right" valign="top">env&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a71f5fb263f865908cd45744c26e3883d">close</a> ()</td></tr>
 <tr class="separator:a71f5fb263f865908cd45744c26e3883d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a001d8377f5d29d68bf19906ff225a230"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a001d8377f5d29d68bf19906ff225a230">checkMetrics</a> (__LINE__, env, 0, 8, 4, 4, 256)</td></tr>
-<tr class="separator:a001d8377f5d29d68bf19906ff225a230"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9c90a93b3dbce081dc60bc3ae96db32f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a9c90a93b3dbce081dc60bc3ae96db32f">checkMetrics</a> (__LINE__, env, 0, 8, 4, 4)</td></tr>
+<tr class="separator:a9c90a93b3dbce081dc60bc3ae96db32f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8ef0c3d04b0d3b7c6eac78e9ee769ee2"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a8ef0c3d04b0d3b7c6eac78e9ee769ee2">envs</a> (<a class="el" href="namespaceripple_1_1test_1_1jtx.html#a95abf901db0a698e0c97d00476c95f34">noop</a>(alice), <a class="el" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>(<a class="el" href="namespaceripple_1_1test_1_1jtx.html#a3456c2965b84d7eb0beeee1d4b9fbc3a">none</a>))(<a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#ad04376943325640a0f05baf448403ed9">submitParams</a>)</td></tr>
 <tr class="separator:a8ef0c3d04b0d3b7c6eac78e9ee769ee2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0ff153ab6d525adf169cae1d5bccb87c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a0ff153ab6d525adf169cae1d5bccb87c">envs</a> (<a class="el" href="namespaceripple_1_1test_1_1jtx.html#a50cacef3867fc01273aa9c29231f9a7c">fset</a>(alice, <a class="el" href="namespaceripple.html#a9236ad224cda331f55af0a09d9bd16ea">asfAccountTxnID</a>), <a class="el" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(100), <a class="el" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>(<a class="el" href="namespaceripple_1_1test_1_1jtx.html#a3456c2965b84d7eb0beeee1d4b9fbc3a">none</a>), <a class="el" href="classripple_1_1test_1_1jtx_1_1json.html">json</a>(jss::LastLedgerSequence, 10), <a class="el" href="classripple_1_1test_1_1jtx_1_1ter.html">ter</a>(<a class="el" href="namespaceripple.html#adebe4d783be9c979e67fdbb2bc27162fac6476cc82d6799d4a026dfa2f430e06e">terQUEUED</a>))(<a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#ad04376943325640a0f05baf448403ed9">submitParams</a>)</td></tr>
-<tr class="separator:a0ff153ab6d525adf169cae1d5bccb87c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2a627d1ef62d2daf86e8263051aa8078"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a2a627d1ef62d2daf86e8263051aa8078">checkMetrics</a> (__LINE__, env, 1, 8, 5, 4, 256)</td></tr>
-<tr class="separator:a2a627d1ef62d2daf86e8263051aa8078"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad1127f650b494b51d468d9300407ff54"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#ad1127f650b494b51d468d9300407ff54">envs</a> (<a class="el" href="namespaceripple_1_1test_1_1jtx.html#a50cacef3867fc01273aa9c29231f9a7c">fset</a>(alice, <a class="el" href="namespaceripple.html#a9236ad224cda331f55af0a09d9bd16ea">asfAccountTxnID</a>), <a class="el" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(baseFee *10), <a class="el" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>(<a class="el" href="namespaceripple_1_1test_1_1jtx.html#a3456c2965b84d7eb0beeee1d4b9fbc3a">none</a>), <a class="el" href="classripple_1_1test_1_1jtx_1_1json.html">json</a>(jss::LastLedgerSequence, 10), <a class="el" href="classripple_1_1test_1_1jtx_1_1ter.html">ter</a>(<a class="el" href="namespaceripple.html#adebe4d783be9c979e67fdbb2bc27162fac6476cc82d6799d4a026dfa2f430e06e">terQUEUED</a>))(<a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#ad04376943325640a0f05baf448403ed9">submitParams</a>)</td></tr>
+<tr class="separator:ad1127f650b494b51d468d9300407ff54"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5d18aae62986697d5930a3b6814bcde6"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a5d18aae62986697d5930a3b6814bcde6">checkMetrics</a> (__LINE__, env, 1, 8, 5, 4)</td></tr>
+<tr class="separator:a5d18aae62986697d5930a3b6814bcde6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a74f7533281b66332d4da8617e5cea76c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a74f7533281b66332d4da8617e5cea76c">BEAST_EXPECT</a> (info.isMember(jss::result) &amp;&amp;info[jss::result].isMember(jss::account_data))</td></tr>
 <tr class="separator:a74f7533281b66332d4da8617e5cea76c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8746256d93719fa59a6120bdfb4b27d5"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a8746256d93719fa59a6120bdfb4b27d5">BEAST_EXPECT</a> (result.isMember(jss::queue_data))</td></tr>
@@ -296,18 +304,18 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a5d63260e48c59d671422cfa66f5ef042"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a924fc86cf3b90a59c8d810bd13a9d288"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a924fc86cf3b90a59c8d810bd13a9d288">BEAST_EXPECT</a> (queue_data.isMember(jss::max_spend_drops_total))</td></tr>
 <tr class="separator:a924fc86cf3b90a59c8d810bd13a9d288"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6e66d574e6c7b24f9f15b8517f83b982"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a6e66d574e6c7b24f9f15b8517f83b982">BEAST_EXPECT</a> (<a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#aab5bcfc5936b581b93c63cbfe33802d8">queue_data</a>[jss::max_spend_drops_total]==&quot;100&quot;)</td></tr>
-<tr class="separator:a6e66d574e6c7b24f9f15b8517f83b982"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a722ccdf192eb30bfa1125ec6f2562b9c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a722ccdf192eb30bfa1125ec6f2562b9c">BEAST_EXPECT</a> (<a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#aab5bcfc5936b581b93c63cbfe33802d8">queue_data</a>[jss::max_spend_drops_total]==<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(baseFee *10))</td></tr>
+<tr class="separator:a722ccdf192eb30bfa1125ec6f2562b9c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6420c6678be5cf115bef8d2b1e355e2c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a6420c6678be5cf115bef8d2b1e355e2c">BEAST_EXPECT</a> (queue_data.isMember(jss::transactions))</td></tr>
 <tr class="separator:a6420c6678be5cf115bef8d2b1e355e2c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9f61409425daa4ae007b3f51034b2646"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a9f61409425daa4ae007b3f51034b2646">BEAST_EXPECT</a> (queued.size()==<a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#aab5bcfc5936b581b93c63cbfe33802d8">queue_data</a>[jss::txn_count])</td></tr>
 <tr class="separator:a9f61409425daa4ae007b3f51034b2646"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6b4163939169a7e3c27ea36de3b954ee"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a6b4163939169a7e3c27ea36de3b954ee">for</a> (unsigned i=0;i&lt; queued.size();++i)</td></tr>
 <tr class="separator:a6b4163939169a7e3c27ea36de3b954ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a0aa59a569c0584cb522f8a7d098cd809"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a0aa59a569c0584cb522f8a7d098cd809">envs</a> (<a class="el" href="namespaceripple_1_1test_1_1jtx.html#a95abf901db0a698e0c97d00476c95f34">noop</a>(alice), <a class="el" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(100), <a class="el" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>(<a class="el" href="namespaceripple_1_1test_1_1jtx.html#a3456c2965b84d7eb0beeee1d4b9fbc3a">none</a>), <a class="el" href="classripple_1_1test_1_1jtx_1_1ter.html">ter</a>(<a class="el" href="namespaceripple.html#a260d2970ac1119109937ed1c5d4ca962a2f58f0aada31cf40f373e57f402178f1">telCAN_NOT_QUEUE_BLOCKED</a>))(<a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#ad04376943325640a0f05baf448403ed9">submitParams</a>)</td></tr>
-<tr class="separator:a0aa59a569c0584cb522f8a7d098cd809"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2a627d1ef62d2daf86e8263051aa8078"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a2a627d1ef62d2daf86e8263051aa8078">checkMetrics</a> (__LINE__, env, 1, 8, 5, 4, 256)</td></tr>
-<tr class="separator:a2a627d1ef62d2daf86e8263051aa8078"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a607205df21d1b2c9cd05c2a06db8d50f"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a607205df21d1b2c9cd05c2a06db8d50f">envs</a> (<a class="el" href="namespaceripple_1_1test_1_1jtx.html#a95abf901db0a698e0c97d00476c95f34">noop</a>(alice), <a class="el" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(baseFee *10), <a class="el" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>(<a class="el" href="namespaceripple_1_1test_1_1jtx.html#a3456c2965b84d7eb0beeee1d4b9fbc3a">none</a>), <a class="el" href="classripple_1_1test_1_1jtx_1_1ter.html">ter</a>(<a class="el" href="namespaceripple.html#a260d2970ac1119109937ed1c5d4ca962a2f58f0aada31cf40f373e57f402178f1">telCAN_NOT_QUEUE_BLOCKED</a>))(<a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#ad04376943325640a0f05baf448403ed9">submitParams</a>)</td></tr>
+<tr class="separator:a607205df21d1b2c9cd05c2a06db8d50f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5d18aae62986697d5930a3b6814bcde6"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a5d18aae62986697d5930a3b6814bcde6">checkMetrics</a> (__LINE__, env, 1, 8, 5, 4)</td></tr>
+<tr class="separator:a5d18aae62986697d5930a3b6814bcde6"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a74f7533281b66332d4da8617e5cea76c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a74f7533281b66332d4da8617e5cea76c">BEAST_EXPECT</a> (info.isMember(jss::result) &amp;&amp;info[jss::result].isMember(jss::account_data))</td></tr>
 <tr class="separator:a74f7533281b66332d4da8617e5cea76c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8746256d93719fa59a6120bdfb4b27d5"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a8746256d93719fa59a6120bdfb4b27d5">BEAST_EXPECT</a> (result.isMember(jss::queue_data))</td></tr>
@@ -332,8 +340,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a9e8cf7b6f15a4d419181f18186743ef1"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a924fc86cf3b90a59c8d810bd13a9d288"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a924fc86cf3b90a59c8d810bd13a9d288">BEAST_EXPECT</a> (queue_data.isMember(jss::max_spend_drops_total))</td></tr>
 <tr class="separator:a924fc86cf3b90a59c8d810bd13a9d288"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6e66d574e6c7b24f9f15b8517f83b982"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a6e66d574e6c7b24f9f15b8517f83b982">BEAST_EXPECT</a> (<a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#aab5bcfc5936b581b93c63cbfe33802d8">queue_data</a>[jss::max_spend_drops_total]==&quot;100&quot;)</td></tr>
-<tr class="separator:a6e66d574e6c7b24f9f15b8517f83b982"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a722ccdf192eb30bfa1125ec6f2562b9c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a722ccdf192eb30bfa1125ec6f2562b9c">BEAST_EXPECT</a> (<a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#aab5bcfc5936b581b93c63cbfe33802d8">queue_data</a>[jss::max_spend_drops_total]==<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(baseFee *10))</td></tr>
+<tr class="separator:a722ccdf192eb30bfa1125ec6f2562b9c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a6420c6678be5cf115bef8d2b1e355e2c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a6420c6678be5cf115bef8d2b1e355e2c">BEAST_EXPECT</a> (queue_data.isMember(jss::transactions))</td></tr>
 <tr class="separator:a6420c6678be5cf115bef8d2b1e355e2c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9f61409425daa4ae007b3f51034b2646"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a9f61409425daa4ae007b3f51034b2646">BEAST_EXPECT</a> (queued.size()==<a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#aab5bcfc5936b581b93c63cbfe33802d8">queue_data</a>[jss::txn_count])</td></tr>
@@ -344,12 +352,12 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a550b762f587bcf4226122eaa899dc192"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a71f5fb263f865908cd45744c26e3883d"><td class="memItemLeft" align="right" valign="top">env&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a71f5fb263f865908cd45744c26e3883d">close</a> ()</td></tr>
 <tr class="separator:a71f5fb263f865908cd45744c26e3883d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af7758a5587d1e18ad7723c9eb4714719"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#af7758a5587d1e18ad7723c9eb4714719">checkMetrics</a> (__LINE__, env, 0, 10, 2, 5, 256)</td></tr>
-<tr class="separator:af7758a5587d1e18ad7723c9eb4714719"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2757dea2259104e0798ebfff42535770"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a2757dea2259104e0798ebfff42535770">checkMetrics</a> (__LINE__, env, 0, 10, 2, 5)</td></tr>
+<tr class="separator:a2757dea2259104e0798ebfff42535770"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a71f5fb263f865908cd45744c26e3883d"><td class="memItemLeft" align="right" valign="top">env&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a71f5fb263f865908cd45744c26e3883d">close</a> ()</td></tr>
 <tr class="separator:a71f5fb263f865908cd45744c26e3883d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aaddeb985069d5c0bc609e1abc1d8b995"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#aaddeb985069d5c0bc609e1abc1d8b995">checkMetrics</a> (__LINE__, env, 0, 10, 0, 5, 256)</td></tr>
-<tr class="separator:aaddeb985069d5c0bc609e1abc1d8b995"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7899ca5bad4859b87acbd83ae4e5815c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a7899ca5bad4859b87acbd83ae4e5815c">checkMetrics</a> (__LINE__, env, 0, 10, 0, 5)</td></tr>
+<tr class="separator:a7899ca5bad4859b87acbd83ae4e5815c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a74f7533281b66332d4da8617e5cea76c"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a74f7533281b66332d4da8617e5cea76c">BEAST_EXPECT</a> (info.isMember(jss::result) &amp;&amp;info[jss::result].isMember(jss::account_data))</td></tr>
 <tr class="separator:a74f7533281b66332d4da8617e5cea76c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8746256d93719fa59a6120bdfb4b27d5"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a8746256d93719fa59a6120bdfb4b27d5">BEAST_EXPECT</a> (result.isMember(jss::queue_data))</td></tr>
@@ -484,12 +492,18 @@ Public Attributes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-methods" name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
-<tr class="memitem:a3917a77d8da311518fee5a0ef84da7d2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a3917a77d8da311518fee5a0ef84da7d2">checkMetrics</a> (int line, <a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html">jtx::Env</a> &amp;env, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> expectedCount, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> &gt; expectedMaxCount, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> expectedInLedger, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> expectedPerLedger, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> expectedMinFeeLevel, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> expectedMedFeeLevel=256 *500)</td></tr>
-<tr class="separator:a3917a77d8da311518fee5a0ef84da7d2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a40f14c7fd60443a86f9a66051c858701"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a40f14c7fd60443a86f9a66051c858701">checkMetrics</a> (int line, <a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html">jtx::Env</a> &amp;env, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> expectedCount, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> &gt; expectedMaxCount, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> expectedInLedger, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> expectedPerLedger, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> expectedMinFeeLevel=baseFeeLevel.fee(), <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> expectedMedFeeLevel=minEscalationFeeLevel.fee())</td></tr>
+<tr class="separator:a40f14c7fd60443a86f9a66051c858701"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a901735732874f515f253fd409df81f0f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a901735732874f515f253fd409df81f0f">fillQueue</a> (<a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html">jtx::Env</a> &amp;env, <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> const &amp;account)</td></tr>
 <tr class="separator:a901735732874f515f253fd409df81f0f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad3f9e5ec459f96af80d6f45901b66a4c"><td class="memItemLeft" align="right" valign="top">auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#ad3f9e5ec459f96af80d6f45901b66a4c">openLedgerFee</a> (<a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html">jtx::Env</a> &amp;env)</td></tr>
-<tr class="separator:ad3f9e5ec459f96af80d6f45901b66a4c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa4d388252044993d2284fb5533b6630c"><td class="memItemLeft" align="right" valign="top">auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#aa4d388252044993d2284fb5533b6630c">openLedgerCost</a> (<a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html">jtx::Env</a> &amp;env)</td></tr>
+<tr class="separator:aa4d388252044993d2284fb5533b6630c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aab0d9c7da807ec0b5293c5c25fc102bf"><td class="memItemLeft" align="right" valign="top">auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#aab0d9c7da807ec0b5293c5c25fc102bf">txFeeLevelByAccount</a> (<a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html">jtx::Env</a> &amp;env, <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> const &amp;account)</td></tr>
+<tr class="separator:aab0d9c7da807ec0b5293c5c25fc102bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4a1df58e905683afe973289202889419"><td class="memItemLeft" align="right" valign="top">auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a4a1df58e905683afe973289202889419">calcMedFeeLevel</a> (<a class="el" href="namespaceripple.html#aaaf6522d07c2b836c5fd589e9ecf578c">FeeLevel64</a> const feeLevel1, <a class="el" href="namespaceripple.html#aaaf6522d07c2b836c5fd589e9ecf578c">FeeLevel64</a> const feeLevel2)</td></tr>
+<tr class="separator:a4a1df58e905683afe973289202889419"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0785ea059a52806dbb7b9b9324c006ab"><td class="memItemLeft" align="right" valign="top">auto&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a0785ea059a52806dbb7b9b9324c006ab">calcMedFeeLevel</a> (<a class="el" href="namespaceripple.html#aaaf6522d07c2b836c5fd589e9ecf578c">FeeLevel64</a> const feeLevel)</td></tr>
+<tr class="separator:a0785ea059a52806dbb7b9b9324c006ab"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9eed26dba5e7b3709a65ad6107943007"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a9eed26dba5e7b3709a65ad6107943007">initFee</a> (<a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html">jtx::Env</a> &amp;env, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> expectedPerLedger, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> ledgersInQueue, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> base, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> <a class="el" href="namespaceripple_1_1test.html#a95819c5e0e7ed797436fa48695febd32">reserve</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> increment)</td></tr>
 <tr class="separator:a9eed26dba5e7b3709a65ad6107943007"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aaf73a1f738d097ca74935f643f07ef80"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1unit__test_1_1suite.html#aaf73a1f738d097ca74935f643f07ef80">propagate_abort</a> ()</td></tr>
@@ -510,13 +524,20 @@ Private Attributes</h2></td></tr>
 <tr class="separator:a45d58f9aa77f9b1ccbab63ea33acb78b"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4145ff2c3dba83fcc1709868d9efb626"><td class="memItemLeft" align="right" valign="top">runner *&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1unit__test_1_1suite.html#a4145ff2c3dba83fcc1709868d9efb626">runner_</a> = nullptr</td></tr>
 <tr class="separator:a4145ff2c3dba83fcc1709868d9efb626"><td class="memSeparator" colspan="2">&#160;</td></tr>
+</table><table class="memberdecls">
+<tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-static-attribs" name="pri-static-attribs"></a>
+Static Private Attributes</h2></td></tr>
+<tr class="memitem:a65e7ff0003263d237c575aa1bbd5aba0"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="el" href="namespaceripple.html#aaaf6522d07c2b836c5fd589e9ecf578c">FeeLevel64</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a65e7ff0003263d237c575aa1bbd5aba0">baseFeeLevel</a> {256}</td></tr>
+<tr class="separator:a65e7ff0003263d237c575aa1bbd5aba0"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9bdf0ab97f269d9f99e65cf8138bd5ee"><td class="memItemLeft" align="right" valign="top">static constexpr <a class="el" href="namespaceripple.html#aaaf6522d07c2b836c5fd589e9ecf578c">FeeLevel64</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a9bdf0ab97f269d9f99e65cf8138bd5ee">minEscalationFeeLevel</a> = <a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a65e7ff0003263d237c575aa1bbd5aba0">baseFeeLevel</a> * 500</td></tr>
+<tr class="separator:a9bdf0ab97f269d9f99e65cf8138bd5ee"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock">
 <p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l00039">39</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 </div><h2 class="groupheader">Member Function Documentation</h2>
-<a id="a3917a77d8da311518fee5a0ef84da7d2" name="a3917a77d8da311518fee5a0ef84da7d2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3917a77d8da311518fee5a0ef84da7d2">&#9670;&#160;</a></span>checkMetrics() <span class="overload">[1/9]</span></h2>
+<a id="a40f14c7fd60443a86f9a66051c858701" name="a40f14c7fd60443a86f9a66051c858701"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a40f14c7fd60443a86f9a66051c858701">&#9670;&#160;</a></span>checkMetrics() <span class="overload">[1/9]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -564,13 +585,13 @@ Private Attributes</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&#160;</td>
-          <td class="paramname"><em>expectedMinFeeLevel</em>, </td>
+          <td class="paramname"><em>expectedMinFeeLevel</em> = <code>baseFeeLevel.fee()</code>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&#160;</td>
-          <td class="paramname"><em>expectedMedFeeLevel</em> = <code>256&#160;*&#160;500</code>&#160;</td>
+          <td class="paramname"><em>expectedMedFeeLevel</em> = <code>minEscalationFeeLevel.fee()</code>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -585,7 +606,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l00042">42</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l00046">46</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -623,12 +644,12 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l00133">133</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l00137">137</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
-<a id="ad3f9e5ec459f96af80d6f45901b66a4c" name="ad3f9e5ec459f96af80d6f45901b66a4c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad3f9e5ec459f96af80d6f45901b66a4c">&#9670;&#160;</a></span>openLedgerFee()</h2>
+<a id="aa4d388252044993d2284fb5533b6630c" name="aa4d388252044993d2284fb5533b6630c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa4d388252044993d2284fb5533b6630c">&#9670;&#160;</a></span>openLedgerCost()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -637,7 +658,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">auto ripple::test::TxQPosNegFlows_test::openLedgerFee </td>
+          <td class="memname">auto ripple::test::TxQPosNegFlows_test::openLedgerCost </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html">jtx::Env</a> &amp;&#160;</td>
           <td class="paramname"><em>env</em></td><td>)</td>
@@ -651,7 +672,111 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l00141">141</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l00145">145</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+
+</div>
+</div>
+<a id="aab0d9c7da807ec0b5293c5c25fc102bf" name="aab0d9c7da807ec0b5293c5c25fc102bf"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aab0d9c7da807ec0b5293c5c25fc102bf">&#9670;&#160;</a></span>txFeeLevelByAccount()</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">auto ripple::test::TxQPosNegFlows_test::txFeeLevelByAccount </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html">jtx::Env</a> &amp;&#160;</td>
+          <td class="paramname"><em>env</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> const &amp;&#160;</td>
+          <td class="paramname"><em>account</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l00165">165</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a4a1df58e905683afe973289202889419" name="a4a1df58e905683afe973289202889419"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4a1df58e905683afe973289202889419">&#9670;&#160;</a></span>calcMedFeeLevel() <span class="overload">[1/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">auto ripple::test::TxQPosNegFlows_test::calcMedFeeLevel </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aaaf6522d07c2b836c5fd589e9ecf578c">FeeLevel64</a> const&#160;</td>
+          <td class="paramname"><em>feeLevel1</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aaaf6522d07c2b836c5fd589e9ecf578c">FeeLevel64</a> const&#160;</td>
+          <td class="paramname"><em>feeLevel2</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l00178">178</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a0785ea059a52806dbb7b9b9324c006ab" name="a0785ea059a52806dbb7b9b9324c006ab"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0785ea059a52806dbb7b9b9324c006ab">&#9670;&#160;</a></span>calcMedFeeLevel() <span class="overload">[2/2]</span></h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">auto ripple::test::TxQPosNegFlows_test::calcMedFeeLevel </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#aaaf6522d07c2b836c5fd589e9ecf578c">FeeLevel64</a> const&#160;</td>
+          <td class="paramname"><em>feeLevel</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l00187">187</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -689,7 +814,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l00159">159</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l00193">193</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -751,7 +876,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l00193">193</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l00227">227</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -770,7 +895,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l00235">235</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l00269">269</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -789,7 +914,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l00447">447</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l00487">487</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -808,7 +933,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l00704">704</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l00746">746</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -827,7 +952,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l00740">740</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l00782">782</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -846,7 +971,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l00797">797</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l00838">838</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -865,7 +990,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l00907">907</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l00964">964</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -884,7 +1009,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l01004">1004</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l01065">1065</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -903,7 +1028,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l01031">1031</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l01092">1092</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -922,7 +1047,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l01082">1082</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l01143">1143</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -941,7 +1066,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l01352">1352</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l01411">1411</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -960,7 +1085,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l01598">1598</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l01662">1662</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -979,7 +1104,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l01637">1637</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l01699">1699</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -998,7 +1123,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l01735">1735</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l01815">1815</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -1017,7 +1142,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l01832">1832</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l01910">1910</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -1036,7 +1161,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l01962">1962</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l02042">2042</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -1055,7 +1180,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l02124">2124</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l02208">2208</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -1074,7 +1199,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l02478">2478</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l02562">2562</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -1093,7 +1218,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l02536">2536</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l02620">2620</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -1112,7 +1237,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l02641">2641</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l02734">2734</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -1131,7 +1256,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l02705">2705</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l02798">2798</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -1150,7 +1275,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l02806">2806</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l02901">2901</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -1169,7 +1294,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l02971">2971</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l03068">3068</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -1188,7 +1313,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l03101">3101</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l03203">3203</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -1436,8 +1561,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a851c2e833226154eb3180bff82486d56" name="a851c2e833226154eb3180bff82486d56"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a851c2e833226154eb3180bff82486d56">&#9670;&#160;</a></span>checkMetrics() <span class="overload">[2/9]</span></h2>
+<a id="ae29e6b5416d0693e1daa4774dbb6cf0c" name="ae29e6b5416d0693e1daa4774dbb6cf0c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae29e6b5416d0693e1daa4774dbb6cf0c">&#9670;&#160;</a></span>checkMetrics() <span class="overload">[2/9]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1476,12 +1601,6 @@ Private Attributes</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">3&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">256&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -1522,8 +1641,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a50b47bf0b47b8c61cb3347160ac79e22" name="a50b47bf0b47b8c61cb3347160ac79e22"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a50b47bf0b47b8c61cb3347160ac79e22">&#9670;&#160;</a></span>checkMetrics() <span class="overload">[3/9]</span></h2>
+<a id="a6ddd09d489a70d352411bafc034449a6" name="a6ddd09d489a70d352411bafc034449a6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6ddd09d489a70d352411bafc034449a6">&#9670;&#160;</a></span>checkMetrics() <span class="overload">[3/9]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1562,12 +1681,6 @@ Private Attributes</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">3&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">256&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -1760,8 +1873,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a04933e1c85b954f18b699f3e2e6b4757" name="a04933e1c85b954f18b699f3e2e6b4757"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a04933e1c85b954f18b699f3e2e6b4757">&#9670;&#160;</a></span>envs() <span class="overload">[1/7]</span></h2>
+<a id="a40bfabce4c6984bb9b2f3861c66ef5ac" name="a40bfabce4c6984bb9b2f3861c66ef5ac"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a40bfabce4c6984bb9b2f3861c66ef5ac">&#9670;&#160;</a></span>envs() <span class="overload">[1/7]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1775,7 +1888,7 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(100)&#160;</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(baseFee *10)&#160;</td>
           <td class="paramname">, </td>
         </tr>
         <tr>
@@ -1800,8 +1913,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a04933e1c85b954f18b699f3e2e6b4757" name="a04933e1c85b954f18b699f3e2e6b4757"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a04933e1c85b954f18b699f3e2e6b4757">&#9670;&#160;</a></span>envs() <span class="overload">[2/7]</span></h2>
+<a id="a40bfabce4c6984bb9b2f3861c66ef5ac" name="a40bfabce4c6984bb9b2f3861c66ef5ac"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a40bfabce4c6984bb9b2f3861c66ef5ac">&#9670;&#160;</a></span>envs() <span class="overload">[2/7]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1815,7 +1928,7 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(100)&#160;</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(baseFee *10)&#160;</td>
           <td class="paramname">, </td>
         </tr>
         <tr>
@@ -1840,8 +1953,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a04933e1c85b954f18b699f3e2e6b4757" name="a04933e1c85b954f18b699f3e2e6b4757"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a04933e1c85b954f18b699f3e2e6b4757">&#9670;&#160;</a></span>envs() <span class="overload">[3/7]</span></h2>
+<a id="a40bfabce4c6984bb9b2f3861c66ef5ac" name="a40bfabce4c6984bb9b2f3861c66ef5ac"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a40bfabce4c6984bb9b2f3861c66ef5ac">&#9670;&#160;</a></span>envs() <span class="overload">[3/7]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1855,7 +1968,7 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(100)&#160;</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(baseFee *10)&#160;</td>
           <td class="paramname">, </td>
         </tr>
         <tr>
@@ -1880,8 +1993,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a04933e1c85b954f18b699f3e2e6b4757" name="a04933e1c85b954f18b699f3e2e6b4757"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a04933e1c85b954f18b699f3e2e6b4757">&#9670;&#160;</a></span>envs() <span class="overload">[4/7]</span></h2>
+<a id="a40bfabce4c6984bb9b2f3861c66ef5ac" name="a40bfabce4c6984bb9b2f3861c66ef5ac"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a40bfabce4c6984bb9b2f3861c66ef5ac">&#9670;&#160;</a></span>envs() <span class="overload">[4/7]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1895,7 +2008,7 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(100)&#160;</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(baseFee *10)&#160;</td>
           <td class="paramname">, </td>
         </tr>
         <tr>
@@ -1920,8 +2033,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="abcfa3b5f9779aaf6b9d5ee79bba9b9db" name="abcfa3b5f9779aaf6b9d5ee79bba9b9db"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abcfa3b5f9779aaf6b9d5ee79bba9b9db">&#9670;&#160;</a></span>checkMetrics() <span class="overload">[4/9]</span></h2>
+<a id="a777473e130d649ca1b1776f0e749c5e2" name="a777473e130d649ca1b1776f0e749c5e2"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a777473e130d649ca1b1776f0e749c5e2">&#9670;&#160;</a></span>checkMetrics() <span class="overload">[4/9]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1960,12 +2073,6 @@ Private Attributes</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">3&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">256&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -2194,8 +2301,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="ab43d4a54572429e9e602dd32cebe76a4" name="ab43d4a54572429e9e602dd32cebe76a4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab43d4a54572429e9e602dd32cebe76a4">&#9670;&#160;</a></span>BEAST_EXPECT() <span class="overload">[36/79]</span></h2>
+<a id="adb1a9a0ced8bd421eb6a676edf382726" name="adb1a9a0ced8bd421eb6a676edf382726"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adb1a9a0ced8bd421eb6a676edf382726">&#9670;&#160;</a></span>BEAST_EXPECT() <span class="overload">[36/79]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2204,7 +2311,7 @@ Private Attributes</h2></td></tr>
           <td class="memname">ripple::test::TxQPosNegFlows_test::BEAST_EXPECT </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#aab5bcfc5936b581b93c63cbfe33802d8">queue_data</a>&#160;</td>
-          <td class="paramname">[jss::max_spend_drops_total] = <code>=&quot;400&quot;</code></td><td>)</td>
+          <td class="paramname">[jss::max_spend_drops_total] = <code>=<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(baseFee&#160;*40)</code></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -2263,7 +2370,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l03203">3203</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l03312">3312</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -2284,8 +2391,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a001d8377f5d29d68bf19906ff225a230" name="a001d8377f5d29d68bf19906ff225a230"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a001d8377f5d29d68bf19906ff225a230">&#9670;&#160;</a></span>checkMetrics() <span class="overload">[5/9]</span></h2>
+<a id="a9c90a93b3dbce081dc60bc3ae96db32f" name="a9c90a93b3dbce081dc60bc3ae96db32f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9c90a93b3dbce081dc60bc3ae96db32f">&#9670;&#160;</a></span>checkMetrics() <span class="overload">[5/9]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2324,12 +2431,6 @@ Private Attributes</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">4&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">256&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -2370,8 +2471,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a0ff153ab6d525adf169cae1d5bccb87c" name="a0ff153ab6d525adf169cae1d5bccb87c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0ff153ab6d525adf169cae1d5bccb87c">&#9670;&#160;</a></span>envs() <span class="overload">[6/7]</span></h2>
+<a id="ad1127f650b494b51d468d9300407ff54" name="ad1127f650b494b51d468d9300407ff54"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad1127f650b494b51d468d9300407ff54">&#9670;&#160;</a></span>envs() <span class="overload">[6/7]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2385,7 +2486,7 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(100)&#160;</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(baseFee *10)&#160;</td>
           <td class="paramname">, </td>
         </tr>
         <tr>
@@ -2416,8 +2517,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a2a627d1ef62d2daf86e8263051aa8078" name="a2a627d1ef62d2daf86e8263051aa8078"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2a627d1ef62d2daf86e8263051aa8078">&#9670;&#160;</a></span>checkMetrics() <span class="overload">[6/9]</span></h2>
+<a id="a5d18aae62986697d5930a3b6814bcde6" name="a5d18aae62986697d5930a3b6814bcde6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5d18aae62986697d5930a3b6814bcde6">&#9670;&#160;</a></span>checkMetrics() <span class="overload">[6/9]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2456,12 +2557,6 @@ Private Attributes</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">4&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">256&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -2690,8 +2785,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a6e66d574e6c7b24f9f15b8517f83b982" name="a6e66d574e6c7b24f9f15b8517f83b982"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6e66d574e6c7b24f9f15b8517f83b982">&#9670;&#160;</a></span>BEAST_EXPECT() <span class="overload">[51/79]</span></h2>
+<a id="a722ccdf192eb30bfa1125ec6f2562b9c" name="a722ccdf192eb30bfa1125ec6f2562b9c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a722ccdf192eb30bfa1125ec6f2562b9c">&#9670;&#160;</a></span>BEAST_EXPECT() <span class="overload">[51/79]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2700,7 +2795,7 @@ Private Attributes</h2></td></tr>
           <td class="memname">ripple::test::TxQPosNegFlows_test::BEAST_EXPECT </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#aab5bcfc5936b581b93c63cbfe33802d8">queue_data</a>&#160;</td>
-          <td class="paramname">[jss::max_spend_drops_total] = <code>=&quot;100&quot;</code></td><td>)</td>
+          <td class="paramname">[jss::max_spend_drops_total] = <code>=<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(baseFee&#160;*10)</code></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -2759,12 +2854,12 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l03261">3261</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l03375">3375</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a0aa59a569c0584cb522f8a7d098cd809" name="a0aa59a569c0584cb522f8a7d098cd809"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0aa59a569c0584cb522f8a7d098cd809">&#9670;&#160;</a></span>envs() <span class="overload">[7/7]</span></h2>
+<a id="a607205df21d1b2c9cd05c2a06db8d50f" name="a607205df21d1b2c9cd05c2a06db8d50f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a607205df21d1b2c9cd05c2a06db8d50f">&#9670;&#160;</a></span>envs() <span class="overload">[7/7]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2778,7 +2873,7 @@ Private Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(100)&#160;</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(baseFee *10)&#160;</td>
           <td class="paramname">, </td>
         </tr>
         <tr>
@@ -2803,8 +2898,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a2a627d1ef62d2daf86e8263051aa8078" name="a2a627d1ef62d2daf86e8263051aa8078"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2a627d1ef62d2daf86e8263051aa8078">&#9670;&#160;</a></span>checkMetrics() <span class="overload">[7/9]</span></h2>
+<a id="a5d18aae62986697d5930a3b6814bcde6" name="a5d18aae62986697d5930a3b6814bcde6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5d18aae62986697d5930a3b6814bcde6">&#9670;&#160;</a></span>checkMetrics() <span class="overload">[7/9]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2843,12 +2938,6 @@ Private Attributes</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">4&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">256&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -3077,8 +3166,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a6e66d574e6c7b24f9f15b8517f83b982" name="a6e66d574e6c7b24f9f15b8517f83b982"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6e66d574e6c7b24f9f15b8517f83b982">&#9670;&#160;</a></span>BEAST_EXPECT() <span class="overload">[66/79]</span></h2>
+<a id="a722ccdf192eb30bfa1125ec6f2562b9c" name="a722ccdf192eb30bfa1125ec6f2562b9c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a722ccdf192eb30bfa1125ec6f2562b9c">&#9670;&#160;</a></span>BEAST_EXPECT() <span class="overload">[66/79]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3087,7 +3176,7 @@ Private Attributes</h2></td></tr>
           <td class="memname">ripple::test::TxQPosNegFlows_test::BEAST_EXPECT </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#aab5bcfc5936b581b93c63cbfe33802d8">queue_data</a>&#160;</td>
-          <td class="paramname">[jss::max_spend_drops_total] = <code>=&quot;100&quot;</code></td><td>)</td>
+          <td class="paramname">[jss::max_spend_drops_total] = <code>=<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(baseFee&#160;*10)</code></td><td>)</td>
           <td></td>
         </tr>
       </table>
@@ -3146,7 +3235,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l03317">3317</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l03439">3439</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -3185,8 +3274,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="af7758a5587d1e18ad7723c9eb4714719" name="af7758a5587d1e18ad7723c9eb4714719"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af7758a5587d1e18ad7723c9eb4714719">&#9670;&#160;</a></span>checkMetrics() <span class="overload">[8/9]</span></h2>
+<a id="a2757dea2259104e0798ebfff42535770" name="a2757dea2259104e0798ebfff42535770"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2757dea2259104e0798ebfff42535770">&#9670;&#160;</a></span>checkMetrics() <span class="overload">[8/9]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3225,12 +3314,6 @@ Private Attributes</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">5&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">256&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -3260,8 +3343,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="aaddeb985069d5c0bc609e1abc1d8b995" name="aaddeb985069d5c0bc609e1abc1d8b995"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aaddeb985069d5c0bc609e1abc1d8b995">&#9670;&#160;</a></span>checkMetrics() <span class="overload">[9/9]</span></h2>
+<a id="a7899ca5bad4859b87acbd83ae4e5815c" name="a7899ca5bad4859b87acbd83ae4e5815c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7899ca5bad4859b87acbd83ae4e5815c">&#9670;&#160;</a></span>checkMetrics() <span class="overload">[9/9]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3300,12 +3383,6 @@ Private Attributes</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">5&#160;</td>
-          <td class="paramname">, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype">256&#160;</td>
           <td class="paramname">&#160;</td>
         </tr>
         <tr>
@@ -3513,7 +3590,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l03380">3380</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l03510">3510</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -3532,7 +3609,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l03641">3641</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l03775">3775</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -3551,7 +3628,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l03786">3786</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l03921">3921</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -3570,7 +3647,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l03992">3992</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l04150">4150</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -3589,7 +3666,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l04132">4132</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l04290">4290</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -3608,7 +3685,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l04201">4201</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l04357">4357</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -3627,7 +3704,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l04296">4296</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l04452">4452</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -3646,7 +3723,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l04452">4452</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l04640">4640</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -3665,7 +3742,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l04689">4689</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l04884">4884</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -3684,7 +3761,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l04802">4802</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l04997">4997</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -3717,7 +3794,7 @@ Private Attributes</h2></td></tr>
 
 <p>Reimplemented in <a class="el" href="classripple_1_1test_1_1TxQMetaInfo__test.html#ae8b0cb3ced22c83ad6756ec6cd6a0b3f">ripple::test::TxQMetaInfo_test</a>.</p>
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l04940">4940</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l05133">5133</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -3736,7 +3813,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l04962">4962</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l05155">5155</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -4462,6 +4539,54 @@ template&lt;class Condition &gt; </div>
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
+<a id="a65e7ff0003263d237c575aa1bbd5aba0" name="a65e7ff0003263d237c575aa1bbd5aba0"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a65e7ff0003263d237c575aa1bbd5aba0">&#9670;&#160;</a></span>baseFeeLevel</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr <a class="el" href="namespaceripple.html#aaaf6522d07c2b836c5fd589e9ecf578c">FeeLevel64</a> ripple::test::TxQPosNegFlows_test::baseFeeLevel {256}</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l00042">42</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a9bdf0ab97f269d9f99e65cf8138bd5ee" name="a9bdf0ab97f269d9f99e65cf8138bd5ee"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9bdf0ab97f269d9f99e65cf8138bd5ee">&#9670;&#160;</a></span>minEscalationFeeLevel</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">constexpr <a class="el" href="namespaceripple.html#aaaf6522d07c2b836c5fd589e9ecf578c">FeeLevel64</a> ripple::test::TxQPosNegFlows_test::minEscalationFeeLevel = <a class="el" href="classripple_1_1test_1_1TxQPosNegFlows__test.html#a65e7ff0003263d237c575aa1bbd5aba0">baseFeeLevel</a> * 500</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span><span class="mlabel">constexpr</span><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l00043">43</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+
+</div>
+</div>
 <a id="a4eb5ff2df2f3cef41348502a4ec78198" name="a4eb5ff2df2f3cef41348502a4ec78198"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a4eb5ff2df2f3cef41348502a4ec78198">&#9670;&#160;</a></span>withoutQueue</h2>
 
@@ -4474,7 +4599,7 @@ template&lt;class Condition &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l03115">3115</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l03218">3218</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -4492,7 +4617,7 @@ template&lt;class Condition &gt; </div>
 <b>Initial value:</b><div class="fragment"><div class="line">= R<span class="stringliteral">&quot;({ &quot;account&quot;: &quot;)&quot; + alice.human() +</span></div>
 <div class="line"><span class="stringliteral">            R</span><span class="stringliteral">&quot;(&quot;, &quot;queue&quot;: true, &quot;ledger_index&quot;: 3 })&quot;</span></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l03116">3116</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l03219">3219</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -4508,7 +4633,7 @@ template&lt;class Condition &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l03134">3134</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l03237">3237</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -4524,7 +4649,7 @@ template&lt;class Condition &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l03136">3136</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l03239">3239</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -4540,7 +4665,7 @@ template&lt;class Condition &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l03169">3169</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l03272">3272</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -4556,7 +4681,7 @@ template&lt;class Condition &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l03182">3182</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l03289">3289</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
@@ -4572,7 +4697,7 @@ template&lt;class Condition &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l03201">3201</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxQ__test_8cpp_source.html#l03310">3310</a> of file <a class="el" href="TxQ__test_8cpp_source.html">TxQ_test.cpp</a>.</p>
 
 </div>
 </div>
