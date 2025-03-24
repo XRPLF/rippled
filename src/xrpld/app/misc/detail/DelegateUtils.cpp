@@ -26,7 +26,7 @@ TER
 checkTxPermission(std::shared_ptr<SLE const> const& delegate, STTx const& tx)
 {
     if (!delegate)
-        return tesSUCCESS;
+        return tesSUCCESS;  // LCOV_EXCL_LINE
 
     auto const permissionArray = delegate->getFieldArray(sfPermissions);
     auto const transactionType = tx.getTxnType();
@@ -48,7 +48,7 @@ loadGranularPermission(
     std::unordered_set<GranularPermissionType>& granularPermissions)
 {
     if (!delegate)
-        return;
+        return;  // LCOV_EXCL_LINE
 
     auto const permissionArray = delegate->getFieldArray(sfPermissions);
     for (auto const& permission : permissionArray)

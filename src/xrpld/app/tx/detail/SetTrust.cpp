@@ -159,26 +159,10 @@ SetTrust::checkPermission(ReadView const& view, STTx const& tx)
     auto const sleRippleState = view.read(keylet::line(
         tx[sfAccount], saLimitAmount.getIssuer(), saLimitAmount.getCurrency()));
 
-    if (sleRippleState)
-    {
-        // updating LimitAmount is not allowed only with granular permissions,
-        // unless there's a new granular permission for this in the future.
-        auto const curLimit = tx[sfAccount] > saLimitAmount.getIssuer()
-            ? sleRippleState->getFieldAmount(sfHighLimit)
-            : sleRippleState->getFieldAmount(sfLowLimit);
-
-        STAmount saLimitAllow = saLimitAmount;
-        saLimitAllow.setIssuer(tx[sfAccount]);
-
-        if (curLimit != saLimitAllow)
-            return tecNO_PERMISSION;
-    }
-    else
-    {
-        // if the trustline does not exist, granular permissions are
-        // not allowed to create trustline
+    // if the trustline does not exist, granular permissions are
+    // not allowed to create trustline
+    if (!sleRippleState)
         return tecNO_PERMISSION;
-    }
 
     std::unordered_set<GranularPermissionType> granularPermissions;
     loadGranularPermission(sle, ttTRUST_SET, granularPermissions);
@@ -190,6 +174,18 @@ SetTrust::checkPermission(ReadView const& view, STTx const& tx)
         return tecNO_PERMISSION;
     if (txFlags & tfClearFreeze &&
         !granularPermissions.contains(TrustlineUnfreeze))
+        return tecNO_PERMISSION;
+
+    // updating LimitAmount is not allowed only with granular permissions,
+    // unless there's a new granular permission for this in the future.
+    auto const curLimit = tx[sfAccount] > saLimitAmount.getIssuer()
+        ? sleRippleState->getFieldAmount(sfHighLimit)
+        : sleRippleState->getFieldAmount(sfLowLimit);
+
+    STAmount saLimitAllow = saLimitAmount;
+    saLimitAllow.setIssuer(tx[sfAccount]);
+
+    if (curLimit != saLimitAllow)
         return tecNO_PERMISSION;
 
     return tesSUCCESS;

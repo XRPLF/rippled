@@ -90,6 +90,10 @@ preflight1(PreflightContext const& ctx)
         return temMALFORMED;
     }
 
+    if (ctx.tx.isFieldPresent(sfDelegate) &&
+        !ctx.rules.enabled(featurePermissionDelegation))
+        return temDISABLED;
+
     auto const ret = preflight0(ctx);
     if (!isTesSuccess(ret))
         return ret;
@@ -301,7 +305,7 @@ Transactor::payFee()
         auto const delegate = ctx_.tx.getAccountID(sfDelegate);
         auto const delegatedSle = view().peek(keylet::account(delegate));
         if (!delegatedSle)
-            return tefINTERNAL;
+            return tefINTERNAL;  // LCOV_EXCL_LINE
 
         delegatedSle->setFieldAmount(
             sfBalance, delegatedSle->getFieldAmount(sfBalance) - feePaid);
@@ -311,7 +315,7 @@ Transactor::payFee()
     {
         auto const sle = view().peek(keylet::account(account_));
         if (!sle)
-            return tefINTERNAL;
+            return tefINTERNAL;  // LCOV_EXCL_LINE
 
         // Deduct the fee, so it's not available during the transaction.
         // Will only write the account back if the transaction succeeds.
@@ -912,7 +916,7 @@ Transactor::reset(XRPAmount fee)
         ? view().peek(keylet::account(ctx_.tx.getAccountID(sfDelegate)))
         : txnAcct;
     if (!payerSle)
-        return {tefINTERNAL, beast::zero};
+        return {tefINTERNAL, beast::zero};  // LCOV_EXCL_LINE
 
     auto const balance = payerSle->getFieldAmount(sfBalance).xrp();
 

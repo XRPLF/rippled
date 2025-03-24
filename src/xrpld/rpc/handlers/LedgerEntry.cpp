@@ -71,21 +71,24 @@ parseAuthorizeCredentials(Json::Value const& jv)
 static std::optional<uint256>
 parseDelegate(Json::Value const& params, Json::Value& jvResult)
 {
-    // LCOV_EXCL_START
     if (!params.isObject())
     {
         uint256 uNodeIndex;
-        if (!uNodeIndex.parseHex(params.asString()))
+        if (!params.isString() || !uNodeIndex.parseHex(params.asString()))
         {
             jvResult[jss::error] = "malformedRequest";
             return std::nullopt;
         }
         return uNodeIndex;
     }
-    // LCOV_EXCL_STOP
     if (!params.isMember(jss::account) || !params.isMember(jss::authorize))
     {
         jvResult[jss::error] = "malformedRequest";
+        return std::nullopt;
+    }
+    if (!params[jss::account].isString() || !params[jss::authorize].isString())
+    {
+        jvResult[jss::error] = "malformedAddress";
         return std::nullopt;
     }
     auto const account =
