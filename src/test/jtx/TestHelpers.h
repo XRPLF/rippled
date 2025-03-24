@@ -372,6 +372,32 @@ public:
     }
 };
 
+struct data
+{
+private:
+    std::string value_;
+
+public:
+    explicit data(std::string func) : value_(func)
+    {
+    }
+
+    explicit data(Slice const& func) : value_(strHex(func))
+    {
+    }
+
+    template <size_t N>
+    explicit data(std::array<std::uint8_t, N> const& f) : data(makeSlice(f))
+    {
+    }
+
+    void
+    operator()(Env&, JTx& jt) const
+    {
+        jt.jv[sfData.jsonName] = value_;
+    }
+};
+
 /* Payment Channel */
 /******************************************************************************/
 
