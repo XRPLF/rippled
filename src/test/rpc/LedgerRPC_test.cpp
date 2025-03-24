@@ -22,14 +22,13 @@
 #include <test/jtx/attester.h>
 #include <test/jtx/multisign.h>
 #include <test/jtx/xchain_bridge.h>
-#include <xrpld/app/misc/Manifest.h>
+
 #include <xrpld/app/misc/TxQ.h>
-#include <xrpl/basics/StringUtilities.h>
+
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
-#include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/jss.h>
 
 namespace ripple {
@@ -3207,7 +3206,18 @@ class LedgerRPC_test : public beast::unit_test::suite
             params[jss::permissioned_domain][jss::account] = 1;
             params[jss::permissioned_domain][jss::seq] = seq;
             auto const jrr = env.rpc("json", "ledger_entry", to_string(params));
-            checkErrorValue(jrr[jss::result], "malformedRequest", "");
+            checkErrorValue(jrr[jss::result], "malformedAddress", "");
+        }
+
+        {
+            // Fail, account is an object
+            Json::Value params;
+            params[jss::ledger_index] = jss::validated;
+            params[jss::permissioned_domain][jss::account] =
+                Json::Value{Json::ValueType::objectValue};
+            params[jss::permissioned_domain][jss::seq] = seq;
+            auto const jrr = env.rpc("json", "ledger_entry", to_string(params));
+            checkErrorValue(jrr[jss::result], "malformedAddress", "");
         }
 
         {

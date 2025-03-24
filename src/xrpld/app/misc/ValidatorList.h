@@ -23,16 +23,16 @@
 #include <xrpld/app/misc/Manifest.h>
 #include <xrpld/core/TimeKeeper.h>
 #include <xrpld/overlay/Message.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/crypto/csprng.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/PublicKey.h>
-#include <boost/iterator/counting_iterator.hpp>
-#include <boost/range/adaptors.hpp>
+
 #include <boost/thread/shared_mutex.hpp>
+
 #include <mutex>
-#include <numeric>
 #include <shared_mutex>
 
 namespace protocol {

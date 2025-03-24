@@ -16,7 +16,9 @@
 //==============================================================================
 
 #include <test/jtx.h>
+
 #include <xrpld/ledger/BookDirs.h>
+
 #include <xrpl/protocol/Feature.h>
 
 namespace ripple {

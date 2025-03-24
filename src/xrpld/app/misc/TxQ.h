@@ -23,12 +23,15 @@
 #include <xrpld/app/tx/applySteps.h>
 #include <xrpld/ledger/ApplyView.h>
 #include <xrpld/ledger/OpenView.h>
+
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
+
 #include <boost/circular_buffer.hpp>
 #include <boost/intrusive/set.hpp>
+
 #include <optional>
 
 namespace ripple {

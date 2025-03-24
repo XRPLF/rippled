@@ -19,6 +19,7 @@
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/unit_test.h>
+
 #include <string>
 
 namespace ripple {

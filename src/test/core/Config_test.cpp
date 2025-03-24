@@ -19,9 +19,10 @@
 
 #include <test/jtx/TestSuite.h>
 #include <test/unit_test/FileDirGuard.h>
+
 #include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
-#include <xrpl/basics/contract.h>
+
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/server/Port.h>
 
@@ -29,7 +30,6 @@
 #include <boost/format.hpp>
 
 #include <fstream>
-#include <iostream>
 #include <regex>
 
 namespace ripple {

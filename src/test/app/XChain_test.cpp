@@ -17,6 +17,12 @@
 */
 //==============================================================================
 
+#include <test/jtx.h>
+#include <test/jtx/Env.h>
+#include <test/jtx/attester.h>
+#include <test/jtx/multisign.h>
+#include <test/jtx/xchain_bridge.h>
+
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -27,12 +33,6 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/XChainAttestations.h>
 
-#include <test/jtx.h>
-#include <test/jtx/Env.h>
-#include <test/jtx/attester.h>
-#include <test/jtx/multisign.h>
-#include <test/jtx/xchain_bridge.h>
-
 #include <functional>
 #include <limits>
 #include <optional>
@@ -41,9 +41,6 @@
 #include <tuple>
 #include <variant>
 #include <vector>
-
-#include <fstream>
-#include <iostream>
 
 namespace ripple::test {
 
