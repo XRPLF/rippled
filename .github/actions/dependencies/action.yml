@@ -60,7 +60,5 @@ runs:
     - name: cache Conan dependencies
       uses: actions/cache@v4
       with:
-      path: ~/.conan/data
-      key: ${{ inputs.cache-key }}-${{ inputs.configuration }}-conan-${{ hashFiles('conanfile.py') }}
-      restore-keys: |
-        ${{ runner.os }}-conan-
+        path: ~/.conan/data
+        key: ${{ inputs.cache-key }}-${{ inputs.configuration }}-conan-${{ hashFiles('conanfile.py') }}
