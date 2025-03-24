@@ -147,12 +147,6 @@ jobs:
           cmake --version
       - name: checkout
         uses: actions/checkout@v4
-      - name: dependencies
-        uses: ./.github/actions/dependencies
-        env:
-          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
-        with:
-          configuration: ${{ matrix.configuration }}
       - name: build
         uses: ./.github/actions/build
         with:
@@ -202,12 +196,6 @@ jobs:
           ls ~/.conan
       - name: checkout
         uses: actions/checkout@v4
-      - name: dependencies
-        uses: ./.github/actions/dependencies
-        env:
-          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
-        with:
-          configuration: ${{ matrix.configuration }}
       - name: build
         uses: ./.github/actions/build
         with:
@@ -273,12 +261,6 @@ jobs:
           cmake --version
       - name: checkout
         uses: actions/checkout@v4
-      - name: dependencies
-        uses: ./.github/actions/dependencies
-        env:
-          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
-        with:
-          configuration: ${{ env.configuration }}
       - name: export
         run: |
           version=$(conan inspect --raw version .)
