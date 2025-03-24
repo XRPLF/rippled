@@ -3214,20 +3214,20 @@ struct Escrow_test : public beast::unit_test::suite
     void
     run() override
     {
-        // testEnablement();
-        // testTiming();
-        // testTags();
-        // testDisallowXRP();
-        // test1571();
-        // testFails();
-        // testLockup();
-        // testEscrowConditions();
-        // testMetaAndOwnership();
-        // testConsequences();
-        // testEscrowWithTickets();
-        // testCredentials();
-        // testFinishFunctionPreflight();
-        // testFinishFunction();
+        testEnablement();
+        testTiming();
+        testTags();
+        testDisallowXRP();
+        test1571();
+        testFails();
+        testLockup();
+        testEscrowConditions();
+        testMetaAndOwnership();
+        testConsequences();
+        testEscrowWithTickets();
+        testCredentials();
+        testFinishFunctionPreflight();
+        testFinishFunction();
         testAllHostFunctions();
     }
 };
