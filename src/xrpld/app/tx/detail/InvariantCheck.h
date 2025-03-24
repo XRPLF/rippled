@@ -438,6 +438,7 @@ class ValidNewAccountRoot
 {
     std::uint32_t accountsCreated_ = 0;
     std::uint32_t accountSeq_ = 0;
+    bool pseudoAccount_ = false;
 
 public:
     void

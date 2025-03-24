@@ -884,6 +884,8 @@ ValidNewAccountRoot::visitEntry(
     {
         accountsCreated_++;
         accountSeq_ = (*after)[sfSequence];
+        pseudoAccount_ =
+            after->isFieldPresent(sfAMMID) || after->isFieldPresent(sfVaultID);
     }
 }
 
@@ -912,8 +914,13 @@ ValidNewAccountRoot::finalize(
          tx.getTxnType() == ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION) &&
         result == tesSUCCESS)
     {
-        std::uint32_t const startingSeq{
-            view.rules().enabled(featureDeletableAccounts) ? view.seq() : 1};
+        std::uint32_t const startingSeq =  //
+            (pseudoAccount_ &&
+             view.rules().enabled(featureSingleAssetVault))   //
+            ? 0                                               //
+            : view.rules().enabled(featureDeletableAccounts)  //
+                ? view.seq()                                  //
+                : 1;
 
         if (accountSeq_ != startingSeq)
         {
