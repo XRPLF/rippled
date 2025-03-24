@@ -134,7 +134,7 @@ MPTokenIssuanceCreate::doApply()
         view(),
         j_,
         {.account = account_,
-         .sequence = tx.getSeqProxy().value(),
+         .sequence = tx.getSeqValue(),
          .flags = tx.getFlags(),
          .maxAmount = tx[~sfMaximumAmount],
          .assetScale = tx[~sfAssetScale],
