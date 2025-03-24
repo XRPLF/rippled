@@ -117,6 +117,7 @@ public:
     bool
     del(const key_type& key, bool valid);
 
+public:
     /** Replace aliased objects with originals.
 
         Due to concurrency it is possible for two separate objects with
@@ -130,7 +131,6 @@ public:
 
         @return `true` If the key already existed.
     */
-public:
     template <class R>
     bool
     canonicalize(
