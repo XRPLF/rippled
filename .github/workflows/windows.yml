@@ -80,6 +80,7 @@ jobs:
           CONAN_PASSWORD_RIPPLE: ${{ secrets.CONAN_TOKEN }}
         with:
           configuration: ${{ matrix.configuration.type }}
+          cache-key: windows
       - name: build
         uses: ./.github/actions/build
         with:
@@ -88,7 +89,6 @@ jobs:
           # Hard code for now. Move to the matrix if varied options are needed
           cmake-args: "-Dassert=TRUE -Dwerr=TRUE -Dreporting=OFF -Dunity=ON"
           cmake-target: install
-          cache-key: windows
       - name: test
         shell: bash
         if: ${{ matrix.configuration.tests }}

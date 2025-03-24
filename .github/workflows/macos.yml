@@ -80,13 +80,13 @@ jobs:
           CONAN_PASSWORD_RIPPLE: ${{ secrets.CONAN_TOKEN }}
         with:
           configuration: ${{ matrix.configuration }}
+          cache-key: macos-${{ matrix.platform }}-${{ matrix.generator }}
       - name: build
         uses: ./.github/actions/build
         with:
           generator: ${{ matrix.generator }}
           configuration: ${{ matrix.configuration }}
           cmake-args: "-Dassert=TRUE -Dwerr=TRUE ${{ matrix.cmake-args }}"
-          cache-key: macos-${{ matrix.platform }}-${{ matrix.generator }}
       - name: test
         run: |
           n=$(nproc)
