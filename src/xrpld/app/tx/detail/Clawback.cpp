@@ -210,6 +210,10 @@ Clawback::preclaim(PreclaimContext const& ctx)
     if (sleHolder->isFieldPresent(sfAMMID))
         return tecAMM_ACCOUNT;
 
+    if (ctx.view.rules().enabled(featureSingleAssetVault) &&
+        sleHolder->isFieldPresent(sfVaultID))
+        return tecVAULT_ACCOUNT;
+
     return std::visit(
         [&]<typename T>(T const&) {
             return preclaimHelper<T>(
