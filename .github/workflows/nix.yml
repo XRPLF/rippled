@@ -174,7 +174,6 @@ jobs:
         configuration:
           - Release
         cmake-args:
-          -
           - "-DUNIT_TEST_REFERENCE_FEE=0"
           - "-DUNIT_TEST_REFERENCE_FEE=200"
           - "-DUNIT_TEST_REFERENCE_FEE=1000"
