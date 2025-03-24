@@ -1067,12 +1067,18 @@ createPseudoAccount(
     account->setFieldU32(
         sfFlags, lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth);
     // Link the pseudo-account with its owner object.
-    if (type == PseudoAccountOwnerType::AMM)
-        account->setFieldH256(sfAMMID, pseudoOwnerKey);
-    else if (type == PseudoAccountOwnerType::Vault)
-        account->setFieldH256(sfVaultID, pseudoOwnerKey);
-    else
-        UNREACHABLE("ripple::createPseudoAccount : unknown owner key type");
+    switch (type)
+    {
+        case PseudoAccountOwnerType::AMM:
+            account->setFieldH256(sfAMMID, pseudoOwnerKey);
+            break;
+        case PseudoAccountOwnerType::Vault:
+            account->setFieldH256(sfVaultID, pseudoOwnerKey);
+            break;
+        default:
+            UNREACHABLE("ripple::createPseudoAccount : unknown owner key type");
+            return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+    }
 
     view.insert(account);
 
