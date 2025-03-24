@@ -733,7 +733,7 @@ class Delegate_test : public beast::unit_test::suite
                 delegate(bob),
                 ter(tecNO_PERMISSION));
 
-            // cannot update LimitAmout with granular permission, both high and
+            // cannot update LimitAmount with granular permission, both high and
             // low account
             env(trust(gw, alice["USD"](50), 0));
             env(delegate_set::delegateSet(gw, bob, {"TrustlineUnfreeze"}));

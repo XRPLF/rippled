@@ -534,8 +534,10 @@ transactionPreProcessImpl(
             if (tx_json.isMember(sfDelegate.jsonName))
             {
                 // Delegated transaction
-                auto const ptrDelegatedAddressID = parseBase58<AccountID>(
-                    tx_json[sfDelegate.jsonName].asString());
+                auto const delegateJson = tx_json[sfDelegate.jsonName];
+                auto const ptrDelegatedAddressID = delegateJson.isString()
+                    ? parseBase58<AccountID>(delegateJson.asString())
+                    : std::nullopt;
 
                 if (!ptrDelegatedAddressID)
                 {
