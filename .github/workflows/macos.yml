@@ -10,13 +10,12 @@ on:
       - release
       - master
       # Branches that opt-in to running
-      - 'ci/**'
+      - "ci/**"
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
-
   test:
     strategy:
       matrix:
@@ -42,7 +41,7 @@ jobs:
         if: matrix.generator == 'Ninja'
         run: brew install ninja
       - name: install python
-        run: | 
+        run: |
           if which python > /dev/null 2>&1; then
               echo "Python executable exists"
           else
@@ -70,7 +69,7 @@ jobs:
           echo -n "nproc returns: "
           nproc
       - name: configure Conan
-        run : |
+        run: |
           conan profile new default --detect || true
           conan profile update settings.compiler.cppstd=20 default
       - name: build dependencies
@@ -87,6 +86,7 @@ jobs:
           generator: ${{ matrix.generator }}
           configuration: ${{ matrix.configuration }}
           cmake-args: "-Dassert=TRUE -Dwerr=TRUE ${{ matrix.cmake-args }}"
+          cache-key: macos-${{ matrix.platform }}-${{ matrix.generator }}
       - name: test
         run: |
           n=$(nproc)
