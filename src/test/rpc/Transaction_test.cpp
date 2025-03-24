@@ -355,8 +355,7 @@ class Transaction_test : public beast::unit_test::suite
         }
 
         auto const tx = env.jt(noop(alice), seq(env.seq(alice))).stx;
-        auto const ctid =
-            *RPC::encodeCTID(endLegSeq, tx->getSeqProxy().value(), netID);
+        auto const ctid = *RPC::encodeCTID(endLegSeq, tx->getSeqValue(), netID);
         for (int deltaEndSeq = 0; deltaEndSeq < 2; ++deltaEndSeq)
         {
             auto const result = env.rpc(
