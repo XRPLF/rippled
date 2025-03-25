@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include "xrpld/app/misc/WasmHostFuncImpl.h"
+#include <xrpld/app/misc/WasmHostFuncImpl.h>
 
-#include "xrpl/protocol/digest.h"
+#include <xrpl/protocol/digest.h>
 
 namespace ripple {
 
