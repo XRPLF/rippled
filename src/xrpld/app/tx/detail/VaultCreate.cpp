@@ -187,6 +187,9 @@ VaultCreate::doApply()
     vault->at(sfOwner) = ownerId;
     vault->at(sfAccount) = pseudoId;
     vault->at(sfAsset) = tx[sfAsset];
+    vault->at(sfAssetTotal) = Number(0);
+    vault->at(sfAssetAvailable) = Number(0);
+    vault->at(sfLossUnrealized) = Number(0);
     // Leave default values for AssetTotal and AssetAvailable, both zero.
     if (auto value = tx[~sfAssetMaximum])
         vault->at(sfAssetMaximum) = *value;

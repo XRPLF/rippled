@@ -475,10 +475,10 @@ LEDGER_ENTRY(ltVAULT, 0x0083, Vault, vault, ({
     {sfAccount,              soeREQUIRED},
     {sfData,                 soeOPTIONAL},
     {sfAsset,                soeREQUIRED},
-    {sfAssetTotal,           soeDEFAULT},
-    {sfAssetAvailable,       soeDEFAULT},
+    {sfAssetTotal,           soeREQUIRED},
+    {sfAssetAvailable,       soeREQUIRED},
     {sfAssetMaximum,         soeDEFAULT},
-    {sfLossUnrealized,       soeDEFAULT},
+    {sfLossUnrealized,       soeREQUIRED},
     {sfMPTokenIssuanceID,    soeREQUIRED}, // sfShare
     {sfWithdrawalPolicy,     soeREQUIRED},
     // no ShareTotal ever (use MPTIssuance.sfOutstandingAmount)

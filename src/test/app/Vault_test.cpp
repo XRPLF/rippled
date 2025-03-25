@@ -31,6 +31,7 @@
 #include <xrpl/json/json_forwards.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TER.h>
@@ -780,7 +781,7 @@ class Vault_test : public beast::unit_test::suite
     }
 
     void
-    testTransactionFees()
+    testWithIOU()
     {
         testcase("IOU fees");
         Env env{*this};
@@ -802,16 +803,41 @@ class Vault_test : public beast::unit_test::suite
         env(tx);
         env.close();
 
-        AccountID const vaultAccount = [&env, key = keylet.key]() {
+        auto const [vaultAccount, ownerAccount, mptID] =  //
+            [&env, &owner, key = keylet.key, this]()      //
+            -> std::tuple<AccountID, AccountID, uint192> {
             Json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
             jvParams[jss::vault] = strHex(key);
-            auto const jvVault =
-                env.rpc("json", "ledger_entry", to_string(jvParams));
-            return parseBase58<AccountID>(
-                       jvVault[jss::result][jss::node][jss::Account].asString())
-                .value();
+            auto jvVault = env.rpc("json", "ledger_entry", to_string(jvParams));
+
+            // Vault pseudo-account
+            auto const vAcct =
+                parseBase58<AccountID>(
+                    jvVault[jss::result][jss::node][jss::Account].asString())
+                    .value();
+
+            // Owner account
+            auto const oAcct =
+                parseBase58<AccountID>(
+                    jvVault[jss::result][jss::node][jss::Owner].asString())
+                    .value();
+            BEAST_EXPECT(oAcct == owner.id());
+
+            // MPTID of the vault shares
+            auto const strMpt = jvVault[jss::result][jss::node][jss::Share]
+                                       [jss::mpt_issuance_id]
+                                           .asString();
+            uint192 mpt;
+            BEAST_EXPECT(mpt.parseHex(strMpt));
+
+            return {vAcct, oAcct, mpt};
         }();
+
+        BEAST_EXPECT(makeMptID(1, vaultAccount) == mptID);
+        BEAST_EXPECT(
+            keylet::vault(ownerAccount, env.seq(owner) - 1).key == keylet.key);
+
         auto const vaultBalance = [&]() -> PrettyAmount {
             auto const sle = env.le(keylet::line(vaultAccount, issue));
             BEAST_EXPECT(sle != nullptr);
@@ -866,8 +892,8 @@ public:
         testCreateFailIOU();
         testCreateFailMPT();
         testWithMPT();
+        testWithIOU();
         testWithDomainCheck();
-        testTransactionFees();
     }
 };
 
