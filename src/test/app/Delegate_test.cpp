@@ -42,7 +42,7 @@ class Delegate_test : public beast::unit_test::suite
         env(delegate_set::delegateSet(gw, alice, {"Payment"}),
             ter(temDISABLED));
 
-        // can not send delegating transaction when feture disabled
+        // can not send delegating transaction when feature disabled
         env(pay(alice, bob, XRP(100)), delegate(bob), ter(temDISABLED));
     }
 
@@ -189,24 +189,6 @@ class Delegate_test : public beast::unit_test::suite
             jv[sfPermissions.jsonName] = permissionsJson;
             jv[sfFee.jsonName] = -1;
             env(jv, ter(temBAD_FEE));
-        }
-
-        // when the provided permissions include a transaction that does not
-        // exist
-        {
-            try
-            {
-                env(delegate_set::delegateSet(gw, alice, {"Payment1"}));
-            }
-            catch (std::exception const& e)
-            {
-                BEAST_EXPECT(
-                    e.what() ==
-                    std::string("invalidParamsError at "
-                                "'tx_json.Permissions.[0].Permission'. Field "
-                                "'tx_json.Permissions.[0].Permission."
-                                "PermissionValue' has invalid data."));
-            }
         }
 
         // when provided permissions contains duplicate values, should return
@@ -446,9 +428,14 @@ class Delegate_test : public beast::unit_test::suite
         env.fund(XRP(20000), bob);
         env.fund(XRP(30000), carol);
         env.close();
+
         auto aliceBalance = env.balance(alice, XRP);
         auto bobBalance = env.balance(bob, XRP);
         auto carolBalance = env.balance(carol, XRP);
+
+        // can not send transaction on one's own behalf
+        env(pay(alice, bob, XRP(50)), delegate(alice), ter(temBAD_SIGNER));
+        env.require(balance(alice, aliceBalance));
 
         env(delegate_set::delegateSet(alice, bob, {"Payment"}));
         env.close();

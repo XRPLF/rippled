@@ -65,7 +65,7 @@ Permission::Permission()
         XRPL_ASSERT(
             permission.second > UINT16_MAX,
             "ripple::Permission::granularPermissionMap : granular permission "
-            "value not greater than max uint16");
+            "value must not exceed the maximum uint16_t value.");
 }
 
 Permission const&
@@ -114,6 +114,18 @@ Permission::isProhibited(std::uint32_t const& value) const
         return true;
 
     return false;
+}
+
+uint32_t
+Permission::txToPermissionType(TxType const& type) const
+{
+    return static_cast<uint32_t>(type) + 1;
+}
+
+TxType
+Permission::permissionToTxType(uint32_t const& value) const
+{
+    return static_cast<TxType>(value - 1);
 }
 
 }  // namespace ripple

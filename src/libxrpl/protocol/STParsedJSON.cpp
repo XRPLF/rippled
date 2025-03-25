@@ -387,12 +387,13 @@ parseLeaf(
                         }
                         else
                         {
+                            auto const& txType =
+                                TxFormats::getInstance().findTypeByName(
+                                    strValue);
                             ret = detail::make_stvar<STUInt32>(
                                 field,
-                                static_cast<std::uint32_t>(
-                                    TxFormats::getInstance().findTypeByName(
-                                        strValue) +
-                                    1));
+                                Permission::getInstance().txToPermissionType(
+                                    txType));
                         }
                     }
                     else

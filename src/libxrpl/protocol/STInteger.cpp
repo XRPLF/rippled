@@ -191,9 +191,9 @@ STUInt32::getJson(JsonOptions) const
         }
         else
         {
-            auto item = TxFormats::getInstance().findByType(
-                static_cast<TxType>(value_ - 1));
-
+            auto const txType =
+                Permission::getInstance().permissionToTxType(value_);
+            auto item = TxFormats::getInstance().findByType(txType);
             if (item != nullptr)
                 return item->getName();
         }

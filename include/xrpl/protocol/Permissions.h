@@ -80,6 +80,14 @@ public:
 
     bool
     isProhibited(std::uint32_t const& value) const;
+
+    // for tx level permission, permission value is equal to tx type plus one
+    uint32_t
+    txToPermissionType(const TxType& type) const;
+
+    // tx type value is permission value minus one
+    TxType
+    permissionToTxType(uint32_t const& value) const;
 };
 
 }  // namespace ripple

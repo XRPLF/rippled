@@ -94,6 +94,15 @@ preflight1(PreflightContext const& ctx)
         !ctx.rules.enabled(featurePermissionDelegation))
         return temDISABLED;
 
+    if (ctx.tx.isFieldPresent(sfDelegate))
+    {
+        if (!ctx.rules.enabled(featurePermissionDelegation))
+            return temDISABLED;
+
+        if (*ctx.tx[~sfDelegate] == ctx.tx[sfAccount])
+            return temBAD_SIGNER;
+    }
+
     auto const ret = preflight0(ctx);
     if (!isTesSuccess(ret))
         return ret;
