@@ -90,10 +90,6 @@ preflight1(PreflightContext const& ctx)
         return temMALFORMED;
     }
 
-    if (ctx.tx.isFieldPresent(sfDelegate) &&
-        !ctx.rules.enabled(featurePermissionDelegation))
-        return temDISABLED;
-
     if (ctx.tx.isFieldPresent(sfDelegate))
     {
         if (!ctx.rules.enabled(featurePermissionDelegation))
