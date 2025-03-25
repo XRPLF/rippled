@@ -42,6 +42,9 @@ VaultClawback::preflight(PreflightContext const& ctx)
     if (ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
 
+    if (ctx.tx[sfVaultID] == beast::zero)
+        return temMALFORMED;
+
     AccountID const issuer = ctx.tx[sfAccount];
     AccountID const holder = ctx.tx[sfHolder];
 

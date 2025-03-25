@@ -42,6 +42,9 @@ VaultWithdraw::preflight(PreflightContext const& ctx)
     if (ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
 
+    if (ctx.tx[sfVaultID] == beast::zero)
+        return temMALFORMED;
+
     if (ctx.tx[sfAmount] <= beast::zero)
         return temBAD_AMOUNT;
 

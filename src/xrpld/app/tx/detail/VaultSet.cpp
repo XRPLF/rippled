@@ -43,6 +43,9 @@ VaultSet::preflight(PreflightContext const& ctx)
     if (auto const ter = preflight1(ctx))
         return ter;
 
+    if (ctx.tx[sfVaultID] == beast::zero)
+        return temMALFORMED;
+
     if (ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
 

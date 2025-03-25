@@ -102,6 +102,15 @@ class Vault_test : public beast::unit_test::suite
             }
 
             {
+                testcase(prefix + " fail to deposit to zero vaultID");
+                auto tx = vault.deposit(
+                    {.depositor = depositor,
+                     .id = beast::zero,
+                     .amount = asset(10)});
+                env(tx, ter(temMALFORMED));
+            }
+
+            {
                 testcase(prefix + " deposit non-zero amount");
                 auto tx = vault.deposit(
                     {.depositor = depositor,
@@ -145,6 +154,13 @@ class Vault_test : public beast::unit_test::suite
                 auto tx = vault.set({.owner = owner, .id = keylet.key});
                 tx[sfAssetMaximum] = asset(50).number();
                 env(tx, ter(tecLIMIT_EXCEEDED));
+            }
+
+            {
+                testcase(prefix + " fail to set zero vault");
+                auto tx = vault.set({.owner = owner, .id = beast::zero});
+                tx[sfAssetMaximum] = asset(150).number();
+                env(tx, ter(temMALFORMED));
             }
 
             {
@@ -253,6 +269,17 @@ class Vault_test : public beast::unit_test::suite
                 env(tx, code);
             }
 
+            if (!asset.raw().native())
+            {
+                testcase(prefix + " fail to clawback zero vault");
+                auto tx = vault.clawback(
+                    {.issuer = issuer,
+                     .id = beast::zero,
+                     .holder = depositor,
+                     .amount = asset(10)});
+                env(tx, ter(temMALFORMED));
+            }
+
             {
                 testcase(prefix + " clawback all");
                 auto code = asset.raw().native() ? ter(tecNO_PERMISSION)
@@ -273,6 +300,15 @@ class Vault_test : public beast::unit_test::suite
             }
 
             {
+                testcase(prefix + " fail to withdraw zero vault");
+                auto tx = vault.withdraw(
+                    {.depositor = depositor,
+                     .id = beast::zero,
+                     .amount = asset(100)});
+                env(tx, ter(temMALFORMED));
+            }
+
+            {
                 testcase(prefix + " withdraw non-zero assets");
                 auto tx = vault.withdraw(
                     {.depositor = depositor,
@@ -285,6 +321,12 @@ class Vault_test : public beast::unit_test::suite
                 testcase(prefix + " fail to delete because wrong owner");
                 auto tx = vault.del({.owner = issuer, .id = keylet.key});
                 env(tx, ter(tecNO_PERMISSION));
+            }
+
+            {
+                testcase(prefix + " fail to delete zero vault");
+                auto tx = vault.del({.owner = owner, .id = beast::zero});
+                env(tx, ter(temMALFORMED));
             }
 
             {
