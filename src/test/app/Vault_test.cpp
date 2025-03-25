@@ -35,6 +35,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
 namespace ripple {
@@ -596,6 +597,121 @@ class Vault_test : public beast::unit_test::suite
     }
 
     void
+    testNonTransferableShares()
+    {
+        using namespace test::jtx;
+        Env env{*this};
+        Account issuer{"issuer"};
+        Account owner{"owner"};
+        Account depositor{"depositor"};
+        env.fund(XRP(1000), issuer, owner, depositor);
+        env.close();
+
+        auto vault = env.vault();
+        PrettyAsset asset = issuer["IOU"];
+        env.trust(asset(1000), owner);
+        env(pay(issuer, owner, asset(100)));
+        env.trust(asset(1000), depositor);
+        env(pay(issuer, depositor, asset(100)));
+        env.close();
+
+        auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+        tx[sfFlags] = tfVaultShareNonTransferable;
+        env(tx);
+        env.close();
+
+        {
+            testcase("nontransferable deposits");
+            auto tx1 = vault.deposit(
+                {.depositor = depositor,
+                 .id = keylet.key,
+                 .amount = asset(40)});
+            env(tx1);
+
+            auto tx2 = vault.deposit(
+                {.depositor = owner, .id = keylet.key, .amount = asset(60)});
+            env(tx2);
+            env.close();
+        }
+
+        auto const vaultAccount =  //
+            [&env, key = keylet.key, this]() -> AccountID {
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = jss::validated;
+            jvParams[jss::vault] = strHex(key);
+            auto jvVault = env.rpc("json", "ledger_entry", to_string(jvParams));
+            BEAST_EXPECT(
+                jvVault[jss::result][jss::node][jss::ShareTotal] == "100");
+            BEAST_EXPECT(
+                jvVault[jss::result][jss::node][sfAssetTotal.fieldName] ==
+                "100");
+
+            // Vault pseudo-account
+            return parseBase58<AccountID>(
+                       jvVault[jss::result][jss::node][jss::Account].asString())
+                .value();
+        }();
+
+        auto const MptID = makeMptID(1, vaultAccount);
+        Asset shares = MptID;
+
+        {
+            testcase("nontransferable shares cannot be moved");
+            env(pay(owner, depositor, shares(10)), ter{tecNO_AUTH});
+            env(pay(depositor, owner, shares(10)), ter{tecNO_AUTH});
+        }
+
+        {
+            testcase("nontransferable shares can be used to withdraw");
+            auto tx1 = vault.withdraw(
+                {.depositor = depositor,
+                 .id = keylet.key,
+                 .amount = asset(20)});
+            env(tx1);
+
+            auto tx2 = vault.withdraw(
+                {.depositor = owner, .id = keylet.key, .amount = asset(30)});
+            env(tx2);
+            env.close();
+        }
+
+        {
+            testcase("nontransferable shares balance check");
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = jss::validated;
+            jvParams[jss::vault] = strHex(keylet.key);
+            auto jvVault = env.rpc("json", "ledger_entry", to_string(jvParams));
+
+            BEAST_EXPECT(
+                jvVault[jss::result][jss::node][jss::ShareTotal] == "50");
+            BEAST_EXPECT(
+                jvVault[jss::result][jss::node][sfAssetTotal.fieldName] ==
+                "50");
+        }
+
+        {
+            testcase("nontransferable shares withdraw rest");
+            auto tx1 = vault.withdraw(
+                {.depositor = depositor,
+                 .id = keylet.key,
+                 .amount = asset(20)});
+            env(tx1);
+
+            auto tx2 = vault.withdraw(
+                {.depositor = owner, .id = keylet.key, .amount = asset(30)});
+            env(tx2);
+            env.close();
+        }
+
+        {
+            testcase("nontransferable shares delete empty vault");
+            auto tx = vault.del({.owner = owner, .id = keylet.key});
+            env(tx);
+            BEAST_EXPECT(!env.le(keylet));
+        }
+    }
+
+    void
     testWithMPT()
     {
         using namespace test::jtx;
@@ -958,6 +1074,7 @@ public:
         testWithMPT();
         testWithIOU();
         testWithDomainCheck();
+        testNonTransferableShares();
     }
 };
 
