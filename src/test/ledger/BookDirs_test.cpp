@@ -34,6 +34,7 @@ struct BookDirs_test : public beast::unit_test::suite
         auto gw = Account("gw");
         auto USD = gw["USD"];
         env.fund(XRP(1000000), "alice", "bob", "gw");
+        env.close();
 
         {
             Book book(xrpIssue(), USD.issue());
