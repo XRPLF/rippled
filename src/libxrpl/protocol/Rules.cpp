@@ -157,7 +157,7 @@ Rules::operator!=(Rules const& other) const
 bool
 isFeatureEnabled(uint256 const& feature)
 {
-    auto const rules = getCurrentTransactionRules();
+    auto const& rules = getCurrentTransactionRules();
     return rules && rules->enabled(feature);
 }
 

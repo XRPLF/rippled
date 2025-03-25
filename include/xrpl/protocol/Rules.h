@@ -28,6 +28,9 @@
 
 namespace ripple {
 
+bool
+isFeatureEnabled(uint256 const& feature);
+
 class DigestAwareReadView;
 
 /** Rules controlling protocol behavior. */
@@ -126,9 +129,6 @@ public:
 private:
     std::optional<Rules> saved_;
 };
-
-bool
-isFeatureEnabled(uint256 const& feature);
 
 }  // namespace ripple
 #endif
