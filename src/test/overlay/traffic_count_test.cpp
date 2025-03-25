@@ -68,23 +68,26 @@ public:
         auto run = [&](TestCase const& tc) {
             testcase(tc.name);
             TrafficCount m_traffic;
-            auto counts = m_traffic.getCounts();
 
+            auto const counts = m_traffic.getCounts();
             std::for_each(counts.begin(), counts.end(), [&](auto& pair) {
                 for (auto i = 0; i < tc.messageCount; ++i)
                     m_traffic.addCount(pair.first, tc.inbound, tc.size);
             });
 
-            counts = m_traffic.getCounts();
-            std::for_each(counts.begin(), counts.end(), [&](auto& pair) {
-                BEAST_EXPECT(pair.second.bytesIn.load() == tc.expectedBytesIn);
-                BEAST_EXPECT(
-                    pair.second.bytesOut.load() == tc.expectedBytesOut);
-                BEAST_EXPECT(
-                    pair.second.messagesIn.load() == tc.expectedMessagesIn);
-                BEAST_EXPECT(
-                    pair.second.messagesOut.load() == tc.expectedMessagesOut);
-            });
+            auto const counts_new = m_traffic.getCounts();
+            std::for_each(
+                counts_new.begin(), counts_new.end(), [&](auto& pair) {
+                    BEAST_EXPECT(
+                        pair.second.bytesIn.load() == tc.expectedBytesIn);
+                    BEAST_EXPECT(
+                        pair.second.bytesOut.load() == tc.expectedBytesOut);
+                    BEAST_EXPECT(
+                        pair.second.messagesIn.load() == tc.expectedMessagesIn);
+                    BEAST_EXPECT(
+                        pair.second.messagesOut.load() ==
+                        tc.expectedMessagesOut);
+                });
         };
 
         auto const testcases = {

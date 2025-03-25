@@ -250,23 +250,20 @@ PeerImp::send(std::shared_ptr<Message> const& m)
     auto validator = m->getValidatorKey();
     if (validator && !squelch_.expireSquelch(*validator))
     {
-        overlay_.reportTraffic(
+        overlay_.reportOutboundTraffic(
             TrafficCount::category::squelch_saved,
-            false,
             static_cast<int>(m->getBuffer(compressionEnabled_).size()));
         return;
     }
 
     // report categorized outgoing traffic
-    overlay_.reportTraffic(
+    overlay_.reportOutboundTraffic(
         safe_cast<TrafficCount::category>(m->getCategory()),
-        false,
         static_cast<int>(m->getBuffer(compressionEnabled_).size()));
 
     // report total outgoing traffic
-    overlay_.reportTraffic(
+    overlay_.reportOutboundTraffic(
         TrafficCount::category::total,
-        false,
         static_cast<int>(m->getBuffer(compressionEnabled_).size()));
 
     auto sendq_size = send_queue_.size();
@@ -1031,11 +1028,11 @@ PeerImp::onMessageBegin(
     auto const category = TrafficCount::categorize(
         *m, static_cast<protocol::MessageType>(type), true);
     // report specific category traffic
-    overlay_.reportTraffic(category, true, static_cast<int>(size));
+    overlay_.reportInboundTraffic(category, static_cast<int>(size));
 
     // retport total incoming traffic
-    overlay_.reportTraffic(
-        TrafficCount::category::total, true, static_cast<int>(size));
+    overlay_.reportInboundTraffic(
+        TrafficCount::category::total, static_cast<int>(size));
 
     using namespace protocol;
     if ((type == MessageType::mtTRANSACTION ||
@@ -1304,10 +1301,9 @@ PeerImp::handleTransaction(
             else if (eraseTxQueue && txReduceRelayEnabled())
                 removeTxQueue(txID);
 
-            overlay_.reportTraffic(
+            overlay_.reportInboundTraffic(
                 TrafficCount::category::transaction_duplicate,
-                true,
-                Message::totalSize(*m));
+                Message::messageSize(*m));
 
             return;
         }
@@ -1698,10 +1694,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
     // of an untrusted key
     if (!isTrusted)
     {
-        overlay_.reportTraffic(
+        overlay_.reportInboundTraffic(
             TrafficCount::category::proposal_untrusted,
-            true,
-            Message::totalSize(*m));
+            Message::messageSize(*m));
 
         if (app_.config().RELAY_UNTRUSTED_PROPOSALS == -1)
             return;
@@ -1731,10 +1726,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
             overlay_.updateSlotAndSquelch(
                 suppression, publicKey, id_, protocol::mtPROPOSE_LEDGER);
 
-        overlay_.reportTraffic(
+        overlay_.reportInboundTraffic(
             TrafficCount::category::proposal_duplicate,
-            true,
-            Message::totalSize(*m));
+            Message::messageSize(*m));
 
         JLOG(p_journal_.trace()) << "Proposal: duplicate";
 
@@ -2356,10 +2350,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
         // verifying the signature of an untrusted key
         if (!isTrusted)
         {
-            overlay_.reportTraffic(
+            overlay_.reportInboundTraffic(
                 TrafficCount::category::validation_untrusted,
-                true,
-                Message::totalSize(*m));
+                Message::messageSize(*m));
 
             if (app_.config().RELAY_UNTRUSTED_VALIDATIONS == -1)
                 return;
@@ -2381,10 +2374,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
                 overlay_.updateSlotAndSquelch(
                     key, val->getSignerPublic(), id_, protocol::mtVALIDATION);
 
-            overlay_.reportTraffic(
+            overlay_.reportInboundTraffic(
                 TrafficCount::category::validation_duplicate,
-                true,
-                Message::totalSize(*m));
+                Message::messageSize(*m));
 
             JLOG(p_journal_.trace()) << "Validation: duplicate";
             return;

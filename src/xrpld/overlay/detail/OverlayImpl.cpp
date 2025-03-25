@@ -685,11 +685,16 @@ OverlayImpl::onManifests(
 }
 
 void
-OverlayImpl::reportTraffic(TrafficCount::category cat, bool isInbound, int size)
+OverlayImpl::reportInboundTraffic(TrafficCount::category cat, int size)
 {
-    m_traffic.addCount(cat, isInbound, size);
+    m_traffic.addCount(cat, true, size);
 }
 
+void
+OverlayImpl::reportOutboundTraffic(TrafficCount::category cat, int size)
+{
+    m_traffic.addCount(cat, false, size);
+}
 /** The number of active peers on the network
     Active peers are only those peers that have completed the handshake
     and are running the Ripple protocol.

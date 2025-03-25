@@ -345,7 +345,10 @@ public:
     makePrefix(std::uint32_t id);
 
     void
-    reportTraffic(TrafficCount::category cat, bool isInbound, int bytes);
+    reportInboundTraffic(TrafficCount::category cat, int bytes);
+
+    void
+    reportOutboundTraffic(TrafficCount::category cat, int bytes);
 
     void
     incJqTransOverflow() override
