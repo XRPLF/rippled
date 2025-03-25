@@ -51,13 +51,14 @@ runs:
         echo missing=$(conan info . --build missing --settings build_type=${{ inputs.configuration }} --json 2>/dev/null  | grep '^\[') | tee ${GITHUB_OUTPUT}
 
     - name: cache Conan dependencies
+      id: cache-conan
       uses: actions/cache@v4
       with:
         path: ~/.conan/data
         key: ${{ inputs.cache-key }}-${{ inputs.configuration }}-conan-${{ hashFiles('conanfile.py') }}
 
     - name: install dependencies
-      if: steps.cache-primes.outputs.cache-hit != 'true'
+      if: steps.cache-conan.outputs.cache-hit != 'true'
       shell: bash
       run: |
         mkdir ${build_dir}
