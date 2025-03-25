@@ -149,6 +149,26 @@ isRelatedToAccount(
     return false;
 }
 
+template <>
+void
+supplementJson<ltVAULT>(
+    ReadView const& view,
+    std::shared_ptr<SLE const> const& vault,
+    Json::Value& node)
+{
+    XRPL_ASSERT(
+        vault->getType() == ltVAULT,
+        "ripple::RPC::supplementJson<ltVAULT> : matching type");
+
+    auto const share = vault->at(sfMPTokenIssuanceID);
+    auto const sleIssuance = view.read(keylet::mptIssuance(share));
+    if (!sleIssuance)
+        return;
+
+    node[jss::ShareTotal] =
+        Number(sleIssuance->getFieldU64(sfOutstandingAmount));
+}
+
 bool
 getAccountObjects(
     ReadView const& ledger,
@@ -300,7 +320,10 @@ getAccountObjects(
             if (!typeFilter.has_value() ||
                 typeMatchesFilter(typeFilter.value(), sleNode->getType()))
             {
-                jvObjects.append(sleNode->getJson(JsonOptions::none));
+                auto& entry =
+                    jvObjects.append(sleNode->getJson(JsonOptions::none));
+                if (sleNode->getType() == ltVAULT)
+                    RPC::supplementJson<ltVAULT>(ledger, sleNode, entry);
             }
 
             if (++i == mlimit)

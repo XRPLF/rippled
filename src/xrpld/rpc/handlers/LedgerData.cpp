@@ -124,6 +124,8 @@ doLedgerData(RPC::JsonContext& context)
             {
                 Json::Value& entry =
                     nodes.append(sle->getJson(JsonOptions::none));
+                if (sle->getType() == ltVAULT)
+                    RPC::supplementJson<ltVAULT>(*lpLedger, sle, entry);
                 entry[jss::index] = to_string(sle->key());
             }
         }

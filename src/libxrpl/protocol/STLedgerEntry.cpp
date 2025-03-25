@@ -31,6 +31,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STLedgerEntry.h>
+#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/jss.h>
@@ -144,8 +145,7 @@ STLedgerEntry::getJson(JsonOptions options) const
     else if (getType() == ltVAULT)
     {
         // Replace "MPTokenIssuanceID" with functionally equivalent "Share"
-        const char* const fieldMptIssue = sfMPTokenIssuanceID.fieldName.c_str();
-        ret.removeMember(fieldMptIssue);
+        ret.removeMember(sfMPTokenIssuanceID.fieldName.c_str());
         ret[jss::Share] = to_json(MPTIssue(getFieldH192(sfMPTokenIssuanceID)));
     }
 
