@@ -50,6 +50,10 @@ runs:
       run: |
         echo missing=$(conan info . --build missing --settings build_type=${{ inputs.configuration }} --json 2>/dev/null  | grep '^\[') | tee ${GITHUB_OUTPUT}
 
+    - name: make build dir
+      shell: bash
+      run: mkdir ${build_dir}
+
     - name: cache Conan dependencies
       id: cache-conan
       uses: actions/cache@v4
@@ -61,7 +65,6 @@ runs:
       if: steps.cache-conan.outputs.cache-hit != 'true'
       shell: bash
       run: |
-        mkdir ${build_dir}
         cd ${build_dir}
         conan install \
           --output-folder . \
