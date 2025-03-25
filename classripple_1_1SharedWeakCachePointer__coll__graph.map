@@ -1,0 +1,4 @@
+<map id="ripple::SharedWeakCachePointer&lt; T &gt;" name="ripple::SharedWeakCachePointer&lt; T &gt;">
+<area shape="rect" id="node1" title="A combination of a std::shared_ptr and a std::weak_pointer." alt="" coords="5,123,277,148"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/variant.html" title=" " alt="" coords="63,5,220,60"/>
+</map>

@@ -2351,7 +2351,7 @@ $(function() {
 <div class="line"><a id="l02273" name="l02273"></a><span class="lineno"> 2273</span>        <span class="comment">// put 4 transactions into the open ledger</span></div>
 <div class="line"><a id="l02274" name="l02274"></a><span class="lineno"> 2274</span>        <span class="keywordflow">for</span> (<span class="keyword">auto</span> i = 0; i &lt; 4; ++i)</div>
 <div class="line"><a id="l02275" name="l02275"></a><span class="lineno"> 2275</span>        {</div>
-<div class="line"><a id="l02276" name="l02276"></a><span class="lineno"> 2276</span>            env(noop(env.master));</div>
+<div class="line"><a id="l02276" name="l02276"></a><span class="lineno"> 2276</span>            env(<a class="code hl_enumvalue" href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">noop</a>(env.master));</div>
 <div class="line"><a id="l02277" name="l02277"></a><span class="lineno"> 2277</span>        }</div>
 <div class="line"><a id="l02278" name="l02278"></a><span class="lineno"> 2278</span> </div>
 <div class="line"><a id="l02279" name="l02279"></a><span class="lineno"> 2279</span>        {</div>
@@ -2517,7 +2517,7 @@ $(function() {
 <div class="line"><a id="l02439" name="l02439"></a><span class="lineno"> 2439</span>        {</div>
 <div class="line"><a id="l02440" name="l02440"></a><span class="lineno"> 2440</span>            <span class="comment">// Call &quot;sign&quot; with nothing in the open ledger</span></div>
 <div class="line"><a id="l02441" name="l02441"></a><span class="lineno"> 2441</span>            <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> toSign;</div>
-<div class="line"><a id="l02442" name="l02442"></a><span class="lineno"> 2442</span>            toSign[jss::tx_json] = noop(env.master);</div>
+<div class="line"><a id="l02442" name="l02442"></a><span class="lineno"> 2442</span>            toSign[jss::tx_json] = <a class="code hl_enumvalue" href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">noop</a>(env.master);</div>
 <div class="line"><a id="l02443" name="l02443"></a><span class="lineno"> 2443</span>            toSign[jss::secret] = <span class="stringliteral">&quot;masterpassphrase&quot;</span>;</div>
 <div class="line"><a id="l02444" name="l02444"></a><span class="lineno"> 2444</span>            <span class="keyword">auto</span> rpcResult = env.rpc(<span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;sign&quot;</span>, <a class="code hl_function" href="namespaceripple.html#ac124fe6744b7fe887dec949b56b16d50">to_string</a>(toSign));</div>
 <div class="line"><a id="l02445" name="l02445"></a><span class="lineno"> 2445</span>            <span class="keyword">auto</span> result = rpcResult[jss::result];</div>
@@ -2540,11 +2540,11 @@ $(function() {
 <div class="line"><a id="l02462" name="l02462"></a><span class="lineno"> 2462</span>                <span class="keyword">auto</span> metrics = env.app().getTxQ().getMetrics(*env.current());</div>
 <div class="line"><a id="l02463" name="l02463"></a><span class="lineno"> 2463</span>                <span class="keywordflow">if</span> (metrics.openLedgerFeeLevel &gt; metrics.minProcessingFeeLevel)</div>
 <div class="line"><a id="l02464" name="l02464"></a><span class="lineno"> 2464</span>                    <span class="keywordflow">break</span>;</div>
-<div class="line"><a id="l02465" name="l02465"></a><span class="lineno"> 2465</span>                env(noop(env.master));</div>
+<div class="line"><a id="l02465" name="l02465"></a><span class="lineno"> 2465</span>                env(<a class="code hl_enumvalue" href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">noop</a>(env.master));</div>
 <div class="line"><a id="l02466" name="l02466"></a><span class="lineno"> 2466</span>            }</div>
 <div class="line"><a id="l02467" name="l02467"></a><span class="lineno"> 2467</span> </div>
 <div class="line"><a id="l02468" name="l02468"></a><span class="lineno"> 2468</span>            <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> toSign;</div>
-<div class="line"><a id="l02469" name="l02469"></a><span class="lineno"> 2469</span>            toSign[jss::tx_json] = noop(env.master);</div>
+<div class="line"><a id="l02469" name="l02469"></a><span class="lineno"> 2469</span>            toSign[jss::tx_json] = <a class="code hl_enumvalue" href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">noop</a>(env.master);</div>
 <div class="line"><a id="l02470" name="l02470"></a><span class="lineno"> 2470</span>            toSign[jss::secret] = <span class="stringliteral">&quot;masterpassphrase&quot;</span>;</div>
 <div class="line"><a id="l02471" name="l02471"></a><span class="lineno"> 2471</span>            toSign[jss::fee_mult_max] = 900;</div>
 <div class="line"><a id="l02472" name="l02472"></a><span class="lineno"> 2472</span>            <span class="keyword">auto</span> rpcResult = env.rpc(<span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;sign&quot;</span>, <a class="code hl_function" href="namespaceripple.html#ac124fe6744b7fe887dec949b56b16d50">to_string</a>(toSign));</div>
@@ -2573,7 +2573,7 @@ $(function() {
 <div class="line"><a id="l02495" name="l02495"></a><span class="lineno"> 2495</span>            }</div>
 <div class="line"><a id="l02496" name="l02496"></a><span class="lineno"> 2496</span> </div>
 <div class="line"><a id="l02497" name="l02497"></a><span class="lineno"> 2497</span>            <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> toSign;</div>
-<div class="line"><a id="l02498" name="l02498"></a><span class="lineno"> 2498</span>            toSign[jss::tx_json] = noop(env.master);</div>
+<div class="line"><a id="l02498" name="l02498"></a><span class="lineno"> 2498</span>            toSign[jss::tx_json] = <a class="code hl_enumvalue" href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">noop</a>(env.master);</div>
 <div class="line"><a id="l02499" name="l02499"></a><span class="lineno"> 2499</span>            toSign[jss::secret] = <span class="stringliteral">&quot;masterpassphrase&quot;</span>;</div>
 <div class="line"><a id="l02500" name="l02500"></a><span class="lineno"> 2500</span>            <span class="keyword">auto</span> rpcResult = env.rpc(<span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;sign&quot;</span>, <a class="code hl_function" href="namespaceripple.html#ac124fe6744b7fe887dec949b56b16d50">to_string</a>(toSign));</div>
 <div class="line"><a id="l02501" name="l02501"></a><span class="lineno"> 2501</span>            <span class="keyword">auto</span> result = rpcResult[jss::result];</div>
@@ -2598,13 +2598,13 @@ $(function() {
 <div class="line"><a id="l02520" name="l02520"></a><span class="lineno"> 2520</span>                <span class="keyword">auto</span> metrics = env.app().getTxQ().getMetrics(*env.current());</div>
 <div class="line"><a id="l02521" name="l02521"></a><span class="lineno"> 2521</span>                <span class="keywordflow">if</span> (metrics.openLedgerFeeLevel &gt; metrics.minProcessingFeeLevel)</div>
 <div class="line"><a id="l02522" name="l02522"></a><span class="lineno"> 2522</span>                    <span class="keywordflow">break</span>;</div>
-<div class="line"><a id="l02523" name="l02523"></a><span class="lineno"> 2523</span>                env(noop(env.master), fee(47));</div>
+<div class="line"><a id="l02523" name="l02523"></a><span class="lineno"> 2523</span>                env(<a class="code hl_enumvalue" href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">noop</a>(env.master), fee(47));</div>
 <div class="line"><a id="l02524" name="l02524"></a><span class="lineno"> 2524</span>            }</div>
 <div class="line"><a id="l02525" name="l02525"></a><span class="lineno"> 2525</span> </div>
 <div class="line"><a id="l02526" name="l02526"></a><span class="lineno"> 2526</span>            Env_ss envs(env);</div>
 <div class="line"><a id="l02527" name="l02527"></a><span class="lineno"> 2527</span> </div>
 <div class="line"><a id="l02528" name="l02528"></a><span class="lineno"> 2528</span>            <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> toSign;</div>
-<div class="line"><a id="l02529" name="l02529"></a><span class="lineno"> 2529</span>            toSign[jss::tx_json] = noop(env.master);</div>
+<div class="line"><a id="l02529" name="l02529"></a><span class="lineno"> 2529</span>            toSign[jss::tx_json] = <a class="code hl_enumvalue" href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">noop</a>(env.master);</div>
 <div class="line"><a id="l02530" name="l02530"></a><span class="lineno"> 2530</span>            toSign[jss::secret] = <span class="stringliteral">&quot;masterpassphrase&quot;</span>;</div>
 <div class="line"><a id="l02531" name="l02531"></a><span class="lineno"> 2531</span>            <span class="comment">// Max fee = 7000 drops</span></div>
 <div class="line"><a id="l02532" name="l02532"></a><span class="lineno"> 2532</span>            toSign[jss::fee_mult_max] = 700;</div>
@@ -2634,7 +2634,7 @@ $(function() {
 <div class="line"><a id="l02556" name="l02556"></a><span class="lineno"> 2556</span> </div>
 <div class="line"><a id="l02557" name="l02557"></a><span class="lineno"> 2557</span>        {</div>
 <div class="line"><a id="l02558" name="l02558"></a><span class="lineno"> 2558</span>            <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> toSign;</div>
-<div class="line"><a id="l02559" name="l02559"></a><span class="lineno"> 2559</span>            toSign[jss::tx_json] = noop(env.master);</div>
+<div class="line"><a id="l02559" name="l02559"></a><span class="lineno"> 2559</span>            toSign[jss::tx_json] = <a class="code hl_enumvalue" href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">noop</a>(env.master);</div>
 <div class="line"><a id="l02560" name="l02560"></a><span class="lineno"> 2560</span> </div>
 <div class="line"><a id="l02561" name="l02561"></a><span class="lineno"> 2561</span>            BEAST_EXPECT(!toSign[jss::tx_json].isMember(jss::NetworkID));</div>
 <div class="line"><a id="l02562" name="l02562"></a><span class="lineno"> 2562</span>            toSign[jss::secret] = <span class="stringliteral">&quot;masterpassphrase&quot;</span>;</div>
@@ -2856,6 +2856,7 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html_a53f80df10254751781250aa20704e98f"><div class="ttname"><a href="namespaceripple.html#a53f80df10254751781250aa20704e98f">ripple::set</a></div><div class="ttdeci">bool set(T &amp;target, std::string const &amp;name, Section const &amp;section)</div><div class="ttdoc">Set a value from a configuration Section If the named value is not found or doesn't parse as a T,...</div><div class="ttdef"><b>Definition:</b> <a href="BasicConfig_8h_source.html#l00315">BasicConfig.h:315</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a9de744cfdefe1132969eb982e57e4ddea8183aa2c95dc1385c8f58bf1917fcb0b"><div class="ttname"><a href="namespaceripple.html#a9de744cfdefe1132969eb982e57e4ddea8183aa2c95dc1385c8f58bf1917fcb0b">ripple::KeyType::ed25519</a></div><div class="ttdeci">@ ed25519</div></div>
 <div class="ttc" id="anamespaceripple_html_ac124fe6744b7fe887dec949b56b16d50"><div class="ttname"><a href="namespaceripple.html#ac124fe6744b7fe887dec949b56b16d50">ripple::to_string</a></div><div class="ttdeci">std::string to_string(base_uint&lt; Bits, Tag &gt; const &amp;a)</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00630">base_uint.h:630</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a"><div class="ttname"><a href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">ripple::ReleaseStrongRefAction::noop</a></div><div class="ttdeci">@ noop</div></div>
 <div class="ttc" id="anamespaceripple_html_ae08fe18f17b24699ce41d3898fbb8c2c"><div class="ttname"><a href="namespaceripple.html#ae08fe18f17b24699ce41d3898fbb8c2c">ripple::Role</a></div><div class="ttdeci">Role</div><div class="ttdoc">Indicates the level of administrative permission to grant.</div><div class="ttdef"><b>Definition:</b> <a href="Role_8h_source.html#l00044">Role.h:44</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ae08fe18f17b24699ce41d3898fbb8c2ca2e40ad879e955201df4dedbf8d479a12"><div class="ttname"><a href="namespaceripple.html#ae08fe18f17b24699ce41d3898fbb8c2ca2e40ad879e955201df4dedbf8d479a12">ripple::Role::USER</a></div><div class="ttdeci">@ USER</div></div>
 <div class="ttc" id="anamespaceripple_html_ae08fe18f17b24699ce41d3898fbb8c2ca33e9232989576b5cfaa06654217d7a1a"><div class="ttname"><a href="namespaceripple.html#ae08fe18f17b24699ce41d3898fbb8c2ca33e9232989576b5cfaa06654217d7a1a">ripple::Role::GUEST</a></div><div class="ttdeci">@ GUEST</div></div>

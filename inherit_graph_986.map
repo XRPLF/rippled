@@ -1,5 +1,6 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integral_constant.html" title=" " alt="" coords="5,20,168,45"/>
-<area shape="rect" id="node2" href="$structbeast_1_1is__contiguously__hashable.html" title=" " alt="" coords="216,13,456,53"/>
-<area shape="rect" id="node3" href="$structbeast_1_1is__contiguously__hashable_3_01ripple_1_1tagged__integer_3_01Int_00_01Tag_01_4_00_01HashAlgorithm_01_4.html" title=" " alt="" coords="504,5,776,60"/>
+<area shape="rect" id="node1" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,37,192,77"/>
+<area shape="rect" id="node2" href="$classbeast_1_1insight_1_1EventImpl.html" title=" " alt="" coords="240,45,424,70"/>
+<area shape="rect" id="node3" href="$classbeast_1_1insight_1_1detail_1_1NullEventImpl.html" title=" " alt="" coords="472,5,627,45"/>
+<area shape="rect" id="node4" href="$classbeast_1_1insight_1_1detail_1_1StatsDEventImpl.html" title=" " alt="" coords="472,69,627,109"/>
 </map>

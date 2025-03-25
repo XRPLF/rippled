@@ -285,7 +285,7 @@ $(function() {
 <div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span>            {</div>
 <div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span>                <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> <span class="keyword">const</span>&amp; deleted = node[sfDeletedNode.jsonName];</div>
 <div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span>                <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span> entryType =</div>
-<div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span>                    deleted[sfLedgerEntryType.jsonName].<a class="code hl_function" href="classJson_1_1Value.html#ab0d86bf425efefd03513e8dbfaca317b">asString</a>();</div>
+<div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span>                    deleted[sfLedgerEntryType.jsonName].asString();</div>
 <div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span> </div>
 <div class="line"><a id="l00215" name="l00215"></a><span class="lineno">  215</span>                <span class="keywordflow">if</span> (entryType == jss::Ticket)</div>
 <div class="line"><a id="l00216" name="l00216"></a><span class="lineno">  216</span>                {</div>
@@ -461,8 +461,8 @@ $(function() {
 <div class="line"><a id="l00391" name="l00391"></a><span class="lineno">  391</span>        env.close();</div>
 <div class="line"><a id="l00392" name="l00392"></a><span class="lineno">  392</span>        env.require(owners(env.master, 0), tickets(env.master, 0));</div>
 <div class="line"><a id="l00393" name="l00393"></a><span class="lineno">  393</span> </div>
-<div class="line"><a id="l00394" name="l00394"></a><span class="lineno">  394</span>        env(noop(env.master), ticket::use(1), ter(<a class="code hl_enumvalue" href="namespaceripple.html#afe21c8454670d46fb93751a5edffed46a6c750a245b6efb84fdc4ab34dc010328">temMALFORMED</a>));</div>
-<div class="line"><a id="l00395" name="l00395"></a><span class="lineno">  395</span>        env(noop(env.master),</div>
+<div class="line"><a id="l00394" name="l00394"></a><span class="lineno">  394</span>        env(<a class="code hl_enumvalue" href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">noop</a>(env.master), ticket::use(1), ter(<a class="code hl_enumvalue" href="namespaceripple.html#afe21c8454670d46fb93751a5edffed46a6c750a245b6efb84fdc4ab34dc010328">temMALFORMED</a>));</div>
+<div class="line"><a id="l00395" name="l00395"></a><span class="lineno">  395</span>        env(<a class="code hl_enumvalue" href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">noop</a>(env.master),</div>
 <div class="line"><a id="l00396" name="l00396"></a><span class="lineno">  396</span>            ticket::use(1),</div>
 <div class="line"><a id="l00397" name="l00397"></a><span class="lineno">  397</span>            seq(env.seq(env.master)),</div>
 <div class="line"><a id="l00398" name="l00398"></a><span class="lineno">  398</span>            ter(<a class="code hl_enumvalue" href="namespaceripple.html#afe21c8454670d46fb93751a5edffed46a6c750a245b6efb84fdc4ab34dc010328">temMALFORMED</a>));</div>
@@ -482,7 +482,7 @@ $(function() {
 <div class="line"><a id="l00412" name="l00412"></a><span class="lineno">  412</span>        env.close();</div>
 <div class="line"><a id="l00413" name="l00413"></a><span class="lineno">  413</span>        env.require(owners(env.master, 2), tickets(env.master, 2));</div>
 <div class="line"><a id="l00414" name="l00414"></a><span class="lineno">  414</span> </div>
-<div class="line"><a id="l00415" name="l00415"></a><span class="lineno">  415</span>        env(noop(env.master), ticket::use(ticketSeq++));</div>
+<div class="line"><a id="l00415" name="l00415"></a><span class="lineno">  415</span>        env(<a class="code hl_enumvalue" href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">noop</a>(env.master), ticket::use(ticketSeq++));</div>
 <div class="line"><a id="l00416" name="l00416"></a><span class="lineno">  416</span>        <a class="code hl_function" href="classripple_1_1Ticket__test.html#ad1630084d99e0eb69410ef0c84410699">checkTicketConsumeMeta</a>(env);</div>
 <div class="line"><a id="l00417" name="l00417"></a><span class="lineno">  417</span>        env.close();</div>
 <div class="line"><a id="l00418" name="l00418"></a><span class="lineno">  418</span>        env.require(owners(env.master, 1), tickets(env.master, 1));</div>
@@ -531,7 +531,7 @@ $(function() {
 <div class="line"><a id="l00461" name="l00461"></a><span class="lineno">  461</span> </div>
 <div class="line"><a id="l00462" name="l00462"></a><span class="lineno">  462</span>        <span class="comment">// We successfully created 1 ticket earlier.  Verify that we can</span></div>
 <div class="line"><a id="l00463" name="l00463"></a><span class="lineno">  463</span>        <span class="comment">// create 250 tickets in one shot.  We must consume one ticket first.</span></div>
-<div class="line"><a id="l00464" name="l00464"></a><span class="lineno">  464</span>        env(noop(master), ticket::use(ticketSeq_A));</div>
+<div class="line"><a id="l00464" name="l00464"></a><span class="lineno">  464</span>        env(<a class="code hl_enumvalue" href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">noop</a>(master), ticket::use(ticketSeq_A));</div>
 <div class="line"><a id="l00465" name="l00465"></a><span class="lineno">  465</span>        <a class="code hl_function" href="classripple_1_1Ticket__test.html#ad1630084d99e0eb69410ef0c84410699">checkTicketConsumeMeta</a>(env);</div>
 <div class="line"><a id="l00466" name="l00466"></a><span class="lineno">  466</span>        env.close();</div>
 <div class="line"><a id="l00467" name="l00467"></a><span class="lineno">  467</span>        env.require(owners(master, 1), tickets(master, 1));</div>
@@ -731,7 +731,7 @@ $(function() {
 <div class="line"><a id="l00661" name="l00661"></a><span class="lineno">  661</span>        BEAST_EXPECT(ticketSeq_DE + 2 == env.seq(alice));</div>
 <div class="line"><a id="l00662" name="l00662"></a><span class="lineno">  662</span> </div>
 <div class="line"><a id="l00663" name="l00663"></a><span class="lineno">  663</span>        <span class="comment">// ... and you can use a ticket for other things.</span></div>
-<div class="line"><a id="l00664" name="l00664"></a><span class="lineno">  664</span>        env(noop(alice), ticket::use(ticketSeq_DE + 0));</div>
+<div class="line"><a id="l00664" name="l00664"></a><span class="lineno">  664</span>        env(<a class="code hl_enumvalue" href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">noop</a>(alice), ticket::use(ticketSeq_DE + 0));</div>
 <div class="line"><a id="l00665" name="l00665"></a><span class="lineno">  665</span>        <a class="code hl_function" href="classripple_1_1Ticket__test.html#ad1630084d99e0eb69410ef0c84410699">checkTicketConsumeMeta</a>(env);</div>
 <div class="line"><a id="l00666" name="l00666"></a><span class="lineno">  666</span>        env.close();</div>
 <div class="line"><a id="l00667" name="l00667"></a><span class="lineno">  667</span>        env.require(owners(alice, 2), tickets(alice, 2));</div>
@@ -750,12 +750,12 @@ $(function() {
 <div class="line"><a id="l00680" name="l00680"></a><span class="lineno">  680</span>        BEAST_EXPECT(ticketSeq_DE + 2 == env.seq(alice));</div>
 <div class="line"><a id="l00681" name="l00681"></a><span class="lineno">  681</span> </div>
 <div class="line"><a id="l00682" name="l00682"></a><span class="lineno">  682</span>        <span class="comment">// Attempt to use a ticket that has already been used.</span></div>
-<div class="line"><a id="l00683" name="l00683"></a><span class="lineno">  683</span>        env(noop(alice), ticket::use(ticketSeq_C), ter(<a class="code hl_enumvalue" href="namespaceripple.html#a75cb21d7f1df42f2fdc8efddb79b63f4a428f826ecea84dc8b43351c2d2b2117a">tefNO_TICKET</a>));</div>
+<div class="line"><a id="l00683" name="l00683"></a><span class="lineno">  683</span>        env(<a class="code hl_enumvalue" href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">noop</a>(alice), ticket::use(ticketSeq_C), ter(<a class="code hl_enumvalue" href="namespaceripple.html#a75cb21d7f1df42f2fdc8efddb79b63f4a428f826ecea84dc8b43351c2d2b2117a">tefNO_TICKET</a>));</div>
 <div class="line"><a id="l00684" name="l00684"></a><span class="lineno">  684</span>        env.close();</div>
 <div class="line"><a id="l00685" name="l00685"></a><span class="lineno">  685</span> </div>
 <div class="line"><a id="l00686" name="l00686"></a><span class="lineno">  686</span>        <span class="comment">// Attempt to use a ticket from the future.</span></div>
 <div class="line"><a id="l00687" name="l00687"></a><span class="lineno">  687</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> <span class="keyword">const</span> ticketSeq_F{env.seq(alice) + 1};</div>
-<div class="line"><a id="l00688" name="l00688"></a><span class="lineno">  688</span>        env(noop(alice), ticket::use(ticketSeq_F), ter(<a class="code hl_enumvalue" href="namespaceripple.html#adebe4d783be9c979e67fdbb2bc27162fad237d4c433f46906a2b8b2e1624c1aff">terPRE_TICKET</a>));</div>
+<div class="line"><a id="l00688" name="l00688"></a><span class="lineno">  688</span>        env(<a class="code hl_enumvalue" href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">noop</a>(alice), ticket::use(ticketSeq_F), ter(<a class="code hl_enumvalue" href="namespaceripple.html#adebe4d783be9c979e67fdbb2bc27162fad237d4c433f46906a2b8b2e1624c1aff">terPRE_TICKET</a>));</div>
 <div class="line"><a id="l00689" name="l00689"></a><span class="lineno">  689</span>        env.close();</div>
 <div class="line"><a id="l00690" name="l00690"></a><span class="lineno">  690</span> </div>
 <div class="line"><a id="l00691" name="l00691"></a><span class="lineno">  691</span>        <span class="comment">// Now create the ticket.  The retry will consume the new ticket.</span></div>
@@ -772,7 +772,7 @@ $(function() {
 <div class="line"><a id="l00702" name="l00702"></a><span class="lineno">  702</span>        <a class="code hl_function" href="classripple_1_1Ticket__test.html#a686abcfb2c3a5b696777fd49efe6cc84">checkTicketCreateMeta</a>(env);</div>
 <div class="line"><a id="l00703" name="l00703"></a><span class="lineno">  703</span>        env.close();</div>
 <div class="line"><a id="l00704" name="l00704"></a><span class="lineno">  704</span> </div>
-<div class="line"><a id="l00705" name="l00705"></a><span class="lineno">  705</span>        env(noop(alice),</div>
+<div class="line"><a id="l00705" name="l00705"></a><span class="lineno">  705</span>        env(<a class="code hl_enumvalue" href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">noop</a>(alice),</div>
 <div class="line"><a id="l00706" name="l00706"></a><span class="lineno">  706</span>            ticket::use(ticketSeq_G),</div>
 <div class="line"><a id="l00707" name="l00707"></a><span class="lineno">  707</span>            json(R<span class="stringliteral">&quot;({&quot;AccountTxnID&quot;: &quot;0&quot;})&quot;),</span></div>
 <div class="line"><a id="l00708" name="l00708"></a><span class="lineno">  708</span><span class="stringliteral">            ter(<a class="code hl_enumvalue" href="namespaceripple.html#afe21c8454670d46fb93751a5edffed46a76453a8d513e20754ca7cff63d7546b8">temINVALID</a>));</span></div>
@@ -827,7 +827,7 @@ $(function() {
 <div class="line"><a id="l00757" name="l00757"></a><span class="lineno">  757</span> </div>
 <div class="line"><a id="l00758" name="l00758"></a><span class="lineno">  758</span>        <span class="comment">// Just for grins use the tickets in reverse from largest to smallest.</span></div>
 <div class="line"><a id="l00759" name="l00759"></a><span class="lineno">  759</span>        ticketSeq += ticketCount;</div>
-<div class="line"><a id="l00760" name="l00760"></a><span class="lineno">  760</span>        env(noop(alice), ticket::use(--ticketSeq));</div>
+<div class="line"><a id="l00760" name="l00760"></a><span class="lineno">  760</span>        env(<a class="code hl_enumvalue" href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">noop</a>(alice), ticket::use(--ticketSeq));</div>
 <div class="line"><a id="l00761" name="l00761"></a><span class="lineno">  761</span>        <a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span> txHash_2{getTxID()};</div>
 <div class="line"><a id="l00762" name="l00762"></a><span class="lineno">  762</span> </div>
 <div class="line"><a id="l00763" name="l00763"></a><span class="lineno">  763</span>        env(pay(alice, env.master, XRP(200)), ticket::use(--ticketSeq));</div>
@@ -849,7 +849,7 @@ $(function() {
 <div class="line"><a id="l00779" name="l00779"></a><span class="lineno">  779</span>        env(deposit::unauth(alice, env.master), ticket::use(--ticketSeq));</div>
 <div class="line"><a id="l00780" name="l00780"></a><span class="lineno">  780</span>        <a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span> txHash_7{getTxID()};</div>
 <div class="line"><a id="l00781" name="l00781"></a><span class="lineno">  781</span> </div>
-<div class="line"><a id="l00782" name="l00782"></a><span class="lineno">  782</span>        env(noop(alice), ticket::use(--ticketSeq));</div>
+<div class="line"><a id="l00782" name="l00782"></a><span class="lineno">  782</span>        env(<a class="code hl_enumvalue" href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">noop</a>(alice), ticket::use(--ticketSeq));</div>
 <div class="line"><a id="l00783" name="l00783"></a><span class="lineno">  783</span>        <a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span> txHash_8{getTxID()};</div>
 <div class="line"><a id="l00784" name="l00784"></a><span class="lineno">  784</span> </div>
 <div class="line"><a id="l00785" name="l00785"></a><span class="lineno">  785</span>        env.close();</div>
@@ -933,7 +933,7 @@ $(function() {
 <div class="line"><a id="l00863" name="l00863"></a><span class="lineno">  863</span>            <span class="comment">// Create a noop transaction using a TicketSequence but don&#39;t fill</span></div>
 <div class="line"><a id="l00864" name="l00864"></a><span class="lineno">  864</span>            <span class="comment">// in the Sequence field.</span></div>
 <div class="line"><a id="l00865" name="l00865"></a><span class="lineno">  865</span>            <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> tx = <a class="code hl_enumvalue" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6">Json::objectValue</a>;</div>
-<div class="line"><a id="l00866" name="l00866"></a><span class="lineno">  866</span>            tx[jss::tx_json] = noop(alice);</div>
+<div class="line"><a id="l00866" name="l00866"></a><span class="lineno">  866</span>            tx[jss::tx_json] = <a class="code hl_enumvalue" href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">noop</a>(alice);</div>
 <div class="line"><a id="l00867" name="l00867"></a><span class="lineno">  867</span>            tx[jss::tx_json][sfTicketSequence.jsonName] = ticketSeq;</div>
 <div class="line"><a id="l00868" name="l00868"></a><span class="lineno">  868</span>            tx[jss::secret] = <a class="code hl_function" href="namespaceripple.html#a08a13b62b18272366f788632359e8793">toBase58</a>(<a class="code hl_function" href="namespaceripple.html#adb9531b2a54f33b8227d9b029be9439b">generateSeed</a>(<span class="stringliteral">&quot;alice&quot;</span>));</div>
 <div class="line"><a id="l00869" name="l00869"></a><span class="lineno">  869</span> </div>
@@ -968,7 +968,7 @@ $(function() {
 <div class="line"><a id="l00898" name="l00898"></a><span class="lineno">  898</span>            <span class="comment">// Create a noop transaction using a TicketSequence but don&#39;t fill</span></div>
 <div class="line"><a id="l00899" name="l00899"></a><span class="lineno">  899</span>            <span class="comment">// in the Sequence field.</span></div>
 <div class="line"><a id="l00900" name="l00900"></a><span class="lineno">  900</span>            <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> tx = <a class="code hl_enumvalue" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6">Json::objectValue</a>;</div>
-<div class="line"><a id="l00901" name="l00901"></a><span class="lineno">  901</span>            tx[jss::tx_json] = noop(alice);</div>
+<div class="line"><a id="l00901" name="l00901"></a><span class="lineno">  901</span>            tx[jss::tx_json] = <a class="code hl_enumvalue" href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">noop</a>(alice);</div>
 <div class="line"><a id="l00902" name="l00902"></a><span class="lineno">  902</span>            tx[jss::tx_json][sfTicketSequence.jsonName] = ticketSeq + 1;</div>
 <div class="line"><a id="l00903" name="l00903"></a><span class="lineno">  903</span>            tx[jss::secret] = <a class="code hl_function" href="namespaceripple.html#a08a13b62b18272366f788632359e8793">toBase58</a>(<a class="code hl_function" href="namespaceripple.html#adb9531b2a54f33b8227d9b029be9439b">generateSeed</a>(<span class="stringliteral">&quot;alice&quot;</span>));</div>
 <div class="line"><a id="l00904" name="l00904"></a><span class="lineno">  904</span> </div>
@@ -1019,7 +1019,7 @@ $(function() {
 <div class="line"><a id="l00949" name="l00949"></a><span class="lineno">  949</span>            <span class="comment">// Create a transaction that includes both a ticket and a non-zero</span></div>
 <div class="line"><a id="l00950" name="l00950"></a><span class="lineno">  950</span>            <span class="comment">// sequence number.  Since a ticket is used and tickets are not yet</span></div>
 <div class="line"><a id="l00951" name="l00951"></a><span class="lineno">  951</span>            <span class="comment">// enabled the transaction should be malformed.</span></div>
-<div class="line"><a id="l00952" name="l00952"></a><span class="lineno">  952</span>            env(noop(alice),</div>
+<div class="line"><a id="l00952" name="l00952"></a><span class="lineno">  952</span>            env(<a class="code hl_enumvalue" href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">noop</a>(alice),</div>
 <div class="line"><a id="l00953" name="l00953"></a><span class="lineno">  953</span>                ticket::use(ticketSeq),</div>
 <div class="line"><a id="l00954" name="l00954"></a><span class="lineno">  954</span>                seq(env.seq(alice)),</div>
 <div class="line"><a id="l00955" name="l00955"></a><span class="lineno">  955</span>                ter(<a class="code hl_enumvalue" href="namespaceripple.html#afe21c8454670d46fb93751a5edffed46a6c750a245b6efb84fdc4ab34dc010328">temMALFORMED</a>));</div>
@@ -1042,7 +1042,7 @@ $(function() {
 <div class="line"><a id="l00972" name="l00972"></a><span class="lineno">  972</span> </div>
 <div class="line"><a id="l00973" name="l00973"></a><span class="lineno">  973</span>            <span class="comment">// Create a transaction that includes both a ticket and a non-zero</span></div>
 <div class="line"><a id="l00974" name="l00974"></a><span class="lineno">  974</span>            <span class="comment">// sequence number.  The transaction fails with temSEQ_AND_TICKET.</span></div>
-<div class="line"><a id="l00975" name="l00975"></a><span class="lineno">  975</span>            env(noop(alice),</div>
+<div class="line"><a id="l00975" name="l00975"></a><span class="lineno">  975</span>            env(<a class="code hl_enumvalue" href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">noop</a>(alice),</div>
 <div class="line"><a id="l00976" name="l00976"></a><span class="lineno">  976</span>                ticket::use(ticketSeq),</div>
 <div class="line"><a id="l00977" name="l00977"></a><span class="lineno">  977</span>                seq(env.seq(alice)),</div>
 <div class="line"><a id="l00978" name="l00978"></a><span class="lineno">  978</span>                ter(<a class="code hl_enumvalue" href="namespaceripple.html#afe21c8454670d46fb93751a5edffed46a37e362d0815fb4c7985f9c0ae6a3d835">temSEQ_AND_TICKET</a>));</div>
@@ -1114,6 +1114,7 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html_aa298e929e02f59c2b05a30ee8805b38cad2a823ed54b4d2c7bc8fef63f627ac59"><div class="ttname"><a href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38cad2a823ed54b4d2c7bc8fef63f627ac59">ripple::tecNO_ALTERNATIVE_KEY</a></div><div class="ttdeci">@ tecNO_ALTERNATIVE_KEY</div><div class="ttdef"><b>Definition:</b> <a href="TER_8h_source.html#l00283">TER.h:283</a></div></div>
 <div class="ttc" id="anamespaceripple_html_aa298e929e02f59c2b05a30ee8805b38cae930fb228ae74317976b57b4e87a7f0d"><div class="ttname"><a href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38cae930fb228ae74317976b57b4e87a7f0d">ripple::tecINSUFFICIENT_RESERVE</a></div><div class="ttdeci">@ tecINSUFFICIENT_RESERVE</div><div class="ttdef"><b>Definition:</b> <a href="TER_8h_source.html#l00294">TER.h:294</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ac124fe6744b7fe887dec949b56b16d50"><div class="ttname"><a href="namespaceripple.html#ac124fe6744b7fe887dec949b56b16d50">ripple::to_string</a></div><div class="ttdeci">std::string to_string(base_uint&lt; Bits, Tag &gt; const &amp;a)</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00630">base_uint.h:630</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a"><div class="ttname"><a href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">ripple::ReleaseStrongRefAction::noop</a></div><div class="ttdeci">@ noop</div></div>
 <div class="ttc" id="anamespaceripple_html_ac6935ad0ddb8c447dd408f2404a97b40"><div class="ttname"><a href="namespaceripple.html#ac6935ad0ddb8c447dd408f2404a97b40">ripple::tfFullyCanonicalSig</a></div><div class="ttdeci">constexpr std::uint32_t tfFullyCanonicalSig</div><div class="ttdoc">Transaction flags.</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00060">TxFlags.h:60</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ad3bc01fc1c4e0e3191802ff3192c5493"><div class="ttname"><a href="namespaceripple.html#ad3bc01fc1c4e0e3191802ff3192c5493">ripple::tfSell</a></div><div class="ttdeci">constexpr std::uint32_t tfSell</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00099">TxFlags.h:99</a></div></div>
 <div class="ttc" id="anamespaceripple_html_adb9531b2a54f33b8227d9b029be9439b"><div class="ttname"><a href="namespaceripple.html#adb9531b2a54f33b8227d9b029be9439b">ripple::generateSeed</a></div><div class="ttdeci">Seed generateSeed(std::string const &amp;passPhrase)</div><div class="ttdoc">Generate a seed deterministically.</div><div class="ttdef"><b>Definition:</b> <a href="Seed_8cpp_source.html#l00076">Seed.cpp:76</a></div></div>

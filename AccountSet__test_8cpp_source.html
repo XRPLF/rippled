@@ -281,7 +281,7 @@ $(function() {
 <div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span>        Env env(*<span class="keyword">this</span>);</div>
 <div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span>        Account <span class="keyword">const</span> alice(<span class="stringliteral">&quot;alice&quot;</span>);</div>
 <div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span>        env.fund(XRP(10000), alice);</div>
-<div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span>        <span class="keyword">auto</span> jt = noop(alice);</div>
+<div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span>        <span class="keyword">auto</span> jt = <a class="code hl_enumvalue" href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">noop</a>(alice);</div>
 <div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span>        <span class="comment">// The Domain field is represented as the hex string of the lowercase</span></div>
 <div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span>        <span class="comment">// ASCII of the domain. For example, the domain example.com would be</span></div>
 <div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span>        <span class="comment">// represented as &quot;6578616d706c652e636f6d&quot;.</span></div>
@@ -331,7 +331,7 @@ $(function() {
 <div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span>        Env env(*<span class="keyword">this</span>);</div>
 <div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span>        Account <span class="keyword">const</span> alice(<span class="stringliteral">&quot;alice&quot;</span>);</div>
 <div class="line"><a id="l00255" name="l00255"></a><span class="lineno">  255</span>        env.fund(XRP(10000), alice);</div>
-<div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span>        <span class="keyword">auto</span> jt = noop(alice);</div>
+<div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span>        <span class="keyword">auto</span> jt = <a class="code hl_enumvalue" href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">noop</a>(alice);</div>
 <div class="line"><a id="l00257" name="l00257"></a><span class="lineno">  257</span> </div>
 <div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span>        <span class="keyword">auto</span> <span class="keyword">const</span> rkp = <a class="code hl_function" href="namespaceripple.html#ac52a0a522fc11bdd47fce39bd29f97bc">randomKeyPair</a>(<a class="code hl_enumvalue" href="namespaceripple.html#a9de744cfdefe1132969eb982e57e4ddea8183aa2c95dc1385c8f58bf1917fcb0b">KeyType::ed25519</a>);</div>
 <div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span>        jt[sfMessageKey.fieldName] = <a class="code hl_function" href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">strHex</a>(rkp.first.slice());</div>
@@ -358,7 +358,7 @@ $(function() {
 <div class="line"><a id="l00280" name="l00280"></a><span class="lineno">  280</span>        Env env(*<span class="keyword">this</span>);</div>
 <div class="line"><a id="l00281" name="l00281"></a><span class="lineno">  281</span>        Account <span class="keyword">const</span> alice(<span class="stringliteral">&quot;alice&quot;</span>);</div>
 <div class="line"><a id="l00282" name="l00282"></a><span class="lineno">  282</span>        env.fund(XRP(10000), alice);</div>
-<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span>        <span class="keyword">auto</span> jt = noop(alice);</div>
+<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span>        <span class="keyword">auto</span> jt = <a class="code hl_enumvalue" href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">noop</a>(alice);</div>
 <div class="line"><a id="l00284" name="l00284"></a><span class="lineno">  284</span> </div>
 <div class="line"><a id="l00285" name="l00285"></a><span class="lineno">  285</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span> locator =</div>
 <div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span>            <span class="stringliteral">&quot;9633EC8AF54F16B5286DB1D7B519EF49EEFC050C0C8AC4384F1D88ACD1BFDF05&quot;</span>;</div>
@@ -380,7 +380,7 @@ $(function() {
 <div class="line"><a id="l00302" name="l00302"></a><span class="lineno">  302</span>        Env env(*<span class="keyword">this</span>);</div>
 <div class="line"><a id="l00303" name="l00303"></a><span class="lineno">  303</span>        Account <span class="keyword">const</span> alice(<span class="stringliteral">&quot;alice&quot;</span>);</div>
 <div class="line"><a id="l00304" name="l00304"></a><span class="lineno">  304</span>        env.fund(XRP(10000), alice);</div>
-<div class="line"><a id="l00305" name="l00305"></a><span class="lineno">  305</span>        <span class="keyword">auto</span> jt = noop(alice);</div>
+<div class="line"><a id="l00305" name="l00305"></a><span class="lineno">  305</span>        <span class="keyword">auto</span> jt = <a class="code hl_enumvalue" href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">noop</a>(alice);</div>
 <div class="line"><a id="l00306" name="l00306"></a><span class="lineno">  306</span> </div>
 <div class="line"><a id="l00307" name="l00307"></a><span class="lineno">  307</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span> mh(<span class="stringliteral">&quot;5F31A79367DC3137FADA860C05742EE6&quot;</span>);</div>
 <div class="line"><a id="l00308" name="l00308"></a><span class="lineno">  308</span>        jt[sfEmailHash.fieldName] = mh;</div>
@@ -633,20 +633,20 @@ $(function() {
 <div class="line"><a id="l00555" name="l00555"></a><span class="lineno">  555</span>        env.require(owners(alice, 1), tickets(alice, 1));</div>
 <div class="line"><a id="l00556" name="l00556"></a><span class="lineno">  556</span> </div>
 <div class="line"><a id="l00557" name="l00557"></a><span class="lineno">  557</span>        <span class="comment">// Try using a ticket that alice doesn&#39;t have.</span></div>
-<div class="line"><a id="l00558" name="l00558"></a><span class="lineno">  558</span>        env(noop(alice), ticket::use(ticketSeq + 1), ter(<a class="code hl_enumvalue" href="namespaceripple.html#adebe4d783be9c979e67fdbb2bc27162fad237d4c433f46906a2b8b2e1624c1aff">terPRE_TICKET</a>));</div>
+<div class="line"><a id="l00558" name="l00558"></a><span class="lineno">  558</span>        env(<a class="code hl_enumvalue" href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">noop</a>(alice), ticket::use(ticketSeq + 1), ter(<a class="code hl_enumvalue" href="namespaceripple.html#adebe4d783be9c979e67fdbb2bc27162fad237d4c433f46906a2b8b2e1624c1aff">terPRE_TICKET</a>));</div>
 <div class="line"><a id="l00559" name="l00559"></a><span class="lineno">  559</span>        env.close();</div>
 <div class="line"><a id="l00560" name="l00560"></a><span class="lineno">  560</span>        env.require(owners(alice, 1), tickets(alice, 1));</div>
 <div class="line"><a id="l00561" name="l00561"></a><span class="lineno">  561</span> </div>
 <div class="line"><a id="l00562" name="l00562"></a><span class="lineno">  562</span>        <span class="comment">// Actually use alice&#39;s ticket.  Note that if a transaction consumes</span></div>
 <div class="line"><a id="l00563" name="l00563"></a><span class="lineno">  563</span>        <span class="comment">// a ticket then the account&#39;s sequence number does not advance.</span></div>
 <div class="line"><a id="l00564" name="l00564"></a><span class="lineno">  564</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> <span class="keyword">const</span> aliceSeq{env.seq(alice)};</div>
-<div class="line"><a id="l00565" name="l00565"></a><span class="lineno">  565</span>        env(noop(alice), ticket::use(ticketSeq));</div>
+<div class="line"><a id="l00565" name="l00565"></a><span class="lineno">  565</span>        env(<a class="code hl_enumvalue" href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">noop</a>(alice), ticket::use(ticketSeq));</div>
 <div class="line"><a id="l00566" name="l00566"></a><span class="lineno">  566</span>        env.close();</div>
 <div class="line"><a id="l00567" name="l00567"></a><span class="lineno">  567</span>        env.require(owners(alice, 0), tickets(alice, 0));</div>
 <div class="line"><a id="l00568" name="l00568"></a><span class="lineno">  568</span>        BEAST_EXPECT(aliceSeq == env.seq(alice));</div>
 <div class="line"><a id="l00569" name="l00569"></a><span class="lineno">  569</span> </div>
 <div class="line"><a id="l00570" name="l00570"></a><span class="lineno">  570</span>        <span class="comment">// Try re-using a ticket that alice already used.</span></div>
-<div class="line"><a id="l00571" name="l00571"></a><span class="lineno">  571</span>        env(noop(alice), ticket::use(ticketSeq), ter(<a class="code hl_enumvalue" href="namespaceripple.html#a75cb21d7f1df42f2fdc8efddb79b63f4a428f826ecea84dc8b43351c2d2b2117a">tefNO_TICKET</a>));</div>
+<div class="line"><a id="l00571" name="l00571"></a><span class="lineno">  571</span>        env(<a class="code hl_enumvalue" href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">noop</a>(alice), ticket::use(ticketSeq), ter(<a class="code hl_enumvalue" href="namespaceripple.html#a75cb21d7f1df42f2fdc8efddb79b63f4a428f826ecea84dc8b43351c2d2b2117a">tefNO_TICKET</a>));</div>
 <div class="line"><a id="l00572" name="l00572"></a><span class="lineno">  572</span>        env.close();</div>
 <div class="line"><a id="l00573" name="l00573"></a><span class="lineno">  573</span>    }</div>
 <div class="line"><a id="l00574" name="l00574"></a><span class="lineno">  574</span> </div>
@@ -738,6 +738,7 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html_ac124fe6744b7fe887dec949b56b16d50"><div class="ttname"><a href="namespaceripple.html#ac124fe6744b7fe887dec949b56b16d50">ripple::to_string</a></div><div class="ttdeci">std::string to_string(base_uint&lt; Bits, Tag &gt; const &amp;a)</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00630">base_uint.h:630</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ac12fbb1864b09bfd3fb4ead410449edd"><div class="ttname"><a href="namespaceripple.html#ac12fbb1864b09bfd3fb4ead410449edd">ripple::asfDisallowIncomingPayChan</a></div><div class="ttdeci">constexpr std::uint32_t asfDisallowIncomingPayChan</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00091">TxFlags.h:91</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ac341e8b4d6615fda7866d3c1c0014e44"><div class="ttname"><a href="namespaceripple.html#ac341e8b4d6615fda7866d3c1c0014e44">ripple::get</a></div><div class="ttdeci">T get(Section const &amp;section, std::string const &amp;name, T const &amp;defaultValue=T{})</div><div class="ttdoc">Retrieve a key/value pair from a section.</div><div class="ttdef"><b>Definition:</b> <a href="BasicConfig_8h_source.html#l00355">BasicConfig.h:355</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a"><div class="ttname"><a href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">ripple::ReleaseStrongRefAction::noop</a></div><div class="ttdeci">@ noop</div></div>
 <div class="ttc" id="anamespaceripple_html_ac52a0a522fc11bdd47fce39bd29f97bc"><div class="ttname"><a href="namespaceripple.html#ac52a0a522fc11bdd47fce39bd29f97bc">ripple::randomKeyPair</a></div><div class="ttdeci">std::pair&lt; PublicKey, SecretKey &gt; randomKeyPair(KeyType type)</div><div class="ttdoc">Create a key pair using secure random numbers.</div><div class="ttdef"><b>Definition:</b> <a href="SecretKey_8cpp_source.html#l00386">SecretKey.cpp:386</a></div></div>
 <div class="ttc" id="anamespaceripple_html_acedcd08c62e1bb941e2f6c9e289c6582"><div class="ttname"><a href="namespaceripple.html#acedcd08c62e1bb941e2f6c9e289c6582">ripple::asfAllowTrustLineClawback</a></div><div class="ttdeci">constexpr std::uint32_t asfAllowTrustLineClawback</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00093">TxFlags.h:93</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ad9d8055be347abb09ae405843dc59473"><div class="ttname"><a href="namespaceripple.html#ad9d8055be347abb09ae405843dc59473">ripple::asfRequireAuth</a></div><div class="ttdeci">constexpr std::uint32_t asfRequireAuth</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00077">TxFlags.h:77</a></div></div>

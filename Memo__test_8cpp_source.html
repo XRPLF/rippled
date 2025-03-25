@@ -119,7 +119,7 @@ $(function() {
 <div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>        <span class="comment">// Lambda that returns a valid JTx with a memo that we can hack up.</span></div>
 <div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>        <span class="comment">// This is the basis for building tests of invalid states.</span></div>
 <div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>        <span class="keyword">auto</span> makeJtxWithMemo = [&amp;env, &amp;alice]() {</div>
-<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>            JTx example = noop(alice);</div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>            JTx example = <a class="code hl_enumvalue" href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">noop</a>(alice);</div>
 <div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>            memo <span class="keyword">const</span> exampleMemo{<span class="stringliteral">&quot;tic&quot;</span>, <span class="stringliteral">&quot;tac&quot;</span>, <span class="stringliteral">&quot;toe&quot;</span>};</div>
 <div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>            exampleMemo(env, example);</div>
 <div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>            <span class="keywordflow">return</span> example;</div>
@@ -146,7 +146,7 @@ $(function() {
 <div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>        }</div>
 <div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>        {</div>
 <div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>            <span class="comment">// Put a non-Memo in the Memos array.</span></div>
-<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>            JTx memoNonMemo = noop(alice);</div>
+<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>            JTx memoNonMemo = <a class="code hl_enumvalue" href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">noop</a>(alice);</div>
 <div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>            <span class="keyword">auto</span>&amp; jv = memoNonMemo.jv;</div>
 <div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>            <span class="keyword">auto</span>&amp; ma = jv[sfMemos.jsonName];</div>
 <div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>            <span class="keyword">auto</span>&amp; mi = ma[ma.size()];</div>
@@ -225,6 +225,7 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1Memo__test_html_abb242a0485de1a69979ca768512f1912"><div class="ttname"><a href="classripple_1_1Memo__test.html#abb242a0485de1a69979ca768512f1912">ripple::Memo_test::testMemos</a></div><div class="ttdeci">void testMemos()</div><div class="ttdef"><b>Definition:</b> <a href="Memo__test_8cpp_source.html#l00030">Memo_test.cpp:30</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="algorithm_8h_source.html#l00026">algorithm.h:26</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a86e358ce3f06ff049af13c2342791cf8"><div class="ttname"><a href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">ripple::strHex</a></div><div class="ttdeci">std::string strHex(FwdIt begin, FwdIt end)</div><div class="ttdef"><b>Definition:</b> <a href="strHex_8h_source.html#l00030">strHex.h:30</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a"><div class="ttname"><a href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">ripple::ReleaseStrongRefAction::noop</a></div><div class="ttdeci">@ noop</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

@@ -150,7 +150,7 @@ $(function() {
 <div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>        <span class="keyword">auto</span> <span class="keyword">const</span> startLegSeq = env.current()-&gt;info().seq;</div>
 <div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>        <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; 750; ++i)</div>
 <div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>        {</div>
-<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>            env(noop(alice));</div>
+<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>            env(<a class="code hl_enumvalue" href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">noop</a>(alice));</div>
 <div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>            txns.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/emplace_back.html">emplace_back</a>(env.tx());</div>
 <div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>            env.close();</div>
 <div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>            metas.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/emplace_back.html">emplace_back</a>(</div>
@@ -179,7 +179,7 @@ $(function() {
 <div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>                <a class="code hl_function" href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">strHex</a>(meta-&gt;getSerializer().getData()));</div>
 <div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>        }</div>
 <div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span> </div>
-<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>        <span class="keyword">auto</span> <span class="keyword">const</span> tx = env.jt(noop(alice), seq(env.seq(alice))).stx;</div>
+<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>        <span class="keyword">auto</span> <span class="keyword">const</span> tx = env.jt(<a class="code hl_enumvalue" href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">noop</a>(alice), seq(env.seq(alice))).stx;</div>
 <div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>        <span class="keywordflow">for</span> (<span class="keywordtype">int</span> deltaEndSeq = 0; deltaEndSeq &lt; 2; ++deltaEndSeq)</div>
 <div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>        {</div>
 <div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>            <span class="keyword">auto</span> <span class="keyword">const</span> result = env.rpc(</div>
@@ -402,7 +402,7 @@ $(function() {
 <div class="line"><a id="l00324" name="l00324"></a><span class="lineno">  324</span>        <span class="keyword">auto</span> <span class="keyword">const</span> startLegSeq = env.current()-&gt;info().seq;</div>
 <div class="line"><a id="l00325" name="l00325"></a><span class="lineno">  325</span>        <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; 750; ++i)</div>
 <div class="line"><a id="l00326" name="l00326"></a><span class="lineno">  326</span>        {</div>
-<div class="line"><a id="l00327" name="l00327"></a><span class="lineno">  327</span>            env(noop(alice));</div>
+<div class="line"><a id="l00327" name="l00327"></a><span class="lineno">  327</span>            env(<a class="code hl_enumvalue" href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">noop</a>(alice));</div>
 <div class="line"><a id="l00328" name="l00328"></a><span class="lineno">  328</span>            txns.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/emplace_back.html">emplace_back</a>(env.tx());</div>
 <div class="line"><a id="l00329" name="l00329"></a><span class="lineno">  329</span>            env.close();</div>
 <div class="line"><a id="l00330" name="l00330"></a><span class="lineno">  330</span>            metas.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/emplace_back.html">emplace_back</a>(</div>
@@ -432,7 +432,7 @@ $(function() {
 <div class="line"><a id="l00354" name="l00354"></a><span class="lineno">  354</span>                <a class="code hl_function" href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">strHex</a>(meta-&gt;getSerializer().getData()));</div>
 <div class="line"><a id="l00355" name="l00355"></a><span class="lineno">  355</span>        }</div>
 <div class="line"><a id="l00356" name="l00356"></a><span class="lineno">  356</span> </div>
-<div class="line"><a id="l00357" name="l00357"></a><span class="lineno">  357</span>        <span class="keyword">auto</span> <span class="keyword">const</span> tx = env.jt(noop(alice), seq(env.seq(alice))).stx;</div>
+<div class="line"><a id="l00357" name="l00357"></a><span class="lineno">  357</span>        <span class="keyword">auto</span> <span class="keyword">const</span> tx = env.jt(<a class="code hl_enumvalue" href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">noop</a>(alice), seq(env.seq(alice))).stx;</div>
 <div class="line"><a id="l00358" name="l00358"></a><span class="lineno">  358</span>        <span class="keyword">auto</span> <span class="keyword">const</span> ctid =</div>
 <div class="line"><a id="l00359" name="l00359"></a><span class="lineno">  359</span>            *<a class="code hl_function" href="namespaceripple_1_1RPC.html#ab1859f351e933259eca54268b686e8d0">RPC::encodeCTID</a>(endLegSeq, tx-&gt;getSeqProxy().value(), netID);</div>
 <div class="line"><a id="l00360" name="l00360"></a><span class="lineno">  360</span>        <span class="keywordflow">for</span> (<span class="keywordtype">int</span> deltaEndSeq = 0; deltaEndSeq &lt; 2; ++deltaEndSeq)</div>
@@ -838,7 +838,7 @@ $(function() {
 <div class="line"><a id="l00760" name="l00760"></a><span class="lineno">  760</span>        env.close();</div>
 <div class="line"><a id="l00761" name="l00761"></a><span class="lineno">  761</span> </div>
 <div class="line"><a id="l00762" name="l00762"></a><span class="lineno">  762</span>        <span class="comment">// AccountSet</span></div>
-<div class="line"><a id="l00763" name="l00763"></a><span class="lineno">  763</span>        env(noop(alice));</div>
+<div class="line"><a id="l00763" name="l00763"></a><span class="lineno">  763</span>        env(<a class="code hl_enumvalue" href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">noop</a>(alice));</div>
 <div class="line"><a id="l00764" name="l00764"></a><span class="lineno">  764</span> </div>
 <div class="line"><a id="l00765" name="l00765"></a><span class="lineno">  765</span>        <span class="comment">// Payment</span></div>
 <div class="line"><a id="l00766" name="l00766"></a><span class="lineno">  766</span>        env(pay(alice, gw, XRP(100)));</div>
@@ -1042,6 +1042,7 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html_a86e358ce3f06ff049af13c2342791cf8"><div class="ttname"><a href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">ripple::strHex</a></div><div class="ttdeci">std::string strHex(FwdIt begin, FwdIt end)</div><div class="ttdef"><b>Definition:</b> <a href="strHex_8h_source.html#l00030">strHex.h:30</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a9f8b4ebe6b42066b9e39967ed80daf79"><div class="ttname"><a href="namespaceripple.html#a9f8b4ebe6b42066b9e39967ed80daf79">ripple::forAllApiVersions</a></div><div class="ttdeci">void forAllApiVersions(Fn const &amp;fn, Args &amp;&amp;... args)</div><div class="ttdef"><b>Definition:</b> <a href="ApiVersion_8h_source.html#l00102">ApiVersion.h:102</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ac124fe6744b7fe887dec949b56b16d50"><div class="ttname"><a href="namespaceripple.html#ac124fe6744b7fe887dec949b56b16d50">ripple::to_string</a></div><div class="ttdeci">std::string to_string(base_uint&lt; Bits, Tag &gt; const &amp;a)</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00630">base_uint.h:630</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a"><div class="ttname"><a href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">ripple::ReleaseStrongRefAction::noop</a></div><div class="ttdeci">@ noop</div></div>
 <div class="ttc" id="aoptional_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/optional.html">optional</a></div></div>
 <div class="ttc" id="ashared_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a></div></div>
 <div class="ttc" id="asize_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/size.html">std::vector::size</a></div><div class="ttdeci">T size(T... args)</div></div>

@@ -5,7 +5,7 @@
 <meta http-equiv="X-UA-Compatible" content="IE=11"/>
 <meta name="generator" content="Doxygen 1.9.5"/>
 <meta name="viewport" content="width=device-width, initial-scale=1"/>
-<title>rippled: ripple::TaggedCache&lt; Key, T, IsKeyCache, Hash, KeyEqual, Mutex &gt; Class Template Reference</title>
+<title>rippled: ripple::TaggedCache&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, KeyEqual, Mutex &gt; Class Template Reference</title>
 <link href="tabs.css" rel="stylesheet" type="text/css"/>
 <script type="text/javascript" src="jquery.js"></script>
 <script type="text/javascript" src="dynsections.js"></script>
@@ -81,7 +81,7 @@ $(function() {
 <a href="#pri-methods">Private Member Functions</a> &#124;
 <a href="#pri-attribs">Private Attributes</a> &#124;
 <a href="classripple_1_1TaggedCache-members.html">List of all members</a>  </div>
-  <div class="headertitle"><div class="title">ripple::TaggedCache&lt; Key, T, IsKeyCache, Hash, KeyEqual, Mutex &gt; Class Template Reference</div></div>
+  <div class="headertitle"><div class="title">ripple::TaggedCache&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, KeyEqual, Mutex &gt; Class Template Reference</div></div>
 </div><!--header-->
 <div class="contents">
 
@@ -90,30 +90,30 @@ $(function() {
 
 <p><code>#include &lt;<a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>&gt;</code></p>
 <div class="dynheader">
-Collaboration diagram for ripple::TaggedCache&lt; Key, T, IsKeyCache, Hash, KeyEqual, Mutex &gt;:</div>
+Collaboration diagram for ripple::TaggedCache&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, KeyEqual, Mutex &gt;:</div>
 <div class="dyncontent">
-<div class="center"><img src="classripple_1_1TaggedCache__coll__graph.png" border="0" usemap="#aripple_1_1TaggedCache_3_01Key_00_01T_00_01IsKeyCache_00_01Hash_00_01KeyEqual_00_01Mutex_01_4_coll__map" alt="Collaboration graph"/></div>
-<map name="aripple_1_1TaggedCache_3_01Key_00_01T_00_01IsKeyCache_00_01Hash_00_01KeyEqual_00_01Mutex_01_4_coll__map" id="aripple_1_1TaggedCache_3_01Key_00_01T_00_01IsKeyCache_00_01Hash_00_01KeyEqual_00_01Mutex_01_4_coll__map">
-<area shape="rect" title="Map/cache combination." alt="" coords="1380,230,1571,285"/>
-<area shape="rect" href="classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="1119,7,1230,33"/>
+<div class="center"><img src="classripple_1_1TaggedCache__coll__graph.png" border="0" usemap="#aripple_1_1TaggedCache_3_01Key_00_01T_00_01IsKeyCache_00_01SharedWeakUnionPointerType_00_01SharedPointerType_00_01Hash_00_01KeyEqual_00_01Mutex_01_4_coll__map" alt="Collaboration graph"/></div>
+<map name="aripple_1_1TaggedCache_3_01Key_00_01T_00_01IsKeyCache_00_01SharedWeakUnionPointerType_00_01SharedPointerType_00_01Hash_00_01KeyEqual_00_01Mutex_01_4_coll__map" id="aripple_1_1TaggedCache_3_01Key_00_01T_00_01IsKeyCache_00_01SharedWeakUnionPointerType_00_01SharedPointerType_00_01Hash_00_01KeyEqual_00_01Mutex_01_4_coll__map">
+<area shape="rect" title="Map/cache combination." alt="" coords="1429,230,1655,314"/>
+<area shape="rect" href="classbeast_1_1Journal.html" title="A generic endpoint for log messages." alt="" coords="1144,7,1255,33"/>
 <area shape="rect" href="classbeast_1_1Journal_1_1Sink.html" title="Abstraction for the underlying message destination." alt="" coords="799,7,945,33"/>
-<area shape="rect" href="classbeast_1_1abstract__clock.html" title="Abstract interface to a clock." alt="" coords="1095,57,1255,97"/>
-<area shape="rect" href="structripple_1_1TaggedCache_1_1Stats.html" title=" " alt="" coords="1087,121,1263,191"/>
-<area shape="rect" href="classbeast_1_1insight_1_1Hook.html" title="A reference to a handler for performing polled collection." alt="" coords="796,78,948,103"/>
-<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="507,69,677,109"/>
-<area shape="rect" href="classbeast_1_1insight_1_1HookImpl.html" title=" " alt="" coords="251,77,432,102"/>
-<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="9,69,193,109"/>
-<area shape="rect" href="classbeast_1_1insight_1_1Gauge.html" title="A metric for measuring an integral value." alt="" coords="792,141,952,166"/>
-<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="507,133,677,173"/>
-<area shape="rect" href="classbeast_1_1insight_1_1GaugeImpl.html" title=" " alt="" coords="247,141,436,166"/>
-<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,133,197,173"/>
-<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/types/size_t.html" title=" " alt="" coords="828,219,916,245"/>
-<area shape="rect" href="classripple_1_1partitioned__unordered__map.html" title=" " alt="" coords="1087,215,1262,299"/>
-<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/thread/recursive_mutex.html" title=" " alt="" coords="1095,323,1254,349"/>
-<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/string/basic_string.html" title=" " alt="" coords="1131,373,1218,398"/>
-<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/string/basic_string.html" title=" " alt="" coords="803,365,941,405"/>
-<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/container/vector.html" title=" " alt="" coords="779,290,965,315"/>
-<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="1123,425,1226,450"/>
+<area shape="rect" href="classbeast_1_1abstract__clock.html" title="Abstract interface to a clock." alt="" coords="1119,57,1279,97"/>
+<area shape="rect" href="structripple_1_1TaggedCache_1_1Stats.html" title=" " alt="" coords="1087,122,1312,206"/>
+<area shape="rect" href="classbeast_1_1insight_1_1Hook.html" title="A reference to a handler for performing polled collection." alt="" coords="796,90,948,115"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="507,81,677,121"/>
+<area shape="rect" href="classbeast_1_1insight_1_1HookImpl.html" title=" " alt="" coords="251,89,432,114"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="9,81,193,121"/>
+<area shape="rect" href="classbeast_1_1insight_1_1Gauge.html" title="A metric for measuring an integral value." alt="" coords="792,153,952,178"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html" title=" " alt="" coords="507,145,677,185"/>
+<area shape="rect" href="classbeast_1_1insight_1_1GaugeImpl.html" title=" " alt="" coords="247,153,436,178"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="5,145,197,185"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/types/size_t.html" title=" " alt="" coords="828,231,916,257"/>
+<area shape="rect" href="classripple_1_1partitioned__unordered__map.html" title=" " alt="" coords="1112,230,1287,314"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/thread/recursive_mutex.html" title=" " alt="" coords="1120,338,1279,363"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/string/basic_string.html" title=" " alt="" coords="1156,387,1243,413"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/string/basic_string.html" title=" " alt="" coords="803,380,941,420"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/container/vector.html" title=" " alt="" coords="779,302,965,327"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="1148,439,1251,465"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -128,240 +128,275 @@ Classes</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-types" name="pub-types"></a>
 Public Types</h2></td></tr>
-<tr class="memitem:a90b28609d7c5d922ebe89af5055fd081"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a90b28609d7c5d922ebe89af5055fd081">mutex_type</a> = Mutex</td></tr>
-<tr class="separator:a90b28609d7c5d922ebe89af5055fd081"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9cce14460473920e8672f3d7983346f7"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a9cce14460473920e8672f3d7983346f7">key_type</a> = Key</td></tr>
-<tr class="separator:a9cce14460473920e8672f3d7983346f7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3d2e1d1503f17e1c3f8b615cf46cc4a2"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a3d2e1d1503f17e1c3f8b615cf46cc4a2">mapped_type</a> = T</td></tr>
-<tr class="separator:a3d2e1d1503f17e1c3f8b615cf46cc4a2"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac55d64946c1478480a16538eea72b0d0"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#ac55d64946c1478480a16538eea72b0d0">clock_type</a> = <a class="el" href="classbeast_1_1abstract__clock.html">beast::abstract_clock</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/steady_clock.html">std::chrono::steady_clock</a> &gt;</td></tr>
-<tr class="separator:ac55d64946c1478480a16538eea72b0d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2f86213d5fb9df938cf350027e27a651"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a2f86213d5fb9df938cf350027e27a651">SweptPointersVector</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1TaggedCache.html#a3d2e1d1503f17e1c3f8b615cf46cc4a2">mapped_type</a> &gt; &gt;, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/weak_ptr.html">std::weak_ptr</a>&lt; <a class="el" href="classripple_1_1TaggedCache.html#a3d2e1d1503f17e1c3f8b615cf46cc4a2">mapped_type</a> &gt; &gt; &gt;</td></tr>
-<tr class="separator:a2f86213d5fb9df938cf350027e27a651"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a0c032979985207685a9d4c649cf2811f"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a0c032979985207685a9d4c649cf2811f">mutex_type</a> = Mutex</td></tr>
+<tr class="separator:a0c032979985207685a9d4c649cf2811f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acd49368e75e11b597c3efa974b0e967d"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#acd49368e75e11b597c3efa974b0e967d">key_type</a> = Key</td></tr>
+<tr class="separator:acd49368e75e11b597c3efa974b0e967d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a918ba1ad238881b954a4239e80cc329a"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a918ba1ad238881b954a4239e80cc329a">mapped_type</a> = T</td></tr>
+<tr class="separator:a918ba1ad238881b954a4239e80cc329a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a27c30bd917ee888142db8a190299ca36"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a27c30bd917ee888142db8a190299ca36">clock_type</a> = <a class="el" href="classbeast_1_1abstract__clock.html">beast::abstract_clock</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/steady_clock.html">std::chrono::steady_clock</a> &gt;</td></tr>
+<tr class="separator:a27c30bd917ee888142db8a190299ca36"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5cd933250b6c2e1669f0158f9ce6a9b6"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a5cd933250b6c2e1669f0158f9ce6a9b6">shared_weak_combo_pointer_type</a> = SharedWeakUnionPointerType</td></tr>
+<tr class="separator:a5cd933250b6c2e1669f0158f9ce6a9b6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a93fb054c9ce1b60414da254bd7a4b785"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a93fb054c9ce1b60414da254bd7a4b785">shared_pointer_type</a> = SharedPointerType</td></tr>
+<tr class="separator:a93fb054c9ce1b60414da254bd7a4b785"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a95752178ee7f810dd694494ab54df700"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a95752178ee7f810dd694494ab54df700">SweptPointersVector</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; SharedWeakUnionPointerType &gt;</td></tr>
+<tr class="separator:a95752178ee7f810dd694494ab54df700"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
-<tr class="memitem:ab321071f80cb871b276f2f45f0d4e1e9"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#ab321071f80cb871b276f2f45f0d4e1e9">TaggedCache</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;name, int <a class="el" href="classripple_1_1TaggedCache.html#ada87b87736e5b2a8df3804c116e75dc3">size</a>, <a class="el" href="classbeast_1_1abstract__clock.html#ad024b15fa67696e8d1eba3744e800d32">clock_type::duration</a> expiration, <a class="el" href="classripple_1_1TaggedCache.html#ac55d64946c1478480a16538eea72b0d0">clock_type</a> &amp;<a class="el" href="classripple_1_1TaggedCache.html#aae45aaf8fafc99c20da9b8fd816b9974">clock</a>, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> journal, <a class="el" href="classbeast_1_1insight_1_1Collector.html#ad1677ecd39a09b6a8bb8f2e073266bc4">beast::insight::Collector::ptr</a> const &amp;collector=<a class="el" href="classbeast_1_1insight_1_1NullCollector.html#a8821f08e6db108aacae400a738286da6">beast::insight::NullCollector::New</a>())</td></tr>
-<tr class="separator:ab321071f80cb871b276f2f45f0d4e1e9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aae45aaf8fafc99c20da9b8fd816b9974"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1TaggedCache.html#ac55d64946c1478480a16538eea72b0d0">clock_type</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#aae45aaf8fafc99c20da9b8fd816b9974">clock</a> ()</td></tr>
-<tr class="memdesc:aae45aaf8fafc99c20da9b8fd816b9974"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the clock associated with the cache.  <a href="classripple_1_1TaggedCache.html#aae45aaf8fafc99c20da9b8fd816b9974">More...</a><br /></td></tr>
-<tr class="separator:aae45aaf8fafc99c20da9b8fd816b9974"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ada87b87736e5b2a8df3804c116e75dc3"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#ada87b87736e5b2a8df3804c116e75dc3">size</a> () const</td></tr>
-<tr class="memdesc:ada87b87736e5b2a8df3804c116e75dc3"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of items in the container.  <a href="classripple_1_1TaggedCache.html#ada87b87736e5b2a8df3804c116e75dc3">More...</a><br /></td></tr>
-<tr class="separator:ada87b87736e5b2a8df3804c116e75dc3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7c93038dab2483ab59153f816d9ed4e4"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a7c93038dab2483ab59153f816d9ed4e4">setTargetSize</a> (int s)</td></tr>
-<tr class="separator:a7c93038dab2483ab59153f816d9ed4e4"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ac6fa2e016aee2901a814a3375ef9c93e"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbeast_1_1abstract__clock.html#ad024b15fa67696e8d1eba3744e800d32">clock_type::duration</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#ac6fa2e016aee2901a814a3375ef9c93e">getTargetAge</a> () const</td></tr>
-<tr class="separator:ac6fa2e016aee2901a814a3375ef9c93e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a601b7bfdd4a7922b879b5139d495dc6f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a601b7bfdd4a7922b879b5139d495dc6f">setTargetAge</a> (<a class="el" href="classbeast_1_1abstract__clock.html#ad024b15fa67696e8d1eba3744e800d32">clock_type::duration</a> s)</td></tr>
-<tr class="separator:a601b7bfdd4a7922b879b5139d495dc6f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4c9c3493560093144c40e9eb9c18d8e7"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a4c9c3493560093144c40e9eb9c18d8e7">getCacheSize</a> () const</td></tr>
-<tr class="separator:a4c9c3493560093144c40e9eb9c18d8e7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a10fb65444d213248bb86271e589821d6"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a10fb65444d213248bb86271e589821d6">getTrackSize</a> () const</td></tr>
-<tr class="separator:a10fb65444d213248bb86271e589821d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae3695f9380d7cf36abe6384bc9b3e13b"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#ae3695f9380d7cf36abe6384bc9b3e13b">getHitRate</a> ()</td></tr>
-<tr class="separator:ae3695f9380d7cf36abe6384bc9b3e13b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a80bf6a7ce34a303cd0e84c262697ac8f"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a80bf6a7ce34a303cd0e84c262697ac8f">clear</a> ()</td></tr>
-<tr class="separator:a80bf6a7ce34a303cd0e84c262697ac8f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a86fc97392f9cb3079c407a0e53f7c037"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a86fc97392f9cb3079c407a0e53f7c037">reset</a> ()</td></tr>
-<tr class="separator:a86fc97392f9cb3079c407a0e53f7c037"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aa3c8e033d152cefb85f9546aac64b175"><td class="memTemplParams" colspan="2">template&lt;class KeyComparable &gt; </td></tr>
-<tr class="memitem:aa3c8e033d152cefb85f9546aac64b175"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#aa3c8e033d152cefb85f9546aac64b175">touch_if_exists</a> (KeyComparable const &amp;key)</td></tr>
-<tr class="memdesc:aa3c8e033d152cefb85f9546aac64b175"><td class="mdescLeft">&#160;</td><td class="mdescRight">Refresh the last access time on a key if present.  <a href="classripple_1_1TaggedCache.html#aa3c8e033d152cefb85f9546aac64b175">More...</a><br /></td></tr>
-<tr class="separator:aa3c8e033d152cefb85f9546aac64b175"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5a2f1176e41e598872fc1ab375e74441"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a5a2f1176e41e598872fc1ab375e74441">sweep</a> ()</td></tr>
-<tr class="separator:a5a2f1176e41e598872fc1ab375e74441"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7055703a52e579ca1ef3a90d53dcebcb"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a7055703a52e579ca1ef3a90d53dcebcb">del</a> (const <a class="el" href="classripple_1_1TaggedCache.html#a9cce14460473920e8672f3d7983346f7">key_type</a> &amp;key, bool <a class="el" href="namespaceripple_1_1credentials.html#abd2ed437891b9bd542d2afc3f5f4bc58">valid</a>)</td></tr>
-<tr class="separator:a7055703a52e579ca1ef3a90d53dcebcb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8ccb634f184f6815b5dc5249add2aa0c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a8ccb634f184f6815b5dc5249add2aa0c">canonicalize</a> (const <a class="el" href="classripple_1_1TaggedCache.html#a9cce14460473920e8672f3d7983346f7">key_type</a> &amp;key, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; T &gt; &amp;data, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; bool(<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; T &gt; const &amp;)&gt; &amp;&amp;replace)</td></tr>
-<tr class="memdesc:a8ccb634f184f6815b5dc5249add2aa0c"><td class="mdescLeft">&#160;</td><td class="mdescRight">Replace aliased objects with originals.  <a href="classripple_1_1TaggedCache.html#a8ccb634f184f6815b5dc5249add2aa0c">More...</a><br /></td></tr>
-<tr class="separator:a8ccb634f184f6815b5dc5249add2aa0c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a6d1fd054e7350fdbd3bb0cbdd0f0f2f3"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a6d1fd054e7350fdbd3bb0cbdd0f0f2f3">canonicalize_replace_cache</a> (const <a class="el" href="classripple_1_1TaggedCache.html#a9cce14460473920e8672f3d7983346f7">key_type</a> &amp;key, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; T &gt; const &amp;data)</td></tr>
-<tr class="separator:a6d1fd054e7350fdbd3bb0cbdd0f0f2f3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a87fe60d8d8ce16003486f76bd6fa9ae3"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a87fe60d8d8ce16003486f76bd6fa9ae3">canonicalize_replace_client</a> (const <a class="el" href="classripple_1_1TaggedCache.html#a9cce14460473920e8672f3d7983346f7">key_type</a> &amp;key, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; T &gt; &amp;data)</td></tr>
-<tr class="separator:a87fe60d8d8ce16003486f76bd6fa9ae3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3d5f6570f0eb719ddc0f093a5b40cb01"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; T &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a3d5f6570f0eb719ddc0f093a5b40cb01">fetch</a> (const <a class="el" href="classripple_1_1TaggedCache.html#a9cce14460473920e8672f3d7983346f7">key_type</a> &amp;key)</td></tr>
-<tr class="separator:a3d5f6570f0eb719ddc0f093a5b40cb01"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a583708481da131b61555d3abd64617d0"><td class="memTemplParams" colspan="2">template&lt;class ReturnType  = bool&gt; </td></tr>
-<tr class="memitem:a583708481da131b61555d3abd64617d0"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a583708481da131b61555d3abd64617d0">insert</a> (<a class="el" href="classripple_1_1TaggedCache.html#a9cce14460473920e8672f3d7983346f7">key_type</a> const &amp;key, T const &amp;value) -&gt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/enable_if.html">std::enable_if_t</a>&lt;!IsKeyCache, ReturnType &gt;</td></tr>
-<tr class="memdesc:a583708481da131b61555d3abd64617d0"><td class="mdescLeft">&#160;</td><td class="mdescRight">Insert the element into the container.  <a href="classripple_1_1TaggedCache.html#a583708481da131b61555d3abd64617d0">More...</a><br /></td></tr>
-<tr class="separator:a583708481da131b61555d3abd64617d0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ad41496152416a86c1e2211574d68f824"><td class="memTemplParams" colspan="2">template&lt;class ReturnType  = bool&gt; </td></tr>
-<tr class="memitem:ad41496152416a86c1e2211574d68f824"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#ad41496152416a86c1e2211574d68f824">insert</a> (<a class="el" href="classripple_1_1TaggedCache.html#a9cce14460473920e8672f3d7983346f7">key_type</a> const &amp;key) -&gt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/enable_if.html">std::enable_if_t</a>&lt; IsKeyCache, ReturnType &gt;</td></tr>
-<tr class="separator:ad41496152416a86c1e2211574d68f824"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a080e1514d06ec95c554f569a35b3288f"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a080e1514d06ec95c554f569a35b3288f">retrieve</a> (const <a class="el" href="classripple_1_1TaggedCache.html#a9cce14460473920e8672f3d7983346f7">key_type</a> &amp;key, T &amp;data)</td></tr>
-<tr class="separator:a080e1514d06ec95c554f569a35b3288f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abd7d4aa1cac53ec4e1c5b4e78e36b57c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1TaggedCache.html#a90b28609d7c5d922ebe89af5055fd081">mutex_type</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#abd7d4aa1cac53ec4e1c5b4e78e36b57c">peekMutex</a> ()</td></tr>
-<tr class="separator:abd7d4aa1cac53ec4e1c5b4e78e36b57c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:acd8f915d17465bf780ef7b20c57c5e51"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1TaggedCache.html#a9cce14460473920e8672f3d7983346f7">key_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#acd8f915d17465bf780ef7b20c57c5e51">getKeys</a> () const</td></tr>
-<tr class="separator:acd8f915d17465bf780ef7b20c57c5e51"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aeeae514b81e823a018c05e1b2ba29a15"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#aeeae514b81e823a018c05e1b2ba29a15">rate</a> () const</td></tr>
-<tr class="memdesc:aeeae514b81e823a018c05e1b2ba29a15"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the fraction of cache hits.  <a href="classripple_1_1TaggedCache.html#aeeae514b81e823a018c05e1b2ba29a15">More...</a><br /></td></tr>
-<tr class="separator:aeeae514b81e823a018c05e1b2ba29a15"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af3bbb6157d9daffedbb01f8af85924eb"><td class="memTemplParams" colspan="2">template&lt;class Handler &gt; </td></tr>
-<tr class="memitem:af3bbb6157d9daffedbb01f8af85924eb"><td class="memTemplItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; T &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#af3bbb6157d9daffedbb01f8af85924eb">fetch</a> (<a class="el" href="classripple_1_1TaggedCache.html#a9cce14460473920e8672f3d7983346f7">key_type</a> const &amp;<a class="el" href="namespaceripple.html#a91e9fe7a4e92dba79c3812fd3edcaacc">digest</a>, Handler const &amp;h)</td></tr>
-<tr class="memdesc:af3bbb6157d9daffedbb01f8af85924eb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fetch an item from the cache.  <a href="classripple_1_1TaggedCache.html#af3bbb6157d9daffedbb01f8af85924eb">More...</a><br /></td></tr>
-<tr class="separator:af3bbb6157d9daffedbb01f8af85924eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae940816ff80607f1d5205a415c06c448"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#ae940816ff80607f1d5205a415c06c448">TaggedCache</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;name, int <a class="el" href="classripple_1_1TaggedCache.html#a7cb4a1c810668e13f7c3340ab15c2977">size</a>, <a class="el" href="classbeast_1_1abstract__clock.html#ad024b15fa67696e8d1eba3744e800d32">clock_type::duration</a> expiration, <a class="el" href="classripple_1_1TaggedCache.html#a27c30bd917ee888142db8a190299ca36">clock_type</a> &amp;<a class="el" href="classripple_1_1TaggedCache.html#a5119dd1871c07076adc0b5a3d77df3f5">clock</a>, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> journal, <a class="el" href="classbeast_1_1insight_1_1Collector.html#ad1677ecd39a09b6a8bb8f2e073266bc4">beast::insight::Collector::ptr</a> const &amp;collector=<a class="el" href="classbeast_1_1insight_1_1NullCollector.html#a8821f08e6db108aacae400a738286da6">beast::insight::NullCollector::New</a>())</td></tr>
+<tr class="separator:ae940816ff80607f1d5205a415c06c448"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5119dd1871c07076adc0b5a3d77df3f5"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1TaggedCache.html#a27c30bd917ee888142db8a190299ca36">clock_type</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a5119dd1871c07076adc0b5a3d77df3f5">clock</a> ()</td></tr>
+<tr class="memdesc:a5119dd1871c07076adc0b5a3d77df3f5"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return the clock associated with the cache.  <a href="classripple_1_1TaggedCache.html#a5119dd1871c07076adc0b5a3d77df3f5">More...</a><br /></td></tr>
+<tr class="separator:a5119dd1871c07076adc0b5a3d77df3f5"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7cb4a1c810668e13f7c3340ab15c2977"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a7cb4a1c810668e13f7c3340ab15c2977">size</a> () const</td></tr>
+<tr class="memdesc:a7cb4a1c810668e13f7c3340ab15c2977"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the number of items in the container.  <a href="classripple_1_1TaggedCache.html#a7cb4a1c810668e13f7c3340ab15c2977">More...</a><br /></td></tr>
+<tr class="separator:a7cb4a1c810668e13f7c3340ab15c2977"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a8f577f5b26552a728626109d842ab520"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a8f577f5b26552a728626109d842ab520">getCacheSize</a> () const</td></tr>
+<tr class="separator:a8f577f5b26552a728626109d842ab520"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aefafc1e8be84e564fbc94fbad0696023"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#aefafc1e8be84e564fbc94fbad0696023">getTrackSize</a> () const</td></tr>
+<tr class="separator:aefafc1e8be84e564fbc94fbad0696023"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7cb6eb2607f6d663e29ab7ea8d3774b1"><td class="memItemLeft" align="right" valign="top">float&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a7cb6eb2607f6d663e29ab7ea8d3774b1">getHitRate</a> ()</td></tr>
+<tr class="separator:a7cb6eb2607f6d663e29ab7ea8d3774b1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a43afa5c2828d03c518efb311dc3cba11"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a43afa5c2828d03c518efb311dc3cba11">clear</a> ()</td></tr>
+<tr class="separator:a43afa5c2828d03c518efb311dc3cba11"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a82e110069721f7aa643eb44408e27fc3"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a82e110069721f7aa643eb44408e27fc3">reset</a> ()</td></tr>
+<tr class="separator:a82e110069721f7aa643eb44408e27fc3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a02f39cb5be185673026ea1dcc9cfb592"><td class="memTemplParams" colspan="2">template&lt;class KeyComparable &gt; </td></tr>
+<tr class="memitem:a02f39cb5be185673026ea1dcc9cfb592"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a02f39cb5be185673026ea1dcc9cfb592">touch_if_exists</a> (KeyComparable const &amp;key)</td></tr>
+<tr class="memdesc:a02f39cb5be185673026ea1dcc9cfb592"><td class="mdescLeft">&#160;</td><td class="mdescRight">Refresh the last access time on a key if present.  <a href="classripple_1_1TaggedCache.html#a02f39cb5be185673026ea1dcc9cfb592">More...</a><br /></td></tr>
+<tr class="separator:a02f39cb5be185673026ea1dcc9cfb592"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:acb7b2bcb7ad7f8d2015eea180190f596"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#acb7b2bcb7ad7f8d2015eea180190f596">sweep</a> ()</td></tr>
+<tr class="separator:acb7b2bcb7ad7f8d2015eea180190f596"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a36bc83e60e726addd030b2436da10b4c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a36bc83e60e726addd030b2436da10b4c">del</a> (const <a class="el" href="classripple_1_1TaggedCache.html#acd49368e75e11b597c3efa974b0e967d">key_type</a> &amp;key, bool <a class="el" href="namespaceripple_1_1credentials.html#abd2ed437891b9bd542d2afc3f5f4bc58">valid</a>)</td></tr>
+<tr class="separator:a36bc83e60e726addd030b2436da10b4c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2a4957c6735a84909afb4282978f2bb1"><td class="memTemplParams" colspan="2">template&lt;class R &gt; </td></tr>
+<tr class="memitem:a2a4957c6735a84909afb4282978f2bb1"><td class="memTemplItemLeft" align="right" valign="top">bool&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a2a4957c6735a84909afb4282978f2bb1">canonicalize</a> (const <a class="el" href="classripple_1_1TaggedCache.html#acd49368e75e11b597c3efa974b0e967d">key_type</a> &amp;key, SharedPointerType &amp;data, R &amp;&amp;replaceCallback)</td></tr>
+<tr class="memdesc:a2a4957c6735a84909afb4282978f2bb1"><td class="mdescLeft">&#160;</td><td class="mdescRight">Replace aliased objects with originals.  <a href="classripple_1_1TaggedCache.html#a2a4957c6735a84909afb4282978f2bb1">More...</a><br /></td></tr>
+<tr class="separator:a2a4957c6735a84909afb4282978f2bb1"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a452da146b922285478b1ebed4b35a74a"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a452da146b922285478b1ebed4b35a74a">canonicalize_replace_cache</a> (const <a class="el" href="classripple_1_1TaggedCache.html#acd49368e75e11b597c3efa974b0e967d">key_type</a> &amp;key, SharedPointerType const &amp;data)</td></tr>
+<tr class="separator:a452da146b922285478b1ebed4b35a74a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae6c09d89ac848705579561949ada78ca"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#ae6c09d89ac848705579561949ada78ca">canonicalize_replace_client</a> (const <a class="el" href="classripple_1_1TaggedCache.html#acd49368e75e11b597c3efa974b0e967d">key_type</a> &amp;key, SharedPointerType &amp;data)</td></tr>
+<tr class="separator:ae6c09d89ac848705579561949ada78ca"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a7a535c19e0d56af57598db5149778f22"><td class="memItemLeft" align="right" valign="top">SharedPointerType&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a7a535c19e0d56af57598db5149778f22">fetch</a> (const <a class="el" href="classripple_1_1TaggedCache.html#acd49368e75e11b597c3efa974b0e967d">key_type</a> &amp;key)</td></tr>
+<tr class="separator:a7a535c19e0d56af57598db5149778f22"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a650a84ffd002036d38d415689f65a06a"><td class="memTemplParams" colspan="2">template&lt;class ReturnType  = bool&gt; </td></tr>
+<tr class="memitem:a650a84ffd002036d38d415689f65a06a"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a650a84ffd002036d38d415689f65a06a">insert</a> (<a class="el" href="classripple_1_1TaggedCache.html#acd49368e75e11b597c3efa974b0e967d">key_type</a> const &amp;key, T const &amp;value) -&gt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/enable_if.html">std::enable_if_t</a>&lt;!IsKeyCache, ReturnType &gt;</td></tr>
+<tr class="memdesc:a650a84ffd002036d38d415689f65a06a"><td class="mdescLeft">&#160;</td><td class="mdescRight">Insert the element into the container.  <a href="classripple_1_1TaggedCache.html#a650a84ffd002036d38d415689f65a06a">More...</a><br /></td></tr>
+<tr class="separator:a650a84ffd002036d38d415689f65a06a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad91c899a191552af93db0e9d605c5f2d"><td class="memTemplParams" colspan="2">template&lt;class ReturnType  = bool&gt; </td></tr>
+<tr class="memitem:ad91c899a191552af93db0e9d605c5f2d"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#ad91c899a191552af93db0e9d605c5f2d">insert</a> (<a class="el" href="classripple_1_1TaggedCache.html#acd49368e75e11b597c3efa974b0e967d">key_type</a> const &amp;key) -&gt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/enable_if.html">std::enable_if_t</a>&lt; IsKeyCache, ReturnType &gt;</td></tr>
+<tr class="separator:ad91c899a191552af93db0e9d605c5f2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a180de999ec99f8c049a5c5841f220216"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a180de999ec99f8c049a5c5841f220216">retrieve</a> (const <a class="el" href="classripple_1_1TaggedCache.html#acd49368e75e11b597c3efa974b0e967d">key_type</a> &amp;key, T &amp;data)</td></tr>
+<tr class="separator:a180de999ec99f8c049a5c5841f220216"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5f2eeaf8067412bc98556b44e65fc5b3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1TaggedCache.html#a0c032979985207685a9d4c649cf2811f">mutex_type</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a5f2eeaf8067412bc98556b44e65fc5b3">peekMutex</a> ()</td></tr>
+<tr class="separator:a5f2eeaf8067412bc98556b44e65fc5b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6a2968beb840442bd9cd8e7895d012c3"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1TaggedCache.html#acd49368e75e11b597c3efa974b0e967d">key_type</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a6a2968beb840442bd9cd8e7895d012c3">getKeys</a> () const</td></tr>
+<tr class="separator:a6a2968beb840442bd9cd8e7895d012c3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad113108a142a6d0e74ef84345008aec6"><td class="memItemLeft" align="right" valign="top">double&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#ad113108a142a6d0e74ef84345008aec6">rate</a> () const</td></tr>
+<tr class="memdesc:ad113108a142a6d0e74ef84345008aec6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the fraction of cache hits.  <a href="classripple_1_1TaggedCache.html#ad113108a142a6d0e74ef84345008aec6">More...</a><br /></td></tr>
+<tr class="separator:ad113108a142a6d0e74ef84345008aec6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a63a7092dceb88190a120d1203cbb3b10"><td class="memTemplParams" colspan="2">template&lt;class Handler &gt; </td></tr>
+<tr class="memitem:a63a7092dceb88190a120d1203cbb3b10"><td class="memTemplItemLeft" align="right" valign="top">SharedPointerType&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a63a7092dceb88190a120d1203cbb3b10">fetch</a> (<a class="el" href="classripple_1_1TaggedCache.html#acd49368e75e11b597c3efa974b0e967d">key_type</a> const &amp;<a class="el" href="namespaceripple.html#a91e9fe7a4e92dba79c3812fd3edcaacc">digest</a>, Handler const &amp;h)</td></tr>
+<tr class="memdesc:a63a7092dceb88190a120d1203cbb3b10"><td class="mdescLeft">&#160;</td><td class="mdescRight">Fetch an item from the cache.  <a href="classripple_1_1TaggedCache.html#a63a7092dceb88190a120d1203cbb3b10">More...</a><br /></td></tr>
+<tr class="separator:a63a7092dceb88190a120d1203cbb3b10"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-types" name="pri-types"></a>
 Private Types</h2></td></tr>
-<tr class="memitem:a1f56084dfc8fe22932bf26cf4724bbe3"><td class="memItemLeft" align="right" valign="top">typedef <a class="elRef" href="http://en.cppreference.com/w/cpp/types/conditional.html">std::conditional</a>&lt; IsKeyCache, <a class="el" href="classripple_1_1TaggedCache_1_1KeyOnlyEntry.html">KeyOnlyEntry</a>, <a class="el" href="classripple_1_1TaggedCache_1_1ValueEntry.html">ValueEntry</a> &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a1f56084dfc8fe22932bf26cf4724bbe3">Entry</a></td></tr>
-<tr class="separator:a1f56084dfc8fe22932bf26cf4724bbe3"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aed26009e5db0681488035dd98613ef34"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#aed26009e5db0681488035dd98613ef34">KeyOnlyCacheType</a> = <a class="el" href="namespaceripple.html#a034035787a5b7de743464244c2bdd935">hardened_partitioned_hash_map</a>&lt; <a class="el" href="classripple_1_1TaggedCache.html#a9cce14460473920e8672f3d7983346f7">key_type</a>, <a class="el" href="classripple_1_1TaggedCache_1_1KeyOnlyEntry.html">KeyOnlyEntry</a>, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a> &gt;</td></tr>
-<tr class="separator:aed26009e5db0681488035dd98613ef34"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1879db7d63e17ba2d0d5a1539a0d94df"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a1879db7d63e17ba2d0d5a1539a0d94df">KeyValueCacheType</a> = <a class="el" href="namespaceripple.html#a034035787a5b7de743464244c2bdd935">hardened_partitioned_hash_map</a>&lt; <a class="el" href="classripple_1_1TaggedCache.html#a9cce14460473920e8672f3d7983346f7">key_type</a>, <a class="el" href="classripple_1_1TaggedCache_1_1ValueEntry.html">ValueEntry</a>, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a> &gt;</td></tr>
-<tr class="separator:a1879db7d63e17ba2d0d5a1539a0d94df"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a3d8282ec993c6e4d4e1e34758c1d1a70"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a3d8282ec993c6e4d4e1e34758c1d1a70">cache_type</a> = <a class="el" href="namespaceripple.html#a034035787a5b7de743464244c2bdd935">hardened_partitioned_hash_map</a>&lt; <a class="el" href="classripple_1_1TaggedCache.html#a9cce14460473920e8672f3d7983346f7">key_type</a>, <a class="el" href="classripple_1_1TaggedCache.html#a1f56084dfc8fe22932bf26cf4724bbe3">Entry</a>, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a> &gt;</td></tr>
-<tr class="separator:a3d8282ec993c6e4d4e1e34758c1d1a70"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab3f1079fb7f841c7f6c04b553beaf4bb"><td class="memItemLeft" align="right" valign="top">typedef <a class="elRef" href="http://en.cppreference.com/w/cpp/types/conditional.html">std::conditional</a>&lt; IsKeyCache, <a class="el" href="classripple_1_1TaggedCache_1_1KeyOnlyEntry.html">KeyOnlyEntry</a>, <a class="el" href="classripple_1_1TaggedCache_1_1ValueEntry.html">ValueEntry</a> &gt;::type&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#ab3f1079fb7f841c7f6c04b553beaf4bb">Entry</a></td></tr>
+<tr class="separator:ab3f1079fb7f841c7f6c04b553beaf4bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6d0e830aaf88f25edf323a73d0d48412"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a6d0e830aaf88f25edf323a73d0d48412">KeyOnlyCacheType</a> = <a class="el" href="namespaceripple.html#a034035787a5b7de743464244c2bdd935">hardened_partitioned_hash_map</a>&lt; <a class="el" href="classripple_1_1TaggedCache.html#acd49368e75e11b597c3efa974b0e967d">key_type</a>, <a class="el" href="classripple_1_1TaggedCache_1_1KeyOnlyEntry.html">KeyOnlyEntry</a>, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a> &gt;</td></tr>
+<tr class="separator:a6d0e830aaf88f25edf323a73d0d48412"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:adead5d92724a6305bc4f4df2358490d6"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#adead5d92724a6305bc4f4df2358490d6">KeyValueCacheType</a> = <a class="el" href="namespaceripple.html#a034035787a5b7de743464244c2bdd935">hardened_partitioned_hash_map</a>&lt; <a class="el" href="classripple_1_1TaggedCache.html#acd49368e75e11b597c3efa974b0e967d">key_type</a>, <a class="el" href="classripple_1_1TaggedCache_1_1ValueEntry.html">ValueEntry</a>, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a> &gt;</td></tr>
+<tr class="separator:adead5d92724a6305bc4f4df2358490d6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5b69c954beb5ba033655d3c6903eea9f"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a5b69c954beb5ba033655d3c6903eea9f">cache_type</a> = <a class="el" href="namespaceripple.html#a034035787a5b7de743464244c2bdd935">hardened_partitioned_hash_map</a>&lt; <a class="el" href="classripple_1_1TaggedCache.html#acd49368e75e11b597c3efa974b0e967d">key_type</a>, <a class="el" href="classripple_1_1TaggedCache.html#ab3f1079fb7f841c7f6c04b553beaf4bb">Entry</a>, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a> &gt;</td></tr>
+<tr class="separator:a5b69c954beb5ba033655d3c6903eea9f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-methods" name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
-<tr class="memitem:a6888fa7b996b4fa2f2861b5867348efb"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; T &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a6888fa7b996b4fa2f2861b5867348efb">initialFetch</a> (<a class="el" href="classripple_1_1TaggedCache.html#a9cce14460473920e8672f3d7983346f7">key_type</a> const &amp;key, <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a>&lt; <a class="el" href="classripple_1_1TaggedCache.html#a90b28609d7c5d922ebe89af5055fd081">mutex_type</a> &gt; const &amp;l)</td></tr>
-<tr class="separator:a6888fa7b996b4fa2f2861b5867348efb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a5445906f1657546cd6557b89216a2f34"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a5445906f1657546cd6557b89216a2f34">collect_metrics</a> ()</td></tr>
-<tr class="separator:a5445906f1657546cd6557b89216a2f34"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a06b1aa487bb555813a9248a213246c32"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/thread.html">std::thread</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a06b1aa487bb555813a9248a213246c32">sweepHelper</a> (<a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">clock_type::time_point</a> const &amp;when_expire, <a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">clock_type::time_point</a> const &amp;now, typename <a class="el" href="classripple_1_1partitioned__unordered__map.html#a791cfec5cd59f92f85a14e3bd96bb1ee">KeyValueCacheType::map_type</a> &amp;partition, <a class="el" href="classripple_1_1TaggedCache.html#a2f86213d5fb9df938cf350027e27a651">SweptPointersVector</a> &amp;stuffToSweep, <a class="elRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic</a>&lt; int &gt; &amp;allRemovals, <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/recursive_mutex.html">std::recursive_mutex</a> &gt; const &amp;)</td></tr>
-<tr class="separator:a06b1aa487bb555813a9248a213246c32"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aed8149c3e092792a7a14685b6ad72742"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/thread.html">std::thread</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#aed8149c3e092792a7a14685b6ad72742">sweepHelper</a> (<a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">clock_type::time_point</a> const &amp;when_expire, <a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">clock_type::time_point</a> const &amp;now, typename <a class="el" href="classripple_1_1partitioned__unordered__map.html#a791cfec5cd59f92f85a14e3bd96bb1ee">KeyOnlyCacheType::map_type</a> &amp;partition, <a class="el" href="classripple_1_1TaggedCache.html#a2f86213d5fb9df938cf350027e27a651">SweptPointersVector</a> &amp;, <a class="elRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic</a>&lt; int &gt; &amp;allRemovals, <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/recursive_mutex.html">std::recursive_mutex</a> &gt; const &amp;)</td></tr>
-<tr class="separator:aed8149c3e092792a7a14685b6ad72742"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9a82311cd004003ca594e98cd10c71d9"><td class="memItemLeft" align="right" valign="top">SharedPointerType&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a9a82311cd004003ca594e98cd10c71d9">initialFetch</a> (<a class="el" href="classripple_1_1TaggedCache.html#acd49368e75e11b597c3efa974b0e967d">key_type</a> const &amp;key, <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a>&lt; <a class="el" href="classripple_1_1TaggedCache.html#a0c032979985207685a9d4c649cf2811f">mutex_type</a> &gt; const &amp;l)</td></tr>
+<tr class="separator:a9a82311cd004003ca594e98cd10c71d9"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a84c4b26223cca7b9e915d843333d067d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a84c4b26223cca7b9e915d843333d067d">collect_metrics</a> ()</td></tr>
+<tr class="separator:a84c4b26223cca7b9e915d843333d067d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a9efc81ff730b16e9acd8c6954d05721a"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/thread.html">std::thread</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a9efc81ff730b16e9acd8c6954d05721a">sweepHelper</a> (<a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">clock_type::time_point</a> const &amp;when_expire, <a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">clock_type::time_point</a> const &amp;now, typename <a class="el" href="classripple_1_1partitioned__unordered__map.html#a791cfec5cd59f92f85a14e3bd96bb1ee">KeyValueCacheType::map_type</a> &amp;partition, <a class="el" href="classripple_1_1TaggedCache.html#a95752178ee7f810dd694494ab54df700">SweptPointersVector</a> &amp;stuffToSweep, <a class="elRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic</a>&lt; int &gt; &amp;allRemovals, <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/recursive_mutex.html">std::recursive_mutex</a> &gt; const &amp;)</td></tr>
+<tr class="separator:a9efc81ff730b16e9acd8c6954d05721a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a946fc2b3e630d62bca9663b81d751843"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/thread.html">std::thread</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a946fc2b3e630d62bca9663b81d751843">sweepHelper</a> (<a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">clock_type::time_point</a> const &amp;when_expire, <a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">clock_type::time_point</a> const &amp;now, typename <a class="el" href="classripple_1_1partitioned__unordered__map.html#a791cfec5cd59f92f85a14e3bd96bb1ee">KeyOnlyCacheType::map_type</a> &amp;partition, <a class="el" href="classripple_1_1TaggedCache.html#a95752178ee7f810dd694494ab54df700">SweptPointersVector</a> &amp;, <a class="elRef" href="http://en.cppreference.com/w/cpp/atomic/atomic.html">std::atomic</a>&lt; int &gt; &amp;allRemovals, <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/recursive_mutex.html">std::recursive_mutex</a> &gt; const &amp;)</td></tr>
+<tr class="separator:a946fc2b3e630d62bca9663b81d751843"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-attribs" name="pri-attribs"></a>
 Private Attributes</h2></td></tr>
-<tr class="memitem:a6da20f8e87b7ef43161b4ddcbfa48ec0"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a6da20f8e87b7ef43161b4ddcbfa48ec0">m_journal</a></td></tr>
-<tr class="separator:a6da20f8e87b7ef43161b4ddcbfa48ec0"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a59474c6f11ed52197982a2c61fdb953b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1TaggedCache.html#ac55d64946c1478480a16538eea72b0d0">clock_type</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a59474c6f11ed52197982a2c61fdb953b">m_clock</a></td></tr>
-<tr class="separator:a59474c6f11ed52197982a2c61fdb953b"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ae9dcd1befa6944285c62d22925b28fd6"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1TaggedCache_1_1Stats.html">Stats</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#ae9dcd1befa6944285c62d22925b28fd6">m_stats</a></td></tr>
-<tr class="separator:ae9dcd1befa6944285c62d22925b28fd6"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a7b941b85ce975e7812ddb4caa4320c1a"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1TaggedCache.html#a90b28609d7c5d922ebe89af5055fd081">mutex_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a7b941b85ce975e7812ddb4caa4320c1a">m_mutex</a></td></tr>
-<tr class="separator:a7b941b85ce975e7812ddb4caa4320c1a"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a960092c9c7439c8c1fd02459d0e82d00"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a960092c9c7439c8c1fd02459d0e82d00">m_name</a></td></tr>
-<tr class="separator:a960092c9c7439c8c1fd02459d0e82d00"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abc4b5ec2ca3d7146111e4ca4eb6f00dc"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#abc4b5ec2ca3d7146111e4ca4eb6f00dc">m_target_size</a></td></tr>
-<tr class="separator:abc4b5ec2ca3d7146111e4ca4eb6f00dc"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:afa8e18677da99995543fda2b75ed2929"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbeast_1_1abstract__clock.html#ad024b15fa67696e8d1eba3744e800d32">clock_type::duration</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#afa8e18677da99995543fda2b75ed2929">m_target_age</a></td></tr>
-<tr class="separator:afa8e18677da99995543fda2b75ed2929"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:abc4ed7d5f2ed327749490548c4fc9f0e"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#abc4ed7d5f2ed327749490548c4fc9f0e">m_cache_count</a></td></tr>
-<tr class="separator:abc4ed7d5f2ed327749490548c4fc9f0e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aedce0510d469f36c1158c6c5c70e782c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1TaggedCache.html#a3d8282ec993c6e4d4e1e34758c1d1a70">cache_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#aedce0510d469f36c1158c6c5c70e782c">m_cache</a></td></tr>
-<tr class="separator:aedce0510d469f36c1158c6c5c70e782c"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:af16055830c75a1e2944ca1f95b9fe6bb"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#af16055830c75a1e2944ca1f95b9fe6bb">m_hits</a></td></tr>
-<tr class="separator:af16055830c75a1e2944ca1f95b9fe6bb"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a45b6f2ac8315aa34d1234e119ce9a2e2"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a45b6f2ac8315aa34d1234e119ce9a2e2">m_misses</a></td></tr>
-<tr class="separator:a45b6f2ac8315aa34d1234e119ce9a2e2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4447ab3d6842cd9f44292c40f809875d"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a4447ab3d6842cd9f44292c40f809875d">m_journal</a></td></tr>
+<tr class="separator:a4447ab3d6842cd9f44292c40f809875d"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a5457bcc14cbf1c751d2228a01c8c9f33"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1TaggedCache.html#a27c30bd917ee888142db8a190299ca36">clock_type</a> &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a5457bcc14cbf1c751d2228a01c8c9f33">m_clock</a></td></tr>
+<tr class="separator:a5457bcc14cbf1c751d2228a01c8c9f33"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa33494784c3de973a867f267d7e515b3"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1TaggedCache_1_1Stats.html">Stats</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#aa33494784c3de973a867f267d7e515b3">m_stats</a></td></tr>
+<tr class="separator:aa33494784c3de973a867f267d7e515b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6e612cf149483afb460f3132c10d9b18"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1TaggedCache.html#a0c032979985207685a9d4c649cf2811f">mutex_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a6e612cf149483afb460f3132c10d9b18">m_mutex</a></td></tr>
+<tr class="separator:a6e612cf149483afb460f3132c10d9b18"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ac10d1e5830aebb130e837da693be6219"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#ac10d1e5830aebb130e837da693be6219">m_name</a></td></tr>
+<tr class="separator:ac10d1e5830aebb130e837da693be6219"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aabb3bcf5c4c8a5f447c427c1799060af"><td class="memItemLeft" align="right" valign="top">const int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#aabb3bcf5c4c8a5f447c427c1799060af">m_target_size</a></td></tr>
+<tr class="separator:aabb3bcf5c4c8a5f447c427c1799060af"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad85e0945a52b3dc43517dec0044ddc32"><td class="memItemLeft" align="right" valign="top">const <a class="el" href="classbeast_1_1abstract__clock.html#ad024b15fa67696e8d1eba3744e800d32">clock_type::duration</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#ad85e0945a52b3dc43517dec0044ddc32">m_target_age</a></td></tr>
+<tr class="separator:ad85e0945a52b3dc43517dec0044ddc32"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae460aeefa90d4cd74efea1343b9b257a"><td class="memItemLeft" align="right" valign="top">int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#ae460aeefa90d4cd74efea1343b9b257a">m_cache_count</a></td></tr>
+<tr class="separator:ae460aeefa90d4cd74efea1343b9b257a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3e18438a88751b78e5eea167852f48fa"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1TaggedCache.html#a5b69c954beb5ba033655d3c6903eea9f">cache_type</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#a3e18438a88751b78e5eea167852f48fa">m_cache</a></td></tr>
+<tr class="separator:a3e18438a88751b78e5eea167852f48fa"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aeb202b5f2b6f326dea8bd5bbe7f641a7"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#aeb202b5f2b6f326dea8bd5bbe7f641a7">m_hits</a></td></tr>
+<tr class="separator:aeb202b5f2b6f326dea8bd5bbe7f641a7"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aaba1e3a0970a25049a321b569fe42164"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TaggedCache.html#aaba1e3a0970a25049a321b569fe42164">m_misses</a></td></tr>
+<tr class="separator:aaba1e3a0970a25049a321b569fe42164"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><div class="compoundTemplParams">template&lt;class Key, class T, bool IsKeyCache = false, class Hash = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a> = std::equal_to&lt;Key&gt;, class Mutex = std::recursive_mutex&gt;<br />
-class ripple::TaggedCache&lt; Key, T, IsKeyCache, Hash, KeyEqual, Mutex &gt;</div><p >Map/cache combination. </p>
+<div class="textblock"><div class="compoundTemplParams">template&lt;class Key, class T, bool IsKeyCache = false, class SharedWeakUnionPointerType = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType = std::shared_ptr&lt;T&gt;, class Hash = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a> = std::equal_to&lt;Key&gt;, class Mutex = std::recursive_mutex&gt;<br />
+class ripple::TaggedCache&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, KeyEqual, Mutex &gt;</div><p >Map/cache combination. </p>
 <p >This class implements a cache and a map. The cache keeps objects alive in the map. The map allows multiple code paths that reference objects with the same tag to get the same actual object.</p>
 <p >So long as data is in the cache, it will stay in memory. If it stays in memory even after it is ejected from the cache, the map will track it.</p>
 <dl class="section note"><dt>Note</dt><dd>Callers must not modify data objects that are stored in the cache unless they hold their own lock over all cache operations. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00057">57</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
-</div><h2 class="groupheader">Member Typedef Documentation</h2>
-<a id="a90b28609d7c5d922ebe89af5055fd081" name="a90b28609d7c5d922ebe89af5055fd081"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a90b28609d7c5d922ebe89af5055fd081">&#9670;&#160;</a></span>mutex_type</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">using <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::mutex_type =  Mutex</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00060">60</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
-
-</div>
-</div>
-<a id="a9cce14460473920e8672f3d7983346f7" name="a9cce14460473920e8672f3d7983346f7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9cce14460473920e8672f3d7983346f7">&#9670;&#160;</a></span>key_type</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">using <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::key_type =  Key</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
 <p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00061">61</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
-
-</div>
-</div>
-<a id="a3d2e1d1503f17e1c3f8b615cf46cc4a2" name="a3d2e1d1503f17e1c3f8b615cf46cc4a2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3d2e1d1503f17e1c3f8b615cf46cc4a2">&#9670;&#160;</a></span>mapped_type</h2>
+</div><h2 class="groupheader">Member Typedef Documentation</h2>
+<a id="a0c032979985207685a9d4c649cf2811f" name="a0c032979985207685a9d4c649cf2811f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a0c032979985207685a9d4c649cf2811f">&#9670;&#160;</a></span>mutex_type</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::mapped_type =  T</td>
+          <td class="memname">using <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::mutex_type =  Mutex</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00062">62</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00064">64</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
 
 </div>
 </div>
-<a id="ac55d64946c1478480a16538eea72b0d0" name="ac55d64946c1478480a16538eea72b0d0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac55d64946c1478480a16538eea72b0d0">&#9670;&#160;</a></span>clock_type</h2>
+<a id="acd49368e75e11b597c3efa974b0e967d" name="acd49368e75e11b597c3efa974b0e967d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acd49368e75e11b597c3efa974b0e967d">&#9670;&#160;</a></span>key_type</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::clock_type =  <a class="el" href="classbeast_1_1abstract__clock.html">beast::abstract_clock</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/steady_clock.html">std::chrono::steady_clock</a>&gt;</td>
+          <td class="memname">using <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::key_type =  Key</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00063">63</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00065">65</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
 
 </div>
 </div>
-<a id="a2f86213d5fb9df938cf350027e27a651" name="a2f86213d5fb9df938cf350027e27a651"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2f86213d5fb9df938cf350027e27a651">&#9670;&#160;</a></span>SweptPointersVector</h2>
+<a id="a918ba1ad238881b954a4239e80cc329a" name="a918ba1ad238881b954a4239e80cc329a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a918ba1ad238881b954a4239e80cc329a">&#9670;&#160;</a></span>mapped_type</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::SweptPointersVector =  <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt;<a class="el" href="classripple_1_1TaggedCache.html#a3d2e1d1503f17e1c3f8b615cf46cc4a2">mapped_type</a>&gt; &gt;, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/weak_ptr.html">std::weak_ptr</a>&lt;<a class="el" href="classripple_1_1TaggedCache.html#a3d2e1d1503f17e1c3f8b615cf46cc4a2">mapped_type</a>&gt; &gt;&gt;</td>
+          <td class="memname">using <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::mapped_type =  T</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00200">200</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00066">66</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
 
 </div>
 </div>
-<a id="a1f56084dfc8fe22932bf26cf4724bbe3" name="a1f56084dfc8fe22932bf26cf4724bbe3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1f56084dfc8fe22932bf26cf4724bbe3">&#9670;&#160;</a></span>Entry</h2>
+<a id="a27c30bd917ee888142db8a190299ca36" name="a27c30bd917ee888142db8a190299ca36"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a27c30bd917ee888142db8a190299ca36">&#9670;&#160;</a></span>clock_type</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::clock_type =  <a class="el" href="classbeast_1_1abstract__clock.html">beast::abstract_clock</a>&lt;<a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/steady_clock.html">std::chrono::steady_clock</a>&gt;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00067">67</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
+
+</div>
+</div>
+<a id="a5cd933250b6c2e1669f0158f9ce6a9b6" name="a5cd933250b6c2e1669f0158f9ce6a9b6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5cd933250b6c2e1669f0158f9ce6a9b6">&#9670;&#160;</a></span>shared_weak_combo_pointer_type</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::shared_weak_combo_pointer_type =  SharedWeakUnionPointerType</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00068">68</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
+
+</div>
+</div>
+<a id="a93fb054c9ce1b60414da254bd7a4b785" name="a93fb054c9ce1b60414da254bd7a4b785"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a93fb054c9ce1b60414da254bd7a4b785">&#9670;&#160;</a></span>shared_pointer_type</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::shared_pointer_type =  SharedPointerType</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00069">69</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
+
+</div>
+</div>
+<a id="a95752178ee7f810dd694494ab54df700" name="a95752178ee7f810dd694494ab54df700"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a95752178ee7f810dd694494ab54df700">&#9670;&#160;</a></span>SweptPointersVector</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::SweptPointersVector =  <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt;SharedWeakUnionPointerType&gt;</td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00112">112</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
+
+</div>
+</div>
+<a id="ab3f1079fb7f841c7f6c04b553beaf4bb" name="ab3f1079fb7f841c7f6c04b553beaf4bb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab3f1079fb7f841c7f6c04b553beaf4bb">&#9670;&#160;</a></span>Entry</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">typedef <a class="elRef" href="http://en.cppreference.com/w/cpp/types/conditional.html">std::conditional</a>&lt;IsKeyCache,<a class="el" href="classripple_1_1TaggedCache_1_1KeyOnlyEntry.html">KeyOnlyEntry</a>,<a class="el" href="classripple_1_1TaggedCache_1_1ValueEntry.html">ValueEntry</a>&gt;::type <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::Entry</td>
+          <td class="memname">typedef <a class="elRef" href="http://en.cppreference.com/w/cpp/types/conditional.html">std::conditional</a>&lt;IsKeyCache,<a class="el" href="classripple_1_1TaggedCache_1_1KeyOnlyEntry.html">KeyOnlyEntry</a>,<a class="el" href="classripple_1_1TaggedCache_1_1ValueEntry.html">ValueEntry</a>&gt;::type <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::Entry</td>
         </tr>
       </table>
   </td>
@@ -371,23 +406,23 @@ template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardene
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00643">643</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00286">286</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
 
 </div>
 </div>
-<a id="aed26009e5db0681488035dd98613ef34" name="aed26009e5db0681488035dd98613ef34"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aed26009e5db0681488035dd98613ef34">&#9670;&#160;</a></span>KeyOnlyCacheType</h2>
+<a id="a6d0e830aaf88f25edf323a73d0d48412" name="a6d0e830aaf88f25edf323a73d0d48412"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6d0e830aaf88f25edf323a73d0d48412">&#9670;&#160;</a></span>KeyOnlyCacheType</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::KeyOnlyCacheType =  <a class="el" href="namespaceripple.html#a034035787a5b7de743464244c2bdd935">hardened_partitioned_hash_map</a>&lt;<a class="el" href="classripple_1_1TaggedCache.html#a9cce14460473920e8672f3d7983346f7">key_type</a>, <a class="el" href="classripple_1_1TaggedCache_1_1KeyOnlyEntry.html">KeyOnlyEntry</a>, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>&gt;</td>
+          <td class="memname">using <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::KeyOnlyCacheType =  <a class="el" href="namespaceripple.html#a034035787a5b7de743464244c2bdd935">hardened_partitioned_hash_map</a>&lt;<a class="el" href="classripple_1_1TaggedCache.html#acd49368e75e11b597c3efa974b0e967d">key_type</a>, <a class="el" href="classripple_1_1TaggedCache_1_1KeyOnlyEntry.html">KeyOnlyEntry</a>, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>&gt;</td>
         </tr>
       </table>
   </td>
@@ -397,23 +432,23 @@ template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardene
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00645">645</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00288">288</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
 
 </div>
 </div>
-<a id="a1879db7d63e17ba2d0d5a1539a0d94df" name="a1879db7d63e17ba2d0d5a1539a0d94df"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1879db7d63e17ba2d0d5a1539a0d94df">&#9670;&#160;</a></span>KeyValueCacheType</h2>
+<a id="adead5d92724a6305bc4f4df2358490d6" name="adead5d92724a6305bc4f4df2358490d6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#adead5d92724a6305bc4f4df2358490d6">&#9670;&#160;</a></span>KeyValueCacheType</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::KeyValueCacheType =  <a class="el" href="namespaceripple.html#a034035787a5b7de743464244c2bdd935">hardened_partitioned_hash_map</a>&lt;<a class="el" href="classripple_1_1TaggedCache.html#a9cce14460473920e8672f3d7983346f7">key_type</a>, <a class="el" href="classripple_1_1TaggedCache_1_1ValueEntry.html">ValueEntry</a>, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>&gt;</td>
+          <td class="memname">using <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::KeyValueCacheType =  <a class="el" href="namespaceripple.html#a034035787a5b7de743464244c2bdd935">hardened_partitioned_hash_map</a>&lt;<a class="el" href="classripple_1_1TaggedCache.html#acd49368e75e11b597c3efa974b0e967d">key_type</a>, <a class="el" href="classripple_1_1TaggedCache_1_1ValueEntry.html">ValueEntry</a>, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>&gt;</td>
         </tr>
       </table>
   </td>
@@ -423,23 +458,23 @@ template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardene
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00648">648</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00291">291</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
 
 </div>
 </div>
-<a id="a3d8282ec993c6e4d4e1e34758c1d1a70" name="a3d8282ec993c6e4d4e1e34758c1d1a70"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3d8282ec993c6e4d4e1e34758c1d1a70">&#9670;&#160;</a></span>cache_type</h2>
+<a id="a5b69c954beb5ba033655d3c6903eea9f" name="a5b69c954beb5ba033655d3c6903eea9f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5b69c954beb5ba033655d3c6903eea9f">&#9670;&#160;</a></span>cache_type</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">using <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::cache_type =  <a class="el" href="namespaceripple.html#a034035787a5b7de743464244c2bdd935">hardened_partitioned_hash_map</a>&lt;<a class="el" href="classripple_1_1TaggedCache.html#a9cce14460473920e8672f3d7983346f7">key_type</a>, <a class="el" href="classripple_1_1TaggedCache.html#a1f56084dfc8fe22932bf26cf4724bbe3">Entry</a>, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>&gt;</td>
+          <td class="memname">using <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::cache_type =  <a class="el" href="namespaceripple.html#a034035787a5b7de743464244c2bdd935">hardened_partitioned_hash_map</a>&lt;<a class="el" href="classripple_1_1TaggedCache.html#acd49368e75e11b597c3efa974b0e967d">key_type</a>, <a class="el" href="classripple_1_1TaggedCache.html#ab3f1079fb7f841c7f6c04b553beaf4bb">Entry</a>, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>&gt;</td>
         </tr>
       </table>
   </td>
@@ -449,21 +484,21 @@ template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardene
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00651">651</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00294">294</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="ab321071f80cb871b276f2f45f0d4e1e9" name="ab321071f80cb871b276f2f45f0d4e1e9"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab321071f80cb871b276f2f45f0d4e1e9">&#9670;&#160;</a></span>TaggedCache()</h2>
+<a id="ae940816ff80607f1d5205a415c06c448" name="ae940816ff80607f1d5205a415c06c448"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae940816ff80607f1d5205a415c06c448">&#9670;&#160;</a></span>TaggedCache()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::TaggedCache </td>
+          <td class="memname"><a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::TaggedCache </td>
           <td>(</td>
           <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;&#160;</td>
           <td class="paramname"><em>name</em>, </td>
@@ -483,7 +518,7 @@ template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardene
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1TaggedCache.html#ac55d64946c1478480a16538eea72b0d0">clock_type</a> &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1TaggedCache.html#a27c30bd917ee888142db8a190299ca36">clock_type</a> &amp;&#160;</td>
           <td class="paramname"><em>clock</em>, </td>
         </tr>
         <tr>
@@ -506,21 +541,19 @@ template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardene
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00066">66</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
-
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="aae45aaf8fafc99c20da9b8fd816b9974" name="aae45aaf8fafc99c20da9b8fd816b9974"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aae45aaf8fafc99c20da9b8fd816b9974">&#9670;&#160;</a></span>clock()</h2>
+<a id="a5119dd1871c07076adc0b5a3d77df3f5" name="a5119dd1871c07076adc0b5a3d77df3f5"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5119dd1871c07076adc0b5a3d77df3f5">&#9670;&#160;</a></span>clock()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1TaggedCache.html#ac55d64946c1478480a16538eea72b0d0">clock_type</a> &amp; <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::clock </td>
+          <td class="memname"><a class="el" href="classripple_1_1TaggedCache.html#a27c30bd917ee888142db8a190299ca36">clock_type</a> &amp; <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::clock </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -530,20 +563,18 @@ template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardene
 
 <p>Return the clock associated with the cache. </p>
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00092">92</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
-
 </div>
 </div>
-<a id="ada87b87736e5b2a8df3804c116e75dc3" name="ada87b87736e5b2a8df3804c116e75dc3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ada87b87736e5b2a8df3804c116e75dc3">&#9670;&#160;</a></span>size()</h2>
+<a id="a7cb4a1c810668e13f7c3340ab15c2977" name="a7cb4a1c810668e13f7c3340ab15c2977"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7cb4a1c810668e13f7c3340ab15c2977">&#9670;&#160;</a></span>size()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::size </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::size </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -553,42 +584,18 @@ template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardene
 
 <p>Returns the number of items in the container. </p>
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00099">99</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
-
 </div>
 </div>
-<a id="a7c93038dab2483ab59153f816d9ed4e4" name="a7c93038dab2483ab59153f816d9ed4e4"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7c93038dab2483ab59153f816d9ed4e4">&#9670;&#160;</a></span>setTargetSize()</h2>
+<a id="a8f577f5b26552a728626109d842ab520" name="a8f577f5b26552a728626109d842ab520"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a8f577f5b26552a728626109d842ab520">&#9670;&#160;</a></span>getCacheSize()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::setTargetSize </td>
-          <td>(</td>
-          <td class="paramtype">int&#160;</td>
-          <td class="paramname"><em>s</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00106">106</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
-
-</div>
-</div>
-<a id="ac6fa2e016aee2901a814a3375ef9c93e" name="ac6fa2e016aee2901a814a3375ef9c93e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ac6fa2e016aee2901a814a3375ef9c93e">&#9670;&#160;</a></span>getTargetAge()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname"><a class="el" href="classbeast_1_1abstract__clock.html#ad024b15fa67696e8d1eba3744e800d32">clock_type::duration</a> <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::getTargetAge </td>
+          <td class="memname">int <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::getCacheSize </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -596,42 +603,18 @@ template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardene
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00126">126</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
-
 </div>
 </div>
-<a id="a601b7bfdd4a7922b879b5139d495dc6f" name="a601b7bfdd4a7922b879b5139d495dc6f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a601b7bfdd4a7922b879b5139d495dc6f">&#9670;&#160;</a></span>setTargetAge()</h2>
+<a id="aefafc1e8be84e564fbc94fbad0696023" name="aefafc1e8be84e564fbc94fbad0696023"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aefafc1e8be84e564fbc94fbad0696023">&#9670;&#160;</a></span>getTrackSize()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::setTargetAge </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classbeast_1_1abstract__clock.html#ad024b15fa67696e8d1eba3744e800d32">clock_type::duration</a>&#160;</td>
-          <td class="paramname"><em>s</em></td><td>)</td>
-          <td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00133">133</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
-
-</div>
-</div>
-<a id="a4c9c3493560093144c40e9eb9c18d8e7" name="a4c9c3493560093144c40e9eb9c18d8e7"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a4c9c3493560093144c40e9eb9c18d8e7">&#9670;&#160;</a></span>getCacheSize()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">int <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::getCacheSize </td>
+          <td class="memname">int <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::getTrackSize </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -639,41 +622,18 @@ template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardene
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00142">142</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
-
 </div>
 </div>
-<a id="a10fb65444d213248bb86271e589821d6" name="a10fb65444d213248bb86271e589821d6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a10fb65444d213248bb86271e589821d6">&#9670;&#160;</a></span>getTrackSize()</h2>
+<a id="a7cb6eb2607f6d663e29ab7ea8d3774b1" name="a7cb6eb2607f6d663e29ab7ea8d3774b1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7cb6eb2607f6d663e29ab7ea8d3774b1">&#9670;&#160;</a></span>getHitRate()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">int <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::getTrackSize </td>
-          <td>(</td>
-          <td class="paramname"></td><td>)</td>
-          <td> const</td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00149">149</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
-
-</div>
-</div>
-<a id="ae3695f9380d7cf36abe6384bc9b3e13b" name="ae3695f9380d7cf36abe6384bc9b3e13b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae3695f9380d7cf36abe6384bc9b3e13b">&#9670;&#160;</a></span>getHitRate()</h2>
-
-<div class="memitem">
-<div class="memproto">
-<div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
-      <table class="memname">
-        <tr>
-          <td class="memname">float <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::getHitRate </td>
+          <td class="memname">float <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::getHitRate </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -681,20 +641,18 @@ template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardene
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00156">156</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
-
 </div>
 </div>
-<a id="a80bf6a7ce34a303cd0e84c262697ac8f" name="a80bf6a7ce34a303cd0e84c262697ac8f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a80bf6a7ce34a303cd0e84c262697ac8f">&#9670;&#160;</a></span>clear()</h2>
+<a id="a43afa5c2828d03c518efb311dc3cba11" name="a43afa5c2828d03c518efb311dc3cba11"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a43afa5c2828d03c518efb311dc3cba11">&#9670;&#160;</a></span>clear()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::clear </td>
+          <td class="memname">void <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::clear </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -702,20 +660,18 @@ template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardene
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00164">164</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
-
 </div>
 </div>
-<a id="a86fc97392f9cb3079c407a0e53f7c037" name="a86fc97392f9cb3079c407a0e53f7c037"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a86fc97392f9cb3079c407a0e53f7c037">&#9670;&#160;</a></span>reset()</h2>
+<a id="a82e110069721f7aa643eb44408e27fc3" name="a82e110069721f7aa643eb44408e27fc3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a82e110069721f7aa643eb44408e27fc3">&#9670;&#160;</a></span>reset()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::reset </td>
+          <td class="memname">void <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::reset </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -723,22 +679,20 @@ template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardene
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00172">172</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
-
 </div>
 </div>
-<a id="aa3c8e033d152cefb85f9546aac64b175" name="aa3c8e033d152cefb85f9546aac64b175"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aa3c8e033d152cefb85f9546aac64b175">&#9670;&#160;</a></span>touch_if_exists()</h2>
+<a id="a02f39cb5be185673026ea1dcc9cfb592" name="a02f39cb5be185673026ea1dcc9cfb592"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a02f39cb5be185673026ea1dcc9cfb592">&#9670;&#160;</a></span>touch_if_exists()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
 <div class="memtemplate">
 template&lt;class KeyComparable &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">bool <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::touch_if_exists </td>
+          <td class="memname">bool <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::touch_if_exists </td>
           <td>(</td>
           <td class="paramtype">KeyComparable const &amp;&#160;</td>
           <td class="paramname"><em>key</em></td><td>)</td>
@@ -750,20 +704,18 @@ template&lt;class KeyComparable &gt; </div>
 <p>Refresh the last access time on a key if present. </p>
 <dl class="section return"><dt>Returns</dt><dd><code>true</code> If the key was found. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00186">186</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
-
 </div>
 </div>
-<a id="a5a2f1176e41e598872fc1ab375e74441" name="a5a2f1176e41e598872fc1ab375e74441"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5a2f1176e41e598872fc1ab375e74441">&#9670;&#160;</a></span>sweep()</h2>
+<a id="acb7b2bcb7ad7f8d2015eea180190f596" name="acb7b2bcb7ad7f8d2015eea180190f596"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#acb7b2bcb7ad7f8d2015eea180190f596">&#9670;&#160;</a></span>sweep()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::sweep </td>
+          <td class="memname">void <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::sweep </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -771,22 +723,20 @@ template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardene
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00205">205</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
-
 </div>
 </div>
-<a id="a7055703a52e579ca1ef3a90d53dcebcb" name="a7055703a52e579ca1ef3a90d53dcebcb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7055703a52e579ca1ef3a90d53dcebcb">&#9670;&#160;</a></span>del()</h2>
+<a id="a36bc83e60e726addd030b2436da10b4c" name="a36bc83e60e726addd030b2436da10b4c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a36bc83e60e726addd030b2436da10b4c">&#9670;&#160;</a></span>del()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">bool <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::del </td>
+          <td class="memname">bool <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::del </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classripple_1_1TaggedCache.html#a9cce14460473920e8672f3d7983346f7">key_type</a> &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classripple_1_1TaggedCache.html#acd49368e75e11b597c3efa974b0e967d">key_type</a> &amp;&#160;</td>
           <td class="paramname"><em>key</em>, </td>
         </tr>
         <tr>
@@ -803,35 +753,35 @@ template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardene
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00270">270</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
-
 </div>
 </div>
-<a id="a8ccb634f184f6815b5dc5249add2aa0c" name="a8ccb634f184f6815b5dc5249add2aa0c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a8ccb634f184f6815b5dc5249add2aa0c">&#9670;&#160;</a></span>canonicalize()</h2>
+<a id="a2a4957c6735a84909afb4282978f2bb1" name="a2a4957c6735a84909afb4282978f2bb1"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2a4957c6735a84909afb4282978f2bb1">&#9670;&#160;</a></span>canonicalize()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+<div class="memtemplate">
+template&lt;class R &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">bool <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::canonicalize </td>
+          <td class="memname">bool <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::canonicalize </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classripple_1_1TaggedCache.html#a9cce14460473920e8672f3d7983346f7">key_type</a> &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classripple_1_1TaggedCache.html#acd49368e75e11b597c3efa974b0e967d">key_type</a> &amp;&#160;</td>
           <td class="paramname"><em>key</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; T &gt; &amp;&#160;</td>
+          <td class="paramtype">SharedPointerType &amp;&#160;</td>
           <td class="paramname"><em>data</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; bool(<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; T &gt; const &amp;)&gt; &amp;&amp;&#160;</td>
-          <td class="paramname"><em>replace</em>&#160;</td>
+          <td class="paramtype">R &amp;&amp;&#160;</td>
+          <td class="paramname"><em>replaceCallback</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -853,28 +803,26 @@ template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardene
 </dl>
 <dl class="section return"><dt>Returns</dt><dd><code>true</code> If the key already existed. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00313">313</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
-
 </div>
 </div>
-<a id="a6d1fd054e7350fdbd3bb0cbdd0f0f2f3" name="a6d1fd054e7350fdbd3bb0cbdd0f0f2f3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6d1fd054e7350fdbd3bb0cbdd0f0f2f3">&#9670;&#160;</a></span>canonicalize_replace_cache()</h2>
+<a id="a452da146b922285478b1ebed4b35a74a" name="a452da146b922285478b1ebed4b35a74a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a452da146b922285478b1ebed4b35a74a">&#9670;&#160;</a></span>canonicalize_replace_cache()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">bool <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::canonicalize_replace_cache </td>
+          <td class="memname">bool <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::canonicalize_replace_cache </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classripple_1_1TaggedCache.html#a9cce14460473920e8672f3d7983346f7">key_type</a> &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classripple_1_1TaggedCache.html#acd49368e75e11b597c3efa974b0e967d">key_type</a> &amp;&#160;</td>
           <td class="paramname"><em>key</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; T &gt; const &amp;&#160;</td>
+          <td class="paramtype">SharedPointerType const &amp;&#160;</td>
           <td class="paramname"><em>data</em>&#160;</td>
         </tr>
         <tr>
@@ -885,28 +833,26 @@ template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardene
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00379">379</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
-
 </div>
 </div>
-<a id="a87fe60d8d8ce16003486f76bd6fa9ae3" name="a87fe60d8d8ce16003486f76bd6fa9ae3"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a87fe60d8d8ce16003486f76bd6fa9ae3">&#9670;&#160;</a></span>canonicalize_replace_client()</h2>
+<a id="ae6c09d89ac848705579561949ada78ca" name="ae6c09d89ac848705579561949ada78ca"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae6c09d89ac848705579561949ada78ca">&#9670;&#160;</a></span>canonicalize_replace_client()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">bool <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::canonicalize_replace_client </td>
+          <td class="memname">bool <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::canonicalize_replace_client </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classripple_1_1TaggedCache.html#a9cce14460473920e8672f3d7983346f7">key_type</a> &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classripple_1_1TaggedCache.html#acd49368e75e11b597c3efa974b0e967d">key_type</a> &amp;&#160;</td>
           <td class="paramname"><em>key</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; T &gt; &amp;&#160;</td>
+          <td class="paramtype">SharedPointerType &amp;&#160;</td>
           <td class="paramname"><em>data</em>&#160;</td>
         </tr>
         <tr>
@@ -917,46 +863,42 @@ template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardene
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00390">390</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
-
 </div>
 </div>
-<a id="a3d5f6570f0eb719ddc0f093a5b40cb01" name="a3d5f6570f0eb719ddc0f093a5b40cb01"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3d5f6570f0eb719ddc0f093a5b40cb01">&#9670;&#160;</a></span>fetch() <span class="overload">[1/2]</span></h2>
+<a id="a7a535c19e0d56af57598db5149778f22" name="a7a535c19e0d56af57598db5149778f22"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a7a535c19e0d56af57598db5149778f22">&#9670;&#160;</a></span>fetch() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; T &gt; <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::fetch </td>
+          <td class="memname">SharedPointerType <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::fetch </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classripple_1_1TaggedCache.html#a9cce14460473920e8672f3d7983346f7">key_type</a> &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classripple_1_1TaggedCache.html#acd49368e75e11b597c3efa974b0e967d">key_type</a> &amp;&#160;</td>
           <td class="paramname"><em>key</em></td><td>)</td>
           <td></td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00397">397</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
-
 </div>
 </div>
-<a id="a583708481da131b61555d3abd64617d0" name="a583708481da131b61555d3abd64617d0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a583708481da131b61555d3abd64617d0">&#9670;&#160;</a></span>insert() <span class="overload">[1/2]</span></h2>
+<a id="a650a84ffd002036d38d415689f65a06a" name="a650a84ffd002036d38d415689f65a06a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a650a84ffd002036d38d415689f65a06a">&#9670;&#160;</a></span>insert() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
 <div class="memtemplate">
 template&lt;class ReturnType  = bool&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">auto <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::insert </td>
+          <td class="memname">auto <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::insert </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1TaggedCache.html#a9cce14460473920e8672f3d7983346f7">key_type</a> const &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1TaggedCache.html#acd49368e75e11b597c3efa974b0e967d">key_type</a> const &amp;&#160;</td>
           <td class="paramname"><em>key</em>, </td>
         </tr>
         <tr>
@@ -968,8 +910,7 @@ template&lt;class ReturnType  = bool&gt; </div>
         <tr>
           <td></td>
           <td>)</td>
-          <td></td><td> -&gt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/enable_if.html">std::enable_if_t</a>&lt;!IsKeyCache, ReturnType&gt;
-    </td>
+          <td></td><td> -&gt;  <a class="elRef" href="http://en.cppreference.com/w/cpp/types/enable_if.html">std::enable_if_t</a>&lt;!IsKeyCache, ReturnType &gt;</td>
         </tr>
       </table>
 </div><div class="memdoc">
@@ -977,47 +918,42 @@ template&lt;class ReturnType  = bool&gt; </div>
 <p>Insert the element into the container. </p>
 <p >If the key already exists, nothing happens. </p><dl class="section return"><dt>Returns</dt><dd><code>true</code> If the element was inserted </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00412">412</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
-
 </div>
 </div>
-<a id="ad41496152416a86c1e2211574d68f824" name="ad41496152416a86c1e2211574d68f824"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ad41496152416a86c1e2211574d68f824">&#9670;&#160;</a></span>insert() <span class="overload">[2/2]</span></h2>
+<a id="ad91c899a191552af93db0e9d605c5f2d" name="ad91c899a191552af93db0e9d605c5f2d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad91c899a191552af93db0e9d605c5f2d">&#9670;&#160;</a></span>insert() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
 <div class="memtemplate">
 template&lt;class ReturnType  = bool&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">auto <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::insert </td>
+          <td class="memname">auto <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::insert </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1TaggedCache.html#a9cce14460473920e8672f3d7983346f7">key_type</a> const &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1TaggedCache.html#acd49368e75e11b597c3efa974b0e967d">key_type</a> const &amp;&#160;</td>
           <td class="paramname"><em>key</em></td><td>)</td>
-          <td> -&gt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/enable_if.html">std::enable_if_t</a>&lt;IsKeyCache, ReturnType&gt;
-    </td>
+          <td> -&gt;  <a class="elRef" href="http://en.cppreference.com/w/cpp/types/enable_if.html">std::enable_if_t</a>&lt; IsKeyCache, ReturnType &gt;</td>
         </tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00421">421</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
-
 </div>
 </div>
-<a id="a080e1514d06ec95c554f569a35b3288f" name="a080e1514d06ec95c554f569a35b3288f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a080e1514d06ec95c554f569a35b3288f">&#9670;&#160;</a></span>retrieve()</h2>
+<a id="a180de999ec99f8c049a5c5841f220216" name="a180de999ec99f8c049a5c5841f220216"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a180de999ec99f8c049a5c5841f220216">&#9670;&#160;</a></span>retrieve()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">bool <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::retrieve </td>
+          <td class="memname">bool <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::retrieve </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classripple_1_1TaggedCache.html#a9cce14460473920e8672f3d7983346f7">key_type</a> &amp;&#160;</td>
+          <td class="paramtype">const <a class="el" href="classripple_1_1TaggedCache.html#acd49368e75e11b597c3efa974b0e967d">key_type</a> &amp;&#160;</td>
           <td class="paramname"><em>key</em>, </td>
         </tr>
         <tr>
@@ -1034,20 +970,18 @@ template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardene
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00440">440</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
-
 </div>
 </div>
-<a id="abd7d4aa1cac53ec4e1c5b4e78e36b57c" name="abd7d4aa1cac53ec4e1c5b4e78e36b57c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abd7d4aa1cac53ec4e1c5b4e78e36b57c">&#9670;&#160;</a></span>peekMutex()</h2>
+<a id="a5f2eeaf8067412bc98556b44e65fc5b3" name="a5f2eeaf8067412bc98556b44e65fc5b3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5f2eeaf8067412bc98556b44e65fc5b3">&#9670;&#160;</a></span>peekMutex()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1TaggedCache.html#a90b28609d7c5d922ebe89af5055fd081">mutex_type</a> &amp; <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::peekMutex </td>
+          <td class="memname"><a class="el" href="classripple_1_1TaggedCache.html#a0c032979985207685a9d4c649cf2811f">mutex_type</a> &amp; <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::peekMutex </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -1055,20 +989,18 @@ template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardene
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00453">453</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
-
 </div>
 </div>
-<a id="acd8f915d17465bf780ef7b20c57c5e51" name="acd8f915d17465bf780ef7b20c57c5e51"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#acd8f915d17465bf780ef7b20c57c5e51">&#9670;&#160;</a></span>getKeys()</h2>
+<a id="a6a2968beb840442bd9cd8e7895d012c3" name="a6a2968beb840442bd9cd8e7895d012c3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6a2968beb840442bd9cd8e7895d012c3">&#9670;&#160;</a></span>getKeys()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1TaggedCache.html#a9cce14460473920e8672f3d7983346f7">key_type</a> &gt; <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::getKeys </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1TaggedCache.html#acd49368e75e11b597c3efa974b0e967d">key_type</a> &gt; <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::getKeys </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -1076,20 +1008,18 @@ template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardene
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00459">459</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
-
 </div>
 </div>
-<a id="aeeae514b81e823a018c05e1b2ba29a15" name="aeeae514b81e823a018c05e1b2ba29a15"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aeeae514b81e823a018c05e1b2ba29a15">&#9670;&#160;</a></span>rate()</h2>
+<a id="ad113108a142a6d0e74ef84345008aec6" name="ad113108a142a6d0e74ef84345008aec6"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad113108a142a6d0e74ef84345008aec6">&#9670;&#160;</a></span>rate()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname">double <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::rate </td>
+          <td class="memname">double <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::rate </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -1099,24 +1029,22 @@ template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardene
 
 <p>Returns the fraction of cache hits. </p>
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00476">476</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
-
 </div>
 </div>
-<a id="af3bbb6157d9daffedbb01f8af85924eb" name="af3bbb6157d9daffedbb01f8af85924eb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af3bbb6157d9daffedbb01f8af85924eb">&#9670;&#160;</a></span>fetch() <span class="overload">[2/2]</span></h2>
+<a id="a63a7092dceb88190a120d1203cbb3b10" name="a63a7092dceb88190a120d1203cbb3b10"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a63a7092dceb88190a120d1203cbb3b10">&#9670;&#160;</a></span>fetch() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
 <div class="memtemplate">
 template&lt;class Handler &gt; </div>
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; T &gt; <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::fetch </td>
+          <td class="memname">SharedPointerType <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::fetch </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1TaggedCache.html#a9cce14460473920e8672f3d7983346f7">key_type</a> const &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1TaggedCache.html#acd49368e75e11b597c3efa974b0e967d">key_type</a> const &amp;&#160;</td>
           <td class="paramname"><em>digest</em>, </td>
         </tr>
         <tr>
@@ -1136,31 +1064,29 @@ template&lt;class Handler &gt; </div>
 <p>Fetch an item from the cache. </p>
 <p >If the digest was not found, Handler will be called with this signature: std::shared_ptr&lt;SLE const&gt;(void) </p>
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00492">492</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
-
 </div>
 </div>
-<a id="a6888fa7b996b4fa2f2861b5867348efb" name="a6888fa7b996b4fa2f2861b5867348efb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6888fa7b996b4fa2f2861b5867348efb">&#9670;&#160;</a></span>initialFetch()</h2>
+<a id="a9a82311cd004003ca594e98cd10c71d9" name="a9a82311cd004003ca594e98cd10c71d9"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9a82311cd004003ca594e98cd10c71d9">&#9670;&#160;</a></span>initialFetch()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; T &gt; <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::initialFetch </td>
+          <td class="memname">SharedPointerType <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::initialFetch </td>
           <td>(</td>
-          <td class="paramtype"><a class="el" href="classripple_1_1TaggedCache.html#a9cce14460473920e8672f3d7983346f7">key_type</a> const &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1TaggedCache.html#acd49368e75e11b597c3efa974b0e967d">key_type</a> const &amp;&#160;</td>
           <td class="paramname"><em>key</em>, </td>
         </tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a>&lt; <a class="el" href="classripple_1_1TaggedCache.html#a90b28609d7c5d922ebe89af5055fd081">mutex_type</a> &gt; const &amp;&#160;</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a>&lt; <a class="el" href="classripple_1_1TaggedCache.html#a0c032979985207685a9d4c649cf2811f">mutex_type</a> &gt; const &amp;&#160;</td>
           <td class="paramname"><em>l</em>&#160;</td>
         </tr>
         <tr>
@@ -1176,23 +1102,21 @@ template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardene
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00516">516</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
-
 </div>
 </div>
-<a id="a5445906f1657546cd6557b89216a2f34" name="a5445906f1657546cd6557b89216a2f34"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a5445906f1657546cd6557b89216a2f34">&#9670;&#160;</a></span>collect_metrics()</h2>
+<a id="a84c4b26223cca7b9e915d843333d067d" name="a84c4b26223cca7b9e915d843333d067d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a84c4b26223cca7b9e915d843333d067d">&#9670;&#160;</a></span>collect_metrics()</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">void <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::collect_metrics </td>
+          <td class="memname">void <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::collect_metrics </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td></td>
@@ -1205,23 +1129,21 @@ template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardene
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00543">543</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
-
 </div>
 </div>
-<a id="a06b1aa487bb555813a9248a213246c32" name="a06b1aa487bb555813a9248a213246c32"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a06b1aa487bb555813a9248a213246c32">&#9670;&#160;</a></span>sweepHelper() <span class="overload">[1/2]</span></h2>
+<a id="a9efc81ff730b16e9acd8c6954d05721a" name="a9efc81ff730b16e9acd8c6954d05721a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a9efc81ff730b16e9acd8c6954d05721a">&#9670;&#160;</a></span>sweepHelper() <span class="overload">[1/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/thread.html">std::thread</a> <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::sweepHelper </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/thread.html">std::thread</a> <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::sweepHelper </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">clock_type::time_point</a> const &amp;&#160;</td>
           <td class="paramname"><em>when_expire</em>, </td>
@@ -1241,7 +1163,7 @@ template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardene
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1TaggedCache.html#a2f86213d5fb9df938cf350027e27a651">SweptPointersVector</a> &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1TaggedCache.html#a95752178ee7f810dd694494ab54df700">SweptPointersVector</a> &amp;&#160;</td>
           <td class="paramname"><em>stuffToSweep</em>, </td>
         </tr>
         <tr>
@@ -1269,23 +1191,21 @@ template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardene
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00655">655</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
-
 </div>
 </div>
-<a id="aed8149c3e092792a7a14685b6ad72742" name="aed8149c3e092792a7a14685b6ad72742"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aed8149c3e092792a7a14685b6ad72742">&#9670;&#160;</a></span>sweepHelper() <span class="overload">[2/2]</span></h2>
+<a id="a946fc2b3e630d62bca9663b81d751843" name="a946fc2b3e630d62bca9663b81d751843"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a946fc2b3e630d62bca9663b81d751843">&#9670;&#160;</a></span>sweepHelper() <span class="overload">[2/2]</span></h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/thread.html">std::thread</a> <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::sweepHelper </td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/thread/thread.html">std::thread</a> <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::sweepHelper </td>
           <td>(</td>
           <td class="paramtype"><a class="el" href="classbeast_1_1abstract__clock.html#a4e16832b0bdf9392c5138bbbde024d8e">clock_type::time_point</a> const &amp;&#160;</td>
           <td class="paramname"><em>when_expire</em>, </td>
@@ -1305,7 +1225,7 @@ template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardene
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1TaggedCache.html#a2f86213d5fb9df938cf350027e27a651">SweptPointersVector</a> &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1TaggedCache.html#a95752178ee7f810dd694494ab54df700">SweptPointersVector</a> &amp;&#160;</td>
           <td class="paramname">, </td>
         </tr>
         <tr>
@@ -1333,24 +1253,22 @@ template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardene
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00729">729</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
-
 </div>
 </div>
 <h2 class="groupheader">Member Data Documentation</h2>
-<a id="a6da20f8e87b7ef43161b4ddcbfa48ec0" name="a6da20f8e87b7ef43161b4ddcbfa48ec0"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a6da20f8e87b7ef43161b4ddcbfa48ec0">&#9670;&#160;</a></span>m_journal</h2>
+<a id="a4447ab3d6842cd9f44292c40f809875d" name="a4447ab3d6842cd9f44292c40f809875d"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4447ab3d6842cd9f44292c40f809875d">&#9670;&#160;</a></span>m_journal</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::m_journal</td>
+          <td class="memname"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::m_journal</td>
         </tr>
       </table>
   </td>
@@ -1360,23 +1278,23 @@ template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardene
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00775">775</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00315">315</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
 
 </div>
 </div>
-<a id="a59474c6f11ed52197982a2c61fdb953b" name="a59474c6f11ed52197982a2c61fdb953b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a59474c6f11ed52197982a2c61fdb953b">&#9670;&#160;</a></span>m_clock</h2>
+<a id="a5457bcc14cbf1c751d2228a01c8c9f33" name="a5457bcc14cbf1c751d2228a01c8c9f33"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a5457bcc14cbf1c751d2228a01c8c9f33">&#9670;&#160;</a></span>m_clock</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1TaggedCache.html#ac55d64946c1478480a16538eea72b0d0">clock_type</a>&amp; <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::m_clock</td>
+          <td class="memname"><a class="el" href="classripple_1_1TaggedCache.html#a27c30bd917ee888142db8a190299ca36">clock_type</a>&amp; <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::m_clock</td>
         </tr>
       </table>
   </td>
@@ -1386,23 +1304,23 @@ template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardene
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00776">776</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00316">316</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
 
 </div>
 </div>
-<a id="ae9dcd1befa6944285c62d22925b28fd6" name="ae9dcd1befa6944285c62d22925b28fd6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ae9dcd1befa6944285c62d22925b28fd6">&#9670;&#160;</a></span>m_stats</h2>
+<a id="aa33494784c3de973a867f267d7e515b3" name="aa33494784c3de973a867f267d7e515b3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa33494784c3de973a867f267d7e515b3">&#9670;&#160;</a></span>m_stats</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="structripple_1_1TaggedCache_1_1Stats.html">Stats</a> <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::m_stats</td>
+          <td class="memname"><a class="el" href="structripple_1_1TaggedCache_1_1Stats.html">Stats</a> <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::m_stats</td>
         </tr>
       </table>
   </td>
@@ -1412,23 +1330,23 @@ template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardene
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00777">777</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00317">317</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
 
 </div>
 </div>
-<a id="a7b941b85ce975e7812ddb4caa4320c1a" name="a7b941b85ce975e7812ddb4caa4320c1a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a7b941b85ce975e7812ddb4caa4320c1a">&#9670;&#160;</a></span>m_mutex</h2>
+<a id="a6e612cf149483afb460f3132c10d9b18" name="a6e612cf149483afb460f3132c10d9b18"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6e612cf149483afb460f3132c10d9b18">&#9670;&#160;</a></span>m_mutex</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1TaggedCache.html#a90b28609d7c5d922ebe89af5055fd081">mutex_type</a> <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::m_mutex</td>
+          <td class="memname"><a class="el" href="classripple_1_1TaggedCache.html#a0c032979985207685a9d4c649cf2811f">mutex_type</a> <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::m_mutex</td>
         </tr>
       </table>
   </td>
@@ -1438,23 +1356,23 @@ template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardene
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00779">779</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00319">319</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
 
 </div>
 </div>
-<a id="a960092c9c7439c8c1fd02459d0e82d00" name="a960092c9c7439c8c1fd02459d0e82d00"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a960092c9c7439c8c1fd02459d0e82d00">&#9670;&#160;</a></span>m_name</h2>
+<a id="ac10d1e5830aebb130e837da693be6219" name="ac10d1e5830aebb130e837da693be6219"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ac10d1e5830aebb130e837da693be6219">&#9670;&#160;</a></span>m_name</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::m_name</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::m_name</td>
         </tr>
       </table>
   </td>
@@ -1464,23 +1382,23 @@ template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardene
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00782">782</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00322">322</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
 
 </div>
 </div>
-<a id="abc4b5ec2ca3d7146111e4ca4eb6f00dc" name="abc4b5ec2ca3d7146111e4ca4eb6f00dc"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abc4b5ec2ca3d7146111e4ca4eb6f00dc">&#9670;&#160;</a></span>m_target_size</h2>
+<a id="aabb3bcf5c4c8a5f447c427c1799060af" name="aabb3bcf5c4c8a5f447c427c1799060af"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aabb3bcf5c4c8a5f447c427c1799060af">&#9670;&#160;</a></span>m_target_size</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">int <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::m_target_size</td>
+          <td class="memname">const int <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::m_target_size</td>
         </tr>
       </table>
   </td>
@@ -1490,23 +1408,23 @@ template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardene
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00785">785</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00325">325</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
 
 </div>
 </div>
-<a id="afa8e18677da99995543fda2b75ed2929" name="afa8e18677da99995543fda2b75ed2929"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#afa8e18677da99995543fda2b75ed2929">&#9670;&#160;</a></span>m_target_age</h2>
+<a id="ad85e0945a52b3dc43517dec0044ddc32" name="ad85e0945a52b3dc43517dec0044ddc32"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad85e0945a52b3dc43517dec0044ddc32">&#9670;&#160;</a></span>m_target_age</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classbeast_1_1abstract__clock.html#ad024b15fa67696e8d1eba3744e800d32">clock_type::duration</a> <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::m_target_age</td>
+          <td class="memname">const <a class="el" href="classbeast_1_1abstract__clock.html#ad024b15fa67696e8d1eba3744e800d32">clock_type::duration</a> <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::m_target_age</td>
         </tr>
       </table>
   </td>
@@ -1516,23 +1434,23 @@ template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardene
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00788">788</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00328">328</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
 
 </div>
 </div>
-<a id="abc4ed7d5f2ed327749490548c4fc9f0e" name="abc4ed7d5f2ed327749490548c4fc9f0e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#abc4ed7d5f2ed327749490548c4fc9f0e">&#9670;&#160;</a></span>m_cache_count</h2>
+<a id="ae460aeefa90d4cd74efea1343b9b257a" name="ae460aeefa90d4cd74efea1343b9b257a"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae460aeefa90d4cd74efea1343b9b257a">&#9670;&#160;</a></span>m_cache_count</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">int <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::m_cache_count</td>
+          <td class="memname">int <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::m_cache_count</td>
         </tr>
       </table>
   </td>
@@ -1542,23 +1460,23 @@ template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardene
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00791">791</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00331">331</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
 
 </div>
 </div>
-<a id="aedce0510d469f36c1158c6c5c70e782c" name="aedce0510d469f36c1158c6c5c70e782c"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aedce0510d469f36c1158c6c5c70e782c">&#9670;&#160;</a></span>m_cache</h2>
+<a id="a3e18438a88751b78e5eea167852f48fa" name="a3e18438a88751b78e5eea167852f48fa"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3e18438a88751b78e5eea167852f48fa">&#9670;&#160;</a></span>m_cache</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="classripple_1_1TaggedCache.html#a3d8282ec993c6e4d4e1e34758c1d1a70">cache_type</a> <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::m_cache</td>
+          <td class="memname"><a class="el" href="classripple_1_1TaggedCache.html#a5b69c954beb5ba033655d3c6903eea9f">cache_type</a> <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::m_cache</td>
         </tr>
       </table>
   </td>
@@ -1568,23 +1486,23 @@ template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardene
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00792">792</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00332">332</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
 
 </div>
 </div>
-<a id="af16055830c75a1e2944ca1f95b9fe6bb" name="af16055830c75a1e2944ca1f95b9fe6bb"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#af16055830c75a1e2944ca1f95b9fe6bb">&#9670;&#160;</a></span>m_hits</h2>
+<a id="aeb202b5f2b6f326dea8bd5bbe7f641a7" name="aeb202b5f2b6f326dea8bd5bbe7f641a7"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aeb202b5f2b6f326dea8bd5bbe7f641a7">&#9670;&#160;</a></span>m_hits</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::m_hits</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::m_hits</td>
         </tr>
       </table>
   </td>
@@ -1594,23 +1512,23 @@ template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardene
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00793">793</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00333">333</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
 
 </div>
 </div>
-<a id="a45b6f2ac8315aa34d1234e119ce9a2e2" name="a45b6f2ac8315aa34d1234e119ce9a2e2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a45b6f2ac8315aa34d1234e119ce9a2e2">&#9670;&#160;</a></span>m_misses</h2>
+<a id="aaba1e3a0970a25049a321b569fe42164" name="aaba1e3a0970a25049a321b569fe42164"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aaba1e3a0970a25049a321b569fe42164">&#9670;&#160;</a></span>m_misses</h2>
 
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
+template&lt;class Key , class T , bool IsKeyCache = false, class SharedWeakUnionPointerType  = SharedWeakCachePointer&lt;T&gt;, class SharedPointerType  = std::shared_ptr&lt;T&gt;, class Hash  = hardened_hash&lt;&gt;, class <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>  = std::equal_to&lt;Key&gt;, class Mutex  = std::recursive_mutex&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::m_misses</td>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> <a class="el" href="classripple_1_1TaggedCache.html">ripple::TaggedCache</a>&lt; Key, T, IsKeyCache, SharedWeakUnionPointerType, SharedPointerType, Hash, <a class="el" href="structripple_1_1KeyEqual.html">KeyEqual</a>, Mutex &gt;::m_misses</td>
         </tr>
       </table>
   </td>
@@ -1620,7 +1538,7 @@ template&lt;class Key , class T , bool IsKeyCache = false, class Hash  = hardene
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00794">794</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TaggedCache_8h_source.html#l00334">334</a> of file <a class="el" href="TaggedCache_8h_source.html">TaggedCache.h</a>.</p>
 
 </div>
 </div>

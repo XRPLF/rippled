@@ -166,7 +166,7 @@ $(function() {
 <div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>        BEAST_EXPECT(!jr.isMember(jss::warnings));</div>
 <div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span> </div>
 <div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>        <span class="comment">// submit</span></div>
-<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>        <span class="keyword">auto</span> jt = env.jt(noop(alice));</div>
+<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>        <span class="keyword">auto</span> jt = env.jt(<a class="code hl_enumvalue" href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">noop</a>(alice));</div>
 <div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>        <a class="code hl_class" href="classripple_1_1Serializer.html">Serializer</a> s;</div>
 <div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>        jt.stx-&gt;add(s);</div>
 <div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>        jr = env.rpc(<span class="stringliteral">&quot;submit&quot;</span>, <a class="code hl_function" href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">strHex</a>(s.<a class="code hl_function" href="classripple_1_1Serializer.html#a394c3299f6cfcebdaa4bc98ec0c602d6">slice</a>()))[jss::result];</div>
@@ -237,7 +237,7 @@ $(function() {
 <div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span>        BEAST_EXPECT(!jr.isMember(jss::warnings));</div>
 <div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span> </div>
 <div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span>        <span class="comment">// submit</span></div>
-<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span>        jt = env.jt(noop(alice));</div>
+<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span>        jt = env.jt(<a class="code hl_enumvalue" href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">noop</a>(alice));</div>
 <div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span>        s.<a class="code hl_function" href="classripple_1_1Serializer.html#a0b9f56cab2021e47d45e4cd287f4b425">erase</a>();</div>
 <div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span>        jt.stx-&gt;add(s);</div>
 <div class="line"><a id="l00165" name="l00165"></a><span class="lineno">  165</span>        jr = env.rpc(<span class="stringliteral">&quot;submit&quot;</span>, <a class="code hl_function" href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">strHex</a>(s.<a class="code hl_function" href="classripple_1_1Serializer.html#a394c3299f6cfcebdaa4bc98ec0c602d6">slice</a>()))[jss::result];</div>
@@ -350,6 +350,7 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html_a86e358ce3f06ff049af13c2342791cf8"><div class="ttname"><a href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">ripple::strHex</a></div><div class="ttdeci">std::string strHex(FwdIt begin, FwdIt end)</div><div class="ttdef"><b>Definition:</b> <a href="strHex_8h_source.html#l00030">strHex.h:30</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a9de744cfdefe1132969eb982e57e4ddea82c2b7829b8129e5a2d53665ba4b4757"><div class="ttname"><a href="namespaceripple.html#a9de744cfdefe1132969eb982e57e4ddea82c2b7829b8129e5a2d53665ba4b4757">ripple::KeyType::secp256k1</a></div><div class="ttdeci">@ secp256k1</div></div>
 <div class="ttc" id="anamespaceripple_html_ac124fe6744b7fe887dec949b56b16d50"><div class="ttname"><a href="namespaceripple.html#ac124fe6744b7fe887dec949b56b16d50">ripple::to_string</a></div><div class="ttdeci">std::string to_string(base_uint&lt; Bits, Tag &gt; const &amp;a)</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00630">base_uint.h:630</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a"><div class="ttname"><a href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">ripple::ReleaseStrongRefAction::noop</a></div><div class="ttdeci">@ noop</div></div>
 <div class="ttc" id="astructripple_1_1JsonOptions_html_ab85e43ec84df987200d3355c3ba89f0aa1917451e3686dfe8d5016670eb87ab33"><div class="ttname"><a href="structripple_1_1JsonOptions.html#ab85e43ec84df987200d3355c3ba89f0aa1917451e3686dfe8d5016670eb87ab33">ripple::JsonOptions::none</a></div><div class="ttdeci">@ none</div><div class="ttdef"><b>Definition:</b> <a href="STBase_8h_source.html#l00044">STBase.h:44</a></div></div>
 <div class="ttc" id="aunique_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a></div></div>
 </div><!-- fragment --></div><!-- contents -->

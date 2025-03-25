@@ -1,0 +1,9 @@
+<map id="ripple::IntrusiveRefCounts" name="ripple::IntrusiveRefCounts">
+<area shape="rect" id="node1" title="Implement the strong count, weak count, and bit flags for an intrusive pointer." alt="" coords="5,46,196,71"/>
+<area shape="rect" id="node2" href="$classripple_1_1SHAMapTreeNode.html" title=" " alt="" coords="244,46,427,71"/>
+<area shape="rect" id="node3" href="$classripple_1_1SHAMapInnerNode.html" title=" " alt="" coords="475,21,664,46"/>
+<area shape="rect" id="node4" href="$classripple_1_1SHAMapLeafNode.html" title=" " alt="" coords="477,70,661,95"/>
+<area shape="rect" id="node5" href="$classripple_1_1SHAMapAccountStateLeafNode.html" title="A leaf node for a state object." alt="" coords="712,5,920,45"/>
+<area shape="rect" id="node6" href="$classripple_1_1SHAMapTxLeafNode.html" title="A leaf node for a transaction." alt="" coords="716,70,916,95"/>
+<area shape="rect" id="node7" href="$classripple_1_1SHAMapTxPlusMetaLeafNode.html" title="A leaf node for a transaction and its associated metadata." alt="" coords="717,120,915,160"/>
+</map>

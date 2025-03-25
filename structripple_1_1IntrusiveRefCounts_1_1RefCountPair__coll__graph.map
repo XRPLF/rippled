@@ -1,0 +1,5 @@
+<map id="ripple::IntrusiveRefCounts::RefCountPair" name="ripple::IntrusiveRefCounts::RefCountPair">
+<area shape="rect" id="node1" title="Unpack the count and tag fields from the packed atomic integer form." alt="" coords="51,167,241,207"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,5,108,31"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="185,5,288,31"/>
+</map>

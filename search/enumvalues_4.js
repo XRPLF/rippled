@@ -8,7 +8,7 @@ var searchData=
   ['defaultyes_5',['DefaultYes',['../namespaceripple.html#aa5778f9faa15e3677dcda7975d9db7c6a7edd41da231424c2a5df0cffd15af6bf',1,'ripple']]],
   ['deposit_5fpreauth_6',['DEPOSIT_PREAUTH',['../namespaceripple.html#a22768e0a41b646442c98d38f2f2a307ba3327bcb6bb4b74aec018c7cf6efa8b3a',1,'ripple']]],
   ['deposit_5fpreauth_5fcredentials_7',['DEPOSIT_PREAUTH_CREDENTIALS',['../namespaceripple.html#a22768e0a41b646442c98d38f2f2a307ba77000a1075cbe484fbfbcefad8c8229f',1,'ripple']]],
-  ['destroy_8',['destroy',['../classripple_1_1SetSignerList.html#a6a367d4aa89f471f6d9b44eb6a49e2d4a8d0fd977dbcf1fe471613a825e916913',1,'ripple::SetSignerList']]],
+  ['destroy_8',['destroy',['../classripple_1_1SetSignerList.html#a6a367d4aa89f471f6d9b44eb6a49e2d4a8d0fd977dbcf1fe471613a825e916913',1,'ripple::SetSignerList::destroy()'],['../namespaceripple.html#a3b64e12be521bde0f95af971c64faf71afb14982288108e1fbd6207ef55f05027',1,'ripple::destroy()'],['../namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aeafb14982288108e1fbd6207ef55f05027',1,'ripple::destroy()']]],
   ['did_9',['DID',['../namespaceripple.html#a22768e0a41b646442c98d38f2f2a307badbeab5095e8b54be8527724b23c371a3',1,'ripple']]],
   ['dir_5fnode_10',['DIR_NODE',['../namespaceripple.html#a22768e0a41b646442c98d38f2f2a307ba5d46a758217bde4e7cb6ee02fafefd61',1,'ripple']]],
   ['disable_5fapi_5fprior_5fv2_11',['disable_API_prior_V2',['../structripple_1_1JsonOptions.html#ab85e43ec84df987200d3355c3ba89f0aa3ace7cc623d6c6f5783c87db5efea1bc',1,'ripple::JsonOptions']]],

@@ -1,3 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classripple_1_1ledger__trie__detail_1_1Span.html" title=" " alt="" coords="5,5,185,45"/>
+<area shape="rect" id="node1" href="$classripple_1_1KnownFormats.html" title=" " alt="" coords="5,5,180,45"/>
+<area shape="rect" id="node2" href="$classripple_1_1TxFormats.html" title="Manages the list of known transaction formats." alt="" coords="228,13,364,38"/>
 </map>

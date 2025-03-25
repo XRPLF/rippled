@@ -1,3 +1,6 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$structripple_1_1NodeStore_1_1BatchWriteReport.html" title="Contains information about a batch write operation." alt="" coords="5,5,148,45"/>
+<area shape="rect" id="node1" href="$classripple_1_1NodeStore_1_1Backend.html" title="A backend used for the NodeStore." alt="" coords="5,69,148,109"/>
+<area shape="rect" id="node2" href="$classripple_1_1NodeStore_1_1MemoryBackend.html" title=" " alt="" coords="196,5,339,45"/>
+<area shape="rect" id="node3" href="$classripple_1_1NodeStore_1_1NuDBBackend.html" title=" " alt="" coords="196,69,339,109"/>
+<area shape="rect" id="node4" href="$classripple_1_1NodeStore_1_1NullBackend.html" title=" " alt="" coords="196,133,339,173"/>
 </map>

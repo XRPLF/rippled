@@ -1,0 +1,5 @@
+<map id="ripple::IntrusiveRefCounts" name="ripple::IntrusiveRefCounts">
+<area shape="rect" id="node1" title="Implement the strong count, weak count, and bit flags for an intrusive pointer." alt="" coords="5,317,196,343"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="49,5,152,31"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="252,161,459,187"/>
+</map>

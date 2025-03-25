@@ -94,5 +94,6 @@ var searchData=
   ['dummyvalueallocatorinitializer_91',['DummyValueAllocatorInitializer',['../structJson_1_1DummyValueAllocatorInitializer.html',1,'Json']]],
   ['duration_92',['duration',['http://en.cppreference.com/w/cpp/chrono/duration.html',1,'std::chrono']]],
   ['duration_3c_20rep_2c_20period_20_3e_93',['duration&lt; rep, period &gt;',['http://en.cppreference.com/w/cpp/chrono/duration.html',1,'std::chrono']]],
-  ['duration_5fvalues_94',['duration_values',['http://en.cppreference.com/w/cpp/chrono/duration_values.html',1,'std::chrono']]]
+  ['duration_5fvalues_94',['duration_values',['http://en.cppreference.com/w/cpp/chrono/duration_values.html',1,'std::chrono']]],
+  ['dynamiccasttagsharedintrusive_95',['DynamicCastTagSharedIntrusive',['../structripple_1_1DynamicCastTagSharedIntrusive.html',1,'ripple']]]
 ];

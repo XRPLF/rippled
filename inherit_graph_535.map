@@ -1,3 +1,5 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$structripple_1_1RelationalDatabase_1_1AccountTxMarker.html" title=" " alt="" coords="5,5,200,45"/>
+<area shape="rect" id="node1" href="$classripple_1_1RelationalDatabase.html" title=" " alt="" coords="5,5,200,31"/>
+<area shape="rect" id="node2" href="$classripple_1_1SQLiteDatabase.html" title=" " alt="" coords="248,5,419,31"/>
+<area shape="rect" id="node3" href="$classripple_1_1SQLiteDatabaseImp.html" title=" " alt="" coords="467,5,663,31"/>
 </map>
