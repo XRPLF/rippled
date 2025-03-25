@@ -172,138 +172,139 @@ $(function() {
 <div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>        <span class="keyword">auto</span> <span class="keyword">const</span> alice = Account{<span class="stringliteral">&quot;alice&quot;</span>};</div>
 <div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>        <span class="keyword">auto</span> <span class="keyword">const</span> gw = Account{<span class="stringliteral">&quot;gateway&quot;</span>};</div>
 <div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>        env.fund(XRP(10000), alice, gw);</div>
-<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>        <span class="keyword">auto</span> <span class="keyword">const</span> USD = gw[<span class="stringliteral">&quot;USD&quot;</span>];</div>
-<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>        <span class="keyword">auto</span> <span class="keyword">const</span> CNY = gw[<span class="stringliteral">&quot;CNY&quot;</span>];</div>
-<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span>        env(trust(alice, USD(1000)));</div>
-<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>        env(trust(alice, CNY(1000)));</div>
-<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>        env(offer(alice, USD(1), XRP(1000)));</div>
-<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>        env.close();</div>
-<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span> </div>
-<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>        env(pay(gw, alice, USD(50)));</div>
-<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>        env(pay(gw, alice, CNY(50)));</div>
-<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>        env(offer(alice, CNY(2), XRP(1000)));</div>
-<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span> </div>
-<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>        <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> params;</div>
-<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span>        params[jss::account] = alice.human();</div>
-<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>        <span class="keyword">auto</span> <span class="keyword">const</span> result =</div>
-<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>            env.rpc(<span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;owner_info&quot;</span>, <a class="code hl_function" href="namespaceripple.html#ac124fe6744b7fe887dec949b56b16d50">to_string</a>(params))[jss::result];</div>
-<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span>        <span class="keywordflow">if</span> (!BEAST_EXPECT(</div>
-<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span>                result.isMember(jss::accepted) &amp;&amp;</div>
-<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>                result.isMember(jss::current)))</div>
-<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>        {</div>
-<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>            <span class="keywordflow">return</span>;</div>
-<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>        }</div>
-<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span> </div>
-<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>        <span class="comment">// accepted ledger entry</span></div>
-<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>        <span class="keywordflow">if</span> (!BEAST_EXPECT(result[jss::accepted].isMember(jss::ripple_lines)))</div>
-<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>            <span class="keywordflow">return</span>;</div>
-<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>        <span class="keyword">auto</span> lines = result[jss::accepted][jss::ripple_lines];</div>
-<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>        <span class="keywordflow">if</span> (!BEAST_EXPECT(lines.isArray() &amp;&amp; lines.size() == 2))</div>
-<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>            <span class="keywordflow">return</span>;</div>
-<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span> </div>
-<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>            lines[0u][sfBalance.fieldName] ==</div>
-<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>            (<a class="code hl_class" href="classripple_1_1STAmount.html">STAmount</a>{Issue{to_currency(<span class="stringliteral">&quot;CNY&quot;</span>), noAccount()}, 0}</div>
-<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span>                 .<a class="code hl_function" href="classripple_1_1STAmount.html#aa40b0743a468d95eeaaf4914ea555866">value</a>()</div>
-<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span>                 .<a class="code hl_function" href="namespaceripple.html#ad30131b5a5b7cf60d9b392ab868b8c0e">getJson</a>(<a class="code hl_enumvalue" href="structripple_1_1JsonOptions.html#ab85e43ec84df987200d3355c3ba89f0aa1917451e3686dfe8d5016670eb87ab33">JsonOptions::none</a>)));</div>
-<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span>            lines[0u][sfHighLimit.fieldName] ==</div>
-<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span>            alice[<span class="stringliteral">&quot;CNY&quot;</span>](1000).value().getJson(<a class="code hl_enumvalue" href="structripple_1_1JsonOptions.html#ab85e43ec84df987200d3355c3ba89f0aa1917451e3686dfe8d5016670eb87ab33">JsonOptions::none</a>));</div>
-<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span>            lines[0u][sfLowLimit.fieldName] ==</div>
-<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span>            gw[<span class="stringliteral">&quot;CNY&quot;</span>](0).value().getJson(<a class="code hl_enumvalue" href="structripple_1_1JsonOptions.html#ab85e43ec84df987200d3355c3ba89f0aa1917451e3686dfe8d5016670eb87ab33">JsonOptions::none</a>));</div>
-<div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span> </div>
-<div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00139" name="l00139"></a><span class="lineno">  139</span>            lines[1u][sfBalance.fieldName] ==</div>
-<div class="line"><a id="l00140" name="l00140"></a><span class="lineno">  140</span>            (<a class="code hl_class" href="classripple_1_1STAmount.html">STAmount</a>{Issue{to_currency(<span class="stringliteral">&quot;USD&quot;</span>), noAccount()}, 0}</div>
-<div class="line"><a id="l00141" name="l00141"></a><span class="lineno">  141</span>                 .<a class="code hl_function" href="classripple_1_1STAmount.html#aa40b0743a468d95eeaaf4914ea555866">value</a>()</div>
-<div class="line"><a id="l00142" name="l00142"></a><span class="lineno">  142</span>                 .<a class="code hl_function" href="namespaceripple.html#ad30131b5a5b7cf60d9b392ab868b8c0e">getJson</a>(<a class="code hl_enumvalue" href="structripple_1_1JsonOptions.html#ab85e43ec84df987200d3355c3ba89f0aa1917451e3686dfe8d5016670eb87ab33">JsonOptions::none</a>)));</div>
-<div class="line"><a id="l00143" name="l00143"></a><span class="lineno">  143</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00144" name="l00144"></a><span class="lineno">  144</span>            lines[1u][sfHighLimit.fieldName] ==</div>
-<div class="line"><a id="l00145" name="l00145"></a><span class="lineno">  145</span>            alice[<span class="stringliteral">&quot;USD&quot;</span>](1000).value().getJson(<a class="code hl_enumvalue" href="structripple_1_1JsonOptions.html#ab85e43ec84df987200d3355c3ba89f0aa1917451e3686dfe8d5016670eb87ab33">JsonOptions::none</a>));</div>
-<div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span>            lines[1u][sfLowLimit.fieldName] ==</div>
-<div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span>            USD(0).value().<a class="code hl_function" href="namespaceripple.html#ad30131b5a5b7cf60d9b392ab868b8c0e">getJson</a>(<a class="code hl_enumvalue" href="structripple_1_1JsonOptions.html#ab85e43ec84df987200d3355c3ba89f0aa1917451e3686dfe8d5016670eb87ab33">JsonOptions::none</a>));</div>
-<div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span> </div>
-<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span>        <span class="keywordflow">if</span> (!BEAST_EXPECT(result[jss::accepted].isMember(jss::offers)))</div>
-<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span>            <span class="keywordflow">return</span>;</div>
-<div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span>        <span class="keyword">auto</span> offers = result[jss::accepted][jss::offers];</div>
-<div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span>        <span class="keywordflow">if</span> (!BEAST_EXPECT(offers.isArray() &amp;&amp; offers.size() == 1))</div>
-<div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span>            <span class="keywordflow">return</span>;</div>
-<div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span> </div>
-<div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span>        BEAST_EXPECT(offers[0u][jss::Account] == alice.human());</div>
-<div class="line"><a id="l00157" name="l00157"></a><span class="lineno">  157</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span>            offers[0u][sfTakerGets.fieldName] ==</div>
-<div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span>            XRP(1000).value().<a class="code hl_function" href="namespaceripple.html#ad30131b5a5b7cf60d9b392ab868b8c0e">getJson</a>(<a class="code hl_enumvalue" href="structripple_1_1JsonOptions.html#ab85e43ec84df987200d3355c3ba89f0aa1917451e3686dfe8d5016670eb87ab33">JsonOptions::none</a>));</div>
-<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span>            offers[0u][sfTakerPays.fieldName] ==</div>
-<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span>            USD(1).value().<a class="code hl_function" href="namespaceripple.html#ad30131b5a5b7cf60d9b392ab868b8c0e">getJson</a>(<a class="code hl_enumvalue" href="structripple_1_1JsonOptions.html#ab85e43ec84df987200d3355c3ba89f0aa1917451e3686dfe8d5016670eb87ab33">JsonOptions::none</a>));</div>
-<div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span> </div>
-<div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span>        <span class="comment">// current ledger entry</span></div>
-<div class="line"><a id="l00165" name="l00165"></a><span class="lineno">  165</span>        <span class="keywordflow">if</span> (!BEAST_EXPECT(result[jss::current].isMember(jss::ripple_lines)))</div>
-<div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span>            <span class="keywordflow">return</span>;</div>
-<div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span>        lines = result[jss::current][jss::ripple_lines];</div>
-<div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span>        <span class="keywordflow">if</span> (!BEAST_EXPECT(lines.isArray() &amp;&amp; lines.size() == 2))</div>
-<div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span>            <span class="keywordflow">return</span>;</div>
-<div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span> </div>
-<div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span>            lines[0u][sfBalance.fieldName] ==</div>
-<div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span>            (STAmount{Issue{to_currency(<span class="stringliteral">&quot;CNY&quot;</span>), noAccount()}, -50}</div>
-<div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span>                 .value()</div>
-<div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span>                 .<a class="code hl_function" href="namespaceripple.html#ad30131b5a5b7cf60d9b392ab868b8c0e">getJson</a>(JsonOptions::none)));</div>
-<div class="line"><a id="l00176" name="l00176"></a><span class="lineno">  176</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00177" name="l00177"></a><span class="lineno">  177</span>            lines[0u][sfHighLimit.fieldName] ==</div>
-<div class="line"><a id="l00178" name="l00178"></a><span class="lineno">  178</span>            alice[<span class="stringliteral">&quot;CNY&quot;</span>](1000).value().getJson(JsonOptions::none));</div>
-<div class="line"><a id="l00179" name="l00179"></a><span class="lineno">  179</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00180" name="l00180"></a><span class="lineno">  180</span>            lines[0u][sfLowLimit.fieldName] ==</div>
-<div class="line"><a id="l00181" name="l00181"></a><span class="lineno">  181</span>            gw[<span class="stringliteral">&quot;CNY&quot;</span>](0).value().getJson(JsonOptions::none));</div>
-<div class="line"><a id="l00182" name="l00182"></a><span class="lineno">  182</span> </div>
-<div class="line"><a id="l00183" name="l00183"></a><span class="lineno">  183</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00184" name="l00184"></a><span class="lineno">  184</span>            lines[1u][sfBalance.fieldName] ==</div>
-<div class="line"><a id="l00185" name="l00185"></a><span class="lineno">  185</span>            (STAmount{Issue{to_currency(<span class="stringliteral">&quot;USD&quot;</span>), noAccount()}, -50}</div>
-<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span>                 .value()</div>
-<div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span>                 .<a class="code hl_function" href="namespaceripple.html#ad30131b5a5b7cf60d9b392ab868b8c0e">getJson</a>(JsonOptions::none)));</div>
-<div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span>            lines[1u][sfHighLimit.fieldName] ==</div>
-<div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span>            alice[<span class="stringliteral">&quot;USD&quot;</span>](1000).value().getJson(JsonOptions::none));</div>
-<div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span>            lines[1u][sfLowLimit.fieldName] ==</div>
-<div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span>            gw[<span class="stringliteral">&quot;USD&quot;</span>](0).value().getJson(JsonOptions::none));</div>
-<div class="line"><a id="l00194" name="l00194"></a><span class="lineno">  194</span> </div>
-<div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span>        <span class="keywordflow">if</span> (!BEAST_EXPECT(result[jss::current].isMember(jss::offers)))</div>
-<div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span>            <span class="keywordflow">return</span>;</div>
-<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span>        <a class="code hl_typedef" href="namespaceripple_1_1test_1_1jtx.html#a3beb715a43d7e5bc771c333529bbf92d">offers</a> = result[jss::current][jss::offers];</div>
-<div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span>        <span class="comment">// 1 additional offer in current, (2 total)</span></div>
-<div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span>        <span class="keywordflow">if</span> (!BEAST_EXPECT(<a class="code hl_typedef" href="namespaceripple_1_1test_1_1jtx.html#a3beb715a43d7e5bc771c333529bbf92d">offers</a>.isArray() &amp;&amp; <a class="code hl_typedef" href="namespaceripple_1_1test_1_1jtx.html#a3beb715a43d7e5bc771c333529bbf92d">offers</a>.size() == 2))</div>
-<div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span>            <span class="keywordflow">return</span>;</div>
-<div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span> </div>
-<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span>        BEAST_EXPECT(offers[1u] == result[jss::accepted][jss::offers][0u]);</div>
-<div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span>        BEAST_EXPECT(offers[0u][jss::Account] == alice.human());</div>
-<div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span>            offers[0u][sfTakerGets.fieldName] ==</div>
-<div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span>            <a class="code hl_variable" href="namespaceripple_1_1test_1_1jtx.html#aea9cd3d4e6b5df2e62d53b34b605957e">XRP</a>(1000).value().<a class="code hl_function" href="namespaceripple.html#ad30131b5a5b7cf60d9b392ab868b8c0e">getJson</a>(JsonOptions::none));</div>
-<div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span>        BEAST_EXPECT(</div>
-<div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span>            offers[0u][sfTakerPays.fieldName] ==</div>
-<div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span>            CNY(2).value().<a class="code hl_function" href="namespaceripple.html#ad30131b5a5b7cf60d9b392ab868b8c0e">getJson</a>(JsonOptions::none));</div>
-<div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span>    }</div>
-<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span> </div>
-<div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span><span class="keyword">public</span>:</div>
-<div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span>    <span class="keywordtype">void</span></div>
-<div class="line"><a id="l00214" name="l00214"></a><span class="lineno"><a class="line" href="classripple_1_1OwnerInfo__test.html#a263a6386cd4193eca52373e660c3a362">  214</a></span>    <a class="code hl_function" href="classripple_1_1OwnerInfo__test.html#a263a6386cd4193eca52373e660c3a362">run</a>()<span class="keyword"> override</span></div>
-<div class="line"><a id="l00215" name="l00215"></a><span class="lineno">  215</span><span class="keyword">    </span>{</div>
-<div class="line"><a id="l00216" name="l00216"></a><span class="lineno">  216</span>        testBadInput();</div>
-<div class="line"><a id="l00217" name="l00217"></a><span class="lineno">  217</span>        testBasic();</div>
-<div class="line"><a id="l00218" name="l00218"></a><span class="lineno">  218</span>    }</div>
-<div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span>};</div>
-<div class="line"><a id="l00220" name="l00220"></a><span class="lineno">  220</span> </div>
-<div class="line"><a id="l00221" name="l00221"></a><span class="lineno"><a class="line" href="namespaceripple.html#a60134e6787fd51a3424332ae3c44d0df">  221</a></span>BEAST_DEFINE_TESTSUITE(OwnerInfo, app, <a class="code hl_namespace" href="namespaceripple.html">ripple</a>);</div>
-<div class="line"><a id="l00222" name="l00222"></a><span class="lineno">  222</span> </div>
-<div class="line"><a id="l00223" name="l00223"></a><span class="lineno">  223</span>}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>        env.close();</div>
+<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>        <span class="keyword">auto</span> <span class="keyword">const</span> USD = gw[<span class="stringliteral">&quot;USD&quot;</span>];</div>
+<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span>        <span class="keyword">auto</span> <span class="keyword">const</span> CNY = gw[<span class="stringliteral">&quot;CNY&quot;</span>];</div>
+<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>        env(trust(alice, USD(1000)));</div>
+<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>        env(trust(alice, CNY(1000)));</div>
+<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>        env(offer(alice, USD(1), XRP(1000)));</div>
+<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>        env.close();</div>
+<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span> </div>
+<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>        env(pay(gw, alice, USD(50)));</div>
+<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>        env(pay(gw, alice, CNY(50)));</div>
+<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>        env(offer(alice, CNY(2), XRP(1000)));</div>
+<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span> </div>
+<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span>        <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> params;</div>
+<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>        params[jss::account] = alice.human();</div>
+<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>        <span class="keyword">auto</span> <span class="keyword">const</span> result =</div>
+<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span>            env.rpc(<span class="stringliteral">&quot;json&quot;</span>, <span class="stringliteral">&quot;owner_info&quot;</span>, <a class="code hl_function" href="namespaceripple.html#ac124fe6744b7fe887dec949b56b16d50">to_string</a>(params))[jss::result];</div>
+<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span>        <span class="keywordflow">if</span> (!BEAST_EXPECT(</div>
+<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>                result.isMember(jss::accepted) &amp;&amp;</div>
+<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>                result.isMember(jss::current)))</div>
+<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>        {</div>
+<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>            <span class="keywordflow">return</span>;</div>
+<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>        }</div>
+<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span> </div>
+<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>        <span class="comment">// accepted ledger entry</span></div>
+<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>        <span class="keywordflow">if</span> (!BEAST_EXPECT(result[jss::accepted].isMember(jss::ripple_lines)))</div>
+<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>            <span class="keywordflow">return</span>;</div>
+<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>        <span class="keyword">auto</span> lines = result[jss::accepted][jss::ripple_lines];</div>
+<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>        <span class="keywordflow">if</span> (!BEAST_EXPECT(lines.isArray() &amp;&amp; lines.size() == 2))</div>
+<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>            <span class="keywordflow">return</span>;</div>
+<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span> </div>
+<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>            lines[0u][sfBalance.fieldName] ==</div>
+<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span>            (<a class="code hl_class" href="classripple_1_1STAmount.html">STAmount</a>{Issue{to_currency(<span class="stringliteral">&quot;CNY&quot;</span>), noAccount()}, 0}</div>
+<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span>                 .<a class="code hl_function" href="classripple_1_1STAmount.html#aa40b0743a468d95eeaaf4914ea555866">value</a>()</div>
+<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span>                 .<a class="code hl_function" href="namespaceripple.html#ad30131b5a5b7cf60d9b392ab868b8c0e">getJson</a>(<a class="code hl_enumvalue" href="structripple_1_1JsonOptions.html#ab85e43ec84df987200d3355c3ba89f0aa1917451e3686dfe8d5016670eb87ab33">JsonOptions::none</a>)));</div>
+<div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span>            lines[0u][sfHighLimit.fieldName] ==</div>
+<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>            alice[<span class="stringliteral">&quot;CNY&quot;</span>](1000).value().getJson(<a class="code hl_enumvalue" href="structripple_1_1JsonOptions.html#ab85e43ec84df987200d3355c3ba89f0aa1917451e3686dfe8d5016670eb87ab33">JsonOptions::none</a>));</div>
+<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span>            lines[0u][sfLowLimit.fieldName] ==</div>
+<div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span>            gw[<span class="stringliteral">&quot;CNY&quot;</span>](0).value().getJson(<a class="code hl_enumvalue" href="structripple_1_1JsonOptions.html#ab85e43ec84df987200d3355c3ba89f0aa1917451e3686dfe8d5016670eb87ab33">JsonOptions::none</a>));</div>
+<div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span> </div>
+<div class="line"><a id="l00139" name="l00139"></a><span class="lineno">  139</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00140" name="l00140"></a><span class="lineno">  140</span>            lines[1u][sfBalance.fieldName] ==</div>
+<div class="line"><a id="l00141" name="l00141"></a><span class="lineno">  141</span>            (<a class="code hl_class" href="classripple_1_1STAmount.html">STAmount</a>{Issue{to_currency(<span class="stringliteral">&quot;USD&quot;</span>), noAccount()}, 0}</div>
+<div class="line"><a id="l00142" name="l00142"></a><span class="lineno">  142</span>                 .<a class="code hl_function" href="classripple_1_1STAmount.html#aa40b0743a468d95eeaaf4914ea555866">value</a>()</div>
+<div class="line"><a id="l00143" name="l00143"></a><span class="lineno">  143</span>                 .<a class="code hl_function" href="namespaceripple.html#ad30131b5a5b7cf60d9b392ab868b8c0e">getJson</a>(<a class="code hl_enumvalue" href="structripple_1_1JsonOptions.html#ab85e43ec84df987200d3355c3ba89f0aa1917451e3686dfe8d5016670eb87ab33">JsonOptions::none</a>)));</div>
+<div class="line"><a id="l00144" name="l00144"></a><span class="lineno">  144</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00145" name="l00145"></a><span class="lineno">  145</span>            lines[1u][sfHighLimit.fieldName] ==</div>
+<div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span>            alice[<span class="stringliteral">&quot;USD&quot;</span>](1000).value().getJson(<a class="code hl_enumvalue" href="structripple_1_1JsonOptions.html#ab85e43ec84df987200d3355c3ba89f0aa1917451e3686dfe8d5016670eb87ab33">JsonOptions::none</a>));</div>
+<div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span>            lines[1u][sfLowLimit.fieldName] ==</div>
+<div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span>            USD(0).value().<a class="code hl_function" href="namespaceripple.html#ad30131b5a5b7cf60d9b392ab868b8c0e">getJson</a>(<a class="code hl_enumvalue" href="structripple_1_1JsonOptions.html#ab85e43ec84df987200d3355c3ba89f0aa1917451e3686dfe8d5016670eb87ab33">JsonOptions::none</a>));</div>
+<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span> </div>
+<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span>        <span class="keywordflow">if</span> (!BEAST_EXPECT(result[jss::accepted].isMember(jss::offers)))</div>
+<div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span>            <span class="keywordflow">return</span>;</div>
+<div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span>        <span class="keyword">auto</span> offers = result[jss::accepted][jss::offers];</div>
+<div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span>        <span class="keywordflow">if</span> (!BEAST_EXPECT(offers.isArray() &amp;&amp; offers.size() == 1))</div>
+<div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span>            <span class="keywordflow">return</span>;</div>
+<div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span> </div>
+<div class="line"><a id="l00157" name="l00157"></a><span class="lineno">  157</span>        BEAST_EXPECT(offers[0u][jss::Account] == alice.human());</div>
+<div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span>            offers[0u][sfTakerGets.fieldName] ==</div>
+<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span>            XRP(1000).value().<a class="code hl_function" href="namespaceripple.html#ad30131b5a5b7cf60d9b392ab868b8c0e">getJson</a>(<a class="code hl_enumvalue" href="structripple_1_1JsonOptions.html#ab85e43ec84df987200d3355c3ba89f0aa1917451e3686dfe8d5016670eb87ab33">JsonOptions::none</a>));</div>
+<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span>            offers[0u][sfTakerPays.fieldName] ==</div>
+<div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span>            USD(1).value().<a class="code hl_function" href="namespaceripple.html#ad30131b5a5b7cf60d9b392ab868b8c0e">getJson</a>(<a class="code hl_enumvalue" href="structripple_1_1JsonOptions.html#ab85e43ec84df987200d3355c3ba89f0aa1917451e3686dfe8d5016670eb87ab33">JsonOptions::none</a>));</div>
+<div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span> </div>
+<div class="line"><a id="l00165" name="l00165"></a><span class="lineno">  165</span>        <span class="comment">// current ledger entry</span></div>
+<div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span>        <span class="keywordflow">if</span> (!BEAST_EXPECT(result[jss::current].isMember(jss::ripple_lines)))</div>
+<div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span>            <span class="keywordflow">return</span>;</div>
+<div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span>        lines = result[jss::current][jss::ripple_lines];</div>
+<div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span>        <span class="keywordflow">if</span> (!BEAST_EXPECT(lines.isArray() &amp;&amp; lines.size() == 2))</div>
+<div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span>            <span class="keywordflow">return</span>;</div>
+<div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span> </div>
+<div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span>            lines[0u][sfBalance.fieldName] ==</div>
+<div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span>            (STAmount{Issue{to_currency(<span class="stringliteral">&quot;CNY&quot;</span>), noAccount()}, -50}</div>
+<div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span>                 .value()</div>
+<div class="line"><a id="l00176" name="l00176"></a><span class="lineno">  176</span>                 .<a class="code hl_function" href="namespaceripple.html#ad30131b5a5b7cf60d9b392ab868b8c0e">getJson</a>(JsonOptions::none)));</div>
+<div class="line"><a id="l00177" name="l00177"></a><span class="lineno">  177</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00178" name="l00178"></a><span class="lineno">  178</span>            lines[0u][sfHighLimit.fieldName] ==</div>
+<div class="line"><a id="l00179" name="l00179"></a><span class="lineno">  179</span>            alice[<span class="stringliteral">&quot;CNY&quot;</span>](1000).value().getJson(JsonOptions::none));</div>
+<div class="line"><a id="l00180" name="l00180"></a><span class="lineno">  180</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00181" name="l00181"></a><span class="lineno">  181</span>            lines[0u][sfLowLimit.fieldName] ==</div>
+<div class="line"><a id="l00182" name="l00182"></a><span class="lineno">  182</span>            gw[<span class="stringliteral">&quot;CNY&quot;</span>](0).value().getJson(JsonOptions::none));</div>
+<div class="line"><a id="l00183" name="l00183"></a><span class="lineno">  183</span> </div>
+<div class="line"><a id="l00184" name="l00184"></a><span class="lineno">  184</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00185" name="l00185"></a><span class="lineno">  185</span>            lines[1u][sfBalance.fieldName] ==</div>
+<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span>            (STAmount{Issue{to_currency(<span class="stringliteral">&quot;USD&quot;</span>), noAccount()}, -50}</div>
+<div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span>                 .value()</div>
+<div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span>                 .<a class="code hl_function" href="namespaceripple.html#ad30131b5a5b7cf60d9b392ab868b8c0e">getJson</a>(JsonOptions::none)));</div>
+<div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span>            lines[1u][sfHighLimit.fieldName] ==</div>
+<div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span>            alice[<span class="stringliteral">&quot;USD&quot;</span>](1000).value().getJson(JsonOptions::none));</div>
+<div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span>            lines[1u][sfLowLimit.fieldName] ==</div>
+<div class="line"><a id="l00194" name="l00194"></a><span class="lineno">  194</span>            gw[<span class="stringliteral">&quot;USD&quot;</span>](0).value().getJson(JsonOptions::none));</div>
+<div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span> </div>
+<div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span>        <span class="keywordflow">if</span> (!BEAST_EXPECT(result[jss::current].isMember(jss::offers)))</div>
+<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span>            <span class="keywordflow">return</span>;</div>
+<div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span>        <a class="code hl_typedef" href="namespaceripple_1_1test_1_1jtx.html#a3beb715a43d7e5bc771c333529bbf92d">offers</a> = result[jss::current][jss::offers];</div>
+<div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span>        <span class="comment">// 1 additional offer in current, (2 total)</span></div>
+<div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span>        <span class="keywordflow">if</span> (!BEAST_EXPECT(<a class="code hl_typedef" href="namespaceripple_1_1test_1_1jtx.html#a3beb715a43d7e5bc771c333529bbf92d">offers</a>.isArray() &amp;&amp; <a class="code hl_typedef" href="namespaceripple_1_1test_1_1jtx.html#a3beb715a43d7e5bc771c333529bbf92d">offers</a>.size() == 2))</div>
+<div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span>            <span class="keywordflow">return</span>;</div>
+<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span> </div>
+<div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span>        BEAST_EXPECT(offers[1u] == result[jss::accepted][jss::offers][0u]);</div>
+<div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span>        BEAST_EXPECT(offers[0u][jss::Account] == alice.human());</div>
+<div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span>            offers[0u][sfTakerGets.fieldName] ==</div>
+<div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span>            <a class="code hl_variable" href="namespaceripple_1_1test_1_1jtx.html#aea9cd3d4e6b5df2e62d53b34b605957e">XRP</a>(1000).value().<a class="code hl_function" href="namespaceripple.html#ad30131b5a5b7cf60d9b392ab868b8c0e">getJson</a>(JsonOptions::none));</div>
+<div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span>        BEAST_EXPECT(</div>
+<div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span>            offers[0u][sfTakerPays.fieldName] ==</div>
+<div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span>            CNY(2).value().<a class="code hl_function" href="namespaceripple.html#ad30131b5a5b7cf60d9b392ab868b8c0e">getJson</a>(JsonOptions::none));</div>
+<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span>    }</div>
+<div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span> </div>
+<div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span><span class="keyword">public</span>:</div>
+<div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span>    <span class="keywordtype">void</span></div>
+<div class="line"><a id="l00215" name="l00215"></a><span class="lineno"><a class="line" href="classripple_1_1OwnerInfo__test.html#a263a6386cd4193eca52373e660c3a362">  215</a></span>    <a class="code hl_function" href="classripple_1_1OwnerInfo__test.html#a263a6386cd4193eca52373e660c3a362">run</a>()<span class="keyword"> override</span></div>
+<div class="line"><a id="l00216" name="l00216"></a><span class="lineno">  216</span><span class="keyword">    </span>{</div>
+<div class="line"><a id="l00217" name="l00217"></a><span class="lineno">  217</span>        testBadInput();</div>
+<div class="line"><a id="l00218" name="l00218"></a><span class="lineno">  218</span>        testBasic();</div>
+<div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span>    }</div>
+<div class="line"><a id="l00220" name="l00220"></a><span class="lineno">  220</span>};</div>
+<div class="line"><a id="l00221" name="l00221"></a><span class="lineno">  221</span> </div>
+<div class="line"><a id="l00222" name="l00222"></a><span class="lineno"><a class="line" href="namespaceripple.html#a60134e6787fd51a3424332ae3c44d0df">  222</a></span>BEAST_DEFINE_TESTSUITE(OwnerInfo, app, <a class="code hl_namespace" href="namespaceripple.html">ripple</a>);</div>
+<div class="line"><a id="l00223" name="l00223"></a><span class="lineno">  223</span> </div>
+<div class="line"><a id="l00224" name="l00224"></a><span class="lineno">  224</span>}  <span class="comment">// namespace ripple</span></div>
 <div class="ttc" id="aclassJson_1_1Value_html"><div class="ttname"><a href="classJson_1_1Value.html">Json::Value</a></div><div class="ttdoc">Represents a JSON value.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00147">json_value.h:148</a></div></div>
 <div class="ttc" id="aclassbeast_1_1unit__test_1_1suite_html"><div class="ttname"><a href="classbeast_1_1unit__test_1_1suite.html">beast::unit_test::suite</a></div><div class="ttdoc">A testsuite class.</div><div class="ttdef"><b>Definition:</b> <a href="suite_8h_source.html#l00054">suite.h:55</a></div></div>
 <div class="ttc" id="aclassbeast_1_1unit__test_1_1suite_html_aaa1237d9b85c69d35fe86645cee094b5"><div class="ttname"><a href="classbeast_1_1unit__test_1_1suite.html#aaa1237d9b85c69d35fe86645cee094b5">beast::unit_test::suite::testcase</a></div><div class="ttdeci">testcase_t testcase</div><div class="ttdoc">Memberspace for declaring test cases.</div><div class="ttdef"><b>Definition:</b> <a href="suite_8h_source.html#l00155">suite.h:155</a></div></div>
 <div class="ttc" id="aclassripple_1_1OwnerInfo__test_html"><div class="ttname"><a href="classripple_1_1OwnerInfo__test.html">ripple::OwnerInfo_test</a></div><div class="ttdef"><b>Definition:</b> <a href="OwnerInfo__test_8cpp_source.html#l00029">OwnerInfo_test.cpp:30</a></div></div>
-<div class="ttc" id="aclassripple_1_1OwnerInfo__test_html_a263a6386cd4193eca52373e660c3a362"><div class="ttname"><a href="classripple_1_1OwnerInfo__test.html#a263a6386cd4193eca52373e660c3a362">ripple::OwnerInfo_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdoc">Runs the suite.</div><div class="ttdef"><b>Definition:</b> <a href="OwnerInfo__test_8cpp_source.html#l00214">OwnerInfo_test.cpp:214</a></div></div>
+<div class="ttc" id="aclassripple_1_1OwnerInfo__test_html_a263a6386cd4193eca52373e660c3a362"><div class="ttname"><a href="classripple_1_1OwnerInfo__test.html#a263a6386cd4193eca52373e660c3a362">ripple::OwnerInfo_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdoc">Runs the suite.</div><div class="ttdef"><b>Definition:</b> <a href="OwnerInfo__test_8cpp_source.html#l00215">OwnerInfo_test.cpp:215</a></div></div>
 <div class="ttc" id="aclassripple_1_1OwnerInfo__test_html_a773a9795127e329bbfe8ce100fd3bb77"><div class="ttname"><a href="classripple_1_1OwnerInfo__test.html#a773a9795127e329bbfe8ce100fd3bb77">ripple::OwnerInfo_test::testBadInput</a></div><div class="ttdeci">void testBadInput()</div><div class="ttdef"><b>Definition:</b> <a href="OwnerInfo__test_8cpp_source.html#l00032">OwnerInfo_test.cpp:32</a></div></div>
 <div class="ttc" id="aclassripple_1_1OwnerInfo__test_html_aacd96111febfe60b97824783c2cbc9f4"><div class="ttname"><a href="classripple_1_1OwnerInfo__test.html#aacd96111febfe60b97824783c2cbc9f4">ripple::OwnerInfo_test::testBasic</a></div><div class="ttdeci">void testBasic()</div><div class="ttdef"><b>Definition:</b> <a href="OwnerInfo__test_8cpp_source.html#l00087">OwnerInfo_test.cpp:87</a></div></div>
 <div class="ttc" id="aclassripple_1_1STAmount_html"><div class="ttname"><a href="classripple_1_1STAmount.html">ripple::STAmount</a></div><div class="ttdef"><b>Definition:</b> <a href="STAmount_8h_source.html#l00049">STAmount.h:50</a></div></div>

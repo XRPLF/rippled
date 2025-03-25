@@ -121,298 +121,326 @@ $(function() {
 <div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span> </div>
 <div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>        {</div>
 <div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>            <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env(*<span class="keyword">this</span>);</div>
-<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>            <span class="comment">// missing base_asset</span></div>
-<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>            <span class="keyword">auto</span> ret =</div>
-<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>                <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a0133531e0fdbc760528798c514b0f1fb">Oracle::aggregatePrice</a>(env, std::nullopt, <span class="stringliteral">&quot;USD&quot;</span>, oracles);</div>
-<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>            BEAST_EXPECT(</div>
-<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>                ret[jss::error_message].asString() ==</div>
-<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>                <span class="stringliteral">&quot;Missing field &#39;base_asset&#39;.&quot;</span>);</div>
-<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span> </div>
-<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>            <span class="comment">// missing quote_asset</span></div>
-<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>            ret = <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a0133531e0fdbc760528798c514b0f1fb">Oracle::aggregatePrice</a>(env, <span class="stringliteral">&quot;XRP&quot;</span>, std::nullopt, oracles);</div>
-<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>            BEAST_EXPECT(</div>
-<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>                ret[jss::error_message].asString() ==</div>
-<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>                <span class="stringliteral">&quot;Missing field &#39;quote_asset&#39;.&quot;</span>);</div>
-<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span> </div>
-<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>            <span class="comment">// invalid base_asset, quote_asset</span></div>
-<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;AnyValue&gt;</a> invalidAsset = {</div>
-<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>                <a class="code hl_variable" href="namespaceripple_1_1test_1_1jtx_1_1oracle.html#adeb894af522aac240c60bc5e9e67f7b2">NoneTag</a>,</div>
-<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>                1,</div>
-<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>                -1,</div>
-<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>                1.2,</div>
-<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>                <span class="stringliteral">&quot;&quot;</span>,</div>
-<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>                <span class="stringliteral">&quot;invalid&quot;</span>,</div>
-<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>                <span class="stringliteral">&quot;a&quot;</span>,</div>
-<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>                <span class="stringliteral">&quot;ab&quot;</span>,</div>
-<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>                <span class="stringliteral">&quot;A&quot;</span>,</div>
-<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>                <span class="stringliteral">&quot;AB&quot;</span>,</div>
-<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>                <span class="stringliteral">&quot;ABCD&quot;</span>,</div>
-<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>                <span class="stringliteral">&quot;010101&quot;</span>,</div>
-<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>                <span class="stringliteral">&quot;012345678901234567890123456789012345678&quot;</span>,</div>
-<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>                <span class="stringliteral">&quot;012345678901234567890123456789012345678G&quot;</span>};</div>
-<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; v : invalidAsset)</div>
-<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>            {</div>
-<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>                ret = <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a0133531e0fdbc760528798c514b0f1fb">Oracle::aggregatePrice</a>(env, <span class="stringliteral">&quot;USD&quot;</span>, v, oracles);</div>
-<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>                BEAST_EXPECT(ret[jss::error].asString() == <span class="stringliteral">&quot;invalidParams&quot;</span>);</div>
-<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>                ret = <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a0133531e0fdbc760528798c514b0f1fb">Oracle::aggregatePrice</a>(env, v, <span class="stringliteral">&quot;USD&quot;</span>, oracles);</div>
-<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>                BEAST_EXPECT(ret[jss::error].asString() == <span class="stringliteral">&quot;invalidParams&quot;</span>);</div>
-<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>                ret = <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a0133531e0fdbc760528798c514b0f1fb">Oracle::aggregatePrice</a>(env, v, v, oracles);</div>
-<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>                BEAST_EXPECT(ret[jss::error].asString() == <span class="stringliteral">&quot;invalidParams&quot;</span>);</div>
-<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>            }</div>
-<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span> </div>
-<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>            <span class="comment">// missing oracles array</span></div>
-<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>            ret = <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a0133531e0fdbc760528798c514b0f1fb">Oracle::aggregatePrice</a>(env, <span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;USD&quot;</span>);</div>
-<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>            BEAST_EXPECT(</div>
-<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>                ret[jss::error_message].asString() ==</div>
-<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>                <span class="stringliteral">&quot;Missing field &#39;oracles&#39;.&quot;</span>);</div>
-<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span> </div>
-<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>            <span class="comment">// empty oracles array</span></div>
-<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>            ret = <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a0133531e0fdbc760528798c514b0f1fb">Oracle::aggregatePrice</a>(env, <span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;USD&quot;</span>, <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/vector.html">OraclesData</a>{});</div>
-<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>            BEAST_EXPECT(ret[jss::error].asString() == <span class="stringliteral">&quot;oracleMalformed&quot;</span>);</div>
-<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span> </div>
-<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>            <span class="comment">// no token pairs found</span></div>
-<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>            ret = <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a0133531e0fdbc760528798c514b0f1fb">Oracle::aggregatePrice</a>(env, <span class="stringliteral">&quot;YAN&quot;</span>, <span class="stringliteral">&quot;USD&quot;</span>, oracles);</div>
-<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>            BEAST_EXPECT(ret[jss::error].asString() == <span class="stringliteral">&quot;objectNotFound&quot;</span>);</div>
-<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span> </div>
-<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span>            <span class="comment">// invalid oracle document id</span></div>
-<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>            <span class="comment">// id doesn&#39;t exist</span></div>
-<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>            ret = <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a0133531e0fdbc760528798c514b0f1fb">Oracle::aggregatePrice</a>(env, <span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;USD&quot;</span>, {{{owner, 2}}});</div>
-<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>            BEAST_EXPECT(ret[jss::error].asString() == <span class="stringliteral">&quot;objectNotFound&quot;</span>);</div>
-<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>            <span class="comment">// invalid values</span></div>
-<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;AnyValue&gt;</a> invalidDocument = {</div>
-<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>                <a class="code hl_variable" href="namespaceripple_1_1test_1_1jtx_1_1oracle.html#adeb894af522aac240c60bc5e9e67f7b2">NoneTag</a>, 1.2, -1, <span class="stringliteral">&quot;&quot;</span>, <span class="stringliteral">&quot;none&quot;</span>, <span class="stringliteral">&quot;1.2&quot;</span>};</div>
-<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; v : invalidDocument)</div>
-<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>            {</div>
-<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>                ret = <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a0133531e0fdbc760528798c514b0f1fb">Oracle::aggregatePrice</a>(env, <span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;USD&quot;</span>, {{{owner, v}}});</div>
-<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span>                <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> jv;</div>
-<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>                <a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1oracle.html#a5864542659e12e4a56d5e6801c42ee15">toJson</a>(jv, v);</div>
-<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>                BEAST_EXPECT(ret[jss::error].asString() == <span class="stringliteral">&quot;invalidParams&quot;</span>);</div>
-<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span>            }</div>
-<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span>            <span class="comment">// missing document id</span></div>
-<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>            ret = <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a0133531e0fdbc760528798c514b0f1fb">Oracle::aggregatePrice</a>(</div>
-<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>                env, <span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;USD&quot;</span>, {{{owner, std::nullopt}}});</div>
-<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>            BEAST_EXPECT(ret[jss::error].asString() == <span class="stringliteral">&quot;oracleMalformed&quot;</span>);</div>
-<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span> </div>
-<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>            <span class="comment">// invalid owner</span></div>
-<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>            ret = <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a0133531e0fdbc760528798c514b0f1fb">Oracle::aggregatePrice</a>(env, <span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;USD&quot;</span>, {{{<a class="code hl_enumvalue" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66cca03d59e663c1af9ac33a9949d1193505a">some</a>, 1}}});</div>
-<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>            BEAST_EXPECT(ret[jss::error].asString() == <span class="stringliteral">&quot;objectNotFound&quot;</span>);</div>
-<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>            <span class="comment">// missing account</span></div>
-<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>            ret = <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a0133531e0fdbc760528798c514b0f1fb">Oracle::aggregatePrice</a>(</div>
-<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>                env, <span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;USD&quot;</span>, {{{std::nullopt, 1}}});</div>
-<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>            BEAST_EXPECT(ret[jss::error].asString() == <span class="stringliteral">&quot;oracleMalformed&quot;</span>);</div>
-<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span> </div>
-<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span>            <span class="comment">// oracles have wrong asset pair</span></div>
-<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>            env.<a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1Env.html#ae2349266cb09d1f1c3de06606ebdf9e2">fund</a>(<a class="code hl_variable" href="namespaceripple_1_1test_1_1jtx.html#aea9cd3d4e6b5df2e62d53b34b605957e">XRP</a>(1&#39;000), owner);</div>
-<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>            <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html">Oracle</a> oracle(</div>
-<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span>                env, {.owner = owner, .series = {{<span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;EUR&quot;</span>, 740, 1}}});</div>
-<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span>            ret = <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a0133531e0fdbc760528798c514b0f1fb">Oracle::aggregatePrice</a>(</div>
-<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span>                env, <span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;USD&quot;</span>, {{{owner, oracle.documentID()}}});</div>
-<div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span>            BEAST_EXPECT(ret[jss::error].asString() == <span class="stringliteral">&quot;objectNotFound&quot;</span>);</div>
-<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span> </div>
-<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>            <span class="comment">// invalid trim value</span></div>
-<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;AnyValue&gt;</a> invalidTrim = {</div>
-<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span>                <a class="code hl_variable" href="namespaceripple_1_1test_1_1jtx_1_1oracle.html#adeb894af522aac240c60bc5e9e67f7b2">NoneTag</a>, 0, 26, -1, 1.2, <span class="stringliteral">&quot;&quot;</span>, <span class="stringliteral">&quot;none&quot;</span>, <span class="stringliteral">&quot;1.2&quot;</span>};</div>
-<div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span>            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; v : invalidTrim)</div>
-<div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span>            {</div>
-<div class="line"><a id="l00139" name="l00139"></a><span class="lineno">  139</span>                ret = <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a0133531e0fdbc760528798c514b0f1fb">Oracle::aggregatePrice</a>(</div>
-<div class="line"><a id="l00140" name="l00140"></a><span class="lineno">  140</span>                    env, <span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;USD&quot;</span>, {{{owner, oracle.documentID()}}}, v);</div>
-<div class="line"><a id="l00141" name="l00141"></a><span class="lineno">  141</span>                BEAST_EXPECT(ret[jss::error].asString() == <span class="stringliteral">&quot;invalidParams&quot;</span>);</div>
-<div class="line"><a id="l00142" name="l00142"></a><span class="lineno">  142</span>            }</div>
-<div class="line"><a id="l00143" name="l00143"></a><span class="lineno">  143</span> </div>
-<div class="line"><a id="l00144" name="l00144"></a><span class="lineno">  144</span>            <span class="comment">// invalid time threshold value</span></div>
-<div class="line"><a id="l00145" name="l00145"></a><span class="lineno">  145</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;AnyValue&gt;</a> invalidTime = {</div>
-<div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span>                <a class="code hl_variable" href="namespaceripple_1_1test_1_1jtx_1_1oracle.html#adeb894af522aac240c60bc5e9e67f7b2">NoneTag</a>, -1, 1.2, <span class="stringliteral">&quot;&quot;</span>, <span class="stringliteral">&quot;none&quot;</span>, <span class="stringliteral">&quot;1.2&quot;</span>};</div>
-<div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span>            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; v : invalidTime)</div>
-<div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span>            {</div>
-<div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span>                ret = <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a0133531e0fdbc760528798c514b0f1fb">Oracle::aggregatePrice</a>(</div>
-<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span>                    env,</div>
-<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span>                    <span class="stringliteral">&quot;XRP&quot;</span>,</div>
-<div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span>                    <span class="stringliteral">&quot;USD&quot;</span>,</div>
-<div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span>                    {{{owner, oracle.documentID()}}},</div>
-<div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span>                    std::nullopt,</div>
-<div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span>                    v);</div>
-<div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span>                BEAST_EXPECT(ret[jss::error].asString() == <span class="stringliteral">&quot;invalidParams&quot;</span>);</div>
-<div class="line"><a id="l00157" name="l00157"></a><span class="lineno">  157</span>            }</div>
-<div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span>        }</div>
-<div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span> </div>
-<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span>        <span class="comment">// too many oracles</span></div>
-<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span>        {</div>
-<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span>            <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env(*<span class="keyword">this</span>);</div>
-<div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/vector.html">OraclesData</a> oracles;</div>
-<div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span>            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; 201; ++i)</div>
-<div class="line"><a id="l00165" name="l00165"></a><span class="lineno">  165</span>            {</div>
-<div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span>                <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span> owner(<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(i));</div>
-<div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span>                env.<a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1Env.html#ae2349266cb09d1f1c3de06606ebdf9e2">fund</a>(<a class="code hl_variable" href="namespaceripple_1_1test_1_1jtx.html#aea9cd3d4e6b5df2e62d53b34b605957e">XRP</a>(1&#39;000), owner);</div>
-<div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span>                <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html">Oracle</a> oracle(env, {.owner = owner, .documentID = i});</div>
-<div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span>                oracles.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/emplace_back.html">emplace_back</a>(owner, oracle.documentID());</div>
-<div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span>            }</div>
-<div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span>            <span class="keyword">auto</span> <span class="keyword">const</span> ret = <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a0133531e0fdbc760528798c514b0f1fb">Oracle::aggregatePrice</a>(env, <span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;USD&quot;</span>, oracles);</div>
-<div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span>            BEAST_EXPECT(ret[jss::error].asString() == <span class="stringliteral">&quot;oracleMalformed&quot;</span>);</div>
-<div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span>        }</div>
-<div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span>    }</div>
-<div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span> </div>
-<div class="line"><a id="l00176" name="l00176"></a><span class="lineno">  176</span>    <span class="keywordtype">void</span></div>
-<div class="line"><a id="l00177" name="l00177"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1jtx_1_1oracle_1_1GetAggregatePrice__test.html#af4fd626c3928f6e26aa8a266daab791e">  177</a></span>    <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1GetAggregatePrice__test.html#af4fd626c3928f6e26aa8a266daab791e">testRpc</a>()</div>
-<div class="line"><a id="l00178" name="l00178"></a><span class="lineno">  178</span>    {</div>
-<div class="line"><a id="l00179" name="l00179"></a><span class="lineno">  179</span>        <a class="code hl_variable" href="classbeast_1_1unit__test_1_1suite.html#aaa1237d9b85c69d35fe86645cee094b5">testcase</a>(<span class="stringliteral">&quot;RPC&quot;</span>);</div>
-<div class="line"><a id="l00180" name="l00180"></a><span class="lineno">  180</span>        <span class="keyword">using namespace </span>jtx;</div>
-<div class="line"><a id="l00181" name="l00181"></a><span class="lineno">  181</span> </div>
-<div class="line"><a id="l00182" name="l00182"></a><span class="lineno">  182</span>        <span class="keyword">auto</span> prep = [&amp;](<a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a>&amp; env, <span class="keyword">auto</span>&amp; oracles) {</div>
-<div class="line"><a id="l00183" name="l00183"></a><span class="lineno">  183</span>            oracles.reserve(10);</div>
-<div class="line"><a id="l00184" name="l00184"></a><span class="lineno">  184</span>            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; 10; ++i)</div>
-<div class="line"><a id="l00185" name="l00185"></a><span class="lineno">  185</span>            {</div>
-<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span>                <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span> owner{<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(i)};</div>
-<div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span>                env.<a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1Env.html#ae2349266cb09d1f1c3de06606ebdf9e2">fund</a>(<a class="code hl_variable" href="namespaceripple_1_1test_1_1jtx.html#aea9cd3d4e6b5df2e62d53b34b605957e">XRP</a>(1&#39;000), owner);</div>
-<div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span>                <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html">Oracle</a> oracle(</div>
-<div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span>                    env,</div>
-<div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span>                    {.owner = owner,</div>
-<div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span>                     .documentID = rand(),</div>
-<div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span>                     .series = {</div>
-<div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span>                         {<span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;USD&quot;</span>, 740 + i, 1}, {<span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;EUR&quot;</span>, 740, 1}}});</div>
-<div class="line"><a id="l00194" name="l00194"></a><span class="lineno">  194</span>                oracles.emplace_back(owner, oracle.documentID());</div>
-<div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span>            }</div>
-<div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span>        };</div>
-<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span> </div>
-<div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span>        <span class="comment">// Aggregate data set includes all price oracle instances, no trimming</span></div>
-<div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span>        <span class="comment">// or time threshold</span></div>
-<div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span>        {</div>
-<div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span>            <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env(*<span class="keyword">this</span>);</div>
-<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/vector.html">OraclesData</a> oracles;</div>
-<div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span>            prep(env, oracles);</div>
-<div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span>            <span class="comment">// entire and trimmed stats</span></div>
-<div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span>            <span class="keyword">auto</span> ret = <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a0133531e0fdbc760528798c514b0f1fb">Oracle::aggregatePrice</a>(env, <span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;USD&quot;</span>, oracles);</div>
-<div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span>            BEAST_EXPECT(ret[jss::entire_set][jss::mean] == <span class="stringliteral">&quot;74.45&quot;</span>);</div>
-<div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span>            BEAST_EXPECT(ret[jss::entire_set][jss::size].<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1oracle.html#a47696f5fab72ed456ac8600a67f06119">asUInt</a>() == 10);</div>
-<div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span>            BEAST_EXPECT(</div>
-<div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span>                ret[jss::entire_set][jss::standard_deviation] ==</div>
-<div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span>                <span class="stringliteral">&quot;0.3027650354097492&quot;</span>);</div>
-<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span>            BEAST_EXPECT(ret[jss::median] == <span class="stringliteral">&quot;74.45&quot;</span>);</div>
-<div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span>            BEAST_EXPECT(ret[jss::time] == 946694900);</div>
-<div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span>        }</div>
-<div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span> </div>
-<div class="line"><a id="l00215" name="l00215"></a><span class="lineno">  215</span>        <span class="comment">// Aggregate data set includes all price oracle instances</span></div>
-<div class="line"><a id="l00216" name="l00216"></a><span class="lineno">  216</span>        {</div>
-<div class="line"><a id="l00217" name="l00217"></a><span class="lineno">  217</span>            <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env(*<span class="keyword">this</span>);</div>
-<div class="line"><a id="l00218" name="l00218"></a><span class="lineno">  218</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/vector.html">OraclesData</a> oracles;</div>
-<div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span>            prep(env, oracles);</div>
-<div class="line"><a id="l00220" name="l00220"></a><span class="lineno">  220</span>            <span class="comment">// entire and trimmed stats</span></div>
-<div class="line"><a id="l00221" name="l00221"></a><span class="lineno">  221</span>            <span class="keyword">auto</span> ret =</div>
-<div class="line"><a id="l00222" name="l00222"></a><span class="lineno">  222</span>                <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a0133531e0fdbc760528798c514b0f1fb">Oracle::aggregatePrice</a>(env, <span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;USD&quot;</span>, oracles, 20, 100);</div>
-<div class="line"><a id="l00223" name="l00223"></a><span class="lineno">  223</span>            BEAST_EXPECT(ret[jss::entire_set][jss::mean] == <span class="stringliteral">&quot;74.45&quot;</span>);</div>
-<div class="line"><a id="l00224" name="l00224"></a><span class="lineno">  224</span>            BEAST_EXPECT(ret[jss::entire_set][jss::size].<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1oracle.html#a47696f5fab72ed456ac8600a67f06119">asUInt</a>() == 10);</div>
-<div class="line"><a id="l00225" name="l00225"></a><span class="lineno">  225</span>            BEAST_EXPECT(</div>
-<div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span>                ret[jss::entire_set][jss::standard_deviation] ==</div>
-<div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span>                <span class="stringliteral">&quot;0.3027650354097492&quot;</span>);</div>
-<div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span>            BEAST_EXPECT(ret[jss::median] == <span class="stringliteral">&quot;74.45&quot;</span>);</div>
-<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span>            BEAST_EXPECT(ret[jss::trimmed_set][jss::mean] == <span class="stringliteral">&quot;74.45&quot;</span>);</div>
-<div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span>            BEAST_EXPECT(ret[jss::trimmed_set][jss::size].<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1oracle.html#a47696f5fab72ed456ac8600a67f06119">asUInt</a>() == 6);</div>
-<div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span>            BEAST_EXPECT(</div>
-<div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span>                ret[jss::trimmed_set][jss::standard_deviation] ==</div>
-<div class="line"><a id="l00233" name="l00233"></a><span class="lineno">  233</span>                <span class="stringliteral">&quot;0.187082869338697&quot;</span>);</div>
-<div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span>            BEAST_EXPECT(ret[jss::time] == 946694900);</div>
-<div class="line"><a id="l00235" name="l00235"></a><span class="lineno">  235</span>        }</div>
-<div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span> </div>
-<div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span>        <span class="comment">// A reduced dataset, as some price oracles have data beyond three</span></div>
-<div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span>        <span class="comment">// updated ledgers</span></div>
-<div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span>        {</div>
-<div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span>            <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env(*<span class="keyword">this</span>);</div>
-<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/vector.html">OraclesData</a> oracles;</div>
-<div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span>            prep(env, oracles);</div>
-<div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span>            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; 3; ++i)</div>
-<div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span>            {</div>
-<div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span>                <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html">Oracle</a> oracle(</div>
-<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span>                    env,</div>
-<div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span>                    {.owner = oracles[i].first,</div>
-<div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span>                     .documentID = <a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1oracle.html#a47696f5fab72ed456ac8600a67f06119">asUInt</a>(*oracles[i].second)},</div>
-<div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span>                    <span class="keyword">false</span>);</div>
-<div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span>                <span class="comment">// push XRP/USD by more than three ledgers, so this price</span></div>
-<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span>                <span class="comment">// oracle is not included in the dataset</span></div>
-<div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span>                oracle.set(<a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1oracle_1_1UpdateArg.html">UpdateArg</a>{.<a class="code hl_variable" href="structripple_1_1test_1_1jtx_1_1oracle_1_1UpdateArg.html#ab5f28bfb56ed9e15ab80e9a44c045696">series</a> = {{<span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;EUR&quot;</span>, 740, 1}}});</div>
-<div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span>                oracle.set(<a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1oracle_1_1UpdateArg.html">UpdateArg</a>{.<a class="code hl_variable" href="structripple_1_1test_1_1jtx_1_1oracle_1_1UpdateArg.html#ab5f28bfb56ed9e15ab80e9a44c045696">series</a> = {{<span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;EUR&quot;</span>, 740, 1}}});</div>
-<div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span>                oracle.set(<a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1oracle_1_1UpdateArg.html">UpdateArg</a>{.<a class="code hl_variable" href="structripple_1_1test_1_1jtx_1_1oracle_1_1UpdateArg.html#ab5f28bfb56ed9e15ab80e9a44c045696">series</a> = {{<span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;EUR&quot;</span>, 740, 1}}});</div>
-<div class="line"><a id="l00255" name="l00255"></a><span class="lineno">  255</span>            }</div>
-<div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span>            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 3; i &lt; 6; ++i)</div>
-<div class="line"><a id="l00257" name="l00257"></a><span class="lineno">  257</span>            {</div>
-<div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span>                <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html">Oracle</a> oracle(</div>
-<div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span>                    env,</div>
-<div class="line"><a id="l00260" name="l00260"></a><span class="lineno">  260</span>                    {.owner = oracles[i].first,</div>
-<div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span>                     .documentID = <a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1oracle.html#a47696f5fab72ed456ac8600a67f06119">asUInt</a>(*oracles[i].second)},</div>
-<div class="line"><a id="l00262" name="l00262"></a><span class="lineno">  262</span>                    <span class="keyword">false</span>);</div>
-<div class="line"><a id="l00263" name="l00263"></a><span class="lineno">  263</span>                <span class="comment">// push XRP/USD by two ledgers, so this price</span></div>
-<div class="line"><a id="l00264" name="l00264"></a><span class="lineno">  264</span>                <span class="comment">// is included in the dataset</span></div>
-<div class="line"><a id="l00265" name="l00265"></a><span class="lineno">  265</span>                oracle.set(<a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1oracle_1_1UpdateArg.html">UpdateArg</a>{.<a class="code hl_variable" href="structripple_1_1test_1_1jtx_1_1oracle_1_1UpdateArg.html#ab5f28bfb56ed9e15ab80e9a44c045696">series</a> = {{<span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;EUR&quot;</span>, 740, 1}}});</div>
-<div class="line"><a id="l00266" name="l00266"></a><span class="lineno">  266</span>                oracle.set(<a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1oracle_1_1UpdateArg.html">UpdateArg</a>{.<a class="code hl_variable" href="structripple_1_1test_1_1jtx_1_1oracle_1_1UpdateArg.html#ab5f28bfb56ed9e15ab80e9a44c045696">series</a> = {{<span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;EUR&quot;</span>, 740, 1}}});</div>
-<div class="line"><a id="l00267" name="l00267"></a><span class="lineno">  267</span>            }</div>
-<div class="line"><a id="l00268" name="l00268"></a><span class="lineno">  268</span> </div>
-<div class="line"><a id="l00269" name="l00269"></a><span class="lineno">  269</span>            <span class="comment">// entire and trimmed stats</span></div>
-<div class="line"><a id="l00270" name="l00270"></a><span class="lineno">  270</span>            <span class="keyword">auto</span> ret =</div>
-<div class="line"><a id="l00271" name="l00271"></a><span class="lineno">  271</span>                <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a0133531e0fdbc760528798c514b0f1fb">Oracle::aggregatePrice</a>(env, <span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;USD&quot;</span>, oracles, 20, <span class="stringliteral">&quot;200&quot;</span>);</div>
-<div class="line"><a id="l00272" name="l00272"></a><span class="lineno">  272</span>            BEAST_EXPECT(ret[jss::entire_set][jss::mean] == <span class="stringliteral">&quot;74.6&quot;</span>);</div>
-<div class="line"><a id="l00273" name="l00273"></a><span class="lineno">  273</span>            BEAST_EXPECT(ret[jss::entire_set][jss::size].<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1oracle.html#a47696f5fab72ed456ac8600a67f06119">asUInt</a>() == 7);</div>
-<div class="line"><a id="l00274" name="l00274"></a><span class="lineno">  274</span>            BEAST_EXPECT(</div>
-<div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span>                ret[jss::entire_set][jss::standard_deviation] ==</div>
-<div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span>                <span class="stringliteral">&quot;0.2160246899469287&quot;</span>);</div>
-<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span>            BEAST_EXPECT(ret[jss::median] == <span class="stringliteral">&quot;74.6&quot;</span>);</div>
-<div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span>            BEAST_EXPECT(ret[jss::trimmed_set][jss::mean] == <span class="stringliteral">&quot;74.6&quot;</span>);</div>
-<div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span>            BEAST_EXPECT(ret[jss::trimmed_set][jss::size].<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1oracle.html#a47696f5fab72ed456ac8600a67f06119">asUInt</a>() == 5);</div>
-<div class="line"><a id="l00280" name="l00280"></a><span class="lineno">  280</span>            BEAST_EXPECT(</div>
-<div class="line"><a id="l00281" name="l00281"></a><span class="lineno">  281</span>                ret[jss::trimmed_set][jss::standard_deviation] ==</div>
-<div class="line"><a id="l00282" name="l00282"></a><span class="lineno">  282</span>                <span class="stringliteral">&quot;0.158113883008419&quot;</span>);</div>
-<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span>            BEAST_EXPECT(ret[jss::time] == 946694900);</div>
-<div class="line"><a id="l00284" name="l00284"></a><span class="lineno">  284</span>        }</div>
-<div class="line"><a id="l00285" name="l00285"></a><span class="lineno">  285</span> </div>
-<div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span>        <span class="comment">// Reduced data set because of the time threshold</span></div>
-<div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span>        {</div>
-<div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span>            <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env(*<span class="keyword">this</span>);</div>
-<div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/vector.html">OraclesData</a> oracles;</div>
-<div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span>            prep(env, oracles);</div>
-<div class="line"><a id="l00291" name="l00291"></a><span class="lineno">  291</span>            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; oracles.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a>(); ++i)</div>
-<div class="line"><a id="l00292" name="l00292"></a><span class="lineno">  292</span>            {</div>
-<div class="line"><a id="l00293" name="l00293"></a><span class="lineno">  293</span>                <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html">Oracle</a> oracle(</div>
-<div class="line"><a id="l00294" name="l00294"></a><span class="lineno">  294</span>                    env,</div>
-<div class="line"><a id="l00295" name="l00295"></a><span class="lineno">  295</span>                    {.owner = oracles[i].first,</div>
-<div class="line"><a id="l00296" name="l00296"></a><span class="lineno">  296</span>                     .documentID = <a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1oracle.html#a47696f5fab72ed456ac8600a67f06119">asUInt</a>(*oracles[i].second)},</div>
-<div class="line"><a id="l00297" name="l00297"></a><span class="lineno">  297</span>                    <span class="keyword">false</span>);</div>
-<div class="line"><a id="l00298" name="l00298"></a><span class="lineno">  298</span>                <span class="comment">// push XRP/USD by two ledgers, so this price</span></div>
-<div class="line"><a id="l00299" name="l00299"></a><span class="lineno">  299</span>                <span class="comment">// is included in the dataset</span></div>
-<div class="line"><a id="l00300" name="l00300"></a><span class="lineno">  300</span>                oracle.set(<a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1oracle_1_1UpdateArg.html">UpdateArg</a>{.<a class="code hl_variable" href="structripple_1_1test_1_1jtx_1_1oracle_1_1UpdateArg.html#ab5f28bfb56ed9e15ab80e9a44c045696">series</a> = {{<span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;USD&quot;</span>, 740, 1}}});</div>
-<div class="line"><a id="l00301" name="l00301"></a><span class="lineno">  301</span>            }</div>
-<div class="line"><a id="l00302" name="l00302"></a><span class="lineno">  302</span> </div>
-<div class="line"><a id="l00303" name="l00303"></a><span class="lineno">  303</span>            <span class="comment">// entire stats only, limit lastUpdateTime to {200, 125}</span></div>
-<div class="line"><a id="l00304" name="l00304"></a><span class="lineno">  304</span>            <span class="keyword">auto</span> ret = <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a0133531e0fdbc760528798c514b0f1fb">Oracle::aggregatePrice</a>(</div>
-<div class="line"><a id="l00305" name="l00305"></a><span class="lineno">  305</span>                env, <span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;USD&quot;</span>, oracles, std::nullopt, 75);</div>
-<div class="line"><a id="l00306" name="l00306"></a><span class="lineno">  306</span>            BEAST_EXPECT(ret[jss::entire_set][jss::mean] == <span class="stringliteral">&quot;74&quot;</span>);</div>
-<div class="line"><a id="l00307" name="l00307"></a><span class="lineno">  307</span>            BEAST_EXPECT(ret[jss::entire_set][jss::size].<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1oracle.html#a47696f5fab72ed456ac8600a67f06119">asUInt</a>() == 8);</div>
-<div class="line"><a id="l00308" name="l00308"></a><span class="lineno">  308</span>            BEAST_EXPECT(ret[jss::entire_set][jss::standard_deviation] == <span class="stringliteral">&quot;0&quot;</span>);</div>
-<div class="line"><a id="l00309" name="l00309"></a><span class="lineno">  309</span>            BEAST_EXPECT(ret[jss::median] == <span class="stringliteral">&quot;74&quot;</span>);</div>
-<div class="line"><a id="l00310" name="l00310"></a><span class="lineno">  310</span>            BEAST_EXPECT(ret[jss::time] == 946695000);</div>
-<div class="line"><a id="l00311" name="l00311"></a><span class="lineno">  311</span>        }</div>
-<div class="line"><a id="l00312" name="l00312"></a><span class="lineno">  312</span>    }</div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>            <span class="keyword">auto</span> <span class="keyword">const</span> baseFee = env.<a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1Env.html#a65bedb2e0babbd55343f721de9008a37">current</a>()-&gt;fees().base;</div>
+<div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>            <span class="comment">// missing base_asset</span></div>
+<div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>            <span class="keyword">auto</span> ret =</div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>                <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a0133531e0fdbc760528798c514b0f1fb">Oracle::aggregatePrice</a>(env, std::nullopt, <span class="stringliteral">&quot;USD&quot;</span>, oracles);</div>
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>            BEAST_EXPECT(</div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>                ret[jss::error_message].asString() ==</div>
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>                <span class="stringliteral">&quot;Missing field &#39;base_asset&#39;.&quot;</span>);</div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span> </div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>            <span class="comment">// missing quote_asset</span></div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>            ret = <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a0133531e0fdbc760528798c514b0f1fb">Oracle::aggregatePrice</a>(env, <span class="stringliteral">&quot;XRP&quot;</span>, std::nullopt, oracles);</div>
+<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>            BEAST_EXPECT(</div>
+<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>                ret[jss::error_message].asString() ==</div>
+<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>                <span class="stringliteral">&quot;Missing field &#39;quote_asset&#39;.&quot;</span>);</div>
+<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span> </div>
+<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>            <span class="comment">// invalid base_asset, quote_asset</span></div>
+<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;AnyValue&gt;</a> invalidAsset = {</div>
+<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>                <a class="code hl_variable" href="namespaceripple_1_1test_1_1jtx_1_1oracle.html#adeb894af522aac240c60bc5e9e67f7b2">NoneTag</a>,</div>
+<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>                1,</div>
+<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>                -1,</div>
+<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>                1.2,</div>
+<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>                <span class="stringliteral">&quot;&quot;</span>,</div>
+<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>                <span class="stringliteral">&quot;invalid&quot;</span>,</div>
+<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>                <span class="stringliteral">&quot;a&quot;</span>,</div>
+<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>                <span class="stringliteral">&quot;ab&quot;</span>,</div>
+<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>                <span class="stringliteral">&quot;A&quot;</span>,</div>
+<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>                <span class="stringliteral">&quot;AB&quot;</span>,</div>
+<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>                <span class="stringliteral">&quot;ABCD&quot;</span>,</div>
+<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>                <span class="stringliteral">&quot;010101&quot;</span>,</div>
+<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>                <span class="stringliteral">&quot;012345678901234567890123456789012345678&quot;</span>,</div>
+<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>                <span class="stringliteral">&quot;012345678901234567890123456789012345678G&quot;</span>};</div>
+<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; v : invalidAsset)</div>
+<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>            {</div>
+<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>                ret = <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a0133531e0fdbc760528798c514b0f1fb">Oracle::aggregatePrice</a>(env, <span class="stringliteral">&quot;USD&quot;</span>, v, oracles);</div>
+<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>                BEAST_EXPECT(ret[jss::error].asString() == <span class="stringliteral">&quot;invalidParams&quot;</span>);</div>
+<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>                ret = <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a0133531e0fdbc760528798c514b0f1fb">Oracle::aggregatePrice</a>(env, v, <span class="stringliteral">&quot;USD&quot;</span>, oracles);</div>
+<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>                BEAST_EXPECT(ret[jss::error].asString() == <span class="stringliteral">&quot;invalidParams&quot;</span>);</div>
+<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>                ret = <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a0133531e0fdbc760528798c514b0f1fb">Oracle::aggregatePrice</a>(env, v, v, oracles);</div>
+<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>                BEAST_EXPECT(ret[jss::error].asString() == <span class="stringliteral">&quot;invalidParams&quot;</span>);</div>
+<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>            }</div>
+<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span> </div>
+<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>            <span class="comment">// missing oracles array</span></div>
+<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>            ret = <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a0133531e0fdbc760528798c514b0f1fb">Oracle::aggregatePrice</a>(env, <span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;USD&quot;</span>);</div>
+<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>            BEAST_EXPECT(</div>
+<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>                ret[jss::error_message].asString() ==</div>
+<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>                <span class="stringliteral">&quot;Missing field &#39;oracles&#39;.&quot;</span>);</div>
+<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span> </div>
+<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>            <span class="comment">// empty oracles array</span></div>
+<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>            ret = <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a0133531e0fdbc760528798c514b0f1fb">Oracle::aggregatePrice</a>(env, <span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;USD&quot;</span>, <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/vector.html">OraclesData</a>{});</div>
+<div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>            BEAST_EXPECT(ret[jss::error].asString() == <span class="stringliteral">&quot;oracleMalformed&quot;</span>);</div>
+<div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span> </div>
+<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>            <span class="comment">// no token pairs found</span></div>
+<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>            ret = <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a0133531e0fdbc760528798c514b0f1fb">Oracle::aggregatePrice</a>(env, <span class="stringliteral">&quot;YAN&quot;</span>, <span class="stringliteral">&quot;USD&quot;</span>, oracles);</div>
+<div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>            BEAST_EXPECT(ret[jss::error].asString() == <span class="stringliteral">&quot;objectNotFound&quot;</span>);</div>
+<div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span> </div>
+<div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>            <span class="comment">// invalid oracle document id</span></div>
+<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>            <span class="comment">// id doesn&#39;t exist</span></div>
+<div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>            ret = <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a0133531e0fdbc760528798c514b0f1fb">Oracle::aggregatePrice</a>(env, <span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;USD&quot;</span>, {{{owner, 2}}});</div>
+<div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>            BEAST_EXPECT(ret[jss::error].asString() == <span class="stringliteral">&quot;objectNotFound&quot;</span>);</div>
+<div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>            <span class="comment">// invalid values</span></div>
+<div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;AnyValue&gt;</a> invalidDocument = {</div>
+<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>                <a class="code hl_variable" href="namespaceripple_1_1test_1_1jtx_1_1oracle.html#adeb894af522aac240c60bc5e9e67f7b2">NoneTag</a>, 1.2, -1, <span class="stringliteral">&quot;&quot;</span>, <span class="stringliteral">&quot;none&quot;</span>, <span class="stringliteral">&quot;1.2&quot;</span>};</div>
+<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; v : invalidDocument)</div>
+<div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>            {</div>
+<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span>                ret = <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a0133531e0fdbc760528798c514b0f1fb">Oracle::aggregatePrice</a>(env, <span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;USD&quot;</span>, {{{owner, v}}});</div>
+<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>                <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> jv;</div>
+<div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>                <a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1oracle.html#a5864542659e12e4a56d5e6801c42ee15">toJson</a>(jv, v);</div>
+<div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span>                BEAST_EXPECT(ret[jss::error].asString() == <span class="stringliteral">&quot;invalidParams&quot;</span>);</div>
+<div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span>            }</div>
+<div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>            <span class="comment">// missing document id</span></div>
+<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>            ret = <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a0133531e0fdbc760528798c514b0f1fb">Oracle::aggregatePrice</a>(</div>
+<div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>                env, <span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;USD&quot;</span>, {{{owner, std::nullopt}}});</div>
+<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>            BEAST_EXPECT(ret[jss::error].asString() == <span class="stringliteral">&quot;oracleMalformed&quot;</span>);</div>
+<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span> </div>
+<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>            <span class="comment">// invalid owner</span></div>
+<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>            ret = <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a0133531e0fdbc760528798c514b0f1fb">Oracle::aggregatePrice</a>(env, <span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;USD&quot;</span>, {{{<a class="code hl_enumvalue" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66cca03d59e663c1af9ac33a9949d1193505a">some</a>, 1}}});</div>
+<div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>            BEAST_EXPECT(ret[jss::error].asString() == <span class="stringliteral">&quot;objectNotFound&quot;</span>);</div>
+<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>            <span class="comment">// missing account</span></div>
+<div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>            ret = <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a0133531e0fdbc760528798c514b0f1fb">Oracle::aggregatePrice</a>(</div>
+<div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>                env, <span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;USD&quot;</span>, {{{std::nullopt, 1}}});</div>
+<div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>            BEAST_EXPECT(ret[jss::error].asString() == <span class="stringliteral">&quot;oracleMalformed&quot;</span>);</div>
+<div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span> </div>
+<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>            <span class="comment">// oracles have wrong asset pair</span></div>
+<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>            env.<a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1Env.html#ae2349266cb09d1f1c3de06606ebdf9e2">fund</a>(<a class="code hl_variable" href="namespaceripple_1_1test_1_1jtx.html#aea9cd3d4e6b5df2e62d53b34b605957e">XRP</a>(1&#39;000), owner);</div>
+<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span>            <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html">Oracle</a> oracle(</div>
+<div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span>                env,</div>
+<div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span>                {.owner = owner,</div>
+<div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span>                 .series = {{<span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;EUR&quot;</span>, 740, 1}},</div>
+<div class="line"><a id="l00133" name="l00133"></a><span class="lineno">  133</span>                 .fee = <span class="keyword">static_cast&lt;</span><span class="keywordtype">int</span><span class="keyword">&gt;</span>(baseFee.drops())});</div>
+<div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>            ret = <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a0133531e0fdbc760528798c514b0f1fb">Oracle::aggregatePrice</a>(</div>
+<div class="line"><a id="l00135" name="l00135"></a><span class="lineno">  135</span>                env, <span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;USD&quot;</span>, {{{owner, oracle.documentID()}}});</div>
+<div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span>            BEAST_EXPECT(ret[jss::error].asString() == <span class="stringliteral">&quot;objectNotFound&quot;</span>);</div>
+<div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span> </div>
+<div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span>            <span class="comment">// invalid trim value</span></div>
+<div class="line"><a id="l00139" name="l00139"></a><span class="lineno">  139</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;AnyValue&gt;</a> invalidTrim = {</div>
+<div class="line"><a id="l00140" name="l00140"></a><span class="lineno">  140</span>                <a class="code hl_variable" href="namespaceripple_1_1test_1_1jtx_1_1oracle.html#adeb894af522aac240c60bc5e9e67f7b2">NoneTag</a>, 0, 26, -1, 1.2, <span class="stringliteral">&quot;&quot;</span>, <span class="stringliteral">&quot;none&quot;</span>, <span class="stringliteral">&quot;1.2&quot;</span>};</div>
+<div class="line"><a id="l00141" name="l00141"></a><span class="lineno">  141</span>            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; v : invalidTrim)</div>
+<div class="line"><a id="l00142" name="l00142"></a><span class="lineno">  142</span>            {</div>
+<div class="line"><a id="l00143" name="l00143"></a><span class="lineno">  143</span>                ret = <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a0133531e0fdbc760528798c514b0f1fb">Oracle::aggregatePrice</a>(</div>
+<div class="line"><a id="l00144" name="l00144"></a><span class="lineno">  144</span>                    env, <span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;USD&quot;</span>, {{{owner, oracle.documentID()}}}, v);</div>
+<div class="line"><a id="l00145" name="l00145"></a><span class="lineno">  145</span>                BEAST_EXPECT(ret[jss::error].asString() == <span class="stringliteral">&quot;invalidParams&quot;</span>);</div>
+<div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span>            }</div>
+<div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span> </div>
+<div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span>            <span class="comment">// invalid time threshold value</span></div>
+<div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;AnyValue&gt;</a> invalidTime = {</div>
+<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span>                <a class="code hl_variable" href="namespaceripple_1_1test_1_1jtx_1_1oracle.html#adeb894af522aac240c60bc5e9e67f7b2">NoneTag</a>, -1, 1.2, <span class="stringliteral">&quot;&quot;</span>, <span class="stringliteral">&quot;none&quot;</span>, <span class="stringliteral">&quot;1.2&quot;</span>};</div>
+<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span>            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; v : invalidTime)</div>
+<div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span>            {</div>
+<div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span>                ret = <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a0133531e0fdbc760528798c514b0f1fb">Oracle::aggregatePrice</a>(</div>
+<div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span>                    env,</div>
+<div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span>                    <span class="stringliteral">&quot;XRP&quot;</span>,</div>
+<div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span>                    <span class="stringliteral">&quot;USD&quot;</span>,</div>
+<div class="line"><a id="l00157" name="l00157"></a><span class="lineno">  157</span>                    {{{owner, oracle.documentID()}}},</div>
+<div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span>                    std::nullopt,</div>
+<div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span>                    v);</div>
+<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span>                BEAST_EXPECT(ret[jss::error].asString() == <span class="stringliteral">&quot;invalidParams&quot;</span>);</div>
+<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span>            }</div>
+<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span>        }</div>
+<div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span> </div>
+<div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span>        <span class="comment">// too many oracles</span></div>
+<div class="line"><a id="l00165" name="l00165"></a><span class="lineno">  165</span>        {</div>
+<div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span>            <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env(*<span class="keyword">this</span>);</div>
+<div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span>            <span class="keyword">auto</span> <span class="keyword">const</span> baseFee =</div>
+<div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span>                <span class="keyword">static_cast&lt;</span><span class="keywordtype">int</span><span class="keyword">&gt;</span>(env.<a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1Env.html#a65bedb2e0babbd55343f721de9008a37">current</a>()-&gt;fees().base.drops());</div>
+<div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span> </div>
+<div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/vector.html">OraclesData</a> oracles;</div>
+<div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span>            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; 201; ++i)</div>
+<div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span>            {</div>
+<div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span>                <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span> owner(<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(i));</div>
+<div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span>                env.<a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1Env.html#ae2349266cb09d1f1c3de06606ebdf9e2">fund</a>(<a class="code hl_variable" href="namespaceripple_1_1test_1_1jtx.html#aea9cd3d4e6b5df2e62d53b34b605957e">XRP</a>(1&#39;000), owner);</div>
+<div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span>                <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html">Oracle</a> oracle(</div>
+<div class="line"><a id="l00176" name="l00176"></a><span class="lineno">  176</span>                    env, {.owner = owner, .documentID = i, .fee = baseFee});</div>
+<div class="line"><a id="l00177" name="l00177"></a><span class="lineno">  177</span>                oracles.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/emplace_back.html">emplace_back</a>(owner, oracle.documentID());</div>
+<div class="line"><a id="l00178" name="l00178"></a><span class="lineno">  178</span>            }</div>
+<div class="line"><a id="l00179" name="l00179"></a><span class="lineno">  179</span>            <span class="keyword">auto</span> <span class="keyword">const</span> ret = <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a0133531e0fdbc760528798c514b0f1fb">Oracle::aggregatePrice</a>(env, <span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;USD&quot;</span>, oracles);</div>
+<div class="line"><a id="l00180" name="l00180"></a><span class="lineno">  180</span>            BEAST_EXPECT(ret[jss::error].asString() == <span class="stringliteral">&quot;oracleMalformed&quot;</span>);</div>
+<div class="line"><a id="l00181" name="l00181"></a><span class="lineno">  181</span>        }</div>
+<div class="line"><a id="l00182" name="l00182"></a><span class="lineno">  182</span>    }</div>
+<div class="line"><a id="l00183" name="l00183"></a><span class="lineno">  183</span> </div>
+<div class="line"><a id="l00184" name="l00184"></a><span class="lineno">  184</span>    <span class="keywordtype">void</span></div>
+<div class="line"><a id="l00185" name="l00185"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1jtx_1_1oracle_1_1GetAggregatePrice__test.html#af4fd626c3928f6e26aa8a266daab791e">  185</a></span>    <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1GetAggregatePrice__test.html#af4fd626c3928f6e26aa8a266daab791e">testRpc</a>()</div>
+<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span>    {</div>
+<div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span>        <a class="code hl_variable" href="classbeast_1_1unit__test_1_1suite.html#aaa1237d9b85c69d35fe86645cee094b5">testcase</a>(<span class="stringliteral">&quot;RPC&quot;</span>);</div>
+<div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span>        <span class="keyword">using namespace </span>jtx;</div>
+<div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span> </div>
+<div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span>        <span class="keyword">auto</span> prep = [&amp;](<a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a>&amp; env, <span class="keyword">auto</span>&amp; oracles) {</div>
+<div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span>            oracles.reserve(10);</div>
+<div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span>            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; 10; ++i)</div>
+<div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span>            {</div>
+<div class="line"><a id="l00194" name="l00194"></a><span class="lineno">  194</span>                <span class="keyword">auto</span> <span class="keyword">const</span> baseFee =</div>
+<div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span>                    <span class="keyword">static_cast&lt;</span><span class="keywordtype">int</span><span class="keyword">&gt;</span>(env.<a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1Env.html#a65bedb2e0babbd55343f721de9008a37">current</a>()-&gt;fees().base.drops());</div>
+<div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span> </div>
+<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span>                <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span> owner{<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(i)};</div>
+<div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span>                env.<a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1Env.html#ae2349266cb09d1f1c3de06606ebdf9e2">fund</a>(<a class="code hl_variable" href="namespaceripple_1_1test_1_1jtx.html#aea9cd3d4e6b5df2e62d53b34b605957e">XRP</a>(1&#39;000), owner);</div>
+<div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span>                <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html">Oracle</a> oracle(</div>
+<div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span>                    env,</div>
+<div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span>                    {.owner = owner,</div>
+<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span>                     .documentID = rand(),</div>
+<div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span>                     .series =</div>
+<div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span>                         {{<span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;USD&quot;</span>, 740 + i, 1}, {<span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;EUR&quot;</span>, 740, 1}},</div>
+<div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span>                     .fee = baseFee});</div>
+<div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span>                oracles.emplace_back(owner, oracle.documentID());</div>
+<div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span>            }</div>
+<div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span>        };</div>
+<div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span> </div>
+<div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span>        <span class="comment">// Aggregate data set includes all price oracle instances, no trimming</span></div>
+<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span>        <span class="comment">// or time threshold</span></div>
+<div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span>        {</div>
+<div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span>            <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env(*<span class="keyword">this</span>);</div>
+<div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/vector.html">OraclesData</a> oracles;</div>
+<div class="line"><a id="l00215" name="l00215"></a><span class="lineno">  215</span>            prep(env, oracles);</div>
+<div class="line"><a id="l00216" name="l00216"></a><span class="lineno">  216</span>            <span class="comment">// entire and trimmed stats</span></div>
+<div class="line"><a id="l00217" name="l00217"></a><span class="lineno">  217</span>            <span class="keyword">auto</span> ret = <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a0133531e0fdbc760528798c514b0f1fb">Oracle::aggregatePrice</a>(env, <span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;USD&quot;</span>, oracles);</div>
+<div class="line"><a id="l00218" name="l00218"></a><span class="lineno">  218</span>            BEAST_EXPECT(ret[jss::entire_set][jss::mean] == <span class="stringliteral">&quot;74.45&quot;</span>);</div>
+<div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span>            BEAST_EXPECT(ret[jss::entire_set][jss::size].<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1oracle.html#a47696f5fab72ed456ac8600a67f06119">asUInt</a>() == 10);</div>
+<div class="line"><a id="l00220" name="l00220"></a><span class="lineno">  220</span>            BEAST_EXPECT(</div>
+<div class="line"><a id="l00221" name="l00221"></a><span class="lineno">  221</span>                ret[jss::entire_set][jss::standard_deviation] ==</div>
+<div class="line"><a id="l00222" name="l00222"></a><span class="lineno">  222</span>                <span class="stringliteral">&quot;0.3027650354097492&quot;</span>);</div>
+<div class="line"><a id="l00223" name="l00223"></a><span class="lineno">  223</span>            BEAST_EXPECT(ret[jss::median] == <span class="stringliteral">&quot;74.45&quot;</span>);</div>
+<div class="line"><a id="l00224" name="l00224"></a><span class="lineno">  224</span>            BEAST_EXPECT(ret[jss::time] == 946694900);</div>
+<div class="line"><a id="l00225" name="l00225"></a><span class="lineno">  225</span>        }</div>
+<div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span> </div>
+<div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span>        <span class="comment">// Aggregate data set includes all price oracle instances</span></div>
+<div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span>        {</div>
+<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span>            <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env(*<span class="keyword">this</span>);</div>
+<div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/vector.html">OraclesData</a> oracles;</div>
+<div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span>            prep(env, oracles);</div>
+<div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span>            <span class="comment">// entire and trimmed stats</span></div>
+<div class="line"><a id="l00233" name="l00233"></a><span class="lineno">  233</span>            <span class="keyword">auto</span> ret =</div>
+<div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span>                <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a0133531e0fdbc760528798c514b0f1fb">Oracle::aggregatePrice</a>(env, <span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;USD&quot;</span>, oracles, 20, 100);</div>
+<div class="line"><a id="l00235" name="l00235"></a><span class="lineno">  235</span>            BEAST_EXPECT(ret[jss::entire_set][jss::mean] == <span class="stringliteral">&quot;74.45&quot;</span>);</div>
+<div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span>            BEAST_EXPECT(ret[jss::entire_set][jss::size].<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1oracle.html#a47696f5fab72ed456ac8600a67f06119">asUInt</a>() == 10);</div>
+<div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span>            BEAST_EXPECT(</div>
+<div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span>                ret[jss::entire_set][jss::standard_deviation] ==</div>
+<div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span>                <span class="stringliteral">&quot;0.3027650354097492&quot;</span>);</div>
+<div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span>            BEAST_EXPECT(ret[jss::median] == <span class="stringliteral">&quot;74.45&quot;</span>);</div>
+<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span>            BEAST_EXPECT(ret[jss::trimmed_set][jss::mean] == <span class="stringliteral">&quot;74.45&quot;</span>);</div>
+<div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span>            BEAST_EXPECT(ret[jss::trimmed_set][jss::size].<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1oracle.html#a47696f5fab72ed456ac8600a67f06119">asUInt</a>() == 6);</div>
+<div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span>            BEAST_EXPECT(</div>
+<div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span>                ret[jss::trimmed_set][jss::standard_deviation] ==</div>
+<div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span>                <span class="stringliteral">&quot;0.187082869338697&quot;</span>);</div>
+<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span>            BEAST_EXPECT(ret[jss::time] == 946694900);</div>
+<div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span>        }</div>
+<div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span> </div>
+<div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span>        <span class="comment">// A reduced dataset, as some price oracles have data beyond three</span></div>
+<div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span>        <span class="comment">// updated ledgers</span></div>
+<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span>        {</div>
+<div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span>            <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env(*<span class="keyword">this</span>);</div>
+<div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span>            <span class="keyword">auto</span> <span class="keyword">const</span> baseFee =</div>
+<div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span>                <span class="keyword">static_cast&lt;</span><span class="keywordtype">int</span><span class="keyword">&gt;</span>(env.<a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1Env.html#a65bedb2e0babbd55343f721de9008a37">current</a>()-&gt;fees().base.drops());</div>
+<div class="line"><a id="l00255" name="l00255"></a><span class="lineno">  255</span> </div>
+<div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/vector.html">OraclesData</a> oracles;</div>
+<div class="line"><a id="l00257" name="l00257"></a><span class="lineno">  257</span>            prep(env, oracles);</div>
+<div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span>            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; 3; ++i)</div>
+<div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span>            {</div>
+<div class="line"><a id="l00260" name="l00260"></a><span class="lineno">  260</span>                <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html">Oracle</a> oracle(</div>
+<div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span>                    env,</div>
+<div class="line"><a id="l00262" name="l00262"></a><span class="lineno">  262</span>                    {.owner = oracles[i].first,</div>
+<div class="line"><a id="l00263" name="l00263"></a><span class="lineno">  263</span>                     .documentID = <a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1oracle.html#a47696f5fab72ed456ac8600a67f06119">asUInt</a>(*oracles[i].second),</div>
+<div class="line"><a id="l00264" name="l00264"></a><span class="lineno">  264</span>                     .fee = baseFee},</div>
+<div class="line"><a id="l00265" name="l00265"></a><span class="lineno">  265</span>                    <span class="keyword">false</span>);</div>
+<div class="line"><a id="l00266" name="l00266"></a><span class="lineno">  266</span>                <span class="comment">// push XRP/USD by more than three ledgers, so this price</span></div>
+<div class="line"><a id="l00267" name="l00267"></a><span class="lineno">  267</span>                <span class="comment">// oracle is not included in the dataset</span></div>
+<div class="line"><a id="l00268" name="l00268"></a><span class="lineno">  268</span>                oracle.set(<a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1oracle_1_1UpdateArg.html">UpdateArg</a>{</div>
+<div class="line"><a id="l00269" name="l00269"></a><span class="lineno">  269</span>                    .<a class="code hl_variable" href="structripple_1_1test_1_1jtx_1_1oracle_1_1UpdateArg.html#ab5f28bfb56ed9e15ab80e9a44c045696">series</a> = {{<span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;EUR&quot;</span>, 740, 1}}, .fee = baseFee});</div>
+<div class="line"><a id="l00270" name="l00270"></a><span class="lineno">  270</span>                oracle.set(<a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1oracle_1_1UpdateArg.html">UpdateArg</a>{</div>
+<div class="line"><a id="l00271" name="l00271"></a><span class="lineno">  271</span>                    .<a class="code hl_variable" href="structripple_1_1test_1_1jtx_1_1oracle_1_1UpdateArg.html#ab5f28bfb56ed9e15ab80e9a44c045696">series</a> = {{<span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;EUR&quot;</span>, 740, 1}}, .fee = baseFee});</div>
+<div class="line"><a id="l00272" name="l00272"></a><span class="lineno">  272</span>                oracle.set(<a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1oracle_1_1UpdateArg.html">UpdateArg</a>{</div>
+<div class="line"><a id="l00273" name="l00273"></a><span class="lineno">  273</span>                    .<a class="code hl_variable" href="structripple_1_1test_1_1jtx_1_1oracle_1_1UpdateArg.html#ab5f28bfb56ed9e15ab80e9a44c045696">series</a> = {{<span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;EUR&quot;</span>, 740, 1}}, .fee = baseFee});</div>
+<div class="line"><a id="l00274" name="l00274"></a><span class="lineno">  274</span>            }</div>
+<div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span>            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 3; i &lt; 6; ++i)</div>
+<div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span>            {</div>
+<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span>                <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html">Oracle</a> oracle(</div>
+<div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span>                    env,</div>
+<div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span>                    {.owner = oracles[i].first,</div>
+<div class="line"><a id="l00280" name="l00280"></a><span class="lineno">  280</span>                     .documentID = <a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1oracle.html#a47696f5fab72ed456ac8600a67f06119">asUInt</a>(*oracles[i].second),</div>
+<div class="line"><a id="l00281" name="l00281"></a><span class="lineno">  281</span>                     .fee = baseFee},</div>
+<div class="line"><a id="l00282" name="l00282"></a><span class="lineno">  282</span>                    <span class="keyword">false</span>);</div>
+<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span>                <span class="comment">// push XRP/USD by two ledgers, so this price</span></div>
+<div class="line"><a id="l00284" name="l00284"></a><span class="lineno">  284</span>                <span class="comment">// is included in the dataset</span></div>
+<div class="line"><a id="l00285" name="l00285"></a><span class="lineno">  285</span>                oracle.set(<a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1oracle_1_1UpdateArg.html">UpdateArg</a>{</div>
+<div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span>                    .<a class="code hl_variable" href="structripple_1_1test_1_1jtx_1_1oracle_1_1UpdateArg.html#ab5f28bfb56ed9e15ab80e9a44c045696">series</a> = {{<span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;EUR&quot;</span>, 740, 1}}, .fee = baseFee});</div>
+<div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span>                oracle.set(<a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1oracle_1_1UpdateArg.html">UpdateArg</a>{</div>
+<div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span>                    .<a class="code hl_variable" href="structripple_1_1test_1_1jtx_1_1oracle_1_1UpdateArg.html#ab5f28bfb56ed9e15ab80e9a44c045696">series</a> = {{<span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;EUR&quot;</span>, 740, 1}}, .fee = baseFee});</div>
+<div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span>            }</div>
+<div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span> </div>
+<div class="line"><a id="l00291" name="l00291"></a><span class="lineno">  291</span>            <span class="comment">// entire and trimmed stats</span></div>
+<div class="line"><a id="l00292" name="l00292"></a><span class="lineno">  292</span>            <span class="keyword">auto</span> ret =</div>
+<div class="line"><a id="l00293" name="l00293"></a><span class="lineno">  293</span>                <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a0133531e0fdbc760528798c514b0f1fb">Oracle::aggregatePrice</a>(env, <span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;USD&quot;</span>, oracles, 20, <span class="stringliteral">&quot;200&quot;</span>);</div>
+<div class="line"><a id="l00294" name="l00294"></a><span class="lineno">  294</span>            BEAST_EXPECT(ret[jss::entire_set][jss::mean] == <span class="stringliteral">&quot;74.6&quot;</span>);</div>
+<div class="line"><a id="l00295" name="l00295"></a><span class="lineno">  295</span>            BEAST_EXPECT(ret[jss::entire_set][jss::size].<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1oracle.html#a47696f5fab72ed456ac8600a67f06119">asUInt</a>() == 7);</div>
+<div class="line"><a id="l00296" name="l00296"></a><span class="lineno">  296</span>            BEAST_EXPECT(</div>
+<div class="line"><a id="l00297" name="l00297"></a><span class="lineno">  297</span>                ret[jss::entire_set][jss::standard_deviation] ==</div>
+<div class="line"><a id="l00298" name="l00298"></a><span class="lineno">  298</span>                <span class="stringliteral">&quot;0.2160246899469287&quot;</span>);</div>
+<div class="line"><a id="l00299" name="l00299"></a><span class="lineno">  299</span>            BEAST_EXPECT(ret[jss::median] == <span class="stringliteral">&quot;74.6&quot;</span>);</div>
+<div class="line"><a id="l00300" name="l00300"></a><span class="lineno">  300</span>            BEAST_EXPECT(ret[jss::trimmed_set][jss::mean] == <span class="stringliteral">&quot;74.6&quot;</span>);</div>
+<div class="line"><a id="l00301" name="l00301"></a><span class="lineno">  301</span>            BEAST_EXPECT(ret[jss::trimmed_set][jss::size].<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1oracle.html#a47696f5fab72ed456ac8600a67f06119">asUInt</a>() == 5);</div>
+<div class="line"><a id="l00302" name="l00302"></a><span class="lineno">  302</span>            BEAST_EXPECT(</div>
+<div class="line"><a id="l00303" name="l00303"></a><span class="lineno">  303</span>                ret[jss::trimmed_set][jss::standard_deviation] ==</div>
+<div class="line"><a id="l00304" name="l00304"></a><span class="lineno">  304</span>                <span class="stringliteral">&quot;0.158113883008419&quot;</span>);</div>
+<div class="line"><a id="l00305" name="l00305"></a><span class="lineno">  305</span>            BEAST_EXPECT(ret[jss::time] == 946694900);</div>
+<div class="line"><a id="l00306" name="l00306"></a><span class="lineno">  306</span>        }</div>
+<div class="line"><a id="l00307" name="l00307"></a><span class="lineno">  307</span> </div>
+<div class="line"><a id="l00308" name="l00308"></a><span class="lineno">  308</span>        <span class="comment">// Reduced data set because of the time threshold</span></div>
+<div class="line"><a id="l00309" name="l00309"></a><span class="lineno">  309</span>        {</div>
+<div class="line"><a id="l00310" name="l00310"></a><span class="lineno">  310</span>            <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env(*<span class="keyword">this</span>);</div>
+<div class="line"><a id="l00311" name="l00311"></a><span class="lineno">  311</span>            <span class="keyword">auto</span> <span class="keyword">const</span> baseFee =</div>
+<div class="line"><a id="l00312" name="l00312"></a><span class="lineno">  312</span>                <span class="keyword">static_cast&lt;</span><span class="keywordtype">int</span><span class="keyword">&gt;</span>(env.<a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1Env.html#a65bedb2e0babbd55343f721de9008a37">current</a>()-&gt;fees().base.drops());</div>
 <div class="line"><a id="l00313" name="l00313"></a><span class="lineno">  313</span> </div>
-<div class="line"><a id="l00314" name="l00314"></a><span class="lineno">  314</span>    <span class="keywordtype">void</span></div>
-<div class="line"><a id="l00315" name="l00315"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1jtx_1_1oracle_1_1GetAggregatePrice__test.html#ad228f332fe09361711e3a4a774a3a6d5">  315</a></span>    <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1GetAggregatePrice__test.html#ad228f332fe09361711e3a4a774a3a6d5">run</a>()<span class="keyword"> override</span></div>
-<div class="line"><a id="l00316" name="l00316"></a><span class="lineno">  316</span><span class="keyword">    </span>{</div>
-<div class="line"><a id="l00317" name="l00317"></a><span class="lineno">  317</span>        <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1GetAggregatePrice__test.html#a5592ba46432e26e6a6643fd831e1e0c2">testErrors</a>();</div>
-<div class="line"><a id="l00318" name="l00318"></a><span class="lineno">  318</span>        <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1GetAggregatePrice__test.html#af4fd626c3928f6e26aa8a266daab791e">testRpc</a>();</div>
-<div class="line"><a id="l00319" name="l00319"></a><span class="lineno">  319</span>    }</div>
-<div class="line"><a id="l00320" name="l00320"></a><span class="lineno">  320</span>};</div>
-<div class="line"><a id="l00321" name="l00321"></a><span class="lineno">  321</span> </div>
-<div class="line"><a id="l00322" name="l00322"></a><span class="lineno"><a class="line" href="namespaceripple_1_1test_1_1jtx_1_1oracle.html#a0f7478b6f667f1208151129cb795e717">  322</a></span>BEAST_DEFINE_TESTSUITE(GetAggregatePrice, app, <a class="code hl_namespace" href="namespaceripple.html">ripple</a>);</div>
-<div class="line"><a id="l00323" name="l00323"></a><span class="lineno">  323</span> </div>
-<div class="line"><a id="l00324" name="l00324"></a><span class="lineno">  324</span>}  <span class="comment">// namespace oracle</span></div>
-<div class="line"><a id="l00325" name="l00325"></a><span class="lineno">  325</span>}  <span class="comment">// namespace jtx</span></div>
-<div class="line"><a id="l00326" name="l00326"></a><span class="lineno">  326</span>}  <span class="comment">// namespace test</span></div>
-<div class="line"><a id="l00327" name="l00327"></a><span class="lineno">  327</span>}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a id="l00314" name="l00314"></a><span class="lineno">  314</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/vector.html">OraclesData</a> oracles;</div>
+<div class="line"><a id="l00315" name="l00315"></a><span class="lineno">  315</span>            prep(env, oracles);</div>
+<div class="line"><a id="l00316" name="l00316"></a><span class="lineno">  316</span>            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; oracles.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a>(); ++i)</div>
+<div class="line"><a id="l00317" name="l00317"></a><span class="lineno">  317</span>            {</div>
+<div class="line"><a id="l00318" name="l00318"></a><span class="lineno">  318</span>                <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html">Oracle</a> oracle(</div>
+<div class="line"><a id="l00319" name="l00319"></a><span class="lineno">  319</span>                    env,</div>
+<div class="line"><a id="l00320" name="l00320"></a><span class="lineno">  320</span>                    {.owner = oracles[i].first,</div>
+<div class="line"><a id="l00321" name="l00321"></a><span class="lineno">  321</span>                     .documentID = <a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1oracle.html#a47696f5fab72ed456ac8600a67f06119">asUInt</a>(*oracles[i].second),</div>
+<div class="line"><a id="l00322" name="l00322"></a><span class="lineno">  322</span>                     .fee = baseFee},</div>
+<div class="line"><a id="l00323" name="l00323"></a><span class="lineno">  323</span>                    <span class="keyword">false</span>);</div>
+<div class="line"><a id="l00324" name="l00324"></a><span class="lineno">  324</span>                <span class="comment">// push XRP/USD by two ledgers, so this price</span></div>
+<div class="line"><a id="l00325" name="l00325"></a><span class="lineno">  325</span>                <span class="comment">// is included in the dataset</span></div>
+<div class="line"><a id="l00326" name="l00326"></a><span class="lineno">  326</span>                oracle.set(<a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1oracle_1_1UpdateArg.html">UpdateArg</a>{</div>
+<div class="line"><a id="l00327" name="l00327"></a><span class="lineno">  327</span>                    .<a class="code hl_variable" href="structripple_1_1test_1_1jtx_1_1oracle_1_1UpdateArg.html#ab5f28bfb56ed9e15ab80e9a44c045696">series</a> = {{<span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;USD&quot;</span>, 740, 1}}, .fee = baseFee});</div>
+<div class="line"><a id="l00328" name="l00328"></a><span class="lineno">  328</span>            }</div>
+<div class="line"><a id="l00329" name="l00329"></a><span class="lineno">  329</span> </div>
+<div class="line"><a id="l00330" name="l00330"></a><span class="lineno">  330</span>            <span class="comment">// entire stats only, limit lastUpdateTime to {200, 125}</span></div>
+<div class="line"><a id="l00331" name="l00331"></a><span class="lineno">  331</span>            <span class="keyword">auto</span> ret = <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a0133531e0fdbc760528798c514b0f1fb">Oracle::aggregatePrice</a>(</div>
+<div class="line"><a id="l00332" name="l00332"></a><span class="lineno">  332</span>                env, <span class="stringliteral">&quot;XRP&quot;</span>, <span class="stringliteral">&quot;USD&quot;</span>, oracles, std::nullopt, 75);</div>
+<div class="line"><a id="l00333" name="l00333"></a><span class="lineno">  333</span>            BEAST_EXPECT(ret[jss::entire_set][jss::mean] == <span class="stringliteral">&quot;74&quot;</span>);</div>
+<div class="line"><a id="l00334" name="l00334"></a><span class="lineno">  334</span>            BEAST_EXPECT(ret[jss::entire_set][jss::size].<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1oracle.html#a47696f5fab72ed456ac8600a67f06119">asUInt</a>() == 8);</div>
+<div class="line"><a id="l00335" name="l00335"></a><span class="lineno">  335</span>            BEAST_EXPECT(ret[jss::entire_set][jss::standard_deviation] == <span class="stringliteral">&quot;0&quot;</span>);</div>
+<div class="line"><a id="l00336" name="l00336"></a><span class="lineno">  336</span>            BEAST_EXPECT(ret[jss::median] == <span class="stringliteral">&quot;74&quot;</span>);</div>
+<div class="line"><a id="l00337" name="l00337"></a><span class="lineno">  337</span>            BEAST_EXPECT(ret[jss::time] == 946695000);</div>
+<div class="line"><a id="l00338" name="l00338"></a><span class="lineno">  338</span>        }</div>
+<div class="line"><a id="l00339" name="l00339"></a><span class="lineno">  339</span>    }</div>
+<div class="line"><a id="l00340" name="l00340"></a><span class="lineno">  340</span> </div>
+<div class="line"><a id="l00341" name="l00341"></a><span class="lineno">  341</span>    <span class="keywordtype">void</span></div>
+<div class="line"><a id="l00342" name="l00342"></a><span class="lineno"><a class="line" href="classripple_1_1test_1_1jtx_1_1oracle_1_1GetAggregatePrice__test.html#ad228f332fe09361711e3a4a774a3a6d5">  342</a></span>    <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1GetAggregatePrice__test.html#ad228f332fe09361711e3a4a774a3a6d5">run</a>()<span class="keyword"> override</span></div>
+<div class="line"><a id="l00343" name="l00343"></a><span class="lineno">  343</span><span class="keyword">    </span>{</div>
+<div class="line"><a id="l00344" name="l00344"></a><span class="lineno">  344</span>        <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1GetAggregatePrice__test.html#a5592ba46432e26e6a6643fd831e1e0c2">testErrors</a>();</div>
+<div class="line"><a id="l00345" name="l00345"></a><span class="lineno">  345</span>        <a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1oracle_1_1GetAggregatePrice__test.html#af4fd626c3928f6e26aa8a266daab791e">testRpc</a>();</div>
+<div class="line"><a id="l00346" name="l00346"></a><span class="lineno">  346</span>    }</div>
+<div class="line"><a id="l00347" name="l00347"></a><span class="lineno">  347</span>};</div>
+<div class="line"><a id="l00348" name="l00348"></a><span class="lineno">  348</span> </div>
+<div class="line"><a id="l00349" name="l00349"></a><span class="lineno"><a class="line" href="namespaceripple_1_1test_1_1jtx_1_1oracle.html#a0f7478b6f667f1208151129cb795e717">  349</a></span>BEAST_DEFINE_TESTSUITE(GetAggregatePrice, app, <a class="code hl_namespace" href="namespaceripple.html">ripple</a>);</div>
+<div class="line"><a id="l00350" name="l00350"></a><span class="lineno">  350</span> </div>
+<div class="line"><a id="l00351" name="l00351"></a><span class="lineno">  351</span>}  <span class="comment">// namespace oracle</span></div>
+<div class="line"><a id="l00352" name="l00352"></a><span class="lineno">  352</span>}  <span class="comment">// namespace jtx</span></div>
+<div class="line"><a id="l00353" name="l00353"></a><span class="lineno">  353</span>}  <span class="comment">// namespace test</span></div>
+<div class="line"><a id="l00354" name="l00354"></a><span class="lineno">  354</span>}  <span class="comment">// namespace ripple</span></div>
 <div class="ttc" id="aclassJson_1_1Value_html"><div class="ttname"><a href="classJson_1_1Value.html">Json::Value</a></div><div class="ttdoc">Represents a JSON value.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00147">json_value.h:148</a></div></div>
 <div class="ttc" id="aclassbeast_1_1unit__test_1_1suite_html"><div class="ttname"><a href="classbeast_1_1unit__test_1_1suite.html">beast::unit_test::suite</a></div><div class="ttdoc">A testsuite class.</div><div class="ttdef"><b>Definition:</b> <a href="suite_8h_source.html#l00054">suite.h:55</a></div></div>
 <div class="ttc" id="aclassbeast_1_1unit__test_1_1suite_html_aaa1237d9b85c69d35fe86645cee094b5"><div class="ttname"><a href="classbeast_1_1unit__test_1_1suite.html#aaa1237d9b85c69d35fe86645cee094b5">beast::unit_test::suite::testcase</a></div><div class="ttdeci">testcase_t testcase</div><div class="ttdoc">Memberspace for declaring test cases.</div><div class="ttdef"><b>Definition:</b> <a href="suite_8h_source.html#l00155">suite.h:155</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Account_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Account.html">ripple::test::jtx::Account</a></div><div class="ttdoc">Immutable cryptographic account descriptor.</div><div class="ttdef"><b>Definition:</b> <a href="Account_8h_source.html#l00038">Account.h:39</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html">ripple::test::jtx::Env</a></div><div class="ttdoc">A transaction testing environment.</div><div class="ttdef"><b>Definition:</b> <a href="Env_8h_source.html#l00119">Env.h:120</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html_a65bedb2e0babbd55343f721de9008a37"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html#a65bedb2e0babbd55343f721de9008a37">ripple::test::jtx::Env::current</a></div><div class="ttdeci">std::shared_ptr&lt; OpenView const &gt; current() const</div><div class="ttdoc">Returns the current ledger.</div><div class="ttdef"><b>Definition:</b> <a href="Env_8h_source.html#l00328">Env.h:328</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html_ae2349266cb09d1f1c3de06606ebdf9e2"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html#ae2349266cb09d1f1c3de06606ebdf9e2">ripple::test::jtx::Env::fund</a></div><div class="ttdeci">void fund(bool setDefaultRipple, STAmount const &amp;amount, Account const &amp;account)</div><div class="ttdef"><b>Definition:</b> <a href="Env_8cpp_source.html#l00233">Env.cpp:233</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1oracle_1_1GetAggregatePrice__test_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1oracle_1_1GetAggregatePrice__test.html">ripple::test::jtx::oracle::GetAggregatePrice_test</a></div><div class="ttdef"><b>Definition:</b> <a href="GetAggregatePrice__test_8cpp_source.html#l00032">GetAggregatePrice_test.cpp:33</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1oracle_1_1GetAggregatePrice__test_html_a5592ba46432e26e6a6643fd831e1e0c2"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1oracle_1_1GetAggregatePrice__test.html#a5592ba46432e26e6a6643fd831e1e0c2">ripple::test::jtx::oracle::GetAggregatePrice_test::testErrors</a></div><div class="ttdeci">void testErrors()</div><div class="ttdef"><b>Definition:</b> <a href="GetAggregatePrice__test_8cpp_source.html#l00036">GetAggregatePrice_test.cpp:36</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1oracle_1_1GetAggregatePrice__test_html_ad228f332fe09361711e3a4a774a3a6d5"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1oracle_1_1GetAggregatePrice__test.html#ad228f332fe09361711e3a4a774a3a6d5">ripple::test::jtx::oracle::GetAggregatePrice_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdoc">Runs the suite.</div><div class="ttdef"><b>Definition:</b> <a href="GetAggregatePrice__test_8cpp_source.html#l00315">GetAggregatePrice_test.cpp:315</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1oracle_1_1GetAggregatePrice__test_html_af4fd626c3928f6e26aa8a266daab791e"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1oracle_1_1GetAggregatePrice__test.html#af4fd626c3928f6e26aa8a266daab791e">ripple::test::jtx::oracle::GetAggregatePrice_test::testRpc</a></div><div class="ttdeci">void testRpc()</div><div class="ttdef"><b>Definition:</b> <a href="GetAggregatePrice__test_8cpp_source.html#l00177">GetAggregatePrice_test.cpp:177</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1oracle_1_1GetAggregatePrice__test_html_ad228f332fe09361711e3a4a774a3a6d5"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1oracle_1_1GetAggregatePrice__test.html#ad228f332fe09361711e3a4a774a3a6d5">ripple::test::jtx::oracle::GetAggregatePrice_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdoc">Runs the suite.</div><div class="ttdef"><b>Definition:</b> <a href="GetAggregatePrice__test_8cpp_source.html#l00342">GetAggregatePrice_test.cpp:342</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1oracle_1_1GetAggregatePrice__test_html_af4fd626c3928f6e26aa8a266daab791e"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1oracle_1_1GetAggregatePrice__test.html#af4fd626c3928f6e26aa8a266daab791e">ripple::test::jtx::oracle::GetAggregatePrice_test::testRpc</a></div><div class="ttdeci">void testRpc()</div><div class="ttdef"><b>Definition:</b> <a href="GetAggregatePrice__test_8cpp_source.html#l00185">GetAggregatePrice_test.cpp:185</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1oracle_1_1Oracle_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html">ripple::test::jtx::oracle::Oracle</a></div><div class="ttdoc">Oracle class facilitates unit-testing of the Price Oracle feature.</div><div class="ttdef"><b>Definition:</b> <a href="Oracle_8h_source.html#l00119">Oracle.h:120</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1oracle_1_1Oracle_html_a0133531e0fdbc760528798c514b0f1fb"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a0133531e0fdbc760528798c514b0f1fb">ripple::test::jtx::oracle::Oracle::aggregatePrice</a></div><div class="ttdeci">static Json::Value aggregatePrice(Env &amp;env, std::optional&lt; AnyValue &gt; const &amp;baseAsset, std::optional&lt; AnyValue &gt; const &amp;quoteAsset, std::optional&lt; OraclesData &gt; const &amp;oracles=std::nullopt, std::optional&lt; AnyValue &gt; const &amp;trim=std::nullopt, std::optional&lt; AnyValue &gt; const &amp;timeTreshold=std::nullopt)</div><div class="ttdef"><b>Definition:</b> <a href="Oracle_8cpp_source.html#l00146">Oracle.cpp:146</a></div></div>
 <div class="ttc" id="aemplace_back_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/emplace_back.html">std::vector::emplace_back</a></div><div class="ttdeci">T emplace_back(T... args)</div></div>
