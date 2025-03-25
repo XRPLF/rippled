@@ -682,20 +682,42 @@ class Vault_test : public beast::unit_test::suite
         {
             testcase("private vault set domainId");
 
-            pdomain::Credentials const credentials{
-                {.issuer = credIssuer1, .credType = credType},
-                {.issuer = credIssuer2, .credType = credType}};
+            {
+                pdomain::Credentials const credentials1{
+                    {.issuer = credIssuer1, .credType = credType}};
 
-            env(pdomain::setTx(pdOwner, credentials));
-            auto const domainId = [&]() {
-                auto tx = env.tx()->getJson(JsonOptions::none);
-                return pdomain::getNewDomain(env.meta());
-            }();
+                env(pdomain::setTx(pdOwner, credentials1));
+                auto const domainId1 = [&]() {
+                    auto tx = env.tx()->getJson(JsonOptions::none);
+                    return pdomain::getNewDomain(env.meta());
+                }();
 
-            auto tx = vault.set({.owner = owner, .id = keylet.key});
-            tx[sfDomainID] = to_string(domainId);
-            env(tx);
-            env.close();
+                auto tx = vault.set({.owner = owner, .id = keylet.key});
+                tx[sfDomainID] = to_string(domainId1);
+                env(tx);
+                env.close();
+
+                // Update domain second time, should be harmless
+                env(tx);
+                env.close();
+            }
+
+            {
+                pdomain::Credentials const credentials{
+                    {.issuer = credIssuer1, .credType = credType},
+                    {.issuer = credIssuer2, .credType = credType}};
+
+                env(pdomain::setTx(pdOwner, credentials));
+                auto const domainId = [&]() {
+                    auto tx = env.tx()->getJson(JsonOptions::none);
+                    return pdomain::getNewDomain(env.meta());
+                }();
+
+                auto tx = vault.set({.owner = owner, .id = keylet.key});
+                tx[sfDomainID] = to_string(domainId);
+                env(tx);
+                env.close();
+            }
         }
 
         {
