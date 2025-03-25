@@ -18,7 +18,9 @@
 //==============================================================================
 
 #include <test/jtx.h>
+
 #include <xrpld/rpc/detail/RPCHelpers.h>
+
 #include <xrpl/protocol/jss.h>
 
 namespace ripple {

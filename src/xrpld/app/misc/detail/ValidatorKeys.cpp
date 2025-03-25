@@ -17,11 +17,11 @@
 */
 //==============================================================================
 
-#include <xrpld/app/misc/ValidatorKeys.h>
-
 #include <xrpld/app/misc/Manifest.h>
+#include <xrpld/app/misc/ValidatorKeys.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/base64.h>
 

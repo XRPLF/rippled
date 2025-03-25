@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/consensus/Consensus.h>
+
 #include <xrpl/basics/Log.h>
 
 namespace ripple {
@@ -108,6 +109,7 @@ checkConsensusReached(
     bool count_self,
     std::size_t minConsensusPct,
     bool reachedMax,
+    bool stalled,
     std::unique_ptr<std::stringstream> const& clog)
 {
     CLOG(clog) << "checkConsensusReached params: agreeing: " << agreeing
@@ -137,6 +139,17 @@ checkConsensusReached(
         return false;
     }
 
+    // We only get stalled when every disputed transaction unequivocally has 80%
+    // (minConsensusPct) agreement, either for or against. That is: either under
+    // 20% or over 80% consensus (repectively "nay" or "yay"). This prevents
+    // manipulation by a minority of byzantine peers of which transactions make
+    // the cut to get into the ledger.
+    if (stalled)
+    {
+        CLOG(clog) << "consensus stalled. ";
+        return true;
+    }
+
     if (count_self)
     {
         ++agreeing;
@@ -146,6 +159,7 @@ checkConsensusReached(
     }
 
     std::size_t currentPercentage = (agreeing * 100) / total;
+
     CLOG(clog) << "currentPercentage: " << currentPercentage;
     bool const ret = currentPercentage >= minConsensusPct;
     if (ret)
@@ -167,6 +181,7 @@ checkConsensus(
     std::size_t currentFinished,
     std::chrono::milliseconds previousAgreeTime,
     std::chrono::milliseconds currentAgreeTime,
+    bool stalled,
     ConsensusParms const& parms,
     bool proposing,
     beast::Journal j,
@@ -180,7 +195,7 @@ checkConsensus(
                << " minimum duration to reach consensus: "
                << parms.ledgerMIN_CONSENSUS.count() << "ms"
                << " max consensus time " << parms.ledgerMAX_CONSENSUS.count()
-               << "s"
+               << "ms"
                << " minimum consensus percentage: " << parms.minCONSENSUS_PCT
                << ". ";
 
@@ -210,10 +225,12 @@ checkConsensus(
             proposing,
             parms.minCONSENSUS_PCT,
             currentAgreeTime > parms.ledgerMAX_CONSENSUS,
+            stalled,
             clog))
     {
-        JLOG(j.debug()) << "normal consensus";
-        CLOG(clog) << "reached. ";
+        JLOG((stalled ? j.warn() : j.debug()))
+            << "normal consensus" << (stalled ? ", but stalled" : "");
+        CLOG(clog) << "reached" << (stalled ? ", but stalled." : ".");
         return ConsensusState::Yes;
     }
 
@@ -225,11 +242,25 @@ checkConsensus(
             false,
             parms.minCONSENSUS_PCT,
             currentAgreeTime > parms.ledgerMAX_CONSENSUS,
+            false,
             clog))
     {
         JLOG(j.warn()) << "We see no consensus, but 80% of nodes have moved on";
         CLOG(clog) << "We see no consensus, but 80% of nodes have moved on";
         return ConsensusState::MovedOn;
+    }
+
+    std::chrono::milliseconds const maxAgreeTime =
+        previousAgreeTime * parms.ledgerABANDON_CONSENSUS_FACTOR;
+    if (currentAgreeTime > std::clamp(
+                               maxAgreeTime,
+                               parms.ledgerMAX_CONSENSUS,
+                               parms.ledgerABANDON_CONSENSUS))
+    {
+        JLOG(j.warn()) << "consensus taken too long";
+        CLOG(clog) << "Consensus taken too long. ";
+        // Note the Expired result may be overridden by the caller.
+        return ConsensusState::Expired;
     }
 
     // no consensus yet

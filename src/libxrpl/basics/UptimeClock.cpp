@@ -19,6 +19,10 @@
 
 #include <xrpl/basics/UptimeClock.h>
 
+#include <atomic>
+#include <chrono>
+#include <thread>
+
 namespace ripple {
 
 std::atomic<UptimeClock::rep> UptimeClock::now_{0};  // seconds since start

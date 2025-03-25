@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/rpc/Status.h>
+
 #include <sstream>
 
 namespace ripple {

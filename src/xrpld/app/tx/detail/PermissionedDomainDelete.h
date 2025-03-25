@@ -17,7 +17,8 @@
 */
 //==============================================================================
 
-#pragma once
+#ifndef RIPPLE_TX_PERMISSIONEDDOMAINDELETE_H_INCLUDED
+#define RIPPLE_TX_PERMISSIONEDDOMAINDELETE_H_INCLUDED
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
@@ -44,3 +45,5 @@ public:
 };
 
 }  // namespace ripple
+
+#endif

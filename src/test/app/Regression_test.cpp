@@ -18,12 +18,13 @@
 #include <test/jtx.h>
 #include <test/jtx/check.h>
 #include <test/jtx/envconfig.h>
+
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/tx/apply.h>
+
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/json/json_reader.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/jss.h>
 
@@ -175,6 +176,7 @@ struct Regression_test : public beast::unit_test::suite
         Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
             cfg->section("transaction_queue")
                 .set("minimum_txn_in_ledger_standalone", "3");
+            cfg->FEES.reference_fee = 10;
             return cfg;
         }));
         Env_ss envs(env);
