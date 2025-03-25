@@ -217,7 +217,7 @@ protected:
 
     template <class T>
     static bool
-    validNumericRange(std::optional<T> value, T min, T max);
+    validNumericRange(std::optional<T> value, T max, T min = {});
 
 private:
     std::pair<TER, XRPAmount>

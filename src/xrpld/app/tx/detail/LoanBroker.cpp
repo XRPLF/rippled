@@ -35,6 +35,7 @@
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/TER.h>
@@ -68,11 +69,11 @@ LoanBrokerSet::doPreflight(PreflightContext const& ctx)
     auto const& tx = ctx.tx;
     if (!validDataLength(tx[~sfData], maxDataPayloadLength))
         return temINVALID;
-    if (!validNumericRange(tx[~sfManagementFeeRate], 0, maxFeeRate))
+    if (!validNumericRange(tx[~sfManagementFeeRate], maxFeeRate))
         return temINVALID;
-    if (!validNumericRange(tx[~sfCoverRateMinimum], 0, maxCoverRate))
+    if (!validNumericRange(tx[~sfCoverRateMinimum], maxCoverRate))
         return temINVALID;
-    if (!validNumericRange(tx[~sfCoverRateLiquidation], 0, maxCoverRate))
+    if (!validNumericRange(tx[~sfCoverRateLiquidation], maxCoverRate))
         return temINVALID;
 
     if (tx.isFieldPresent(sfLoanBrokerID))
@@ -187,7 +188,7 @@ LoanBrokerSet::doApply()
             broker->at(sfData) = *data;
         if (auto const rate = tx[~sfManagementFeeRate])
             broker->at(sfManagementFeeRate) = *rate;
-        if (auto const debtMax = tx[~sfDebtMaximum]; debtMax && *debtMax)
+        if (auto const debtMax = tx[~sfDebtMaximum]; debtMax)
             broker->at(sfDebtMaximum) = *debtMax;
         if (auto const coverMin = tx[~sfCoverRateMinimum])
             broker->at(sfCoverRateMinimum) = *coverMin;
