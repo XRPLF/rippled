@@ -59,6 +59,9 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
     if (vault->at(sfAssetAvailable) != 0)
         return tecHAS_OBLIGATIONS;
 
+    if (vault->at(sfAssetTotal) != 0)
+        return tecHAS_OBLIGATIONS;
+
     return tesSUCCESS;
 }
 
