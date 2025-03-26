@@ -93,7 +93,7 @@ parseUrl(parsedURL& pUrl, std::string const& strUrl)
     // We need to use Endpoint to parse the domain to
     // strip surrounding brackets from IPv6 addresses,
     // e.g. [::1] => ::1.
-    const auto result = beast::IP::Endpoint::from_string_checked(domain);
+    auto const result = beast::IP::Endpoint::from_string_checked(domain);
     pUrl.domain = result ? result->address().to_string() : domain;
     const std::string port = smMatch[5];
     if (!port.empty())

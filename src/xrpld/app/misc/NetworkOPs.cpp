@@ -3496,7 +3496,7 @@ void
 NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
 {
     enum DatabaseType { Sqlite, None };
-    static const auto databaseType = [&]() -> DatabaseType {
+    static auto const databaseType = [&]() -> DatabaseType {
         // Use a dynamic_cast to return DatabaseType::None
         // on failure.
         if (dynamic_cast<SQLiteDatabase*>(&app_.getRelationalDatabase()))

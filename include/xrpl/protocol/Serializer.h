@@ -161,7 +161,7 @@ public:
     bool
     getInteger(Integer& number, int offset)
     {
-        static const auto bytes = sizeof(Integer);
+        static auto const bytes = sizeof(Integer);
         if ((offset + bytes) > mData.size())
             return false;
         number = 0;

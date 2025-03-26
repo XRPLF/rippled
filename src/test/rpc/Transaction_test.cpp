@@ -135,7 +135,7 @@ class Transaction_test : public beast::unit_test::suite
             BEAST_EXPECT(!result[jss::result][jss::searched_all].asBool());
         }
 
-        const auto deletedLedger = (startLegSeq + endLegSeq) / 2;
+        auto const deletedLedger = (startLegSeq + endLegSeq) / 2;
         {
             // Remove one of the ledgers from the database directly
             dynamic_cast<SQLiteDatabase*>(&env.app().getRelationalDatabase())
@@ -393,7 +393,7 @@ class Transaction_test : public beast::unit_test::suite
             BEAST_EXPECT(!result[jss::result][jss::searched_all].asBool());
         }
 
-        const auto deletedLedger = (startLegSeq + endLegSeq) / 2;
+        auto const deletedLedger = (startLegSeq + endLegSeq) / 2;
         {
             // Remove one of the ledgers from the database directly
             dynamic_cast<SQLiteDatabase*>(&env.app().getRelationalDatabase())

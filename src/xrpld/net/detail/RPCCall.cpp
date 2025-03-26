@@ -1041,7 +1041,7 @@ private:
 
         if (jvParams.size() >= 3)
         {
-            const auto offset = jvParams.size() == 3 ? 0 : 1;
+            auto const offset = jvParams.size() == 3 ? 0 : 1;
 
             jvRequest[jss::min_ledger] = jvParams[1u + offset].asString();
             jvRequest[jss::max_ledger] = jvParams[2u + offset].asString();
