@@ -476,12 +476,6 @@ public:
     std::uint32_t
     ownerCount(Account const& account) const;
 
-    Vault
-    vault()
-    {
-        return Vault{*this};
-    }
-
     /** Return an account root.
         @return empty if the account does not exist.
     */
