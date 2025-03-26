@@ -71,7 +71,7 @@ class Vault_test : public beast::unit_test::suite
             {
                 testcase(prefix + " fail to set negative maximum");
                 auto tx = vault.set({.owner = owner, .id = keylet.key});
-                tx[sfAssetMaximum] = negativeAmount(asset).number();
+                tx[sfAssetsMaximum] = negativeAmount(asset).number();
                 env(tx, ter{temMALFORMED});
             }
 
@@ -138,7 +138,7 @@ class Vault_test : public beast::unit_test::suite
             {
                 testcase(prefix + " fail to update because wrong owner");
                 auto tx = vault.set({.owner = issuer, .id = keylet.key});
-                tx[sfAssetMaximum] = asset(50).number();
+                tx[sfAssetsMaximum] = asset(50).number();
                 env(tx, ter(tecNO_PERMISSION));
             }
 
@@ -153,21 +153,21 @@ class Vault_test : public beast::unit_test::suite
                 testcase(
                     prefix + " fail to set maximum lower than current amount");
                 auto tx = vault.set({.owner = owner, .id = keylet.key});
-                tx[sfAssetMaximum] = asset(50).number();
+                tx[sfAssetsMaximum] = asset(50).number();
                 env(tx, ter(tecLIMIT_EXCEEDED));
             }
 
             {
                 testcase(prefix + " fail to set zero vault");
                 auto tx = vault.set({.owner = owner, .id = beast::zero});
-                tx[sfAssetMaximum] = asset(150).number();
+                tx[sfAssetsMaximum] = asset(150).number();
                 env(tx, ter(temMALFORMED));
             }
 
             {
                 testcase(prefix + " set maximum higher than current amount");
                 auto tx = vault.set({.owner = owner, .id = keylet.key});
-                tx[sfAssetMaximum] = asset(150).number();
+                tx[sfAssetsMaximum] = asset(150).number();
                 env(tx);
             }
 
@@ -197,7 +197,7 @@ class Vault_test : public beast::unit_test::suite
             {
                 testcase(prefix + " reset maximum to zero i.e. not enforced");
                 auto tx = vault.set({.owner = owner, .id = keylet.key});
-                tx[sfAssetMaximum] = asset(0).number();
+                tx[sfAssetsMaximum] = asset(0).number();
                 env(tx);
             }
 
@@ -428,7 +428,7 @@ class Vault_test : public beast::unit_test::suite
                      Vault& vault) {
             testcase("nothing to set");
             auto tx = vault.set({.owner = owner, .id = keylet::skip().key});
-            tx[sfAssetMaximum] = asset(0).number();
+            tx[sfAssetsMaximum] = asset(0).number();
             env(tx, ter(tecNO_ENTRY));
         });
 
@@ -714,7 +714,7 @@ class Vault_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 jvVault[jss::result][jss::node][jss::ShareTotal] == "100");
             BEAST_EXPECT(
-                jvVault[jss::result][jss::node][sfAssetTotal.fieldName] ==
+                jvVault[jss::result][jss::node][sfAssetsTotal.fieldName] ==
                 "100");
 
             // Vault pseudo-account
@@ -756,7 +756,7 @@ class Vault_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 jvVault[jss::result][jss::node][jss::ShareTotal] == "50");
             BEAST_EXPECT(
-                jvVault[jss::result][jss::node][sfAssetTotal.fieldName] ==
+                jvVault[jss::result][jss::node][sfAssetsTotal.fieldName] ==
                 "50");
         }
 

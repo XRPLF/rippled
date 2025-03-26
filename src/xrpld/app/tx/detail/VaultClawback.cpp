@@ -156,7 +156,7 @@ VaultClawback::doApply()
     }
 
     // Clamp to maximum.
-    Number maxAssets = *vault->at(sfAssetAvailable);
+    Number maxAssets = *vault->at(sfAssetsAvailable);
     if (assets > maxAssets)
     {
         assets = maxAssets;
@@ -166,8 +166,8 @@ VaultClawback::doApply()
     if (shares == beast::zero)
         return tecINSUFFICIENT_FUNDS;
 
-    vault->at(sfAssetTotal) -= assets;
-    vault->at(sfAssetAvailable) -= assets;
+    vault->at(sfAssetsTotal) -= assets;
+    vault->at(sfAssetsAvailable) -= assets;
     view().update(vault);
 
     auto const& vaultAccount = vault->at(sfAccount);

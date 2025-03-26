@@ -196,9 +196,9 @@ TYPED_SFIELD(sfVaultID,                  UINT256,   35)
 
 // number (common)
 TYPED_SFIELD(sfNumber,                   NUMBER,     1)
-TYPED_SFIELD(sfAssetAvailable,           NUMBER,     2)
-TYPED_SFIELD(sfAssetMaximum,             NUMBER,     3)
-TYPED_SFIELD(sfAssetTotal,               NUMBER,     4)
+TYPED_SFIELD(sfAssetsAvailable,           NUMBER,     2)
+TYPED_SFIELD(sfAssetsMaximum,             NUMBER,     3)
+TYPED_SFIELD(sfAssetsTotal,               NUMBER,     4)
 TYPED_SFIELD(sfLossUnrealized,           NUMBER,     5)
 
 // currency amount (common)

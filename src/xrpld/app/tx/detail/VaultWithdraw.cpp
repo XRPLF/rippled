@@ -160,11 +160,11 @@ VaultWithdraw::doApply()
     // The vault must have enough assets on hand. The vault may hold assets that
     // it has already pledged. That is why we look at AssetAvailable instead of
     // the pseudo-account balance.
-    if (*vault->at(sfAssetAvailable) < assets)
+    if (*vault->at(sfAssetsAvailable) < assets)
         return tecINSUFFICIENT_FUNDS;
 
-    vault->at(sfAssetTotal) -= assets;
-    vault->at(sfAssetAvailable) -= assets;
+    vault->at(sfAssetsTotal) -= assets;
+    vault->at(sfAssetsAvailable) -= assets;
     view().update(vault);
 
     auto const& vaultAccount = vault->at(sfAccount);

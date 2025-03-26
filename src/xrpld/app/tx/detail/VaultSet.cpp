@@ -61,14 +61,14 @@ VaultSet::preflight(PreflightContext const& ctx)
             return temMALFORMED;
     }
 
-    if (auto const assetMax = ctx.tx[~sfAssetMaximum])
+    if (auto const assetMax = ctx.tx[~sfAssetsMaximum])
     {
         if (*assetMax < beast::zero)
             return temMALFORMED;
     }
 
     if (!ctx.tx.isFieldPresent(sfDomainID) &&
-        !ctx.tx.isFieldPresent(sfAssetMaximum) &&
+        !ctx.tx.isFieldPresent(sfAssetsMaximum) &&
         !ctx.tx.isFieldPresent(sfData))
         return temMALFORMED;
 
@@ -132,12 +132,12 @@ VaultSet::doApply()
     // Update mutable flags and fields if given.
     if (tx.isFieldPresent(sfData))
         vault->at(sfData) = tx[sfData];
-    if (tx.isFieldPresent(sfAssetMaximum))
+    if (tx.isFieldPresent(sfAssetsMaximum))
     {
-        if (tx[sfAssetMaximum] != 0 &&
-            tx[sfAssetMaximum] < *vault->at(sfAssetTotal))
+        if (tx[sfAssetsMaximum] != 0 &&
+            tx[sfAssetsMaximum] < *vault->at(sfAssetsTotal))
             return tecLIMIT_EXCEEDED;
-        vault->at(sfAssetMaximum) = tx[sfAssetMaximum];
+        vault->at(sfAssetsMaximum) = tx[sfAssetsMaximum];
     }
     if (tx.isFieldPresent(sfDomainID))
     {

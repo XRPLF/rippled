@@ -468,7 +468,7 @@ TRANSACTION(ttPERMISSIONED_DOMAIN_DELETE, 63, PermissionedDomainDelete, ({
 /** This transaction creates a single asset vault. */
 TRANSACTION(ttVAULT_CREATE, 64, VaultCreate, ({
     {sfAsset, soeREQUIRED, soeMPTSupported},
-    {sfAssetMaximum, soeOPTIONAL},
+    {sfAssetsMaximum, soeOPTIONAL},
     {sfMPTokenMetadata, soeOPTIONAL},
     {sfDomainID, soeOPTIONAL}, // PermissionedDomainID
     {sfWithdrawalPolicy, soeOPTIONAL},
@@ -478,7 +478,7 @@ TRANSACTION(ttVAULT_CREATE, 64, VaultCreate, ({
 /** This transaction updates a single asset vault. */
 TRANSACTION(ttVAULT_SET, 65, VaultSet, ({
     {sfVaultID, soeREQUIRED},
-    {sfAssetMaximum, soeOPTIONAL},
+    {sfAssetsMaximum, soeOPTIONAL},
     {sfDomainID, soeOPTIONAL}, // PermissionedDomainID
     {sfData, soeOPTIONAL},
 }))

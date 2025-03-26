@@ -56,10 +56,10 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
     if (vault->at(sfOwner) != ctx.tx[sfAccount])
         return tecNO_PERMISSION;
 
-    if (vault->at(sfAssetAvailable) != 0)
+    if (vault->at(sfAssetsAvailable) != 0)
         return tecHAS_OBLIGATIONS;
 
-    if (vault->at(sfAssetTotal) != 0)
+    if (vault->at(sfAssetsTotal) != 0)
         return tecHAS_OBLIGATIONS;
 
     return tesSUCCESS;

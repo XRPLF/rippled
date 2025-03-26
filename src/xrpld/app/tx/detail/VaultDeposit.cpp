@@ -166,13 +166,13 @@ VaultDeposit::doApply()
         shares.asset() != assets.asset(),
         "ripple::VaultDeposit::doApply : assets are not shares");
 
-    vault->at(sfAssetTotal) += assets;
-    vault->at(sfAssetAvailable) += assets;
+    vault->at(sfAssetsTotal) += assets;
+    vault->at(sfAssetsAvailable) += assets;
     view().update(vault);
 
     // A deposit must not push the vault over its limit.
-    auto const maximum = *vault->at(sfAssetMaximum);
-    if (maximum != 0 && *vault->at(sfAssetTotal) > maximum)
+    auto const maximum = *vault->at(sfAssetsMaximum);
+    if (maximum != 0 && *vault->at(sfAssetsTotal) > maximum)
         return tecLIMIT_EXCEEDED;
 
     // Transfer assets from depositor to vault.

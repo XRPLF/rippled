@@ -68,7 +68,7 @@ VaultCreate::preflight(PreflightContext const& ctx)
             return temMALFORMED;  // DomainID only allowed on private vaults
     }
 
-    if (auto const assetMax = ctx.tx[~sfAssetMaximum])
+    if (auto const assetMax = ctx.tx[~sfAssetsMaximum])
     {
         if (*assetMax < beast::zero)
             return temMALFORMED;
@@ -187,12 +187,12 @@ VaultCreate::doApply()
     vault->at(sfOwner) = ownerId;
     vault->at(sfAccount) = pseudoId;
     vault->at(sfAsset) = tx[sfAsset];
-    vault->at(sfAssetTotal) = Number(0);
-    vault->at(sfAssetAvailable) = Number(0);
+    vault->at(sfAssetsTotal) = Number(0);
+    vault->at(sfAssetsAvailable) = Number(0);
     vault->at(sfLossUnrealized) = Number(0);
     // Leave default values for AssetTotal and AssetAvailable, both zero.
-    if (auto value = tx[~sfAssetMaximum])
-        vault->at(sfAssetMaximum) = *value;
+    if (auto value = tx[~sfAssetsMaximum])
+        vault->at(sfAssetsMaximum) = *value;
     vault->at(sfMPTokenIssuanceID) = share;
     if (auto value = tx[~sfData])
         vault->at(sfData) = *value;
