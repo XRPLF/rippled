@@ -2676,7 +2676,7 @@ public:
     {
         using namespace test::jtx;
         FeatureBitset const all{supported_amendments()};
-        // testIOUWithFeats(all);
+        testIOUWithFeats(all);
         testMPTWithFeats(all);
     }
 };
