@@ -815,6 +815,7 @@ class View_test : public beast::unit_test::suite
         auto const EUR = gw["EUR"];
 
         env.fund(XRP(10000), alice, bob, carol, gw);
+        env.close();
         env.trust(USD(100), alice, bob, carol);
         {
             // Global freezing.

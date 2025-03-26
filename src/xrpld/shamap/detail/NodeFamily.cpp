@@ -22,7 +22,7 @@
 #include <xrpld/app/main/Tuning.h>
 #include <xrpld/shamap/NodeFamily.h>
 
-#include <sstream>
+#include <xrpl/basics/TaggedCache.ipp>
 
 namespace ripple {
 

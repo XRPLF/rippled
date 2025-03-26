@@ -2137,6 +2137,8 @@ public:
     {
         testcase("autofill fees");
         test::jtx::Env env(*this);
+        auto const baseFee =
+            static_cast<int>(env.current()->fees().base.drops());
         auto ledger = env.current();
         auto const& feeTrack = env.app().getFeeTrack();
 
@@ -2156,7 +2158,7 @@ public:
             BEAST_EXPECT(!RPC::contains_error(result));
             BEAST_EXPECT(
                 req[jss::tx_json].isMember(jss::Fee) &&
-                req[jss::tx_json][jss::Fee] == 10);
+                req[jss::tx_json][jss::Fee] == baseFee);
         }
 
         {
@@ -2177,7 +2179,7 @@ public:
             BEAST_EXPECT(!RPC::contains_error(result));
             BEAST_EXPECT(
                 req[jss::tx_json].isMember(jss::Fee) &&
-                req[jss::tx_json][jss::Fee] == 10);
+                req[jss::tx_json][jss::Fee] == baseFee);
         }
 
         {
@@ -2656,20 +2658,24 @@ public:
     {
         testcase("sign/submit RPCs");
         using namespace std::chrono_literals;
+        using namespace test::jtx;
         // Use jtx to set up a ledger so the tests will do the right thing.
-        test::jtx::Account const a{"a"};  // rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA
-        test::jtx::Account const g{"g"};  // rLPwWB1itaUGMV8kbMLLysjGkEpTM2Soy4
+        Account const a{"a"};  // rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA
+        Account const g{"g"};  // rLPwWB1itaUGMV8kbMLLysjGkEpTM2Soy4
         auto const USD = g["USD"];
 
         // Account: rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi
         // seed:    sh1yJfwoi98zCygwijUzuHmJDeVKd
-        test::jtx::Account const ed{"ed", KeyType::ed25519};
+        Account const ed{"ed", KeyType::ed25519};
         // master is rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh.
         // "b" (not in the ledger) is rDg53Haik2475DJx8bjMDSDPj4VX7htaMd.
         // "c" (phantom signer) is rPcNzota6B8YBokhYtcTNqQVCngtbnWfux.
 
-        test::jtx::Env env(*this);
-        env.fund(test::jtx::XRP(100000), a, ed, g);
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg->FEES.reference_fee = 10;
+            return cfg;
+        }));
+        env.fund(XRP(100000), a, ed, g);
         env.close();
 
         env(trust(a, USD(1000)));
