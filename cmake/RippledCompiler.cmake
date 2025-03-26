@@ -121,12 +121,11 @@ else ()
     INTERFACE
       -rdynamic
       $<$<BOOL:${is_linux}>:-Wl,-z,relro,-z,now,--build-id>
-      # link to static libc/c++ iff:
+      # link to static c++ iff:
       #   * static option set and
       #   * NOT APPLE (AppleClang does not support static libc/c++) and
       #   * NOT san (sanitizers typically don't work with static libc/c++)
       $<$<AND:$<BOOL:${static}>,$<NOT:$<BOOL:${APPLE}>>,$<NOT:$<BOOL:${san}>>>:
-      -static-libstdc++
       -static-libgcc
       >)
 endif ()

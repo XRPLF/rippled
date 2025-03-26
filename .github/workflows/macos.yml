@@ -32,13 +32,6 @@ jobs:
       build_dir: .build
       NUM_PROCESSORS: 12
     steps:
-      - name: cleanup
-        run: |
-          # MacOS builds do not run in containers but on physical machines, and
-          # GitHub does not clean up by default. We must, however, do so to
-          # prevent separate CI invocations from affecting each other.
-          rm -rf {{.github.workspace}}/{.,}* || true
-          rm -rf ~/.conan || true
       - name: checkout
         uses: actions/checkout@v4
       - name: install Conan
