@@ -501,7 +501,7 @@ TRANSACTION(ttVAULT_WITHDRAW, 68, VaultWithdraw, ({
     {sfDestination, soeOPTIONAL},
 }))
 
-/** This transaction trades shares for assets with a vault. */
+/** This transaction claws back tokens from a vault. */
 TRANSACTION(ttVAULT_CLAWBACK, 69, VaultClawback, ({
     {sfVaultID, soeREQUIRED},
     {sfHolder, soeREQUIRED},
