@@ -2196,22 +2196,21 @@ rippleLockEscrowMPT(
     if (amount.getIssuer() != sender)
     {
         auto const mptokenID = keylet::mptoken(mptID.key, sender);
-        if (auto sle = view.peek(mptokenID))
-        {
-            auto const amt = sle->getFieldU64(sfMPTAmount);
-            auto const pay = amount.mpt().value();
-            if (amt < pay)
-                return tecINSUFFICIENT_FUNDS;
-            (*sle)[sfMPTAmount] = amt - pay;
-
-            if (sle->isFieldPresent(sfEscrowedAmount))
-                (*sle)[sfEscrowedAmount] += pay;
-            else
-                sle->setFieldU64(sfEscrowedAmount, pay);
-            view.update(sle);
-        }
+        auto sle = view.peek(mptokenID);
+        if (!sle)
+            return tecOBJECT_NOT_FOUND;
+        
+        auto const amt = sle->getFieldU64(sfMPTAmount);
+        auto const pay = amount.mpt().value();
+        if (amt < pay)
+            return tecINSUFFICIENT_FUNDS;
+        
+        (*sle)[sfMPTAmount] = amt - pay;
+        if (sle->isFieldPresent(sfEscrowedAmount))
+            (*sle)[sfEscrowedAmount] += pay;
         else
-            return tecNO_AUTH;
+            sle->setFieldU64(sfEscrowedAmount, pay);
+        view.update(sle);
     }
 
     // 1. Increase the Issuance EscrowedAmount
@@ -2243,60 +2242,54 @@ rippleUnlockEscrowMPT(
     // Decrease the Issuance EscrowedAmount
     {
         if (!sleIssuance->isFieldPresent(sfEscrowedAmount))
-            return tecINTERNAL;  // No escrowed amount to redeem
-        else
-        {
-            auto const escrowed = sleIssuance->getFieldU64(sfEscrowedAmount);
-            auto const redeem = amount.mpt().value();
-            if (escrowed >= redeem)
-            {
-                sleIssuance->setFieldU64(sfEscrowedAmount, escrowed - redeem);
-                view.update(sleIssuance);
-            }
-            else
-                return tecINTERNAL;
-        }
+            return tecINTERNAL;
+
+        auto const escrowed = sleIssuance->getFieldU64(sfEscrowedAmount);
+        auto const redeem = amount.mpt().value();
+        if (escrowed < redeem)
+            return tecINTERNAL;
+
+        sleIssuance->setFieldU64(sfEscrowedAmount, escrowed - redeem);
+        view.update(sleIssuance);
+
     }
 
     if (issuer != receiver)
     {
         // Increase the MPT Holder MPTAmount
         auto const mptokenID = keylet::mptoken(mptID.key, receiver);
-        if (auto sle = view.peek(mptokenID))
-        {
-            (*sle)[sfMPTAmount] += amount.mpt().value();
-            view.update(sle);
-        }
-        else
-            return tecNO_AUTH;
+        auto sle = view.peek(mptokenID);
+        if (!sle)
+            return tecOBJECT_NOT_FOUND;
+        
+        (*sle)[sfMPTAmount] += amount.mpt().value();
+        view.update(sle);
     }
     else
     {
         // Decrease the Issuance OutstandingAmount
         auto const outstanding = sleIssuance->getFieldU64(sfOutstandingAmount);
         auto const redeem = amount.mpt().value();
-        if (outstanding >= redeem)
-        {
-            sleIssuance->setFieldU64(sfOutstandingAmount, outstanding - redeem);
-            view.update(sleIssuance);
-        }
-        else
+        if (outstanding < redeem)
             return tecINTERNAL;
+
+        sleIssuance->setFieldU64(sfOutstandingAmount, outstanding - redeem);
+        view.update(sleIssuance);
     }
 
     if (issuer != sender)
     {
         // Descrease the MPT Holder EscrowedAmount
         auto const mptokenID = keylet::mptoken(mptID.key, sender);
-        if (auto sle = view.peek(mptokenID))
-        {
-            if (!sle->isFieldPresent(sfEscrowedAmount))
-                return tecINTERNAL;
-            (*sle)[sfEscrowedAmount] -= amount.mpt().value();
-            view.update(sle);
-        }
-        else
-            return tecNO_AUTH;
+        auto sle = view.peek(mptokenID);
+        if (!sle)
+            return tecOBJECT_NOT_FOUND;
+
+        if (!sle->isFieldPresent(sfEscrowedAmount))
+            return tecINTERNAL;
+       
+        (*sle)[sfEscrowedAmount] -= amount.mpt().value();
+        view.update(sle);
     }
     return tesSUCCESS;
 }
