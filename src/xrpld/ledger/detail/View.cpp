@@ -305,16 +305,17 @@ isVaultPseudoAccountFrozen(ReadView const& view, MPTIssue const& mptShare)
     if (mptIssuance == nullptr)
     {
         UNREACHABLE(
-            "ripple::isVaultPseudoAccountFrozen : null MPTokenIssuance");
-        return false;
+            "ripple::isVaultPseudoAccountFrozen : null MPTokenIssuance");  // LCOV_EXCL_LINE
+        return false;  // LCOV_EXCL_LINE
     }
 
     auto const issuer = mptIssuance->getAccountID(sfIssuer);
     auto const mptIssuer = view.read(keylet::account(issuer));
     if (mptIssuer == nullptr)
     {
-        UNREACHABLE("ripple::isVaultPseudoAccountFrozen : null MPToken issuer");
-        return false;
+        UNREACHABLE(
+            "ripple::isVaultPseudoAccountFrozen : null MPToken issuer");  // LCOV_EXCL_LINE
+        return false;  // LCOV_EXCL_LINE
     }
 
     if (!mptIssuer->isFieldPresent(sfVaultID))
@@ -324,8 +325,9 @@ isVaultPseudoAccountFrozen(ReadView const& view, MPTIssue const& mptShare)
         view.read(keylet::vault(mptIssuer->getFieldH256(sfVaultID)));
     if (vault == nullptr)
     {
-        UNREACHABLE("ripple::isVaultPseudoAccountFrozen : null vault");
-        return false;
+        UNREACHABLE(
+            "ripple::isVaultPseudoAccountFrozen : null vault");  // LCOV_EXCL_LINE
+        return false;  // LCOV_EXCL_LINE
     }
 
     Asset const asset{vault->at(sfAsset)};
@@ -1084,7 +1086,8 @@ createPseudoAccount(
             account->setFieldH256(sfVaultID, pseudoOwnerKey);
             break;
         default:
-            UNREACHABLE("ripple::createPseudoAccount : unknown owner key type");
+            UNREACHABLE(
+                "ripple::createPseudoAccount : unknown owner key type");  // LCOV_EXCL_LINE
             return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
     }
 
@@ -1310,8 +1313,9 @@ addEmptyHolding(
              .accountID = accountID});
     }
 
-    // Should be unreachable.
-    return tecINTERNAL;
+    UNREACHABLE(
+        "ripple::addEmptyHolding : neither Issue nor MPTIssue");  // LCOV_EXCL_LINE
+    return tecINTERNAL;  // LCOV_EXCL_LINE
 }
 
 [[nodiscard]] TER
@@ -1363,8 +1367,9 @@ removeEmptyHolding(
              .flags = tfMPTUnauthorize});
     }
 
-    // Should be unreachable.
-    return tecINTERNAL;
+    UNREACHABLE(
+        "ripple::removeEmptyHolding : neither Issue nor MPTIssue");  // LCOV_EXCL_LINE
+    return tecINTERNAL;  // LCOV_EXCL_LINE
 }
 
 TER
@@ -2331,8 +2336,8 @@ enforceMPTokenAuthorization(
     }
 
     UNREACHABLE(
-        "ripple::enforceMPTokenAuthorization : condition list is incomplete");
-    return tefINTERNAL;
+        "ripple::enforceMPTokenAuthorization : condition list is incomplete");  // LCOV_EXCL_LINE
+    return tefINTERNAL;  // LCOV_EXCL_LINE
 }
 
 TER
