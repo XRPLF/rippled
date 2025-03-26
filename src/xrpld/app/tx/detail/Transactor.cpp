@@ -95,7 +95,7 @@ preflight1(PreflightContext const& ctx)
         if (!ctx.rules.enabled(featurePermissionDelegation))
             return temDISABLED;
 
-        if (*ctx.tx[~sfDelegate] == ctx.tx[sfAccount])
+        if (ctx.tx[sfDelegate] == ctx.tx[sfAccount])
             return temBAD_SIGNER;
     }
 
