@@ -160,7 +160,7 @@ jobs:
           cmake-args: "-Dassert=TRUE -Dwerr=TRUE ${{ matrix.cmake-args }}"
       - name: check binary
         run: |
-          ldd rippled
+          ldd ${build_dir}/rippled
       - name: test
         run: |
           ${build_dir}/rippled --unittest --unittest-jobs $(nproc)
