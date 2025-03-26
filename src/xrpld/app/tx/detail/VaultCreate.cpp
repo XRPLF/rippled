@@ -102,7 +102,7 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
         auto mptID = asset.get<MPTIssue>().getMptID();
         auto issuance = ctx.view.read(keylet::mptIssuance(mptID));
         if (!issuance)
-            return tecNO_ENTRY;
+            return tecOBJECT_NOT_FOUND;
         if ((issuance->getFlags() & lsfMPTCanTransfer) == 0)
             return tecNO_AUTH;
     }
@@ -116,7 +116,7 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
         auto const sleDomain =
             ctx.view.read(keylet::permissionedDomain(*domain));
         if (!sleDomain)
-            return tecNO_ENTRY;
+            return tecOBJECT_NOT_FOUND;
     }
 
     return tesSUCCESS;

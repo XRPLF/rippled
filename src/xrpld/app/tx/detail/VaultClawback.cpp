@@ -71,7 +71,7 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
 {
     auto const vault = ctx.view.read(keylet::vault(ctx.tx[sfVaultID]));
     if (!vault)
-        return tecOBJECT_NOT_FOUND;
+        return tecNO_ENTRY;
 
     auto account = ctx.tx[sfAccount];
     auto const issuer = ctx.view.read(keylet::account(account));
@@ -117,7 +117,7 @@ VaultClawback::doApply()
     auto const& tx = ctx_.tx;
     auto const vault = view().peek(keylet::vault(tx[sfVaultID]));
     if (!vault)
-        return tecOBJECT_NOT_FOUND;
+        return tefINTERNAL;  // Enforced in preclaim
 
     auto const mptIssuanceID = (*vault)[sfMPTokenIssuanceID];
     auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));

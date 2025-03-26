@@ -80,7 +80,7 @@ VaultSet::preclaim(PreclaimContext const& ctx)
 {
     auto const vault = ctx.view.read(keylet::vault(ctx.tx[sfVaultID]));
     if (!vault)
-        return tecOBJECT_NOT_FOUND;
+        return tecNO_ENTRY;
 
     // Assert that submitter is the Owner.
     if (ctx.tx[sfAccount] != vault->at(sfOwner))
@@ -120,9 +120,9 @@ VaultSet::doApply()
     auto const& tx = ctx_.tx;
 
     // Update existing object.
-    auto vault = view().peek({ltVAULT, tx[sfVaultID]});
+    auto vault = view().peek(keylet::vault(tx[sfVaultID]));
     if (!vault)
-        return tecOBJECT_NOT_FOUND;
+        return tefINTERNAL;  // Enforced in preclaim
 
     auto const mptIssuanceID = (*vault)[sfMPTokenIssuanceID];
     auto const sleIssuance = view().peek(keylet::mptIssuance(mptIssuanceID));

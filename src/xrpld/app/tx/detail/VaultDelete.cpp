@@ -23,6 +23,7 @@
 
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STNumber.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
 namespace ripple {
@@ -50,7 +51,7 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
 {
     auto const vault = ctx.view.read(keylet::vault(ctx.tx[sfVaultID]));
     if (!vault)
-        return tecOBJECT_NOT_FOUND;
+        return tecNO_ENTRY;
 
     if (vault->at(sfOwner) != ctx.tx[sfAccount])
         return tecNO_PERMISSION;
@@ -66,7 +67,7 @@ VaultDelete::doApply()
 {
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
     if (!vault)
-        return tefINTERNAL;
+        return tefINTERNAL;  // Enforced in preclaim
 
     // Destroy the asset holding.
     if (auto ter = removeEmptyHolding(

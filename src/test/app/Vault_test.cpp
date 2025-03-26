@@ -424,11 +424,54 @@ class Vault_test : public beast::unit_test::suite
                      Account const& issuer,
                      Account const& owner,
                      Account const& depositor,
+                     PrettyAsset const& asset,
+                     Vault& vault) {
+            testcase("nothing to set");
+            auto tx = vault.set({.owner = owner, .id = keylet::skip().key});
+            tx[sfAssetMaximum] = asset(0).number();
+            env(tx, ter(tecNO_ENTRY));
+        });
+
+        testCase([this](
+                     Env& env,
+                     Account const& issuer,
+                     Account const& owner,
+                     Account const& depositor,
+                     PrettyAsset const& asset,
+                     Vault& vault) {
+            testcase("nothing to deposit to");
+            auto tx = vault.deposit(
+                {.depositor = depositor,
+                 .id = keylet::skip().key,
+                 .amount = asset(10)});
+            env(tx, ter(tecNO_ENTRY));
+        });
+
+        testCase([this](
+                     Env& env,
+                     Account const& issuer,
+                     Account const& owner,
+                     Account const& depositor,
+                     PrettyAsset const& asset,
+                     Vault& vault) {
+            testcase("nothing to withdraw from");
+            auto tx = vault.withdraw(
+                {.depositor = depositor,
+                 .id = keylet::skip().key,
+                 .amount = asset(10)});
+            env(tx, ter(tecNO_ENTRY));
+        });
+
+        testCase([this](
+                     Env& env,
+                     Account const& issuer,
+                     Account const& owner,
+                     Account const& depositor,
                      Asset const& asset,
                      Vault& vault) {
             testcase("nothing to delete");
-            auto tx = vault.del({.owner = issuer, .id = keylet::skip().key});
-            env(tx, ter(tecOBJECT_NOT_FOUND));
+            auto tx = vault.del({.owner = owner, .id = keylet::skip().key});
+            env(tx, ter(tecNO_ENTRY));
         });
 
         testCase([this](
@@ -551,6 +594,34 @@ class Vault_test : public beast::unit_test::suite
             // A hexadecimal string of 1025 bytes.
             tx[sfMPTokenMetadata] = std::string(2050, 'B');
             env(tx, ter(temMALFORMED));
+        });
+
+        testCase([this](
+                     Env& env,
+                     Account const& issuer,
+                     Account const& owner,
+                     Account const& depositor,
+                     Asset const& asset,
+                     Vault& vault) {
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            tx[sfFlags] = tfVaultPrivate;
+            tx[sfDomainID] = to_string(base_uint<256>(0));
+            testcase("invalid zero domain");
+            env(tx, ter{temMALFORMED});
+        });
+
+        testCase([this](
+                     Env& env,
+                     Account const& issuer,
+                     Account const& owner,
+                     Account const& depositor,
+                     Asset const& asset,
+                     Vault& vault) {
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            tx[sfFlags] = tfVaultPrivate;
+            tx[sfDomainID] = to_string(base_uint<256>(42ul));
+            testcase("non-existing domain");
+            env(tx, ter{tecOBJECT_NOT_FOUND});
         });
     }
 
@@ -741,6 +812,23 @@ class Vault_test : public beast::unit_test::suite
 
             test(env, issuer, owner, depositor, asset, vault, mptt);
         };
+
+        testCase([this](
+                     Env& env,
+                     Account const& issuer,
+                     Account const& owner,
+                     Account const& depositor,
+                     PrettyAsset const& asset,
+                     Vault& vault,
+                     MPTTester& mptt) {
+            testcase("nothing to clawback from");
+            auto tx = vault.clawback(
+                {.issuer = issuer,
+                 .id = keylet::skip().key,
+                 .holder = depositor,
+                 .amount = asset(10)});
+            env(tx, ter(tecNO_ENTRY));
+        });
 
         testCase([this](
                      Env& env,

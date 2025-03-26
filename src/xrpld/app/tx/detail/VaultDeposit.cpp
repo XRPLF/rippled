@@ -58,7 +58,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
 {
     auto const vault = ctx.view.read(keylet::vault(ctx.tx[sfVaultID]));
     if (!vault)
-        return tecOBJECT_NOT_FOUND;
+        return tecNO_ENTRY;
 
     auto const account = ctx.tx[sfAccount];
     auto const assets = ctx.tx[sfAmount];
@@ -99,7 +99,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         auto mptID = assets.get<MPTIssue>().getMptID();
         auto issuance = ctx.view.read(keylet::mptIssuance(mptID));
         if (!issuance)
-            return tecNO_ENTRY;
+            return tecOBJECT_NOT_FOUND;
         if ((issuance->getFlags() & lsfMPTCanTransfer) == 0)
             return tecNO_AUTH;
     }
@@ -121,7 +121,7 @@ VaultDeposit::doApply()
 {
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
     if (!vault)
-        return tefINTERNAL;
+        return tefINTERNAL;  // Enforced in preclaim
 
     auto const assets = ctx_.tx[sfAmount];
 

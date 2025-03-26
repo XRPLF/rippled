@@ -63,7 +63,7 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
 {
     auto const vault = ctx.view.read(keylet::vault(ctx.tx[sfVaultID]));
     if (!vault)
-        return tecOBJECT_NOT_FOUND;
+        return tecNO_ENTRY;
 
     if (ctx.tx.isFieldPresent(sfDestination))
     {
@@ -95,7 +95,7 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         auto mptID = assets.get<MPTIssue>().getMptID();
         auto issuance = ctx.view.read(keylet::mptIssuance(mptID));
         if (!issuance)
-            return tecNO_ENTRY;
+            return tecOBJECT_NOT_FOUND;
         if ((issuance->getFlags() & lsfMPTCanTransfer) == 0)
             return tecNO_AUTH;
     }
