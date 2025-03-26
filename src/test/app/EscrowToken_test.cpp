@@ -2655,19 +2655,19 @@ struct EscrowToken_test : public beast::unit_test::suite
     void
     testMPTWithFeats(FeatureBitset features)
     {
-        // testMPTEnablement(features);
-        // testMPTCreatePreflight(features);
-        // testMPTCreatePreclaim(features);
-        // testMPTFinishPreclaim(features);
-        // testMPTFinishCreateAsset(features);
-        // testMPTCancelPreclaim(features);
-        // testMPTBalances(features);
-        // testMPTMetaAndOwnership(features);
-        // testMPTGateway(features);
+        testMPTEnablement(features);
+        testMPTCreatePreflight(features);
+        testMPTCreatePreclaim(features);
+        testMPTFinishPreclaim(features);
+        testMPTFinishCreateAsset(features);
+        testMPTCancelPreclaim(features);
+        testMPTBalances(features);
+        testMPTMetaAndOwnership(features);
+        testMPTGateway(features);
         testMPTLockedRate(features);
-        // testMPTRequireAuth(features);
-        // testMPTFreeze(features);
-        // testMPTDestroy(features);
+        testMPTRequireAuth(features);
+        testMPTFreeze(features);
+        testMPTDestroy(features);
     }
 
 public:
