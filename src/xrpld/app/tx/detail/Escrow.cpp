@@ -970,7 +970,8 @@ escrowUnlockApplyHelper<MPTIssue>(
         adjustOwnerCount(view, sleDest, 1, journal);
     }
 
-    if (!view.exists(keylet::mptoken(issuanceKey.key, receiver)) && !receiverIssuer)
+    if (!view.exists(keylet::mptoken(issuanceKey.key, receiver)) &&
+        !receiverIssuer)
         return tecNO_PERMISSION;
 
     auto const xferRate = transferRate(view, amount);

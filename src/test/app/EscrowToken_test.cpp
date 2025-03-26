@@ -2022,8 +2022,8 @@ struct EscrowToken_test : public beast::unit_test::suite
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
             mptGw.create(
                 {.ownerCount = 1,
-                .holderCount = 0,
-                .flags = tfMPTCanEscrow | tfMPTCanTransfer});
+                 .holderCount = 0,
+                 .flags = tfMPTCanEscrow | tfMPTCanTransfer});
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
             auto const MPT = mptGw["MPT"];
@@ -2131,8 +2131,8 @@ struct EscrowToken_test : public beast::unit_test::suite
             MPTTester mptGw(env, gw, {.holders = {alice, bob, carol}});
             mptGw.create(
                 {.ownerCount = 1,
-                .holderCount = 0,
-                .flags = tfMPTCanEscrow | tfMPTCanTransfer});
+                 .holderCount = 0,
+                 .flags = tfMPTCanEscrow | tfMPTCanTransfer});
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
             mptGw.authorize({.account = carol});
@@ -2256,8 +2256,8 @@ struct EscrowToken_test : public beast::unit_test::suite
             MPTTester mptGw(env, gw, {.holders = {alice, carol}});
             mptGw.create(
                 {.ownerCount = 1,
-                .holderCount = 0,
-                .flags = tfMPTCanEscrow | tfMPTCanTransfer});
+                 .holderCount = 0,
+                 .flags = tfMPTCanEscrow | tfMPTCanTransfer});
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = carol});
             auto const MPT = mptGw["MPT"];
@@ -2398,12 +2398,11 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const gw = Account("gw");
 
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
-            mptGw.create({
-                .ownerCount = 1,
-                .transferFee = 25000,
-                .holderCount = 0,
-                .flags = tfMPTCanEscrow | tfMPTCanTransfer
-            });
+            mptGw.create(
+                {.ownerCount = 1,
+                 .transferFee = 25000,
+                 .holderCount = 0,
+                 .flags = tfMPTCanEscrow | tfMPTCanTransfer});
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
             auto const MPT = mptGw["MPT"];
@@ -2431,7 +2430,9 @@ struct EscrowToken_test : public beast::unit_test::suite
                 fee(1500));
             env.close();
 
-            BEAST_EXPECT(mptBalance(env, alice, MPT) == preAlice - delta.value().value());
+            BEAST_EXPECT(
+                mptBalance(env, alice, MPT) ==
+                preAlice - delta.value().value());
             BEAST_EXPECT(mptBalance(env, bob, MPT) == 10'100);
         }
     }

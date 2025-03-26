@@ -2199,12 +2199,12 @@ rippleLockEscrowMPT(
         auto sle = view.peek(mptokenID);
         if (!sle)
             return tecOBJECT_NOT_FOUND;
-        
+
         auto const amt = sle->getFieldU64(sfMPTAmount);
         auto const pay = amount.mpt().value();
         if (amt < pay)
             return tecINSUFFICIENT_FUNDS;
-        
+
         (*sle)[sfMPTAmount] = amt - pay;
         if (sle->isFieldPresent(sfEscrowedAmount))
             (*sle)[sfEscrowedAmount] += pay;
@@ -2251,7 +2251,6 @@ rippleUnlockEscrowMPT(
 
         sleIssuance->setFieldU64(sfEscrowedAmount, escrowed - redeem);
         view.update(sleIssuance);
-
     }
 
     if (issuer != receiver)
@@ -2261,7 +2260,7 @@ rippleUnlockEscrowMPT(
         auto sle = view.peek(mptokenID);
         if (!sle)
             return tecOBJECT_NOT_FOUND;
-        
+
         (*sle)[sfMPTAmount] += amount.mpt().value();
         view.update(sle);
     }
@@ -2287,7 +2286,7 @@ rippleUnlockEscrowMPT(
 
         if (!sle->isFieldPresent(sfEscrowedAmount))
             return tecINTERNAL;
-       
+
         (*sle)[sfEscrowedAmount] -= amount.mpt().value();
         view.update(sle);
     }
