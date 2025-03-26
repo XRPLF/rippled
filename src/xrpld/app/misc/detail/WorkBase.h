@@ -212,10 +212,10 @@ template <class Impl>
 void
 WorkBase<Impl>::onConnect(error_code const& ec, endpoint_type const& endpoint)
 {
+    lastEndpoint_ = endpoint;
+
     if (ec)
         return fail(ec);
-
-    lastEndpoint_ = endpoint;
 
     impl().onConnect(ec);
 }
