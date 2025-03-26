@@ -938,8 +938,6 @@ escrowUnlockApplyHelper<MPTIssue>(
     bool const senderIssuer = issuer == sender;
     bool const receiverIssuer = issuer == receiver;
 
-    // Review Note: We could remove this and just say to use batch to auth the
-    // token first
     auto const issuanceKey =
         keylet::mptIssuance(amount.get<MPTIssue>().getMptID());
     if (!view.exists(keylet::mptoken(issuanceKey.key, receiver)) &&
@@ -948,8 +946,6 @@ escrowUnlockApplyHelper<MPTIssue>(
         if (std::uint32_t const ownerCount = {sleDest->at(sfOwnerCount)};
             balance < view.fees().accountReserve(ownerCount + 1))
         {
-            JLOG(journal.trace()) << "MPToken does not exist. "
-                                     "Insufficent reserve to create line.";
             return tecINSUFFICIENT_RESERVE;
         }
 
@@ -974,9 +970,8 @@ escrowUnlockApplyHelper<MPTIssue>(
         adjustOwnerCount(view, sleDest, 1, journal);
     }
 
-    if (!view.exists(keylet::mptoken(issuanceKey.key, receiver)) &&
-        !receiverIssuer)
-        return tecNO_AUTH;
+    if (!view.exists(keylet::mptoken(issuanceKey.key, receiver)) && !receiverIssuer)
+        return tecNO_PERMISSION;
 
     auto const xferRate = transferRate(view, amount);
     // update if issuer rate is less than locked rate
@@ -993,13 +988,12 @@ escrowUnlockApplyHelper<MPTIssue>(
     {
         // compute transfer fee, if any
         auto const xferFee = amount.value() -
-            divideRound(amount, lockedRate, amount.issue(), true);
+            divideRound(amount, lockedRate, amount.asset(), true);
         // compute balance to transfer
         finalAmt = amount.value() - xferFee;
     }
 
     return rippleUnlockEscrowMPT(view, sender, receiver, finalAmt, journal);
-    return tesSUCCESS;
 }
 
 TER

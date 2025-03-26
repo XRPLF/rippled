@@ -83,6 +83,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
             }
 
             if (ctx.view.rules().enabled(featureTokenEscrow) &&
+                (*sleMpt).isFieldPresent(sfEscrowedAmount) &&
                 (*sleMpt)[~sfEscrowedAmount] != 0)
             {
                 auto const sleMptIssuance = ctx.view.read(
