@@ -123,7 +123,7 @@ public:
             },
         };
 
-        for (const auto& tc : testcases)
+        for (auto const& tc : testcases)
             run(tc);
     }
 

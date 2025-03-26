@@ -564,7 +564,7 @@ private:
     struct TrafficGauges
     {
         TrafficGauges(
-            std::string name,
+            std::string const& name,
             beast::insight::Collector::ptr const& collector)
             : bytesIn(collector->make_gauge(name, "Bytes_In"))
             , bytesOut(collector->make_gauge(name, "Bytes_Out"))

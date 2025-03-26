@@ -195,7 +195,7 @@ public:
             cat <= category::unknown,
             "ripple::TrafficCount::addCount : valid category input");
 
-        const auto& it = counts_.find(cat);
+        auto const& it = counts_.find(cat);
 
         // nothing to do, the category does not exist
         if (it == counts_.end())
@@ -226,121 +226,67 @@ public:
     static std::string
     category_to_string(category cat)
     {
-        switch (cat)
-        {
-            case base:
-                return "overhead";
-            case cluster:
-                return "overhead_cluster";
-            case overlay:
-                return "overhead_overlay";
-            case manifests:
-                return "overhead_manifest";
-            case transaction:
-                return "transactions";
-            case transaction_duplicate:
-                return "transactions_duplicate";
-            case proposal:
-                return "proposals";
-            case proposal_untrusted:
-                return "proposals_untrusted";
-            case proposal_duplicate:
-                return "proposals_duplicate";
-            case validation:
-                return "validations";
-            case validation_untrusted:
-                return "validations_untrusted";
-            case validation_duplicate:
-                return "validations_duplicate";
-            case validatorlist:
-                return "validator_lists";
-            case squelch:
-                return "squelch";
-            case squelch_saved:
-                return "squelch_saved";
-            case get_set:
-                return "set_get";
-            case share_set:
-                return "set_share";
-            case ld_tsc_get:
-                return "ledger_data_Transaction_Set_candidate_get";
-            case ld_tsc_share:
-                return "ledger_data_Transaction_Set_candidate_share";
-            case ld_txn_get:
-                return "ledger_data_Transaction_Node_get";
-            case ld_txn_share:
-                return "ledger_data_Transaction_Node_share";
-            case ld_asn_get:
-                return "ledger_data_Account_State_Node_get";
-            case ld_asn_share:
-                return "ledger_data_Account_State_Node_share";
-            case ld_get:
-                return "ledger_data_get";
-            case ld_share:
-                return "ledger_data_share";
-            case gl_tsc_share:
-                return "ledger_Transaction_Set_candidate_share";
-            case gl_tsc_get:
-                return "ledger_Transaction_Set_candidate_get";
-            case gl_txn_share:
-                return "ledger_Transaction_node_share";
-            case gl_txn_get:
-                return "ledger_Transaction_node_get";
-            case gl_asn_share:
-                return "ledger_Account_State_node_share";
-            case gl_asn_get:
-                return "ledger_Account_State_node_get";
-            case gl_share:
-                return "ledger_share";
-            case gl_get:
-                return "ledger_get";
-            case share_hash_ledger:
-                return "getobject_Ledger_share";
-            case get_hash_ledger:
-                return "getobject_Ledger_get";
-            case share_hash_tx:
-                return "getobject_Transaction_share";
-            case get_hash_tx:
-                return "getobject_Transaction_get";
-            case share_hash_txnode:
-                return "getobject_Transaction_node_share";
-            case get_hash_txnode:
-                return "getobject_Transaction_node_get";
-            case share_hash_asnode:
-                return "getobject_Account_State_node_share";
-            case get_hash_asnode:
-                return "getobject_Account_State_node_get";
-            case share_cas_object:
-                return "getobject_CAS_share";
-            case get_cas_object:
-                return "getobject_CAS_get";
-            case share_fetch_pack:
-                return "getobject_Fetch_Pack_share";
-            case get_fetch_pack:
-                return "getobject_Fetch Pack_get";
-            case get_transactions:
-                return "getobject_Transactions_get";
-            case share_hash:
-                return "getobject_share";
-            case get_hash:
-                return "getobject_get";
-            case proof_path_request:
-                return "proof_path_request";
-            case proof_path_response:
-                return "proof_path_response";
-            case replay_delta_request:
-                return "replay_delta_request";
-            case replay_delta_response:
-                return "replay_delta_response";
-            case have_transactions:
-                return "have_transactions";
-            case requested_transactions:
-                return "requested_transactions";
-            case total:
-                return "total";
-            default:
-                return "unknown";
-        }
+        static const std::unordered_map<category, std::string> category_map = {
+            {base, "overhead"},
+            {cluster, "overhead_cluster"},
+            {overlay, "overhead_overlay"},
+            {manifests, "overhead_manifest"},
+            {transaction, "transactions"},
+            {transaction_duplicate, "transactions_duplicate"},
+            {proposal, "proposals"},
+            {proposal_untrusted, "proposals_untrusted"},
+            {proposal_duplicate, "proposals_duplicate"},
+            {validation, "validations"},
+            {validation_untrusted, "validations_untrusted"},
+            {validation_duplicate, "validations_duplicate"},
+            {validatorlist, "validator_lists"},
+            {squelch, "squelch"},
+            {squelch_saved, "squelch_saved"},
+            {get_set, "set_get"},
+            {share_set, "set_share"},
+            {ld_tsc_get, "ledger_data_Transaction_Set_candidate_get"},
+            {ld_tsc_share, "ledger_data_Transaction_Set_candidate_share"},
+            {ld_txn_get, "ledger_data_Transaction_Node_get"},
+            {ld_txn_share, "ledger_data_Transaction_Node_share"},
+            {ld_asn_get, "ledger_data_Account_State_Node_get"},
+            {ld_asn_share, "ledger_data_Account_State_Node_share"},
+            {ld_get, "ledger_data_get"},
+            {ld_share, "ledger_data_share"},
+            {gl_tsc_share, "ledger_Transaction_Set_candidate_share"},
+            {gl_tsc_get, "ledger_Transaction_Set_candidate_get"},
+            {gl_txn_share, "ledger_Transaction_node_share"},
+            {gl_txn_get, "ledger_Transaction_node_get"},
+            {gl_asn_share, "ledger_Account_State_node_share"},
+            {gl_asn_get, "ledger_Account_State_node_get"},
+            {gl_share, "ledger_share"},
+            {gl_get, "ledger_get"},
+            {share_hash_ledger, "getobject_Ledger_share"},
+            {get_hash_ledger, "getobject_Ledger_get"},
+            {share_hash_tx, "getobject_Transaction_share"},
+            {get_hash_tx, "getobject_Transaction_get"},
+            {share_hash_txnode, "getobject_Transaction_node_share"},
+            {get_hash_txnode, "getobject_Transaction_node_get"},
+            {share_hash_asnode, "getobject_Account_State_node_share"},
+            {get_hash_asnode, "getobject_Account_State_node_get"},
+            {share_cas_object, "getobject_CAS_share"},
+            {get_cas_object, "getobject_CAS_get"},
+            {share_fetch_pack, "getobject_Fetch_Pack_share"},
+            {get_fetch_pack, "getobject_Fetch Pack_get"},
+            {get_transactions, "getobject_Transactions_get"},
+            {share_hash, "getobject_share"},
+            {get_hash, "getobject_get"},
+            {proof_path_request, "proof_path_request"},
+            {proof_path_response, "proof_path_response"},
+            {replay_delta_request, "replay_delta_request"},
+            {replay_delta_response, "replay_delta_response"},
+            {have_transactions, "have_transactions"},
+            {requested_transactions, "requested_transactions"},
+            {total, "total"}};
+
+        if (auto it = category_map.find(cat); it != category_map.end())
+            return it->second;
+
+        return "unknown";
     }
 
 protected:

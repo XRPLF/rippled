@@ -148,7 +148,7 @@ OverlayImpl::OverlayImpl(
               std::vector<TrafficGauges> ret;
               ret.reserve(counts.size());
 
-              for (const auto& pair : counts)
+              for (auto const& pair : counts)
                   ret.push_back(TrafficGauges(pair.second.name, collector));
 
               return ret;
