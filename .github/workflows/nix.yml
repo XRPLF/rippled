@@ -120,7 +120,6 @@ jobs:
           - Debug
           - Release
         cmake-args:
-          -
           - "-Dunity=ON"
     needs: dependencies
     runs-on: [self-hosted, heavy]
@@ -159,6 +158,9 @@ jobs:
           generator: Ninja
           configuration: ${{ matrix.configuration }}
           cmake-args: "-Dassert=TRUE -Dwerr=TRUE ${{ matrix.cmake-args }}"
+      - name: check binary
+        run: |
+          ldd rippled
       - name: test
         run: |
           ${build_dir}/rippled --unittest --unittest-jobs $(nproc)
