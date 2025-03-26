@@ -179,10 +179,10 @@ class Vault_test : public beast::unit_test::suite
             }
 
             {
-                testcase(prefix + " fail to set nonexistent domain");
+                testcase(prefix + " fail to set domain on public vault");
                 auto tx = vault.set({.owner = owner, .id = keylet.key});
                 tx[sfDomainID] = to_string(base_uint<256>(42ul));
-                env(tx, ter(tecINVALID_DOMAIN));
+                env(tx, ter{tecNO_PERMISSION});
             }
 
             {
@@ -835,6 +835,13 @@ class Vault_test : public beast::unit_test::suite
                  .id = keylet.key,
                  .amount = asset(50)});
             env(tx, ter{tecNO_AUTH});
+        }
+
+        {
+            testcase("private vault cannot set non-existing domain");
+            auto tx = vault.set({.owner = owner, .id = keylet.key});
+            tx[sfDomainID] = to_string(base_uint<256>(42ul));
+            env(tx, ter{tecOBJECT_NOT_FOUND});
         }
 
         {

@@ -346,8 +346,7 @@ enum TECcodes : TERUnderlyingType {
     tecBAD_CREDENTIALS = 193,
     tecWRONG_ASSET = 194,
     tecLIMIT_EXCEEDED = 195,
-    tecINVALID_DOMAIN = 196,
-    tecPSEUDO_ACCOUNT = 197,
+    tecPSEUDO_ACCOUNT = 196,
 };
 
 //------------------------------------------------------------------------------

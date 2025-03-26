@@ -2238,7 +2238,7 @@ requireAuth(
         return tesSUCCESS;
     }
 
-    // err = tefINTERNAL | tecINVALID_DOMAIN | tecNO_AUTH | tecEXPIRED
+    // err = tefINTERNAL | tecOBJECT_NOT_FOUND | tecNO_AUTH | tecEXPIRED
     if (auto const err =
             credentials::validDomain(view, *maybeDomainID, account);
         !isTesSuccess(err))

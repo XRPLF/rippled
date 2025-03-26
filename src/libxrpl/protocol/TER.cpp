@@ -125,7 +125,6 @@ transResults()
         MAKE_ERROR(tecBAD_CREDENTIALS,               "Bad credentials."),
         MAKE_ERROR(tecWRONG_ASSET,                   "Wrong asset given."),
         MAKE_ERROR(tecLIMIT_EXCEEDED,                "Limit exceeded."),
-        MAKE_ERROR(tecINVALID_DOMAIN,                "Invalid permissioned domain."),
         MAKE_ERROR(tecPSEUDO_ACCOUNT,                "This operation is not allowed against a pseudo-account."),
 
         MAKE_ERROR(tefALREADY,                     "The exact transaction was already in this ledger."),

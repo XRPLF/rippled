@@ -20,6 +20,7 @@
 #include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/ledger/View.h>
 
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/digest.h>
 
 #include <unordered_set>
@@ -190,17 +191,12 @@ validDomain(ReadView const& view, uint256 domainID, AccountID const& subject)
     // Note, permissioned domain objects can be deleted at any time
     auto const slePD = view.read(keylet::permissionedDomain(domainID));
     if (!slePD)
-        return tecINVALID_DOMAIN;
-    else if (!slePD->isFieldPresent(sfAcceptedCredentials))
-        return tefINTERNAL;
+        return tecOBJECT_NOT_FOUND;
 
     auto const closeTime = view.info().parentCloseTime;
     bool foundExpired = false;
     for (auto const& h : slePD->getFieldArray(sfAcceptedCredentials))
     {
-        if (!h.isFieldPresent(sfIssuer) || !h.isFieldPresent(sfCredentialType))
-            return tefINTERNAL;
-
         auto const issuer = h.getAccountID(sfIssuer);
         auto const type = h.getFieldVL(sfCredentialType);
         auto const keyletCredential =
@@ -324,17 +320,14 @@ verifyValidDomain(
     beast::Journal j)
 {
     auto const slePD = view.read(keylet::permissionedDomain(domainID));
-    if (!slePD || !slePD->isFieldPresent(sfAcceptedCredentials))
-        return tefINTERNAL;
+    if (!slePD)
+        return tecOBJECT_NOT_FOUND;
 
     // Collect all matching credentials on a side, so we can remove expired ones
     // We may finish the loop with this collection empty, it's fine.
     STVector256 credentials;
     for (auto const& h : slePD->getFieldArray(sfAcceptedCredentials))
     {
-        if (!h.isFieldPresent(sfIssuer) || !h.isFieldPresent(sfCredentialType))
-            return tefINTERNAL;
-
         auto const issuer = h.getAccountID(sfIssuer);
         auto const type = h.getFieldVL(sfCredentialType);
         auto const keyletCredential =

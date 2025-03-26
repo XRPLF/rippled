@@ -95,12 +95,12 @@ VaultSet::preclaim(PreclaimContext const& ctx)
     {
         // We can only set domain if private flag was originally set
         if ((vault->getFlags() & tfVaultPrivate) == 0)
-            return tecINVALID_DOMAIN;
+            return tecNO_PERMISSION;
 
         auto const sleDomain =
             ctx.view.read(keylet::permissionedDomain(*domain));
         if (!sleDomain)
-            return tecNO_ENTRY;
+            return tecOBJECT_NOT_FOUND;
 
         // Sanity check only, this should be enforced by VaultCreate
         if ((sleIssuance->getFlags() & lsfMPTRequireAuth) == 0)
