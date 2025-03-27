@@ -58,9 +58,9 @@ jobs:
               cxx: /usr/bin/g++
           - compiler: clang
             profile:
-              version: 14
-              cc: /usr/bin/clang-14
-              cxx: /usr/bin/clang++-14
+              version: 16
+              cc: /usr/bin/clang-16
+              cxx: /usr/bin/clang++-16
     runs-on: [self-hosted, heavy]
     container: rippleci/rippled-build-ubuntu:aaf5e3e
     env:
@@ -120,7 +120,6 @@ jobs:
           - Debug
           - Release
         cmake-args:
-          -
           - "-Dunity=ON"
     needs: dependencies
     runs-on: [self-hosted, heavy]
@@ -299,88 +298,70 @@ jobs:
           cmake --build .
           ./example | grep '^[[:digit:]]\+\.[[:digit:]]\+\.[[:digit:]]\+'
 
-  # NOTE we are not using dependencies built above because it lags with
-  # compiler versions. Instrumentation requires clang version 16 or
-  # later
-
-  instrumentation-build:
-    env:
-      CLANG_RELEASE: 16
+  instrumentation:
     strategy:
       fail-fast: false
+      matrix:
+        platform:
+          - linux
+        compiler:
+          - clang
+        configuration:
+          - Debug
+    needs: dependencies
     runs-on: [self-hosted, heavy]
-    container: debian:bookworm
+    container: rippleci/rippled-build-ubuntu:aaf5e3e
+    env:
+      build_dir: .build
     steps:
-        - name: install prerequisites
-          env:
-            DEBIAN_FRONTEND: noninteractive
-          run: |
-            apt-get update
-            apt-get install --yes --no-install-recommends \
-              clang-${CLANG_RELEASE} clang++-${CLANG_RELEASE} \
-              python3-pip python-is-python3 make cmake git wget
-            apt-get clean
-            update-alternatives --install \
-              /usr/bin/clang clang /usr/bin/clang-${CLANG_RELEASE} 100 \
-              --slave /usr/bin/clang++ clang++ /usr/bin/clang++-${CLANG_RELEASE}
-            update-alternatives --auto clang
-            pip install --no-cache --break-system-packages "conan<2"
-
-        - name: checkout
-          uses: actions/checkout@v4
-
-        - name: prepare environment
-          run: |
-            mkdir ${GITHUB_WORKSPACE}/.build
-            echo "SOURCE_DIR=$GITHUB_WORKSPACE" >> $GITHUB_ENV
-            echo "BUILD_DIR=$GITHUB_WORKSPACE/.build" >> $GITHUB_ENV
-            echo "CC=/usr/bin/clang" >> $GITHUB_ENV
-            echo "CXX=/usr/bin/clang++" >> $GITHUB_ENV
-
-        - name: configure Conan
-          run: |
-            conan profile new --detect default
-            conan profile update settings.compiler=clang default
-            conan profile update settings.compiler.version=${CLANG_RELEASE} default
-            conan profile update settings.compiler.libcxx=libstdc++11 default
-            conan profile update settings.compiler.cppstd=20 default
-            conan profile update options.rocksdb=False default
-            conan profile update \
-              'conf.tools.build:compiler_executables={"c": "/usr/bin/clang", "cpp": "/usr/bin/clang++"}' default
-            conan profile update 'env.CXXFLAGS="-DBOOST_ASIO_DISABLE_CONCEPTS"' default
-            conan profile update 'conf.tools.build:cxxflags+=["-DBOOST_ASIO_DISABLE_CONCEPTS"]' default
-            conan export external/snappy snappy/1.1.10@
-            conan export external/soci soci/4.0.3@
-
-        - name: build dependencies
-          run: |
-            cd ${BUILD_DIR}
-            conan install ${SOURCE_DIR} \
-              --output-folder ${BUILD_DIR} \
-              --install-folder ${BUILD_DIR} \
-              --build missing \
-              --settings build_type=Debug
-
-        - name: build with instrumentation
-          run: |
-            cd ${BUILD_DIR}
-            cmake -S ${SOURCE_DIR} -B ${BUILD_DIR} \
-              -Dvoidstar=ON \
-              -Dtests=ON \
-              -Dxrpld=ON \
-              -DCMAKE_BUILD_TYPE=Debug \
-              -DSECP256K1_BUILD_BENCHMARK=OFF \
-              -DSECP256K1_BUILD_TESTS=OFF \
-              -DSECP256K1_BUILD_EXHAUSTIVE_TESTS=OFF \
-              -DCMAKE_TOOLCHAIN_FILE=${BUILD_DIR}/build/generators/conan_toolchain.cmake
-            cmake --build .  --parallel $(nproc)
-
-        - name: verify instrumentation enabled
-          run: |
-            cd ${BUILD_DIR}
-            ./rippled --version | grep libvoidstar
-
-        - name: run unit tests
-          run: |
-            cd ${BUILD_DIR}
-            ./rippled -u --unittest-jobs $(( $(nproc)/4 ))
+      - name: upgrade conan
+        run: |
+          pip install --upgrade "conan<2"
+      - name: download cache
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
+      - name: extract cache
+        run: |
+          mkdir -p ~/.conan
+          tar -xzf conan.tar -C ~/.conan
+      - name: install gcovr
+        run: pip install "gcovr>=7,<8"
+      - name: check environment
+        run: |
+          echo ${PATH} | tr ':' '\n'
+          conan --version
+          cmake --version
+          gcovr --version
+          env | sort
+          ls ~/.conan
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: dependencies
+        uses: ./.github/actions/dependencies
+        env:
+          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
+        with:
+          configuration: ${{ matrix.configuration }}
+      - name: build
+        uses: ./.github/actions/build
+        with:
+          generator: Ninja
+          configuration: ${{ matrix.configuration }}
+          cmake-args: >-
+            -Dassert=TRUE
+            -Dwerr=TRUE
+            -Dtests=ON
+            -Dvoidstar=ON
+            -DCODE_COVERAGE_VERBOSE=ON
+            -DCMAKE_CXX_FLAGS="-O0"
+            -DCMAKE_C_FLAGS="-O0"
+          cmake-target: coverage
+      - name: verify instrumentation enabled
+        run: |
+          cd ${BUILD_DIR}
+          ./rippled --version | grep libvoidstar
+      - name: run unit tests
+        run: |
+          cd ${BUILD_DIR}
+          ${build_dir}/rippled --unittest --unittest-jobs $(nproc)
