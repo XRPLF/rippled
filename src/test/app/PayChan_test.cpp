@@ -840,7 +840,7 @@ struct PayChan_test : public beast::unit_test::suite
         using namespace jtx;
         using namespace std::literals::chrono_literals;
 
-        const char credType[] = "abcde";
+        char const credType[] = "abcde";
 
         Account const alice("alice");
         Account const bob("bob");
