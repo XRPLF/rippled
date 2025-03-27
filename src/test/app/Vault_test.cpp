@@ -348,7 +348,7 @@ class Vault_test : public beast::unit_test::suite
                 Account issuer{"issuer"};
                 Account owner{"owner"};
                 Account depositor{"depositor"};
-                Vault vault(env);
+                Vault vault{env};
                 env.fund(XRP(1000), issuer, owner, depositor);
                 env.close();
                 env(fset(issuer, asfAllowTrustLineClawback));
@@ -413,7 +413,7 @@ class Vault_test : public beast::unit_test::suite
             Account depositor{"depositor"};
             env.fund(XRP(1000), issuer, owner, depositor);
             env.close();
-            Vault vault(env);
+            Vault vault{env};
             Asset asset = xrpIssue();
 
             test(env, issuer, owner, depositor, asset, vault);
@@ -635,7 +635,7 @@ class Vault_test : public beast::unit_test::suite
         Account depositor{"depositor"};
         env.fund(XRP(1000), issuer, owner, depositor);
         env.close();
-        Vault vault(env);
+        Vault vault{env};
         Asset asset = issuer["IOU"];
 
         auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
@@ -656,7 +656,7 @@ class Vault_test : public beast::unit_test::suite
         Account depositor{"depositor"};
         env.fund(XRP(1000), issuer, owner, depositor);
         env.close();
-        Vault vault(env);
+        Vault vault{env};
 
         MPTTester mptt{env, issuer, mptInitNoFund};
 
@@ -678,7 +678,7 @@ class Vault_test : public beast::unit_test::suite
         env.fund(XRP(1000), issuer, owner, depositor);
         env.close();
 
-        Vault vault(env);
+        Vault vault{env};
         PrettyAsset asset = issuer["IOU"];
         env.trust(asset(1000), owner);
         env(pay(issuer, owner, asset(100)));
@@ -801,7 +801,7 @@ class Vault_test : public beast::unit_test::suite
             Account depositor{"depositor"};
             env.fund(XRP(1000), issuer, owner, depositor);
             env.close();
-            Vault vault(env);
+            Vault vault{env};
 
             MPTTester mptt{env, issuer, mptInitNoFund};
             mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
@@ -888,7 +888,7 @@ class Vault_test : public beast::unit_test::suite
         Account credIssuer1{"credIssuer1"};
         Account credIssuer2{"credIssuer2"};
         std::string const credType = "credential";
-        Vault vault(env);
+        Vault vault{env};
         env.fund(
             XRP(1000),
             issuer,
@@ -1063,7 +1063,7 @@ class Vault_test : public beast::unit_test::suite
         Account const owner{"owner"};
         Account const issuer{"issuer"};
         Account const charlie{"charlie"};
-        Vault vault(env);
+        Vault vault{env};
         env.fund(XRP(1000), issuer, owner, charlie);
         env.close();
 
@@ -1113,12 +1113,13 @@ class Vault_test : public beast::unit_test::suite
         BEAST_EXPECT(
             keylet::vault(ownerAccount, env.seq(owner) - 1).key == keylet.key);
 
-        auto const vaultBalance = [&]() -> PrettyAmount {
-            auto const sle = env.le(keylet::line(vaultAccount, issue));
+        auto const vaultBalance =  //
+            [&, account = vaultAccount]() -> PrettyAmount {
+            auto const sle = env.le(keylet::line(account, issue));
             BEAST_EXPECT(sle != nullptr);
             auto amount = sle->getFieldAmount(sfBalance);
             amount.setIssuer(issue.account);
-            if (vaultAccount > issue.account)
+            if (account > issue.account)
                 amount.negate();
             return {amount, env.lookup(issue.account).name()};
         };

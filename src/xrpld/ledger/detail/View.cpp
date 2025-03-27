@@ -1043,18 +1043,25 @@ createPseudoAccount(
     uint256 const& pseudoOwnerKey,
     PseudoAccountOwnerType type)
 {
-    AccountID accountId;
-    for (auto i = 0;; ++i)
-    {
-        if (i >= 256)
-            return Unexpected(tecDUPLICATE);
-        ripesha_hasher rsh;
-        auto const hash = sha512Half(i, view.info().parentHash, pseudoOwnerKey);
-        rsh(hash.data(), hash.size());
-        accountId = static_cast<ripesha_hasher::result_type>(rsh);
-        if (!view.read(keylet::account(accountId)))
-            break;
-    }
+    auto const accountId = [&]() -> AccountID {
+        AccountID ret = beast::zero;
+        // This number must not be changed without an amendment
+        constexpr int maxAccountAttempts = 256;
+        for (auto i = 0; i < maxAccountAttempts; ++i)
+        {
+            ripesha_hasher rsh;
+            auto const hash =
+                sha512Half(i, view.info().parentHash, pseudoOwnerKey);
+            rsh(hash.data(), hash.size());
+            ret = static_cast<ripesha_hasher::result_type>(rsh);
+            if (!view.read(keylet::account(ret)))
+                return ret;
+        }
+        return ret;
+    }();
+
+    if (accountId == beast::zero)
+        return Unexpected(tecDUPLICATE);
 
     // Create pseudo-account.
     auto account = std::make_shared<SLE>(keylet::account(accountId));

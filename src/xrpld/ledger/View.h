@@ -659,7 +659,7 @@ requireAuth(
 /** Enforce account has MPToken to match its authorization.
  *
  *   Called from doApply - it will check for expired (and delete if found any)
- *   credentials maching DomainID set in MPTIssuance. Must be called if
+ *   credentials matching DomainID set in MPTIssuance. Must be called if
  *   requireAuth(...MPTIssue...) returned tesSUCCESS or tecEXPIRED in preclaim.
  *   Will create MPToken (if needed) on the basis of any non-expired credentals
  *   and delete any expried credentials (indirectly via verifyValidDomain)
