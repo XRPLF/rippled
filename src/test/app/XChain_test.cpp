@@ -316,7 +316,7 @@ struct BalanceTransfer
         return std::all_of(
             reward_accounts.begin(),
             reward_accounts.end(),
-            [&](const balance& b) { return b.diff() == reward; });
+            [&](balance const& b) { return b.diff() == reward; });
     }
 
     bool
@@ -4582,8 +4582,8 @@ private:
     {
     public:
         SmBase(
-            const std::shared_ptr<ChainStateTracker>& chainstate,
-            const BridgeDef& bridge)
+            std::shared_ptr<ChainStateTracker> const& chainstate,
+            BridgeDef const& bridge)
             : bridge_(bridge), st_(chainstate)
         {
         }
@@ -4613,7 +4613,7 @@ private:
         }
 
     protected:
-        const BridgeDef& bridge_;
+        BridgeDef const& bridge_;
         std::shared_ptr<ChainStateTracker> st_;
     };
 
@@ -4624,8 +4624,8 @@ private:
         using Base = SmBase<SmCreateAccount>;
 
         SmCreateAccount(
-            const std::shared_ptr<ChainStateTracker>& chainstate,
-            const BridgeDef& bridge,
+            std::shared_ptr<ChainStateTracker> const& chainstate,
+            BridgeDef const& bridge,
             AccountCreate create)
             : Base(chainstate, bridge)
             , sm_state(st_initial)
@@ -4756,8 +4756,8 @@ private:
         using Base = SmBase<SmTransfer>;
 
         SmTransfer(
-            const std::shared_ptr<ChainStateTracker>& chainstate,
-            const BridgeDef& bridge,
+            std::shared_ptr<ChainStateTracker> const& chainstate,
+            BridgeDef const& bridge,
             Transfer xfer)
             : Base(chainstate, bridge)
             , xfer(std::move(xfer))
@@ -4926,7 +4926,7 @@ private:
     void
     xfer(
         uint64_t time,
-        const std::shared_ptr<ChainStateTracker>& chainstate,
+        std::shared_ptr<ChainStateTracker> const& chainstate,
         BridgeDef const& bridge,
         Transfer transfer)
     {
@@ -4936,7 +4936,7 @@ private:
 
     void
     ac(uint64_t time,
-       const std::shared_ptr<ChainStateTracker>& chainstate,
+       std::shared_ptr<ChainStateTracker> const& chainstate,
        BridgeDef const& bridge,
        AccountCreate ac)
     {

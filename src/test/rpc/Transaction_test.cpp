@@ -55,11 +55,11 @@ class Transaction_test : public beast::unit_test::suite
         using namespace test::jtx;
         using std::to_string;
 
-        const char* COMMAND = jss::tx.c_str();
-        const char* BINARY = jss::binary.c_str();
-        const char* NOT_FOUND = RPC::get_error_info(rpcTXN_NOT_FOUND).token;
-        const char* INVALID = RPC::get_error_info(rpcINVALID_LGR_RANGE).token;
-        const char* EXCESSIVE =
+        char const* COMMAND = jss::tx.c_str();
+        char const* BINARY = jss::binary.c_str();
+        char const* NOT_FOUND = RPC::get_error_info(rpcTXN_NOT_FOUND).token;
+        char const* INVALID = RPC::get_error_info(rpcINVALID_LGR_RANGE).token;
+        char const* EXCESSIVE =
             RPC::get_error_info(rpcEXCESSIVE_LGR_RANGE).token;
 
         Env env{*this, features};
@@ -305,11 +305,11 @@ class Transaction_test : public beast::unit_test::suite
         using namespace test::jtx;
         using std::to_string;
 
-        const char* COMMAND = jss::tx.c_str();
-        const char* BINARY = jss::binary.c_str();
-        const char* NOT_FOUND = RPC::get_error_info(rpcTXN_NOT_FOUND).token;
-        const char* INVALID = RPC::get_error_info(rpcINVALID_LGR_RANGE).token;
-        const char* EXCESSIVE =
+        char const* COMMAND = jss::tx.c_str();
+        char const* BINARY = jss::binary.c_str();
+        char const* NOT_FOUND = RPC::get_error_info(rpcTXN_NOT_FOUND).token;
+        char const* INVALID = RPC::get_error_info(rpcINVALID_LGR_RANGE).token;
+        char const* EXCESSIVE =
             RPC::get_error_info(rpcEXCESSIVE_LGR_RANGE).token;
 
         Env env{*this, makeNetworkConfig(11111)};

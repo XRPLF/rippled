@@ -753,7 +753,7 @@ class LedgerRPC_test : public beast::unit_test::suite
         Account const issuer{"issuer"};
         Account const alice{"alice"};
         Account const bob{"bob"};
-        const char credType[] = "abcde";
+        char const credType[] = "abcde";
 
         env.fund(XRP(5000), issuer, alice, bob);
         env.close();
@@ -1082,7 +1082,7 @@ class LedgerRPC_test : public beast::unit_test::suite
         Account const issuer{"issuer"};
         Account const alice{"alice"};
         Account const bob{"bob"};
-        const char credType[] = "abcde";
+        char const credType[] = "abcde";
 
         env.fund(XRP(5000), issuer, alice, bob);
         env.close();
@@ -1275,7 +1275,7 @@ class LedgerRPC_test : public beast::unit_test::suite
         {
             // Failed, authorized_credentials is too long
 
-            static const std::string_view credTypes[] = {
+            static std::string_view const credTypes[] = {
                 "cred1",
                 "cred2",
                 "cred3",
@@ -2747,11 +2747,11 @@ class LedgerRPC_test : public beast::unit_test::suite
         env.close();
 
         jrr = env.rpc("json", "ledger", to_string(jv))[jss::result];
-        const std::string txid0 = [&]() {
+        std::string const txid0 = [&]() {
             auto const& parentHash = env.current()->info().parentHash;
             if (BEAST_EXPECT(jrr[jss::queue_data].size() == 2))
             {
-                const std::string txid1 = [&]() {
+                std::string const txid1 = [&]() {
                     auto const& txj = jrr[jss::queue_data][1u];
                     BEAST_EXPECT(txj[jss::account] == alice.human());
                     BEAST_EXPECT(txj[jss::fee_level] == "256");
@@ -2849,7 +2849,7 @@ class LedgerRPC_test : public beast::unit_test::suite
         jv[jss::binary] = false;
 
         jrr = env.rpc("json", "ledger", to_string(jv))[jss::result];
-        const std::string txid2 = [&]() {
+        std::string const txid2 = [&]() {
             if (BEAST_EXPECT(jrr[jss::queue_data].size() == 1))
             {
                 auto const& txj = jrr[jss::queue_data][0u];

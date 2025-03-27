@@ -358,7 +358,7 @@ public:
         std::shared_ptr<ReadView const>& lpLedger,
         Book const&,
         AccountID const& uTakerID,
-        const bool bProof,
+        bool const bProof,
         unsigned int iLimit,
         Json::Value const& jvMarker,
         Json::Value& jvResult) override;
@@ -382,7 +382,7 @@ private:
     void
     switchLastClosedLedger(std::shared_ptr<Ledger const> const& newLCL);
     bool
-    checkLastClosedLedger(const Overlay::PeerSequence&, uint256& networkClosed);
+    checkLastClosedLedger(Overlay::PeerSequence const&, uint256& networkClosed);
 
 public:
     bool
@@ -943,7 +943,7 @@ NetworkOPsImp::setStateTimer()
 void
 NetworkOPsImp::setTimer(
     boost::asio::steady_timer& timer,
-    const std::chrono::milliseconds& expiry_time,
+    std::chrono::milliseconds const& expiry_time,
     std::function<void()> onExpire,
     std::function<void()> onError)
 {
@@ -1086,7 +1086,7 @@ NetworkOPsImp::processHeartbeatTimer()
     mConsensus.timerEntry(app_.timeKeeper().closeTime(), clog.ss());
 
     CLOG(clog.ss()) << "consensus phase " << to_string(mLastConsensusPhase);
-    const ConsensusPhase currPhase = mConsensus.phase();
+    ConsensusPhase const currPhase = mConsensus.phase();
     if (mLastConsensusPhase != currPhase)
     {
         reportConsensusStateChange(currPhase);
@@ -1691,7 +1691,7 @@ NetworkOPsImp::clearUNLBlocked()
 
 bool
 NetworkOPsImp::checkLastClosedLedger(
-    const Overlay::PeerSequence& peerList,
+    Overlay::PeerSequence const& peerList,
     uint256& networkClosed)
 {
     // Returns true if there's an *abnormal* ledger issue, normal changing in
@@ -1913,7 +1913,7 @@ NetworkOPsImp::beginConsensus(
         changes.added,
         clog);
 
-    const ConsensusPhase currPhase = mConsensus.phase();
+    ConsensusPhase const currPhase = mConsensus.phase();
     if (mLastConsensusPhase != currPhase)
     {
         reportConsensusStateChange(currPhase);
@@ -3145,7 +3145,7 @@ NetworkOPsImp::transJson(
 void
 NetworkOPsImp::pubValidatedTransaction(
     std::shared_ptr<ReadView const> const& ledger,
-    const AcceptedLedgerTx& transaction,
+    AcceptedLedgerTx const& transaction,
     bool last)
 {
     auto const& stTxn = transaction.getTxn();
@@ -3552,7 +3552,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
 
                     if (node.isFieldPresent(sfNewFields))
                     {
-                        if (auto inner = dynamic_cast<const STObject*>(
+                        if (auto inner = dynamic_cast<STObject const*>(
                                 node.peekAtPField(sfNewFields));
                             inner)
                         {
@@ -3888,7 +3888,7 @@ NetworkOPsImp::unsubAccountHistory(
 void
 NetworkOPsImp::unsubAccountHistoryInternal(
     std::uint64_t seq,
-    const AccountID& account,
+    AccountID const& account,
     bool historyOnly)
 {
     std::lock_guard sl(mSubLock);
@@ -4225,8 +4225,8 @@ NetworkOPsImp::getBookPage(
         (jvResult[jss::offers] = Json::Value(Json::arrayValue));
 
     std::unordered_map<AccountID, STAmount> umBalance;
-    const uint256 uBookBase = getBookBase(book);
-    const uint256 uBookEnd = getQualityNext(uBookBase);
+    uint256 const uBookBase = getBookBase(book);
+    uint256 const uBookEnd = getQualityNext(uBookBase);
     uint256 uTipIndex = uBookBase;
 
     if (auto stream = m_journal.trace())
@@ -4437,7 +4437,7 @@ NetworkOPsImp::getBookPage(
 
     auto const rate = transferRate(lesActive, book.out.account);
 
-    const bool bGlobalFreeze = lesActive.isGlobalFrozen(book.out.account) ||
+    bool const bGlobalFreeze = lesActive.isGlobalFrozen(book.out.account) ||
         lesActive.isGlobalFrozen(book.in.account);
 
     while (iLimit-- > 0 && obIterator.nextOffer())

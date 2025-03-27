@@ -40,7 +40,7 @@ isControlCharacter(char ch)
 }
 
 static bool
-containsControlCharacter(const char* str)
+containsControlCharacter(char const* str)
 {
     while (*str)
     {
@@ -117,7 +117,7 @@ valueToString(bool value)
 }
 
 std::string
-valueToQuotedString(const char* value)
+valueToQuotedString(char const* value)
 {
     // Not sure how to handle unicode...
     if (strpbrk(value, "\"\\\b\f\n\r\t") == nullptr &&
@@ -132,7 +132,7 @@ valueToQuotedString(const char* value)
     result.reserve(maxsize);  // to avoid lots of mallocs
     result += "\"";
 
-    for (const char* c = value; *c != 0; ++c)
+    for (char const* c = value; *c != 0; ++c)
     {
         switch (*c)
         {
@@ -197,7 +197,7 @@ valueToQuotedString(const char* value)
 // //////////////////////////////////////////////////////////////////
 
 std::string
-FastWriter::write(const Value& root)
+FastWriter::write(Value const& root)
 {
     document_ = "";
     writeValue(root);
@@ -205,7 +205,7 @@ FastWriter::write(const Value& root)
 }
 
 void
-FastWriter::writeValue(const Value& value)
+FastWriter::writeValue(Value const& value)
 {
     switch (value.type())
     {
@@ -281,7 +281,7 @@ StyledWriter::StyledWriter() : rightMargin_(74), indentSize_(3)
 }
 
 std::string
-StyledWriter::write(const Value& root)
+StyledWriter::write(Value const& root)
 {
     document_ = "";
     addChildValues_ = false;
@@ -292,7 +292,7 @@ StyledWriter::write(const Value& root)
 }
 
 void
-StyledWriter::writeValue(const Value& value)
+StyledWriter::writeValue(Value const& value)
 {
     switch (value.type())
     {
@@ -338,7 +338,7 @@ StyledWriter::writeValue(const Value& value)
                 while (true)
                 {
                     std::string const& name = *it;
-                    const Value& childValue = value[name];
+                    Value const& childValue = value[name];
                     writeWithIndent(valueToQuotedString(name.c_str()));
                     document_ += " : ";
                     writeValue(childValue);
@@ -358,7 +358,7 @@ StyledWriter::writeValue(const Value& value)
 }
 
 void
-StyledWriter::writeArrayValue(const Value& value)
+StyledWriter::writeArrayValue(Value const& value)
 {
     unsigned size = value.size();
 
@@ -377,7 +377,7 @@ StyledWriter::writeArrayValue(const Value& value)
 
             while (true)
             {
-                const Value& childValue = value[index];
+                Value const& childValue = value[index];
 
                 if (hasChildValue)
                     writeWithIndent(childValues_[index]);
@@ -417,7 +417,7 @@ StyledWriter::writeArrayValue(const Value& value)
 }
 
 bool
-StyledWriter::isMultineArray(const Value& value)
+StyledWriter::isMultineArray(Value const& value)
 {
     int size = value.size();
     bool isMultiLine = size * 3 >= rightMargin_;
@@ -425,7 +425,7 @@ StyledWriter::isMultineArray(const Value& value)
 
     for (int index = 0; index < size && !isMultiLine; ++index)
     {
-        const Value& childValue = value[index];
+        Value const& childValue = value[index];
         isMultiLine = isMultiLine ||
             ((childValue.isArray() || childValue.isObject()) &&
              childValue.size() > 0);
@@ -507,7 +507,7 @@ StyledStreamWriter::StyledStreamWriter(std::string indentation)
 }
 
 void
-StyledStreamWriter::write(std::ostream& out, const Value& root)
+StyledStreamWriter::write(std::ostream& out, Value const& root)
 {
     document_ = &out;
     addChildValues_ = false;
@@ -518,7 +518,7 @@ StyledStreamWriter::write(std::ostream& out, const Value& root)
 }
 
 void
-StyledStreamWriter::writeValue(const Value& value)
+StyledStreamWriter::writeValue(Value const& value)
 {
     switch (value.type())
     {
@@ -564,7 +564,7 @@ StyledStreamWriter::writeValue(const Value& value)
                 while (true)
                 {
                     std::string const& name = *it;
-                    const Value& childValue = value[name];
+                    Value const& childValue = value[name];
                     writeWithIndent(valueToQuotedString(name.c_str()));
                     *document_ << " : ";
                     writeValue(childValue);
@@ -584,7 +584,7 @@ StyledStreamWriter::writeValue(const Value& value)
 }
 
 void
-StyledStreamWriter::writeArrayValue(const Value& value)
+StyledStreamWriter::writeArrayValue(Value const& value)
 {
     unsigned size = value.size();
 
@@ -603,7 +603,7 @@ StyledStreamWriter::writeArrayValue(const Value& value)
 
             while (true)
             {
-                const Value& childValue = value[index];
+                Value const& childValue = value[index];
 
                 if (hasChildValue)
                     writeWithIndent(childValues_[index]);
@@ -643,7 +643,7 @@ StyledStreamWriter::writeArrayValue(const Value& value)
 }
 
 bool
-StyledStreamWriter::isMultineArray(const Value& value)
+StyledStreamWriter::isMultineArray(Value const& value)
 {
     int size = value.size();
     bool isMultiLine = size * 3 >= rightMargin_;
@@ -651,7 +651,7 @@ StyledStreamWriter::isMultineArray(const Value& value)
 
     for (int index = 0; index < size && !isMultiLine; ++index)
     {
-        const Value& childValue = value[index];
+        Value const& childValue = value[index];
         isMultiLine = isMultiLine ||
             ((childValue.isArray() || childValue.isObject()) &&
              childValue.size() > 0);
@@ -726,7 +726,7 @@ StyledStreamWriter::unindent()
 }
 
 std::ostream&
-operator<<(std::ostream& sout, const Value& root)
+operator<<(std::ostream& sout, Value const& root)
 {
     Json::StyledStreamWriter writer;
     writer.write(sout, root);
