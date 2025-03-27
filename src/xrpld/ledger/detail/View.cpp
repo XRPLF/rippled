@@ -26,6 +26,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/st.h>
 
 #include <optional>
@@ -927,6 +928,47 @@ describeOwnerDir(AccountID const& account)
     return [&account](std::shared_ptr<SLE> const& sle) {
         (*sle)[sfOwner] = account;
     };
+}
+
+Expected<std::shared_ptr<SLE>, TER>
+createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey)
+{
+    AccountID const accountId = [&]() -> AccountID {
+        AccountID ret = beast::zero;
+        for (auto i = 0; i < 256; ++i)
+        {
+            ripesha_hasher rsh;
+            auto const hash =
+                sha512Half(i, view.info().parentHash, pseudoOwnerKey);
+            rsh(hash.data(), hash.size());
+            ret = static_cast<ripesha_hasher::result_type>(rsh);
+            if (!view.read(keylet::account(ret)))
+                return ret;
+        }
+        return ret;
+    }();
+
+    if (accountId == beast::zero)
+        return Unexpected(tecDUPLICATE);
+
+    // Create pseudo-account.
+    auto account = std::make_shared<SLE>(keylet::account(accountId));
+    account->setAccountID(sfAccount, accountId);
+    account->setFieldAmount(sfBalance, STAmount{});
+    std::uint32_t const seqno{
+        view.rules().enabled(featureDeletableAccounts) ? view.seq() : 1};
+    account->setFieldU32(sfSequence, seqno);
+    // Ignore reserves requirement, disable the master key, allow default
+    // rippling, and enable deposit authorization to prevent payments into
+    // pseudo-account.
+    account->setFieldU32(
+        sfFlags, lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth);
+    // Link the root account and AMM object
+    account->setFieldH256(sfAMMID, pseudoOwnerKey);
+
+    view.insert(account);
+
+    return account;
 }
 
 TER
