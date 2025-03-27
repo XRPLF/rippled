@@ -179,7 +179,7 @@ SHAMapTreeNode::makeFromPrefix(Slice rawNode, SHAMapHash const& hash)
 }
 
 std::string
-SHAMapTreeNode::getString(const SHAMapNodeID& id) const
+SHAMapTreeNode::getString(SHAMapNodeID const& id) const
 {
     return to_string(id);
 }

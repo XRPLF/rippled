@@ -149,7 +149,7 @@ struct DID_test : public beast::unit_test::suite
         BEAST_EXPECT(ownerCount(env, alice) == 0);
 
         // uri is too long
-        const std::string longString(257, 'a');
+        std::string const longString(257, 'a');
         env(did::set(alice), did::uri(longString), ter(temMALFORMED));
         env.close();
         BEAST_EXPECT(ownerCount(env, alice) == 0);

@@ -825,7 +825,7 @@ parseLeaf(
     return ret;
 }
 
-static const int maxDepth = 64;
+static int const maxDepth = 64;
 
 // Forward declaration since parseObject() and parseArray() call each other.
 static std::optional<detail::STVar>

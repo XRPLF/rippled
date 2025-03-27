@@ -174,7 +174,7 @@ private:
                         true,
                         logs_);
                 }
-                catch (const std::exception& e)
+                catch (std::exception const& e)
                 {
                     JLOG(j_.info())
                         << "RPCCall::fromNetwork exception: " << e.what();
