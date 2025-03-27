@@ -933,9 +933,11 @@ describeOwnerDir(AccountID const& account)
 Expected<std::shared_ptr<SLE>, TER>
 createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey)
 {
-    AccountID const accountId = [&]() -> AccountID {
+    auto const accountId = [&]() -> AccountID {
         AccountID ret = beast::zero;
-        for (auto i = 0; i < 256; ++i)
+        // This number must not be changed without an amendment
+        constexpr int maxAccountAttempts = 256;
+        for (auto i = 0; i < maxAccountAttempts; ++i)
         {
             ripesha_hasher rsh;
             auto const hash =
