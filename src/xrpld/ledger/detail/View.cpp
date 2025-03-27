@@ -1030,13 +1030,17 @@ describeOwnerDir(AccountID const& account)
 }
 
 TER
-dirLink(ApplyView& view, AccountID const& owner, std::shared_ptr<SLE>& object)
+dirLink(
+    ApplyView& view,
+    AccountID const& owner,
+    std::shared_ptr<SLE>& object,
+    SF_UINT64 const& node)
 {
     auto const page = view.dirInsert(
         keylet::ownerDir(owner), object->key(), describeOwnerDir(owner));
     if (!page)
         return tecDIR_FULL;  // LCOV_EXCL_LINE
-    object->setFieldU64(sfOwnerNode, *page);
+    object->setFieldU64(node, *page);
     return tesSUCCESS;
 }
 

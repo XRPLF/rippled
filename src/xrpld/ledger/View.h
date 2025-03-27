@@ -502,7 +502,11 @@ dirNext(
 describeOwnerDir(AccountID const& account);
 
 [[nodiscard]] TER
-dirLink(ApplyView& view, AccountID const& owner, std::shared_ptr<SLE>& object);
+dirLink(
+    ApplyView& view,
+    AccountID const& owner,
+    std::shared_ptr<SLE>& object,
+    SF_UINT64 const& node = sfOwnerNode);
 
 AccountID
 pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey);

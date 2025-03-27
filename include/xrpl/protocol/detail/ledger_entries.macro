@@ -536,7 +536,7 @@ LEDGER_ENTRY(ltLOAN, 0x0085, Loan, loan, ({
     {sfPreviousPaymentDate,  soeREQUIRED},
     {sfNextPaymentDueDate,   soeREQUIRED},
     {sfPaymentRemaining,     soeREQUIRED},
-    {sfAssetAvailable,       soeREQUIRED},
+    {sfAssetsAvailable,      soeREQUIRED},
     {sfPrincipalOutstanding, soeREQUIRED},
 }))
 
