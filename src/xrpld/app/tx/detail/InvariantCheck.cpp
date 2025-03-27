@@ -882,6 +882,8 @@ ValidNewAccountRoot::visitEntry(
     {
         accountsCreated_++;
         accountSeq_ = (*after)[sfSequence];
+        pseudoAccount_ = after->isFieldPresent(sfAMMID);
+        flags_ = after->getFlags();
     }
 }
 
@@ -909,8 +911,22 @@ ValidNewAccountRoot::finalize(
          tx.getTxnType() == ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION) &&
         result == tesSUCCESS)
     {
-        std::uint32_t const startingSeq{
-            view.rules().enabled(featureDeletableAccounts) ? view.seq() : 1};
+        bool const pseudoAccount =
+            (pseudoAccount_ && view.rules().enabled(fixPseudoAccount));
+
+        if (pseudoAccount && tx.getTxnType() != ttAMM_CREATE)
+        {
+            JLOG(j.fatal()) << "Invariant failed: pseudo-account created by a "
+                               "wrong transaction type";
+            return false;
+        }
+
+        std::uint32_t const startingSeq =                     //
+            pseudoAccount                                     //
+            ? 0                                               //
+            : view.rules().enabled(featureDeletableAccounts)  //
+                ? view.seq()                                  //
+                : 1;
 
         if (accountSeq_ != startingSeq)
         {
@@ -918,6 +934,20 @@ ValidNewAccountRoot::finalize(
                                "wrong starting sequence number";
             return false;
         }
+
+        if (pseudoAccount)
+        {
+            std::uint32_t const expected =
+                (lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth);
+            if (flags_ != expected)
+            {
+                JLOG(j.fatal())
+                    << "Invariant failed: pseudo-account created with "
+                       "wrong flags";
+                return false;
+            }
+        }
+
         return true;
     }
 

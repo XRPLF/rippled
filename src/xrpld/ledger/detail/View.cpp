@@ -951,14 +951,27 @@ createPseudoAccount(ApplyView& view, uint256 const& pseudoOwnerKey)
     }();
 
     if (accountId == beast::zero)
-        return Unexpected(tecDUPLICATE);
+    {
+        TER const code = view.rules().enabled(fixPseudoAccount) && view.open()
+            ? TER(terADDRESS_COLLISION)
+            : TER(tecDUPLICATE);
+        return Unexpected(code);
+    }
 
     // Create pseudo-account.
     auto account = std::make_shared<SLE>(keylet::account(accountId));
     account->setAccountID(sfAccount, accountId);
     account->setFieldAmount(sfBalance, STAmount{});
-    std::uint32_t const seqno{
-        view.rules().enabled(featureDeletableAccounts) ? view.seq() : 1};
+
+    // Pseudo-accounts can't submit transactions, so set the sequence number
+    // to 0 to make them easier to spot and verify, and add an extra level
+    // of protection.
+    std::uint32_t const seqno =                           //
+        view.rules().enabled(fixPseudoAccount)            //
+        ? 0                                               //
+        : view.rules().enabled(featureDeletableAccounts)  //
+            ? view.seq()                                  //
+            : 1;
     account->setFieldU32(sfSequence, seqno);
     // Ignore reserves requirement, disable the master key, allow default
     // rippling, and enable deposit authorization to prevent payments into
