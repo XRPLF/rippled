@@ -73,6 +73,7 @@ struct Flow_test : public beast::unit_test::suite
             Env env(*this, features);
 
             env.fund(XRP(10000), alice, bob, gw);
+            env.close();
             env.trust(USD(1000), alice, bob);
             env(pay(gw, alice, USD(100)));
             env(pay(alice, bob, USD(10)), paths(USD));
@@ -83,6 +84,7 @@ struct Flow_test : public beast::unit_test::suite
             Env env(*this, features);
 
             env.fund(XRP(10000), alice, bob);
+            env.close();
             env(pay(alice, bob, XRP(100)));
             env.require(balance(bob, XRP(10000 + 100)));
             env.require(balance(alice, xrpMinusFee(env, 10000 - 100)));
@@ -92,6 +94,7 @@ struct Flow_test : public beast::unit_test::suite
             Env env(*this, features);
 
             env.fund(XRP(10000), alice, bob, gw);
+            env.close();
             env.trust(USD(1000), alice, bob);
             env(pay(gw, alice, USD(100)));
             env(pay(alice, bob, USD(110)), paths(USD), ter(tecPATH_PARTIAL));
@@ -106,6 +109,7 @@ struct Flow_test : public beast::unit_test::suite
             Env env(*this, features);
 
             env.fund(XRP(10000), alice, bob, carol, dan);
+            env.close();
             env.trust(USDA(10), bob);
             env.trust(USDB(10), carol);
             env.trust(USDC(10), dan);
@@ -121,6 +125,7 @@ struct Flow_test : public beast::unit_test::suite
             Env env(*this, features);
 
             env.fund(XRP(10000), alice, bob, carol, dan);
+            env.close();
             env.trust(USDA(10), bob);
             env.trust(USDB(10), alice, carol);
             env.trust(USDC(10), dan);
@@ -141,6 +146,7 @@ struct Flow_test : public beast::unit_test::suite
             Env env(*this, features);
 
             env.fund(XRP(10000), alice, bob, carol, dan);
+            env.close();
             env.trust(USDA(10), bob);
             env.trust(USDB(10), alice, carol);
             env.trust(USDC(10), dan);
@@ -159,6 +165,7 @@ struct Flow_test : public beast::unit_test::suite
             Env env(*this, features);
 
             env.fund(XRP(10000), alice, bob, carol, dan, erin);
+            env.close();
             env.trust(USDA(10), bob, carol);
             env.trust(USDB(10), dan);
             env.trust(USDC(10), alice, dan);
@@ -182,6 +189,7 @@ struct Flow_test : public beast::unit_test::suite
             Env env(*this, features);
 
             env.fund(XRP(10000), alice, bob, carol);
+            env.close();
             env.trust(USDA(10), bob);
             env.trust(USDB(10), carol);
 
@@ -219,6 +227,7 @@ struct Flow_test : public beast::unit_test::suite
             {
                 Env env(*this, features);
                 env.fund(XRP(10000), alice, bob, carol, dan);
+                env.close();
                 env(trust(bob, USDD(100)), qualityInPercent(bobDanQIn));
                 env(trust(bob, USDA(100)), qualityOutPercent(bobAliceQOut));
                 env(trust(carol, USDA(100)));
@@ -246,6 +255,8 @@ struct Flow_test : public beast::unit_test::suite
         {
             Env env(*this, features);
             env.fund(XRP(10000), alice, bob, carol);
+            env.close();
+
             env(trust(bob, USDA(10)));
             env(trust(carol, USDA(10)), qualityInPercent(carolAliceQIn));
 
@@ -262,6 +273,7 @@ struct Flow_test : public beast::unit_test::suite
         {
             Env env(*this, features);
             env.fund(XRP(10000), alice, bob, carol);
+            env.close();
             env(trust(bob, USDA(10)), qualityOutPercent(bobAliceQOut));
             env(trust(carol, USDA(10)));
 
@@ -293,6 +305,7 @@ struct Flow_test : public beast::unit_test::suite
             Env env(*this, features);
 
             env.fund(XRP(10000), alice, bob, carol, gw);
+            env.close();
             env.trust(USD(1000), alice, bob, carol);
             env.trust(BTC(1000), alice, bob, carol);
 
@@ -314,6 +327,7 @@ struct Flow_test : public beast::unit_test::suite
             Env env(*this, features);
 
             env.fund(XRP(10000), alice, bob, carol, gw);
+            env.close();
             env.trust(USD(1000), alice, bob, carol);
             env.trust(BTC(1000), alice, bob, carol);
 
@@ -337,6 +351,7 @@ struct Flow_test : public beast::unit_test::suite
             Env env(*this, features);
 
             env.fund(XRP(10000), alice, bob, carol, gw);
+            env.close();
             env.trust(USD(1000), alice, bob, carol);
             env.trust(BTC(1000), alice, bob, carol);
 
@@ -357,6 +372,7 @@ struct Flow_test : public beast::unit_test::suite
             Env env(*this, features);
 
             env.fund(XRP(10000), alice, bob, carol, gw);
+            env.close();
             env.trust(USD(1000), alice, bob, carol);
             env.trust(BTC(1000), alice, bob, carol);
 
@@ -377,6 +393,7 @@ struct Flow_test : public beast::unit_test::suite
             Env env(*this, features);
 
             env.fund(XRP(10000), alice, bob, carol, gw);
+            env.close();
             env.trust(USD(1000), alice, bob, carol);
             env.trust(BTC(1000), alice, bob, carol);
             env.trust(EUR(1000), alice, bob, carol);
@@ -424,6 +441,7 @@ struct Flow_test : public beast::unit_test::suite
             Env env(*this, features);
 
             env.fund(XRP(10000), alice, bob, carol, gw);
+            env.close();
             env.trust(USD(1000), alice, bob, carol);
             env.trust(BTC(1000), alice, bob, carol);
             env.trust(EUR(1000), alice, bob, carol);
@@ -510,6 +528,8 @@ struct Flow_test : public beast::unit_test::suite
             // expected.
             Env env(*this, features);
             env.fund(XRP(10000), alice, bob, carol, gw);
+            env.close();
+
             env.trust(USD(1000), alice, bob, carol);
             env.trust(EUR(1000), alice, bob, carol);
 
@@ -586,6 +606,7 @@ struct Flow_test : public beast::unit_test::suite
             Env env(*this, features);
 
             env.fund(XRP(10000), alice, bob, carol, gw);
+            env.close();
             env(rate(gw, 1.25));
             env.trust(USD(1000), alice, bob, carol);
             env(pay(gw, alice, USD(50)));
@@ -598,6 +619,7 @@ struct Flow_test : public beast::unit_test::suite
             Env env(*this, features);
 
             env.fund(XRP(10000), alice, bob, carol, gw);
+            env.close();
             env(rate(gw, 1.25));
             env.trust(USD(1000), alice, bob, carol);
             env(pay(gw, alice, USD(50)));
@@ -610,6 +632,7 @@ struct Flow_test : public beast::unit_test::suite
             Env env(*this, features);
 
             env.fund(XRP(10000), alice, bob, carol, gw);
+            env.close();
             env(rate(gw, 1.25));
             env.trust(USD(1000), alice, bob, carol);
             env(pay(gw, bob, USD(65)));
@@ -628,6 +651,7 @@ struct Flow_test : public beast::unit_test::suite
             Env env(*this, features);
 
             env.fund(XRP(10000), alice, bob, carol, gw);
+            env.close();
             env(rate(gw, 1.25));
             env.trust(USD(1000), alice, bob, carol);
             env.trust(EUR(1000), alice, bob, carol);
@@ -653,6 +677,7 @@ struct Flow_test : public beast::unit_test::suite
             auto const USDB = bob["USD"];
 
             env.fund(XRP(10000), alice, bob, carol, gw);
+            env.close();
             env(rate(gw, 1.25));
             env.trust(USD(1000), alice, bob, carol);
             env.trust(USDA(1000), bob);
@@ -675,6 +700,7 @@ struct Flow_test : public beast::unit_test::suite
             Account const dan("dan");
 
             env.fund(XRP(10000), alice, bob, carol, dan, gw);
+            env.close();
             env(rate(gw, 1.25));
             env.trust(USD(1000), alice, bob, carol, dan);
             env.trust(EUR(1000), carol, dan);
@@ -702,6 +728,7 @@ struct Flow_test : public beast::unit_test::suite
             Env env(*this, features);
 
             env.fund(XRP(10000), alice, bob, gw);
+            env.close();
             env(rate(gw, 1.25));
             env.trust(USD(1000), alice, bob);
             env(offer(gw, XRP(100), USD(100)));
@@ -716,6 +743,7 @@ struct Flow_test : public beast::unit_test::suite
             Env env(*this, features);
 
             env.fund(XRP(10000), alice, bob, gw);
+            env.close();
             env(rate(gw, 1.25));
             env.trust(USD(1000), alice, bob);
             env(offer(gw, XRP(125), USD(125)));
@@ -744,6 +772,7 @@ struct Flow_test : public beast::unit_test::suite
 
         env.fund(XRP(10000), alice, carol, gw);
         env.fund(reserve(env, 5), bob);
+        env.close();
         env.trust(USD(1000), alice, bob, carol);
         env.trust(EUR(1000), alice, bob, carol);
 
@@ -789,6 +818,7 @@ struct Flow_test : public beast::unit_test::suite
             Env env(*this);
 
             env.fund(XRP(10000), alice, bob, carol, gw);
+            env.close();
 
             env.trust(USD(100), alice, bob, carol);
             env(pay(gw, bob, USD(100)));
@@ -989,6 +1019,7 @@ struct Flow_test : public beast::unit_test::suite
         auto const USD = gw["USD"];
 
         env.fund(XRP(10000), alice, gw);
+        env.close();
         env(trust(alice, USD(20)));
         env(pay(gw, alice, USD(10)));
         env(offer(alice, XRP(50000), USD(10)));
@@ -1018,6 +1049,7 @@ struct Flow_test : public beast::unit_test::suite
             auto const USD = gw["USD"];
 
             env.fund(XRP(100000), alice, bob, gw);
+            env.close();
             env(trust(bob, USD(20)));
 
             STAmount tinyAmt1{
@@ -1051,6 +1083,7 @@ struct Flow_test : public beast::unit_test::suite
             auto const USD = gw["USD"];
 
             env.fund(XRP(100000), alice, bob, gw);
+            env.close();
             env(trust(alice, USD(20)));
 
             STAmount tinyAmt1{
@@ -1168,6 +1201,7 @@ struct Flow_test : public beast::unit_test::suite
         auto const gw = Account("gw");
 
         env.fund(XRP(100000000), alice, noripple(bob), carol, gw);
+        env.close();
         env.trust(gw["USD"](10000), alice, carol);
         env(trust(bob, gw["USD"](10000), tfSetNoRipple));
         env.trust(gw["USD"](10000), bob);
@@ -1293,6 +1327,7 @@ struct Flow_test : public beast::unit_test::suite
         Env env(*this, features);
 
         env.fund(XRP(10000), alice);
+        env.close();
 
         env(pay(alice, alice, alice["USD"](100)),
             path(~alice["USD"]),
@@ -1322,8 +1357,10 @@ struct Flow_test : public beast::unit_test::suite
                 // Payment path starting with XRP
                 Env env(*this, feats);
                 env.fund(XRP(10000), alice, bob, gw);
+                env.close();
                 env.trust(USD(1000), alice, bob);
                 env.trust(EUR(1000), alice, bob);
+                env.close();
                 env(pay(gw, alice, USD(100)));
                 env(pay(gw, alice, EUR(100)));
                 env.close();
@@ -1347,6 +1384,7 @@ struct Flow_test : public beast::unit_test::suite
             // Payment path ending with XRP
             Env env(*this);
             env.fund(XRP(10000), alice, bob, gw);
+            env.close();
             env.trust(USD(1000), alice, bob);
             env.trust(EUR(1000), alice, bob);
             env(pay(gw, alice, USD(100)));
@@ -1405,6 +1443,7 @@ struct Flow_test : public beast::unit_test::suite
         Env env(*this, features);
 
         env.fund(XRP(10000), alice);
+        env.close();
 
         // alice creates a ticket for the payment.
         std::uint32_t const ticketSeq{env.seq(alice) + 1};
@@ -1414,7 +1453,8 @@ struct Flow_test : public beast::unit_test::suite
         env(pay(alice, bob, XRP(1000)), ticket::use(ticketSeq));
         env.close();
         env.require(balance(bob, XRP(1000)));
-        env.require(balance(alice, XRP(9000) - drops(20)));
+        env.require(
+            balance(alice, XRP(9000) - (env.current()->fees().base * 2)));
     }
 
     void
