@@ -159,6 +159,9 @@ jobs:
           generator: Ninja
           configuration: ${{ matrix.configuration }}
           cmake-args: "-Dassert=TRUE -Dwerr=TRUE ${{ matrix.cmake-args }}"
+      - name: check binary
+        run: |
+          ldd ${build_dir}/rippled
       - name: test
         run: |
           ${build_dir}/rippled --unittest --unittest-jobs $(nproc)
@@ -288,7 +291,7 @@ jobs:
           echo "reference=${reference}" >> "${GITHUB_ENV}"
       - name: build
         run: |
-          cd examples/example
+          cd tests/conan
           mkdir ${build_dir}
           cd ${build_dir}
           conan install .. --output-folder . \
