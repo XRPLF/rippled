@@ -1181,7 +1181,7 @@ NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
     auto const txid = trans->getTransactionID();
     auto const flags = app_.getHashRouter().getFlags(txid);
 
-    if ((flags & SF_BAD) != 0)
+    if ((flags & LedgerFlags::BAD) != LedgerFlags::UNDEFINED)
     {
         JLOG(m_journal.warn()) << "Submitted transaction cached bad";
         return;
@@ -1230,7 +1230,7 @@ NetworkOPsImp::processTransaction(
     auto ev = m_job_queue.makeLoadEvent(jtTXN_PROC, "ProcessTXN");
     auto const newFlags = app_.getHashRouter().getFlags(transaction->getID());
 
-    if ((newFlags & SF_BAD) != 0)
+    if ((newFlags & LedgerFlags::BAD) != LedgerFlags::UNDEFINED)
     {
         // cached bad
         JLOG(m_journal.warn()) << transaction->getID() << ": cached bad!\n";
@@ -1258,7 +1258,7 @@ NetworkOPsImp::processTransaction(
         JLOG(m_journal.info()) << "Transaction has bad signature: " << reason;
         transaction->setStatus(INVALID);
         transaction->setResult(temBAD_SIGNATURE);
-        app_.getHashRouter().setFlags(transaction->getID(), SF_BAD);
+        app_.getHashRouter().setFlags(transaction->getID(), LedgerFlags::BAD);
         return;
     }
 
@@ -1417,7 +1417,8 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
             e.transaction->setResult(e.result);
 
             if (isTemMalformed(e.result))
-                app_.getHashRouter().setFlags(e.transaction->getID(), SF_BAD);
+                app_.getHashRouter().setFlags(
+                    e.transaction->getID(), LedgerFlags::BAD);
 
 #ifdef DEBUG
             if (e.result != tesSUCCESS)
@@ -2499,8 +2500,9 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
 
     info[jss::server_state] = strOperatingMode(admin);
 
-    info[jss::time] = to_string(std::chrono::floor<std::chrono::microseconds>(
-        std::chrono::system_clock::now()));
+    info[jss::time] = to_string(
+        std::chrono::floor<std::chrono::microseconds>(
+            std::chrono::system_clock::now()));
 
     if (needNetworkLedger_)
         info[jss::network_ledger] = "waiting";
