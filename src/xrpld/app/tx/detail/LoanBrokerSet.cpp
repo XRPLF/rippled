@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <xrpld/app/tx/detail/LoanBroker.h>
+#include <xrpld/app/tx/detail/LoanBrokerSet.h>
 #include <xrpld/app/tx/detail/SignerEntries.h>
 #include <xrpld/app/tx/detail/Transactor.h>
 #include <xrpld/app/tx/detail/VaultCreate.h>
