@@ -142,9 +142,14 @@ LoanBrokerSet::doApply()
     if (auto const brokerID = tx[~sfLoanBrokerID])
     {
         // Modify an existing LoanBroker
-        auto const sleBroker = view.read(keylet::loanbroker(*brokerID));
+        auto broker = view.peek(keylet::loanbroker(*brokerID));
 
-        assert(0);
+        if (auto const data = tx[~sfData])
+            broker->at(sfData) = *data;
+        if (auto const debtMax = tx[~sfDebtMaximum])
+            broker->at(sfDebtMaximum) = *debtMax;
+
+        view.update(broker);
     }
     else
     {
@@ -160,7 +165,7 @@ LoanBrokerSet::doApply()
 
         if (auto const ter = dirLink(view, account_, broker))
             return ter;
-        if (auto const ter = dirLink(view, vaultPseudoID, broker))
+        if (auto const ter = dirLink(view, vaultPseudoID, broker, sfVaultNode))
             return ter;
 
         adjustOwnerCount(view, owner, 1, j_);
@@ -188,7 +193,7 @@ LoanBrokerSet::doApply()
             broker->at(sfData) = *data;
         if (auto const rate = tx[~sfManagementFeeRate])
             broker->at(sfManagementFeeRate) = *rate;
-        if (auto const debtMax = tx[~sfDebtMaximum]; debtMax)
+        if (auto const debtMax = tx[~sfDebtMaximum])
             broker->at(sfDebtMaximum) = *debtMax;
         if (auto const coverMin = tx[~sfCoverRateMinimum])
             broker->at(sfCoverRateMinimum) = *coverMin;
@@ -198,7 +203,7 @@ LoanBrokerSet::doApply()
         view.insert(broker);
     }
 
-    return temDISABLED;
+    return tesSUCCESS;
 }
 
 //------------------------------------------------------------------------------
