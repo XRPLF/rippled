@@ -35,6 +35,82 @@ namespace ripple {
 namespace test {
 namespace jtx {
 
+/** Generic helper class for helper clases that set a field on a JTx.
+
+ Not every helper will be able to use this because of conversions and other
+ issues, but for classes where it's straightforward, this can simplify things.
+*/
+template <class F, class V, class JV>
+struct field
+{
+protected:
+    F const& field_;
+    V value_;
+
+public:
+    explicit field(F const& field, V const& value)
+        : field_(field), value_(value)
+    {
+    }
+
+    virtual JV
+    value() const = 0;
+
+    virtual void
+    operator()(Env&, JTx& jt) const
+    {
+        jt.jv[field_.jsonName] = value();
+    }
+};
+
+template <class F, class V>
+struct field<F, V, V>
+{
+protected:
+    F const& field_;
+    V value_;
+
+public:
+    explicit field(F const& field, V const& value)
+        : field_(field), value_(value)
+    {
+    }
+
+    virtual void
+    operator()(Env&, JTx& jt) const
+    {
+        jt.jv[field_.jsonName] = value_;
+    }
+};
+
+template<class F, class V>
+using simpleField = field<F, V, V>;
+
+struct timePointField
+    : public field<SF_UINT32, NetClock::time_point, NetClock::rep>
+{
+    using F = SF_UINT32;
+    using V = NetClock::time_point;
+    using JV = NetClock::rep;
+    using base = field<F, V, JV>;
+
+protected:
+    using base::value_;
+
+public:
+
+    explicit timePointField(F const& field, V const& value)
+        : field(field, value)
+    {
+    }
+
+    JV
+    value() const override
+    {
+        return value_.time_since_epoch().count();
+    }
+};
+
 // TODO We only need this long "requires" clause as polyfill, for C++20
 // implementations which are missing <ranges> header. Replace with
 // `std::ranges::range<Input>`, and accordingly use std::ranges::begin/end
@@ -264,48 +340,25 @@ std::array<std::uint8_t, 39> constexpr cb1 = {
 std::array<std::uint8_t, 4> const fb1 = {{0xA0, 0x02, 0x80, 0x00}};
 
 /** Set the "FinishAfter" time tag on a JTx */
-struct finish_time
+struct finish_time : public timePointField
 {
-private:
-    NetClock::time_point value_;
-
-public:
-    explicit finish_time(NetClock::time_point const& value) : value_(value)
+    explicit finish_time(NetClock::time_point const& value)
+        : timePointField(sfFinishAfter, value)
     {
-    }
-
-    void
-    operator()(Env&, JTx& jt) const
-    {
-        jt.jv[sfFinishAfter.jsonName] = value_.time_since_epoch().count();
     }
 };
 
 /** Set the "CancelAfter" time tag on a JTx */
-struct cancel_time
+struct cancel_time : public timePointField
 {
-private:
-    NetClock::time_point value_;
-
-public:
-    explicit cancel_time(NetClock::time_point const& value) : value_(value)
+    explicit cancel_time(NetClock::time_point const& value) : timePointField(sfCancelAfter, value)
     {
-    }
-
-    void
-    operator()(jtx::Env&, jtx::JTx& jt) const
-    {
-        jt.jv[sfCancelAfter.jsonName] = value_.time_since_epoch().count();
     }
 };
 
-struct condition
+struct condition: public simpleField<SF_VL, std::string>
 {
-private:
-    std::string value_;
-
-public:
-    explicit condition(Slice const& cond) : value_(strHex(cond))
+    explicit condition(Slice const& cond) : field(sfCondition, strHex(cond))
     {
     }
 
@@ -313,12 +366,6 @@ public:
     explicit condition(std::array<std::uint8_t, N> const& c)
         : condition(makeSlice(c))
     {
-    }
-
-    void
-    operator()(Env&, JTx& jt) const
-    {
-        jt.jv[sfCondition.jsonName] = value_;
     }
 };
 
@@ -460,6 +507,24 @@ create(
 }
 
 }  // namespace check
+
+/* LoanBroker */
+/******************************************************************************/
+
+namespace loanBroker {
+
+Json::Value
+create(AccountID const& account, uint256 const& vaultId);
+
+/*
+inline Json::Value
+create(Account const& account, uint256 const& vaultId)
+{
+    return create(account.id(), vaultId);
+}
+*/
+
+}  // namespace loanBroker
 
 }  // namespace jtx
 }  // namespace test

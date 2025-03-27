@@ -37,22 +37,25 @@
 
 namespace ripple {
 
-NotTEC
-DeleteAccount::preflight(PreflightContext const& ctx)
+bool
+DeleteAccount::isEnabled(PreflightContext const& ctx)
 {
     if (!ctx.rules.enabled(featureDeletableAccounts))
-        return temDISABLED;
+        return false;
 
-    if (ctx.tx.isFieldPresent(sfCredentialIDs) &&
-        !ctx.rules.enabled(featureCredentials))
-        return temDISABLED;
+    return !ctx.tx.isFieldPresent(sfCredentialIDs) ||
+        ctx.rules.enabled(featureCredentials);
+}
 
-    if (ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
+std::uint32_t
+DeleteAccount::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfUniversalMask;
+}
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
+NotTEC
+DeleteAccount::doPreflight(PreflightContext const& ctx)
+{
     if (ctx.tx[sfAccount] == ctx.tx[sfDestination])
         // An account cannot be deleted and give itself the resulting XRP.
         return temDST_IS_SRC;
@@ -60,7 +63,7 @@ DeleteAccount::preflight(PreflightContext const& ctx)
     if (auto const err = credentials::checkFields(ctx); !isTesSuccess(err))
         return err;
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 XRPAmount

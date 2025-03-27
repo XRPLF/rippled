@@ -25,18 +25,21 @@
 
 namespace ripple {
 
-NotTEC
-MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
+bool
+MPTokenIssuanceCreate::isEnabled(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureMPTokensV1))
-        return temDISABLED;
+    return ctx.rules.enabled(featureMPTokensV1);
+}
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
+std::uint32_t
+MPTokenIssuanceCreate::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfMPTokenIssuanceCreateMask;
+}
 
-    if (ctx.tx.getFlags() & tfMPTokenIssuanceCreateMask)
-        return temINVALID_FLAG;
-
+NotTEC
+MPTokenIssuanceCreate::doPreflight(PreflightContext const& ctx)
+{
     if (auto const fee = ctx.tx[~sfTransferFee])
     {
         if (fee > maxTransferFee)
@@ -64,7 +67,7 @@ MPTokenIssuanceCreate::preflight(PreflightContext const& ctx)
         if (maxAmt > maxMPTokenAmount)
             return temMALFORMED;
     }
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 Expected<MPTID, TER>

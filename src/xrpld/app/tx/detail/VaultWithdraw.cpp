@@ -30,18 +30,21 @@
 
 namespace ripple {
 
-NotTEC
-VaultWithdraw::preflight(PreflightContext const& ctx)
+bool
+VaultWithdraw::isEnabled(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureSingleAssetVault))
-        return temDISABLED;
+    return ctx.rules.enabled(featureSingleAssetVault);
+}
 
-    if (auto const ter = preflight1(ctx))
-        return ter;
+std::uint32_t
+VaultWithdraw::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfUniversalMask;
+}
 
-    if (ctx.tx.getFlags() & tfUniversalMask)
-        return temINVALID_FLAG;
-
+NotTEC
+VaultWithdraw::doPreflight(PreflightContext const& ctx)
+{
     if (ctx.tx[sfVaultID] == beast::zero)
         return temMALFORMED;
 
@@ -55,7 +58,7 @@ VaultWithdraw::preflight(PreflightContext const& ctx)
             return temMALFORMED;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 TER

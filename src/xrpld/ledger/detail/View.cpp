@@ -1027,14 +1027,28 @@ describeOwnerDir(AccountID const& account)
 }
 
 TER
-dirLink(ApplyView& view, AccountID const& owner, std::shared_ptr<SLE>& object)
+dirLink(
+    ApplyView& view,
+    AccountID const& owner,
+    std::shared_ptr<SLE>& object,
+    SF_UINT64 const& node)
 {
     auto const page = view.dirInsert(
         keylet::ownerDir(owner), object->key(), describeOwnerDir(owner));
     if (!page)
         return tecDIR_FULL;
-    object->setFieldU64(sfOwnerNode, *page);
+    object->setFieldU64(node, *page);
     return tesSUCCESS;
+}
+
+std::map<PseudoAccountOwnerType, SF_UINT256 const&> const&
+getPseudoAccountOwnerFields()
+{
+    static std::map<PseudoAccountOwnerType, SF_UINT256 const&> const fields{
+        {PseudoAccountOwnerType::AMM, sfAMMID},
+        {PseudoAccountOwnerType::Vault, sfVaultID},
+        {PseudoAccountOwnerType::LoanBroker, sfLoanBrokerID}};
+    return fields;
 }
 
 Expected<std::shared_ptr<SLE>, TER>
@@ -1083,18 +1097,14 @@ createPseudoAccount(
     account->setFieldU32(
         sfFlags, lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth);
     // Link the pseudo-account with its owner object.
-    switch (type)
+    auto const& fields = getPseudoAccountOwnerFields();
+    auto const it = fields.find(type);
+    if (it != fields.end())
+        account->setFieldH256(it->second, pseudoOwnerKey);
+    else
     {
-        case PseudoAccountOwnerType::AMM:
-            account->setFieldH256(sfAMMID, pseudoOwnerKey);
-            break;
-        case PseudoAccountOwnerType::Vault:
-            account->setFieldH256(sfVaultID, pseudoOwnerKey);
-            break;
-        default:
-            UNREACHABLE(
-                "ripple::createPseudoAccount : unknown owner key type");  // LCOV_EXCL_LINE
-            return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
+        UNREACHABLE("ripple::createPseudoAccount : unknown owner key type");
+        return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
     }
 
     view.insert(account);

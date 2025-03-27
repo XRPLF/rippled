@@ -25,20 +25,22 @@
 
 namespace ripple {
 
-NotTEC
-MPTokenIssuanceDestroy::preflight(PreflightContext const& ctx)
+bool
+MPTokenIssuanceDestroy::isEnabled(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureMPTokensV1))
-        return temDISABLED;
+    return ctx.rules.enabled(featureMPTokensV1);
+}
 
-    // check flags
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
+std::uint32_t
+MPTokenIssuanceDestroy::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfMPTokenIssuanceDestroyMask;
+}
 
-    if (ctx.tx.getFlags() & tfMPTokenIssuanceDestroyMask)
-        return temINVALID_FLAG;
-
-    return preflight2(ctx);
+NotTEC
+MPTokenIssuanceDestroy::doPreflight(PreflightContext const& ctx)
+{
+    return tesSUCCESS;
 }
 
 TER
