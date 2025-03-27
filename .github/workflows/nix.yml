@@ -342,7 +342,7 @@ jobs:
           echo "reference=${reference}" >> "${GITHUB_ENV}"
       - name: build
         run: |
-          cd examples/example
+          cd tests/conan
           mkdir ${build_dir}
           cd ${build_dir}
           conan install .. --output-folder . \
