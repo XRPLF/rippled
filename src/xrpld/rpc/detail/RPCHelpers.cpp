@@ -165,7 +165,7 @@ supplementJson<ltVAULT>(
     if (!sleIssuance)
         return;
 
-    node[jss::ShareTotal] =
+    node[jss::SharesTotal] =
         Number(sleIssuance->getFieldU64(sfOutstandingAmount));
 }
 

@@ -712,7 +712,7 @@ class Vault_test : public beast::unit_test::suite
             jvParams[jss::vault] = strHex(key);
             auto jvVault = env.rpc("json", "ledger_entry", to_string(jvParams));
             BEAST_EXPECT(
-                jvVault[jss::result][jss::node][jss::ShareTotal] == "100");
+                jvVault[jss::result][jss::node][jss::SharesTotal] == "100");
             BEAST_EXPECT(
                 jvVault[jss::result][jss::node][sfAssetsTotal.fieldName] ==
                 "100");
@@ -754,7 +754,7 @@ class Vault_test : public beast::unit_test::suite
             auto jvVault = env.rpc("json", "ledger_entry", to_string(jvParams));
 
             BEAST_EXPECT(
-                jvVault[jss::result][jss::node][jss::ShareTotal] == "50");
+                jvVault[jss::result][jss::node][jss::SharesTotal] == "50");
             BEAST_EXPECT(
                 jvVault[jss::result][jss::node][sfAssetsTotal.fieldName] ==
                 "50");
