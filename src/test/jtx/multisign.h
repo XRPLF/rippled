@@ -21,6 +21,7 @@
 #define RIPPLE_TEST_JTX_MULTISIGN_H_INCLUDED
 
 #include <test/jtx/Account.h>
+#include <test/jtx/SignerUtils.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/owners.h>
 #include <test/jtx/tags.h>
@@ -65,48 +66,19 @@ signers(Account const& account, none_t);
 class msig
 {
 public:
-    struct Reg
-    {
-        Account acct;
-        Account sig;
-
-        Reg(Account const& masterSig) : acct(masterSig), sig(masterSig)
-        {
-        }
-
-        Reg(Account const& acct_, Account const& regularSig)
-            : acct(acct_), sig(regularSig)
-        {
-        }
-
-        Reg(char const* masterSig) : acct(masterSig), sig(masterSig)
-        {
-        }
-
-        Reg(char const* acct_, char const* regularSig)
-            : acct(acct_), sig(regularSig)
-        {
-        }
-
-        bool
-        operator<(Reg const& rhs) const
-        {
-            return acct < rhs.acct;
-        }
-    };
-
     std::vector<Reg> signers;
 
-public:
-    msig(std::vector<Reg> signers_);
+    msig(std::vector<Reg> signers_) : signers(std::move(signers_))
+    {
+        sortSigners(signers);
+    }
 
     template <class AccountType, class... Accounts>
         requires std::convertible_to<AccountType, Reg>
     explicit msig(AccountType&& a0, Accounts&&... aN)
-        : msig{std::vector<Reg>{
-              std::forward<AccountType>(a0),
-              std::forward<Accounts>(aN)...}}
+        : signers{std::forward<AccountType>(a0), std::forward<Accounts>(aN)...}
     {
+        sortSigners(signers);
     }
 
     void

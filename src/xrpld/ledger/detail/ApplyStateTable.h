@@ -72,6 +72,7 @@ public:
         STTx const& tx,
         TER ter,
         std::optional<STAmount> const& deliver,
+        std::optional<uint256 const> const& parentBatchId,
         bool isDryRun,
         beast::Journal j);
 

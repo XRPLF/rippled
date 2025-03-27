@@ -31,6 +31,7 @@
 #include <test/jtx/acctdelete.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/balance.h>
+#include <test/jtx/batch.h>
 #include <test/jtx/check.h>
 #include <test/jtx/credentials.h>
 #include <test/jtx/delivermin.h>

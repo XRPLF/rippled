@@ -165,6 +165,8 @@ struct PreflightResult
 public:
     /// From the input - the transaction
     STTx const& tx;
+    /// From the input - the batch identifier, if part of a batch
+    std::optional<uint256 const> const parentBatchId;
     /// From the input - the rules
     Rules const rules;
     /// Consequences of the transaction
@@ -183,6 +185,7 @@ public:
         Context const& ctx_,
         std::pair<NotTEC, TxConsequences> const& result)
         : tx(ctx_.tx)
+        , parentBatchId(ctx_.parentBatchId)
         , rules(ctx_.rules)
         , consequences(result.second)
         , flags(ctx_.flags)
@@ -210,6 +213,8 @@ public:
     ReadView const& view;
     /// From the input - the transaction
     STTx const& tx;
+    /// From the input - the batch identifier, if part of a batch
+    std::optional<uint256 const> const parentBatchId;
     /// From the input - the flags
     ApplyFlags const flags;
     /// From the input - the journal
@@ -217,6 +222,7 @@ public:
 
     /// Intermediate transaction result
     TER const ter;
+
     /// Success flag - whether the transaction is likely to
     /// claim a fee
     bool const likelyToClaimFee;
@@ -226,6 +232,7 @@ public:
     PreclaimResult(Context const& ctx_, TER ter_)
         : view(ctx_.view)
         , tx(ctx_.tx)
+        , parentBatchId(ctx_.parentBatchId)
         , flags(ctx_.flags)
         , j(ctx_.j)
         , ter(ter_)
@@ -255,6 +262,7 @@ public:
     @return A `PreflightResult` object containing, among
     other things, the `TER` code.
 */
+/** @{ */
 PreflightResult
 preflight(
     Application& app,
@@ -262,6 +270,16 @@ preflight(
     STTx const& tx,
     ApplyFlags flags,
     beast::Journal j);
+
+PreflightResult
+preflight(
+    Application& app,
+    Rules const& rules,
+    uint256 const& parentBatchId,
+    STTx const& tx,
+    ApplyFlags flags,
+    beast::Journal j);
+/** @} */
 
 /** Gate a transaction based on static ledger information.
 

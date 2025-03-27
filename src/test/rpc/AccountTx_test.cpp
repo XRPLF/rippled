@@ -458,7 +458,6 @@ class AccountTx_test : public beast::unit_test::suite
                              STAmount const& amount) {
                 Json::Value escro;
                 escro[jss::TransactionType] = jss::EscrowCreate;
-                escro[jss::Flags] = tfUniversal;
                 escro[jss::Account] = account.human();
                 escro[jss::Destination] = to.human();
                 escro[jss::Amount] = amount.getJson(JsonOptions::none);
@@ -487,7 +486,6 @@ class AccountTx_test : public beast::unit_test::suite
             {
                 Json::Value escrowFinish;
                 escrowFinish[jss::TransactionType] = jss::EscrowFinish;
-                escrowFinish[jss::Flags] = tfUniversal;
                 escrowFinish[jss::Account] = alice.human();
                 escrowFinish[sfOwner.jsonName] = alice.human();
                 escrowFinish[sfOfferSequence.jsonName] = escrowFinishSeq;
@@ -496,7 +494,6 @@ class AccountTx_test : public beast::unit_test::suite
             {
                 Json::Value escrowCancel;
                 escrowCancel[jss::TransactionType] = jss::EscrowCancel;
-                escrowCancel[jss::Flags] = tfUniversal;
                 escrowCancel[jss::Account] = alice.human();
                 escrowCancel[sfOwner.jsonName] = alice.human();
                 escrowCancel[sfOfferSequence.jsonName] = escrowCancelSeq;
@@ -510,7 +507,6 @@ class AccountTx_test : public beast::unit_test::suite
             std::uint32_t payChanSeq{env.seq(alice)};
             Json::Value payChanCreate;
             payChanCreate[jss::TransactionType] = jss::PaymentChannelCreate;
-            payChanCreate[jss::Flags] = tfUniversal;
             payChanCreate[jss::Account] = alice.human();
             payChanCreate[jss::Destination] = gw.human();
             payChanCreate[jss::Amount] =
@@ -527,7 +523,6 @@ class AccountTx_test : public beast::unit_test::suite
             {
                 Json::Value payChanFund;
                 payChanFund[jss::TransactionType] = jss::PaymentChannelFund;
-                payChanFund[jss::Flags] = tfUniversal;
                 payChanFund[jss::Account] = alice.human();
                 payChanFund[sfChannel.jsonName] = payChanIndex;
                 payChanFund[jss::Amount] =
