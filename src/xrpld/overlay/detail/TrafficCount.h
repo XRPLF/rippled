@@ -195,7 +195,7 @@ public:
             cat <= category::unknown,
             "ripple::TrafficCount::addCount : valid category input");
 
-        auto const& it = counts_.find(cat);
+        auto it = counts_.find(cat);
 
         // nothing to do, the category does not exist
         if (it == counts_.end())

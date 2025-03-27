@@ -610,14 +610,14 @@ private:
             counts.size() == m_stats.trafficGauges.size(),
             "ripple::OverlayImpl::collect_metrics : counts size do match");
 
-        auto i = 0;
-        std::for_each(counts.begin(), counts.end(), [&](const auto& pair) {
-            m_stats.trafficGauges[i].bytesIn = pair.second.bytesIn;
-            m_stats.trafficGauges[i].bytesOut = pair.second.bytesOut;
-            m_stats.trafficGauges[i].messagesIn = pair.second.messagesIn;
-            m_stats.trafficGauges[i].messagesOut = pair.second.messagesOut;
-            ++i;
-        });
+        for (auto const& [key, value] : counts)
+        {
+            auto& gauge = m_stats.trafficGauges[key];
+            gauge.bytesIn = value.bytesIn;
+            gauge.bytesOut = value.bytesOut;
+            gauge.messagesIn = value.messagesIn;
+            gauge.messagesOut = value.messagesOut;
+        }
 
         m_stats.peerDisconnects = getPeerDisconnect();
     }
