@@ -927,7 +927,7 @@ public:
             Account const carol{"carol"};
             Account const daria{"daria"};
 
-            const char credType[] = "abcd";
+            char const credType[] = "abcd";
 
             Env env{*this};
             env.fund(XRP(100000), alice, becky, carol, daria);
@@ -1193,7 +1193,7 @@ public:
             Account const becky{"becky"};
             Account const carol{"carol"};
 
-            const char credType[] = "abcd";
+            char const credType[] = "abcd";
 
             Env env{*this};
             env.fund(XRP(100000), alice, becky, carol);
@@ -1237,7 +1237,7 @@ public:
             Account const becky{"becky"};
             Account const carol{"carol"};
 
-            const char credType[] = "abcd";
+            char const credType[] = "abcd";
 
             Env env{*this};
             env.fund(XRP(100000), alice, becky, carol);

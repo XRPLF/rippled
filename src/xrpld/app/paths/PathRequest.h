@@ -52,8 +52,8 @@ class PathRequest final : public InfoSubRequest,
 public:
     using wptr = std::weak_ptr<PathRequest>;
     using pointer = std::shared_ptr<PathRequest>;
-    using ref = const pointer&;
-    using wref = const wptr&;
+    using ref = pointer const&;
+    using wref = wptr const&;
 
 public:
     // path_find semantics

@@ -188,7 +188,7 @@ private:
 // Helper functions for debug printing
 
 inline std::ostream&
-operator<<(std::ostream& o, const Tx& t)
+operator<<(std::ostream& o, Tx const& t)
 {
     return o << t.id();
 }

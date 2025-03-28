@@ -29,7 +29,7 @@ namespace ripple {
 LedgerFormats::LedgerFormats()
 {
     // Fields shared by all ledger formats:
-    static const std::initializer_list<SOElement> commonFields{
+    static std::initializer_list<SOElement> const commonFields{
         {sfLedgerIndex, soeOPTIONAL},
         {sfLedgerEntryType, soeREQUIRED},
         {sfFlags, soeREQUIRED},

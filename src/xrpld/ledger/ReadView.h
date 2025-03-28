@@ -258,7 +258,7 @@ public:
     using digest_type = uint256;
 
     DigestAwareReadView() = default;
-    DigestAwareReadView(const DigestAwareReadView&) = default;
+    DigestAwareReadView(DigestAwareReadView const&) = default;
 
     /** Return the digest associated with the key.
 

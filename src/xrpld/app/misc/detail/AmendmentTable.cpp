@@ -998,8 +998,8 @@ AmendmentTableImpl::trustChanged(hash_set<PublicKey> const& allTrusted)
 void
 AmendmentTableImpl::injectJson(
     Json::Value& v,
-    const uint256& id,
-    const AmendmentState& fs,
+    uint256 const& id,
+    AmendmentState const& fs,
     bool isAdmin,
     std::lock_guard<std::mutex> const&) const
 {

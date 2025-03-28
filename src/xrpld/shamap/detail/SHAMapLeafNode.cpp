@@ -65,7 +65,7 @@ SHAMapLeafNode::setItem(boost::intrusive_ptr<SHAMapItem const> item)
 }
 
 std::string
-SHAMapLeafNode::getString(const SHAMapNodeID& id) const
+SHAMapLeafNode::getString(SHAMapNodeID const& id) const
 {
     std::string ret = SHAMapTreeNode::getString(id);
 

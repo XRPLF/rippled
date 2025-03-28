@@ -328,7 +328,7 @@ class RCLConsensus
             ConsensusCloseTimes const& rawCloseTimes,
             ConsensusMode const& mode,
             Json::Value&& consensusJson,
-            const bool validating);
+            bool const validating);
 
         /** Process the accepted ledger that was a result of simulation/force
             accept.
@@ -556,7 +556,7 @@ class RclConsensusLogger
 
 public:
     explicit RclConsensusLogger(
-        const char* label,
+        char const* label,
         bool validating,
         beast::Journal j);
     ~RclConsensusLogger();

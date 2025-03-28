@@ -553,11 +553,11 @@ struct Peer
         ConsensusCloseTimes const& rawCloseTimes,
         ConsensusMode const& mode,
         Json::Value&& consensusJson,
-        const bool validating)
+        bool const validating)
     {
         schedule(delays.ledgerAccept, [=, this]() {
-            const bool proposing = mode == ConsensusMode::proposing;
-            const bool consensusFail = result.state == ConsensusState::MovedOn;
+            bool const proposing = mode == ConsensusMode::proposing;
+            bool const consensusFail = result.state == ConsensusState::MovedOn;
 
             TxSet const acceptedTxs = injectTxs(prevLedger, result.txns);
             Ledger const newLedger = oracle.accept(

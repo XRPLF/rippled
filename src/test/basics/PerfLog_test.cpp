@@ -776,7 +776,7 @@ public:
 
             // Verify values in jss::total are what we expect.
             Json::Value const& total{jobQueue[jss::total]};
-            const int finished = jobs.size() * 2;
+            int const finished = jobs.size() * 2;
             BEAST_EXPECT(jsonToUint64(total[jss::queued]) == jobs.size());
             BEAST_EXPECT(jsonToUint64(total[jss::started]) == finished);
             BEAST_EXPECT(jsonToUint64(total[jss::finished]) == finished);

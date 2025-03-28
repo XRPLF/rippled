@@ -32,7 +32,7 @@ namespace test {
 
 extern std::atomic<bool> envUseIPv4;
 
-inline const char*
+inline char const*
 getEnvLocalhostAddr()
 {
     return envUseIPv4 ? "127.0.0.1" : "::1";

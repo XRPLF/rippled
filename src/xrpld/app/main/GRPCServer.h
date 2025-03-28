@@ -44,10 +44,10 @@ public:
 
     Processor() = default;
 
-    Processor(const Processor&) = delete;
+    Processor(Processor const&) = delete;
 
     Processor&
-    operator=(const Processor&) = delete;
+    operator=(Processor const&) = delete;
 
     // process a request that has arrived. Can only be called once per instance
     virtual void
@@ -120,10 +120,10 @@ private:
 public:
     explicit GRPCServerImpl(Application& app);
 
-    GRPCServerImpl(const GRPCServerImpl&) = delete;
+    GRPCServerImpl(GRPCServerImpl const&) = delete;
 
     GRPCServerImpl&
-    operator=(const GRPCServerImpl&) = delete;
+    operator=(GRPCServerImpl const&) = delete;
 
     void
     shutdown();
@@ -214,10 +214,10 @@ private:
             Resource::Charge loadType,
             std::vector<boost::asio::ip::address> const& secureGatewayIPs);
 
-        CallData(const CallData&) = delete;
+        CallData(CallData const&) = delete;
 
         CallData&
-        operator=(const CallData&) = delete;
+        operator=(CallData const&) = delete;
 
         virtual void
         process() override;
@@ -304,10 +304,10 @@ public:
     {
     }
 
-    GRPCServer(const GRPCServer&) = delete;
+    GRPCServer(GRPCServer const&) = delete;
 
     GRPCServer&
-    operator=(const GRPCServer&) = delete;
+    operator=(GRPCServer const&) = delete;
 
     bool
     start();

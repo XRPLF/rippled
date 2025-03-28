@@ -115,7 +115,7 @@ adjustDescriptorLimit(int needed, beast::Journal j)
 }
 
 void
-printHelp(const po::options_description& desc)
+printHelp(po::options_description const& desc)
 {
     std::cerr
         << systemName() << "d [options] <command> <params>\n"

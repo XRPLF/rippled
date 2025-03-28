@@ -43,7 +43,7 @@ struct less
     using result_type = bool;
 
     constexpr bool
-    operator()(const T& left, const T& right) const
+    operator()(T const& left, T const& right) const
     {
         return std::less<T>()(left, right);
     }
@@ -55,7 +55,7 @@ struct equal_to
     using result_type = bool;
 
     constexpr bool
-    operator()(const T& left, const T& right) const
+    operator()(T const& left, T const& right) const
     {
         return std::equal_to<T>()(left, right);
     }

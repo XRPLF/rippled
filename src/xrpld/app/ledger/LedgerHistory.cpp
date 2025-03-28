@@ -65,7 +65,7 @@ LedgerHistory::insert(
 
     std::unique_lock sl(m_ledgers_by_hash.peekMutex());
 
-    const bool alreadyHad = m_ledgers_by_hash.canonicalize_replace_cache(
+    bool const alreadyHad = m_ledgers_by_hash.canonicalize_replace_cache(
         ledger->info().hash, ledger);
     if (validated)
         mLedgersByIndex[ledger->info().seq] = ledger->info().hash;

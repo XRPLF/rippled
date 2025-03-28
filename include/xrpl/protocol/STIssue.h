@@ -71,7 +71,7 @@ public:
     add(Serializer& s) const override;
 
     bool
-    isEquivalent(const STBase& t) const override;
+    isEquivalent(STBase const& t) const override;
 
     bool
     isDefault() const override;

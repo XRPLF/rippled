@@ -63,7 +63,7 @@ getFileContents(
         return {};
     }
 
-    const std::string result{
+    std::string const result{
         std::istreambuf_iterator<char>{fileStream},
         std::istreambuf_iterator<char>{}};
 

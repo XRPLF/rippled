@@ -28,8 +28,8 @@ struct mulDiv_test : beast::unit_test::suite
     void
     run() override
     {
-        const auto max = std::numeric_limits<std::uint64_t>::max();
-        const std::uint64_t max32 = std::numeric_limits<std::uint32_t>::max();
+        auto const max = std::numeric_limits<std::uint64_t>::max();
+        std::uint64_t const max32 = std::numeric_limits<std::uint32_t>::max();
 
         auto result = mulDiv(85, 20, 5);
         BEAST_EXPECT(result && *result == 340);

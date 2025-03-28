@@ -37,9 +37,9 @@ class temp_dir
 
 public:
 #if !GENERATING_DOCS
-    temp_dir(const temp_dir&) = delete;
+    temp_dir(temp_dir const&) = delete;
     temp_dir&
-    operator=(const temp_dir&) = delete;
+    operator=(temp_dir const&) = delete;
 #endif
 
     /// Construct a temporary directory.

@@ -47,7 +47,7 @@ struct Handler
     template <class JsonValue>
     using Method = std::function<Status(JsonContext&, JsonValue&)>;
 
-    const char* name_;
+    char const* name_;
     Method<Json::Value> valueMethod_;
     Role role_;
     RPC::Condition condition_;

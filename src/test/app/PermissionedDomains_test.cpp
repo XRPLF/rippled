@@ -285,7 +285,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
         Env env(*this, withFeature_);
         env.set_parse_failure_expected(true);
 
-        const int accNum = 12;
+        int const accNum = 12;
         Account const alice[accNum] = {
             "alice",
             "alice2",

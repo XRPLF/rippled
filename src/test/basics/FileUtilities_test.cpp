@@ -34,7 +34,7 @@ public:
         using namespace ripple::test::detail;
         using namespace boost::system;
 
-        constexpr const char* expectedContents =
+        constexpr char const* expectedContents =
             "This file is very short. That's all we need.";
 
         FileDirGuard file(

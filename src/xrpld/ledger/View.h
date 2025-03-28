@@ -339,7 +339,7 @@ areCompatible(
     ReadView const& validLedger,
     ReadView const& testLedger,
     beast::Journal::Stream& s,
-    const char* reason);
+    char const* reason);
 
 [[nodiscard]] bool
 areCompatible(
@@ -347,7 +347,7 @@ areCompatible(
     LedgerIndex validIndex,
     ReadView const& testLedger,
     beast::Journal::Stream& s,
-    const char* reason);
+    char const* reason);
 
 //------------------------------------------------------------------------------
 //
@@ -440,14 +440,14 @@ describeOwnerDir(AccountID const& account);
 [[nodiscard]] TER
 trustCreate(
     ApplyView& view,
-    const bool bSrcHigh,
+    bool const bSrcHigh,
     AccountID const& uSrcAccountID,
     AccountID const& uDstAccountID,
     uint256 const& uIndex,      // --> ripple state entry
     SLE::ref sleAccount,        // --> the account being set.
-    const bool bAuth,           // --> authorize account.
-    const bool bNoRipple,       // --> others cannot ripple through
-    const bool bFreeze,         // --> funds cannot leave
+    bool const bAuth,           // --> authorize account.
+    bool const bNoRipple,       // --> others cannot ripple through
+    bool const bFreeze,         // --> funds cannot leave
     bool bDeepFreeze,           // --> can neither receive nor send funds
     STAmount const& saBalance,  // --> balance of account being set.
                                 // Issuer should be noAccount()

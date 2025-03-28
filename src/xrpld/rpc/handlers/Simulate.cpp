@@ -233,7 +233,7 @@ simulateTxn(RPC::JsonContext& context, std::shared_ptr<Transaction> transaction)
     jvResult[jss::applied] = result.applied;
     jvResult[jss::ledger_index] = view.seq();
 
-    const bool isBinaryOutput = context.params.get(jss::binary, false).asBool();
+    bool const isBinaryOutput = context.params.get(jss::binary, false).asBool();
 
     // Convert the TER to human-readable values
     std::string token;

@@ -63,7 +63,7 @@ public:
         testcase("Lookup");
 
         using namespace jtx;
-        const std::vector<std::string> tokenBlob = {
+        std::vector<std::string> const tokenBlob = {
             "    "
             "eyJ2YWxpZGF0aW9uX3NlY3JldF9rZXkiOiI5ZWQ0NWY4NjYyNDFjYzE4YTI3NDdiNT"
             "\n",

@@ -168,7 +168,7 @@ public:
 
     template <typename Seq, typename Handler>
     void
-    async_read_some(const Seq& buffers, Handler handler)
+    async_read_some(Seq const& buffers, Handler handler)
     {
         if (isSecure())
             mSocket->async_read_some(buffers, handler);
@@ -178,7 +178,7 @@ public:
 
     template <typename Seq, typename Condition, typename Handler>
     void
-    async_read_until(const Seq& buffers, Condition condition, Handler handler)
+    async_read_until(Seq const& buffers, Condition condition, Handler handler)
     {
         if (isSecure())
             boost::asio::async_read_until(
@@ -218,7 +218,7 @@ public:
 
     template <typename Buf, typename Handler>
     void
-    async_write(const Buf& buffers, Handler handler)
+    async_write(Buf const& buffers, Handler handler)
     {
         if (isSecure())
             boost::asio::async_write(*mSocket, buffers, handler);
@@ -240,7 +240,7 @@ public:
 
     template <typename Buf, typename Condition, typename Handler>
     void
-    async_read(const Buf& buffers, Condition cond, Handler handler)
+    async_read(Buf const& buffers, Condition cond, Handler handler)
     {
         if (isSecure())
             boost::asio::async_read(*mSocket, buffers, cond, handler);
@@ -263,7 +263,7 @@ public:
 
     template <typename Buf, typename Handler>
     void
-    async_read(const Buf& buffers, Handler handler)
+    async_read(Buf const& buffers, Handler handler)
     {
         if (isSecure())
             boost::asio::async_read(*mSocket, buffers, handler);
@@ -273,7 +273,7 @@ public:
 
     template <typename Seq, typename Handler>
     void
-    async_write_some(const Seq& buffers, Handler handler)
+    async_write_some(Seq const& buffers, Handler handler)
     {
         if (isSecure())
             mSocket->async_write_some(buffers, handler);
@@ -285,7 +285,7 @@ protected:
     void
     handle_autodetect(
         callback cbFunc,
-        const error_code& ec,
+        error_code const& ec,
         size_t bytesTransferred)
     {
         using namespace ripple;

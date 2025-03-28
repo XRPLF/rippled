@@ -267,7 +267,7 @@ XRPAmount::decimalXRP() const
 // Output XRPAmount as just the drops value.
 template <class Char, class Traits>
 std::basic_ostream<Char, Traits>&
-operator<<(std::basic_ostream<Char, Traits>& os, const XRPAmount& q)
+operator<<(std::basic_ostream<Char, Traits>& os, XRPAmount const& q)
 {
     return os << q.drops();
 }

@@ -39,7 +39,7 @@ class Reader
 {
 public:
     using Char = char;
-    using Location = const Char*;
+    using Location = Char const*;
 
     /** \brief Constructs a Reader allowing all features
      * for parsing.
@@ -64,7 +64,7 @@ public:
      * error occurred.
      */
     bool
-    parse(const char* beginDoc, const char* endDoc, Value& root);
+    parse(char const* beginDoc, char const* endDoc, Value& root);
 
     /// \brief Parse from input stream.
     /// \see Json::operator>>(std::istream&, Json::Value&).
@@ -133,7 +133,7 @@ private:
     using Errors = std::deque<ErrorInfo>;
 
     bool
-    expectToken(TokenType type, Token& token, const char* message);
+    expectToken(TokenType type, Token& token, char const* message);
     bool
     readToken(Token& token);
     void

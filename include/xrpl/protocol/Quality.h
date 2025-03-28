@@ -113,8 +113,8 @@ public:
     // have lower unsigned integer representations.
     using value_type = std::uint64_t;
 
-    static const int minTickSize = 3;
-    static const int maxTickSize = 16;
+    static int const minTickSize = 3;
+    static int const maxTickSize = 16;
 
 private:
     // This has the same representation as STAmount, see the comment on the

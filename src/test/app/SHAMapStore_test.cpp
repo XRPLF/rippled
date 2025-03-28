@@ -72,21 +72,21 @@ class SHAMapStore_test : public beast::unit_test::suite
             env.app().getRelationalDatabase().getLedgerInfoByIndex(seq);
         if (!oinfo)
             return false;
-        const LedgerInfo& info = oinfo.value();
+        LedgerInfo const& info = oinfo.value();
 
-        const std::string outHash = to_string(info.hash);
-        const LedgerIndex outSeq = info.seq;
-        const std::string outParentHash = to_string(info.parentHash);
-        const std::string outDrops = to_string(info.drops);
-        const std::uint64_t outCloseTime =
+        std::string const outHash = to_string(info.hash);
+        LedgerIndex const outSeq = info.seq;
+        std::string const outParentHash = to_string(info.parentHash);
+        std::string const outDrops = to_string(info.drops);
+        std::uint64_t const outCloseTime =
             info.closeTime.time_since_epoch().count();
-        const std::uint64_t outParentCloseTime =
+        std::uint64_t const outParentCloseTime =
             info.parentCloseTime.time_since_epoch().count();
-        const std::uint64_t outCloseTimeResolution =
+        std::uint64_t const outCloseTimeResolution =
             info.closeTimeResolution.count();
-        const std::uint64_t outCloseFlags = info.closeFlags;
-        const std::string outAccountHash = to_string(info.accountHash);
-        const std::string outTxHash = to_string(info.txHash);
+        std::uint64_t const outCloseFlags = info.closeFlags;
+        std::string const outAccountHash = to_string(info.accountHash);
+        std::string const outTxHash = to_string(info.txHash);
 
         auto const& ledger = json[jss::result][jss::ledger];
         return outHash == ledger[jss::ledger_hash].asString() &&
@@ -124,7 +124,7 @@ class SHAMapStore_test : public beast::unit_test::suite
     void
     ledgerCheck(jtx::Env& env, int const rows, int const first)
     {
-        const auto [actualRows, actualFirst, actualLast] =
+        auto const [actualRows, actualFirst, actualLast] =
             dynamic_cast<SQLiteDatabase*>(&env.app().getRelationalDatabase())
                 ->getLedgerCountMinMax();
 

@@ -80,7 +80,7 @@ struct MultiApiJson
     }
 
     void
-    set(const char* key, auto const& v)
+    set(char const* key, auto const& v)
         requires std::constructible_from<Json::Value, decltype(v)>
     {
         for (auto& a : this->val)
@@ -91,7 +91,7 @@ struct MultiApiJson
     enum IsMemberResult : int { none = 0, some, all };
 
     [[nodiscard]] IsMemberResult
-    isMember(const char* key) const
+    isMember(char const* key) const
     {
         int count = 0;
         for (auto& a : this->val)

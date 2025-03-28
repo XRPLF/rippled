@@ -367,7 +367,7 @@ get(Section const& section,
 }
 
 inline std::string
-get(Section const& section, std::string const& name, const char* defaultValue)
+get(Section const& section, std::string const& name, char const* defaultValue)
 {
     try
     {

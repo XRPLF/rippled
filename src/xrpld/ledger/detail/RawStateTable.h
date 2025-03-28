@@ -126,7 +126,7 @@ private:
         sleAction,
         std::less<key_type>,
         boost::container::pmr::polymorphic_allocator<
-            std::pair<const key_type, sleAction>>>;
+            std::pair<key_type const, sleAction>>>;
     // monotonic_resource_ must outlive `items_`. Make a pointer so it may be
     // easily moved.
     std::unique_ptr<boost::container::pmr::monotonic_buffer_resource>

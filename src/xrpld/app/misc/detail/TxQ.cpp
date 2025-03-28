@@ -323,7 +323,7 @@ TxQ::TxQAccount::TxQAccount(std::shared_ptr<STTx const> const& txn)
 {
 }
 
-TxQ::TxQAccount::TxQAccount(const AccountID& account_) : account(account_)
+TxQ::TxQAccount::TxQAccount(AccountID const& account_) : account(account_)
 {
 }
 

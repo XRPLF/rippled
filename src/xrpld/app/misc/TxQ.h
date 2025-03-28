@@ -650,7 +650,7 @@ private:
          *
          */
         bool
-        operator()(const MaybeTx& lhs, const MaybeTx& rhs) const
+        operator()(MaybeTx const& lhs, MaybeTx const& rhs) const
         {
             if (lhs.feeLevel == rhs.feeLevel)
                 return (lhs.txID ^ MaybeTx::parentHashComp) <
@@ -690,7 +690,7 @@ private:
         /// Construct from a transaction
         explicit TxQAccount(std::shared_ptr<STTx const> const& txn);
         /// Construct from an account
-        explicit TxQAccount(const AccountID& account);
+        explicit TxQAccount(AccountID const& account);
 
         /// Return the number of transactions currently queued for this account
         std::size_t

@@ -320,7 +320,7 @@ public:
         {
             soci::session s;
             sc.open(s);
-            const char* dbInit[] = {
+            char const* dbInit[] = {
                 "BEGIN TRANSACTION;",
                 "CREATE TABLE Ledgers (                     \
                 LedgerHash      CHARACTER(64) PRIMARY KEY,  \

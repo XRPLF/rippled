@@ -311,7 +311,7 @@ protected:
     sqliteWALHook(
         void* cpId,
         sqlite_api::sqlite3* conn,
-        const char* dbName,
+        char const* dbName,
         int walSize)
     {
         if (walSize >= checkpointPageCount)

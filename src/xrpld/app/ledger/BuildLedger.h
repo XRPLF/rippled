@@ -53,7 +53,7 @@ std::shared_ptr<Ledger>
 buildLedger(
     std::shared_ptr<Ledger const> const& parent,
     NetClock::time_point closeTime,
-    const bool closeTimeCorrect,
+    bool const closeTimeCorrect,
     NetClock::duration closeResolution,
     Application& app,
     CanonicalTXSet& txns,

@@ -37,7 +37,7 @@ pretty(Value const&);
 
 /** Output using the StyledStreamWriter. @see Json::operator>>(). */
 std::ostream&
-operator<<(std::ostream&, const Value& root);
+operator<<(std::ostream&, Value const& root);
 
 }  // namespace Json
 

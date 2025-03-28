@@ -5840,7 +5840,7 @@ static RPCCallTestData const rpcCallTestArray[] = {
 };
 
 std::string
-updateAPIVersionString(const char* const req, unsigned apiVersion)
+updateAPIVersionString(char const* const req, unsigned apiVersion)
 {
     std::string const version_str = std::to_string(apiVersion);
     static auto const place_holder = "%API_VER%";
@@ -5883,7 +5883,7 @@ public:
             std::vector<std::string> const args{
                 rpcCallTest.args.begin(), rpcCallTest.args.end()};
 
-            const char* const expVersioned =
+            char const* const expVersioned =
                 (apiVersion - RPC::apiMinimumSupportedVersion) <
                     rpcCallTest.exp.size()
                 ? rpcCallTest.exp[apiVersion - RPC::apiMinimumSupportedVersion]

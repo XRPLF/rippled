@@ -128,9 +128,9 @@ STIssue::add(Serializer& s) const
 }
 
 bool
-STIssue::isEquivalent(const STBase& t) const
+STIssue::isEquivalent(STBase const& t) const
 {
-    const STIssue* v = dynamic_cast<const STIssue*>(&t);
+    STIssue const* v = dynamic_cast<STIssue const*>(&t);
     return v && (*v == *this);
 }
 

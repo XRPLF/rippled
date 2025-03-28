@@ -603,7 +603,7 @@ private:
     Ledger_t previousLedger_;
 
     // Transaction Sets, indexed by hash of transaction tree
-    hash_map<typename TxSet_t::ID, const TxSet_t> acquired_;
+    hash_map<typename TxSet_t::ID, TxSet_t const> acquired_;
 
     std::optional<Result> result_;
     ConsensusCloseTimes rawCloseTimes_;
@@ -872,7 +872,7 @@ Consensus<Adaptor>::timerEntry(
     CLOG(clog) << "Set network adjusted time to " << to_string(now) << ". ";
 
     // Check we are on the proper ledger (this may change phase_)
-    const auto phaseOrig = phase_;
+    auto const phaseOrig = phase_;
     CLOG(clog) << "Phase " << to_string(phaseOrig) << ". ";
     checkLedger(clog);
     if (phaseOrig != phase_)
@@ -1447,7 +1447,7 @@ Consensus<Adaptor>::closeLedger(std::unique_ptr<std::stringstream> const& clog)
     if (acquired_.emplace(result_->txns.id(), result_->txns).second)
         adaptor_.share(result_->txns);
 
-    const auto mode = mode_.get();
+    auto const mode = mode_.get();
     CLOG(clog)
         << "closeLedger transitioned to ConsensusPhase::establish, mode: "
         << to_string(mode)

@@ -133,7 +133,7 @@ PeerImp::PeerImp(
 
 PeerImp::~PeerImp()
 {
-    const bool inCluster{cluster()};
+    bool const inCluster{cluster()};
 
     overlay_.deletePeer(id_);
     overlay_.onPeerDeactivate(id_);
@@ -2486,7 +2486,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
 
         for (int i = 0; i < packet.objects_size(); ++i)
         {
-            const protocol::TMIndexedObject& obj = packet.objects(i);
+            protocol::TMIndexedObject const& obj = packet.objects(i);
 
             if (obj.has_hash() && stringIsUint256Sized(obj.hash()))
             {
@@ -2700,7 +2700,7 @@ PeerImp::addLedger(
 }
 
 void
-PeerImp::doFetchPack(const std::shared_ptr<protocol::TMGetObjectByHash>& packet)
+PeerImp::doFetchPack(std::shared_ptr<protocol::TMGetObjectByHash> const& packet)
 {
     // VFALCO TODO Invert this dependency using an observer and shared state
     // object. Don't queue fetch pack jobs if we're under load or we already
@@ -3401,19 +3401,19 @@ PeerImp::getScore(bool haveItem) const
 {
     // Random component of score, used to break ties and avoid
     // overloading the "best" peer
-    static const int spRandomMax = 9999;
+    static int const spRandomMax = 9999;
 
     // Score for being very likely to have the thing we are
     // look for; should be roughly spRandomMax
-    static const int spHaveItem = 10000;
+    static int const spHaveItem = 10000;
 
     // Score reduction for each millisecond of latency; should
     // be roughly spRandomMax divided by the maximum reasonable
     // latency
-    static const int spLatency = 30;
+    static int const spLatency = 30;
 
     // Penalty for unknown latency; should be roughly spRandomMax
-    static const int spNoLatency = 8000;
+    static int const spNoLatency = 8000;
 
     int score = rand_int(spRandomMax);
 

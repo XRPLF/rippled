@@ -37,7 +37,7 @@ static void
 textTime(
     std::string& text,
     UptimeClock::time_point& seconds,
-    const char* unitName,
+    char const* unitName,
     std::chrono::seconds unitVal)
 {
     auto i = seconds.time_since_epoch() / unitVal;

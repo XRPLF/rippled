@@ -1534,7 +1534,7 @@ LedgerMaster::newOrderBookDB()
  */
 bool
 LedgerMaster::newPFWork(
-    const char* name,
+    char const* name,
     std::unique_lock<std::recursive_mutex>&)
 {
     if (!app_.isStopping() && mPathFindThread < 2 &&

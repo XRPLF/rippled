@@ -602,7 +602,7 @@ private:
         std::lock_guard<std::mutex> const& lockedRecentLock);
 
     void
-    doFetchPack(const std::shared_ptr<protocol::TMGetObjectByHash>& packet);
+    doFetchPack(std::shared_ptr<protocol::TMGetObjectByHash> const& packet);
 
     void
     onValidatorListMessage(

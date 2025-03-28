@@ -252,7 +252,7 @@ OrderBookDB::getBookListeners(Book const& book)
 void
 OrderBookDB::processTxn(
     std::shared_ptr<ReadView const> const& ledger,
-    const AcceptedLedgerTx& alTx,
+    AcceptedLedgerTx const& alTx,
     MultiApiJson const& jvObj)
 {
     std::lock_guard sl(mLock);

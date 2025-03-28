@@ -182,22 +182,22 @@ public:
         private_access_tag_t,
         SerializedTypeID tid,
         int fv,
-        const char* fn,
+        char const* fn,
         int meta = sMD_Default,
         IsSigning signing = IsSigning::yes);
     explicit SField(private_access_tag_t, int fc);
 
-    static const SField&
+    static SField const&
     getField(int fieldCode);
-    static const SField&
+    static SField const&
     getField(std::string const& fieldName);
-    static const SField&
+    static SField const&
     getField(int type, int value)
     {
         return getField(field_code(type, value));
     }
 
-    static const SField&
+    static SField const&
     getField(SerializedTypeID type, int value)
     {
         return getField(field_code(type, value));
@@ -284,19 +284,19 @@ public:
     }
 
     bool
-    operator==(const SField& f) const
+    operator==(SField const& f) const
     {
         return fieldCode == f.fieldCode;
     }
 
     bool
-    operator!=(const SField& f) const
+    operator!=(SField const& f) const
     {
         return fieldCode != f.fieldCode;
     }
 
     static int
-    compare(const SField& f1, const SField& f2);
+    compare(SField const& f1, SField const& f2);
 
     static std::map<int, SField const*> const&
     getKnownCodeToField()

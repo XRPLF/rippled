@@ -312,7 +312,7 @@ private:
     // Returns true if work started.  Always called with m_mutex locked.
     // The passed lock is a reminder to callers.
     bool
-    newPFWork(const char* name, std::unique_lock<std::recursive_mutex>&);
+    newPFWork(char const* name, std::unique_lock<std::recursive_mutex>&);
 
     Application& app_;
     beast::Journal m_journal;

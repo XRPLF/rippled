@@ -145,9 +145,9 @@ STPathSet::assembleAdd(STPath const& base, STPathElement const& tail)
 }
 
 bool
-STPathSet::isEquivalent(const STBase& t) const
+STPathSet::isEquivalent(STBase const& t) const
 {
-    const STPathSet* v = dynamic_cast<const STPathSet*>(&t);
+    STPathSet const* v = dynamic_cast<STPathSet const*>(&t);
     return v && (value == v->value);
 }
 

@@ -287,7 +287,7 @@ ServerDefinitions::ServerDefinitions() : defs_{Json::objectValue}
 
     // generate hash
     {
-        const std::string out = Json::FastWriter().write(defs_);
+        std::string const out = Json::FastWriter().write(defs_);
         defsHash_ = ripple::sha512Half(ripple::Slice{out.data(), out.size()});
         defs_[jss::hash] = to_string(defsHash_);
     }
@@ -308,7 +308,7 @@ doServerDefinitions(RPC::JsonContext& context)
             return RPC::invalid_field_error(jss::hash);
     }
 
-    static const detail::ServerDefinitions defs{};
+    static detail::ServerDefinitions const defs{};
     if (defs.hashMatches(hash))
     {
         Json::Value jv = Json::objectValue;

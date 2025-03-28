@@ -577,7 +577,7 @@ SHAMap::addRootNode(
 
 SHAMapAddNode
 SHAMap::addKnownNode(
-    const SHAMapNodeID& node,
+    SHAMapNodeID const& node,
     Slice const& rawNode,
     SHAMapSyncFilter* filter)
 {

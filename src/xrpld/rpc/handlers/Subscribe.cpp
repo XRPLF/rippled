@@ -330,7 +330,7 @@ doSubscribe(RPC::JsonContext& context)
                     context.app.getLedgerMaster().getPublishedLedger();
                 if (lpLedger)
                 {
-                    const Json::Value jvMarker = Json::Value(Json::nullValue);
+                    Json::Value const jvMarker = Json::Value(Json::nullValue);
                     Json::Value jvOffers(Json::objectValue);
 
                     auto add = [&](Json::StaticString field) {

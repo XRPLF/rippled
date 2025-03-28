@@ -1027,7 +1027,7 @@ ServerHandler::processRequest(
 
     if (auto stream = m_journal.debug())
     {
-        static const int maxSize = 10000;
+        static int const maxSize = 10000;
         if (response.size() <= maxSize)
             stream << "Reply: " << response;
         else

@@ -45,8 +45,8 @@ public:
     STBitString() = default;
 
     STBitString(SField const& n);
-    STBitString(const value_type& v);
-    STBitString(SField const& n, const value_type& v);
+    STBitString(value_type const& v);
+    STBitString(SField const& n, value_type const& v);
     STBitString(SerialIter& sit, SField const& name);
 
     SerializedTypeID
@@ -56,7 +56,7 @@ public:
     getText() const override;
 
     bool
-    isEquivalent(const STBase& t) const override;
+    isEquivalent(STBase const& t) const override;
 
     void
     add(Serializer& s) const override;
@@ -93,12 +93,12 @@ inline STBitString<Bits>::STBitString(SField const& n) : STBase(n)
 }
 
 template <int Bits>
-inline STBitString<Bits>::STBitString(const value_type& v) : value_(v)
+inline STBitString<Bits>::STBitString(value_type const& v) : value_(v)
 {
 }
 
 template <int Bits>
-inline STBitString<Bits>::STBitString(SField const& n, const value_type& v)
+inline STBitString<Bits>::STBitString(SField const& n, value_type const& v)
     : STBase(n), value_(v)
 {
 }
@@ -160,9 +160,9 @@ STBitString<Bits>::getText() const
 
 template <int Bits>
 bool
-STBitString<Bits>::isEquivalent(const STBase& t) const
+STBitString<Bits>::isEquivalent(STBase const& t) const
 {
-    const STBitString* v = dynamic_cast<const STBitString*>(&t);
+    STBitString const* v = dynamic_cast<STBitString const*>(&t);
     return v && (value_ == v->value_);
 }
 

@@ -37,7 +37,7 @@ ValueIteratorBase::ValueIteratorBase() : current_(), isNull_(true)
 }
 
 ValueIteratorBase::ValueIteratorBase(
-    const Value::ObjectValues::iterator& current)
+    Value::ObjectValues::iterator const& current)
     : current_(current), isNull_(false)
 {
 }
@@ -61,7 +61,7 @@ ValueIteratorBase::decrement()
 }
 
 ValueIteratorBase::difference_type
-ValueIteratorBase::computeDistance(const SelfType& other) const
+ValueIteratorBase::computeDistance(SelfType const& other) const
 {
     // Iterator for null value are initialized using the default
     // constructor, which initialize current_ to the default
@@ -89,7 +89,7 @@ ValueIteratorBase::computeDistance(const SelfType& other) const
 }
 
 bool
-ValueIteratorBase::isEqual(const SelfType& other) const
+ValueIteratorBase::isEqual(SelfType const& other) const
 {
     if (isNull_)
     {
@@ -100,7 +100,7 @@ ValueIteratorBase::isEqual(const SelfType& other) const
 }
 
 void
-ValueIteratorBase::copy(const SelfType& other)
+ValueIteratorBase::copy(SelfType const& other)
 {
     current_ = other.current_;
 }
@@ -108,7 +108,7 @@ ValueIteratorBase::copy(const SelfType& other)
 Value
 ValueIteratorBase::key() const
 {
-    const Value::CZString czstring = (*current_).first;
+    Value::CZString const czstring = (*current_).first;
 
     if (czstring.c_str())
     {
@@ -124,7 +124,7 @@ ValueIteratorBase::key() const
 UInt
 ValueIteratorBase::index() const
 {
-    const Value::CZString czstring = (*current_).first;
+    Value::CZString const czstring = (*current_).first;
 
     if (!czstring.c_str())
         return czstring.index();
@@ -132,10 +132,10 @@ ValueIteratorBase::index() const
     return Value::UInt(-1);
 }
 
-const char*
+char const*
 ValueIteratorBase::memberName() const
 {
-    const char* name = (*current_).first.c_str();
+    char const* name = (*current_).first.c_str();
     return name ? name : "";
 }
 
@@ -148,13 +148,13 @@ ValueIteratorBase::memberName() const
 // //////////////////////////////////////////////////////////////////
 
 ValueConstIterator::ValueConstIterator(
-    const Value::ObjectValues::iterator& current)
+    Value::ObjectValues::iterator const& current)
     : ValueIteratorBase(current)
 {
 }
 
 ValueConstIterator&
-ValueConstIterator::operator=(const ValueIteratorBase& other)
+ValueConstIterator::operator=(ValueIteratorBase const& other)
 {
     copy(other);
     return *this;
@@ -168,23 +168,23 @@ ValueConstIterator::operator=(const ValueIteratorBase& other)
 // //////////////////////////////////////////////////////////////////
 // //////////////////////////////////////////////////////////////////
 
-ValueIterator::ValueIterator(const Value::ObjectValues::iterator& current)
+ValueIterator::ValueIterator(Value::ObjectValues::iterator const& current)
     : ValueIteratorBase(current)
 {
 }
 
-ValueIterator::ValueIterator(const ValueConstIterator& other)
+ValueIterator::ValueIterator(ValueConstIterator const& other)
     : ValueIteratorBase(other)
 {
 }
 
-ValueIterator::ValueIterator(const ValueIterator& other)
+ValueIterator::ValueIterator(ValueIterator const& other)
     : ValueIteratorBase(other)
 {
 }
 
 ValueIterator&
-ValueIterator::operator=(const SelfType& other)
+ValueIterator::operator=(SelfType const& other)
 {
     copy(other);
     return *this;
