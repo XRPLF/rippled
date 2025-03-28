@@ -54,7 +54,7 @@ inline TaggedCache<
     , m_clock(clock)
     , m_stats(name, std::bind(&TaggedCache::collect_metrics, this), collector)
     , m_name(name)
-    , m_target_size(size)
+    , m_target_size(0)
     , m_target_age(expiration)
     , m_cache_count(0)
     , m_hits(0)
