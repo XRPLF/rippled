@@ -152,6 +152,7 @@ struct base_uint_test : beast::unit_test::suite
         uset.insert(u);
         BEAST_EXPECT(raw.size() == u.size());
         BEAST_EXPECT(to_string(u) == "0102030405060708090A0B0C");
+        BEAST_EXPECT(to_short_string(u) == "01020304...");
         BEAST_EXPECT(*u.data() == 1);
         BEAST_EXPECT(u.signum() == 1);
         BEAST_EXPECT(!!u);
@@ -174,6 +175,7 @@ struct base_uint_test : beast::unit_test::suite
         test96 v{~u};
         uset.insert(v);
         BEAST_EXPECT(to_string(v) == "FEFDFCFBFAF9F8F7F6F5F4F3");
+        BEAST_EXPECT(to_short_string(v) == "FEFDFCFB...");
         BEAST_EXPECT(*v.data() == 0xfe);
         BEAST_EXPECT(v.signum() == 1);
         BEAST_EXPECT(!!v);
@@ -194,6 +196,7 @@ struct base_uint_test : beast::unit_test::suite
         test96 z{beast::zero};
         uset.insert(z);
         BEAST_EXPECT(to_string(z) == "000000000000000000000000");
+        BEAST_EXPECT(to_short_string(z) == "00000000...");
         BEAST_EXPECT(*z.data() == 0);
         BEAST_EXPECT(*z.begin() == 0);
         BEAST_EXPECT(*std::prev(z.end(), 1) == 0);
@@ -214,6 +217,7 @@ struct base_uint_test : beast::unit_test::suite
         BEAST_EXPECT(n == z);
         n--;
         BEAST_EXPECT(to_string(n) == "FFFFFFFFFFFFFFFFFFFFFFFF");
+        BEAST_EXPECT(to_short_string(n) == "FFFFFFFF...");
         n = beast::zero;
         BEAST_EXPECT(n == z);
 
@@ -224,6 +228,7 @@ struct base_uint_test : beast::unit_test::suite
         test96 x{zm1 ^ zp1};
         uset.insert(x);
         BEAST_EXPECTS(to_string(x) == "FFFFFFFFFFFFFFFFFFFFFFFE", to_string(x));
+        BEAST_EXPECTS(to_short_string(x) == "FFFFFFFF...", to_short_string(x));
 
         BEAST_EXPECT(uset.size() == 4);
 
