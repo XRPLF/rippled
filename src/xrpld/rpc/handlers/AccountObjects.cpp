@@ -224,7 +224,9 @@ doAccountObjects(RPC::JsonContext& context)
             {jss::bridge, ltBRIDGE},
             {jss::mpt_issuance, ltMPTOKEN_ISSUANCE},
             {jss::mptoken, ltMPTOKEN},
-            {jss::permissioned_domain, ltPERMISSIONED_DOMAIN}};
+            {jss::permissioned_domain, ltPERMISSIONED_DOMAIN},
+            {jss::vault, ltVAULT},
+        };
 
         typeFilter.emplace();
         typeFilter->reserve(std::size(deletionBlockers));

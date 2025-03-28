@@ -269,6 +269,29 @@ keypairForSignature(
     Json::Value const& params,
     Json::Value& error,
     unsigned int apiVersion = apiVersionIfUnspecified);
+
+/**
+ * Supplement JSON of a ledger object with additional data read from a view
+ *
+ * To be specialized per ledger object type as needed; any specialization of
+ * this function must be declared below and defined in RPCHelpers.cpp
+ *
+ * The general template is never used, hence it is only declared but not defined
+ */
+template <LedgerEntryType Type>
+inline void
+supplementJson(
+    ReadView const&,
+    std::shared_ptr<SLE const> const& sle,
+    Json::Value&);
+
+template <>
+void
+supplementJson<ltVAULT>(
+    ReadView const& view,
+    std::shared_ptr<SLE const> const& vault,
+    Json::Value& node);
+
 }  // namespace RPC
 }  // namespace ripple
 

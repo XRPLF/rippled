@@ -28,6 +28,7 @@
 #include <test/jtx/envconfig.h>
 #include <test/jtx/require.h>
 #include <test/jtx/tags.h>
+#include <test/jtx/vault.h>
 #include <test/unit_test/SuiteJournal.h>
 
 #include <xrpld/app/ledger/Ledger.h>
