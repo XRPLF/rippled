@@ -19,12 +19,15 @@
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/amount.h>
 #include <test/jtx/credentials.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/permissioned_domains.h>
 #include <test/jtx/utility.h>
 #include <test/jtx/vault.h>
+
+#include <xrpld/ledger/View.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
@@ -1159,6 +1162,35 @@ class Vault_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testFailedPseudoAccount()
+    {
+        using namespace test::jtx;
+
+        testcase("failed pseudo-account allocation");
+        Env env{*this};
+        Account const owner{"owner"};
+        Vault vault{env};
+        env.fund(XRP(1000), owner);
+
+        auto const keylet = keylet::vault(owner.id(), env.seq(owner));
+        for (int i = 0; i < 256; ++i)
+        {
+            AccountID const accountId =
+                ripple::pseudoAccountAddress(*env.current(), keylet.key);
+
+            env(pay(env.master.id(), accountId, XRP(1000)),
+                seq(autofill),
+                fee(autofill),
+                sig(autofill));
+        }
+
+        auto [tx, keylet1] =
+            vault.create({.owner = owner, .asset = xrpIssue()});
+        BEAST_EXPECT(keylet.key == keylet1.key);
+        env(tx, ter{terADDRESS_COLLISION});
+    }
+
 public:
     void
     run() override
@@ -1171,6 +1203,7 @@ public:
         testWithIOU();
         testWithDomainCheck();
         testNonTransferableShares();
+        testFailedPseudoAccount();
     }
 };
 

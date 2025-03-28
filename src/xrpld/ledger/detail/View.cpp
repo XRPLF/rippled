@@ -1040,7 +1040,6 @@ dirLink(ApplyView& view, AccountID const& owner, std::shared_ptr<SLE>& object)
 AccountID
 pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey)
 {
-    AccountID ret = beast::zero;
     // This number must not be changed without an amendment
     constexpr int maxAccountAttempts = 256;
     for (auto i = 0; i < maxAccountAttempts; ++i)
@@ -1048,11 +1047,11 @@ pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey)
         ripesha_hasher rsh;
         auto const hash = sha512Half(i, view.info().parentHash, pseudoOwnerKey);
         rsh(hash.data(), hash.size());
-        ret = static_cast<ripesha_hasher::result_type>(rsh);
+        AccountID const ret{static_cast<ripesha_hasher::result_type>(rsh)};
         if (!view.read(keylet::account(ret)))
             return ret;
     }
-    return ret;
+    return beast::zero;
 }
 
 Expected<std::shared_ptr<SLE>, TER>
