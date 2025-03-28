@@ -162,7 +162,7 @@ same(STPathSet const& st1, Args const&... args)
 
     for (auto const& p : st2)
     {
-        if (std::find(st1.begin(), st1.end(), p) == st1.end())
+        if (std::ranges::find(st1, p) == st1.end())
             return false;
     }
     return true;

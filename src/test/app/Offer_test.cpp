@@ -1120,7 +1120,7 @@ public:
         // Offer with a bad expiration
         {
             env(offer(alice, USD(1000), XRP(1000)),
-                json(sfExpiration.fieldName, std::uint32_t(0)),
+                json(sfExpiration.fieldName, static_cast<std::uint32_t>(0)),
                 ter(temBAD_EXPIRATION));
             env.require(owners(alice, 1), offers(alice, 0));
         }
@@ -1128,7 +1128,7 @@ public:
         // Offer with a bad offer sequence
         {
             env(offer(alice, USD(1000), XRP(1000)),
-                json(jss::OfferSequence, std::uint32_t(0)),
+                json(jss::OfferSequence, static_cast<std::uint32_t>(0)),
                 ter(temBAD_SEQUENCE));
             env.require(owners(alice, 1), offers(alice, 0));
         }
@@ -3889,7 +3889,7 @@ public:
             BEAST_EXPECT(offer[sfLedgerEntryType] == ltOFFER);
             BEAST_EXPECT(
                 offer[sfTakerGets] ==
-                STAmount(JPY.issue(), std::uint64_t(2230682446713524ul), -12));
+                STAmount(JPY.issue(), static_cast<std::uint64_t>(2230682446713524ul), -12));
             BEAST_EXPECT(offer[sfTakerPays] == BTC(0.035378));
         }
     }
@@ -3926,24 +3926,24 @@ public:
         env(
             pay(gw1,
                 alice,
-                STAmount{USD.issue(), std::uint64_t(2185410179555600), -14}));
+                STAmount{USD.issue(), static_cast<std::uint64_t>(2185410179555600), -14}));
         env(
             pay(gw2,
                 bob,
-                STAmount{JPY.issue(), std::uint64_t(6351823459548956), -12}));
+                STAmount{JPY.issue(), static_cast<std::uint64_t>(6351823459548956), -12}));
         env.close();
 
         env(offer(
             bob,
-            STAmount{USD.issue(), std::uint64_t(4371257532306000), -17},
-            STAmount{JPY.issue(), std::uint64_t(4573216636606000), -15}));
+            STAmount{USD.issue(), static_cast<std::uint64_t>(4371257532306000), -17},
+            STAmount{JPY.issue(), static_cast<std::uint64_t>(4573216636606000), -15}));
         env.close();
 
         // This offer did not partially cross correctly.
         env(offer(
             alice,
-            STAmount{JPY.issue(), std::uint64_t(2291181510070762), -12},
-            STAmount{USD.issue(), std::uint64_t(2190218999914694), -14}));
+            STAmount{JPY.issue(), static_cast<std::uint64_t>(2291181510070762), -12},
+            STAmount{USD.issue(), static_cast<std::uint64_t>(2190218999914694), -14}));
         env.close();
 
         auto const aliceOffers = offersOnAccount(env, alice);
@@ -3954,10 +3954,10 @@ public:
             BEAST_EXPECT(offer[sfLedgerEntryType] == ltOFFER);
             BEAST_EXPECT(
                 offer[sfTakerGets] ==
-                STAmount(USD.issue(), std::uint64_t(2185847305256635), -14));
+                STAmount(USD.issue(), static_cast<std::uint64_t>(2185847305256635), -14));
             BEAST_EXPECT(
                 offer[sfTakerPays] ==
-                STAmount(JPY.issue(), std::uint64_t(2286608293434156), -12));
+                STAmount(JPY.issue(), static_cast<std::uint64_t>(2286608293434156), -12));
         }
     }
 
@@ -3986,21 +3986,21 @@ public:
         // Place alice's tiny offer in the book first.  Let's see what happens
         // when a reasonable offer crosses it.
         STAmount const alicesCnyOffer{
-            CNY.issue(), std::uint64_t(4926000000000000), -23};
+            CNY.issue(), static_cast<std::uint64_t>(4926000000000000), -23};
 
         env(offer(alice, alicesCnyOffer, drops(1), tfPassive));
         env.close();
 
         // bob places an ordinary offer
         STAmount const bobsCnyStartBalance{
-            CNY.issue(), std::uint64_t(3767479960090235), -15};
+            CNY.issue(), static_cast<std::uint64_t>(3767479960090235), -15};
         env(pay(gw, bob, bobsCnyStartBalance));
         env.close();
 
         env(offer(
             bob,
             drops(203),
-            STAmount{CNY.issue(), std::uint64_t(1000000000000000), -20}));
+            STAmount{CNY.issue(), static_cast<std::uint64_t>(1000000000000000), -20}));
         env.close();
 
         env.require(balance(alice, alicesCnyOffer));
@@ -4684,7 +4684,7 @@ public:
                                   jtx::Account const& src,
                                   jtx::Account const& dst,
                                   Currency const& cur) -> bool {
-            return bool(env.le(keylet::line(src, dst, cur)));
+            return static_cast<bool>(env.le(keylet::line(src, dst, cur)));
         };
 
         Account const alice("alice");
@@ -4893,9 +4893,8 @@ public:
     {
         std::vector<std::shared_ptr<SLE const>> offers{
             offersOnAccount(env, acct)};
-        std::sort(
-            offers.begin(),
-            offers.end(),
+        std::ranges::sort(
+            offers,
             [](std::shared_ptr<SLE const> const& rhs,
                std::shared_ptr<SLE const> const& lhs) {
                 return (*rhs)[sfSequence] < (*lhs)[sfSequence];

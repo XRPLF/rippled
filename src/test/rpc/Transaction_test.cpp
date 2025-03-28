@@ -574,7 +574,8 @@ class Transaction_test : public beast::unit_test::suite
         // completeness
         auto const expected3 = std::optional<std::string>("CFFFFFFF0000FFFF");
         BEAST_EXPECT(
-            RPC::encodeCTID(0x0FFF'FFFF, (uint16_t)0x10000, 0xFFFF) ==
+            RPC::encodeCTID(
+                0x0FFF'FFFF, static_cast<uint16_t>(0x10000), 0xFFFF) ==
             expected3);
 
         // Test case 4: network_id greater than 0xFFFF
@@ -582,7 +583,8 @@ class Transaction_test : public beast::unit_test::suite
         // completeness
         auto const expected4 = std::optional<std::string>("CFFFFFFFFFFF0000");
         BEAST_EXPECT(
-            RPC::encodeCTID(0x0FFF'FFFFUL, 0xFFFFU, (uint16_t)0x1000'0U) ==
+            RPC::encodeCTID(
+                0x0FFF'FFFFUL, 0xFFFFU, static_cast<uint16_t>(0x1000'0U)) ==
             expected4);
 
         // Test case 5: Valid input values
@@ -692,14 +694,12 @@ class Transaction_test : public beast::unit_test::suite
 
             // Verify that there are at least two upper case letters in ctid and
             // test a mixed case
-            if (BEAST_EXPECT(
-                    std::count_if(ctid.begin(), ctid.end(), isUpper) > 1))
+            if (BEAST_EXPECT(std::ranges::count_if(ctid, isUpper) > 1))
             {
                 // Change the first upper case letter to lower case.
                 std::string mixedCase = ctid;
                 {
-                    auto const iter = std::find_if(
-                        mixedCase.begin(), mixedCase.end(), isUpper);
+                    auto const iter = std::ranges::find_if(mixedCase, isUpper);
                     *iter = std::tolower(*iter);
                 }
                 BEAST_EXPECT(ctid != mixedCase);

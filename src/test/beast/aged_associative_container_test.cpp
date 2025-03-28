@@ -681,10 +681,8 @@ aged_associative_container_test_base::checkUnorderedContentsRefRef(
         auto const last(c.end(i));
         for (auto iter(c.begin(i)); iter != last; ++iter)
         {
-            auto const match(std::find_if(
-                v.begin(),
-                v.end(),
-                [iter](typename Values::value_type const& e) {
+            auto const match(std::ranges::find_if(
+                v, [iter](typename Values::value_type const& e) {
                     return Traits::extract(*iter) == Traits::extract(e);
                 }));
             BEAST_EXPECT(match != v.end());
@@ -1513,8 +1511,8 @@ aged_associative_container_test_base::reverseFillAgedContainer(
     clk.set(0);
 
     Values rev(values);
-    std::sort(rev.begin(), rev.end());
-    std::reverse(rev.begin(), rev.end());
+    std::ranges::sort(rev);
+    std::ranges::reverse(rev);
     for (auto& v : rev)
     {
         // Add values in reverse order so they are reversed chronologically.

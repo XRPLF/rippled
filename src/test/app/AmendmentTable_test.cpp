@@ -145,7 +145,7 @@ private:
         Args const&... args)
     {
         assert(dest.capacity() >= dest.size() + src.size());
-        std::copy(src.begin(), src.end(), std::back_inserter(dest));
+        std::ranges::copy(src, std::back_inserter(dest));
         if constexpr (sizeof...(args) > 0)
             combine_arg(dest, args...);
     }
@@ -433,7 +433,7 @@ public:
         {
             uint256 const supportedID = amendmentId(a);
             bool const enabled = table->isEnabled(supportedID);
-            bool const found = allEnabled.find(supportedID) != allEnabled.end();
+            bool const found = allEnabled.contains(supportedID);
             BEAST_EXPECTS(
                 enabled == found,
                 a + (enabled ? " enabled " : " disabled ") +
@@ -448,7 +448,7 @@ public:
 
             std::vector<uint256> const desired = table->getDesired();
             for (uint256 const& a : desired)
-                BEAST_EXPECT(vetoed.count(a) == 0);
+                BEAST_EXPECT(!vetoed.contains(a));
 
             // Unveto an amendment that is already not vetoed.  Shouldn't
             // hurt anything, but the values returned by getDesired()
@@ -464,8 +464,7 @@ public:
 
             std::vector<uint256> const desired = table->getDesired();
             BEAST_EXPECT(
-                std::find(desired.begin(), desired.end(), unvetoedID) !=
-                desired.end());
+                std::ranges::find(desired, unvetoedID) != desired.end());
         }
 
         // Veto all supported amendments.  Now desired should be empty.
@@ -580,23 +579,23 @@ public:
             {
                 case 0:
                     // amendment goes from majority to enabled
-                    if (enabled.find(hash) != enabled.end())
+                    if (enabled.contains(hash))
                         Throw<std::runtime_error>("enabling already enabled");
-                    if (majority.find(hash) == majority.end())
+                    if (!majority.contains(hash))
                         Throw<std::runtime_error>("enabling without majority");
                     enabled.insert(hash);
                     majority.erase(hash);
                     break;
 
                 case tfGotMajority:
-                    if (majority.find(hash) != majority.end())
+                    if (majority.contains(hash))
                         Throw<std::runtime_error>(
                             "got majority while having majority");
                     majority[hash] = roundTime;
                     break;
 
                 case tfLostMajority:
-                    if (majority.find(hash) == majority.end())
+                    if (!majority.contains(hash))
                         Throw<std::runtime_error>(
                             "lost majority without majority");
                     majority.erase(hash);
@@ -782,7 +781,7 @@ public:
         BEAST_EXPECT(ourVotes.size() == yes_.size());
         BEAST_EXPECT(enabled.empty());
         for (auto const& i : yes_)
-            BEAST_EXPECT(majority.find(amendmentId(i)) == majority.end());
+            BEAST_EXPECT(!majority.contains(amendmentId(i)));
 
         // Now, everyone votes for this feature
         for (auto const& i : yes_)
@@ -829,7 +828,7 @@ public:
         BEAST_EXPECT(enabled.size() == yes_.size());
         BEAST_EXPECT(ourVotes.empty());
         for (auto const& i : yes_)
-            BEAST_EXPECT(majority.find(amendmentId(i)) == majority.end());
+            BEAST_EXPECT(!majority.contains(amendmentId(i)));
     }
 
     // Detect majority at 80%, enable later
@@ -1035,10 +1034,8 @@ public:
                 // We need a hash_set to pass to trustChanged.
                 hash_set<PublicKey> trustedValidators;
                 trustedValidators.reserve(validators.size());
-                std::for_each(
-                    validators.begin(),
-                    validators.end(),
-                    [&trustedValidators](auto const& val) {
+                std::ranges::for_each(
+                    validators, [&trustedValidators](auto const& val) {
                         trustedValidators.insert(val.first);
                     });
 
@@ -1244,10 +1241,9 @@ public:
         BEAST_EXPECT(table->needValidatedLedger(1));
 
         std::set<uint256> enabled;
-        std::for_each(
-            unsupported_.begin(),
-            unsupported_.end(),
-            [&enabled](auto const& s) { enabled.insert(amendmentId(s)); });
+        std::ranges::for_each(unsupported_, [&enabled](auto const& s) {
+            enabled.insert(amendmentId(s));
+        });
 
         majorityAmendments_t majority;
         table->doValidatedLedger(1, enabled, majority);
@@ -1255,10 +1251,8 @@ public:
         BEAST_EXPECT(!table->firstUnsupportedExpected());
 
         NetClock::duration t{1000s};
-        std::for_each(
-            unsupportedMajority_.begin(),
-            unsupportedMajority_.end(),
-            [&majority, &t](auto const& s) {
+        std::ranges::for_each(
+            unsupportedMajority_, [&majority, &t](auto const& s) {
                 majority[amendmentId(s)] = NetClock::time_point{--t};
             });
 

@@ -61,7 +61,7 @@ class WSClientImpl : public WSClient
                 continue;
             ParsedPort pp;
             parse_Port(pp, cfg[name], log);
-            if (pp.protocol.count(ps) == 0)
+            if (!pp.protocol.contains(ps))
                 continue;
             using namespace boost::asio::ip;
             if (pp.ip && pp.ip->is_unspecified())

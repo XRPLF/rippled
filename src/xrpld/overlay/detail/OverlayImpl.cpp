@@ -208,7 +208,7 @@ OverlayImpl::onHandoff(
 
     {
         auto const types = beast::rfc2616::split_commas(request["Connect-As"]);
-        if (std::find_if(types.begin(), types.end(), [](std::string const& s) {
+        if (std::ranges::find_if(types, [](std::string const& s) {
                 return boost::iequals(s, "peer");
             }) == types.end())
         {
@@ -1085,7 +1085,7 @@ OverlayImpl::getActivePeers(
             if (!reduceRelayEnabled)
                 ++disabled;
 
-            if (toSkip.count(id) == 0)
+            if (!toSkip.contains(id))
                 ret.emplace_back(std::move(p));
             else if (reduceRelayEnabled)
                 ++enabledInSkip;
@@ -1149,7 +1149,7 @@ OverlayImpl::relay(
         auto const sm =
             std::make_shared<Message>(m, protocol::mtPROPOSE_LEDGER, validator);
         for_each([&](std::shared_ptr<PeerImp>&& p) {
-            if (toSkip->find(p->id()) == toSkip->end())
+            if (!toSkip->contains(p->id()))
                 p->send(sm);
         });
         return *toSkip;
@@ -1175,7 +1175,7 @@ OverlayImpl::relay(
         auto const sm =
             std::make_shared<Message>(m, protocol::mtVALIDATION, validator);
         for_each([&](std::shared_ptr<PeerImp>&& p) {
-            if (toSkip->find(p->id()) == toSkip->end())
+            if (!toSkip->contains(p->id()))
                 p->send(sm);
         });
         return *toSkip;
@@ -1269,7 +1269,7 @@ OverlayImpl::relay(
     txMetrics_.addMetrics(enabledTarget, toSkip.size(), disabled);
 
     if (enabledTarget > enabledInSkip)
-        std::shuffle(peers.begin(), peers.end(), default_prng());
+        std::ranges::shuffle(peers, default_prng());
 
     JLOG(journal_.trace()) << "relaying tx, total peers " << peers.size()
                            << " selected " << enabledTarget << " skip "

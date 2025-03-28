@@ -43,7 +43,7 @@ public:
 
         // Insert an item, retrieve it, and age it so it gets purged.
         {
-            Cache c("test", LedgerIndex(1), 2s, clock, j);
+            Cache c("test", 1, 2s, clock, j);
 
             BEAST_EXPECT(c.size() == 0);
             BEAST_EXPECT(c.insert("one"));
@@ -61,7 +61,7 @@ public:
 
         // Insert two items, have one expire
         {
-            Cache c("test", LedgerIndex(2), 2s, clock, j);
+            Cache c("test", 2, 2s, clock, j);
 
             BEAST_EXPECT(c.insert("one"));
             BEAST_EXPECT(c.size() == 1);
@@ -78,7 +78,7 @@ public:
 
         // Insert three items (1 over limit), sweep
         {
-            Cache c("test", LedgerIndex(2), 3s, clock, j);
+            Cache c("test", 2, 3s, clock, j);
 
             BEAST_EXPECT(c.insert("one"));
             ++clock;

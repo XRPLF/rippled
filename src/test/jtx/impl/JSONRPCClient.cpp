@@ -50,7 +50,7 @@ class JSONRPCClient : public AbstractClient
                 continue;
             ParsedPort pp;
             parse_Port(pp, cfg[name], log);
-            if (pp.protocol.count("http") == 0)
+            if (!pp.protocol.contains("http"))
                 continue;
             using namespace boost::asio::ip;
             if (pp.ip && pp.ip->is_unspecified())

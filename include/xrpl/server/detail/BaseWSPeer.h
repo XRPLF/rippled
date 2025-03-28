@@ -400,8 +400,8 @@ BaseWSPeer<Handler, Impl>::on_read(error_code const& ec)
         return fail(ec, "read");
     auto const& data = rb_.data();
     std::vector<boost::asio::const_buffer> b;
-    b.reserve(std::distance(data.begin(), data.end()));
-    std::copy(data.begin(), data.end(), std::back_inserter(b));
+    b.reserve(std::ranges::distance(data));
+    std::ranges::copy(data, std::back_inserter(b));
     this->handler_.onWSMessage(impl().shared_from_this(), b);
     rb_.consume(rb_.size());
 }

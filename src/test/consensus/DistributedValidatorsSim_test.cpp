@@ -147,9 +147,9 @@ class DistributedValidators_test : public beast::unit_test::suite
             << std::endl;
 
         // number of peers, UNLs, connections
-        int const numCNLs = std::max(int(1.00 * numPeers), 1);
-        int const minCNLSize = std::max(int(0.25 * numCNLs), 1);
-        int const maxCNLSize = std::max(int(0.50 * numCNLs), 1);
+        int const numCNLs = std::max(static_cast<int>(1.00 * numPeers), 1);
+        int const minCNLSize = std::max(static_cast<int>(0.25 * numCNLs), 1);
+        int const maxCNLSize = std::max(static_cast<int>(0.50 * numCNLs), 1);
         BEAST_EXPECT(numPeers >= 1);
         BEAST_EXPECT(numCNLs >= 1);
         BEAST_EXPECT(

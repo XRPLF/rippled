@@ -2686,10 +2686,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         sortedNFTs.reserve(nfts.size());
         for (std::size_t i = 0; i < nfts.size(); ++i)
             sortedNFTs.push_back(nfts[i]);
-        std::sort(
-            sortedNFTs.begin(),
-            sortedNFTs.end(),
-            [](Json::Value const& lhs, Json::Value const& rhs) {
+        std::ranges::sort(
+            sortedNFTs, [](Json::Value const& lhs, Json::Value const& rhs) {
                 return lhs[jss::nft_serial] < rhs[jss::nft_serial];
             });
 
@@ -6260,8 +6258,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 // The new NFT minted has the same ID as one of the NFTs
                 // authorized minter minted for alice
                 BEAST_EXPECT(
-                    std::find(nftIDs.begin(), nftIDs.end(), remintNFTokenID) !=
-                    nftIDs.end());
+                    std::ranges::find(nftIDs, remintNFTokenID) != nftIDs.end());
             }
             else if (features[fixNFTokenRemint])
             {
@@ -6317,8 +6314,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 // The new NFT minted will not have the same ID
                 // as any of the NFTs authorized minter minted
                 BEAST_EXPECT(
-                    std::find(nftIDs.begin(), nftIDs.end(), remintNFTokenID) ==
-                    nftIDs.end());
+                    std::ranges::find(nftIDs, remintNFTokenID) == nftIDs.end());
             }
         }
 
@@ -6407,8 +6403,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 // The new NFT minted will have the same ID
                 // as one of NFTs minted using tickets
                 BEAST_EXPECT(
-                    std::find(nftIDs.begin(), nftIDs.end(), remintNFTokenID) !=
-                    nftIDs.end());
+                    std::ranges::find(nftIDs, remintNFTokenID) != nftIDs.end());
             }
             else if (features[fixNFTokenRemint])
             {
@@ -6464,8 +6459,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 // The new NFT minted will not have the same ID
                 // as any of the NFTs authorized minter minted using tickets
                 BEAST_EXPECT(
-                    std::find(nftIDs.begin(), nftIDs.end(), remintNFTokenID) ==
-                    nftIDs.end());
+                    std::ranges::find(nftIDs, remintNFTokenID) == nftIDs.end());
             }
         }
         // If fixNFTokenRemint is enabled,
@@ -6578,8 +6572,7 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             // The new NFT minted will not have the same ID
             // as one of NFTs authorized minter minted using tickets
             BEAST_EXPECT(
-                std::find(nftIDs.begin(), nftIDs.end(), remintNFTokenID) ==
-                nftIDs.end());
+                std::ranges::find(nftIDs, remintNFTokenID) == nftIDs.end());
         }
     }
 
@@ -6937,8 +6930,8 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                     });
 
                 // Sort both array to prepare for comparison
-                std::sort(metaIDs.begin(), metaIDs.end());
-                std::sort(actualNftIDs.begin(), actualNftIDs.end());
+                std::ranges::sort(metaIDs);
+                std::ranges::sort(actualNftIDs);
 
                 // Make sure the expect number of NFTs is correct
                 BEAST_EXPECT(metaIDs.size() == actualNftIDs.size());
