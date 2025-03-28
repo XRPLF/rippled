@@ -345,7 +345,10 @@ public:
     makePrefix(std::uint32_t id);
 
     void
-    reportTraffic(TrafficCount::category cat, bool isInbound, int bytes);
+    reportInboundTraffic(TrafficCount::category cat, int bytes);
+
+    void
+    reportOutboundTraffic(TrafficCount::category cat, int bytes);
 
     void
     incJqTransOverflow() override
@@ -561,7 +564,7 @@ private:
     struct TrafficGauges
     {
         TrafficGauges(
-            char const* name,
+            std::string const& name,
             beast::insight::Collector::ptr const& collector)
             : bytesIn(collector->make_gauge(name, "Bytes_In"))
             , bytesOut(collector->make_gauge(name, "Bytes_Out"))
@@ -607,13 +610,15 @@ private:
             counts.size() == m_stats.trafficGauges.size(),
             "ripple::OverlayImpl::collect_metrics : counts size do match");
 
-        for (std::size_t i = 0; i < counts.size(); ++i)
+        for (auto const& [key, value] : counts)
         {
-            m_stats.trafficGauges[i].bytesIn = counts[i].bytesIn;
-            m_stats.trafficGauges[i].bytesOut = counts[i].bytesOut;
-            m_stats.trafficGauges[i].messagesIn = counts[i].messagesIn;
-            m_stats.trafficGauges[i].messagesOut = counts[i].messagesOut;
+            auto& gauge = m_stats.trafficGauges[key];
+            gauge.bytesIn = value.bytesIn;
+            gauge.bytesOut = value.bytesOut;
+            gauge.messagesIn = value.messagesIn;
+            gauge.messagesOut = value.messagesOut;
         }
+
         m_stats.peerDisconnects = getPeerDisconnect();
     }
 };

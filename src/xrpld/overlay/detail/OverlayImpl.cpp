@@ -148,10 +148,8 @@ OverlayImpl::OverlayImpl(
               std::vector<TrafficGauges> ret;
               ret.reserve(counts.size());
 
-              for (size_t i = 0; i < counts.size(); ++i)
-              {
-                  ret.push_back(TrafficGauges(counts[i].name, collector));
-              }
+              for (auto const& pair : counts)
+                  ret.push_back(TrafficGauges(pair.second.name, collector));
 
               return ret;
           }())
@@ -580,17 +578,14 @@ OverlayImpl::onWrite(beast::PropertyStream::Map& stream)
 {
     beast::PropertyStream::Set set("traffic", stream);
     auto const stats = m_traffic.getCounts();
-    for (auto const& i : stats)
+    for (auto const& pair : stats)
     {
-        if (i)
-        {
-            beast::PropertyStream::Map item(set);
-            item["category"] = i.name;
-            item["bytes_in"] = std::to_string(i.bytesIn.load());
-            item["messages_in"] = std::to_string(i.messagesIn.load());
-            item["bytes_out"] = std::to_string(i.bytesOut.load());
-            item["messages_out"] = std::to_string(i.messagesOut.load());
-        }
+        beast::PropertyStream::Map item(set);
+        item["category"] = pair.second.name;
+        item["bytes_in"] = std::to_string(pair.second.bytesIn.load());
+        item["messages_in"] = std::to_string(pair.second.messagesIn.load());
+        item["bytes_out"] = std::to_string(pair.second.bytesOut.load());
+        item["messages_out"] = std::to_string(pair.second.messagesOut.load());
     }
 }
 
@@ -690,14 +685,16 @@ OverlayImpl::onManifests(
 }
 
 void
-OverlayImpl::reportTraffic(
-    TrafficCount::category cat,
-    bool isInbound,
-    int number)
+OverlayImpl::reportInboundTraffic(TrafficCount::category cat, int size)
 {
-    m_traffic.addCount(cat, isInbound, number);
+    m_traffic.addCount(cat, true, size);
 }
 
+void
+OverlayImpl::reportOutboundTraffic(TrafficCount::category cat, int size)
+{
+    m_traffic.addCount(cat, false, size);
+}
 /** The number of active peers on the network
     Active peers are only those peers that have completed the handshake
     and are running the Ripple protocol.

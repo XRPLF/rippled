@@ -21,36 +21,41 @@
 
 namespace ripple {
 
+std::unordered_map<protocol::MessageType, TrafficCount::category> const
+    type_lookup = {
+        {protocol::mtPING, TrafficCount::category::base},
+        {protocol::mtSTATUS_CHANGE, TrafficCount::category::base},
+        {protocol::mtMANIFESTS, TrafficCount::category::manifests},
+        {protocol::mtENDPOINTS, TrafficCount::category::overlay},
+        {protocol::mtTRANSACTION, TrafficCount::category::transaction},
+        {protocol::mtVALIDATORLIST, TrafficCount::category::validatorlist},
+        {protocol::mtVALIDATORLISTCOLLECTION,
+         TrafficCount::category::validatorlist},
+        {protocol::mtVALIDATION, TrafficCount::category::validation},
+        {protocol::mtPROPOSE_LEDGER, TrafficCount::category::proposal},
+        {protocol::mtPROOF_PATH_REQ,
+         TrafficCount::category::proof_path_request},
+        {protocol::mtPROOF_PATH_RESPONSE,
+         TrafficCount::category::proof_path_response},
+        {protocol::mtREPLAY_DELTA_REQ,
+         TrafficCount::category::replay_delta_request},
+        {protocol::mtREPLAY_DELTA_RESPONSE,
+         TrafficCount::category::replay_delta_response},
+        {protocol::mtHAVE_TRANSACTIONS,
+         TrafficCount::category::have_transactions},
+        {protocol::mtTRANSACTIONS,
+         TrafficCount::category::requested_transactions},
+        {protocol::mtSQUELCH, TrafficCount::category::squelch},
+};
+
 TrafficCount::category
 TrafficCount::categorize(
     ::google::protobuf::Message const& message,
-    int type,
+    protocol::MessageType type,
     bool inbound)
 {
-    if ((type == protocol::mtPING) || (type == protocol::mtSTATUS_CHANGE))
-        return TrafficCount::category::base;
-
-    if (type == protocol::mtCLUSTER)
-        return TrafficCount::category::cluster;
-
-    if (type == protocol::mtMANIFESTS)
-        return TrafficCount::category::manifests;
-
-    if (type == protocol::mtENDPOINTS)
-        return TrafficCount::category::overlay;
-
-    if (type == protocol::mtTRANSACTION)
-        return TrafficCount::category::transaction;
-
-    if (type == protocol::mtVALIDATORLIST ||
-        type == protocol::mtVALIDATORLISTCOLLECTION)
-        return TrafficCount::category::validatorlist;
-
-    if (type == protocol::mtVALIDATION)
-        return TrafficCount::category::validation;
-
-    if (type == protocol::mtPROPOSE_LEDGER)
-        return TrafficCount::category::proposal;
+    if (auto item = type_lookup.find(type); item != type_lookup.end())
+        return item->second;
 
     if (type == protocol::mtHAVE_SET)
         return inbound ? TrafficCount::category::get_set
@@ -139,25 +144,6 @@ TrafficCount::categorize(
                                          : TrafficCount::category::get_hash;
     }
 
-    if (type == protocol::mtPROOF_PATH_REQ)
-        return TrafficCount::category::proof_path_request;
-
-    if (type == protocol::mtPROOF_PATH_RESPONSE)
-        return TrafficCount::category::proof_path_response;
-
-    if (type == protocol::mtREPLAY_DELTA_REQ)
-        return TrafficCount::category::replay_delta_request;
-
-    if (type == protocol::mtREPLAY_DELTA_RESPONSE)
-        return TrafficCount::category::replay_delta_response;
-
-    if (type == protocol::mtHAVE_TRANSACTIONS)
-        return TrafficCount::category::have_transactions;
-
-    if (type == protocol::mtTRANSACTIONS)
-        return TrafficCount::category::requested_transactions;
-
     return TrafficCount::category::unknown;
 }
-
 }  // namespace ripple
