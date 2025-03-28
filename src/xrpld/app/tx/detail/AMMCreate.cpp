@@ -183,6 +183,14 @@ AMMCreate::preclaim(PreclaimContext const& ctx)
         return tecAMM_INVALID_TOKENS;
     }
 
+    if (ctx.view.rules().enabled(featureSingleAssetVault))
+    {
+        if (auto const accountId = pseudoAccountAddress(
+                ctx.view, keylet::amm(amount.issue(), amount2.issue()).key);
+            accountId == beast::zero)
+            return terADDRESS_COLLISION;
+    }
+
     // If featureAMMClawback is enabled, allow AMMCreate without checking
     // if the issuer has clawback enabled
     if (ctx.view.rules().enabled(featureAMMClawback))

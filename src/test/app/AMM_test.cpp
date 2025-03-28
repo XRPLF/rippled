@@ -7144,6 +7144,36 @@ private:
     }
 
     void
+    testFailedPseudoAccount()
+    {
+        testcase("Failed pseudo-account allocation");
+        using namespace test::jtx;
+
+        Env env{*this};
+        env.fund(XRP(30'000), gw, alice);
+        env.close();
+        env(trust(alice, gw["USD"](30'000), 0));
+        env(pay(gw, alice, USD(10'000)));
+        env.close();
+
+        STAmount amount = XRP(10'000);
+        STAmount amount2 = USD(10'000);
+        auto const keylet = keylet::amm(amount.issue(), amount2.issue());
+        for (int i = 0; i < 256; ++i)
+        {
+            AccountID const accountId =
+                ripple::pseudoAccountAddress(*env.current(), keylet.key);
+
+            env(pay(env.master.id(), accountId, XRP(1000)),
+                seq(autofill),
+                fee(autofill),
+                sig(autofill));
+        }
+
+        AMM ammAlice(env, alice, amount, amount2, ter(terADDRESS_COLLISION));
+    }
+
+    void
     run() override
     {
         FeatureBitset const all{jtx::supported_amendments()};
@@ -7198,6 +7228,7 @@ private:
         testAMMDepositWithFrozenAssets(all - fixAMMv1_1 - featureAMMClawback);
         testFixReserveCheckOnWithdrawal(all);
         testFixReserveCheckOnWithdrawal(all - fixAMMv1_2);
+        testFailedPseudoAccount();
     }
 };
 
