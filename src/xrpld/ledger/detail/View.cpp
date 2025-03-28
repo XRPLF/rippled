@@ -1037,29 +1037,31 @@ dirLink(ApplyView& view, AccountID const& owner, std::shared_ptr<SLE>& object)
     return tesSUCCESS;
 }
 
+AccountID
+pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey)
+{
+    AccountID ret = beast::zero;
+    // This number must not be changed without an amendment
+    constexpr int maxAccountAttempts = 256;
+    for (auto i = 0; i < maxAccountAttempts; ++i)
+    {
+        ripesha_hasher rsh;
+        auto const hash = sha512Half(i, view.info().parentHash, pseudoOwnerKey);
+        rsh(hash.data(), hash.size());
+        ret = static_cast<ripesha_hasher::result_type>(rsh);
+        if (!view.read(keylet::account(ret)))
+            return ret;
+    }
+    return ret;
+}
+
 Expected<std::shared_ptr<SLE>, TER>
 createPseudoAccount(
     ApplyView& view,
     uint256 const& pseudoOwnerKey,
     PseudoAccountOwnerType type)
 {
-    auto const accountId = [&]() -> AccountID {
-        AccountID ret = beast::zero;
-        // This number must not be changed without an amendment
-        constexpr int maxAccountAttempts = 256;
-        for (auto i = 0; i < maxAccountAttempts; ++i)
-        {
-            ripesha_hasher rsh;
-            auto const hash =
-                sha512Half(i, view.info().parentHash, pseudoOwnerKey);
-            rsh(hash.data(), hash.size());
-            ret = static_cast<ripesha_hasher::result_type>(rsh);
-            if (!view.read(keylet::account(ret)))
-                return ret;
-        }
-        return ret;
-    }();
-
+    auto const accountId = pseudoAccountAddress(view, pseudoOwnerKey);
     if (accountId == beast::zero)
         return Unexpected(tecDUPLICATE);
 

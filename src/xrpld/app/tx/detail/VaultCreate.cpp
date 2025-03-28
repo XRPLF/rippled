@@ -119,6 +119,12 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
             return tecOBJECT_NOT_FOUND;
     }
 
+    auto sequence = ctx.tx.getSeqValue();
+    if (auto const accountId = pseudoAccountAddress(
+            ctx.view, keylet::vault(account, sequence).key);
+        accountId == beast::zero)
+        return terADDRESS_COLLISION;
+
     return tesSUCCESS;
 }
 
