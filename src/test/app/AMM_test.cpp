@@ -59,6 +59,17 @@ private:
                 XRP(10'000), USD(10'000), IOUAmount{10'000'000, 0}));
         });
 
+        // XRP to IOU, without featureSingleAssetVault
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'000), USD(10'000), IOUAmount{10'000'000, 0}));
+            },
+            {},
+            0,
+            {},
+            {supported_amendments() - featureSingleAssetVault});
+
         // IOU to IOU
         testAMM(
             [&](AMM& ammAlice, Env&) {
