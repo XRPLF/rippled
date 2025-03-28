@@ -36,6 +36,7 @@
 #include <xrpld/app/tx/detail/CreateTicket.h>
 #include <xrpld/app/tx/detail/Credentials.h>
 #include <xrpld/app/tx/detail/DID.h>
+#include <xrpld/app/tx/detail/DelegateSet.h>
 #include <xrpld/app/tx/detail/DeleteAccount.h>
 #include <xrpld/app/tx/detail/DeleteOracle.h>
 #include <xrpld/app/tx/detail/DepositPreauth.h>
@@ -192,6 +193,11 @@ invoke_preclaim(PreclaimContext const& ctx)
                     return result;
 
                 result = T::checkFee(ctx, calculateBaseFee(ctx.view, ctx.tx));
+
+                if (result != tesSUCCESS)
+                    return result;
+
+                result = T::checkPermission(ctx.view, ctx.tx);
 
                 if (result != tesSUCCESS)
                     return result;
