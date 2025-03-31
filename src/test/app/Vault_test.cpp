@@ -32,9 +32,13 @@
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_forwards.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TER.h>
@@ -1081,43 +1085,14 @@ class Vault_test : public beast::unit_test::suite
         env(tx);
         env.close();
 
-        auto const [vaultAccount, ownerAccount, mptID] =  //
-            [&env, &owner, key = keylet.key, this]()      //
-            -> std::tuple<AccountID, AccountID, uint192> {
-            Json::Value jvParams;
-            jvParams[jss::ledger_index] = jss::validated;
-            jvParams[jss::vault] = strHex(key);
-            auto jvVault = env.rpc("json", "ledger_entry", to_string(jvParams));
-
-            // Vault pseudo-account
-            auto const vAcct =
-                parseBase58<AccountID>(
-                    jvVault[jss::result][jss::node][jss::Account].asString())
-                    .value();
-
-            // Owner account
-            auto const oAcct =
-                parseBase58<AccountID>(
-                    jvVault[jss::result][jss::node][jss::Owner].asString())
-                    .value();
-            BEAST_EXPECT(oAcct == owner.id());
-
-            // MPTID of the vault shares
-            auto const strMpt = jvVault[jss::result][jss::node][jss::Share]
-                                       [jss::mpt_issuance_id]
-                                           .asString();
-            uint192 mpt;
-            BEAST_EXPECT(mpt.parseHex(strMpt));
-
-            return {vAcct, oAcct, mpt};
+        auto const vaultAccount = [&env, keylet = keylet, this]() -> AccountID {
+            auto const vault = env.le(keylet);
+            BEAST_EXPECT(vault != nullptr);
+            return vault->at(sfAccount);
         }();
 
-        BEAST_EXPECT(makeMptID(1, vaultAccount) == mptID);
-        BEAST_EXPECT(
-            keylet::vault(ownerAccount, env.seq(owner) - 1).key == keylet.key);
-
         auto const vaultBalance =  //
-            [&, account = vaultAccount]() -> PrettyAmount {
+            [&, account = vaultAccount, this]() -> PrettyAmount {
             auto const sle = env.le(keylet::line(account, issue));
             BEAST_EXPECT(sle != nullptr);
             auto amount = sle->getFieldAmount(sfBalance);
@@ -1191,6 +1166,207 @@ class Vault_test : public beast::unit_test::suite
         env(tx, ter{terADDRESS_COLLISION});
     }
 
+    void
+    testRPC()
+    {
+        testcase("RPC");
+        Env env{*this};
+        Account const owner{"owner"};
+        Account const issuer{"issuer"};
+        Vault vault{env};
+        env.fund(XRP(1000), issuer, owner);
+        env.close();
+
+        PrettyAsset asset = issuer["IOU"];
+        env.trust(asset(1000), owner);
+        env(pay(issuer, owner, asset(200)));
+        env.close();
+
+        auto const sequence = env.seq(owner);
+        auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+        env(tx);
+        env.close();
+
+        // Set some fields
+        {
+            auto tx1 = vault.deposit(
+                {.depositor = owner, .id = keylet.key, .amount = asset(50)});
+            env(tx1);
+
+            auto tx2 = vault.set({.owner = owner, .id = keylet.key});
+            tx2[sfAssetsMaximum] = asset(1000).number();
+            env(tx2);
+            env.close();
+        }
+
+        auto const sleVault = [&env, keylet = keylet, this]() {
+            auto const vault = env.le(keylet);
+            BEAST_EXPECT(vault != nullptr);
+            return vault;
+        }();
+
+        auto const check = [&, keylet = keylet, sle = sleVault, this](
+                               Json::Value const& node) {
+            BEAST_EXPECT(node.isObject());
+
+            auto checkString =
+                [&node](SField const& field, std::string expected) -> bool {
+                return node.isMember(field.fieldName) &&
+                    node[field.fieldName].isString() &&
+                    node[field.fieldName] == expected;
+            };
+            auto checkObject =
+                [&node](SField const& field, Json::Value expected) -> bool {
+                return node.isMember(field.fieldName) &&
+                    node[field.fieldName].isObject() &&
+                    node[field.fieldName] == expected;
+            };
+            auto checkInt = [&node](SField const& field, int expected) -> bool {
+                return node.isMember(field.fieldName) &&
+                    ((node[field.fieldName].isInt() &&
+                      node[field.fieldName] == Json::Int(expected)) ||
+                     (node[field.fieldName].isUInt() &&
+                      node[field.fieldName] == Json::UInt(expected)));
+            };
+
+            BEAST_EXPECT(node["LedgerEntryType"].asString() == "Vault");
+            BEAST_EXPECT(node[jss::index].asString() == strHex(keylet.key));
+            BEAST_EXPECT(checkInt(sfFlags, 0));
+            // Ignore all other standard fields, this test doesn't care
+
+            BEAST_EXPECT(checkString(sfAccount, toBase58(sle->at(sfAccount))));
+            BEAST_EXPECT(checkObject(sfAsset, to_json(sle->at(sfAsset))));
+            BEAST_EXPECT(checkString(sfAssetsAvailable, "50"));
+            BEAST_EXPECT(checkString(sfAssetsMaximum, "1000"));
+            BEAST_EXPECT(checkString(sfAssetsTotal, "50"));
+            BEAST_EXPECT(checkString(sfLossUnrealized, "0"));
+            BEAST_EXPECT(checkString(
+                sfMPTokenIssuanceID, strHex(sle->at(sfMPTokenIssuanceID))));
+            BEAST_EXPECT(checkString(sfOwner, toBase58(owner.id())));
+            BEAST_EXPECT(checkInt(sfSequence, sequence));
+            BEAST_EXPECT(
+                checkInt(sfWithdrawalPolicy, vaultStrategyFirstComeFirstServe));
+
+            // This field is injected in STLedgerEntry::getJson
+            BEAST_EXPECT(
+                node.isMember(jss::Share) && node[jss::Share].isObject() &&
+                node[jss::Share] == to_json(sle->at(sfMPTokenIssuanceID)));
+
+            // This field is injected in RPC::supplementJson<ltVAULT>
+            BEAST_EXPECT(
+                node.isMember(jss::SharesTotal) &&
+                node[jss::SharesTotal].isString() &&
+                node[jss::SharesTotal] == "50");
+        };
+
+        {
+            testcase("RPC ledger_entry selected by key");
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = jss::validated;
+            jvParams[jss::vault] = strHex(keylet.key);
+            auto jvVault = env.rpc("json", "ledger_entry", to_string(jvParams));
+
+            BEAST_EXPECT(!jvVault[jss::result].isMember(jss::error));
+            BEAST_EXPECT(jvVault[jss::result].isMember(jss::node));
+            check(jvVault[jss::result][jss::node]);
+        }
+
+        {
+            testcase("RPC ledger_entry selected by owner and seq");
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = jss::validated;
+            jvParams[jss::vault][jss::owner] = owner.human();
+            jvParams[jss::vault][jss::seq] = sequence;
+            auto jvVault = env.rpc("json", "ledger_entry", to_string(jvParams));
+
+            BEAST_EXPECT(!jvVault[jss::result].isMember(jss::error));
+            BEAST_EXPECT(jvVault[jss::result].isMember(jss::node));
+            check(jvVault[jss::result][jss::node]);
+        }
+
+        {
+            testcase("RPC ledger_entry cannot find vault by key");
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = jss::validated;
+            jvParams[jss::vault] = to_string(uint256(42));
+            auto jvVault = env.rpc("json", "ledger_entry", to_string(jvParams));
+            BEAST_EXPECT(
+                jvVault[jss::result][jss::error].asString() == "entryNotFound");
+        }
+
+        {
+            testcase("RPC ledger_entry cannot find vault by owner and seq");
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = jss::validated;
+            jvParams[jss::vault][jss::owner] = issuer.human();
+            jvParams[jss::vault][jss::seq] = 1'000'000;
+            auto jvVault = env.rpc("json", "ledger_entry", to_string(jvParams));
+            BEAST_EXPECT(
+                jvVault[jss::result][jss::error].asString() == "entryNotFound");
+        }
+
+        {
+            testcase("RPC ledger_entry malformed key");
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = jss::validated;
+            jvParams[jss::vault] = 42;
+            auto jvVault = env.rpc("json", "ledger_entry", to_string(jvParams));
+            BEAST_EXPECT(
+                jvVault[jss::result][jss::error].asString() ==
+                "malformedRequest");
+        }
+
+        {
+            testcase("RPC ledger_entry malformed owner");
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = jss::validated;
+            jvParams[jss::vault][jss::owner] = 42;
+            jvParams[jss::vault][jss::seq] = sequence;
+            auto jvVault = env.rpc("json", "ledger_entry", to_string(jvParams));
+            BEAST_EXPECT(
+                jvVault[jss::result][jss::error].asString() ==
+                "malformedOwner");
+        }
+
+        {
+            testcase("RPC ledger_entry malformed seq");
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = jss::validated;
+            jvParams[jss::vault][jss::owner] = issuer.human();
+            jvParams[jss::vault][jss::seq] = "42";
+            auto jvVault = env.rpc("json", "ledger_entry", to_string(jvParams));
+            BEAST_EXPECT(
+                jvVault[jss::result][jss::error].asString() ==
+                "malformedRequest");
+        }
+
+        {
+            testcase("RPC account_objects");
+
+            Json::Value jvParams;
+            jvParams[jss::account] = owner.human();
+            jvParams[jss::type] = jss::vault;
+            auto jv = env.rpc(
+                "json", "account_objects", to_string(jvParams))[jss::result];
+
+            BEAST_EXPECT(jv[jss::account_objects].size() == 1);
+            check(jv[jss::account_objects][0u]);
+        }
+
+        {
+            testcase("RPC ledger_data");
+
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = jss::validated;
+            jvParams[jss::binary] = false;
+            jvParams[jss::type] = jss::vault;
+            Json::Value jv =
+                env.rpc("json", "ledger_data", to_string(jvParams));
+            BEAST_EXPECT(jv[jss::result][jss::state].size() == 1);
+            check(jv[jss::result][jss::state][0u]);
+        }
+    }
+
 public:
     void
     run() override
@@ -1204,6 +1380,7 @@ public:
         testWithDomainCheck();
         testNonTransferableShares();
         testFailedPseudoAccount();
+        testRPC();
     }
 };
 
