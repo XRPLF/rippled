@@ -1263,8 +1263,8 @@ PeerImp::handleTransaction(
 
     try
     {
-        auto stx = std::make_shared<STTx const>(sit);
-        uint256 txID = stx->getTransactionID();
+        auto const stx = std::make_shared<STTx const>(sit);
+        auto const txID = stx->getTransactionID();
 
         int flags;
         constexpr std::chrono::seconds tx_interval = 10s;
@@ -1637,7 +1637,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMLedgerData> const& m)
 void
 PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
 {
-    protocol::TMProposeSet& set = *m;
+    protocol::TMProposeSet const& set = *m;
 
     auto const sig = makeSlice(set.signature());
 
@@ -1665,13 +1665,6 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
     // suppression for 30 seconds to avoid doing a relatively expensive lookup
     // every time a spam packet is received
     PublicKey const publicKey{makeSlice(set.nodepubkey())};
-    auto const isTrusted = app_.validators().trusted(publicKey);
-
-    // If the operator has specified that untrusted proposals be dropped then
-    // this happens here I.e. before further wasting CPU verifying the signature
-    // of an untrusted key
-    if (!isTrusted && app_.config().RELAY_UNTRUSTED_PROPOSALS == -1)
-        return;
 
     uint256 const proposeHash{set.currenttxhash()};
     uint256 const prevLedger{set.previousledger()};
@@ -1686,7 +1679,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
         publicKey.slice(),
         sig);
 
-    if (auto [added, relayed] =
+    if (auto const [added, relayed] =
             app_.getHashRouter().addSuppressionPeerWithStatus(suppression, id_);
         !added)
     {
@@ -1700,8 +1693,15 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
         return;
     }
 
+    auto const isTrusted = app_.validators().trusted(publicKey);
     if (!isTrusted)
     {
+        // If the operator has specified that untrusted proposals be dropped
+        // then this happens here I.e. before further wasting CPU verifying the
+        // signature of an untrusted key
+        if (app_.config().RELAY_UNTRUSTED_PROPOSALS == -1)
+            return;
+
         if (tracking_.load() == Tracking::diverged)
         {
             JLOG(p_journal_.debug())
@@ -2278,19 +2278,37 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
 
     try
     {
-        auto const closeTime = app_.timeKeeper().closeTime();
-
-        std::shared_ptr<STValidation> val;
-        {
+        std::shared_ptr<STValidation> const val = [this, m]() {
             SerialIter sit(makeSlice(m->validation()));
-            val = std::make_shared<STValidation>(
+            auto v = std::make_shared<STValidation>(
                 std::ref(sit),
                 [this](PublicKey const& pk) {
                     return calcNodeID(
                         app_.validatorManifests().getMasterKey(pk));
                 },
                 false);
-            val->setSeen(closeTime);
+
+            v->setSeen(app_.timeKeeper().closeTime());
+            return v;
+        }();
+
+        auto const key = sha512Half(makeSlice(m->validation()));
+
+        if (auto const [added, relayed] =
+                app_.getHashRouter().addSuppressionPeerWithStatus(key, id_);
+            !added)
+        {
+            // Count unique messages (Slots has it's own 'HashRouter'), which a
+            // peer receives within IDLED seconds since the message has been
+            // relayed. Wait WAIT_ON_BOOTUP time to let the server establish
+            // connections to peers.
+            if (reduceRelayReady() && relayed &&
+                (stopwatch().now() - *relayed) < reduce_relay::IDLED)
+                overlay_.updateSlotAndSquelch(
+                    key, val->getSignerPublic(), id_, protocol::mtVALIDATION);
+
+            JLOG(p_journal_.trace()) << "Validation: duplicate";
+            return;
         }
 
         if (!isCurrent(
@@ -2310,34 +2328,21 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
         auto const isTrusted =
             app_.validators().trusted(val->getSignerPublic());
 
-        // If the operator has specified that untrusted validations be dropped
-        // then this happens here I.e. before further wasting CPU verifying the
-        // signature of an untrusted key
-        if (!isTrusted && app_.config().RELAY_UNTRUSTED_VALIDATIONS == -1)
-            return;
-
-        auto key = sha512Half(makeSlice(m->validation()));
-
-        if (auto [added, relayed] =
-                app_.getHashRouter().addSuppressionPeerWithStatus(key, id_);
-            !added)
+        if (!isTrusted)
         {
-            // Count unique messages (Slots has it's own 'HashRouter'), which a
-            // peer receives within IDLED seconds since the message has been
-            // relayed. Wait WAIT_ON_BOOTUP time to let the server establish
-            // connections to peers.
-            if (reduceRelayReady() && relayed &&
-                (stopwatch().now() - *relayed) < reduce_relay::IDLED)
-                overlay_.updateSlotAndSquelch(
-                    key, val->getSignerPublic(), id_, protocol::mtVALIDATION);
-            JLOG(p_journal_.trace()) << "Validation: duplicate";
-            return;
-        }
+            // If the operator has specified that untrusted validations be
+            // dropped
+            // then this happens here I.e. before further wasting CPU verifying
+            // the signature of an untrusted key
+            if (app_.config().RELAY_UNTRUSTED_VALIDATIONS == -1)
+                return;
 
-        if (!isTrusted && (tracking_.load() == Tracking::diverged))
-        {
-            JLOG(p_journal_.debug())
-                << "Dropping untrusted validation from diverged peer";
+            if ((tracking_.load() == Tracking::diverged))
+            {
+                JLOG(p_journal_.debug())
+                    << "Dropping untrusted validation from diverged peer";
+                return;
+            }
         }
         else if (isTrusted || !app_.getFeeTrack().isLoadedLocal())
         {
