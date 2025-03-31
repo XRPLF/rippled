@@ -83,7 +83,7 @@ public:
     }
 };
 
-template<class F, class V>
+template <class F, class V>
 using simpleField = field<F, V, V>;
 
 struct timePointField
@@ -98,7 +98,6 @@ protected:
     using base::value_;
 
 public:
-
     explicit timePointField(F const& field, V const& value)
         : field(field, value)
     {
@@ -351,12 +350,13 @@ struct finish_time : public timePointField
 /** Set the "CancelAfter" time tag on a JTx */
 struct cancel_time : public timePointField
 {
-    explicit cancel_time(NetClock::time_point const& value) : timePointField(sfCancelAfter, value)
+    explicit cancel_time(NetClock::time_point const& value)
+        : timePointField(sfCancelAfter, value)
     {
     }
 };
 
-struct condition: public simpleField<SF_VL, std::string>
+struct condition : public simpleField<SF_VL, std::string>
 {
     explicit condition(Slice const& cond) : field(sfCondition, strHex(cond))
     {
