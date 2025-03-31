@@ -79,7 +79,7 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
 
     auto const assets = ctx.tx[sfAmount];
     auto const asset = vault->at(sfAsset);
-    auto const share = vault->at(sfMPTokenIssuanceID);
+    auto const share = vault->at(sfShareMPTID);
     if (assets.asset() != asset && assets.asset() != share)
         return tecWRONG_ASSET;
 
@@ -117,7 +117,7 @@ VaultWithdraw::doApply()
     if (!vault)
         return tefINTERNAL;  // Enforced in preclaim
 
-    auto const mptIssuanceID = (*vault)[sfMPTokenIssuanceID];
+    auto const mptIssuanceID = (*vault)[sfShareMPTID];
     auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
     if (!sleIssuance)
         return tefINTERNAL;

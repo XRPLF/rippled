@@ -89,7 +89,6 @@ JSS(SettleDelay);                        // in: TransactionSign
 JSS(SendMax);                            // in: TransactionSign
 JSS(Sequence);                           // in/out: TransactionSign; field.
 JSS(SetFlag);                            // field.
-JSS(Share);                              // out: Vault
 JSS(SharesTotal);                        // out: Vault
 JSS(Signer);                             // field.
 JSS(Signers);                            // field.

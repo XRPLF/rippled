@@ -2533,8 +2533,7 @@ assetsToSharesDeposit(
         assets.asset() == vault->at(sfAsset),
         "ripple::assetsToSharesDeposit : assets and vault match");
     Number assetTotal = vault->at(sfAssetsTotal);
-    STAmount shares{
-        vault->at(sfMPTokenIssuanceID), static_cast<Number>(assets)};
+    STAmount shares{vault->at(sfShareMPTID), static_cast<Number>(assets)};
     if (assetTotal == 0)
         return shares;
     Number shareTotal = issuance->at(sfOutstandingAmount);
@@ -2553,7 +2552,7 @@ assetsToSharesWithdraw(
         "ripple::assetsToSharesWithdraw : assets and vault match");
     Number assetTotal = vault->at(sfAssetsTotal);
     assetTotal -= vault->at(sfLossUnrealized);
-    STAmount shares{vault->at(sfMPTokenIssuanceID)};
+    STAmount shares{vault->at(sfShareMPTID)};
     if (assetTotal == 0)
         return shares;
     Number shareTotal = issuance->at(sfOutstandingAmount);
@@ -2568,7 +2567,7 @@ sharesToAssetsWithdraw(
     STAmount const& shares)
 {
     XRPL_ASSERT(
-        shares.asset() == vault->at(sfMPTokenIssuanceID),
+        shares.asset() == vault->at(sfShareMPTID),
         "ripple::sharesToAssetsWithdraw : shares and vault match");
     Number assetTotal = vault->at(sfAssetsTotal);
     assetTotal -= vault->at(sfLossUnrealized);

@@ -199,7 +199,7 @@ VaultCreate::doApply()
     // Leave default values for AssetTotal and AssetAvailable, both zero.
     if (auto value = tx[~sfAssetsMaximum])
         vault->at(sfAssetsMaximum) = *value;
-    vault->at(sfMPTokenIssuanceID) = share;
+    vault->at(sfShareMPTID) = share;
     if (auto value = tx[~sfData])
         vault->at(sfData) = *value;
     // Required field, default to vaultStrategyFirstComeFirstServe

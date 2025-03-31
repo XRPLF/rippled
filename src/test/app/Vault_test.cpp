@@ -873,7 +873,7 @@ class Vault_test : public beast::unit_test::suite
             // accounts for the issued shares.
             auto v = env.le(keylet);
             BEAST_EXPECT(v);
-            MPTID share = (*v)[sfMPTokenIssuanceID];
+            MPTID share = (*v)[sfShareMPTID];
             auto issuance = env.le(keylet::mptIssuance(share));
             BEAST_EXPECT(issuance);
             Number outstandingShares = issuance->at(sfOutstandingAmount);
@@ -1240,17 +1240,12 @@ class Vault_test : public beast::unit_test::suite
             BEAST_EXPECT(checkString(sfAssetsMaximum, "1000"));
             BEAST_EXPECT(checkString(sfAssetsTotal, "50"));
             BEAST_EXPECT(checkString(sfLossUnrealized, "0"));
-            BEAST_EXPECT(checkString(
-                sfMPTokenIssuanceID, strHex(sle->at(sfMPTokenIssuanceID))));
+            BEAST_EXPECT(
+                checkString(sfShareMPTID, strHex(sle->at(sfShareMPTID))));
             BEAST_EXPECT(checkString(sfOwner, toBase58(owner.id())));
             BEAST_EXPECT(checkInt(sfSequence, sequence));
             BEAST_EXPECT(
                 checkInt(sfWithdrawalPolicy, vaultStrategyFirstComeFirstServe));
-
-            // This field is injected in STLedgerEntry::getJson
-            BEAST_EXPECT(
-                node.isMember(jss::Share) && node[jss::Share].isObject() &&
-                node[jss::Share] == to_json(sle->at(sfMPTokenIssuanceID)));
 
             // This field is injected in RPC::supplementJson<ltVAULT>
             BEAST_EXPECT(

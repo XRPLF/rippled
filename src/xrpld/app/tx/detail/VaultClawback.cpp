@@ -119,7 +119,7 @@ VaultClawback::doApply()
     if (!vault)
         return tefINTERNAL;  // Enforced in preclaim
 
-    auto const mptIssuanceID = (*vault)[sfMPTokenIssuanceID];
+    auto const mptIssuanceID = (*vault)[sfShareMPTID];
     auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
     if (!sleIssuance)
         return tefINTERNAL;
@@ -139,7 +139,7 @@ VaultClawback::doApply()
     STAmount assets, shares;
     if (amount == beast::zero)
     {
-        Asset share = *(*vault)[sfMPTokenIssuanceID];
+        Asset share = *(*vault)[sfShareMPTID];
         shares = accountHolds(
             view(),
             holder,

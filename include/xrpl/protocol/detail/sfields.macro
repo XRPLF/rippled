@@ -155,6 +155,7 @@ TYPED_SFIELD(sfTakerGetsIssuer,          UINT160,    4)
 
 // 192-bit (common)
 TYPED_SFIELD(sfMPTokenIssuanceID,        UINT192,    1)
+TYPED_SFIELD(sfShareMPTID,               UINT192,    2)
 
 // 256-bit (common)
 TYPED_SFIELD(sfLedgerHash,               UINT256,    1)

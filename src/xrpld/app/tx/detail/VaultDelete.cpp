@@ -84,7 +84,7 @@ VaultDelete::doApply()
             // The operator-> gives the underlying STAccount,
             // whose value function returns a const&.
             {.account = vault->at(sfAccount)->value(),
-             .issuanceID = vault->at(sfMPTokenIssuanceID)}))
+             .issuanceID = vault->at(sfShareMPTID)}))
         return ter;
 
     // The psuedo-account's directory should have been deleted already.

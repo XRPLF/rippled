@@ -70,7 +70,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     if (isFrozen(ctx.view, account, vaultAsset))
         return tecFROZEN;
 
-    auto const share = MPTIssue(vault->at(sfMPTokenIssuanceID));
+    auto const share = MPTIssue(vault->at(sfShareMPTID));
     // Cannot deposit if the shares of the vault are frozen
     if (isFrozen(ctx.view, account, share))
         return tecFROZEN;
@@ -126,7 +126,7 @@ VaultDeposit::doApply()
     auto const assets = ctx_.tx[sfAmount];
 
     // Make sure the depositor can hold shares.
-    auto const mptIssuanceID = (*vault)[sfMPTokenIssuanceID];
+    auto const mptIssuanceID = (*vault)[sfShareMPTID];
     auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
     if (!sleIssuance)
         return tefINTERNAL;

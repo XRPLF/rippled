@@ -160,7 +160,7 @@ supplementJson<ltVAULT>(
         vault->getType() == ltVAULT,
         "ripple::RPC::supplementJson<ltVAULT> : matching type");
 
-    auto const share = vault->at(sfMPTokenIssuanceID);
+    auto const share = vault->at(sfShareMPTID);
     auto const sleIssuance = view.read(keylet::mptIssuance(share));
     if (!sleIssuance)
         return;

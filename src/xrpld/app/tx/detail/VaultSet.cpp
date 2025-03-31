@@ -86,7 +86,7 @@ VaultSet::preclaim(PreclaimContext const& ctx)
     if (ctx.tx[sfAccount] != vault->at(sfOwner))
         return tecNO_PERMISSION;
 
-    auto const mptIssuanceID = (*vault)[sfMPTokenIssuanceID];
+    auto const mptIssuanceID = (*vault)[sfShareMPTID];
     auto const sleIssuance = ctx.view.read(keylet::mptIssuance(mptIssuanceID));
     if (!sleIssuance)
         return tefINTERNAL;
@@ -124,7 +124,7 @@ VaultSet::doApply()
     if (!vault)
         return tefINTERNAL;  // Enforced in preclaim
 
-    auto const mptIssuanceID = (*vault)[sfMPTokenIssuanceID];
+    auto const mptIssuanceID = (*vault)[sfShareMPTID];
     auto const sleIssuance = view().peek(keylet::mptIssuance(mptIssuanceID));
     if (!sleIssuance)
         return tefINTERNAL;
