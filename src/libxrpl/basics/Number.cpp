@@ -20,7 +20,7 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
-#include <boost/predef.h>
+#include <boost/predef/compiler/visualc.h>
 
 #include <algorithm>
 #include <cstddef>
@@ -33,7 +33,7 @@
 #include <type_traits>
 #include <utility>
 
-#ifndef BOOST_COMP_MSVC
+#ifdef BOOST_COMP_MSVC
 #include <boost/multiprecision/cpp_int.hpp>
 using uint128_t = boost::multiprecision::uint128_t;
 #else   // !defined(BOOST_COMP_MSVC)
