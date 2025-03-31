@@ -20,6 +20,8 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
+#include <boost/predef.h>
+
 #include <algorithm>
 #include <cstddef>
 #include <cstdint>
@@ -31,12 +33,12 @@
 #include <type_traits>
 #include <utility>
 
-#ifdef BOOST_COMP_MSVC
+#ifndef BOOST_COMP_MSVC
 #include <boost/multiprecision/cpp_int.hpp>
 using uint128_t = boost::multiprecision::uint128_t;
-#else   // !defined(_MSVC_LANG)
+#else   // !defined(BOOST_COMP_MSVC)
 using uint128_t = __uint128_t;
-#endif  // !defined(_MSVC_LANG)
+#endif  // !defined(BOOST_COMP_MSVC)
 
 namespace ripple {
 
