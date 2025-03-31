@@ -662,10 +662,25 @@ requireAuth(
 /** Enforce account has MPToken to match its authorization.
  *
  *   Called from doApply - it will check for expired (and delete if found any)
- *   credentials matching DomainID set in MPTIssuance. Must be called if
- *   requireAuth(...MPTIssue...) returned tesSUCCESS or tecEXPIRED in preclaim.
- *   Will create MPToken (if needed) on the basis of any non-expired credentals
- *   and delete any expried credentials (indirectly via verifyValidDomain)
+ *   credentials matching DomainID set in MPTokenIssuance. Must be called if
+ *   requireAuth(...MPTIssue...) returned tesSUCCESS or tecEXPIRED in preclaim,
+ *   which implies that preclaim should replace `tecEXPIRED` with `tesSUCCESS`
+ *   in order for the transactor to proceed to doApply.
+ *
+ *   This function will create MPToken (if needed) on the basis of any
+ *   non-expired credentals and will delete any expired credentials, indirectly
+ *   via verifyValidDomain, as per DomainID (if set in MPTokenIssuance).
+ *
+ *   The caller does NOT need to ensure that DomainID is actually set - this
+ *   function handles gracefully both cases when DomainID is set and when not.
+ *
+ *   The caller does NOT need to look for existing MPToken to match
+ *   mptIssue/account - this function checks lsfMPTAuthorized of an existing
+ *   MPToken iff DomainID is not set.
+ *
+ *   Do not use for accounts which hold implied permission e.g. object owners or
+ *   if MPTokenIssuance does not require authorization. In both cases use
+ *   MPTokenAuthorize::authorize if MPToken does not yet exist.
  */
 [[nodiscard]] TER
 enforceMPTokenAuthorization(
