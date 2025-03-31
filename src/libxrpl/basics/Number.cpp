@@ -20,7 +20,7 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/instrumentation.h>
 
-#include <boost/predef/compiler/visualc.h>
+#include <boost/predef.h>
 
 #include <algorithm>
 #include <cstddef>
