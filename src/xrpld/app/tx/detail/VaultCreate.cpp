@@ -17,10 +17,12 @@
 */
 //==============================================================================
 
+#include <xrpld/app/tx/detail/MPTokenAuthorize.h>
 #include <xrpld/app/tx/detail/MPTokenIssuanceCreate.h>
 #include <xrpld/app/tx/detail/VaultCreate.h>
 #include <xrpld/ledger/View.h>
 
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTIssue.h>
@@ -128,6 +130,70 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
+[[nodiscard]] static TER
+addEmptyHolding(
+    ApplyView& view,
+    AccountID const& accountID,
+    XRPAmount priorBalance,
+    Issue const& issue,
+    beast::Journal journal)
+{
+    // Every account can hold XRP.
+    if (issue.native())
+        return tesSUCCESS;
+
+    auto const& issuerId = issue.getIssuer();
+    auto const& currency = issue.currency;
+    if (isGlobalFrozen(view, issuerId))
+        return tecFROZEN;
+
+    auto const& srcId = issuerId;
+    auto const& dstId = accountID;
+    auto const high = srcId > dstId;
+    auto const index = keylet::line(srcId, dstId, currency);
+    auto const sle = view.peek(keylet::account(accountID));
+    if (!sle)
+        return tefINTERNAL;
+    return trustCreate(
+        view,
+        high,
+        srcId,
+        dstId,
+        index.key,
+        sle,
+        /*auth=*/false,
+        /*noRipple=*/true,
+        /*freeze=*/false,
+        /*deepFreeze*/ false,
+        /*balance=*/STAmount{Issue{currency, noAccount()}},
+        /*limit=*/STAmount{Issue{currency, dstId}},
+        /*qualityIn=*/0,
+        /*qualityOut=*/0,
+        journal);
+}
+
+[[nodiscard]] static TER
+addEmptyHolding(
+    ApplyView& view,
+    AccountID const& accountID,
+    XRPAmount priorBalance,
+    MPTIssue const& mptIssue,
+    beast::Journal journal)
+{
+    auto const& mptID = mptIssue.getMptID();
+    auto const mpt = view.peek(keylet::mptIssuance(mptID));
+    if (!mpt)
+        return tefINTERNAL;
+    if (mpt->getFlags() & lsfMPTLocked)
+        return tecLOCKED;
+    return MPTokenAuthorize::authorize(
+        view,
+        journal,
+        {.priorBalance = priorBalance,
+         .mptIssuanceID = mptID,
+         .accountID = accountID});
+}
+
 TER
 VaultCreate::doApply()
 {
@@ -156,9 +222,15 @@ VaultCreate::doApply()
         return maybePseudo.error();
     auto& pseudo = *maybePseudo;
     auto pseudoId = pseudo->at(sfAccount);
+    auto asset = tx[sfAsset];
 
-    if (auto ter =
-            addEmptyHolding(view(), pseudoId, mPriorBalance, tx[sfAsset], j_))
+    if (auto ter = std::visit(
+            [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
+                return addEmptyHolding(
+                    view(), pseudoId, mPriorBalance, issue, j_);
+            },
+            asset.value());
+        !isTesSuccess(ter))
         return ter;
 
     auto txFlags = tx.getFlags();
@@ -168,10 +240,10 @@ VaultCreate::doApply()
     if (txFlags & tfVaultPrivate)
         mptFlags |= lsfMPTRequireAuth;
 
-    // Note, here we are **not** creating an MPToken for the assets held in the
-    // vault. That MPToken or TrustLine/RippleState is created above, in
-    // addEmptyHolding. Here we are creating MPTokenIssuance for the shares in
-    // the vault
+    // Note, here we are **not** creating an MPToken for the assets held in
+    // the vault. That MPToken or TrustLine/RippleState is created above, in
+    // addEmptyHolding. Here we are creating MPTokenIssuance for the shares
+    // in the vault
     auto maybeShare = MPTokenIssuanceCreate::create(
         view(),
         j_,
@@ -192,7 +264,7 @@ VaultCreate::doApply()
     vault->at(sfSequence) = sequence;
     vault->at(sfOwner) = ownerId;
     vault->at(sfAccount) = pseudoId;
-    vault->at(sfAsset) = tx[sfAsset];
+    vault->at(sfAsset) = asset;
     vault->at(sfAssetsTotal) = Number(0);
     vault->at(sfAssetsAvailable) = Number(0);
     vault->at(sfLossUnrealized) = Number(0);

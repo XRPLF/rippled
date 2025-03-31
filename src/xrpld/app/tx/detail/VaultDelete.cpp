@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <xrpld/app/tx/detail/MPTokenAuthorize.h>
 #include <xrpld/app/tx/detail/MPTokenIssuanceDestroy.h>
 #include <xrpld/app/tx/detail/VaultDelete.h>
 #include <xrpld/ledger/View.h>
@@ -65,6 +66,56 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
+[[nodiscard]] static TER
+removeEmptyHolding(
+    ApplyView& view,
+    AccountID const& accountID,
+    Issue const& issue,
+    beast::Journal journal)
+{
+    if (issue.native())
+    {
+        auto const sle = view.read(keylet::account(accountID));
+        if (!sle)
+            return tecINTERNAL;
+        auto const balance = sle->getFieldAmount(sfBalance);
+        if (balance.xrp() != 0)
+            return tecHAS_OBLIGATIONS;
+        return tesSUCCESS;
+    }
+
+    // `asset` is an IOU.
+    auto const line = view.peek(keylet::line(accountID, issue));
+    if (!line)
+        return tecOBJECT_NOT_FOUND;
+    if (line->at(sfBalance)->iou() != beast::zero)
+        return tecHAS_OBLIGATIONS;
+    return trustDelete(
+        view,
+        line,
+        line->at(sfLowLimit)->getIssuer(),
+        line->at(sfHighLimit)->getIssuer(),
+        journal);
+}
+
+[[nodiscard]] static TER
+removeEmptyHolding(
+    ApplyView& view,
+    AccountID const& accountID,
+    MPTIssue const& mptIssue,
+    beast::Journal journal)
+{
+    auto const& mptID = mptIssue.getMptID();
+    // `MPTokenAuthorize::authorize` asserts that the balance is 0.
+    return MPTokenAuthorize::authorize(
+        view,
+        journal,
+        {.priorBalance = {},
+         .mptIssuanceID = mptID,
+         .accountID = accountID,
+         .flags = tfMPTUnauthorize});
+}
+
 TER
 VaultDelete::doApply()
 {
@@ -73,8 +124,14 @@ VaultDelete::doApply()
         return tefINTERNAL;  // Enforced in preclaim
 
     // Destroy the asset holding.
-    if (auto ter = removeEmptyHolding(
-            view(), vault->at(sfAccount), vault->at(sfAsset), j_))
+    auto asset = vault->at(sfAsset);
+    if (auto ter = std::visit(
+            [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
+                return removeEmptyHolding(
+                    view(), vault->at(sfAccount), issue, j_);
+            },
+            (*asset).value());
+        !isTesSuccess(ter))
         return ter;
 
     // Destroy the share issuance.

@@ -535,30 +535,6 @@ trustDelete(
     AccountID const& uHighAccountID,
     beast::Journal j);
 
-/** Create the structures necessary for an account to hold an asset.
- *
- * If the asset is:
- * - XRP: Do nothing.
- * - IOU: Check that the asset is not globally frozen,
- *   and create a trust line (with limit 0).
- * - MPT: Check that the asset is not globally locked,
- *   and create an MPToken.
- */
-[[nodiscard]] TER
-addEmptyHolding(
-    ApplyView& view,
-    AccountID const& account,
-    XRPAmount priorBalance,
-    Asset const& asset,
-    beast::Journal journal);
-
-[[nodiscard]] TER
-removeEmptyHolding(
-    ApplyView& view,
-    AccountID const& account,
-    Asset const& asset,
-    beast::Journal journal);
-
 /** Delete an offer.
 
     Requirements:
