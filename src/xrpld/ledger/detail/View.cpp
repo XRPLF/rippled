@@ -1288,6 +1288,8 @@ addEmptyHolding(
         auto const high = srcId > dstId;
         auto const index = keylet::line(srcId, dstId, currency);
         auto const sle = view.peek(keylet::account(accountID));
+        if (!sle)
+            return tefINTERNAL;
         return trustCreate(
             view,
             high,
@@ -1311,6 +1313,8 @@ addEmptyHolding(
         auto const& mptIssue = asset.get<MPTIssue>();
         auto const& mptID = mptIssue.getMptID();
         auto const mpt = view.peek(keylet::mptIssuance(mptID));
+        if (!mpt)
+            return tefINTERNAL;
         if (mpt->getFlags() & lsfMPTLocked)
             return tecLOCKED;
         return MPTokenAuthorize::authorize(
