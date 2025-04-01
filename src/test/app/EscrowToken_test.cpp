@@ -178,7 +178,7 @@ struct EscrowToken_test : public beast::unit_test::suite
                 fee(1500),
                 createResult);
             env.close();
-            env(escrow::cancel(bob, alice, seq2), fee(1500), finishResult);
+            env(escrow::cancel(bob, alice, seq2), finishResult);
             env.close();
         }
     }
@@ -227,7 +227,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             fee(1500),
             ter(tesSUCCESS));
         env.close();
-        env(escrow::cancel(bob, alice, seq2), fee(1500), ter(tesSUCCESS));
+        env(escrow::cancel(bob, alice, seq2), ter(tesSUCCESS));
         env.close();
     }
 
@@ -1252,7 +1252,7 @@ struct EscrowToken_test : public beast::unit_test::suite
                 fee(1500),
                 createResult);
             env.close();
-            env(escrow::cancel(bob, alice, seq2), fee(1500), finishResult);
+            env(escrow::cancel(bob, alice, seq2), finishResult);
             env.close();
         }
     }
@@ -1964,13 +1964,68 @@ struct EscrowToken_test : public beast::unit_test::suite
         {
             auto const preAliceMPT = mptBalance(env, alice, MPT);
             auto const preBobMPT = mptBalance(env, bob, MPT);
-            env(escrow::cancel(bob, alice, seq2), fee(1500), ter(tesSUCCESS));
+            env(escrow::cancel(bob, alice, seq2), ter(tesSUCCESS));
             env.close();
 
             BEAST_EXPECT(mptBalance(env, alice, MPT) == preAliceMPT + 1'000);
             BEAST_EXPECT(mptEscrowed(env, alice, MPT) == 0);
             BEAST_EXPECT(mptBalance(env, bob, MPT) == preBobMPT);
             BEAST_EXPECT(mptEscrowed(env, bob, MPT) == 0);
+            BEAST_EXPECT(issuerMPTOutstanding(env, MPT) == outstandingMPT);
+            BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == 0);
+        }
+
+        // Self Escrow Create & Finish
+        {
+            auto const seq = env.seq(alice);
+            auto const preAliceMPT = mptBalance(env, alice, MPT);
+            env(escrow::create(alice, alice, MPT(1'000)),
+                escrow::condition(escrow::cb1),
+                escrow::finish_time(env.now() + 1s),
+                fee(1500),
+                ter(tesSUCCESS));
+            env.close();
+
+            BEAST_EXPECT(mptBalance(env, alice, MPT) == preAliceMPT - 1'000);
+            BEAST_EXPECT(mptEscrowed(env, alice, MPT) == 1'000);
+            BEAST_EXPECT(issuerMPTOutstanding(env, MPT) == outstandingMPT);
+            BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == 1'000);
+
+            env(escrow::finish(alice, alice, seq),
+                escrow::condition(escrow::cb1),
+                escrow::fulfillment(escrow::fb1),
+                fee(1500),
+                ter(tesSUCCESS));
+            env.close();
+
+            BEAST_EXPECT(mptBalance(env, alice, MPT) == preAliceMPT);
+            BEAST_EXPECT(mptEscrowed(env, alice, MPT) == 0);
+            BEAST_EXPECT(issuerMPTOutstanding(env, MPT) == outstandingMPT);
+            BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == 0);
+        }
+
+        // Self Escrow Create & Cancel
+        {
+            auto const seq = env.seq(alice);
+            auto const preAliceMPT = mptBalance(env, alice, MPT);
+            env(escrow::create(alice, alice, MPT(1'000)),
+                escrow::condition(escrow::cb1),
+                escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 2s),
+                fee(1500),
+                ter(tesSUCCESS));
+            env.close();
+
+            BEAST_EXPECT(mptBalance(env, alice, MPT) == preAliceMPT - 1'000);
+            BEAST_EXPECT(mptEscrowed(env, alice, MPT) == 1'000);
+            BEAST_EXPECT(issuerMPTOutstanding(env, MPT) == outstandingMPT);
+            BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == 1'000);
+
+            env(escrow::cancel(alice, alice, seq), ter(tesSUCCESS));
+            env.close();
+
+            BEAST_EXPECT(mptBalance(env, alice, MPT) == preAliceMPT);
+            BEAST_EXPECT(mptEscrowed(env, alice, MPT) == 0);
             BEAST_EXPECT(issuerMPTOutstanding(env, MPT) == outstandingMPT);
             BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == 0);
         }
@@ -2462,17 +2517,17 @@ struct EscrowToken_test : public beast::unit_test::suite
         env(pay(gw, alice, MPT(10'000)));
         env.close();
 
-        // alice cannot create escrow - fails without auth
-        auto seq1 = env.seq(alice);
+        auto seq = env.seq(alice);
         auto const delta = MPT(125);
+        // alice can create escrow - is authorized
         env(escrow::create(alice, bob, MPT(100)),
             escrow::condition(escrow::cb1),
             escrow::finish_time(env.now() + 1s),
             fee(1500));
         env.close();
 
-        // bob can finish
-        env(escrow::finish(bob, alice, seq1),
+        // bob can finish escrow - is authorized
+        env(escrow::finish(bob, alice, seq),
             escrow::condition(escrow::cb1),
             escrow::fulfillment(escrow::fb1),
             fee(1500));
@@ -2527,6 +2582,72 @@ struct EscrowToken_test : public beast::unit_test::suite
         // bob can cancel
         env(escrow::cancel(bob, alice, seq1));
         env.close();
+    }
+
+    void
+    testMPTCanTransfer(FeatureBitset features)
+    {
+        testcase("MPT Can Transfer");
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        Env env{*this, features};
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account("gw");
+
+        MPTTester mptGw(env, gw, {.holders = {alice, bob}});
+        mptGw.create(
+            {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanEscrow});
+        mptGw.authorize({.account = alice});
+        mptGw.authorize({.account = bob});
+        auto const MPT = mptGw["MPT"];
+        env(pay(gw, alice, MPT(10'000)));
+        env(pay(gw, bob, MPT(10'000)));
+        env.close();
+
+        // alice cannot create escrow to non issuer
+        env(escrow::create(alice, bob, MPT(100)),
+            escrow::condition(escrow::cb1),
+            escrow::finish_time(env.now() + 1s),
+            escrow::cancel_time(env.now() + 2s),
+            fee(1500),
+            ter(tecNO_AUTH));
+        env.close();
+
+        // Escrow Create & Finish
+        {
+            // alice an create escrow to issuer
+            auto seq = env.seq(alice);
+            env(escrow::create(alice, gw, MPT(100)),
+                escrow::condition(escrow::cb1),
+                escrow::finish_time(env.now() + 1s),
+                fee(1500));
+            env.close();
+
+            // gw can finish
+            env(escrow::finish(gw, alice, seq),
+                escrow::condition(escrow::cb1),
+                escrow::fulfillment(escrow::fb1),
+                fee(1500));
+            env.close();
+        }
+
+        // Escrow Create & Cancel
+        {
+            // alice an create escrow to issuer
+            auto seq = env.seq(alice);
+            env(escrow::create(alice, gw, MPT(100)),
+                escrow::condition(escrow::cb1),
+                escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 2s),
+                fee(1500));
+            env.close();
+
+            // alice can cancel
+            env(escrow::cancel(alice, alice, seq));
+            env.close();
+        }
     }
 
     void
@@ -2667,6 +2788,7 @@ struct EscrowToken_test : public beast::unit_test::suite
         testMPTLockedRate(features);
         testMPTRequireAuth(features);
         testMPTFreeze(features);
+        testMPTCanTransfer(features);
         testMPTDestroy(features);
     }
 
