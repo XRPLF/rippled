@@ -67,7 +67,7 @@ public:
             }
         }
 
-        if (cacheSize != 0 || cacheAge != 0)
+        /*if (cacheSize != 0 || cacheAge != 0)
         {
             cache_ = std::make_shared<TaggedCache<uint256, NodeObject>>(
                 "DatabaseNodeImp",
@@ -75,7 +75,7 @@ public:
                 std::chrono::minutes(cacheAge.value_or(0)),
                 stopwatch(),
                 j);
-        }
+        }*/
 
         XRPL_ASSERT(
             backend_,

@@ -105,9 +105,8 @@ TaggedCache<
     KeyEqual,
     Mutex>::size() const
 {
-    /*std::lock_guard lock(m_mutex);
-    return m_cache.size();*/
-    return 0;
+    std::lock_guard lock(m_mutex);
+    return m_cache.size();
 }
 
 template <
@@ -130,9 +129,8 @@ TaggedCache<
     KeyEqual,
     Mutex>::getCacheSize() const
 {
-    /*std::lock_guard lock(m_mutex);
-    return m_cache_count;*/
-    return 0;
+    std::lock_guard lock(m_mutex);
+    return m_cache_count;
 }
 
 template <
@@ -155,9 +153,8 @@ TaggedCache<
     KeyEqual,
     Mutex>::getTrackSize() const
 {
-    /*std::lock_guard lock(m_mutex);
-    return m_cache.size();*/
-    return 0;
+    std::lock_guard lock(m_mutex);
+    return m_cache.size();
 }
 
 template <
@@ -180,10 +177,9 @@ TaggedCache<
     KeyEqual,
     Mutex>::getHitRate()
 {
-    /*std::lock_guard lock(m_mutex);
+    std::lock_guard lock(m_mutex);
     auto const total = static_cast<float>(m_hits + m_misses);
-    return m_hits * (100.0f / std::max(1.0f, total));*/
-    return 0.0f;
+    return m_hits * (100.0f / std::max(1.0f, total));
 }
 
 template <
@@ -206,9 +202,9 @@ TaggedCache<
     KeyEqual,
     Mutex>::clear()
 {
-    /*std::lock_guard lock(m_mutex);
+    std::lock_guard lock(m_mutex);
     m_cache.clear();
-    m_cache_count = 0;*/
+    m_cache_count = 0;
 }
 
 template <
@@ -231,11 +227,11 @@ TaggedCache<
     KeyEqual,
     Mutex>::reset()
 {
-    /*std::lock_guard lock(m_mutex);
+    std::lock_guard lock(m_mutex);
     m_cache.clear();
     m_cache_count = 0;
     m_hits = 0;
-    m_misses = 0;*/
+    m_misses = 0;
 }
 
 template <
@@ -259,7 +255,7 @@ TaggedCache<
     KeyEqual,
     Mutex>::touch_if_exists(KeyComparable const& key)
 {
-    /*std::lock_guard lock(m_mutex);
+    std::lock_guard lock(m_mutex);
     auto const iter(m_cache.find(key));
     if (iter == m_cache.end())
     {
@@ -268,8 +264,7 @@ TaggedCache<
     }
     iter->second.touch(m_clock.now());
     ++m_stats.hits;
-    return true;*/
-    return false;
+    return true;
 }
 
 template <
@@ -292,7 +287,7 @@ TaggedCache<
     KeyEqual,
     Mutex>::sweep()
 {
-    /*// Keep references to all the stuff we sweep
+    // Keep references to all the stuff we sweep
     // For performance, each worker thread should exit before the swept data
     // is destroyed but still within the main cache lock.
     std::vector<SweptPointersVector> allStuffToSweep(m_cache.partitions());
@@ -349,7 +344,7 @@ TaggedCache<
         << std::chrono::duration_cast<std::chrono::milliseconds>(
                std::chrono::steady_clock::now() - start)
                .count()
-        << "ms";*/
+        << "ms";
 }
 
 template <
@@ -372,7 +367,7 @@ TaggedCache<
     KeyEqual,
     Mutex>::del(const key_type& key, bool valid)
 {
-    /*// Remove from cache, if !valid, remove from map too. Returns true if
+    // Remove from cache, if !valid, remove from map too. Returns true if
     // removed from cache
     std::lock_guard lock(m_mutex);
 
@@ -395,8 +390,7 @@ TaggedCache<
     if (!valid || entry.isExpired())
         m_cache.erase(cit);
 
-    return ret;*/
-    return false;
+    return ret;
 }
 
 template <
@@ -424,7 +418,7 @@ TaggedCache<
         SharedPointerType& data,
         R&& replaceCallback)
 {
-    /*// Return canonical value, store if needed, refresh in cache
+    // Return canonical value, store if needed, refresh in cache
     // Return values: true=we had the data already
     std::lock_guard lock(m_mutex);
 
@@ -490,7 +484,7 @@ TaggedCache<
     }
 
     entry.ptr = data;
-    ++m_cache_count;*/
+    ++m_cache_count;
 
     return false;
 }
@@ -566,12 +560,11 @@ TaggedCache<
     KeyEqual,
     Mutex>::fetch(const key_type& key)
 {
-    /*std::lock_guard<mutex_type> l(m_mutex);
+    std::lock_guard<mutex_type> l(m_mutex);
     auto ret = initialFetch(key, l);
     if (!ret)
         ++m_misses;
-    return ret;*/
-    return {};
+    return ret;
 }
 
 template <
@@ -634,7 +627,7 @@ TaggedCache<
     Mutex>::insert(key_type const& key)
     -> std::enable_if_t<IsKeyCache, ReturnType>
 {
-    /*std::lock_guard lock(m_mutex);
+    std::lock_guard lock(m_mutex);
     clock_type::time_point const now(m_clock.now());
     auto [it, inserted] = m_cache.emplace(
         std::piecewise_construct,
@@ -642,8 +635,7 @@ TaggedCache<
         std::forward_as_tuple(now));
     if (!inserted)
         it->second.last_access = now;
-    return inserted;*/
-    return false;
+    return inserted;
 }
 
 template <
@@ -666,15 +658,14 @@ TaggedCache<
     KeyEqual,
     Mutex>::retrieve(const key_type& key, T& data)
 {
-    /*// retrieve the value of the stored data
+    // retrieve the value of the stored data
     auto entry = fetch(key);
 
     if (!entry)
         return false;
 
     data = *entry;
-    return true;*/
-    return false;
+    return true;
 }
 
 template <
@@ -722,12 +713,12 @@ TaggedCache<
 {
     std::vector<key_type> v;
 
-    /*{
+    {
         std::lock_guard lock(m_mutex);
         v.reserve(m_cache.size());
         for (auto const& _ : m_cache)
             v.push_back(_.first);
-    }*/
+    }
 
     return v;
 }
@@ -752,12 +743,11 @@ TaggedCache<
     KeyEqual,
     Mutex>::rate() const
 {
-    /*std::lock_guard lock(m_mutex);
+    std::lock_guard lock(m_mutex);
     auto const tot = m_hits + m_misses;
     if (tot == 0)
         return 0;
-    return double(m_hits) / tot;*/
-    return 0.0;
+    return double(m_hits) / tot;
 }
 
 template <
@@ -781,29 +771,27 @@ TaggedCache<
     KeyEqual,
     Mutex>::fetch(key_type const& digest, Handler const& h)
 {
-    /*{
+    {
         std::lock_guard l(m_mutex);
         if (auto ret = initialFetch(digest, l))
             return ret;
-    }*/
+    }
 
     auto sle = h();
     if (!sle)
         return {};
 
-    /*std::lock_guard l(m_mutex);
+    std::lock_guard l(m_mutex);
     ++m_misses;
     auto const [it, inserted] =
         m_cache.emplace(digest, Entry(m_clock.now(), std::move(sle)));
     if (!inserted)
         it->second.touch(m_clock.now());
-    return it->second.ptr.getStrong();*/
-
-    return sle;
+    return it->second.ptr.getStrong();
 }
 // End CachedSLEs functions.
 
-/*template <
+template <
     class Key,
     class T,
     bool IsKeyCache,
@@ -846,7 +834,7 @@ TaggedCache<
 
     m_cache.erase(cit);
     return {};
-}*/
+}
 
 template <
     class Key,
@@ -872,17 +860,17 @@ TaggedCache<
 
     {
         beast::insight::Gauge::value_type hit_rate(0);
-        /*{
+        {
             std::lock_guard lock(m_mutex);
             auto const total(m_hits + m_misses);
             if (total != 0)
                 hit_rate = (m_hits * 100) / total;
-        }*/
+        }
         m_stats.hit_rate.set(hit_rate);
     }
 }
 
-/*template <
+template <
     class Key,
     class T,
     bool IsKeyCache,
@@ -1034,7 +1022,7 @@ TaggedCache<
 
         allRemovals += cacheRemovals;
     });
-}*/
+}
 
 }  // namespace ripple
 

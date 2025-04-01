@@ -192,8 +192,8 @@ public:
     // End CachedSLEs functions.
 
 private:
-    // SharedPointerType
-    // initialFetch(key_type const& key, std::lock_guard<mutex_type> const& l);
+    SharedPointerType
+    initialFetch(key_type const& key, std::lock_guard<mutex_type> const& l);
 
     void
     collect_metrics();
@@ -294,7 +294,7 @@ private:
     using cache_type =
         hardened_partitioned_hash_map<key_type, Entry, Hash, KeyEqual>;
 
-    /*[[nodiscard]] std::thread
+    [[nodiscard]] std::thread
     sweepHelper(
         clock_type::time_point const& when_expire,
         [[maybe_unused]] clock_type::time_point const& now,
@@ -310,7 +310,7 @@ private:
         typename KeyOnlyCacheType::map_type& partition,
         SweptPointersVector&,
         std::atomic<int>& allRemovals,
-        std::lock_guard<std::recursive_mutex> const&);*/
+        std::lock_guard<std::recursive_mutex> const&);
 
     beast::Journal m_journal;
     clock_type& m_clock;
