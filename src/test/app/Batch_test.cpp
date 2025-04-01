@@ -20,6 +20,8 @@
 #include <test/jtx.h>
 #include <test/jtx/utility.h>
 
+#include <xrpld/app/misc/HashRouter.h>
+#include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/tx/apply.h>
 
 #include <xrpl/protocol/Batch.h>
@@ -2931,6 +2933,71 @@ class Batch_test : public beast::unit_test::suite
     }
 
     void
+    testBatchNetworkOps(FeatureBitset features)
+    {
+        testcase("batch network ops");
+
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        Env env(
+            *this,
+            envconfig(),
+            features,
+            nullptr,
+            beast::severities::kDisabled);
+
+        auto alice = Account("alice");
+        auto bob = Account("bob");
+        env.fund(XRP(1000), alice, bob);
+        env.close();
+
+        auto submitTx = [&](std::uint32_t flags) {
+            auto jv = pay(alice, bob, XRP(1));
+            jv[sfFlags.fieldName] = flags;
+            Serializer s;
+            auto jt = env.jt(jv);
+            jt.stx->add(s);
+            env.app().getOPs().submitTransaction(jt.stx);
+        };
+
+        auto processTxn = [&](std::uint32_t flags) -> uint256 {
+            auto jv = pay(alice, bob, XRP(1));
+            jv[sfFlags.fieldName] = flags;
+            Serializer s;
+            auto jt = env.jt(jv);
+            jt.stx->add(s);
+            std::string reason;
+            auto transaction =
+                std::make_shared<Transaction>(jt.stx, reason, env.app());
+            env.app().getOPs().processTransaction(
+                transaction, false, true, NetworkOPs::FailHard::yes);
+            return transaction->getID();
+        };
+
+        // Validate: NetworkOPs::submitTransaction()
+        {
+            // Submit a tx with tfPartialPayment
+            submitTx(tfPartialPayment);
+            // Verify the transaction is queued
+            BEAST_EXPECT(
+                env.app().getJobQueue().getJobCount(jtTRANSACTION) == 1);
+            // Submit a tx with tfInnerBatchTxn
+            submitTx(tfInnerBatchTxn);
+            // Verify the transaction is not queued
+            BEAST_EXPECT(
+                env.app().getJobQueue().getJobCount(jtTRANSACTION) == 0);
+        }
+
+        // Validate: NetworkOPs::processTransaction()
+        {
+            uint256 const txid = processTxn(tfInnerBatchTxn);
+            // HashRouter::getFlags() should return SF_BAD
+            BEAST_EXPECT(env.app().getHashRouter().getFlags(txid) == SF_BAD);
+        }
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testEnable(features);
@@ -2961,6 +3028,7 @@ class Batch_test : public beast::unit_test::suite
         testPseudoTxn(features);
         testBatchWithSelfSubmit(features);
         testBatchTxQueue(features);
+        testBatchNetworkOps(features);
     }
 
 public:
