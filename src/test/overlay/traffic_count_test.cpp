@@ -40,12 +40,12 @@ public:
         message.set_type(protocol::TMPing::ptPING);
 
         // a known message is categorized to a proper category
-        const auto known =
+        auto const known =
             TrafficCount::categorize(message, protocol::mtPING, false);
         BEAST_EXPECT(known == TrafficCount::category::base);
 
         // an unknown message type is categorized as unknown
-        const auto unknown = TrafficCount::categorize(
+        auto const unknown = TrafficCount::categorize(
             message, static_cast<protocol::MessageType>(99), false);
         BEAST_EXPECT(unknown == TrafficCount::category::unknown);
     }
@@ -70,14 +70,14 @@ public:
             TrafficCount m_traffic;
 
             auto const counts = m_traffic.getCounts();
-            std::for_each(counts.begin(), counts.end(), [&](auto& pair) {
+            std::for_each(counts.begin(), counts.end(), [&](auto const& pair) {
                 for (auto i = 0; i < tc.messageCount; ++i)
                     m_traffic.addCount(pair.first, tc.inbound, tc.size);
             });
 
             auto const counts_new = m_traffic.getCounts();
             std::for_each(
-                counts_new.begin(), counts_new.end(), [&](auto& pair) {
+                counts_new.begin(), counts_new.end(), [&](auto const& pair) {
                     BEAST_EXPECT(
                         pair.second.bytesIn.load() == tc.expectedBytesIn);
                     BEAST_EXPECT(
