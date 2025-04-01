@@ -493,10 +493,9 @@ class Simulate_test : public beast::unit_test::suite
         Json::Value params;
         params[jss::tx_json] = jt.jv;
         auto const resp = env.rpc("json", "simulate", to_string(params));
-        BEAST_EXPECT(resp[jss::result][jss::error] == "invalidTransaction");
+        BEAST_EXPECT(resp[jss::result][jss::error] == "notImpl");
         BEAST_EXPECT(
-            resp[jss::result][jss::error_exception] ==
-            "Batch transactions are not supported.");
+            resp[jss::result][jss::error_message] == "Not implemented.");
     }
 
     void
