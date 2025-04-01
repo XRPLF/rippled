@@ -45,7 +45,7 @@ public:
         std::atomic<std::uint64_t> messagesOut{0};
 
         TrafficStats(TrafficCount::category cat)
-            : name(TrafficCount::category_to_string(cat))
+            : name(TrafficCount::to_string(cat))
         {
         }
 
@@ -224,7 +224,7 @@ public:
     }
 
     static std::string
-    category_to_string(category cat)
+    to_string(category cat)
     {
         static const std::unordered_map<category, std::string> category_map = {
             {base, "overhead"},
