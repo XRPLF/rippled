@@ -208,7 +208,6 @@ template <ValidIssueType T>
 static TER
 escrowCreatePreclaimHelper(
     PreclaimContext const& ctx,
-    AccountID const& issuer,
     AccountID const& account,
     AccountID const& dest,
     STAmount const& amount);
@@ -217,11 +216,11 @@ template <>
 TER
 escrowCreatePreclaimHelper<Issue>(
     PreclaimContext const& ctx,
-    AccountID const& issuer,
     AccountID const& account,
     AccountID const& dest,
     STAmount const& amount)
 {
+    AccountID issuer = amount.getIssuer();
     // If the issuer is the same as the account, return tecNO_PERMISSION
     if (issuer == account)
         return tecNO_PERMISSION;
@@ -299,11 +298,11 @@ template <>
 TER
 escrowCreatePreclaimHelper<MPTIssue>(
     PreclaimContext const& ctx,
-    AccountID const& issuer,
     AccountID const& account,
     AccountID const& dest,
     STAmount const& amount)
 {
+    AccountID issuer = amount.getIssuer();
     // If the issuer is the same as the account, return tecNO_PERMISSION
     if (issuer == account)
         return tecNO_PERMISSION;
@@ -315,8 +314,8 @@ escrowCreatePreclaimHelper<MPTIssue>(
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    // If the tfMPTCanEscrow is not enabled, return tecNO_PERMISSION
-    if (!(sleIssuance->getFieldU32(sfFlags) & tfMPTCanEscrow))
+    // If the lsfMPTCanEscrow is not enabled, return tecNO_PERMISSION
+    if (!(sleIssuance->getFieldU32(sfFlags) & lsfMPTCanEscrow))
         return tecNO_PERMISSION;
 
     // If the issuer is not the same as the issuer of the mpt, return
@@ -392,11 +391,10 @@ EscrowCreate::preclaim(PreclaimContext const& ctx)
         if (!ctx.view.rules().enabled(featureTokenEscrow))
             return temDISABLED;
 
-        AccountID issuer = amount.getIssuer();
         if (auto const ret = std::visit(
                 [&]<typename T>(T const&) {
                     return escrowCreatePreclaimHelper<T>(
-                        ctx, issuer, account, dest, amount);
+                        ctx, account, dest, amount);
                 },
                 ctx.tx[sfAmount].asset().value());
             !isTesSuccess(ret))
@@ -508,7 +506,6 @@ EscrowCreate::doApply()
     STAmount const amount{ctx_.tx[sfAmount]};
 
     auto const reserve = psb.fees().accountReserve((*sle)[sfOwnerCount] + 1);
-    AccountID const issuer = amount.getIssuer();
 
     if (mSourceBalance < reserve)
         return tecINSUFFICIENT_RESERVE;
@@ -583,6 +580,7 @@ EscrowCreate::doApply()
 
     // If issuer is not source or destination, add escrow to issuers owner
     // directory.
+    AccountID const issuer = amount.getIssuer();
     if (!isXRP(amount) && issuer != account_ && issuer != dest)
     {
         auto page = psb.dirInsert(
@@ -597,7 +595,6 @@ EscrowCreate::doApply()
         (*sle)[sfBalance] = (*sle)[sfBalance] - ctx_.tx[sfAmount];
     else
     {
-        auto const issuer = amount.getIssuer();
         if (auto const ret = std::visit(
                 [&]<typename T>(T const&) {
                     return escrowLockApplyHelper<T>(
@@ -707,7 +704,6 @@ template <ValidIssueType T>
 static TER
 escrowFinishPreclaimHelper(
     PreclaimContext const& ctx,
-    AccountID const& issuer,
     AccountID const& dest,
     STAmount const& amount);
 
@@ -715,10 +711,10 @@ template <>
 TER
 escrowFinishPreclaimHelper<Issue>(
     PreclaimContext const& ctx,
-    AccountID const& issuer,
     AccountID const& dest,
     STAmount const& amount)
 {
+    AccountID issuer = amount.getIssuer();
     // If the issuer is the same as the account, return tesSUCCESS
     if (issuer == dest)
         return tesSUCCESS;
@@ -743,10 +739,10 @@ template <>
 TER
 escrowFinishPreclaimHelper<MPTIssue>(
     PreclaimContext const& ctx,
-    AccountID const& issuer,
     AccountID const& dest,
     STAmount const& amount)
 {
+    AccountID issuer = amount.getIssuer();
     // If the issuer is the same as the dest, return tesSUCCESS
     if (issuer == dest)
         return tesSUCCESS;
@@ -795,11 +791,9 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
         if (!ctx.view.rules().enabled(featureTokenEscrow))
             return temDISABLED;
 
-        AccountID issuer = amount.getIssuer();
         if (auto const ret = std::visit(
                 [&]<typename T>(T const&) {
-                    return escrowFinishPreclaimHelper<T>(
-                        ctx, issuer, dest, amount);
+                    return escrowFinishPreclaimHelper<T>(ctx, dest, amount);
                 },
                 amount.asset().value());
             !isTesSuccess(ret))
@@ -1193,7 +1187,6 @@ template <ValidIssueType T>
 static TER
 escrowCancelPreclaimHelper(
     PreclaimContext const& ctx,
-    AccountID const& issuer,
     AccountID const& account,
     STAmount const& amount);
 
@@ -1201,10 +1194,10 @@ template <>
 TER
 escrowCancelPreclaimHelper<Issue>(
     PreclaimContext const& ctx,
-    AccountID const& issuer,
     AccountID const& account,
     STAmount const& amount)
 {
+    AccountID issuer = amount.getIssuer();
     // If the issuer is the same as the account, return tesSUCCESS
     if (issuer == account)
         return tesSUCCESS;
@@ -1225,10 +1218,10 @@ template <>
 TER
 escrowCancelPreclaimHelper<MPTIssue>(
     PreclaimContext const& ctx,
-    AccountID const& issuer,
     AccountID const& account,
     STAmount const& amount)
 {
+    AccountID issuer = amount.getIssuer();
     // If the issuer is the same as the account, return tesSUCCESS
     if (issuer == account)
         return tesSUCCESS;
@@ -1266,11 +1259,9 @@ EscrowCancel::preclaim(PreclaimContext const& ctx)
         if (!ctx.view.rules().enabled(featureTokenEscrow))
             return temDISABLED;
 
-        AccountID issuer = amount.getIssuer();
         if (auto const ret = std::visit(
                 [&]<typename T>(T const&) {
-                    return escrowCancelPreclaimHelper<T>(
-                        ctx, issuer, account, amount);
+                    return escrowCancelPreclaimHelper<T>(ctx, account, amount);
                 },
                 amount.asset().value());
             !isTesSuccess(ret))
@@ -1372,11 +1363,7 @@ EscrowCancel::doApply()
         // Remove escrow from issuers owner directory, if present.
         if (auto const optPage = (*slep)[~sfIssuerNode]; optPage)
         {
-            if (!psb.dirRemove(
-                    keylet::ownerDir(amount.getIssuer()),
-                    *optPage,
-                    k.key,
-                    true))
+            if (!psb.dirRemove(keylet::ownerDir(issuer), *optPage, k.key, true))
             {
                 JLOG(j_.fatal()) << "Unable to delete Escrow from recipient.";
                 return tefBAD_LEDGER;
