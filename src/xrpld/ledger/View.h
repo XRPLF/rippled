@@ -500,6 +500,38 @@ createPseudoAccount(
     uint256 const& pseudoOwnerKey,
     PseudoAccountOwnerType type);
 
+[[nodiscard]] TER
+addEmptyHolding(
+    ApplyView& view,
+    AccountID const& accountID,
+    XRPAmount priorBalance,
+    Issue const& issue,
+    beast::Journal journal);
+
+[[nodiscard]] TER
+addEmptyHolding(
+    ApplyView& view,
+    AccountID const& accountID,
+    XRPAmount priorBalance,
+    MPTIssue const& mptIssue,
+    beast::Journal journal);
+
+[[nodiscard]] inline TER
+addEmptyHolding(
+    ApplyView& view,
+    AccountID const& accountID,
+    XRPAmount priorBalance,
+    Asset const& asset,
+    beast::Journal journal)
+{
+    return std::visit(
+        [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
+            return addEmptyHolding(
+                view, accountID, priorBalance, issue, journal);
+        },
+        asset.value());
+}
+
 // VFALCO NOTE Both STAmount parameters should just
 //             be "Amount", a unit-less number.
 //
@@ -526,6 +558,34 @@ trustCreate(
     std::uint32_t uSrcQualityIn,
     std::uint32_t uSrcQualityOut,
     beast::Journal j);
+
+[[nodiscard]] TER
+removeEmptyHolding(
+    ApplyView& view,
+    AccountID const& accountID,
+    Issue const& issue,
+    beast::Journal journal);
+
+[[nodiscard]] TER
+removeEmptyHolding(
+    ApplyView& view,
+    AccountID const& accountID,
+    MPTIssue const& mptIssue,
+    beast::Journal journal);
+
+[[nodiscard]] inline TER
+removeEmptyHolding(
+    ApplyView& view,
+    AccountID const& accountID,
+    Asset const& asset,
+    beast::Journal journal)
+{
+    return std::visit(
+        [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
+            return removeEmptyHolding(view, accountID, issue, journal);
+        },
+        asset.value());
+}
 
 [[nodiscard]] TER
 trustDelete(

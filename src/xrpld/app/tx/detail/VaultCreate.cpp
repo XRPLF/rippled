@@ -130,70 +130,6 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
-[[nodiscard]] static TER
-addEmptyHolding(
-    ApplyView& view,
-    AccountID const& accountID,
-    XRPAmount priorBalance,
-    Issue const& issue,
-    beast::Journal journal)
-{
-    // Every account can hold XRP.
-    if (issue.native())
-        return tesSUCCESS;
-
-    auto const& issuerId = issue.getIssuer();
-    auto const& currency = issue.currency;
-    if (isGlobalFrozen(view, issuerId))
-        return tecFROZEN;
-
-    auto const& srcId = issuerId;
-    auto const& dstId = accountID;
-    auto const high = srcId > dstId;
-    auto const index = keylet::line(srcId, dstId, currency);
-    auto const sle = view.peek(keylet::account(accountID));
-    if (!sle)
-        return tefINTERNAL;
-    return trustCreate(
-        view,
-        high,
-        srcId,
-        dstId,
-        index.key,
-        sle,
-        /*auth=*/false,
-        /*noRipple=*/true,
-        /*freeze=*/false,
-        /*deepFreeze*/ false,
-        /*balance=*/STAmount{Issue{currency, noAccount()}},
-        /*limit=*/STAmount{Issue{currency, dstId}},
-        /*qualityIn=*/0,
-        /*qualityOut=*/0,
-        journal);
-}
-
-[[nodiscard]] static TER
-addEmptyHolding(
-    ApplyView& view,
-    AccountID const& accountID,
-    XRPAmount priorBalance,
-    MPTIssue const& mptIssue,
-    beast::Journal journal)
-{
-    auto const& mptID = mptIssue.getMptID();
-    auto const mpt = view.peek(keylet::mptIssuance(mptID));
-    if (!mpt)
-        return tefINTERNAL;
-    if (mpt->getFlags() & lsfMPTLocked)
-        return tecLOCKED;
-    return MPTokenAuthorize::authorize(
-        view,
-        journal,
-        {.priorBalance = priorBalance,
-         .mptIssuanceID = mptID,
-         .accountID = accountID});
-}
-
 TER
 VaultCreate::doApply()
 {
@@ -224,12 +160,7 @@ VaultCreate::doApply()
     auto pseudoId = pseudo->at(sfAccount);
     auto asset = tx[sfAsset];
 
-    if (auto ter = std::visit(
-            [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
-                return addEmptyHolding(
-                    view(), pseudoId, mPriorBalance, issue, j_);
-            },
-            asset.value());
+    if (auto ter = addEmptyHolding(view(), pseudoId, mPriorBalance, asset, j_);
         !isTesSuccess(ter))
         return ter;
 

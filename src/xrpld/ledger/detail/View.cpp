@@ -1104,6 +1104,70 @@ createPseudoAccount(
     return account;
 }
 
+[[nodiscard]] TER
+addEmptyHolding(
+    ApplyView& view,
+    AccountID const& accountID,
+    XRPAmount priorBalance,
+    Issue const& issue,
+    beast::Journal journal)
+{
+    // Every account can hold XRP.
+    if (issue.native())
+        return tesSUCCESS;
+
+    auto const& issuerId = issue.getIssuer();
+    auto const& currency = issue.currency;
+    if (isGlobalFrozen(view, issuerId))
+        return tecFROZEN;
+
+    auto const& srcId = issuerId;
+    auto const& dstId = accountID;
+    auto const high = srcId > dstId;
+    auto const index = keylet::line(srcId, dstId, currency);
+    auto const sle = view.peek(keylet::account(accountID));
+    if (!sle)
+        return tefINTERNAL;
+    return trustCreate(
+        view,
+        high,
+        srcId,
+        dstId,
+        index.key,
+        sle,
+        /*auth=*/false,
+        /*noRipple=*/true,
+        /*freeze=*/false,
+        /*deepFreeze*/ false,
+        /*balance=*/STAmount{Issue{currency, noAccount()}},
+        /*limit=*/STAmount{Issue{currency, dstId}},
+        /*qualityIn=*/0,
+        /*qualityOut=*/0,
+        journal);
+}
+
+[[nodiscard]] TER
+addEmptyHolding(
+    ApplyView& view,
+    AccountID const& accountID,
+    XRPAmount priorBalance,
+    MPTIssue const& mptIssue,
+    beast::Journal journal)
+{
+    auto const& mptID = mptIssue.getMptID();
+    auto const mpt = view.peek(keylet::mptIssuance(mptID));
+    if (!mpt)
+        return tefINTERNAL;
+    if (mpt->getFlags() & lsfMPTLocked)
+        return tecLOCKED;
+    return MPTokenAuthorize::authorize(
+        view,
+        journal,
+        {.priorBalance = priorBalance,
+         .mptIssuanceID = mptID,
+         .accountID = accountID});
+}
+
 TER
 trustCreate(
     ApplyView& view,
@@ -1221,6 +1285,56 @@ trustCreate(
         uSrcAccountID, uDstAccountID, saBalance, saBalance.zeroed());
 
     return tesSUCCESS;
+}
+
+[[nodiscard]] TER
+removeEmptyHolding(
+    ApplyView& view,
+    AccountID const& accountID,
+    Issue const& issue,
+    beast::Journal journal)
+{
+    if (issue.native())
+    {
+        auto const sle = view.read(keylet::account(accountID));
+        if (!sle)
+            return tecINTERNAL;
+        auto const balance = sle->getFieldAmount(sfBalance);
+        if (balance.xrp() != 0)
+            return tecHAS_OBLIGATIONS;
+        return tesSUCCESS;
+    }
+
+    // `asset` is an IOU.
+    auto const line = view.peek(keylet::line(accountID, issue));
+    if (!line)
+        return tecOBJECT_NOT_FOUND;
+    if (line->at(sfBalance)->iou() != beast::zero)
+        return tecHAS_OBLIGATIONS;
+    return trustDelete(
+        view,
+        line,
+        line->at(sfLowLimit)->getIssuer(),
+        line->at(sfHighLimit)->getIssuer(),
+        journal);
+}
+
+[[nodiscard]] TER
+removeEmptyHolding(
+    ApplyView& view,
+    AccountID const& accountID,
+    MPTIssue const& mptIssue,
+    beast::Journal journal)
+{
+    auto const& mptID = mptIssue.getMptID();
+    // `MPTokenAuthorize::authorize` asserts that the balance is 0.
+    return MPTokenAuthorize::authorize(
+        view,
+        journal,
+        {.priorBalance = {},
+         .mptIssuanceID = mptID,
+         .accountID = accountID,
+         .flags = tfMPTUnauthorize});
 }
 
 TER
