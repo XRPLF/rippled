@@ -533,7 +533,8 @@ struct Escrow_test : public beast::unit_test::suite
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(5000), "alice", "bob", "zelda");
             auto const seq = env.seq("alice");
-            env(escrow::create("alice", "bob", XRP(1000)), escrow::finish_time(env.now() + 5s));
+            env(escrow::create("alice", "bob", XRP(1000)),
+                escrow::finish_time(env.now() + 5s));
             env.require(balance("alice", XRP(4000) - drops(baseFee)));
 
             // Not enough time has elapsed for a finish and canceling isn't
@@ -563,7 +564,8 @@ struct Escrow_test : public beast::unit_test::suite
             env.close();
 
             auto const seq = env.seq("alice");
-            env(escrow::create("alice", "bob", XRP(1000)), escrow::finish_time(env.now() + 5s));
+            env(escrow::create("alice", "bob", XRP(1000)),
+                escrow::finish_time(env.now() + 5s));
             env.require(balance("alice", XRP(4000) - drops(baseFee)));
 
             // Not enough time has elapsed for a finish and canceling isn't
@@ -603,7 +605,8 @@ struct Escrow_test : public beast::unit_test::suite
             env.close();
 
             auto const seq = env.seq("alice");
-            env(escrow::create("alice", "bob", XRP(1000)), escrow::finish_time(env.now() + 5s));
+            env(escrow::create("alice", "bob", XRP(1000)),
+                escrow::finish_time(env.now() + 5s));
             env.require(balance("alice", XRP(4000) - drops(baseFee)));
             env.close();
 

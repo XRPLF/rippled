@@ -24,6 +24,7 @@
 #include <test/jtx/Env.h>
 #include <test/jtx/owners.h>
 #include <test/jtx/rate.h>
+
 #include <xrpl/protocol/Indexes.h>
 
 namespace ripple {

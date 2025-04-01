@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <test/jtx/escrow.h>
+
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
