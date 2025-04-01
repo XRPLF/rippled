@@ -344,11 +344,7 @@ doSimulate(RPC::JsonContext& context)
 
     if (stTx->getTxnType() == ttBATCH)
     {
-        Json::Value jvResult = Json::objectValue;
-        jvResult[jss::error] = "invalidTransaction";
-        jvResult[jss::error_exception] =
-            "Batch transactions are not supported.";
-        return jvResult;
+        return RPC::make_error(rpcNOT_IMPL);
     }
 
     std::string reason;
