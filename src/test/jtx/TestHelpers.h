@@ -40,75 +40,149 @@ namespace jtx {
  Not every helper will be able to use this because of conversions and other
  issues, but for classes where it's straightforward, this can simplify things.
 */
-template <class F, class V, class JV>
-struct field
+template <
+    class SField,
+    class StoredValue = SField::type::value_type,
+    class OutputValue = StoredValue>
+struct JTxField
 {
+    using SF = SField;
+    using SV = StoredValue;
+    using OV = OutputValue;
+
 protected:
-    F const& field_;
-    V value_;
+    SF const& sfield_;
+    SV value_;
 
 public:
-    explicit field(F const& field, V const& value)
-        : field_(field), value_(value)
+    explicit JTxField(SF const& sfield, SV const& value)
+        : sfield_(sfield), value_(value)
     {
     }
 
-    virtual JV
+    virtual OV
     value() const = 0;
 
     virtual void
     operator()(Env&, JTx& jt) const
     {
-        jt.jv[field_.jsonName] = value();
+        jt.jv[sfield_.jsonName] = value();
     }
 };
 
-template <class F, class V>
-struct field<F, V, V>
+template <class SField, class StoredValue>
+struct JTxField<SField, StoredValue, StoredValue>
 {
+    using SF = SField;
+    using SV = StoredValue;
+    using OV = SV;
+
 protected:
-    F const& field_;
-    V value_;
+    SF const& sfield_;
+    SV value_;
 
 public:
-    explicit field(F const& field, V const& value)
-        : field_(field), value_(value)
+    explicit JTxField(SF const& sfield, SV const& value)
+        : sfield_(sfield), value_(value)
     {
     }
 
     virtual void
     operator()(Env&, JTx& jt) const
     {
-        jt.jv[field_.jsonName] = value_;
+        jt.jv[sfield_.jsonName] = value_;
     }
 };
 
-template <class F, class V>
-using simpleField = field<F, V, V>;
-
 struct timePointField
-    : public field<SF_UINT32, NetClock::time_point, NetClock::rep>
+    : public JTxField<SF_UINT32, NetClock::time_point, NetClock::rep>
 {
-    using F = SF_UINT32;
-    using V = NetClock::time_point;
-    using JV = NetClock::rep;
-    using base = field<F, V, JV>;
+    using SF = SF_UINT32;
+    using SV = NetClock::time_point;
+    using OV = NetClock::rep;
+    using base = JTxField<SF, SV, OV>;
 
 protected:
     using base::value_;
 
 public:
-    explicit timePointField(F const& field, V const& value)
-        : field(field, value)
+    explicit timePointField(SF const& sfield, SV const& value)
+        : JTxField(sfield, value)
     {
     }
 
-    JV
+    OV
     value() const override
     {
         return value_.time_since_epoch().count();
     }
 };
+
+struct uint256Field : public JTxField<SF_UINT256, uint256, std::string>
+{
+    using SF = SF_UINT256;
+    using SV = uint256;
+    using OV = std::string;
+    using base = JTxField<SF, SV, OV>;
+
+protected:
+    using base::value_;
+
+public:
+    explicit uint256Field(SF const& sfield, SV const& value)
+        : JTxField(sfield, value)
+    {
+    }
+
+    OV
+    value() const override
+    {
+        return to_string(value_);
+    }
+};
+
+struct blobField : public JTxField<SF_VL, std::string>
+{
+    using SF = SF_VL;
+    using SV = std::string;
+    using base = JTxField<SF, SV, SV>;
+
+    explicit blobField(SF const& sfield, Slice const& cond)
+        : JTxField(sfield, strHex(cond))
+    {
+    }
+
+    template <size_t N>
+    explicit blobField(SF const& sfield, std::array<std::uint8_t, N> const& c)
+        : blobField(sfield, makeSlice(c))
+    {
+    }
+};
+
+template <class JTxField>
+struct JTxFieldWrapper
+{
+    using JF = JTxField;
+    using SF = JF::SF;
+    using SV = JF::SV;
+
+protected:
+    SF const& sfield_;
+
+public:
+    explicit JTxFieldWrapper(SF const& sfield) : sfield_(sfield)
+    {
+    }
+
+    JTxField const&
+    operator()(SV const& value) const
+    {
+        return JTxField(sfield_, value);
+    }
+};
+
+template <class SField, class StoredValue = SField::type::value_type>
+using simpleField = JTxFieldWrapper<JTxField<SField, StoredValue>>;
 
 // TODO We only need this long "requires" clause as polyfill, for C++20
 // implementations which are missing <ranges> header. Replace with
@@ -339,58 +413,14 @@ std::array<std::uint8_t, 39> constexpr cb1 = {
 std::array<std::uint8_t, 4> const fb1 = {{0xA0, 0x02, 0x80, 0x00}};
 
 /** Set the "FinishAfter" time tag on a JTx */
-struct finish_time : public timePointField
-{
-    explicit finish_time(NetClock::time_point const& value)
-        : timePointField(sfFinishAfter, value)
-    {
-    }
-};
+auto const finish_time = JTxFieldWrapper<timePointField>(sfFinishAfter);
 
 /** Set the "CancelAfter" time tag on a JTx */
-struct cancel_time : public timePointField
-{
-    explicit cancel_time(NetClock::time_point const& value)
-        : timePointField(sfCancelAfter, value)
-    {
-    }
-};
+auto const cancel_time = JTxFieldWrapper<timePointField>(sfCancelAfter);
 
-struct condition : public simpleField<SF_VL, std::string>
-{
-    explicit condition(Slice const& cond) : field(sfCondition, strHex(cond))
-    {
-    }
+auto const condition = JTxFieldWrapper<blobField>(sfCondition);
 
-    template <size_t N>
-    explicit condition(std::array<std::uint8_t, N> const& c)
-        : condition(makeSlice(c))
-    {
-    }
-};
-
-struct fulfillment
-{
-private:
-    std::string value_;
-
-public:
-    explicit fulfillment(Slice condition) : value_(strHex(condition))
-    {
-    }
-
-    template <size_t N>
-    explicit fulfillment(std::array<std::uint8_t, N> f)
-        : fulfillment(makeSlice(f))
-    {
-    }
-
-    void
-    operator()(Env&, JTx& jt) const
-    {
-        jt.jv[sfFulfillment.jsonName] = value_;
-    }
-};
+auto const fulfllment = JTxFieldWrapper<blobField>(sfFulfillment);
 
 /* Payment Channel */
 /******************************************************************************/
@@ -514,15 +544,37 @@ create(
 namespace loanBroker {
 
 Json::Value
-create(AccountID const& account, uint256 const& vaultId);
+set(AccountID const& account, uint256 const& vaultId, uint32_t flags = 0);
 
 /*
 inline Json::Value
-create(Account const& account, uint256 const& vaultId)
+set(Account const& account, uint256 const& vaultId, uint32_t flags = 0)
 {
     return create(account.id(), vaultId);
 }
 */
+
+auto const loanBrokerID = JTxFieldWrapper<uint256Field>(sfLoanBrokerID);
+
+auto const data = JTxFieldWrapper<blobField>(sfData);
+
+auto const managementFeeRate = simpleField<SF_UINT16>(sfManagementFeeRate);
+
+/*
+Data string BLOB None Arbitrary metadata in hex
+            format.The field is limited to 256 bytes.ManagementFeeRate number
+                UINT16 0 The 1 /
+        10th basis point fee charged by the Lending Protocol Owner.Valid values
+            are between 0 and
+    10000 inclusive
+            .DebtMaximum number NUMBER 0 The maximum amount the protocol can owe
+                the Vault
+            .The default value of 0 means there is no limit to the
+                debt.CoverRateMinimum number UINT16 0 The 1 /
+        10th basis point DebtTotal that the first loss capital must
+            cover.Valid values are between 0 and
+    100000 inclusive.CoverRateLiquidation
+    */
 
 }  // namespace loanBroker
 

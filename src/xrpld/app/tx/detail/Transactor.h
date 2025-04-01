@@ -270,13 +270,13 @@ Transactor::preflight(PreflightContext const& ctx)
     if (!T::isEnabled(ctx))
         return temDISABLED;
 
-    if (auto const ret = detail::preflight1(ctx, T::getFlagsMask(ctx)))
+    if (auto const ret = ripple::detail::preflight1(ctx, T::getFlagsMask(ctx)))
         return ret;
 
     if (auto const ret = T::doPreflight(ctx))
         return ret;
 
-    return detail::preflight2(ctx);
+    return ripple::detail::preflight2(ctx);
 }
 
 template <class T>

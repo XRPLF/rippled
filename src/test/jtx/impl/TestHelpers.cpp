@@ -389,6 +389,24 @@ allpe(AccountID const& a, Issue const& iss)
         iss.account);
 };
 
+/* LoanBroker */
+/******************************************************************************/
+
+namespace loanBroker {
+
+Json::Value
+set(AccountID const& account, uint256 const& vaultId, uint32_t flags)
+{
+    Json::Value jv;
+    jv[sfTransactionType.jsonName] = jss::LoanBrokerSet;
+    jv[sfAccount.jsonName] = to_string(account);
+    jv[sfVaultID.jsonName] = to_string(vaultId);
+    jv[sfFlags.jsonName] = flags;
+    return jv;
+}
+
+}
+
 }  // namespace jtx
 }  // namespace test
 }  // namespace ripple
