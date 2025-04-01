@@ -18,20 +18,15 @@
 //==============================================================================
 
 #include <xrpld/shamap/SHAMapInnerNode.h>
-
 #include <xrpld/shamap/SHAMapTreeNode.h>
 #include <xrpld/shamap/detail/TaggedPointer.ipp>
-#include <xrpl/basics/Log.h>
+
+#include <xrpl/basics/IntrusivePointer.ipp>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/spinlock.h>
-#include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/digest.h>
-
-#include <algorithm>
-#include <iterator>
-#include <utility>
 
 namespace ripple {
 
@@ -43,6 +38,17 @@ SHAMapInnerNode::SHAMapInnerNode(
 }
 
 SHAMapInnerNode::~SHAMapInnerNode() = default;
+
+void
+SHAMapInnerNode::partialDestructor()
+{
+    intr_ptr::SharedPtr<SHAMapTreeNode>* children;
+    // structured bindings can't be captured in c++ 17; use tie instead
+    std::tie(std::ignore, std::ignore, children) =
+        hashesAndChildren_.getHashesAndChildren();
+    iterNonEmptyChildIndexes(
+        [&](auto branchNum, auto indexNum) { children[indexNum].reset(); });
+}
 
 template <class F>
 void
@@ -71,17 +77,17 @@ SHAMapInnerNode::getChildIndex(int i) const
     return hashesAndChildren_.getChildIndex(isBranch_, i);
 }
 
-std::shared_ptr<SHAMapTreeNode>
+intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMapInnerNode::clone(std::uint32_t cowid) const
 {
     auto const branchCount = getBranchCount();
     auto const thisIsSparse = !hashesAndChildren_.isDense();
-    auto p = std::make_shared<SHAMapInnerNode>(cowid, branchCount);
+    auto p = intr_ptr::make_shared<SHAMapInnerNode>(cowid, branchCount);
     p->hash_ = hash_;
     p->isBranch_ = isBranch_;
     p->fullBelowGen_ = fullBelowGen_;
     SHAMapHash *cloneHashes, *thisHashes;
-    std::shared_ptr<SHAMapTreeNode>*cloneChildren, *thisChildren;
+    intr_ptr::SharedPtr<SHAMapTreeNode>*cloneChildren, *thisChildren;
     // structured bindings can't be captured in c++ 17; use tie instead
     std::tie(std::ignore, cloneHashes, cloneChildren) =
         p->hashesAndChildren_.getHashesAndChildren();
@@ -122,7 +128,7 @@ SHAMapInnerNode::clone(std::uint32_t cowid) const
     return p;
 }
 
-std::shared_ptr<SHAMapTreeNode>
+intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMapInnerNode::makeFullInner(
     Slice data,
     SHAMapHash const& hash,
@@ -132,7 +138,7 @@ SHAMapInnerNode::makeFullInner(
     if (data.size() != branchFactor * uint256::bytes)
         Throw<std::runtime_error>("Invalid FI node");
 
-    auto ret = std::make_shared<SHAMapInnerNode>(0, branchFactor);
+    auto ret = intr_ptr::make_shared<SHAMapInnerNode>(0, branchFactor);
 
     SerialIter si(data);
 
@@ -156,7 +162,7 @@ SHAMapInnerNode::makeFullInner(
     return ret;
 }
 
-std::shared_ptr<SHAMapTreeNode>
+intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMapInnerNode::makeCompressedInner(Slice data)
 {
     // A compressed inner node is serialized as a series of 33 byte chunks,
@@ -169,7 +175,7 @@ SHAMapInnerNode::makeCompressedInner(Slice data)
 
     SerialIter si(data);
 
-    auto ret = std::make_shared<SHAMapInnerNode>(0, branchFactor);
+    auto ret = intr_ptr::make_shared<SHAMapInnerNode>(0, branchFactor);
 
     auto hashes = ret->hashesAndChildren_.getHashes();
 
@@ -211,13 +217,13 @@ void
 SHAMapInnerNode::updateHashDeep()
 {
     SHAMapHash* hashes;
-    std::shared_ptr<SHAMapTreeNode>* children;
+    intr_ptr::SharedPtr<SHAMapTreeNode>* children;
     // structured bindings can't be captured in c++ 17; use tie instead
     std::tie(std::ignore, hashes, children) =
         hashesAndChildren_.getHashesAndChildren();
     iterNonEmptyChildIndexes([&](auto branchNum, auto indexNum) {
-        if (children[indexNum] != nullptr)
-            hashes[indexNum] = children[indexNum]->getHash();
+        if (auto p = children[indexNum].get())
+            hashes[indexNum] = p->getHash();
     });
     updateHash();
 }
@@ -275,7 +281,7 @@ SHAMapInnerNode::getString(const SHAMapNodeID& id) const
 
 // We are modifying an inner node
 void
-SHAMapInnerNode::setChild(int m, std::shared_ptr<SHAMapTreeNode> child)
+SHAMapInnerNode::setChild(int m, intr_ptr::SharedPtr<SHAMapTreeNode> child)
 {
     XRPL_ASSERT(
         (m >= 0) && (m < branchFactor),
@@ -317,7 +323,9 @@ SHAMapInnerNode::setChild(int m, std::shared_ptr<SHAMapTreeNode> child)
 
 // finished modifying, now make shareable
 void
-SHAMapInnerNode::shareChild(int m, std::shared_ptr<SHAMapTreeNode> const& child)
+SHAMapInnerNode::shareChild(
+    int m,
+    intr_ptr::SharedPtr<SHAMapTreeNode> const& child)
 {
     XRPL_ASSERT(
         (m >= 0) && (m < branchFactor),
@@ -352,7 +360,7 @@ SHAMapInnerNode::getChildPointer(int branch)
     return hashesAndChildren_.getChildren()[index].get();
 }
 
-std::shared_ptr<SHAMapTreeNode>
+intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMapInnerNode::getChild(int branch)
 {
     XRPL_ASSERT(
@@ -381,10 +389,10 @@ SHAMapInnerNode::getChildHash(int m) const
     return zeroSHAMapHash;
 }
 
-std::shared_ptr<SHAMapTreeNode>
+intr_ptr::SharedPtr<SHAMapTreeNode>
 SHAMapInnerNode::canonicalizeChild(
     int branch,
-    std::shared_ptr<SHAMapTreeNode> node)
+    intr_ptr::SharedPtr<SHAMapTreeNode> node)
 {
     XRPL_ASSERT(
         branch >= 0 && branch < branchFactor,

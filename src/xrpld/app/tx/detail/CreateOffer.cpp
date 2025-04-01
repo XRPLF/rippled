@@ -21,10 +21,10 @@
 #include <xrpld/app/paths/Flow.h>
 #include <xrpld/app/tx/detail/CreateOffer.h>
 #include <xrpld/ledger/PaymentSandbox.h>
+
 #include <xrpl/beast/utility/WrappedSink.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Quality.h>
-#include <xrpl/protocol/st.h>
 
 namespace ripple {
 

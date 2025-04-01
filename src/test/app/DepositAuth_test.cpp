@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <test/jtx.h>
+
 #include <xrpl/protocol/Feature.h>
 
 #include <algorithm>
@@ -96,6 +97,7 @@ struct DepositAuth_test : public beast::unit_test::suite
         Env env(*this);
 
         env.fund(XRP(10000), alice, bob, carol, gw);
+        env.close();
         env.trust(USD(1000), alice, bob);
         env.close();
 
@@ -186,18 +188,20 @@ struct DepositAuth_test : public beast::unit_test::suite
         Account const bob{"bob"};
 
         Env env(*this);
+        auto const baseFee = env.current()->fees().base;
 
         env.fund(XRP(10000), alice, bob);
+        env.close();
 
         // bob sets the lsfDepositAuth flag.
-        env(fset(bob, asfDepositAuth), fee(drops(10)));
+        env(fset(bob, asfDepositAuth), fee(drops(baseFee)));
         env.close();
-        BEAST_EXPECT(env.balance(bob, XRP) == XRP(10000) - drops(10));
+        BEAST_EXPECT(env.balance(bob, XRP) == XRP(10000) - drops(baseFee));
 
         // bob has more XRP than the base reserve.  Any XRP payment should fail.
         env(pay(alice, bob, drops(1)), ter(tecNO_PERMISSION));
         env.close();
-        BEAST_EXPECT(env.balance(bob, XRP) == XRP(10000) - drops(10));
+        BEAST_EXPECT(env.balance(bob, XRP) == XRP(10000) - drops(baseFee));
 
         // Change bob's XRP balance to exactly the base reserve.
         {
@@ -259,7 +263,7 @@ struct DepositAuth_test : public beast::unit_test::suite
         BEAST_EXPECT(env.balance(bob, XRP) == drops(1));
 
         // Pay bob enough so he can afford the fee to clear lsfDepositAuth.
-        env(pay(alice, bob, drops(9)));
+        env(pay(alice, bob, drops(baseFee - 1)));
         env.close();
 
         // Interestingly, at this point the terINSUF_FEE_B retry grabs the
@@ -301,6 +305,7 @@ struct DepositAuth_test : public beast::unit_test::suite
             Env env(*this, features);
 
             env.fund(XRP(10000), gw1, alice, bob);
+            env.close();
             env(trust(gw1, alice["USD"](10), noRipplePrev ? tfSetNoRipple : 0));
             env(trust(gw1, bob["USD"](10), noRippleNext ? tfSetNoRipple : 0));
             env.trust(USD1(10), alice, bob);
@@ -324,6 +329,7 @@ struct DepositAuth_test : public beast::unit_test::suite
             Env env(*this, features);
 
             env.fund(XRP(10000), gw1, gw2, alice);
+            env.close();
             env(trust(alice, USD1(10), noRipplePrev ? tfSetNoRipple : 0));
             env(trust(alice, USD2(10), noRippleNext ? tfSetNoRipple : 0));
             env(pay(gw2, alice, USD2(10)));
@@ -571,7 +577,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
         env.require(owners(becky, 0));
 
         // carol gets enough XRP to (barely) meet the reserve.
-        env(pay(alice, carol, drops(11)));
+        env(pay(alice, carol, drops(env.current()->fees().base + 1)));
         env.close();
         env(deposit::auth(carol, becky));
         env.close();
@@ -661,6 +667,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
                 const char credType[] = "abcde";
                 Account const carol{"carol"};
                 env.fund(XRP(5000), carol);
+                env.close();
 
                 bool const supportsCredentials = features[featureCredentials];
 
@@ -1125,6 +1132,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
                 // not enough reserve
                 Account const john{"john"};
                 env.fund(env.current()->fees().accountReserve(0), john);
+                env.close();
                 auto jv = deposit::authCredentials(john, {{issuer, credType}});
                 env(jv, ter(tecINSUFFICIENT_RESERVE));
             }
