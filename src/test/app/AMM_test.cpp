@@ -3386,14 +3386,15 @@ private:
             }
         }
 
-        // Can (featureEscrow) pay into AMM with escrow.
+        // Can't pay into AMM with escrow.
         testAMM([&](AMM& ammAlice, Env& env) {
             auto const baseFee = env.current()->fees().base;
-            env(escrow(carol, ammAlice.ammAccount(), XRP(1)),
-                condition(cb1),
-                finish_time(env.now() + 1s),
-                cancel_time(env.now() + 2s),
-                fee(baseFee * 150));
+            env(escrow::create(carol, ammAlice.ammAccount(), XRP(1)),
+                escrow::condition(escrow::cb1),
+                escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 2s),
+                fee(baseFee * 150),
+                ter(tecNO_PERMISSION));
         });
 
         // Can't pay into AMM with paychan.
