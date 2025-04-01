@@ -26,6 +26,7 @@
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
@@ -178,6 +179,35 @@ public:
     operator()(SV const& value) const
     {
         return JTxField(sfield_, value);
+    }
+};
+
+template <>
+struct JTxFieldWrapper<blobField>
+{
+    using JF = blobField;
+    using SF = JF::SF;
+    using SV = JF::SV;
+
+protected:
+    SF const& sfield_;
+
+public:
+    explicit JTxFieldWrapper(SF const& sfield) : sfield_(sfield)
+    {
+    }
+
+    JF const&
+    operator()(Slice const& cond) const
+    {
+        return JF(sfield_, cond);
+    }
+
+    template <size_t N>
+    JF const&
+    operator()(std::array<std::uint8_t, N> const& c) const
+    {
+        return operator()(makeSlice(c));
     }
 };
 
@@ -560,21 +590,12 @@ auto const data = JTxFieldWrapper<blobField>(sfData);
 
 auto const managementFeeRate = simpleField<SF_UINT16>(sfManagementFeeRate);
 
-/*
-Data string BLOB None Arbitrary metadata in hex
-            format.The field is limited to 256 bytes.ManagementFeeRate number
-                UINT16 0 The 1 /
-        10th basis point fee charged by the Lending Protocol Owner.Valid values
-            are between 0 and
-    10000 inclusive
-            .DebtMaximum number NUMBER 0 The maximum amount the protocol can owe
-                the Vault
-            .The default value of 0 means there is no limit to the
-                debt.CoverRateMinimum number UINT16 0 The 1 /
-        10th basis point DebtTotal that the first loss capital must
-            cover.Valid values are between 0 and
-    100000 inclusive.CoverRateLiquidation
-    */
+auto const debtMaximum = simpleField<SF_NUMBER>(sfDebtMaximum);
+
+auto const coverRateMinimum = simpleField<SF_UINT32>(sfCoverRateMinimum);
+
+auto const coverRateLiquidation =
+    simpleField<SF_UINT32>(sfCoverRateLiquidation);
 
 }  // namespace loanBroker
 
