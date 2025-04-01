@@ -448,6 +448,23 @@ class Batch_test : public beast::unit_test::suite
             env.close();
         }
 
+        // temINVALID_INNER_BATCH: Batch: inner txn must have either Sequence or
+        // TicketSequence.
+        {
+            auto const seq = env.seq(alice);
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto tx1 = pay(alice, bob, XRP(1));
+            tx1[jss::Fee] = "0";
+            tx1[jss::Sequence] = 0;
+            tx1[jss::SigningPubKey] = "";
+            tx1[jss::Flags] = tx1[jss::Flags].asUInt() | tfInnerBatchTxn;
+            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                batch::inner_nofill(tx1),
+                batch::inner(pay(alice, bob, XRP(2)), seq + 2),
+                ter(temINVALID_INNER_BATCH));
+            env.close();
+        }
+
         // temINVALID_INNER_BATCH: Batch: duplicate sequence found:
         {
             auto const seq = env.seq(alice);
@@ -466,6 +483,17 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(1)), 0, seq + 1),
                 batch::inner(pay(alice, bob, XRP(2)), 0, seq + 1),
+                ter(temINVALID_INNER_BATCH));
+            env.close();
+        }
+
+        // temINVALID_INNER_BATCH: Batch: duplicate ticket & sequence found:
+        {
+            auto const seq = env.seq(alice);
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                batch::inner(pay(alice, bob, XRP(1)), 0, seq + 1),
+                batch::inner(pay(alice, bob, XRP(2)), seq + 1),
                 ter(temINVALID_INNER_BATCH));
             env.close();
         }

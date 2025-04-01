@@ -170,9 +170,7 @@ Batch::preflight(PreflightContext const& ctx)
     std::unordered_set<AccountID> requiredSigners;
     std::unordered_set<uint256> uniqueHashes;
     std::unordered_map<AccountID, std::unordered_set<std::uint32_t>>
-        accountSequences;
-    std::unordered_map<AccountID, std::unordered_set<std::uint32_t>>
-        accountTickets;
+        accountSeqTicket;
     for (STObject rb : rawTxns)
     {
         STTx const stx = STTx{std::move(rb)};
@@ -245,12 +243,23 @@ Batch::preflight(PreflightContext const& ctx)
             return temINVALID_INNER_BATCH;
         }
 
+        // Verify that either Sequence or TicketSequence is present
+        if (!stx.isFieldPresent(sfTicketSequence) &&
+            stx.getFieldU32(sfSequence) == 0)
+        {
+            JLOG(ctx.j.trace()) << "BatchTrace[" << parentBatchId << "]: "
+                                << "inner txn must have either Sequence or "
+                                   "TicketSequence. "
+                                << "txID: " << hash;
+            return temINVALID_INNER_BATCH;
+        }
+
         // Duplicate sequence and ticket checks
         if (flags & (tfAllOrNothing | tfUntilFailure))
         {
             if (auto const seq = stx.getFieldU32(sfSequence); seq != 0)
             {
-                if (!accountSequences[innerAccount].insert(seq).second)
+                if (!accountSeqTicket[innerAccount].insert(seq).second)
                 {
                     JLOG(ctx.j.trace())
                         << "BatchTrace[" << parentBatchId << "]: "
@@ -263,7 +272,7 @@ Batch::preflight(PreflightContext const& ctx)
             if (stx.isFieldPresent(sfTicketSequence))
             {
                 if (auto const ticket = stx.getFieldU32(sfTicketSequence);
-                    !accountTickets[innerAccount].insert(ticket).second)
+                    !accountSeqTicket[innerAccount].insert(ticket).second)
                 {
                     JLOG(ctx.j.trace())
                         << "BatchTrace[" << parentBatchId << "]: "
