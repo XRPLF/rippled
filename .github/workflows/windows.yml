@@ -33,7 +33,7 @@ jobs:
           - type: Debug
             # Skip running unit tests on debug builds, because they
             # take an unreasonable amount of time
-            tests: false
+            tests: true
             runtime: d
     runs-on: ${{ matrix.version.runs-on }}
     env:
