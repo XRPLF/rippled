@@ -18,7 +18,10 @@
 //==============================================================================
 
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/instrumentation.h>
+
+#include <ios>
+#include <ostream>
+#include <string>
 
 namespace beast {
 
@@ -64,6 +67,11 @@ public:
 
     void
     write(severities::Severity, std::string const&) override
+    {
+    }
+
+    void
+    writeAlways(severities::Severity, std::string const&) override
     {
     }
 };

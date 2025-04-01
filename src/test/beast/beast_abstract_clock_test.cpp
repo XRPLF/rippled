@@ -22,6 +22,7 @@
 #include <xrpl/beast/clock/abstract_clock.h>
 #include <xrpl/beast/clock/manual_clock.h>
 #include <xrpl/beast/unit_test.h>
+
 #include <sstream>
 #include <string>
 #include <thread>

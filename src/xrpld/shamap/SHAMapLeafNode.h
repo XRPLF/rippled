@@ -21,11 +21,9 @@
 #define RIPPLE_SHAMAP_SHAMAPLEAFNODE_H_INCLUDED
 
 #include <xrpld/shamap/SHAMapItem.h>
-#include <xrpld/shamap/SHAMapNodeID.h>
 #include <xrpld/shamap/SHAMapTreeNode.h>
 
 #include <cstdint>
-#include <memory>
 
 namespace ripple {
 

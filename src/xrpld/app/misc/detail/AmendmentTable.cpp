@@ -21,6 +21,7 @@
 #include <xrpld/app/misc/AmendmentTable.h>
 #include <xrpld/app/rdb/Wallet.h>
 #include <xrpld/core/ConfigSections.h>
+
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -30,6 +31,7 @@
 #include <boost/format.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/regex.hpp>
+
 #include <algorithm>
 #include <mutex>
 
@@ -226,7 +228,10 @@ public:
                     toBase58(TokenType::NodePublic, votes.first);
                 if (!votes.second.timeout)
                 {
-                    assert(votes.second.upVotes.empty());
+                    XRPL_ASSERT(
+                        votes.second.upVotes.empty(),
+                        "ripple::TrustedVotes::recordVotes : received no "
+                        "upvotes");
                     JLOG(j.debug())
                         << "recordVotes: Have not received any "
                            "amendment votes from "
@@ -242,7 +247,10 @@ public:
                 }
                 else if (votes.second.timeout != newTimeout)
                 {
-                    assert(votes.second.timeout < newTimeout);
+                    XRPL_ASSERT(
+                        votes.second.timeout < newTimeout,
+                        "ripple::TrustedVotes::recordVotes : votes not "
+                        "expired");
                     using namespace std::chrono;
                     auto const age = duration_cast<minutes>(
                         newTimeout - *votes.second.timeout);
@@ -262,9 +270,10 @@ public:
         int available = 0;
         for (auto& validatorVotes : recordedVotes_)
         {
-            assert(
+            XRPL_ASSERT(
                 validatorVotes.second.timeout ||
-                validatorVotes.second.upVotes.empty());
+                    validatorVotes.second.upVotes.empty(),
+                "ripple::TrustedVotes::getVotes : valid votes");
             if (validatorVotes.second.timeout)
                 ++available;
             for (uint256 const& amendment : validatorVotes.second.upVotes)
