@@ -23,7 +23,6 @@
 #include <xrpl/protocol/Batch.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Sign.h>
-#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
 #include <optional>
@@ -81,20 +80,6 @@ inner::operator()(Env& env, JTx& jt) const
     // Initialize the batch transaction
     batchTransaction = Json::Value{};
     batchTransaction[jss::RawTransaction] = txn_;
-    batchTransaction[jss::RawTransaction][jss::SigningPubKey] = "";
-    batchTransaction[jss::RawTransaction][jss::Sequence] = seq_;
-    batchTransaction[jss::RawTransaction][jss::Fee] = "0";
-    batchTransaction[jss::RawTransaction][jss::Flags] =
-        batchTransaction[jss::RawTransaction][jss::Flags].asUInt() |
-        tfInnerBatchTxn;
-
-    // Optionally set ticket sequence
-    if (ticket_.has_value())
-    {
-        batchTransaction[jss::RawTransaction][jss::Sequence] = 0;
-        batchTransaction[jss::RawTransaction][sfTicketSequence.jsonName] =
-            *ticket_;
-    }
 }
 
 void

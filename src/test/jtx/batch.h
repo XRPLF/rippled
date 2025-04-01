@@ -26,6 +26,8 @@
 #include <test/jtx/owners.h>
 #include <test/jtx/tags.h>
 
+#include <xrpl/protocol/TxFlags.h>
+
 #include "test/jtx/SignerUtils.h"
 
 #include <concepts>
@@ -67,6 +69,12 @@ public:
 
     void
     operator()(Env&, JTx& jtx) const;
+
+    Json::Value&
+    operator[](Json::StaticString const& key)
+    {
+        return txn_[key];
+    }
 };
 
 /** Adds a new Batch Txn on a JTx and autofills. */
@@ -85,10 +93,27 @@ public:
         std::optional<std::uint32_t> const& fee = std::nullopt)
         : txn_(txn), seq_(sequence), ticket_(ticket)
     {
+        txn_[jss::SigningPubKey] = "";
+        txn_[jss::Sequence] = seq_;
+        txn_[jss::Fee] = "0";
+        txn_[jss::Flags] = txn_[jss::Flags].asUInt() | tfInnerBatchTxn;
+
+        // Optionally set ticket sequence
+        if (ticket_.has_value())
+        {
+            txn_[jss::Sequence] = 0;
+            txn_[sfTicketSequence.jsonName] = *ticket_;
+        }
     }
 
     void
     operator()(Env&, JTx& jtx) const;
+
+    Json::Value&
+    operator[](Json::StaticString const& key)
+    {
+        return txn_[key];
+    }
 };
 
 /** Set a batch signature on a JTx. */

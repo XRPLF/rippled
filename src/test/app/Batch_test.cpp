@@ -339,14 +339,11 @@ class Batch_test : public beast::unit_test::suite
         {
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
             auto const seq = env.seq(alice);
-            auto tx1 = pay(alice, bob, XRP(10));
-            tx1[jss::Fee] = "0";
-            tx1[jss::Sequence] = seq + 1;
-            tx1[jss::SigningPubKey] = "";
-            tx1.removeMember(jss::Flags);
+            auto tx1 = batch::inner(pay(alice, bob, XRP(10)), seq + 1);
+            tx1[jss::Flags] = 0;
             auto jt = env.jtnofill(
                 batch::outer(alice, seq, batchFee, tfAllOrNothing),
-                batch::inner_nofill(tx1),
+                tx1,
                 batch::inner(pay(alice, bob, XRP(10)), seq + 2));
 
             env(jt.jv, batch::sig(bob), ter(temINVALID_INNER_BATCH));
