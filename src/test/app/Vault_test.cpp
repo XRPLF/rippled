@@ -22,6 +22,7 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/credentials.h>
 #include <test/jtx/fee.h>
+#include <test/jtx/flags.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/permissioned_domains.h>
 #include <test/jtx/utility.h>
@@ -37,6 +38,7 @@
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -373,11 +375,21 @@ class Vault_test : public beast::unit_test::suite
             }
 
             {
+                testcase(prefix + " withdraw to issuer");
+                auto tx = vault.withdraw(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = asset(50)});
+                tx[sfDestination] = issuer.human();
+                env(tx);
+            }
+
+            {
                 testcase(prefix + " withdraw remaining assets");
                 auto tx = vault.withdraw(
                     {.depositor = depositor,
                      .id = keylet.key,
-                     .amount = asset(100)});
+                     .amount = asset(50)});
                 env(tx);
             }
 
@@ -921,7 +933,7 @@ class Vault_test : public beast::unit_test::suite
                      Asset const& asset,
                      Vault& vault,
                      MPTTester& mptt) {
-            testcase("global lock");
+            testcase("global lock blocks create");
             mptt.set({.account = issuer, .flags = tfMPTLock});
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
             env(tx, ter(tecFROZEN));
@@ -935,7 +947,7 @@ class Vault_test : public beast::unit_test::suite
                      Asset const& asset,
                      Vault& vault,
                      MPTTester& mptt) {
-            testcase("deposit non-zero amount");
+            testcase("global lock blocks withdrawal");
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
             env(tx);
             env.close();
@@ -945,6 +957,7 @@ class Vault_test : public beast::unit_test::suite
                  .amount = asset(100)});
             env(tx);
             env.close();
+
             // Check that the OutstandingAmount field of MPTIssuance
             // accounts for the issued shares.
             auto v = env.le(keylet);
@@ -953,8 +966,17 @@ class Vault_test : public beast::unit_test::suite
             auto issuance = env.le(keylet::mptIssuance(share));
             BEAST_EXPECT(issuance);
             Number outstandingShares = issuance->at(sfOutstandingAmount);
-            BEAST_EXPECT(outstandingShares > 0);
             BEAST_EXPECT(outstandingShares == 100);
+
+            mptt.set({.account = issuer, .flags = tfMPTLock});
+            tx = vault.withdraw(
+                {.depositor = depositor,
+                 .id = keylet.key,
+                 .amount = asset(100)});
+            env(tx, ter(tecFROZEN));
+
+            tx[sfDestination] = issuer.human();
+            env(tx, ter(tecFROZEN));
         });
     }
 
@@ -1141,7 +1163,7 @@ class Vault_test : public beast::unit_test::suite
     void
     testWithIOU()
     {
-        testcase("IOU fees");
+        testcase("IOU");
         Env env{*this};
         Account const owner{"owner"};
         Account const issuer{"issuer"};
@@ -1180,7 +1202,7 @@ class Vault_test : public beast::unit_test::suite
         BEAST_EXPECT(vaultBalance() == asset(0));
 
         {
-            testcase("zero IOU fee on deposit");
+            testcase("IOU zero fee on deposit");
             env(vault.deposit(
                 {.depositor = owner, .id = keylet.key, .amount = asset(100)}));
             env.close();
@@ -1190,7 +1212,7 @@ class Vault_test : public beast::unit_test::suite
         }
 
         {
-            testcase("zero IOU fee on withdraw");
+            testcase("IOU zero fee on withdraw");
             env(vault.withdraw(
                 {.depositor = owner, .id = keylet.key, .amount = asset(60)}));
             env.close();
@@ -1200,16 +1222,27 @@ class Vault_test : public beast::unit_test::suite
         }
 
         {
-            testcase("zero IOU fee on withdraw for 3rd party");
+            testcase("IOU zero fee on withdraw for 3rd party");
             auto tx = vault.withdraw(
-                {.depositor = owner, .id = keylet.key, .amount = asset(40)});
+                {.depositor = owner, .id = keylet.key, .amount = asset(20)});
             tx[sfDestination] = charlie.human();
             env(tx);
             env.close();
 
             BEAST_EXPECT(env.balance(owner, issue) == asset(160));
-            BEAST_EXPECT(env.balance(charlie, issue) == asset(40));
-            BEAST_EXPECT(vaultBalance() == asset(0));
+            BEAST_EXPECT(env.balance(charlie, issue) == asset(20));
+            BEAST_EXPECT(vaultBalance() == asset(20));
+        }
+
+        {
+            testcase("IOU freeze");
+            env(fset(issuer, asfGlobalFreeze));
+            auto tx = vault.withdraw(
+                {.depositor = owner, .id = keylet.key, .amount = asset(20)});
+            env(tx, ter{tecFROZEN});
+
+            tx[sfDestination] = issuer.human();
+            env(tx, ter{tecFROZEN});
         }
     }
 
