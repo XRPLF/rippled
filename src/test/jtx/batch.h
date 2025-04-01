@@ -114,6 +114,18 @@ public:
     {
         return txn_[key];
     }
+
+    void
+    removeMember(Json::StaticString const& key)
+    {
+        txn_.removeMember(key);
+    }
+
+    Json::Value const&
+    getTxn() const
+    {
+        return txn_;
+    }
 };
 
 /** Set a batch signature on a JTx. */

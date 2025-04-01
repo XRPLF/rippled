@@ -354,10 +354,11 @@ class Batch_test : public beast::unit_test::suite
         {
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
-            auto tx1 = pay(alice, bob, XRP(1));
-            tx1[jss::TxnSignature] = "DEADBEEF";
+            auto jt =
+                env.jt(batch::inner(pay(alice, bob, XRP(1)), seq + 1).getTxn());
+            jt.jv[jss::SigningPubKey] = "";
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
-                batch::inner(tx1, seq + 1),
+                batch::inner_nofill(jt.jv),
                 batch::inner(pay(alice, bob, XRP(1)), seq + 2),
                 ter(temINVALID_INNER_BATCH));
             env.close();
@@ -368,14 +369,11 @@ class Batch_test : public beast::unit_test::suite
         {
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
-            auto tx1 = pay(alice, bob, XRP(1));
+            auto tx1 = batch::inner(pay(alice, bob, XRP(1)), seq + 1);
             tx1[jss::SigningPubKey] = strHex(alice.pk());
-            tx1[jss::Sequence] = seq + 1;
-            tx1[jss::Fee] = "0";
-            tx1[jss::Flags] = tx1[jss::Flags].asUInt() | tfInnerBatchTxn;
             auto jt = env.jtnofill(
                 batch::outer(alice, seq, batchFee, tfAllOrNothing),
-                batch::inner_nofill(tx1),
+                tx1,
                 batch::inner(pay(alice, bob, XRP(1)), seq + 2));
 
             env(jt.jv, ter(temINVALID_INNER_BATCH));
@@ -407,7 +405,8 @@ class Batch_test : public beast::unit_test::suite
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
-                batch::inner(acctdelete(alice, bob), seq + 1),
+                batch::inner(pay(alice, bob, XRP(1)), seq + 1),
+                // amount can't be negative
                 batch::inner(pay(alice, bob, XRP(-1)), seq + 2),
                 ter(temINVALID_INNER_BATCH));
             env.close();
@@ -848,11 +847,11 @@ class Batch_test : public beast::unit_test::suite
         {
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
             auto const seq = env.seq(alice);
-            auto tx1 = pay(alice, bob, XRP(10));
+            auto tx1 = batch::inner(pay(alice, bob, XRP(10)), seq + 1);
             tx1.removeMember(jss::TransactionType);
             auto jt = env.jtnofill(
                 batch::outer(alice, seq, batchFee, tfAllOrNothing),
-                batch::inner(tx1, seq + 1),
+                tx1,
                 batch::inner(pay(alice, bob, XRP(10)), seq + 2));
 
             env(jt.jv, batch::sig(bob), ter(telENV_RPC_FAILED));
@@ -863,11 +862,11 @@ class Batch_test : public beast::unit_test::suite
         {
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
             auto const seq = env.seq(alice);
-            auto tx1 = pay(alice, bob, XRP(10));
+            auto tx1 = batch::inner(pay(alice, bob, XRP(10)), seq + 1);
             tx1.removeMember(jss::Account);
             auto jt = env.jtnofill(
                 batch::outer(alice, seq, batchFee, tfAllOrNothing),
-                batch::inner(tx1, seq + 1),
+                tx1,
                 batch::inner(pay(alice, bob, XRP(10)), seq + 2));
 
             env(jt.jv, batch::sig(bob), ter(telENV_RPC_FAILED));
@@ -878,11 +877,11 @@ class Batch_test : public beast::unit_test::suite
         {
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
             auto const seq = env.seq(alice);
-            auto tx1 = pay(alice, bob, XRP(10));
+            auto tx1 = batch::inner(pay(alice, bob, XRP(10)), seq + 1);
             tx1.removeMember(jss::Sequence);
             auto jt = env.jtnofill(
                 batch::outer(alice, seq, batchFee, tfAllOrNothing),
-                batch::inner_nofill(tx1),
+                tx1,
                 batch::inner(pay(alice, bob, XRP(10)), seq + 2));
 
             env(jt.jv, batch::sig(bob), ter(telENV_RPC_FAILED));
@@ -893,12 +892,11 @@ class Batch_test : public beast::unit_test::suite
         {
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
             auto const seq = env.seq(alice);
-            auto tx1 = pay(alice, bob, XRP(10));
-            tx1[jss::Sequence] = seq + 1;
+            auto tx1 = batch::inner(pay(alice, bob, XRP(10)), seq + 1);
             tx1.removeMember(jss::Fee);
             auto jt = env.jtnofill(
                 batch::outer(alice, seq, batchFee, tfAllOrNothing),
-                batch::inner_nofill(tx1),
+                tx1,
                 batch::inner(pay(alice, bob, XRP(10)), seq + 2));
 
             env(jt.jv, batch::sig(bob), ter(telENV_RPC_FAILED));
@@ -909,13 +907,11 @@ class Batch_test : public beast::unit_test::suite
         {
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
             auto const seq = env.seq(alice);
-            auto tx1 = pay(alice, bob, XRP(10));
-            tx1[jss::Sequence] = seq + 1;
-            tx1[jss::Fee] = "0";
+            auto tx1 = batch::inner(pay(alice, bob, XRP(10)), seq + 1);
             tx1.removeMember(jss::SigningPubKey);
             auto jt = env.jtnofill(
                 batch::outer(alice, seq, batchFee, tfAllOrNothing),
-                batch::inner_nofill(tx1),
+                tx1,
                 batch::inner(pay(alice, bob, XRP(10)), seq + 2));
 
             env(jt.jv, batch::sig(bob), ter(telENV_RPC_FAILED));
