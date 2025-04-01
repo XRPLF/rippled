@@ -137,7 +137,8 @@ preflight1(PreflightContext const& ctx)
     if (ctx.tx.isFlag(tfInnerBatchTxn) && !ctx.rules.enabled(featureBatch))
     {
         // The following transaction types dont have a tfUniversalMask flag
-        // check
+        // check. Therefore these transactions need to be tesSUCCESS when the
+        // flag is set and the amendment is not enabled.
         if (ctx.tx.getTxnType() != ttSIGNER_LIST_SET &&
             ctx.tx.getTxnType() != ttCREDENTIAL_ACCEPT &&
             ctx.tx.getTxnType() != ttCREDENTIAL_CREATE &&

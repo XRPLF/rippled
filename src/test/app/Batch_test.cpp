@@ -187,6 +187,9 @@ class Batch_test : public beast::unit_test::suite
             }
 
             // tfInnerBatchTxn
+            // If the feature is disabled, the transaction fails with
+            // temINVALID_FLAG If the feature is enabled, the transaction fails
+            // early in checkValidity()
             {
                 auto const txResult =
                     withBatch ? ter(telENV_RPC_FAILED) : ter(temINVALID_FLAG);
@@ -196,7 +199,10 @@ class Batch_test : public beast::unit_test::suite
                 env.close();
             }
 
-            // Transaction Types missing flag validation
+            // TransactionType missing tfUniversalMask flag
+            // If the feature is disabled, the transaction is successful
+            // If the feature is enabled, the transaction fails early in
+            // checkValidity()
             {
                 auto const txResult =
                     withBatch ? ter(telENV_RPC_FAILED) : ter(tesSUCCESS);
@@ -236,7 +242,8 @@ class Batch_test : public beast::unit_test::suite
             env.close();
         }
 
-        // temINVALID_FLAG: Batch: inner batch flag.
+        // DEFENSIVE: temINVALID_FLAG: Batch: inner batch flag.
+        // ACTUAL: telENV_RPC_FAILED: checkValidity()
         {
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 0);
@@ -283,8 +290,8 @@ class Batch_test : public beast::unit_test::suite
             env.close();
         }
 
-        // temARRAY_TOO_LARGE: Batch: txns array exceeds 8 entries.
-        // telENV_RPC_FAILED
+        // DEFENSIVE: temARRAY_TOO_LARGE: Batch: txns array exceeds 8 entries.
+        // ACTUAL: telENV_RPC_FAILED: isRawTransactionOkay()
         {
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 9);
@@ -493,8 +500,9 @@ class Batch_test : public beast::unit_test::suite
             env.close();
         }
 
-        // temARRAY_TOO_LARGE: Batch: signers array exceeds 8 entries.
-        // telENV_RPC_FAILED
+        // DEFENSIVE: temARRAY_TOO_LARGE: Batch: signers array exceeds 8
+        // entries.
+        // ACTUAL: telENV_RPC_FAILED: isRawTransactionOkay()
         {
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 9, 2);
