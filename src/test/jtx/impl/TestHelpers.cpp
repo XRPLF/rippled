@@ -405,7 +405,7 @@ set(AccountID const& account, uint256 const& vaultId, uint32_t flags)
     return jv;
 }
 
-}
+}  // namespace loanBroker
 
 }  // namespace jtx
 }  // namespace test
