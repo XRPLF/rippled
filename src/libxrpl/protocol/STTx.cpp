@@ -265,6 +265,9 @@ STTx::checkBatchSign(
 {
     try
     {
+        XRPL_ASSERT(
+            getTxnType() == ttBATCH,
+            "STTx::checkBatchSign : not a batch transaction");
         STArray const& signers{getFieldArray(sfBatchSigners)};
         for (auto const& signer : signers)
         {
@@ -565,8 +568,11 @@ std::vector<uint256>
 STTx::getBatchTransactionIDs() const
 {
     XRPL_ASSERT(
+        getTxnType() == ttBATCH,
+        "STTx::getBatchTransactionIDs : not a batch transaction");
+    XRPL_ASSERT(
         getFieldArray(sfRawTransactions).size() != 0,
-        "Batch transaction missing sfRawTransactions");
+        "STTx::getBatchTransactionIDs : empty raw transactions");
     if (batch_txn_ids_.size() != 0)
         return batch_txn_ids_;
 
@@ -575,7 +581,7 @@ STTx::getBatchTransactionIDs() const
 
     XRPL_ASSERT(
         batch_txn_ids_.size() == getFieldArray(sfRawTransactions).size(),
-        "hashes array size does not match txns");
+        "STTx::getBatchTransactionIDs : batch transaction IDs size mismatch");
     return batch_txn_ids_;
 }
 
