@@ -68,12 +68,22 @@ class Vault_test : public beast::unit_test::suite
                                       Account const& issuer,
                                       Account const& owner,
                                       Account const& depositor,
+                                      Account const& charlie,
                                       Vault& vault,
                                       PrettyAsset const& asset) {
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
             env(tx);
             env.close();
             BEAST_EXPECT(env.le(keylet));
+
+            // Several 3rd party accounts which cannot receive funds
+            Account alice{"alice"};
+            Account dave{"dave"};
+            Account erin{"erin"};  // not authorized by issuer
+            env.fund(XRP(1000), alice, dave, erin);
+            env(fset(alice, asfDepositAuth));
+            env(fset(dave, asfRequireDest));
+            env.close();
 
             {
                 testcase(prefix + " fail to set negative maximum");
@@ -317,11 +327,57 @@ class Vault_test : public beast::unit_test::suite
             }
 
             {
-                testcase(prefix + " withdraw non-zero assets");
+                testcase(
+                    prefix + " fail to withdraw to 3rd party lsfDepositAuth");
                 auto tx = vault.withdraw(
                     {.depositor = depositor,
                      .id = keylet.key,
-                     .amount = asset(200)});
+                     .amount = asset(100)});
+                tx[sfDestination] = alice.human();
+                env(tx, ter{tecNO_PERMISSION});
+            }
+
+            if (!asset.raw().native())
+            {
+                testcase(
+                    prefix + " fail to withdraw to 3rd party no authorization");
+                auto tx = vault.withdraw(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = asset(100)});
+                tx[sfDestination] = erin.human();
+                env(tx,
+                    ter{asset.raw().holds<Issue>() ? tecNO_LINE : tecNO_AUTH});
+            }
+
+            {
+                testcase(
+                    prefix +
+                    " fail to withdraw to 3rd party lsfRequireDestTag");
+                auto tx = vault.withdraw(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = asset(100)});
+                tx[sfDestination] = dave.human();
+                env(tx, ter{tecDST_TAG_NEEDED});
+            }
+
+            {
+                testcase(prefix + " withdraw to authorized 3rd party");
+                auto tx = vault.withdraw(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = asset(100)});
+                tx[sfDestination] = charlie.human();
+                env(tx);
+            }
+
+            {
+                testcase(prefix + " withdraw remaining assets");
+                auto tx = vault.withdraw(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = asset(100)});
                 env(tx);
             }
 
@@ -345,40 +401,57 @@ class Vault_test : public beast::unit_test::suite
             }
         };
 
-        auto testCases =
-            [this, &testSequence](
-                std::string prefix,
-                std::function<PrettyAsset(
-                    Env & env, Account const& issuer, Account const& depositor)>
-                    setup) {
-                Env env{*this};
-                Account issuer{"issuer"};
-                Account owner{"owner"};
-                Account depositor{"depositor"};
-                Vault vault{env};
-                env.fund(XRP(1000), issuer, owner, depositor);
-                env.close();
-                env(fset(issuer, asfAllowTrustLineClawback));
-                env.close();
-                env.require(flags(issuer, asfAllowTrustLineClawback));
+        auto testCases = [this, &testSequence](
+                             std::string prefix,
+                             std::function<PrettyAsset(
+                                 Env & env,
+                                 Account const& issuer,
+                                 Account const& owner,
+                                 Account const& depositor,
+                                 Account const& charlie)> setup) {
+            Env env{*this};
+            Account issuer{"issuer"};
+            Account owner{"owner"};
+            Account depositor{"depositor"};
+            Account charlie{"charlie"};  // authorized 3rd party
+            Vault vault{env};
+            env.fund(XRP(1000), issuer, owner, depositor, charlie);
+            env.close();
+            env(fset(issuer, asfAllowTrustLineClawback));
+            env(fset(issuer, asfRequireAuth));
+            env.close();
+            env.require(flags(issuer, asfAllowTrustLineClawback));
+            env.require(flags(issuer, asfRequireAuth));
 
-                PrettyAsset asset = setup(env, issuer, depositor);
-                testSequence(
-                    prefix, env, issuer, owner, depositor, vault, asset);
-            };
+            PrettyAsset asset = setup(env, issuer, owner, depositor, charlie);
+            testSequence(
+                prefix, env, issuer, owner, depositor, charlie, vault, asset);
+        };
 
         testCases(
             "XRP",
-            [](Env& env, Account const& issuer, Account const& depositor)
-                -> PrettyAsset { return {xrpIssue(), 1'000'000}; });
+            [](Env& env,
+               Account const& issuer,
+               Account const& owner,
+               Account const& depositor,
+               Account const& charlie) -> PrettyAsset {
+                return {xrpIssue(), 1'000'000};
+            });
 
         testCases(
             "IOU",
             [](Env& env,
                Account const& issuer,
-               Account const& depositor) -> Asset {
+               Account const& owner,
+               Account const& depositor,
+               Account const& charlie) -> Asset {
                 PrettyAsset asset = issuer["IOU"];
-                env.trust(asset(1000), depositor);
+                env(trust(owner, asset(1000)));
+                env(trust(depositor, asset(1000)));
+                env(trust(charlie, asset(1000)));
+                env(trust(issuer, asset(0), owner, tfSetfAuth));
+                env(trust(issuer, asset(0), depositor, tfSetfAuth));
+                env(trust(issuer, asset(0), charlie, tfSetfAuth));
                 env(pay(issuer, depositor, asset(1000)));
                 env.close();
                 return asset;
@@ -388,13 +461,16 @@ class Vault_test : public beast::unit_test::suite
             "MPT",
             [](Env& env,
                Account const& issuer,
-               Account const& depositor) -> Asset {
+               Account const& owner,
+               Account const& depositor,
+               Account const& charlie) -> Asset {
                 MPTTester mptt{env, issuer, mptInitNoFund};
                 mptt.create(
                     {.flags =
                          tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
                 PrettyAsset asset = mptt.issuanceID();
                 mptt.authorize({.account = depositor});
+                mptt.authorize({.account = charlie});
                 env(pay(issuer, depositor, asset(1000)));
                 env.close();
                 return asset;

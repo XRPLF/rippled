@@ -65,23 +65,15 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     if (!vault)
         return tecNO_ENTRY;
 
-    if (ctx.tx.isFieldPresent(sfDestination))
-    {
-        auto const dstAccountID = ctx.tx.getAccountID(sfDestination);
-        if (auto const sleDst = ctx.view.read(keylet::account(dstAccountID));
-            sleDst == nullptr)
-            return tecNO_DST;
-    }
-
-    // Enforce valid withdrawal policy
-    if (vault->at(sfWithdrawalPolicy) != vaultStrategyFirstComeFirstServe)
-        return tefINTERNAL;
-
     auto const assets = ctx.tx[sfAmount];
     auto const asset = vault->at(sfAsset);
     auto const share = vault->at(sfShareMPTID);
     if (assets.asset() != asset && assets.asset() != share)
         return tecWRONG_ASSET;
+
+    // Enforce valid withdrawal policy
+    if (vault->at(sfWithdrawalPolicy) != vaultStrategyFirstComeFirstServe)
+        return tefINTERNAL;
 
     auto const account = ctx.tx[sfAccount];
     auto const dstAcct = [&]() -> AccountID {
@@ -90,14 +82,38 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         return account;
     }();
 
-    if (account != dstAcct && assets.holds<MPTIssue>())
+    // Withdrawal to a 3rd party destination account is essentially a transfer,
+    // via shares in the vault. Enforce all the usual asset transfer checks.
+    if (account != dstAcct)
     {
-        auto mptID = assets.get<MPTIssue>().getMptID();
-        auto issuance = ctx.view.read(keylet::mptIssuance(mptID));
-        if (!issuance)
-            return tecOBJECT_NOT_FOUND;
-        if ((issuance->getFlags() & lsfMPTCanTransfer) == 0)
-            return tecNO_AUTH;
+        auto const sleDst = ctx.view.read(keylet::account(dstAcct));
+        if (sleDst == nullptr)
+            return tecNO_DST;
+
+        if (sleDst->getFlags() & lsfRequireDestTag)
+            return tecDST_TAG_NEEDED;  // Cannot send without a tag
+
+        if (sleDst->getFlags() & lsfDepositAuth)
+        {
+            if (!ctx.view.exists(keylet::depositPreauth(dstAcct, account)))
+                return tecNO_PERMISSION;
+        }
+
+        if (auto const ter = std::visit(
+                [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
+                    return requireAuth(ctx.view, issue, dstAcct);
+                },
+                asset.value());
+            !isTesSuccess(ter))
+            return ter;
+
+        if (assets.holds<MPTIssue>())
+        {
+            if (auto const ter = canTransfer(
+                    ctx.view, assets.get<MPTIssue>(), account, dstAcct);
+                !isTesSuccess(ter))
+                return ter;
+        }
     }
 
     // Cannot withdraw from a Vault an Asset frozen for the destination account
