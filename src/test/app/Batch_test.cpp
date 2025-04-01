@@ -49,12 +49,6 @@ class Batch_test : public beast::unit_test::suite
         std::string txHash;
     };
 
-    struct TestSignData
-    {
-        int index;
-        jtx::Account account;
-    };
-
     Json::Value
     getTxByIndex(Json::Value const& jrr, int const index)
     {
@@ -74,7 +68,7 @@ class Batch_test : public beast::unit_test::suite
         int const& pbIndex = 0)
     {
         Json::Value params;
-        params[jss::ledger_index] = env.current()->seq() - 1;
+        params[jss::ledger_index] = env.closed()->seq();
         params[jss::transactions] = true;
         params[jss::expand] = true;
         auto const jrr = env.rpc("json", "ledger", to_string(params));
@@ -97,7 +91,6 @@ class Batch_test : public beast::unit_test::suite
             Json::Value jsonTx;
             jsonTx[jss::binary] = false;
             jsonTx[jss::transaction] = batchResult.txHash;
-            jsonTx[jss::id] = 1;
             Json::Value const jrr =
                 env.rpc("tx", batchResult.txHash)[jss::result];
             BEAST_EXPECT(
@@ -113,7 +106,7 @@ class Batch_test : public beast::unit_test::suite
     getLastLedger(jtx::Env& env)
     {
         Json::Value params;
-        params[jss::ledger_index] = env.current()->seq() - 1;
+        params[jss::ledger_index] = env.closed()->seq();
         params[jss::transactions] = true;
         params[jss::expand] = true;
         return env.rpc("json", "ledger", to_string(params));
@@ -572,10 +565,6 @@ class Batch_test : public beast::unit_test::suite
 
         // temBAD_SIGNATURE: Batch: invalid batch txn signature.
         {
-            std::vector<TestSignData> const signers = {{
-                {0, bob},
-            }};
-
             auto const seq = env.seq(alice);
             auto const bobSeq = env.seq(bob);
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
@@ -584,23 +573,17 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
                 batch::inner(pay(bob, alice, XRP(5)), bobSeq));
 
-            for (auto const& signer : signers)
-            {
-                Serializer msg;
-                serializeBatch(
-                    msg, tfAllOrNothing, jt.stx->getBatchTransactionIDs());
-                auto const sig = ripple::sign(
-                    signer.account.pk(), signer.account.sk(), msg.slice());
-                jt.jv[sfBatchSigners.jsonName][signer.index]
-                     [sfBatchSigner.jsonName][sfAccount.jsonName] =
-                    signer.account.human();
-                jt.jv[sfBatchSigners.jsonName][signer.index]
-                     [sfBatchSigner.jsonName][sfSigningPubKey.jsonName] =
-                    strHex(alice.pk());
-                jt.jv[sfBatchSigners.jsonName][signer.index]
-                     [sfBatchSigner.jsonName][sfTxnSignature.jsonName] =
-                    strHex(Slice{sig.data(), sig.size()});
-            }
+            Serializer msg;
+            serializeBatch(
+                msg, tfAllOrNothing, jt.stx->getBatchTransactionIDs());
+            auto const sig = ripple::sign(bob.pk(), bob.sk(), msg.slice());
+            jt.jv[sfBatchSigners.jsonName][0u][sfBatchSigner.jsonName]
+                 [sfAccount.jsonName] = bob.human();
+            jt.jv[sfBatchSigners.jsonName][0u][sfBatchSigner.jsonName]
+                 [sfSigningPubKey.jsonName] = strHex(alice.pk());
+            jt.jv[sfBatchSigners.jsonName][0u][sfBatchSigner.jsonName]
+                 [sfTxnSignature.jsonName] =
+                strHex(Slice{sig.data(), sig.size()});
 
             env(jt.jv, ter(temBAD_SIGNATURE));
             env.close();
