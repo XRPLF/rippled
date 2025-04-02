@@ -99,14 +99,6 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
                 return tecNO_PERMISSION;
         }
 
-        if (auto const ter = std::visit(
-                [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
-                    return requireAuth(ctx.view, issue, dstAcct);
-                },
-                asset.value());
-            !isTesSuccess(ter))
-            return ter;
-
         if (assets.holds<MPTIssue>())
         {
             if (auto const ter = canTransfer(
@@ -115,6 +107,14 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
                 return ter;
         }
     }
+
+    if (auto const ter = std::visit(
+            [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
+                return requireAuth(ctx.view, issue, dstAcct);
+            },
+            asset.value());
+        !isTesSuccess(ter))
+        return ter;
 
     // Cannot withdraw from a Vault an Asset frozen for the destination account
     if (isFrozen(ctx.view, dstAcct, asset))

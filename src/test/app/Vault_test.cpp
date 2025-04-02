@@ -899,9 +899,14 @@ class Vault_test : public beast::unit_test::suite
             Vault vault{env};
 
             MPTTester mptt{env, issuer, mptInitNoFund};
-            mptt.create({.flags = tfMPTCanTransfer | tfMPTCanLock});
+            mptt.create(
+                {.flags = tfMPTCanTransfer | tfMPTCanLock | lsfMPTCanClawback |
+                     tfMPTRequireAuth});
             PrettyAsset asset = mptt.issuanceID();
+            mptt.authorize({.account = owner});
+            mptt.authorize({.account = issuer, .holder = owner});
             mptt.authorize({.account = depositor});
+            mptt.authorize({.account = issuer, .holder = depositor});
             env(pay(issuer, depositor, asset(1000)));
             env.close();
 
@@ -977,6 +982,54 @@ class Vault_test : public beast::unit_test::suite
 
             tx[sfDestination] = issuer.human();
             env(tx, ter(tecFROZEN));
+        });
+
+        testCase([this](
+                     Env& env,
+                     Account const& issuer,
+                     Account const& owner,
+                     Account const& depositor,
+                     Asset const& asset,
+                     Vault& vault,
+                     MPTTester& mptt) {
+            testcase("MPT un-authorization blocks withdrawal");
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+            tx = vault.deposit(
+                {.depositor = depositor,
+                 .id = keylet.key,
+                 .amount = asset(1000)});
+            env(tx);
+            env.close();
+
+            mptt.authorize(
+                {.account = issuer,
+                 .holder = depositor,
+                 .flags = tfMPTUnauthorize});
+            tx = vault.withdraw(
+                {.depositor = depositor,
+                 .id = keylet.key,
+                 .amount = asset(100)});
+            env(tx, ter(tecNO_AUTH));
+
+            // Withdrawal to other (authorized) accounts works
+            tx[sfDestination] = issuer.human();
+            env(tx);
+            tx[sfDestination] = owner.human();
+            env(tx);
+
+            // Clawback works
+            tx = vault.clawback(
+                {.issuer = issuer,
+                 .id = keylet.key,
+                 .holder = depositor,
+                 .amount = asset(800)});
+            env(tx);
+
+            // Can delete empty vault
+            tx = vault.del({.owner = owner, .id = keylet.key});
+            env(tx);
         });
     }
 
@@ -1235,10 +1288,25 @@ class Vault_test : public beast::unit_test::suite
         }
 
         {
-            testcase("IOU freeze");
+            testcase("IOU deleted trust line, withdraw to 3rd party");
+            env(trust(issuer, asset(0), owner, tfSetFreeze));
+
+            auto tx = vault.withdraw(
+                {.depositor = owner, .id = keylet.key, .amount = asset(10)});
+            env(tx, ter{tecFROZEN});
+
+            tx[sfDestination] = charlie.human();
+            env(tx);
+            env.close();
+
+            BEAST_EXPECT(env.balance(charlie, issue) == asset(30));
+        }
+
+        {
+            testcase("IOU global freeze");
             env(fset(issuer, asfGlobalFreeze));
             auto tx = vault.withdraw(
-                {.depositor = owner, .id = keylet.key, .amount = asset(20)});
+                {.depositor = owner, .id = keylet.key, .amount = asset(10)});
             env(tx, ter{tecFROZEN});
 
             tx[sfDestination] = issuer.human();
