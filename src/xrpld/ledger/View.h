@@ -25,6 +25,7 @@
 #include <xrpld/ledger/ReadView.h>
 
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rate.h>
@@ -797,6 +798,21 @@ sharesToAssetsWithdraw(
     std::shared_ptr<SLE const> const& vault,
     std::shared_ptr<SLE const> const& issuance,
     STAmount const& shares);
+
+// Returns true iff sleAcct is a pseudo-account.
+//
+// Returns false if sleAcct is
+// * NOT a pseudo-account OR
+// * NOT a ltACCOUNT_ROOT OR
+// * null pointer
+[[nodiscard]] bool
+isPseudoAccount(std::shared_ptr<SLE const> sleAcct);
+
+[[nodiscard]] inline bool
+isPseudoAccount(ReadView const& view, AccountID accountId)
+{
+    return isPseudoAccount(view.read(keylet::account(accountId)));
+}
 
 }  // namespace ripple
 

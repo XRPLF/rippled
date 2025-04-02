@@ -884,8 +884,7 @@ ValidNewAccountRoot::visitEntry(
     {
         accountsCreated_++;
         accountSeq_ = (*after)[sfSequence];
-        pseudoAccount_ =
-            after->isFieldPresent(sfAMMID) || after->isFieldPresent(sfVaultID);
+        pseudoAccount_ = isPseudoAccount(after);
         flags_ = after->getFlags();
     }
 }
