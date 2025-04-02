@@ -250,13 +250,13 @@ private:
 inline void
 IntrusiveRefCounts::addStrongRef() const noexcept
 {
-    refCounts.fetch_add(strongDelta, std::memory_order_acq_rel);
+    refCounts.fetch_add(strongDelta, std::memory_order_seq_cst);
 }
 
 inline void
 IntrusiveRefCounts::addWeakRef() const noexcept
 {
-    refCounts.fetch_add(weakDelta, std::memory_order_acq_rel);
+    refCounts.fetch_add(weakDelta, std::memory_order_seq_cst);
 }
 
 inline ReleaseStrongRefAction
@@ -270,7 +270,7 @@ IntrusiveRefCounts::releaseStrongRef() const
     // conditional `fetch_or`. This loop will almost always run once.
 
     using enum ReleaseStrongRefAction;
-    auto prevIntVal = refCounts.load(std::memory_order_acquire);
+    auto prevIntVal = refCounts.load(std::memory_order_seq_cst);
     while (1)
     {
         RefCountPair const prevVal{prevIntVal};
@@ -294,7 +294,7 @@ IntrusiveRefCounts::releaseStrongRef() const
         }
 
         if (refCounts.compare_exchange_weak(
-                prevIntVal, nextIntVal, std::memory_order_release))
+                prevIntVal, nextIntVal, std::memory_order_seq_cst))
         {
             // Can't be in partial destroy because only decrementing the strong
             // count to zero can start a partial destroy, and that can't happen
@@ -315,7 +315,7 @@ IntrusiveRefCounts::addWeakReleaseStrongRef() const
 
     static_assert(weakDelta > strongDelta);
     auto constexpr delta = weakDelta - strongDelta;
-    auto prevIntVal = refCounts.load(std::memory_order_acquire);
+    auto prevIntVal = refCounts.load(std::memory_order_seq_cst);
     // This loop will almost always run once. The loop is needed to atomically
     // change the counts and flags (the count could be atomically changed, but
     // the flags depend on the current value of the counts).
@@ -351,7 +351,7 @@ IntrusiveRefCounts::addWeakReleaseStrongRef() const
             }
         }
         if (refCounts.compare_exchange_weak(
-                prevIntVal, nextIntVal, std::memory_order_release))
+                prevIntVal, nextIntVal, std::memory_order_seq_cst))
         {
             XRPL_ASSERT(
                 (!(prevIntVal & partialDestroyStartedMask)),
@@ -365,7 +365,7 @@ IntrusiveRefCounts::addWeakReleaseStrongRef() const
 inline ReleaseWeakRefAction
 IntrusiveRefCounts::releaseWeakRef() const
 {
-    auto prevIntVal = refCounts.fetch_sub(weakDelta, std::memory_order_acq_rel);
+    auto prevIntVal = refCounts.fetch_sub(weakDelta, std::memory_order_seq_cst);
     RefCountPair prev = prevIntVal;
     if (prev.weak == 1 && prev.strong == 0)
     {
@@ -374,15 +374,15 @@ IntrusiveRefCounts::releaseWeakRef() const
             // This case should only be hit if the partialDestroyStartedBit is
             // set non-atomically (and even then very rarely). The code is kept
             // in case we need to set the flag non-atomically for perf reasons.
-            refCounts.wait(prevIntVal, std::memory_order_acq_rel);
-            prevIntVal = refCounts.load(std::memory_order_acquire);
+            refCounts.wait(prevIntVal, std::memory_order_seq_cst);
+            prevIntVal = refCounts.load(std::memory_order_seq_cst);
             prev = RefCountPair{prevIntVal};
         }
         if (!prev.partialDestroyFinishedBit)
         {
             // partial destroy MUST finish before running a full destroy (when
             // using weak pointers)
-            refCounts.wait(prevIntVal - weakDelta, std::memory_order_acq_rel);
+            refCounts.wait(prevIntVal - weakDelta, std::memory_order_seq_cst);
         }
         return ReleaseWeakRefAction::destroy;
     }
@@ -396,7 +396,7 @@ IntrusiveRefCounts::checkoutStrongRefFromWeak() const noexcept
     auto desiredValue = RefCountPair{2, 1}.combinedValue();
 
     while (!refCounts.compare_exchange_weak(
-        curValue, desiredValue, std::memory_order_release))
+        curValue, desiredValue, std::memory_order_seq_cst))
     {
         RefCountPair const prev{curValue};
         if (!prev.strong)
@@ -410,21 +410,21 @@ IntrusiveRefCounts::checkoutStrongRefFromWeak() const noexcept
 inline bool
 IntrusiveRefCounts::expired() const noexcept
 {
-    RefCountPair const val = refCounts.load(std::memory_order_acquire);
+    RefCountPair const val = refCounts.load(std::memory_order_seq_cst);
     return val.strong == 0;
 }
 
 inline std::size_t
 IntrusiveRefCounts::use_count() const noexcept
 {
-    RefCountPair const val = refCounts.load(std::memory_order_acquire);
+    RefCountPair const val = refCounts.load(std::memory_order_seq_cst);
     return val.strong;
 }
 
 inline IntrusiveRefCounts::~IntrusiveRefCounts() noexcept
 {
 #ifndef NDEBUG
-    auto v = refCounts.load(std::memory_order_acquire);
+    auto v = refCounts.load(std::memory_order_seq_cst);
     XRPL_ASSERT(
         (!(v & valueMask)),
         "ripple::IntrusiveRefCounts::~IntrusiveRefCounts : count must be zero");

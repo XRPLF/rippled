@@ -39,7 +39,7 @@ public:
     getState(int id)
     {
         assert(id < state.size());
-        return state[id].load(std::memory_order_acquire);
+        return state[id].load(std::memory_order_seq_cst);
     }
     static void
     resetStates(bool resetCallback)
@@ -47,9 +47,9 @@ public:
         for (int i = 0; i < maxStates; ++i)
         {
             state[i].store(
-                TrackedState::uninitialized, std::memory_order_release);
+                TrackedState::uninitialized, std::memory_order_seq_cst);
         }
-        nextId.store(0, std::memory_order_release);
+        nextId.store(0, std::memory_order_seq_cst);
         if (resetCallback)
             TIBase::tracingCallback_ = [](TrackedState,
                                           std::optional<TrackedState>) {};
@@ -72,7 +72,7 @@ public:
     TIBase() : id_{checkoutID()}
     {
         assert(state.size() > id_);
-        state[id_].store(TrackedState::alive, std::memory_order_relaxed);
+        state[id_].store(TrackedState::alive, std::memory_order_seq_cst);
     }
     ~TIBase()
     {
@@ -80,18 +80,18 @@ public:
 
         assert(state.size() > id_);
         tracingCallback_(
-            state[id_].load(std::memory_order_relaxed), deletedStarted);
+            state[id_].load(std::memory_order_seq_cst), deletedStarted);
 
         assert(state.size() > id_);
         // Use relaxed memory order to try to avoid atomic operations from
         // adding additional memory synchronizations that may hide threading
         // errors in the underlying shared pointer class.
-        state[id_].store(deletedStarted, std::memory_order_relaxed);
+        state[id_].store(deletedStarted, std::memory_order_seq_cst);
 
         tracingCallback_(deletedStarted, deleted);
 
         assert(state.size() > id_);
-        state[id_].store(TrackedState::deleted, std::memory_order_relaxed);
+        state[id_].store(TrackedState::deleted, std::memory_order_seq_cst);
 
         tracingCallback_(TrackedState::deleted, std::nullopt);
     }
@@ -103,16 +103,16 @@ public:
 
         assert(state.size() > id_);
         tracingCallback_(
-            state[id_].load(std::memory_order_relaxed),
+            state[id_].load(std::memory_order_seq_cst),
             partiallyDeletedStarted);
 
         assert(state.size() > id_);
-        state[id_].store(partiallyDeletedStarted, std::memory_order_relaxed);
+        state[id_].store(partiallyDeletedStarted, std::memory_order_seq_cst);
 
         tracingCallback_(partiallyDeletedStarted, partiallyDeleted);
 
         assert(state.size() > id_);
-        state[id_].store(partiallyDeleted, std::memory_order_relaxed);
+        state[id_].store(partiallyDeleted, std::memory_order_seq_cst);
 
         tracingCallback_(partiallyDeleted, std::nullopt);
     }
@@ -126,7 +126,7 @@ private:
     static int
     checkoutID()
     {
-        return nextId.fetch_add(1, std::memory_order_acq_rel);
+        return nextId.fetch_add(1, std::memory_order_seq_cst);
     }
 };
 
@@ -449,14 +449,14 @@ public:
         std::atomic<int> destructionState{0};
         // returns destructorRan and partialDestructorRan (in that order)
         auto getDestructorState = [&]() -> std::pair<bool, bool> {
-            int s = destructionState.load(std::memory_order_relaxed);
+            int s = destructionState.load(std::memory_order_seq_cst);
             return {(s & 1) != 0, (s & 2) != 0};
         };
         auto setDestructorRan = [&]() -> void {
-            destructionState.fetch_or(1, std::memory_order_acq_rel);
+            destructionState.fetch_or(1, std::memory_order_seq_cst);
         };
         auto setPartialDeleteRan = [&]() -> void {
-            destructionState.fetch_or(2, std::memory_order_acq_rel);
+            destructionState.fetch_or(2, std::memory_order_seq_cst);
         };
         auto tracingCallback = [&](TrackedState cur,
                                    std::optional<TrackedState> next) {
@@ -534,7 +534,7 @@ public:
                     auto [destructorRan, partialDeleteRan] =
                         getDestructorState();
                     BEAST_EXPECT(!i || destructorRan);
-                    destructionState.store(0, std::memory_order_release);
+                    destructionState.store(0, std::memory_order_seq_cst);
 
                     toClone.clear();
                     toClone.resize(numThreads);
@@ -589,14 +589,14 @@ public:
         std::atomic<int> destructionState{0};
         // returns destructorRan and partialDestructorRan (in that order)
         auto getDestructorState = [&]() -> std::pair<bool, bool> {
-            int s = destructionState.load(std::memory_order_relaxed);
+            int s = destructionState.load(std::memory_order_seq_cst);
             return {(s & 1) != 0, (s & 2) != 0};
         };
         auto setDestructorRan = [&]() -> void {
-            destructionState.fetch_or(1, std::memory_order_acq_rel);
+            destructionState.fetch_or(1, std::memory_order_seq_cst);
         };
         auto setPartialDeleteRan = [&]() -> void {
-            destructionState.fetch_or(2, std::memory_order_acq_rel);
+            destructionState.fetch_or(2, std::memory_order_seq_cst);
         };
         auto tracingCallback = [&](TrackedState cur,
                                    std::optional<TrackedState> next) {
@@ -663,7 +663,7 @@ public:
                     auto [destructorRan, partialDeleteRan] =
                         getDestructorState();
                     BEAST_EXPECT(!i || destructorRan);
-                    destructionState.store(0, std::memory_order_release);
+                    destructionState.store(0, std::memory_order_seq_cst);
 
                     toClone.clear();
                     toClone.resize(numThreads);
@@ -732,14 +732,14 @@ public:
         std::atomic<int> destructionState{0};
         // returns destructorRan and partialDestructorRan (in that order)
         auto getDestructorState = [&]() -> std::pair<bool, bool> {
-            int s = destructionState.load(std::memory_order_relaxed);
+            int s = destructionState.load(std::memory_order_seq_cst);
             return {(s & 1) != 0, (s & 2) != 0};
         };
         auto setDestructorRan = [&]() -> void {
-            destructionState.fetch_or(1, std::memory_order_acq_rel);
+            destructionState.fetch_or(1, std::memory_order_seq_cst);
         };
         auto setPartialDeleteRan = [&]() -> void {
-            destructionState.fetch_or(2, std::memory_order_acq_rel);
+            destructionState.fetch_or(2, std::memory_order_seq_cst);
         };
         auto tracingCallback = [&](TrackedState cur,
                                    std::optional<TrackedState> next) {
@@ -786,7 +786,7 @@ public:
                     auto [destructorRan, partialDeleteRan] =
                         getDestructorState();
                     BEAST_EXPECT(!i || destructorRan);
-                    destructionState.store(0, std::memory_order_release);
+                    destructionState.store(0, std::memory_order_seq_cst);
 
                     toLock.clear();
                     toLock.resize(numThreads);
