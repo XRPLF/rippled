@@ -32,7 +32,6 @@
 #include <xrpl/protocol/messages.h>
 
 #include <algorithm>
-#include <memory>
 #include <optional>
 #include <set>
 #include <tuple>
@@ -104,10 +103,30 @@ public:
 template <typename clock_type>
 class Slot final
 {
-private:
     friend class Slots<clock_type>;
+
+private:
     using id_t = Peer::id_t;
     using time_point = typename clock_type::time_point;
+    /** Data maintained for each peer */
+    struct PeerInfo
+    {
+        PeerState state;         // peer's state
+        std::size_t count;       // message count
+        time_point expire;       // squelch expiration time
+        time_point lastMessage;  // time last message received
+    };
+    std::unordered_map<id_t, PeerInfo> peers_;  // peer's data
+    // pool of peers considered as the source of messages
+    // from validator - peers that reached MIN_MESSAGE_THRESHOLD
+    std::unordered_set<id_t> considered_;
+    // number of peers that reached MAX_MESSAGE_THRESHOLD
+    std::uint16_t reachedThreshold_;
+    // last time peers were selected, used to age the slot
+    typename clock_type::time_point lastSelected_;
+    SlotState state_;                // slot's state
+    SquelchHandler const& handler_;  // squelch/unsquelch handler
+    beast::Journal const journal_;   // logging
 
     /** Constructor
      * @param journal Journal for logging
@@ -195,7 +214,6 @@ private:
     std::chrono::seconds
     getSquelchDuration(std::size_t npeers);
 
-private:
     /** Reset counts of peers in Selected or Counting state */
     void
     resetCounts();
@@ -203,26 +221,6 @@ private:
     /** Initialize slot to Counting state */
     void
     initCounting();
-
-    /** Data maintained for each peer */
-    struct PeerInfo
-    {
-        PeerState state;         // peer's state
-        std::size_t count;       // message count
-        time_point expire;       // squelch expiration time
-        time_point lastMessage;  // time last message received
-    };
-    std::unordered_map<id_t, PeerInfo> peers_;  // peer's data
-    // pool of peers considered as the source of messages
-    // from validator - peers that reached MIN_MESSAGE_THRESHOLD
-    std::unordered_set<id_t> considered_;
-    // number of peers that reached MAX_MESSAGE_THRESHOLD
-    std::uint16_t reachedThreshold_;
-    // last time peers were selected, used to age the slot
-    typename clock_type::time_point lastSelected_;
-    SlotState state_;                // slot's state
-    SquelchHandler const& handler_;  // squelch/unsquelch handler
-    beast::Journal const journal_;   // logging
 };
 
 template <typename clock_type>
@@ -605,12 +603,6 @@ public:
     deletePeer(id_t id, bool erase);
 
 private:
-    /** Add message/peer if have not seen this message
-     * from the peer. A message is aged after IDLED seconds.
-     * Return true if added */
-    bool
-    addPeerMessage(uint256 const& key, id_t id);
-
     hash_map<PublicKey, Slot<clock_type>> slots_;
     SquelchHandler const& handler_;  // squelch/unsquelch handler
     Logs& logs_;
@@ -621,6 +613,12 @@ private:
     // after it was relayed is ignored by PeerImp.
     inline static messages peersWithMessage_{
         beast::get_abstract_clock<clock_type>()};
+
+    /** Add message/peer if have not seen this message
+     * from the peer. A message is aged after IDLED seconds.
+     * Return true if added */
+    bool
+    addPeerMessage(uint256 const& key, id_t id);
 };
 
 template <typename clock_type>
