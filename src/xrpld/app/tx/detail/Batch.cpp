@@ -33,14 +33,15 @@ namespace ripple {
 XRPAmount
 Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
-    XRPAmount const maxAmount{std::numeric_limits<std::int64_t>::max()};
+    XRPAmount const maxAmount{
+        std::numeric_limits<XRPAmount::value_type>::max()};
 
     // batchBase: view.fees().base for batch processing + default base fee
     XRPAmount const baseFee = Transactor::calculateBaseFee(view, tx);
 
     // LCOV_EXCL_START
     if (baseFee > maxAmount - view.fees().base)
-        return INITIAL_XRP;
+        throw std::overflow_error("XRPAmount overflow");
     // LCOV_EXCL_STOP
 
     XRPAmount const batchBase = view.fees().base + baseFee;
@@ -57,7 +58,8 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
 
         // LCOV_EXCL_START
         if (txns.size() > maxBatchTxCount)
-            return INITIAL_XRP;
+            throw std::length_error(
+                "Raw Transactions array exceeds max entries");
         // LCOV_EXCL_STOP
 
         for (STObject txn : txns)
@@ -69,13 +71,13 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
 
             // LCOV_EXCL_START
             if (stx.getTxnType() == ttBATCH)
-                return INITIAL_XRP;
+                throw std::invalid_argument("Inner Batch transaction found");
             // LCOV_EXCL_STOP
 
             auto const fee = ripple::calculateBaseFee(view, stx);
             // LCOV_EXCL_START
             if (txnFees > maxAmount - fee)
-                return INITIAL_XRP;
+                throw std::overflow_error("XRPAmount overflow");
             // LCOV_EXCL_STOP
             txnFees += fee;
         }
@@ -92,7 +94,7 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
 
         // LCOV_EXCL_START
         if (signers.size() > maxBatchTxCount)
-            return INITIAL_XRP;
+            throw std::length_error("Batch Signers array exceeds max entries");
         // LCOV_EXCL_STOP
 
         for (STObject const& signer : signers)
@@ -106,16 +108,16 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
 
     // LCOV_EXCL_START
     if (signerCount > 0 && view.fees().base > maxAmount / signerCount)
-        return INITIAL_XRP;
+        throw std::overflow_error("XRPAmount overflow");
     // LCOV_EXCL_STOP
 
     XRPAmount signerFees = signerCount * view.fees().base;
 
     // LCOV_EXCL_START
     if (signerFees > maxAmount - txnFees)
-        return INITIAL_XRP;
+        throw std::overflow_error("XRPAmount overflow");
     if (txnFees + signerFees > maxAmount - batchBase)
-        return INITIAL_XRP;
+        throw std::overflow_error("XRPAmount overflow");
     // LCOV_EXCL_STOP
 
     // 10 drops per batch signature + sum of inner tx fees + batchBase
