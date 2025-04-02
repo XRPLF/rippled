@@ -167,10 +167,6 @@ private:
     std::uint16_t
     inState(PeerState state) const;
 
-    /** Return number of peers not in state */
-    std::uint16_t
-    notInState(PeerState state) const;
-
     /** Return Slot's state */
     SlotState
     getState() const
@@ -485,15 +481,6 @@ Slot<clock_type>::inState(PeerState state) const
 }
 
 template <typename clock_type>
-std::uint16_t
-Slot<clock_type>::notInState(PeerState state) const
-{
-    return std::count_if(peers_.begin(), peers_.end(), [&](auto const& it) {
-        return (it.second.state != state);
-    });
-}
-
-template <typename clock_type>
 std::set<typename Peer::id_t>
 Slot<clock_type>::getSelected() const
 {
@@ -578,16 +565,6 @@ public:
         auto const& it = slots_.find(validator);
         if (it != slots_.end())
             return it->second.inState(state);
-        return {};
-    }
-
-    /** Return number of peers not in state */
-    std::optional<std::uint16_t>
-    notInState(PublicKey const& validator, PeerState state) const
-    {
-        auto const& it = slots_.find(validator);
-        if (it != slots_.end())
-            return it->second.notInState(state);
         return {};
     }
 
