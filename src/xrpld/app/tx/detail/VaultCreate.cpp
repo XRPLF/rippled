@@ -36,7 +36,8 @@ namespace ripple {
 NotTEC
 VaultCreate::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureSingleAssetVault))
+    if (!ctx.rules.enabled(featureSingleAssetVault) ||
+        !ctx.rules.enabled(featureMPTokensV1))
         return temDISABLED;
 
     if (ctx.tx.isFieldPresent(sfDomainID) &&
