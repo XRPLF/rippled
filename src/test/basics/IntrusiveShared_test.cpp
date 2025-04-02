@@ -828,12 +828,12 @@ public:
     void
     run() override
     {
-        // testBasics();
+        testBasics();
         testPartialDelete();
-        // testDestructor();
-        // testMultithreadedClearMixedVariant();
-        // testMultithreadedClearMixedUnion();
-        // testMultithreadedLockingWeak();
+        testDestructor();
+        testMultithreadedClearMixedVariant();
+        testMultithreadedClearMixedUnion();
+        testMultithreadedLockingWeak();
     }
 };  // namespace tests
 
