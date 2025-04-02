@@ -148,6 +148,8 @@ struct blobField : public JTxField<SF_VL, std::string>
     using SV = std::string;
     using base = JTxField<SF, SV, SV>;
 
+    using JTxField::JTxField;
+
     explicit blobField(SF const& sfield, Slice const& cond)
         : JTxField(sfield, strHex(cond))
     {
@@ -175,7 +177,7 @@ public:
     {
     }
 
-    JTxField const&
+    JF
     operator()(SV const& value) const
     {
         return JTxField(sfield_, value);
@@ -197,14 +199,20 @@ public:
     {
     }
 
-    JF const&
+    JF
+    operator()(SV const& cond) const
+    {
+        return JF(sfield_, cond);
+    }
+
+    JF
     operator()(Slice const& cond) const
     {
         return JF(sfield_, cond);
     }
 
     template <size_t N>
-    JF const&
+    JF
     operator()(std::array<std::uint8_t, N> const& c) const
     {
         return operator()(makeSlice(c));
@@ -450,7 +458,7 @@ auto const cancel_time = JTxFieldWrapper<timePointField>(sfCancelAfter);
 
 auto const condition = JTxFieldWrapper<blobField>(sfCondition);
 
-auto const fulfllment = JTxFieldWrapper<blobField>(sfFulfillment);
+auto const fulfillment = JTxFieldWrapper<blobField>(sfFulfillment);
 
 /* Payment Channel */
 /******************************************************************************/
