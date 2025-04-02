@@ -803,15 +803,16 @@ class Vault_test : public beast::unit_test::suite
         auto const vaultAccount =  //
             [&env, key = keylet.key, this]() -> AccountID {
             auto jvVault = env.rpc("vault_info", strHex(key));
+
             BEAST_EXPECT(
-                jvVault[jss::result][jss::nodes][0u][sfAssetsTotal] == "100");
+                jvVault[jss::result][jss::vault][sfAssetsTotal] == "100");
             BEAST_EXPECT(
-                jvVault[jss::result][jss::nodes][1u][sfOutstandingAmount] ==
-                "100");
+                jvVault[jss::result][jss::vault][jss::share]
+                       [sfOutstandingAmount] == "100");
 
             // Vault pseudo-account
             return parseBase58<AccountID>(
-                       jvVault[jss::result][jss::nodes][0u][jss::Account]
+                       jvVault[jss::result][jss::vault][jss::Account]
                            .asString())
                 .value();
         }();
@@ -843,10 +844,10 @@ class Vault_test : public beast::unit_test::suite
             testcase("nontransferable shares balance check");
             auto jvVault = env.rpc("vault_info", strHex(keylet.key));
             BEAST_EXPECT(
-                jvVault[jss::result][jss::nodes][0u][sfAssetsTotal] == "50");
+                jvVault[jss::result][jss::vault][sfAssetsTotal] == "50");
             BEAST_EXPECT(
-                jvVault[jss::result][jss::nodes][1u][sfOutstandingAmount] ==
-                "50");
+                jvVault[jss::result][jss::vault][jss::share]
+                       [sfOutstandingAmount] == "50");
         }
 
         {
@@ -1552,15 +1553,10 @@ class Vault_test : public beast::unit_test::suite
                 env.rpc("vault_info", strHex(keylet.key), "validated");
 
             BEAST_EXPECT(!jv[jss::result].isMember(jss::error));
-            BEAST_EXPECT(jv[jss::result].isMember(jss::nodes));
-            BEAST_EXPECT(jv[jss::result][jss::nodes].isArray());
-            BEAST_EXPECT(jv[jss::result].isMember(jss::directory));
-            BEAST_EXPECT(jv[jss::result][jss::directory][jss::vault] == 0);
-            BEAST_EXPECT(
-                jv[jss::result][jss::directory][jss::mpt_issuance] == 1);
+            BEAST_EXPECT(jv[jss::result].isMember(jss::vault));
             check(
-                jv[jss::result][jss::nodes][0u],
-                jv[jss::result][jss::nodes][1u]);
+                jv[jss::result][jss::vault],
+                jv[jss::result][jss::vault][jss::share]);
         }
 
         {
@@ -1572,15 +1568,10 @@ class Vault_test : public beast::unit_test::suite
             auto jv = env.rpc("json", "vault_info", to_string(jvParams));
 
             BEAST_EXPECT(!jv[jss::result].isMember(jss::error));
-            BEAST_EXPECT(jv[jss::result].isMember(jss::nodes));
-            BEAST_EXPECT(jv[jss::result][jss::nodes].isArray());
-            BEAST_EXPECT(jv[jss::result].isMember(jss::directory));
-            BEAST_EXPECT(jv[jss::result][jss::directory][jss::vault] == 0);
-            BEAST_EXPECT(
-                jv[jss::result][jss::directory][jss::mpt_issuance] == 1);
+            BEAST_EXPECT(jv[jss::result].isMember(jss::vault));
             check(
-                jv[jss::result][jss::nodes][0u],
-                jv[jss::result][jss::nodes][1u]);
+                jv[jss::result][jss::vault],
+                jv[jss::result][jss::vault][jss::share]);
         }
 
         {

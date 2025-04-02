@@ -47,8 +47,6 @@ doVaultInfo(RPC::JsonContext& context)
         return jvResult;
     }
 
-    bool const isBinary = context.params[jss::binary].asBool();
-
     auto const sleVault = lpLedger->read(keylet::vault(uNodeIndex));
     auto const sleIssuance = sleVault == nullptr  //
         ? nullptr
@@ -59,36 +57,12 @@ doVaultInfo(RPC::JsonContext& context)
         return jvResult;
     }
 
-    Json::Value directory = Json::objectValue;
-    // Some directory positions in nodes are hardcoded below, because the
-    // order of writing these is hardcoded, but it may not stay like this
-    // forever. If a given type can have any number of nodes, use an array
-    // rather than a number
-    directory[jss::vault] = 0;
-    directory[jss::mpt_issuance] = 1;
+    Json::Value& vault = jvResult[jss::vault];
+    vault = sleVault->getJson(JsonOptions::none);
+    auto& share = vault[jss::share];
+    share = sleIssuance->getJson(JsonOptions::none);
 
-    Json::Value nodes = Json::arrayValue;
-    if (!isBinary)
-    {
-        auto& vault = nodes.append(Json::objectValue);
-        vault = sleVault->getJson(JsonOptions::none);
-
-        auto& issuance = nodes.append(Json::objectValue);
-        issuance = sleIssuance->getJson(JsonOptions::none);
-    }
-    else
-    {
-        auto& vault = nodes.append(Json::objectValue);
-        vault[jss::data] = serializeHex(*sleVault);
-        vault[jss::index] = to_string(sleVault->key());
-
-        auto& issuance = nodes.append(Json::objectValue);
-        issuance[jss::data] = serializeHex(*sleIssuance);
-        issuance[jss::index] = to_string(sleIssuance->key());
-    }
-
-    jvResult[jss::directory] = directory;
-    jvResult[jss::nodes] = nodes;
+    jvResult[jss::vault] = vault;
     return jvResult;
 }
 
