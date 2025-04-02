@@ -115,6 +115,24 @@ private:
         std::size_t count;       // message count
         time_point expire;       // squelch expiration time
         time_point lastMessage;  // time last message received
+
+        bool
+        isSelected()
+        {
+            return state == PeerState::Selected;
+        }
+
+        bool
+        isSquelched()
+        {
+            return state == PeerState::Squelched;
+        }
+
+        bool
+        reachedMaxThreshold()
+        {
+            return count > MAX_MESSAGE_THRESHOLD;
+        }
     };
     std::unordered_map<id_t, PeerInfo> peers_;  // peer's data
     // pool of peers considered as the source of messages
@@ -267,7 +285,7 @@ Slot<clock_type>::update(
         return;
     }
     // Message from a peer with expired squelch
-    if (it->second.state == PeerState::Squelched && now > it->second.expire)
+    if (it->second.isSquelched() && now > it->second.expire)
     {
         JLOG(journal_.trace())
             << "update: squelch expired " << Slice(validator) << " " << id;
@@ -289,12 +307,12 @@ Slot<clock_type>::update(
 
     peer.lastMessage = now;
 
-    if (state_ != SlotState::Counting || peer.state == PeerState::Squelched)
+    if (state_ != SlotState::Counting || peer.isSquelched())
         return;
 
     if (++peer.count > MIN_MESSAGE_THRESHOLD)
         considered_.insert(id);
-    if (peer.count == (MAX_MESSAGE_THRESHOLD + 1))
+    if (peer.reachedMaxThreshold())
         ++reachedThreshold_;
 
     if (now - lastSelected_ > 2 * MAX_UNSQUELCH_EXPIRE_DEFAULT)
