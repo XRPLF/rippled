@@ -1661,9 +1661,6 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
         return;
     }
 
-    // RH TODO: when isTrusted = false we should probably also cache a key
-    // suppression for 30 seconds to avoid doing a relatively expensive lookup
-    // every time a spam packet is received
     PublicKey const publicKey{makeSlice(set.nodepubkey())};
 
     uint256 const proposeHash{set.currenttxhash()};
@@ -1679,6 +1676,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
         publicKey.slice(),
         sig);
 
+    // If the message is duplicate, updating squelching and drop the message
     if (auto const [added, relayed] =
             app_.getHashRouter().addSuppressionPeerWithStatus(suppression, id_);
         !added)
@@ -1693,6 +1691,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
         return;
     }
 
+    // RH TODO: when isTrusted = false we should probably also cache a key
+    // suppression for 30 seconds to avoid doing a relatively expensive lookup
+    // every time a spam packet is received
     auto const isTrusted = app_.validators().trusted(publicKey);
     if (!isTrusted)
     {
@@ -2278,6 +2279,8 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
 
     try
     {
+        // Parse the validation message before duplicity check
+        // as squelching logic requires the validator key
         std::shared_ptr<STValidation> const val = [this, m]() {
             SerialIter sit(makeSlice(m->validation()));
             auto v = std::make_shared<STValidation>(
@@ -2294,6 +2297,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
 
         auto const key = sha512Half(makeSlice(m->validation()));
 
+        // If the message is duplicate, updating squelching and drop the message
         if (auto const [added, relayed] =
                 app_.getHashRouter().addSuppressionPeerWithStatus(key, id_);
             !added)
