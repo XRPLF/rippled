@@ -2953,13 +2953,14 @@ class Batch_test : public beast::unit_test::suite
         env.fund(XRP(1000), alice, bob);
         env.close();
 
-        auto submitTx = [&](std::uint32_t flags) {
+        auto submitTx = [&](std::uint32_t flags) -> uint256 {
             auto jv = pay(alice, bob, XRP(1));
             jv[sfFlags.fieldName] = flags;
             Serializer s;
             auto jt = env.jt(jv);
             jt.stx->add(s);
             env.app().getOPs().submitTransaction(jt.stx);
+            return jt.stx->getTransactionID();
         };
 
         auto processTxn = [&](std::uint32_t flags) -> uint256 {
@@ -2979,15 +2980,13 @@ class Batch_test : public beast::unit_test::suite
         // Validate: NetworkOPs::submitTransaction()
         {
             // Submit a tx with tfPartialPayment
-            submitTx(tfPartialPayment);
-            // Verify the transaction is queued
+            uint256 const txGood = submitTx(tfPartialPayment);
             BEAST_EXPECT(
-                env.app().getJobQueue().getJobCount(jtTRANSACTION) == 1);
+                env.app().getHashRouter().getFlags(txGood) ==
+                SF_PRIVATE2 + SF_PRIVATE4);
             // Submit a tx with tfInnerBatchTxn
-            submitTx(tfInnerBatchTxn);
-            // Verify the transaction is not queued
-            BEAST_EXPECT(
-                env.app().getJobQueue().getJobCount(jtTRANSACTION) == 0);
+            uint256 const txBad = submitTx(tfInnerBatchTxn);
+            BEAST_EXPECT(env.app().getHashRouter().getFlags(txBad) == 0);
         }
 
         // Validate: NetworkOPs::processTransaction()
