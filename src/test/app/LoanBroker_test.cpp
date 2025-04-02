@@ -19,8 +19,8 @@
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
-#include <test/jtx/vault.h>
 #include <test/jtx/TestHelpers.h>
+#include <test/jtx/vault.h>
 
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
@@ -37,19 +37,18 @@
 namespace ripple {
 namespace test {
 
-
 class LoanBroker_test : public beast::unit_test::suite
 {
     void
     testDisabled()
     {
-        // Lending Protocol depends on Single Asset Vault. Test combinations of the two amendments.
-        // Single Asset Vault depends on MPTokensV1, but don't test every combo of that.
+        // Lending Protocol depends on Single Asset Vault. Test combinations of
+        // the two amendments. Single Asset Vault depends on MPTokensV1, but
+        // don't test every combo of that.
         using namespace jtx;
         FeatureBitset const all{jtx::supported_amendments()};
         {
-            auto const noMPTs =
-                all - featureMPTokensV1;
+            auto const noMPTs = all - featureMPTokensV1;
             Env env(*this, noMPTs);
 
             Account const alice{"alice"};
@@ -58,7 +57,8 @@ class LoanBroker_test : public beast::unit_test::suite
             // Can't create a vault
             PrettyAsset const asset{xrpIssue(), 1'000'000};
             Vault vault{env};
-            auto const [tx, keylet] = vault.create({.owner = alice, .asset = asset});
+            auto const [tx, keylet] =
+                vault.create({.owner = alice, .asset = asset});
             env(tx, ter(temDISABLED));
             env.close();
             BEAST_EXPECT(!env.le(keylet));
@@ -70,7 +70,6 @@ class LoanBroker_test : public beast::unit_test::suite
         {
             auto const neither = all - featureMPTokensV1 -
                 featureSingleAssetVault - featureLendingProtocol;
-
         }
     }
 
