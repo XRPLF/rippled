@@ -802,19 +802,17 @@ class Vault_test : public beast::unit_test::suite
 
         auto const vaultAccount =  //
             [&env, key = keylet.key, this]() -> AccountID {
-            Json::Value jvParams;
-            jvParams[jss::ledger_index] = jss::validated;
-            jvParams[jss::vault] = strHex(key);
-            auto jvVault = env.rpc("json", "ledger_entry", to_string(jvParams));
+            auto jvVault = env.rpc("vault_info", strHex(key));
             BEAST_EXPECT(
-                jvVault[jss::result][jss::node][jss::SharesTotal] == "100");
+                jvVault[jss::result][jss::nodes][0u][sfAssetsTotal] == "100");
             BEAST_EXPECT(
-                jvVault[jss::result][jss::node][sfAssetsTotal.fieldName] ==
+                jvVault[jss::result][jss::nodes][1u][sfOutstandingAmount] ==
                 "100");
 
             // Vault pseudo-account
             return parseBase58<AccountID>(
-                       jvVault[jss::result][jss::node][jss::Account].asString())
+                       jvVault[jss::result][jss::nodes][0u][jss::Account]
+                           .asString())
                 .value();
         }();
 
@@ -843,15 +841,11 @@ class Vault_test : public beast::unit_test::suite
 
         {
             testcase("nontransferable shares balance check");
-            Json::Value jvParams;
-            jvParams[jss::ledger_index] = jss::validated;
-            jvParams[jss::vault] = strHex(keylet.key);
-            auto jvVault = env.rpc("json", "ledger_entry", to_string(jvParams));
-
+            auto jvVault = env.rpc("vault_info", strHex(keylet.key));
             BEAST_EXPECT(
-                jvVault[jss::result][jss::node][jss::SharesTotal] == "50");
+                jvVault[jss::result][jss::nodes][0u][sfAssetsTotal] == "50");
             BEAST_EXPECT(
-                jvVault[jss::result][jss::node][sfAssetsTotal.fieldName] ==
+                jvVault[jss::result][jss::nodes][1u][sfOutstandingAmount] ==
                 "50");
         }
 
@@ -1383,52 +1377,66 @@ class Vault_test : public beast::unit_test::suite
         }();
 
         auto const check = [&, keylet = keylet, sle = sleVault, this](
-                               Json::Value const& node) {
-            BEAST_EXPECT(node.isObject());
+                               Json::Value const& vault,
+                               Json::Value const& issuance = Json::nullValue) {
+            BEAST_EXPECT(vault.isObject());
 
-            auto checkString =
-                [&node](SField const& field, std::string expected) -> bool {
+            constexpr auto checkString =
+                [](auto& node, SField const& field, std::string v) -> bool {
                 return node.isMember(field.fieldName) &&
                     node[field.fieldName].isString() &&
-                    node[field.fieldName] == expected;
+                    node[field.fieldName] == v;
             };
-            auto checkObject =
-                [&node](SField const& field, Json::Value expected) -> bool {
+            constexpr auto checkObject =
+                [](auto& node, SField const& field, Json::Value v) -> bool {
                 return node.isMember(field.fieldName) &&
                     node[field.fieldName].isObject() &&
-                    node[field.fieldName] == expected;
+                    node[field.fieldName] == v;
             };
-            auto checkInt = [&node](SField const& field, int expected) -> bool {
+            constexpr auto checkInt =
+                [](auto& node, SField const& field, int v) -> bool {
                 return node.isMember(field.fieldName) &&
                     ((node[field.fieldName].isInt() &&
-                      node[field.fieldName] == Json::Int(expected)) ||
+                      node[field.fieldName] == Json::Int(v)) ||
                      (node[field.fieldName].isUInt() &&
-                      node[field.fieldName] == Json::UInt(expected)));
+                      node[field.fieldName] == Json::UInt(v)));
             };
 
-            BEAST_EXPECT(node["LedgerEntryType"].asString() == "Vault");
-            BEAST_EXPECT(node[jss::index].asString() == strHex(keylet.key));
-            BEAST_EXPECT(checkInt(sfFlags, 0));
+            BEAST_EXPECT(vault["LedgerEntryType"].asString() == "Vault");
+            BEAST_EXPECT(vault[jss::index].asString() == strHex(keylet.key));
+            BEAST_EXPECT(checkInt(vault, sfFlags, 0));
             // Ignore all other standard fields, this test doesn't care
 
-            BEAST_EXPECT(checkString(sfAccount, toBase58(sle->at(sfAccount))));
-            BEAST_EXPECT(checkObject(sfAsset, to_json(sle->at(sfAsset))));
-            BEAST_EXPECT(checkString(sfAssetsAvailable, "50"));
-            BEAST_EXPECT(checkString(sfAssetsMaximum, "1000"));
-            BEAST_EXPECT(checkString(sfAssetsTotal, "50"));
-            BEAST_EXPECT(checkString(sfLossUnrealized, "0"));
             BEAST_EXPECT(
-                checkString(sfShareMPTID, strHex(sle->at(sfShareMPTID))));
-            BEAST_EXPECT(checkString(sfOwner, toBase58(owner.id())));
-            BEAST_EXPECT(checkInt(sfSequence, sequence));
+                checkString(vault, sfAccount, toBase58(sle->at(sfAccount))));
             BEAST_EXPECT(
-                checkInt(sfWithdrawalPolicy, vaultStrategyFirstComeFirstServe));
+                checkObject(vault, sfAsset, to_json(sle->at(sfAsset))));
+            BEAST_EXPECT(checkString(vault, sfAssetsAvailable, "50"));
+            BEAST_EXPECT(checkString(vault, sfAssetsMaximum, "1000"));
+            BEAST_EXPECT(checkString(vault, sfAssetsTotal, "50"));
+            BEAST_EXPECT(checkString(vault, sfLossUnrealized, "0"));
 
-            // This field is injected in RPC::supplementJson<ltVAULT>
-            BEAST_EXPECT(
-                node.isMember(jss::SharesTotal) &&
-                node[jss::SharesTotal].isString() &&
-                node[jss::SharesTotal] == "50");
+            auto const strShareID = strHex(sle->at(sfShareMPTID));
+            BEAST_EXPECT(checkString(vault, sfShareMPTID, strShareID));
+            BEAST_EXPECT(checkString(vault, sfOwner, toBase58(owner.id())));
+            BEAST_EXPECT(checkInt(vault, sfSequence, sequence));
+            BEAST_EXPECT(checkInt(
+                vault, sfWithdrawalPolicy, vaultStrategyFirstComeFirstServe));
+
+            if (issuance.isObject())
+            {
+                BEAST_EXPECT(
+                    issuance["LedgerEntryType"].asString() ==
+                    "MPTokenIssuance");
+                BEAST_EXPECT(
+                    issuance[jss::mpt_issuance_id].asString() == strShareID);
+                BEAST_EXPECT(checkInt(issuance, sfSequence, 1));
+                BEAST_EXPECT(checkInt(
+                    issuance,
+                    sfFlags,
+                    int(lsfMPTCanEscrow | lsfMPTCanTrade | lsfMPTCanTransfer)));
+                BEAST_EXPECT(checkString(issuance, sfOutstandingAmount, "50"));
+            }
         };
 
         {
@@ -1536,6 +1544,74 @@ class Vault_test : public beast::unit_test::suite
                 env.rpc("json", "ledger_data", to_string(jvParams));
             BEAST_EXPECT(jv[jss::result][jss::state].size() == 1);
             check(jv[jss::result][jss::state][0u]);
+        }
+
+        {
+            testcase("RPC vault_info command line");
+            Json::Value jv =
+                env.rpc("vault_info", strHex(keylet.key), "validated");
+
+            BEAST_EXPECT(!jv[jss::result].isMember(jss::error));
+            BEAST_EXPECT(jv[jss::result].isMember(jss::nodes));
+            BEAST_EXPECT(jv[jss::result][jss::nodes].isArray());
+            BEAST_EXPECT(jv[jss::result].isMember(jss::directory));
+            BEAST_EXPECT(jv[jss::result][jss::directory][jss::vault] == 0);
+            BEAST_EXPECT(
+                jv[jss::result][jss::directory][jss::mpt_issuance] == 1);
+            check(
+                jv[jss::result][jss::nodes][0u],
+                jv[jss::result][jss::nodes][1u]);
+        }
+
+        {
+            testcase("RPC vault_info json by owner and sequence");
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = jss::validated;
+            jvParams[jss::vault][jss::owner] = owner.human();
+            jvParams[jss::vault][jss::seq] = sequence;
+            auto jv = env.rpc("json", "vault_info", to_string(jvParams));
+
+            BEAST_EXPECT(!jv[jss::result].isMember(jss::error));
+            BEAST_EXPECT(jv[jss::result].isMember(jss::nodes));
+            BEAST_EXPECT(jv[jss::result][jss::nodes].isArray());
+            BEAST_EXPECT(jv[jss::result].isMember(jss::directory));
+            BEAST_EXPECT(jv[jss::result][jss::directory][jss::vault] == 0);
+            BEAST_EXPECT(
+                jv[jss::result][jss::directory][jss::mpt_issuance] == 1);
+            check(
+                jv[jss::result][jss::nodes][0u],
+                jv[jss::result][jss::nodes][1u]);
+        }
+
+        {
+            testcase("RPC vault_info command line invalid index");
+            Json::Value jv = env.rpc("vault_info", "0", "validated");
+            BEAST_EXPECT(jv[jss::error].asString() == "invalidParams");
+        }
+
+        {
+            testcase("RPC vault_info json invalid index");
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = jss::validated;
+            jvParams[jss::vault] = 0;
+            auto jv = env.rpc("json", "vault_info", to_string(jvParams));
+            BEAST_EXPECT(
+                jv[jss::result][jss::error].asString() == "malformedRequest");
+        }
+
+        {
+            testcase("RPC vault_info command line invalid index");
+            Json::Value jv =
+                env.rpc("vault_info", strHex(uint256(42)), "validated");
+            BEAST_EXPECT(
+                jv[jss::result][jss::error].asString() == "entryNotFound");
+        }
+
+        {
+            testcase("RPC vault_info command line invalid ledger");
+            Json::Value jv = env.rpc("vault_info", strHex(keylet.key), "0");
+            BEAST_EXPECT(
+                jv[jss::result][jss::error].asString() == "lgrNotFound");
         }
     }
 

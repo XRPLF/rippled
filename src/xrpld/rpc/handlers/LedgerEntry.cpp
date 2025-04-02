@@ -856,32 +856,7 @@ parsePermissionedDomains(Json::Value const& pd, Json::Value& jvResult)
 static std::optional<uint256>
 parseVault(Json::Value const& params, Json::Value& jvResult)
 {
-    if (!params.isObject())
-    {
-        uint256 uNodeIndex;
-        if (!uNodeIndex.parseHex(params.asString()))
-        {
-            jvResult[jss::error] = "malformedRequest";
-            return std::nullopt;
-        }
-        return uNodeIndex;
-    }
-
-    if (!params.isMember(jss::owner) || !params.isMember(jss::seq) ||
-        !params[jss::seq].isIntegral())
-    {
-        jvResult[jss::error] = "malformedRequest";
-        return std::nullopt;
-    }
-
-    auto const id = parseBase58<AccountID>(params[jss::owner].asString());
-    if (!id)
-    {
-        jvResult[jss::error] = "malformedOwner";
-        return std::nullopt;
-    }
-
-    return keylet::vault(*id, params[jss::seq].asUInt()).key;
+    return RPC::parseVault(params, jvResult);
 }
 
 using FunctionType =
@@ -1033,9 +1008,6 @@ doLedgerEntry(RPC::JsonContext& context)
     else
     {
         jvResult[jss::node] = sleNode->getJson(JsonOptions::none);
-        if (sleNode->getType() == ltVAULT)
-            RPC::supplementJson<ltVAULT>(
-                *lpLedger, sleNode, jvResult[jss::node]);
         jvResult[jss::index] = to_string(uNodeIndex);
     }
 

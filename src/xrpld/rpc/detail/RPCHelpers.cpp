@@ -149,26 +149,6 @@ isRelatedToAccount(
     return false;
 }
 
-template <>
-void
-supplementJson<ltVAULT>(
-    ReadView const& view,
-    std::shared_ptr<SLE const> const& vault,
-    Json::Value& node)
-{
-    XRPL_ASSERT(
-        vault->getType() == ltVAULT,
-        "ripple::RPC::supplementJson<ltVAULT> : matching type");
-
-    auto const share = vault->at(sfShareMPTID);
-    auto const sleIssuance = view.read(keylet::mptIssuance(share));
-    if (!sleIssuance)
-        return;
-
-    node[jss::SharesTotal] =
-        Number(sleIssuance->getFieldU64(sfOutstandingAmount));
-}
-
 bool
 getAccountObjects(
     ReadView const& ledger,
@@ -320,10 +300,7 @@ getAccountObjects(
             if (!typeFilter.has_value() ||
                 typeMatchesFilter(typeFilter.value(), sleNode->getType()))
             {
-                auto& entry =
-                    jvObjects.append(sleNode->getJson(JsonOptions::none));
-                if (sleNode->getType() == ltVAULT)
-                    RPC::supplementJson<ltVAULT>(ledger, sleNode, entry);
+                jvObjects.append(sleNode->getJson(JsonOptions::none));
             }
 
             if (++i == mlimit)
@@ -1163,5 +1140,37 @@ getLedgerByContext(RPC::JsonContext& context)
     return RPC::make_error(
         rpcNOT_READY, "findCreate failed to return an inbound ledger");
 }
+
+std::optional<uint256>
+parseVault(Json::Value const& params, Json::Value& jvResult)
+{
+    if (!params.isObject())
+    {
+        uint256 uNodeIndex;
+        if (!uNodeIndex.parseHex(params.asString()))
+        {
+            jvResult[jss::error] = "malformedRequest";
+            return std::nullopt;
+        }
+        return uNodeIndex;
+    }
+
+    if (!params.isMember(jss::owner) || !params.isMember(jss::seq) ||
+        !params[jss::seq].isIntegral())
+    {
+        jvResult[jss::error] = "malformedRequest";
+        return std::nullopt;
+    }
+
+    auto const id = parseBase58<AccountID>(params[jss::owner].asString());
+    if (!id)
+    {
+        jvResult[jss::error] = "malformedOwner";
+        return std::nullopt;
+    }
+
+    return keylet::vault(*id, params[jss::seq].asUInt()).key;
+}
+
 }  // namespace RPC
 }  // namespace ripple

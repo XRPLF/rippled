@@ -30,6 +30,7 @@
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/json/json_forwards.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/ErrorCodes.h>
@@ -862,6 +863,25 @@ private:
         return jvRequest;
     }
 
+    Json::Value
+    parseVault(Json::Value const& jvParams)
+    {
+        std::string strVaultID = jvParams[0u].asString();
+        uint256 id = beast::zero;
+        if (!id.parseHex(strVaultID))
+            return rpcError(rpcINVALID_PARAMS);
+        if (id == beast::zero)
+            return rpcError(rpcINVALID_PARAMS);
+
+        Json::Value jvRequest(Json::objectValue);
+        jvRequest[jss::vault] = strVaultID;
+
+        if (jvParams.size() > 1)
+            jvParseLedger(jvRequest, jvParams[1u].asString());
+
+        return jvRequest;
+    }
+
     // peer_reservations_add <public_key> [<name>]
     Json::Value
     parsePeerReservationsAdd(Json::Value const& jvParams)
@@ -1208,6 +1228,7 @@ public:
             {"account_offers", &RPCParser::parseAccountItems, 1, 4},
             {"account_tx", &RPCParser::parseAccountTransactions, 1, 8},
             {"amm_info", &RPCParser::parseAsIs, 1, 2},
+            {"vault_info", &RPCParser::parseVault, 1, 2},
             {"book_changes", &RPCParser::parseLedgerId, 1, 1},
             {"book_offers", &RPCParser::parseBookOffers, 2, 7},
             {"can_delete", &RPCParser::parseCanDelete, 0, 1},
