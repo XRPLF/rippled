@@ -142,7 +142,7 @@ private:
     // number of peers that reached MAX_MESSAGE_THRESHOLD
     std::uint16_t reachedThreshold_;
     // last time peers were selected, used to age the slot
-    typename clock_type::time_point lastSelected_;
+    time_point lastSelected_;
     SlotState state_;                // slot's state
     SquelchHandler const& handler_;  // squelch/unsquelch handler
     beast::Journal const journal_;   // logging
@@ -542,7 +542,7 @@ Slot<clock_type>::inState(PeerState state) const
 }
 
 template <typename clock_type>
-std::set<typename Peer::id_t>
+std::set<id_t>
 Slot<clock_type>::getSelected() const
 {
     std::set<id_t> r;
@@ -553,9 +553,7 @@ Slot<clock_type>::getSelected() const
 }
 
 template <typename clock_type>
-std::unordered_map<
-    typename Peer::id_t,
-    std::tuple<PeerState, uint16_t, uint32_t, uint32_t>>
+std::unordered_map<id_t, std::tuple<PeerState, uint16_t, uint32_t, uint32_t>>
 Slot<clock_type>::getPeers() const
 {
     using namespace std::chrono;
@@ -586,7 +584,7 @@ class Slots final
     using id_t = typename Peer::id_t;
     using messages = beast::aged_unordered_map<
         uint256,
-        std::unordered_set<Peer::id_t>,
+        std::unordered_set<id_t>,
         clock_type,
         hardened_hash<strong_hash>>;
 
@@ -653,7 +651,7 @@ public:
      * expiration milliseconds.
      */
     std::unordered_map<
-        typename Peer::id_t,
+        id_t,
         std::tuple<PeerState, uint16_t, uint32_t, std::uint32_t>>
     getPeers(PublicKey const& validator)
     {
