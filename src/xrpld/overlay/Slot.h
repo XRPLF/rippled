@@ -167,13 +167,6 @@ private:
     std::uint16_t
     inState(PeerState state) const;
 
-    /** Return Slot's state */
-    SlotState
-    getState() const
-    {
-        return state_;
-    }
-
     /** Return selected peers */
     std::set<id_t>
     getSelected() const;
@@ -599,16 +592,6 @@ public:
         auto const& it = slots_.find(validator);
         if (it != slots_.end())
             return it->second.getPeers();
-        return {};
-    }
-
-    /** Get Slot's state */
-    std::optional<SlotState>
-    getState(PublicKey const& validator)
-    {
-        auto const& it = slots_.find(validator);
-        if (it != slots_.end())
-            return it->second.getState();
         return {};
     }
 
