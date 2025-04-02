@@ -130,6 +130,12 @@ private:
         }
 
         bool
+        reachedMinThreshold()
+        {
+            return count > MIN_MESSAGE_THRESHOLD;
+        }
+
+        bool
         reachedMaxThreshold()
         {
             return count > MAX_MESSAGE_THRESHOLD;
@@ -303,8 +309,11 @@ Slot<clock_type>::update(
     if (state_ != SlotState::Counting || peer.isSquelched())
         return;
 
-    if (++peer.count > MIN_MESSAGE_THRESHOLD)
+    ++peer.count;
+
+    if (peer.reachedMinThreshold())
         considered_.insert(id);
+
     if (peer.reachedMaxThreshold())
         ++reachedThreshold_;
 
@@ -434,6 +443,13 @@ Slot<clock_type>::deleteIdlePeers(PublicKey const& validator)
 
 template <typename clock_type>
 void
+Slot<clock_type>::deletePeer(PublicKey const& validator, id_t id, bool erase)
+{
+    deletePeers(validator, {id}, erase);
+}
+
+template <typename clock_type>
+void
 Slot<clock_type>::deletePeers(
     PublicKey const& validator,
     std::vector<id_t> ids,
@@ -457,7 +473,7 @@ Slot<clock_type>::deletePeers(
             << erase;
 
         // A peer we are removing is a selected peer
-        // we need unsquelch all peers, and reset state
+        // we need unsquelch all peers, and reset slot state
         if (it->second.isSelected())
             unsquelch = true;
 
@@ -499,9 +515,10 @@ Slot<clock_type>::deletePeers(
 
 template <typename clock_type>
 void
-Slot<clock_type>::deletePeer(PublicKey const& validator, id_t id, bool erase)
+Slot<clock_type>::initCounting()
 {
-    deletePeers(validator, {id}, erase);
+    resetState();
+    resetCounts();
 }
 
 template <typename clock_type>
@@ -522,14 +539,6 @@ Slot<clock_type>::resetState()
     state_ = SlotState::Counting;
     considered_.clear();
     reachedThreshold_ = 0;
-}
-
-template <typename clock_type>
-void
-Slot<clock_type>::initCounting()
-{
-    resetState();
-    resetCounts();
 }
 
 template <typename clock_type>
@@ -738,15 +747,14 @@ Slots<clock_type>::updateSlotAndSquelch(
     {
         JLOG(journal_.trace())
             << "updateSlotAndSquelch: new slot " << Slice(validator);
-        auto it = slots_
-                      .emplace(std::make_pair(
-                          validator,
-                          Slot<clock_type>(handler_, logs_.journal("Slot"))))
-                      .first;
-        it->second.update(validator, id, type);
+        it = slots_
+                 .emplace(std::make_pair(
+                     validator,
+                     Slot<clock_type>(handler_, logs_.journal("Slot"))))
+                 .first;
     }
-    else
-        it->second.update(validator, id, type);
+
+    it->second.update(validator, id, type);
 }
 
 template <typename clock_type>
