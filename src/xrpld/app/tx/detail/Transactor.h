@@ -281,7 +281,7 @@ Transactor::preflight(PreflightContext const& ctx)
 
 template <class T>
 bool
-Transactor::validNumericRange(std::optional<T> value, T min, T max)
+Transactor::validNumericRange(std::optional<T> value, T max, T min)
 {
     if (!value)
         return true;

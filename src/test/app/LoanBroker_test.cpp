@@ -20,6 +20,7 @@
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/TestHelpers.h>
+#include <test/jtx/mpt.h>
 #include <test/jtx/vault.h>
 
 #include <xrpl/basics/base_uint.h>
@@ -42,34 +43,141 @@ class LoanBroker_test : public beast::unit_test::suite
     void
     testDisabled()
     {
-        // Lending Protocol depends on Single Asset Vault. Test combinations of
-        // the two amendments. Single Asset Vault depends on MPTokensV1, but
-        // don't test every combo of that.
+        // Lending Protocol depends on Single Asset Vault (SAV). Test
+        // combinations of the two amendments.
+        // Single Asset Vault depends on MPTokensV1, but don't test every combo
+        // of that.
         using namespace jtx;
         FeatureBitset const all{jtx::supported_amendments()};
-        {
-            auto const noMPTs = all - featureMPTokensV1;
-            Env env(*this, noMPTs);
+        auto failAll = [this](FeatureBitset features, bool goodVault = false) {
+            Env env(*this, features);
 
             Account const alice{"alice"};
             env.fund(XRP(10000), alice);
 
-            // Can't create a vault
+            // Try to create a vault
             PrettyAsset const asset{xrpIssue(), 1'000'000};
             Vault vault{env};
             auto const [tx, keylet] =
                 vault.create({.owner = alice, .asset = asset});
-            env(tx, ter(temDISABLED));
+            env(tx, ter(goodVault ? ter(tesSUCCESS) : ter(temDISABLED)));
             env.close();
-            BEAST_EXPECT(!env.le(keylet));
+            BEAST_EXPECT(static_cast<bool>(env.le(keylet)) == goodVault);
 
             using namespace loanBroker;
-            // Can't create a loan broker with the non-existent vault
+            // Can't create a loan broker regardless of whether the vault exists
             env(set(alice, keylet.key), ter(temDISABLED));
-        }
+        };
+        // failAll(all - featureMPTokensV1);
+        failAll(all - featureSingleAssetVault - featureLendingProtocol);
+        failAll(all - featureSingleAssetVault);
+        failAll(all - featureLendingProtocol, true);
+    }
+
+    void
+    testCreateAndUpdate()
+    {
+        using namespace jtx;
+
+        // Create 3 loan brokers: one for XRP, one for an IOU, and one for an
+        // MPT. That'll require three corresponding SAVs.
+        Env env(*this);
+
+        Account issuer{"issuer"};
+        // For simplicity, alice will be the sole actor for the vault & brokers.
+        Account alice{"alice"};
+        // Evan will attempt to be naughty
+        Account evan{"evan"};
+        Vault vault{env};
+        env.fund(XRP(1000), issuer, alice, evan);
+
+        // Create assets
+        PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+        PrettyAsset const iouAsset = issuer["IOU"];
+        env(trust(alice, iouAsset(1000)));
+        env(trust(evan, iouAsset(1000)));
+        env(pay(issuer, evan, iouAsset(1000)));
+        env(pay(issuer, alice, iouAsset(1000)));
+        env.close();
+
+        MPTTester mptt{env, issuer, mptInitNoFund};
+        mptt.create(
+            {.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
+        PrettyAsset const mptAsset = mptt.issuanceID();
+        mptt.authorize({.account = alice});
+        mptt.authorize({.account = evan});
+        env(pay(issuer, alice, mptAsset(1000)));
+        env(pay(issuer, evan, mptAsset(1000)));
+        env.close();
+
+        std::array const assets{xrpAsset, iouAsset, mptAsset};
+
+        // Create vaults
+        struct Vault
         {
-            auto const neither = all - featureMPTokensV1 -
-                featureSingleAssetVault - featureLendingProtocol;
+            PrettyAsset const& asset;
+            uint256 vaultID;
+        };
+        std::vector<Vault> vaults;
+        for (auto const& asset : assets)
+        {
+            auto [tx, keylet] = vault.create({.owner = alice, .asset = asset});
+            env(tx);
+            env.close();
+            BEAST_EXPECT(env.le(keylet));
+
+            vaults.emplace_back(asset, keylet.key);
+
+            env(vault.deposit(
+                {.depositor = alice, .id = keylet.key, .amount = asset(50)}));
+        }
+
+        // Create and update Loan Brokers
+        for (auto const& vault : vaults)
+        {
+            using namespace loanBroker;
+
+            // Try some failure cases
+            env(set(evan, vault.vaultID), ter(tecNO_PERMISSION));
+            // flags are checked first
+            env(set(evan, vault.vaultID, ~tfUniversal), ter(temINVALID_FLAG));
+            // field length validation
+            // sfData: good length, bad account
+            env(set(evan, vault.vaultID),
+                data(strHex(std::string(maxDataPayloadLength, '0'))),
+                ter(tecNO_PERMISSION));
+            // sfData: too long
+            env(set(evan, vault.vaultID),
+                data(strHex(std::string(maxDataPayloadLength + 1, '0'))),
+                ter(temINVALID));
+            // sfManagementFeeRate: good value, bad account
+            env(set(evan, vault.vaultID),
+                managementFeeRate(maxFeeRate),
+                ter(tecNO_PERMISSION));
+            // sfManagementFeeRate: too big
+            env(set(evan, vault.vaultID),
+                managementFeeRate(maxFeeRate + 1),
+                ter(temINVALID));
+            // sfCoverRateMinimum: good value, bad account
+            env(set(evan, vault.vaultID),
+                coverRateMinimum(maxCoverRate),
+                ter(tecNO_PERMISSION));
+            // sfCoverRateMinimum: too big
+            env(set(evan, vault.vaultID),
+                coverRateMinimum(maxCoverRate + 1),
+                ter(temINVALID));
+            // sfCoverRateLiquidation: good value, bad account
+            env(set(evan, vault.vaultID),
+                coverRateLiquidation(maxCoverRate),
+                ter(tecNO_PERMISSION));
+            // sfCoverRateLiquidation: too big
+            env(set(evan, vault.vaultID),
+                coverRateLiquidation(maxCoverRate + 1),
+                ter(temINVALID));
+
+            auto keylet = keylet::loanbroker(alice.id(), env.seq(alice));
+            env(set(alice, vault.vaultID));
+            BEAST_EXPECT(env.le(keylet));
         }
     }
 
@@ -78,6 +186,7 @@ public:
     run() override
     {
         testDisabled();
+        testCreateAndUpdate();
     }
 };
 

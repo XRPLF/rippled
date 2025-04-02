@@ -916,10 +916,13 @@ ValidNewAccountRoot::finalize(
         result == tesSUCCESS)
     {
         bool const pseudoAccount =
-            (pseudoAccount_ && view.rules().enabled(featureSingleAssetVault));
+            (pseudoAccount_ &&
+             (view.rules().enabled(featureSingleAssetVault) ||
+              view.rules().enabled(featureLendingProtocol)));
 
         if (pseudoAccount && tx.getTxnType() != ttAMM_CREATE &&
-            tx.getTxnType() != ttVAULT_CREATE)
+            tx.getTxnType() != ttVAULT_CREATE &&
+            tx.getTxnType() != ttLOAN_BROKER_SET)
         {
             JLOG(j.fatal()) << "Invariant failed: pseudo-account created by a "
                                "wrong transaction type";
