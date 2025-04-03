@@ -26,10 +26,15 @@
  *
  * You must define a transactor class in the `ripple` namespace named `name`,
  * and include its header in `src/xrpld/app/tx/detail/applySteps.cpp`.
+ *
+ * The fourth parameter of the TRANSACTION macro is a keyword
+ * indicating whether the transaction can create an ltACCOUNT_ROOT.
+ * Valid values are "noCreate", "createFull", and "createPseudo".
+ * The values are only used in InvariantCheck.cpp
  */
 
 /** This transaction type executes a payment. */
-TRANSACTION(ttPAYMENT, 0, Payment, ({
+TRANSACTION(ttPAYMENT, 0, Payment, createFull, ({
     {sfDestination, soeREQUIRED},
     {sfAmount, soeREQUIRED, soeMPTSupported},
     {sfSendMax, soeOPTIONAL, soeMPTSupported},
@@ -41,7 +46,7 @@ TRANSACTION(ttPAYMENT, 0, Payment, ({
 }))
 
 /** This transaction type creates an escrow object. */
-TRANSACTION(ttESCROW_CREATE, 1, EscrowCreate, ({
+TRANSACTION(ttESCROW_CREATE, 1, EscrowCreate, noCreate, ({
     {sfDestination, soeREQUIRED},
     {sfAmount, soeREQUIRED},
     {sfCondition, soeOPTIONAL},
@@ -51,7 +56,7 @@ TRANSACTION(ttESCROW_CREATE, 1, EscrowCreate, ({
 }))
 
 /** This transaction type completes an existing escrow. */
-TRANSACTION(ttESCROW_FINISH, 2, EscrowFinish, ({
+TRANSACTION(ttESCROW_FINISH, 2, EscrowFinish, noCreate, ({
     {sfOwner, soeREQUIRED},
     {sfOfferSequence, soeREQUIRED},
     {sfFulfillment, soeOPTIONAL},
@@ -61,7 +66,7 @@ TRANSACTION(ttESCROW_FINISH, 2, EscrowFinish, ({
 
 
 /** This transaction type adjusts various account settings. */
-TRANSACTION(ttACCOUNT_SET, 3, AccountSet, ({
+TRANSACTION(ttACCOUNT_SET, 3, AccountSet, noCreate, ({
     {sfEmailHash, soeOPTIONAL},
     {sfWalletLocator, soeOPTIONAL},
     {sfWalletSize, soeOPTIONAL},
@@ -75,20 +80,20 @@ TRANSACTION(ttACCOUNT_SET, 3, AccountSet, ({
 }))
 
 /** This transaction type cancels an existing escrow. */
-TRANSACTION(ttESCROW_CANCEL, 4, EscrowCancel, ({
+TRANSACTION(ttESCROW_CANCEL, 4, EscrowCancel, noCreate, ({
     {sfOwner, soeREQUIRED},
     {sfOfferSequence, soeREQUIRED},
 }))
 
 /** This transaction type sets or clears an account's "regular key". */
-TRANSACTION(ttREGULAR_KEY_SET, 5, SetRegularKey, ({
+TRANSACTION(ttREGULAR_KEY_SET, 5, SetRegularKey, noCreate, ({
     {sfRegularKey, soeOPTIONAL},
 }))
 
 // 6 deprecated
 
 /** This transaction type creates an offer to trade one asset for another. */
-TRANSACTION(ttOFFER_CREATE, 7, OfferCreate, ({
+TRANSACTION(ttOFFER_CREATE, 7, OfferCreate, noCreate, ({
     {sfTakerPays, soeREQUIRED},
     {sfTakerGets, soeREQUIRED},
     {sfExpiration, soeOPTIONAL},
@@ -96,14 +101,14 @@ TRANSACTION(ttOFFER_CREATE, 7, OfferCreate, ({
 }))
 
 /** This transaction type cancels existing offers to trade one asset for another. */
-TRANSACTION(ttOFFER_CANCEL, 8, OfferCancel, ({
+TRANSACTION(ttOFFER_CANCEL, 8, OfferCancel, noCreate, ({
     {sfOfferSequence, soeREQUIRED},
 }))
 
 // 9 deprecated
 
 /** This transaction type creates a new set of tickets. */
-TRANSACTION(ttTICKET_CREATE, 10, TicketCreate, ({
+TRANSACTION(ttTICKET_CREATE, 10, TicketCreate, noCreate, ({
     {sfTicketCount, soeREQUIRED},
 }))
 
@@ -112,13 +117,13 @@ TRANSACTION(ttTICKET_CREATE, 10, TicketCreate, ({
 /** This transaction type modifies the signer list associated with an account. */
 // The SignerEntries are optional because a SignerList is deleted by
 // setting the SignerQuorum to zero and omitting SignerEntries.
-TRANSACTION(ttSIGNER_LIST_SET, 12, SignerListSet, ({
+TRANSACTION(ttSIGNER_LIST_SET, 12, SignerListSet, noCreate, ({
     {sfSignerQuorum, soeREQUIRED},
     {sfSignerEntries, soeOPTIONAL},
 }))
 
 /** This transaction type creates a new unidirectional XRP payment channel. */
-TRANSACTION(ttPAYCHAN_CREATE, 13, PaymentChannelCreate, ({
+TRANSACTION(ttPAYCHAN_CREATE, 13, PaymentChannelCreate, noCreate, ({
     {sfDestination, soeREQUIRED},
     {sfAmount, soeREQUIRED},
     {sfSettleDelay, soeREQUIRED},
@@ -128,14 +133,14 @@ TRANSACTION(ttPAYCHAN_CREATE, 13, PaymentChannelCreate, ({
 }))
 
 /** This transaction type funds an existing unidirectional XRP payment channel. */
-TRANSACTION(ttPAYCHAN_FUND, 14, PaymentChannelFund, ({
+TRANSACTION(ttPAYCHAN_FUND, 14, PaymentChannelFund, noCreate, ({
     {sfChannel, soeREQUIRED},
     {sfAmount, soeREQUIRED},
     {sfExpiration, soeOPTIONAL},
 }))
 
 /** This transaction type submits a claim against an existing unidirectional payment channel. */
-TRANSACTION(ttPAYCHAN_CLAIM, 15, PaymentChannelClaim, ({
+TRANSACTION(ttPAYCHAN_CLAIM, 15, PaymentChannelClaim, noCreate, ({
     {sfChannel, soeREQUIRED},
     {sfAmount, soeOPTIONAL},
     {sfBalance, soeOPTIONAL},
@@ -145,7 +150,7 @@ TRANSACTION(ttPAYCHAN_CLAIM, 15, PaymentChannelClaim, ({
 }))
 
 /** This transaction type creates a new check. */
-TRANSACTION(ttCHECK_CREATE, 16, CheckCreate, ({
+TRANSACTION(ttCHECK_CREATE, 16, CheckCreate, noCreate, ({
     {sfDestination, soeREQUIRED},
     {sfSendMax, soeREQUIRED},
     {sfExpiration, soeOPTIONAL},
@@ -154,19 +159,19 @@ TRANSACTION(ttCHECK_CREATE, 16, CheckCreate, ({
 }))
 
 /** This transaction type cashes an existing check. */
-TRANSACTION(ttCHECK_CASH, 17, CheckCash, ({
+TRANSACTION(ttCHECK_CASH, 17, CheckCash, noCreate, ({
     {sfCheckID, soeREQUIRED},
     {sfAmount, soeOPTIONAL},
     {sfDeliverMin, soeOPTIONAL},
 }))
 
 /** This transaction type cancels an existing check. */
-TRANSACTION(ttCHECK_CANCEL, 18, CheckCancel, ({
+TRANSACTION(ttCHECK_CANCEL, 18, CheckCancel, noCreate, ({
     {sfCheckID, soeREQUIRED},
 }))
 
 /** This transaction type grants or revokes authorization to transfer funds. */
-TRANSACTION(ttDEPOSIT_PREAUTH, 19, DepositPreauth, ({
+TRANSACTION(ttDEPOSIT_PREAUTH, 19, DepositPreauth, noCreate, ({
     {sfAuthorize, soeOPTIONAL},
     {sfUnauthorize, soeOPTIONAL},
     {sfAuthorizeCredentials, soeOPTIONAL},
@@ -174,14 +179,14 @@ TRANSACTION(ttDEPOSIT_PREAUTH, 19, DepositPreauth, ({
 }))
 
 /** This transaction type modifies a trustline between two accounts. */
-TRANSACTION(ttTRUST_SET, 20, TrustSet, ({
+TRANSACTION(ttTRUST_SET, 20, TrustSet, noCreate, ({
     {sfLimitAmount, soeOPTIONAL},
     {sfQualityIn, soeOPTIONAL},
     {sfQualityOut, soeOPTIONAL},
 }))
 
 /** This transaction type deletes an existing account. */
-TRANSACTION(ttACCOUNT_DELETE, 21, AccountDelete, ({
+TRANSACTION(ttACCOUNT_DELETE, 21, AccountDelete, noCreate, ({
     {sfDestination, soeREQUIRED},
     {sfDestinationTag, soeOPTIONAL},
     {sfCredentialIDs, soeOPTIONAL},
@@ -190,7 +195,7 @@ TRANSACTION(ttACCOUNT_DELETE, 21, AccountDelete, ({
 // 22 reserved
 
 /** This transaction mints a new NFT. */
-TRANSACTION(ttNFTOKEN_MINT, 25, NFTokenMint, ({
+TRANSACTION(ttNFTOKEN_MINT, 25, NFTokenMint, noCreate, ({
     {sfNFTokenTaxon, soeREQUIRED},
     {sfTransferFee, soeOPTIONAL},
     {sfIssuer, soeOPTIONAL},
@@ -201,13 +206,13 @@ TRANSACTION(ttNFTOKEN_MINT, 25, NFTokenMint, ({
 }))
 
 /** This transaction burns (i.e. destroys) an existing NFT. */
-TRANSACTION(ttNFTOKEN_BURN, 26, NFTokenBurn, ({
+TRANSACTION(ttNFTOKEN_BURN, 26, NFTokenBurn, noCreate, ({
     {sfNFTokenID, soeREQUIRED},
     {sfOwner, soeOPTIONAL},
 }))
 
 /** This transaction creates a new offer to buy or sell an NFT. */
-TRANSACTION(ttNFTOKEN_CREATE_OFFER, 27, NFTokenCreateOffer, ({
+TRANSACTION(ttNFTOKEN_CREATE_OFFER, 27, NFTokenCreateOffer, noCreate, ({
     {sfNFTokenID, soeREQUIRED},
     {sfAmount, soeREQUIRED},
     {sfDestination, soeOPTIONAL},
@@ -216,25 +221,25 @@ TRANSACTION(ttNFTOKEN_CREATE_OFFER, 27, NFTokenCreateOffer, ({
 }))
 
 /** This transaction cancels an existing offer to buy or sell an existing NFT. */
-TRANSACTION(ttNFTOKEN_CANCEL_OFFER, 28, NFTokenCancelOffer, ({
+TRANSACTION(ttNFTOKEN_CANCEL_OFFER, 28, NFTokenCancelOffer, noCreate, ({
     {sfNFTokenOffers, soeREQUIRED},
 }))
 
 /** This transaction accepts an existing offer to buy or sell an existing  NFT. */
-TRANSACTION(ttNFTOKEN_ACCEPT_OFFER, 29, NFTokenAcceptOffer, ({
+TRANSACTION(ttNFTOKEN_ACCEPT_OFFER, 29, NFTokenAcceptOffer, noCreate, ({
     {sfNFTokenBuyOffer, soeOPTIONAL},
     {sfNFTokenSellOffer, soeOPTIONAL},
     {sfNFTokenBrokerFee, soeOPTIONAL},
 }))
 
 /** This transaction claws back issued tokens. */
-TRANSACTION(ttCLAWBACK, 30, Clawback, ({
+TRANSACTION(ttCLAWBACK, 30, Clawback, noCreate, ({
     {sfAmount, soeREQUIRED, soeMPTSupported},
     {sfHolder, soeOPTIONAL},
 }))
 
 /** This transaction claws back tokens from an AMM pool. */
-TRANSACTION(ttAMM_CLAWBACK, 31, AMMClawback, ({
+TRANSACTION(ttAMM_CLAWBACK, 31, AMMClawback, noCreate, ({
     {sfHolder, soeREQUIRED},
     {sfAsset, soeREQUIRED},
     {sfAsset2, soeREQUIRED},
@@ -242,14 +247,14 @@ TRANSACTION(ttAMM_CLAWBACK, 31, AMMClawback, ({
 }))
 
 /** This transaction type creates an AMM instance */
-TRANSACTION(ttAMM_CREATE, 35, AMMCreate, ({
+TRANSACTION(ttAMM_CREATE, 35, AMMCreate, createPseudo, ({
     {sfAmount, soeREQUIRED},
     {sfAmount2, soeREQUIRED},
     {sfTradingFee, soeREQUIRED},
 }))
 
 /** This transaction type deposits into an AMM instance */
-TRANSACTION(ttAMM_DEPOSIT, 36, AMMDeposit, ({
+TRANSACTION(ttAMM_DEPOSIT, 36, AMMDeposit, noCreate, ({
     {sfAsset, soeREQUIRED},
     {sfAsset2, soeREQUIRED},
     {sfAmount, soeOPTIONAL},
@@ -260,7 +265,7 @@ TRANSACTION(ttAMM_DEPOSIT, 36, AMMDeposit, ({
 }))
 
 /** This transaction type withdraws from an AMM instance */
-TRANSACTION(ttAMM_WITHDRAW, 37, AMMWithdraw, ({
+TRANSACTION(ttAMM_WITHDRAW, 37, AMMWithdraw, noCreate, ({
     {sfAsset, soeREQUIRED},
     {sfAsset2, soeREQUIRED},
     {sfAmount, soeOPTIONAL},
@@ -270,14 +275,14 @@ TRANSACTION(ttAMM_WITHDRAW, 37, AMMWithdraw, ({
 }))
 
 /** This transaction type votes for the trading fee */
-TRANSACTION(ttAMM_VOTE, 38, AMMVote, ({
+TRANSACTION(ttAMM_VOTE, 38, AMMVote, noCreate, ({
     {sfAsset, soeREQUIRED},
     {sfAsset2, soeREQUIRED},
     {sfTradingFee, soeREQUIRED},
 }))
 
 /** This transaction type bids for the auction slot */
-TRANSACTION(ttAMM_BID, 39, AMMBid, ({
+TRANSACTION(ttAMM_BID, 39, AMMBid, noCreate, ({
     {sfAsset, soeREQUIRED},
     {sfAsset2, soeREQUIRED},
     {sfBidMin, soeOPTIONAL},
@@ -286,20 +291,20 @@ TRANSACTION(ttAMM_BID, 39, AMMBid, ({
 }))
 
 /** This transaction type deletes AMM in the empty state */
-TRANSACTION(ttAMM_DELETE, 40, AMMDelete, ({
+TRANSACTION(ttAMM_DELETE, 40, AMMDelete, noCreate, ({
     {sfAsset, soeREQUIRED},
     {sfAsset2, soeREQUIRED},
 }))
 
 /** This transactions creates a crosschain sequence number */
-TRANSACTION(ttXCHAIN_CREATE_CLAIM_ID, 41, XChainCreateClaimID, ({
+TRANSACTION(ttXCHAIN_CREATE_CLAIM_ID, 41, XChainCreateClaimID, noCreate, ({
     {sfXChainBridge, soeREQUIRED},
     {sfSignatureReward, soeREQUIRED},
     {sfOtherChainSource, soeREQUIRED},
 }))
 
 /** This transactions initiates a crosschain transaction */
-TRANSACTION(ttXCHAIN_COMMIT, 42, XChainCommit, ({
+TRANSACTION(ttXCHAIN_COMMIT, 42, XChainCommit, noCreate, ({
     {sfXChainBridge, soeREQUIRED},
     {sfXChainClaimID, soeREQUIRED},
     {sfAmount, soeREQUIRED},
@@ -307,7 +312,7 @@ TRANSACTION(ttXCHAIN_COMMIT, 42, XChainCommit, ({
 }))
 
 /** This transaction completes a crosschain transaction */
-TRANSACTION(ttXCHAIN_CLAIM, 43, XChainClaim, ({
+TRANSACTION(ttXCHAIN_CLAIM, 43, XChainClaim, noCreate, ({
     {sfXChainBridge, soeREQUIRED},
     {sfXChainClaimID, soeREQUIRED},
     {sfDestination, soeREQUIRED},
@@ -316,7 +321,7 @@ TRANSACTION(ttXCHAIN_CLAIM, 43, XChainClaim, ({
 }))
 
 /** This transaction initiates a crosschain account create transaction */
-TRANSACTION(ttXCHAIN_ACCOUNT_CREATE_COMMIT, 44, XChainAccountCreateCommit, ({
+TRANSACTION(ttXCHAIN_ACCOUNT_CREATE_COMMIT, 44, XChainAccountCreateCommit, noCreate, ({
     {sfXChainBridge, soeREQUIRED},
     {sfDestination, soeREQUIRED},
     {sfAmount, soeREQUIRED},
@@ -324,7 +329,7 @@ TRANSACTION(ttXCHAIN_ACCOUNT_CREATE_COMMIT, 44, XChainAccountCreateCommit, ({
 }))
 
 /** This transaction adds an attestation to a claim */
-TRANSACTION(ttXCHAIN_ADD_CLAIM_ATTESTATION, 45, XChainAddClaimAttestation, ({
+TRANSACTION(ttXCHAIN_ADD_CLAIM_ATTESTATION, 45, XChainAddClaimAttestation, createFull, ({
     {sfXChainBridge, soeREQUIRED},
 
     {sfAttestationSignerAccount, soeREQUIRED},
@@ -340,7 +345,7 @@ TRANSACTION(ttXCHAIN_ADD_CLAIM_ATTESTATION, 45, XChainAddClaimAttestation, ({
 }))
 
 /** This transaction adds an attestation to an account */
-TRANSACTION(ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION, 46, XChainAddAccountCreateAttestation, ({
+TRANSACTION(ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION, 46, XChainAddAccountCreateAttestation, createFull, ({
     {sfXChainBridge, soeREQUIRED},
 
     {sfAttestationSignerAccount, soeREQUIRED},
@@ -357,31 +362,31 @@ TRANSACTION(ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION, 46, XChainAddAccountCreateA
 }))
 
 /** This transaction modifies a sidechain */
-TRANSACTION(ttXCHAIN_MODIFY_BRIDGE, 47, XChainModifyBridge, ({
+TRANSACTION(ttXCHAIN_MODIFY_BRIDGE, 47, XChainModifyBridge, noCreate, ({
     {sfXChainBridge, soeREQUIRED},
     {sfSignatureReward, soeOPTIONAL},
     {sfMinAccountCreateAmount, soeOPTIONAL},
 }))
 
 /** This transactions creates a sidechain */
-TRANSACTION(ttXCHAIN_CREATE_BRIDGE, 48, XChainCreateBridge, ({
+TRANSACTION(ttXCHAIN_CREATE_BRIDGE, 48, XChainCreateBridge, noCreate, ({
     {sfXChainBridge, soeREQUIRED},
     {sfSignatureReward, soeREQUIRED},
     {sfMinAccountCreateAmount, soeOPTIONAL},
 }))
 
 /** This transaction type creates or updates a DID */
-TRANSACTION(ttDID_SET, 49, DIDSet, ({
+TRANSACTION(ttDID_SET, 49, DIDSet, noCreate, ({
     {sfDIDDocument, soeOPTIONAL},
     {sfURI, soeOPTIONAL},
     {sfData, soeOPTIONAL},
 }))
 
 /** This transaction type deletes a DID */
-TRANSACTION(ttDID_DELETE, 50, DIDDelete, ({}))
+TRANSACTION(ttDID_DELETE, 50, DIDDelete, noCreate, ({}))
 
 /** This transaction type creates an Oracle instance */
-TRANSACTION(ttORACLE_SET, 51, OracleSet, ({
+TRANSACTION(ttORACLE_SET, 51, OracleSet, noCreate, ({
     {sfOracleDocumentID, soeREQUIRED},
     {sfProvider, soeOPTIONAL},
     {sfURI, soeOPTIONAL},
@@ -391,18 +396,18 @@ TRANSACTION(ttORACLE_SET, 51, OracleSet, ({
 }))
 
 /** This transaction type deletes an Oracle instance */
-TRANSACTION(ttORACLE_DELETE, 52, OracleDelete, ({
+TRANSACTION(ttORACLE_DELETE, 52, OracleDelete, noCreate, ({
     {sfOracleDocumentID, soeREQUIRED},
 }))
 
 /** This transaction type fixes a problem in the ledger state */
-TRANSACTION(ttLEDGER_STATE_FIX, 53, LedgerStateFix, ({
+TRANSACTION(ttLEDGER_STATE_FIX, 53, LedgerStateFix, noCreate, ({
     {sfLedgerFixType, soeREQUIRED},
     {sfOwner, soeOPTIONAL},
 }))
 
 /** This transaction type creates a MPTokensIssuance instance */
-TRANSACTION(ttMPTOKEN_ISSUANCE_CREATE, 54, MPTokenIssuanceCreate, ({
+TRANSACTION(ttMPTOKEN_ISSUANCE_CREATE, 54, MPTokenIssuanceCreate, noCreate, ({
     {sfAssetScale, soeOPTIONAL},
     {sfTransferFee, soeOPTIONAL},
     {sfMaximumAmount, soeOPTIONAL},
@@ -410,24 +415,24 @@ TRANSACTION(ttMPTOKEN_ISSUANCE_CREATE, 54, MPTokenIssuanceCreate, ({
 }))
 
 /** This transaction type destroys a MPTokensIssuance instance */
-TRANSACTION(ttMPTOKEN_ISSUANCE_DESTROY, 55, MPTokenIssuanceDestroy, ({
+TRANSACTION(ttMPTOKEN_ISSUANCE_DESTROY, 55, MPTokenIssuanceDestroy, noCreate, ({
     {sfMPTokenIssuanceID, soeREQUIRED},
 }))
 
 /** This transaction type sets flags on a MPTokensIssuance or MPToken instance */
-TRANSACTION(ttMPTOKEN_ISSUANCE_SET, 56, MPTokenIssuanceSet, ({
+TRANSACTION(ttMPTOKEN_ISSUANCE_SET, 56, MPTokenIssuanceSet, noCreate, ({
     {sfMPTokenIssuanceID, soeREQUIRED},
     {sfHolder, soeOPTIONAL},
 }))
 
 /** This transaction type authorizes a MPToken instance */
-TRANSACTION(ttMPTOKEN_AUTHORIZE, 57, MPTokenAuthorize, ({
+TRANSACTION(ttMPTOKEN_AUTHORIZE, 57, MPTokenAuthorize, noCreate, ({
     {sfMPTokenIssuanceID, soeREQUIRED},
     {sfHolder, soeOPTIONAL},
 }))
 
 /** This transaction type create an Credential instance */
-TRANSACTION(ttCREDENTIAL_CREATE, 58, CredentialCreate, ({
+TRANSACTION(ttCREDENTIAL_CREATE, 58, CredentialCreate, noCreate, ({
     {sfSubject, soeREQUIRED},
     {sfCredentialType, soeREQUIRED},
     {sfExpiration, soeOPTIONAL},
@@ -435,38 +440,38 @@ TRANSACTION(ttCREDENTIAL_CREATE, 58, CredentialCreate, ({
 }))
 
 /** This transaction type accept an Credential object */
-TRANSACTION(ttCREDENTIAL_ACCEPT, 59, CredentialAccept, ({
+TRANSACTION(ttCREDENTIAL_ACCEPT, 59, CredentialAccept, noCreate, ({
     {sfIssuer, soeREQUIRED},
     {sfCredentialType, soeREQUIRED},
 }))
 
 /** This transaction type delete an Credential object */
-TRANSACTION(ttCREDENTIAL_DELETE, 60, CredentialDelete, ({
+TRANSACTION(ttCREDENTIAL_DELETE, 60, CredentialDelete, noCreate, ({
     {sfSubject, soeOPTIONAL},
     {sfIssuer, soeOPTIONAL},
     {sfCredentialType, soeREQUIRED},
 }))
 
 /** This transaction type modify a NFToken */
-TRANSACTION(ttNFTOKEN_MODIFY, 61, NFTokenModify, ({
+TRANSACTION(ttNFTOKEN_MODIFY, 61, NFTokenModify, noCreate, ({
     {sfNFTokenID, soeREQUIRED},
     {sfOwner, soeOPTIONAL},
     {sfURI, soeOPTIONAL},
 }))
 
 /** This transaction type creates or modifies a Permissioned Domain */
-TRANSACTION(ttPERMISSIONED_DOMAIN_SET, 62, PermissionedDomainSet, ({
+TRANSACTION(ttPERMISSIONED_DOMAIN_SET, 62, PermissionedDomainSet, noCreate, ({
     {sfDomainID, soeOPTIONAL},
     {sfAcceptedCredentials, soeREQUIRED},
 }))
 
 /** This transaction type deletes a Permissioned Domain */
-TRANSACTION(ttPERMISSIONED_DOMAIN_DELETE, 63, PermissionedDomainDelete, ({
+TRANSACTION(ttPERMISSIONED_DOMAIN_DELETE, 63, PermissionedDomainDelete, noCreate, ({
     {sfDomainID, soeREQUIRED},
 }))
 
 /** This transaction creates a single asset vault. */
-TRANSACTION(ttVAULT_CREATE, 64, VaultCreate, ({
+TRANSACTION(ttVAULT_CREATE, 64, VaultCreate, createPseudo, ({
     {sfAsset, soeREQUIRED, soeMPTSupported},
     {sfAssetsMaximum, soeOPTIONAL},
     {sfMPTokenMetadata, soeOPTIONAL},
@@ -476,7 +481,7 @@ TRANSACTION(ttVAULT_CREATE, 64, VaultCreate, ({
 }))
 
 /** This transaction updates a single asset vault. */
-TRANSACTION(ttVAULT_SET, 65, VaultSet, ({
+TRANSACTION(ttVAULT_SET, 65, VaultSet, noCreate, ({
     {sfVaultID, soeREQUIRED},
     {sfAssetsMaximum, soeOPTIONAL},
     {sfDomainID, soeOPTIONAL}, // PermissionedDomainID
@@ -484,32 +489,32 @@ TRANSACTION(ttVAULT_SET, 65, VaultSet, ({
 }))
 
 /** This transaction deletes a single asset vault. */
-TRANSACTION(ttVAULT_DELETE, 66, VaultDelete, ({
+TRANSACTION(ttVAULT_DELETE, 66, VaultDelete, noCreate, ({
     {sfVaultID, soeREQUIRED},
 }))
 
 /** This transaction trades assets for shares with a vault. */
-TRANSACTION(ttVAULT_DEPOSIT, 67, VaultDeposit, ({
+TRANSACTION(ttVAULT_DEPOSIT, 67, VaultDeposit, noCreate, ({
     {sfVaultID, soeREQUIRED},
     {sfAmount, soeREQUIRED, soeMPTSupported},
 }))
 
 /** This transaction trades shares for assets with a vault. */
-TRANSACTION(ttVAULT_WITHDRAW, 68, VaultWithdraw, ({
+TRANSACTION(ttVAULT_WITHDRAW, 68, VaultWithdraw, noCreate, ({
     {sfVaultID, soeREQUIRED},
     {sfAmount, soeREQUIRED, soeMPTSupported},
     {sfDestination, soeOPTIONAL},
 }))
 
 /** This transaction claws back tokens from a vault. */
-TRANSACTION(ttVAULT_CLAWBACK, 69, VaultClawback, ({
+TRANSACTION(ttVAULT_CLAWBACK, 69, VaultClawback, noCreate, ({
     {sfVaultID, soeREQUIRED},
     {sfHolder, soeREQUIRED},
     {sfAmount, soeOPTIONAL, soeMPTSupported},
 }))
 
 /** This transaction creates and updates a Loan Broker */
-TRANSACTION(ttLOAN_BROKER_SET, 70, LoanBrokerSet, ({
+TRANSACTION(ttLOAN_BROKER_SET, 70, LoanBrokerSet, createPseudo, ({
     {sfVaultID, soeREQUIRED},
     {sfLoanBrokerID, soeOPTIONAL},
     {sfData, soeOPTIONAL},
@@ -521,24 +526,24 @@ TRANSACTION(ttLOAN_BROKER_SET, 70, LoanBrokerSet, ({
 
 #if 0
 /** This transaction deletes a Loan Broker */
-TRANSACTION(ttLOAN_BROKER_DELETE, 71, LoanBrokerDelete, ({
+TRANSACTION(ttLOAN_BROKER_DELETE, 71, LoanBrokerDelete, noCreate, ({
     {sfLoanBrokerID, soeREQUIRED},
 }))
 
 /** This transaction deposits First Loss Capital into a Loan Broker */
-TRANSACTION(ttLOAN_BROKER_COVER_DEPOSIT, 72, LoanBrokerCoverDeposit, ({
+TRANSACTION(ttLOAN_BROKER_COVER_DEPOSIT, 72, LoanBrokerCoverDeposit, noCreate, ({
     {sfLoanBrokerID, soeREQUIRED},
     {sfNumber, soeREQUIRED},
 }))
 
 /** This transaction withdraws First Loss Capital from a Loan Broker */
-TRANSACTION(ttLOAN_BROKER_COVER_WITHDRAW, 73, LoanBrokerCoverWithdraw, ({
+TRANSACTION(ttLOAN_BROKER_COVER_WITHDRAW, 73, LoanBrokerCoverWithdraw, noCreate, ({
     {sfLoanBrokerID, soeREQUIRED},
     {sfNumber, soeREQUIRED},
 }))
 
 /** This transaction creates a Loan */
-TRANSACTION(ttLOAN_SET, 74, LoanSet, ({
+TRANSACTION(ttLOAN_SET, 74, LoanSet, noCreate, ({
     {sfLoanBrokerID, soeREQUIRED},
     {sfData, soeOPTIONAL},
     {sfCounterparty, soeOPTIONAL},
@@ -558,23 +563,23 @@ TRANSACTION(ttLOAN_SET, 74, LoanSet, ({
 }))
 
 /** This transaction deletes an existing Loan */
-TRANSACTION(ttLOAN_DELETE, 75, LoanDelete, ({
+TRANSACTION(ttLOAN_DELETE, 75, LoanDelete, noCreate, ({
     {sfLoanID, soeREQUIRED},
 }))
 
 /** This transaction is used to change the delinquency status of an existing Loan */
-TRANSACTION(ttLOAN_MANAGE, 76, LoanManage, ({
+TRANSACTION(ttLOAN_MANAGE, 76, LoanManage, noCreate, ({
     {sfLoanID, soeREQUIRED},
 }))
 
 /** The Borrower uses this transaction to draws funds from the Loan. */
-TRANSACTION(ttLOAN_DRAW, 77, LoanDraw, ({
+TRANSACTION(ttLOAN_DRAW, 77, LoanDraw, noCreate, ({
     {sfLoanID, soeREQUIRED},
     {sfAmount, soeREQUIRED},
 }))
 
 /** The Borrower uses this transaction to make a Payment on the Loan. */
-TRANSACTION(ttLOAN_PAY, 77, LoanPay, ({
+TRANSACTION(ttLOAN_PAY, 77, LoanPay, noCreate, ({
     {sfLoanID, soeREQUIRED},
     {sfAmount, soeREQUIRED},
 }))
@@ -584,7 +589,7 @@ TRANSACTION(ttLOAN_PAY, 77, LoanPay, ({
 
     For details, see: https://xrpl.org/amendments.html
  */
-TRANSACTION(ttAMENDMENT, 100, EnableAmendment, ({
+TRANSACTION(ttAMENDMENT, 100, EnableAmendment, noCreate, ({
     {sfLedgerSequence, soeREQUIRED},
     {sfAmendment, soeREQUIRED},
 }))
@@ -592,7 +597,7 @@ TRANSACTION(ttAMENDMENT, 100, EnableAmendment, ({
 /** This system-generated transaction type is used to update the network's fee settings.
     For details, see: https://xrpl.org/fee-voting.html
  */
-TRANSACTION(ttFEE, 101, SetFee, ({
+TRANSACTION(ttFEE, 101, SetFee, noCreate, ({
     {sfLedgerSequence, soeOPTIONAL},
     // Old version uses raw numbers
     {sfBaseFee, soeOPTIONAL},
@@ -609,7 +614,7 @@ TRANSACTION(ttFEE, 101, SetFee, ({
 
     For details, see: https://xrpl.org/negative-unl.html
  */
-TRANSACTION(ttUNL_MODIFY, 102, UNLModify, ({
+TRANSACTION(ttUNL_MODIFY, 102, UNLModify, noCreate, ({
     {sfUNLModifyDisabling, soeREQUIRED},
     {sfLedgerSequence, soeREQUIRED},
     {sfUNLModifyValidator, soeREQUIRED},

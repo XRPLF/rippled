@@ -1074,25 +1074,20 @@ static std::array<SField const*, 2> const pseudoAccountOwnerFields = {
 [[nodiscard]] bool
 isPseudoAccount(std::shared_ptr<SLE const> sleAcct)
 {
-    // Note, the list of the pseudo-account designator fields below MUST be
-    // maintained but it does NOT need to be amendment-gated, since a non-active
-    // amendment will not set any field, by definition. Specific properties of a
-    // pseudo-account are NOT checked here, that's what InvariantCheck is for.
-    static std::array const fields =  //
-        {
-            &sfAMMID,         //
-            &sfVaultID,       //
-            &sfLoanBrokerID,  //
-        };
+    // auto const acctFields =
+    // LedgerFormats::getInstance().findByType(ltACCOUNT_ROOT);
 
     // Intentionally use defensive coding here because it's cheap and makes the
     // semantics of true return value clean.
     return sleAcct && sleAcct->getType() == ltACCOUNT_ROOT &&
         std::count_if(
-            fields.begin(), fields.end(), [&sleAcct](SField const* sf) -> bool {
+            pseudoAccountOwnerFields.begin(),
+            pseudoAccountOwnerFields.end(),
+            [&sleAcct](SField const* sf) -> bool {
                 return sleAcct->isFieldPresent(*sf);
             }) > 0;
 }
+
 
 Expected<std::shared_ptr<SLE>, TER>
 createPseudoAccount(
@@ -1137,20 +1132,6 @@ createPseudoAccount(
     view.insert(account);
 
     return account;
-}
-
-[[nodiscard]] bool
-isPseudoAccount(std::shared_ptr<SLE const> sleAcct)
-{
-    // Intentionally use defensive coding here because it's cheap and makes the
-    // semantics of true return value clean.
-    return sleAcct && sleAcct->getType() == ltACCOUNT_ROOT &&
-        std::count_if(
-            pseudoAccountOwnerFields.begin(),
-            pseudoAccountOwnerFields.end(),
-            [&sleAcct](SField const* sf) -> bool {
-                return sleAcct->isFieldPresent(*sf);
-            }) > 0;
 }
 
 [[nodiscard]] TER

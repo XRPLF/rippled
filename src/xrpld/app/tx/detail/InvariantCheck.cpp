@@ -462,40 +462,23 @@ LedgerEntryTypesMatch::visitEntry(
 
     if (after)
     {
+#pragma push_macro("LEDGER_ENTRY")
+#undef LEDGER_ENTRY
+
+#define LEDGER_ENTRY(tag, value, name, rpcName, fields) case tag:
+
         switch (after->getType())
         {
-            case ltACCOUNT_ROOT:
-            case ltDIR_NODE:
-            case ltRIPPLE_STATE:
-            case ltTICKET:
-            case ltSIGNER_LIST:
-            case ltOFFER:
-            case ltLEDGER_HASHES:
-            case ltAMENDMENTS:
-            case ltFEE_SETTINGS:
-            case ltESCROW:
-            case ltPAYCHAN:
-            case ltCHECK:
-            case ltDEPOSIT_PREAUTH:
-            case ltNEGATIVE_UNL:
-            case ltNFTOKEN_PAGE:
-            case ltNFTOKEN_OFFER:
-            case ltAMM:
-            case ltBRIDGE:
-            case ltXCHAIN_OWNED_CLAIM_ID:
-            case ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID:
-            case ltDID:
-            case ltORACLE:
-            case ltMPTOKEN_ISSUANCE:
-            case ltMPTOKEN:
-            case ltCREDENTIAL:
-            case ltPERMISSIONED_DOMAIN:
-            case ltVAULT:
-                break;
+#include <xrpl/protocol/detail/ledger_entries.macro>
+
+            break;
             default:
                 invalidTypeAdded_ = true;
                 break;
         }
+
+#undef LEDGER_ENTRY
+#pragma pop_macro("LEDGER_ENTRY")
     }
 }
 
@@ -908,21 +891,54 @@ ValidNewAccountRoot::finalize(
         return false;
     }
 
+    enum Creation {
+        noCreate,    //
+        createFull,  //
+        createPseudo
+    };
+#pragma push_macro("TRANSACTION")
+#undef TRANSACTION
+
+#define TRANSACTION(tag, value, name, acctCreate, fields) \
+    case tag: {                                           \
+        return acctCreate != noCreate;                    \
+    }
+
+    auto creator = [](STTx const& tx) {
+        switch (tx.getTxnType())
+        {
+#include <xrpl/protocol/detail/transactions.macro>
+        }
+        return false;
+    };
+
+#undef TRANSACTION
+
+#define TRANSACTION(tag, value, name, acctCreate, fields) \
+    case tag: {                                           \
+        return acctCreate == createPseudo;                \
+    }
+
+    auto pseudoCreator = [](STTx const& tx) {
+        switch (tx.getTxnType())
+        {
+#include <xrpl/protocol/detail/transactions.macro>
+        }
+        return false;
+    };
+
+#undef TRANSACTION
+#pragma pop_macro("TRANSACTION")
+
     // From this point on we know exactly one account was created.
-    if ((tx.getTxnType() == ttPAYMENT || tx.getTxnType() == ttAMM_CREATE ||
-         tx.getTxnType() == ttVAULT_CREATE ||
-         tx.getTxnType() == ttXCHAIN_ADD_CLAIM_ATTESTATION ||
-         tx.getTxnType() == ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION) &&
-        result == tesSUCCESS)
+    if (creator(tx) && result == tesSUCCESS)
     {
         bool const pseudoAccount =
             (pseudoAccount_ &&
              (view.rules().enabled(featureSingleAssetVault) ||
               view.rules().enabled(featureLendingProtocol)));
 
-        if (pseudoAccount && tx.getTxnType() != ttAMM_CREATE &&
-            tx.getTxnType() != ttVAULT_CREATE &&
-            tx.getTxnType() != ttLOAN_BROKER_SET)
+        if (pseudoAccount && !pseudoCreator(tx))
         {
             JLOG(j.fatal()) << "Invariant failed: pseudo-account created by a "
                                "wrong transaction type";
@@ -961,7 +977,7 @@ ValidNewAccountRoot::finalize(
 
     JLOG(j.fatal()) << "Invariant failed: account root created illegally";
     return false;
-}
+}  // namespace ripple
 
 //------------------------------------------------------------------------------
 
