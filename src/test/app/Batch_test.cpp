@@ -416,13 +416,10 @@ class Batch_test : public beast::unit_test::suite
         {
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
-            auto tx1 = pay(alice, bob, XRP(1));
+            auto tx1 = batch::inner(pay(alice, bob, XRP(1)), seq + 1);
             tx1[jss::Fee] = to_string(env.current()->fees().base);
-            tx1[jss::Sequence] = seq + 1;
-            tx1[jss::SigningPubKey] = "";
-            tx1[jss::Flags] = tx1[jss::Flags].asUInt() | tfInnerBatchTxn;
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
-                batch::inner_nofill(tx1),
+                tx1,
                 batch::inner(pay(alice, bob, XRP(2)), seq + 2),
                 ter(temINVALID_INNER_BATCH));
             env.close();
@@ -433,14 +430,10 @@ class Batch_test : public beast::unit_test::suite
         {
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
-            auto tx1 = pay(alice, bob, XRP(1));
+            auto tx1 = batch::inner(pay(alice, bob, XRP(1)), 0, 1);
             tx1[jss::Sequence] = seq + 1;
-            tx1[sfTicketSequence.jsonName] = 1;
-            tx1[jss::Fee] = "0";
-            tx1[jss::SigningPubKey] = "";
-            tx1[jss::Flags] = tx1[jss::Flags].asUInt() | tfInnerBatchTxn;
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
-                batch::inner_nofill(tx1),
+                tx1,
                 batch::inner(pay(alice, bob, XRP(2)), seq + 2),
                 ter(temINVALID_INNER_BATCH));
             env.close();
@@ -451,13 +444,8 @@ class Batch_test : public beast::unit_test::suite
         {
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
-            auto tx1 = pay(alice, bob, XRP(1));
-            tx1[jss::Fee] = "0";
-            tx1[jss::Sequence] = 0;
-            tx1[jss::SigningPubKey] = "";
-            tx1[jss::Flags] = tx1[jss::Flags].asUInt() | tfInnerBatchTxn;
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
-                batch::inner_nofill(tx1),
+                batch::inner(pay(alice, bob, XRP(1)), 0),
                 batch::inner(pay(alice, bob, XRP(2)), seq + 2),
                 ter(temINVALID_INNER_BATCH));
             env.close();
@@ -1396,14 +1384,9 @@ class Batch_test : public beast::unit_test::suite
 
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
             auto const seq = env.seq(alice);
-            auto tx2 = trust(alice, USD(1000), tfSetfAuth);
-            tx2[jss::Fee] = "0";
-            tx2[jss::Sequence] = seq + 2;
-            tx2[jss::SigningPubKey] = "";
-            tx2[jss::Flags] = tx2[jss::Flags].asUInt() | tfInnerBatchTxn;
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(1)), seq + 1),
-                batch::inner_nofill(tx2),
+                batch::inner(trust(alice, USD(1000), tfSetfAuth), seq + 2),
                 ter(tesSUCCESS));
             auto const txIDs = env.tx()->getBatchTransactionIDs();
             TxID const parentBatchId = env.tx()->getTransactionID();
@@ -1475,13 +1458,8 @@ class Batch_test : public beast::unit_test::suite
 
             auto const batchFee = batch::calcBatchFee(env, 0, 3);
             auto const seq = env.seq(alice);
-            auto tx1 = trust(alice, USD(1000), tfSetfAuth);
-            tx1[jss::Fee] = "0";
-            tx1[jss::Sequence] = seq + 1;
-            tx1[jss::SigningPubKey] = "";
-            tx1[jss::Flags] = tx1[jss::Flags].asUInt() | tfInnerBatchTxn;
             env(batch::outer(alice, seq, batchFee, tfOnlyOne),
-                batch::inner_nofill(tx1),
+                batch::inner(trust(alice, USD(1000), tfSetfAuth), seq + 1),
                 // duplicate txn id
                 batch::inner(pay(alice, bob, XRP(1)), seq + 1),
                 batch::inner(pay(alice, bob, XRP(2)), seq + 3),
@@ -1559,15 +1537,10 @@ class Batch_test : public beast::unit_test::suite
 
             auto const batchFee = batch::calcBatchFee(env, 0, 4);
             auto const seq = env.seq(alice);
-            auto tx3 = trust(alice, USD(1000), tfSetfAuth);
-            tx3[jss::Fee] = "0";
-            tx3[jss::Sequence] = seq + 3;
-            tx3[jss::SigningPubKey] = "";
-            tx3[jss::Flags] = tx3[jss::Flags].asUInt() | tfInnerBatchTxn;
             env(batch::outer(alice, seq, batchFee, tfUntilFailure),
                 batch::inner(pay(alice, bob, XRP(1)), seq + 1),
                 batch::inner(pay(alice, bob, XRP(2)), seq + 2),
-                batch::inner_nofill(tx3),
+                batch::inner(trust(alice, USD(1000), tfSetfAuth), seq + 3),
                 batch::inner(pay(alice, bob, XRP(3)), seq + 4),
                 ter(tesSUCCESS));
             auto const txIDs = env.tx()->getBatchTransactionIDs();
@@ -1645,15 +1618,10 @@ class Batch_test : public beast::unit_test::suite
 
             auto const batchFee = batch::calcBatchFee(env, 0, 4);
             auto const seq = env.seq(alice);
-            auto tx3 = trust(alice, USD(1000), tfSetfAuth);
-            tx3[jss::Fee] = "0";
-            tx3[jss::Sequence] = seq + 3;
-            tx3[jss::SigningPubKey] = "";
-            tx3[jss::Flags] = tx3[jss::Flags].asUInt() | tfInnerBatchTxn;
             env(batch::outer(alice, seq, batchFee, tfIndependent),
                 batch::inner(pay(alice, bob, XRP(1)), seq + 1),
                 batch::inner(pay(alice, bob, XRP(2)), seq + 2),
-                batch::inner_nofill(tx3),
+                batch::inner(trust(alice, USD(1000), tfSetfAuth), seq + 3),
                 // duplicate sequence
                 batch::inner(pay(alice, bob, XRP(3)), seq + 3),
                 ter(tesSUCCESS));
