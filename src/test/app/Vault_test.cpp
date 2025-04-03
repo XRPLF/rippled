@@ -421,7 +421,7 @@ class Vault_test : public beast::unit_test::suite
                                  Account const& owner,
                                  Account const& depositor,
                                  Account const& charlie)> setup) {
-            Env env{*this};
+            Env env{*this, supported_amendments() | featureSingleAssetVault};
             Account issuer{"issuer"};
             Account owner{"owner"};
             Account depositor{"depositor"};
@@ -502,7 +502,7 @@ class Vault_test : public beast::unit_test::suite
                                    Account const& depositor,
                                    Asset const& asset,
                                    Vault& vault)> test) {
-            Env env{*this};
+            Env env{*this, supported_amendments() | featureSingleAssetVault};
             Account issuer{"issuer"};
             Account owner{"owner"};
             Account depositor{"depositor"};
@@ -724,7 +724,7 @@ class Vault_test : public beast::unit_test::suite
     testCreateFailIOU()
     {
         using namespace test::jtx;
-        Env env{*this};
+        Env env{*this, supported_amendments() | featureSingleAssetVault};
         Account issuer{"issuer"};
         Account owner{"owner"};
         Account depositor{"depositor"};
@@ -745,7 +745,7 @@ class Vault_test : public beast::unit_test::suite
     testCreateFailMPT()
     {
         using namespace test::jtx;
-        Env env{*this};
+        Env env{*this, supported_amendments() | featureSingleAssetVault};
         Account issuer{"issuer"};
         Account owner{"owner"};
         Account depositor{"depositor"};
@@ -766,7 +766,7 @@ class Vault_test : public beast::unit_test::suite
     testNonTransferableShares()
     {
         using namespace test::jtx;
-        Env env{*this};
+        Env env{*this, supported_amendments() | featureSingleAssetVault};
         Account issuer{"issuer"};
         Account owner{"owner"};
         Account depositor{"depositor"};
@@ -885,7 +885,7 @@ class Vault_test : public beast::unit_test::suite
                                    Asset const& asset,
                                    Vault& vault,
                                    MPTTester& mptt)> test) {
-            Env env{*this};
+            Env env{*this, supported_amendments() | featureSingleAssetVault};
             Account issuer{"issuer"};
             Account owner{"owner"};
             Account depositor{"depositor"};
@@ -1033,7 +1033,7 @@ class Vault_test : public beast::unit_test::suite
     {
         testcase("private vault");
 
-        Env env{*this};
+        Env env{*this, supported_amendments() | featureSingleAssetVault};
         Account issuer{"issuer"};
         Account owner{"owner"};
         Account depositor{"depositor"};
@@ -1212,7 +1212,7 @@ class Vault_test : public beast::unit_test::suite
     testWithIOU()
     {
         testcase("IOU");
-        Env env{*this};
+        Env env{*this, supported_amendments() | featureSingleAssetVault};
         Account const owner{"owner"};
         Account const issuer{"issuer"};
         Account const charlie{"charlie"};
@@ -1315,7 +1315,7 @@ class Vault_test : public beast::unit_test::suite
         using namespace test::jtx;
 
         testcase("failed pseudo-account allocation");
-        Env env{*this};
+        Env env{*this, supported_amendments() | featureSingleAssetVault};
         Account const owner{"owner"};
         Vault vault{env};
         env.fund(XRP(1000), owner);
@@ -1342,7 +1342,7 @@ class Vault_test : public beast::unit_test::suite
     testRPC()
     {
         testcase("RPC");
-        Env env{*this};
+        Env env{*this, supported_amendments() | featureSingleAssetVault};
         Account const owner{"owner"};
         Account const issuer{"issuer"};
         Vault vault{env};
