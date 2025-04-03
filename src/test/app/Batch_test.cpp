@@ -1436,7 +1436,7 @@ class Batch_test : public beast::unit_test::suite
             BEAST_EXPECT(env.balance(bob) == preBob);
         }
 
-        // non tec failure
+        // tef failure
         {
             auto const preAlice = env.balance(alice);
             auto const preBob = env.balance(bob);
@@ -1451,6 +1451,33 @@ class Batch_test : public beast::unit_test::suite
             TxID const parentBatchId = env.tx()->getTransactionID();
             std::vector<TestBatchData> testCases = {
                 // tx #2 fails with tefNO_AUTH_REQUIRED
+            };
+            env.close();
+            validateBatch(env, parentBatchId, testCases);
+
+            // Alice consumes sequence
+            BEAST_EXPECT(env.seq(alice) == seq + 1);
+
+            // Alice pays Fee; Bob should not be affected
+            BEAST_EXPECT(env.balance(alice) == preAlice - batchFee);
+            BEAST_EXPECT(env.balance(bob) == preBob);
+        }
+
+        // ter failure
+        {
+            auto const preAlice = env.balance(alice);
+            auto const preBob = env.balance(bob);
+
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto const seq = env.seq(alice);
+            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                batch::inner(pay(alice, bob, XRP(1)), seq + 1),
+                batch::inner(trust(alice, USD(1000), tfSetfAuth), 0, seq + 2),
+                ter(tesSUCCESS));
+            auto const txIDs = env.tx()->getBatchTransactionIDs();
+            TxID const parentBatchId = env.tx()->getTransactionID();
+            std::vector<TestBatchData> testCases = {
+                // tx #2 fails with terPRE_TICKET
             };
             env.close();
             validateBatch(env, parentBatchId, testCases);
@@ -1511,7 +1538,7 @@ class Batch_test : public beast::unit_test::suite
             BEAST_EXPECT(env.balance(bob) == preBob + XRP(1));
         }
 
-        // non tec failure
+        // tef failure
         {
             auto const preAlice = env.balance(alice);
             auto const preBob = env.balance(bob);
@@ -1520,7 +1547,6 @@ class Batch_test : public beast::unit_test::suite
             auto const seq = env.seq(alice);
             env(batch::outer(alice, seq, batchFee, tfOnlyOne),
                 batch::inner(trust(alice, USD(1000), tfSetfAuth), seq + 1),
-                // duplicate txn id
                 batch::inner(pay(alice, bob, XRP(1)), seq + 1),
                 batch::inner(pay(alice, bob, XRP(2)), seq + 3),
                 ter(tesSUCCESS));
@@ -1528,6 +1554,35 @@ class Batch_test : public beast::unit_test::suite
             TxID const parentBatchId = env.tx()->getTransactionID();
             std::vector<TestBatchData> testCases = {
                 // tx #1 fails with tefNO_AUTH_REQUIRED
+                {"tesSUCCESS", to_string(txIDs[1])},
+            };
+            env.close();
+            validateBatch(env, parentBatchId, testCases);
+
+            // Alice consumes sequences (# of txns)
+            BEAST_EXPECT(env.seq(alice) == seq + 2);
+
+            // Alice pays XRP & Fee; Bob receives XRP
+            BEAST_EXPECT(env.balance(alice) == preAlice - batchFee - XRP(1));
+            BEAST_EXPECT(env.balance(bob) == preBob + XRP(1));
+        }
+
+        // ter failure
+        {
+            auto const preAlice = env.balance(alice);
+            auto const preBob = env.balance(bob);
+
+            auto const batchFee = batch::calcBatchFee(env, 0, 3);
+            auto const seq = env.seq(alice);
+            env(batch::outer(alice, seq, batchFee, tfOnlyOne),
+                batch::inner(trust(alice, USD(1000), tfSetfAuth), 0, seq + 1),
+                batch::inner(pay(alice, bob, XRP(1)), seq + 1),
+                batch::inner(pay(alice, bob, XRP(2)), seq + 3),
+                ter(tesSUCCESS));
+            auto const txIDs = env.tx()->getBatchTransactionIDs();
+            TxID const parentBatchId = env.tx()->getTransactionID();
+            std::vector<TestBatchData> testCases = {
+                // tx #1 fails with terPRE_TICKET
                 {"tesSUCCESS", to_string(txIDs[1])},
             };
             env.close();
@@ -1591,7 +1646,7 @@ class Batch_test : public beast::unit_test::suite
             BEAST_EXPECT(env.balance(bob) == preBob + XRP(3));
         }
 
-        // non tec error
+        // tef error
         {
             auto const preAlice = env.balance(alice);
             auto const preBob = env.balance(bob);
@@ -1610,6 +1665,37 @@ class Batch_test : public beast::unit_test::suite
                 {"tesSUCCESS", to_string(txIDs[0])},
                 {"tesSUCCESS", to_string(txIDs[1])},
                 // tx #3 fails with tefNO_AUTH_REQUIRED
+            };
+            env.close();
+            validateBatch(env, parentBatchId, testCases);
+
+            // Alice consumes sequences (# of txns)
+            BEAST_EXPECT(env.seq(alice) == seq + 3);
+
+            // Alice pays XRP & Fee; Bob receives XRP
+            BEAST_EXPECT(env.balance(alice) == preAlice - XRP(3) - batchFee);
+            BEAST_EXPECT(env.balance(bob) == preBob + XRP(3));
+        }
+        
+        // ter error
+        {
+            auto const preAlice = env.balance(alice);
+            auto const preBob = env.balance(bob);
+
+            auto const batchFee = batch::calcBatchFee(env, 0, 4);
+            auto const seq = env.seq(alice);
+            env(batch::outer(alice, seq, batchFee, tfUntilFailure),
+                batch::inner(pay(alice, bob, XRP(1)), seq + 1),
+                batch::inner(pay(alice, bob, XRP(2)), seq + 2),
+                batch::inner(trust(alice, USD(1000), tfSetfAuth), 0, seq + 3),
+                batch::inner(pay(alice, bob, XRP(3)), seq + 4),
+                ter(tesSUCCESS));
+            auto const txIDs = env.tx()->getBatchTransactionIDs();
+            TxID const parentBatchId = env.tx()->getTransactionID();
+            std::vector<TestBatchData> testCases = {
+                {"tesSUCCESS", to_string(txIDs[0])},
+                {"tesSUCCESS", to_string(txIDs[1])},
+                // tx #3 fails with terPRE_TICKET
             };
             env.close();
             validateBatch(env, parentBatchId, testCases);
@@ -1673,7 +1759,7 @@ class Batch_test : public beast::unit_test::suite
             BEAST_EXPECT(env.balance(bob) == preBob + XRP(6));
         }
 
-        // non tec error
+        // tef error
         {
             auto const preAlice = env.balance(alice);
             auto const preBob = env.balance(bob);
@@ -1684,7 +1770,6 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(1)), seq + 1),
                 batch::inner(pay(alice, bob, XRP(2)), seq + 2),
                 batch::inner(trust(alice, USD(1000), tfSetfAuth), seq + 3),
-                // duplicate sequence
                 batch::inner(pay(alice, bob, XRP(3)), seq + 3),
                 ter(tesSUCCESS));
             auto const txIDs = env.tx()->getBatchTransactionIDs();
@@ -1693,6 +1778,38 @@ class Batch_test : public beast::unit_test::suite
                 {"tesSUCCESS", to_string(txIDs[0])},
                 {"tesSUCCESS", to_string(txIDs[1])},
                 // tx #3 fails with tefNO_AUTH_REQUIRED
+                {"tesSUCCESS", to_string(txIDs[3])},
+            };
+            env.close();
+            validateBatch(env, parentBatchId, testCases);
+
+            // Alice consumes sequences (# of txns)
+            BEAST_EXPECT(env.seq(alice) == seq + 4);
+
+            // Alice pays XRP & Fee; Bob receives XRP
+            BEAST_EXPECT(env.balance(alice) == preAlice - batchFee - XRP(6));
+            BEAST_EXPECT(env.balance(bob) == preBob + XRP(6));
+        }
+
+        // ter error
+        {
+            auto const preAlice = env.balance(alice);
+            auto const preBob = env.balance(bob);
+
+            auto const batchFee = batch::calcBatchFee(env, 0, 4);
+            auto const seq = env.seq(alice);
+            env(batch::outer(alice, seq, batchFee, tfIndependent),
+                batch::inner(pay(alice, bob, XRP(1)), seq + 1),
+                batch::inner(pay(alice, bob, XRP(2)), seq + 2),
+                batch::inner(trust(alice, USD(1000), tfSetfAuth), 0, seq + 3),
+                batch::inner(pay(alice, bob, XRP(3)), seq + 3),
+                ter(tesSUCCESS));
+            auto const txIDs = env.tx()->getBatchTransactionIDs();
+            TxID const parentBatchId = env.tx()->getTransactionID();
+            std::vector<TestBatchData> testCases = {
+                {"tesSUCCESS", to_string(txIDs[0])},
+                {"tesSUCCESS", to_string(txIDs[1])},
+                // tx #3 fails with terPRE_TICKET
                 {"tesSUCCESS", to_string(txIDs[3])},
             };
             env.close();
