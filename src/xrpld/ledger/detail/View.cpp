@@ -1150,6 +1150,8 @@ addEmptyHolding(
     auto const sle = view.peek(keylet::account(accountID));
     if (!sle)
         return tefINTERNAL;
+    if ((sle->getFlags() & lsfDefaultRipple) == 0)
+        return tecINTERNAL;
     return trustCreate(
         view,
         high,
