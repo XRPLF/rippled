@@ -932,6 +932,64 @@ class Batch_test : public beast::unit_test::suite
         env(noop(bob), ter(tesSUCCESS));
         env.close();
 
+        // Invalid: Alice Sequence is a past sequence
+        {
+            auto const preAliceSeq = env.seq(alice);
+            auto const preAlice = env.balance(alice);
+            auto const preAliceUSD = env.balance(alice, USD.issue());
+            auto const preBobSeq = env.seq(bob);
+            auto const preBob = env.balance(bob);
+            auto const preBobUSD = env.balance(bob, USD.issue());
+
+            auto const batchFee = batch::calcBatchFee(env, 1, 2);
+            env(batch::outer(alice, preAliceSeq, batchFee, tfAllOrNothing),
+                batch::inner(pay(alice, bob, XRP(10)), preAliceSeq - 10),
+                batch::inner(pay(bob, alice, XRP(5)), preBobSeq),
+                batch::sig(bob),
+                ter(tesSUCCESS));
+            TxID const parentBatchId = env.tx()->getTransactionID();
+            std::vector<TestBatchData> testCases = {};
+            env.close();
+            validateBatch(env, parentBatchId, testCases);
+
+            // Alice pays fee & Bob should not be affected.
+            BEAST_EXPECT(env.seq(alice) == preAliceSeq + 1);
+            BEAST_EXPECT(env.balance(alice) == preAlice - batchFee);
+            BEAST_EXPECT(env.balance(alice, USD.issue()) == preAliceUSD);
+            BEAST_EXPECT(env.seq(bob) == preBobSeq);
+            BEAST_EXPECT(env.balance(bob) == preBob);
+            BEAST_EXPECT(env.balance(bob, USD.issue()) == preBobUSD);
+        }
+
+        // Invalid: Alice Sequence is a future sequence
+        {
+            auto const preAliceSeq = env.seq(alice);
+            auto const preAlice = env.balance(alice);
+            auto const preAliceUSD = env.balance(alice, USD.issue());
+            auto const preBobSeq = env.seq(bob);
+            auto const preBob = env.balance(bob);
+            auto const preBobUSD = env.balance(bob, USD.issue());
+
+            auto const batchFee = batch::calcBatchFee(env, 1, 2);
+            env(batch::outer(alice, preAliceSeq, batchFee, tfAllOrNothing),
+                batch::inner(pay(alice, bob, XRP(10)), preAliceSeq + 10),
+                batch::inner(pay(bob, alice, XRP(5)), preBobSeq),
+                batch::sig(bob),
+                ter(tesSUCCESS));
+            TxID const parentBatchId = env.tx()->getTransactionID();
+            std::vector<TestBatchData> testCases = {};
+            env.close();
+            validateBatch(env, parentBatchId, testCases);
+
+            // Alice pays fee & Bob should not be affected.
+            BEAST_EXPECT(env.seq(alice) == preAliceSeq + 1);
+            BEAST_EXPECT(env.balance(alice) == preAlice - batchFee);
+            BEAST_EXPECT(env.balance(alice, USD.issue()) == preAliceUSD);
+            BEAST_EXPECT(env.seq(bob) == preBobSeq);
+            BEAST_EXPECT(env.balance(bob) == preBob);
+            BEAST_EXPECT(env.balance(bob, USD.issue()) == preBobUSD);
+        }
+
         // Invalid: Bob Sequence is a past sequence
         {
             auto const preAliceSeq = env.seq(alice);
