@@ -118,10 +118,10 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
 
     // Cannot withdraw from a Vault an Asset frozen for the destination account
     if (isFrozen(ctx.view, dstAcct, asset))
-        return tecFROZEN;
+        return asset.holds<Issue>() ? tecFROZEN : tecLOCKED;
 
     if (isFrozen(ctx.view, account, share))
-        return tecFROZEN;
+        return tecLOCKED;
 
     return tesSUCCESS;
 }

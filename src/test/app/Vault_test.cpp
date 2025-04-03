@@ -973,10 +973,10 @@ class Vault_test : public beast::unit_test::suite
                 {.depositor = depositor,
                  .id = keylet.key,
                  .amount = asset(100)});
-            env(tx, ter(tecFROZEN));
+            env(tx, ter(tecLOCKED));
 
             tx[sfDestination] = issuer.human();
-            env(tx, ter(tecFROZEN));
+            env(tx, ter(tecLOCKED));
         });
 
         testCase([this](
