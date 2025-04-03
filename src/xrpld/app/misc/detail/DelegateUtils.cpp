@@ -26,15 +26,15 @@ TER
 checkTxPermission(std::shared_ptr<SLE const> const& delegate, STTx const& tx)
 {
     if (!delegate)
-        return tesSUCCESS;  // LCOV_EXCL_LINE
+        return tecNO_PERMISSION;  // LCOV_EXCL_LINE
 
     auto const permissionArray = delegate->getFieldArray(sfPermissions);
-    auto const transactionType = tx.getTxnType();
+    auto const txPermission = tx.getTxnType() + 1;
 
     for (auto const& permission : permissionArray)
     {
         auto const permissionValue = permission[sfPermissionValue];
-        if (permissionValue == transactionType + 1)
+        if (permissionValue == txPermission)
             return tesSUCCESS;
     }
 
@@ -44,7 +44,7 @@ checkTxPermission(std::shared_ptr<SLE const> const& delegate, STTx const& tx)
 void
 loadGranularPermission(
     std::shared_ptr<SLE const> const& delegate,
-    TxType const& type,
+    TxType const& txType,
     std::unordered_set<GranularPermissionType>& granularPermissions)
 {
     if (!delegate)
@@ -58,7 +58,7 @@ loadGranularPermission(
             static_cast<GranularPermissionType>(permissionValue);
         auto const& type =
             Permission::getInstance().getGranularTxType(granularValue);
-        if (type && *type == type)
+        if (type && *type == txType)
             granularPermissions.insert(granularValue);
     }
 }

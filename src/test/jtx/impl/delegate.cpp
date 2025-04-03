@@ -25,11 +25,10 @@ namespace ripple {
 namespace test {
 namespace jtx {
 
-namespace delegate_set {
+namespace delegate {
 
 Json::Value
-delegateSet(
-    jtx::Account const& account,
+set(jtx::Account const& account,
     jtx::Account const& authorize,
     std::vector<std::string> const& permissions)
 {
@@ -53,10 +52,7 @@ delegateSet(
 }
 
 Json::Value
-ledgerEntry(
-    jtx::Env& env,
-    jtx::Account const& account,
-    jtx::Account const& authorize)
+entry(jtx::Env& env, jtx::Account const& account, jtx::Account const& authorize)
 {
     Json::Value jvParams;
     jvParams[jss::ledger_index] = jss::validated;
@@ -65,7 +61,7 @@ ledgerEntry(
     return env.rpc("json", "ledger_entry", to_string(jvParams));
 }
 
-}  // namespace delegate_set
+}  // namespace delegate
 }  // namespace jtx
 }  // namespace test
 }  // namespace ripple

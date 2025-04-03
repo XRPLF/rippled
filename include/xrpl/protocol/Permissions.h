@@ -47,10 +47,14 @@ enum GranularPermissionType : std::uint32_t {
 #pragma pop_macro("PERMISSION")
 };
 
+enum delegatable { enabled, disabled };
+
 class Permission
 {
 private:
     Permission();
+
+    std::unordered_map<std::uint16_t, delegatable> delegatableTx;
 
     std::unordered_map<std::string, GranularPermissionType>
         granularPermissionMap;
@@ -58,8 +62,6 @@ private:
     std::unordered_map<GranularPermissionType, std::string> granularNameMap;
 
     std::unordered_map<GranularPermissionType, TxType> granularTxTypeMap;
-
-    std::unordered_set<std::string> supportedTransactions;
 
 public:
     static Permission const&
@@ -79,7 +81,7 @@ public:
     getGranularTxType(GranularPermissionType const& gpType) const;
 
     bool
-    isProhibited(std::uint32_t const& value) const;
+    isDelegatable(std::uint32_t const& permissionValue) const;
 
     // for tx level permission, permission value is equal to tx type plus one
     uint32_t

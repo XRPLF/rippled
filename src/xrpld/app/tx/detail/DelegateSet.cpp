@@ -49,12 +49,8 @@ DelegateSet::preflight(PreflightContext const& ctx)
 
     for (auto const& permission : permissions)
     {
-        auto const permissionValue = permission[sfPermissionValue];
-
-        if (permissionSet.find(permissionValue) != permissionSet.end())
+        if (!permissionSet.insert(permission[sfPermissionValue]).second)
             return temMALFORMED;
-
-        permissionSet.insert(permissionValue);
     }
 
     return preflight2(ctx);
@@ -73,7 +69,7 @@ DelegateSet::preclaim(PreclaimContext const& ctx)
     for (auto const& permission : permissions)
     {
         auto const permissionValue = permission[sfPermissionValue];
-        if (Permission::getInstance().isProhibited(permissionValue - 1))
+        if (!Permission::getInstance().isDelegatable(permissionValue))
             return tecNO_PERMISSION;
     }
 
@@ -109,20 +105,27 @@ DelegateSet::doApply()
     if (mPriorBalance < reserve)
         return tecINSUFFICIENT_RESERVE;
 
-    sle = std::make_shared<SLE>(delegateKey);
-    sle->setAccountID(sfAccount, account_);
-    sle->setAccountID(sfAuthorize, authAccount);
     auto const& permissions = ctx_.tx.getFieldArray(sfPermissions);
-    sle->setFieldArray(sfPermissions, permissions);
-    auto const page = ctx_.view().dirInsert(
-        keylet::ownerDir(account_), delegateKey, describeOwnerDir(account_));
+    if (!permissions.empty())
+    {
+        sle = std::make_shared<SLE>(delegateKey);
+        sle->setAccountID(sfAccount, account_);
+        sle->setAccountID(sfAuthorize, authAccount);
 
-    if (!page)
-        return tecDIR_FULL;  // LCOV_EXCL_LINE
+        sle->setFieldArray(sfPermissions, permissions);
+        auto const page = ctx_.view().dirInsert(
+            keylet::ownerDir(account_),
+            delegateKey,
+            describeOwnerDir(account_));
 
-    (*sle)[sfOwnerNode] = *page;
-    ctx_.view().insert(sle);
-    adjustOwnerCount(ctx_.view(), sleOwner, 1, ctx_.journal);
+        if (!page)
+            return tecDIR_FULL;  // LCOV_EXCL_LINE
+
+        (*sle)[sfOwnerNode] = *page;
+        ctx_.view().insert(sle);
+        adjustOwnerCount(ctx_.view(), sleOwner, 1, ctx_.journal);
+    }
+
     return tesSUCCESS;
 }
 

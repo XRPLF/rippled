@@ -953,7 +953,7 @@ class LedgerRPC_test : public beast::unit_test::suite
         env.fund(XRP(10000), alice, bob);
         env.close();
 
-        env(delegate_set::delegateSet(alice, bob, {"Payment", "CheckCreate"}));
+        env(delegate::set(alice, bob, {"Payment", "CheckCreate"}));
         env.close();
 
         std::string const ledgerHash{to_string(env.closed()->info().hash)};

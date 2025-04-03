@@ -25,6 +25,18 @@ namespace ripple {
 
 Permission::Permission()
 {
+    delegatableTx = {
+#pragma push_macro("TRANSACTION")
+#undef TRANSACTION
+
+#define TRANSACTION(tag, value, name, delegatable, fields) {value, delegatable},
+
+#include <xrpl/protocol/detail/transactions.macro>
+
+#undef TRANSACTION
+#pragma pop_macro("TRANSACTION")
+    };
+
     granularPermissionMap = {
 #pragma push_macro("PERMISSION")
 #undef PERMISSION
@@ -106,14 +118,19 @@ Permission::getGranularTxType(GranularPermissionType const& gpType) const
 }
 
 bool
-Permission::isProhibited(std::uint32_t const& value) const
+Permission::isDelegatable(std::uint32_t const& permissionValue) const
 {
-    if (value == ttSIGNER_LIST_SET || value == ttREGULAR_KEY_SET ||
-        value == ttACCOUNT_SET || value == ttDELEGATE_SET ||
-        value == ttACCOUNT_DELETE)
+    auto const granularPermission =
+        getGranularName(static_cast<GranularPermissionType>(permissionValue));
+    if (granularPermission)
+        // granular permissions are always allowed to be delegated
         return true;
 
-    return false;
+    auto const it = delegatableTx.find(permissionValue - 1);
+    if (it != delegatableTx.end() && it->second == delegatable::disabled)
+        return false;
+
+    return true;
 }
 
 uint32_t

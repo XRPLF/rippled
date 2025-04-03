@@ -26,21 +26,37 @@ namespace ripple {
 namespace test {
 namespace jtx {
 
-namespace delegate_set {
+namespace delegate {
 
 Json::Value
-delegateSet(
-    jtx::Account const& account,
+set(jtx::Account const& account,
     jtx::Account const& authorize,
     std::vector<std::string> const& permissions);
 
 Json::Value
-ledgerEntry(
+entry(
     jtx::Env& env,
     jtx::Account const& account,
     jtx::Account const& authorize);
 
-}  // namespace delegate_set
+struct as
+{
+private:
+    jtx::Account delegate_;
+
+public:
+    explicit as(jtx::Account const& account) : delegate_(account)
+    {
+    }
+
+    void
+    operator()(jtx::Env&, jtx::JTx& jtx) const
+    {
+        jtx.jv[sfDelegate.jsonName] = delegate_.human();
+    }
+};
+
+}  // namespace delegate
 }  // namespace jtx
 }  // namespace test
 }  // namespace ripple

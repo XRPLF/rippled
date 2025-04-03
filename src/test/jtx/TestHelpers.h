@@ -345,23 +345,6 @@ public:
     }
 };
 
-struct delegate
-{
-private:
-    jtx::Account delegate_;
-
-public:
-    explicit delegate(jtx::Account const& account) : delegate_(account)
-    {
-    }
-
-    void
-    operator()(jtx::Env&, jtx::JTx& jtx) const
-    {
-        jtx.jv[sfDelegate.jsonName] = delegate_.human();
-    }
-};
-
 /* Payment Channel */
 /******************************************************************************/
 
