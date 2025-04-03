@@ -96,8 +96,8 @@ with_txn_type(TxType txnType, F&& f)
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
-#define TRANSACTION(tag, value, name, acctCreate, fields) \
-    case tag:                                 \
+#define TRANSACTION(tag, value, name, privileges, fields) \
+    case tag:                                             \
         return f.template operator()<name>();
 
 #include <xrpl/protocol/detail/transactions.macro>

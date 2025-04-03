@@ -40,15 +40,21 @@ namespace test {
 
 class LoanBroker_test : public beast::unit_test::suite
 {
+    // Ensure that all the features needed for Lending Protocol are included,
+    // even if they are set to unsupported.
+    FeatureBitset const all{
+        jtx::supported_amendments() | featureMPTokensV1 |
+        featureSingleAssetVault | featureLendingProtocol};
+
     void
     testDisabled()
     {
+        testcase("Disabled");
         // Lending Protocol depends on Single Asset Vault (SAV). Test
         // combinations of the two amendments.
         // Single Asset Vault depends on MPTokensV1, but don't test every combo
         // of that.
         using namespace jtx;
-        FeatureBitset const all{jtx::supported_amendments()};
         auto failAll = [this](FeatureBitset features, bool goodVault = false) {
             Env env(*this, features);
 
@@ -68,7 +74,7 @@ class LoanBroker_test : public beast::unit_test::suite
             // Can't create a loan broker regardless of whether the vault exists
             env(set(alice, keylet.key), ter(temDISABLED));
         };
-        // failAll(all - featureMPTokensV1);
+        failAll(all - featureMPTokensV1);
         failAll(all - featureSingleAssetVault - featureLendingProtocol);
         failAll(all - featureSingleAssetVault);
         failAll(all - featureLendingProtocol, true);
@@ -77,11 +83,12 @@ class LoanBroker_test : public beast::unit_test::suite
     void
     testCreateAndUpdate()
     {
+        testcase("Create and update");
         using namespace jtx;
 
         // Create 3 loan brokers: one for XRP, one for an IOU, and one for an
         // MPT. That'll require three corresponding SAVs.
-        Env env(*this);
+        Env env(*this, all);
 
         Account issuer{"issuer"};
         // For simplicity, alice will be the sole actor for the vault & brokers.

@@ -35,6 +35,56 @@
 
 namespace ripple {
 
+enum Privilege {
+    noPriv =
+        0x0000,  // The transaction can not do any of the enumerated operations
+    createAcct =
+        0x0001,  // The transaction can create a new ACCOUNT_ROOT object.
+    createPseudoAcct = 0x0003,  // The transaction can create a pseudo account,
+                                // which implies createAcct
+    mustDeleteAcct =
+        0x0004,  // The transaction must delete an ACCOUNT_ROOT object
+    mayDeleteAcct = 0x0008,    // The transaction may delete an ACCOUNT_ROOT
+                               // object, but does not have to
+    overrideFreeze = 0x0010,   // The transaction can override some freeze rules
+    changeNFTCounts = 0x0020,  // The transaction can mint or burn an NFT
+    createMPTIssuance =
+        0x0040,  // The transaction can create a new MPT issuance
+    destroyMPTIssuance = 0x0080,  // The transaction can destroy an MPT issuance
+    mustAuthorizeMPT = 0x0100,  // The transaction MUST create or delete an MPT
+                                // object (except by issuer)
+    mayAuthorizeMPT = 0x0200,   // The transaction MAY create or delete an MPT
+                                // object (except by issuer)
+};
+constexpr Privilege
+operator|(Privilege const& lhs, Privilege const& rhs)
+{
+    return safe_cast<Privilege>(
+        safe_cast<std::underlying_type_t<Privilege>>(lhs) |
+        safe_cast<std::underlying_type_t<Privilege>>(rhs));
+}
+
+#pragma push_macro("TRANSACTION")
+#undef TRANSACTION
+
+#define TRANSACTION(tag, value, name, privileges, fields) \
+    case tag: {                                           \
+        return (privileges) & priv;                       \
+    }
+
+bool
+checkMyPrivilege(STTx const& tx, Privilege priv)
+{
+    switch (tx.getTxnType())
+    {
+#include <xrpl/protocol/detail/transactions.macro>
+    }
+    return false;
+};
+
+#undef TRANSACTION
+#pragma pop_macro("TRANSACTION")
+
 void
 TransactionFeeCheck::visitEntry(
     bool,
@@ -329,10 +379,7 @@ AccountRootsNotDeleted::finalize(
     // transaction when the total AMM LP Tokens balance goes to 0.
     // A successful AccountDelete or AMMDelete MUST delete exactly
     // one account root.
-    if ((tx.getTxnType() == ttACCOUNT_DELETE ||
-         tx.getTxnType() == ttAMM_DELETE ||
-         tx.getTxnType() == ttVAULT_DELETE) &&
-        result == tesSUCCESS)
+    if (checkMyPrivilege(tx, mustDeleteAcct) && result == tesSUCCESS)
     {
         if (accountsDeleted_ == 1)
             return true;
@@ -349,9 +396,8 @@ AccountRootsNotDeleted::finalize(
     // A successful AMMWithdraw/AMMClawback MAY delete one account root
     // when the total AMM LP Tokens balance goes to 0. Not every AMM withdraw
     // deletes the AMM account, accountsDeleted_ is set if it is deleted.
-    if ((tx.getTxnType() == ttAMM_WITHDRAW ||
-         tx.getTxnType() == ttAMM_CLAWBACK) &&
-        result == tesSUCCESS && accountsDeleted_ == 1)
+    if (checkMyPrivilege(tx, mayDeleteAcct) && result == tesSUCCESS &&
+        accountsDeleted_ == 1)
         return true;
 
     if (accountsDeleted_ == 0)
@@ -832,7 +878,7 @@ TransfersNotFrozen::validateFrozenState(
     }
 
     // AMMClawbacks are allowed to override some freeze rules
-    if ((!isAMMLine || globalFreeze) && tx.getTxnType() == ttAMM_CLAWBACK)
+    if ((!isAMMLine || globalFreeze) && checkMyPrivilege(tx, overrideFreeze))
     {
         JLOG(j.debug()) << "Invariant check allowing funds to be moved "
                         << (change.balanceChangeSign > 0 ? "to" : "from")
@@ -891,54 +937,15 @@ ValidNewAccountRoot::finalize(
         return false;
     }
 
-    enum Creation {
-        noCreate,    //
-        createFull,  //
-        createPseudo
-    };
-#pragma push_macro("TRANSACTION")
-#undef TRANSACTION
-
-#define TRANSACTION(tag, value, name, acctCreate, fields) \
-    case tag: {                                           \
-        return acctCreate != noCreate;                    \
-    }
-
-    auto creator = [](STTx const& tx) {
-        switch (tx.getTxnType())
-        {
-#include <xrpl/protocol/detail/transactions.macro>
-        }
-        return false;
-    };
-
-#undef TRANSACTION
-
-#define TRANSACTION(tag, value, name, acctCreate, fields) \
-    case tag: {                                           \
-        return acctCreate == createPseudo;                \
-    }
-
-    auto pseudoCreator = [](STTx const& tx) {
-        switch (tx.getTxnType())
-        {
-#include <xrpl/protocol/detail/transactions.macro>
-        }
-        return false;
-    };
-
-#undef TRANSACTION
-#pragma pop_macro("TRANSACTION")
-
     // From this point on we know exactly one account was created.
-    if (creator(tx) && result == tesSUCCESS)
+    if (checkMyPrivilege(tx, createAcct) && result == tesSUCCESS)
     {
         bool const pseudoAccount =
             (pseudoAccount_ &&
              (view.rules().enabled(featureSingleAssetVault) ||
               view.rules().enabled(featureLendingProtocol)));
 
-        if (pseudoAccount && !pseudoCreator(tx))
+        if (pseudoAccount && !checkMyPrivilege(tx, createPseudoAcct))
         {
             JLOG(j.fatal()) << "Invariant failed: pseudo-account created by a "
                                "wrong transaction type";
@@ -1173,7 +1180,7 @@ NFTokenCountTracking::finalize(
     beast::Journal const& j)
 {
     if (TxType const txType = tx.getTxnType();
-        txType != ttNFTOKEN_MINT && txType != ttNFTOKEN_BURN)
+        !checkMyPrivilege(tx, changeNFTCounts))
     {
         if (beforeMintedTotal != afterMintedTotal)
         {
@@ -1363,8 +1370,7 @@ ValidMPTIssuance::finalize(
 {
     if (result == tesSUCCESS)
     {
-        if (tx.getTxnType() == ttMPTOKEN_ISSUANCE_CREATE ||
-            tx.getTxnType() == ttVAULT_CREATE)
+        if (checkMyPrivilege(tx, createMPTIssuance))
         {
             if (mptIssuancesCreated_ == 0)
             {
@@ -1385,8 +1391,7 @@ ValidMPTIssuance::finalize(
             return mptIssuancesCreated_ == 1 && mptIssuancesDeleted_ == 0;
         }
 
-        if (tx.getTxnType() == ttMPTOKEN_ISSUANCE_DESTROY ||
-            tx.getTxnType() == ttVAULT_DELETE)
+        if (checkMyPrivilege(tx, destroyMPTIssuance))
         {
             if (mptIssuancesDeleted_ == 0)
             {
@@ -1407,8 +1412,7 @@ ValidMPTIssuance::finalize(
             return mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 1;
         }
 
-        if (tx.getTxnType() == ttMPTOKEN_AUTHORIZE ||
-            tx.getTxnType() == ttVAULT_DEPOSIT)
+        if (checkMyPrivilege(tx, mustAuthorizeMPT | mayAuthorizeMPT))
         {
             bool const submittedByIssuer = tx.isFieldPresent(sfHolder);
 
@@ -1424,6 +1428,12 @@ ValidMPTIssuance::finalize(
                                    "succeeded but deleted issuances";
                 return false;
             }
+            else if (mptokensCreated_ + mptokensDeleted_ > 1)
+            {
+                JLOG(j.fatal()) << "Invariant failed: MPT authorize succeeded "
+                                   "but created/deleted bad number mptokens";
+                return false;
+            }
             else if (
                 submittedByIssuer &&
                 (mptokensCreated_ > 0 || mptokensDeleted_ > 0))
@@ -1434,7 +1444,7 @@ ValidMPTIssuance::finalize(
                 return false;
             }
             else if (
-                !submittedByIssuer && (tx.getTxnType() != ttVAULT_DEPOSIT) &&
+                !submittedByIssuer && !checkMyPrivilege(tx, mayAuthorizeMPT) &&
                 (mptokensCreated_ + mptokensDeleted_ != 1))
             {
                 // if the holder submitted this tx, then a mptoken must be
