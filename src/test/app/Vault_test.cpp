@@ -807,7 +807,7 @@ class Vault_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 jvVault[jss::result][jss::vault][sfAssetsTotal] == "100");
             BEAST_EXPECT(
-                jvVault[jss::result][jss::vault][jss::share]
+                jvVault[jss::result][jss::vault][jss::shares]
                        [sfOutstandingAmount] == "100");
 
             // Vault pseudo-account
@@ -846,7 +846,7 @@ class Vault_test : public beast::unit_test::suite
             BEAST_EXPECT(
                 jvVault[jss::result][jss::vault][sfAssetsTotal] == "50");
             BEAST_EXPECT(
-                jvVault[jss::result][jss::vault][jss::share]
+                jvVault[jss::result][jss::vault][jss::shares]
                        [sfOutstandingAmount] == "50");
         }
 
@@ -1556,7 +1556,7 @@ class Vault_test : public beast::unit_test::suite
             BEAST_EXPECT(jv[jss::result].isMember(jss::vault));
             check(
                 jv[jss::result][jss::vault],
-                jv[jss::result][jss::vault][jss::share]);
+                jv[jss::result][jss::vault][jss::shares]);
         }
 
         {
@@ -1571,7 +1571,7 @@ class Vault_test : public beast::unit_test::suite
             BEAST_EXPECT(jv[jss::result].isMember(jss::vault));
             check(
                 jv[jss::result][jss::vault],
-                jv[jss::result][jss::vault][jss::share]);
+                jv[jss::result][jss::vault][jss::shares]);
         }
 
         {
