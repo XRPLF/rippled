@@ -1196,7 +1196,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
         }
 
-        // Bad Fee With Signer
+        // Bad Fee With BatchSigners
         {
             test::jtx::Env env{*this, envconfig()};
 
