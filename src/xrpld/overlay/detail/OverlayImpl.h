@@ -584,7 +584,8 @@ private:
         Stats(
             Handler const& handler,
             beast::insight::Collector::ptr const& collector,
-            std::vector<TrafficGauges>&& trafficGauges_)
+            std::unordered_map<TrafficCount::category, TrafficGauges>&&
+                trafficGauges_)
             : peerDisconnects(
                   collector->make_gauge("Overlay", "Peer_Disconnects"))
             , trafficGauges(std::move(trafficGauges_))
@@ -593,7 +594,7 @@ private:
         }
 
         beast::insight::Gauge peerDisconnects;
-        std::vector<TrafficGauges> trafficGauges;
+        std::unordered_map<TrafficCount::category, TrafficGauges> trafficGauges;
         beast::insight::Hook hook;
     };
 
@@ -612,7 +613,11 @@ private:
 
         for (auto const& [key, value] : counts)
         {
-            auto& gauge = m_stats.trafficGauges[key];
+            auto it = m_stats.trafficGauges.find(key);
+            if (it == m_stats.trafficGauges.end())
+                continue;
+            auto& gauge = it->second;
+
             gauge.bytesIn = value.bytesIn;
             gauge.bytesOut = value.bytesOut;
             gauge.messagesIn = value.messagesIn;

@@ -41,6 +41,10 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 
+#include "xrpld/overlay/detail/TrafficCount.h"
+
+#include <unordered_set>
+
 namespace ripple {
 
 namespace CrawlOptions {
@@ -145,11 +149,11 @@ OverlayImpl::OverlayImpl(
           std::bind(&OverlayImpl::collect_metrics, this),
           collector,
           [counts = m_traffic.getCounts(), collector]() {
-              std::vector<TrafficGauges> ret;
-              ret.reserve(counts.size());
+              std::unordered_map<TrafficCount::category, TrafficGauges> ret;
 
               for (auto const& pair : counts)
-                  ret.push_back(TrafficGauges(pair.second.name, collector));
+                  ret.emplace(
+                      pair.first, TrafficGauges(pair.second.name, collector));
 
               return ret;
           }())
