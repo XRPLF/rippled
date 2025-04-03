@@ -501,6 +501,21 @@ createPseudoAccount(
     uint256 const& pseudoOwnerKey,
     PseudoAccountOwnerType type);
 
+// Returns true iff sleAcct is a pseudo-account.
+//
+// Returns false if sleAcct is
+// * NOT a pseudo-account OR
+// * NOT a ltACCOUNT_ROOT OR
+// * null pointer
+[[nodiscard]] bool
+isPseudoAccount(std::shared_ptr<SLE const> sleAcct);
+
+[[nodiscard]] inline bool
+isPseudoAccount(ReadView const& view, AccountID accountId)
+{
+    return isPseudoAccount(view.read(keylet::account(accountId)));
+}
+
 [[nodiscard]] TER
 addEmptyHolding(
     ApplyView& view,
@@ -798,21 +813,6 @@ sharesToAssetsWithdraw(
     std::shared_ptr<SLE const> const& vault,
     std::shared_ptr<SLE const> const& issuance,
     STAmount const& shares);
-
-// Returns true iff sleAcct is a pseudo-account.
-//
-// Returns false if sleAcct is
-// * NOT a pseudo-account OR
-// * NOT a ltACCOUNT_ROOT OR
-// * null pointer
-[[nodiscard]] bool
-isPseudoAccount(std::shared_ptr<SLE const> sleAcct);
-
-[[nodiscard]] inline bool
-isPseudoAccount(ReadView const& view, AccountID accountId)
-{
-    return isPseudoAccount(view.read(keylet::account(accountId)));
-}
 
 }  // namespace ripple
 
