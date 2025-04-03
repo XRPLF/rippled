@@ -1419,6 +1419,7 @@ class Batch_test : public beast::unit_test::suite
             auto const seq = env.seq(alice);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(1)), seq + 1),
+                // tecUNFUNDED_PAYMENT: alice does not have enough XRP
                 batch::inner(pay(alice, bob, XRP(999)), seq + 2),
                 ter(tesSUCCESS));
             auto const txIDs = env.tx()->getBatchTransactionIDs();
@@ -1488,6 +1489,7 @@ class Batch_test : public beast::unit_test::suite
             auto const batchFee = batch::calcBatchFee(env, 0, 3);
             auto const seq = env.seq(alice);
             env(batch::outer(alice, seq, batchFee, tfOnlyOne),
+                // tecUNFUNDED_PAYMENT: alice does not have enough XRP
                 batch::inner(pay(alice, bob, XRP(999)), seq + 1),
                 batch::inner(pay(alice, bob, XRP(1)), seq + 2),
                 batch::inner(pay(alice, bob, XRP(2)), seq + 3),
@@ -1567,6 +1569,7 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, seq, batchFee, tfUntilFailure),
                 batch::inner(pay(alice, bob, XRP(1)), seq + 1),
                 batch::inner(pay(alice, bob, XRP(2)), seq + 2),
+                // tecUNFUNDED_PAYMENT: alice does not have enough XRP
                 batch::inner(pay(alice, bob, XRP(999)), seq + 3),
                 batch::inner(pay(alice, bob, XRP(3)), seq + 4),
                 ter(tesSUCCESS));
@@ -1647,6 +1650,7 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, seq, batchFee, tfIndependent),
                 batch::inner(pay(alice, bob, XRP(1)), seq + 1),
                 batch::inner(pay(alice, bob, XRP(2)), seq + 2),
+                // tecUNFUNDED_PAYMENT: alice does not have enough XRP
                 batch::inner(pay(alice, bob, XRP(999)), seq + 3),
                 batch::inner(pay(alice, bob, XRP(3)), seq + 4),
                 ter(tesSUCCESS));
