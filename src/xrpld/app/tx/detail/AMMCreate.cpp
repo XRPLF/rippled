@@ -271,7 +271,7 @@ applyCreate(
     if (auto ter = dirLink(sb, accountId, ammSle); ter)
     {
         JLOG(j_.debug()) << "AMM Instance: failed to insert owner dir";
-        return {tecDIR_FULL, false};
+        return {ter, false};
     }
     sb.insert(ammSle);
 
