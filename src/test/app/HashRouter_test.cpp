@@ -34,15 +34,19 @@ class HashRouter_test : public beast::unit_test::suite
         TestStopwatch stopwatch;
         HashRouter router(stopwatch, 2s);
 
-        uint256 const key1(1);
-        uint256 const key2(2);
-        uint256 const key3(3);
+        LedgerFlags key1(LedgerFlags::PRIVATE1);
+        LedgerFlags key2(LedgerFlags::PRIVATE2);
+        LedgerFlags key3(LedgerFlags::PRIVATE3);
+
+        auto const ukey1 = uint256{static_cast<std::uint64_t>(key1)};
+        auto const ukey2 = uint256{static_cast<std::uint64_t>(key2)};
+        auto const ukey3 = uint256{static_cast<std::uint64_t>(key3)};
 
         // t=0
-        router.setFlags(key1, static_cast<LedgerFlags>(11111));
-        BEAST_EXPECT(router.getFlags(key1) == static_cast<LedgerFlags>(11111));
-        router.setFlags(key2, static_cast<LedgerFlags>(22222));
-        BEAST_EXPECT(router.getFlags(key2) == static_cast<LedgerFlags>(22222));
+        router.setFlags(ukey1, LedgerFlags::PRIVATE1);
+        BEAST_EXPECT(router.getFlags(ukey1) == LedgerFlags::PRIVATE1);
+        router.setFlags(ukey2, LedgerFlags::PRIVATE2);
+        BEAST_EXPECT(router.getFlags(ukey2) == LedgerFlags::PRIVATE2);
         // key1 : 0
         // key2 : 0
         // key3: null
@@ -51,7 +55,7 @@ class HashRouter_test : public beast::unit_test::suite
 
         // Because we are accessing key1 here, it
         // will NOT be expired for another two ticks
-        BEAST_EXPECT(router.getFlags(key1) == static_cast<LedgerFlags>(11111));
+        BEAST_EXPECT(router.getFlags(ukey1) == LedgerFlags::PRIVATE1);
         // key1 : 1
         // key2 : 0
         // key3 null
@@ -59,10 +63,9 @@ class HashRouter_test : public beast::unit_test::suite
         ++stopwatch;
 
         // t=3
-        router.setFlags(
-            key3, static_cast<LedgerFlags>(33333));  // force expiration
-        BEAST_EXPECT(router.getFlags(key1) == static_cast<LedgerFlags>(11111));
-        BEAST_EXPECT(router.getFlags(key2) == LedgerFlags::UNDEFINED);
+        router.setFlags(ukey3, LedgerFlags::PRIVATE3);  // force expiration
+        BEAST_EXPECT(router.getFlags(ukey1) == LedgerFlags::PRIVATE1);
+        BEAST_EXPECT(router.getFlags(ukey2) == LedgerFlags::UNDEFINED);
     }
 
     void
@@ -72,15 +75,21 @@ class HashRouter_test : public beast::unit_test::suite
         TestStopwatch stopwatch;
         HashRouter router(stopwatch, 2s);
 
-        uint256 const key1(1);
-        uint256 const key2(2);
-        uint256 const key3(3);
-        uint256 const key4(4);
+        LedgerFlags key1(LedgerFlags::PRIVATE1);
+        LedgerFlags key2(LedgerFlags::PRIVATE2);
+        LedgerFlags key3(LedgerFlags::PRIVATE3);
+        LedgerFlags key4(LedgerFlags::PRIVATE4);
+
+        auto const ukey1 = uint256{static_cast<std::uint64_t>(key1)};
+        auto const ukey2 = uint256{static_cast<std::uint64_t>(key2)};
+        auto const ukey3 = uint256{static_cast<std::uint64_t>(key3)};
+        auto const ukey4 = uint256{static_cast<std::uint64_t>(key4)};
+
         BEAST_EXPECT(key1 != key2 && key2 != key3 && key3 != key4);
 
         // t=0
-        router.setFlags(key1, static_cast<LedgerFlags>(12345));
-        BEAST_EXPECT(router.getFlags(key1) == static_cast<LedgerFlags>(12345));
+        router.setFlags(ukey1, LedgerFlags::BAD);
+        BEAST_EXPECT(router.getFlags(ukey1) == LedgerFlags::BAD);
         // key1 : 0
         // key2 : null
         // key3 : null
@@ -92,26 +101,27 @@ class HashRouter_test : public beast::unit_test::suite
         // so key1 will be expired after the second
         // call to setFlags.
         // t=1
-        router.setFlags(key2, 9999);
-        BEAST_EXPECT(router.getFlags(key1) == static_cast<LedgerFlags>(12345));
-        BEAST_EXPECT(router.getFlags(key2) == static_cast<LedgerFlags>(9999));
+
+        router.setFlags(ukey2, LedgerFlags::PRIVATE5);
+        BEAST_EXPECT(router.getFlags(ukey1) == LedgerFlags::BAD);
+        BEAST_EXPECT(router.getFlags(ukey2) == LedgerFlags::PRIVATE5);
         // key1 : 1
         // key2 : 1
         // key3 : null
 
         ++stopwatch;
         // t=2
-        BEAST_EXPECT(router.getFlags(key2) == static_cast<LedgerFlags>(9999));
+        BEAST_EXPECT(router.getFlags(ukey2) == LedgerFlags::PRIVATE5);
         // key1 : 1
         // key2 : 2
         // key3 : null
 
         ++stopwatch;
         // t=3
-        router.setFlags(key3, 2222);
-        BEAST_EXPECT(router.getFlags(key1) == LedgerFlags::UNDEFINED);
-        BEAST_EXPECT(router.getFlags(key2) == static_cast<LedgerFlags>(9999));
-        BEAST_EXPECT(router.getFlags(key3) == static_cast<LedgerFlags>(2222));
+        router.setFlags(ukey3, LedgerFlags::BAD);
+        BEAST_EXPECT(router.getFlags(ukey1) == LedgerFlags::UNDEFINED);
+        BEAST_EXPECT(router.getFlags(ukey2) == LedgerFlags::PRIVATE5);
+        BEAST_EXPECT(router.getFlags(ukey3) == LedgerFlags::BAD);
         // key1 : 3
         // key2 : 3
         // key3 : 3
@@ -119,10 +129,10 @@ class HashRouter_test : public beast::unit_test::suite
         ++stopwatch;
         // t=4
         // No insertion, no expiration
-        router.setFlags(key1, 7654);
-        BEAST_EXPECT(router.getFlags(key1) == static_cast<LedgerFlags>(7654));
-        BEAST_EXPECT(router.getFlags(key2) == static_cast<LedgerFlags>(9999));
-        BEAST_EXPECT(router.getFlags(key3) == static_cast<LedgerFlags>(2222));
+        router.setFlags(ukey1, LedgerFlags::SAVED);
+        BEAST_EXPECT(router.getFlags(ukey1) == LedgerFlags::SAVED);
+        BEAST_EXPECT(router.getFlags(ukey2) == LedgerFlags::PRIVATE5);
+        BEAST_EXPECT(router.getFlags(ukey3) == LedgerFlags::BAD);
         // key1 : 4
         // key2 : 4
         // key3 : 4
@@ -131,11 +141,11 @@ class HashRouter_test : public beast::unit_test::suite
         ++stopwatch;
 
         // t=6
-        router.setFlags(key4, 7890);
-        BEAST_EXPECT(router.getFlags(key1) == LedgerFlags::UNDEFINED);
-        BEAST_EXPECT(router.getFlags(key2) == LedgerFlags::UNDEFINED);
-        BEAST_EXPECT(router.getFlags(key3) == LedgerFlags::UNDEFINED);
-        BEAST_EXPECT(router.getFlags(key4) == static_cast<LedgerFlags>(7890));
+        router.setFlags(ukey4, LedgerFlags::TRUSTED);
+        BEAST_EXPECT(router.getFlags(ukey1) == LedgerFlags::UNDEFINED);
+        BEAST_EXPECT(router.getFlags(ukey2) == LedgerFlags::UNDEFINED);
+        BEAST_EXPECT(router.getFlags(ukey3) == LedgerFlags::UNDEFINED);
+        BEAST_EXPECT(router.getFlags(ukey4) == LedgerFlags::TRUSTED);
         // key1 : 6
         // key2 : 6
         // key3 : 6
@@ -156,18 +166,18 @@ class HashRouter_test : public beast::unit_test::suite
         uint256 const key4(4);
         BEAST_EXPECT(key1 != key2 && key2 != key3 && key3 != key4);
 
-        int flags = 12345;  // This value is ignored
+        LedgerFlags flags(LedgerFlags::BAD);  // This value is ignored
         router.addSuppression(key1);
         BEAST_EXPECT(router.addSuppressionPeer(key2, 15));
         BEAST_EXPECT(router.addSuppressionPeer(key3, 20, flags));
-        BEAST_EXPECT(flags == 0);
+        BEAST_EXPECT(flags == LedgerFlags::UNDEFINED);
 
         ++stopwatch;
 
         BEAST_EXPECT(!router.addSuppressionPeer(key1, 2));
         BEAST_EXPECT(!router.addSuppressionPeer(key2, 3));
         BEAST_EXPECT(!router.addSuppressionPeer(key3, 4, flags));
-        BEAST_EXPECT(flags == 0);
+        BEAST_EXPECT(flags == LedgerFlags::UNDEFINED);
         BEAST_EXPECT(router.addSuppressionPeer(key4, 5));
     }
 
@@ -179,9 +189,9 @@ class HashRouter_test : public beast::unit_test::suite
         HashRouter router(stopwatch, 2s);
 
         uint256 const key1(1);
-        BEAST_EXPECT(router.setFlags(key1, 10));
-        BEAST_EXPECT(!router.setFlags(key1, 10));
-        BEAST_EXPECT(router.setFlags(key1, 20));
+        BEAST_EXPECT(router.setFlags(key1, LedgerFlags::PRIVATE1));
+        BEAST_EXPECT(!router.setFlags(key1, LedgerFlags::PRIVATE1));
+        BEAST_EXPECT(router.setFlags(key1, LedgerFlags::PRIVATE2));
     }
 
     void
