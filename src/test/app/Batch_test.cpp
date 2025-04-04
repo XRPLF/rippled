@@ -2298,14 +2298,7 @@ class Batch_test : public beast::unit_test::suite
         env.fund(XRP(1000), alice, bob);
         env.close();
 
-        // Close enough ledgers to delete account
-        int const delta = [&]() -> int {
-            if (env.seq(alice) + 300 > env.current()->seq())
-                return env.seq(alice) - env.current()->seq() + 300;
-            return 0;
-        }();
-        for (int i = 0; i < delta; ++i)
-            env.close();
+        incLgrSeqForAccDel(env, alice);
 
         auto const preAlice = env.balance(alice);
         auto const preBob = env.balance(bob);

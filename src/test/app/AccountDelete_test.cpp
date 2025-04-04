@@ -28,12 +28,6 @@ namespace test {
 class AccountDelete_test : public beast::unit_test::suite
 {
 private:
-    std::uint32_t
-    openLedgerSeq(jtx::Env& env)
-    {
-        return env.current()->seq();
-    }
-
     // Helper function that verifies the expected DeliveredAmount is present.
     //
     // NOTE: the function _infers_ the transaction to operate on by calling
@@ -82,26 +76,6 @@ private:
         jv[sfPublicKey.jsonName] = strHex(pk.slice());
         return jv;
     };
-
-    // Close the ledger until the ledger sequence is large enough to close
-    // the account.  If margin is specified, close the ledger so `margin`
-    // more closes are needed
-    void
-    incLgrSeqForAccDel(
-        jtx::Env& env,
-        jtx::Account const& acc,
-        std::uint32_t margin = 0)
-    {
-        int const delta = [&]() -> int {
-            if (env.seq(acc) + 255 > openLedgerSeq(env))
-                return env.seq(acc) - openLedgerSeq(env) + 255 - margin;
-            return 0;
-        }();
-        BEAST_EXPECT(margin == 0 || delta >= 0);
-        for (int i = 0; i < delta; ++i)
-            env.close();
-        BEAST_EXPECT(openLedgerSeq(env) == env.seq(acc) + 255 - margin);
-    }
 
 public:
     void
