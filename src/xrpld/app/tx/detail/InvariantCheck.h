@@ -645,6 +645,34 @@ public:
         beast::Journal const&);
 };
 
+/**
+ * @brief Invariants: Pseudo-accounts have
+ *
+ * Pseudo-accounts have certain properties, and some of those properties are
+ * unique to pseudo-accounts. Check that all pseudo-accounts are following the
+ * rules, and that only pseudo-accounts look like pseudo-accounts.
+ *
+ */
+class ValidPseudoAccounts
+{
+    std::vector<std::string> errors_;
+
+public:
+    void
+    visitEntry(
+        bool,
+        std::shared_ptr<SLE const> const&,
+        std::shared_ptr<SLE const> const&);
+
+    bool
+    finalize(
+        STTx const&,
+        TER const,
+        XRPAmount const,
+        ReadView const&,
+        beast::Journal const&);
+};
+
 // additional invariant checks can be declared above and then added to this
 // tuple
 using InvariantChecks = std::tuple<
@@ -665,7 +693,8 @@ using InvariantChecks = std::tuple<
     ValidClawback,
     ValidMPTIssuance,
     ValidPermissionedDomain,
-    NoModifiedUnmodifiableFields>;
+    NoModifiedUnmodifiableFields,
+    ValidPseudoAccounts>;
 
 /**
  * @brief get a tuple of all invariant checks

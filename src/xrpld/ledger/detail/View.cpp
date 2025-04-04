@@ -1061,28 +1061,45 @@ pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey)
     return beast::zero;
 }
 
-// Note, the list of the pseudo-account designator fields below MUST be
-// maintained but it does NOT need to be amendment-gated, since a
-// non-active amendment will not set any field, by definition. Specific
-// properties of a pseudo-account are NOT checked here, that's what
+// Pseudo-account designator fields MUST be maintained by including the
+// SField::sMD_PseudoAccount flag in the SField definition. (Don't forget to
+// "| SField::sMD_Default"!) The fields do NOT need to be amendment-gated,
+// since a non-active amendment will not set any field, by definition.
+// Specific properties of a pseudo-account are NOT checked here, that's what
 // InvariantCheck is for.
-static std::array<SField const*, 2> const pseudoAccountOwnerFields = {
-    &sfAMMID,    //
-    &sfVaultID,  //
-};
+[[nodiscard]] std::vector<SField const*> const&
+getPseudoAccountFields()
+{
+    static std::vector<SField const*> const pseudoFields = []() {
+        auto const ar = LedgerFormats::getInstance().findByType(ltACCOUNT_ROOT);
+        if (!ar)
+            LogicError(
+                "ripple::isPseudoAccount : unable to find account root ledger "
+                "format");
+        auto const& soTemplate = ar->getSOTemplate();
+
+        std::vector<SField const*> pseudoFields;
+        for (auto const& field : soTemplate)
+        {
+            if (field.sField().shouldMeta(SField::sMD_PseudoAccount))
+                pseudoFields.emplace_back(&field.sField());
+        }
+        return pseudoFields;
+    }();
+    return pseudoFields;
+}
 
 [[nodiscard]] bool
 isPseudoAccount(std::shared_ptr<SLE const> sleAcct)
 {
-    // auto const acctFields =
-    // LedgerFormats::getInstance().findByType(ltACCOUNT_ROOT);
+    std::vector<SField const*> const& fields = getPseudoAccountFields();
 
     // Intentionally use defensive coding here because it's cheap and makes the
     // semantics of true return value clean.
     return sleAcct && sleAcct->getType() == ltACCOUNT_ROOT &&
         std::count_if(
-            pseudoAccountOwnerFields.begin(),
-            pseudoAccountOwnerFields.end(),
+            fields.begin(),
+            fields.end(),
             [&sleAcct](SField const* sf) -> bool {
                 return sleAcct->isFieldPresent(*sf);
             }) > 0;
@@ -1095,10 +1112,11 @@ createPseudoAccount(
     uint256 const& pseudoOwnerKey,
     SField const& ownerField)
 {
+    std::vector<SField const*> const& fields = getPseudoAccountFields();
     XRPL_ASSERT(
         std::count_if(
-            pseudoAccountOwnerFields.begin(),
-            pseudoAccountOwnerFields.end(),
+            fields.begin(),
+            fields.end(),
             [&ownerField](SField const* sf) -> bool {
                 return *sf == ownerField;
             }) == 1,

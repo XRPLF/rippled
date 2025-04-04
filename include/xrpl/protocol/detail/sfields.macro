@@ -187,7 +187,8 @@ TYPED_SFIELD(sfNFTokenID,                UINT256,   10)
 TYPED_SFIELD(sfEmitParentTxnID,          UINT256,   11)
 TYPED_SFIELD(sfEmitNonce,                UINT256,   12)
 TYPED_SFIELD(sfEmitHookHash,             UINT256,   13)
-TYPED_SFIELD(sfAMMID,                    UINT256,   14)
+TYPED_SFIELD(sfAMMID,                    UINT256,   14,
+    SField::sMD_PseudoAccount |SField::sMD_Default)
 
 // 256-bit (uncommon)
 TYPED_SFIELD(sfBookDirectory,            UINT256,   16)
@@ -209,8 +210,10 @@ TYPED_SFIELD(sfHookHash,                 UINT256,   31)
 TYPED_SFIELD(sfHookNamespace,            UINT256,   32)
 TYPED_SFIELD(sfHookSetTxnID,             UINT256,   33)
 TYPED_SFIELD(sfDomainID,                 UINT256,   34)
-TYPED_SFIELD(sfVaultID,                  UINT256,   35)
-TYPED_SFIELD(sfLoanBrokerID,             UINT256,   36)
+TYPED_SFIELD(sfVaultID,                  UINT256,   35,
+    SField::sMD_PseudoAccount | SField::sMD_Default)
+TYPED_SFIELD(sfLoanBrokerID,             UINT256,   36,
+    SField::sMD_PseudoAccount | SField::sMD_Default)
 TYPED_SFIELD(sfLoanID,                   UINT256,   37)
 
 // number (common)

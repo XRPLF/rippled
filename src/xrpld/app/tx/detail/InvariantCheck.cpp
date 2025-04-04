@@ -1723,4 +1723,95 @@ NoModifiedUnmodifiableFields::finalize(
     return true;
 }
 
+//------------------------------------------------------------------------------
+
+void
+ValidPseudoAccounts::visitEntry(
+    bool isDelete,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
+{
+    if (isDelete)
+        // Deletion is ignored
+        return;
+
+    if (after && after->getType() == ltACCOUNT_ROOT)
+    {
+        bool const isPseudo = [&]() {
+            // isPseudoAccount checks that any of the pseudo-account fields are
+            // set.
+            if (isPseudoAccount(after))
+                return true;
+            // Not all pseudo-accounts have a zero sequence, but all accounts
+            // with a zero sequence had better be pseudo-accounts.
+            if (after->at(sfSequence) == 0)
+                return true;
+
+            return false;
+        }();
+        if (isPseudo)
+        {
+            // Pseudo accounts must have the following properties:
+            // 1. Exactly one of the pseudo-account fields is set.
+            // 2. The sequence number is not changed.
+            // 3. The lsfDisableMaster, lsfDefaultRipple, and lsfDepositAuth
+            // flags are set.
+            // 4. The RegularKey is not set.
+            {
+                std::vector<SField const*> const& fields =
+                    getPseudoAccountFields();
+
+                auto const numFields = std::count_if(
+                    fields.begin(),
+                    fields.end(),
+                    [&after](SField const* sf) -> bool {
+                        return after->isFieldPresent(*sf);
+                    });
+                if (numFields != 1)
+                {
+                    std::stringstream error;
+                    error << "pseudo-account has " << numFields
+                          << "pseudo-account fields set";
+                    errors_.emplace_back(error.str());
+                }
+            }
+            if (before && before->at(sfSequence) != after->at(sfSequence))
+            {
+                errors_.emplace_back("pseudo-account sequence changed");
+            }
+            if (!after->isFlag(
+                    lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth))
+            {
+                errors_.emplace_back(
+                    "Invariant failed: pseudo-account flags are not set");
+            }
+        }
+    }
+}
+
+bool
+ValidPseudoAccounts::finalize(
+    STTx const& tx,
+    TER const,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    bool const enforce = view.rules().enabled(featureLendingProtocol);
+    XRPL_ASSERT(
+        errors_.empty() || enforce,
+        "ripple::ValidPseudoAccounts::finalize : no bad "
+        "changes or enforce invariant");
+    if (!errors_.empty())
+    {
+        for (auto const& error : errors_)
+        {
+            JLOG(j.fatal()) << "Invariant failed: " << error;
+        }
+        if (enforce)
+            return false;
+    }
+    return true;
+}
+
 }  // namespace ripple
