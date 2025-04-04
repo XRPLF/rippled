@@ -534,8 +534,10 @@ TRANSACTION(ttVAULT_CLAWBACK, 69, VaultClawback, noPriv, ({
     {sfAmount, soeOPTIONAL, soeMPTSupported},
 }))
 
+/** Reserve 70-73 for future Vault-related transactions */
+
 /** This transaction creates and updates a Loan Broker */
-TRANSACTION(ttLOAN_BROKER_SET, 70, LoanBrokerSet,
+TRANSACTION(ttLOAN_BROKER_SET, 74, LoanBrokerSet,
     createPseudoAcct | mayAuthorizeMPT, ({
     {sfVaultID, soeREQUIRED},
     {sfLoanBrokerID, soeOPTIONAL},
@@ -548,25 +550,25 @@ TRANSACTION(ttLOAN_BROKER_SET, 70, LoanBrokerSet,
 
 #if 0
 /** This transaction deletes a Loan Broker */
-TRANSACTION(ttLOAN_BROKER_DELETE, 71, LoanBrokerDelete,
+TRANSACTION(ttLOAN_BROKER_DELETE, 75, LoanBrokerDelete,
     acctDelete | mayAuthorizeMPT, ({
     {sfLoanBrokerID, soeREQUIRED},
 }))
 
 /** This transaction deposits First Loss Capital into a Loan Broker */
-TRANSACTION(ttLOAN_BROKER_COVER_DEPOSIT, 72, LoanBrokerCoverDeposit, noPriv, ({
+TRANSACTION(ttLOAN_BROKER_COVER_DEPOSIT, 76, LoanBrokerCoverDeposit, noPriv, ({
     {sfLoanBrokerID, soeREQUIRED},
     {sfNumber, soeREQUIRED},
 }))
 
 /** This transaction withdraws First Loss Capital from a Loan Broker */
-TRANSACTION(ttLOAN_BROKER_COVER_WITHDRAW, 73, LoanBrokerCoverWithdraw, noPriv, ({
+TRANSACTION(ttLOAN_BROKER_COVER_WITHDRAW, 77, LoanBrokerCoverWithdraw, noPriv, ({
     {sfLoanBrokerID, soeREQUIRED},
     {sfNumber, soeREQUIRED},
 }))
 
 /** This transaction creates a Loan */
-TRANSACTION(ttLOAN_SET, 74, LoanSet, noPriv, ({
+TRANSACTION(ttLOAN_SET, 78, LoanSet, noPriv, ({
     {sfLoanBrokerID, soeREQUIRED},
     {sfData, soeOPTIONAL},
     {sfCounterparty, soeOPTIONAL},
@@ -586,23 +588,23 @@ TRANSACTION(ttLOAN_SET, 74, LoanSet, noPriv, ({
 }))
 
 /** This transaction deletes an existing Loan */
-TRANSACTION(ttLOAN_DELETE, 75, LoanDelete, noPriv, ({
+TRANSACTION(ttLOAN_DELETE, 79, LoanDelete, noPriv, ({
     {sfLoanID, soeREQUIRED},
 }))
 
 /** This transaction is used to change the delinquency status of an existing Loan */
-TRANSACTION(ttLOAN_MANAGE, 76, LoanManage, noPriv, ({
+TRANSACTION(ttLOAN_MANAGE, 80, LoanManage, noPriv, ({
     {sfLoanID, soeREQUIRED},
 }))
 
 /** The Borrower uses this transaction to draws funds from the Loan. */
-TRANSACTION(ttLOAN_DRAW, 77, LoanDraw, noPriv, ({
+TRANSACTION(ttLOAN_DRAW, 81, LoanDraw, noPriv, ({
     {sfLoanID, soeREQUIRED},
     {sfAmount, soeREQUIRED},
 }))
 
 /** The Borrower uses this transaction to make a Payment on the Loan. */
-TRANSACTION(ttLOAN_PAY, 77, LoanPay, noPriv, ({
+TRANSACTION(ttLOAN_PAY, 82, LoanPay, noPriv, ({
     {sfLoanID, soeREQUIRED},
     {sfAmount, soeREQUIRED},
 }))
