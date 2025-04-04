@@ -1940,7 +1940,7 @@ NetworkOPsImp::processTrustedProposal(RCLCxPeerPos peerPos)
         // Another, innocuous explanation is unusual message routing and delays,
         // causing this node to receive its own messages back.
         JLOG(m_journal.error())
-            << "Received a proposal signed by MY KEY from a peer.";
+            << "Received a proposal signed by MY KEY from a peer. This may indicate a misconfiguration where another node has the same validator key, or may be caused by unusual message routing and delays.";
         return false;
     }
 
