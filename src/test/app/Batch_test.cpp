@@ -154,6 +154,76 @@ class Batch_test : public beast::unit_test::suite
         }
     }
 
+    static uint256
+    getCheckIndex(AccountID const& account, std::uint32_t uSequence)
+    {
+        return keylet::check(account, uSequence).key;
+    }
+
+    static std::unique_ptr<Config>
+    makeConfig(
+        std::map<std::string, std::string> extraTxQ = {},
+        std::map<std::string, std::string> extraVoting = {})
+    {
+        auto p = test::jtx::envconfig();
+        auto& section = p->section("transaction_queue");
+        section.set("ledgers_in_queue", "2");
+        section.set("minimum_queue_size", "2");
+        section.set("min_ledgers_to_compute_size_limit", "3");
+        section.set("max_ledger_counts_to_store", "100");
+        section.set("retry_sequence_percent", "25");
+        section.set("normal_consensus_increase_percent", "0");
+
+        for (auto const& [k, v] : extraTxQ)
+            section.set(k, v);
+
+        return p;
+    }
+
+    void
+    checkMetrics(
+        int line,
+        jtx::Env& env,
+        std::size_t expectedCount,
+        std::optional<std::size_t> expectedMaxCount,
+        std::size_t expectedInLedger)
+    {
+        auto const metrics = env.app().getTxQ().getMetrics(*env.current());
+        using namespace std::string_literals;
+        metrics.txCount == expectedCount
+            ? pass()
+            : fail(
+                  "txCount: "s + std::to_string(metrics.txCount) + "/" +
+                      std::to_string(expectedCount),
+                  __FILE__,
+                  line);
+        metrics.txQMaxSize == expectedMaxCount
+            ? pass()
+            : fail(
+                  "txQMaxSize: "s +
+                      std::to_string(metrics.txQMaxSize.value_or(0)) + "/" +
+                      std::to_string(expectedMaxCount.value_or(0)),
+                  __FILE__,
+                  line);
+        metrics.txInLedger == expectedInLedger
+            ? pass()
+            : fail(
+                  "txInLedger: "s + std::to_string(metrics.txInLedger) + "/" +
+                      std::to_string(expectedInLedger),
+                  __FILE__,
+                  line);
+    }
+
+    auto
+    openLedgerFee(jtx::Env& env, XRPAmount const& batchFee)
+    {
+        using namespace jtx;
+
+        auto const& view = *env.current();
+        auto metrics = env.app().getTxQ().getMetrics(view);
+        return toDrops(metrics.openLedgerFeeLevel, batchFee) + 1;
+    }
+
     void
     testEnable(FeatureBitset features)
     {
@@ -2324,12 +2394,6 @@ class Batch_test : public beast::unit_test::suite
         BEAST_EXPECT(env.balance(bob) == preBob + (preAlice - batchFee));
     }
 
-    static uint256
-    getCheckIndex(AccountID const& account, std::uint32_t uSequence)
-    {
-        return keylet::check(account, uSequence).key;
-    }
-
     void
     testObjectCreateSequence(FeatureBitset features)
     {
@@ -3017,70 +3081,6 @@ class Batch_test : public beast::unit_test::suite
         BEAST_EXPECT(
             env.balance(alice) == preAlice - XRP(10) - batchFee - baseFee);
         BEAST_EXPECT(env.balance(bob) == preBob + XRP(10) - baseFee);
-    }
-
-    static std::unique_ptr<Config>
-    makeConfig(
-        std::map<std::string, std::string> extraTxQ = {},
-        std::map<std::string, std::string> extraVoting = {})
-    {
-        auto p = test::jtx::envconfig();
-        auto& section = p->section("transaction_queue");
-        section.set("ledgers_in_queue", "2");
-        section.set("minimum_queue_size", "2");
-        section.set("min_ledgers_to_compute_size_limit", "3");
-        section.set("max_ledger_counts_to_store", "100");
-        section.set("retry_sequence_percent", "25");
-        section.set("normal_consensus_increase_percent", "0");
-
-        for (auto const& [k, v] : extraTxQ)
-            section.set(k, v);
-
-        return p;
-    }
-
-    void
-    checkMetrics(
-        int line,
-        jtx::Env& env,
-        std::size_t expectedCount,
-        std::optional<std::size_t> expectedMaxCount,
-        std::size_t expectedInLedger)
-    {
-        auto const metrics = env.app().getTxQ().getMetrics(*env.current());
-        using namespace std::string_literals;
-        metrics.txCount == expectedCount
-            ? pass()
-            : fail(
-                  "txCount: "s + std::to_string(metrics.txCount) + "/" +
-                      std::to_string(expectedCount),
-                  __FILE__,
-                  line);
-        metrics.txQMaxSize == expectedMaxCount
-            ? pass()
-            : fail(
-                  "txQMaxSize: "s +
-                      std::to_string(metrics.txQMaxSize.value_or(0)) + "/" +
-                      std::to_string(expectedMaxCount.value_or(0)),
-                  __FILE__,
-                  line);
-        metrics.txInLedger == expectedInLedger
-            ? pass()
-            : fail(
-                  "txInLedger: "s + std::to_string(metrics.txInLedger) + "/" +
-                      std::to_string(expectedInLedger),
-                  __FILE__,
-                  line);
-    }
-
-    auto
-    openLedgerFee(jtx::Env& env, XRPAmount const& batchFee)
-    {
-        using namespace jtx;
-
-        auto const& view = *env.current();
-        auto metrics = env.app().getTxQ().getMetrics(view);
-        return toDrops(metrics.openLedgerFeeLevel, batchFee) + 1;
     }
 
     void
