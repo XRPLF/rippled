@@ -268,7 +268,7 @@ $(function() {
 <div class="line"><a id="l00294" name="l00294"></a><span class="lineno">  294</span>        }</div>
 <div class="line"><a id="l00295" name="l00295"></a><span class="lineno">  295</span> </div>
 <div class="line"><a id="l00296" name="l00296"></a><span class="lineno">  296</span>        <span class="keywordflow">if</span> (<a class="code hl_variable" href="structripple_1_1IntrusiveRefCounts.html#aca9660ae7c2e3bfcefc49a3bc319b7c1">refCounts</a>.compare_exchange_weak(</div>
-<div class="line"><a id="l00297" name="l00297"></a><span class="lineno">  297</span>                prevIntVal, nextIntVal, std::memory_order_release))</div>
+<div class="line"><a id="l00297" name="l00297"></a><span class="lineno">  297</span>                prevIntVal, nextIntVal, std::memory_order_acq_rel))</div>
 <div class="line"><a id="l00298" name="l00298"></a><span class="lineno">  298</span>        {</div>
 <div class="line"><a id="l00299" name="l00299"></a><span class="lineno">  299</span>            <span class="comment">// Can&#39;t be in partial destroy because only decrementing the strong</span></div>
 <div class="line"><a id="l00300" name="l00300"></a><span class="lineno">  300</span>            <span class="comment">// count to zero can start a partial destroy, and that can&#39;t happen</span></div>
@@ -325,7 +325,7 @@ $(function() {
 <div class="line"><a id="l00351" name="l00351"></a><span class="lineno">  351</span>            }</div>
 <div class="line"><a id="l00352" name="l00352"></a><span class="lineno">  352</span>        }</div>
 <div class="line"><a id="l00353" name="l00353"></a><span class="lineno">  353</span>        <span class="keywordflow">if</span> (<a class="code hl_variable" href="structripple_1_1IntrusiveRefCounts.html#aca9660ae7c2e3bfcefc49a3bc319b7c1">refCounts</a>.compare_exchange_weak(</div>
-<div class="line"><a id="l00354" name="l00354"></a><span class="lineno">  354</span>                prevIntVal, nextIntVal, std::memory_order_release))</div>
+<div class="line"><a id="l00354" name="l00354"></a><span class="lineno">  354</span>                prevIntVal, nextIntVal, std::memory_order_acq_rel))</div>
 <div class="line"><a id="l00355" name="l00355"></a><span class="lineno">  355</span>        {</div>
 <div class="line"><a id="l00356" name="l00356"></a><span class="lineno">  356</span>            XRPL_ASSERT(</div>
 <div class="line"><a id="l00357" name="l00357"></a><span class="lineno">  357</span>                (!(prevIntVal &amp; <a class="code hl_variable" href="structripple_1_1IntrusiveRefCounts.html#a52d23e303089ab5665473e7d963e4a27">partialDestroyStartedMask</a>)),</div>
@@ -348,7 +348,7 @@ $(function() {
 <div class="line"><a id="l00374" name="l00374"></a><span class="lineno">  374</span>            <span class="comment">// This case should only be hit if the partialDestroyStartedBit is</span></div>
 <div class="line"><a id="l00375" name="l00375"></a><span class="lineno">  375</span>            <span class="comment">// set non-atomically (and even then very rarely). The code is kept</span></div>
 <div class="line"><a id="l00376" name="l00376"></a><span class="lineno">  376</span>            <span class="comment">// in case we need to set the flag non-atomically for perf reasons.</span></div>
-<div class="line"><a id="l00377" name="l00377"></a><span class="lineno">  377</span>            <a class="code hl_variable" href="structripple_1_1IntrusiveRefCounts.html#aca9660ae7c2e3bfcefc49a3bc319b7c1">refCounts</a>.wait(prevIntVal, std::memory_order_acq_rel);</div>
+<div class="line"><a id="l00377" name="l00377"></a><span class="lineno">  377</span>            <a class="code hl_variable" href="structripple_1_1IntrusiveRefCounts.html#aca9660ae7c2e3bfcefc49a3bc319b7c1">refCounts</a>.wait(prevIntVal, std::memory_order_acquire);</div>
 <div class="line"><a id="l00378" name="l00378"></a><span class="lineno">  378</span>            prevIntVal = <a class="code hl_variable" href="structripple_1_1IntrusiveRefCounts.html#aca9660ae7c2e3bfcefc49a3bc319b7c1">refCounts</a>.load(std::memory_order_acquire);</div>
 <div class="line"><a id="l00379" name="l00379"></a><span class="lineno">  379</span>            prev = <a class="code hl_struct" href="structripple_1_1IntrusiveRefCounts_1_1RefCountPair.html">RefCountPair</a>{prevIntVal};</div>
 <div class="line"><a id="l00380" name="l00380"></a><span class="lineno">  380</span>        }</div>
@@ -356,7 +356,7 @@ $(function() {
 <div class="line"><a id="l00382" name="l00382"></a><span class="lineno">  382</span>        {</div>
 <div class="line"><a id="l00383" name="l00383"></a><span class="lineno">  383</span>            <span class="comment">// partial destroy MUST finish before running a full destroy (when</span></div>
 <div class="line"><a id="l00384" name="l00384"></a><span class="lineno">  384</span>            <span class="comment">// using weak pointers)</span></div>
-<div class="line"><a id="l00385" name="l00385"></a><span class="lineno">  385</span>            <a class="code hl_variable" href="structripple_1_1IntrusiveRefCounts.html#aca9660ae7c2e3bfcefc49a3bc319b7c1">refCounts</a>.wait(prevIntVal - <a class="code hl_variable" href="structripple_1_1IntrusiveRefCounts.html#a9f1df1e02f8c059a10598595669c5f4d">weakDelta</a>, std::memory_order_acq_rel);</div>
+<div class="line"><a id="l00385" name="l00385"></a><span class="lineno">  385</span>            <a class="code hl_variable" href="structripple_1_1IntrusiveRefCounts.html#aca9660ae7c2e3bfcefc49a3bc319b7c1">refCounts</a>.wait(prevIntVal - <a class="code hl_variable" href="structripple_1_1IntrusiveRefCounts.html#a9f1df1e02f8c059a10598595669c5f4d">weakDelta</a>, std::memory_order_acquire);</div>
 <div class="line"><a id="l00386" name="l00386"></a><span class="lineno">  386</span>        }</div>
 <div class="line"><a id="l00387" name="l00387"></a><span class="lineno">  387</span>        <span class="keywordflow">return</span> <a class="code hl_enumvalue" href="namespaceripple.html#a3b64e12be521bde0f95af971c64faf71afb14982288108e1fbd6207ef55f05027">ReleaseWeakRefAction::destroy</a>;</div>
 <div class="line"><a id="l00388" name="l00388"></a><span class="lineno">  388</span>    }</div>
@@ -370,7 +370,7 @@ $(function() {
 <div class="line"><a id="l00396" name="l00396"></a><span class="lineno">  396</span>    <span class="keyword">auto</span> desiredValue = <a class="code hl_struct" href="structripple_1_1IntrusiveRefCounts_1_1RefCountPair.html">RefCountPair</a>{2, 1}.<a class="code hl_function" href="structripple_1_1IntrusiveRefCounts_1_1RefCountPair.html#a44d096585c183aff9f715c987c483e40">combinedValue</a>();</div>
 <div class="line"><a id="l00397" name="l00397"></a><span class="lineno">  397</span> </div>
 <div class="line"><a id="l00398" name="l00398"></a><span class="lineno">  398</span>    <span class="keywordflow">while</span> (!<a class="code hl_variable" href="structripple_1_1IntrusiveRefCounts.html#aca9660ae7c2e3bfcefc49a3bc319b7c1">refCounts</a>.compare_exchange_weak(</div>
-<div class="line"><a id="l00399" name="l00399"></a><span class="lineno">  399</span>        curValue, desiredValue, std::memory_order_release))</div>
+<div class="line"><a id="l00399" name="l00399"></a><span class="lineno">  399</span>        curValue, desiredValue, std::memory_order_acq_rel))</div>
 <div class="line"><a id="l00400" name="l00400"></a><span class="lineno">  400</span>    {</div>
 <div class="line"><a id="l00401" name="l00401"></a><span class="lineno">  401</span>        <a class="code hl_struct" href="structripple_1_1IntrusiveRefCounts_1_1RefCountPair.html">RefCountPair</a> <span class="keyword">const</span> prev{curValue};</div>
 <div class="line"><a id="l00402" name="l00402"></a><span class="lineno">  402</span>        <span class="keywordflow">if</span> (!prev.strong)</div>
