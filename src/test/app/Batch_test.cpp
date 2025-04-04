@@ -2851,6 +2851,12 @@ class Batch_test : public beast::unit_test::suite
             env.close();
 
             auto const aliceSeq = env.seq(alice);
+
+            // AccountSet Txn
+            auto const noopTxn = env.jt(noop(alice), seq(aliceSeq + 1));
+            env(noopTxn, ter(terPRE_SEQ));
+            
+            // Batch Txn
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
             auto const batchTxn = env.jt(
                 batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
@@ -2859,8 +2865,6 @@ class Batch_test : public beast::unit_test::suite
                     0,
                     aliceSeq + 1),  // Uses Ticket (Fails with terPRE_TICKET)
                 batch::inner(pay(alice, bob, XRP(2)), aliceSeq + 2));
-            auto const noopTxn = env.jt(noop(alice), seq(aliceSeq + 1));
-            env(noopTxn, ter(terPRE_SEQ));
             env(batchTxn);
             env.close();
 
@@ -2885,13 +2889,17 @@ class Batch_test : public beast::unit_test::suite
             env.close();
 
             auto const aliceSeq = env.seq(alice);
+            
+            // AccountSet Txn
+            auto const noopTxn = env.jt(noop(alice), seq(aliceSeq + 1));
+            env(noopTxn, ter(terPRE_SEQ));
+            
+            // Batch Txn
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
             auto const batchTxn = env.jt(
                 batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(1)), aliceSeq + 1),
                 batch::inner(pay(alice, bob, XRP(2)), aliceSeq + 2));
-            auto const noopTxn = env.jt(noop(alice), seq(aliceSeq + 1));
-            env(noopTxn, ter(terPRE_SEQ));
             env(batchTxn);
             env.close();
 
@@ -2957,15 +2965,19 @@ class Batch_test : public beast::unit_test::suite
             env.close();
 
             auto const aliceSeq = env.seq(alice);
+
+            // AccountSet Txn
+            auto const noopTxn =
+                env.jt(noop(alice), ticket::use(aliceTicketSeq + 1));
+            env(noopTxn);
+
+            // Batch Txn
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
             auto const batchTxn = env.jt(
                 batch::outer(alice, 0, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(1)), 0, aliceTicketSeq + 1),
                 batch::inner(pay(alice, bob, XRP(2)), aliceSeq),
                 ticket::use(aliceTicketSeq));
-            auto const noopTxn =
-                env.jt(noop(alice), ticket::use(aliceTicketSeq + 1));
-            env(noopTxn);
             env(batchTxn);
             env.close();
 
@@ -3037,15 +3049,19 @@ class Batch_test : public beast::unit_test::suite
             env.close();
 
             auto const aliceSeq = env.seq(alice);
-            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+
+            // CheckCash Txn
             uint256 const chkId{getCheckIndex(alice, aliceSeq)};
+            auto const objTxn = env.jt(check::cash(bob, chkId, XRP(10)));
+            env(objTxn, ter(tecNO_ENTRY));
+
+            // Batch Txn
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
             auto const batchTxn = env.jt(
                 batch::outer(alice, 0, batchFee, tfAllOrNothing),
                 batch::inner(check::create(alice, bob, XRP(10)), aliceSeq),
                 batch::inner(pay(alice, bob, XRP(1)), 0, aliceTicketSeq + 1),
                 ticket::use(aliceTicketSeq));
-            auto const objTxn = env.jt(check::cash(bob, chkId, XRP(10)));
-            env(objTxn, ter(tecNO_ENTRY));
             env(batchTxn);
             env.close();
 
