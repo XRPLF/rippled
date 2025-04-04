@@ -1037,6 +1037,7 @@ class Vault_test : public beast::unit_test::suite
         Account issuer{"issuer"};
         Account owner{"owner"};
         Account depositor{"depositor"};
+        Account charlie{"charlie"};
         Account pdOwner{"pdOwner"};
         Account credIssuer1{"credIssuer1"};
         Account credIssuer2{"credIssuer2"};
@@ -1047,6 +1048,7 @@ class Vault_test : public beast::unit_test::suite
             issuer,
             owner,
             depositor,
+            charlie,
             pdOwner,
             credIssuer1,
             credIssuer2);
@@ -1055,7 +1057,13 @@ class Vault_test : public beast::unit_test::suite
         env.close();
         env.require(flags(issuer, asfAllowTrustLineClawback));
 
-        PrettyAsset asset{xrpIssue(), 1'000'000};
+        PrettyAsset asset = issuer["IOU"];
+        env.trust(asset(1000), owner);
+        env(pay(issuer, owner, asset(500)));
+        env.trust(asset(1000), depositor);
+        env(pay(issuer, depositor, asset(500)));
+        env.close();
+
         auto [tx, keylet] = vault.create(
             {.owner = owner, .asset = asset, .flags = tfVaultPrivate});
         env(tx);
@@ -1142,6 +1150,8 @@ class Vault_test : public beast::unit_test::suite
             testcase("private vault depositor now authorized");
             env(credentials::create(depositor, credIssuer1, credType));
             env(credentials::accept(depositor, credIssuer1, credType));
+            env(credentials::create(charlie, credIssuer1, credType));
+            env(credentials::accept(charlie, credIssuer1, credType));
             env.close();
             auto credSle = env.le(credKeylet);
             BEAST_EXPECT(credSle != nullptr);
@@ -1151,6 +1161,11 @@ class Vault_test : public beast::unit_test::suite
                  .id = keylet.key,
                  .amount = asset(50)});
             env(tx);
+            env.close();
+
+            tx = vault.deposit(
+                {.depositor = charlie, .id = keylet.key, .amount = asset(50)});
+            env(tx, ter{tecINSUFFICIENT_FUNDS});
             env.close();
         }
 

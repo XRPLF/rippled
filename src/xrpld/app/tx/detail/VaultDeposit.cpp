@@ -86,12 +86,12 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         // would allow authorization granted by the issuer explicitly, but Vault
         // does not have an MPT issuer (instead it uses pseudo-account, which is
         // blackholed and cannot create any transactions).
-        auto const err = requireAuth(ctx.view, share, account);
-
-        // As per requireAuth spec, we suppress tecEXPIRED error here, so we can
-        // delete any expired credentials inside doApply.
-        if (err != tecEXPIRED)
-            return err;
+        //
+        // As per requireAuth documentation, we suppress tecEXPIRED error here,
+        // so we can delete any expired credentials inside doApply.
+        if (auto const ter = requireAuth(ctx.view, share, account);
+            !isTesSuccess(ter) && ter != tecEXPIRED)
+            return ter;
     }
 
     if (assets.holds<MPTIssue>())
