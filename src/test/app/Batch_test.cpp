@@ -161,7 +161,7 @@ class Batch_test : public beast::unit_test::suite
     }
 
     static std::unique_ptr<Config>
-    makeConfig(
+    makeSmallQueueConfig(
         std::map<std::string, std::string> extraTxQ = {},
         std::map<std::string, std::string> extraVoting = {})
     {
@@ -3229,7 +3229,7 @@ class Batch_test : public beast::unit_test::suite
 
         test::jtx::Env env{
             *this,
-            makeConfig({{"minimum_txn_in_ledger_standalone", "2"}}),
+            makeSmallQueueConfig({{"minimum_txn_in_ledger_standalone", "2"}}),
             nullptr,
             beast::severities::kError};
 
