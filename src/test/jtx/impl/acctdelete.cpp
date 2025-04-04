@@ -17,11 +17,10 @@
 */
 //==============================================================================
 
-#include <test/jtx/acctdelete.h>
 #include <test/jtx/Env.h>
+#include <test/jtx/acctdelete.h>
 
 #include <xrpl/protocol/jss.h>
-
 
 namespace ripple {
 namespace test {
@@ -42,10 +41,7 @@ acctdelete(jtx::Account const& account, jtx::Account const& dest)
 // the account.  If margin is specified, close the ledger so `margin`
 // more closes are needed
 void
-incLgrSeqForAccDel(
-    jtx::Env& env,
-    jtx::Account const& acc,
-    std::uint32_t margin)
+incLgrSeqForAccDel(jtx::Env& env, jtx::Account const& acc, std::uint32_t margin)
 {
     using namespace jtx;
     auto openLedgerSeq = [](jtx::Env& env) -> std::uint32_t {
