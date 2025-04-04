@@ -3237,8 +3237,6 @@ class Batch_test : public beast::unit_test::suite
         auto bob = Account("bob");
         auto carol = Account("carol");
 
-        auto queued = ter(terQUEUED);
-
         // Fund across several ledgers so the TxQ metrics stay restricted.
         env.fund(XRP(1000), noripple(alice, bob));
         env.close(env.now() + 5s, 10000ms);
@@ -3251,7 +3249,7 @@ class Batch_test : public beast::unit_test::suite
         env(noop(alice));
         checkMetrics(__LINE__, env, 0, std::nullopt, 3);
 
-        env(noop(carol), queued);
+        env(noop(carol), ter(terQUEUED));
         checkMetrics(__LINE__, env, 1, std::nullopt, 3);
 
         auto const aliceSeq = env.seq(alice);
@@ -3264,7 +3262,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(10)), aliceSeq + 1),
                 batch::inner(pay(bob, alice, XRP(5)), bobSeq),
                 batch::sig(bob),
-                queued);
+                ter(terQUEUED));
         }
 
         checkMetrics(__LINE__, env, 2, std::nullopt, 3);
