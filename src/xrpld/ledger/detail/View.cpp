@@ -304,7 +304,7 @@ isVaultPseudoAccountFrozen(ReadView const& view, MPTIssue const& mptShare)
         view.read(keylet::mptIssuance(mptShare.getMptID()));
     if (mptIssuance == nullptr)
     {
-        UNREACHABLE(
+        UNREACHABLE(  // LCOV_EXCL_LINE
             "ripple::isVaultPseudoAccountFrozen : null MPTokenIssuance");  // LCOV_EXCL_LINE
         return false;  // LCOV_EXCL_LINE
     }
@@ -313,7 +313,7 @@ isVaultPseudoAccountFrozen(ReadView const& view, MPTIssue const& mptShare)
     auto const mptIssuer = view.read(keylet::account(issuer));
     if (mptIssuer == nullptr)
     {
-        UNREACHABLE(
+        UNREACHABLE(  // LCOV_EXCL_LINE
             "ripple::isVaultPseudoAccountFrozen : null MPToken issuer");  // LCOV_EXCL_LINE
         return false;  // LCOV_EXCL_LINE
     }
@@ -325,7 +325,7 @@ isVaultPseudoAccountFrozen(ReadView const& view, MPTIssue const& mptShare)
         view.read(keylet::vault(mptIssuer->getFieldH256(sfVaultID)));
     if (vault == nullptr)
     {
-        UNREACHABLE(
+        UNREACHABLE(  // LCOV_EXCL_LINE
             "ripple::isVaultPseudoAccountFrozen : null vault");  // LCOV_EXCL_LINE
         return false;  // LCOV_EXCL_LINE
     }
@@ -1094,7 +1094,7 @@ createPseudoAccount(
             account->setFieldH256(sfVaultID, pseudoOwnerKey);
             break;
         default:
-            UNREACHABLE(
+            UNREACHABLE(  // LCOV_EXCL_LINE
                 "ripple::createPseudoAccount : unknown owner key type");  // LCOV_EXCL_LINE
             return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
     }
@@ -2364,7 +2364,7 @@ enforceMPTokenAuthorization(
         return tesSUCCESS;
     }
 
-    UNREACHABLE(
+    UNREACHABLE(  // LCOV_EXCL_LINE
         "ripple::enforceMPTokenAuthorization : condition list is incomplete");  // LCOV_EXCL_LINE
     return tefINTERNAL;  // LCOV_EXCL_LINE
 }
