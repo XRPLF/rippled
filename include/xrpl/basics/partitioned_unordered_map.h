@@ -255,7 +255,7 @@ public:
     {
         // Set partitions to the number of hardware threads if the parameter
         // is either empty or set to 0.
-        partitions_ = 1;
+        partitions_ = std::size_t{std::thread::hardware_concurrency() / 2};
         // partitions && *partitions
         //     ? *partitions
         //     : std::thread::hardware_concurrency();
