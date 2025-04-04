@@ -2692,146 +2692,144 @@ class Batch_test : public beast::unit_test::suite
     }
 
     void
-    testTicketsOuter(FeatureBitset features)
+    testTickets(FeatureBitset features)
     {
-        testcase("tickets outer");
+        {
+            testcase("tickets outer");
 
-        using namespace test::jtx;
-        using namespace std::literals;
+            using namespace test::jtx;
+            using namespace std::literals;
 
-        test::jtx::Env env{*this, envconfig()};
+            test::jtx::Env env{*this, envconfig()};
 
-        auto const alice = Account("alice");
-        auto const bob = Account("bob");
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
 
-        env.fund(XRP(1000), alice, bob);
-        env.close();
+            env.fund(XRP(1000), alice, bob);
+            env.close();
 
-        std::uint32_t aliceTicketSeq{env.seq(alice) + 1};
-        env(ticket::create(alice, 10));
-        env.close();
+            std::uint32_t aliceTicketSeq{env.seq(alice) + 1};
+            env(ticket::create(alice, 10));
+            env.close();
 
-        auto const aliceSeq = env.seq(alice);
-        auto const preAlice = env.balance(alice);
-        auto const preBob = env.balance(bob);
+            auto const aliceSeq = env.seq(alice);
+            auto const preAlice = env.balance(alice);
+            auto const preBob = env.balance(bob);
 
-        auto const batchFee = batch::calcBatchFee(env, 0, 2);
-        env(batch::outer(alice, 0, batchFee, tfAllOrNothing),
-            batch::inner(pay(alice, bob, XRP(1)), aliceSeq + 0),
-            batch::inner(pay(alice, bob, XRP(2)), aliceSeq + 1),
-            ticket::use(aliceTicketSeq));
-        auto const txIDs = env.tx()->getBatchTransactionIDs();
-        TxID const parentBatchId = env.tx()->getTransactionID();
-        std::vector<TestBatchData> testCases = {
-            {"tesSUCCESS", to_string(txIDs[0])},
-            {"tesSUCCESS", to_string(txIDs[1])},
-        };
-        env.close();
-        validateBatch(env, parentBatchId, testCases);
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            env(batch::outer(alice, 0, batchFee, tfAllOrNothing),
+                batch::inner(pay(alice, bob, XRP(1)), aliceSeq + 0),
+                batch::inner(pay(alice, bob, XRP(2)), aliceSeq + 1),
+                ticket::use(aliceTicketSeq));
+            auto const txIDs = env.tx()->getBatchTransactionIDs();
+            TxID const parentBatchId = env.tx()->getTransactionID();
+            std::vector<TestBatchData> testCases = {
+                {"tesSUCCESS", to_string(txIDs[0])},
+                {"tesSUCCESS", to_string(txIDs[1])},
+            };
+            env.close();
+            validateBatch(env, parentBatchId, testCases);
 
-        auto const sle = env.le(keylet::account(alice));
-        BEAST_EXPECT(sle);
-        BEAST_EXPECT(sle->getFieldU32(sfOwnerCount) == 9);
-        BEAST_EXPECT(sle->getFieldU32(sfTicketCount) == 9);
+            auto const sle = env.le(keylet::account(alice));
+            BEAST_EXPECT(sle);
+            BEAST_EXPECT(sle->getFieldU32(sfOwnerCount) == 9);
+            BEAST_EXPECT(sle->getFieldU32(sfTicketCount) == 9);
 
-        BEAST_EXPECT(env.seq(alice) == aliceSeq + 2);
-        BEAST_EXPECT(env.balance(alice) == preAlice - XRP(3) - batchFee);
-        BEAST_EXPECT(env.balance(bob) == preBob + XRP(3));
-    }
+            BEAST_EXPECT(env.seq(alice) == aliceSeq + 2);
+            BEAST_EXPECT(env.balance(alice) == preAlice - XRP(3) - batchFee);
+            BEAST_EXPECT(env.balance(bob) == preBob + XRP(3));
+        }
 
-    void
-    testTicketsInner(FeatureBitset features)
-    {
-        testcase("tickets inner");
+        {
+            testcase("tickets inner");
 
-        using namespace test::jtx;
-        using namespace std::literals;
+            using namespace test::jtx;
+            using namespace std::literals;
 
-        test::jtx::Env env{*this, envconfig()};
+            test::jtx::Env env{*this, envconfig()};
 
-        auto const alice = Account("alice");
-        auto const bob = Account("bob");
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
 
-        env.fund(XRP(1000), alice, bob);
-        env.close();
+            env.fund(XRP(1000), alice, bob);
+            env.close();
 
-        std::uint32_t aliceTicketSeq{env.seq(alice) + 1};
-        env(ticket::create(alice, 10));
-        env.close();
+            std::uint32_t aliceTicketSeq{env.seq(alice) + 1};
+            env(ticket::create(alice, 10));
+            env.close();
 
-        auto const aliceSeq = env.seq(alice);
-        auto const preAlice = env.balance(alice);
-        auto const preBob = env.balance(bob);
+            auto const aliceSeq = env.seq(alice);
+            auto const preAlice = env.balance(alice);
+            auto const preBob = env.balance(bob);
 
-        auto const batchFee = batch::calcBatchFee(env, 0, 2);
-        env(batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
-            batch::inner(pay(alice, bob, XRP(1)), 0, aliceTicketSeq),
-            batch::inner(pay(alice, bob, XRP(2)), 0, aliceTicketSeq + 1));
-        auto const txIDs = env.tx()->getBatchTransactionIDs();
-        TxID const parentBatchId = env.tx()->getTransactionID();
-        std::vector<TestBatchData> testCases = {
-            {"tesSUCCESS", to_string(txIDs[0])},
-            {"tesSUCCESS", to_string(txIDs[1])},
-        };
-        env.close();
-        validateBatch(env, parentBatchId, testCases);
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            env(batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
+                batch::inner(pay(alice, bob, XRP(1)), 0, aliceTicketSeq),
+                batch::inner(pay(alice, bob, XRP(2)), 0, aliceTicketSeq + 1));
+            auto const txIDs = env.tx()->getBatchTransactionIDs();
+            TxID const parentBatchId = env.tx()->getTransactionID();
+            std::vector<TestBatchData> testCases = {
+                {"tesSUCCESS", to_string(txIDs[0])},
+                {"tesSUCCESS", to_string(txIDs[1])},
+            };
+            env.close();
+            validateBatch(env, parentBatchId, testCases);
 
-        auto const sle = env.le(keylet::account(alice));
-        BEAST_EXPECT(sle);
-        BEAST_EXPECT(sle->getFieldU32(sfOwnerCount) == 8);
-        BEAST_EXPECT(sle->getFieldU32(sfTicketCount) == 8);
+            auto const sle = env.le(keylet::account(alice));
+            BEAST_EXPECT(sle);
+            BEAST_EXPECT(sle->getFieldU32(sfOwnerCount) == 8);
+            BEAST_EXPECT(sle->getFieldU32(sfTicketCount) == 8);
 
-        BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
-        BEAST_EXPECT(env.balance(alice) == preAlice - XRP(3) - batchFee);
-        BEAST_EXPECT(env.balance(bob) == preBob + XRP(3));
-    }
+            BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
+            BEAST_EXPECT(env.balance(alice) == preAlice - XRP(3) - batchFee);
+            BEAST_EXPECT(env.balance(bob) == preBob + XRP(3));
+        }
 
-    void
-    testTicketsOuterInner(FeatureBitset features)
-    {
-        testcase("tickets outer inner");
+        {
+            testcase("tickets outer inner");
 
-        using namespace test::jtx;
-        using namespace std::literals;
+            using namespace test::jtx;
+            using namespace std::literals;
 
-        test::jtx::Env env{*this, envconfig()};
+            test::jtx::Env env{*this, envconfig()};
 
-        auto const alice = Account("alice");
-        auto const bob = Account("bob");
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
 
-        env.fund(XRP(1000), alice, bob);
-        env.close();
+            env.fund(XRP(1000), alice, bob);
+            env.close();
 
-        std::uint32_t aliceTicketSeq{env.seq(alice) + 1};
-        env(ticket::create(alice, 10));
-        env.close();
+            std::uint32_t aliceTicketSeq{env.seq(alice) + 1};
+            env(ticket::create(alice, 10));
+            env.close();
 
-        auto const aliceSeq = env.seq(alice);
-        auto const preAlice = env.balance(alice);
-        auto const preBob = env.balance(bob);
+            auto const aliceSeq = env.seq(alice);
+            auto const preAlice = env.balance(alice);
+            auto const preBob = env.balance(bob);
 
-        auto const batchFee = batch::calcBatchFee(env, 0, 2);
-        env(batch::outer(alice, 0, batchFee, tfAllOrNothing),
-            batch::inner(pay(alice, bob, XRP(1)), 0, aliceTicketSeq + 1),
-            batch::inner(pay(alice, bob, XRP(2)), aliceSeq),
-            ticket::use(aliceTicketSeq));
-        auto const txIDs = env.tx()->getBatchTransactionIDs();
-        TxID const parentBatchId = env.tx()->getTransactionID();
-        std::vector<TestBatchData> testCases = {
-            {"tesSUCCESS", to_string(txIDs[0])},
-            {"tesSUCCESS", to_string(txIDs[1])},
-        };
-        env.close();
-        validateBatch(env, parentBatchId, testCases);
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            env(batch::outer(alice, 0, batchFee, tfAllOrNothing),
+                batch::inner(pay(alice, bob, XRP(1)), 0, aliceTicketSeq + 1),
+                batch::inner(pay(alice, bob, XRP(2)), aliceSeq),
+                ticket::use(aliceTicketSeq));
+            auto const txIDs = env.tx()->getBatchTransactionIDs();
+            TxID const parentBatchId = env.tx()->getTransactionID();
+            std::vector<TestBatchData> testCases = {
+                {"tesSUCCESS", to_string(txIDs[0])},
+                {"tesSUCCESS", to_string(txIDs[1])},
+            };
+            env.close();
+            validateBatch(env, parentBatchId, testCases);
 
-        auto const sle = env.le(keylet::account(alice));
-        BEAST_EXPECT(sle);
-        BEAST_EXPECT(sle->getFieldU32(sfOwnerCount) == 8);
-        BEAST_EXPECT(sle->getFieldU32(sfTicketCount) == 8);
+            auto const sle = env.le(keylet::account(alice));
+            BEAST_EXPECT(sle);
+            BEAST_EXPECT(sle->getFieldU32(sfOwnerCount) == 8);
+            BEAST_EXPECT(sle->getFieldU32(sfTicketCount) == 8);
 
-        BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
-        BEAST_EXPECT(env.balance(alice) == preAlice - XRP(3) - batchFee);
-        BEAST_EXPECT(env.balance(bob) == preBob + XRP(3));
+            BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
+            BEAST_EXPECT(env.balance(alice) == preAlice - XRP(3) - batchFee);
+            BEAST_EXPECT(env.balance(bob) == preBob + XRP(3));
+        }
     }
 
     void
@@ -3357,9 +3355,7 @@ class Batch_test : public beast::unit_test::suite
         testObjectCreateSequence(features);
         testObjectCreateTicket(features);
         testObjectCreate3rdParty(features);
-        testTicketsOuter(features);
-        testTicketsInner(features);
-        testTicketsOuterInner(features);
+        testTickets(features);
         testSequenceOpenLedger(features);
         testTicketsOpenLedger(features);
         testObjectsOpenLedger(features);
