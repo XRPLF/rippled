@@ -87,7 +87,7 @@ public:
         validatorlist,
 
         squelch,
-        squelch_saved,
+        squelch_suppressed,
 
         // TMHaveSet message:
         get_set,    // transaction sets we try to get
@@ -240,7 +240,7 @@ public:
             {validation_duplicate, "validations_duplicate"},
             {validatorlist, "validator_lists"},
             {squelch, "squelch"},
-            {squelch_saved, "squelch_saved"},
+            {squelch_suppressed, "squelch_saved"},
             {get_set, "set_get"},
             {share_set, "set_share"},
             {ld_tsc_get, "ledger_data_Transaction_Set_candidate_get"},
@@ -304,7 +304,7 @@ protected:
         {validation_duplicate, {validation_duplicate}},
         {validatorlist, {validatorlist}},
         {squelch, {squelch}},
-        {squelch_saved, {squelch_saved}},
+        {squelch_suppressed, {squelch_suppressed}},
         {get_set, {get_set}},
         {share_set, {share_set}},
         {ld_tsc_get, {ld_tsc_get}},

@@ -251,7 +251,7 @@ PeerImp::send(std::shared_ptr<Message> const& m)
     if (validator && !squelch_.expireSquelch(*validator))
     {
         overlay_.reportOutboundTraffic(
-            TrafficCount::category::squelch_saved,
+            TrafficCount::category::squelch_suppressed,
             static_cast<int>(m->getBuffer(compressionEnabled_).size()));
         return;
     }
