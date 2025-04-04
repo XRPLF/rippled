@@ -2116,26 +2116,30 @@ class Batch_test : public beast::unit_test::suite
 
         env.fund(XRP(1000), alice, bob);
         env.close();
+
+        auto submitAndValidate = [&](Slice const& slice) {
+            auto const jrr = env.rpc("submit", strHex(slice))[jss::result];
+            BEAST_EXPECT(
+            jrr[jss::status] == "error" &&
+            jrr[jss::error] == "invalidTransaction" &&
+            jrr[jss::error_exception] ==
+                "fails local checks: Malformed: Invalid inner batch "
+                "transaction.");
+            env.close();
+        };
+
         // Invalid RPC Submission: TxnSignature
         // - has `TxnSignature` field
         // - has no `SigningPubKey` field
         // - has no `Signers` field
         // - has `tfInnerBatchTxn` flag
         {
-            auto jv = pay(alice, bob, XRP(1));
-            jv[sfFlags.fieldName] = tfInnerBatchTxn;
+            auto txn = batch::inner(pay(alice, bob, XRP(1)), env.seq(alice));
+            txn[sfTxnSignature] = "DEADBEEF";
+            STParsedJSONObject parsed("test", txn.getTxn());
             Serializer s;
-            auto jt = env.jt(jv);
-            jt.stx->add(s);
-            auto const jrr = env.rpc("submit", strHex(s.slice()))[jss::result];
-            BEAST_EXPECT(
-                jrr[jss::status] == "error" &&
-                jrr[jss::error] == "invalidTransaction" &&
-                jrr[jss::error_exception] ==
-                    "fails local checks: Malformed: Invalid inner batch "
-                    "transaction.");
-
-            env.close();
+            parsed.object->add(s);
+            submitAndValidate(s.slice());
         }
 
         // Invalid RPC Submission: SigningPubKey
@@ -2144,21 +2148,12 @@ class Batch_test : public beast::unit_test::suite
         // - has no `Signers` field
         // - has `tfInnerBatchTxn` flag
         {
-            std::string txBlob =
-                "1200002240000000240000000561D4838D7EA4C68000000000000000000000"
-                "0000005553440000000000A407AF5856CCF3C42619DAA925813FC955C72983"
-                "68400000000000000A73210388935426E0D08083314842EDFBB2D517BD4769"
-                "9F9A4527318A8E10468C97C0528114AE123A8556F3CF91154711376AFB0F89"
-                "4F832B3D8314F51DFC2A09D62CBBA1DFBDD4691DAC96AD98B90F";
-            auto const jrr = env.rpc("submit", txBlob)[jss::result];
-            BEAST_EXPECT(
-                jrr[jss::status] == "error" &&
-                jrr[jss::error] == "invalidTransaction" &&
-                jrr[jss::error_exception] ==
-                    "fails local checks: Malformed: Invalid inner batch "
-                    "transaction.");
-
-            env.close();
+            auto txn = batch::inner(pay(alice, bob, XRP(1)), env.seq(alice));
+            txn[sfSigningPubKey] = strHex(alice.pk());
+            STParsedJSONObject parsed("test", txn.getTxn());
+            Serializer s;
+            parsed.object->add(s);
+            submitAndValidate(s.slice());
         }
 
         // Invalid RPC Submission: Signers
@@ -2167,29 +2162,12 @@ class Batch_test : public beast::unit_test::suite
         // - has `Signers` field
         // - has `tfInnerBatchTxn` flag
         {
-            std::string txBlob =
-                "1200002240000000240000000561D4838D7EA4C68000000000000000000000"
-                "0000005553440000000000A407AF5856CCF3C42619DAA925813FC955C72983"
-                "68400000000000000A73008114AE123A8556F3CF91154711376AFB0F894F83"
-                "2B3D8314F51DFC2A09D62CBBA1DFBDD4691DAC96AD98B90FF3E01073210289"
-                "49021029D5CC87E78BCF053AFEC0CAFD15108EC119EAAFEC466F5C095407BF"
-                "74473045022100EC791DC3306E1784B813CBE275C9A0E2F467EF795E3571AA"
-                "DB295862F2F316350220668716954E02AF714F119F34D869891C8704A7989B"
-                "DB0DBA029A7580430BB7138114B389FBCED0AF9DCDFF62900BFAEFA3EB872D"
-                "8A96E1E010732102691AC5AE1C4C333AE5DF8A93BDC495F0EEBFC6DB0DA7EB"
-                "6EF808F3AFC006E3FE74473045022100B93117804900BE1E83E5E2B5846642"
-                "7BBFE2138CDEF5F31F566B4AC49A947C300220463AFD847028A76F3FEC997B"
-                "56FA4C4E6514A57E77D38AC854A6A2A54DD4DB478114F51DFC2A09D62CBBA1"
-                "DFBDD4691DAC96AD98B90FE1F1";
-            auto const jrr = env.rpc("submit", txBlob)[jss::result];
-            BEAST_EXPECT(
-                jrr[jss::status] == "error" &&
-                jrr[jss::error] == "invalidTransaction" &&
-                jrr[jss::error_exception] ==
-                    "fails local checks: Malformed: Invalid inner batch "
-                    "transaction.");
-
-            env.close();
+            auto txn = batch::inner(pay(alice, bob, XRP(1)), env.seq(alice));
+            txn[sfSigners] = Json::arrayValue;
+            STParsedJSONObject parsed("test", txn.getTxn());
+            Serializer s;
+            parsed.object->add(s);
+            submitAndValidate(s.slice());
         }
 
         // Invalid RPC Submission: tfInnerBatchTxn
@@ -2198,12 +2176,11 @@ class Batch_test : public beast::unit_test::suite
         // - has no `Signers` field
         // - has `tfInnerBatchTxn` flag
         {
-            std::string txBlob =
-                "1200002240000000240000000561D4838D7EA4C68000000000000000000000"
-                "0000005553440000000000A407AF5856CCF3C42619DAA925813FC955C72983"
-                "68400000000000000A73008114AE123A8556F3CF91154711376AFB0F894F83"
-                "2B3D8314F51DFC2A09D62CBBA1DFBDD4691DAC96AD98B90F";
-            auto const jrr = env.rpc("submit", txBlob)[jss::result];
+            auto txn = batch::inner(pay(alice, bob, XRP(1)), env.seq(alice));
+            STParsedJSONObject parsed("test", txn.getTxn());
+            Serializer s;
+            parsed.object->add(s);
+            auto const jrr = env.rpc("submit", strHex(s.slice()))[jss::result];
             BEAST_EXPECT(
                 jrr[jss::status] == "success" &&
                 jrr[jss::engine_result] == "temINVALID_FLAG");
