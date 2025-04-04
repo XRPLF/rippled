@@ -2361,37 +2361,112 @@ class Batch_test : public beast::unit_test::suite
         using namespace test::jtx;
         using namespace std::literals;
 
-        test::jtx::Env env{*this, envconfig()};
+        // tfIndependent: account delete success
+        {
+            test::jtx::Env env{*this, envconfig()};
 
-        auto const alice = Account("alice");
-        auto const bob = Account("bob");
-        env.fund(XRP(1000), alice, bob);
-        env.close();
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            env.fund(XRP(1000), alice, bob);
+            env.close();
 
-        incLgrSeqForAccDel(env, alice);
+            incLgrSeqForAccDel(env, alice);
+            
+            auto const preAlice = env.balance(alice);
+            auto const preBob = env.balance(bob);
 
-        auto const preAlice = env.balance(alice);
-        auto const preBob = env.balance(bob);
+            auto const seq = env.seq(alice);
+            auto const batchFee =
+                batch::calcBatchFee(env, 0, 2) + env.current()->fees().increment;
+            env(batch::outer(alice, seq, batchFee, tfIndependent),
+                batch::inner(pay(alice, bob, XRP(1)), seq + 1),
+                batch::inner(acctdelete(alice, bob), seq + 2),
+                batch::inner(pay(alice, bob, XRP(2)), seq + 3));
+            auto const txIDs = env.tx()->getBatchTransactionIDs();
+            TxID const parentBatchId = env.tx()->getTransactionID();
+            std::vector<TestBatchData> testCases = {
+                {"tesSUCCESS", to_string(txIDs[0])},
+                {"tesSUCCESS", to_string(txIDs[1])},
+                // terNO_ACCOUNT: alice does not exist
+            };
+            env.close();
+            validateBatch(env, parentBatchId, testCases);
 
-        auto const seq = env.seq(alice);
-        auto const batchFee =
-            batch::calcBatchFee(env, 0, 2) + env.current()->fees().increment;
-        env(batch::outer(alice, seq, batchFee, tfIndependent),
-            batch::inner(pay(alice, bob, XRP(1)), seq + 1),
-            batch::inner(acctdelete(alice, bob), seq + 2),
-            batch::inner(pay(alice, bob, XRP(2)), seq + 3));
-        auto const txIDs = env.tx()->getBatchTransactionIDs();
-        TxID const parentBatchId = env.tx()->getTransactionID();
-        std::vector<TestBatchData> testCases = {
-            {"tesSUCCESS", to_string(txIDs[0])},
-            {"tesSUCCESS", to_string(txIDs[1])},
-        };
-        env.close();
-        validateBatch(env, parentBatchId, testCases);
+            // Alice does not exist; Bob receives Alice's XRP
+            BEAST_EXPECT(!env.le(keylet::account(alice)));
+            BEAST_EXPECT(env.balance(bob) == preBob + (preAlice - batchFee));
+        }
 
-        // Alice does not exist; Bob receives Alice's XRP
-        BEAST_EXPECT(!env.le(keylet::account(alice)));
-        BEAST_EXPECT(env.balance(bob) == preBob + (preAlice - batchFee));
+        // tfIndependent: account delete fails
+        {
+            test::jtx::Env env{*this, envconfig()};
+
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            env.fund(XRP(1000), alice, bob);
+            env.close();
+
+            incLgrSeqForAccDel(env, alice);
+            
+            auto const preAlice = env.balance(alice);
+            auto const preBob = env.balance(bob);
+
+            env.trust(bob["USD"](1000), alice);
+            env.close();
+
+            auto const seq = env.seq(alice);
+            auto const batchFee =
+                batch::calcBatchFee(env, 0, 2) + env.current()->fees().increment;
+            env(batch::outer(alice, seq, batchFee, tfIndependent),
+                batch::inner(pay(alice, bob, XRP(1)), seq + 1),
+                batch::inner(acctdelete(alice, bob), seq + 2),
+                batch::inner(pay(alice, bob, XRP(2)), seq + 3));
+            auto const txIDs = env.tx()->getBatchTransactionIDs();
+            TxID const parentBatchId = env.tx()->getTransactionID();
+            std::vector<TestBatchData> testCases = {
+                {"tesSUCCESS", to_string(txIDs[0])},
+                {"tecHAS_OBLIGATIONS", to_string(txIDs[1])},
+                {"tesSUCCESS", to_string(txIDs[2])},
+            };
+            env.close();
+            validateBatch(env, parentBatchId, testCases);
+
+            // Alice does not exist; Bob receives XRP
+            BEAST_EXPECT(env.le(keylet::account(alice)));
+            BEAST_EXPECT(env.balance(bob) == preBob + XRP(3));
+        }
+        
+        // tfAllOrNothing: account delete fails
+        {
+            test::jtx::Env env{*this, envconfig()};
+
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            env.fund(XRP(1000), alice, bob);
+            env.close();
+
+            incLgrSeqForAccDel(env, alice);
+
+            auto const preAlice = env.balance(alice);
+            auto const preBob = env.balance(bob);
+
+            auto const seq = env.seq(alice);
+            auto const batchFee =
+                batch::calcBatchFee(env, 0, 2) + env.current()->fees().increment;
+            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                batch::inner(pay(alice, bob, XRP(1)), seq + 1),
+                batch::inner(acctdelete(alice, bob), seq + 2),
+                batch::inner(pay(alice, bob, XRP(2)), seq + 3));
+            auto const txIDs = env.tx()->getBatchTransactionIDs();
+            TxID const parentBatchId = env.tx()->getTransactionID();
+            std::vector<TestBatchData> testCases = {};
+            env.close();
+            validateBatch(env, parentBatchId, testCases);
+
+            // Alice still exists; Bob is unchanged
+            BEAST_EXPECT(env.le(keylet::account(alice)));
+            BEAST_EXPECT(env.balance(bob) == preBob);
+        }
     }
 
     void
