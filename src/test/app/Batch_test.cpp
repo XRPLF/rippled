@@ -3305,20 +3305,16 @@ class Batch_test : public beast::unit_test::suite
         env.close();
 
         auto submitTx = [&](std::uint32_t flags) -> uint256 {
-            auto jv = pay(alice, bob, XRP(1));
-            jv[sfFlags.fieldName] = flags;
+            auto jt = env.jt(pay(alice, bob, XRP(1)), txflags(flags));
             Serializer s;
-            auto jt = env.jt(jv);
             jt.stx->add(s);
             env.app().getOPs().submitTransaction(jt.stx);
             return jt.stx->getTransactionID();
         };
 
         auto processTxn = [&](std::uint32_t flags) -> uint256 {
-            auto jv = pay(alice, bob, XRP(1));
-            jv[sfFlags.fieldName] = flags;
+            auto jt = env.jt(pay(alice, bob, XRP(1)), txflags(flags));
             Serializer s;
-            auto jt = env.jt(jv);
             jt.stx->add(s);
             std::string reason;
             auto transaction =
