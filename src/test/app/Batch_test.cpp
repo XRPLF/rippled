@@ -2672,7 +2672,7 @@ class Batch_test : public beast::unit_test::suite
         env(batch::outer(alice, 0, batchFee, tfAllOrNothing),
             batch::inner(pay(alice, bob, XRP(1)), aliceSeq + 0),
             batch::inner(pay(alice, bob, XRP(2)), aliceSeq + 1),
-            ticket::use(aliceTicketSeq++));
+            ticket::use(aliceTicketSeq));
         auto const txIDs = env.tx()->getBatchTransactionIDs();
         TxID const parentBatchId = env.tx()->getTransactionID();
         std::vector<TestBatchData> testCases = {
