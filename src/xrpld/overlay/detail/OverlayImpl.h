@@ -566,12 +566,14 @@ private:
         TrafficGauges(
             std::string const& name,
             beast::insight::Collector::ptr const& collector)
-            : bytesIn(collector->make_gauge(name, "Bytes_In"))
+            : name(name)
+            , bytesIn(collector->make_gauge(name, "Bytes_In"))
             , bytesOut(collector->make_gauge(name, "Bytes_Out"))
             , messagesIn(collector->make_gauge(name, "Messages_In"))
             , messagesOut(collector->make_gauge(name, "Messages_Out"))
         {
         }
+        std::string name;
         beast::insight::Gauge bytesIn;
         beast::insight::Gauge bytesOut;
         beast::insight::Gauge messagesIn;
@@ -616,7 +618,13 @@ private:
             auto it = m_stats.trafficGauges.find(key);
             if (it == m_stats.trafficGauges.end())
                 continue;
+
             auto& gauge = it->second;
+
+            XRPL_ASSERT(
+                gauge.name == value.name,
+                "ripple::OverlayImpl::collect_metrics : gauge and counter "
+                "match");
 
             gauge.bytesIn = value.bytesIn;
             gauge.bytesOut = value.bytesOut;
