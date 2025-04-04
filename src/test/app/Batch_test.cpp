@@ -2206,17 +2206,12 @@ class Batch_test : public beast::unit_test::suite
         env.memoize(bob);
 
         auto const preAlice = env.balance(alice);
-
-        // Tx 1
-        Json::Value tx1 = noop(bob);
-        tx1[sfSetFlag.fieldName] = asfAllowTrustLineClawback;
-
         auto const ledSeq = env.current()->seq();
         auto const seq = env.seq(alice);
         auto const batchFee = batch::calcBatchFee(env, 1, 2);
         env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
             batch::inner(pay(alice, bob, XRP(1000)), seq + 1),
-            batch::inner(tx1, ledSeq),
+            batch::inner(fset(bob, asfAllowTrustLineClawback), ledSeq),
             batch::sig(bob));
         auto const txIDs = env.tx()->getBatchTransactionIDs();
         TxID const parentBatchId = env.tx()->getTransactionID();
