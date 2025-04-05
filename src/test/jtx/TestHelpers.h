@@ -289,6 +289,25 @@ checkArraySize(Json::Value const& val, unsigned int size);
 std::uint32_t
 ownerCount(test::jtx::Env const& env, test::jtx::Account const& account);
 
+inline
+[[nodiscard]] bool
+checkVL(Slice const& result, std::string expected)
+{
+    Serializer s;
+    s.addRaw(result);
+    return s.getString() == expected;
+}
+
+inline
+[[nodiscard]] bool
+checkVL(
+    std::shared_ptr<SLE const> const& sle,
+    SField const& field,
+    std::string const& expected)
+{
+    return strHex(expected) == strHex(sle->getFieldVL(field));
+}
+
 /* Path finding */
 /******************************************************************************/
 void

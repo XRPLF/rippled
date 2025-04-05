@@ -27,14 +27,6 @@
 namespace ripple {
 namespace test {
 
-bool
-checkVL(Slice const& result, std::string expected)
-{
-    Serializer s;
-    s.addRaw(result);
-    return s.getString() == expected;
-}
-
 struct DID_test : public beast::unit_test::suite
 {
     void

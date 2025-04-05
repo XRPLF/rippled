@@ -1783,7 +1783,11 @@ ValidPseudoAccounts::visitEntry(
                     lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth))
             {
                 errors_.emplace_back(
-                    "Invariant failed: pseudo-account flags are not set");
+                    "pseudo-account flags are not set");
+            }
+            if (after->isFieldPresent(sfRegularKey))
+            {
+                errors_.emplace_back("pseudo-account has a regular key");
             }
         }
     }
