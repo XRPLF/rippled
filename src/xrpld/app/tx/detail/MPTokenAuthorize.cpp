@@ -164,6 +164,9 @@ MPTokenAuthorize::authorize(
                 return tecOBJECT_NOT_FOUND;
             if ((*sleMpt)[sfMPTAmount] != 0)
                 return tecHAS_OBLIGATIONS;
+            if (view.rules().enabled(featureSingleAssetVault) &&
+                (sleMpt->getFlags() & lsfMPTLocked))
+                return tecNO_PERMISSION;
 
             if (!view.dirRemove(
                     keylet::ownerDir(args.accountID),

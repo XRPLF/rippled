@@ -621,6 +621,25 @@ class MPToken_test : public beast::unit_test::suite
 
         // locks up bob's mptoken again
         mptAlice.set({.account = alice, .holder = bob, .flags = tfMPTLock});
+        if (!features[featureSingleAssetVault])
+        {
+            // Delete bobs' mptoken even though it is locked
+            mptAlice.authorize({.account = bob, .flags = tfMPTUnauthorize});
+
+            mptAlice.set(
+                {.account = alice,
+                 .holder = bob,
+                 .flags = tfMPTUnlock,
+                 .err = tecOBJECT_NOT_FOUND});
+
+            return;
+        }
+
+        // Cannot delete locked MPToken
+        mptAlice.authorize(
+            {.account = bob,
+             .flags = tfMPTUnauthorize,
+             .err = tecNO_PERMISSION});
 
         // alice unlocks mptissuance
         mptAlice.set({.account = alice, .flags = tfMPTUnlock});
@@ -2297,6 +2316,7 @@ public:
         // MPTokenIssuanceSet
         testSetValidation(all);
         testSetEnabled(all);
+        testSetEnabled(all | featureSingleAssetVault);
 
         // MPT clawback
         testClawbackValidation(all);
