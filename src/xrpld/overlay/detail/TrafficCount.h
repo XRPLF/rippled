@@ -240,7 +240,7 @@ public:
             {validation_duplicate, "validations_duplicate"},
             {validatorlist, "validator_lists"},
             {squelch, "squelch"},
-            {squelch_suppressed, "squelch_saved"},
+            {squelch_suppressed, "squelch_suppressed"},
             {get_set, "set_get"},
             {share_set, "set_share"},
             {ld_tsc_get, "ledger_data_Transaction_Set_candidate_get"},
