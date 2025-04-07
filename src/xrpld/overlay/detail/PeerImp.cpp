@@ -1027,12 +1027,13 @@ PeerImp::onMessageBegin(
 
     auto const category = TrafficCount::categorize(
         *m, static_cast<protocol::MessageType>(type), true);
-    // report specific category traffic
-    overlay_.reportInboundTraffic(category, static_cast<int>(size));
 
     // report total incoming traffic
     overlay_.reportInboundTraffic(
         TrafficCount::category::total, static_cast<int>(size));
+
+    // increase the traffic received for a specific category
+    overlay_.reportInboundTraffic(category, static_cast<int>(size));
 
     using namespace protocol;
     if ((type == MessageType::mtTRANSACTION ||
@@ -1694,6 +1695,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
     // of an untrusted key
     if (!isTrusted)
     {
+        // report untrusted proposal messages
         overlay_.reportInboundTraffic(
             TrafficCount::category::proposal_untrusted,
             Message::messageSize(*m));
@@ -1726,6 +1728,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
             overlay_.updateSlotAndSquelch(
                 suppression, publicKey, id_, protocol::mtPROPOSE_LEDGER);
 
+        // report duplicate proposal messages
         overlay_.reportInboundTraffic(
             TrafficCount::category::proposal_duplicate,
             Message::messageSize(*m));
@@ -2350,6 +2353,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
         // verifying the signature of an untrusted key
         if (!isTrusted)
         {
+            // increase untrusted validations received
             overlay_.reportInboundTraffic(
                 TrafficCount::category::validation_untrusted,
                 Message::messageSize(*m));
@@ -2374,6 +2378,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
                 overlay_.updateSlotAndSquelch(
                     key, val->getSignerPublic(), id_, protocol::mtVALIDATION);
 
+            // increase duplicate validations received
             overlay_.reportInboundTraffic(
                 TrafficCount::category::validation_duplicate,
                 Message::messageSize(*m));

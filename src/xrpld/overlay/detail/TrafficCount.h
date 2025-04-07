@@ -28,6 +28,24 @@
 
 namespace ripple {
 
+/**
+    TrafficCount is used to count ingress and egress wire bytes and number of
+   messages. The general intended usage is as follows:
+        1. Determine the message category by callin TrafficCount::categorize
+        2. Increment the counters for incoming or outgoing traffic by calling
+   TrafficCount::addCount
+        3. Optionally, TrafficCount::addCount can be called at any time to
+   increment additional traffic categories, not captured by
+   TrafficCount::categorize.
+
+   There are two special categories:
+        1. category::total - this category is used to report the total traffic
+   amount. It should be incremented once just after receiving a new message, and
+   once just before sending a message to a peer. Messages whose category is not
+   in TrafficCount::categorize are not included in the total.
+        2. category::unknown - this category is used to report traffic for
+   messages of unknown type.
+*/
 class TrafficCount
 {
 public:
@@ -73,21 +91,24 @@ public:
         overlay,    // overlay management
         manifests,  // manifest management
 
-        transaction,
-        transaction_duplicate,
+        transaction,  // transaction messages
+        // The following categories breakdown transaction message type
+        transaction_duplicate,  // duplicate transaction messages
 
-        proposal,
-        proposal_untrusted,
-        proposal_duplicate,
+        proposal,  // proposal messages
+        // The following categories breakdown proposal message type
+        proposal_untrusted,  // proposals from untrusted validators
+        proposal_duplicate,  // proposals seen previously
 
-        validation,
-        validation_untrusted,
-        validation_duplicate,
+        validation,  // validation messages
+        // The following categories breakdown validation message type
+        validation_untrusted,  // validations from untrusted validators
+        validation_duplicate,  // validations seen previously
 
         validatorlist,
 
         squelch,
-        squelch_suppressed,
+        squelch_suppressed,  // egress traffic amount suppressed by squelching
 
         // TMHaveSet message:
         get_set,    // transaction sets we try to get
@@ -170,7 +191,7 @@ public:
         // TMTransactions
         requested_transactions,
 
-        // The total p2p bytes
+        // The total p2p bytes sent and received on the wire
         total,
 
         unknown  // must be last
