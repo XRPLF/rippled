@@ -270,10 +270,6 @@ keypairForSignature(
     Json::Value& error,
     unsigned int apiVersion = apiVersionIfUnspecified);
 
-// Used by both VaultInfo and LedgerEntry
-std::optional<uint256>
-parseVault(Json::Value const& params, Json::Value& jvResult);
-
 }  // namespace RPC
 
 }  // namespace ripple

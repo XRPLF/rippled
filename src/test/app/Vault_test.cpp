@@ -1575,11 +1575,10 @@ class Vault_test : public beast::unit_test::suite
         }
 
         {
-            testcase("RPC vault_info json by owner and sequence");
+            testcase("RPC vault_info json");
             Json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
-            jvParams[jss::vault][jss::owner] = owner.human();
-            jvParams[jss::vault][jss::seq] = sequence;
+            jvParams[jss::vault_id] = strHex(keylet.key);
             auto jv = env.rpc("json", "vault_info", to_string(jvParams));
 
             BEAST_EXPECT(!jv[jss::result].isMember(jss::error));
@@ -1590,17 +1589,125 @@ class Vault_test : public beast::unit_test::suite
         }
 
         {
+            testcase("RPC vault_info json invalid index");
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = jss::validated;
+            jvParams[jss::vault_id] = 0;
+            auto jv = env.rpc("json", "vault_info", to_string(jvParams));
+            BEAST_EXPECT(
+                jv[jss::result][jss::error].asString() == "malformedRequest");
+        }
+
+        {
+            testcase("RPC vault_info json by owner and sequence");
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = jss::validated;
+            jvParams[jss::owner] = owner.human();
+            jvParams[jss::seq] = sequence;
+            auto jv = env.rpc("json", "vault_info", to_string(jvParams));
+
+            BEAST_EXPECT(!jv[jss::result].isMember(jss::error));
+            BEAST_EXPECT(jv[jss::result].isMember(jss::vault));
+            check(
+                jv[jss::result][jss::vault],
+                jv[jss::result][jss::vault][jss::shares]);
+        }
+
+        {
+            testcase("RPC vault_info json malformed sequence");
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = jss::validated;
+            jvParams[jss::owner] = owner.human();
+            jvParams[jss::seq] = "foobar";
+            auto jv = env.rpc("json", "vault_info", to_string(jvParams));
+            BEAST_EXPECT(
+                jv[jss::result][jss::error].asString() == "malformedRequest");
+        }
+
+        {
+            testcase("RPC vault_info json malformed owner");
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = jss::validated;
+            jvParams[jss::owner] = "foobar";
+            jvParams[jss::seq] = sequence;
+            auto jv = env.rpc("json", "vault_info", to_string(jvParams));
+            BEAST_EXPECT(
+                jv[jss::result][jss::error].asString() == "malformedRequest");
+        }
+
+        {
+            testcase("RPC vault_info json invalid combination only owner");
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = jss::validated;
+            jvParams[jss::owner] = owner.human();
+            auto jv = env.rpc("json", "vault_info", to_string(jvParams));
+            BEAST_EXPECT(
+                jv[jss::result][jss::error].asString() == "malformedRequest");
+        }
+
+        {
+            testcase("RPC vault_info json invalid combination only seq");
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = jss::validated;
+            jvParams[jss::seq] = sequence;
+            auto jv = env.rpc("json", "vault_info", to_string(jvParams));
+            BEAST_EXPECT(
+                jv[jss::result][jss::error].asString() == "malformedRequest");
+        }
+
+        {
+            testcase("RPC vault_info json invalid combination seq vault_id");
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = jss::validated;
+            jvParams[jss::vault_id] = strHex(keylet.key);
+            jvParams[jss::seq] = sequence;
+            auto jv = env.rpc("json", "vault_info", to_string(jvParams));
+            BEAST_EXPECT(
+                jv[jss::result][jss::error].asString() == "malformedRequest");
+        }
+
+        {
+            testcase("RPC vault_info json invalid combination owner vault_id");
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = jss::validated;
+            jvParams[jss::vault_id] = strHex(keylet.key);
+            jvParams[jss::owner] = owner.human();
+            auto jv = env.rpc("json", "vault_info", to_string(jvParams));
+            BEAST_EXPECT(
+                jv[jss::result][jss::error].asString() == "malformedRequest");
+        }
+
+        {
+            testcase(
+                "RPC vault_info json invalid combination owner seq vault_id");
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = jss::validated;
+            jvParams[jss::vault_id] = strHex(keylet.key);
+            jvParams[jss::seq] = sequence;
+            jvParams[jss::owner] = owner.human();
+            auto jv = env.rpc("json", "vault_info", to_string(jvParams));
+            BEAST_EXPECT(
+                jv[jss::result][jss::error].asString() == "malformedRequest");
+        }
+
+        {
+            testcase("RPC vault_info json no input");
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = jss::validated;
+            auto jv = env.rpc("json", "vault_info", to_string(jvParams));
+            BEAST_EXPECT(
+                jv[jss::result][jss::error].asString() == "malformedRequest");
+        }
+
+        {
             testcase("RPC vault_info command line invalid index");
-            Json::Value jv = env.rpc("vault_info", "0", "validated");
+            Json::Value jv = env.rpc("vault_info", "foobar", "validated");
             BEAST_EXPECT(jv[jss::error].asString() == "invalidParams");
         }
 
         {
-            testcase("RPC vault_info json invalid index");
-            Json::Value jvParams;
-            jvParams[jss::ledger_index] = jss::validated;
-            jvParams[jss::vault] = 0;
-            auto jv = env.rpc("json", "vault_info", to_string(jvParams));
+            testcase("RPC vault_info command line invalid index");
+            Json::Value jv = env.rpc("vault_info", "0", "validated");
             BEAST_EXPECT(
                 jv[jss::result][jss::error].asString() == "malformedRequest");
         }

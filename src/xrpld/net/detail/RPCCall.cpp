@@ -870,11 +870,9 @@ private:
         uint256 id = beast::zero;
         if (!id.parseHex(strVaultID))
             return rpcError(rpcINVALID_PARAMS);
-        if (id == beast::zero)
-            return rpcError(rpcINVALID_PARAMS);
 
         Json::Value jvRequest(Json::objectValue);
-        jvRequest[jss::vault] = strVaultID;
+        jvRequest[jss::vault_id] = strVaultID;
 
         if (jvParams.size() > 1)
             jvParseLedger(jvRequest, jvParams[1u].asString());

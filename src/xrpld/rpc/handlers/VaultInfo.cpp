@@ -29,6 +29,55 @@
 
 namespace ripple {
 
+static std::optional<uint256>
+parseVault(Json::Value const& params, Json::Value& jvResult)
+{
+    if (!params.isObject())
+    {
+        jvResult[jss::error] = "malformedRequest";
+        return std::nullopt;
+    }
+
+    auto const hasVaultId = params.isMember(jss::vault_id);
+    auto const hasOwner = params.isMember(jss::owner);
+    auto const hasSeq = params.isMember(jss::seq);
+
+    uint256 uNodeIndex = beast::zero;
+    if (hasVaultId && !hasOwner && !hasSeq)
+    {
+        if (!uNodeIndex.parseHex(params[jss::vault_id].asString()))
+        {
+            jvResult[jss::error] = "malformedRequest";
+            return std::nullopt;
+        }
+        // else uNodeIndex holds the value we need
+    }
+    else if (!hasVaultId && hasOwner && hasSeq)
+    {
+        auto const id = parseBase58<AccountID>(params[jss::owner].asString());
+        if (!id)
+        {
+            jvResult[jss::error] = "malformedOwner";
+            return std::nullopt;
+        }
+        else if (!params[jss::seq].isIntegral())
+        {
+            jvResult[jss::error] = "malformedRequest";
+            return std::nullopt;
+        }
+
+        uNodeIndex = keylet::vault(*id, params[jss::seq].asUInt()).key;
+    }
+    else
+    {
+        // Invalid combination of fields vault_id/owner/seq
+        jvResult[jss::error] = "malformedRequest";
+        return std::nullopt;
+    }
+
+    return uNodeIndex;
+}
+
 Json::Value
 doVaultInfo(RPC::JsonContext& context)
 {
@@ -39,8 +88,7 @@ doVaultInfo(RPC::JsonContext& context)
         return jvResult;
 
     auto const uNodeIndex =
-        RPC::parseVault(context.params[jss::vault], jvResult)
-            .value_or(beast::zero);
+        parseVault(context.params, jvResult).value_or(beast::zero);
     if (uNodeIndex == beast::zero)
     {
         jvResult[jss::error] = "malformedRequest";

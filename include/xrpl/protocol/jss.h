@@ -687,6 +687,7 @@ JSS(validations);               // out: AmendmentTableImpl
 JSS(validator_list_threshold);  // out: ValidatorList
 JSS(validator_sites);           // out: ValidatorSites
 JSS(value);                     // out: STAmount
+JSS(vault_id);                  // in: VaultInfo
 JSS(version);                   // out: RPCVersion
 JSS(vetoed);                    // out: AmendmentTableImpl
 JSS(volume_a);                  // out: BookChanges
