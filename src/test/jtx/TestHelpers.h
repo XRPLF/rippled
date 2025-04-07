@@ -61,6 +61,8 @@ public:
     {
     }
 
+    virtual ~JTxField() = default;
+
     virtual OV
     value() const = 0;
 
@@ -88,7 +90,7 @@ public:
     {
     }
 
-    virtual void
+    void
     operator()(Env&, JTx& jt) const
     {
         jt.jv[sfield_.jsonName] = value_;
@@ -202,7 +204,7 @@ public:
     JF
     operator()(SV const& cond) const
     {
-        return JF(sfield_, cond);
+        return JF(sfield_, makeSlice(cond));
     }
 
     JF
@@ -289,8 +291,8 @@ checkArraySize(Json::Value const& val, unsigned int size);
 std::uint32_t
 ownerCount(test::jtx::Env const& env, test::jtx::Account const& account);
 
-inline
-[[nodiscard]] bool
+[[nodiscard]]
+inline bool
 checkVL(Slice const& result, std::string expected)
 {
     Serializer s;
@@ -298,8 +300,8 @@ checkVL(Slice const& result, std::string expected)
     return s.getString() == expected;
 }
 
-inline
-[[nodiscard]] bool
+[[nodiscard]]
+inline bool
 checkVL(
     std::shared_ptr<SLE const> const& sle,
     SField const& field,

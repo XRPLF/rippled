@@ -75,6 +75,9 @@ LoanBrokerSet::doPreflight(PreflightContext const& ctx)
         return temINVALID;
     if (!validNumericRange(tx[~sfCoverRateLiquidation], maxCoverRate))
         return temINVALID;
+    if (!validNumericRange(
+            tx[~sfDebtMaximum], Number(maxMPTokenAmount), Number(0)))
+        return temINVALID;
 
     if (tx.isFieldPresent(sfLoanBrokerID))
     {

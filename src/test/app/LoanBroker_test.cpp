@@ -96,7 +96,7 @@ class LoanBroker_test : public beast::unit_test::suite
         // Evan will attempt to be naughty
         Account evan{"evan"};
         Vault vault{env};
-        env.fund(XRP(1000), issuer, noripple(alice, evan));
+        env.fund(XRP(100000), issuer, noripple(alice, evan));
         env.close();
 
         // Create assets
@@ -159,11 +159,11 @@ class LoanBroker_test : public beast::unit_test::suite
                 // field length validation
                 // sfData: good length, bad account
                 env(set(evan, vault.vaultID),
-                    data(strHex(std::string(maxDataPayloadLength, '0'))),
+                    data(std::string(maxDataPayloadLength, 'X')),
                     ter(tecNO_PERMISSION));
                 // sfData: too long
                 env(set(evan, vault.vaultID),
-                    data(strHex(std::string(maxDataPayloadLength + 1, '0'))),
+                    data(std::string(maxDataPayloadLength + 1, 'Y')),
                     ter(temINVALID));
                 // sfManagementFeeRate: good value, bad account
                 env(set(evan, vault.vaultID),
@@ -189,12 +189,24 @@ class LoanBroker_test : public beast::unit_test::suite
                 env(set(evan, vault.vaultID),
                     coverRateLiquidation(maxCoverRate + 1),
                     ter(temINVALID));
+                // sfDebtMaximum: good value, bad account
+                env(set(evan, vault.vaultID),
+                    debtMaximum(Number(0)),
+                    ter(tecNO_PERMISSION));
+                // sfDebtMaximum: overflow
+                env(set(evan, vault.vaultID),
+                    debtMaximum(Number(1, 100)),
+                    ter(temINVALID));
+                // sfDebtMaximum: negative
+                env(set(evan, vault.vaultID),
+                    debtMaximum(Number(-1)),
+                    ter(temINVALID));
 
                 auto keylet = keylet::loanbroker(alice.id(), env.seq(alice));
+                // Successfully create a Loan Broker with all default values.
                 env(set(alice, vault.vaultID));
                 env.close();
-                auto broker = env.le(keylet);
-                if (BEAST_EXPECT(broker))
+                if (auto broker = env.le(keylet); BEAST_EXPECT(broker))
                 {
                     // Check the fields
                     BEAST_EXPECT(broker->at(sfVaultID) == vault.vaultID);
@@ -215,6 +227,39 @@ class LoanBroker_test : public beast::unit_test::suite
                     BEAST_EXPECT(broker->at(sfCoverRateLiquidation) == 0);
 
                     // Load the pseudo-account
+                    auto const pseudoKeylet =
+                        keylet::account(broker->at(sfAccount));
+                    if (auto pseudo = env.le(pseudoKeylet);
+                        BEAST_EXPECT(pseudo))
+                    {
+                        BEAST_EXPECT(
+                            pseudo->at(sfFlags) ==
+                            (lsfDisableMaster | lsfDefaultRipple |
+                             lsfDepositAuth));
+                        BEAST_EXPECT(pseudo->at(sfSequence) == 0);
+                        BEAST_EXPECT(pseudo->at(sfBalance) == beast::zero);
+                        BEAST_EXPECT(
+                            pseudo->at(sfOwnerCount) ==
+                            (vault.asset.raw().native() ? 0 : 1));
+                        BEAST_EXPECT(!pseudo->isFieldPresent(sfAccountTxnID));
+                        BEAST_EXPECT(!pseudo->isFieldPresent(sfRegularKey));
+                        BEAST_EXPECT(!pseudo->isFieldPresent(sfEmailHash));
+                        BEAST_EXPECT(!pseudo->isFieldPresent(sfWalletLocator));
+                        BEAST_EXPECT(!pseudo->isFieldPresent(sfWalletSize));
+                        BEAST_EXPECT(!pseudo->isFieldPresent(sfMessageKey));
+                        BEAST_EXPECT(!pseudo->isFieldPresent(sfTransferRate));
+                        BEAST_EXPECT(!pseudo->isFieldPresent(sfDomain));
+                        BEAST_EXPECT(!pseudo->isFieldPresent(sfTickSize));
+                        BEAST_EXPECT(!pseudo->isFieldPresent(sfTicketCount));
+                        BEAST_EXPECT(!pseudo->isFieldPresent(sfNFTokenMinter));
+                        BEAST_EXPECT(!pseudo->isFieldPresent(sfMintedNFTokens));
+                        BEAST_EXPECT(!pseudo->isFieldPresent(sfBurnedNFTokens));
+                        BEAST_EXPECT(
+                            !pseudo->isFieldPresent(sfFirstNFTokenSequence));
+                        BEAST_EXPECT(!pseudo->isFieldPresent(sfAMMID));
+                        BEAST_EXPECT(!pseudo->isFieldPresent(sfVaultID));
+                        BEAST_EXPECT(pseudo->at(sfLoanBrokerID) == keylet.key);
+                    }
 
                     // Update the fields
                     auto nextKeylet =
@@ -254,35 +299,95 @@ class LoanBroker_test : public beast::unit_test::suite
 
                     // fields that can be changed
                     std::string const testData("Test Data 1234");
-                    // Bad data must be hex encoded
-                    try
-                    {
-                        env(set(alice, vault.vaultID),
-                            loanBrokerID(keylet.key),
-                            data(testData),
-                            ter(temINVALID));
-                        fail();
-                    }
-                    catch (std::exception const& e)
-                    {
-                        BEAST_EXPECT(
-                            e.what() ==
-                            std::string("invalidParamsField 'tx_json.Data' has "
-                                        "invalid data."));
-                    }
+                    // Bad data: too long
+                    env(set(alice, vault.vaultID),
+                        loanBrokerID(keylet.key),
+                        data(std::string(maxDataPayloadLength + 1, 'W')),
+                        ter(temINVALID));
+                    // Debt maximum: explicit 0
+                    env(set(alice, vault.vaultID),
+                        loanBrokerID(keylet.key),
+                        debtMaximum(Number(0)));
                     // Bad debt maximum
+                    env(set(alice, vault.vaultID),
+                        loanBrokerID(keylet.key),
+                        debtMaximum(Number(-175, -1)),
+                        ter(temINVALID));
                     // Data & Debt maximum
                     env(set(alice, vault.vaultID),
                         loanBrokerID(keylet.key),
-                        data(strHex(testData)),
+                        data(testData),
                         debtMaximum(Number(175, -1)));
                     env.close();
                     // Check the updated fields
                     broker = env.le(keylet);
                     BEAST_EXPECT(checkVL(broker->at(sfData), testData));
-                    BEAST_EXPECT(
-                        broker->at(sfDebtMaximum) ==
-                        Number(175, -1));
+                    BEAST_EXPECT(broker->at(sfDebtMaximum) == Number(175, -1));
+                }
+
+                auto keylet2 = keylet::loanbroker(alice.id(), env.seq(alice));
+                std::string const testData2("spam spam spam spam");
+                // Finally, create another Loan Broker with none of the values
+                // at default
+                // Successfully create a Loan Broker with no default values.
+                env(set(alice, vault.vaultID),
+                    data(testData2),
+                    managementFeeRate(123),
+                    debtMaximum(Number(9)),
+                    coverRateMinimum(100),
+                    coverRateLiquidation(200));
+                env.close();
+                if (auto broker = env.le(keylet2); BEAST_EXPECT(broker))
+                {
+                    // Check the fields
+                    BEAST_EXPECT(broker->at(sfVaultID) == vault.vaultID);
+                    BEAST_EXPECT(broker->at(sfAccount) != alice.id());
+                    BEAST_EXPECT(broker->at(sfOwner) == alice.id());
+                    BEAST_EXPECT(broker->at(sfManagementFeeRate) == 123);
+                    BEAST_EXPECT(broker->at(sfCoverRateMinimum) == 100);
+                    BEAST_EXPECT(broker->at(sfCoverRateLiquidation) == 200);
+                    BEAST_EXPECT(broker->at(sfDebtMaximum) == Number(9));
+                    BEAST_EXPECT(broker->at(sfFlags) == 0);
+                    BEAST_EXPECT(broker->at(sfSequence) == env.seq(alice) - 1);
+                    BEAST_EXPECT(checkVL(broker->at(sfData), testData2));
+
+                    BEAST_EXPECT(broker->at(sfOwnerCount) == 0);
+                    BEAST_EXPECT(broker->at(sfDebtTotal) == 0);
+                    BEAST_EXPECT(broker->at(sfCoverAvailable) == 0);
+                    // Load the pseudo-account
+                    auto const pseudoKeylet =
+                        keylet::account(broker->at(sfAccount));
+                    if (auto pseudo = env.le(pseudoKeylet);
+                        BEAST_EXPECT(pseudo))
+                    {
+                        BEAST_EXPECT(
+                            pseudo->at(sfFlags) ==
+                            (lsfDisableMaster | lsfDefaultRipple |
+                             lsfDepositAuth));
+                        BEAST_EXPECT(pseudo->at(sfSequence) == 0);
+                        BEAST_EXPECT(pseudo->at(sfBalance) == beast::zero);
+                        BEAST_EXPECT(
+                            pseudo->at(sfOwnerCount) ==
+                            (vault.asset.raw().native() ? 0 : 1));
+                        BEAST_EXPECT(!pseudo->isFieldPresent(sfAccountTxnID));
+                        BEAST_EXPECT(!pseudo->isFieldPresent(sfRegularKey));
+                        BEAST_EXPECT(!pseudo->isFieldPresent(sfEmailHash));
+                        BEAST_EXPECT(!pseudo->isFieldPresent(sfWalletLocator));
+                        BEAST_EXPECT(!pseudo->isFieldPresent(sfWalletSize));
+                        BEAST_EXPECT(!pseudo->isFieldPresent(sfMessageKey));
+                        BEAST_EXPECT(!pseudo->isFieldPresent(sfTransferRate));
+                        BEAST_EXPECT(!pseudo->isFieldPresent(sfDomain));
+                        BEAST_EXPECT(!pseudo->isFieldPresent(sfTickSize));
+                        BEAST_EXPECT(!pseudo->isFieldPresent(sfTicketCount));
+                        BEAST_EXPECT(!pseudo->isFieldPresent(sfNFTokenMinter));
+                        BEAST_EXPECT(!pseudo->isFieldPresent(sfMintedNFTokens));
+                        BEAST_EXPECT(!pseudo->isFieldPresent(sfBurnedNFTokens));
+                        BEAST_EXPECT(
+                            !pseudo->isFieldPresent(sfFirstNFTokenSequence));
+                        BEAST_EXPECT(!pseudo->isFieldPresent(sfAMMID));
+                        BEAST_EXPECT(!pseudo->isFieldPresent(sfVaultID));
+                        BEAST_EXPECT(pseudo->at(sfLoanBrokerID) == keylet2.key);
+                    }
                 }
             }
         }

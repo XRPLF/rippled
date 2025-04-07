@@ -1179,8 +1179,7 @@ NFTokenCountTracking::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
-    if (TxType const txType = tx.getTxnType();
-        !checkMyPrivilege(tx, changeNFTCounts))
+    if (!checkMyPrivilege(tx, changeNFTCounts))
     {
         if (beforeMintedTotal != afterMintedTotal)
         {
@@ -1782,8 +1781,7 @@ ValidPseudoAccounts::visitEntry(
             if (!after->isFlag(
                     lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth))
             {
-                errors_.emplace_back(
-                    "pseudo-account flags are not set");
+                errors_.emplace_back("pseudo-account flags are not set");
             }
             if (after->isFieldPresent(sfRegularKey))
             {
