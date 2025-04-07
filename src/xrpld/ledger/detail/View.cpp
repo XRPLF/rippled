@@ -1135,7 +1135,8 @@ createPseudoAccount(
     // to 0 to make them easier to spot and verify, and add an extra level
     // of protection.
     std::uint32_t const seqno =                        //
-        view.rules().enabled(featureSingleAssetVault)  //
+        view.rules().enabled(featureSingleAssetVault) ||  //
+            view.rules().enabled(featureLendingProtocol)  //
         ? 0                                            //
         : view.seq();
     account->setFieldU32(sfSequence, seqno);
