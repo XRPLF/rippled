@@ -49,14 +49,14 @@ incLgrSeqForAccDel(jtx::Env& env, jtx::Account const& acc, std::uint32_t margin)
     };
 
     int const delta = [&]() -> int {
-        if (env.seq(acc) + 260 > openLedgerSeq(env))
-            return env.seq(acc) - openLedgerSeq(env) + 260 - margin;
+        if (env.seq(acc) + 255 > openLedgerSeq(env))
+            return env.seq(acc) - openLedgerSeq(env) + 255 - margin;
         return 0;
     }();
     env.test.BEAST_EXPECT(margin == 0 || delta >= 0);
     for (int i = 0; i < delta; ++i)
         env.close();
-    env.test.BEAST_EXPECT(openLedgerSeq(env) == env.seq(acc) + 260 - margin);
+    env.test.BEAST_EXPECT(openLedgerSeq(env) == env.seq(acc) + 255 - margin);
 }
 
 }  // namespace jtx

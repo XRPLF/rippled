@@ -2458,6 +2458,8 @@ class Batch_test : public beast::unit_test::suite
             env.close();
 
             incLgrSeqForAccDel(env, alice);
+            for (int i = 0; i < 5; ++i)
+                env.close();
 
             auto const preAlice = env.balance(alice);
             auto const preBob = env.balance(bob);
@@ -2497,6 +2499,8 @@ class Batch_test : public beast::unit_test::suite
             env.close();
 
             incLgrSeqForAccDel(env, alice);
+            for (int i = 0; i < 5; ++i)
+                env.close();
 
             auto const preAlice = env.balance(alice);
             auto const preBob = env.balance(bob);
@@ -2540,6 +2544,8 @@ class Batch_test : public beast::unit_test::suite
             env.close();
 
             incLgrSeqForAccDel(env, alice);
+            for (int i = 0; i < 5; ++i)
+                env.close();
 
             auto const preAlice = env.balance(alice);
             auto const preBob = env.balance(bob);
