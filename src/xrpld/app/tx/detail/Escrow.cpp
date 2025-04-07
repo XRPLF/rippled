@@ -402,6 +402,16 @@ EscrowFinish::preflight(PreflightContext const& ctx)
         }
     }
 
+    if (auto const allowance = ctx.tx[~sfComputationAllowance]; allowance)
+    {
+        if (*allowance > ctx.app.config().FEES.extension_compute_limit)
+        {
+            JLOG(ctx.j.debug())
+                << "ComputationAllowance too large: " << *allowance;
+            return temBAD_LIMIT;
+        }
+    }
+
     if (auto const err = credentials::checkFields(ctx); !isTesSuccess(err))
         return err;
 
