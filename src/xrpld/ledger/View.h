@@ -177,17 +177,6 @@ isAnyFrozen(
     MPTIssue const& mptIssue,
     int depth = 0);
 
-/*
-We do not have a use case for these (yet ?)
-
-[[nodiscard]] bool
-isAnyFrozen(
-    ReadView const& view,
-    AccountID const& account1,
-    AccountID const& account2,
-    Currency const& currency,
-    AccountID const& issuer);
-
 [[nodiscard]] inline bool
 isAnyFrozen(
     ReadView const& view,
@@ -195,7 +184,8 @@ isAnyFrozen(
     AccountID const& account2,
     Issue const& issue)
 {
-    return isAnyFrozen(view, account1, account2, issue.currency, issue.account);
+    return isFrozen(view, account1, issue.currency, issue.account) ||
+        isFrozen(view, account2, issue.currency, issue.account);
 }
 
 [[nodiscard]] inline bool
@@ -203,15 +193,18 @@ isAnyFrozen(
     ReadView const& view,
     AccountID const& account1,
     AccountID const& account2,
-    Asset const& asset)
+    Asset const& asset,
+    int depth = 0)
 {
     return std::visit(
-        [&](auto const& issue) {
-            return isAnyFrozen(view, account1, account2, issue);
+        [&]<ValidIssueType TIss>(TIss const& issue) {
+            if constexpr (std::is_same_v<TIss, Issue>)
+                return isAnyFrozen(view, account1, account2, issue);
+            else
+                return isAnyFrozen(view, account1, account2, issue, depth);
         },
         asset.value());
 }
-*/
 
 [[nodiscard]] bool
 isDeepFrozen(

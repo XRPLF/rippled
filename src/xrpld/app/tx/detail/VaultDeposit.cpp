@@ -66,18 +66,17 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     if (assets.asset() != vaultAsset)
         return tecWRONG_ASSET;
 
+    auto const share = MPTIssue(vault->at(sfShareMPTID));
+    if (share == assets.asset())
+        return tefINTERNAL;
+
     // Cannot deposit inside Vault an Asset frozen for the depositor
     if (isFrozen(ctx.view, account, vaultAsset))
-        return tecFROZEN;
+        return vaultAsset.holds<Issue>() ? tecFROZEN : tecLOCKED;
 
-    auto const share = MPTIssue(vault->at(sfShareMPTID));
     // Cannot deposit if the shares of the vault are frozen
     if (isFrozen(ctx.view, account, share))
-        return tecFROZEN;
-
-    // Defensive check, given above `if (asset.asset() != vaultAsset)`
-    if (share == assets.asset())
-        return tecWRONG_ASSET;
+        return tecLOCKED;
 
     if ((vault->getFlags() & tfVaultPrivate) && account != vault->at(sfOwner))
     {
@@ -93,6 +92,14 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
             !isTesSuccess(ter) && ter != tecEXPIRED)
             return ter;
     }
+
+    if (auto const ter = std::visit(
+            [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
+                return requireAuth(ctx.view, issue, account);
+            },
+            vaultAsset.value());
+        !isTesSuccess(ter))
+        return ter;
 
     if (assets.holds<MPTIssue>())
     {

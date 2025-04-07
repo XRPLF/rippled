@@ -328,7 +328,7 @@ isVaultPseudoAccountFrozen(
     if (!mptIssuer->isFieldPresent(sfVaultID))
         return false;  // not a Vault pseudo-account, common case
 
-    if (depth > maxFreezeCheckDepth)
+    if (depth >= maxFreezeCheckDepth)
         return true;  // fail at maximum 2^maxFreezeCheckDepth checks
 
     auto const vault =
@@ -340,9 +340,7 @@ isVaultPseudoAccountFrozen(
         return false;  // LCOV_EXCL_LINE
     }
 
-    Asset const asset{vault->at(sfAsset)};
-    return isFrozen(view, issuer, asset, depth + 1) ||
-        isFrozen(view, account, asset, depth + 1);
+    return isAnyFrozen(view, issuer, account, vault->at(sfAsset), depth + 1);
 }
 
 bool
@@ -2273,8 +2271,8 @@ requireAuth(
             if (!sleVault)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
 
-            if (depth > maxFreezeCheckDepth)
-                return tecKILLED;  // TODO: consider different code
+            if (depth >= maxFreezeCheckDepth)
+                return tecKILLED;  // VaultCreate looks for this error code
 
             auto const asset = sleVault->at(sfAsset);
             return std::visit(

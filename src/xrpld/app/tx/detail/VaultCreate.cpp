@@ -110,6 +110,18 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
             return tecNO_AUTH;
     }
 
+    // Check for excessive vault shares recursion, which is reported by
+    // requireAuth as tecKILLED. The vault owner might not be permissioned to
+    // hold assets but that's OK, it only means that the owner won't be able to
+    // withdraw from or deposit into the vault (but other users would be fine).
+    if (asset.holds<MPTIssue>())
+    {
+        auto const mptIssue = asset.get<MPTIssue>();
+        if (auto const ter = requireAuth(ctx.view, mptIssue, account, 1);
+            ter == tecKILLED)
+            return ter;
+    }
+
     // Cannot create Vault for an Asset frozen for the vault owner
     if (isFrozen(ctx.view, account, asset))
         return tecFROZEN;

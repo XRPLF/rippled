@@ -38,6 +38,7 @@
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
@@ -1062,6 +1063,124 @@ class Vault_test : public beast::unit_test::suite
             tx = vault.del({.owner = owner, .id = keylet.key});
             env(tx);
         });
+
+        {
+            testcase("MPT maximum asset recursion");
+
+            Env env{*this, supported_amendments() | featureSingleAssetVault};
+            Account owner{"owner"};
+            Account issuer{"issuer"};
+            env.fund(XRP(1000000), owner, issuer);
+            env.close();
+            Vault vault{env};
+
+            struct Vault
+            {
+                Keylet keylet;
+                PrettyAsset shares;
+                PrettyAsset assets;
+            };
+            std::vector<Vault> vaults;
+
+            MPTTester mptt{env, issuer, mptInitNoFund};
+            mptt.create(
+                {.flags = tfMPTCanTransfer | tfMPTCanLock | lsfMPTCanClawback |
+                     tfMPTRequireAuth});
+            mptt.authorize({.account = owner});
+            mptt.authorize({.account = issuer, .holder = owner});
+            {
+                for (int i = 0; i < 5; ++i)
+                    vaults.emplace_back(
+                        keylet::vault(beast::zero), xrpIssue(), xrpIssue());
+
+                PrettyAsset asset = mptt.issuanceID();
+                env(pay(issuer, owner, asset(100)));
+                for (auto& v : vaults)
+                {
+                    auto [tx, k] =
+                        vault.create({.owner = owner, .asset = asset});
+                    env(tx);
+                    env.close();
+
+                    v.keylet = k;
+                    v.assets = asset;
+                    v.shares = [&env, keylet = k, this]() -> Asset {
+                        auto const vault = env.le(keylet);
+                        BEAST_EXPECT(vault != nullptr);
+                        return MPTIssue(vault->at(sfShareMPTID));
+                    }();
+                    asset = v.shares;
+                }
+            }
+
+            env(std::get<Json::Value>(vault.create(
+                    {.owner = owner, .asset = vaults.back().shares})),
+                ter{tecKILLED});  // exceeded maximum recursion depth
+
+            for (auto& v : vaults)
+            {
+                env(vault.deposit(
+                    {.depositor = owner,
+                     .id = v.keylet.key,
+                     .amount = v.assets(100)}));
+                env.close();
+            }
+
+            {
+                testcase("MPT recursive authorization and lock check");
+                auto& v = vaults.back();
+
+                mptt.authorize(
+                    {.account = issuer,
+                     .holder = owner,
+                     .flags = tfMPTUnauthorize});
+
+                env(vault.deposit(
+                        {.depositor = owner,
+                         .id = v.keylet.key,
+                         .amount = v.assets(10)}),
+                    ter{tecNO_AUTH});
+                env(vault.withdraw(
+                        {.depositor = owner,
+                         .id = v.keylet.key,
+                         .amount = v.assets(10)}),
+                    ter{tecNO_AUTH});
+                env.close();
+
+                mptt.authorize({.account = issuer, .holder = owner});
+                mptt.set(
+                    {.account = issuer, .holder = owner, .flags = tfMPTLock});
+
+                env(vault.deposit(
+                        {.depositor = owner,
+                         .id = v.keylet.key,
+                         .amount = v.assets(10)}),
+                    ter{tecLOCKED});
+                env(vault.withdraw(
+                        {.depositor = owner,
+                         .id = v.keylet.key,
+                         .amount = v.assets(10)}),
+                    ter{tecLOCKED});
+                env.close();
+
+                mptt.set(
+                    {.account = issuer, .holder = owner, .flags = tfMPTUnlock});
+            }
+
+            for (auto i = vaults.rbegin(); i != vaults.rend(); ++i)
+            {
+                auto v = *i;
+                env(vault.withdraw(
+                    {.depositor = owner,
+                     .id = v.keylet.key,
+                     .amount = v.shares(100)}));
+            }
+
+            for (auto& v : vaults)
+            {
+                env(vault.del({.owner = owner, .id = v.keylet.key}));
+            }
+        }
     }
 
     void
