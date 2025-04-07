@@ -1030,7 +1030,7 @@ PeerImp::onMessageBegin(
     // report specific category traffic
     overlay_.reportInboundTraffic(category, static_cast<int>(size));
 
-    // retport total incoming traffic
+    // report total incoming traffic
     overlay_.reportInboundTraffic(
         TrafficCount::category::total, static_cast<int>(size));
 
