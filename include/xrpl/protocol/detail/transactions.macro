@@ -59,6 +59,7 @@ TRANSACTION(ttESCROW_FINISH, 2, EscrowFinish, ({
     {sfFulfillment, soeOPTIONAL},
     {sfCondition, soeOPTIONAL},
     {sfCredentialIDs, soeOPTIONAL},
+    {sfComputationAllowance, soeOPTIONAL},
 }))
 
 
