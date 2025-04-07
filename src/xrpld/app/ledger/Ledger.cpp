@@ -228,6 +228,7 @@ Ledger::Ledger(
             sle->at(sfExtensionComputeLimit) =
                 config.FEES.extension_compute_limit;
             sle->at(sfExtensionSizeLimit) = config.FEES.extension_size_limit;
+            sle->at(sfGasPrice) = config.FEES.gas_price;
         }
         rawInsert(sle);
     }
@@ -659,6 +660,7 @@ Ledger::setup()
                 auto const extensionComputeLimit =
                     sle->at(~sfExtensionComputeLimit);
                 auto const extensionSizeLimit = sle->at(~sfExtensionSizeLimit);
+                auto const gasPrice = sle->at(~sfGasPrice);
 
                 auto assign = [](std::uint32_t& dest,
                                  std::optional<std::uint32_t> const& src) {
@@ -669,7 +671,9 @@ Ledger::setup()
                 };
                 assign(fees_.extensionComputeLimit, extensionComputeLimit);
                 assign(fees_.extensionSizeLimit, extensionSizeLimit);
-                extensionFees = extensionComputeLimit || extensionSizeLimit;
+                assign(fees_.gasPrice, gasPrice);
+                extensionFees =
+                    extensionComputeLimit || extensionSizeLimit || gasPrice;
             }
             if (oldFees && newFees)
                 // Should be all of one or the other, but not both
@@ -701,7 +705,8 @@ Ledger::defaultFees(Config const& config)
 {
     assert(
         fees_.base == 0 && fees_.reserve == 0 && fees_.increment == 0 &&
-        fees_.extensionComputeLimit == 0 && fees_.extensionSizeLimit == 0);
+        fees_.extensionComputeLimit == 0 && fees_.extensionSizeLimit == 0 &&
+        fees_.gasPrice == 0);
     if (fees_.base == 0)
         fees_.base = config.FEES.reference_fee;
     if (fees_.reserve == 0)
@@ -710,6 +715,8 @@ Ledger::defaultFees(Config const& config)
         fees_.extensionComputeLimit = config.FEES.extension_compute_limit;
     if (fees_.extensionSizeLimit == 0)
         fees_.extensionSizeLimit = config.FEES.extension_size_limit;
+    if (fees_.gasPrice == 0)
+        fees_.gasPrice = config.FEES.gas_price;
 }
 
 std::shared_ptr<SLE>

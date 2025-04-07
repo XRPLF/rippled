@@ -429,8 +429,7 @@ EscrowFinish::calculateBaseFee(ReadView const& view, STTx const& tx)
     }
     if (auto const allowance = tx[~sfComputationAllowance])
     {
-        // TODO: get gas-drops conversion
-        extraFee += (1000 / 1000000) * (*allowance);
+        extraFee += (view.fees().gasPrice / 1000000) * (*allowance);
     }
 
     return Transactor::calculateBaseFee(view, tx) + extraFee;

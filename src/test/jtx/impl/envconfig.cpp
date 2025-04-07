@@ -38,6 +38,7 @@ setupConfigForUnitTests(Config& cfg)
     cfg.FEES.owner_reserve = XRP(50).value().xrp().drops();
     cfg.FEES.extension_compute_limit = 4294967295;
     cfg.FEES.extension_size_limit = 4294967295;
+    cfg.FEES.gas_price = 1000000;
 
     // The Beta API (currently v2) is always available to tests
     cfg.BETA_RPC_API = true;

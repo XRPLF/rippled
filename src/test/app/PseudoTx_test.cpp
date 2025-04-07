@@ -54,6 +54,7 @@ struct PseudoTx_test : public beast::unit_test::suite
             {
                 obj[sfExtensionComputeLimit] = 0;
                 obj[sfExtensionSizeLimit] = 0;
+                obj[sfGasPrice] = 0;
             }
         }));
 

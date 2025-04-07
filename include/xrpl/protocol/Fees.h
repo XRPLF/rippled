@@ -37,6 +37,7 @@ struct Fees
     std::uint32_t extensionComputeLimit{
         0};  // Extension compute limit (instructions)
     std::uint32_t extensionSizeLimit{0};  // Extension size limit (bytes)
+    std::uint32_t gasPrice{0};            // price of WASM gas (nano-drops)
 
     explicit Fees() = default;
     Fees(Fees const&) = default;
