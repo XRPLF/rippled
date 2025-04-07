@@ -122,6 +122,8 @@ std::size_t constexpr maxDataPayloadLength = 256;
 /** Vault withdrawal policies */
 std::uint8_t constexpr vaultStrategyFirstComeFirstServe = 1;
 
+std::uint8_t constexpr maxFreezeCheckDepth = 5;
+
 /** A ledger index. */
 using LedgerIndex = std::uint32_t;
 

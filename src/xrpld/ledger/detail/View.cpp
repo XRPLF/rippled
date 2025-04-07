@@ -274,11 +274,12 @@ bool
 isFrozen(
     ReadView const& view,
     AccountID const& account,
-    MPTIssue const& mptIssue)
+    MPTIssue const& mptIssue,
+    int depth)
 {
     return isGlobalFrozen(view, mptIssue) ||
         isIndividualFrozen(view, account, mptIssue) ||
-        isVaultPseudoAccountFrozen(view, mptIssue);
+        isVaultPseudoAccountFrozen(view, account, mptIssue, depth);
 }
 
 [[nodiscard]] bool
@@ -286,16 +287,22 @@ isAnyFrozen(
     ReadView const& view,
     AccountID const& account1,
     AccountID const& account2,
-    MPTIssue const& mptIssue)
+    MPTIssue const& mptIssue,
+    int depth)
 {
     return isGlobalFrozen(view, mptIssue) ||
         isIndividualFrozen(view, account1, mptIssue) ||
         isIndividualFrozen(view, account2, mptIssue) ||
-        isVaultPseudoAccountFrozen(view, mptIssue);
+        isVaultPseudoAccountFrozen(view, account1, mptIssue, depth) ||
+        isVaultPseudoAccountFrozen(view, account2, mptIssue, depth);
 }
 
 bool
-isVaultPseudoAccountFrozen(ReadView const& view, MPTIssue const& mptShare)
+isVaultPseudoAccountFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    MPTIssue const& mptShare,
+    int depth)
 {
     if (!view.rules().enabled(featureSingleAssetVault))
         return false;
@@ -321,6 +328,9 @@ isVaultPseudoAccountFrozen(ReadView const& view, MPTIssue const& mptShare)
     if (!mptIssuer->isFieldPresent(sfVaultID))
         return false;  // not a Vault pseudo-account, common case
 
+    if (depth > maxFreezeCheckDepth)
+        return true;  // fail at maximum 2^maxFreezeCheckDepth checks
+
     auto const vault =
         view.read(keylet::vault(mptIssuer->getFieldH256(sfVaultID)));
     if (vault == nullptr)
@@ -331,7 +341,8 @@ isVaultPseudoAccountFrozen(ReadView const& view, MPTIssue const& mptShare)
     }
 
     Asset const asset{vault->at(sfAsset)};
-    return isFrozen(view, issuer, asset);
+    return isFrozen(view, issuer, asset, depth + 1) ||
+        isFrozen(view, account, asset, depth + 1);
 }
 
 bool
@@ -2234,7 +2245,8 @@ TER
 requireAuth(
     ReadView const& view,
     MPTIssue const& mptIssue,
-    AccountID const& account)
+    AccountID const& account,
+    int depth)
 {
     auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
     auto const sleIssuance = view.read(mptID);
@@ -2246,6 +2258,35 @@ requireAuth(
     // issuer is always "authorized"
     if (mptIssuer == account)  // Issuer won't have MPToken
         return tesSUCCESS;
+
+    if (view.rules().enabled(featureSingleAssetVault))
+    {
+        // requireAuth is recursive if the issuer is a vault pseudo-account
+        auto const sleIssuer = view.read(keylet::account(mptIssuer));
+        if (!sleIssuer)
+            return tefINTERNAL;  // LCOV_EXCL_LINE
+
+        if (sleIssuer->isFieldPresent(sfVaultID))
+        {
+            auto const sleVault =
+                view.read(keylet::vault(sleIssuer->getFieldH256(sfVaultID)));
+            if (!sleVault)
+                return tefINTERNAL;  // LCOV_EXCL_LINE
+
+            if (depth > maxFreezeCheckDepth)
+                return tecKILLED;  // TODO: consider different code
+
+            auto const asset = sleVault->at(sfAsset);
+            return std::visit(
+                [&]<ValidIssueType TIss>(TIss const& issue) {
+                    if constexpr (std::is_same_v<TIss, Issue>)
+                        return requireAuth(view, issue, account);
+                    else
+                        return requireAuth(view, issue, account, depth + 1);
+                },
+                asset.value());
+        }
+    }
 
     auto const mptokenID = keylet::mptoken(mptID.key, account);
     auto const sleToken = view.read(mptokenID);

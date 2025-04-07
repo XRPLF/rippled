@@ -88,8 +88,13 @@ isGlobalFrozen(ReadView const& view, MPTIssue const& mptIssue);
 [[nodiscard]] bool
 isGlobalFrozen(ReadView const& view, Asset const& asset);
 
+// Note, depth parameter is used to limit the recursion depth
 [[nodiscard]] bool
-isVaultPseudoAccountFrozen(ReadView const& view, MPTIssue const& mptShare);
+isVaultPseudoAccountFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    MPTIssue const& mptShare,
+    int depth);
 
 [[nodiscard]] bool
 isIndividualFrozen(
@@ -134,7 +139,11 @@ isFrozen(
     AccountID const& issuer);
 
 [[nodiscard]] inline bool
-isFrozen(ReadView const& view, AccountID const& account, Issue const& issue)
+isFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Issue const& issue,
+    int = 0 /*ignored*/)
 {
     return isFrozen(view, account, issue.currency, issue.account);
 }
@@ -143,13 +152,20 @@ isFrozen(ReadView const& view, AccountID const& account, Issue const& issue)
 isFrozen(
     ReadView const& view,
     AccountID const& account,
-    MPTIssue const& mptIssue);
+    MPTIssue const& mptIssue,
+    int depth = 0);
 
 [[nodiscard]] inline bool
-isFrozen(ReadView const& view, AccountID const& account, Asset const& asset)
+isFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Asset const& asset,
+    int depth = 0)
 {
     return std::visit(
-        [&](auto const& issue) { return isFrozen(view, account, issue); },
+        [&](auto const& issue) {
+            return isFrozen(view, account, issue, depth);
+        },
         asset.value());
 }
 
@@ -158,7 +174,8 @@ isAnyFrozen(
     ReadView const& view,
     AccountID const& account1,
     AccountID const& account2,
-    MPTIssue const& mptIssue);
+    MPTIssue const& mptIssue,
+    int depth = 0);
 
 /*
 We do not have a use case for these (yet ?)
@@ -687,9 +704,6 @@ struct TokenDescriptor
     std::shared_ptr<SLE const> issuance;
 };
 
-[[nodiscard]] TER
-requireAuth(ReadView const& view, Issue const& issue, AccountID const& account);
-
 /** Check if the account lacks required authorization.
  *
  *   Return tecNO_AUTH or tecNO_LINE if it does
@@ -709,7 +723,8 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account);
 requireAuth(
     ReadView const& view,
     MPTIssue const& mptIssue,
-    AccountID const& account);
+    AccountID const& account,
+    int depth = 0);
 
 /** Enforce account has MPToken to match its authorization.
  *

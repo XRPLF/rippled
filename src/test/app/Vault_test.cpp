@@ -78,6 +78,12 @@ class Vault_test : public beast::unit_test::suite
             env.close();
             BEAST_EXPECT(env.le(keylet));
 
+            auto const share = [&env, keylet = keylet, this]() -> PrettyAsset {
+                auto const vault = env.le(keylet);
+                BEAST_EXPECT(vault != nullptr);
+                return MPTIssue(vault->at(sfShareMPTID));
+            }();
+
             // Several 3rd party accounts which cannot receive funds
             Account alice{"alice"};
             Account dave{"dave"};
@@ -350,6 +356,36 @@ class Vault_test : public beast::unit_test::suite
                 tx[sfDestination] = erin.human();
                 env(tx,
                     ter{asset.raw().holds<Issue>() ? tecNO_LINE : tecNO_AUTH});
+            }
+
+            if (!asset.raw().native() && asset.raw().holds<Issue>())
+            {
+                testcase(prefix + " temporary authorization for 3rd party");
+                env(trust(erin, asset(1000)));
+                env(trust(issuer, asset(0), erin, tfSetfAuth));
+                env(pay(issuer, erin, asset(10)));
+
+                // Erin deposits all in vault, then sends shares to depositor
+                auto tx = vault.deposit(
+                    {.depositor = erin, .id = keylet.key, .amount = asset(10)});
+                env(tx);
+                env(pay(erin, depositor, share(10)));
+
+                testcase(prefix + " withdraw to authorized 3rd party");
+                // Depositor withdraws shares, destined to Erin
+                tx = vault.withdraw(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = asset(10)});
+                tx[sfDestination] = erin.human();
+                env(tx);
+                // Erin returns assets to issuer
+                env(pay(erin, issuer, asset(10)));
+
+                testcase(prefix + " fail to pay to unauthorized 3rd party");
+                env(trust(erin, asset(0)));
+                // Erin has MPToken but is no longer authorized to hold assets
+                env(pay(depositor, erin, share(1)), ter{tecNO_LINE});
             }
 
             {
@@ -1252,6 +1288,12 @@ class Vault_test : public beast::unit_test::suite
             return vault->at(sfAccount);
         }();
 
+        auto const share = [&env, keylet = keylet, this]() -> Asset {
+            auto const vault = env.le(keylet);
+            BEAST_EXPECT(vault != nullptr);
+            return MPTIssue(vault->at(sfShareMPTID));
+        }();
+
         auto const vaultBalance =  //
             [&, account = vaultAccount, this]() -> PrettyAmount {
             auto const sle = env.le(keylet::line(account, issue));
@@ -1298,7 +1340,7 @@ class Vault_test : public beast::unit_test::suite
         }
 
         {
-            testcase("IOU deleted trust line, withdraw to 3rd party");
+            testcase("IOU froze trust line, cannot withdraw to 3rd party");
             env(trust(issuer, asset(0), owner, tfSetFreeze));
 
             auto tx = vault.withdraw(
@@ -1306,10 +1348,16 @@ class Vault_test : public beast::unit_test::suite
             env(tx, ter{tecFROZEN});
 
             tx[sfDestination] = charlie.human();
-            env(tx);
+            env(tx, ter{tecLOCKED});  // owner transitively locked via MPToken
             env.close();
 
-            BEAST_EXPECT(env.balance(charlie, issue) == asset(30));
+            auto tx1 = test::jtx::pay(owner, charlie, STAmount{share, 10});
+            env(tx1, ter{tecLOCKED});
+
+            auto tx2 = test::jtx::pay(charlie, owner, STAmount{share, 10});
+            env(tx2, ter{tecLOCKED});
+
+            BEAST_EXPECT(env.balance(charlie, issue) == asset(20));
         }
 
         {
