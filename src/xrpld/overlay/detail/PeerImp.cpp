@@ -2295,6 +2295,17 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
             return v;
         }();
 
+        if (!isCurrent(
+                app_.getValidations().parms(),
+                app_.timeKeeper().closeTime(),
+                val->getSignTime(),
+                val->getSeenTime()))
+        {
+            JLOG(p_journal_.trace()) << "Validation: Not current";
+            fee_.update(Resource::feeUselessData, "not current");
+            return;
+        }
+
         auto const key = sha512Half(makeSlice(m->validation()));
 
         // If the message is duplicate, updating squelching and drop the message
@@ -2312,17 +2323,6 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
                     key, val->getSignerPublic(), id_, protocol::mtVALIDATION);
 
             JLOG(p_journal_.trace()) << "Validation: duplicate";
-            return;
-        }
-
-        if (!isCurrent(
-                app_.getValidations().parms(),
-                app_.timeKeeper().closeTime(),
-                val->getSignTime(),
-                val->getSeenTime()))
-        {
-            JLOG(p_journal_.trace()) << "Validation: Not current";
-            fee_.update(Resource::feeUselessData, "not current");
             return;
         }
 
