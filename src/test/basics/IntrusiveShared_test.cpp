@@ -498,7 +498,7 @@ public:
             return result;
         };
         constexpr int loopIters = 2 * 1024;
-        constexpr int numThreads = 16;
+        const int numThreads = std::thread::hardware_concurrency() / 2;
         std::vector<SharedIntrusive<TIBase>> toClone;
         std::barrier loopStartSyncPoint{numThreads};
         std::barrier postCreateToCloneSyncPoint{numThreads};
@@ -626,7 +626,7 @@ public:
         };
         constexpr int loopIters = 2 * 1024;
         constexpr int flipPointersLoopIters = 256;
-        constexpr int numThreads = 16;
+        const int numThreads = std::thread::hardware_concurrency() / 2;
         std::vector<SharedIntrusive<TIBase>> toClone;
         std::barrier loopStartSyncPoint{numThreads};
         std::barrier postCreateToCloneSyncPoint{numThreads};
@@ -759,7 +759,7 @@ public:
 
         constexpr int loopIters = 2 * 1024;
         constexpr int lockWeakLoopIters = 256;
-        constexpr int numThreads = 16;
+        const int numThreads = std::thread::hardware_concurrency() / 2;
         std::vector<SharedIntrusive<TIBase>> toLock;
         std::barrier loopStartSyncPoint{numThreads};
         std::barrier postCreateToLockSyncPoint{numThreads};
