@@ -306,7 +306,8 @@ TaggedCache<
         // }
         // else
         // {
-        //     when_expire = now - m_target_age * m_target_size / m_cache.size();
+        //     when_expire = now - m_target_age * m_target_size /
+        //     m_cache.size();
 
         //     clock_type::duration const minimumAge(std::chrono::seconds(1));
         //     if (when_expire > (now - minimumAge))
@@ -314,11 +315,14 @@ TaggedCache<
 
         //     JLOG(m_journal.trace())
         //         << m_name << " is growing fast " << m_cache.size() << " of "
-        //         << m_target_size << " aging at " << (now - when_expire).count()
+        //         << m_target_size << " aging at " << (now -
+        //         when_expire).count()
         //         << " of " << m_target_age.count();
         // }
 
-        when_expire = now + std::chrono::hours(1); // any future time works too to make sure that nothing survives
+        when_expire =
+            now + std::chrono::hours(1);  // any future time works too to make
+                                          // sure that nothing survives
 
         std::vector<std::thread> workers;
         workers.reserve(m_cache.partitions());
