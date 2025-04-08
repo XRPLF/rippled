@@ -78,8 +78,10 @@ checkMyPrivilege(STTx const& tx, Privilege priv)
     switch (tx.getTxnType())
     {
 #include <xrpl/protocol/detail/transactions.macro>
+        // Deprecated types
+        default:
+            return false;
     }
-    return false;
 };
 
 #undef TRANSACTION

@@ -43,7 +43,7 @@ namespace jtx {
 */
 template <
     class SField,
-    class StoredValue = SField::type::value_type,
+    class StoredValue = typename SField::type::value_type,
     class OutputValue = StoredValue>
 struct JTxField
 {
@@ -168,8 +168,8 @@ template <class JTxField>
 struct JTxFieldWrapper
 {
     using JF = JTxField;
-    using SF = JF::SF;
-    using SV = JF::SV;
+    using SF = typename JF::SF;
+    using SV = typename JF::SV;
 
 protected:
     SF const& sfield_;
@@ -221,7 +221,7 @@ public:
     }
 };
 
-template <class SField, class StoredValue = SField::type::value_type>
+template <class SField, class StoredValue = typename SField::type::value_type>
 using simpleField = JTxFieldWrapper<JTxField<SField, StoredValue>>;
 
 // TODO We only need this long "requires" clause as polyfill, for C++20
