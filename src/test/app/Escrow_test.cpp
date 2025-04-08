@@ -1950,22 +1950,30 @@ struct Escrow_test : public beast::unit_test::suite
                 env.require(balance(carol, XRP(5000)));
 
                 env(finish(carol, alice, seq),
+                    comp_allowance(110),
                     fee(txnFees),
                     ter(tecWASM_REJECTED));
                 env(finish(alice, alice, seq),
+                    comp_allowance(110),
                     fee(txnFees),
                     ter(tecWASM_REJECTED));
                 env(finish(alice, alice, seq),
+                    comp_allowance(110),
                     fee(txnFees),
                     ter(tecWASM_REJECTED));
                 env(finish(carol, alice, seq),
+                    comp_allowance(110),
                     fee(txnFees),
                     ter(tecWASM_REJECTED));
                 env(finish(carol, alice, seq),
+                    comp_allowance(110),
                     fee(txnFees),
                     ter(tecWASM_REJECTED));
                 env.close();
-                env(finish(alice, alice, seq), fee(txnFees), ter(tesSUCCESS));
+                env(finish(alice, alice, seq),
+                    fee(txnFees),
+                    comp_allowance(110),
+                    ter(tesSUCCESS));
                 env.close();
 
                 BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
@@ -1995,29 +2003,34 @@ struct Escrow_test : public beast::unit_test::suite
 
                 // no fulfillment provided, function fails
                 env(finish(carol, alice, seq),
+                    comp_allowance(110),
                     fee(txnFees),
                     ter(tecCRYPTOCONDITION_ERROR));
                 // fulfillment provided, function fails
                 env(finish(carol, alice, seq),
                     condition(cb1),
                     fulfillment(fb1),
+                    comp_allowance(110),
                     fee(txnFees),
                     ter(tecWASM_REJECTED));
                 env.close();
                 // no fulfillment provided, function succeeds
                 env(finish(alice, alice, seq),
+                    comp_allowance(110),
                     fee(txnFees),
                     ter(tecCRYPTOCONDITION_ERROR));
                 // wrong fulfillment provided, function succeeds
                 env(finish(alice, alice, seq),
                     condition(cb1),
                     fulfillment(fb2),
+                    comp_allowance(110),
                     fee(txnFees),
                     ter(tecCRYPTOCONDITION_ERROR));
                 // fulfillment provided, function succeeds, tx succeeds
                 env(finish(alice, alice, seq),
                     condition(cb1),
                     fulfillment(fb1),
+                    comp_allowance(110),
                     fee(txnFees),
                     ter(tesSUCCESS));
                 env.close();
@@ -2050,16 +2063,19 @@ struct Escrow_test : public beast::unit_test::suite
 
                 // finish time hasn't passed, function fails
                 env(finish(carol, alice, seq),
+                    comp_allowance(110),
                     fee(txnFees + 1),
                     ter(tecNO_PERMISSION));
                 env.close();
                 // finish time hasn't passed, function succeeds
                 for (; env.now() < ts; env.close())
                     env(finish(carol, alice, seq),
+                        comp_allowance(110),
                         fee(txnFees + 2),
                         ter(tecNO_PERMISSION));
 
                 env(finish(carol, alice, seq),
+                    comp_allowance(110),
                     fee(txnFees + 1),
                     ter(tesSUCCESS));
                 BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
@@ -2089,17 +2105,22 @@ struct Escrow_test : public beast::unit_test::suite
 
                 // finish time hasn't passed, function fails
                 env(finish(carol, alice, seq),
+                    comp_allowance(110),
                     fee(txnFees),
                     ter(tecNO_PERMISSION));
                 env.close();
 
                 // finish time has passed, function fails
                 env(finish(carol, alice, seq),
+                    comp_allowance(110),
                     fee(txnFees),
                     ter(tecWASM_REJECTED));
                 env.close();
                 // finish time has passed, function succeeds, tx succeeds
-                env(finish(carol, alice, seq), fee(txnFees), ter(tesSUCCESS));
+                env(finish(carol, alice, seq),
+                    comp_allowance(110),
+                    fee(txnFees),
+                    ter(tesSUCCESS));
                 env.close();
 
                 BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
@@ -3260,19 +3281,24 @@ struct Escrow_test : public beast::unit_test::suite
                 env.require(balance(alice, XRP(4000) - txnFees));
                 env.require(balance(carol, XRP(5000)));
 
+                auto const allowance = 40'000;
+
                 // FinishAfter time hasn't passed
                 env(finish(carol, alice, seq),
+                    comp_allowance(allowance),
                     fee(txnFees),
                     ter(tecNO_PERMISSION));
                 env.close();
 
                 // tx sender not escrow creator (alice)
                 env(finish(carol, alice, seq),
+                    comp_allowance(allowance),
                     fee(txnFees),
                     ter(tecWASM_REJECTED));
 
                 // destination balance is too high
                 env(finish(carol, alice, seq),
+                    comp_allowance(allowance),
                     fee(txnFees),
                     ter(tecWASM_REJECTED));
 
@@ -3284,11 +3310,15 @@ struct Escrow_test : public beast::unit_test::suite
 
                 // tx sender not escrow creator (alice)
                 env(finish(carol, alice, seq),
+                    comp_allowance(allowance),
                     fee(txnFees),
                     ter(tecWASM_REJECTED));
                 env.close();
 
-                env(finish(alice, alice, seq), fee(txnFees), ter(tesSUCCESS));
+                env(finish(alice, alice, seq),
+                    comp_allowance(allowance),
+                    fee(txnFees),
+                    ter(tesSUCCESS));
                 env.close();
 
                 BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
@@ -3299,22 +3329,22 @@ struct Escrow_test : public beast::unit_test::suite
     void
     run() override
     {
-        // testEnablement();
-        // testTiming();
-        // testTags();
-        // testDisallowXRP();
-        // test1571();
-        // testFails();
-        // testLockup();
-        // testEscrowConditions();
-        // testMetaAndOwnership();
-        // testConsequences();
-        // testEscrowWithTickets();
-        // testCredentials();
+        testEnablement();
+        testTiming();
+        testTags();
+        testDisallowXRP();
+        test1571();
+        testFails();
+        testLockup();
+        testEscrowConditions();
+        testMetaAndOwnership();
+        testConsequences();
+        testEscrowWithTickets();
+        testCredentials();
         testCreateFinishFunctionPreflight();
         testFinishWasmFailures();
-        // testFinishFunction();
-        // testAllHostFunctions();
+        testFinishFunction();
+        testAllHostFunctions();
     }
 };
 
