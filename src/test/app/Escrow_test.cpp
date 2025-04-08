@@ -1890,10 +1890,10 @@ struct Escrow_test : public beast::unit_test::suite
             // not enough gas
             // This function takes 110 gas
             // In testing, 1 gas costs 1 drop
-            auto const finishFee = env.current()->fees().base + 109;
+            auto const finishFee = env.current()->fees().base + 108;
             env(finish(carol, alice, seq),
                 fee(finishFee),
-                comp_allowance(109),
+                comp_allowance(108),
                 ter(tecFAILED_PROCESSING));
         }
     }
