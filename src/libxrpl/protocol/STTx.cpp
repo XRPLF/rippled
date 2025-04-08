@@ -542,8 +542,7 @@ STTx::checkMultiSign(
     return multiSignHelper(
         *this,
         fullyCanonical,
-        [&dataStart](
-            AccountID const& accountID) mutable -> Serializer {
+        [&dataStart](AccountID const& accountID) mutable -> Serializer {
             Serializer s = dataStart;
             finishMultiSigningData(accountID, s);
             return s;
