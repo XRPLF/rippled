@@ -1869,6 +1869,8 @@ struct Escrow_test : public beast::unit_test::suite
             cfg->FEES.gas_price = 1'000'000;  // 1 drop = 1 gas
             return cfg;
         }));
+        for (auto i = env.current()->seq(); i <= 257; ++i)
+            env.close();
         XRPAmount const txnFees = env.current()->fees().base + 1000;
         // create escrow
         env.fund(XRP(5000), alice, carol);
@@ -1889,7 +1891,7 @@ struct Escrow_test : public beast::unit_test::suite
             env(finish(carol, alice, seq),
                 fee(finishFee),
                 comp_allowance(110),
-                ter(telCAN_NOT_QUEUE_FEE));
+                ter(telINSUF_FEE_P));
         }
 
         {
