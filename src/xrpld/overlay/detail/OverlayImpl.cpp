@@ -43,8 +43,6 @@
 
 #include "xrpld/overlay/detail/TrafficCount.h"
 
-#include <unordered_set>
-
 namespace ripple {
 
 namespace CrawlOptions {
