@@ -294,7 +294,7 @@ IntrusiveRefCounts::releaseStrongRef() const
         }
 
         if (refCounts.compare_exchange_weak(
-                prevIntVal, nextIntVal, std::memory_order_release))
+                prevIntVal, nextIntVal, std::memory_order_acq_rel))
         {
             // Can't be in partial destroy because only decrementing the strong
             // count to zero can start a partial destroy, and that can't happen
@@ -351,7 +351,7 @@ IntrusiveRefCounts::addWeakReleaseStrongRef() const
             }
         }
         if (refCounts.compare_exchange_weak(
-                prevIntVal, nextIntVal, std::memory_order_release))
+                prevIntVal, nextIntVal, std::memory_order_acq_rel))
         {
             XRPL_ASSERT(
                 (!(prevIntVal & partialDestroyStartedMask)),
@@ -374,7 +374,7 @@ IntrusiveRefCounts::releaseWeakRef() const
             // This case should only be hit if the partialDestroyStartedBit is
             // set non-atomically (and even then very rarely). The code is kept
             // in case we need to set the flag non-atomically for perf reasons.
-            refCounts.wait(prevIntVal, std::memory_order_acq_rel);
+            refCounts.wait(prevIntVal, std::memory_order_acquire);
             prevIntVal = refCounts.load(std::memory_order_acquire);
             prev = RefCountPair{prevIntVal};
         }
@@ -382,7 +382,7 @@ IntrusiveRefCounts::releaseWeakRef() const
         {
             // partial destroy MUST finish before running a full destroy (when
             // using weak pointers)
-            refCounts.wait(prevIntVal - weakDelta, std::memory_order_acq_rel);
+            refCounts.wait(prevIntVal - weakDelta, std::memory_order_acquire);
         }
         return ReleaseWeakRefAction::destroy;
     }
@@ -396,7 +396,7 @@ IntrusiveRefCounts::checkoutStrongRefFromWeak() const noexcept
     auto desiredValue = RefCountPair{2, 1}.combinedValue();
 
     while (!refCounts.compare_exchange_weak(
-        curValue, desiredValue, std::memory_order_release))
+        curValue, desiredValue, std::memory_order_acq_rel))
     {
         RefCountPair const prev{curValue};
         if (!prev.strong)
