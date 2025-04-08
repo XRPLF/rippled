@@ -416,7 +416,7 @@ public:
 
         {
             testcase(
-                "deposit_authorized with credentials failed: not a credential "
+                "deposit_authorized with credentials failure: not a credential "
                 "index");
 
             auto args = depositAuthArgs(

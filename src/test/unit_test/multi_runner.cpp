@@ -584,7 +584,7 @@ multi_runner_child::on_suite_end()
             s << job_index_ << "> ";
         s << (suite_results_.failed > 0 ? "failed: " : "")
           << suite_results_.name << " had " << suite_results_.failed
-          << " failures.";
+          << " failures." << std::endl;
         message_queue_send(MessageType::log, s.str());
     }
     results_.add(suite_results_);
