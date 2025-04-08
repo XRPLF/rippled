@@ -20,7 +20,7 @@ jobs:
       version: ${{ steps.version.outputs.version }}
       channel: ${{ steps.channel.outputs.channel }}
     runs-on: [self-hosted, heavy]
-    container: ghcr.io/xrplf/rippled-build-ubuntu:aaf5e3e
+    container: ghcr.io/xrplf/rippled-build-ubuntu:2025-04-07
     steps:
       - name: Wait for essential checks to succeed
         uses: lewagon/wait-on-check-action@v1.3.4
