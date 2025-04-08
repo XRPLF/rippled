@@ -364,7 +364,7 @@ jobs:
           - Debug
     needs: dependencies
     runs-on: [self-hosted, heavy]
-    container: rippleci/rippled-build-ubuntu:aaf5e3e
+    container: ghcr.io/xrplf/rippled-build-ubuntu:2025-04-07
     env:
       build_dir: .build
     steps:
