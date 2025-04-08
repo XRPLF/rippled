@@ -244,7 +244,7 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
         if (feePaid == beast::zero)
             return tesSUCCESS;
 
-        JLOG(ctx.j.trace()) << "Batch: sfFee must be zero.";
+        JLOG(ctx.j.trace()) << "Batch: Fee must be zero.";
         return temBAD_FEE;  // LCOV_EXCL_LINE
     }
 
