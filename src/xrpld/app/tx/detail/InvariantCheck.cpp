@@ -40,7 +40,7 @@ enum Privilege {
         0x0000,  // The transaction can not do any of the enumerated operations
     createAcct =
         0x0001,  // The transaction can create a new ACCOUNT_ROOT object.
-    createPseudoAcct = 0x0003,  // The transaction can create a pseudo account,
+    createPseudoAcct = 0x0002,  // The transaction can create a pseudo account,
                                 // which implies createAcct
     mustDeleteAcct =
         0x0004,  // The transaction must delete an ACCOUNT_ROOT object
@@ -57,7 +57,7 @@ enum Privilege {
                                 // object (except by issuer)
 };
 constexpr Privilege
-operator|(Privilege const& lhs, Privilege const& rhs)
+operator|(Privilege lhs, Privilege rhs)
 {
     return safe_cast<Privilege>(
         safe_cast<std::underlying_type_t<Privilege>>(lhs) |
@@ -940,7 +940,8 @@ ValidNewAccountRoot::finalize(
     }
 
     // From this point on we know exactly one account was created.
-    if (checkMyPrivilege(tx, createAcct) && result == tesSUCCESS)
+    if (checkMyPrivilege(tx, createAcct | createPseudoAcct) &&
+        result == tesSUCCESS)
     {
         bool const pseudoAccount =
             (pseudoAccount_ &&

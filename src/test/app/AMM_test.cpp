@@ -7161,7 +7161,7 @@ private:
         using namespace test::jtx;
 
         auto const testCase = [&](std::string suffix, FeatureBitset features) {
-            testcase("Failed pseudo-account allocation " + suffix);
+            testcase("Fail pseudo-account allocation " + suffix);
             Env env{*this, features};
             env.fund(XRP(30'000), gw, alice);
             env.close();
