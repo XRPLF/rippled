@@ -1773,7 +1773,7 @@ ValidPseudoAccounts::visitEntry(
                 {
                     std::stringstream error;
                     error << "pseudo-account has " << numFields
-                          << "pseudo-account fields set";
+                          << " pseudo-account fields set";
                     errors_.emplace_back(error.str());
                 }
             }

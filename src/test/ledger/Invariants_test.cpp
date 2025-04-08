@@ -31,6 +31,7 @@
 #include <boost/algorithm/string/predicate.hpp>
 
 namespace ripple {
+namespace test {
 
 class Invariants_test : public beast::unit_test::suite
 {
@@ -112,13 +113,13 @@ class Invariants_test : public beast::unit_test::suite
         {
             terActual = ac.checkInvariants(terActual, fee);
             BEAST_EXPECT(terExpect == terActual);
+            auto const messages = sink.messages().str();
             BEAST_EXPECT(
-                sink.messages().str().starts_with("Invariant failed:") ||
-                sink.messages().str().starts_with(
-                    "Transaction caused an exception"));
+                messages.starts_with("Invariant failed:") ||
+                messages.starts_with("Transaction caused an exception"));
             for (auto const& m : expect_logs)
             {
-                if (sink.messages().str().find(m) == std::string::npos)
+                if (messages.find(m) == std::string::npos)
                 {
                     // uncomment if you want to log the invariant failure
                     // message log << "   --> " << m << std::endl;
@@ -1300,6 +1301,220 @@ class Invariants_test : public beast::unit_test::suite
             {tecINVARIANT_FAILED, tecINVARIANT_FAILED});
     }
 
+    void
+    testNoModifiedUnmodifiableFields()
+    {
+        testcase("no modified unmodifiable fields");
+        using namespace jtx;
+
+        // Initialize with a placeholder value because there's no default ctor
+        Keylet loanBrokerKeylet = keylet::amendments();
+        Preclose createLoanBroker =
+            [&, this](Account const& a, Account const& b, Env& env) {
+                PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+
+                // Create vault
+                uint256 vaultID;
+                Vault vault{env};
+                auto [tx, vKeylet] =
+                    vault.create({.owner = a, .asset = xrpAsset});
+                env(tx);
+                env.close();
+                BEAST_EXPECT(env.le(vKeylet));
+
+                vaultID = vKeylet.key;
+
+                env(vault.deposit(
+                    {.depositor = a, .id = vaultID, .amount = xrpAsset(50)}));
+                env.close();
+
+                // Create Loan Broker
+                using namespace loanBroker;
+
+                loanBrokerKeylet = keylet::loanbroker(a.id(), env.seq(a));
+                // Create a Loan Broker with all default values.
+                env(set(a, vaultID));
+
+                return BEAST_EXPECT(env.le(loanBrokerKeylet));
+            };
+
+        {
+            auto const mods =
+                std::to_array<std::function<void(SLE::pointer&)>>({
+                    [](SLE::pointer& sle) { sle->at(sfSequence) += 1; },
+                    [](SLE::pointer& sle) { sle->at(sfOwnerNode) += 1; },
+                    [](SLE::pointer& sle) { sle->at(sfVaultNode) += 1; },
+                    [](SLE::pointer& sle) { sle->at(sfVaultID) = uint256(1u); },
+                    [](SLE::pointer& sle) {
+                        sle->at(sfAccount) = sle->at(sfOwner);
+                    },
+                    [](SLE::pointer& sle) {
+                        sle->at(sfOwner) = sle->at(sfAccount);
+                    },
+                    [](SLE::pointer& sle) {
+                        sle->at(sfManagementFeeRate) += 1;
+                    },
+                    [](SLE::pointer& sle) { sle->at(sfCoverRateMinimum) += 1; },
+                    [](SLE::pointer& sle) {
+                        sle->at(sfCoverRateLiquidation) += 1;
+                    },
+                    [](SLE::pointer& sle) { sle->at(sfLedgerEntryType) += 1; },
+                    [](SLE::pointer& sle) {
+                        sle->at(sfLedgerIndex) = sle->at(sfVaultID).value();
+                    },
+                });
+
+            for (auto const& mod : mods)
+            {
+                doInvariantCheck(
+                    {{"changed an unchangable field"}},
+                    [&](Account const& A1, Account const&, ApplyContext& ac) {
+                        auto sle = ac.view().peek(loanBrokerKeylet);
+                        if (!sle)
+                            return false;
+                        mod(sle);
+                        ac.view().update(sle);
+                        return true;
+                    },
+                    XRPAmount{},
+                    STTx{ttACCOUNT_SET, [](STObject& tx) {}},
+                    {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                    createLoanBroker);
+            }
+        }
+
+        // TODO: Loan Object
+
+        {
+            auto const mods =
+                std::to_array<std::function<void(SLE::pointer&)>>({
+                    [](SLE::pointer& sle) { sle->at(sfLedgerEntryType) += 1; },
+                    [](SLE::pointer& sle) {
+                        sle->at(sfLedgerIndex) = uint256(1u);
+                    },
+                });
+
+            for (auto const& mod : mods)
+            {
+                doInvariantCheck(
+                    {{"changed an unchangable field"}},
+                    [&](Account const& A1, Account const&, ApplyContext& ac) {
+                        auto sle = ac.view().peek(keylet::account(A1.id()));
+                        if (!sle)
+                            return false;
+                        mod(sle);
+                        ac.view().update(sle);
+                        return true;
+                    });
+            }
+        }
+    }
+
+    void
+    testValidPseudoAccounts()
+    {
+        testcase << "valid pseudo accounts";
+
+        using namespace jtx;
+
+        AccountID pseudoAccountID;
+        Preclose createPseudo =
+            [&, this](Account const& a, Account const& b, Env& env) {
+                PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
+
+                // Create vault
+                uint256 vaultID;
+                Vault vault{env};
+                auto [tx, vKeylet] =
+                    vault.create({.owner = a, .asset = xrpAsset});
+                env(tx);
+                env.close();
+                if (auto const vSle = env.le(vKeylet); BEAST_EXPECT(vSle))
+                {
+                    pseudoAccountID = vSle->at(sfAccount);
+                }
+
+                return BEAST_EXPECT(env.le(keylet::account(pseudoAccountID)));
+            };
+
+        /* Cases to check
+            "pseudo-account has 0 pseudo-account fields set"
+            "pseudo-account has 2 pseudo-account fields set"
+            "pseudo-account sequence changed"
+            "pseudo-account flags are not set"
+            "pseudo-account has a regular key"
+        */
+        struct Mod
+        {
+            std::string expectedFailure;
+            std::function<void(SLE::pointer&)> func;
+        };
+        auto const mods = std::to_array<Mod>({
+            {
+                "pseudo-account has 0 pseudo-account fields set",
+                [this](SLE::pointer& sle) {
+                    BEAST_EXPECT(sle->at(~sfVaultID));
+                    sle->at(~sfVaultID) = std::nullopt;
+                },
+            },
+            {
+                "pseudo-account has 2 pseudo-account fields set",
+                [this](SLE::pointer& sle) {
+                    BEAST_EXPECT(
+                        sle->at(~sfVaultID) && !sle->at(~sfLoanBrokerID));
+                    sle->at(~sfLoanBrokerID) = ~sle->at(~sfVaultID);
+                },
+            },
+            {
+                "pseudo-account sequence changed",
+                [](SLE::pointer& sle) { sle->at(sfSequence) = 12345; },
+            },
+            {
+                "pseudo-account flags are not set",
+                [](SLE::pointer& sle) { sle->at(sfFlags) = lsfNoFreeze; },
+            },
+            {
+                "pseudo-account has a regular key",
+                [](SLE::pointer& sle) {
+                    sle->at(sfRegularKey) = Account("regular").id();
+                },
+            },
+        });
+
+        for (auto const& mod : mods)
+        {
+            doInvariantCheck(
+                {{mod.expectedFailure}},
+                [&](Account const& A1, Account const&, ApplyContext& ac) {
+                    auto sle = ac.view().peek(keylet::account(pseudoAccountID));
+                    if (!sle)
+                        return false;
+                    mod.func(sle);
+                    ac.view().update(sle);
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttACCOUNT_SET, [](STObject& tx) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                createPseudo);
+        }
+
+        // Take one of the regular accounts and set the sequence to 0, which
+        // will make it look like a pseudo-account
+        doInvariantCheck(
+            {{"pseudo-account has 0 pseudo-account fields set"},
+             {"pseudo-account sequence changed"},
+             {"pseudo-account flags are not set"}},
+            [&](Account const& A1, Account const&, ApplyContext& ac) {
+                auto sle = ac.view().peek(keylet::account(A1.id()));
+                if (!sle)
+                    return false;
+                sle->at(sfSequence) = 0;
+                ac.view().update(sle);
+                return true;
+            });
+    }
+
 public:
     void
     run() override
@@ -1318,9 +1533,12 @@ public:
         testValidNewAccountRoot();
         testNFTokenPageInvariants();
         testPermissionedDomainInvariants();
+        testNoModifiedUnmodifiableFields();
+        testValidPseudoAccounts();
     }
 };
 
 BEAST_DEFINE_TESTSUITE(Invariants, ledger, ripple);
 
+}  // namespace test
 }  // namespace ripple
