@@ -148,6 +148,7 @@ msig::operator()(Env& env, JTx& jt) const
 
         Serializer msg;
         serializeBatch(msg, stx.getFlags(), stx.getBatchTransactionIDs());
+        finishMultiSigningData(e.acct.id(), msg);
         auto const sig = ripple::sign(
             *publicKeyType(e.sig.pk().slice()), e.sig.sk(), msg.slice());
         iso[sfTxnSignature.getJsonName()] =

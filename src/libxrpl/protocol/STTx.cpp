@@ -428,7 +428,7 @@ Expected<void, std::string>
 multiSignHelper(
     STObject const& signerObj,
     bool const fullyCanonical,
-    std::function<std::vector<uint8_t>(AccountID const&)> makeMsg,
+    std::function<Serializer(AccountID const&)> makeMsg,
     Rules const& rules)
 {
     // Make sure the MultiSigners are present.  Otherwise they are not
@@ -477,16 +477,13 @@ multiSignHelper(
         bool validSig = false;
         try
         {
-            std::vector<uint8_t> msgData = makeMsg(accountID);
-            Slice msgSlice(msgData.data(), msgData.size());
             auto spk = signer.getFieldVL(sfSigningPubKey);
-
             if (publicKeyType(makeSlice(spk)))
             {
                 Blob const signature = signer.getFieldVL(sfTxnSignature);
                 validSig = verify(
                     PublicKey(makeSlice(spk)),
-                    msgSlice,
+                    makeMsg(accountID).slice(),
                     makeSlice(signature),
                     fullyCanonical);
             }
@@ -511,16 +508,21 @@ STTx::checkBatchMultiSign(
     RequireFullyCanonicalSig requireCanonicalSig,
     Rules const& rules) const
 {
-    Serializer msg;
-    serializeBatch(msg, getFlags(), getBatchTransactionIDs());
     bool const fullyCanonical = (getFlags() & tfFullyCanonicalSig) ||
         (requireCanonicalSig == RequireFullyCanonicalSig::yes);
 
+    // We can ease the computational load inside the loop a bit by
+    // pre-constructing part of the data that we hash.  Fill a Serializer
+    // with the stuff that stays constant from signature to signature.
+    Serializer dataStart;
+    serializeBatch(dataStart, getFlags(), getBatchTransactionIDs());
     return multiSignHelper(
         batchSigner,
         fullyCanonical,
-        [&msg](AccountID const&) -> std::vector<uint8_t> {
-            return msg.getData();
+        [&dataStart](AccountID const& accountID) mutable -> Serializer {
+            Serializer s = dataStart;
+            finishMultiSigningData(accountID, s);
+            return s;
         },
         rules);
 }
@@ -541,10 +543,10 @@ STTx::checkMultiSign(
         *this,
         fullyCanonical,
         [&dataStart](
-            AccountID const& accountID) mutable -> std::vector<uint8_t> {
+            AccountID const& accountID) mutable -> Serializer {
             Serializer s = dataStart;
             finishMultiSigningData(accountID, s);
-            return s.getData();
+            return s;
         },
         rules);
 }
