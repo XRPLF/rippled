@@ -79,7 +79,7 @@ struct FeeSetup
     /** The WASM size limit for Feature Extensions. */
     std::uint32_t extension_size_limit{4294967295};
 
-    /** The price of 1 WASM gas, in nano-drops. */
+    /** The price of 1 WASM gas, in micro-drops. */
     std::uint32_t gas_price{1000000};
 
     /* (Remember to update the example cfg files when changing any of these
