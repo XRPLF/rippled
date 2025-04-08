@@ -398,6 +398,23 @@ public:
     }
 };
 
+struct comp_allowance
+{
+private:
+    std::uint32_t value_;
+
+public:
+    explicit comp_allowance(std::uint32_t const& value) : value_(value)
+    {
+    }
+
+    void
+    operator()(Env&, JTx& jt) const
+    {
+        jt.jv[sfComputationAllowance.jsonName] = value_;
+    }
+};
+
 /* Payment Channel */
 /******************************************************************************/
 

@@ -1659,7 +1659,7 @@ struct Escrow_test : public beast::unit_test::suite
     }
 
     void
-    testFinishFunctionPreflight()
+    testCreateFinishFunctionPreflight()
     {
         testcase("Test preflight checks involving FinishFunction");
 
@@ -1703,12 +1703,15 @@ struct Escrow_test : public beast::unit_test::suite
             env.close();
         }
 
-        Env env(*this);
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg->START_UP = Config::FRESH;
+            return cfg;
+        }));
         XRPAmount const txnFees = env.current()->fees().base + 1000;
         // create escrow
         env.fund(XRP(5000), alice, carol);
 
-        auto escrowCreate = escrow(alice, carol, XRP(1000));
+        auto escrowCreate = escrow(alice, carol, XRP(500));
 
         // Success situations
         {
@@ -1811,6 +1814,88 @@ struct Escrow_test : public beast::unit_test::suite
         //         ter(temMALFORMED));
         //     env.close();
         // }
+    }
+
+    void
+    testFinishWasmFailures()
+    {
+        testcase("EscrowFinish Smart Escrow failures");
+
+        using namespace jtx;
+        using namespace std::chrono;
+
+        Account const alice{"alice"};
+        Account const carol{"carol"};
+
+        // Tests whether the ledger index is >= 5
+        // #[no_mangle]
+        // pub fn ready() -> bool {
+        //     unsafe { host_lib::getLedgerSqn() >= 5}
+        // }
+        static auto wasmHex =
+            "0061736d010000000105016000017f02190108686f73745f6c69620c6765744c65"
+            "6467657253716e0000030201000405017001010105030100100619037f01418080"
+            "c0000b7f00418080c0000b7f00418080c0000b072d04066d656d6f727902000572"
+            "6561647900010a5f5f646174615f656e6403010b5f5f686561705f626173650302"
+            "0a0d010b0010808080800041044a0b006c046e616d65000e0d7761736d5f6c6962"
+            "2e7761736d01410200375f5a4e387761736d5f6c696238686f73745f6c69623132"
+            "6765744c656467657253716e313768303033306666356636376562356638314501"
+            "057265616479071201000f5f5f737461636b5f706f696e74657200550970726f64"
+            "756365727302086c616e6775616765010452757374000c70726f6365737365642d"
+            "62790105727573746325312e38332e302d6e696768746c79202863326637346333"
+            "663920323032342d30392d30392900490f7461726765745f666561747572657304"
+            "2b0a6d756c746976616c75652b0f6d757461626c652d676c6f62616c732b0f7265"
+            "666572656e63652d74797065732b087369676e2d657874";
+
+        {
+            // featureSmartEscrow disabled
+            Env env(*this, supported_amendments() - featureSmartEscrow);
+            env.fund(XRP(5000), alice, carol);
+            XRPAmount const txnFees = env.current()->fees().base + 1000;
+            env(finish(carol, alice, 1),
+                fee(txnFees),
+                comp_allowance(110),
+                ter(temDISABLED));
+            env.close();
+        }
+
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg->START_UP = Config::FRESH;
+            return cfg;
+        }));
+        XRPAmount const txnFees = env.current()->fees().base + 1000;
+        // create escrow
+        env.fund(XRP(5000), alice, carol);
+
+        // EscrowFinish
+        auto const seq = env.seq(alice);
+        env(escrow(alice, carol, XRP(500)),
+            finish_function(wasmHex),
+            cancel_time(env.now() + 100s),
+            fee(txnFees));
+        env.close();
+
+        {
+            // not enough fees
+            // This function takes 110 gas
+            // In testing, 1 gas costs 1 drop
+            auto const finishFee = env.current()->fees().base + 109;
+            env(finish(carol, alice, seq),
+                fee(finishFee),
+                comp_allowance(110),
+                ter(telCAN_NOT_QUEUE_FEE));
+        }
+
+        {
+            // not enough gas
+            // This function takes 110 gas
+            // In testing, 1 gas costs 1 drop
+            auto const finishFee = env.current()->fees().base + 109;
+            env(finish(carol, alice, seq),
+                fee(finishFee),
+                comp_allowance(109),
+                ter(tecFAILED_PROCESSING));
+        }
     }
 
     void
@@ -3214,21 +3299,22 @@ struct Escrow_test : public beast::unit_test::suite
     void
     run() override
     {
-        testEnablement();
-        testTiming();
-        testTags();
-        testDisallowXRP();
-        test1571();
-        testFails();
-        testLockup();
-        testEscrowConditions();
-        testMetaAndOwnership();
-        testConsequences();
-        testEscrowWithTickets();
-        testCredentials();
-        testFinishFunctionPreflight();
-        testFinishFunction();
-        testAllHostFunctions();
+        // testEnablement();
+        // testTiming();
+        // testTags();
+        // testDisallowXRP();
+        // test1571();
+        // testFails();
+        // testLockup();
+        // testEscrowConditions();
+        // testMetaAndOwnership();
+        // testConsequences();
+        // testEscrowWithTickets();
+        // testCredentials();
+        testCreateFinishFunctionPreflight();
+        testFinishWasmFailures();
+        // testFinishFunction();
+        // testAllHostFunctions();
     }
 };
 

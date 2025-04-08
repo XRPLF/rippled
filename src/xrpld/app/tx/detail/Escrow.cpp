@@ -34,6 +34,8 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 
+#include <algorithm>
+
 // During an EscrowFinish, the transaction must specify both
 // a condition and a fulfillment. We track whether that
 // fulfillment matches and validates the condition.
@@ -361,6 +363,13 @@ EscrowFinish::preflight(PreflightContext const& ctx)
         !ctx.rules.enabled(featureCredentials))
         return temDISABLED;
 
+    if (ctx.tx.isFieldPresent(sfComputationAllowance) &&
+        !ctx.rules.enabled(featureSmartEscrow))
+    {
+        JLOG(ctx.j.debug()) << "SmartEscrow not enabled";
+        return temDISABLED;
+    }
+
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
@@ -427,11 +436,10 @@ EscrowFinish::calculateBaseFee(ReadView const& view, STTx const& tx)
     {
         extraFee += view.fees().base * (32 + (fb->size() / 16));
     }
-    if (auto const allowance = tx[~sfComputationAllowance])
+    if (auto const allowance = tx[~sfComputationAllowance]; allowance)
     {
-        extraFee += (view.fees().gasPrice / 1000000) * (*allowance);
+        extraFee += (*allowance) * view.fees().gasPrice / 1000000;
     }
-
     return Transactor::calculateBaseFee(view, tx) + extraFee;
 }
 
@@ -455,6 +463,24 @@ EscrowFinish::doApply()
     auto const slep = ctx_.view().peek(k);
     if (!slep)
         return tecNO_TARGET;
+
+    if (slep->isFieldPresent(sfFinishFunction))
+    {
+        if (!ctx_.tx.isFieldPresent(sfComputationAllowance))
+        {
+            JLOG(j_.debug()) << "FinishFunction requires ComputationAllowance";
+            return tefWASM_FIELD_NOT_INCLUDED;
+        }
+    }
+    else
+    {
+        if (ctx_.tx.isFieldPresent(sfComputationAllowance))
+        {
+            JLOG(j_.debug())
+                << "FinishFunction not present, ComputationAllowance present";
+            return tefNO_WASM;
+        }
+    }
 
     // Order of processing the release conditions (in order of performance):
     // FinishAfter/CancelAfter
@@ -592,17 +618,12 @@ EscrowFinish::doApply()
         std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
         std::string funcName("ready");
 
-        auto const escrowTx =
-            ctx_.tx.getJson(JsonOptions::none).toStyledString();
-        auto const escrowObj =
-            slep->getJson(JsonOptions::none).toStyledString();
-        std::vector<uint8_t> escrowTxData(escrowTx.begin(), escrowTx.end());
-        std::vector<uint8_t> escrowObjData(escrowObj.begin(), escrowObj.end());
-
         WasmHostFunctionsImpl ledgerDataProvider(ctx_, k);
 
-        std::uint32_t gasLimit = ctx_.app.config().FEES.extension_compute_limit;
-        auto re = runEscrowWasm(wasm, funcName, &ledgerDataProvider, gasLimit);
+        std::uint32_t allowance = std::min(
+            ctx_.tx[sfComputationAllowance],
+            ctx_.app.config().FEES.extension_compute_limit);
+        auto re = runEscrowWasm(wasm, funcName, &ledgerDataProvider, allowance);
         JLOG(j_.trace()) << "Escrow WASM ran";
         if (re.has_value())
         {
