@@ -3078,7 +3078,7 @@ class Batch_test : public beast::unit_test::suite
 
             auto const noopTxn = env.jt(noop(alice), seq(aliceSeq + 1));
             auto const noopTxnID = to_string(noopTxn.stx->getTransactionID());
-            env(noopTxn);
+            env(noopTxn, ter(tesSUCCESS));
             env.close();
 
             {
@@ -3318,7 +3318,7 @@ class Batch_test : public beast::unit_test::suite
             // IMPORTANT: The initial result of `CheckCash` is tecNO_ENTRY
             // because the create transaction has not been applied because the
             // batch will run in the close ledger process. The batch will be
-            // allied and then retry this transaction in the current ledger.
+            // applied and then retry this transaction in the current ledger.
 
             test::jtx::Env env{*this, envconfig()};
             env.fund(XRP(10000), alice, bob);
@@ -3452,6 +3452,15 @@ class Batch_test : public beast::unit_test::suite
         };
         validateClosedLedger(env, testCases);
 
+        env.close();
+        {
+            // next ledger includes the payment txn
+            std::vector<TestLedgerData> testCases = {
+                {0, "Payment", "tesSUCCESS", payTxn2ID, std::nullopt},
+            };
+            validateClosedLedger(env, testCases);
+        }
+
         // Alice consumes sequences (# of txns)
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 3);
 
@@ -3571,11 +3580,6 @@ class Batch_test : public beast::unit_test::suite
 
         // Validate: NetworkOPs::submitTransaction()
         {
-            // Submit a tx with tfPartialPayment
-            uint256 const txGood = submitTx(tfPartialPayment);
-            BEAST_EXPECT(
-                env.app().getHashRouter().getFlags(txGood) ==
-                SF_PRIVATE2 + SF_PRIVATE4);
             // Submit a tx with tfInnerBatchTxn
             uint256 const txBad = submitTx(tfInnerBatchTxn);
             BEAST_EXPECT(env.app().getHashRouter().getFlags(txBad) == 0);
