@@ -121,12 +121,12 @@ class LoanBroker_test : public beast::unit_test::suite
         std::array const assets{xrpAsset, iouAsset, mptAsset};
 
         // Create vaults
-        struct Vault
+        struct VaultInfo
         {
             PrettyAsset const& asset;
             uint256 vaultID;
         };
-        std::vector<Vault> vaults;
+        std::vector<VaultInfo> vaults;
         for (auto const& asset : assets)
         {
             auto [tx, keylet] = vault.create({.owner = alice, .asset = asset});

@@ -1423,7 +1423,6 @@ class Invariants_test : public beast::unit_test::suite
                 PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
 
                 // Create vault
-                uint256 vaultID;
                 Vault vault{env};
                 auto [tx, vKeylet] =
                     vault.create({.owner = a, .asset = xrpAsset});
