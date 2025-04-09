@@ -1864,18 +1864,18 @@ struct Escrow_test : public beast::unit_test::suite
             env.close();
         }
 
-        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->FEES.extension_compute_limit = 100'000;
-            cfg->FEES.gas_price = 1'000'000;  // 1 drop = 1 gas
-            return cfg;
-        }));
+        Env env(*this);
+
+        // Run past the flag ledger so that a Fee change vote occurs and
+        // lowers the reserve fee. (It also activates all supported
+        // amendments.)
         for (auto i = env.current()->seq(); i <= 257; ++i)
             env.close();
+
         XRPAmount const txnFees = env.current()->fees().base + 1000;
-        // create escrow
         env.fund(XRP(5000), alice, carol);
 
-        // EscrowFinish
+        // create escrow
         auto const seq = env.seq(alice);
         env(escrow(alice, carol, XRP(500)),
             finish_function(wasmHex),
