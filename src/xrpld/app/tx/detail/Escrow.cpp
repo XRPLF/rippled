@@ -620,9 +620,12 @@ EscrowFinish::doApply()
 
         WasmHostFunctionsImpl ledgerDataProvider(ctx_, k);
 
-        std::uint32_t allowance = std::min(
-            ctx_.tx[sfComputationAllowance],
-            ctx_.app.config().FEES.extension_compute_limit);
+        if (!ctx.tx.isFieldPresent(sfComputationAllowance))
+        {
+            // already checked above, this check is just in case
+            return tecINTERNAL;
+        }
+        std::uint32_t allowance = ctx_.tx[sfComputationAllowance];
         auto re = runEscrowWasm(wasm, funcName, &ledgerDataProvider, allowance);
         JLOG(j_.trace()) << "Escrow WASM ran";
         if (re.has_value())

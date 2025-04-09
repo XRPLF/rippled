@@ -2296,7 +2296,7 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
             jvObj[jss::extension_size] = *extensionSizeLimit;
 
         if (auto const gasPrice = ~val->at(~sfGasPrice); gasPrice)
-            jvObj[jss::extension_size] = *gasPrice;
+            jvObj[jss::gas_price] = *gasPrice;
 
         // NOTE Use MultiApiJson to publish two slightly different JSON objects
         // for consumers supporting different API versions
