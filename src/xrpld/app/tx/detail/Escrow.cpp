@@ -620,7 +620,7 @@ EscrowFinish::doApply()
 
         WasmHostFunctionsImpl ledgerDataProvider(ctx_, k);
 
-        if (!ctx.tx.isFieldPresent(sfComputationAllowance))
+        if (!ctx_.tx.isFieldPresent(sfComputationAllowance))
         {
             // already checked above, this check is just in case
             return tecINTERNAL;
