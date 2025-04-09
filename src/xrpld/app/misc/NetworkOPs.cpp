@@ -2088,11 +2088,14 @@ NetworkOPsImp::processTrustedProposal(RCLCxPeerPos peerPos)
         // is a trusted message, it could be a very big deal. Either way, we
         // don't want to relay the proposal. Note that the byzantine behavior
         // detection in handleNewValidation will notify other peers.
-        UNREACHABLE(
-            "ripple::NetworkOPsImp::processTrustedProposal : received own "
-            "proposal");
+        //
+        // Another, innocuous explanation is unusual message routing and delays,
+        // causing this node to receive its own messages back.
         JLOG(m_journal.error())
-            << "Received a TRUSTED proposal signed with my key from a peer";
+            << "Received a proposal signed by MY KEY from a peer. This may "
+               "indicate a misconfiguration where another node has the same "
+               "validator key, or may be caused by unusual message routing and "
+               "delays.";
         return false;
     }
 
