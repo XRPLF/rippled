@@ -3378,22 +3378,22 @@ struct Escrow_test : public beast::unit_test::suite
     void
     run() override
     {
-        // testEnablement();
-        // testTiming();
-        // testTags();
-        // testDisallowXRP();
-        // test1571();
-        // testFails();
-        // testLockup();
-        // testEscrowConditions();
-        // testMetaAndOwnership();
-        // testConsequences();
-        // testEscrowWithTickets();
-        // testCredentials();
-        // testCreateFinishFunctionPreflight();
+        testEnablement();
+        testTiming();
+        testTags();
+        testDisallowXRP();
+        test1571();
+        testFails();
+        testLockup();
+        testEscrowConditions();
+        testMetaAndOwnership();
+        testConsequences();
+        testEscrowWithTickets();
+        testCredentials();
+        testCreateFinishFunctionPreflight();
         testFinishWasmFailures();
-        // testFinishFunction();
-        // testAllHostFunctions();
+        testFinishFunction();
+        testAllHostFunctions();
     }
 };
 
