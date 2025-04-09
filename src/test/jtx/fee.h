@@ -37,10 +37,15 @@ class fee
 {
 private:
     bool manual_ = true;
+    bool increment_ = false;
     std::optional<STAmount> amount_;
 
 public:
     explicit fee(autofill_t) : manual_(false)
+    {
+    }
+
+    explicit fee(increment_t) : increment_(true)
     {
     }
 

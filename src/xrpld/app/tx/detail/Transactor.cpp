@@ -233,6 +233,18 @@ Transactor::calculateBaseFee(ReadView const& view, STTx const& tx)
     return baseFee + (signerCount * baseFee);
 }
 
+// Returns the fee in fee units, not scaled for load.
+XRPAmount
+Transactor::calculateOwnerReserveFee(ReadView const& view, STTx const& tx)
+{
+    // One reserve increment is typically much greater than one base fee.
+    XRPL_ASSERT(
+        view.fees().increment > view.fees().base * 100,
+        "ripple::Transactor::calculateOwnerReserveFee : Owner reserve is much "
+        "greater than base fee");
+    return view.fees().increment;
+}
+
 XRPAmount
 Transactor::minimumFee(
     Application& app,

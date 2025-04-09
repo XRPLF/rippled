@@ -46,6 +46,9 @@ public:
     static NotTEC
     doPreflight(PreflightContext const& ctx);
 
+    static XRPAmount
+    calculateBaseFee(ReadView const& view, STTx const& tx);
+
     static TER
     preclaim(PreclaimContext const& ctx);
 

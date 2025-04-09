@@ -208,6 +208,10 @@ protected:
         Fees const& fees,
         ApplyFlags flags);
 
+    // Returns the fee in fee units, not scaled for load.
+    static XRPAmount
+    calculateOwnerReserveFee(ReadView const& view, STTx const& tx);
+
     // Base class always returns true
     static bool
     isEnabled(PreflightContext const& ctx);

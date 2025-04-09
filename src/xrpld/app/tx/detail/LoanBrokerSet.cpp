@@ -92,6 +92,15 @@ LoanBrokerSet::doPreflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
+XRPAmount
+LoanBrokerSet::calculateBaseFee(ReadView const& view, STTx const& tx)
+{
+    // One reserve increment is typically much greater than one base fee.
+    if (!tx.isFieldPresent(sfLoanBrokerID))
+        return calculateOwnerReserveFee(view, tx);
+    return Transactor::calculateBaseFee(view, tx);
+}
+
 TER
 LoanBrokerSet::preclaim(PreclaimContext const& ctx)
 {

@@ -91,7 +91,7 @@ XRPAmount
 VaultCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
     // One reserve increment is typically much greater than one base fee.
-    return view.fees().increment;
+    return calculateOwnerReserveFee(view, tx);
 }
 
 TER

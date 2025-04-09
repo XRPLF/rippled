@@ -72,7 +72,7 @@ class LoanBroker_test : public beast::unit_test::suite
 
             using namespace loanBroker;
             // Can't create a loan broker regardless of whether the vault exists
-            env(set(alice, keylet.key), ter(temDISABLED));
+            env(set(alice, keylet.key), fee(increment), ter(temDISABLED));
         };
         failAll(all - featureMPTokensV1);
         failAll(all - featureSingleAssetVault - featureLendingProtocol);
@@ -153,62 +153,80 @@ class LoanBroker_test : public beast::unit_test::suite
             {
                 auto badKeylet = keylet::vault(alice.id(), env.seq(alice));
                 // Try some failure cases
+                // insufficient fee
+                env(set(evan, vault.vaultID), ter(telINSUF_FEE_P));
                 // not the vault owner
-                env(set(evan, vault.vaultID), ter(tecNO_PERMISSION));
+                env(set(evan, vault.vaultID),
+                    fee(increment),
+                    ter(tecNO_PERMISSION));
                 // not a vault
-                env(set(alice, badKeylet.key), ter(tecNO_ENTRY));
+                env(set(alice, badKeylet.key),
+                    fee(increment),
+                    ter(tecNO_ENTRY));
                 // flags are checked first
                 env(set(evan, vault.vaultID, ~tfUniversal),
+                    fee(increment),
                     ter(temINVALID_FLAG));
                 // field length validation
                 // sfData: good length, bad account
                 env(set(evan, vault.vaultID),
+                    fee(increment),
                     data(std::string(maxDataPayloadLength, 'X')),
                     ter(tecNO_PERMISSION));
                 // sfData: too long
                 env(set(evan, vault.vaultID),
+                    fee(increment),
                     data(std::string(maxDataPayloadLength + 1, 'Y')),
                     ter(temINVALID));
                 // sfManagementFeeRate: good value, bad account
                 env(set(evan, vault.vaultID),
                     managementFeeRate(maxFeeRate),
+                    fee(increment),
                     ter(tecNO_PERMISSION));
                 // sfManagementFeeRate: too big
                 env(set(evan, vault.vaultID),
                     managementFeeRate(maxFeeRate + 1),
+                    fee(increment),
                     ter(temINVALID));
                 // sfCoverRateMinimum: good value, bad account
                 env(set(evan, vault.vaultID),
                     coverRateMinimum(maxCoverRate),
+                    fee(increment),
                     ter(tecNO_PERMISSION));
                 // sfCoverRateMinimum: too big
                 env(set(evan, vault.vaultID),
                     coverRateMinimum(maxCoverRate + 1),
+                    fee(increment),
                     ter(temINVALID));
                 // sfCoverRateLiquidation: good value, bad account
                 env(set(evan, vault.vaultID),
                     coverRateLiquidation(maxCoverRate),
+                    fee(increment),
                     ter(tecNO_PERMISSION));
                 // sfCoverRateLiquidation: too big
                 env(set(evan, vault.vaultID),
                     coverRateLiquidation(maxCoverRate + 1),
+                    fee(increment),
                     ter(temINVALID));
                 // sfDebtMaximum: good value, bad account
                 env(set(evan, vault.vaultID),
                     debtMaximum(Number(0)),
+                    fee(increment),
                     ter(tecNO_PERMISSION));
                 // sfDebtMaximum: overflow
                 env(set(evan, vault.vaultID),
                     debtMaximum(Number(1, 100)),
+                    fee(increment),
                     ter(temINVALID));
                 // sfDebtMaximum: negative
                 env(set(evan, vault.vaultID),
                     debtMaximum(Number(-1)),
+                    fee(increment),
                     ter(temINVALID));
 
                 auto keylet = keylet::loanbroker(alice.id(), env.seq(alice));
                 // Successfully create a Loan Broker with all default values.
-                env(set(alice, vault.vaultID));
+                env(set(alice, vault.vaultID), fee(increment));
                 env.close();
                 if (auto broker = env.le(keylet); BEAST_EXPECT(broker))
                 {
@@ -339,7 +357,8 @@ class LoanBroker_test : public beast::unit_test::suite
                     managementFeeRate(123),
                     debtMaximum(Number(9)),
                     coverRateMinimum(100),
-                    coverRateLiquidation(200));
+                    coverRateLiquidation(200),
+                    fee(increment));
                 env.close();
                 if (auto broker = env.le(keylet2); BEAST_EXPECT(broker))
                 {

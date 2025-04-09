@@ -1319,21 +1319,16 @@ class Invariants_test : public beast::unit_test::suite
                 auto [tx, vKeylet] =
                     vault.create({.owner = a, .asset = xrpAsset});
                 env(tx);
-                env.close();
                 BEAST_EXPECT(env.le(vKeylet));
 
                 vaultID = vKeylet.key;
-
-                env(vault.deposit(
-                    {.depositor = a, .id = vaultID, .amount = xrpAsset(50)}));
-                env.close();
 
                 // Create Loan Broker
                 using namespace loanBroker;
 
                 loanBrokerKeylet = keylet::loanbroker(a.id(), env.seq(a));
                 // Create a Loan Broker with all default values.
-                env(set(a, vaultID));
+                env(set(a, vaultID), fee(increment));
 
                 return BEAST_EXPECT(env.le(loanBrokerKeylet));
             };
