@@ -1074,13 +1074,20 @@ class Vault_test : public beast::unit_test::suite
             env.close();
             Vault vault{env};
 
-            struct Vault
+            struct VaultInfo
             {
                 Keylet keylet;
                 PrettyAsset shares;
                 PrettyAsset assets;
+                VaultInfo(
+                    Keylet const& keylet_,
+                    PrettyAsset const& shares_,
+                    PrettyAsset const& assets_)
+                    : keylet(keylet_), shares(shares_), assets(assets_)
+                {
+                }
             };
-            std::vector<Vault> vaults;
+            std::vector<VaultInfo> vaults;
 
             MPTTester mptt{env, issuer, mptInitNoFund};
             mptt.create(
