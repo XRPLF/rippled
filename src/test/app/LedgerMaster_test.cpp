@@ -33,8 +33,6 @@ class LedgerMaster_test : public beast::unit_test::suite
         using namespace jtx;
         return envconfig([&](std::unique_ptr<Config> cfg) {
             cfg->NETWORK_ID = networkID;
-            // This test relies on ledger hash so must lock it to fee 10.
-            cfg->FEES.reference_fee = 10;
             return cfg;
         });
     }
@@ -47,7 +45,8 @@ class LedgerMaster_test : public beast::unit_test::suite
         using namespace test::jtx;
         using namespace std::literals;
 
-        test::jtx::Env env{*this, makeNetworkConfig(11111)};
+        // This test relies on ledger hash so must lock it to fee 10.
+        test::jtx::Env env{*this, makeNetworkConfig(11111), XRPAmount(10)};
 
         auto const alice = Account("alice");
         env.fund(XRP(1000), alice);

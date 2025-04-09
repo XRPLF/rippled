@@ -116,10 +116,7 @@ class AccountTx_test : public beast::unit_test::suite
         testcase("Parameters APIv" + std::to_string(apiVersion));
         using namespace test::jtx;
 
-        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->FEES.reference_fee = 10;
-            return cfg;
-        }));
+        Env env(*this, XRPAmount(10));
         Account A1{"A1"};
         env.fund(XRP(10000), A1);
         env.close();

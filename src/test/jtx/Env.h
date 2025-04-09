@@ -152,7 +152,8 @@ private:
             beast::unit_test::suite& suite,
             std::unique_ptr<Config> config,
             std::unique_ptr<Logs> logs,
-            beast::severities::Severity thresh);
+            beast::severities::Severity thresh,
+            std::optional<XRPAmount> referenceFee);
         ~AppBundle();
     };
 
@@ -185,9 +186,15 @@ public:
         std::unique_ptr<Config> config,
         FeatureBitset features,
         std::unique_ptr<Logs> logs = nullptr,
-        beast::severities::Severity thresh = beast::severities::kError)
+        std::optional<beast::severities::Severity> thresh = std::nullopt,
+        std::optional<XRPAmount> referenceFee = std::nullopt)
         : test(suite_)
-        , bundle_(suite_, std::move(config), std::move(logs), thresh)
+        , bundle_(
+              suite_,
+              std::move(config),
+              std::move(logs),
+              thresh.value_or(beast::severities::kError),
+              referenceFee)
         , journal{bundle_.app->journal("Env")}
     {
         memoize(Account::master);
@@ -199,8 +206,8 @@ public:
     }
 
     /**
-     * @brief Create Env with default config and specified
-     * features.
+     * @brief Create Env with default config, specified
+     * features, log handler, and reference fee.
      *
      * This constructor will create an Env with the standard Env configuration
      * (from envconfig()) and features explicitly specified. Use
@@ -208,13 +215,46 @@ public:
      * collection of features appropriate for passing here.
      *
      * @param suite_ the current unit_test::suite
-     * @param args collection of features
+     * @param features collection of features
+     * @param logs log handler
+     * @param referenceFee non-default reference fee
      *
      */
     Env(beast::unit_test::suite& suite_,
         FeatureBitset features,
-        std::unique_ptr<Logs> logs = nullptr)
-        : Env(suite_, envconfig(), features, std::move(logs))
+        std::unique_ptr<Logs> logs,
+        std::optional<XRPAmount> referenceFee = std::nullopt)
+        : Env(suite_,
+              envconfig(),
+              features,
+              std::move(logs),
+              std::nullopt,
+              referenceFee)
+    {
+    }
+    /**
+     * @brief Create Env with default config, specified
+     * features, and reference fee.
+     *
+     * This constructor will create an Env with the standard Env configuration
+     * (from envconfig()) and features explicitly specified. Use
+     * with_only_features(...) or supported_features_except(...) to create a
+     * collection of features appropriate for passing here.
+     *
+     * @param suite_ the current unit_test::suite
+     * @param features collection of features
+     * @param referenceFee non-default reference fee
+     *
+     */
+    Env(beast::unit_test::suite& suite_,
+        FeatureBitset features,
+        std::optional<XRPAmount> referenceFee = std::nullopt)
+        : Env(suite_,
+              envconfig(),
+              features,
+              nullptr,
+              std::nullopt,
+              referenceFee)
     {
     }
 
@@ -233,12 +273,39 @@ public:
     Env(beast::unit_test::suite& suite_,
         std::unique_ptr<Config> config,
         std::unique_ptr<Logs> logs = nullptr,
-        beast::severities::Severity thresh = beast::severities::kError)
+        std::optional<beast::severities::Severity> thresh = std::nullopt,
+        std::optional<XRPAmount> referenceFee = std::nullopt)
         : Env(suite_,
               std::move(config),
               testable_amendments(),
               std::move(logs),
-              thresh)
+              thresh,
+              referenceFee)
+    {
+    }
+
+    /**
+     * @brief Create Env using suite, Config pointer, and reference fee.
+     *
+     * This constructor will create an Env with the specified configuration
+     * and takes ownership the passed Config pointer. All supported amendments
+     * are enabled by this version of the constructor.
+     *
+     * @param suite_ the current unit_test::suite
+     * @param config The desired Config - ownership will be taken by moving
+     * the pointer. See envconfig and related functions for common config
+     * tweaks.
+     * @param referenceFee Optional reference fee to use in fee settings.
+     */
+    Env(beast::unit_test::suite& suite_,
+        std::unique_ptr<Config> config,
+        std::optional<XRPAmount> referenceFee)
+        : Env(suite_,
+              std::move(config),
+              supported_amendments(),
+              nullptr,
+              std::nullopt,
+              referenceFee)
     {
     }
 
@@ -251,7 +318,9 @@ public:
      *
      * @param suite_ the current unit_test::suite
      */
-    Env(beast::unit_test::suite& suite_) : Env(suite_, envconfig())
+    Env(beast::unit_test::suite& suite_,
+        std::optional<XRPAmount> referenceFee = std::nullopt)
+        : Env(suite_, envconfig(), referenceFee)
     {
     }
 

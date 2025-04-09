@@ -37,10 +37,7 @@ class TransactionEntry_test : public beast::unit_test::suite
     {
         testcase("Invalid request params");
         using namespace test::jtx;
-        Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->FEES.reference_fee = 10;
-                    return cfg;
-                })};
+        Env env{*this, XRPAmount(10)};
 
         {
             // no params
@@ -155,10 +152,7 @@ class TransactionEntry_test : public beast::unit_test::suite
     {
         testcase("Basic request API version " + std::to_string(apiVersion));
         using namespace test::jtx;
-        Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->FEES.reference_fee = 10;
-                    return cfg;
-                })};
+        Env env{*this, XRPAmount(10)};
 
         auto check_tx = [this, &env, apiVersion](
                             int index,

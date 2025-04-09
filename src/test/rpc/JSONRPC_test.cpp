@@ -2814,10 +2814,7 @@ public:
         // "b" (not in the ledger) is rDg53Haik2475DJx8bjMDSDPj4VX7htaMd.
         // "c" (phantom signer) is rPcNzota6B8YBokhYtcTNqQVCngtbnWfux.
 
-        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->FEES.reference_fee = 10;
-            return cfg;
-        }));
+        Env env(*this, XRPAmount(10));
         env.fund(XRP(100000), a, ed, g);
         env.close();
 
