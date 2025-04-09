@@ -123,8 +123,12 @@ class LoanBroker_test : public beast::unit_test::suite
         // Create vaults
         struct VaultInfo
         {
-            PrettyAsset const& asset;
+            PrettyAsset asset;
             uint256 vaultID;
+            VaultInfo(PrettyAsset const& asset_, uint256 const& vaultID_)
+                : asset(asset_), vaultID(vaultID_)
+            {
+            }
         };
         std::vector<VaultInfo> vaults;
         for (auto const& asset : assets)
