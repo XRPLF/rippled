@@ -38,6 +38,168 @@
 
 namespace ripple {
 
+static std::optional<uint256>
+parseIndex(Json::Value const& params, Json::Value& jvResult)
+{
+    uint256 uNodeIndex;
+    if (!uNodeIndex.parseHex(params.asString()))
+    {
+        jvResult[jss::error] = "malformedRequest";
+        return std::nullopt;
+    }
+
+    return uNodeIndex;
+}
+
+static std::optional<uint256>
+parseAccountRoot(Json::Value const& params, Json::Value& jvResult)
+{
+    auto const account = parseBase58<AccountID>(params.asString());
+    if (!account || account->isZero())
+    {
+        jvResult[jss::error] = "malformedAddress";
+        return std::nullopt;
+    }
+
+    return keylet::account(*account).key;
+}
+
+static std::optional<uint256>
+parseAMM(Json::Value const& params, Json::Value& jvResult)
+{
+    if (!params.isObject())
+    {
+        uint256 uNodeIndex;
+        if (!uNodeIndex.parseHex(params.asString()))
+        {
+            jvResult[jss::error] = "malformedRequest";
+            return std::nullopt;
+        }
+        return uNodeIndex;
+    }
+
+    if (!params.isMember(jss::asset) || !params.isMember(jss::asset2))
+    {
+        jvResult[jss::error] = "malformedRequest";
+        return std::nullopt;
+    }
+
+    try
+    {
+        auto const issue = issueFromJson(params[jss::asset]);
+        auto const issue2 = issueFromJson(params[jss::asset2]);
+        return keylet::amm(issue, issue2).key;
+    }
+    catch (std::runtime_error const&)
+    {
+        jvResult[jss::error] = "malformedRequest";
+        return std::nullopt;
+    }
+}
+
+static std::optional<uint256>
+parseBridge(Json::Value const& params, Json::Value& jvResult)
+{
+    // return the keylet for the specified bridge or nullopt if the
+    // request is malformed
+    auto const maybeKeylet = [&]() -> std::optional<Keylet> {
+        try
+        {
+            if (!params.isMember(jss::bridge_account))
+                return std::nullopt;
+
+            auto const& jsBridgeAccount = params[jss::bridge_account];
+            if (!jsBridgeAccount.isString())
+            {
+                return std::nullopt;
+            }
+
+            auto const account =
+                parseBase58<AccountID>(jsBridgeAccount.asString());
+            if (!account || account->isZero())
+            {
+                return std::nullopt;
+            }
+
+            // This may throw and is the reason for the `try` block. The
+            // try block has a larger scope so the `bridge` variable
+            // doesn't need to be an optional.
+            STXChainBridge const bridge(params[jss::bridge]);
+            STXChainBridge::ChainType const chainType =
+                STXChainBridge::srcChain(account == bridge.lockingChainDoor());
+
+            if (account != bridge.door(chainType))
+                return std::nullopt;
+
+            return keylet::bridge(bridge, chainType);
+        }
+        catch (...)
+        {
+            return std::nullopt;
+        }
+    }();
+
+    if (maybeKeylet)
+    {
+        return maybeKeylet->key;
+    }
+
+    jvResult[jss::error] = "malformedRequest";
+    return std::nullopt;
+}
+
+static std::optional<uint256>
+parseCheck(Json::Value const& params, Json::Value& jvResult)
+{
+    uint256 uNodeIndex;
+    if (!uNodeIndex.parseHex(params.asString()))
+    {
+        jvResult[jss::error] = "malformedRequest";
+        return std::nullopt;
+    }
+
+    return uNodeIndex;
+}
+
+static std::optional<uint256>
+parseCredential(Json::Value const& cred, Json::Value& jvResult)
+{
+    if (cred.isString())
+    {
+        uint256 uNodeIndex;
+        if (!uNodeIndex.parseHex(cred.asString()))
+        {
+            jvResult[jss::error] = "malformedRequest";
+            return std::nullopt;
+        }
+        return uNodeIndex;
+    }
+
+    if ((!cred.isMember(jss::subject) || !cred[jss::subject].isString()) ||
+        (!cred.isMember(jss::issuer) || !cred[jss::issuer].isString()) ||
+        (!cred.isMember(jss::credential_type) ||
+         !cred[jss::credential_type].isString()))
+    {
+        jvResult[jss::error] = "malformedRequest";
+        return std::nullopt;
+    }
+
+    auto const subject = parseBase58<AccountID>(cred[jss::subject].asString());
+    auto const issuer = parseBase58<AccountID>(cred[jss::issuer].asString());
+    auto const credType = strUnHex(cred[jss::credential_type].asString());
+
+    if (!subject || subject->isZero() || !issuer || issuer->isZero() ||
+        !credType || credType->empty())
+    {
+        jvResult[jss::error] = "malformedRequest";
+        return std::nullopt;
+    }
+
+    return keylet::credential(
+               *subject, *issuer, Slice(credType->data(), credType->size()))
+        .key;
+}
+
 static STArray
 parseAuthorizeCredentials(Json::Value const& jv)
 {
@@ -67,45 +229,6 @@ parseAuthorizeCredentials(Json::Value const& jv)
     }
 
     return arr;
-}
-
-static std::optional<uint256>
-parseIndex(Json::Value const& params, Json::Value& jvResult)
-{
-    uint256 uNodeIndex;
-    if (!uNodeIndex.parseHex(params.asString()))
-    {
-        jvResult[jss::error] = "malformedRequest";
-        return std::nullopt;
-    }
-
-    return uNodeIndex;
-}
-
-static std::optional<uint256>
-parseAccountRoot(Json::Value const& params, Json::Value& jvResult)
-{
-    auto const account = parseBase58<AccountID>(params.asString());
-    if (!account || account->isZero())
-    {
-        jvResult[jss::error] = "malformedAddress";
-        return std::nullopt;
-    }
-
-    return keylet::account(*account).key;
-}
-
-static std::optional<uint256>
-parseCheck(Json::Value const& params, Json::Value& jvResult)
-{
-    uint256 uNodeIndex;
-    if (!uNodeIndex.parseHex(params.asString()))
-    {
-        jvResult[jss::error] = "malformedRequest";
-        return std::nullopt;
-    }
-
-    return uNodeIndex;
 }
 
 static std::optional<uint256>
@@ -171,6 +294,19 @@ parseDepositPreauth(Json::Value const& dp, Json::Value& jvResult)
     }
 
     return keylet::depositPreauth(*owner, sorted).key;
+}
+
+static std::optional<uint256>
+parseDID(Json::Value const& params, Json::Value& jvResult)
+{
+    auto const account = parseBase58<AccountID>(params.asString());
+    if (!account || account->isZero())
+    {
+        jvResult[jss::error] = "malformedAddress";
+        return std::nullopt;
+    }
+
+    return keylet::did(*account).key;
 }
 
 static std::optional<uint256>
@@ -273,6 +409,92 @@ parseEscrow(Json::Value const& params, Json::Value& jvResult)
 }
 
 static std::optional<uint256>
+parseMPToken(Json::Value const& mptJson, Json::Value& jvResult)
+{
+    if (!mptJson.isObject())
+    {
+        uint256 uNodeIndex;
+        if (!uNodeIndex.parseHex(mptJson.asString()))
+        {
+            jvResult[jss::error] = "malformedRequest";
+            return std::nullopt;
+        }
+        return uNodeIndex;
+    }
+
+    if (!mptJson.isMember(jss::mpt_issuance_id) ||
+        !mptJson.isMember(jss::account))
+    {
+        jvResult[jss::error] = "malformedRequest";
+        return std::nullopt;
+    }
+
+    try
+    {
+        auto const mptIssuanceIdStr = mptJson[jss::mpt_issuance_id].asString();
+
+        uint192 mptIssuanceID;
+        if (!mptIssuanceID.parseHex(mptIssuanceIdStr))
+            Throw<std::runtime_error>("Cannot parse mpt_issuance_id");
+
+        auto const account =
+            parseBase58<AccountID>(mptJson[jss::account].asString());
+
+        if (!account || account->isZero())
+        {
+            jvResult[jss::error] = "malformedAddress";
+            return std::nullopt;
+        }
+
+        return keylet::mptoken(mptIssuanceID, *account).key;
+    }
+    catch (std::runtime_error const&)
+    {
+        jvResult[jss::error] = "malformedRequest";
+        return std::nullopt;
+    }
+}
+
+static std::optional<uint256>
+parseMPTokenIssuance(
+    Json::Value const& unparsedMPTIssuanceID,
+    Json::Value& jvResult)
+{
+    if (unparsedMPTIssuanceID.isString())
+    {
+        uint192 mptIssuanceID;
+        if (!mptIssuanceID.parseHex(unparsedMPTIssuanceID.asString()))
+        {
+            jvResult[jss::error] = "malformedRequest";
+            return std::nullopt;
+        }
+
+        return keylet::mptIssuance(mptIssuanceID).key;
+    }
+
+    jvResult[jss::error] = "malformedRequest";
+    return std::nullopt;
+}
+
+static std::optional<uint256>
+parseNFTokenPage(Json::Value const& params, Json::Value& jvResult)
+{
+    if (params.isString())
+    {
+        uint256 uNodeIndex;
+        if (!uNodeIndex.parseHex(params.asString()))
+        {
+            jvResult[jss::error] = "malformedRequest";
+            return std::nullopt;
+        }
+        return uNodeIndex;
+    }
+
+    jvResult[jss::error] = "malformedRequest";
+    return std::nullopt;
+}
+
+static std::optional<uint256>
 parseOffer(Json::Value const& params, Json::Value& jvResult)
 {
     if (!params.isObject())
@@ -304,6 +526,60 @@ parseOffer(Json::Value const& params, Json::Value& jvResult)
 }
 
 static std::optional<uint256>
+parseOracle(Json::Value const& params, Json::Value& jvResult)
+{
+    if (!params.isObject())
+    {
+        uint256 uNodeIndex;
+        if (!uNodeIndex.parseHex(params.asString()))
+        {
+            jvResult[jss::error] = "malformedRequest";
+            return std::nullopt;
+        }
+        return uNodeIndex;
+    }
+
+    if (!params.isMember(jss::oracle_document_id) ||
+        !params.isMember(jss::account))
+    {
+        jvResult[jss::error] = "malformedRequest";
+        return std::nullopt;
+    }
+
+    auto const& oracle = params;
+    auto const documentID = [&]() -> std::optional<std::uint32_t> {
+        auto const id = oracle[jss::oracle_document_id];
+        if (id.isUInt() || (id.isInt() && id.asInt() >= 0))
+            return std::make_optional(id.asUInt());
+
+        if (id.isString())
+        {
+            std::uint32_t v;
+            if (beast::lexicalCastChecked(v, id.asString()))
+                return std::make_optional(v);
+        }
+
+        return std::nullopt;
+    }();
+
+    auto const account =
+        parseBase58<AccountID>(oracle[jss::account].asString());
+    if (!account || account->isZero())
+    {
+        jvResult[jss::error] = "malformedAddress";
+        return std::nullopt;
+    }
+
+    if (!documentID)
+    {
+        jvResult[jss::error] = "malformedDocumentID";
+        return std::nullopt;
+    }
+
+    return keylet::oracle(*account, *documentID).key;
+}
+
+static std::optional<uint256>
 parsePaymentChannel(Json::Value const& params, Json::Value& jvResult)
 {
     uint256 uNodeIndex;
@@ -314,6 +590,51 @@ parsePaymentChannel(Json::Value const& params, Json::Value& jvResult)
     }
 
     return uNodeIndex;
+}
+
+static std::optional<uint256>
+parsePermissionedDomains(Json::Value const& pd, Json::Value& jvResult)
+{
+    if (pd.isString())
+    {
+        auto const index = parseIndex(pd, jvResult);
+        return index;
+    }
+
+    if (!pd.isObject())
+    {
+        jvResult[jss::error] = "malformedRequest";
+        return std::nullopt;
+    }
+
+    if (!pd.isMember(jss::account))
+    {
+        jvResult[jss::error] = "malformedRequest";
+        return std::nullopt;
+    }
+
+    if (!pd[jss::account].isString())
+    {
+        jvResult[jss::error] = "malformedAddress";
+        return std::nullopt;
+    }
+
+    if (!pd.isMember(jss::seq) ||
+        (pd[jss::seq].isInt() && pd[jss::seq].asInt() < 0) ||
+        (!pd[jss::seq].isInt() && !pd[jss::seq].isUInt()))
+    {
+        jvResult[jss::error] = "malformedRequest";
+        return std::nullopt;
+    }
+
+    auto const account = parseBase58<AccountID>(pd[jss::account].asString());
+    if (!account)
+    {
+        jvResult[jss::error] = "malformedAddress";
+        return std::nullopt;
+    }
+
+    return keylet::permissionedDomain(*account, pd[jss::seq].asUInt()).key;
 }
 
 static std::optional<uint256>
@@ -385,25 +706,7 @@ parseTicket(Json::Value const& params, Json::Value& jvResult)
 }
 
 static std::optional<uint256>
-parseNFTokenPage(Json::Value const& params, Json::Value& jvResult)
-{
-    if (params.isString())
-    {
-        uint256 uNodeIndex;
-        if (!uNodeIndex.parseHex(params.asString()))
-        {
-            jvResult[jss::error] = "malformedRequest";
-            return std::nullopt;
-        }
-        return uNodeIndex;
-    }
-
-    jvResult[jss::error] = "malformedRequest";
-    return std::nullopt;
-}
-
-static std::optional<uint256>
-parseAMM(Json::Value const& params, Json::Value& jvResult)
+parseVault(Json::Value const& params, Json::Value& jvResult)
 {
     if (!params.isObject())
     {
@@ -416,74 +719,21 @@ parseAMM(Json::Value const& params, Json::Value& jvResult)
         return uNodeIndex;
     }
 
-    if (!params.isMember(jss::asset) || !params.isMember(jss::asset2))
+    if (!params.isMember(jss::owner) || !params.isMember(jss::seq) ||
+        !params[jss::seq].isIntegral())
     {
         jvResult[jss::error] = "malformedRequest";
         return std::nullopt;
     }
 
-    try
+    auto const id = parseBase58<AccountID>(params[jss::owner].asString());
+    if (!id)
     {
-        auto const issue = issueFromJson(params[jss::asset]);
-        auto const issue2 = issueFromJson(params[jss::asset2]);
-        return keylet::amm(issue, issue2).key;
-    }
-    catch (std::runtime_error const&)
-    {
-        jvResult[jss::error] = "malformedRequest";
+        jvResult[jss::error] = "malformedOwner";
         return std::nullopt;
     }
-}
 
-static std::optional<uint256>
-parseBridge(Json::Value const& params, Json::Value& jvResult)
-{
-    // return the keylet for the specified bridge or nullopt if the
-    // request is malformed
-    auto const maybeKeylet = [&]() -> std::optional<Keylet> {
-        try
-        {
-            if (!params.isMember(jss::bridge_account))
-                return std::nullopt;
-
-            auto const& jsBridgeAccount = params[jss::bridge_account];
-            if (!jsBridgeAccount.isString())
-            {
-                return std::nullopt;
-            }
-
-            auto const account =
-                parseBase58<AccountID>(jsBridgeAccount.asString());
-            if (!account || account->isZero())
-            {
-                return std::nullopt;
-            }
-
-            // This may throw and is the reason for the `try` block. The
-            // try block has a larger scope so the `bridge` variable
-            // doesn't need to be an optional.
-            STXChainBridge const bridge(params[jss::bridge]);
-            STXChainBridge::ChainType const chainType =
-                STXChainBridge::srcChain(account == bridge.lockingChainDoor());
-
-            if (account != bridge.door(chainType))
-                return std::nullopt;
-
-            return keylet::bridge(bridge, chainType);
-        }
-        catch (...)
-        {
-            return std::nullopt;
-        }
-    }();
-
-    if (maybeKeylet)
-    {
-        return maybeKeylet->key;
-    }
-
-    jvResult[jss::error] = "malformedRequest";
-    return std::nullopt;
+    return keylet::vault(*id, params[jss::seq].asUInt()).key;
 }
 
 static std::optional<uint256>
@@ -632,256 +882,6 @@ parseXChainOwnedCreateAccountClaimID(
     }
 
     return std::nullopt;
-}
-
-static std::optional<uint256>
-parseDID(Json::Value const& params, Json::Value& jvResult)
-{
-    auto const account = parseBase58<AccountID>(params.asString());
-    if (!account || account->isZero())
-    {
-        jvResult[jss::error] = "malformedAddress";
-        return std::nullopt;
-    }
-
-    return keylet::did(*account).key;
-}
-
-static std::optional<uint256>
-parseOracle(Json::Value const& params, Json::Value& jvResult)
-{
-    if (!params.isObject())
-    {
-        uint256 uNodeIndex;
-        if (!uNodeIndex.parseHex(params.asString()))
-        {
-            jvResult[jss::error] = "malformedRequest";
-            return std::nullopt;
-        }
-        return uNodeIndex;
-    }
-
-    if (!params.isMember(jss::oracle_document_id) ||
-        !params.isMember(jss::account))
-    {
-        jvResult[jss::error] = "malformedRequest";
-        return std::nullopt;
-    }
-
-    auto const& oracle = params;
-    auto const documentID = [&]() -> std::optional<std::uint32_t> {
-        auto const id = oracle[jss::oracle_document_id];
-        if (id.isUInt() || (id.isInt() && id.asInt() >= 0))
-            return std::make_optional(id.asUInt());
-
-        if (id.isString())
-        {
-            std::uint32_t v;
-            if (beast::lexicalCastChecked(v, id.asString()))
-                return std::make_optional(v);
-        }
-
-        return std::nullopt;
-    }();
-
-    auto const account =
-        parseBase58<AccountID>(oracle[jss::account].asString());
-    if (!account || account->isZero())
-    {
-        jvResult[jss::error] = "malformedAddress";
-        return std::nullopt;
-    }
-
-    if (!documentID)
-    {
-        jvResult[jss::error] = "malformedDocumentID";
-        return std::nullopt;
-    }
-
-    return keylet::oracle(*account, *documentID).key;
-}
-
-static std::optional<uint256>
-parseCredential(Json::Value const& cred, Json::Value& jvResult)
-{
-    if (cred.isString())
-    {
-        uint256 uNodeIndex;
-        if (!uNodeIndex.parseHex(cred.asString()))
-        {
-            jvResult[jss::error] = "malformedRequest";
-            return std::nullopt;
-        }
-        return uNodeIndex;
-    }
-
-    if ((!cred.isMember(jss::subject) || !cred[jss::subject].isString()) ||
-        (!cred.isMember(jss::issuer) || !cred[jss::issuer].isString()) ||
-        (!cred.isMember(jss::credential_type) ||
-         !cred[jss::credential_type].isString()))
-    {
-        jvResult[jss::error] = "malformedRequest";
-        return std::nullopt;
-    }
-
-    auto const subject = parseBase58<AccountID>(cred[jss::subject].asString());
-    auto const issuer = parseBase58<AccountID>(cred[jss::issuer].asString());
-    auto const credType = strUnHex(cred[jss::credential_type].asString());
-
-    if (!subject || subject->isZero() || !issuer || issuer->isZero() ||
-        !credType || credType->empty())
-    {
-        jvResult[jss::error] = "malformedRequest";
-        return std::nullopt;
-    }
-
-    return keylet::credential(
-               *subject, *issuer, Slice(credType->data(), credType->size()))
-        .key;
-}
-
-static std::optional<uint256>
-parseMPTokenIssuance(
-    Json::Value const& unparsedMPTIssuanceID,
-    Json::Value& jvResult)
-{
-    if (unparsedMPTIssuanceID.isString())
-    {
-        uint192 mptIssuanceID;
-        if (!mptIssuanceID.parseHex(unparsedMPTIssuanceID.asString()))
-        {
-            jvResult[jss::error] = "malformedRequest";
-            return std::nullopt;
-        }
-
-        return keylet::mptIssuance(mptIssuanceID).key;
-    }
-
-    jvResult[jss::error] = "malformedRequest";
-    return std::nullopt;
-}
-
-static std::optional<uint256>
-parseMPToken(Json::Value const& mptJson, Json::Value& jvResult)
-{
-    if (!mptJson.isObject())
-    {
-        uint256 uNodeIndex;
-        if (!uNodeIndex.parseHex(mptJson.asString()))
-        {
-            jvResult[jss::error] = "malformedRequest";
-            return std::nullopt;
-        }
-        return uNodeIndex;
-    }
-
-    if (!mptJson.isMember(jss::mpt_issuance_id) ||
-        !mptJson.isMember(jss::account))
-    {
-        jvResult[jss::error] = "malformedRequest";
-        return std::nullopt;
-    }
-
-    try
-    {
-        auto const mptIssuanceIdStr = mptJson[jss::mpt_issuance_id].asString();
-
-        uint192 mptIssuanceID;
-        if (!mptIssuanceID.parseHex(mptIssuanceIdStr))
-            Throw<std::runtime_error>("Cannot parse mpt_issuance_id");
-
-        auto const account =
-            parseBase58<AccountID>(mptJson[jss::account].asString());
-
-        if (!account || account->isZero())
-        {
-            jvResult[jss::error] = "malformedAddress";
-            return std::nullopt;
-        }
-
-        return keylet::mptoken(mptIssuanceID, *account).key;
-    }
-    catch (std::runtime_error const&)
-    {
-        jvResult[jss::error] = "malformedRequest";
-        return std::nullopt;
-    }
-}
-
-static std::optional<uint256>
-parsePermissionedDomains(Json::Value const& pd, Json::Value& jvResult)
-{
-    if (pd.isString())
-    {
-        auto const index = parseIndex(pd, jvResult);
-        return index;
-    }
-
-    if (!pd.isObject())
-    {
-        jvResult[jss::error] = "malformedRequest";
-        return std::nullopt;
-    }
-
-    if (!pd.isMember(jss::account))
-    {
-        jvResult[jss::error] = "malformedRequest";
-        return std::nullopt;
-    }
-
-    if (!pd[jss::account].isString())
-    {
-        jvResult[jss::error] = "malformedAddress";
-        return std::nullopt;
-    }
-
-    if (!pd.isMember(jss::seq) ||
-        (pd[jss::seq].isInt() && pd[jss::seq].asInt() < 0) ||
-        (!pd[jss::seq].isInt() && !pd[jss::seq].isUInt()))
-    {
-        jvResult[jss::error] = "malformedRequest";
-        return std::nullopt;
-    }
-
-    auto const account = parseBase58<AccountID>(pd[jss::account].asString());
-    if (!account)
-    {
-        jvResult[jss::error] = "malformedAddress";
-        return std::nullopt;
-    }
-
-    return keylet::permissionedDomain(*account, pd[jss::seq].asUInt()).key;
-}
-
-static std::optional<uint256>
-parseVault(Json::Value const& params, Json::Value& jvResult)
-{
-    if (!params.isObject())
-    {
-        uint256 uNodeIndex;
-        if (!uNodeIndex.parseHex(params.asString()))
-        {
-            jvResult[jss::error] = "malformedRequest";
-            return std::nullopt;
-        }
-        return uNodeIndex;
-    }
-
-    if (!params.isMember(jss::owner) || !params.isMember(jss::seq) ||
-        !params[jss::seq].isIntegral())
-    {
-        jvResult[jss::error] = "malformedRequest";
-        return std::nullopt;
-    }
-
-    auto const id = parseBase58<AccountID>(params[jss::owner].asString());
-    if (!id)
-    {
-        jvResult[jss::error] = "malformedOwner";
-        return std::nullopt;
-    }
-
-    return keylet::vault(*id, params[jss::seq].asUInt()).key;
 }
 
 using FunctionType =
