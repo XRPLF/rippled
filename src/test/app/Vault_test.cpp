@@ -1397,14 +1397,15 @@ class Vault_test : public beast::unit_test::suite
         env.fund(XRP(1000), issuer, owner, charlie);
         env.close();
 
-        PrettyAsset asset = issuer["IOU"];
+        PrettyAsset const asset = issuer["IOU"];
         env.trust(asset(1000), owner);
         env(pay(issuer, owner, asset(200)));
         env(rate(issuer, 1.25));
         env.close();
         auto const issue = asset.raw().get<Issue>();
 
-        auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+        auto const [tx, keylet] =
+            vault.create({.owner = owner, .asset = asset});
         env(tx);
         env.close();
 
@@ -1468,6 +1469,7 @@ class Vault_test : public beast::unit_test::suite
         {
             testcase("IOU froze trust line, cannot withdraw to 3rd party");
             env(trust(issuer, asset(0), owner, tfSetFreeze));
+            env.close();
 
             auto tx = vault.withdraw(
                 {.depositor = owner, .id = keylet.key, .amount = asset(10)});
@@ -1475,13 +1477,13 @@ class Vault_test : public beast::unit_test::suite
 
             tx[sfDestination] = charlie.human();
             env(tx, ter{tecLOCKED});  // owner transitively locked via MPToken
-            env.close();
 
             auto tx1 = test::jtx::pay(owner, charlie, STAmount{share, 10});
             env(tx1, ter{tecLOCKED});
 
             auto tx2 = test::jtx::pay(charlie, owner, STAmount{share, 10});
             env(tx2, ter{tecLOCKED});
+            env.close();
 
             BEAST_EXPECT(env.balance(charlie, issue) == asset(20));
         }
@@ -1495,6 +1497,7 @@ class Vault_test : public beast::unit_test::suite
 
             tx[sfDestination] = issuer.human();
             env(tx, ter{tecFROZEN});
+            env.close();
         }
     }
 
