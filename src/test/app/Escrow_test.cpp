@@ -1864,10 +1864,30 @@ struct Escrow_test : public beast::unit_test::suite
             env.close();
         }
 
+        {
+            // ComputationAllowance > max compute limit
+            Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+                cfg->FEES.extension_compute_limit = 1'000;  // in gas
+                return cfg;
+            }));
+            env.fund(XRP(5000), alice, carol);
+            // Run past the flag ledger so that a Fee change vote occurs and
+            // updates FeeSettings. (It also activates all supported
+            // amendments.)
+            for (auto i = env.current()->seq(); i <= 257; ++i)
+                env.close();
+
+            auto const allowance = 1'001;
+            env(finish(carol, alice, 1),
+                fee(env.current()->fees().base + allowance),
+                comp_allowance(allowance),
+                ter(temBAD_LIMIT));
+        }
+
         Env env(*this);
 
         // Run past the flag ledger so that a Fee change vote occurs and
-        // lowers the reserve fee. (It also activates all supported
+        // updates FeeSettings. (It also activates all supported
         // amendments.)
         for (auto i = env.current()->seq(); i <= 257; ++i)
             env.close();
@@ -1882,6 +1902,11 @@ struct Escrow_test : public beast::unit_test::suite
             cancel_time(env.now() + 100s),
             fee(txnFees));
         env.close();
+
+        {
+            // no ComputationAllowance field
+            env(finish(carol, alice, seq), ter(tefWASM_FIELD_NOT_INCLUDED));
+        }
 
         {
             // not enough fees
@@ -1903,6 +1928,22 @@ struct Escrow_test : public beast::unit_test::suite
                 fee(finishFee),
                 comp_allowance(108),
                 ter(tecFAILED_PROCESSING));
+        }
+
+        {
+            // ComputationAllowance field included w/no FinishFunction on
+            // escrow
+            auto const seq2 = env.seq(alice);
+            env(escrow(alice, carol, XRP(500)),
+                finish_time(env.now() + 10s),
+                cancel_time(env.now() + 100s));
+            env.close();
+
+            auto const allowance = 100;
+            env(finish(carol, alice, seq2),
+                fee(env.current()->fees().base + allowance),
+                comp_allowance(allowance),
+                ter(tefNO_WASM));
         }
     }
 
