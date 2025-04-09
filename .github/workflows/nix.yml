@@ -161,7 +161,7 @@ jobs:
           cmake-args: "-Dassert=TRUE -Dwerr=TRUE ${{ matrix.cmake-args }}"
       - name: test
         run: |
-          cd ${BUILD_DIR}
+          cd ${build_dir}
           ./rippled --unittest --unittest-jobs $(nproc)
           ctest -j $(nproc)
 
@@ -217,7 +217,7 @@ jobs:
           cmake-args: "-Dassert=TRUE -Dwerr=TRUE ${{ matrix.cmake-args }}"
       - name: test
         run: |
-          cd ${BUILD_DIR}
+          cd ${build_dir}
           ./rippled --unittest --unittest-jobs $(nproc)
           ctest -j $(nproc)
   coverage:

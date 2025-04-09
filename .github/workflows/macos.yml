@@ -92,6 +92,6 @@ jobs:
           n=$(nproc)
           echo "Using $n test jobs"
 
-          cd ${BUILD_DIR}
+          cd ${build_dir}
           ./rippled --unittest --unittest-jobs $n
           ctest -j $n
