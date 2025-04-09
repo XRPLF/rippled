@@ -95,3 +95,4 @@ jobs:
         run: |
           ${build_dir}/${{ matrix.configuration.type }}/rippled --unittest \
               --unittest-jobs $(nproc)
+          ctest -j $(nproc)
