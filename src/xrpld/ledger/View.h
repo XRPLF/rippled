@@ -822,6 +822,15 @@ sharesToAssetsWithdraw(
     std::shared_ptr<SLE const> const& issuance,
     STAmount const& shares);
 
+/** Has the specified time passed?
+
+    @param now  the current time
+    @param mark the cutoff point
+    @return true if \a now refers to a time strictly after \a mark, else false.
+*/
+bool
+after(NetClock::time_point now, std::uint32_t mark);
+
 }  // namespace ripple
 
 #endif
