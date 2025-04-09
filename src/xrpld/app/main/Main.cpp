@@ -242,6 +242,7 @@ static int
 runUnitTests(
     std::string const& pattern,
     std::string const& argument,
+    std::optional<std::int64_t> referenceFee,
     bool quiet,
     bool log,
     bool child,
@@ -261,6 +262,8 @@ runUnitTests(
 
         multi_runner_child child_runner{num_jobs, quiet, log};
         child_runner.arg(argument);
+        if (referenceFee)
+            child_runner.referenceFee(*referenceFee);
         multi_selector const pred(pattern);
         auto const any_failed = child_runner.run_multi(pred) || anyMissing(child_runner, pred);
 
@@ -318,6 +321,8 @@ runUnitTests(
     // child
     multi_runner_child runner{num_jobs, quiet, log};
     runner.arg(argument);
+    if (referenceFee)
+        runner.referenceFee(*referenceFee);
     auto const anyFailed = runner.run_multi(multi_selector(pattern));
 
     if (anyFailed)
@@ -408,6 +413,10 @@ run(int argc, char** argv)
         "argument is handled individually by any suite that accesses it -- "
         "as such, it typically only make sense to provide this when running "
         "a single suite.")(
+        "unittest-fee",
+        po::value<std::int64_t>(),
+        "Supplies a reference fee (in drops) to unit tests. If provided, this "
+        "value is used in every suite that does not override it.")(
         "unittest-ipv6", "Use IPv6 localhost when running unittests (default is IPv4).")(
         "unittest-log",
         "Force unit test log message output. Only useful in combination with "
@@ -503,9 +512,12 @@ run(int argc, char** argv)
     if (vm.contains("unittest"))
     {
         std::string argument;
+        std::optional<std::int64_t> referenceFee;
 
         if (vm.contains("unittest-arg"))
             argument = vm["unittest-arg"].as<std::string>();
+        if (vm.count("unittest-fee"))
+            referenceFee = vm["unittest-fee"].as<std::int64_t>();
 
         std::size_t numJobs = 1;
         bool unittestChild = false;
@@ -516,6 +528,7 @@ run(int argc, char** argv)
         return runUnitTests(
             vm["unittest"].as<std::string>(),
             argument,
+            referenceFee,
             vm.contains("quiet"),
             vm.contains("unittest-log"),
             unittestChild,
@@ -526,13 +539,12 @@ run(int argc, char** argv)
     }
     // LCOV_EXCL_START
 
-    if (vm.contains("unittest-jobs"))
+    if (vm.count("unittest-jobs") || vm.count("unittest-arg") || vm.count("unittest-fee") ||
+        vm.count("unittest-log") || vm.count("unittest-ipv6"))
     {
         // unittest jobs only makes sense with `unittest`
-        std::cerr << "xrpld: '--unittest-jobs' specified without "
-                     "'--unittest'.\n";
-        std::cerr << "To run the unit tests the '--unittest' option must "
-                     "be present.\n";
+        std::cerr << "xrpld: unittest-related parameter specified without '--unittest'.\n";
+        std::cerr << "To run the unit tests the '--unittest' option must be present.\n";
         return 1;
     }
 

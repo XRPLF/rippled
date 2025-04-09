@@ -40,7 +40,8 @@ Env::AppBundle::AppBundle(
     beast::unit_test::suite& suite,
     std::unique_ptr<Config> config,
     std::unique_ptr<Logs> logs,
-    beast::severities::Severity thresh)
+    beast::severities::Severity thresh,
+    std::optional<XRPAmount> referenceFee)
     : AppBundle()
 {
     using namespace beast::severities;
@@ -56,6 +57,14 @@ Env::AppBundle::AppBundle(
     }
     auto timeKeeper_ = std::make_unique<ManualTimeKeeper>();
     timeKeeper = timeKeeper_.get();
+    if (referenceFee)
+    {
+        config->FEES.reference_fee = *referenceFee;
+    }
+    else if (auto const fee = suite.referenceFee())
+    {
+        config->FEES.reference_fee = *fee;
+    }
     // Hack so we don't have to call Config::setup
     HTTPClient::initializeSSLContext(
         config->SSL_VERIFY_DIR, config->SSL_VERIFY_FILE, config->SSL_VERIFY, debugLog());

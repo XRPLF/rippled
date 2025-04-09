@@ -28,8 +28,8 @@ class PerfLog_test : public beast::unit_test::suite
 
     // We're only using Env for its Journal.  That Journal gives better
     // coverage in unit tests.
-    test::jtx::Env env_{*this, test::jtx::envconfig(), nullptr, beast::severities::kDisabled};
-    beast::Journal j_{env_.app().getJournal("PerfLog_test")};
+    std::optional<test::jtx::Env> env_;
+    std::optional<beast::Journal> j_;
 
     struct Fixture
     {
@@ -175,7 +175,7 @@ public:
 
         {
             // Verify a PerfLog creates its file when constructed.
-            Fixture fixture{env_.app(), j_};
+            Fixture fixture{env_->app(), *j_};
             BEAST_EXPECT(!exists(fixture.logFile()));
 
             auto perfLog{fixture.perfLog(WithFile::yes)};
@@ -187,7 +187,7 @@ public:
             // Create a file where PerfLog wants to put its directory.
             // Make sure that PerfLog tries to shutdown the server since it
             // can't open its file.
-            Fixture fixture{env_.app(), j_};
+            Fixture fixture{env_->app(), *j_};
             if (!BEAST_EXPECT(!exists(fixture.logDir())))
                 return;
 
@@ -220,7 +220,7 @@ public:
             // Put a write protected file where PerfLog wants to write its
             // file.  Make sure that PerfLog tries to shutdown the server
             // since it can't open its file.
-            Fixture fixture{env_.app(), j_};
+            Fixture fixture{env_->app(), *j_};
             if (!BEAST_EXPECT(!exists(fixture.logDir())))
                 return;
 
@@ -276,7 +276,7 @@ public:
     {
         // Exercise the rpc interfaces of PerfLog.
         // Start up the PerfLog that we'll use for testing.
-        Fixture fixture{env_.app(), j_};
+        Fixture fixture{env_->app(), *j_};
         auto perfLog{fixture.perfLog(withFile)};
         perfLog->start();
 
@@ -472,7 +472,7 @@ public:
 
         // Exercise the jobs interfaces of PerfLog.
         // Start up the PerfLog that we'll use for testing.
-        Fixture fixture{env_.app(), j_};
+        Fixture fixture{env_->app(), *j_};
         auto perfLog{fixture.perfLog(withFile)};
         perfLog->start();
 
@@ -795,7 +795,7 @@ public:
         // the PerLog behaves as well as possible if an invalid ID is passed.
 
         // Start up the PerfLog that we'll use for testing.
-        Fixture fixture{env_.app(), j_};
+        Fixture fixture{env_->app(), *j_};
         auto perfLog{fixture.perfLog(withFile)};
         perfLog->start();
 
@@ -934,7 +934,7 @@ public:
         // the interface and see that it doesn't crash.
         using namespace boost::filesystem;
 
-        Fixture fixture{env_.app(), j_};
+        Fixture fixture{env_->app(), *j_};
         BEAST_EXPECT(!exists(fixture.logDir()));
 
         auto perfLog{fixture.perfLog(withFile)};
@@ -985,6 +985,9 @@ public:
     void
     run() override
     {
+        env_.emplace(*this, test::jtx::envconfig(), nullptr, beast::severities::kDisabled);
+        j_.emplace(env_->app().getJournal("PerfLog_test"));
+
         testFileCreation();
         testRPC(WithFile::no);
         testRPC(WithFile::yes);
