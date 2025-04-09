@@ -786,10 +786,7 @@ class Transaction_test : public beast::unit_test::suite
         using namespace test::jtx;
         using std::to_string;
 
-        Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->FEES.reference_fee = 10;
-                    return cfg;
-                })};
+        Env env{*this, XRPAmount(10)};
         Account const alice{"alice"};
         Account const alie{"alie"};
         Account const gw{"gw"};
@@ -871,10 +868,7 @@ class Transaction_test : public beast::unit_test::suite
         using namespace test::jtx;
         using std::to_string;
 
-        Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
-                    cfg->FEES.reference_fee = 10;
-                    return cfg;
-                })};
+        Env env{*this, XRPAmount(10)};
         Account const alice{"alice"};
         Account const gw{"gw"};
         auto const USD{gw["USD"]};
