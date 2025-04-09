@@ -32,6 +32,11 @@ jobs:
       build_dir: .build
       NUM_PROCESSORS: 12
     steps:
+      - name: print system info
+        run: |
+          system_profiler SPHardwareDataType
+          sysctl -n hw.logicalcpu
+          clang --version
       - name: checkout
         uses: actions/checkout@v4
       - name: install Conan
