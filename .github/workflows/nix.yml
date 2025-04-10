@@ -175,9 +175,9 @@ jobs:
           - gcc
         configuration:
           - Debug
-        cmake-args:
-          - "-DUNIT_TEST_REFERENCE_FEE=200"
-          - "-DUNIT_TEST_REFERENCE_FEE=1000"
+        reference-fee:
+          - 200
+          - 1000
     needs: dependencies
     runs-on: [self-hosted, heavy]
     container: ghcr.io/xrplf/rippled-build-ubuntu:aaf5e3e
@@ -217,7 +217,8 @@ jobs:
           cmake-args: "-Dassert=TRUE -Dwerr=TRUE ${{ matrix.cmake-args }}"
       - name: test
         run: |
-          ${build_dir}/rippled --unittest --unittest-jobs $(nproc)
+          ${build_dir}/rippled --unittest --unittest-jobs $(nproc) \
+            --unittest-fee=${{ matrix.reference-fee }}
 
   coverage:
     strategy:
