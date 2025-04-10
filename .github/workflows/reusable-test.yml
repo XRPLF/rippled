@@ -11,6 +11,11 @@ on:
         description: "Whether to run unit tests"
         required: true
         type: boolean
+      unittest_args:
+        description: 'Additional arguments to pass to rippled when running tests'
+        required: false
+        type: string
+        default: ""
 
       runs_on:
         description: Runner to run the job on as a JSON string
@@ -65,5 +70,6 @@ jobs:
         if: ${{ inputs.run_tests }}
         shell: bash
         run: |
-          ./rippled --unittest --unittest-jobs $(nproc)
+          ./rippled --unittest --unittest-jobs $(nproc) \
+            ${{ inputs.unittest_args }}
           ctest -j $(nproc) --output-on-failure

@@ -50,6 +50,7 @@ jobs:
       build_only: ${{ matrix.build_only }}
       build_type: ${{ matrix.build_type }}
       cmake_args: ${{ matrix.cmake_args }}
+      unittest_args: ${{ matrix.unittest_args }}
       cmake_target: ${{ matrix.cmake_target }}
       runs_on: ${{ toJSON(matrix.architecture.runner) }}
       image: ${{ contains(matrix.architecture.platform, 'linux') && format('ghcr.io/xrplf/ci/{0}-{1}:{2}-{3}-sha-5dd7158', matrix.os.distro_name, matrix.os.distro_version, matrix.os.compiler_name, matrix.os.compiler_version) || '' }}
