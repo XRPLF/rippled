@@ -190,9 +190,9 @@ jobs:
           - gcc
         configuration:
           - Debug
-        cmake-args:
-          - "-DUNIT_TEST_REFERENCE_FEE=200"
-          - "-DUNIT_TEST_REFERENCE_FEE=1000"
+        reference-fee:
+          - 200
+          - 1000
     needs: dependencies
     runs-on: [self-hosted, heavy]
     container: ghcr.io/xrplf/ci/ubuntu-jammy:gcc-12
@@ -228,7 +228,8 @@ jobs:
       - name: test
         run: |
           cd ${build_dir}
-          ./rippled --unittest --unittest-jobs $(nproc)
+          ./rippled --unittest --unittest-jobs $(nproc) \
+            --unittest-fee=${{ matrix.reference-fee }}
           ctest -j $(nproc) --output-on-failure
 
   coverage:
