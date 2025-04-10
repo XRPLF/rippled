@@ -695,6 +695,7 @@ class Batch_test : public beast::unit_test::suite
                 ter(tefBAD_SIGNATURE));
             env.close();
         }
+
         // tefBAD_SIGNATURE: Wrong publicKey type
         {
             auto const seq = env.seq(alice);
@@ -706,6 +707,7 @@ class Batch_test : public beast::unit_test::suite
                 ter(tefBAD_SIGNATURE));
             env.close();
         }
+
         // tefMASTER_DISABLED: Master key disabled
         {
             env(regkey(elsa, frank));
@@ -719,6 +721,7 @@ class Batch_test : public beast::unit_test::suite
                 ter(tefMASTER_DISABLED));
             env.close();
         }
+
         // tefBAD_SIGNATURE: Signer does not exist
         {
             auto const seq = env.seq(alice);
@@ -730,6 +733,7 @@ class Batch_test : public beast::unit_test::suite
                 ter(tefBAD_SIGNATURE));
             env.close();
         }
+
         // tefBAD_SIGNATURE: Signer has not enabled RegularKey
         {
             auto const seq = env.seq(alice);
@@ -742,6 +746,7 @@ class Batch_test : public beast::unit_test::suite
                 ter(tefBAD_SIGNATURE));
             env.close();
         }
+
         // tefBAD_SIGNATURE: Wrong RegularKey Set
         {
             env(regkey(dave, frank));
@@ -755,6 +760,7 @@ class Batch_test : public beast::unit_test::suite
                 ter(tefBAD_SIGNATURE));
             env.close();
         }
+
         // tefBAD_QUORUM
         {
             auto const seq = env.seq(alice);
@@ -767,6 +773,7 @@ class Batch_test : public beast::unit_test::suite
                 ter(tefBAD_QUORUM));
             env.close();
         }
+
         // tesSUCCESS: BatchSigners.Signers
         {
             auto const seq = env.seq(alice);
@@ -779,6 +786,7 @@ class Batch_test : public beast::unit_test::suite
                 ter(tesSUCCESS));
             env.close();
         }
+
         // tesSUCCESS: Multisign + BatchSigners.Signers
         {
             auto const seq = env.seq(alice);
@@ -796,17 +804,20 @@ class Batch_test : public beast::unit_test::suite
         //----------------------------------------------------------------------
         // checkBatchSign.checkSingleSign
 
-        // tefBAD_AUTH: Wrong PublicKey Type
+
+        // tefBAD_AUTH: Inner Account is not signer
         {
+            auto const ledSeq = env.current()->seq();
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
-                batch::inner(pay(alice, bob, XRP(1)), seq + 1),
-                batch::inner(pay(bob, alice, XRP(2)), env.seq(bob)),
-                batch::sig(Reg{bob, Account("bob", KeyType::ed25519)}),
+                batch::inner(pay(alice, phantom, XRP(1000)), seq + 1),
+                batch::inner(noop(phantom), ledSeq),
+                batch::sig(Reg{phantom, carol}),
                 ter(tefBAD_AUTH));
             env.close();
         }
+
         // tefBAD_AUTH: Account is not signer
         {
             auto const ledSeq = env.current()->seq();
@@ -819,6 +830,7 @@ class Batch_test : public beast::unit_test::suite
                 ter(tefBAD_AUTH));
             env.close();
         }
+
         // tesSUCCESS: Signed With Regular Key
         {
             env(regkey(bob, carol));
@@ -831,6 +843,7 @@ class Batch_test : public beast::unit_test::suite
                 ter(tesSUCCESS));
             env.close();
         }
+
         // tesSUCCESS: Signed With Master Key
         {
             auto const seq = env.seq(alice);
@@ -842,6 +855,7 @@ class Batch_test : public beast::unit_test::suite
                 ter(tesSUCCESS));
             env.close();
         }
+
         // tefMASTER_DISABLED: Signed With Master Key Disabled
         {
             env(regkey(bob, carol));
