@@ -2061,14 +2061,16 @@ public:
     }
 
     void
-    testAutoFillFailsLocalCheck()
+    testAutoFillFails()
     {
-        testcase("autofill fails local check");
+        testcase("autofill fails");
         using namespace test::jtx;
-        Env env(*this);
-        auto ledger = env.current();
-        auto const& feeTrack = env.app().getFeeTrack();
+        
+        // test batch raw transactions max size
         {
+            Env env(*this);
+            auto ledger = env.current();
+            auto const& feeTrack = env.app().getFeeTrack();
             Json::Value req;
             Account const alice("alice");
             Account const bob("bob");
@@ -2091,6 +2093,40 @@ public:
 
             jt.jv.removeMember(jss::Fee);
             jt.jv.removeMember(jss::TxnSignature);
+            req[jss::tx_json] = jt.jv;
+            Json::Value result = checkFee(
+                req,
+                Role::ADMIN,
+                true,
+                env.app().config(),
+                feeTrack,
+                env.app().getTxQ(),
+                env.app());
+            BEAST_EXPECT(result.size() == 0);
+            BEAST_EXPECT(
+                req[jss::tx_json].isMember(jss::Fee) &&
+                req[jss::tx_json][jss::Fee] ==
+                    env.current()->fees().base.jsonClipped());
+        }
+
+        // test signers max size
+        {
+            Env env(*this);
+            auto ledger = env.current();
+            auto const& feeTrack = env.app().getFeeTrack();
+            Json::Value req;
+            Account const alice("alice");
+            Account const bob("bob");
+            env.fund(XRP(100000), alice, bob);
+            env.close();
+
+            auto jt = env.jtnofill(
+                noop(alice),
+                msig(alice, alice, alice, alice, alice, alice, alice, alice, alice, alice,
+                     alice, alice, alice, alice, alice, alice, alice, alice, alice, alice,
+                     alice, alice, alice, alice, alice, alice, alice, alice, alice, alice,
+                     alice, alice, alice, alice, alice, alice, alice, alice, alice, alice));
+
             req[jss::tx_json] = jt.jv;
             Json::Value result = checkFee(
                 req,
@@ -2761,7 +2797,7 @@ public:
     run() override
     {
         testBadRpcCommand();
-        testAutoFillFailsLocalCheck();
+        testAutoFillFails();
         testAutoFillFees();
         testAutoFillEscalatedFees();
         testAutoFillNetworkID();
