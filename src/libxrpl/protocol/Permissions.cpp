@@ -127,7 +127,7 @@ Permission::isDelegatable(std::uint32_t const& permissionValue) const
         return true;
 
     auto const it = delegatableTx.find(permissionValue - 1);
-    if (it != delegatableTx.end() && it->second == delegatable::disabled)
+    if (it != delegatableTx.end() && it->second == Delegation::notDelegatable)
         return false;
 
     return true;
