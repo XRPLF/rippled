@@ -59,9 +59,9 @@ jobs:
       - name: install nproc
         run: |
           brew install coreutils
-      - name: install clang
+      - name: install llvm (includes clang)
         run: |
-          brew install clang
+          brew install llvm
       - name: check environment
         run: |
           env | sort

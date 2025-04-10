@@ -122,8 +122,9 @@ jobs:
         configuration:
           - Debug
           - Release
-        cmake-args:
-          - "-Dunity=ON"
+        cmake-args: >-
+          -Dunity=OFF
+          -Dunity=ON
     needs: dependencies
     runs-on: [self-hosted, heavy]
     container: ghcr.io/xrplf/rippled-build-ubuntu:2025-04-07
@@ -160,7 +161,10 @@ jobs:
         with:
           generator: Ninja
           configuration: ${{ matrix.configuration }}
-          cmake-args: "-Dassert=TRUE -Dwerr=TRUE ${{ matrix.cmake-args }}"
+          cmake-args: >-
+            -Dassert=TRUE
+            -Dwerr=TRUE
+            ${{ matrix.cmake-args }}
       - name: test
         run: |
           ${build_dir}/rippled --unittest --unittest-jobs $(nproc)
@@ -175,9 +179,9 @@ jobs:
           - gcc
         configuration:
           - Debug
-        cmake-args:
-          - "-DUNIT_TEST_REFERENCE_FEE=200"
-          - "-DUNIT_TEST_REFERENCE_FEE=1000"
+        cmake-args: >-
+          -DUNIT_TEST_REFERENCE_FEE=200
+          -DUNIT_TEST_REFERENCE_FEE=1000
     needs: dependencies
     runs-on: [self-hosted, heavy]
     container: ghcr.io/xrplf/rippled-build-ubuntu:2025-04-07
@@ -214,7 +218,10 @@ jobs:
         with:
           generator: Ninja
           configuration: ${{ matrix.configuration }}
-          cmake-args: "-Dassert=TRUE -Dwerr=TRUE ${{ matrix.cmake-args }}"
+          cmake-args: >-
+            -Dassert=TRUE
+            -Dwerr=TRUE
+            ${{ matrix.cmake-args }}
       - name: test
         run: |
           ${build_dir}/rippled --unittest --unittest-jobs $(nproc)
@@ -409,11 +416,8 @@ jobs:
             -Dassert=TRUE
             -Dwerr=TRUE
             -Dtests=ON
+            -Dxrpld=ON
             -Dvoidstar=ON
-            -DCODE_COVERAGE_VERBOSE=ON
-            -DCMAKE_CXX_FLAGS="-O0"
-            -DCMAKE_C_FLAGS="-O0"
-          cmake-target: coverage
       - name: verify instrumentation enabled
         run: |
           cd ${BUILD_DIR}
