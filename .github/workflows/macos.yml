@@ -10,7 +10,7 @@ on:
       - release
       - master
       # Branches that opt-in to running
-      - 'ci/**'  
+      - 'ci/**'
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
