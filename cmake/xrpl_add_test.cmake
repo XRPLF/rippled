@@ -2,13 +2,12 @@ include(isolate_headers)
 
 function(xrpl_add_test name)
   set(target ${PROJECT_NAME}.test.${name})
-  add_executable(${target} EXCLUDE_FROM_ALL ${ARGN})
 
   file(GLOB_RECURSE sources CONFIGURE_DEPENDS
-    "${CMAKE_CURRENT_SOURCE_DIR}/${name}/*.cpp"
-    "${CMAKE_CURRENT_SOURCE_DIR}/${name}.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/${name}/*.cpp"
+  "${CMAKE_CURRENT_SOURCE_DIR}/${name}.cpp"
   )
-  target_sources(${target} PRIVATE ${sources})
+  add_executable(${target} EXCLUDE_FROM_ALL ${ARGN} ${sources})
 
   isolate_headers(
     ${target}
@@ -16,6 +15,11 @@ function(xrpl_add_test name)
     "${CMAKE_SOURCE_DIR}/tests/${name}"
     PRIVATE
   )
+
+  # Make sure the test isn't optimized away in unity builds
+  set_target_properties(${target} PROPERTIES
+    UNITY_BUILD_MODE GROUP
+    UNITY_BUILD_BATCH_SIZE 0)  # Adjust as needed
 
   add_test(NAME ${target} COMMAND ${target})
   set_tests_properties(
