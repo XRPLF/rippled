@@ -1092,7 +1092,7 @@ getPseudoAccountFields()
 [[nodiscard]] bool
 isPseudoAccount(std::shared_ptr<SLE const> sleAcct)
 {
-    std::vector<SField const*> const& fields = getPseudoAccountFields();
+    auto const& fields = getPseudoAccountFields();
 
     // Intentionally use defensive coding here because it's cheap and makes the
     // semantics of true return value clean.
@@ -1112,7 +1112,7 @@ createPseudoAccount(
     uint256 const& pseudoOwnerKey,
     SField const& ownerField)
 {
-    std::vector<SField const*> const& fields = getPseudoAccountFields();
+    auto const& fields = getPseudoAccountFields();
     XRPL_ASSERT(
         std::count_if(
             fields.begin(),

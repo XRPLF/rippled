@@ -434,7 +434,9 @@ AccountRootsDeletedClean::finalize(
     // feature is enabled. Enabled, or not, though, a fatal-level message will
     // be logged
     [[maybe_unused]] bool const enforce =
-        view.rules().enabled(featureInvariantsV1_1);
+        view.rules().enabled(featureInvariantsV1_1) ||
+        view.rules().enabled(featureSingleAssetVault) ||
+        view.rules().enabled(featureLendingProtocol);
 
     auto const objectExists = [&view, enforce, &j](auto const& keylet) {
         if (auto const sle = view.read(keylet))
@@ -487,10 +489,14 @@ AccountRootsDeletedClean::finalize(
         }
 
         // Keys directly stored in the AccountRoot object
-        if (auto const ammKey = accountSLE->at(~sfAMMID))
+        for (auto const& field : getPseudoAccountFields())
         {
-            if (objectExists(keylet::amm(*ammKey)) && enforce)
-                return false;
+            if (accountSLE->isFieldPresent(*field))
+            {
+                auto const key = accountSLE->getFieldH256(*field);
+                if (objectExists(keylet::unchecked(key)) && enforce)
+                    return false;
+            }
         }
     }
 

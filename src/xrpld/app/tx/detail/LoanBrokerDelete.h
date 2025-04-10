@@ -17,23 +17,19 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_LOANBROKERSET_H_INCLUDED
-#define RIPPLE_TX_LOANBROKERSET_H_INCLUDED
+#ifndef RIPPLE_TX_LOANBROKERDELETE_H_INCLUDED
+#define RIPPLE_TX_LOANBROKERDELETE_H_INCLUDED
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
 namespace ripple {
 
-// Lending protocol has dependencies, so capture them here.
-bool
-lendingProtocolEnabled(PreflightContext const& ctx);
-
-class LoanBrokerSet : public Transactor
+class LoanBrokerDelete : public Transactor
 {
 public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
-    explicit LoanBrokerSet(ApplyContext& ctx) : Transactor(ctx)
+    explicit LoanBrokerDelete(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
@@ -45,9 +41,6 @@ public:
 
     static NotTEC
     doPreflight(PreflightContext const& ctx);
-
-    static XRPAmount
-    calculateBaseFee(ReadView const& view, STTx const& tx);
 
     static TER
     preclaim(PreclaimContext const& ctx);
