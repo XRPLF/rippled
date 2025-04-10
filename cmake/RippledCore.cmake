@@ -136,6 +136,9 @@ if(xrpld)
   add_executable(rippled)
   if(tests)
     target_compile_definitions(rippled PUBLIC ENABLE_TESTS)
+    target_compile_definitions(rippled PRIVATE
+                                       UNIT_TEST_REFERENCE_FEE=${UNIT_TEST_REFERENCE_FEE}
+    )
   endif()
   target_include_directories(rippled
     PRIVATE
