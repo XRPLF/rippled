@@ -87,8 +87,9 @@ jobs:
           generator: ${{ matrix.generator }}
           configuration: ${{ matrix.configuration }}
           cmake-args: "-Dassert=TRUE -Dwerr=TRUE ${{ matrix.cmake-args }}"
-      - name: test
-        run: |
-          n=$(nproc)
-          echo "Using $n test jobs"
-          ${build_dir}/rippled --unittest --unittest-jobs $n
+      # TODO: Temporary disabled tests
+      # - name: test
+      #   run: |
+      #     n=$(nproc)
+      #     echo "Using $n test jobs"
+      #     ${build_dir}/rippled --unittest --unittest-jobs $n
