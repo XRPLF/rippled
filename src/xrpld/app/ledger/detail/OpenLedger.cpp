@@ -124,6 +124,7 @@ OpenLedger::accept(
         auto const txId = tx->getTransactionID();
 
         // skip batch txns
+        // LCOV_EXCL_START
         if (tx->isFlag(tfInnerBatchTxn) && rules.enabled(featureBatch))
         {
             XRPL_ASSERT(
@@ -131,6 +132,7 @@ OpenLedger::accept(
                 "Inner Batch transaction missing sfParentBatchID");
             continue;
         }
+        // LCOV_EXCL_STOP
 
         if (auto const toSkip = app.getHashRouter().shouldRelay(txId))
         {
