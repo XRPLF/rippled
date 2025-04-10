@@ -302,7 +302,7 @@ public:
         std::optional<XRPAmount> referenceFee)
         : Env(suite_,
               std::move(config),
-              supported_amendments(),
+              testable_amendments(),
               nullptr,
               std::nullopt,
               referenceFee)
