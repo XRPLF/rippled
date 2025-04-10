@@ -2065,7 +2065,7 @@ public:
     {
         testcase("autofill fails");
         using namespace test::jtx;
-        
+
         // test batch raw transactions max size
         {
             Env env(*this);
@@ -2122,10 +2122,47 @@ public:
 
             auto jt = env.jtnofill(
                 noop(alice),
-                msig(alice, alice, alice, alice, alice, alice, alice, alice, alice, alice,
-                     alice, alice, alice, alice, alice, alice, alice, alice, alice, alice,
-                     alice, alice, alice, alice, alice, alice, alice, alice, alice, alice,
-                     alice, alice, alice, alice, alice, alice, alice, alice, alice, alice));
+                msig(
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice));
 
             req[jss::tx_json] = jt.jv;
             Json::Value result = checkFee(

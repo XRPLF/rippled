@@ -804,7 +804,6 @@ class Batch_test : public beast::unit_test::suite
         //----------------------------------------------------------------------
         // checkBatchSign.checkSingleSign
 
-
         // tefBAD_AUTH: Inner Account is not signer
         {
             auto const ledSeq = env.current()->seq();
