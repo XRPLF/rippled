@@ -291,9 +291,12 @@ public:
     }
 
     /** Return the reference fee associated with the runner. */
-    std::optional<std::int64_t> const&
+    std::optional<std::int64_t>
     referenceFee() const
     {
+        assert(runner_);
+        if (!runner_)
+            return {};
         return runner_->referenceFee();
     }
 
