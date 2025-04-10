@@ -194,6 +194,7 @@ jobs:
           build_only: ${{ matrix.build_only }}
           build_type: ${{ matrix.build_type }}
           cmake_args: ${{ matrix.cmake_args }}
+          unittest_args: ${{ matrix.unittest_args }}
           cmake_target: ${{ matrix.cmake_target }}
           codecov_token: ${{ secrets.codecov_token }}
           os: ${{ inputs.os }}
