@@ -10,8 +10,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  job:
-    runs-on: ubuntu-latest
+  documentation:
+    runs-on: [self-hosted, heavy]
     permissions:
       contents: write
     container: ghcr.io/xrplf/rippled-build-ubuntu:aaf5e3e
