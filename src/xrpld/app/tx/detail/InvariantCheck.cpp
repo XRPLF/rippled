@@ -386,7 +386,8 @@ AccountRootsDeletedClean::finalize(
     [[maybe_unused]] bool const enforce =
         view.rules().enabled(featureInvariantsV1_1);
 
-    auto const objectExists = [&view, &j](auto const& keylet) {
+    auto const objectExists = [&view, &enforce, &j](auto const& keylet) {
+        void(enforce);
         if (auto const sle = view.read(keylet))
         {
             // Finding the object is bad
