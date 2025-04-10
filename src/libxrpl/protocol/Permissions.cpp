@@ -73,7 +73,7 @@ Permission::Permission()
 #pragma pop_macro("PERMISSION")
     };
 
-    for (auto const& permission : granularPermissionMap)
+    for ([[maybe_unused]] auto const& permission : granularPermissionMap)
         XRPL_ASSERT(
             permission.second > UINT16_MAX,
             "ripple::Permission::granularPermissionMap : granular permission "
