@@ -24,6 +24,8 @@
 
 namespace ripple {
 
+constexpr std::uint32_t MICRO_DROPS_PER_DROP{1'000'000};
+
 /** Reflects the fee settings for a particular ledger.
 
     The fees are always the same for any transactions applied

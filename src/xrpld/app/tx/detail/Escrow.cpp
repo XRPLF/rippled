@@ -438,7 +438,7 @@ EscrowFinish::calculateBaseFee(ReadView const& view, STTx const& tx)
     }
     if (auto const allowance = tx[~sfComputationAllowance]; allowance)
     {
-        extraFee += (*allowance) * view.fees().gasPrice / 1000000;
+        extraFee += (*allowance) * view.fees().gasPrice / MICRO_DROPS_PER_DROP;
     }
     return Transactor::calculateBaseFee(view, tx) + extraFee;
 }
@@ -448,6 +448,34 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
 {
     if (!ctx.view.rules().enabled(featureCredentials))
         return Transactor::preclaim(ctx);
+
+    if (ctx.view.rules().enabled(featureSmartEscrow))
+    {
+        // this check is done in doApply before this amendment is enabled
+        auto const k = keylet::escrow(ctx.tx[sfOwner], ctx.tx[sfOfferSequence]);
+        auto const slep = ctx.view.read(k);
+        if (!slep)
+            return tecNO_TARGET;
+
+        if (slep->isFieldPresent(sfFinishFunction))
+        {
+            if (!ctx.tx.isFieldPresent(sfComputationAllowance))
+            {
+                JLOG(ctx.j.debug())
+                    << "FinishFunction requires ComputationAllowance";
+                return tefWASM_FIELD_NOT_INCLUDED;
+            }
+        }
+        else
+        {
+            if (ctx.tx.isFieldPresent(sfComputationAllowance))
+            {
+                JLOG(ctx.j.debug()) << "FinishFunction not present, "
+                                       "ComputationAllowance present";
+                return tefNO_WASM;
+            }
+        }
+    }
 
     if (auto const err = credentials::valid(ctx, ctx.tx[sfAccount]);
         !isTesSuccess(err))
@@ -462,25 +490,8 @@ EscrowFinish::doApply()
     auto const k = keylet::escrow(ctx_.tx[sfOwner], ctx_.tx[sfOfferSequence]);
     auto const slep = ctx_.view().peek(k);
     if (!slep)
-        return tecNO_TARGET;
-
-    if (slep->isFieldPresent(sfFinishFunction))
-    {
-        if (!ctx_.tx.isFieldPresent(sfComputationAllowance))
-        {
-            JLOG(j_.debug()) << "FinishFunction requires ComputationAllowance";
-            return tefWASM_FIELD_NOT_INCLUDED;
-        }
-    }
-    else
-    {
-        if (ctx_.tx.isFieldPresent(sfComputationAllowance))
-        {
-            JLOG(j_.debug())
-                << "FinishFunction not present, ComputationAllowance present";
-            return tefNO_WASM;
-        }
-    }
+        return ctx_.view().rules().enabled(featureSmartEscrow) ? tecINTERNAL
+                                                               : tecNO_TARGET;
 
     // Order of processing the release conditions (in order of performance):
     // FinishAfter/CancelAfter
