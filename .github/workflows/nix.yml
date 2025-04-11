@@ -1,6 +1,7 @@
 name: nix
 on:
   pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
   push:
     # If the branches list is ever changed, be sure to change it on all
     # build/test jobs (nix, macos, windows)
@@ -39,7 +40,7 @@ concurrency:
 
 jobs:
   dependencies:
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'NoCI') }}
+    if: ${{ github.event_name == 'push' || github.event.pull_request.draft != true || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     strategy:
       fail-fast: false
       matrix:
@@ -359,7 +360,7 @@ jobs:
   # later
 
   instrumentation-build:
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'NoCI') }}
+    if: ${{ github.event_name == 'push' || github.event.pull_request.draft != true || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     env:
       CLANG_RELEASE: 16
     strategy:
