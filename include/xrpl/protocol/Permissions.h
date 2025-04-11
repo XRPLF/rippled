@@ -54,14 +54,14 @@ class Permission
 private:
     Permission();
 
-    std::unordered_map<std::uint16_t, Delegation> delegatableTx;
+    std::unordered_map<std::uint16_t, Delegation> delegatableTx_;
 
     std::unordered_map<std::string, GranularPermissionType>
-        granularPermissionMap;
+        granularPermissionMap_;
 
-    std::unordered_map<GranularPermissionType, std::string> granularNameMap;
+    std::unordered_map<GranularPermissionType, std::string> granularNameMap_;
 
-    std::unordered_map<GranularPermissionType, TxType> granularTxTypeMap;
+    std::unordered_map<GranularPermissionType, TxType> granularTxTypeMap_;
 
 public:
     static Permission const&

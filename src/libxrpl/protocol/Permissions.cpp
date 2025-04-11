@@ -25,7 +25,7 @@ namespace ripple {
 
 Permission::Permission()
 {
-    delegatableTx = {
+    delegatableTx_ = {
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
@@ -37,7 +37,7 @@ Permission::Permission()
 #pragma pop_macro("TRANSACTION")
     };
 
-    granularPermissionMap = {
+    granularPermissionMap_ = {
 #pragma push_macro("PERMISSION")
 #undef PERMISSION
 
@@ -49,7 +49,7 @@ Permission::Permission()
 #pragma pop_macro("PERMISSION")
     };
 
-    granularNameMap = {
+    granularNameMap_ = {
 #pragma push_macro("PERMISSION")
 #undef PERMISSION
 
@@ -61,7 +61,7 @@ Permission::Permission()
 #pragma pop_macro("PERMISSION")
     };
 
-    granularTxTypeMap = {
+    granularTxTypeMap_ = {
 #pragma push_macro("PERMISSION")
 #undef PERMISSION
 
@@ -73,10 +73,10 @@ Permission::Permission()
 #pragma pop_macro("PERMISSION")
     };
 
-    for ([[maybe_unused]] auto const& permission : granularPermissionMap)
+    for ([[maybe_unused]] auto const& permission : granularPermissionMap_)
         XRPL_ASSERT(
             permission.second > UINT16_MAX,
-            "ripple::Permission::granularPermissionMap : granular permission "
+            "ripple::Permission::granularPermissionMap_ : granular permission "
             "value must not exceed the maximum uint16_t value.");
 }
 
@@ -90,8 +90,8 @@ Permission::getInstance()
 std::optional<std::uint32_t>
 Permission::getGranularValue(std::string const& name) const
 {
-    auto const it = granularPermissionMap.find(name);
-    if (it != granularPermissionMap.end())
+    auto const it = granularPermissionMap_.find(name);
+    if (it != granularPermissionMap_.end())
         return static_cast<uint32_t>(it->second);
 
     return std::nullopt;
@@ -100,8 +100,8 @@ Permission::getGranularValue(std::string const& name) const
 std::optional<std::string>
 Permission::getGranularName(GranularPermissionType const& value) const
 {
-    auto const it = granularNameMap.find(value);
-    if (it != granularNameMap.end())
+    auto const it = granularNameMap_.find(value);
+    if (it != granularNameMap_.end())
         return it->second;
 
     return std::nullopt;
@@ -110,8 +110,8 @@ Permission::getGranularName(GranularPermissionType const& value) const
 std::optional<TxType>
 Permission::getGranularTxType(GranularPermissionType const& gpType) const
 {
-    auto const it = granularTxTypeMap.find(gpType);
-    if (it != granularTxTypeMap.end())
+    auto const it = granularTxTypeMap_.find(gpType);
+    if (it != granularTxTypeMap_.end())
         return it->second;
 
     return std::nullopt;
@@ -126,8 +126,8 @@ Permission::isDelegatable(std::uint32_t const& permissionValue) const
         // granular permissions are always allowed to be delegated
         return true;
 
-    auto const it = delegatableTx.find(permissionValue - 1);
-    if (it != delegatableTx.end() && it->second == Delegation::notDelegatable)
+    auto const it = delegatableTx_.find(permissionValue - 1);
+    if (it != delegatableTx_.end() && it->second == Delegation::notDelegatable)
         return false;
 
     return true;

@@ -55,7 +55,6 @@ JSS(AssetClass);           // in: Oracle
 JSS(AssetPrice);           // in: Oracle
 JSS(AuthAccount);          // in: AMM Auction Slot
 JSS(AuthAccounts);         // in: AMM Auction Slot
-JSS(Authorize);            // in: delegate
 JSS(BaseAsset);            // in: Oracle
 JSS(BidMax);               // in: AMM Bid
 JSS(BidMin);               // in: AMM Bid

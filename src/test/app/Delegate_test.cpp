@@ -90,7 +90,7 @@ class Delegate_test : public beast::unit_test::suite
                     jle[jss::result][jss::node][jss::Account] ==
                     account.human());
                 BEAST_EXPECT(
-                    jle[jss::result][jss::node][jss::Authorize] ==
+                    jle[jss::result][jss::node][sfAuthorize.jsonName] ==
                     authorize.human());
 
                 auto const& jPermissions =
@@ -181,7 +181,7 @@ class Delegate_test : public beast::unit_test::suite
             Json::Value jv;
             jv[jss::TransactionType] = jss::DelegateSet;
             jv[jss::Account] = gw.human();
-            jv[jss::Authorize] = alice.human();
+            jv[sfAuthorize.jsonName] = alice.human();
             Json::Value permissionsJson(Json::arrayValue);
             Json::Value permissionValue;
             permissionValue[sfPermissionValue.jsonName] = "Payment";

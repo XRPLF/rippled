@@ -27,9 +27,24 @@
 
 namespace ripple {
 
+/**
+ * Check if the delegate account has permission to execute the transaction.
+ * @param delegate The delegate account.
+ * @param tx The transaction that the delegate account intends to execute.
+ * @return tesSUCCESS if the transaction is allowed, tecNO_PERMISSION if not.
+ */
 TER
 checkTxPermission(std::shared_ptr<SLE const> const& delegate, STTx const& tx);
 
+/**
+ * Load the granular permissions granted to the delegate account for the
+ * specified transaction type
+ * @param delegate The delegate account.
+ * @param type Used to determine which granted granular permissions to load,
+ * based on the transaction type.
+ * @param granularPermissions Granted granular permissions tied to the
+ * transaction type.
+ */
 void
 loadGranularPermission(
     std::shared_ptr<SLE const> const& delegate,
