@@ -2,6 +2,7 @@ name: windows
 
 on:
   pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
   push:
     # If the branches list is ever changed, be sure to change it on all
     # build/test jobs (nix, macos, windows, instrumentation)
@@ -21,7 +22,7 @@ concurrency:
 jobs:
 
   test:
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'NoCI') }}
+    if: ${{ github.event_name == 'push' || github.event.pull_request.draft != true || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     strategy:
       fail-fast: false
       matrix:

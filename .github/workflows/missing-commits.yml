@@ -10,7 +10,6 @@ on:
 
 jobs:
   up_to_date:
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'NoCI') }}
     runs-on: ubuntu-24.04
     steps:
     - uses: actions/checkout@v4
