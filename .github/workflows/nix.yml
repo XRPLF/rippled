@@ -39,6 +39,7 @@ concurrency:
 
 jobs:
   dependencies:
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'NoCI') }}
     strategy:
       fail-fast: false
       matrix:
@@ -358,6 +359,7 @@ jobs:
   # later
 
   instrumentation-build:
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'NoCI') }}
     env:
       CLANG_RELEASE: 16
     strategy:

@@ -21,6 +21,7 @@ concurrency:
 jobs:
 
   test:
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'NoCI') }}
     strategy:
       fail-fast: false
       matrix:

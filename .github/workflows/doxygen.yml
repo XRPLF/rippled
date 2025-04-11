@@ -11,6 +11,7 @@ concurrency:
 
 jobs:
   job:
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'NoCI') }}
     runs-on: ubuntu-latest
     permissions:
       contents: write

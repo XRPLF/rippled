@@ -14,6 +14,7 @@ concurrency:
 
 jobs:
   publish:
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'NoCI') }}
     name: Publish libXRPL
     outputs:
       outcome: ${{ steps.upload.outputs.outcome }}

@@ -4,6 +4,7 @@ on: [push, pull_request]
 
 jobs:
   check:
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'NoCI') }}
     runs-on: ubuntu-24.04
     env:
       CLANG_VERSION: 18
