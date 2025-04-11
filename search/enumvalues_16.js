@@ -3,7 +3,9 @@ var searchData=
   ['valid_0',['Valid',['../namespaceripple.html#abcad59b0151763334cc398263373bcdda3ac705f2acd51a4613f9188c05c91d0d',1,'ripple']]],
   ['validated_1',['VALIDATED',['../namespaceripple_1_1RPC.html#a4c04e509451d50d9449cff3d477ff4f2af275a9f97d64cc8d9bbec02e4a361755',1,'ripple::RPC']]],
   ['validation_2',['validation',['../classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a165ad2e358e034ee1a5638ce48322d1d',1,'ripple::TrafficCount::validation()'],['../namespaceripple.html#ad5143ceada01141772ae4aab984f94bdaa617908b172c473cb8e8cda059e55bf0',1,'ripple::validation()']]],
-  ['validatorlist_3',['validatorlist',['../classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a603bba4843f1ab5e0a4259c22231be45',1,'ripple::TrafficCount']]],
-  ['validatorlist2propagation_4',['ValidatorList2Propagation',['../namespaceripple.html#a3b423ad1ba6341f945c08c13fe141150abbd68b30711cfd4adc8abd9b5519abe1',1,'ripple']]],
-  ['validatorlistpropagation_5',['ValidatorListPropagation',['../namespaceripple.html#a3b423ad1ba6341f945c08c13fe141150a9a32e2a438c197a712d352ca4e69b65b',1,'ripple']]]
+  ['validation_5fduplicate_3',['validation_duplicate',['../classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a3b0bd858b8f87d0775e2c978fcfc027a',1,'ripple::TrafficCount']]],
+  ['validation_5funtrusted_4',['validation_untrusted',['../classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7ae5bc7ae33da64addd84f544df555dcda',1,'ripple::TrafficCount']]],
+  ['validatorlist_5',['validatorlist',['../classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a603bba4843f1ab5e0a4259c22231be45',1,'ripple::TrafficCount']]],
+  ['validatorlist2propagation_6',['ValidatorList2Propagation',['../namespaceripple.html#a3b423ad1ba6341f945c08c13fe141150abbd68b30711cfd4adc8abd9b5519abe1',1,'ripple']]],
+  ['validatorlistpropagation_7',['ValidatorListPropagation',['../namespaceripple.html#a3b423ad1ba6341f945c08c13fe141150a9a32e2a438c197a712d352ca4e69b65b',1,'ripple']]]
 ];

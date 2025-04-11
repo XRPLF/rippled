@@ -1,7 +1,9 @@
 <map id="ripple::TrafficCount" name="ripple::TrafficCount">
-<area shape="rect" id="node1" title=" " alt="" coords="37,445,181,471"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="13,328,204,383"/>
-<area shape="rect" id="node3" href="$classripple_1_1TrafficCount_1_1TrafficStats.html" title=" " alt="" coords="37,225,181,265"/>
-<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="5,93,212,119"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="57,5,160,31"/>
+<area shape="rect" id="node1" title="TrafficCount is used to count ingress and egress wire bytes and number of messages." alt="" coords="88,460,232,485"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="63,343,257,397"/>
+<area shape="rect" id="node3" href="$classripple_1_1TrafficCount_1_1TrafficStats.html" title=" " alt="" coords="88,240,232,280"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="31,108,118,133"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/string/basic_string.html" title=" " alt="" coords="5,5,144,45"/>
+<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/atomic/atomic.html" title=" " alt="" coords="142,108,349,133"/>
+<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="194,13,297,38"/>
 </map>

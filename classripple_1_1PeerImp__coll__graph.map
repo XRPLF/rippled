@@ -25,7 +25,7 @@
 <area shape="rect" id="node19" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title=" " alt="" coords="745,335,837,360"/>
 <area shape="rect" id="node30" href="$structripple_1_1metrics_1_1TxMetrics.html" title="Run transaction reduce&#45;relay feature related metrics." alt="" coords="1095,171,1283,196"/>
 <area shape="rect" id="node20" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/unique_ptr.html" title=" " alt="" coords="1100,271,1279,311"/>
-<area shape="rect" id="node21" href="$classripple_1_1TrafficCount.html" title=" " alt="" coords="1117,336,1261,361"/>
+<area shape="rect" id="node21" href="$classripple_1_1TrafficCount.html" title="TrafficCount is used to count ingress and egress wire bytes and number of messages." alt="" coords="1117,336,1261,361"/>
 <area shape="rect" id="node22" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="1072,1542,1307,1611"/>
 <area shape="rect" id="node23" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/shared_ptr.html" title=" " alt="" coords="705,1658,876,1698"/>
 <area shape="rect" id="node24" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="1072,665,1307,720"/>

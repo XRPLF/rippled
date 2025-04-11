@@ -135,8 +135,8 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a977772a4a08b7f7f16e872392493d403"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a055a7753df1a25f0545e2e9a92a5a99f"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STTx.html">STTx</a> const &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionMaster.html#a055a7753df1a25f0545e2e9a92a5a99f">fetch</a> (boost::intrusive_ptr&lt; <a class="el" href="classripple_1_1SHAMapItem.html">SHAMapItem</a> &gt; const &amp;item, <a class="el" href="namespaceripple.html#ae0356b1de00f841c554c830be509dd58">SHAMapNodeType</a> type, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> uCommitLedger)</td></tr>
 <tr class="separator:a055a7753df1a25f0545e2e9a92a5a99f"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2f89069c62a078affbaad8fabb41d563"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionMaster.html#a2f89069c62a078affbaad8fabb41d563">inLedger</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;hash, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ledger)</td></tr>
-<tr class="separator:a2f89069c62a078affbaad8fabb41d563"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa4d053d58b47db8861f5c46f9ca98c6c"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionMaster.html#aa4d053d58b47db8861f5c46f9ca98c6c">inLedger</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;hash, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ledger, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; uint32_t &gt; tseq, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; uint32_t &gt; netID)</td></tr>
+<tr class="separator:aa4d053d58b47db8861f5c46f9ca98c6c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adfb688396e9aed123c909f739e44a0cf"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionMaster.html#adfb688396e9aed123c909f739e44a0cf">canonicalize</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Transaction.html">Transaction</a> &gt; *pTransaction)</td></tr>
 <tr class="separator:adfb688396e9aed123c909f739e44a0cf"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a7e29535a5d6512408ea86b5c5611540a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TransactionMaster.html#a7e29535a5d6512408ea86b5c5611540a">sweep</a> (void)</td></tr>
@@ -244,7 +244,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionMaster_8cpp_source.html#l00054">54</a> of file <a class="el" href="TransactionMaster_8cpp_source.html">TransactionMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionMaster_8cpp_source.html#l00058">58</a> of file <a class="el" href="TransactionMaster_8cpp_source.html">TransactionMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -274,7 +274,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionMaster_8cpp_source.html#l00062">62</a> of file <a class="el" href="TransactionMaster_8cpp_source.html">TransactionMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionMaster_8cpp_source.html#l00066">66</a> of file <a class="el" href="TransactionMaster_8cpp_source.html">TransactionMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -313,7 +313,7 @@ Private Attributes</h2></td></tr>
 <p>Fetch transaction from the cache or database. </p>
 <dl class="section return"><dt>Returns</dt><dd>A <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/variant.html">std::variant</a> that contains either a pair of shared_pointer to the retrieved transaction and its metadata or an enum indicating whether or not the all ledgers in the provided range were present in the database while the search was conducted. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="TransactionMaster_8cpp_source.html#l00086">86</a> of file <a class="el" href="TransactionMaster_8cpp_source.html">TransactionMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionMaster_8cpp_source.html#l00090">90</a> of file <a class="el" href="TransactionMaster_8cpp_source.html">TransactionMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -349,12 +349,12 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionMaster_8cpp_source.html#l00111">111</a> of file <a class="el" href="TransactionMaster_8cpp_source.html">TransactionMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionMaster_8cpp_source.html#l00115">115</a> of file <a class="el" href="TransactionMaster_8cpp_source.html">TransactionMaster.cpp</a>.</p>
 
 </div>
 </div>
-<a id="a2f89069c62a078affbaad8fabb41d563" name="a2f89069c62a078affbaad8fabb41d563"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2f89069c62a078affbaad8fabb41d563">&#9670;&#160;</a></span>inLedger()</h2>
+<a id="aa4d053d58b47db8861f5c46f9ca98c6c" name="aa4d053d58b47db8861f5c46f9ca98c6c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa4d053d58b47db8861f5c46f9ca98c6c">&#9670;&#160;</a></span>inLedger()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -369,7 +369,19 @@ Private Attributes</h2></td></tr>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td>
-          <td class="paramname"><em>ledger</em>&#160;</td>
+          <td class="paramname"><em>ledger</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; uint32_t &gt;&#160;</td>
+          <td class="paramname"><em>tseq</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; uint32_t &gt;&#160;</td>
+          <td class="paramname"><em>netID</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -399,7 +411,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionMaster_8cpp_source.html#l00145">145</a> of file <a class="el" href="TransactionMaster_8cpp_source.html">TransactionMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionMaster_8cpp_source.html#l00149">149</a> of file <a class="el" href="TransactionMaster_8cpp_source.html">TransactionMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -419,7 +431,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionMaster_8cpp_source.html#l00158">158</a> of file <a class="el" href="TransactionMaster_8cpp_source.html">TransactionMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionMaster_8cpp_source.html#l00162">162</a> of file <a class="el" href="TransactionMaster_8cpp_source.html">TransactionMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -438,7 +450,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionMaster_8cpp_source.html#l00164">164</a> of file <a class="el" href="TransactionMaster_8cpp_source.html">TransactionMaster.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionMaster_8cpp_source.html#l00168">168</a> of file <a class="el" href="TransactionMaster_8cpp_source.html">TransactionMaster.cpp</a>.</p>
 
 </div>
 </div>
@@ -463,7 +475,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionMaster_8h_source.html#l00091">91</a> of file <a class="el" href="TransactionMaster_8h_source.html">TransactionMaster.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionMaster_8h_source.html#l00095">95</a> of file <a class="el" href="TransactionMaster_8h_source.html">TransactionMaster.h</a>.</p>
 
 </div>
 </div>
@@ -487,7 +499,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionMaster_8h_source.html#l00092">92</a> of file <a class="el" href="TransactionMaster_8h_source.html">TransactionMaster.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionMaster_8h_source.html#l00096">96</a> of file <a class="el" href="TransactionMaster_8h_source.html">TransactionMaster.h</a>.</p>
 
 </div>
 </div>

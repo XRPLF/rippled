@@ -84,17 +84,22 @@ $(function() {
 </div><!--header-->
 <div class="contents">
 
+<p><a class="el" href="classripple_1_1TrafficCount.html" title="TrafficCount is used to count ingress and egress wire bytes and number of messages.">TrafficCount</a> is used to count ingress and egress wire bytes and number of messages.  
+ <a href="classripple_1_1TrafficCount.html#details">More...</a></p>
+
 <p><code>#include &lt;<a class="el" href="TrafficCount_8h_source.html">TrafficCount.h</a>&gt;</code></p>
 <div class="dynheader">
 Collaboration diagram for ripple::TrafficCount:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1TrafficCount__coll__graph.png" border="0" usemap="#aripple_1_1TrafficCount_coll__map" alt="Collaboration graph"/></div>
 <map name="aripple_1_1TrafficCount_coll__map" id="aripple_1_1TrafficCount_coll__map">
-<area shape="rect" title=" " alt="" coords="37,445,181,471"/>
-<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/container/array.html" title=" " alt="" coords="13,328,204,383"/>
-<area shape="rect" href="classripple_1_1TrafficCount_1_1TrafficStats.html" title=" " alt="" coords="37,225,181,265"/>
-<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/atomic/atomic.html" title=" " alt="" coords="5,93,212,119"/>
-<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="57,5,160,31"/>
+<area shape="rect" title="TrafficCount is used to count ingress and egress wire bytes and number of messages." alt="" coords="88,460,232,485"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/container/unordered_map.html" title=" " alt="" coords="63,343,257,397"/>
+<area shape="rect" href="classripple_1_1TrafficCount_1_1TrafficStats.html" title=" " alt="" coords="88,240,232,280"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/string/basic_string.html" title=" " alt="" coords="31,108,118,133"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/string/basic_string.html" title=" " alt="" coords="5,5,144,45"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/atomic/atomic.html" title=" " alt="" coords="142,108,349,133"/>
+<area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="194,13,297,38"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
 <table class="memberdecls">
@@ -112,58 +117,68 @@ Public Types</h2></td></tr>
 , <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7aa4201d5855258c9a37183c21b21cb16f">manifests</a>
 , <br />
 &#160;&#160;<a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7aaa89f4c0f4e980784af5b65e26c94a96">transaction</a>
+, <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a207d5b73574ecb3b61e4e314be0b3e3c">transaction_duplicate</a>
 , <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7ae7dce5bae6aaf31f79826a9eeb0ef3f2">proposal</a>
-, <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a165ad2e358e034ee1a5638ce48322d1d">validation</a>
-, <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a603bba4843f1ab5e0a4259c22231be45">validatorlist</a>
+, <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a5a75c17c55001c9b047fff31935c9748">proposal_untrusted</a>
 , <br />
-&#160;&#160;<a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7af2259f375b7ec4058e7bc95828112f81">get_set</a>
-, <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a90f481192bc3309a3b7a852fd53e22a5">share_set</a>
+&#160;&#160;<a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a763da39beeba0ea9676a89e59bfd14eb">proposal_duplicate</a>
+, <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a165ad2e358e034ee1a5638ce48322d1d">validation</a>
+, <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7ae5bc7ae33da64addd84f544df555dcda">validation_untrusted</a>
+, <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a3b0bd858b8f87d0775e2c978fcfc027a">validation_duplicate</a>
+, <br />
+&#160;&#160;<a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a603bba4843f1ab5e0a4259c22231be45">validatorlist</a>
+, <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a1595942a2df548dfbc08276809c319c4">squelch</a>
+, <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a46a28cec15c1d675de517732e71b00c3">squelch_suppressed</a>
+, <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7af2259f375b7ec4058e7bc95828112f81">get_set</a>
+, <br />
+&#160;&#160;<a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a90f481192bc3309a3b7a852fd53e22a5">share_set</a>
 , <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7ae94a1a3df0147c88ebb6d724878e1310">ld_tsc_get</a>
 , <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a5943ab376c111b751cf0ee7df8c53eda">ld_tsc_share</a>
+, <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a0a7dd52967c628abadc6075277986cfc">ld_txn_get</a>
 , <br />
-&#160;&#160;<a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a0a7dd52967c628abadc6075277986cfc">ld_txn_get</a>
-, <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a497519508b2d0c6eb29aaa18d3193d9d">ld_txn_share</a>
+&#160;&#160;<a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a497519508b2d0c6eb29aaa18d3193d9d">ld_txn_share</a>
 , <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a605271c7927193d805fef9e8fd2a21cd">ld_asn_get</a>
 , <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a743dbf1e43e199ba47788d4f22a7fcb0">ld_asn_share</a>
+, <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a5242108bb40e3515b81b551c3e0ac485">ld_get</a>
 , <br />
-&#160;&#160;<a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a5242108bb40e3515b81b551c3e0ac485">ld_get</a>
-, <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a8510a746bd27d3b2d780ec9adcebb84f">ld_share</a>
+&#160;&#160;<a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a8510a746bd27d3b2d780ec9adcebb84f">ld_share</a>
 , <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7abc8153fdb0cac36d05446ad558b11e08">gl_tsc_share</a>
 , <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a5b3d7ffc33c5cf9071ad20c515280601">gl_tsc_get</a>
+, <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7af9720e7c32c11bb0b2445890b077d050">gl_txn_share</a>
 , <br />
-&#160;&#160;<a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7af9720e7c32c11bb0b2445890b077d050">gl_txn_share</a>
-, <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7ae29c40afdc8b61913625ccc53cab1188">gl_txn_get</a>
+&#160;&#160;<a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7ae29c40afdc8b61913625ccc53cab1188">gl_txn_get</a>
 , <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7ae86fdfed38d9b5203fa69c9c9a19a101">gl_asn_share</a>
 , <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7aad80d4610ce3b982ddb3648d4f96f01f">gl_asn_get</a>
+, <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a9845721fe90ce1fd17672b6dcbf71dc7">gl_share</a>
 , <br />
-&#160;&#160;<a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a9845721fe90ce1fd17672b6dcbf71dc7">gl_share</a>
-, <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a1626ffa935e1c634e691986b79afb0e3">gl_get</a>
+&#160;&#160;<a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a1626ffa935e1c634e691986b79afb0e3">gl_get</a>
 , <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a283020de0190f21e4c7629b1224f4a1f">share_hash_ledger</a>
 , <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a91135f9eec2ccf0a18c722e7e9936357">get_hash_ledger</a>
+, <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7aad363c23dc8ccc2c87f8fb2d2a0b9644">share_hash_tx</a>
 , <br />
-&#160;&#160;<a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7aad363c23dc8ccc2c87f8fb2d2a0b9644">share_hash_tx</a>
-, <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a4e1efa8c0704a2922f960ab6a642b6a4">get_hash_tx</a>
+&#160;&#160;<a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a4e1efa8c0704a2922f960ab6a642b6a4">get_hash_tx</a>
 , <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7afe333588b576a47f421daeaacf829ffb">share_hash_txnode</a>
 , <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7aaf0d35b25e85657f650469fc98207e46">get_hash_txnode</a>
+, <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7aecbc0ce31bafeac9e7f011afe5e56603">share_hash_asnode</a>
 , <br />
-&#160;&#160;<a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7aecbc0ce31bafeac9e7f011afe5e56603">share_hash_asnode</a>
-, <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7ad28501fe0d5ad7db451e821fe85506dc">get_hash_asnode</a>
+&#160;&#160;<a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7ad28501fe0d5ad7db451e821fe85506dc">get_hash_asnode</a>
 , <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7ae974117fa0a7da52af1de0b16e40cf7a">share_cas_object</a>
 , <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a36ed3431c27c144f0407afc400c736e8">get_cas_object</a>
+, <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7ace6a8a16555daa7e04ba5ccaf9672cb7">share_fetch_pack</a>
 , <br />
-&#160;&#160;<a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7ace6a8a16555daa7e04ba5ccaf9672cb7">share_fetch_pack</a>
-, <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a11f98604c8d2bf034d5981c2e46d6b86">get_fetch_pack</a>
+&#160;&#160;<a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a11f98604c8d2bf034d5981c2e46d6b86">get_fetch_pack</a>
 , <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7adb15948ddbacc73e868382a65286a746">get_transactions</a>
 , <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a9953e5681503deb0eb854af8eb4a4a60">share_hash</a>
+, <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7acd178b9b0f9a37a3e94a53b384bcc215">get_hash</a>
 , <br />
-&#160;&#160;<a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7acd178b9b0f9a37a3e94a53b384bcc215">get_hash</a>
-, <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a12daff4da9926d993515c1abbe440294">proof_path_request</a>
+&#160;&#160;<a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a12daff4da9926d993515c1abbe440294">proof_path_request</a>
 , <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a58bfe29c5a771bac79ae82168a063ece">proof_path_response</a>
 , <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7ac00367186e1994e3ba5993b9c509d093">replay_delta_request</a>
+, <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7aa4ba6487b619632684608b6a3d887354">replay_delta_response</a>
 , <br />
-&#160;&#160;<a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7aa4ba6487b619632684608b6a3d887354">replay_delta_response</a>
-, <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7acf56755e14ebee8ccdbb094140df62b7">have_transactions</a>
+&#160;&#160;<a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7acf56755e14ebee8ccdbb094140df62b7">have_transactions</a>
 , <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7acebb5c897d624ae1c27e67da091b5752">requested_transactions</a>
+, <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7ada2101aac8bb9bee4ba2227b2b8273ee">total</a>
 , <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a634cafe05c126e1bdc36b9d6b8ea6ca8">unknown</a>
 <br />
  }</td></tr>
@@ -171,29 +186,41 @@ Public Types</h2></td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-methods" name="pub-methods"></a>
 Public Member Functions</h2></td></tr>
+<tr class="memitem:a8a3da1b229a9d26bc8f84409a72676a8"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TrafficCount.html#a8a3da1b229a9d26bc8f84409a72676a8">TrafficCount</a> ()=default</td></tr>
+<tr class="separator:a8a3da1b229a9d26bc8f84409a72676a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:adc6e6ac1abf15832d2177ec1cfb32d24"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TrafficCount.html#adc6e6ac1abf15832d2177ec1cfb32d24">addCount</a> (<a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7">category</a> cat, bool inbound, int bytes)</td></tr>
 <tr class="memdesc:adc6e6ac1abf15832d2177ec1cfb32d24"><td class="mdescLeft">&#160;</td><td class="mdescRight">Account for traffic associated with the given category.  <a href="classripple_1_1TrafficCount.html#adc6e6ac1abf15832d2177ec1cfb32d24">More...</a><br /></td></tr>
 <tr class="separator:adc6e6ac1abf15832d2177ec1cfb32d24"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a8a3da1b229a9d26bc8f84409a72676a8"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TrafficCount.html#a8a3da1b229a9d26bc8f84409a72676a8">TrafficCount</a> ()=default</td></tr>
-<tr class="separator:a8a3da1b229a9d26bc8f84409a72676a8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a277e5fe1d38d93bdaac7d94d52d5d872"><td class="memItemLeft" align="right" valign="top">auto const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TrafficCount.html#a277e5fe1d38d93bdaac7d94d52d5d872">getCounts</a> () const</td></tr>
 <tr class="memdesc:a277e5fe1d38d93bdaac7d94d52d5d872"><td class="mdescLeft">&#160;</td><td class="mdescRight">An up-to-date copy of all the counters.  <a href="classripple_1_1TrafficCount.html#a277e5fe1d38d93bdaac7d94d52d5d872">More...</a><br /></td></tr>
 <tr class="separator:a277e5fe1d38d93bdaac7d94d52d5d872"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pub-static-methods" name="pub-static-methods"></a>
 Static Public Member Functions</h2></td></tr>
-<tr class="memitem:a767cf7049eb44fdcb32a5634031ae09f"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7">category</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TrafficCount.html#a767cf7049eb44fdcb32a5634031ae09f">categorize</a> (::google::protobuf::Message const &amp;message, int type, bool inbound)</td></tr>
-<tr class="memdesc:a767cf7049eb44fdcb32a5634031ae09f"><td class="mdescLeft">&#160;</td><td class="mdescRight">Given a protocol message, determine which traffic category it belongs to.  <a href="classripple_1_1TrafficCount.html#a767cf7049eb44fdcb32a5634031ae09f">More...</a><br /></td></tr>
-<tr class="separator:a767cf7049eb44fdcb32a5634031ae09f"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a48b1f14d718684397f7aae2e7c9e74eb"><td class="memItemLeft" align="right" valign="top">static <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7">category</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TrafficCount.html#a48b1f14d718684397f7aae2e7c9e74eb">categorize</a> (::google::protobuf::Message const &amp;message, protocol::MessageType type, bool inbound)</td></tr>
+<tr class="memdesc:a48b1f14d718684397f7aae2e7c9e74eb"><td class="mdescLeft">&#160;</td><td class="mdescRight">Given a protocol message, determine which traffic category it belongs to.  <a href="classripple_1_1TrafficCount.html#a48b1f14d718684397f7aae2e7c9e74eb">More...</a><br /></td></tr>
+<tr class="separator:a48b1f14d718684397f7aae2e7c9e74eb"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:aa8f61c829643dad5d39a852b9238d6a3"><td class="memItemLeft" align="right" valign="top">static <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TrafficCount.html#aa8f61c829643dad5d39a852b9238d6a3">to_string</a> (<a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7">category</a> cat)</td></tr>
+<tr class="separator:aa8f61c829643dad5d39a852b9238d6a3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pro-attribs" name="pro-attribs"></a>
 Protected Attributes</h2></td></tr>
-<tr class="memitem:a399dcd5708d2017e5dc559a2484b83c2"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array</a>&lt; <a class="el" href="classripple_1_1TrafficCount_1_1TrafficStats.html">TrafficStats</a>, <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a634cafe05c126e1bdc36b9d6b8ea6ca8">category::unknown</a>+1 &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TrafficCount.html#a399dcd5708d2017e5dc559a2484b83c2">counts_</a></td></tr>
-<tr class="separator:a399dcd5708d2017e5dc559a2484b83c2"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a434d8361116eb9f800113efd14fc4a5c"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/unordered_map.html">std::unordered_map</a>&lt; <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7">category</a>, <a class="el" href="classripple_1_1TrafficCount_1_1TrafficStats.html">TrafficStats</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1TrafficCount.html#a434d8361116eb9f800113efd14fc4a5c">counts_</a></td></tr>
+<tr class="separator:a434d8361116eb9f800113efd14fc4a5c"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock">
-<p class="definition">Definition at line <a class="el" href="TrafficCount_8h_source.html#l00032">32</a> of file <a class="el" href="TrafficCount_8h_source.html">TrafficCount.h</a>.</p>
+<div class="textblock"><p ><a class="el" href="classripple_1_1TrafficCount.html" title="TrafficCount is used to count ingress and egress wire bytes and number of messages.">TrafficCount</a> is used to count ingress and egress wire bytes and number of messages. </p>
+<p >The general intended usage is as follows:</p><ol type="1">
+<li>Determine the message category by callin <a class="el" href="classripple_1_1TrafficCount.html#a48b1f14d718684397f7aae2e7c9e74eb" title="Given a protocol message, determine which traffic category it belongs to.">TrafficCount::categorize</a></li>
+<li>Increment the counters for incoming or outgoing traffic by calling <a class="el" href="classripple_1_1TrafficCount.html#adc6e6ac1abf15832d2177ec1cfb32d24" title="Account for traffic associated with the given category.">TrafficCount::addCount</a></li>
+<li>Optionally, <a class="el" href="classripple_1_1TrafficCount.html#adc6e6ac1abf15832d2177ec1cfb32d24" title="Account for traffic associated with the given category.">TrafficCount::addCount</a> can be called at any time to increment additional traffic categories, not captured by <a class="el" href="classripple_1_1TrafficCount.html#a48b1f14d718684397f7aae2e7c9e74eb" title="Given a protocol message, determine which traffic category it belongs to.">TrafficCount::categorize</a>.</li>
+</ol>
+<p >There are two special categories:</p><ol type="1">
+<li><a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7ada2101aac8bb9bee4ba2227b2b8273ee">category::total</a> - this category is used to report the total traffic amount. It should be incremented once just after receiving a new message, and once just before sending a message to a peer. Messages whose category is not in <a class="el" href="classripple_1_1TrafficCount.html#a48b1f14d718684397f7aae2e7c9e74eb" title="Given a protocol message, determine which traffic category it belongs to.">TrafficCount::categorize</a> are not included in the total.</li>
+<li><a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a634cafe05c126e1bdc36b9d6b8ea6ca8">category::unknown</a> - this category is used to report traffic for messages of unknown type. </li>
+</ol>
+
+<p class="definition">Definition at line <a class="el" href="TrafficCount_8h_source.html#l00049">49</a> of file <a class="el" href="TrafficCount_8h_source.html">TrafficCount.h</a>.</p>
 </div><h2 class="groupheader">Member Enumeration Documentation</h2>
 <a id="adbaee77c7a063c9aac783e54594aeda7" name="adbaee77c7a063c9aac783e54594aeda7"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#adbaee77c7a063c9aac783e54594aeda7">&#9670;&#160;</a></span>category</h2>
@@ -212,9 +239,16 @@ Protected Attributes</h2></td></tr>
 <tr><td class="fieldname"><a id="adbaee77c7a063c9aac783e54594aeda7a53b8a74c2b773d10759ccf8738b6bd3c" name="adbaee77c7a063c9aac783e54594aeda7a53b8a74c2b773d10759ccf8738b6bd3c"></a>overlay&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="adbaee77c7a063c9aac783e54594aeda7aa4201d5855258c9a37183c21b21cb16f" name="adbaee77c7a063c9aac783e54594aeda7aa4201d5855258c9a37183c21b21cb16f"></a>manifests&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="adbaee77c7a063c9aac783e54594aeda7aaa89f4c0f4e980784af5b65e26c94a96" name="adbaee77c7a063c9aac783e54594aeda7aaa89f4c0f4e980784af5b65e26c94a96"></a>transaction&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="adbaee77c7a063c9aac783e54594aeda7a207d5b73574ecb3b61e4e314be0b3e3c" name="adbaee77c7a063c9aac783e54594aeda7a207d5b73574ecb3b61e4e314be0b3e3c"></a>transaction_duplicate&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="adbaee77c7a063c9aac783e54594aeda7ae7dce5bae6aaf31f79826a9eeb0ef3f2" name="adbaee77c7a063c9aac783e54594aeda7ae7dce5bae6aaf31f79826a9eeb0ef3f2"></a>proposal&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="adbaee77c7a063c9aac783e54594aeda7a5a75c17c55001c9b047fff31935c9748" name="adbaee77c7a063c9aac783e54594aeda7a5a75c17c55001c9b047fff31935c9748"></a>proposal_untrusted&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="adbaee77c7a063c9aac783e54594aeda7a763da39beeba0ea9676a89e59bfd14eb" name="adbaee77c7a063c9aac783e54594aeda7a763da39beeba0ea9676a89e59bfd14eb"></a>proposal_duplicate&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="adbaee77c7a063c9aac783e54594aeda7a165ad2e358e034ee1a5638ce48322d1d" name="adbaee77c7a063c9aac783e54594aeda7a165ad2e358e034ee1a5638ce48322d1d"></a>validation&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="adbaee77c7a063c9aac783e54594aeda7ae5bc7ae33da64addd84f544df555dcda" name="adbaee77c7a063c9aac783e54594aeda7ae5bc7ae33da64addd84f544df555dcda"></a>validation_untrusted&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="adbaee77c7a063c9aac783e54594aeda7a3b0bd858b8f87d0775e2c978fcfc027a" name="adbaee77c7a063c9aac783e54594aeda7a3b0bd858b8f87d0775e2c978fcfc027a"></a>validation_duplicate&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="adbaee77c7a063c9aac783e54594aeda7a603bba4843f1ab5e0a4259c22231be45" name="adbaee77c7a063c9aac783e54594aeda7a603bba4843f1ab5e0a4259c22231be45"></a>validatorlist&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="adbaee77c7a063c9aac783e54594aeda7a1595942a2df548dfbc08276809c319c4" name="adbaee77c7a063c9aac783e54594aeda7a1595942a2df548dfbc08276809c319c4"></a>squelch&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="adbaee77c7a063c9aac783e54594aeda7a46a28cec15c1d675de517732e71b00c3" name="adbaee77c7a063c9aac783e54594aeda7a46a28cec15c1d675de517732e71b00c3"></a>squelch_suppressed&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="adbaee77c7a063c9aac783e54594aeda7af2259f375b7ec4058e7bc95828112f81" name="adbaee77c7a063c9aac783e54594aeda7af2259f375b7ec4058e7bc95828112f81"></a>get_set&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="adbaee77c7a063c9aac783e54594aeda7a90f481192bc3309a3b7a852fd53e22a5" name="adbaee77c7a063c9aac783e54594aeda7a90f481192bc3309a3b7a852fd53e22a5"></a>share_set&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="adbaee77c7a063c9aac783e54594aeda7ae94a1a3df0147c88ebb6d724878e1310" name="adbaee77c7a063c9aac783e54594aeda7ae94a1a3df0147c88ebb6d724878e1310"></a>ld_tsc_get&#160;</td><td class="fielddoc"></td></tr>
@@ -254,10 +288,11 @@ Protected Attributes</h2></td></tr>
 <tr><td class="fieldname"><a id="adbaee77c7a063c9aac783e54594aeda7aa4ba6487b619632684608b6a3d887354" name="adbaee77c7a063c9aac783e54594aeda7aa4ba6487b619632684608b6a3d887354"></a>replay_delta_response&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="adbaee77c7a063c9aac783e54594aeda7acf56755e14ebee8ccdbb094140df62b7" name="adbaee77c7a063c9aac783e54594aeda7acf56755e14ebee8ccdbb094140df62b7"></a>have_transactions&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="adbaee77c7a063c9aac783e54594aeda7acebb5c897d624ae1c27e67da091b5752" name="adbaee77c7a063c9aac783e54594aeda7acebb5c897d624ae1c27e67da091b5752"></a>requested_transactions&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="adbaee77c7a063c9aac783e54594aeda7ada2101aac8bb9bee4ba2227b2b8273ee" name="adbaee77c7a063c9aac783e54594aeda7ada2101aac8bb9bee4ba2227b2b8273ee"></a>total&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="adbaee77c7a063c9aac783e54594aeda7a634cafe05c126e1bdc36b9d6b8ea6ca8" name="adbaee77c7a063c9aac783e54594aeda7a634cafe05c126e1bdc36b9d6b8ea6ca8"></a>unknown&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
-<p class="definition">Definition at line <a class="el" href="TrafficCount_8h_source.html#l00067">67</a> of file <a class="el" href="TrafficCount_8h_source.html">TrafficCount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TrafficCount_8h_source.html#l00087">87</a> of file <a class="el" href="TrafficCount_8h_source.html">TrafficCount.h</a>.</p>
 
 </div>
 </div>
@@ -288,8 +323,8 @@ Protected Attributes</h2></td></tr>
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a767cf7049eb44fdcb32a5634031ae09f" name="a767cf7049eb44fdcb32a5634031ae09f"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a767cf7049eb44fdcb32a5634031ae09f">&#9670;&#160;</a></span>categorize()</h2>
+<a id="a48b1f14d718684397f7aae2e7c9e74eb" name="a48b1f14d718684397f7aae2e7c9e74eb"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a48b1f14d718684397f7aae2e7c9e74eb">&#9670;&#160;</a></span>categorize()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -306,7 +341,7 @@ Protected Attributes</h2></td></tr>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">int&#160;</td>
+          <td class="paramtype">protocol::MessageType&#160;</td>
           <td class="paramname"><em>type</em>, </td>
         </tr>
         <tr>
@@ -330,7 +365,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Given a protocol message, determine which traffic category it belongs to. </p>
 
-<p class="definition">Definition at line <a class="el" href="TrafficCount_8cpp_source.html#l00025">25</a> of file <a class="el" href="TrafficCount_8cpp_source.html">TrafficCount.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TrafficCount_8cpp_source.html#l00052">52</a> of file <a class="el" href="TrafficCount_8cpp_source.html">TrafficCount.cpp</a>.</p>
 
 </div>
 </div>
@@ -368,7 +403,7 @@ Protected Attributes</h2></td></tr>
 
 <p>Account for traffic associated with the given category. </p>
 
-<p class="definition">Definition at line <a class="el" href="TrafficCount_8h_source.html#l00172">172</a> of file <a class="el" href="TrafficCount_8h_source.html">TrafficCount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TrafficCount_8h_source.html#l00212">212</a> of file <a class="el" href="TrafficCount_8h_source.html">TrafficCount.h</a>.</p>
 
 </div>
 </div>
@@ -390,13 +425,12 @@ Protected Attributes</h2></td></tr>
 <p>An up-to-date copy of all the counters. </p>
 <dl class="section return"><dt>Returns</dt><dd>an object which satisfies the requirements of Container </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="TrafficCount_8h_source.html#l00197">197</a> of file <a class="el" href="TrafficCount_8h_source.html">TrafficCount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TrafficCount_8h_source.html#l00241">241</a> of file <a class="el" href="TrafficCount_8h_source.html">TrafficCount.h</a>.</p>
 
 </div>
 </div>
-<h2 class="groupheader">Member Data Documentation</h2>
-<a id="a399dcd5708d2017e5dc559a2484b83c2" name="a399dcd5708d2017e5dc559a2484b83c2"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a399dcd5708d2017e5dc559a2484b83c2">&#9670;&#160;</a></span>counts_</h2>
+<a id="aa8f61c829643dad5d39a852b9238d6a3" name="aa8f61c829643dad5d39a852b9238d6a3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#aa8f61c829643dad5d39a852b9238d6a3">&#9670;&#160;</a></span>to_string()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -405,7 +439,36 @@ Protected Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/array.html">std::array</a>&lt;<a class="el" href="classripple_1_1TrafficCount_1_1TrafficStats.html">TrafficStats</a>, <a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a634cafe05c126e1bdc36b9d6b8ea6ca8">category::unknown</a> + 1&gt; ripple::TrafficCount::counts_</td>
+          <td class="memname">static <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> ripple::TrafficCount::to_string </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7">category</a>&#160;</td>
+          <td class="paramname"><em>cat</em></td><td>)</td>
+          <td></td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">static</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="TrafficCount_8h_source.html#l00247">247</a> of file <a class="el" href="TrafficCount_8h_source.html">TrafficCount.h</a>.</p>
+
+</div>
+</div>
+<h2 class="groupheader">Member Data Documentation</h2>
+<a id="a434d8361116eb9f800113efd14fc4a5c" name="a434d8361116eb9f800113efd14fc4a5c"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a434d8361116eb9f800113efd14fc4a5c">&#9670;&#160;</a></span>counts_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/unordered_map.html">std::unordered_map</a>&lt;<a class="el" href="classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7">category</a>, <a class="el" href="classripple_1_1TrafficCount_1_1TrafficStats.html">TrafficStats</a>&gt; ripple::TrafficCount::counts_</td>
         </tr>
       </table>
   </td>
@@ -415,7 +478,7 @@ Protected Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TrafficCount_8h_source.html#l00203">203</a> of file <a class="el" href="TrafficCount_8h_source.html">TrafficCount.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TrafficCount_8h_source.html#l00313">313</a> of file <a class="el" href="TrafficCount_8h_source.html">TrafficCount.h</a>.</p>
 
 </div>
 </div>

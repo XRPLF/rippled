@@ -15,12 +15,14 @@ var searchData=
   ['previss_12',['prevIss',['../classripple_1_1test_1_1ElementComboIter.html#a4a14ce172d72da140cb8ae49a8f132dca12c323f90714c47c4b398b6f47fbe4f0',1,'ripple::test::ElementComboIter']]],
   ['proof_5fpath_5frequest_13',['proof_path_request',['../classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a12daff4da9926d993515c1abbe440294',1,'ripple::TrafficCount']]],
   ['proof_5fpath_5fresponse_14',['proof_path_response',['../classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a58bfe29c5a771bac79ae82168a063ece',1,'ripple::TrafficCount']]],
-  ['proposal_15',['proposal',['../classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7ae7dce5bae6aaf31f79826a9eeb0ef3f2',1,'ripple::TrafficCount::proposal()'],['../namespaceripple.html#ad5143ceada01141772ae4aab984f94bdab314439bc1697845de3749d51dca7c15',1,'ripple::proposal()']]],
-  ['proposing_16',['proposing',['../namespaceripple.html#a33f8b6e68b5f63faf2e9755cc251563ea80dcf57f5ecd4be3cbfa37eccbcb6f44',1,'ripple']]],
-  ['proxy_17',['PROXY',['../namespaceripple.html#ae08fe18f17b24699ce41d3898fbb8c2cae69e6446e892e3922e76c82e96837920',1,'ripple']]],
-  ['pt_5fnonxrp_5fto_5fnonxrp_18',['pt_nonXRP_to_nonXRP',['../classripple_1_1Pathfinder.html#ac8ac528dd5f3db523d97019bd5cc7b68a0e0c19cf0719f141e7678e880a0bb27f',1,'ripple::Pathfinder']]],
-  ['pt_5fnonxrp_5fto_5fsame_19',['pt_nonXRP_to_same',['../classripple_1_1Pathfinder.html#ac8ac528dd5f3db523d97019bd5cc7b68a66ca6f9e06b3d15958b7638aea014cb7',1,'ripple::Pathfinder']]],
-  ['pt_5fnonxrp_5fto_5fxrp_20',['pt_nonXRP_to_XRP',['../classripple_1_1Pathfinder.html#ac8ac528dd5f3db523d97019bd5cc7b68aa8468d8408c64a9a8e9ae944425cb76b',1,'ripple::Pathfinder']]],
-  ['pt_5fxrp_5fto_5fnonxrp_21',['pt_XRP_to_nonXRP',['../classripple_1_1Pathfinder.html#ac8ac528dd5f3db523d97019bd5cc7b68a5e290dc7a0b9c81a83545431e6781567',1,'ripple::Pathfinder']]],
-  ['pt_5fxrp_5fto_5fxrp_22',['pt_XRP_to_XRP',['../classripple_1_1Pathfinder.html#ac8ac528dd5f3db523d97019bd5cc7b68aab70f6934f757bb3eca6032a279f2d2f',1,'ripple::Pathfinder']]]
+  ['proposal_15',['proposal',['../namespaceripple.html#ad5143ceada01141772ae4aab984f94bdab314439bc1697845de3749d51dca7c15',1,'ripple::proposal()'],['../classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7ae7dce5bae6aaf31f79826a9eeb0ef3f2',1,'ripple::TrafficCount::proposal()']]],
+  ['proposal_5fduplicate_16',['proposal_duplicate',['../classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a763da39beeba0ea9676a89e59bfd14eb',1,'ripple::TrafficCount']]],
+  ['proposal_5funtrusted_17',['proposal_untrusted',['../classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a5a75c17c55001c9b047fff31935c9748',1,'ripple::TrafficCount']]],
+  ['proposing_18',['proposing',['../namespaceripple.html#a33f8b6e68b5f63faf2e9755cc251563ea80dcf57f5ecd4be3cbfa37eccbcb6f44',1,'ripple']]],
+  ['proxy_19',['PROXY',['../namespaceripple.html#ae08fe18f17b24699ce41d3898fbb8c2cae69e6446e892e3922e76c82e96837920',1,'ripple']]],
+  ['pt_5fnonxrp_5fto_5fnonxrp_20',['pt_nonXRP_to_nonXRP',['../classripple_1_1Pathfinder.html#ac8ac528dd5f3db523d97019bd5cc7b68a0e0c19cf0719f141e7678e880a0bb27f',1,'ripple::Pathfinder']]],
+  ['pt_5fnonxrp_5fto_5fsame_21',['pt_nonXRP_to_same',['../classripple_1_1Pathfinder.html#ac8ac528dd5f3db523d97019bd5cc7b68a66ca6f9e06b3d15958b7638aea014cb7',1,'ripple::Pathfinder']]],
+  ['pt_5fnonxrp_5fto_5fxrp_22',['pt_nonXRP_to_XRP',['../classripple_1_1Pathfinder.html#ac8ac528dd5f3db523d97019bd5cc7b68aa8468d8408c64a9a8e9ae944425cb76b',1,'ripple::Pathfinder']]],
+  ['pt_5fxrp_5fto_5fnonxrp_23',['pt_XRP_to_nonXRP',['../classripple_1_1Pathfinder.html#ac8ac528dd5f3db523d97019bd5cc7b68a5e290dc7a0b9c81a83545431e6781567',1,'ripple::Pathfinder']]],
+  ['pt_5fxrp_5fto_5fxrp_24',['pt_XRP_to_XRP',['../classripple_1_1Pathfinder.html#ac8ac528dd5f3db523d97019bd5cc7b68aab70f6934f757bb3eca6032a279f2d2f',1,'ripple::Pathfinder']]]
 ];

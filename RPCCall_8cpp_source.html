@@ -1741,7 +1741,7 @@ $(function() {
 <div class="line"><a id="l01663" name="l01663"></a><span class="lineno"> 1663</span>    <span class="keyword">constexpr</span> <span class="keyword">auto</span> RPC_REPLY_MAX_BYTES = <a class="code hl_function" href="namespaceripple.html#a13d7c6c34d30731bbc221f629e03f8db">megabytes</a>(256);</div>
 <div class="line"><a id="l01664" name="l01664"></a><span class="lineno"> 1664</span> </div>
 <div class="line"><a id="l01665" name="l01665"></a><span class="lineno"> 1665</span>    <span class="keyword">using namespace </span>std::chrono_literals;</div>
-<div class="line"><a id="l01666" name="l01666"></a><span class="lineno"> 1666</span>    <span class="keyword">auto</span> <span class="keyword">constexpr</span> RPC_NOTIFY = 10min;</div>
+<div class="line"><a id="l01666" name="l01666"></a><span class="lineno"> 1666</span>    <span class="keyword">auto</span> <span class="keyword">constexpr</span> RPC_WEBHOOK_TIMEOUT = 30s;</div>
 <div class="line"><a id="l01667" name="l01667"></a><span class="lineno"> 1667</span> </div>
 <div class="line"><a id="l01668" name="l01668"></a><span class="lineno"> 1668</span>    <a class="code hl_function" href="classripple_1_1HTTPClient.html#a6655540e8a9d9255e16358b8edfeb9a5">HTTPClient::request</a>(</div>
 <div class="line"><a id="l01669" name="l01669"></a><span class="lineno"> 1669</span>        bSSL,</div>
@@ -1758,7 +1758,7 @@ $(function() {
 <div class="line"><a id="l01680" name="l01680"></a><span class="lineno"> 1680</span>            std::placeholders::_2,</div>
 <div class="line"><a id="l01681" name="l01681"></a><span class="lineno"> 1681</span>            j),</div>
 <div class="line"><a id="l01682" name="l01682"></a><span class="lineno"> 1682</span>        RPC_REPLY_MAX_BYTES,</div>
-<div class="line"><a id="l01683" name="l01683"></a><span class="lineno"> 1683</span>        RPC_NOTIFY,</div>
+<div class="line"><a id="l01683" name="l01683"></a><span class="lineno"> 1683</span>        RPC_WEBHOOK_TIMEOUT,</div>
 <div class="line"><a id="l01684" name="l01684"></a><span class="lineno"> 1684</span>        <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/utility/functional/bind.html">std::bind</a>(</div>
 <div class="line"><a id="l01685" name="l01685"></a><span class="lineno"> 1685</span>            &amp;<a class="code hl_function" href="structripple_1_1RPCCallImp.html#ab7421486f8b9b70783fab86e3a4cd382">RPCCallImp::onResponse</a>,</div>
 <div class="line"><a id="l01686" name="l01686"></a><span class="lineno"> 1686</span>            callbackFuncP,</div>
