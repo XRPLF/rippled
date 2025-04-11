@@ -211,8 +211,10 @@ public:
      * @param args collection of features
      *
      */
-    Env(beast::unit_test::suite& suite_, FeatureBitset features)
-        : Env(suite_, envconfig(), features)
+    Env(beast::unit_test::suite& suite_,
+        FeatureBitset features,
+        std::unique_ptr<Logs> logs = nullptr)
+        : Env(suite_, envconfig(), features, std::move(logs))
     {
     }
 
