@@ -66,7 +66,8 @@ NotTEC
 LoanBrokerSet::doPreflight(PreflightContext const& ctx)
 {
     auto const& tx = ctx.tx;
-    if (!validDataLength(tx[~sfData], maxDataPayloadLength))
+    if (auto const data = tx[~sfData]; data && !data->empty() &&
+        !validDataLength(tx[~sfData], maxDataPayloadLength))
         return temINVALID;
     if (!validNumericRange(tx[~sfManagementFeeRate], maxFeeRate))
         return temINVALID;

@@ -100,20 +100,31 @@ class LoanBroker_test : public beast::unit_test::suite
         jtx::Account const& alice,
         jtx::Account const& evan,
         VaultInfo const& vault,
-        std::function<void()> createBroker,
-        std::function<void(SLE::const_ref broker)> checkBroker,
-        std::function<void(SLE::const_ref broker)> changeBroker,
-        std::function<void(SLE::const_ref broker)> checkChangedBroker)
+        std::function<jtx::JTx(jtx::JTx const&)> modifyJTx,
+        std::function<void(SLE::const_ref)> checkBroker,
+        std::function<void(SLE::const_ref)> changeBroker,
+        std::function<void(SLE::const_ref)> checkChangedBroker)
     {
         auto const keylet = keylet::loanbroker(alice.id(), env.seq(alice));
+        testcase("Lifecycle: " + to_string(vault.asset));
 
         using namespace jtx;
         using namespace loanBroker;
 
-        createBroker();
+        {
+            // Start with default values
+            auto jtx = env.jt(set(alice, vault.vaultID), fee(increment));
+            // Modify as desired
+            if (modifyJTx)
+                jtx = modifyJTx(jtx);
+            // Successfully create a Loan Broker
+            env(jtx);
+        }
+
         env.close();
         if (auto broker = env.le(keylet); BEAST_EXPECT(broker))
         {
+            log << to_string(broker->getJson()) << std::endl;
             BEAST_EXPECT(broker->at(sfVaultID) == vault.vaultID);
             BEAST_EXPECT(broker->at(sfAccount) != alice.id());
             BEAST_EXPECT(broker->at(sfOwner) == alice.id());
@@ -121,11 +132,9 @@ class LoanBroker_test : public beast::unit_test::suite
             BEAST_EXPECT(broker->at(sfSequence) == env.seq(alice) - 1);
             BEAST_EXPECT(broker->at(sfOwnerCount) == 0);
             BEAST_EXPECT(broker->at(sfDebtTotal) == 0);
-            BEAST_EXPECT(broker->at(sfDebtMaximum) == 0);
             BEAST_EXPECT(broker->at(sfCoverAvailable) == 0);
-            BEAST_EXPECT(broker->at(sfCoverRateMinimum) == 0);
-            BEAST_EXPECT(broker->at(sfCoverRateLiquidation) == 0);
-            checkBroker(broker);
+            if (checkBroker)
+                checkBroker(broker);
 
             // Load the pseudo-account
             auto const pseudoKeylet = keylet::account(broker->at(sfAccount));
@@ -162,13 +171,28 @@ class LoanBroker_test : public beast::unit_test::suite
             env(set(alice, vault.vaultID), loanBrokerID(keylet.key));
 
             // Make modifications to the broker
-            changeBroker(broker);
+            if (changeBroker)
+                changeBroker(broker);
 
             env.close();
             broker = env.le(keylet);
 
             // Check the results of modifications
-            checkChangedBroker(broker);
+            if (checkChangedBroker)
+                checkChangedBroker(broker);
+
+            // Verify that fields get removed when set to default values
+            // Debt maximum: explicit 0
+            // Data: explicit empty
+            env(set(alice, vault.vaultID),
+                loanBrokerID(broker->key()),
+                debtMaximum(Number(0)),
+                data(""));
+
+            // Check the updated fields
+            broker = env.le(keylet);
+            BEAST_EXPECT(!broker->isFieldPresent(sfDebtMaximum));
+            BEAST_EXPECT(!broker->isFieldPresent(sfData));
 
             /////////////////////////////////////
             // try to delete the wrong broker object
@@ -320,16 +344,14 @@ class LoanBroker_test : public beast::unit_test::suite
                 fee(increment),
                 ter(temINVALID));
 
+            std::string testData;
             lifecycle(
                 env,
                 alice,
                 evan,
                 vault,
-                [&]() {
-                    // Successfully create a Loan Broker with all default
-                    // values.
-                    env(set(alice, vault.vaultID), fee(increment));
-                },
+                // No modifications
+                {},
                 [&](SLE::const_ref broker) {
                     // Extra checks
                     BEAST_EXPECT(!broker->isFieldPresent(sfManagementFeeRate));
@@ -337,6 +359,10 @@ class LoanBroker_test : public beast::unit_test::suite
                     BEAST_EXPECT(
                         !broker->isFieldPresent(sfCoverRateLiquidation));
                     BEAST_EXPECT(!broker->isFieldPresent(sfData));
+                    BEAST_EXPECT(!broker->isFieldPresent(sfDebtMaximum));
+                    BEAST_EXPECT(broker->at(sfDebtMaximum) == 0);
+                    BEAST_EXPECT(broker->at(sfCoverRateMinimum) == 0);
+                    BEAST_EXPECT(broker->at(sfCoverRateLiquidation) == 0);
                 },
                 [&](SLE::const_ref broker) {
                     // Modifications
@@ -375,19 +401,13 @@ class LoanBroker_test : public beast::unit_test::suite
                         ter(temINVALID));
 
                     // fields that can be changed
-                    std::string const testData("Test Data 1234");
+                    testData = "Test Data 1234";
                     // Bad data: too long
                     env(set(alice, vault.vaultID),
                         loanBrokerID(broker->key()),
                         data(std::string(maxDataPayloadLength + 1, 'W')),
                         ter(temINVALID));
-                    // Debt maximum: explicit 0
-                    env(set(alice, vault.vaultID),
-                        loanBrokerID(broker->key()),
-                        debtMaximum(Number(0)));
-                    // Check the updated fields
-                    broker = env.le(broker->key());
-                    BEAST_EXPECT(!broker->isFieldPresent(sfDebtMaximum));
+
                     // Bad debt maximum
                     env(set(alice, vault.vaultID),
                         loanBrokerID(broker->key()),
@@ -410,17 +430,17 @@ class LoanBroker_test : public beast::unit_test::suite
                 alice,
                 evan,
                 vault,
-                [&]() {
-                    std::string const testData2("spam spam spam spam");
+                [&](jtx::JTx const& jv) {
+                    testData = "spam spam spam spam";
                     // Finally, create another Loan Broker with none of the
                     // values at default
-                    env(set(alice, vault.vaultID),
-                        data(testData2),
+                    return env.jt(
+                        jv,
+                        data(testData),
                         managementFeeRate(123),
                         debtMaximum(Number(9)),
                         coverRateMinimum(100),
-                        coverRateLiquidation(200),
-                        fee(increment));
+                        coverRateLiquidation(200));
                 },
                 [&](SLE::const_ref broker) {
                     // Extra checks
@@ -428,12 +448,12 @@ class LoanBroker_test : public beast::unit_test::suite
                     BEAST_EXPECT(broker->at(sfCoverRateMinimum) == 100);
                     BEAST_EXPECT(broker->at(sfCoverRateLiquidation) == 200);
                     BEAST_EXPECT(broker->at(sfDebtMaximum) == Number(9));
-                    BEAST_EXPECT(checkVL(broker->at(sfData), testData2));
+                    BEAST_EXPECT(checkVL(broker->at(sfData), testData));
                 },
                 [&](SLE::const_ref broker) {
                     // Reset Data & Debt maximum to default values
                     env(set(alice, vault.vaultID),
-                        loanBrokerID(keylet.key),
+                        loanBrokerID(broker->key()),
                         data(""),
                         debtMaximum(Number(0)));
                 },
