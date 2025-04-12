@@ -605,13 +605,9 @@ namespace loanBroker {
 Json::Value
 set(AccountID const& account, uint256 const& vaultId, uint32_t flags = 0);
 
-/*
-inline Json::Value
-set(Account const& account, uint256 const& vaultId, uint32_t flags = 0)
-{
-    return create(account.id(), vaultId);
-}
-*/
+// Use "del" because "delete" is a reserved word in C++.
+Json::Value
+del(AccountID const& account, uint256 const& loanBrokerID, uint32_t flags = 0);
 
 auto const loanBrokerID = JTxFieldWrapper<uint256Field>(sfLoanBrokerID);
 

@@ -435,7 +435,6 @@ AccountRootsDeletedClean::finalize(
     // be logged
     [[maybe_unused]] bool const enforce =
         view.rules().enabled(featureInvariantsV1_1) ||
-        view.rules().enabled(featureSingleAssetVault) ||
         view.rules().enabled(featureLendingProtocol);
 
     auto const objectExists = [&view, enforce, &j](auto const& keylet) {

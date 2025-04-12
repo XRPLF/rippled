@@ -548,13 +548,13 @@ TRANSACTION(ttLOAN_BROKER_SET, 74, LoanBrokerSet,
     {sfCoverRateLiquidation, soeOPTIONAL},
 }))
 
-#if 0
 /** This transaction deletes a Loan Broker */
 TRANSACTION(ttLOAN_BROKER_DELETE, 75, LoanBrokerDelete,
-    acctDelete | mayAuthorizeMPT, ({
+    mustDeleteAcct | mayAuthorizeMPT, ({
     {sfLoanBrokerID, soeREQUIRED},
 }))
 
+#if 0
 /** This transaction deposits First Loss Capital into a Loan Broker */
 TRANSACTION(ttLOAN_BROKER_COVER_DEPOSIT, 76, LoanBrokerCoverDeposit, noPriv, ({
     {sfLoanBrokerID, soeREQUIRED},

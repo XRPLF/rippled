@@ -80,7 +80,7 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
     }
     if (sleBroker->at(sfOwnerCount) != 0)
     {
-        JLOG(ctx.j.warn()) << "LoanBrokerSet: Owner count is not zero";
+        JLOG(ctx.j.warn()) << "LoanBrokerDelete: Owner count is not zero";
         return tecHAS_OBLIGATIONS;
     }
 
@@ -137,6 +137,26 @@ LoanBrokerDelete::doApply()
     auto brokerPseudoSLE = view.peek(keylet::account(brokerPseudoID));
     if (!brokerPseudoSLE)
         return tefBAD_LEDGER;
+
+    // Making the payment should have deleted any obligations
+    // associated with the broker or broker pseudo-account.
+    if (*brokerPseudoSLE->at(sfBalance))
+    {
+        JLOG(j_.warn()) << "LoanBrokerDelete: Pseudo-account has a balance";
+        return tecHAS_OBLIGATIONS;
+    }
+    if (brokerPseudoSLE->at(sfOwnerCount) != 0)
+    {
+        JLOG(j_.warn())
+            << "LoanBrokerDelete: Pseudo-account still owns objects";
+        return tecHAS_OBLIGATIONS;
+    }
+    if (auto const directory = keylet::ownerDir(brokerPseudoID);
+        view.read(directory))
+    {
+        JLOG(j_.warn()) << "LoanBrokerDelete: Pseudo-account has a directory";
+        return tecHAS_OBLIGATIONS;
+    }
 
     view.erase(brokerPseudoSLE);
 

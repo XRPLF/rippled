@@ -405,6 +405,17 @@ set(AccountID const& account, uint256 const& vaultId, uint32_t flags)
     return jv;
 }
 
+Json::Value
+del(AccountID const& account, uint256 const& loanBrokerID, uint32_t flags)
+{
+    Json::Value jv;
+    jv[sfTransactionType.jsonName] = jss::LoanBrokerDelete;
+    jv[sfAccount.jsonName] = to_string(account);
+    jv[sfLoanBrokerID.jsonName] = to_string(loanBrokerID);
+    jv[sfFlags.jsonName] = flags;
+    return jv;
+}
+
 }  // namespace loanBroker
 
 }  // namespace jtx
