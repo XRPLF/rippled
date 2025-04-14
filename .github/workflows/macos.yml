@@ -16,7 +16,7 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-  
+
 jobs:
 
   test:
@@ -100,9 +100,8 @@ jobs:
           generator: ${{ matrix.generator }}
           configuration: ${{ matrix.configuration }}
           cmake-args: "-Dassert=TRUE -Dwerr=TRUE ${{ matrix.cmake-args }}"
-      # TODO: Temporary disabled tests
-      # - name: test
-      #   run: |
-      #     n=$(nproc)
-      #     echo "Using $n test jobs"
-      #     ${build_dir}/rippled --unittest --unittest-jobs $n
+      - name: test
+        run: |
+          n=$(nproc)
+          echo "Using $n test jobs"
+          ${build_dir}/rippled --unittest --unittest-jobs $n
