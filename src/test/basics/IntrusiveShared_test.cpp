@@ -828,12 +828,61 @@ public:
     void
     run() override
     {
-        // testBasics();
-        // testPartialDelete();
-        // testDestructor();
-        // testMultithreadedClearMixedVariant();
-        // testMultithreadedClearMixedUnion();
-        testMultithreadedLockingWeak();
+        using clock = std::chrono::steady_clock;
+
+        {
+            auto start = clock::now();
+            testBasics();
+            auto end = clock::now();
+            std::cout << "testBasics() took "
+                      << std::chrono::duration<double>(end - start).count()
+                      << " s" << std::endl;
+        }
+
+        {
+            auto start = clock::now();
+            testPartialDelete();
+            auto end = clock::now();
+            std::cout << "testPartialDelete() took "
+                      << std::chrono::duration<double>(end - start).count()
+                      << " s" << std::endl;
+        }
+
+        {
+            auto start = clock::now();
+            testDestructor();
+            auto end = clock::now();
+            std::cout << "testDestructor() took "
+                      << std::chrono::duration<double>(end - start).count()
+                      << " s" << std::endl;
+        }
+
+        {
+            auto start = clock::now();
+            testMultithreadedClearMixedVariant();
+            auto end = clock::now();
+            std::cout << "testMultithreadedClearMixedVariant() took "
+                      << std::chrono::duration<double>(end - start).count()
+                      << " s" << std::endl;
+        }
+
+        {
+            auto start = clock::now();
+            testMultithreadedClearMixedUnion();
+            auto end = clock::now();
+            std::cout << "testMultithreadedClearMixedUnion() took "
+                      << std::chrono::duration<double>(end - start).count()
+                      << " s" << std::endl;
+        }
+
+        {
+            auto start = clock::now();
+            testMultithreadedLockingWeak();
+            auto end = clock::now();
+            std::cout << "testMultithreadedLockingWeak() took "
+                      << std::chrono::duration<double>(end - start).count()
+                      << " s" << std::endl;
+        }
     }
 };  // namespace tests
 

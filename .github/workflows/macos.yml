@@ -104,4 +104,4 @@ jobs:
         run: |
           n=$(nproc)
           echo "Using $n test jobs"
-          ${build_dir}/rippled --unittest --unittest-jobs $n
+          ${build_dir}/rippled --unittest ripple.ripple_basics.IntrusiveShared --unittest-jobs $n
