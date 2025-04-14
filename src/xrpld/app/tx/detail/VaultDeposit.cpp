@@ -66,8 +66,13 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     if (assets.asset() != vaultAsset)
         return tecWRONG_ASSET;
 
-    auto const share = MPTIssue(vault->at(sfShareMPTID));
+    auto const mptIssuanceID = vault->at(sfShareMPTID);
+    auto const share = MPTIssue(mptIssuanceID);
     if (share == assets.asset())
+        return tefINTERNAL;
+
+    auto const sleIssuance = ctx.view.read(keylet::mptIssuance(mptIssuanceID));
+    if (!sleIssuance)
         return tefINTERNAL;
 
     // Cannot deposit inside Vault an Asset frozen for the depositor
@@ -80,17 +85,23 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
 
     if ((vault->getFlags() & tfVaultPrivate) && account != vault->at(sfOwner))
     {
-        // The authorization check below is based on DomainID stored in
-        // MPTokenIssuance. Had the vault shares been a regular MPToken, we
-        // would allow authorization granted by the issuer explicitly, but Vault
-        // does not have an MPT issuer (instead it uses pseudo-account, which is
-        // blackholed and cannot create any transactions).
-        //
-        // As per requireAuth documentation, we suppress tecEXPIRED error here,
-        // so we can delete any expired credentials inside doApply.
-        if (auto const ter = requireAuth(ctx.view, share, account);
-            !isTesSuccess(ter) && ter != tecEXPIRED)
-            return ter;
+        auto const maybeDomainID = sleIssuance->at(~sfDomainID);
+        // Since this is a private vault and the account is not its owner, we
+        // perform authorization check based on DomainID read from sleIssuance.
+        // Had the vault shares been a regular MPToken, we would allow
+        // authorization granted by the Issuer explicitly, but Vault uses Issuer
+        // pseudo-account, which cannot grant an authorization.
+        if (maybeDomainID)
+        {
+            // As per validDomain documentation, we suppress tecEXPIRED error
+            // here, so we can delete any expired credentials inside doApply.
+            if (auto const err =
+                    credentials::validDomain(ctx.view, *maybeDomainID, account);
+                !isTesSuccess(err) && err != tecEXPIRED)
+                return err;
+        }
+        else
+            return tecNO_AUTH;
     }
 
     if (auto const ter = std::visit(
@@ -158,10 +169,24 @@ VaultDeposit::doApply()
                     view(),
                     ctx_.journal,
                     {.priorBalance = mPriorBalance,
-                     // The operator-> gives the underlying STUInt192
-                     // whose value function returns a const&.
                      .mptIssuanceID = mptIssuanceID->value(),
                      .accountID = account_});
+                !isTesSuccess(err))
+                return err;
+        }
+
+        // If the vault is private, set the authorized flag for the vault owner
+        if (vault->getFlags() & tfVaultPrivate)
+        {
+            if (auto const err = MPTokenAuthorize::authorize(
+                    view(),
+                    ctx_.journal,
+                    {
+                        .priorBalance = mPriorBalance,
+                        .mptIssuanceID = mptIssuanceID->value(),
+                        .accountID = sleIssuance->at(sfIssuer),
+                        .holderID = account_,
+                    });
                 !isTesSuccess(err))
                 return err;
         }

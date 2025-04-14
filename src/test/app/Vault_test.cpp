@@ -1386,6 +1386,108 @@ class Vault_test : public beast::unit_test::suite
     }
 
     void
+    testWithDomainCheckXRP()
+    {
+        testcase("private XRP vault");
+
+        Env env{*this, supported_amendments() | featureSingleAssetVault};
+        Account owner{"owner"};
+        Account depositor{"depositor"};
+        Account alice{"charlie"};
+        std::string const credType = "credential";
+        Vault vault{env};
+        env.fund(XRP(100000), owner, depositor, alice);
+        env.close();
+
+        PrettyAsset asset = xrpIssue();
+        auto [tx, keylet] = vault.create(
+            {.owner = owner, .asset = asset, .flags = tfVaultPrivate});
+        env(tx);
+        env.close();
+
+        auto const [vaultAccount, issuanceId] =
+            [&env, keylet = keylet, this]() -> std::tuple<AccountID, uint192> {
+            auto const vault = env.le(keylet);
+            BEAST_EXPECT(vault != nullptr);
+            return {vault->at(sfAccount), vault->at(sfShareMPTID)};
+        }();
+        BEAST_EXPECT(env.le(keylet::account(vaultAccount)));
+        BEAST_EXPECT(env.le(keylet::mptIssuance(issuanceId)));
+        PrettyAsset shares{issuanceId};
+
+        {
+            testcase("private XRP vault owner can deposit");
+            auto tx = vault.deposit(
+                {.depositor = owner, .id = keylet.key, .amount = asset(50)});
+            env(tx);
+        }
+
+        {
+            testcase("private XRP vault cannot pay shares to depositor yet");
+            env(pay(owner, depositor, shares(1)), ter{tecNO_AUTH});
+        }
+
+        {
+            testcase("private XRP vault depositor not authorized yet");
+            auto tx = vault.deposit(
+                {.depositor = depositor,
+                 .id = keylet.key,
+                 .amount = asset(50)});
+            env(tx, ter{tecNO_AUTH});
+        }
+
+        {
+            testcase("private XRP vault set DomainID");
+            pdomain::Credentials const credentials{
+                {.issuer = owner, .credType = credType}};
+
+            env(pdomain::setTx(owner, credentials));
+            auto const domainId = [&]() {
+                auto tx = env.tx()->getJson(JsonOptions::none);
+                return pdomain::getNewDomain(env.meta());
+            }();
+
+            auto tx = vault.set({.owner = owner, .id = keylet.key});
+            tx[sfDomainID] = to_string(domainId);
+            env(tx);
+            env.close();
+        }
+
+        auto const credKeylet = credentials::keylet(depositor, owner, credType);
+        {
+            testcase("private XRP vault depositor now authorized");
+            env(credentials::create(depositor, owner, credType));
+            env(credentials::accept(depositor, owner, credType));
+            env.close();
+
+            BEAST_EXPECT(env.le(credKeylet));
+            auto tx = vault.deposit(
+                {.depositor = depositor,
+                 .id = keylet.key,
+                 .amount = asset(50)});
+            env(tx);
+            env.close();
+        }
+
+        {
+            testcase("private XRP vault can pay shares to depositor");
+            env(pay(owner, depositor, shares(1)));
+        }
+
+        {
+            testcase("private XRP vault cannot pay shares to 3rd party");
+            Json::Value jv;
+            jv[sfAccount] = alice.human();
+            jv[sfTransactionType] = jss::MPTokenAuthorize;
+            jv[sfMPTokenIssuanceID] = to_string(issuanceId);
+            env(jv);
+            env.close();
+
+            env(pay(owner, alice, shares(1)), ter{tecNO_AUTH});
+        }
+    }
+
+    void
     testWithIOU()
     {
         testcase("IOU");
@@ -1409,10 +1511,11 @@ class Vault_test : public beast::unit_test::suite
         env(tx);
         env.close();
 
-        auto const vaultAccount = [&env, keylet = keylet, this]() -> AccountID {
+        auto const [vaultAccount, issuanceId] =
+            [&env, keylet = keylet, this]() -> std::tuple<AccountID, uint192> {
             auto const vault = env.le(keylet);
             BEAST_EXPECT(vault != nullptr);
-            return vault->at(sfAccount);
+            return {vault->at(sfAccount), vault->at(sfShareMPTID)};
         }();
 
         auto const share = [&env, keylet = keylet, this]() -> Asset {
@@ -1468,7 +1571,22 @@ class Vault_test : public beast::unit_test::suite
 
         {
             testcase("IOU froze trust line, cannot withdraw to 3rd party");
+            auto tx1 = test::jtx::pay(owner, charlie, STAmount{share, 10});
+            env(tx1, ter{tecNO_AUTH});
+            auto tx2 = test::jtx::pay(charlie, owner, STAmount{share, 10});
+            env(tx2, ter{tecNO_AUTH});
+            env.close();
+
             env(trust(issuer, asset(0), owner, tfSetFreeze));
+            env.close();
+
+            // Since the vault is public, Charlie can simply create MPToken
+            // to gain authorization to receive its shares.
+            Json::Value jv;
+            jv[sfAccount] = charlie.human();
+            jv[sfTransactionType] = jss::MPTokenAuthorize;
+            jv[sfMPTokenIssuanceID] = to_string(issuanceId);
+            env(jv);
             env.close();
 
             auto tx = vault.withdraw(
@@ -1477,11 +1595,7 @@ class Vault_test : public beast::unit_test::suite
 
             tx[sfDestination] = charlie.human();
             env(tx, ter{tecLOCKED});  // owner transitively locked via MPToken
-
-            auto tx1 = test::jtx::pay(owner, charlie, STAmount{share, 10});
             env(tx1, ter{tecLOCKED});
-
-            auto tx2 = test::jtx::pay(charlie, owner, STAmount{share, 10});
             env(tx2, ter{tecLOCKED});
             env.close();
 
@@ -1489,14 +1603,40 @@ class Vault_test : public beast::unit_test::suite
         }
 
         {
+            testcase("IOU unfroze trust line, can withdraw or pay");
+            env(trust(issuer, asset(500), owner, tfClearFreeze));
+            env.close();
+
+            auto tx = vault.withdraw(
+                {.depositor = owner, .id = keylet.key, .amount = asset(1)});
+            env(tx);
+
+            tx[sfDestination] = charlie.human();
+            env(tx);
+
+            auto tx1 = test::jtx::pay(owner, charlie, STAmount{share, 1});
+            env(tx1);
+
+            auto tx2 = test::jtx::pay(charlie, owner, STAmount{share, 1});
+            env(tx2);
+        }
+
+        {
             testcase("IOU global freeze");
             env(fset(issuer, asfGlobalFreeze));
+            env.close();
+
             auto tx = vault.withdraw(
                 {.depositor = owner, .id = keylet.key, .amount = asset(10)});
             env(tx, ter{tecFROZEN});
 
             tx[sfDestination] = issuer.human();
             env(tx, ter{tecFROZEN});
+
+            auto tx1 = test::jtx::pay(owner, charlie, STAmount{share, 10});
+            env(tx1, ter{tecLOCKED});
+            auto tx2 = test::jtx::pay(charlie, owner, STAmount{share, 10});
+            env(tx2, ter{tecLOCKED});
             env.close();
         }
     }
@@ -1916,6 +2056,7 @@ public:
         testWithMPT();
         testWithIOU();
         testWithDomainCheck();
+        testWithDomainCheckXRP();
         testNonTransferableShares();
         testFailedPseudoAccount();
         testRPC();

@@ -2275,42 +2275,46 @@ requireAuth(
                 return tecKILLED;  // VaultCreate looks for this error code
 
             auto const asset = sleVault->at(sfAsset);
-            return std::visit(
-                [&]<ValidIssueType TIss>(TIss const& issue) {
-                    if constexpr (std::is_same_v<TIss, Issue>)
-                        return requireAuth(view, issue, account);
-                    else
-                        return requireAuth(view, issue, account, depth + 1);
-                },
-                asset.value());
+            if (auto const err = std::visit(
+                    [&]<ValidIssueType TIss>(TIss const& issue) {
+                        if constexpr (std::is_same_v<TIss, Issue>)
+                            return requireAuth(view, issue, account);
+                        else
+                            return requireAuth(view, issue, account, depth + 1);
+                    },
+                    asset.value());
+                !isTesSuccess(err))
+                return err;
         }
     }
 
     auto const mptokenID = keylet::mptoken(mptID.key, account);
     auto const sleToken = view.read(mptokenID);
-    // Note, this is not amendment-gated because  we do not want to maintain in
-    // this file the list of all the amendments which can write to this field.
-    // This field is empty unless writing to it has been enabled by an amendment
+    // Note, this check is not amendment-gated because DomainID will be always
+    // empty **unless** writing to it has been enabled by an amendment
     auto const maybeDomainID = sleIssuance->at(~sfDomainID);
-    if (!maybeDomainID)
+    if (maybeDomainID)
     {
-        // if account has no MPToken, fail
-        if (!sleToken)
-            return tecNO_AUTH;
-
-        // mptoken must be authorized if issuance enabled requireAuth
-        if (sleIssuance->getFieldU32(sfFlags) & lsfMPTRequireAuth &&
-            !(sleToken->getFlags() & lsfMPTAuthorized))
-            return tecNO_AUTH;
-
-        return tesSUCCESS;
+        XRPL_ASSERT(
+            sleIssuance->getFieldU32(sfFlags) & lsfMPTRequireAuth,
+            "ripple::requireAuth issuance requires authorization");
+        // We ignore error from validDomain if we found sleToken, as it could
+        // belong to someone who is explicitly authorized e.g. a vault owner.
+        // err = tefINTERNAL | tecOBJECT_NOT_FOUND | tecNO_AUTH | tecEXPIRED
+        if (auto const ter =
+                credentials::validDomain(view, *maybeDomainID, account);
+            isTesSuccess(ter) || sleToken == nullptr)
+            return ter;
     }
 
-    // err = tefINTERNAL | tecOBJECT_NOT_FOUND | tecNO_AUTH | tecEXPIRED
-    if (auto const err =
-            credentials::validDomain(view, *maybeDomainID, account);
-        !isTesSuccess(err))
-        return err;
+    // if account has no MPToken, fail
+    if (!sleToken)
+        return tecNO_AUTH;
+
+    // mptoken must be authorized if issuance enabled requireAuth
+    if (sleIssuance->getFieldU32(sfFlags) & lsfMPTRequireAuth &&
+        !(sleToken->getFlags() & lsfMPTAuthorized))
+        return tecNO_AUTH;
 
     // We are authorized by permissioned domain.
     return tesSUCCESS;
