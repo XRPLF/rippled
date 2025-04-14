@@ -3110,6 +3110,49 @@ class Batch_test : public beast::unit_test::suite
                 validateClosedLedger(env, testCases);
             }
         }
+
+        // Outer Batch terPRE_SEQ
+        {
+            test::jtx::Env env{*this, envconfig()};
+            env.fund(XRP(10000), alice, bob, carol);
+            env.close();
+
+            auto const aliceSeq = env.seq(alice);
+            auto const carolSeq = env.seq(carol);
+
+            // Batch Txn
+            auto const batchFee = batch::calcBatchFee(env, 1, 2);
+            auto const [txIDs, batchID] = submitBatch(
+                env,
+                terPRE_SEQ,
+                batch::outer(carol, carolSeq + 1, batchFee, tfAllOrNothing),
+                batch::inner(pay(alice, bob, XRP(1)), aliceSeq),
+                batch::inner(pay(alice, bob, XRP(2)), aliceSeq + 1),
+                batch::sig(alice));
+
+            // AccountSet Txn
+            auto const noopTxn = env.jt(noop(carol), seq(carolSeq));
+            auto const noopTxnID = to_string(noopTxn.stx->getTransactionID());
+            env(noopTxn, ter(tesSUCCESS));
+            env.close();
+
+            {
+                std::vector<TestLedgerData> testCases = {
+                    {0, "AccountSet", "tesSUCCESS", noopTxnID, std::nullopt},
+                    {1, "Batch", "tesSUCCESS", batchID, std::nullopt},
+                    {2, "Payment", "tesSUCCESS", txIDs[0], batchID},
+                    {3, "Payment", "tesSUCCESS", txIDs[1], batchID},
+                };
+                validateClosedLedger(env, testCases);
+            }
+
+            env.close();
+            {
+                // next ledger contains no transactions
+                std::vector<TestLedgerData> testCases = {};
+                validateClosedLedger(env, testCases);
+            }
+        }
     }
 
     void
