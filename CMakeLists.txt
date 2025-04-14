@@ -65,14 +65,6 @@ endif ()
 include(RippledSanity)
 include(RippledVersion)
 include(RippledSettings)
-# this check has to remain in the top-level cmake
-# because of the early return statement
-if (packages_only)
-  if (NOT TARGET rpm)
-    message (FATAL_ERROR "packages_only requested, but targets were not created - is docker installed?")
-  endif()
-  return ()
-endif ()
 include(RippledCompiler)
 include(RippledInterface)
 
@@ -146,11 +138,17 @@ if(coverage)
 endif()
 
 set(PROJECT_EXPORT_SET RippleExports)
+
 include(RippledCore)
-include(RippledInstall)
 include(RippledValidatorKeys)
 
 if(tests)
   include(CTest)
   add_subdirectory(src/tests/libxrpl)
+endif()
+
+include(RippledInstall)
+
+if(package)
+  include(RippledPackage)
 endif()

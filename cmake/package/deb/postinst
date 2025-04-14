@@ -1,0 +1,86 @@
+#!/bin/sh
+set -e
+
+USER_NAME=rippled
+GROUP_NAME=rippled
+case "$1" in
+    configure)
+        id -u $USER_NAME >/dev/null 2>&1 || \
+        adduser --system --quiet \
+            --home /nonexistent --no-create-home \
+            --disabled-password \
+            --group "$GROUP_NAME"
+
+        chown -R $USER_NAME:$GROUP_NAME /opt/ripple
+
+        mkdir -p /var/log/rippled
+        chown -R $USER_NAME:$GROUP_NAME /var/log/rippled/
+        chmod 755 /var/log/rippled/
+
+        mkdir -p /var/lib/rippled
+        chown -R $USER_NAME:$GROUP_NAME /var/lib/rippled/
+        chmod 755 /var/lib/rippled/
+
+        mkdir -p /etc/opt/ripple/
+
+        ln -sf /opt/ripple/etc/ /etc/opt/ripple
+        ln -sf /opt/ripple/bin/xrpld /usr/local/bin/rippled
+        ln -sf /opt/ripple/bin/xrpld /usr/local/bin/xrpld
+    ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure)
+    ;;
+
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+## NOTE: This section is copy-pasted from the postinst script. There's probably a better way to do it.
+
+# Automatically added by dh_systemd_enable/11.1.6ubuntu2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+    # This will only remove masks created by d-s-h on package removal.
+    deb-systemd-helper unmask 'rippled.service' >/dev/null || true
+
+    # was-enabled defaults to true, so new installations run enable.
+    if deb-systemd-helper --quiet was-enabled 'rippled.service'; then
+        # Enables the unit on first installation, creates new
+        # symlinks on upgrades if the unit file has changed.
+        deb-systemd-helper enable 'rippled.service' >/dev/null || true
+    else
+        # Update the statefile to add new symlinks (if any), which need to be
+        # cleaned up on purge. Also remove old symlinks.
+        deb-systemd-helper update-state 'rippled.service' >/dev/null || true
+    fi
+fi
+# End automatically added section
+# Automatically added by dh_systemd_start/11.1.6ubuntu2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+    if [ -d /run/systemd/system ]; then
+        systemctl --system daemon-reload >/dev/null || true
+        if [ -n "$2" ]; then
+            _dh_action=restart
+        else
+            _dh_action=start
+        fi
+        deb-systemd-invoke $_dh_action 'rippled.service' >/dev/null || true
+    fi
+fi
+# End automatically added section
+# Automatically added by dh_installinit/11.1.6ubuntu2
+if [ "$1" = "configure" ] || [ "$1" = "abort-upgrade" ] || [ "$1" = "abort-deconfigure" ] || [ "$1" = "abort-remove" ] ; then
+    if [ -x "/etc/init.d/rippled" ]; then
+        update-rc.d rippled defaults >/dev/null
+        if [ -n "$2" ]; then
+            _dh_action=restart
+        else
+            _dh_action=start
+        fi
+        invoke-rc.d rippled $_dh_action || exit 1
+    fi
+fi
+# End automatically added section
+
+exit 0

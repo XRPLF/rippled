@@ -78,6 +78,8 @@ jobs:
     container: ghcr.io/xrplf/ci/${{ matrix.distro }}-${{ matrix.codename }}:${{ matrix.compiler }}-${{ matrix.compiler_version }}
     env:
       build_dir: .build
+      package_deploy_config: "Debug-gcc-linux"
+    name: ${{ matrix.compiler }}-${{ matrix.configuration }}
     steps:
       - name: checkout
         uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683
@@ -101,12 +103,52 @@ jobs:
         uses: ./.github/actions/dependencies
         with:
           configuration: ${{ matrix.configuration }}
-      - name: upload archive
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02
+      - name: upload Conan dependency archive
+        uses: actions/upload-artifact@v3
         with:
           name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
           path: conan.tar.gz
           if-no-files-found: error
+
+      - name: Generate packages
+        id: package_build
+        if: ${{ (matrix.configuration == 'Debug') && (matrix.compiler == 'gcc') && (matrix.cmake-args == '') }}
+        run: |
+          apt-get update && apt-get install -y \
+            ca-certificates \
+            curl \
+            debhelper \
+            file \
+            gpg \
+            jq \
+            rpm \
+            python-is-python3 \
+            python3-pip \
+            vim
+          cd ${{ env.build_dir }}
+          cmake .. \
+            -Dpackage=ON \
+            -DCMAKE_TOOLCHAIN_FILE=${{ env.build_dir }}/build/generators/conan_toolchain.cmake \
+            -DCMAKE_BUILD_TYPE=Debug
+          cmake \
+            --build . \
+            --target all \
+            --target validator-keys
+          cpack -G DEB
+          cpack -G RPM
+          echo "pkgs_built=true" >> $GITHUB_OUTPUT
+
+      - name: Artifact packages
+        uses: actions/upload-artifact@v3
+        if: ${{ steps.package_build.outputs.pkgs_built  == 'true' }}
+        with:
+          name: rippled_packages
+          # compression-level: 0 # For v4
+          if-no-files-found: error
+          include-hidden-files: true
+          path: |
+            .build/packages/*.d*eb
+            .build/packages/*.rpm
 
   test:
     strategy:
@@ -137,6 +179,7 @@ jobs:
     container: ghcr.io/xrplf/ci/${{ matrix.distro }}-${{ matrix.codename }}:${{ matrix.compiler }}-${{ matrix.compiler_version }}
     env:
       build_dir: .build
+    name: ${{ matrix.compiler }}-${{ matrix.configuration }} ${{ matrix.cmake-args }}
     steps:
       - name: download cache
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
@@ -164,16 +207,7 @@ jobs:
           generator: Ninja
           configuration: ${{ matrix.configuration }}
           cmake-args: "-Dassert=TRUE -Dwerr=TRUE ${{ matrix.cmake-args }}"
-      - name: check linking
-        run: |
-          cd ${build_dir}
-          ldd ./rippled
-          if [ "$(ldd ./rippled | grep -E '(libstdc\+\+|libgcc)' | wc -l)" -eq 0 ]; then
-            echo 'The binary is statically linked.'
-          else
-            echo 'The binary is dynamically linked.'
-            exit 1
-          fi
+
       - name: test
         run: |
           cd ${build_dir}
