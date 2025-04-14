@@ -1344,6 +1344,36 @@ removeEmptyHolding(
         return tecOBJECT_NOT_FOUND;
     if (line->at(sfBalance)->iou() != beast::zero)
         return tecHAS_OBLIGATIONS;
+
+    // Adjust the owner count(s)
+    if (line->isFlag(lsfLowReserve))
+    {
+        // Clear reserve for low account.
+        auto sleLowAccount =
+            view.peek(keylet::account(line->at(sfLowLimit)->getIssuer()));
+        if (!sleLowAccount)
+            return tecINTERNAL;
+        adjustOwnerCount(view, sleLowAccount, -1, journal);
+        // It's not really necessary to clear the reserve flag, since the line
+        // is about to be deleted, but this will make the metadata reflect an
+        // accurate state at the time of deletion.
+        line->clearFlag(lsfLowReserve);
+    }
+
+    if (line->isFlag(lsfHighReserve))
+    {
+        // Clear reserve for high account.
+        auto sleHighAccount =
+            view.peek(keylet::account(line->at(sfHighLimit)->getIssuer()));
+        if (!sleHighAccount)
+            return tecINTERNAL;
+        adjustOwnerCount(view, sleHighAccount, -1, journal);
+        // It's not really necessary to clear the reserve flag, since the line
+        // is about to be deleted, but this will make the metadata reflect an
+        // accurate state at the time of deletion.
+        line->clearFlag(lsfHighReserve);
+    }
+
     return trustDelete(
         view,
         line,
