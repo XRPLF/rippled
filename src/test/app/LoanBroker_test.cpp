@@ -96,6 +96,7 @@ class LoanBroker_test : public beast::unit_test::suite
 
     void
     lifecycle(
+        const char* label,
         jtx::Env& env,
         jtx::Account const& alice,
         jtx::Account const& evan,
@@ -106,7 +107,15 @@ class LoanBroker_test : public beast::unit_test::suite
         std::function<void(SLE::const_ref)> checkChangedBroker)
     {
         auto const keylet = keylet::loanbroker(alice.id(), env.seq(alice));
-        testcase("Lifecycle: " + to_string(vault.asset));
+        {
+            auto const& asset = vault.asset.raw();
+            testcase << "Lifecycle: "
+                     << (asset.native()                ? "XRP "
+                             : asset.holds<Issue>()    ? "IOU "
+                             : asset.holds<MPTIssue>() ? "MPT "
+                                                       : "Unknown ")
+                     << label;
+        }
 
         using namespace jtx;
         using namespace loanBroker;
@@ -124,7 +133,8 @@ class LoanBroker_test : public beast::unit_test::suite
         env.close();
         if (auto broker = env.le(keylet); BEAST_EXPECT(broker))
         {
-            log << to_string(broker->getJson()) << std::endl;
+            // log << "Broker after create: " << to_string(broker->getJson())
+            //     << std::endl;
             BEAST_EXPECT(broker->at(sfVaultID) == vault.vaultID);
             BEAST_EXPECT(broker->at(sfAccount) != alice.id());
             BEAST_EXPECT(broker->at(sfOwner) == alice.id());
@@ -136,10 +146,18 @@ class LoanBroker_test : public beast::unit_test::suite
             if (checkBroker)
                 checkBroker(broker);
 
-            // Load the pseudo-account
+            // if (auto const vaultSLE = env.le(keylet::vault(vault.vaultID)))
+            //{
+            //     log << "Vault: " << to_string(vaultSLE->getJson()) <<
+            //     std::endl;
+            // }
+            //  Load the pseudo-account
             auto const pseudoKeylet = keylet::account(broker->at(sfAccount));
             if (auto const pseudo = env.le(pseudoKeylet); BEAST_EXPECT(pseudo))
             {
+                // log << "Pseudo-account after create: "
+                //     << to_string(pseudo->getJson()) << std::endl
+                //     << std::endl;
                 BEAST_EXPECT(
                     pseudo->at(sfFlags) ==
                     (lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth));
@@ -201,6 +219,15 @@ class LoanBroker_test : public beast::unit_test::suite
             env(del(evan, keylet.key), ter(tecNO_PERMISSION));
             // TODO: test deletion with an active loan
             // delete the broker
+            // log << "Broker before delete: " << to_string(broker->getJson())
+            //    << std::endl;
+            // if (auto const pseudo = env.le(pseudoKeylet);
+            // BEAST_EXPECT(pseudo))
+            //{
+            //    log << "Pseudo-account before delete: "
+            //        << to_string(pseudo->getJson()) << std::endl
+            //        << std::endl;
+            //}
             env(del(alice, keylet.key));
             env.close();
             {
@@ -215,7 +242,7 @@ class LoanBroker_test : public beast::unit_test::suite
     void
     testLifecycle()
     {
-        testcase("Create and update");
+        testcase("Lifecycle");
         using namespace jtx;
 
         // Create 3 loan brokers: one for XRP, one for an IOU, and one for an
@@ -346,6 +373,7 @@ class LoanBroker_test : public beast::unit_test::suite
 
             std::string testData;
             lifecycle(
+                "default fields",
                 env,
                 alice,
                 evan,
@@ -426,6 +454,7 @@ class LoanBroker_test : public beast::unit_test::suite
                 });
 
             lifecycle(
+                "non-default fields",
                 env,
                 alice,
                 evan,

@@ -91,20 +91,19 @@ TER
 LoanBrokerDelete::doApply()
 {
     auto const& tx = ctx_.tx;
-    auto& view = ctx_.view();
 
     auto const brokerID = tx[sfLoanBrokerID];
 
     // Delete the loan broker
-    auto broker = view.peek(keylet::loanbroker(brokerID));
+    auto broker = view().peek(keylet::loanbroker(brokerID));
     auto const vaultID = broker->at(sfVaultID);
-    auto const sleVault = view.read(keylet::vault(vaultID));
+    auto const sleVault = view().read(keylet::vault(vaultID));
     auto const vaultPseudoID = sleVault->at(sfAccount);
     auto const vaultAsset = sleVault->at(sfAsset);
 
     auto const brokerPseudoID = broker->at(sfAccount);
 
-    if (!view.dirRemove(
+    if (!view().dirRemove(
             keylet::ownerDir(account_),
             broker->at(sfOwnerNode),
             broker->key(),
@@ -112,7 +111,7 @@ LoanBrokerDelete::doApply()
     {
         return tefBAD_LEDGER;
     }
-    if (!view.dirRemove(
+    if (!view().dirRemove(
             keylet::ownerDir(vaultPseudoID),
             broker->at(sfVaultNode),
             broker->key(),
@@ -125,7 +124,7 @@ LoanBrokerDelete::doApply()
         auto const coverAvailable =
             STAmount{vaultAsset, broker->at(sfCoverAvailable)};
         if (auto const ter = accountSend(
-                view,
+                view(),
                 brokerPseudoID,
                 account_,
                 coverAvailable,
@@ -134,12 +133,15 @@ LoanBrokerDelete::doApply()
             return ter;
     }
 
-    auto brokerPseudoSLE = view.peek(keylet::account(brokerPseudoID));
+    if (auto ter = removeEmptyHolding(view(), brokerPseudoID, vaultAsset, j_))
+        return ter;
+
+    auto brokerPseudoSLE = view().peek(keylet::account(brokerPseudoID));
     if (!brokerPseudoSLE)
         return tefBAD_LEDGER;
 
-    // Making the payment should have deleted any obligations
-    // associated with the broker or broker pseudo-account.
+    // Making the payment and removing the empty holding should have deleted any
+    // obligations associated with the broker or broker pseudo-account.
     if (*brokerPseudoSLE->at(sfBalance))
     {
         JLOG(j_.warn()) << "LoanBrokerDelete: Pseudo-account has a balance";
@@ -152,15 +154,15 @@ LoanBrokerDelete::doApply()
         return tecHAS_OBLIGATIONS;
     }
     if (auto const directory = keylet::ownerDir(brokerPseudoID);
-        view.read(directory))
+        view().read(directory))
     {
         JLOG(j_.warn()) << "LoanBrokerDelete: Pseudo-account has a directory";
         return tecHAS_OBLIGATIONS;
     }
 
-    view.erase(brokerPseudoSLE);
+    view().erase(brokerPseudoSLE);
 
-    view.erase(broker);
+    view().erase(broker);
 
     return tesSUCCESS;
 }
