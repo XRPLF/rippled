@@ -572,22 +572,11 @@ public:
     {
         testcase("Multithreaded Clear Mixed Union");
 
-        // This test creates and destroys many SharedWeak pointers in a
-        // loop. All the pointers start as strong and a loop randomly
-        // convert them between strong and weak pointers. Both threads clear
-        // all the pointers and check that the invariants hold.
-        //
-        // Note: This test also differs from the test above in that the pointers
-        // randomly change from strong to weak and from weak to strong in a
-        // loop. This can't be done in the variant test above because variant is
-        // not thread safe while the SharedWeakUnion is thread safe.
-
         using enum TrackedState;
 
         TIBase::ResetStatesGuard rsg{true};
 
         std::atomic<int> destructionState{0};
-        // returns destructorRan and partialDestructorRan (in that order)
         auto getDestructorState = [&]() -> std::pair<bool, bool> {
             int s = destructionState.load(std::memory_order_relaxed);
             return {(s & 1) != 0, (s & 2) != 0};
@@ -641,24 +630,29 @@ public:
             return result;
         }();
 
-        // cloneAndDestroy clones the strong pointer into a vector of
-        // mixed strong and weak pointers, runs a loop that randomly
-        // changes strong pointers to weak pointers,  and destroys them
-        // all at once.
         auto cloneAndDestroy = [&](int threadId) {
             for (int i = 0; i < loopIters; ++i)
             {
-                // ------ Sync Point ------
+                // Example: measure time for loopStartSyncPoint barrier
+                auto startBarrier = std::chrono::steady_clock::now();
                 loopStartSyncPoint.arrive_and_wait();
+                auto endBarrier = std::chrono::steady_clock::now();
+                if (std::chrono::duration<double>(endBarrier - startBarrier)
+                        .count() > 10)
+                {
+                    std::cout << "[Union][Thread " << threadId
+                              << "] Delay at loopStartSyncPoint, iteration "
+                              << i << ": "
+                              << std::chrono::duration<double>(
+                                     endBarrier - startBarrier)
+                                     .count()
+                              << " s" << std::endl;
+                }
 
-                // only thread 0 should reset the state
+                // only thread 0 resets state
                 std::optional<TIBase::ResetStatesGuard> rsg;
                 if (threadId == 0)
                 {
-                    // threadId 0 is the genesis thread. It creates the
-                    // strong point to be cloned by the other threads. This
-                    // thread will also check that the destructor ran and
-                    // clear the temporary variables.
                     rsg.emplace(false);
                     auto [destructorRan, partialDeleteRan] =
                         getDestructorState();
@@ -672,47 +666,96 @@ public:
                     std::fill(toClone.begin(), toClone.end(), strong);
                 }
 
-                // ------ Sync Point ------
+                // Barrier before creating the vector of pointers
+                startBarrier = std::chrono::steady_clock::now();
                 postCreateToCloneSyncPoint.arrive_and_wait();
+                endBarrier = std::chrono::steady_clock::now();
+                if (std::chrono::duration<double>(endBarrier - startBarrier)
+                        .count() > 10)
+                {
+                    std::cout
+                        << "[Union][Thread " << threadId
+                        << "] Delay at postCreateToCloneSyncPoint, iteration "
+                        << i << ": "
+                        << std::chrono::duration<double>(
+                               endBarrier - startBarrier)
+                               .count()
+                        << " s" << std::endl;
+                }
 
                 auto v =
                     createVecOfPointers(toClone[threadId], engines[threadId]);
                 toClone[threadId].reset();
 
-                // ------ Sync Point ------
+                // Barrier after vector creation
+                startBarrier = std::chrono::steady_clock::now();
                 postCreateVecOfPointersSyncPoint.arrive_and_wait();
+                endBarrier = std::chrono::steady_clock::now();
+                if (std::chrono::duration<double>(endBarrier - startBarrier)
+                        .count() > 10)
+                {
+                    std::cout << "[Union][Thread " << threadId
+                              << "] Delay at postCreateVecOfPointersSyncPoint, "
+                                 "iteration "
+                              << i << ": "
+                              << std::chrono::duration<double>(
+                                     endBarrier - startBarrier)
+                                     .count()
+                              << " s" << std::endl;
+                }
 
-                std::uniform_int_distribution<> isStrongDist(0, 1);
+                // Inner loop for flipping pointers
+                auto innerStart = std::chrono::steady_clock::now();
                 for (int f = 0; f < flipPointersLoopIters; ++f)
                 {
                     for (auto& p : v)
                     {
+                        std::uniform_int_distribution<> isStrongDist(0, 1);
                         if (isStrongDist(engines[threadId]))
-                        {
                             p.convertToStrong();
-                        }
                         else
-                        {
                             p.convertToWeak();
-                        }
                     }
                 }
+                auto innerEnd = std::chrono::steady_clock::now();
+                if (std::chrono::duration<double>(innerEnd - innerStart)
+                        .count() > 10)
+                {
+                    std::cout
+                        << "[Union][Thread " << threadId
+                        << "] Delay in pointer conversion loop, iteration " << i
+                        << ": "
+                        << std::chrono::duration<double>(innerEnd - innerStart)
+                               .count()
+                        << " s" << std::endl;
+                }
 
-                // ------ Sync Point ------
+                // Barrier after pointer conversion loop
+                startBarrier = std::chrono::steady_clock::now();
                 postFlipPointersLoopSyncPoint.arrive_and_wait();
+                endBarrier = std::chrono::steady_clock::now();
+                if (std::chrono::duration<double>(endBarrier - startBarrier)
+                        .count() > 10)
+                {
+                    std::cout << "[Union][Thread " << threadId
+                              << "] Delay at postFlipPointersLoopSyncPoint, "
+                                 "iteration "
+                              << i << ": "
+                              << std::chrono::duration<double>(
+                                     endBarrier - startBarrier)
+                                     .count()
+                              << " s" << std::endl;
+                }
 
                 v.clear();
             }
         };
+
         std::vector<std::thread> threads;
         for (int i = 0; i < numThreads; ++i)
-        {
             threads.emplace_back(cloneAndDestroy, i);
-        }
         for (int i = 0; i < numThreads; ++i)
-        {
             threads[i].join();
-        }
     }
 
     void
