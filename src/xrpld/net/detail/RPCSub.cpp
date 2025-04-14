@@ -80,13 +80,6 @@ public:
     {
         std::lock_guard sl(mLock);
 
-        if (mDeque.size() >= eventQueueMax)
-        {
-            // Drop the previous event.
-            JLOG(j_.warn()) << "RPCCall::fromNetwork drop";
-            mDeque.pop_back();
-        }
-
         auto jm = broadcast ? j_.debug() : j_.info();
         JLOG(jm) << "RPCCall::fromNetwork push: " << jvObj;
 
@@ -184,8 +177,6 @@ private:
     }
 
 private:
-    enum { eventQueueMax = 32 };
-
     boost::asio::io_service& m_io_service;
     JobQueue& m_jobQueue;
 

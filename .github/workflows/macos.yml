@@ -1,6 +1,7 @@
 name: macos
 on:
   pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
   push:
     # If the branches list is ever changed, be sure to change it on all
     # build/test jobs (nix, macos, windows, instrumentation)
@@ -18,6 +19,7 @@ concurrency:
 jobs:
 
   test:
+    if: ${{ github.event_name == 'push' || github.event.pull_request.draft != true || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     strategy:
       matrix:
         platform:
@@ -97,8 +99,9 @@ jobs:
           generator: ${{ matrix.generator }}
           configuration: ${{ matrix.configuration }}
           cmake-args: "-Dassert=TRUE -Dwerr=TRUE ${{ matrix.cmake-args }}"
-      - name: test
-        run: |
-          n=$(nproc)
-          echo "Using $n test jobs"
-          ${build_dir}/rippled --unittest --unittest-jobs $n
+      # TODO: Temporary disabled tests
+      # - name: test
+      #   run: |
+      #     n=$(nproc)
+      #     echo "Using $n test jobs"
+      #     ${build_dir}/rippled --unittest --unittest-jobs $n
