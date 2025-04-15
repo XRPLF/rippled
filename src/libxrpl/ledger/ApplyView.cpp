@@ -192,6 +192,7 @@ ApplyView::dirRemove(
     uint256 const& key,
     bool keepRoot)
 {
+    keepRoot = false;
     auto node = peek(keylet::page(directory, page));
 
     if (!node)
