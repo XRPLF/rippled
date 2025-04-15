@@ -554,17 +554,17 @@ TRANSACTION(ttLOAN_BROKER_DELETE, 75, LoanBrokerDelete,
     {sfLoanBrokerID, soeREQUIRED},
 }))
 
-#if 0
 /** This transaction deposits First Loss Capital into a Loan Broker */
 TRANSACTION(ttLOAN_BROKER_COVER_DEPOSIT, 76, LoanBrokerCoverDeposit, noPriv, ({
     {sfLoanBrokerID, soeREQUIRED},
-    {sfNumber, soeREQUIRED},
+    {sfAmount, soeREQUIRED},
 }))
 
+#if 0
 /** This transaction withdraws First Loss Capital from a Loan Broker */
 TRANSACTION(ttLOAN_BROKER_COVER_WITHDRAW, 77, LoanBrokerCoverWithdraw, noPriv, ({
     {sfLoanBrokerID, soeREQUIRED},
-    {sfNumber, soeREQUIRED},
+    {sfAmount, soeREQUIRED},
 }))
 
 /** This transaction creates a Loan */
