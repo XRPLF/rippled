@@ -185,6 +185,16 @@ class LoanBroker_test : public beast::unit_test::suite
                 BEAST_EXPECT(pseudo->at(sfLoanBrokerID) == keylet.key);
             }
 
+            // Test Cover funding before allowing alterations
+            env(coverDeposit(alice, uint256(0), vault.asset(10)),
+                ter(temINVALID));
+            env(coverDeposit(alice, uint256(0), vault.asset(-10)),
+                ter(temBAD_AMOUNT));
+            env(coverDeposit(evan, keylet.key, vault.asset(10)),
+                ter(tecNO_PERMISSION));
+            env(coverDeposit(alice, vault.vaultID, vault.asset(10)),
+                ter(tecNO_ENTRY));
+
             // no-op
             env(set(alice, vault.vaultID), loanBrokerID(keylet.key));
 
@@ -255,16 +265,19 @@ class LoanBroker_test : public beast::unit_test::suite
         // Evan will attempt to be naughty
         Account evan{"evan"};
         Vault vault{env};
-        env.fund(XRP(100000), issuer, noripple(alice, evan));
+
+        // Fund the accounts and trust lines with the same amount so that tests
+        // can use the same values regardless of the asset.
+        env.fund(XRP(100'000), issuer, noripple(alice, evan));
         env.close();
 
         // Create assets
         PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
         PrettyAsset const iouAsset = issuer["IOU"];
-        env(trust(alice, iouAsset(1000)));
-        env(trust(evan, iouAsset(1000)));
-        env(pay(issuer, evan, iouAsset(1000)));
-        env(pay(issuer, alice, iouAsset(1000)));
+        env(trust(alice, iouAsset(1'000'000)));
+        env(trust(evan, iouAsset(1'000'000)));
+        env(pay(issuer, evan, iouAsset(100'000)));
+        env(pay(issuer, alice, iouAsset(100'000)));
         env.close();
 
         MPTTester mptt{env, issuer, mptInitNoFund};
@@ -273,8 +286,8 @@ class LoanBroker_test : public beast::unit_test::suite
         PrettyAsset const mptAsset = mptt.issuanceID();
         mptt.authorize({.account = alice});
         mptt.authorize({.account = evan});
-        env(pay(issuer, alice, mptAsset(1000)));
-        env(pay(issuer, evan, mptAsset(1000)));
+        env(pay(issuer, alice, mptAsset(100'000)));
+        env(pay(issuer, evan, mptAsset(100'000)));
         env.close();
 
         std::array const assets{xrpAsset, iouAsset, mptAsset};

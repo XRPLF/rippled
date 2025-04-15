@@ -398,10 +398,10 @@ Json::Value
 set(AccountID const& account, uint256 const& vaultId, uint32_t flags)
 {
     Json::Value jv;
-    jv[sfTransactionType.jsonName] = jss::LoanBrokerSet;
-    jv[sfAccount.jsonName] = to_string(account);
-    jv[sfVaultID.jsonName] = to_string(vaultId);
-    jv[sfFlags.jsonName] = flags;
+    jv[sfTransactionType] = jss::LoanBrokerSet;
+    jv[sfAccount] = to_string(account);
+    jv[sfVaultID] = to_string(vaultId);
+    jv[sfFlags] = flags;
     return jv;
 }
 
@@ -409,10 +409,42 @@ Json::Value
 del(AccountID const& account, uint256 const& loanBrokerID, uint32_t flags)
 {
     Json::Value jv;
-    jv[sfTransactionType.jsonName] = jss::LoanBrokerDelete;
-    jv[sfAccount.jsonName] = to_string(account);
-    jv[sfLoanBrokerID.jsonName] = to_string(loanBrokerID);
-    jv[sfFlags.jsonName] = flags;
+    jv[sfTransactionType] = jss::LoanBrokerDelete;
+    jv[sfAccount] = to_string(account);
+    jv[sfLoanBrokerID] = to_string(loanBrokerID);
+    jv[sfFlags] = flags;
+    return jv;
+}
+
+Json::Value
+coverDeposit(
+    AccountID const& account,
+    uint256 const& loanBrokerID,
+    STAmount const& amount,
+    uint32_t flags)
+{
+    Json::Value jv;
+    jv[sfTransactionType] = jss::LoanBrokerCoverDeposit;
+    jv[sfAccount] = to_string(account);
+    jv[sfLoanBrokerID] = to_string(loanBrokerID);
+    jv[sfAmount] = amount.getJson(JsonOptions::none);
+    jv[sfFlags] = flags;
+    return jv;
+}
+
+Json::Value
+coverWithdraw(
+    AccountID const& account,
+    uint256 const& loanBrokerID,
+    STAmount const& amount,
+    uint32_t flags)
+{
+    Json::Value jv;
+    jv[sfTransactionType] = jss::LoanBrokerCoverWithdraw;
+    jv[sfAccount] = to_string(account);
+    jv[sfLoanBrokerID] = to_string(loanBrokerID);
+    jv[sfAmount] = amount.getJson(JsonOptions::none);
+    jv[sfFlags] = flags;
     return jv;
 }
 
