@@ -618,8 +618,8 @@ xrpLiquid(
     std::uint32_t const ownerCount = confineOwnerCount(
         view.ownerCountHook(id, sle->getFieldU32(sfOwnerCount)), ownerCountAdj);
 
-    // AMMs have no reserve requirement
-    auto const reserve = sle->isFieldPresent(sfAMMID)
+    // Pseudo-accounts have no reserve requirement
+    auto const reserve = isPseudoAccount(sle)
         ? XRPAmount{0}
         : view.fees().accountReserve(ownerCount);
 

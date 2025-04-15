@@ -42,6 +42,7 @@
 #include <xrpld/app/tx/detail/Escrow.h>
 #include <xrpld/app/tx/detail/LedgerStateFix.h>
 #include <xrpld/app/tx/detail/LoanBrokerCoverDeposit.h>
+#include <xrpld/app/tx/detail/LoanBrokerCoverWithdraw.h>
 #include <xrpld/app/tx/detail/LoanBrokerDelete.h>
 #include <xrpld/app/tx/detail/LoanBrokerSet.h>
 #include <xrpld/app/tx/detail/MPTokenAuthorize.h>

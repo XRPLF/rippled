@@ -102,6 +102,11 @@ std::uint16_t constexpr maxFeeRate = 10'000;
 */
 std::uint32_t constexpr maxCoverRate = 100'000;
 
+/** Basis points (bps) represent 0.01% of a thing. Given a value X, to find the
+ * amount for B bps, use X * B / bpsPerOne
+ */
+std::uint32_t constexpr bpsPerOne = 10'000;
+
 /** The maximum length of a URI inside an NFT */
 std::size_t constexpr maxTokenURILength = 256;
 

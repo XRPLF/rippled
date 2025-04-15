@@ -22,12 +22,12 @@
 #endif
 
 /**
- * TRANSACTION(tag, value, name, fields)
+ * TRANSACTION(tag, value, name, privileges, fields)
  *
  * You must define a transactor class in the `ripple` namespace named `name`,
  * and include its header in `src/xrpld/app/tx/detail/applySteps.cpp`.
  *
- * The fourth parameter of the TRANSACTION macro is a bitfield
+ * The `privileges` parameter of the TRANSACTION macro is a bitfield
  * defining which operations the transaction can perform.
  *
  * The values are only used in InvariantCheck.cpp
@@ -557,16 +557,16 @@ TRANSACTION(ttLOAN_BROKER_DELETE, 75, LoanBrokerDelete,
 /** This transaction deposits First Loss Capital into a Loan Broker */
 TRANSACTION(ttLOAN_BROKER_COVER_DEPOSIT, 76, LoanBrokerCoverDeposit, noPriv, ({
     {sfLoanBrokerID, soeREQUIRED},
-    {sfAmount, soeREQUIRED},
+    {sfAmount, soeREQUIRED, soeMPTSupported},
 }))
 
-#if 0
 /** This transaction withdraws First Loss Capital from a Loan Broker */
 TRANSACTION(ttLOAN_BROKER_COVER_WITHDRAW, 77, LoanBrokerCoverWithdraw, noPriv, ({
     {sfLoanBrokerID, soeREQUIRED},
-    {sfAmount, soeREQUIRED},
+    {sfAmount, soeREQUIRED, soeMPTSupported},
 }))
 
+#if 0
 /** This transaction creates a Loan */
 TRANSACTION(ttLOAN_SET, 78, LoanSet, noPriv, ({
     {sfLoanBrokerID, soeREQUIRED},
@@ -600,13 +600,13 @@ TRANSACTION(ttLOAN_MANAGE, 80, LoanManage, noPriv, ({
 /** The Borrower uses this transaction to draws funds from the Loan. */
 TRANSACTION(ttLOAN_DRAW, 81, LoanDraw, noPriv, ({
     {sfLoanID, soeREQUIRED},
-    {sfAmount, soeREQUIRED},
+    {sfAmount, soeREQUIRED, soeMPTSupported},
 }))
 
 /** The Borrower uses this transaction to make a Payment on the Loan. */
 TRANSACTION(ttLOAN_PAY, 82, LoanPay, noPriv, ({
     {sfLoanID, soeREQUIRED},
-    {sfAmount, soeREQUIRED},
+    {sfAmount, soeREQUIRED, soeMPTSupported},
 }))
 #endif
 

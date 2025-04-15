@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <xrpld/app/tx/detail/LoanBrokerCoverDeposit.h>
+#include <xrpld/app/tx/detail/LoanBrokerCoverWithdraw.h>
 #include <xrpld/app/tx/detail/LoanBrokerSet.h>
 #include <xrpld/ledger/ApplyView.h>
 #include <xrpld/ledger/View.h>
@@ -42,19 +42,19 @@
 namespace ripple {
 
 bool
-LoanBrokerCoverDeposit::isEnabled(PreflightContext const& ctx)
+LoanBrokerCoverWithdraw::isEnabled(PreflightContext const& ctx)
 {
     return lendingProtocolEnabled(ctx);
 }
 
 std::uint32_t
-LoanBrokerCoverDeposit::getFlagsMask(PreflightContext const& ctx)
+LoanBrokerCoverWithdraw::getFlagsMask(PreflightContext const& ctx)
 {
     return tfUniversalMask;
 }
 
 NotTEC
-LoanBrokerCoverDeposit::doPreflight(PreflightContext const& ctx)
+LoanBrokerCoverWithdraw::doPreflight(PreflightContext const& ctx)
 {
     if (ctx.tx[sfLoanBrokerID] == beast::zero)
         return temINVALID;
@@ -66,7 +66,7 @@ LoanBrokerCoverDeposit::doPreflight(PreflightContext const& ctx)
 }
 
 TER
-LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
+LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
 {
     auto const& tx = ctx.tx;
 
@@ -91,18 +91,31 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
     if (amount.asset() != vaultAsset)
         return tecWRONG_ASSET;
 
+    // Cannot transfer a frozen Asset
     auto const pseudoAccountID = sleBroker->at(sfAccount);
 
     // Cannot transfer a frozen Asset
+    /*
     if (isFrozen(ctx.view, account, vaultAsset))
+        return vaultAsset.holds<Issue>() ? tecFROZEN : tecLOCKED;
+    */
+    if (isFrozen(ctx.view, pseudoAccountID, vaultAsset))
         return vaultAsset.holds<Issue>() ? tecFROZEN : tecLOCKED;
     if (vaultAsset.holds<Issue>())
     {
         auto const issue = vaultAsset.get<Issue>();
-        if (isDeepFrozen(
-                ctx.view, pseudoAccountID, issue.currency, issue.account))
+        if (isDeepFrozen(ctx.view, account, issue.currency, issue.account))
             return tecFROZEN;
     }
+
+    auto const coverAvail = sleBroker->at(sfCoverAvailable);
+    // Cover Rate is in 1/10 bps units
+    auto const minimumCover = sleBroker->at(sfDebtTotal) *
+        sleBroker->at(sfCoverRateMinimum) / bpsPerOne / 10;
+    if (coverAvail < amount)
+        return tecINSUFFICIENT_FUNDS;
+    if ((coverAvail - amount) < minimumCover)
+        return tecINSUFFICIENT_FUNDS;
 
     if (accountHolds(
             ctx.view,
@@ -117,7 +130,7 @@ LoanBrokerCoverDeposit::preclaim(PreclaimContext const& ctx)
 }
 
 TER
-LoanBrokerCoverDeposit::doApply()
+LoanBrokerCoverWithdraw::doApply()
 {
     auto const& tx = ctx_.tx;
 
@@ -128,18 +141,18 @@ LoanBrokerCoverDeposit::doApply()
 
     auto const brokerPseudoID = broker->at(sfAccount);
 
-    // Transfer assets from depositor to pseudo-account.
+    // Transfer assets from pseudo-account to depositor.
     if (auto ter = accountSend(
             view(),
-            account_,
             brokerPseudoID,
+            account_,
             amount,
             j_,
             WaiveTransferFee::Yes))
         return ter;
 
     // Increase the LoanBroker's CoverAvailable by Amount
-    broker->at(sfCoverAvailable) += amount;
+    broker->at(sfCoverAvailable) -= amount;
 
     return tesSUCCESS;
 }
