@@ -69,7 +69,7 @@
 #include <test/jtx/trust.h>
 #include <test/jtx/txflags.h>
 #include <test/jtx/utility.h>
-
+#include <test/jtx/domain.h>
 #include <xrpl/json/to_string.h>
 
 #endif

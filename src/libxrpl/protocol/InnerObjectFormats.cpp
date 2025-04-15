@@ -154,6 +154,13 @@ InnerObjectFormats::InnerObjectFormats()
             {sfIssuer, soeREQUIRED},
             {sfCredentialType, soeREQUIRED},
         });
+
+    add(sfBook.jsonName,
+        sfBook.getCode(),
+        {
+            {sfBookDirectory, soeREQUIRED},
+            {sfBookNode, soeREQUIRED},
+        });
 }
 
 InnerObjectFormats const&

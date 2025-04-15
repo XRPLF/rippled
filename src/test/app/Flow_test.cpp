@@ -494,6 +494,7 @@ struct Flow_test : public beast::unit_test::suite
                     OfferCrossing::no,
                     std::nullopt,
                     smax,
+                    std::nullopt,
                     flowJournal);
             }();
 
@@ -1475,7 +1476,8 @@ struct Flow_test : public beast::unit_test::suite
 
         using namespace jtx;
         auto const sa = supported_amendments();
-        testWithFeats(sa - featureFlowCross);
+        testWithFeats(sa - featureFlowCross - featurePermissionedDEX);
+        testWithFeats(sa - featurePermissionedDEX);
         testWithFeats(sa);
         testEmptyStrand(sa);
     }
@@ -1490,13 +1492,16 @@ struct Flow_manual_test : public Flow_test
         auto const all = supported_amendments();
         FeatureBitset const flowCross{featureFlowCross};
         FeatureBitset const f1513{fix1513};
+        FeatureBitset const permDex{featurePermissionedDEX};
 
-        testWithFeats(all - flowCross - f1513);
-        testWithFeats(all - flowCross);
-        testWithFeats(all - f1513);
+        testWithFeats(all - flowCross - f1513 - permDex);
+        testWithFeats(all - flowCross - permDex);
+        testWithFeats(all - f1513 - permDex);
+        testWithFeats(all - permDex);
         testWithFeats(all);
 
-        testEmptyStrand(all - f1513);
+        testEmptyStrand(all - f1513 - permDex);
+        testEmptyStrand(all - permDex);
         testEmptyStrand(all);
     }
 };

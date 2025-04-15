@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/ledger/ReadView.h>
 #include <xrpld/ledger/View.h>
 
@@ -27,6 +28,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/st.h>
+#include "xrpl/protocol/SField.h"
 
 #include <optional>
 
@@ -381,7 +383,8 @@ accountHolds(
         amount.clear(Issue{currency, issuer});
     }
 
-    JLOG(j.trace()) << "accountHolds:" << " account=" << to_string(account)
+    JLOG(j.trace()) << "accountHolds:"
+                    << " account=" << to_string(account)
                     << " amount=" << amount.getFullText();
 
     return view.balanceHook(account, issuer, amount);
@@ -1115,6 +1118,26 @@ offerDelete(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
             false))
     {
         return tefBAD_LEDGER;
+    }
+
+    if (sle->isFlag(lsfHybrid))
+    {
+        if (!sle->isFieldPresent(sfDomainID))
+            return tefINTERNAL;
+
+        auto const& additionalBookDirs = sle->getFieldArray(sfAdditionalBooks);
+
+        for (auto const& bookDir : additionalBookDirs)
+        {
+            auto const& dirIndex = bookDir.getFieldH256(sfBookDirectory);
+            auto const& dirNode = bookDir.getFieldU64(sfBookNode);
+
+            if (!view.dirRemove(
+                    keylet::page(dirIndex), dirNode, offerIndex, false))
+            {
+                return tefBAD_LEDGER;
+            }
+        }
     }
 
     adjustOwnerCount(view, view.peek(keylet::account(owner)), -1, j);

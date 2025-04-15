@@ -68,6 +68,8 @@ protected:
     // if AMM offer quality is better than CLOB offer
     // quality or there is no CLOB offer.
     std::optional<AMMLiquidity<TIn, TOut>> ammLiquidity_;
+    // If set, the step must executed under a domain
+    std::optional<uint256> domainID_;
     beast::Journal const j_;
 
     struct Cache
@@ -93,11 +95,12 @@ protected:
 public:
     BookStep(StrandContext const& ctx, Issue const& in, Issue const& out)
         : maxOffersToConsume_(getMaxOffersToConsume(ctx))
-        , book_(in, out)
+        , book_(in, out, ctx.domainID)
         , strandSrc_(ctx.strandSrc)
         , strandDst_(ctx.strandDst)
         , prevStep_(ctx.prevStep)
         , ownerPaysTransferFee_(ctx.ownerPaysTransferFee)
+        , domainID_(ctx.domainID)
         , j_(ctx.j)
     {
         if (auto const ammSle = ctx.view.read(keylet::amm(in, out));
@@ -190,7 +193,8 @@ protected:
     logStringImpl(char const* name) const
     {
         std::ostringstream ostr;
-        ostr << name << ": " << "\ninIss: " << book_.in.account
+        ostr << name << ": "
+             << "\ninIss: " << book_.in.account
              << "\noutIss: " << book_.out.account
              << "\ninCur: " << book_.in.currency
              << "\noutCur: " << book_.out.currency;
@@ -836,6 +840,10 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
 
     // At any payment engine iteration, AMM offer can only be consumed once.
     auto tryAMM = [&](std::optional<Quality> const& lobQuality) -> bool {
+        // amm doesn't support domain yet
+        if (domainID_)
+            return true;
+
         // If offer crossing then use either LOB quality or nullopt
         // to prevent AMM being blocked by a lower quality LOB.
         auto const qualityThreshold = [&]() -> std::optional<Quality> {

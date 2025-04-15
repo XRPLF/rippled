@@ -29,6 +29,7 @@
 #include <xrpl/protocol/TER.h>
 
 #include <boost/container/flat_set.hpp>
+#include "xrpl/basics/base_uint.h"
 
 #include <optional>
 
@@ -403,6 +404,7 @@ toStrand(
     bool ownerPaysTransferFee,
     OfferCrossing offerCrossing,
     AMMContext& ammContext,
+    std::optional<uint256> const& domainID,
     beast::Journal j);
 
 /**
@@ -443,6 +445,7 @@ toStrands(
     bool ownerPaysTransferFee,
     OfferCrossing offerCrossing,
     AMMContext& ammContext,
+    std::optional<uint256> const& domainID,
     beast::Journal j);
 
 /// @cond INTERNAL
@@ -553,6 +556,7 @@ struct StrandContext
     */
     boost::container::flat_set<Issue>& seenBookOuts;
     AMMContext& ammContext;
+    std::optional<uint256> domainID;
     beast::Journal const j;
 
     /** StrandContext constructor. */
@@ -574,6 +578,7 @@ struct StrandContext
         boost::container::flat_set<Issue>&
             seenBookOuts_,  ///< For detecting book loops
         AMMContext& ammContext_,
+        std::optional<uint256> const& domainID,
         beast::Journal j_);  ///< Journal for logging
 };
 

@@ -21,6 +21,7 @@
 
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/Feature.h>
+#include "test/jtx/permissioned_dex.h"
 
 namespace ripple {
 namespace test {
@@ -143,7 +144,9 @@ public:
     {
         using namespace jtx;
         auto const sa = supported_amendments();
-        test_convert_all_of_an_asset(sa - featureFlowCross);
+        test_convert_all_of_an_asset(
+            sa - featureFlowCross - featurePermissionedDEX);
+        test_convert_all_of_an_asset(sa - featurePermissionedDEX);
         test_convert_all_of_an_asset(sa);
     }
 };

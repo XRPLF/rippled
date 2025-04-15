@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/app/misc/CredentialHelpers.h>
+#include <xrpld/app/misc/PermissionedDEXHelpers.h>
 #include <xrpld/app/paths/RippleCalc.h>
 #include <xrpld/app/tx/detail/Payment.h>
 #include <xrpld/ledger/View.h>
@@ -68,6 +69,10 @@ Payment::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx.isFieldPresent(sfCredentialIDs) &&
         !ctx.rules.enabled(featureCredentials))
+        return temDISABLED;
+
+    if (ctx.tx.isFieldPresent(sfDomainID) &&
+        !ctx.rules.enabled(featurePermissionedDEX))
         return temDISABLED;
 
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
@@ -323,6 +328,17 @@ Payment::preclaim(PreclaimContext const& ctx)
         !isTesSuccess(err))
         return err;
 
+    if (ctx.tx.isFieldPresent(sfDomainID))
+    {
+        if (!permissionedDEX::accountInDomain(
+                ctx.view, ctx.tx[sfAccount], ctx.tx[sfDomainID]))
+            return tecNO_PERMISSION;
+
+        if (!permissionedDEX::accountInDomain(
+                ctx.view, ctx.tx[sfDestination], ctx.tx[sfDomainID]))
+            return tecNO_PERMISSION;
+    }
+
     return tesSUCCESS;
 }
 
@@ -424,6 +440,7 @@ Payment::doApply()
                 dstAccountID,
                 account_,
                 ctx_.tx.getFieldPathSet(sfPaths),
+                ctx_.tx[~sfDomainID],
                 ctx_.app.logs(),
                 &rcInput);
             // VFALCO NOTE We might not need to apply, depending
