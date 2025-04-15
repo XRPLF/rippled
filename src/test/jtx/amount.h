@@ -34,6 +34,16 @@
 #include <type_traits>
 
 namespace ripple {
+
+namespace detail {
+
+struct epsilon_multiple
+{
+    std::size_t n;
+};
+
+}  // namespace detail
+
 namespace test {
 namespace jtx {
 
@@ -311,15 +321,6 @@ drops(XRPAmount i)
 }
 
 //------------------------------------------------------------------------------
-
-namespace detail {
-
-struct epsilon_multiple
-{
-    std::size_t n;
-};
-
-}  // namespace detail
 
 // The smallest possible IOU STAmount
 struct epsilon_t
