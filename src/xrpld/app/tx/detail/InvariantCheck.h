@@ -646,7 +646,7 @@ public:
 };
 
 /**
- * @brief Invariants: Pseudo-accounts have
+ * @brief Invariants: Pseudo-accounts have valid and consisent properties
  *
  * Pseudo-accounts have certain properties, and some of those properties are
  * unique to pseudo-accounts. Check that all pseudo-accounts are following the
@@ -656,6 +656,40 @@ public:
 class ValidPseudoAccounts
 {
     std::vector<std::string> errors_;
+
+public:
+    void
+    visitEntry(
+        bool,
+        std::shared_ptr<SLE const> const&,
+        std::shared_ptr<SLE const> const&);
+
+    bool
+    finalize(
+        STTx const&,
+        TER const,
+        XRPAmount const,
+        ReadView const&,
+        beast::Journal const&);
+};
+
+/**
+ * @brief Invariants: Loan brokers are internally consistent
+ *
+ * 1. If `LoanBroker.OwnerCount = 0` the `DirectoryNode` will have at most one
+ *    node (the root), which will only hold entries for `RippleState` or
+ * `MPToken` objects.
+ *
+ */
+class ValidLoanBroker
+{
+    std::vector<SLE::const_pointer> brokers_;
+
+    bool
+    goodZeroDirectory(
+        ReadView const& view,
+        SLE::const_ref dir,
+        beast::Journal const& j) const;
 
 public:
     void
@@ -694,7 +728,8 @@ using InvariantChecks = std::tuple<
     ValidMPTIssuance,
     ValidPermissionedDomain,
     NoModifiedUnmodifiableFields,
-    ValidPseudoAccounts>;
+    ValidPseudoAccounts,
+    ValidLoanBroker>;
 
 /**
  * @brief get a tuple of all invariant checks

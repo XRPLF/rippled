@@ -1824,4 +1824,98 @@ ValidPseudoAccounts::finalize(
     return true;
 }
 
+//------------------------------------------------------------------------------
+
+void
+ValidLoanBroker::visitEntry(
+    bool isDelete,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
+{
+    if (after && after->getType() == ltLOAN_BROKER)
+    {
+        brokers_.emplace_back(after);
+    }
+}
+
+bool
+ValidLoanBroker::goodZeroDirectory(
+    ReadView const& view,
+    SLE::const_ref dir,
+    beast::Journal const& j) const
+{
+    auto const next = dir->at(~sfIndexNext);
+    auto const prev = dir->at(~sfIndexPrevious);
+    if ((prev && *prev) || (next && *next))
+    {
+        JLOG(j.fatal()) << "Invariant failed: Loan Broker with zero "
+                           "OwnerCount has multiple directory pages";
+        return false;
+    }
+    auto indexes = dir->getFieldV256(sfIndexes);
+    if (indexes.size() > 1)
+    {
+        JLOG(j.fatal())
+            << "Invariant failed: Loan Broker with zero "
+               "OwnerCount has multiple indexes in the Directory root";
+        return false;
+    }
+    if (indexes.size() == 1)
+    {
+        auto const index = indexes.value().front();
+        auto const sle = view.read(keylet::unchecked(index));
+        if (!sle)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: Loan Broker directory corrupt";
+            return false;
+        }
+        if (sle->getType() != ltRIPPLE_STATE && sle->getType() != ltMPTOKEN)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: Loan Broker with zero "
+                   "OwnerCount has an unexpected entry in the directory";
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool
+ValidLoanBroker::finalize(
+    STTx const& tx,
+    TER const,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    bool const enforce = view.rules().enabled(featureLendingProtocol);
+
+    for (auto const& broker : brokers_)
+    {
+        // https://github.com/Tapanito/XRPL-Standards/blob/xls-66-lending-protocol/XLS-0066d-lending-protocol/README.md#3123-invariants
+        // If `LoanBroker.OwnerCount = 0` the `DirectoryNode` will have at most
+        // one node (the root), which will only hold entries for `RippleState`
+        // or `MPToken` objects.
+        if (broker->at(sfOwnerCount) == 0)
+        {
+            auto const dir = view.read(keylet::ownerDir(broker->at(sfAccount)));
+            if (dir)
+            {
+                if (!goodZeroDirectory(view, dir, j))
+                {
+                    XRPL_ASSERT(
+                        enforce,
+                        "ripple::ValidLoanBroker::finalize : Enforcing "
+                        "invariant");
+                    if (enforce)
+                        return false;
+                }
+            }
+        }
+    }
+    return true;
+}
+
 }  // namespace ripple
