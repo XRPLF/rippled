@@ -638,7 +638,7 @@ public:
                 loopStartSyncPoint.arrive_and_wait();
                 auto endBarrier = std::chrono::steady_clock::now();
                 if (std::chrono::duration<double>(endBarrier - startBarrier)
-                        .count() > 1)
+                        .count() > 0.01)
                 {
                     std::cout << "[Union][Thread " << threadId
                               << "] Delay at loopStartSyncPoint, iteration "
@@ -671,7 +671,7 @@ public:
                 postCreateToCloneSyncPoint.arrive_and_wait();
                 endBarrier = std::chrono::steady_clock::now();
                 if (std::chrono::duration<double>(endBarrier - startBarrier)
-                        .count() > 1)
+                        .count() > 0.01)
                 {
                     std::cout
                         << "[Union][Thread " << threadId
@@ -692,7 +692,7 @@ public:
                 postCreateVecOfPointersSyncPoint.arrive_and_wait();
                 endBarrier = std::chrono::steady_clock::now();
                 if (std::chrono::duration<double>(endBarrier - startBarrier)
-                        .count() > 1)
+                        .count() > 0.01)
                 {
                     std::cout << "[Union][Thread " << threadId
                               << "] Delay at postCreateVecOfPointersSyncPoint, "
@@ -719,7 +719,7 @@ public:
                 }
                 auto innerEnd = std::chrono::steady_clock::now();
                 if (std::chrono::duration<double>(innerEnd - innerStart)
-                        .count() > 1)
+                        .count() > 0.01)
                 {
                     std::cout
                         << "[Union][Thread " << threadId
@@ -735,7 +735,7 @@ public:
                 postFlipPointersLoopSyncPoint.arrive_and_wait();
                 endBarrier = std::chrono::steady_clock::now();
                 if (std::chrono::duration<double>(endBarrier - startBarrier)
-                        .count() > 1)
+                        .count() > 0.01)
                 {
                     std::cout << "[Union][Thread " << threadId
                               << "] Delay at postFlipPointersLoopSyncPoint, "
