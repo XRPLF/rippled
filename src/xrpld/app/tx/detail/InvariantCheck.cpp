@@ -2170,4 +2170,42 @@ ValidAMM::finalize(
     return true;
 }
 
+//------------------------------------------------------------------------------
+
+void
+NoEmptyDirectory::visitEntry(
+    bool isDelete,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
+{
+    if (isDelete)
+        return;
+    if (before && before->getType() != ltDIR_NODE)
+        return;
+    if (after && after->getType() != ltDIR_NODE)
+        return;
+    if (!after->isFieldPresent(sfOwner))
+        // Not an account dir
+        return;
+
+    bad_ = after->at(sfIndexes).empty();
+}
+
+bool
+NoEmptyDirectory::finalize(
+    STTx const& tx,
+    TER const result,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    if (bad_)
+    {
+        JLOG(j.fatal()) << "Invariant failed: empty owner directory.";
+        return false;
+    }
+
+    return true;
+}
+
 }  // namespace ripple
