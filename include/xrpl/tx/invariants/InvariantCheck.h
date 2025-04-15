@@ -372,6 +372,22 @@ public:
     finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
 };
 
+/**
+ * @brief Invariants: An account's directory should never be empty
+ *
+ */
+class NoEmptyDirectory
+{
+    bool bad_ = false;
+
+public:
+    void
+    visitEntry(bool, std::shared_ptr<SLE const> const&, std::shared_ptr<SLE const> const&);
+
+    bool
+    finalize(STTx const&, TER const, XRPAmount const, ReadView const&, beast::Journal const&);
+};
+
 // additional invariant checks can be declared above and then added to this
 // tuple
 using InvariantChecks = std::tuple<
@@ -399,7 +415,8 @@ using InvariantChecks = std::tuple<
     ValidLoanBroker,
     ValidLoan,
     ValidVault,
-    ValidMPTPayment>;
+    ValidMPTPayment,
+    NoEmptyDirectory>;
 
 /**
  * @brief get a tuple of all invariant checks
