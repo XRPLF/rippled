@@ -19,6 +19,33 @@
 namespace ripple {
 namespace tests {
 
+struct ManualBarrier
+{
+    std::mutex mtx;
+    std::condition_variable cv;
+    int count;
+    const int initial;
+
+    ManualBarrier(int n) : count(n), initial(n)
+    {
+    }
+
+    void
+    arrive_and_wait()
+    {
+        std::unique_lock lock(mtx);
+        if (--count == 0)
+        {
+            count = initial;
+            cv.notify_all();
+        }
+        else
+        {
+            cv.wait(lock, [&] { return count == initial; });
+        }
+    }
+};
+
 namespace {
 enum class TrackedState : std::uint8_t {
     uninitialized,
@@ -500,9 +527,9 @@ public:
         constexpr int loopIters = 2 * 1024;
         const int numThreads = std::thread::hardware_concurrency() / 2;
         std::vector<SharedIntrusive<TIBase>> toClone;
-        std::barrier loopStartSyncPoint{numThreads};
-        std::barrier postCreateToCloneSyncPoint{numThreads};
-        std::barrier postCreateVecOfPointersSyncPoint{numThreads};
+        ManualBarrier loopStartSyncPoint{numThreads};
+        ManualBarrier postCreateToCloneSyncPoint{numThreads};
+        ManualBarrier postCreateVecOfPointersSyncPoint{numThreads};
         auto engines = [&]() -> std::vector<std::default_random_engine> {
             std::random_device rd;
             std::vector<std::default_random_engine> result;
@@ -617,10 +644,10 @@ public:
         constexpr int flipPointersLoopIters = 256;
         const int numThreads = std::thread::hardware_concurrency() / 2;
         std::vector<SharedIntrusive<TIBase>> toClone;
-        std::barrier loopStartSyncPoint{numThreads};
-        std::barrier postCreateToCloneSyncPoint{numThreads};
-        std::barrier postCreateVecOfPointersSyncPoint{numThreads};
-        std::barrier postFlipPointersLoopSyncPoint{numThreads};
+        ManualBarrier loopStartSyncPoint{numThreads};
+        ManualBarrier postCreateToCloneSyncPoint{numThreads};
+        ManualBarrier postCreateVecOfPointersSyncPoint{numThreads};
+        ManualBarrier postFlipPointersLoopSyncPoint{numThreads};
         auto engines = [&]() -> std::vector<std::default_random_engine> {
             std::random_device rd;
             std::vector<std::default_random_engine> result;
@@ -804,9 +831,9 @@ public:
         constexpr int lockWeakLoopIters = 256;
         const int numThreads = std::thread::hardware_concurrency() / 2;
         std::vector<SharedIntrusive<TIBase>> toLock;
-        std::barrier loopStartSyncPoint{numThreads};
-        std::barrier postCreateToLockSyncPoint{numThreads};
-        std::barrier postLockWeakLoopSyncPoint{numThreads};
+        ManualBarrier loopStartSyncPoint{numThreads};
+        ManualBarrier postCreateToLockSyncPoint{numThreads};
+        ManualBarrier postLockWeakLoopSyncPoint{numThreads};
 
         // lockAndDestroy creates weak pointers from the strong pointer
         // and runs a loop that locks the weak pointer. At the end of the loop
