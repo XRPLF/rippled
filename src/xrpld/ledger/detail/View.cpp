@@ -28,6 +28,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/st.h>
+
 #include "xrpl/protocol/SField.h"
 
 #include <optional>
@@ -533,7 +534,8 @@ xrpLiquid(
     STAmount const amount =
         (balance < reserve) ? STAmount{0} : balance - reserve;
 
-    JLOG(j.trace()) << "accountHolds:" << " account=" << to_string(id)
+    JLOG(j.trace()) << "accountHolds:"
+                    << " account=" << to_string(id)
                     << " amount=" << amount.getFullText()
                     << " fullBalance=" << fullBalance.getFullText()
                     << " balance=" << balance.getFullText()
@@ -1120,11 +1122,8 @@ offerDelete(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
         return tefBAD_LEDGER;
     }
 
-    if (sle->isFlag(lsfHybrid))
+    if (sle->isFieldPresent(sfAdditionalBooks))
     {
-        if (!sle->isFieldPresent(sfDomainID))
-            return tefINTERNAL;
-
         auto const& additionalBookDirs = sle->getFieldArray(sfAdditionalBooks);
 
         for (auto const& bookDir : additionalBookDirs)
