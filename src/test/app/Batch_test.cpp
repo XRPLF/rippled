@@ -350,7 +350,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
         }
 
-        // temINVALID_INNER_BATCH: Batch: duplicate Txn found.
+        // temREDUNDANT: Batch: duplicate Txn found.
         {
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
             auto const seq = env.seq(alice);
@@ -359,11 +359,11 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1));
 
-            env(jt.jv, batch::sig(bob), ter(temINVALID_INNER_BATCH));
+            env(jt.jv, batch::sig(bob), ter(temREDUNDANT));
             env.close();
         }
 
-        // temINVALID_INNER_BATCH: Batch: batch cannot have inner batch txn.
+        // temINVALID: Batch: batch cannot have inner batch txn.
         {
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
@@ -371,11 +371,11 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(
                     batch::outer(alice, seq, batchFee, tfAllOrNothing), seq),
                 batch::inner(pay(alice, bob, XRP(1)), seq + 2),
-                ter(temINVALID_INNER_BATCH));
+                ter(temINVALID));
             env.close();
         }
 
-        // temINVALID_INNER_BATCH: Batch: inner txn must have the
+        // temINVALID_FLAG: Batch: inner txn must have the
         // tfInnerBatchTxn flag.
         {
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
@@ -387,11 +387,11 @@ class Batch_test : public beast::unit_test::suite
                 tx1,
                 batch::inner(pay(alice, bob, XRP(10)), seq + 2));
 
-            env(jt.jv, batch::sig(bob), ter(temINVALID_INNER_BATCH));
+            env(jt.jv, batch::sig(bob), ter(temINVALID_FLAG));
             env.close();
         }
 
-        // temINVALID_INNER_BATCH: Batch: inner txn cannot include TxnSignature.
+        // temMALFORMED: Batch: inner txn cannot include TxnSignature.
         {
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
@@ -401,27 +401,11 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner_nofill(jt.jv),
                 batch::inner(pay(alice, bob, XRP(1)), seq + 2),
-                ter(temINVALID_INNER_BATCH));
+                ter(temMALFORMED));
             env.close();
         }
 
-        // temINVALID_INNER_BATCH: Batch: inner txn must include empty
-        // SigningPubKey.
-        {
-            auto const seq = env.seq(alice);
-            auto const batchFee = batch::calcBatchFee(env, 0, 2);
-            auto tx1 = batch::inner(pay(alice, bob, XRP(1)), seq + 1);
-            tx1[jss::SigningPubKey] = strHex(alice.pk());
-            auto jt = env.jtnofill(
-                batch::outer(alice, seq, batchFee, tfAllOrNothing),
-                tx1,
-                batch::inner(pay(alice, bob, XRP(1)), seq + 2));
-
-            env(jt.jv, ter(temINVALID_INNER_BATCH));
-            env.close();
-        }
-
-        // temINVALID_INNER_BATCH: Batch: inner txn cannot include Signers.
+        // temMALFORMED: Batch: inner txn cannot include Signers.
         {
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
@@ -437,7 +421,23 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(tx1, seq + 1),
                 batch::inner(pay(alice, bob, XRP(1)), seq + 2),
-                ter(temINVALID_INNER_BATCH));
+                ter(temMALFORMED));
+            env.close();
+        }
+
+        // temMALFORMED: Batch: inner txn must include empty
+        // SigningPubKey.
+        {
+            auto const seq = env.seq(alice);
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto tx1 = batch::inner(pay(alice, bob, XRP(1)), seq + 1);
+            tx1[jss::SigningPubKey] = strHex(alice.pk());
+            auto jt = env.jtnofill(
+                batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                tx1,
+                batch::inner(pay(alice, bob, XRP(1)), seq + 2));
+
+            env(jt.jv, ter(temMALFORMED));
             env.close();
         }
 
@@ -453,7 +453,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
         }
 
-        // temINVALID_INNER_BATCH: Batch: inner txn must have a fee of 0.
+        // temBAD_FEE: Batch: inner txn must have a fee of 0.
         {
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
@@ -462,11 +462,11 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 tx1,
                 batch::inner(pay(alice, bob, XRP(2)), seq + 2),
-                ter(temINVALID_INNER_BATCH));
+                ter(temBAD_FEE));
             env.close();
         }
 
-        // temINVALID_INNER_BATCH: Batch: inner txn cannot have both Sequence
+        // temSEQ_AND_TICKET: Batch: inner txn cannot have both Sequence
         // and TicketSequence.
         {
             auto const seq = env.seq(alice);
@@ -476,11 +476,11 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 tx1,
                 batch::inner(pay(alice, bob, XRP(2)), seq + 2),
-                ter(temINVALID_INNER_BATCH));
+                ter(temSEQ_AND_TICKET));
             env.close();
         }
 
-        // temINVALID_INNER_BATCH: Batch: inner txn must have either Sequence or
+        // temSEQ_AND_TICKET: Batch: inner txn must have either Sequence or
         // TicketSequence.
         {
             auto const seq = env.seq(alice);
@@ -488,40 +488,40 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(1)), 0),
                 batch::inner(pay(alice, bob, XRP(2)), seq + 2),
-                ter(temINVALID_INNER_BATCH));
+                ter(temSEQ_AND_TICKET));
             env.close();
         }
 
-        // temINVALID_INNER_BATCH: Batch: duplicate sequence found:
+        // temREDUNDANT: Batch: duplicate sequence found:
         {
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(1)), seq + 1),
                 batch::inner(pay(alice, bob, XRP(2)), seq + 1),
-                ter(temINVALID_INNER_BATCH));
+                ter(temREDUNDANT));
             env.close();
         }
 
-        // temINVALID_INNER_BATCH: Batch: duplicate ticket found:
+        // temREDUNDANT: Batch: duplicate ticket found:
         {
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(1)), 0, seq + 1),
                 batch::inner(pay(alice, bob, XRP(2)), 0, seq + 1),
-                ter(temINVALID_INNER_BATCH));
+                ter(temREDUNDANT));
             env.close();
         }
 
-        // temINVALID_INNER_BATCH: Batch: duplicate ticket & sequence found:
+        // temREDUNDANT: Batch: duplicate ticket & sequence found:
         {
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(1)), 0, seq + 1),
                 batch::inner(pay(alice, bob, XRP(2)), seq + 1),
-                ter(temINVALID_INNER_BATCH));
+                ter(temREDUNDANT));
             env.close();
         }
 

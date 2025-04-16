@@ -182,7 +182,7 @@ Batch::preflight(PreflightContext const& ctx)
             JLOG(ctx.j.trace()) << "BatchTrace[" << parentBatchId << "]: "
                                 << "duplicate Txn found. "
                                 << "txID: " << hash;
-            return temINVALID_INNER_BATCH;
+            return temREDUNDANT;
         }
 
         if (stx.getFieldU16(sfTransactionType) == ttBATCH)
@@ -190,7 +190,7 @@ Batch::preflight(PreflightContext const& ctx)
             JLOG(ctx.j.trace()) << "BatchTrace[" << parentBatchId << "]: "
                                 << "batch cannot have an inner batch txn. "
                                 << "txID: " << hash;
-            return temINVALID_INNER_BATCH;
+            return temINVALID;
         }
 
         if (!(stx.getFlags() & tfInnerBatchTxn))
@@ -199,17 +199,31 @@ Batch::preflight(PreflightContext const& ctx)
                 << "BatchTrace[" << parentBatchId << "]: "
                 << "inner txn must have the tfInnerBatchTxn flag. "
                 << "txID: " << hash;
-            return temINVALID_INNER_BATCH;
+            return temINVALID_FLAG;
         }
 
-        if (stx.isFieldPresent(sfTxnSignature) ||
-            stx.isFieldPresent(sfSigners) || !stx.getSigningPubKey().empty())
+        if (stx.isFieldPresent(sfTxnSignature))
         {
             JLOG(ctx.j.trace()) << "BatchTrace[" << parentBatchId << "]: "
-                                << "inner txn cannot include TxnSignature and "
-                                   "Signers and SigningPubKey must be empty. "
+                                << "inner txn cannot include TxnSignature. "
                                 << "txID: " << hash;
-            return temINVALID_INNER_BATCH;
+            return temMALFORMED;
+        }
+
+        if (stx.isFieldPresent(sfSigners))
+        {
+            JLOG(ctx.j.trace()) << "BatchTrace[" << parentBatchId << "]: "
+                                << "inner txn cannot include Signers. "
+                                << "txID: " << hash;
+            return temMALFORMED;
+        }
+
+        if (!stx.getSigningPubKey().empty())
+        {
+            JLOG(ctx.j.trace()) << "BatchTrace[" << parentBatchId << "]: "
+                                << "inner txn SigningPubKey must be empty. "
+                                << "txID: " << hash;
+            return temMALFORMED;
         }
 
         auto const innerAccount = stx.getAccountID(sfAccount);
@@ -217,10 +231,10 @@ Batch::preflight(PreflightContext const& ctx)
                 ctx.app, ctx.rules, parentBatchId, stx, tapBATCH, ctx.j);
             preflightResult.ter != tesSUCCESS)
         {
-            JLOG(ctx.j.trace())
-                << "BatchTrace[" << parentBatchId << "]: "
-                << "inner txn preflight failed: " << preflightResult.ter << " "
-                << "txID: " << hash;
+            JLOG(ctx.j.trace()) << "BatchTrace[" << parentBatchId << "]: "
+                                << "inner txn preflight failed: "
+                                << transHuman(preflightResult.ter) << " "
+                                << "txID: " << hash;
             return temINVALID_INNER_BATCH;
         }
 
@@ -231,7 +245,7 @@ Batch::preflight(PreflightContext const& ctx)
             JLOG(ctx.j.trace()) << "BatchTrace[" << parentBatchId << "]: "
                                 << "inner txn must have a fee of 0. "
                                 << "txID: " << hash;
-            return temINVALID_INNER_BATCH;
+            return temBAD_FEE;
         }
 
         // Check that Sequence and TicketSequence are not both present
@@ -242,7 +256,7 @@ Batch::preflight(PreflightContext const& ctx)
                                 << "inner txn cannot have both Sequence and "
                                    "TicketSequence. "
                                 << "txID: " << hash;
-            return temINVALID_INNER_BATCH;
+            return temSEQ_AND_TICKET;
         }
 
         // Verify that either Sequence or TicketSequence is present
@@ -253,7 +267,7 @@ Batch::preflight(PreflightContext const& ctx)
                                 << "inner txn must have either Sequence or "
                                    "TicketSequence. "
                                 << "txID: " << hash;
-            return temINVALID_INNER_BATCH;
+            return temSEQ_AND_TICKET;
         }
 
         // Duplicate sequence and ticket checks
@@ -267,7 +281,7 @@ Batch::preflight(PreflightContext const& ctx)
                         << "BatchTrace[" << parentBatchId << "]: "
                         << "duplicate sequence found: "
                         << "txID: " << hash;
-                    return temINVALID_INNER_BATCH;
+                    return temREDUNDANT;
                 }
             }
 
@@ -280,7 +294,7 @@ Batch::preflight(PreflightContext const& ctx)
                         << "BatchTrace[" << parentBatchId << "]: "
                         << "duplicate ticket found: "
                         << "txID: " << hash;
-                    return temINVALID_INNER_BATCH;
+                    return temREDUNDANT;
                 }
             }
         }
