@@ -1382,7 +1382,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
                 saTakerGets,
                 setDirFunc);
             res != tesSUCCESS)
-            return {res, true};
+            return {res, true};  // LCOV_EXCL_LINE
     }
 
     sb.insert(sleOffer);

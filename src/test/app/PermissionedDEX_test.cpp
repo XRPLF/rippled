@@ -316,6 +316,21 @@ class PermissionedDEX_test : public beast::unit_test::suite
             env.close();
         }
 
+        // preclaim - cannot create an offer in a non existent domain
+        {
+            Env env(*this, features);
+            auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+                PermissionedDEX(env);
+            uint256 const badDomain{
+                "F10D0CC9A0F9A3CBF585B80BE09A186483668FDBDD39AA7E3370F3649CE134"
+                "E5"};
+
+            env(offer(bob, XRP(10), USD(10)),
+                domain(badDomain),
+                ter(tecNO_PERMISSION));
+            env.close();
+        }
+
         // apply - offer can be created even if takergets issuer is not in
         // domain
         {
@@ -441,6 +456,22 @@ class PermissionedDEX_test : public beast::unit_test::suite
                 path(~USD),
                 sendmax(XRP(10)),
                 domain(domainID));
+            env.close();
+        }
+
+        // preclaim - cannot send payment with non existent domain
+        {
+            Env env(*this, features);
+            auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
+                PermissionedDEX(env);
+            uint256 const badDomain{
+                "F10D0CC9A0F9A3CBF585B80BE09A186483668FDBDD39AA7E3370F3649CE134"
+                "E5"};
+
+            env(pay(bob, alice, USD(10)),
+                path(~USD),
+                sendmax(XRP(10)),
+                domain(badDomain));
             env.close();
         }
 

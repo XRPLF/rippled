@@ -64,12 +64,15 @@ offerInDomain(
 {
     auto const sleOffer = view.read(keylet::offer(offerID));
 
+    // The following are defensive checks that should never happen, since this
+    // function is used to check against the order book offers, which should not
+    // have any of the following wrong behavior
     if (!sleOffer)
-        return false;
+        return false;  // LCOV_EXCL_LINE
     if (!sleOffer->isFieldPresent(sfDomainID))
-        return false;
+        return false;  // LCOV_EXCL_LINE
     if (sleOffer->getFieldH256(sfDomainID) != domainID)
-        return false;
+        return false;  // LCOV_EXCL_LINE
 
     return accountInDomain(view, sleOffer->getAccountID(sfAccount), domainID);
 }

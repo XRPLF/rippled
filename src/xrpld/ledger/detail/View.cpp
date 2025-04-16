@@ -1134,7 +1134,7 @@ offerDelete(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
             if (!view.dirRemove(
                     keylet::page(dirIndex), dirNode, offerIndex, false))
             {
-                return tefBAD_LEDGER;
+                return tefBAD_LEDGER;  // LCOV_EXCL_LINE
             }
         }
     }
