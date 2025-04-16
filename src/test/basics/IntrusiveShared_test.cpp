@@ -9,7 +9,6 @@
 #include <atomic>
 #include <barrier>
 #include <chrono>
-#include <condition_variable>
 #include <latch>
 #include <optional>
 #include <random>
@@ -19,33 +18,6 @@
 
 namespace ripple {
 namespace tests {
-
-struct ManualBarrier
-{
-    std::mutex mtx;
-    std::condition_variable cv;
-    int count;
-    const int initial;
-
-    ManualBarrier(int n) : count(n), initial(n)
-    {
-    }
-
-    void
-    arrive_and_wait()
-    {
-        std::unique_lock lock(mtx);
-        if (--count == 0)
-        {
-            count = initial;
-            cv.notify_all();
-        }
-        else
-        {
-            cv.wait(lock, [&] { return count == initial; });
-        }
-    }
-};
 
 namespace {
 enum class TrackedState : std::uint8_t {
@@ -67,7 +39,7 @@ public:
     getState(int id)
     {
         assert(id < state.size());
-        return state[id].load(std::memory_order_relaxed);
+        return state[id].load(std::memory_order_acquire);
     }
     static void
     resetStates(bool resetCallback)
@@ -75,9 +47,9 @@ public:
         for (int i = 0; i < maxStates; ++i)
         {
             state[i].store(
-                TrackedState::uninitialized, std::memory_order_relaxed);
+                TrackedState::uninitialized, std::memory_order_release);
         }
-        nextId.store(0, std::memory_order_relaxed);
+        nextId.store(0, std::memory_order_release);
         if (resetCallback)
             TIBase::tracingCallback_ = [](TrackedState,
                                           std::optional<TrackedState>) {};
@@ -154,7 +126,7 @@ private:
     static int
     checkoutID()
     {
-        return nextId.fetch_add(1, std::memory_order_relaxed);
+        return nextId.fetch_add(1, std::memory_order_acq_rel);
     }
 };
 
@@ -481,10 +453,10 @@ public:
             return {(s & 1) != 0, (s & 2) != 0};
         };
         auto setDestructorRan = [&]() -> void {
-            destructionState.fetch_or(1, std::memory_order_relaxed);
+            destructionState.fetch_or(1, std::memory_order_acq_rel);
         };
         auto setPartialDeleteRan = [&]() -> void {
-            destructionState.fetch_or(2, std::memory_order_relaxed);
+            destructionState.fetch_or(2, std::memory_order_acq_rel);
         };
         auto tracingCallback = [&](TrackedState cur,
                                    std::optional<TrackedState> next) {
@@ -526,11 +498,11 @@ public:
             return result;
         };
         constexpr int loopIters = 2 * 1024;
-        const int numThreads = std::thread::hardware_concurrency() / 2;
+        constexpr int numThreads = 16;
         std::vector<SharedIntrusive<TIBase>> toClone;
-        ManualBarrier loopStartSyncPoint{numThreads};
-        ManualBarrier postCreateToCloneSyncPoint{numThreads};
-        ManualBarrier postCreateVecOfPointersSyncPoint{numThreads};
+        std::barrier loopStartSyncPoint{numThreads};
+        std::barrier postCreateToCloneSyncPoint{numThreads};
+        std::barrier postCreateVecOfPointersSyncPoint{numThreads};
         auto engines = [&]() -> std::vector<std::default_random_engine> {
             std::random_device rd;
             std::vector<std::default_random_engine> result;
@@ -562,7 +534,7 @@ public:
                     auto [destructorRan, partialDeleteRan] =
                         getDestructorState();
                     BEAST_EXPECT(!i || destructorRan);
-                    destructionState.store(0, std::memory_order_relaxed);
+                    destructionState.store(0, std::memory_order_release);
 
                     toClone.clear();
                     toClone.resize(numThreads);
@@ -600,20 +572,31 @@ public:
     {
         testcase("Multithreaded Clear Mixed Union");
 
+        // This test creates and destroys many SharedWeak pointers in a
+        // loop. All the pointers start as strong and a loop randomly
+        // convert them between strong and weak pointers. Both threads clear
+        // all the pointers and check that the invariants hold.
+        //
+        // Note: This test also differs from the test above in that the pointers
+        // randomly change from strong to weak and from weak to strong in a
+        // loop. This can't be done in the variant test above because variant is
+        // not thread safe while the SharedWeakUnion is thread safe.
+
         using enum TrackedState;
 
         TIBase::ResetStatesGuard rsg{true};
 
         std::atomic<int> destructionState{0};
+        // returns destructorRan and partialDestructorRan (in that order)
         auto getDestructorState = [&]() -> std::pair<bool, bool> {
             int s = destructionState.load(std::memory_order_relaxed);
             return {(s & 1) != 0, (s & 2) != 0};
         };
         auto setDestructorRan = [&]() -> void {
-            destructionState.fetch_or(1, std::memory_order_relaxed);
+            destructionState.fetch_or(1, std::memory_order_acq_rel);
         };
         auto setPartialDeleteRan = [&]() -> void {
-            destructionState.fetch_or(2, std::memory_order_relaxed);
+            destructionState.fetch_or(2, std::memory_order_acq_rel);
         };
         auto tracingCallback = [&](TrackedState cur,
                                    std::optional<TrackedState> next) {
@@ -643,12 +626,12 @@ public:
         };
         constexpr int loopIters = 2 * 1024;
         constexpr int flipPointersLoopIters = 256;
-        const int numThreads = std::thread::hardware_concurrency() / 2;
+        constexpr int numThreads = 16;
         std::vector<SharedIntrusive<TIBase>> toClone;
-        ManualBarrier loopStartSyncPoint{numThreads};
-        ManualBarrier postCreateToCloneSyncPoint{numThreads};
-        ManualBarrier postCreateVecOfPointersSyncPoint{numThreads};
-        ManualBarrier postFlipPointersLoopSyncPoint{numThreads};
+        std::barrier loopStartSyncPoint{numThreads};
+        std::barrier postCreateToCloneSyncPoint{numThreads};
+        std::barrier postCreateVecOfPointersSyncPoint{numThreads};
+        std::barrier postFlipPointersLoopSyncPoint{numThreads};
         auto engines = [&]() -> std::vector<std::default_random_engine> {
             std::random_device rd;
             std::vector<std::default_random_engine> result;
@@ -658,34 +641,29 @@ public:
             return result;
         }();
 
+        // cloneAndDestroy clones the strong pointer into a vector of
+        // mixed strong and weak pointers, runs a loop that randomly
+        // changes strong pointers to weak pointers,  and destroys them
+        // all at once.
         auto cloneAndDestroy = [&](int threadId) {
             for (int i = 0; i < loopIters; ++i)
             {
-                // Example: measure time for loopStartSyncPoint barrier
-                auto startBarrier = std::chrono::steady_clock::now();
+                // ------ Sync Point ------
                 loopStartSyncPoint.arrive_and_wait();
-                auto endBarrier = std::chrono::steady_clock::now();
-                if (std::chrono::duration<double>(endBarrier - startBarrier)
-                        .count() > 0.01)
-                {
-                    std::cout << "[Union][Thread " << threadId
-                              << "] Delay at loopStartSyncPoint, iteration "
-                              << i << ": "
-                              << std::chrono::duration<double>(
-                                     endBarrier - startBarrier)
-                                     .count()
-                              << " s" << std::endl;
-                }
 
-                // only thread 0 resets state
+                // only thread 0 should reset the state
                 std::optional<TIBase::ResetStatesGuard> rsg;
                 if (threadId == 0)
                 {
+                    // threadId 0 is the genesis thread. It creates the
+                    // strong point to be cloned by the other threads. This
+                    // thread will also check that the destructor ran and
+                    // clear the temporary variables.
                     rsg.emplace(false);
                     auto [destructorRan, partialDeleteRan] =
                         getDestructorState();
                     BEAST_EXPECT(!i || destructorRan);
-                    destructionState.store(0, std::memory_order_relaxed);
+                    destructionState.store(0, std::memory_order_release);
 
                     toClone.clear();
                     toClone.resize(numThreads);
@@ -694,96 +672,47 @@ public:
                     std::fill(toClone.begin(), toClone.end(), strong);
                 }
 
-                // Barrier before creating the vector of pointers
-                startBarrier = std::chrono::steady_clock::now();
+                // ------ Sync Point ------
                 postCreateToCloneSyncPoint.arrive_and_wait();
-                endBarrier = std::chrono::steady_clock::now();
-                if (std::chrono::duration<double>(endBarrier - startBarrier)
-                        .count() > 0.01)
-                {
-                    std::cout
-                        << "[Union][Thread " << threadId
-                        << "] Delay at postCreateToCloneSyncPoint, iteration "
-                        << i << ": "
-                        << std::chrono::duration<double>(
-                               endBarrier - startBarrier)
-                               .count()
-                        << " s" << std::endl;
-                }
 
                 auto v =
                     createVecOfPointers(toClone[threadId], engines[threadId]);
                 toClone[threadId].reset();
 
-                // Barrier after vector creation
-                startBarrier = std::chrono::steady_clock::now();
+                // ------ Sync Point ------
                 postCreateVecOfPointersSyncPoint.arrive_and_wait();
-                endBarrier = std::chrono::steady_clock::now();
-                if (std::chrono::duration<double>(endBarrier - startBarrier)
-                        .count() > 0.01)
-                {
-                    std::cout << "[Union][Thread " << threadId
-                              << "] Delay at postCreateVecOfPointersSyncPoint, "
-                                 "iteration "
-                              << i << ": "
-                              << std::chrono::duration<double>(
-                                     endBarrier - startBarrier)
-                                     .count()
-                              << " s" << std::endl;
-                }
 
-                // Inner loop for flipping pointers
-                auto innerStart = std::chrono::steady_clock::now();
+                std::uniform_int_distribution<> isStrongDist(0, 1);
                 for (int f = 0; f < flipPointersLoopIters; ++f)
                 {
                     for (auto& p : v)
                     {
-                        std::uniform_int_distribution<> isStrongDist(0, 1);
                         if (isStrongDist(engines[threadId]))
+                        {
                             p.convertToStrong();
+                        }
                         else
+                        {
                             p.convertToWeak();
+                        }
                     }
                 }
-                auto innerEnd = std::chrono::steady_clock::now();
-                if (std::chrono::duration<double>(innerEnd - innerStart)
-                        .count() > 0.01)
-                {
-                    std::cout
-                        << "[Union][Thread " << threadId
-                        << "] Delay in pointer conversion loop, iteration " << i
-                        << ": "
-                        << std::chrono::duration<double>(innerEnd - innerStart)
-                               .count()
-                        << " s" << std::endl;
-                }
 
-                // Barrier after pointer conversion loop
-                startBarrier = std::chrono::steady_clock::now();
+                // ------ Sync Point ------
                 postFlipPointersLoopSyncPoint.arrive_and_wait();
-                endBarrier = std::chrono::steady_clock::now();
-                if (std::chrono::duration<double>(endBarrier - startBarrier)
-                        .count() > 0.01)
-                {
-                    std::cout << "[Union][Thread " << threadId
-                              << "] Delay at postFlipPointersLoopSyncPoint, "
-                                 "iteration "
-                              << i << ": "
-                              << std::chrono::duration<double>(
-                                     endBarrier - startBarrier)
-                                     .count()
-                              << " s" << std::endl;
-                }
 
                 v.clear();
             }
         };
-
         std::vector<std::thread> threads;
         for (int i = 0; i < numThreads; ++i)
+        {
             threads.emplace_back(cloneAndDestroy, i);
+        }
         for (int i = 0; i < numThreads; ++i)
+        {
             threads[i].join();
+        }
     }
 
     void
@@ -807,10 +736,10 @@ public:
             return {(s & 1) != 0, (s & 2) != 0};
         };
         auto setDestructorRan = [&]() -> void {
-            destructionState.fetch_or(1, std::memory_order_relaxed);
+            destructionState.fetch_or(1, std::memory_order_acq_rel);
         };
         auto setPartialDeleteRan = [&]() -> void {
-            destructionState.fetch_or(2, std::memory_order_relaxed);
+            destructionState.fetch_or(2, std::memory_order_acq_rel);
         };
         auto tracingCallback = [&](TrackedState cur,
                                    std::optional<TrackedState> next) {
@@ -830,11 +759,11 @@ public:
 
         constexpr int loopIters = 2 * 1024;
         constexpr int lockWeakLoopIters = 256;
-        const int numThreads = std::thread::hardware_concurrency() / 2;
+        constexpr int numThreads = 16;
         std::vector<SharedIntrusive<TIBase>> toLock;
-        ManualBarrier loopStartSyncPoint{numThreads};
-        ManualBarrier postCreateToLockSyncPoint{numThreads};
-        ManualBarrier postLockWeakLoopSyncPoint{numThreads};
+        std::barrier loopStartSyncPoint{numThreads};
+        std::barrier postCreateToLockSyncPoint{numThreads};
+        std::barrier postLockWeakLoopSyncPoint{numThreads};
 
         // lockAndDestroy creates weak pointers from the strong pointer
         // and runs a loop that locks the weak pointer. At the end of the loop
@@ -857,7 +786,7 @@ public:
                     auto [destructorRan, partialDeleteRan] =
                         getDestructorState();
                     BEAST_EXPECT(!i || destructorRan);
-                    destructionState.store(0, std::memory_order_relaxed);
+                    destructionState.store(0, std::memory_order_release);
 
                     toLock.clear();
                     toLock.resize(numThreads);
@@ -899,61 +828,12 @@ public:
     void
     run() override
     {
-        using clock = std::chrono::steady_clock;
-
-        {
-            auto start = clock::now();
-            testBasics();
-            auto end = clock::now();
-            std::cout << "testBasics() took "
-                      << std::chrono::duration<double>(end - start).count()
-                      << " s" << std::endl;
-        }
-
-        {
-            auto start = clock::now();
-            testPartialDelete();
-            auto end = clock::now();
-            std::cout << "testPartialDelete() took "
-                      << std::chrono::duration<double>(end - start).count()
-                      << " s" << std::endl;
-        }
-
-        {
-            auto start = clock::now();
-            testDestructor();
-            auto end = clock::now();
-            std::cout << "testDestructor() took "
-                      << std::chrono::duration<double>(end - start).count()
-                      << " s" << std::endl;
-        }
-
-        {
-            auto start = clock::now();
-            testMultithreadedClearMixedVariant();
-            auto end = clock::now();
-            std::cout << "testMultithreadedClearMixedVariant() took "
-                      << std::chrono::duration<double>(end - start).count()
-                      << " s" << std::endl;
-        }
-
-        {
-            auto start = clock::now();
-            testMultithreadedClearMixedUnion();
-            auto end = clock::now();
-            std::cout << "testMultithreadedClearMixedUnion() took "
-                      << std::chrono::duration<double>(end - start).count()
-                      << " s" << std::endl;
-        }
-
-        {
-            auto start = clock::now();
-            testMultithreadedLockingWeak();
-            auto end = clock::now();
-            std::cout << "testMultithreadedLockingWeak() took "
-                      << std::chrono::duration<double>(end - start).count()
-                      << " s" << std::endl;
-        }
+        testBasics();
+        testPartialDelete();
+        testDestructor();
+        testMultithreadedClearMixedVariant();
+        testMultithreadedClearMixedUnion();
+        testMultithreadedLockingWeak();
     }
 };  // namespace tests
 
