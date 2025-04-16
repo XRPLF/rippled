@@ -21,22 +21,26 @@ namespace ripple {
 namespace tests {
 
 /**
-Experimentally, we discovered that using std::barrier performs extremely poorly (~1 hour vs ~1 minute to run the test suite) in certain macOS environments.
-To unblock our macOS CI pipeline, we replaced std::barrier with a custom mutex-based barrier (Barrier) that significantly improves performance without compromising correctness.
-For future reference, if we ever consider reintroducing std::barrier, the following configuration is known to exhibit the problem:
+Experimentally, we discovered that using std::barrier performs extremely
+poorly (~1 hour vs ~1 minute to run the test suite) in certain macOS
+environments. To unblock our macOS CI pipeline, we replaced std::barrier with a
+custom mutex-based barrier (Barrier) that significantly improves performance
+without compromising correctness. For future reference, if we ever consider
+reintroducing std::barrier, the following configuration is known to exhibit the
+problem:
 
-    Model Name: Mac mini 
-    Model Identifier: Mac14,3 
-    Model Number: Z16K000R4LL/A 
-    Chip: Apple M2 
-    Total Number of Cores: 8 (4 performance and 4 efficiency) 
-    Memory: 24 GB 
-    System Firmware Version: 11881.41.5 
-    OS Loader Version: 11881.1.1 
-    Apple clang version 16.0.0 (clang-1600.0.26.3) 
-    Target: arm64-apple-darwin24.0.0 
-    Thread model: posix 
- 
+    Model Name: Mac mini
+    Model Identifier: Mac14,3
+    Model Number: Z16K000R4LL/A
+    Chip: Apple M2
+    Total Number of Cores: 8 (4 performance and 4 efficiency)
+    Memory: 24 GB
+    System Firmware Version: 11881.41.5
+    OS Loader Version: 11881.1.1
+    Apple clang version 16.0.0 (clang-1600.0.26.3)
+    Target: arm64-apple-darwin24.0.0
+    Thread model: posix
+
  */
 struct Barrier
 {
