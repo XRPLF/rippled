@@ -35,16 +35,6 @@ jobs:
       build_dir: .build
       NUM_PROCESSORS: 12
     steps:
-      - name: install Homebrew clang 18.1.8
-        run: |
-          brew install llvm@18
-          echo '/opt/homebrew/opt/llvm@18/bin' >> $GITHUB_PATH
-          echo "Updated clang to Homebrew clang version 18.1.8"
-      - name: print system info
-        run: |
-          system_profiler SPHardwareDataType
-          sysctl -n hw.logicalcpu
-          clang --version
       - name: checkout
         uses: actions/checkout@v4
       - name: install Conan
@@ -82,6 +72,9 @@ jobs:
           nproc --version
           echo -n "nproc returns: "
           nproc
+          system_profiler SPHardwareDataType
+          sysctl -n hw.logicalcpu
+          clang --version
       - name: configure Conan
         run : |
           conan profile new default --detect || true
