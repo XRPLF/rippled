@@ -9,6 +9,7 @@
 #include <atomic>
 #include <barrier>
 #include <chrono>
+#include <condition_variable>
 #include <latch>
 #include <optional>
 #include <random>
