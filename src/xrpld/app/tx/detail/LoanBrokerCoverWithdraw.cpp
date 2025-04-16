@@ -153,6 +153,7 @@ LoanBrokerCoverWithdraw::doApply()
 
     // Increase the LoanBroker's CoverAvailable by Amount
     broker->at(sfCoverAvailable) -= amount;
+    view().update(broker);
 
     return tesSUCCESS;
 }

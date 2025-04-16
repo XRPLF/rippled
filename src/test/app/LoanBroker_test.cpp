@@ -152,7 +152,9 @@ class LoanBroker_test : public beast::unit_test::suite
             //     std::endl;
             // }
             //  Load the pseudo-account
-            auto const pseudoKeylet = keylet::account(broker->at(sfAccount));
+            Account const pseudoAccount{
+                "Broker pseudo-account", broker->at(sfAccount)};
+            auto const pseudoKeylet = keylet::account(pseudoAccount);
             if (auto const pseudo = env.le(pseudoKeylet); BEAST_EXPECT(pseudo))
             {
                 // log << "Pseudo-account after create: "
@@ -188,12 +190,57 @@ class LoanBroker_test : public beast::unit_test::suite
             // Test Cover funding before allowing alterations
             env(coverDeposit(alice, uint256(0), vault.asset(10)),
                 ter(temINVALID));
-            env(coverDeposit(alice, uint256(0), vault.asset(-10)),
-                ter(temBAD_AMOUNT));
             env(coverDeposit(evan, keylet.key, vault.asset(10)),
                 ter(tecNO_PERMISSION));
+            env(coverDeposit(evan, keylet.key, vault.asset(0)),
+                ter(temBAD_AMOUNT));
+            env(coverDeposit(evan, keylet.key, vault.asset(-10)),
+                ter(temBAD_AMOUNT));
             env(coverDeposit(alice, vault.vaultID, vault.asset(10)),
                 ter(tecNO_ENTRY));
+
+            // Fund the cover deposit
+            env(coverDeposit(alice, keylet.key, vault.asset(10)));
+            if (BEAST_EXPECT(broker = env.le(keylet)))
+            {
+                BEAST_EXPECT(
+                    broker->at(sfCoverAvailable) == vault.asset(10).number());
+                env.require(balance(pseudoAccount, vault.asset(10)));
+            }
+            // Can't delete the broker with the deposit in place
+            env(del(alice, keylet.key), ter(tecHAS_OBLIGATIONS));
+
+            // Test withdrawal failure cases
+            env(coverWithdraw(alice, uint256(0), vault.asset(10)),
+                ter(temINVALID));
+            env(coverWithdraw(evan, keylet.key, vault.asset(10)),
+                ter(tecNO_PERMISSION));
+            env(coverWithdraw(evan, keylet.key, vault.asset(0)),
+                ter(temBAD_AMOUNT));
+            env(coverWithdraw(evan, keylet.key, vault.asset(-10)),
+                ter(temBAD_AMOUNT));
+            env(coverWithdraw(alice, vault.vaultID, vault.asset(10)),
+                ter(tecNO_ENTRY));
+
+            // Withdraw some of the cover amount
+            env(coverWithdraw(alice, keylet.key, vault.asset(7)));
+            if (BEAST_EXPECT(broker = env.le(keylet)))
+            {
+                BEAST_EXPECT(
+                    broker->at(sfCoverAvailable) == vault.asset(10).number());
+                env.require(balance(pseudoAccount, vault.asset(3)));
+            }
+
+            // Withdraw the rest
+            env(coverWithdraw(alice, keylet.key, vault.asset(3)));
+            if (BEAST_EXPECT(broker = env.le(keylet)))
+            {
+                BEAST_EXPECT(
+                    broker->at(sfCoverAvailable) == vault.asset(10).number());
+                env.require(balance(pseudoAccount, vault.asset(0)));
+            }
+
+            env.close();
 
             // no-op
             env(set(alice, vault.vaultID), loanBrokerID(keylet.key));
@@ -203,10 +250,9 @@ class LoanBroker_test : public beast::unit_test::suite
                 changeBroker(broker);
 
             env.close();
-            broker = env.le(keylet);
 
             // Check the results of modifications
-            if (checkChangedBroker)
+            if (BEAST_EXPECT(broker = env.le(keylet)) && checkChangedBroker)
                 checkChangedBroker(broker);
 
             // Verify that fields get removed when set to default values
@@ -218,9 +264,11 @@ class LoanBroker_test : public beast::unit_test::suite
                 data(""));
 
             // Check the updated fields
-            broker = env.le(keylet);
-            BEAST_EXPECT(!broker->isFieldPresent(sfDebtMaximum));
-            BEAST_EXPECT(!broker->isFieldPresent(sfData));
+            if (BEAST_EXPECT(broker = env.le(keylet)))
+            {
+                BEAST_EXPECT(!broker->isFieldPresent(sfDebtMaximum));
+                BEAST_EXPECT(!broker->isFieldPresent(sfData));
+            }
 
             /////////////////////////////////////
             // try to delete the wrong broker object
