@@ -148,6 +148,35 @@ doGatewayBalances(RPC::JsonContext& context)
     {
         forEachItem(
             *ledger, accountID, [&](std::shared_ptr<SLE const> const& sle) {
+                if (sle->getType() == ltESCROW)
+                {
+                    auto const& escrow = sle->getFieldAmount(sfAmount);
+                    auto& bal = escrowed[escrow.getCurrency()];
+                    if (bal == beast::zero)
+                    {
+                        // This is needed to set the currency code correctly
+                        bal = escrow;
+                    }
+                    else
+                    {
+                        try
+                        {
+                            bal += escrow;
+                        }
+                        catch (std::runtime_error const&)
+                        {
+                            // Presumably the exception was caused by overflow.
+                            // On overflow return the largest valid STAmount.
+                            // Very large sums of STAmount are approximations
+                            // anyway.
+                            bal = STAmount(
+                                bal.issue(),
+                                STAmount::cMaxValue,
+                                STAmount::cMaxOffset);
+                        }
+                    }
+                }
+
                 auto rs = PathFindTrustLine::makeItem(accountID, sle);
 
                 if (!rs)
@@ -192,39 +221,6 @@ doGatewayBalances(RPC::JsonContext& context)
                         try
                         {
                             bal -= rs->getBalance();
-                        }
-                        catch (std::runtime_error const&)
-                        {
-                            // Presumably the exception was caused by overflow.
-                            // On overflow return the largest valid STAmount.
-                            // Very large sums of STAmount are approximations
-                            // anyway.
-                            bal = STAmount(
-                                bal.issue(),
-                                STAmount::cMaxValue,
-                                STAmount::cMaxOffset);
-                        }
-                    }
-                }
-            });
-
-        // Traverse the ledger to find escrows
-        forEachItem(
-            *ledger, accountID, [&](std::shared_ptr<SLE const> const& sle) {
-                if (sle->getType() == ltESCROW)
-                {
-                    auto const& escrow = sle->getFieldAmount(sfAmount);
-                    auto& bal = escrowed[escrow.getCurrency()];
-                    if (bal == beast::zero)
-                    {
-                        // This is needed to set the currency code correctly
-                        bal = escrow;
-                    }
-                    else
-                    {
-                        try
-                        {
-                            bal += escrow;
                         }
                         catch (std::runtime_error const&)
                         {

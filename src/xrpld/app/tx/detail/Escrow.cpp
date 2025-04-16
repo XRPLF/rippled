@@ -578,7 +578,7 @@ EscrowCreate::doApply()
     // If issuer is not source or destination, add escrow to issuers owner
     // directory.
     AccountID const issuer = amount.getIssuer();
-    if (!isXRP(amount) && issuer != account_ && issuer != dest)
+    if (!isXRP(amount) && issuer != account_ && issuer != dest && !amount.holds<MPTIssue>())
     {
         auto page = psb.dirInsert(
             keylet::ownerDir(issuer), escrowKeylet, describeOwnerDir(issuer));
