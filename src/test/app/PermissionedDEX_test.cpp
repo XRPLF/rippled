@@ -471,7 +471,8 @@ class PermissionedDEX_test : public beast::unit_test::suite
             env(pay(bob, alice, USD(10)),
                 path(~USD),
                 sendmax(XRP(10)),
-                domain(badDomain));
+                domain(badDomain),
+                ter(tecNO_PERMISSION));
             env.close();
         }
 
