@@ -44,10 +44,6 @@ public:
     {
     }
 
-    Book(Issue const& in_, Issue const& out_) : in(in_), out(out_)
-    {
-    }
-
     Book(
         Issue const& in_,
         Issue const& out_,
