@@ -1743,8 +1743,12 @@ public:
 
         Env env(*this, all);
         PermissionedDEX permDex(env);
-        auto const& [gw, domainOwner, alice, bob, carol, USD, domainID, credType] =
-            permDex;
+        auto const alice = permDex.alice;
+        auto const bob = permDex.bob;
+        auto const carol = permDex.carol;
+        auto const domainID = permDex.domainID;
+        auto const gw = permDex.gw;
+        auto const USD = permDex.USD;
 
         auto wsc = makeWSClient(env.app().config());
 
