@@ -115,6 +115,7 @@ private:
     uint16_t pingAttempts_ = 0;
     clock_type::time_point lastPingTime_;
     clock_type::time_point const creationTime_;
+    std::atomic<clock_type::time_point> lastMessageTime_;
 
     reduce_relay::Squelch<UptimeClock> squelch_;
     inline static std::atomic_bool reduceRelayReady_{false};
