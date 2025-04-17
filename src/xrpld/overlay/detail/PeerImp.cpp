@@ -733,21 +733,28 @@ PeerImp::onTimer(error_code const& ec)
     }
 
     // Already waiting for PONG
-    if (lastPingSeq_ && (pingAttempts_ < maxPingNumber))
+    if (lastPingSeq_)
     {
         pingAttempts_++;
-        JLOG(journal_.info()) << "Missing PONG, sending PING, attempt "
-                              << pingAttempts_ << " of " << maxPingNumber;
+
+        if (pingAttempts_ >= maxPingNumber)
+        {
+            fail("Ping Timeout");
+            return;
+        }
+        else
+        {
+            JLOG(journal_.info()) << "Missing PONG, sending PING, attempt "
+                                  << pingAttempts_ << " of " << maxPingNumber;
+        }
     }
-    else if (lastPingSeq_)
+    else
     {
-        fail("Ping Timeout");
-        return;
+        pingAttempts_ = 0;
     }
 
     lastPingTime_ = clock_type::now();
     lastPingSeq_ = rand_int<std::uint32_t>();
-    pingAttempts_ = 0;
 
     protocol::TMPing message;
     message.set_type(protocol::TMPing::ptPING);
