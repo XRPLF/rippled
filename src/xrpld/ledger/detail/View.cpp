@@ -1124,6 +1124,10 @@ offerDelete(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
 
     if (sle->isFieldPresent(sfAdditionalBooks))
     {
+        XRPL_ASSERT(
+            sle->isFlag(lsfHybrid) && sle->isFieldPresent(sfDomainID),
+            "ripple::offerDelete : should be a hybrid domain offer");
+
         auto const& additionalBookDirs = sle->getFieldArray(sfAdditionalBooks);
 
         for (auto const& bookDir : additionalBookDirs)

@@ -24,6 +24,7 @@
 #include <xrpl/protocol/Issue.h>
 
 #include <boost/utility/base_from_member.hpp>
+
 #include "xrpl/basics/base_uint.h"
 
 namespace ripple {
@@ -50,7 +51,7 @@ public:
     Book(
         Issue const& in_,
         Issue const& out_,
-        std::optional<uint256> const& domain_)
+        std::optional<uint256> const& domain_ = std::nullopt)
         : in(in_), out(out_), domain(domain_)
     {
     }
