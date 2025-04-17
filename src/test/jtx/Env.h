@@ -470,7 +470,13 @@ public:
     */
     // VFALCO NOTE This should return a unit-less amount
     PrettyAmount
+    balance(Account const& account, Asset const& asset) const;
+
+    PrettyAmount
     balance(Account const& account, Issue const& issue) const;
+
+    PrettyAmount
+    balance(Account const& account, MPTIssue const& mptIssue) const;
 
     /** Return the number of objects owned by an account.
      * Returns 0 if the account does not exist.

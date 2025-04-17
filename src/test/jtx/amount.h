@@ -143,6 +143,12 @@ public:
         return amount_;
     }
 
+    inline int
+    signum() const
+    {
+        return amount_.signum();
+    }
+
     operator STAmount const&() const
     {
         return amount_;
@@ -367,6 +373,11 @@ public:
     {
         return {currency, account.id()};
     }
+    Asset
+    asset() const
+    {
+        return issue();
+    }
 
     /** Implicit conversion to Issue or Asset.
 
@@ -377,9 +388,9 @@ public:
     {
         return issue();
     }
-    operator Asset() const
+    operator PrettyAsset() const
     {
-        return issue();
+        return asset();
     }
 
     template <
