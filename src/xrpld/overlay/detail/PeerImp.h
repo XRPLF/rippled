@@ -112,6 +112,7 @@ private:
 
     std::optional<std::chrono::milliseconds> latency_;
     std::optional<std::uint32_t> lastPingSeq_;
+    uint16_t pingAttempts_ = 0;
     clock_type::time_point lastPingTime_;
     clock_type::time_point const creationTime_;
 
@@ -715,8 +716,9 @@ PeerImp::PeerImp(
           app_.config().LEDGER_REPLAY))
     , ledgerReplayMsgHandler_(app, app.getLedgerReplayer())
 {
-    read_buffer_.commit(boost::asio::buffer_copy(
-        read_buffer_.prepare(boost::asio::buffer_size(buffers)), buffers));
+    read_buffer_.commit(
+        boost::asio::buffer_copy(
+            read_buffer_.prepare(boost::asio::buffer_size(buffers)), buffers));
     JLOG(journal_.info()) << "compression enabled "
                           << (compressionEnabled_ == Compressed::On)
                           << " vp reduce-relay enabled "

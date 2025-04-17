@@ -57,7 +57,10 @@ namespace {
 std::chrono::milliseconds constexpr peerHighLatency{300};
 
 /** How often we PING the peer to check for latency and sendq probe */
-std::chrono::seconds constexpr peerTimerInterval{300};
+std::chrono::seconds constexpr peerTimerInterval{60};
+
+uint16_t constexpr maxPingNumber = 5;
+
 }  // namespace
 
 // TODO: Remove this exclusion once unit tests are added after the hotfix
@@ -604,7 +607,7 @@ PeerImp::fail(std::string const& reason)
         return post(
             strand_,
             std::bind(
-                (void(Peer::*)(std::string const&)) & PeerImp::fail,
+                (void (Peer::*)(std::string const&))&PeerImp::fail,
                 shared_from_this(),
                 reason));
     if (journal_.active(beast::severities::kWarning) && socket_.is_open())
@@ -730,7 +733,13 @@ PeerImp::onTimer(error_code const& ec)
     }
 
     // Already waiting for PONG
-    if (lastPingSeq_)
+    if (lastPingSeq_ && (pingAttempts_ < maxPingNumber))
+    {
+        pingAttempts_++;
+        JLOG(journal_.info()) << "Missing PONG, sending PING, attempt "
+                              << pingAttempts_ << " of " << maxPingNumber;
+    }
+    else if (lastPingSeq_)
     {
         fail("Ping Timeout");
         return;
@@ -738,6 +747,7 @@ PeerImp::onTimer(error_code const& ec)
 
     lastPingTime_ = clock_type::now();
     lastPingSeq_ = rand_int<std::uint32_t>();
+    pingAttempts_ = 0;
 
     protocol::TMPing message;
     message.set_type(protocol::TMPing::ptPING);
@@ -1105,6 +1115,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMPing> const& m)
         if (m->seq() == lastPingSeq_)
         {
             lastPingSeq_.reset();
+            pingAttempts_ = 0;
 
             // Update latency estimate
             auto const rtt = std::chrono::round<std::chrono::milliseconds>(
@@ -1488,8 +1499,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProofPathRequest> const& m)
                 }
                 else
                 {
-                    peer->send(std::make_shared<Message>(
-                        reply, protocol::mtPROOF_PATH_RESPONSE));
+                    peer->send(
+                        std::make_shared<Message>(
+                            reply, protocol::mtPROOF_PATH_RESPONSE));
                 }
             }
         });
@@ -1543,8 +1555,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMReplayDeltaRequest> const& m)
                 }
                 else
                 {
-                    peer->send(std::make_shared<Message>(
-                        reply, protocol::mtREPLAY_DELTA_RESPONSE));
+                    peer->send(
+                        std::make_shared<Message>(
+                            reply, protocol::mtREPLAY_DELTA_RESPONSE));
                 }
             }
         });
