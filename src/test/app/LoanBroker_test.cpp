@@ -187,6 +187,14 @@ class LoanBroker_test : public beast::unit_test::suite
                 BEAST_EXPECT(pseudo->at(sfLoanBrokerID) == keylet.key);
             }
 
+            auto verifyCoverAmount =
+                [&env, &vault, &broker, &pseudoAccount, this](auto n) {
+                    auto const amount = vault.asset(n);
+                    BEAST_EXPECT(
+                        broker->at(sfCoverAvailable) == amount.number());
+                    env.require(balance(pseudoAccount, amount));
+                };
+
             // Test Cover funding before allowing alterations
             env(coverDeposit(alice, uint256(0), vault.asset(10)),
                 ter(temINVALID));
@@ -199,16 +207,14 @@ class LoanBroker_test : public beast::unit_test::suite
             env(coverDeposit(alice, vault.vaultID, vault.asset(10)),
                 ter(tecNO_ENTRY));
 
+            verifyCoverAmount(0);
+
             // Fund the cover deposit
             env(coverDeposit(alice, keylet.key, vault.asset(10)));
             if (BEAST_EXPECT(broker = env.le(keylet)))
             {
-                BEAST_EXPECT(
-                    broker->at(sfCoverAvailable) == vault.asset(10).number());
-                env.require(balance(pseudoAccount, vault.asset(10)));
+                verifyCoverAmount(10);
             }
-            // Can't delete the broker with the deposit in place
-            env(del(alice, keylet.key), ter(tecHAS_OBLIGATIONS));
 
             // Test withdrawal failure cases
             env(coverWithdraw(alice, uint256(0), vault.asset(10)),
@@ -221,23 +227,28 @@ class LoanBroker_test : public beast::unit_test::suite
                 ter(temBAD_AMOUNT));
             env(coverWithdraw(alice, vault.vaultID, vault.asset(10)),
                 ter(tecNO_ENTRY));
+            env(coverWithdraw(alice, keylet.key, vault.asset(900)),
+                ter(tecINSUFFICIENT_FUNDS));
 
             // Withdraw some of the cover amount
             env(coverWithdraw(alice, keylet.key, vault.asset(7)));
             if (BEAST_EXPECT(broker = env.le(keylet)))
             {
-                BEAST_EXPECT(
-                    broker->at(sfCoverAvailable) == vault.asset(10).number());
-                env.require(balance(pseudoAccount, vault.asset(3)));
+                verifyCoverAmount(3);
             }
 
-            // Withdraw the rest
-            env(coverWithdraw(alice, keylet.key, vault.asset(3)));
+            // Add some more cover
+            env(coverDeposit(alice, keylet.key, vault.asset(5)));
             if (BEAST_EXPECT(broker = env.le(keylet)))
             {
-                BEAST_EXPECT(
-                    broker->at(sfCoverAvailable) == vault.asset(10).number());
-                env.require(balance(pseudoAccount, vault.asset(0)));
+                verifyCoverAmount(8);
+            }
+
+            // Withdraw some more
+            env(coverWithdraw(alice, keylet.key, vault.asset(2)));
+            if (BEAST_EXPECT(broker = env.le(keylet)))
+            {
+                verifyCoverAmount(6);
             }
 
             env.close();
@@ -275,7 +286,17 @@ class LoanBroker_test : public beast::unit_test::suite
             env(del(alice, vault.vaultID), ter(tecNO_ENTRY));
             // evan tries to delete the broker
             env(del(evan, keylet.key), ter(tecNO_PERMISSION));
+
             // TODO: test deletion with an active loan
+
+            // Note alice's balance of the asset and the broker account's cover
+            // funds
+            auto const aliceBalance = env.balance(alice, vault.asset);
+            auto const coverFunds = env.balance(pseudoAccount, vault.asset);
+            BEAST_EXPECT(coverFunds.number() == broker->at(sfCoverAvailable));
+            BEAST_EXPECT(coverFunds != beast::zero);
+            verifyCoverAmount(6);
+
             // delete the broker
             // log << "Broker before delete: " << to_string(broker->getJson())
             //    << std::endl;
@@ -286,6 +307,7 @@ class LoanBroker_test : public beast::unit_test::suite
             //        << to_string(pseudo->getJson()) << std::endl
             //        << std::endl;
             //}
+
             env(del(alice, keylet.key));
             env.close();
             {
@@ -294,6 +316,12 @@ class LoanBroker_test : public beast::unit_test::suite
                 auto pseudo = env.le(pseudoKeylet);
                 BEAST_EXPECT(!pseudo);
             }
+            auto const expectedBalance = aliceBalance + coverFunds -
+                (aliceBalance.value().native()
+                     ? STAmount(env.current()->fees().base.value())
+                     : vault.asset(0));
+            env.require(balance(alice, expectedBalance));
+            env.require(balance(pseudoAccount, None(vault.asset)));
         }
     }
 
