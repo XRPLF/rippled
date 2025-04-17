@@ -159,9 +159,10 @@ class Invariants_test : public beast::unit_test::suite
             {{"an account root was deleted"}},
             [](Account const& A1, Account const&, ApplyContext& ac) {
                 // remove an account from the view
-                auto const sle = ac.view().peek(keylet::account(A1.id()));
+                auto sle = ac.view().peek(keylet::account(A1.id()));
                 if (!sle)
                     return false;
+                sle->at(sfBalance) = beast::zero;
                 ac.view().erase(sle);
                 return true;
             });
@@ -185,10 +186,12 @@ class Invariants_test : public beast::unit_test::suite
             {{"account deletion succeeded but deleted multiple accounts"}},
             [](Account const& A1, Account const& A2, ApplyContext& ac) {
                 // remove two accounts from the view
-                auto const sleA1 = ac.view().peek(keylet::account(A1.id()));
-                auto const sleA2 = ac.view().peek(keylet::account(A2.id()));
+                auto sleA1 = ac.view().peek(keylet::account(A1.id()));
+                auto sleA2 = ac.view().peek(keylet::account(A2.id()));
                 if (!sleA1 || !sleA2)
                     return false;
+                sleA1->at(sfBalance) = beast::zero;
+                sleA2->at(sfBalance) = beast::zero;
                 ac.view().erase(sleA1);
                 ac.view().erase(sleA2);
                 return true;
@@ -202,6 +205,23 @@ class Invariants_test : public beast::unit_test::suite
     {
         using namespace test::jtx;
         testcase << "account root deletion left artifact";
+
+        doInvariantCheck(
+            {{"account deletion left behind a non-zero balance"}},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                // Add an object to the ledger for account A1, then delete
+                // A1
+                auto const a1 = A1.id();
+                auto const sleA1 = ac.view().peek(keylet::account(a1));
+                if (!sleA1)
+                    return false;
+
+                ac.view().erase(sleA1);
+
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttACCOUNT_DELETE, [](STObject& tx) {}});
 
         for (auto const& keyletInfo : directAccountKeylets)
         {
@@ -223,29 +243,31 @@ class Invariants_test : public beast::unit_test::suite
                     // Add an object to the ledger for account A1, then delete
                     // A1
                     auto const a1 = A1.id();
-                    auto const sleA1 = ac.view().peek(keylet::account(a1));
+                    auto sleA1 = ac.view().peek(keylet::account(a1));
                     if (!sleA1)
                         return false;
 
                     auto const key = std::invoke(keyletfunc, a1);
                     auto const newSLE = std::make_shared<SLE>(key);
                     ac.view().insert(newSLE);
+                    sleA1->at(sfBalance) = beast::zero;
                     ac.view().erase(sleA1);
 
                     return true;
                 },
                 XRPAmount{},
                 STTx{ttACCOUNT_DELETE, [](STObject& tx) {}});
-        };
+        }
 
         // NFT special case
         doInvariantCheck(
             {{"account deletion left behind a NFTokenPage object"}},
             [&](Account const& A1, Account const&, ApplyContext& ac) {
                 // remove an account from the view
-                auto const sle = ac.view().peek(keylet::account(A1.id()));
+                auto sle = ac.view().peek(keylet::account(A1.id()));
                 if (!sle)
                     return false;
+                sle->at(sfBalance) = beast::zero;
                 ac.view().erase(sle);
                 return true;
             },
@@ -269,13 +291,14 @@ class Invariants_test : public beast::unit_test::suite
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 // Delete the AMM account without cleaning up the directory or
                 // deleting the AMM object
-                auto const sle = ac.view().peek(keylet::account(ammAcctID));
+                auto sle = ac.view().peek(keylet::account(ammAcctID));
                 if (!sle)
                     return false;
 
                 BEAST_EXPECT(sle->at(~sfAMMID));
                 BEAST_EXPECT(sle->at(~sfAMMID) == ammKey);
 
+                sle->at(sfBalance) = beast::zero;
                 ac.view().erase(sle);
 
                 return true;
@@ -298,7 +321,7 @@ class Invariants_test : public beast::unit_test::suite
                 // Delete all the AMM's trust lines, remove the AMM from the AMM
                 // account's directory (this deletes the directory), and delete
                 // the AMM account. Do not delete the AMM object.
-                auto const sle = ac.view().peek(keylet::account(ammAcctID));
+                auto sle = ac.view().peek(keylet::account(ammAcctID));
                 if (!sle)
                     return false;
 
@@ -338,6 +361,7 @@ class Invariants_test : public beast::unit_test::suite
                     !ac.view().exists(ownerDirKeylet) ||
                     ac.view().emptyDirDelete(ownerDirKeylet));
 
+                sle->at(sfBalance) = beast::zero;
                 ac.view().erase(sle);
 
                 return true;
@@ -1628,7 +1652,7 @@ class Invariants_test : public beast::unit_test::suite
             doInvariantCheck(
                 {{"Loan Broker with zero OwnerCount has multiple directory "
                   "pages"}},
-                [&loanBrokerKeylet, &setupTest, this](
+                [&setupTest, this](
                     Account const& A1, Account const& A2, ApplyContext& ac) {
                     auto test = setupTest(A1, A2, ac);
                     if (!test || !test->first || !test->second)

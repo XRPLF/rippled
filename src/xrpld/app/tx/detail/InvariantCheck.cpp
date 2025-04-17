@@ -415,10 +415,10 @@ void
 AccountRootsDeletedClean::visitEntry(
     bool isDelete,
     std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const&)
+    std::shared_ptr<SLE const> const& after)
 {
     if (isDelete && before && before->getType() == ltACCOUNT_ROOT)
-        accountsDeleted_.emplace_back(before);
+        accountsDeleted_.emplace_back(before, after);
 }
 
 bool
@@ -462,9 +462,21 @@ AccountRootsDeletedClean::finalize(
         return false;
     };
 
-    for (auto const& accountSLE : accountsDeleted_)
+    for (auto const& [before, after] : accountsDeleted_)
     {
-        auto const accountID = accountSLE->getAccountID(sfAccount);
+        auto const accountID = before->getAccountID(sfAccount);
+        // An account should not be deleted with a balance
+        if (after->at(sfBalance) != beast::zero)
+        {
+            JLOG(j.fatal()) << "Invariant failed: account deletion left "
+                               "behind a non-zero balance";
+            XRPL_ASSERT(
+                enforce,
+                "ripple::AccountRootsDeletedClean::finalize : "
+                "account deletion left behind a non-zero balance");
+            if (enforce)
+                return false;
+        }
         // Simple types
         for (auto const& [keyletfunc, _, __] : directAccountKeylets)
         {
@@ -490,9 +502,9 @@ AccountRootsDeletedClean::finalize(
         // Keys directly stored in the AccountRoot object
         for (auto const& field : getPseudoAccountFields())
         {
-            if (accountSLE->isFieldPresent(*field))
+            if (before->isFieldPresent(*field))
             {
-                auto const key = accountSLE->getFieldH256(*field);
+                auto const key = before->getFieldH256(*field);
                 if (objectExists(keylet::unchecked(key)) && enforce)
                     return false;
             }

@@ -174,7 +174,14 @@ public:
  */
 class AccountRootsDeletedClean
 {
-    std::vector<std::shared_ptr<SLE const>> accountsDeleted_;
+    // Pair is <before, after>. Before is used for most of the checks, so that
+    // if, for example, and object ID field is cleared, but the object is not
+    // deleted, it can still be found. After is used specifically for any checks
+    // that are expected as part of the deletion, such as zeroing out the
+    // balance.
+    std::vector<
+        std::pair<std::shared_ptr<SLE const>, std::shared_ptr<SLE const>>>
+        accountsDeleted_;
 
 public:
     void
