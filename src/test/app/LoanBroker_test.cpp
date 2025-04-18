@@ -416,12 +416,12 @@ class LoanBroker_test : public beast::unit_test::suite
                 ter(temINVALID));
             // sfManagementFeeRate: good value, bad account
             env(set(evan, vault.vaultID),
-                managementFeeRate(maxFeeRate),
+                managementFeeRate(maxManagementFeeRate),
                 fee(increment),
                 ter(tecNO_PERMISSION));
             // sfManagementFeeRate: too big
             env(set(evan, vault.vaultID),
-                managementFeeRate(maxFeeRate + 1),
+                managementFeeRate(maxManagementFeeRate + 1),
                 fee(increment),
                 ter(temINVALID));
             // sfCoverRateMinimum: good value, bad account
@@ -504,17 +504,17 @@ class LoanBroker_test : public beast::unit_test::suite
                     // ManagementFeeRate
                     env(set(alice, vault.vaultID),
                         loanBrokerID(broker->key()),
-                        managementFeeRate(maxFeeRate),
+                        managementFeeRate(maxManagementFeeRate),
                         ter(temINVALID));
                     // CoverRateMinimum
                     env(set(alice, vault.vaultID),
                         loanBrokerID(broker->key()),
-                        coverRateMinimum(maxFeeRate),
+                        coverRateMinimum(maxManagementFeeRate),
                         ter(temINVALID));
                     // CoverRateLiquidation
                     env(set(alice, vault.vaultID),
                         loanBrokerID(broker->key()),
-                        coverRateLiquidation(maxFeeRate),
+                        coverRateLiquidation(maxManagementFeeRate),
                         ter(temINVALID));
 
                     // fields that can be changed

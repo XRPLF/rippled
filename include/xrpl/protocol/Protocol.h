@@ -82,30 +82,86 @@ std::size_t constexpr maxDeletableTokenOfferEntries = 500;
  */
 std::uint16_t constexpr maxTransferFee = 50000;
 
-/** The maximum management fee rate allowed in lending.
-
-    TODO: Is this a good name?
-
-    Valid values for the the management fee charged by the Lending Protocol are
-    between 0 and 10000 inclusive. A value of 1 is equivalent to 1/10 basis
-    point fee or 0.001%.
-*/
-std::uint16_t constexpr maxFeeRate = 10'000;
-
-/** The maximum coverage rate allowed in lending.
-
-    TODO: Is this a good name?
-
-    Valid values for the coverage rate charged by the Lending Protocol for first
-    loss capital operations are between 0 and 100000 inclusive. A value of 1 is
-    equivalent to 1/10 bps or 0.001%.
-*/
-std::uint32_t constexpr maxCoverRate = 100'000;
-
-/** Basis points (bps) represent 0.01% of a thing. Given a value X, to find the
- * amount for B bps, use X * B / bpsPerOne
+/** There are 10,000 basis points (bips) in 100%.
+ *
+ * Basis points represent 0.01%.
+ *
+ * Given a value X, to find the amount for B bps,
+ * use X * B / bipsPerUnity
+ *
+ * Example: If a loan broker has 999 XRP of debt, and must maintain 1,000 bps of
+ * that debt as cover (10%), then the minimum cover amount is 999,000,000 drops
+ * * 1000 / bipsPerUnity = 99,900,00 drops or 99.9 XRP.
+ *
+ * Given a percentage P, to find the number of bps that percentage represents,
+ * use P * bipsPerUnity.
+ *
+ * Example: 50% is 0.50 * bipsPerUnity = 5,000 bps.
  */
-std::uint32_t constexpr bpsPerOne = 10'000;
+std::uint32_t constexpr bipsPerUnity = 100 * 100;
+std::uint32_t constexpr tenthBipsPerUnity = bipsPerUnity * 10;
+
+constexpr std::uint32_t
+percentageToBips(std::uint32_t percentage)
+{
+    return percentage * bipsPerUnity / 100;
+}
+constexpr std::uint32_t
+percentageToTenthBips(std::uint32_t percentage)
+{
+    return percentage * tenthBipsPerUnity / 100;
+}
+template <typename T>
+constexpr T
+bipsOfValue(T value, std::uint32_t bips)
+{
+    return value * bips / bipsPerUnity;
+}
+template <typename T>
+constexpr T
+tenthBipsOfValue(T value, std::uint32_t bips)
+{
+    return value * bips / tenthBipsPerUnity;
+}
+
+/** The maximum management fee rate allowed by a loan broker in 1/10 bips.
+
+    Valid values are between 0 and 10% inclusive.
+*/
+std::uint16_t constexpr maxManagementFeeRate = percentageToTenthBips(10);
+static_assert(maxManagementFeeRate == 10'000);
+
+/** The maximum coverage rate required of a loan broker in 1/10 bips.
+
+    Valid values are between 0 and 100% inclusive.
+*/
+std::uint32_t constexpr maxCoverRate = percentageToTenthBips(100);
+static_assert(maxCoverRate == 100'000);
+
+/** The maximum overpayment fee on a loan in 1/10 bips.
+*
+    Valid values are between 0 and 100% inclusive.
+*/
+std::uint32_t constexpr maxOverpaymentFee = percentageToTenthBips(100);
+
+/** The maximum premium added to the interest rate for late payments on a loan
+ * in 1/10 bips.
+ *
+ * Valid values are between 0 and 100% inclusive.
+ */
+std::uint32_t constexpr maxLateInterestRate = percentageToTenthBips(100);
+
+/** The maximum interest rate charged for repaying a loan early in 1/10 bips.
+ *
+ * Valid values are between 0 and 100% inclusive.
+ */
+std::uint32_t constexpr maxCloseInterestRate = percentageToTenthBips(100);
+
+/** The maximum interest rate charged on loan overpayments in 1/10 bips.
+ *
+ * Valid values are between 0 and 100% inclusive.
+ */
+std::uint32_t constexpr maxOverpaymentInterestRate = percentageToTenthBips(100);
 
 /** The maximum length of a URI inside an NFT */
 std::size_t constexpr maxTokenURILength = 256;

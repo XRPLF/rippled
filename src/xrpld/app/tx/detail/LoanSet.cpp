@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <xrpld/app/tx/detail/LoanSet.h>
+//
 #include <xrpld/app/tx/detail/LoanBrokerSet.h>
 #include <xrpld/app/tx/detail/SignerEntries.h>
 #include <xrpld/app/tx/detail/VaultCreate.h>
@@ -44,86 +46,71 @@
 namespace ripple {
 
 bool
-lendingProtocolEnabled(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featureLendingProtocol) &&
-        VaultCreate::isEnabled(ctx);
-}
-
-bool
-LoanBrokerSet::isEnabled(PreflightContext const& ctx)
+LoanSet::isEnabled(PreflightContext const& ctx)
 {
     return lendingProtocolEnabled(ctx);
 }
 
 std::uint32_t
-LoanBrokerSet::getFlagsMask(PreflightContext const& ctx)
+LoanSet::getFlagsMask(PreflightContext const& ctx)
 {
-    return tfUniversalMask;
+    return tfLoanSetMask;
 }
 
 NotTEC
-LoanBrokerSet::doPreflight(PreflightContext const& ctx)
+LoanSet::doPreflight(PreflightContext const& ctx)
 {
     auto const& tx = ctx.tx;
     if (auto const data = tx[~sfData]; data && !data->empty() &&
         !validDataLength(tx[~sfData], maxDataPayloadLength))
         return temINVALID;
-    if (!validNumericRange(tx[~sfManagementFeeRate], maxManagementFeeRate))
+    if (!validNumericRange(tx[~sfLateInterestRate], maxLateInterestRate))
         return temINVALID;
-    if (!validNumericRange(tx[~sfCoverRateMinimum], maxCoverRate))
-        return temINVALID;
-    if (!validNumericRange(tx[~sfCoverRateLiquidation], maxCoverRate))
+    if (!validNumericRange(tx[~sfCloseInterestRate], maxCloseInterestRate))
         return temINVALID;
     if (!validNumericRange(
-            tx[~sfDebtMaximum], Number(maxMPTokenAmount), Number(0)))
+            tx[~sfOverpaymentInterestRate], maxOverpaymentInterestRate))
         return temINVALID;
 
-    if (tx.isFieldPresent(sfLoanBrokerID))
-    {
-        // Fixed fields can not be specified if we're modifying an existing
-        // LoanBroker Object
-        if (tx.isFieldPresent(sfManagementFeeRate) ||
-            tx.isFieldPresent(sfCoverRateMinimum) ||
-            tx.isFieldPresent(sfCoverRateLiquidation))
-            return temINVALID;
-    }
+    if (auto const paymentTotal = tx[~sfPaymentTotal];
+        paymentTotal && *paymentTotal == 0)
+        return temINVALID;
+    if (auto const paymentInterval =
+            tx[~sfPaymentInterval].value_or(LoanSet::defaultPaymentInterval);
+        paymentInterval < LoanSet::defaultPaymentInterval)
+        return temINVALID;
+    else if (auto const gracePeriod =
+                 tx[~sfGracePeriod].value_or(LoanSet::defaultGracePeriod);
+             gracePeriod > paymentInterval)
+        return temINVALID;
 
     return tesSUCCESS;
 }
 
-XRPAmount
-LoanBrokerSet::calculateBaseFee(ReadView const& view, STTx const& tx)
-{
-    // One reserve increment is typically much greater than one base fee.
-    if (!tx.isFieldPresent(sfLoanBrokerID))
-        return calculateOwnerReserveFee(view, tx);
-    return Transactor::calculateBaseFee(view, tx);
-}
-
 TER
-LoanBrokerSet::preclaim(PreclaimContext const& ctx)
+LoanSet::preclaim(PreclaimContext const& ctx)
 {
+    return temDISABLED;
+
     auto const& tx = ctx.tx;
 
     auto const account = tx[sfAccount];
-    if (auto const brokerID = tx[~sfLoanBrokerID])
+    if (auto const ID = tx[~sfLoanID])
     {
-        auto const sleBroker = ctx.view.read(keylet::loanbroker(*brokerID));
-        if (!sleBroker)
+        auto const sle = ctx.view.read(keylet::loan(*ID));
+        if (!sle)
         {
-            JLOG(ctx.j.warn()) << "LoanBroker does not exist.";
+            JLOG(ctx.j.warn()) << "Loan does not exist.";
             return tecNO_ENTRY;
         }
-        if (tx[sfVaultID] != sleBroker->at(sfVaultID))
+        if (tx[sfVaultID] != sle->at(sfVaultID))
         {
-            JLOG(ctx.j.warn())
-                << "Can not change VaultID on an existing LoanBroker.";
+            JLOG(ctx.j.warn()) << "Can not change VaultID on an existing Loan.";
             return tecNO_PERMISSION;
         }
-        if (account != sleBroker->at(sfOwner))
+        if (account != sle->at(sfOwner))
         {
-            JLOG(ctx.j.warn()) << "Account is not the owner of the LoanBroker.";
+            JLOG(ctx.j.warn()) << "Account is not the owner of the Loan.";
             return tecNO_PERMISSION;
         }
     }
@@ -146,38 +133,40 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
 }
 
 TER
-LoanBrokerSet::doApply()
+LoanSet::doApply()
 {
+    return temDISABLED;
+
     auto const& tx = ctx_.tx;
     auto& view = ctx_.view();
 
-    if (auto const brokerID = tx[~sfLoanBrokerID])
+#if 0
+    if (auto const ID = tx[~sfLoanID])
     {
-        // Modify an existing LoanBroker
-        auto broker = view.peek(keylet::loanbroker(*brokerID));
+        // Modify an existing Loan
+        auto loan = view.peek(keylet::loan(*ID));
 
         if (auto const data = tx[~sfData])
-            broker->at(sfData) = *data;
+            loan->at(sfData) = *data;
         if (auto const debtMax = tx[~sfDebtMaximum])
-            broker->at(sfDebtMaximum) = *debtMax;
+            loan->at(sfDebtMaximum) = *debtMax;
 
-        view.update(broker);
+        view.update();
     }
     else
     {
-        // Create a new LoanBroker pointing back to the given Vault
+        // Create a new Loan pointing back to the given Vault
         auto const vaultID = tx[sfVaultID];
         auto const sleVault = view.read(keylet::vault(vaultID));
         auto const vaultPseudoID = sleVault->at(sfAccount);
         auto const sequence = tx.getSeqValue();
 
         auto owner = view.peek(keylet::account(account_));
-        auto broker =
-            std::make_shared<SLE>(keylet::loanbroker(account_, sequence));
+        auto loan = std::make_shared<SLE>(keylet::loan(account_, sequence));
 
-        if (auto const ter = dirLink(view, account_, broker))
+        if (auto const ter = dirLink(view, account_, ))
             return ter;
-        if (auto const ter = dirLink(view, vaultPseudoID, broker, sfVaultNode))
+        if (auto const ter = dirLink(view, vaultPseudoID, , sfVaultNode))
             return ter;
 
         adjustOwnerCount(view, owner, 1, j_);
@@ -185,8 +174,8 @@ LoanBrokerSet::doApply()
         if (mPriorBalance < view.fees().accountReserve(ownerCount))
             return tecINSUFFICIENT_RESERVE;
 
-        auto maybePseudo = createPseudoAccount(
-            view, broker->key(), PseudoAccountOwnerType::LoanBroker);
+        auto maybePseudo =
+            createPseudoAccount(view, loan->key(), PseudoAccountOwnerType::Loan);
         if (!maybePseudo)
             return maybePseudo.error();
         auto& pseudo = *maybePseudo;
@@ -197,23 +186,24 @@ LoanBrokerSet::doApply()
             return ter;
 
         // Initialize data fields:
-        broker->at(sfSequence) = sequence;
-        broker->at(sfVaultID) = vaultID;
-        broker->at(sfOwner) = account_;
-        broker->at(sfAccount) = pseudoId;
+        loan->at(sfSequence) = sequence;
+        loan->at(sfVaultID) = vaultID;
+        loan->at(sfOwner) = account_;
+        loan->at(sfAccount) = pseudoId;
         if (auto const data = tx[~sfData])
-            broker->at(sfData) = *data;
+            loan->at(sfData) = *data;
         if (auto const rate = tx[~sfManagementFeeRate])
-            broker->at(sfManagementFeeRate) = *rate;
+            loan->at(sfManagementFeeRate) = *rate;
         if (auto const debtMax = tx[~sfDebtMaximum])
-            broker->at(sfDebtMaximum) = *debtMax;
+            loan->at(sfDebtMaximum) = *debtMax;
         if (auto const coverMin = tx[~sfCoverRateMinimum])
-            broker->at(sfCoverRateMinimum) = *coverMin;
+            loan->at(sfCoverRateMinimum) = *coverMin;
         if (auto const coverLiq = tx[~sfCoverRateLiquidation])
-            broker->at(sfCoverRateLiquidation) = *coverLiq;
+            loan->at(sfCoverRateLiquidation) = *coverLiq;
 
-        view.insert(broker);
+        view.insert(loan);
     }
+#endif
 
     return tesSUCCESS;
 }

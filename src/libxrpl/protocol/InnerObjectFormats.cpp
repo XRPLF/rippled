@@ -28,12 +28,6 @@ InnerObjectFormats::InnerObjectFormats()
     // inner objects with the default fields have to be
     // constructed with STObject::makeInnerObject()
 
-    std::initializer_list<SOElement> const signingFields = {
-        {sfAccount, soeREQUIRED},
-        {sfSigningPubKey, soeREQUIRED},
-        {sfTxnSignature, soeREQUIRED},
-    };
-
     add(sfSignerEntry.jsonName,
         sfSignerEntry.getCode(),
         {
@@ -42,7 +36,13 @@ InnerObjectFormats::InnerObjectFormats()
             {sfWalletLocator, soeOPTIONAL},
         });
 
-    add(sfSigner.jsonName, sfSigner.getCode(), signingFields);
+    add(sfSigner.jsonName,
+        sfSigner.getCode(),
+        {
+            {sfAccount, soeREQUIRED},
+            {sfSigningPubKey, soeREQUIRED},
+            {sfTxnSignature, soeREQUIRED},
+        });
 
     add(sfMajority.jsonName,
         sfMajority.getCode(),
@@ -157,7 +157,11 @@ InnerObjectFormats::InnerObjectFormats()
 
     add(sfCounterpartySignature.jsonName,
         sfCounterpartySignature.getCode(),
-        signingFields);
+        {
+            {sfSigningPubKey, soeREQUIRED},
+            {sfTxnSignature, soeOPTIONAL},
+            {sfSigners, soeOPTIONAL},
+        });
 }
 
 InnerObjectFormats const&

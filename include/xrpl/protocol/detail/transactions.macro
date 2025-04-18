@@ -726,7 +726,6 @@ TRANSACTION(ttLOAN_BROKER_COVER_WITHDRAW, 77, LoanBrokerCoverWithdraw, noPriv, (
     {sfAmount, soeREQUIRED, soeMPTSupported},
 }))
 
-#if 0
 /** This transaction creates a Loan */
 #if TRANSACTION_INCLUDE
 #   include <xrpld/app/tx/detail/LoanSet.h>
@@ -750,6 +749,7 @@ TRANSACTION(ttLOAN_SET, 78, LoanSet, noPriv, ({
     {sfGracePeriod, soeOPTIONAL},
 }))
 
+#if 0
 /** This transaction deletes an existing Loan */
 #if TRANSACTION_INCLUDE
 #   include <xrpld/app/tx/detail/LoanDelete.h>

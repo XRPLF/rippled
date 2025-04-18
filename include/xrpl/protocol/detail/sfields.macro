@@ -24,6 +24,8 @@
 #error "undefined macro: TYPED_SFIELD"
 #endif
 
+// clang-format off
+
 // untyped
 UNTYPED_SFIELD(sfLedgerEntry,            LEDGERENTRY, 257)
 UNTYPED_SFIELD(sfTransaction,            TRANSACTION, 257)
@@ -60,10 +62,6 @@ TYPED_SFIELD(sfHookExecutionIndex,       UINT16,    19)
 TYPED_SFIELD(sfHookApiVersion,           UINT16,    20)
 TYPED_SFIELD(sfLedgerFixType,            UINT16,    21)
 TYPED_SFIELD(sfManagementFeeRate,        UINT16,    22)
-TYPED_SFIELD(sfInterestRate,             UINT16,    25)
-TYPED_SFIELD(sfLateInterestRate,         UINT16,    26)
-TYPED_SFIELD(sfCloseInterestRate,        UINT16,    27)
-TYPED_SFIELD(sfOverpaymentInterestRate,  UINT16,    28)
 
 // 32-bit integers (common)
 TYPED_SFIELD(sfNetworkID,                UINT32,     1)
@@ -127,6 +125,10 @@ TYPED_SFIELD(sfPaymentRemaining,         UINT32,    57)
 TYPED_SFIELD(sfPaymentTotal,             UINT32,    58)
 TYPED_SFIELD(sfCoverRateMinimum,         UINT32,    59)
 TYPED_SFIELD(sfCoverRateLiquidation,     UINT32,    60)
+TYPED_SFIELD(sfInterestRate,             UINT32,    61)
+TYPED_SFIELD(sfLateInterestRate,         UINT32,    62)
+TYPED_SFIELD(sfCloseInterestRate,        UINT32,    63)
+TYPED_SFIELD(sfOverpaymentInterestRate,  UINT32,    64)
 
 // 64-bit integers (common)
 TYPED_SFIELD(sfIndexNext,                UINT64,     1)
@@ -418,3 +420,5 @@ UNTYPED_SFIELD(sfAuthAccounts,           ARRAY,     25)
 UNTYPED_SFIELD(sfAuthorizeCredentials,   ARRAY,     26)
 UNTYPED_SFIELD(sfUnauthorizeCredentials, ARRAY,     27)
 UNTYPED_SFIELD(sfAcceptedCredentials,    ARRAY,     28)
+
+// clang-format on
