@@ -1246,7 +1246,7 @@ NetworkOPsImp::processTransaction(
         // cached bad
         JLOG(m_journal.warn()) << transaction->getID() << ": cached bad!\n";
         transaction->setStatus(INVALID);
-        transaction->setResult(temBAD_SIGNATURE);
+        transaction->setResult(temINVALID);
         return;
     }
 

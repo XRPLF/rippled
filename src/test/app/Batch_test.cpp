@@ -391,7 +391,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
         }
 
-        // temMALFORMED: Batch: inner txn cannot include TxnSignature.
+        // temINVALID: Batch: inner txn cannot include TxnSignature.
         {
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
@@ -401,11 +401,11 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner_nofill(jt.jv),
                 batch::inner(pay(alice, bob, XRP(1)), seq + 2),
-                ter(temMALFORMED));
+                ter(temINVALID));
             env.close();
         }
 
-        // temMALFORMED: Batch: inner txn cannot include Signers.
+        // temINVALID: Batch: inner txn cannot include Signers.
         {
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
@@ -421,11 +421,11 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(tx1, seq + 1),
                 batch::inner(pay(alice, bob, XRP(1)), seq + 2),
-                ter(temMALFORMED));
+                ter(temINVALID));
             env.close();
         }
 
-        // temMALFORMED: Batch: inner txn must include empty
+        // temINVALID: Batch: inner txn must include empty
         // SigningPubKey.
         {
             auto const seq = env.seq(alice);
@@ -437,7 +437,7 @@ class Batch_test : public beast::unit_test::suite
                 tx1,
                 batch::inner(pay(alice, bob, XRP(1)), seq + 2));
 
-            env(jt.jv, ter(temMALFORMED));
+            env(jt.jv, ter(temINVALID));
             env.close();
         }
 
@@ -561,7 +561,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
         }
 
-        // temBAD_SIGNER: Batch: duplicate signer found
+        // temREDUNDANT: Batch: duplicate signer found
         {
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 2, 2);
@@ -569,11 +569,11 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
                 batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
                 batch::sig(bob, bob),
-                ter(temBAD_SIGNER));
+                ter(temREDUNDANT));
             env.close();
         }
 
-        // temBAD_SIGNER: Batch: no account signature for inner txn.
+        // temBAD_SIGNATURE: Batch: no account signature for inner txn.
         // Note: Extra signature by bob
         {
             auto const seq = env.seq(alice);
@@ -582,11 +582,11 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
                 batch::inner(pay(alice, bob, XRP(5)), seq + 2),
                 batch::sig(bob),
-                ter(temBAD_SIGNER));
+                ter(temBAD_SIGNATURE));
             env.close();
         }
 
-        // temBAD_SIGNER: Batch: no account signature for inner txn.
+        // temBAD_SIGNATURE: Batch: no account signature for inner txn.
         {
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
@@ -594,7 +594,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
                 batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
                 batch::sig(carol),
-                ter(temBAD_SIGNER));
+                ter(temBAD_SIGNATURE));
             env.close();
         }
 

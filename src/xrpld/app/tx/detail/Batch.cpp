@@ -207,7 +207,7 @@ Batch::preflight(PreflightContext const& ctx)
             JLOG(ctx.j.trace()) << "BatchTrace[" << parentBatchId << "]: "
                                 << "inner txn cannot include TxnSignature. "
                                 << "txID: " << hash;
-            return temMALFORMED;
+            return temINVALID;
         }
 
         if (stx.isFieldPresent(sfSigners))
@@ -215,7 +215,7 @@ Batch::preflight(PreflightContext const& ctx)
             JLOG(ctx.j.trace()) << "BatchTrace[" << parentBatchId << "]: "
                                 << "inner txn cannot include Signers. "
                                 << "txID: " << hash;
-            return temMALFORMED;
+            return temINVALID;
         }
 
         if (!stx.getSigningPubKey().empty())
@@ -223,7 +223,7 @@ Batch::preflight(PreflightContext const& ctx)
             JLOG(ctx.j.trace()) << "BatchTrace[" << parentBatchId << "]: "
                                 << "inner txn SigningPubKey must be empty. "
                                 << "txID: " << hash;
-            return temMALFORMED;
+            return temINVALID;
         }
 
         auto const innerAccount = stx.getAccountID(sfAccount);
@@ -345,7 +345,7 @@ Batch::preflight(PreflightContext const& ctx)
                 JLOG(ctx.j.trace())
                     << "BatchTrace[" << parentBatchId << "]: "
                     << "duplicate signer found: " << signerAccount;
-                return temBAD_SIGNER;
+                return temREDUNDANT;
             }
 
             // Check that the batch signer is in the required signers set.
@@ -354,7 +354,7 @@ Batch::preflight(PreflightContext const& ctx)
             {
                 JLOG(ctx.j.trace()) << "BatchTrace[" << parentBatchId << "]: "
                                     << "no account signature for inner txn.";
-                return temBAD_SIGNER;
+                return temBAD_SIGNATURE;
             }
         }
 
