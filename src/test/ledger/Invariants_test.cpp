@@ -1684,7 +1684,7 @@ class Invariants_test : public beast::unit_test::suite
             doInvariantCheck(
                 {{"Loan Broker with zero OwnerCount has multiple indexes in "
                   "the Directory root"}},
-                [&loanBrokerKeylet, &setupTest, this](
+                [&setupTest](
                     Account const& A1, Account const& A2, ApplyContext& ac) {
                     auto test = setupTest(A1, A2, ac);
                     if (!test || !test->first || !test->second)
@@ -1710,7 +1710,7 @@ class Invariants_test : public beast::unit_test::suite
 
             doInvariantCheck(
                 {{"Loan Broker directory corrupt"}},
-                [&loanBrokerKeylet, &setupTest, this](
+                [&setupTest](
                     Account const& A1, Account const& A2, ApplyContext& ac) {
                     auto test = setupTest(A1, A2, ac);
                     if (!test || !test->first || !test->second)
@@ -1741,7 +1741,7 @@ class Invariants_test : public beast::unit_test::suite
             doInvariantCheck(
                 {{"Loan Broker with zero OwnerCount has an unexpected entry in "
                   "the directory"}},
-                [&loanBrokerKeylet, &setupTest, this](
+                [&setupTest](
                     Account const& A1, Account const& A2, ApplyContext& ac) {
                     auto test = setupTest(A1, A2, ac);
                     if (!test || !test->first || !test->second)

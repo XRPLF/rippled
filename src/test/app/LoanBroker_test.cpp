@@ -321,7 +321,7 @@ class LoanBroker_test : public beast::unit_test::suite
                      ? STAmount(env.current()->fees().base.value())
                      : vault.asset(0));
             env.require(balance(alice, expectedBalance));
-            env.require(balance(pseudoAccount, None(vault.asset)));
+            env.require(balance(pseudoAccount, None(vault.asset.raw())));
         }
     }
 
