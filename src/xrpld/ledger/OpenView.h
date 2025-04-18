@@ -24,6 +24,7 @@
 #include <xrpld/ledger/ReadView.h>
 #include <xrpld/ledger/detail/RawStateTable.h>
 
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <boost/container/pmr/monotonic_buffer_resource.hpp>

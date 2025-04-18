@@ -3537,61 +3537,108 @@ class Batch_test : public beast::unit_test::suite
         using namespace test::jtx;
         using namespace std::literals;
 
-        test::jtx::Env env{
-            *this,
-            makeSmallQueueConfig({{"minimum_txn_in_ledger_standalone", "2"}}),
-            nullptr,
-            beast::severities::kError};
-
-        auto alice = Account("alice");
-        auto bob = Account("bob");
-        auto carol = Account("carol");
-
-        // Fund across several ledgers so the TxQ metrics stay restricted.
-        env.fund(XRP(10000), noripple(alice, bob));
-        env.close(env.now() + 5s, 10000ms);
-        env.fund(XRP(10000), noripple(carol));
-        env.close(env.now() + 5s, 10000ms);
-
-        // Fill the ledger
-        env(noop(alice));
-        env(noop(alice));
-        env(noop(alice));
-        checkMetrics(__LINE__, env, 0, std::nullopt, 3);
-
-        env(noop(carol), ter(terQUEUED));
-        checkMetrics(__LINE__, env, 1, std::nullopt, 3);
-
-        auto const aliceSeq = env.seq(alice);
-        auto const bobSeq = env.seq(bob);
-        auto const batchFee = batch::calcBatchFee(env, 1, 2);
-
-        // Queue Batch
+        // only outer batch transactions are counter towards the queue size
         {
-            env(batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
-                batch::inner(pay(alice, bob, XRP(10)), aliceSeq + 1),
-                batch::inner(pay(bob, alice, XRP(5)), bobSeq),
-                batch::sig(bob),
-                ter(terQUEUED));
+            test::jtx::Env env{
+                *this,
+                makeSmallQueueConfig(
+                    {{"minimum_txn_in_ledger_standalone", "2"}}),
+                nullptr,
+                beast::severities::kError};
+
+            auto alice = Account("alice");
+            auto bob = Account("bob");
+            auto carol = Account("carol");
+
+            // Fund across several ledgers so the TxQ metrics stay restricted.
+            env.fund(XRP(10000), noripple(alice, bob));
+            env.close(env.now() + 5s, 10000ms);
+            env.fund(XRP(10000), noripple(carol));
+            env.close(env.now() + 5s, 10000ms);
+
+            // Fill the ledger
+            env(noop(alice));
+            env(noop(alice));
+            env(noop(alice));
+            checkMetrics(__LINE__, env, 0, std::nullopt, 3);
+
+            env(noop(carol), ter(terQUEUED));
+            checkMetrics(__LINE__, env, 1, std::nullopt, 3);
+
+            auto const aliceSeq = env.seq(alice);
+            auto const bobSeq = env.seq(bob);
+            auto const batchFee = batch::calcBatchFee(env, 1, 2);
+
+            // Queue Batch
+            {
+                env(batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
+                    batch::inner(pay(alice, bob, XRP(10)), aliceSeq + 1),
+                    batch::inner(pay(bob, alice, XRP(5)), bobSeq),
+                    batch::sig(bob),
+                    ter(terQUEUED));
+            }
+
+            checkMetrics(__LINE__, env, 2, std::nullopt, 3);
+
+            // Replace Queued Batch
+            {
+                env(batch::outer(
+                        alice,
+                        aliceSeq,
+                        openLedgerFee(env, batchFee),
+                        tfAllOrNothing),
+                    batch::inner(pay(alice, bob, XRP(10)), aliceSeq + 1),
+                    batch::inner(pay(bob, alice, XRP(5)), bobSeq),
+                    batch::sig(bob),
+                    ter(tesSUCCESS));
+                env.close();
+            }
+
+            checkMetrics(__LINE__, env, 0, 12, 1);
         }
 
-        checkMetrics(__LINE__, env, 2, std::nullopt, 3);
-
-        // Replace Queued Batch
+        // inner batch transactions are counter towards the ledger tx count
         {
-            env(batch::outer(
-                    alice,
-                    aliceSeq,
-                    openLedgerFee(env, batchFee),
-                    tfAllOrNothing),
-                batch::inner(pay(alice, bob, XRP(10)), aliceSeq + 1),
-                batch::inner(pay(bob, alice, XRP(5)), bobSeq),
-                batch::sig(bob),
-                ter(tesSUCCESS));
-            env.close();
-        }
+            test::jtx::Env env{
+                *this,
+                makeSmallQueueConfig(
+                    {{"minimum_txn_in_ledger_standalone", "2"}}),
+                nullptr,
+                beast::severities::kError};
 
-        checkMetrics(__LINE__, env, 0, 12, 1);
+            auto alice = Account("alice");
+            auto bob = Account("bob");
+            auto carol = Account("carol");
+
+            // Fund across several ledgers so the TxQ metrics stay restricted.
+            env.fund(XRP(10000), noripple(alice, bob));
+            env.close(env.now() + 5s, 10000ms);
+            env.fund(XRP(10000), noripple(carol));
+            env.close(env.now() + 5s, 10000ms);
+
+            // Fill the ledger leaving room for 1 queued transaction
+            env(noop(alice));
+            env(noop(alice));
+            checkMetrics(__LINE__, env, 0, std::nullopt, 2);
+
+            auto const aliceSeq = env.seq(alice);
+            auto const bobSeq = env.seq(bob);
+            auto const batchFee = batch::calcBatchFee(env, 1, 2);
+
+            // Batch Successful
+            {
+                env(batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
+                    batch::inner(pay(alice, bob, XRP(10)), aliceSeq + 1),
+                    batch::inner(pay(bob, alice, XRP(5)), bobSeq),
+                    batch::sig(bob),
+                    ter(tesSUCCESS));
+            }
+
+            checkMetrics(__LINE__, env, 0, std::nullopt, 5);
+
+            env(noop(carol), ter(terQUEUED));
+            checkMetrics(__LINE__, env, 1, std::nullopt, 5);
+        }
     }
 
     void

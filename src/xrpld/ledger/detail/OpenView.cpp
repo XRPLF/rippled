@@ -122,7 +122,24 @@ OpenView::OpenView(ReadView const* base, std::shared_ptr<void const> hold)
 std::size_t
 OpenView::txCount() const
 {
-    return baseTxCount_ + txs_.size();
+    if (!open_)
+        return baseTxCount_ + txs_.size();
+
+    std::size_t count = baseTxCount_;
+    for (auto const& item : txs_)
+    {
+        SerialIter sit(item.second.txn->slice());
+        STTx stx(sit);
+
+        // Count one for any txn type
+        ++count;
+
+        // For batch txns, also count each inner txn
+        if (stx.getTxnType() == ttBATCH &&
+            stx.isFieldPresent(sfRawTransactions))
+            count += stx.getFieldArray(sfRawTransactions).size();
+    }
+    return count;
 }
 
 void
