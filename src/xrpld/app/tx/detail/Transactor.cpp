@@ -549,11 +549,12 @@ Transactor::apply()
 }
 
 NotTEC
-Transactor::checkSign(PreclaimContext const& ctx)
+Transactor::checkSign(
+    PreclaimContext const& ctx,
+    AccountID const& id,
+    STObject const& sigObject)
 {
     {
-        auto const id = ctx.tx.getAccountID(sfAccount);
-
         auto const sle = ctx.view.read(keylet::account(id));
 
         if (ctx.view.rules().enabled(featureLendingProtocol) &&
@@ -567,22 +568,32 @@ Transactor::checkSign(PreclaimContext const& ctx)
     {
         // This code must be different for `simulate`
         // Since the public key may be empty even for single signing
-        if (ctx.tx.isFieldPresent(sfSigners))
-            return checkMultiSign(ctx);
-        return checkSingleSign(ctx);
+        if (sigObject.isFieldPresent(sfSigners))
+            return checkMultiSign(ctx, id, sigObject);
+        return checkSingleSign(ctx, id, sigObject);
     }
     // If the pk is empty, then we must be multi-signing.
-    if (ctx.tx.getSigningPubKey().empty())
-        return checkMultiSign(ctx);
+    if (sigObject.getFieldVL(sfSigningPubKey).empty())
+        return checkMultiSign(ctx, id, sigObject);
 
-    return checkSingleSign(ctx);
+    return checkSingleSign(ctx, id, sigObject);
 }
 
 NotTEC
-Transactor::checkSingleSign(PreclaimContext const& ctx)
+Transactor::checkSign(PreclaimContext const& ctx)
+{
+    return checkSign(ctx, ctx.tx.getAccountID(sfAccount), ctx.tx);
+}
+
+// TODO generalize
+NotTEC
+Transactor::checkSingleSign(
+    PreclaimContext const& ctx,
+    AccountID const& idAccount,
+    STObject const& sigObject)
 {
     // Check that the value in the signing key slot is a public key.
-    auto const pkSigner = ctx.tx.getSigningPubKey();
+    auto const pkSigner = sigObject.getFieldVL(sfSigningPubKey);
     if (!(ctx.flags & tapDRY_RUN) && !publicKeyType(makeSlice(pkSigner)))
     {
         JLOG(ctx.j.trace())
@@ -591,7 +602,6 @@ Transactor::checkSingleSign(PreclaimContext const& ctx)
     }
 
     // Look up the account.
-    auto const idAccount = ctx.tx.getAccountID(sfAccount);
     auto const sleAccount = ctx.view.read(keylet::account(idAccount));
     if (!sleAccount)
         return terNO_ACCOUNT;
@@ -658,11 +668,14 @@ Transactor::checkSingleSign(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
+// TODO generalize
 NotTEC
-Transactor::checkMultiSign(PreclaimContext const& ctx)
+Transactor::checkMultiSign(
+    PreclaimContext const& ctx,
+    AccountID const& id,
+    STObject const& sigObject)
 {
-    auto const id = ctx.tx.getAccountID(sfAccount);
-    // Get mTxnAccountID's SignerList and Quorum.
+    // Get id's SignerList and Quorum.
     std::shared_ptr<STLedgerEntry const> sleAccountSigners =
         ctx.view.read(keylet::signers(id));
     // If the signer list doesn't exist the account is not multi-signing.
@@ -688,7 +701,7 @@ Transactor::checkMultiSign(PreclaimContext const& ctx)
         return accountSigners.error();
 
     // Get the array of transaction signers.
-    STArray const& txSigners(ctx.tx.getFieldArray(sfSigners));
+    STArray const& txSigners(sigObject.getFieldArray(sfSigners));
 
     // Walk the accountSigners performing a variety of checks and see if
     // the quorum is met.

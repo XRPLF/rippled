@@ -242,6 +242,9 @@ public:
     getFieldPathSet(SField const& field) const;
     const STVector256&
     getFieldV256(SField const& field) const;
+    // If not found, returns an object constructed with the given field
+    STObject
+    getFieldObject(SField const& field) const;
     const STArray&
     getFieldArray(SField const& field) const;
     const STCurrency&

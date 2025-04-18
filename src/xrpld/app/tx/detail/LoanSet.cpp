@@ -61,6 +61,17 @@ NotTEC
 LoanSet::doPreflight(PreflightContext const& ctx)
 {
     auto const& tx = ctx.tx;
+    auto const counterPartySig = ctx.tx.getFieldObject(sfCounterpartySignature);
+
+    // Copied from preflight1
+    // TODO: Refactor into a helper function?
+    if (auto const spk = counterPartySig.getFieldVL(sfSigningPubKey);
+        !spk.empty() && !publicKeyType(makeSlice(spk)))
+    {
+        JLOG(ctx.j.debug()) << "preflight1: invalid signing key";
+        return temBAD_SIGNATURE;
+    }
+
     if (auto const data = tx[~sfData]; data && !data->empty() &&
         !validDataLength(tx[~sfData], maxDataPayloadLength))
         return temINVALID;
@@ -84,7 +95,82 @@ LoanSet::doPreflight(PreflightContext const& ctx)
              gracePeriod > paymentInterval)
         return temINVALID;
 
+    // Copied from preflight2
+    // TODO: Refactor into a helper function?
+    if (ctx.flags & tapDRY_RUN)  // simulation
+    {
+        if (!ctx.tx.getSignature(counterPartySig).empty())
+        {
+            // NOTE: This code should never be hit because it's checked in the
+            // `simulate` RPC
+            return temINVALID;  // LCOV_EXCL_LINE
+        }
+
+        if (!counterPartySig.isFieldPresent(sfSigners))
+        {
+            // no signers, no signature - a valid simulation
+            return tesSUCCESS;
+        }
+
+        for (auto const& signer : counterPartySig.getFieldArray(sfSigners))
+        {
+            if (signer.isFieldPresent(sfTxnSignature) &&
+                !signer[sfTxnSignature].empty())
+            {
+                // NOTE: This code should never be hit because it's
+                // checked in the `simulate` RPC
+                return temINVALID;  // LCOV_EXCL_LINE
+            }
+        }
+        return tesSUCCESS;
+    }
+
     return tesSUCCESS;
+}
+
+NotTEC
+LoanSet::checkSign(PreclaimContext const& ctx)
+{
+    if (auto ret = Transactor::checkSign(ctx))
+        return ret;
+
+    // Counter signer is optional. If it's not specified, it's assumed to be
+    // `LoanBroker.Owner`. Note that we have not checked whether the
+    // loanbroker exists at this point.
+    auto const counterSigner = [&]() -> std::optional<AccountID> {
+        if (auto const c = ctx.tx.at(~sfCounterparty))
+            return c;
+
+        if (auto const broker =
+                ctx.view.read(keylet::loanbroker(ctx.tx[sfLoanBrokerID])))
+            return broker->at(sfOwner);
+        return std::nullopt;
+    }();
+    if (!counterSigner)
+        return temBAD_SIGNER;
+    // Counterparty signature is required
+    auto const counterSig = ctx.tx.getFieldObject(sfCounterpartySignature);
+    return Transactor::checkSign(ctx, *counterSigner, counterSig);
+}
+}
+
+XRPAmount
+LoanSet::calculateBaseFee(ReadView const& view, STTx const& tx)
+{
+    auto const normalCost = Transactor::calculateBaseFee(view, tx);
+
+    // Compute the additional cost of each signature in the
+    // CounterpartySignature, whether a single signature or a multisignature
+    XRPAmount const baseFee = view.fees().base;
+
+    auto const counterSig = tx.getFieldObject(sfCounterpartySignature);
+    // Each signer adds one more baseFee to the minimum required fee
+    // for the transaction. Note that unlike the base class, if there are no
+    // signers, 1 extra signature is still counted for the single signer.
+    std::size_t const signerCount =
+        tx.isFieldPresent(sfSigners) ? tx.getFieldArray(sfSigners).size() : 1;
+
+    return normalCost + (signerCount * baseFee);
 }
 
 TER

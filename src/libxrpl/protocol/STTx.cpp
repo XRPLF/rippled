@@ -197,11 +197,11 @@ STTx::getSigningHash() const
 }
 
 Blob
-STTx::getSignature() const
+STTx::getSignature(STObject const& sigObject) const
 {
     try
     {
-        return getFieldVL(sfTxnSignature);
+        return sigObject.getFieldVL(sfTxnSignature);
     }
     catch (std::exception const&)
     {
@@ -244,22 +244,41 @@ STTx::sign(PublicKey const& publicKey, SecretKey const& secretKey)
 Expected<void, std::string>
 STTx::checkSign(
     RequireFullyCanonicalSig requireCanonicalSig,
-    Rules const& rules) const
+    Rules const& rules,
+    STObject const& sigObject) const
 {
     try
     {
         // Determine whether we're single- or multi-signing by looking
         // at the SigningPubKey.  If it's empty we must be
         // multi-signing.  Otherwise we're single-signing.
-        Blob const& signingPubKey = getFieldVL(sfSigningPubKey);
+        Blob const& signingPubKey = sigObject.getFieldVL(sfSigningPubKey);
         return signingPubKey.empty()
-            ? checkMultiSign(requireCanonicalSig, rules)
-            : checkSingleSign(requireCanonicalSig);
+            ? checkMultiSign(requireCanonicalSig, rules, sigObject)
+            : checkSingleSign(requireCanonicalSig, sigObject);
     }
     catch (std::exception const&)
     {
     }
     return Unexpected("Internal signature check failure.");
+}
+
+Expected<void, std::string>
+STTx::checkSign(
+    RequireFullyCanonicalSig requireCanonicalSig,
+    Rules const& rules) const
+{
+    if (auto const ret = checkSign(requireCanonicalSig, rules, *this); !ret)
+        return ret;
+
+    if (isFieldPresent(sfCounterpartySignature))
+    {
+        auto const counterSig = getFieldObject(sfCounterpartySignature);
+        if (auto const ret = checkSign(requireCanonicalSig, rules, counterSig);
+            !ret)
+            return Unexpected("Counterparty: " + ret.error());
+    }
+    return {};
 }
 
 Json::Value
@@ -342,12 +361,14 @@ STTx::getMetaSQL(
 }
 
 Expected<void, std::string>
-STTx::checkSingleSign(RequireFullyCanonicalSig requireCanonicalSig) const
+STTx::checkSingleSign(
+    RequireFullyCanonicalSig requireCanonicalSig,
+    STObject const& sigObject) const
 {
     // We don't allow both a non-empty sfSigningPubKey and an sfSigners.
     // That would allow the transaction to be signed two ways.  So if both
     // fields are present the signature is invalid.
-    if (isFieldPresent(sfSigners))
+    if (sigObject.isFieldPresent(sfSigners))
         return Unexpected("Cannot both single- and multi-sign.");
 
     bool validSig = false;
@@ -356,11 +377,11 @@ STTx::checkSingleSign(RequireFullyCanonicalSig requireCanonicalSig) const
         bool const fullyCanonical = (getFlags() & tfFullyCanonicalSig) ||
             (requireCanonicalSig == RequireFullyCanonicalSig::yes);
 
-        auto const spk = getFieldVL(sfSigningPubKey);
+        auto const spk = sigObject.getFieldVL(sfSigningPubKey);
 
         if (publicKeyType(makeSlice(spk)))
         {
-            Blob const signature = getFieldVL(sfTxnSignature);
+            Blob const signature = sigObject.getFieldVL(sfTxnSignature);
             Blob const data = getSigningData(*this);
 
             validSig = verify(
@@ -384,19 +405,20 @@ STTx::checkSingleSign(RequireFullyCanonicalSig requireCanonicalSig) const
 Expected<void, std::string>
 STTx::checkMultiSign(
     RequireFullyCanonicalSig requireCanonicalSig,
-    Rules const& rules) const
+    Rules const& rules,
+    STObject const& sigObject) const
 {
     // Make sure the MultiSigners are present.  Otherwise they are not
     // attempting multi-signing and we just have a bad SigningPubKey.
-    if (!isFieldPresent(sfSigners))
+    if (!sigObject.isFieldPresent(sfSigners))
         return Unexpected("Empty SigningPubKey.");
 
     // We don't allow both an sfSigners and an sfTxnSignature.  Both fields
     // being present would indicate that the transaction is signed both ways.
-    if (isFieldPresent(sfTxnSignature))
+    if (sigObject.isFieldPresent(sfTxnSignature))
         return Unexpected("Cannot both single- and multi-sign.");
 
-    STArray const& signers{getFieldArray(sfSigners)};
+    STArray const& signers{sigObject.getFieldArray(sfSigners)};
 
     // There are well known bounds that the number of signers must be within.
     if (signers.size() < minMultiSigners ||

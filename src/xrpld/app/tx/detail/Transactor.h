@@ -212,6 +212,12 @@ protected:
     static XRPAmount
     calculateOwnerReserveFee(ReadView const& view, STTx const& tx);
 
+    static NotTEC
+    checkSign(
+        PreclaimContext const& ctx,
+        AccountID const& id,
+        STObject const& sigObject);
+
     // Base class always returns true
     static bool
     isEnabled(PreflightContext const& ctx);
@@ -232,9 +238,15 @@ private:
     TER
     payFee();
     static NotTEC
-    checkSingleSign(PreclaimContext const& ctx);
+    checkSingleSign(
+        PreclaimContext const& ctx,
+        AccountID const& id,
+        STObject const& sigObject);
     static NotTEC
-    checkMultiSign(PreclaimContext const& ctx);
+    checkMultiSign(
+        PreclaimContext const& ctx,
+        AccountID const& id,
+        STObject const& sigObject);
 
     void trapTransaction(uint256) const;
 };

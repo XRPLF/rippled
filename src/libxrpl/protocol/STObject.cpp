@@ -682,6 +682,13 @@ STObject::getFieldV256(SField const& field) const
     return getFieldByConstRef<STVector256>(field, empty);
 }
 
+STObject
+STObject::getFieldObject(SField const& field) const
+{
+    STObject const empty{field};
+    return getFieldByConstRef<STObject>(field, empty);
+}
+
 const STArray&
 STObject::getFieldArray(SField const& field) const
 {
