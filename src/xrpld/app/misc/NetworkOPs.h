@@ -165,6 +165,16 @@ public:
         Json::Value const& jvMarker,
         Json::Value& jvResult) = 0;
 
+    virtual void
+    getOptionBookPage(
+        std::shared_ptr<ReadView const>& lpLedger,
+        Issue const& issue,
+        std::uint64_t const& strikePrice,
+        std::uint32_t const& expiration,
+        unsigned int iLimit,
+        Json::Value const& jvMarker,
+        Json::Value& jvResult) = 0;
+
     //--------------------------------------------------------------------------
 
     // ledger proposal/close functions

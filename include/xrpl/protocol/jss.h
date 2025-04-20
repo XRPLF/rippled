@@ -581,6 +581,7 @@ JSS(stop);                    // in: LedgerCleaner
 JSS(stop_history_tx_only);    // in: Unsubscribe, stop history tx stream
 JSS(streams);                 // in: Subscribe, Unsubscribe
 JSS(strict);                  // in: AccountCurrencies, AccountInfo
+JSS(strike_price);            // in: OptionBookOffers
 JSS(sub_index);               // in: LedgerEntry
 JSS(subcommand);              // in: PathFind
 JSS(subject);                 // in: LedgerEntry Credential

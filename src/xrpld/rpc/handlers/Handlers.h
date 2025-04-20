@@ -101,6 +101,8 @@ doNFTSellOffers(RPC::JsonContext&);
 Json::Value
 doNoRippleCheck(RPC::JsonContext&);
 Json::Value
+doOptionBookOffers(RPC::JsonContext&);
+Json::Value
 doOwnerInfo(RPC::JsonContext&);
 Json::Value
 doPathFind(RPC::JsonContext&);

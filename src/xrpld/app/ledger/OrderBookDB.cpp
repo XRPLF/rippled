@@ -87,9 +87,11 @@ OrderBookDB::update(std::shared_ptr<ReadView const> const& ledger)
         return;
     }
 
+    decltype(optionBooks_) optionBooks;
     decltype(allBooks_) allBooks;
     decltype(xrpBooks_) xrpBooks;
 
+    optionBooks.reserve(optionBooks_.size());
     allBooks.reserve(allBooks_.size());
     xrpBooks.reserve(xrpBooks_.size());
 
@@ -176,6 +178,14 @@ OrderBookDB::addOrderBook(Book const& book)
 
     if (toXRP)
         xrpBooks_.insert(book.in);
+}
+
+void
+OrderBookDB::addOptionOrderBook(Option const& option)
+{
+    std::lock_guard sl(mLock);
+
+    optionBooks_.insert(option.issue);
 }
 
 // return list of all orderbooks that want this issuerID and currencyID

@@ -280,7 +280,7 @@ public:
         Keylet const& key,
         std::function<void(std::shared_ptr<SLE> const&)> const& describe)
     {
-        if (key.type != ltOFFER)
+        if (key.type != ltOPTION_OFFER)
         {
             UNREACHABLE(
                 "ripple::ApplyView::dirAppend : only Offers are appended to "

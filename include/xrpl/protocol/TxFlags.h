@@ -224,6 +224,19 @@ constexpr std::uint32_t tfAMMClawbackMask = ~(tfUniversal | tfClawTwoAssets);
 // BridgeModify flags:
 constexpr std::uint32_t tfClearAccountCreateAmount     = 0x00010000;
 constexpr std::uint32_t tfBridgeModifyMask = ~(tfUniversal | tfClearAccountCreateAmount);
+
+// OptionCreate flags:
+constexpr std::uint32_t tfPut     = 0x00010000;
+constexpr std::uint32_t tfMarket  = 0x00020000;
+// constexpr std::uint32_t tfSell = 0x00080000;
+constexpr std::uint32_t tfOptionCreateMask = ~(tfUniversal | tfPut | tfMarket | tfSell);
+
+// OptionSettle flags:
+constexpr std::uint32_t tfExpire  = 0x00010000;
+// constexpr std::uint32_t tfClose  = 0x00020000;
+constexpr std::uint32_t tfExercise  = 0x00040000;
+constexpr std::uint32_t tfOptionSettleMask = ~(tfUniversal | tfExpire | tfClose | tfExercise);
+
 // clang-format on
 
 }  // namespace ripple

@@ -25,6 +25,7 @@
 #include <xrpld/app/main/Application.h>
 
 #include <xrpl/protocol/MultiApiJson.h>
+#include <xrpl/protocol/Option.h>
 
 #include <mutex>
 
@@ -42,6 +43,9 @@ public:
 
     void
     addOrderBook(Book const&);
+
+    void
+    addOptionOrderBook(Option const&);
 
     /** @return a list of all orderbooks that want this issuerID and currencyID.
      */
@@ -73,6 +77,9 @@ private:
 
     // Maps order books by "issue in" to "issue out":
     hardened_hash_map<Issue, hardened_hash_set<Issue>> allBooks_;
+
+    // does an option order book exist
+    hash_set<Issue> optionBooks_;
 
     // does an order book to XRP exist
     hash_set<Issue> xrpBooks_;

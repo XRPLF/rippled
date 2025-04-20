@@ -465,6 +465,21 @@ TRANSACTION(ttPERMISSIONED_DOMAIN_DELETE, 63, PermissionedDomainDelete, ({
     {sfDomainID, soeREQUIRED},
 }))
 
+/** This transaction type creates an OptionOffer */
+TRANSACTION(ttOPTION_CREATE, 64, OptionCreate, ({
+    {sfStrikePrice, soeREQUIRED},
+    {sfAsset, soeREQUIRED},
+    {sfExpiration, soeREQUIRED},
+    {sfPremium, soeREQUIRED},
+    {sfQuantity, soeREQUIRED},
+}))
+
+/** This transaction type exercises an OptionOffer */
+TRANSACTION(ttOPTION_SETTLE, 65, OptionSettle, ({
+    {sfOptionID, soeREQUIRED},
+    {sfOptionOfferID, soeREQUIRED},
+}))
+
 /** This system-generated transaction type is used to update the status of the various amendments.
 
     For details, see: https://xrpl.org/amendments.html

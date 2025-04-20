@@ -185,6 +185,8 @@ LEDGER_ENTRY(ltDIR_NODE, 0x0064, DirectoryNode, directory, ({
     {sfIndexNext,            soeOPTIONAL},
     {sfIndexPrevious,        soeOPTIONAL},
     {sfNFTokenID,            soeOPTIONAL},
+    {sfStrike,               soeOPTIONAL},
+    {sfExpiration,           soeOPTIONAL},
     {sfPreviousTxnID,        soeOPTIONAL},
     {sfPreviousTxnLgrSeq,    soeOPTIONAL},
 }))
@@ -458,6 +460,38 @@ LEDGER_ENTRY(ltPERMISSIONED_DOMAIN, 0x0082, PermissionedDomain, permissioned_dom
     {sfOwnerNode,           soeREQUIRED},
     {sfPreviousTxnID,       soeREQUIRED},
     {sfPreviousTxnLgrSeq,   soeREQUIRED},
+}))
+
+/** A ledger object which tracks Options
+    \sa keylet::option
+ */
+LEDGER_ENTRY(ltOPTION, 0x0083, Option, option, ({
+    {sfOwnerNode,            soeREQUIRED},
+    {sfStrikePrice,          soeREQUIRED},
+    {sfAsset,                soeREQUIRED},
+    {sfExpiration,           soeREQUIRED},
+    {sfPreviousTxnID,        soeREQUIRED},
+    {sfPreviousTxnLgrSeq,    soeREQUIRED}
+}))
+
+/** A ledger object which tracks OptionOffers
+    \sa keylet::option_offer
+ */
+LEDGER_ENTRY(ltOPTION_OFFER, 0x0084, OptionOffer, option_offer, ({
+    {sfOwner,                soeREQUIRED},
+    {sfOwnerNode,            soeREQUIRED},
+    {sfStrikePrice,          soeREQUIRED},
+    {sfAsset,                soeREQUIRED},
+    {sfExpiration,           soeREQUIRED},
+    {sfPremium,              soeREQUIRED}, // Premium
+    {sfQuantity,             soeREQUIRED}, // Quantity
+    {sfAmount,               soeOPTIONAL}, // Locked Amount
+    {sfOpenInterest,         soeOPTIONAL}, // To Seal
+    {sfSealedOptions,        soeOPTIONAL},
+    {sfBookDirectory,        soeREQUIRED},
+    {sfBookNode,             soeREQUIRED},
+    {sfPreviousTxnID,        soeREQUIRED},
+    {sfPreviousTxnLgrSeq,    soeREQUIRED}
 }))
 
 #undef EXPAND

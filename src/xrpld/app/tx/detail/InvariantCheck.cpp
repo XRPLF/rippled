@@ -109,6 +109,10 @@ XRPNotCreated::visitEntry(
             case ltESCROW:
                 drops_ -= (*before)[sfAmount].xrp().drops();
                 break;
+            case ltOPTION_OFFER:
+                if (isXRP((*before)[sfAmount]))
+                    drops_ -= (*before)[sfAmount].xrp().drops();
+                break;
             default:
                 break;
         }
@@ -129,6 +133,10 @@ XRPNotCreated::visitEntry(
                 break;
             case ltESCROW:
                 if (!isDelete)
+                    drops_ += (*after)[sfAmount].xrp().drops();
+                break;
+            case ltOPTION_OFFER:
+                if (!isDelete && isXRP((*after)[sfAmount]))
                     drops_ += (*after)[sfAmount].xrp().drops();
                 break;
             default:
@@ -488,6 +496,8 @@ LedgerEntryTypesMatch::visitEntry(
             case ltMPTOKEN:
             case ltCREDENTIAL:
             case ltPERMISSIONED_DOMAIN:
+            case ltOPTION:
+            case ltOPTION_OFFER:
                 break;
             default:
                 invalidTypeAdded_ = true;

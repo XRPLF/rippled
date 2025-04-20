@@ -22,6 +22,7 @@
 #include <xrpld/app/misc/LoadFeeTrack.h>
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
+#include <xrpld/app/tx/detail/OptionUtils.h>
 #include <xrpld/app/tx/detail/SignerEntries.h>
 #include <xrpld/app/tx/detail/Transactor.h>
 #include <xrpld/core/Config.h>
@@ -832,6 +833,19 @@ removeExpiredCredentials(
 }
 
 static void
+removeExpiredOptionOffers(
+    ApplyView& view,
+    std::vector<uint256> const& optionOffers,
+    beast::Journal viewJ)
+{
+    for (auto const& index : optionOffers)
+    {
+        if (auto const sle = view.peek(keylet::optionOffer(index)))
+            option::expireOffer(view, sle, viewJ);
+    }
+}
+
+static void
 removeDeletedTrustLines(
     ApplyView& view,
     std::vector<uint256> const& trustLines,
@@ -985,13 +999,16 @@ Transactor::operator()()
         std::vector<uint256> removedTrustLines;
         std::vector<uint256> expiredNFTokenOffers;
         std::vector<uint256> expiredCredentials;
+        std::vector<uint256> expiredOptionOffers;
 
         bool const doOffers =
             ((result == tecOVERSIZE) || (result == tecKILLED));
         bool const doLines = (result == tecINCOMPLETE);
         bool const doNFTokenOffers = (result == tecEXPIRED);
         bool const doCredentials = (result == tecEXPIRED);
-        if (doOffers || doLines || doNFTokenOffers || doCredentials)
+        bool const doOptionOffers = (result == tecEXPIRED);
+        if (doOffers || doLines || doNFTokenOffers || doCredentials ||
+            doOptionOffers)
         {
             ctx_.visit([doOffers,
                         &removedOffers,
@@ -1000,7 +1017,9 @@ Transactor::operator()()
                         doNFTokenOffers,
                         &expiredNFTokenOffers,
                         doCredentials,
-                        &expiredCredentials](
+                        &expiredCredentials,
+                        doOptionOffers,
+                        &expiredOptionOffers](
                            uint256 const& index,
                            bool isDelete,
                            std::shared_ptr<SLE const> const& before,
@@ -1034,6 +1053,10 @@ Transactor::operator()()
                     if (doCredentials && before && after &&
                         (before->getType() == ltCREDENTIAL))
                         expiredCredentials.push_back(index);
+
+                    if (doOptionOffers && before && after &&
+                        (before->getType() == ltOPTION_OFFER))
+                        expiredOptionOffers.push_back(index);
                 }
             });
         }
@@ -1063,6 +1086,10 @@ Transactor::operator()()
         if (result == tecEXPIRED)
             removeExpiredCredentials(
                 view(), expiredCredentials, ctx_.app.journal("View"));
+
+        if (result == tecEXPIRED)
+            removeExpiredOptionOffers(
+                view(), expiredOptionOffers, ctx_.app.journal("View"));
 
         applied = isTecClaim(result);
     }

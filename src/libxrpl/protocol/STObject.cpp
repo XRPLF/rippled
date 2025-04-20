@@ -689,6 +689,13 @@ STObject::getFieldArray(SField const& field) const
     return getFieldByConstRef<STArray>(field, empty);
 }
 
+STIssue const&
+STObject::getFieldIssue(SField const& field) const
+{
+    static STIssue const empty{};
+    return getFieldByConstRef<STIssue>(field, empty);
+}
+
 STCurrency const&
 STObject::getFieldCurrency(SField const& field) const
 {

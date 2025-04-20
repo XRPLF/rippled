@@ -51,6 +51,8 @@
 #include <xrpld/app/tx/detail/NFTokenCreateOffer.h>
 #include <xrpld/app/tx/detail/NFTokenMint.h>
 #include <xrpld/app/tx/detail/NFTokenModify.h>
+#include <xrpld/app/tx/detail/OptionCreate.h>
+#include <xrpld/app/tx/detail/OptionSettle.h>
 #include <xrpld/app/tx/detail/PayChan.h>
 #include <xrpld/app/tx/detail/Payment.h>
 #include <xrpld/app/tx/detail/PermissionedDomainDelete.h>

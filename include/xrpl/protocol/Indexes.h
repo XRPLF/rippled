@@ -335,9 +335,50 @@ permissionedDomain(AccountID const& account, std::uint32_t seq) noexcept;
 
 Keylet
 permissionedDomain(uint256 const& domainID) noexcept;
+
+Keylet
+option(
+    AccountID const& issuer,
+    Currency const& currency,
+    std::uint64_t strike,
+    std::uint32_t expiration) noexcept;
+
+Keylet
+optionBook(
+    AccountID const& issuer,
+    Currency const& currency,
+    std::uint64_t strike,
+    std::uint32_t expiration) noexcept;
+
+Keylet
+optionOffer(AccountID const& id, std::uint32_t seq) noexcept;
+
+inline Keylet
+optionOffer(uint256 const& key) noexcept
+{
+    return {ltOPTION_OFFER, key};
+}
+
+Keylet
+optionQuality(Keylet const& k, std::uint64_t q) noexcept;
+
 }  // namespace keylet
 
 // Everything below is deprecated and should be removed in favor of keylets:
+
+uint256
+getOptionBookBase(
+    AccountID const& issuer,
+    Currency const& currency,
+    std::uint64_t strike,
+    std::uint32_t expiration);
+
+uint256
+getOptionQualityNext(uint256 const& uBase);
+
+// VFALCO This name could be better
+std::uint64_t
+getOptionQuality(uint256 const& uBase);
 
 uint256
 getBookBase(Book const& book);

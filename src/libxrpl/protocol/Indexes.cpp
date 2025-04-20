@@ -94,6 +94,9 @@ enum class LedgerNameSpace : std::uint16_t {
     MPTOKEN = 't',
     CREDENTIAL = 'D',
     PERMISSIONED_DOMAIN = 'm',
+    OPTION = 'X',
+    OPTION_DIR = 'Y',
+    OPTION_OFFER = 'y',
 
     // No longer used or supported. Left here to reserve the space
     // to avoid accidental reuse.
@@ -138,6 +141,36 @@ getQualityNext(uint256 const& uBase)
 
 std::uint64_t
 getQuality(uint256 const& uBase)
+{
+    // VFALCO [base_uint] This assumes a certain storage format
+    return boost::endian::big_to_native(((std::uint64_t*)uBase.end())[-1]);
+}
+
+uint256
+getOptionBookBase(
+    AccountID const& issuer,
+    Currency const& currency,
+    std::uint64_t strike,
+    std::uint32_t expiration)
+{
+    auto const index = indexHash(
+        LedgerNameSpace::BOOK_DIR, issuer, currency, strike, expiration);
+
+    // Return with quality 0.
+    auto k = keylet::optionQuality({ltDIR_NODE, index}, 0);
+    return k.key;
+}
+
+uint256
+getOptionQualityNext(uint256 const& uBase)
+{
+    static constexpr uint256 nextq(
+        "0000000000000000000000000000000000000000000000010000000000000000");
+    return uBase + nextq;
+}
+
+std::uint64_t
+getOptionQuality(uint256 const& uBase)
 {
     // VFALCO [base_uint] This assumes a certain storage format
     return boost::endian::big_to_native(((std::uint64_t*)uBase.end())[-1]);
@@ -555,6 +588,54 @@ Keylet
 permissionedDomain(uint256 const& domainID) noexcept
 {
     return {ltPERMISSIONED_DOMAIN, domainID};
+}
+
+Keylet
+option(
+    AccountID const& issuer,
+    Currency const& currency,
+    std::uint64_t strike,
+    std::uint32_t expiration) noexcept
+{
+    return {
+        ltOPTION,
+        indexHash(
+            LedgerNameSpace::OPTION, issuer, currency, strike, expiration)};
+}
+
+Keylet
+optionBook(
+    AccountID const& issuer,
+    Currency const& currency,
+    std::uint64_t strike,
+    std::uint32_t expiration) noexcept
+{
+    return {
+        ltDIR_NODE, getOptionBookBase(issuer, currency, strike, expiration)};
+}
+
+Keylet
+optionQuality(Keylet const& k, std::uint64_t q) noexcept
+{
+    assert(k.type == ltDIR_NODE);
+
+    // Indexes are stored in big endian format: they print as hex as stored.
+    // Most significant bytes are first and the least significant bytes
+    // represent adjacent entries. We place the quality, in big endian format,
+    // in the 8 right most bytes; this way, incrementing goes to the next entry
+    // for indexes.
+    uint256 x = k.key;
+
+    // FIXME This is ugly and we can and should do better...
+    ((std::uint64_t*)x.end())[-1] = boost::endian::native_to_big(q);
+
+    return {ltDIR_NODE, x};
+}
+
+Keylet
+optionOffer(AccountID const& id, std::uint32_t seq) noexcept
+{
+    return {ltOPTION_OFFER, indexHash(LedgerNameSpace::OPTION_OFFER, id, seq)};
 }
 
 }  // namespace keylet

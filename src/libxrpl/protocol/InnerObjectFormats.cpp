@@ -154,6 +154,14 @@ InnerObjectFormats::InnerObjectFormats()
             {sfIssuer, soeREQUIRED},
             {sfCredentialType, soeREQUIRED},
         });
+
+    add(sfSealedOption.jsonName,
+        sfSealedOption.getCode(),
+        {
+            {sfOwner, soeREQUIRED},
+            {sfOptionOfferID, soeREQUIRED},
+            {sfQuantity, soeREQUIRED},
+        });
 }
 
 InnerObjectFormats const&

@@ -364,6 +364,16 @@ public:
         Json::Value const& jvMarker,
         Json::Value& jvResult) override;
 
+    void
+    getOptionBookPage(
+        std::shared_ptr<ReadView const>& lpLedger,
+        Issue const&,
+        std::uint64_t const&,
+        std::uint32_t const& expiration,
+        unsigned int iLimit,
+        Json::Value const& jvMarker,
+        Json::Value& jvResult) override;
+
     // Ledger proposal/close functions.
     bool
     processTrustedProposal(RCLCxPeerPos proposal) override;
@@ -4429,6 +4439,112 @@ NetworkOPsImp::getBookPage(
 
     //  jvResult[jss::marker]  = Json::Value(Json::arrayValue);
     //  jvResult[jss::nodes]   = Json::Value(Json::arrayValue);
+}
+
+void
+NetworkOPsImp::getOptionBookPage(
+    std::shared_ptr<ReadView const>& lpLedger,
+    Issue const& issue,
+    std::uint64_t const& strike,
+    std::uint32_t const& expiration,
+    unsigned int iLimit,
+    Json::Value const& jvMarker,
+    Json::Value& jvResult)
+{
+    Json::Value& jvOffers =
+        (jvResult[jss::offers] = Json::Value(Json::arrayValue));
+
+    const uint256 uBookBase =
+        getOptionBookBase(issue.account, issue.currency, strike, expiration);
+    const uint256 uBookEnd = getOptionQualityNext(uBookBase);
+
+    uint256 uTipIndex = uBookBase;
+
+    if (auto stream = m_journal.trace())
+    {
+        stream << "getBookPage: issue=" << issue;
+        stream << "getBookPage: strike=" << strike;
+        stream << "getBookPage: uBookBase=" << uBookBase;
+        stream << "getBookPage: uBookEnd=" << uBookEnd;
+        stream << "getBookPage: uTipIndex=" << uTipIndex;
+    }
+
+    ReadView const& view = *lpLedger;
+
+    bool bDone = false;
+    bool bDirectAdvance = true;
+
+    std::shared_ptr<SLE const> sleOfferDir;
+    uint256 offerIndex;
+    unsigned int uBookEntry;
+    STAmount saDirRate;
+
+    while (!bDone && iLimit-- > 0)
+    {
+        if (bDirectAdvance)
+        {
+            bDirectAdvance = false;
+
+            JLOG(m_journal.trace()) << "getBookPage: bDirectAdvance";
+
+            auto const ledgerIndex = view.succ(uTipIndex, uBookEnd);
+            if (ledgerIndex)
+            {
+                sleOfferDir = view.read(keylet::page(*ledgerIndex));
+            }
+            else
+            {
+                sleOfferDir.reset();
+            }
+
+            if (!sleOfferDir)
+            {
+                JLOG(m_journal.trace()) << "getBookPage: bDone";
+                bDone = true;
+            }
+            else
+            {
+                uTipIndex = sleOfferDir->key();
+                cdirFirst(view, uTipIndex, sleOfferDir, uBookEntry, offerIndex);
+
+                JLOG(m_journal.trace())
+                    << "getBookPage:   uTipIndex=" << uTipIndex;
+                JLOG(m_journal.trace())
+                    << "getBookPage: offerIndex=" << offerIndex;
+            }
+        }
+
+        if (!bDone)
+        {
+            auto sleOffer = view.read(keylet::optionOffer(offerIndex));
+
+            if (sleOffer)
+            {
+                STAmount premium = sleOffer->getFieldAmount(sfAmount);
+                auto const optionQuality = getOptionQuality(uTipIndex);
+                STAmount saDirRate = STAmount(premium.issue(), optionQuality);
+
+                Json::Value jvOffer = sleOffer->getJson(JsonOptions::none);
+
+                Json::Value& jvOf = jvOffers.append(jvOffer);
+                jvOf[jss::quality] = saDirRate.getText();
+            }
+            else
+            {
+                JLOG(m_journal.warn()) << "Missing offer";
+            }
+
+            if (!cdirNext(view, uTipIndex, sleOfferDir, uBookEntry, offerIndex))
+            {
+                bDirectAdvance = true;
+            }
+            else
+            {
+                JLOG(m_journal.trace())
+                    << "getBookPage: offerIndex=" << offerIndex;
+            }
+        }
+    }
 }
 
 #else
