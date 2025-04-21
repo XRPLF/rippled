@@ -1025,7 +1025,7 @@ CreateOffer::applyHybrid(
     {
         JLOG(j_.debug())
             << "final result: failed to add hybrid offer to open book";
-        return tecDIR_FULL;
+        return tecDIR_FULL;  // LCOV_EXCL_LINE
     }
 
     STArray bookArr(sfAdditionalBooks, 1);
