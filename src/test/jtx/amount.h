@@ -24,9 +24,9 @@
 #include <test/jtx/tags.h>
 
 #include <xrpl/basics/contract.h>
-#include <xrpl/protocol/FeeUnits.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/Units.h>
 
 #include <cstdint>
 #include <ostream>

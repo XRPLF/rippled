@@ -349,7 +349,10 @@ loanbroker(uint256 const& vaultKey)
 }
 
 Keylet
-loan(AccountID const& owner, uint256 loanBrokerID, std::uint32_t seq) noexcept;
+loan(
+    AccountID const& borrower,
+    uint256 loanBrokerID,
+    std::uint32_t seq) noexcept;
 
 inline Keylet
 loan(uint256 const& vaultKey)

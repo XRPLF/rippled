@@ -28,6 +28,7 @@
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/jss.h>
 
 #include <vector>
@@ -164,6 +165,37 @@ struct blobField : public JTxField<SF_VL, std::string>
     }
 };
 
+template <class SField, class UnitTag, class ValueType>
+struct valueUnitField
+    : public JTxField<SField, unit::ValueUnit<UnitTag, ValueType>, ValueType>
+{
+    using SF = SField;
+    using SV = unit::ValueUnit<UnitTag, ValueType>;
+    using OV = ValueType;
+    using base = JTxField<SF, SV, OV>;
+
+    static_assert(
+        std::is_same_v<SV, typename SField::type::value_type::value_type>);
+    static_assert(std::is_same_v<
+                  OV,
+                  typename SField::type::value_type::value_type::value_type>);
+
+protected:
+    using base::value_;
+
+public:
+    explicit valueUnitField(SF const& sfield, SV const& value)
+        : JTxField(sfield, value)
+    {
+    }
+
+    OV
+    value() const override
+    {
+        return value_.value();
+    }
+};
+
 template <class JTxField>
 struct JTxFieldWrapper
 {
@@ -220,6 +252,13 @@ public:
         return operator()(makeSlice(c));
     }
 };
+
+template <
+    class SField,
+    class UnitTag = typename SField::type::value_type::unit_type,
+    class ValueType = typename SField::type::value_type::value_type>
+using valueUnitWrapper =
+    JTxFieldWrapper<valueUnitField<SField, UnitTag, ValueType>>;
 
 template <class SField, class StoredValue = typename SField::type::value_type>
 using simpleField = JTxFieldWrapper<JTxField<SField, StoredValue>>;
@@ -627,16 +666,31 @@ auto const loanBrokerID = JTxFieldWrapper<uint256Field>(sfLoanBrokerID);
 
 auto const data = JTxFieldWrapper<blobField>(sfData);
 
-auto const managementFeeRate = simpleField<SF_UINT16>(sfManagementFeeRate);
+auto const managementFeeRate =
+    valueUnitWrapper<SF_TENTHBIPS16>(sfManagementFeeRate);
 
 auto const debtMaximum = simpleField<SF_NUMBER>(sfDebtMaximum);
 
-auto const coverRateMinimum = simpleField<SF_UINT32>(sfCoverRateMinimum);
+auto const coverRateMinimum =
+    valueUnitWrapper<SF_TENTHBIPS32>(sfCoverRateMinimum);
 
 auto const coverRateLiquidation =
-    simpleField<SF_UINT32>(sfCoverRateLiquidation);
+    simpleField<SF_TENTHBIPS32>(sfCoverRateLiquidation);
 
 }  // namespace loanBroker
+
+/* Loan */
+/******************************************************************************/
+namespace loan {
+
+Json::Value
+set(AccountID const& account,
+    uint256 loanBrokerID,
+    Number principalRequested,
+    NetClock::time_point const& startDate,
+    uint32_t flags = 0);
+
+}
 
 }  // namespace jtx
 }  // namespace test

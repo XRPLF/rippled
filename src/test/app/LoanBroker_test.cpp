@@ -75,7 +75,14 @@ class LoanBroker_test : public beast::unit_test::suite
             env(set(alice, keylet.key), fee(increment), ter(temDISABLED));
             auto const brokerKeylet =
                 keylet::loanbroker(alice.id(), env.seq(alice));
-            // LoanBrokerDelete is disabled, too.
+            // Other LoanBroker transactions are disabled, too.
+            // 1. LoanBrokerCoverDeposit
+            env(coverDeposit(alice, brokerKeylet.key, asset(1000)),
+                ter(temDISABLED));
+            // 2. LoanBrokerCoverWithdraw
+            env(coverWithdraw(alice, brokerKeylet.key, asset(1000)),
+                ter(temDISABLED));
+            // 3. LoanBrokerDelete
             env(del(alice, brokerKeylet.key), ter(temDISABLED));
         };
         failAll(all - featureMPTokensV1);
@@ -421,7 +428,7 @@ class LoanBroker_test : public beast::unit_test::suite
                 ter(tecNO_PERMISSION));
             // sfManagementFeeRate: too big
             env(set(evan, vault.vaultID),
-                managementFeeRate(maxManagementFeeRate + 1),
+                managementFeeRate(maxManagementFeeRate + TenthBips16(10)),
                 fee(increment),
                 ter(temINVALID));
             // sfCoverRateMinimum: good value, bad account
@@ -555,10 +562,10 @@ class LoanBroker_test : public beast::unit_test::suite
                     return env.jt(
                         jv,
                         data(testData),
-                        managementFeeRate(123),
+                        managementFeeRate(TenthBips16(123)),
                         debtMaximum(Number(9)),
-                        coverRateMinimum(100),
-                        coverRateLiquidation(200));
+                        coverRateMinimum(TenthBips32(100)),
+                        coverRateLiquidation(TenthBips32(200)));
                 },
                 [&](SLE::const_ref broker) {
                     // Extra checks

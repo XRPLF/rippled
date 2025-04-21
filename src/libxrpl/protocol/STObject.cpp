@@ -686,7 +686,10 @@ STObject
 STObject::getFieldObject(SField const& field) const
 {
     STObject const empty{field};
-    return getFieldByConstRef<STObject>(field, empty);
+    auto ret = getFieldByConstRef<STObject>(field, empty);
+    if (ret != empty)
+        ret.applyTemplateFromSField(field);
+    return ret;
 }
 
 const STArray&

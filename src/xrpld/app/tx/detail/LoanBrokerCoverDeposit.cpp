@@ -125,6 +125,8 @@ LoanBrokerCoverDeposit::doApply()
     auto const amount = tx[sfAmount];
 
     auto broker = view().peek(keylet::loanbroker(brokerID));
+    if (!broker)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const brokerPseudoID = broker->at(sfAccount);
 

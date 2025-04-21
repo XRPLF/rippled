@@ -805,7 +805,7 @@ class Simulate_test : public beast::unit_test::suite
             testTx(env, tx, testSimulation);
 
             tx[sfSigningPubKey] = "";
-            tx[sfTxnSignature] = "";
+            tx[sfTxnSignature] = "x";
             tx[sfSequence] = env.seq(env.master);
             tx[sfFee] = env.current()->fees().base.jsonClipped().asString();
 

@@ -470,6 +470,28 @@ coverWithdraw(
 
 }  // namespace loanBroker
 
+/* Loan */
+/******************************************************************************/
+namespace loan {
+
+Json::Value
+set(AccountID const& account,
+    uint256 loanBrokerID,
+    Number principalRequested,
+    NetClock::time_point const& startDate,
+    uint32_t flags)
+{
+    Json::Value jv;
+    jv[sfTransactionType] = jss::LoanSet;
+    jv[sfAccount] = to_string(account);
+    jv[sfLoanBrokerID] = to_string(loanBrokerID);
+    jv[sfPrincipalRequested] = to_string(principalRequested);
+    jv[sfFlags] = flags;
+    jv[sfStartDate] = startDate.time_since_epoch().count();
+    return jv;
+}
+
+}  // namespace loan
 }  // namespace jtx
 }  // namespace test
 }  // namespace ripple

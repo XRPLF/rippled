@@ -21,6 +21,7 @@
 #define RIPPLE_PROTOCOL_STINTEGER_H_INCLUDED
 
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STBase.h>
 
 namespace ripple {
@@ -81,6 +82,13 @@ using STUInt16 = STInteger<std::uint16_t>;
 using STUInt32 = STInteger<std::uint32_t>;
 using STUInt64 = STInteger<std::uint64_t>;
 
+// Basis points (bips) values:
+using SFBips16 = STInteger<Bips16>;
+using SFBips32 = STInteger<Bips32>;
+// Tenth of a basis point values:
+using SFTenthBips16 = STInteger<TenthBips16>;
+using SFTenthBips32 = STInteger<TenthBips32>;
+
 template <typename Integer>
 inline STInteger<Integer>::STInteger(Integer v) : value_(v)
 {
@@ -122,7 +130,7 @@ template <typename Integer>
 inline bool
 STInteger<Integer>::isDefault() const
 {
-    return value_ == 0;
+    return value_ == Integer{};
 }
 
 template <typename Integer>

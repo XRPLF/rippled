@@ -23,6 +23,8 @@
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/partitioned_unordered_map.h>
+#include <xrpl/basics/safe_cast.h>
+#include <xrpl/protocol/Units.h>
 
 #include <cstdint>
 
@@ -98,70 +100,73 @@ std::uint16_t constexpr maxTransferFee = 50000;
  *
  * Example: 50% is 0.50 * bipsPerUnity = 5,000 bps.
  */
-std::uint32_t constexpr bipsPerUnity = 100 * 100;
-std::uint32_t constexpr tenthBipsPerUnity = bipsPerUnity * 10;
+Bips32 constexpr bipsPerUnity(100 * 100);
+TenthBips32 constexpr tenthBipsPerUnity(bipsPerUnity.value() * 10);
 
-constexpr std::uint32_t
+constexpr Bips32
 percentageToBips(std::uint32_t percentage)
 {
-    return percentage * bipsPerUnity / 100;
+    return Bips32(percentage * bipsPerUnity.value() / 100);
 }
-constexpr std::uint32_t
+constexpr TenthBips32
 percentageToTenthBips(std::uint32_t percentage)
 {
-    return percentage * tenthBipsPerUnity / 100;
+    return TenthBips32(percentage * tenthBipsPerUnity.value() / 100);
 }
-template <typename T>
+template <typename T, class TBips>
 constexpr T
-bipsOfValue(T value, std::uint32_t bips)
+bipsOfValue(T value, Bips<TBips> bips)
 {
-    return value * bips / bipsPerUnity;
+    return value * bips.value() / bipsPerUnity.value();
 }
-template <typename T>
+template <typename T, class TBips>
 constexpr T
-tenthBipsOfValue(T value, std::uint32_t bips)
+tenthBipsOfValue(T value, TenthBips<TBips> bips)
 {
-    return value * bips / tenthBipsPerUnity;
+    return value * bips.value() / tenthBipsPerUnity.value();
 }
 
 /** The maximum management fee rate allowed by a loan broker in 1/10 bips.
 
     Valid values are between 0 and 10% inclusive.
 */
-std::uint16_t constexpr maxManagementFeeRate = percentageToTenthBips(10);
-static_assert(maxManagementFeeRate == 10'000);
+TenthBips16 constexpr maxManagementFeeRate(
+    unsafe_cast<std::uint16_t>(percentageToTenthBips(10).value()));
+static_assert(maxManagementFeeRate == TenthBips16(std::uint16_t(10'000u)));
 
 /** The maximum coverage rate required of a loan broker in 1/10 bips.
 
     Valid values are between 0 and 100% inclusive.
 */
-std::uint32_t constexpr maxCoverRate = percentageToTenthBips(100);
-static_assert(maxCoverRate == 100'000);
+TenthBips32 constexpr maxCoverRate = percentageToTenthBips(100);
+static_assert(maxCoverRate == TenthBips32(100'000u));
 
 /** The maximum overpayment fee on a loan in 1/10 bips.
 *
     Valid values are between 0 and 100% inclusive.
 */
-std::uint32_t constexpr maxOverpaymentFee = percentageToTenthBips(100);
+TenthBips32 constexpr maxOverpaymentFee = percentageToTenthBips(100);
 
 /** The maximum premium added to the interest rate for late payments on a loan
  * in 1/10 bips.
  *
  * Valid values are between 0 and 100% inclusive.
  */
-std::uint32_t constexpr maxLateInterestRate = percentageToTenthBips(100);
+TenthBips32 constexpr maxLateInterestRate = percentageToTenthBips(100);
 
-/** The maximum interest rate charged for repaying a loan early in 1/10 bips.
+/** The maximum close interest rate charged for repaying a loan early in 1/10
+ * bips.
  *
  * Valid values are between 0 and 100% inclusive.
  */
-std::uint32_t constexpr maxCloseInterestRate = percentageToTenthBips(100);
+TenthBips32 constexpr maxCloseInterestRate = percentageToTenthBips(100);
 
-/** The maximum interest rate charged on loan overpayments in 1/10 bips.
+/** The maximum overpayment interest rate charged on loan overpayments in 1/10
+ * bips.
  *
  * Valid values are between 0 and 100% inclusive.
  */
-std::uint32_t constexpr maxOverpaymentInterestRate = percentageToTenthBips(100);
+TenthBips32 constexpr maxOverpaymentInterestRate = percentageToTenthBips(100);
 
 /** The maximum length of a URI inside an NFT */
 std::size_t constexpr maxTokenURILength = 256;

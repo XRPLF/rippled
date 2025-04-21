@@ -54,6 +54,8 @@ TypedField<T>::TypedField(private_access_tag_t pat, Args&&... args)
 #undef UNTYPED_SFIELD
 #pragma push_macro("TYPED_SFIELD")
 #undef TYPED_SFIELD
+#pragma push_macro("INTERPRETED_SFIELD")
+#undef INTERPRETED_SFIELD
 
 #define UNTYPED_SFIELD(sfName, stiSuffix, fieldValue, ...) \
     SField const sfName(                                   \
@@ -69,6 +71,13 @@ TypedField<T>::TypedField(private_access_tag_t pat, Args&&... args)
         fieldValue,                                      \
         std::string_view(#sfName).substr(2).data(),      \
         ##__VA_ARGS__);
+#define INTERPRETED_SFIELD(sfName, stiSuffix, fieldValue, stiInterpreted, ...) \
+    SF_##stiInterpreted const sfName(                                          \
+        access,                                                                \
+        STI_##stiSuffix,                                                       \
+        fieldValue,                                                            \
+        std::string_view(#sfName).substr(2).data(),                            \
+        ##__VA_ARGS__);
 
 // SFields which, for historical reasons, do not follow naming conventions.
 SField const sfInvalid(access, -1);
@@ -80,6 +89,8 @@ SField const sfIndex(access, STI_UINT256, 258, "index");
 
 #include <xrpl/protocol/detail/sfields.macro>
 
+#undef INTERPRETED_SFIELD
+#pragma pop_macro("INTERPRETED_SFIELD")
 #undef TYPED_SFIELD
 #pragma pop_macro("TYPED_SFIELD")
 #undef UNTYPED_SFIELD

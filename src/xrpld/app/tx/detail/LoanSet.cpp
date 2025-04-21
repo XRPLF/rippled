@@ -33,6 +33,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
@@ -63,14 +64,9 @@ LoanSet::doPreflight(PreflightContext const& ctx)
     auto const& tx = ctx.tx;
     auto const counterPartySig = ctx.tx.getFieldObject(sfCounterpartySignature);
 
-    // Copied from preflight1
-    // TODO: Refactor into a helper function?
-    if (auto const spk = counterPartySig.getFieldVL(sfSigningPubKey);
-        !spk.empty() && !publicKeyType(makeSlice(spk)))
-    {
-        JLOG(ctx.j.debug()) << "preflight1: invalid signing key";
-        return temBAD_SIGNATURE;
-    }
+    if (auto const ret =
+            ripple::detail::preflightCheckSigningKey(counterPartySig, ctx.j))
+        return ret;
 
     if (auto const data = tx[~sfData]; data && !data->empty() &&
         !validDataLength(tx[~sfData], maxDataPayloadLength))
@@ -96,34 +92,9 @@ LoanSet::doPreflight(PreflightContext const& ctx)
         return temINVALID;
 
     // Copied from preflight2
-    // TODO: Refactor into a helper function?
-    if (ctx.flags & tapDRY_RUN)  // simulation
-    {
-        if (!ctx.tx.getSignature(counterPartySig).empty())
-        {
-            // NOTE: This code should never be hit because it's checked in the
-            // `simulate` RPC
-            return temINVALID;  // LCOV_EXCL_LINE
-        }
-
-        if (!counterPartySig.isFieldPresent(sfSigners))
-        {
-            // no signers, no signature - a valid simulation
-            return tesSUCCESS;
-        }
-
-        for (auto const& signer : counterPartySig.getFieldArray(sfSigners))
-        {
-            if (signer.isFieldPresent(sfTxnSignature) &&
-                !signer[sfTxnSignature].empty())
-            {
-                // NOTE: This code should never be hit because it's
-                // checked in the `simulate` RPC
-                return temINVALID;  // LCOV_EXCL_LINE
-            }
-        }
-        return tesSUCCESS;
-    }
+    if (auto const ret = ripple::detail::preflightCheckSimulateKeys(
+            ctx.flags, counterPartySig, ctx.j))
+        return *ret;
 
     return tesSUCCESS;
 }
@@ -152,7 +123,6 @@ LoanSet::checkSign(PreclaimContext const& ctx)
     auto const counterSig = ctx.tx.getFieldObject(sfCounterpartySignature);
     return Transactor::checkSign(ctx, *counterSigner, counterSig);
 }
-}
 
 XRPAmount
 LoanSet::calculateBaseFee(ReadView const& view, STTx const& tx)
@@ -176,120 +146,247 @@ LoanSet::calculateBaseFee(ReadView const& view, STTx const& tx)
 TER
 LoanSet::preclaim(PreclaimContext const& ctx)
 {
-    return temDISABLED;
-
     auto const& tx = ctx.tx;
 
+    if (auto const startDate(tx[sfStartDate]); hasExpired(ctx.view, startDate))
+    {
+        JLOG(ctx.j.warn()) << "Start date is in the past.";
+        return tecEXPIRED;
+    }
+
     auto const account = tx[sfAccount];
-    if (auto const ID = tx[~sfLoanID])
+    auto const brokerID = tx[sfLoanBrokerID];
+
+    auto const brokerSle = ctx.view.read(keylet::loanbroker(brokerID));
+    if (!brokerSle)
     {
-        auto const sle = ctx.view.read(keylet::loan(*ID));
-        if (!sle)
-        {
-            JLOG(ctx.j.warn()) << "Loan does not exist.";
-            return tecNO_ENTRY;
-        }
-        if (tx[sfVaultID] != sle->at(sfVaultID))
-        {
-            JLOG(ctx.j.warn()) << "Can not change VaultID on an existing Loan.";
-            return tecNO_PERMISSION;
-        }
-        if (account != sle->at(sfOwner))
-        {
-            JLOG(ctx.j.warn()) << "Account is not the owner of the Loan.";
-            return tecNO_PERMISSION;
-        }
+        JLOG(ctx.j.warn()) << "LoanBroker does not exist.";
+        return tecNO_ENTRY;
     }
-    else
+    auto const brokerOwner = brokerSle->at(sfOwner);
+    if (!tx.isFieldPresent(sfCounterparty) && account != brokerOwner)
     {
-        auto const vaultID = tx[sfVaultID];
-        auto const sleVault = ctx.view.read(keylet::vault(vaultID));
-        if (!sleVault)
-        {
-            JLOG(ctx.j.warn()) << "Vault does not exist.";
-            return tecNO_ENTRY;
-        }
-        if (account != sleVault->at(sfOwner))
-        {
-            JLOG(ctx.j.warn()) << "Account is not the owner of the Vault.";
-            return tecNO_PERMISSION;
-        }
+        JLOG(ctx.j.warn())
+            << "Counterparty is not the owner of the LoanBroker.";
+        return tecNO_PERMISSION;
     }
+    auto const counterparty = tx[~sfCounterparty].value_or(brokerOwner);
+    auto const borrower = counterparty == brokerOwner ? account : counterparty;
+    if (account != brokerOwner && counterparty != brokerOwner)
+    {
+        JLOG(ctx.j.warn()) << "Neither Account nor Counterparty are the owner "
+                              "of the LoanBroker.";
+        return tecNO_PERMISSION;
+    }
+
+    if (auto const borrowerSle = ctx.view.read(keylet::account(borrower));
+        !borrowerSle)
+    {
+        JLOG(ctx.j.warn()) << "Borrower does not exist.";
+        return tecNO_ENTRY;
+    }
+
+    auto const brokerPseudo = brokerSle->at(sfAccount);
+    auto const vault = ctx.view.read(keylet::vault(brokerSle->at(sfVaultID)));
+    if (!vault)
+        // Should be impossible
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+    auto const asset = vault->at(sfAsset);
+    if (isFrozen(ctx.view, brokerOwner, asset) ||
+        isFrozen(ctx.view, brokerPseudo, asset))
+    {
+        JLOG(ctx.j.warn()) << "One of the affected accounts is frozen.";
+        return asset.holds<Issue>() ? tecFROZEN : tecLOCKED;
+    }
+    if (asset.holds<Issue>())
+    {
+        auto const issue = asset.get<Issue>();
+        if (isDeepFrozen(ctx.view, borrower, issue.currency, issue.account))
+            return tecFROZEN;
+    }
+    auto const principalRequested = tx[sfPrincipalRequested];
+    if (auto const assetsAvailable = vault->at(sfAssetsAvailable);
+        assetsAvailable < principalRequested)
+    {
+        JLOG(ctx.j.warn())
+            << "Insufficient assets available in the Vault to fund the loan.";
+        return tecINSUFFICIENT_FUNDS;
+    }
+    auto const debtTotal = brokerSle->at(sfDebtTotal);
+    if (brokerSle->at(sfDebtMaximum) < debtTotal + principalRequested)
+    {
+        JLOG(ctx.j.warn())
+            << "Loan would exceed the maximum debt limit of the LoanBroker.";
+        return tecLIMIT_EXCEEDED;
+    }
+    if (brokerSle->at(sfCoverAvailable) <
+        tenthBipsOfValue(
+            debtTotal + principalRequested, brokerSle->at(sfCoverRateMinimum)))
+    {
+        JLOG(ctx.j.warn())
+            << "Insufficient first-loss capital to cover the loan.";
+        return tecINSUFFICIENT_FUNDS;
+    }
+
     return tesSUCCESS;
 }
 
 TER
 LoanSet::doApply()
 {
-    return temDISABLED;
-
     auto const& tx = ctx_.tx;
     auto& view = ctx_.view();
 
-#if 0
-    if (auto const ID = tx[~sfLoanID])
+    auto const brokerID = tx[sfLoanBrokerID];
+
+    auto const brokerSle = view.peek(keylet::loanbroker(brokerID));
+    if (!brokerSle)
+        tefBAD_LEDGER;  // LCOV_EXCL_LINE
+    auto const brokerOwner = brokerSle->at(sfOwner);
+    auto const brokerOwnerSle = view.peek(keylet::account(brokerOwner));
+
+    auto const vaultSle = view.peek(keylet ::vault(brokerSle->at(sfVaultID)));
+    if (!vaultSle)
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+    auto const vaultPseudo = vaultSle->at(sfAccount);
+    auto const vaultAsset = vaultSle->at(sfAsset);
+
+    auto const counterparty = tx[~sfCounterparty].value_or(brokerOwner);
+    auto const borrower = counterparty == brokerOwner ? account_ : counterparty;
+    auto const borrowerSle = view.peek(keylet::account(borrower));
+    if (!borrowerSle)
     {
-        // Modify an existing Loan
-        auto loan = view.peek(keylet::loan(*ID));
-
-        if (auto const data = tx[~sfData])
-            loan->at(sfData) = *data;
-        if (auto const debtMax = tx[~sfDebtMaximum])
-            loan->at(sfDebtMaximum) = *debtMax;
-
-        view.update();
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
-    else
+
+    auto const brokerPseudo = brokerSle->at(sfAccount);
+    auto const brokerPseudoSle = view.peek(keylet::account(brokerPseudo));
+    auto const principalRequested = tx[sfPrincipalRequested];
+    auto const interestRate = tx[~sfInterestRate].value_or(TenthBips32(0));
+    auto const originationFee = tx[~sfLoanOriginationFee];
+    auto const loanAssetsAvailable =
+        principalRequested - originationFee.value_or(Number{});
+
+    adjustOwnerCount(view, borrowerSle, 1, j_);
+    auto ownerCount = borrowerSle->at(sfOwnerCount);
+    if (mPriorBalance < view.fees().accountReserve(ownerCount))
+        return tecINSUFFICIENT_RESERVE;
+
+    // Create a holding for the borrower if one does not already exist.
+
+    // Account for the origination fee using two payments
+    //
+    // 1. Transfer (principalRequested - originationFee) from vault
+    // pseudo-account to LoanBroker pseudo-account.
+    //
+    // Create the holding if it doesn't already exist
+    if (auto const ter = addEmptyHolding(
+            view,
+            brokerPseudo,
+            brokerPseudoSle->at(sfBalance).value().xrp(),
+            vaultAsset,
+            j_);
+        ter != tesSUCCESS && ter != tecDUPLICATE)
+        // ignore tecDUPLICATE. That means the holding already exists, and is
+        // fine here
+        return ter;
+    if (auto const ter = accountSend(
+            view,
+            vaultPseudo,
+            brokerPseudo,
+            STAmount{vaultAsset, loanAssetsAvailable},
+            j_,
+            WaiveTransferFee::Yes))
+        return ter;
+    // 2. Transfer originationFee, if any, from vault pseudo-account to
+    // LoanBroker owner.
+    if (originationFee)
     {
-        // Create a new Loan pointing back to the given Vault
-        auto const vaultID = tx[sfVaultID];
-        auto const sleVault = view.read(keylet::vault(vaultID));
-        auto const vaultPseudoID = sleVault->at(sfAccount);
-        auto const sequence = tx.getSeqValue();
-
-        auto owner = view.peek(keylet::account(account_));
-        auto loan = std::make_shared<SLE>(keylet::loan(account_, sequence));
-
-        if (auto const ter = dirLink(view, account_, ))
+        // Create the holding if it doesn't already exist
+        if (auto const ter = addEmptyHolding(
+                view,
+                brokerOwner,
+                brokerOwnerSle->at(sfBalance).value().xrp(),
+                vaultAsset,
+                j_);
+            ter != tesSUCCESS && ter != tecDUPLICATE)
+            // ignore tecDUPLICATE. That means the holding already exists, and
+            // is fine here
             return ter;
-        if (auto const ter = dirLink(view, vaultPseudoID, , sfVaultNode))
+        if (auto const ter = accountSend(
+                view,
+                vaultPseudo,
+                brokerOwner,
+                STAmount{vaultAsset, *originationFee},
+                j_,
+                WaiveTransferFee::Yes))
             return ter;
-
-        adjustOwnerCount(view, owner, 1, j_);
-        auto ownerCount = owner->at(sfOwnerCount);
-        if (mPriorBalance < view.fees().accountReserve(ownerCount))
-            return tecINSUFFICIENT_RESERVE;
-
-        auto maybePseudo =
-            createPseudoAccount(view, loan->key(), PseudoAccountOwnerType::Loan);
-        if (!maybePseudo)
-            return maybePseudo.error();
-        auto& pseudo = *maybePseudo;
-        auto pseudoId = pseudo->at(sfAccount);
-
-        if (auto ter = addEmptyHolding(
-                view, pseudoId, mPriorBalance, sleVault->at(sfAsset), j_))
-            return ter;
-
-        // Initialize data fields:
-        loan->at(sfSequence) = sequence;
-        loan->at(sfVaultID) = vaultID;
-        loan->at(sfOwner) = account_;
-        loan->at(sfAccount) = pseudoId;
-        if (auto const data = tx[~sfData])
-            loan->at(sfData) = *data;
-        if (auto const rate = tx[~sfManagementFeeRate])
-            loan->at(sfManagementFeeRate) = *rate;
-        if (auto const debtMax = tx[~sfDebtMaximum])
-            loan->at(sfDebtMaximum) = *debtMax;
-        if (auto const coverMin = tx[~sfCoverRateMinimum])
-            loan->at(sfCoverRateMinimum) = *coverMin;
-        if (auto const coverLiq = tx[~sfCoverRateLiquidation])
-            loan->at(sfCoverRateLiquidation) = *coverLiq;
-
-        view.insert(loan);
     }
-#endif
+
+    auto const managementFeeRate = brokerSle->at(sfManagementFeeRate);
+    auto const loanInterest =
+        tenthBipsOfValue(principalRequested, interestRate);
+    auto const loanInterestToVault = loanInterest -
+        tenthBipsOfValue(loanInterest, managementFeeRate.value());
+    auto const loanSequence = tx.getSeqValue();
+    auto const startDate = tx[sfStartDate];
+    auto const paymentInterval =
+        tx[~sfPaymentInterval].value_or(defaultPaymentInterval);
+
+    // Create the loan
+    auto loan =
+        std::make_shared<SLE>(keylet::loan(borrower, brokerID, loanSequence));
+
+    // Prevent copy/paste errors
+    auto setLoanField = [&loan, &tx](auto const& field) {
+        loan->at(field) = tx[field];
+    };
+
+    // Set required tx fields and pre-computed fields
+    loan->at(sfPrincipalRequested) = principalRequested;
+    loan->at(sfStartDate) = startDate;
+    loan->at(sfSequence) = loanSequence;
+    loan->at(sfLoanBrokerID) = brokerID;
+    loan->at(sfBorrower) = borrower;
+    loan->at(~sfLoanOriginationFee) = originationFee;
+    loan->at(sfPaymentInterval) = paymentInterval;
+    // Set all other transaction fields directly from the transaction
+    if (tx.isFlag(tfLoanOverpayment))
+        loan->setFlag(lsfLoanOverpayment);
+    setLoanField(~sfData);
+    setLoanField(~sfLoanServiceFee);
+    setLoanField(~sfLatePaymentFee);
+    setLoanField(~sfClosePaymentFee);
+    setLoanField(~sfOverpaymentFee);
+    setLoanField(~sfInterestRate);
+    setLoanField(~sfLateInterestRate);
+    setLoanField(~sfCloseInterestRate);
+    setLoanField(~sfOverpaymentInterestRate);
+    loan->at(sfGracePeriod) = tx[~sfGracePeriod].value_or(defaultGracePeriod);
+    // Set dynamic fields to their initial values
+    loan->at(sfPreviousPaymentDate) = 0;
+    loan->at(sfNextPaymentDueDate) = startDate + paymentInterval;
+    loan->at(sfPaymentRemaining) =
+        tx[~sfPaymentTotal].value_or(defaultPaymentTotal);
+    loan->at(sfAssetsAvailable) = loanAssetsAvailable;
+    loan->at(sfPrincipalOutstanding) = principalRequested;
+
+    // Update the balances in the vault
+    vaultSle->at(sfAssetsAvailable) -= principalRequested;
+    vaultSle->at(sfAssetsTotal) += loanInterestToVault;
+    view.update(vaultSle);
+
+    // Update the balances in the loan broker
+    brokerSle->at(sfDebtTotal) += principalRequested + loanInterestToVault;
+    adjustOwnerCount(view, brokerSle, 1, j_);
+
+    if (auto const ter = dirLink(view, brokerPseudo, loan, sfLoanBrokerNode))
+        return ter;
+    // Borrower is effectively the owner of the loan
+    if (auto const ter = dirLink(view, borrower, loan, sfOwnerNode))
+        return ter;
+
+    view.update(brokerSle);
 
     return tesSUCCESS;
 }

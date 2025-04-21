@@ -54,7 +54,9 @@ struct JTx
     bool fill_sig = true;
     bool fill_netid = true;
     std::shared_ptr<STTx const> stx;
+    // TODO: Remove
     std::function<void(Env&, JTx&)> signer;
+    std::vector<std::function<void(Env&, JTx&)>> signers;
 
     JTx() = default;
     JTx(JTx const&) = default;

@@ -262,12 +262,30 @@ NotTEC
 preflight0(PreflightContext const& ctx, std::uint32_t flagMask);
 
 namespace detail {
+
+/** Checks the validity of the transactor signing key.
+ *
+ * Normally called from preflight1 with ctx.tx.
+ */
+NotTEC
+preflightCheckSigningKey(STObject const& sigObject, beast::Journal j);
+
 /** Performs early sanity checks on the account and fee fields.
 
     (And passes flagMask to preflight0)
 */
 NotTEC
 preflight1(PreflightContext const& ctx, std::uint32_t flagMask);
+
+/** Checks the special signing key state needed for simulation
+ *
+ * Normally called from preflight2 with ctx.tx.
+ */
+std::optional<NotTEC>
+preflightCheckSimulateKeys(
+    ApplyFlags flags,
+    STObject const& sigObject,
+    beast::Journal j);
 
 /** Checks whether the signature appears valid */
 NotTEC

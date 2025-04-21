@@ -96,8 +96,12 @@ LoanBrokerDelete::doApply()
 
     // Delete the loan broker
     auto broker = view().peek(keylet::loanbroker(brokerID));
+    if (!broker)
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultID = broker->at(sfVaultID);
     auto const sleVault = view().read(keylet::vault(vaultID));
+    if (!sleVault)
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const vaultPseudoID = sleVault->at(sfAccount);
     auto const vaultAsset = sleVault->at(sfAsset);
 

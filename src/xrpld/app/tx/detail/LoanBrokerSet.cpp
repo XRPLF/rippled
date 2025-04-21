@@ -155,6 +155,8 @@ LoanBrokerSet::doApply()
     {
         // Modify an existing LoanBroker
         auto broker = view.peek(keylet::loanbroker(*brokerID));
+        if (!broker)
+            return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
         if (auto const data = tx[~sfData])
             broker->at(sfData) = *data;
@@ -172,6 +174,8 @@ LoanBrokerSet::doApply()
         auto const sequence = tx.getSeqValue();
 
         auto owner = view.peek(keylet::account(account_));
+        if (!owner)
+            return tefBAD_LEDGER;  // LCOV_EXCL_LINE
         auto broker =
             std::make_shared<SLE>(keylet::loanbroker(account_, sequence));
 
@@ -180,10 +184,14 @@ LoanBrokerSet::doApply()
         if (auto const ter = dirLink(view, vaultPseudoID, broker, sfVaultNode))
             return ter;
 
+        /* We're already charging a higher fee, so we probably don't want to
+        also charge a reserve.
+        *
         adjustOwnerCount(view, owner, 1, j_);
         auto ownerCount = owner->at(sfOwnerCount);
         if (mPriorBalance < view.fees().accountReserve(ownerCount))
             return tecINSUFFICIENT_RESERVE;
+            */
 
         auto maybePseudo = createPseudoAccount(
             view, broker->key(), PseudoAccountOwnerType::LoanBroker);

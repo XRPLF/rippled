@@ -87,6 +87,22 @@ preflight0(PreflightContext const& ctx, std::uint32_t flagMask)
 
 namespace detail {
 
+/** Checks the validity of the transactor signing key.
+ *
+ * Normally called from preflight1.
+ */
+NotTEC
+preflightCheckSigningKey(STObject const& sigObject, beast::Journal j)
+{
+    if (auto const spk = sigObject.getFieldVL(sfSigningPubKey);
+        !spk.empty() && !publicKeyType(makeSlice(spk)))
+    {
+        JLOG(j.debug()) << "preflightCheckSigningKey: invalid signing key";
+        return temBAD_SIGNATURE;
+    }
+    return tesSUCCESS;
+}
+
 /** Performs early sanity checks on the account and fee fields */
 NotTEC
 preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
@@ -118,13 +134,8 @@ preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
         return temBAD_FEE;
     }
 
-    auto const spk = ctx.tx.getSigningPubKey();
-
-    if (!spk.empty() && !publicKeyType(makeSlice(spk)))
-    {
-        JLOG(ctx.j.debug()) << "preflight1: invalid signing key";
-        return temBAD_SIGNATURE;
-    }
+    if (auto const ret = preflightCheckSigningKey(ctx.tx, ctx.j))
+        return ret;
 
     // An AccountTxnID field constrains transaction ordering more than the
     // Sequence field.  Tickets, on the other hand, reduce ordering
@@ -139,26 +150,28 @@ preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
     return tesSUCCESS;
 }
 
-/** Checks whether the signature appears valid */
-NotTEC
-preflight2(PreflightContext const& ctx)
+std::optional<NotTEC>
+preflightCheckSimulateKeys(
+    ApplyFlags flags,
+    STObject const& sigObject,
+    beast::Journal j)
 {
-    if (ctx.flags & tapDRY_RUN)  // simulation
+    if (flags & tapDRY_RUN)  // simulation
     {
-        if (!ctx.tx.getSignature().empty())
+        if (!sigObject.getFieldVL(sfTxnSignature).empty())
         {
             // NOTE: This code should never be hit because it's checked in the
             // `simulate` RPC
             return temINVALID;  // LCOV_EXCL_LINE
         }
 
-        if (!ctx.tx.isFieldPresent(sfSigners))
+        if (!sigObject.isFieldPresent(sfSigners))
         {
             // no signers, no signature - a valid simulation
             return tesSUCCESS;
         }
 
-        for (auto const& signer : ctx.tx.getFieldArray(sfSigners))
+        for (auto const& signer : sigObject.getFieldArray(sfSigners))
         {
             if (signer.isFieldPresent(sfTxnSignature) &&
                 !signer[sfTxnSignature].empty())
@@ -170,6 +183,17 @@ preflight2(PreflightContext const& ctx)
         }
         return tesSUCCESS;
     }
+    return {};
+}
+
+/** Checks whether the signature appears valid */
+NotTEC
+preflight2(PreflightContext const& ctx)
+{
+    if (auto const ret = preflightCheckSimulateKeys(ctx.flags, ctx.tx, ctx.j))
+        // Skips following checks if the transaction is being simulated,
+        // regardless of success or failure
+        return *ret;
 
     auto const sigValid = checkValidity(
         ctx.app.getHashRouter(), ctx.tx, ctx.rules, ctx.app.config());
