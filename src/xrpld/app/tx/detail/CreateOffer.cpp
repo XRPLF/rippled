@@ -28,6 +28,7 @@
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/st.h>
 
+#include "xrpl/basics/base_uint.h"
 #include "xrpl/protocol/STAmount.h"
 #include "xrpl/protocol/TER.h"
 
@@ -1022,7 +1023,8 @@ CreateOffer::applyHybrid(
 
     if (!bookNode)
     {
-        JLOG(j_.debug()) << "final result: failed to add offer to book";
+        JLOG(j_.debug())
+            << "final result: failed to add hybrid offer to open book";
         return tecDIR_FULL;
     }
 
@@ -1314,7 +1316,8 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     adjustOwnerCount(sb, sleCreator, 1, viewJ);
 
     JLOG(j_.trace()) << "adding to book: " << to_string(saTakerPays.issue())
-                     << " : " << to_string(saTakerGets.issue());
+                     << " : " << to_string(saTakerGets.issue()) << " : "
+                     << (domainID ? to_string(*domainID) : "");
 
     Book const book{saTakerPays.issue(), saTakerGets.issue(), domainID};
 

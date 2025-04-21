@@ -60,7 +60,8 @@ bool
 offerInDomain(
     ReadView const& view,
     uint256 const& offerID,
-    uint256 const& domainID)
+    uint256 const& domainID,
+    beast::Journal j)
 {
     auto const sleOffer = view.read(keylet::offer(offerID));
 
@@ -73,6 +74,13 @@ offerInDomain(
         return false;  // LCOV_EXCL_LINE
     if (sleOffer->getFieldH256(sfDomainID) != domainID)
         return false;  // LCOV_EXCL_LINE
+
+    if (sleOffer->isFlag(lsfHybrid) &&
+        !sleOffer->isFieldPresent(sfAdditionalBooks))
+    {
+        JLOG(j.error()) << "Hybrid offer " << offerID
+                        << " missing AdditionalBooks field";  // LCOV_EXCL_LINE
+    }
 
     return accountInDomain(view, sleOffer->getAccountID(sfAccount), domainID);
 }

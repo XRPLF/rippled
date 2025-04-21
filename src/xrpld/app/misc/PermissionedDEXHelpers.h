@@ -35,7 +35,8 @@ accountInDomain(
 offerInDomain(
     ReadView const& view,
     uint256 const& offerID,
-    uint256 const& domainID);
+    uint256 const& domainID,
+    beast::Journal j);
 
 }  // namespace permissionedDEX
 

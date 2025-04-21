@@ -294,7 +294,7 @@ TOfferStreamBase<TIn, TOut>::step()
 
         if (entry->isFieldPresent(sfDomainID) &&
             !permissionedDEX::offerInDomain(
-                view_, entry->key(), entry->getFieldH256(sfDomainID)))
+                view_, entry->key(), entry->getFieldH256(sfDomainID), j_))
         {
             JLOG(j_.trace())
                 << "Removing offer no longer in domain " << entry->key();
