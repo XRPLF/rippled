@@ -18,6 +18,7 @@
 #include <test/jtx.h>
 #include <test/jtx/WSClient.h>
 #include <test/jtx/envconfig.h>
+#include <test/jtx/permissioned_dex.h>
 
 #include <xrpld/app/main/LoadManager.h>
 #include <xrpld/app/misc/LoadFeeTrack.h>
@@ -1301,6 +1302,60 @@ public:
     }
 
     void
+    testSubBookChanges()
+    {
+        testcase("SubBookChanges");
+        using namespace jtx;
+        using namespace std::chrono_literals;
+        FeatureBitset const all{
+            jtx::supported_amendments() | featurePermissionedDomains |
+            featureCredentials | featurePermissionedDEX};
+
+        Env env(*this, all);
+        PermissionedDEX permDex(env);
+        auto const alice = permDex.alice;
+        auto const bob = permDex.bob;
+        auto const carol = permDex.carol;
+        auto const domainID = permDex.domainID;
+        auto const gw = permDex.gw;
+        auto const USD = permDex.USD;
+
+        auto wsc = makeWSClient(env.app().config());
+
+        Json::Value streams;
+        streams[jss::streams] = Json::arrayValue;
+        streams[jss::streams][0u] = "book_changes";
+
+        auto jv = wsc->invoke("subscribe", streams);
+        if (!BEAST_EXPECT(jv[jss::status] == "success"))
+            return;
+        env(offer(alice, XRP(10), USD(10)),
+            domain(domainID),
+            txflags(tfHybrid));
+        env.close();
+
+        env(pay(bob, carol, USD(5)),
+            path(~USD),
+            sendmax(XRP(5)),
+            domain(domainID));
+        env.close();
+
+        BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
+            if (jv[jss::changes].size() != 1)
+                return false;
+
+            auto const jrOffer = jv[jss::changes][0u];
+            return (jv[jss::changes][0u][jss::domain]).asString() ==
+                strHex(domainID) &&
+                jrOffer[jss::currency_a].asString() == "XRP_drops" &&
+                jrOffer[jss::volume_a].asString() == "5000000" &&
+                jrOffer[jss::currency_b].asString() ==
+                "r9QxhA9RghPZBbUchA9HkrmLKaWvkLXU29/USD" &&
+                jrOffer[jss::volume_b].asString() == "5";
+        }));
+    }
+
+    void
     run() override
     {
         using namespace test::jtx;
@@ -1318,6 +1373,7 @@ public:
         testSubErrors(false);
         testSubByUrl();
         testHistoryTxStream();
+        testSubBookChanges();
     }
 };
 
