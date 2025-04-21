@@ -1000,7 +1000,7 @@ CreateOffer::applyHybrid(
     Keylet const& offerKey,
     STAmount const& saTakerPays,
     STAmount const& saTakerGets,
-    std::function<void(SLE::ref, bool)> const& setDir)
+    std::function<void(SLE::ref, std::optional<uint256>)> const& setDir)
 {
     if (!sleOffer->isFieldPresent(sfDomainID))
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -1018,7 +1018,7 @@ CreateOffer::applyHybrid(
     auto const bookNode = sb.dirAppend(dir, offerKey, [&](SLE::ref sle) {
         // don't set domainID on the directory object since this directory is
         // for open book
-        setDir(sle, false);
+        setDir(sle, std::nullopt);
     });
 
     if (!bookNode)
@@ -1335,19 +1335,19 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     auto dir = keylet::quality(keylet::book(book), uRate);
     bool const bookExisted = static_cast<bool>(sb.peek(dir));
 
-    auto setBookDir = [&](SLE::ref sle, bool const setDomainIfAvailable) {
+    auto setBookDir = [&](SLE::ref sle, std::optional<uint256> maybeDomain) {
         sle->setFieldH160(sfTakerPaysCurrency, saTakerPays.issue().currency);
         sle->setFieldH160(sfTakerPaysIssuer, saTakerPays.issue().account);
         sle->setFieldH160(sfTakerGetsCurrency, saTakerGets.issue().currency);
         sle->setFieldH160(sfTakerGetsIssuer, saTakerGets.issue().account);
         sle->setFieldU64(sfExchangeRate, uRate);
-        if (domainID && setDomainIfAvailable)
-            sle->setFieldH256(sfDomainID, *domainID);
+        if (maybeDomain)
+            sle->setFieldH256(sfDomainID, *maybeDomain);
     };
 
     auto const bookNode = sb.dirAppend(dir, offer_index, [&](SLE::ref sle) {
-        // sets domain if it's available
-        setBookDir(sle, true);
+        // sets domainID on book directory if it's a domain offer
+        setBookDir(sle, domainID);
     });
 
     if (!bookNode)

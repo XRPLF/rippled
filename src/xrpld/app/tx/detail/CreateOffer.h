@@ -145,7 +145,7 @@ private:
         Keylet const& offer_index,
         STAmount const& saTakerPays,
         STAmount const& saTakerGets,
-        std::function<void(SLE::ref, bool)> const& setDir);
+        std::function<void(SLE::ref, std::optional<uint256>)> const& setDir);
 
 private:
     // What kind of offer we are placing
