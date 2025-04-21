@@ -206,7 +206,7 @@ private:
         been removed. */
     STAmount mRemainingAmount;
     bool convert_all_;
-    std::optional<uint256>  mDomain;
+    std::optional<uint256> mDomain;
 
     std::shared_ptr<ReadView const> mLedger;
     std::unique_ptr<LoadEvent> m_loadEvent;

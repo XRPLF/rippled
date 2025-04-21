@@ -22,10 +22,11 @@
 #include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Issue.h>
 
+#include <sys/types.h>
+
 #include <map>
 #include <optional>
 #include <set>
-#include <sys/types.h>
 #include <typeinfo>
 #include <unordered_set>
 
