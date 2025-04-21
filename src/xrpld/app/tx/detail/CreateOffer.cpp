@@ -1316,8 +1316,8 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     adjustOwnerCount(sb, sleCreator, 1, viewJ);
 
     JLOG(j_.trace()) << "adding to book: " << to_string(saTakerPays.issue())
-                     << " : " << to_string(saTakerGets.issue()) << " : "
-                     << (domainID ? to_string(*domainID) : "");
+                     << " : " << to_string(saTakerGets.issue())
+                     << (domainID ? (" : " + to_string(*domainID)) : "");
 
     Book const book{saTakerPays.issue(), saTakerGets.issue(), domainID};
 
