@@ -1604,7 +1604,7 @@ ValidPermissionedDEX::finalize(
 
     // for both payment and offercreate, there shouldn't be another domain
     // that's different from the domain specified
-    for (auto const d : domains_)
+    for (auto const& d : domains_)
     {
         if (d != domain)
         {

@@ -148,9 +148,7 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
             else
                 ss << p << "|" << g;
 
-            std::optional<uint256> domain;
-            if (finalFields.isFieldPresent(sfDomainID))
-                domain = finalFields.getFieldH256(sfDomainID);
+            std::optional<uint256> domain = finalFields[~sfDomainID];
 
             std::string key{ss.str()};
 

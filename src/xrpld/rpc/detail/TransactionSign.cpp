@@ -223,7 +223,7 @@ checkPayment(
             rpcINVALID_PARAMS,
             "Cannot specify both 'tx_json.Paths' and 'build_path'");
 
-    std::optional<uint256> domain = std::nullopt;
+    std::optional<uint256> domain;
     if (tx_json.isMember(jss::domain))
     {
         uint256 num;

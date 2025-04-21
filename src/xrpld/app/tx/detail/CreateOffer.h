@@ -145,8 +145,8 @@ private:
         Keylet const& offer_index,
         STAmount const& saTakerPays,
         STAmount const& saTakerGets,
-        std::function<void(SLE::ref, bool)>& setDir);
-    
+        std::function<void(SLE::ref, bool)> const& setDir);
+
 private:
     // What kind of offer we are placing
     CrossType cross_type_;

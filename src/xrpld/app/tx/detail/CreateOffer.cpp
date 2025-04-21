@@ -999,7 +999,7 @@ CreateOffer::applyHybrid(
     Keylet const& offerKey,
     STAmount const& saTakerPays,
     STAmount const& saTakerGets,
-    std::function<void(SLE::ref, bool)>& setDir)
+    std::function<void(SLE::ref, bool)> const& setDir)
 {
     if (!sleOffer->isFieldPresent(sfDomainID))
         return tecINTERNAL;  // LCOV_EXCL_LINE
@@ -1012,7 +1012,7 @@ CreateOffer::applyHybrid(
 
     auto dir =
         keylet::quality(keylet::book(book), getRate(saTakerGets, saTakerPays));
-    bool const bookExisted = static_cast<bool>(sb.peek(dir));
+    bool const bookExists = static_cast<bool>(sb.peek(dir));
 
     auto const bookNode = sb.dirAppend(dir, offerKey, [&](SLE::ref sle) {
         // don't set domainID on the directory object since this directory is
@@ -1026,16 +1026,16 @@ CreateOffer::applyHybrid(
         return tecDIR_FULL;
     }
 
-    STArray bookArr;
+    STArray bookArr(sfAdditionalBooks, 1);
     auto bookInfo = STObject::makeInnerObject(sfBook);
     bookInfo.setFieldH256(sfBookDirectory, dir.key);
     bookInfo.setFieldU64(sfBookNode, *bookNode);
     bookArr.push_back(std::move(bookInfo));
 
-    if (!bookExisted)
+    if (!bookExists)
         ctx_.app.getOrderBookDB().addOrderBook(book);
 
-    sleOffer->setFieldArray(sfAdditionalBooks, std::move(bookArr));
+    sleOffer->setFieldArray(sfAdditionalBooks, bookArr);
     return tesSUCCESS;
 }
 
@@ -1373,14 +1373,13 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     // if it's a hybrid offer, set hybrid flag, and create an open dir
     if (bHybrid)
     {
-        std::function<void(SLE::ref, bool)> setDirFunc = setBookDir;
         if (auto const res = applyHybrid(
                 sb,
                 sleOffer,
                 offer_index,
                 saTakerPays,
                 saTakerGets,
-                setDirFunc);
+                setBookDir);
             res != tesSUCCESS)
             return {res, true};  // LCOV_EXCL_LINE
     }

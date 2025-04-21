@@ -27,6 +27,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/Indexes.h>
+
 #include <utility>
 
 namespace ripple {
@@ -126,14 +127,12 @@ OrderBookDB::update(std::shared_ptr<ReadView const> const& ledger)
                 book.domain = (*sle)[~sfDomainID];
 
                 if (book.domain)
-                    domainBooks_[std::make_pair(book.in, *book.domain)].insert(
-                        book.out);
+                    domainBooks_[{book.in, *book.domain}].insert(book.out);
                 else
                     allBooks[book.in].insert(book.out);
 
                 if (book.domain && isXRP(book.out))
-                    xrpDomainBooks.insert(
-                        std::make_pair(book.in, *book.domain));
+                    xrpDomainBooks.insert({book.in, *book.domain});
                 else if (isXRP(book.out))
                     xrpBooks.insert(book.in);
 
@@ -186,12 +185,12 @@ OrderBookDB::addOrderBook(Book const& book)
     std::lock_guard sl(mLock);
 
     if (book.domain)
-        domainBooks_[std::make_pair(book.in, *book.domain)].insert(book.out);
+        domainBooks_[{book.in, *book.domain}].insert(book.out);
     else
         allBooks_[book.in].insert(book.out);
 
     if (book.domain && toXRP)
-        xrpDomainBooks_.insert(std::make_pair(book.in, *book.domain));
+        xrpDomainBooks_.insert({book.in, *book.domain});
     else if (toXRP)
         xrpBooks_.insert(book.in);
 }
@@ -214,18 +213,18 @@ OrderBookDB::getBooksByTakerPays(
                 ret.reserve(it->second.size());
 
                 for (auto const& gets : it->second)
-                    ret.push_back(Book(issue, gets));
+                    ret.emplace_back(Book(issue, gets));
             }
         }
         else
         {
-            if (auto it = domainBooks_.find(std::make_pair(issue, *domain));
+            if (auto it = domainBooks_.find({issue, *domain});
                 it != domainBooks_.end())
             {
                 ret.reserve(it->second.size());
 
                 for (auto const& gets : it->second)
-                    ret.push_back(Book(issue, gets, domain));
+                    ret.emplace_back(Book(issue, gets, domain));
             }
         }
     }
@@ -247,7 +246,7 @@ OrderBookDB::getBookSize(
     }
     else
     {
-        if (auto it = domainBooks_.find(std::make_pair(issue, *domain));
+        if (auto it = domainBooks_.find({issue, *domain});
             it != domainBooks_.end())
             return static_cast<int>(it->second.size());
     }
@@ -260,8 +259,8 @@ OrderBookDB::isBookToXRP(Issue const& issue, std::optional<Domain> domain)
 {
     std::lock_guard sl(mLock);
     if (domain)
-        return xrpDomainBooks_.count(std::make_pair(issue, *domain)) > 0;
-    return xrpBooks_.count(issue) > 0;
+        return xrpDomainBooks_.contains({issue, *domain});
+    return xrpBooks_.contains(issue);
 }
 
 BookListeners::pointer
