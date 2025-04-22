@@ -143,4 +143,34 @@ WasmHostFunctionsImpl::computeSha512HalfHash(const Bytes& data)
     auto const hash = sha512Half(data);
     return uint256::fromVoid(hash.data());
 }
+
+std::optional<Bytes>
+WasmHostFunctionsImpl::escrowKeylet(
+    const std::string& account,
+    const std::string& seq)
+{
+    auto const accountId = parseBase58<AccountID>(account);
+    if (!accountId || accountId->isZero())
+    {
+        return std::nullopt;
+    }
+
+    std::uint32_t seqNum;
+    try
+    {
+        seqNum = static_cast<std::uint32_t>(std::stoul(seq));
+    }
+    catch (const std::exception& e)
+    {
+        return std::nullopt;
+    }
+
+    auto keylet = keylet::escrow(*accountId, seqNum).key;
+    if (!keylet)
+    {
+        return std::nullopt;
+    }
+
+    return Bytes{keylet.begin(), keylet.end()};
+}
 }  // namespace ripple

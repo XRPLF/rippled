@@ -63,6 +63,9 @@ public:
     Hash
     computeSha512HalfHash(Bytes const& data) override;
 
+    std::optional<Bytes>
+    escrowKeylet(std::string const& account, std::string const& seq) override;
+
 private:
     ApplyContext& ctx;
     Keylet leKey;

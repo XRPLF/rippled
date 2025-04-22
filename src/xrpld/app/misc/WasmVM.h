@@ -92,6 +92,12 @@ struct HostFunctions
         return Hash{};
     }
 
+    virtual std::optional<Bytes>
+    escrowKeylet(std::string const& account, std::string const& seq)
+    {
+        return Bytes{};
+    }
+
     virtual ~HostFunctions() = default;
 };
 
