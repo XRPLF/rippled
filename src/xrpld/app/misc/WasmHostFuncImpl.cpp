@@ -145,6 +145,24 @@ WasmHostFunctionsImpl::computeSha512HalfHash(const Bytes& data)
 }
 
 std::optional<Bytes>
+WasmHostFunctionsImpl::accountKeylet(const std::string& account)
+{
+    auto const accountId = parseBase58<AccountID>(account);
+    if (!accountId || accountId->isZero())
+    {
+        return std::nullopt;
+    }
+
+    auto keylet = keylet::account(*accountId).key;
+    if (!keylet)
+    {
+        return std::nullopt;
+    }
+
+    return Bytes{keylet.begin(), keylet.end()};
+}
+
+std::optional<Bytes>
 WasmHostFunctionsImpl::escrowKeylet(
     const std::string& account,
     const std::string& seq)

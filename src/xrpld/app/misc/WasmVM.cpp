@@ -250,6 +250,30 @@ getNFT(
 }
 
 WasmEdge_Result
+accountKeylet(
+    void* data,
+    const WasmEdge_CallingFrameContext* fm,
+    const WasmEdge_Value* in,
+    WasmEdge_Value* out)
+{
+    auto account = getFieldName(fm, in, 0);
+    if (!account)
+        return account.error();
+
+    auto keylet = ((HostFunctions*)data)->accountKeylet(account.value());
+    if (!keylet)
+        return WasmEdge_Result_Fail;
+
+    auto pointer = setData(fm, keylet.value());
+    if (!pointer)
+        return pointer.error();
+
+    out[0] = pointer.value();
+    //    out[1] = WasmEdge_ValueGenI32((int)nftURI.value().size());
+    return WasmEdge_Result_Success;
+}
+
+WasmEdge_Result
 escrowKeylet(
     void* data,
     const WasmEdge_CallingFrameContext* fm,

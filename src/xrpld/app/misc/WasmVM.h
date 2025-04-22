@@ -93,6 +93,12 @@ struct HostFunctions
     }
 
     virtual std::optional<Bytes>
+    accountKeylet(std::string const& account)
+    {
+        return Bytes{};
+    }
+
+    virtual std::optional<Bytes>
     escrowKeylet(std::string const& account, std::string const& seq)
     {
         return Bytes{};

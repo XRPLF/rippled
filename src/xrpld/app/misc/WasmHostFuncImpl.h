@@ -64,6 +64,9 @@ public:
     computeSha512HalfHash(Bytes const& data) override;
 
     std::optional<Bytes>
+    accountKeylet(std::string const& account) override;
+
+    std::optional<Bytes>
     escrowKeylet(std::string const& account, std::string const& seq) override;
 
 private:
