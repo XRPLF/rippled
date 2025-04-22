@@ -274,6 +274,41 @@ accountKeylet(
 }
 
 WasmEdge_Result
+credentialKeylet(
+    void* data,
+    const WasmEdge_CallingFrameContext* fm,
+    const WasmEdge_Value* in,
+    WasmEdge_Value* out)
+{
+    auto subject = getFieldName(fm, in, 0);
+    if (!subject)
+        return subject.error();
+
+    auto issuer = getFieldName(fm, in, 0);
+    if (!issuer)
+        return issuer.error();
+
+    auto credentialType = getFieldName(fm, in, 0);
+    if (!credentialType)
+        return credentialType.error();
+
+    auto keylet =
+        ((HostFunctions*)data)
+            ->credentialKeylet(
+                subject.value(), issuer.value(), credentialType.value());
+    if (!keylet)
+        return WasmEdge_Result_Fail;
+
+    auto pointer = setData(fm, keylet.value());
+    if (!pointer)
+        return pointer.error();
+
+    out[0] = pointer.value();
+    //    out[1] = WasmEdge_ValueGenI32((int)nftURI.value().size());
+    return WasmEdge_Result_Success;
+}
+
+WasmEdge_Result
 escrowKeylet(
     void* data,
     const WasmEdge_CallingFrameContext* fm,

@@ -163,6 +163,35 @@ WasmHostFunctionsImpl::accountKeylet(const std::string& account)
 }
 
 std::optional<Bytes>
+WasmHostFunctionsImpl::credentialKeylet(
+    const std::string& subject,
+    const std::string& issuer,
+    const std::string& credentialType)
+{
+    auto const subjectId = parseBase58<AccountID>(subject);
+    if (!subjectId || subjectId->isZero())
+    {
+        return std::nullopt;
+    }
+
+    auto const issuerId = parseBase58<AccountID>(issuer);
+    if (!issuerId || issuerId->isZero())
+    {
+        return std::nullopt;
+    }
+
+    auto keylet =
+        keylet::credential(*subjectId, *issuerId, makeSlice(credentialType))
+            .key;
+    if (!keylet)
+    {
+        return std::nullopt;
+    }
+
+    return Bytes{keylet.begin(), keylet.end()};
+}
+
+std::optional<Bytes>
 WasmHostFunctionsImpl::escrowKeylet(
     const std::string& account,
     const std::string& seq)

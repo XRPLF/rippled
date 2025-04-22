@@ -99,6 +99,15 @@ struct HostFunctions
     }
 
     virtual std::optional<Bytes>
+    credentialKeylet(
+        std::string const& subject,
+        std::string const& issuer,
+        std::string const& credentialType)
+    {
+        return Bytes{};
+    }
+
+    virtual std::optional<Bytes>
     escrowKeylet(std::string const& account, std::string const& seq)
     {
         return Bytes{};

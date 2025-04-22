@@ -67,6 +67,12 @@ public:
     accountKeylet(std::string const& account) override;
 
     std::optional<Bytes>
+    credentialKeylet(
+        std::string const& subject,
+        std::string const& issuer,
+        std::string const& credentialType) override;
+
+    std::optional<Bytes>
     escrowKeylet(std::string const& account, std::string const& seq) override;
 
 private:
