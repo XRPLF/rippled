@@ -23,6 +23,7 @@
 #include <test/jtx/Env.h>
 
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Quality.h>
@@ -459,6 +460,100 @@ create(
 }
 
 }  // namespace check
+
+static constexpr FeeLevel64 baseFeeLevel{256};
+static constexpr FeeLevel64 minEscalationFeeLevel = baseFeeLevel * 500;
+
+template <class Suite>
+void
+checkMetrics(
+    Suite& test,
+    int line,
+    jtx::Env& env,
+    std::size_t expectedCount,
+    std::optional<std::size_t> expectedMaxCount,
+    std::size_t expectedInLedger,
+    std::size_t expectedPerLedger,
+    std::uint64_t expectedMinFeeLevel = baseFeeLevel.fee(),
+    std::uint64_t expectedMedFeeLevel = minEscalationFeeLevel.fee())
+{
+    FeeLevel64 const expectedMin{expectedMinFeeLevel};
+    FeeLevel64 const expectedMed{expectedMedFeeLevel};
+    auto const metrics = env.app().getTxQ().getMetrics(*env.current());
+    using namespace std::string_literals;
+
+    metrics.referenceFeeLevel == baseFeeLevel
+        ? test.pass()
+        : test.fail(
+              "reference: "s +
+                  std::to_string(metrics.referenceFeeLevel.value()) + "/" +
+                  std::to_string(baseFeeLevel.value()),
+              __FILE__,
+              line);
+
+    metrics.txCount == expectedCount
+        ? test.pass()
+        : test.fail(
+              "txCount: "s + std::to_string(metrics.txCount) + "/" +
+                  std::to_string(expectedCount),
+              __FILE__,
+              line);
+
+    metrics.txQMaxSize == expectedMaxCount
+        ? test.pass()
+        : test.fail(
+              "txQMaxSize: "s + std::to_string(metrics.txQMaxSize.value_or(0)) +
+                  "/" + std::to_string(expectedMaxCount.value_or(0)),
+              __FILE__,
+              line);
+
+    metrics.txInLedger == expectedInLedger
+        ? test.pass()
+        : test.fail(
+              "txInLedger: "s + std::to_string(metrics.txInLedger) + "/" +
+                  std::to_string(expectedInLedger),
+              __FILE__,
+              line);
+
+    metrics.txPerLedger == expectedPerLedger
+        ? test.pass()
+        : test.fail(
+              "txPerLedger: "s + std::to_string(metrics.txPerLedger) + "/" +
+                  std::to_string(expectedPerLedger),
+              __FILE__,
+              line);
+
+    metrics.minProcessingFeeLevel == expectedMin
+        ? test.pass()
+        : test.fail(
+              "minProcessingFeeLevel: "s +
+                  std::to_string(metrics.minProcessingFeeLevel.value()) + "/" +
+                  std::to_string(expectedMin.value()),
+              __FILE__,
+              line);
+
+    metrics.medFeeLevel == expectedMed
+        ? test.pass()
+        : test.fail(
+              "medFeeLevel: "s + std::to_string(metrics.medFeeLevel.value()) +
+                  "/" + std::to_string(expectedMed.value()),
+              __FILE__,
+              line);
+
+    auto const expectedCurFeeLevel = expectedInLedger > expectedPerLedger
+        ? expectedMed * expectedInLedger * expectedInLedger /
+            (expectedPerLedger * expectedPerLedger)
+        : metrics.referenceFeeLevel;
+
+    metrics.openLedgerFeeLevel == expectedCurFeeLevel
+        ? test.pass()
+        : test.fail(
+              "openLedgerFeeLevel: "s +
+                  std::to_string(metrics.openLedgerFeeLevel.value()) + "/" +
+                  std::to_string(expectedCurFeeLevel.value()),
+              __FILE__,
+              line);
+}
 
 }  // namespace jtx
 }  // namespace test

@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <test/jtx.h>
+#include <test/jtx/TestHelpers.h>
 #include <test/jtx/utility.h>
 
 #include <xrpld/app/misc/HashRouter.h>
@@ -149,40 +150,6 @@ class Batch_test : public beast::unit_test::suite
             section.set(k, v);
 
         return p;
-    }
-
-    void
-    checkMetrics(
-        int line,
-        jtx::Env& env,
-        std::size_t expectedCount,
-        std::optional<std::size_t> expectedMaxCount,
-        std::size_t expectedInLedger)
-    {
-        auto const metrics = env.app().getTxQ().getMetrics(*env.current());
-        using namespace std::string_literals;
-        metrics.txCount == expectedCount
-            ? pass()
-            : fail(
-                  "txCount: "s + std::to_string(metrics.txCount) + "/" +
-                      std::to_string(expectedCount),
-                  __FILE__,
-                  line);
-        metrics.txQMaxSize == expectedMaxCount
-            ? pass()
-            : fail(
-                  "txQMaxSize: "s +
-                      std::to_string(metrics.txQMaxSize.value_or(0)) + "/" +
-                      std::to_string(expectedMaxCount.value_or(0)),
-                  __FILE__,
-                  line);
-        metrics.txInLedger == expectedInLedger
-            ? pass()
-            : fail(
-                  "txInLedger: "s + std::to_string(metrics.txInLedger) + "/" +
-                      std::to_string(expectedInLedger),
-                  __FILE__,
-                  line);
     }
 
     auto
@@ -3560,10 +3527,10 @@ class Batch_test : public beast::unit_test::suite
             env(noop(alice));
             env(noop(alice));
             env(noop(alice));
-            checkMetrics(__LINE__, env, 0, std::nullopt, 3);
+            checkMetrics(*this, __LINE__, env, 0, std::nullopt, 3, 2);
 
             env(noop(carol), ter(terQUEUED));
-            checkMetrics(__LINE__, env, 1, std::nullopt, 3);
+            checkMetrics(*this, __LINE__, env, 1, std::nullopt, 3, 2);
 
             auto const aliceSeq = env.seq(alice);
             auto const bobSeq = env.seq(bob);
@@ -3578,7 +3545,7 @@ class Batch_test : public beast::unit_test::suite
                     ter(terQUEUED));
             }
 
-            checkMetrics(__LINE__, env, 2, std::nullopt, 3);
+            checkMetrics(*this, __LINE__, env, 2, std::nullopt, 3, 2);
 
             // Replace Queued Batch
             {
@@ -3594,7 +3561,7 @@ class Batch_test : public beast::unit_test::suite
                 env.close();
             }
 
-            checkMetrics(__LINE__, env, 0, 12, 1);
+            checkMetrics(*this, __LINE__, env, 0, 12, 1, 6);
         }
 
         // inner batch transactions are counter towards the ledger tx count
@@ -3619,7 +3586,7 @@ class Batch_test : public beast::unit_test::suite
             // Fill the ledger leaving room for 1 queued transaction
             env(noop(alice));
             env(noop(alice));
-            checkMetrics(__LINE__, env, 0, std::nullopt, 2);
+            checkMetrics(*this, __LINE__, env, 0, std::nullopt, 2, 2);
 
             auto const aliceSeq = env.seq(alice);
             auto const bobSeq = env.seq(bob);
@@ -3634,10 +3601,10 @@ class Batch_test : public beast::unit_test::suite
                     ter(tesSUCCESS));
             }
 
-            checkMetrics(__LINE__, env, 0, std::nullopt, 5);
+            checkMetrics(*this, __LINE__, env, 0, std::nullopt, 3, 2);
 
             env(noop(carol), ter(terQUEUED));
-            checkMetrics(__LINE__, env, 1, std::nullopt, 5);
+            checkMetrics(*this, __LINE__, env, 1, std::nullopt, 3, 2);
         }
     }
 
