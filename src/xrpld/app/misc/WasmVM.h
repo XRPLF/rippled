@@ -108,13 +108,13 @@ struct HostFunctions
     }
 
     virtual std::optional<Bytes>
-    escrowKeylet(std::string const& account, std::string const& seq)
+    escrowKeylet(std::string const& account, std::uint32_t const& seq)
     {
         return Bytes{};
     }
 
     virtual std::optional<Bytes>
-    oracleKeylet(std::string const& account, std::string const& docId)
+    oracleKeylet(std::string const& account, std::uint32_t const& docId)
     {
         return Bytes{};
     }

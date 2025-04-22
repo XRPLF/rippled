@@ -73,10 +73,11 @@ public:
         std::string const& credentialType) override;
 
     std::optional<Bytes>
-    escrowKeylet(std::string const& account, std::string const& seq) override;
+    escrowKeylet(std::string const& account, std::uint32_t const& seq) override;
 
     std::optional<Bytes>
-    oracleKeylet(std::string const& account, std::string const& docId) override;
+    oracleKeylet(std::string const& account, std::uint32_t const& documentId)
+        override;
 
 private:
     ApplyContext& ctx;

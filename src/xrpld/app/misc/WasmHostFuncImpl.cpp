@@ -194,7 +194,7 @@ WasmHostFunctionsImpl::credentialKeylet(
 std::optional<Bytes>
 WasmHostFunctionsImpl::escrowKeylet(
     const std::string& account,
-    const std::string& seq)
+    const std::uint32_t& seq)
 {
     auto const accountId = parseBase58<AccountID>(account);
     if (!accountId || accountId->isZero())
@@ -202,17 +202,7 @@ WasmHostFunctionsImpl::escrowKeylet(
         return std::nullopt;
     }
 
-    std::uint32_t seqNum;
-    try
-    {
-        seqNum = static_cast<std::uint32_t>(std::stoul(seq));
-    }
-    catch (const std::exception& e)
-    {
-        return std::nullopt;
-    }
-
-    auto keylet = keylet::escrow(*accountId, seqNum).key;
+    auto keylet = keylet::escrow(*accountId, seq).key;
     if (!keylet)
     {
         return std::nullopt;
@@ -224,20 +214,10 @@ WasmHostFunctionsImpl::escrowKeylet(
 std::optional<Bytes>
 WasmHostFunctionsImpl::oracleKeylet(
     const std::string& account,
-    const std::string& docId)
+    const std::uint32_t& documentId)
 {
     auto const accountId = parseBase58<AccountID>(account);
     if (!accountId || accountId->isZero())
-    {
-        return std::nullopt;
-    }
-
-    std::uint32_t documentId;
-    try
-    {
-        documentId = static_cast<std::uint32_t>(std::stoul(docId));
-    }
-    catch (const std::exception& e)
     {
         return std::nullopt;
     }
