@@ -221,6 +221,35 @@ getCurrentLedgerEntryField(
 }
 
 WasmEdge_Result
+getNFT(
+    void* data,
+    const WasmEdge_CallingFrameContext* fm,
+    const WasmEdge_Value* in,
+    WasmEdge_Value* out)
+{
+    auto account = getFieldName(fm, in, 0);
+    if (!account)
+        return account.error();
+
+    auto nftId = getFieldName(fm, in, 0);
+    if (!nftId)
+        return nftId.error();
+
+    auto nftURI =
+        ((HostFunctions*)data)->getNFT(account.value(), nftId.value());
+    if (!nftURI)
+        return WasmEdge_Result_Fail;
+
+    auto pointer = setData(fm, nftURI.value());
+    if (!pointer)
+        return pointer.error();
+
+    out[0] = pointer.value();
+    //    out[1] = WasmEdge_ValueGenI32((int)nftURI.value().size());
+    return WasmEdge_Result_Success;
+}
+
+WasmEdge_Result
 updateData(
     void* data,
     const WasmEdge_CallingFrameContext* fm,

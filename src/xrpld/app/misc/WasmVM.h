@@ -74,6 +74,12 @@ struct HostFunctions
         return Bytes{};
     }
 
+    virtual std::optional<Bytes>
+    getNFT(std::string const& account, std::string const& nftId)
+    {
+        return Bytes{};
+    }
+
     virtual bool
     updateData(Bytes const& data)
     {

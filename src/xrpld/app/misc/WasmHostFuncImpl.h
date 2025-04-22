@@ -54,6 +54,9 @@ public:
     std::optional<Bytes>
     getCurrentLedgerEntryField(std::string const& fname) override;
 
+    std::optional<Bytes>
+    getNFT(std::string const& account, std::string const& nftId) override;
+
     bool
     updateData(Bytes const& data) override;
 

@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/app/misc/WasmHostFuncImpl.h>
+#include <xrpld/app/tx/detail/NFTokenUtils.h>
 
 #include <xrpl/protocol/digest.h>
 
@@ -96,6 +97,33 @@ WasmHostFunctionsImpl::getCurrentLedgerEntryField(const std::string& fname)
     }
     else
         return std::nullopt;
+}
+
+std::optional<Bytes>
+WasmHostFunctionsImpl::getNFT(
+    const std::string& account,
+    const std::string& nftId)
+{
+    auto const accountId = parseBase58<AccountID>(account);
+    if (!accountId || accountId->isZero())
+    {
+        return std::nullopt;
+    }
+
+    uint256 nftHash;
+    if (!nftHash.parseHex(nftId))
+    {
+        return std::nullopt;
+    }
+
+    auto jv = nft::findToken(ctx.view(), accountId.value(), nftHash);
+    if (!jv)
+    {
+        return std::nullopt;
+    }
+
+    Slice const s = (*jv)[sfURI];
+    return Bytes{s.begin(), s.end()};
 }
 
 bool
