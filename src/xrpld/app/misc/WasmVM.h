@@ -113,6 +113,12 @@ struct HostFunctions
         return Bytes{};
     }
 
+    virtual std::optional<Bytes>
+    oracleKeylet(std::string const& account, std::string const& docId)
+    {
+        return Bytes{};
+    }
+
     virtual ~HostFunctions() = default;
 };
 

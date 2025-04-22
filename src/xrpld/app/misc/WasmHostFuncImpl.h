@@ -75,6 +75,9 @@ public:
     std::optional<Bytes>
     escrowKeylet(std::string const& account, std::string const& seq) override;
 
+    std::optional<Bytes>
+    oracleKeylet(std::string const& account, std::string const& docId) override;
+
 private:
     ApplyContext& ctx;
     Keylet leKey;

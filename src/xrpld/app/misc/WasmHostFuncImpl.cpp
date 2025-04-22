@@ -220,4 +220,34 @@ WasmHostFunctionsImpl::escrowKeylet(
 
     return Bytes{keylet.begin(), keylet.end()};
 }
+
+std::optional<Bytes>
+WasmHostFunctionsImpl::oracleKeylet(
+    const std::string& account,
+    const std::string& docId)
+{
+    auto const accountId = parseBase58<AccountID>(account);
+    if (!accountId || accountId->isZero())
+    {
+        return std::nullopt;
+    }
+
+    std::uint32_t documentId;
+    try
+    {
+        documentId = static_cast<std::uint32_t>(std::stoul(docId));
+    }
+    catch (const std::exception& e)
+    {
+        return std::nullopt;
+    }
+
+    auto keylet = keylet::oracle(*accountId, documentId).key;
+    if (!keylet)
+    {
+        return std::nullopt;
+    }
+
+    return Bytes{keylet.begin(), keylet.end()};
+}
 }  // namespace ripple
