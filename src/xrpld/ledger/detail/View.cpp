@@ -1098,13 +1098,10 @@ isPseudoAccount(std::shared_ptr<SLE const> sleAcct)
     // semantics of true return value clean.
     return sleAcct && sleAcct->getType() == ltACCOUNT_ROOT &&
         std::count_if(
-            fields.begin(),
-            fields.end(),
-            [&sleAcct](SField const* sf) -> bool {
+            fields.begin(), fields.end(), [&sleAcct](SField const* sf) -> bool {
                 return sleAcct->isFieldPresent(*sf);
             }) > 0;
 }
-
 
 Expected<std::shared_ptr<SLE>, TER>
 createPseudoAccount(
@@ -1134,10 +1131,10 @@ createPseudoAccount(
     // Pseudo-accounts can't submit transactions, so set the sequence number
     // to 0 to make them easier to spot and verify, and add an extra level
     // of protection.
-    std::uint32_t const seqno =                        //
+    std::uint32_t const seqno =                           //
         view.rules().enabled(featureSingleAssetVault) ||  //
             view.rules().enabled(featureLendingProtocol)  //
-        ? 0                                            //
+        ? 0                                               //
         : view.seq();
     account->setFieldU32(sfSequence, seqno);
     // Ignore reserves requirement, disable the master key, allow default
