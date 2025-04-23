@@ -226,7 +226,7 @@ escrowCreatePreclaimHelper<Issue>(
     auto const sleIssuer = ctx.view.read(keylet::account(issuer));
     if (!sleIssuer)
         return tecNO_ISSUER;
-    if (!(sleIssuer->getFlags() & lsfAllowTokenEscrow))
+    if (!sleIssuer->isFlag(lsfAllowTokenEscrow))
         return tecNO_PERMISSION;
 
     // If the account does not have a trustline to the issuer, return tecNO_LINE
@@ -246,7 +246,7 @@ escrowCreatePreclaimHelper<Issue>(
         return tecNO_PERMISSION;
 
     // If the issuer has no default ripple state return tecNO_RIPPLE
-    if (!(sleIssuer->getFlags() & lsfDefaultRipple))
+    if (!sleIssuer->isFlag(lsfDefaultRipple))
         return terNO_RIPPLE;
 
     // If the issuer has requireAuth set, check if the account is authorized
@@ -312,7 +312,7 @@ escrowCreatePreclaimHelper<MPTIssue>(
         return tecOBJECT_NOT_FOUND;
 
     // If the lsfMPTCanEscrow is not enabled, return tecNO_PERMISSION
-    if (!(sleIssuance->getFieldU32(sfFlags) & lsfMPTCanEscrow))
+    if (!sleIssuance->isFlag(lsfMPTCanEscrow))
         return tecNO_PERMISSION;
 
     // If the issuer is not the same as the issuer of the mpt, return
