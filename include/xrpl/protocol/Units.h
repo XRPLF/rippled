@@ -301,6 +301,7 @@ public:
     }
 
     /** Returns the number of drops */
+    // TODO: Move this to a new class, maybe with the old "TaggedFee" name
     constexpr value_type
     fee() const
     {

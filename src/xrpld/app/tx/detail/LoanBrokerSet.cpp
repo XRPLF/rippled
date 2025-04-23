@@ -193,8 +193,8 @@ LoanBrokerSet::doApply()
             return tecINSUFFICIENT_RESERVE;
             */
 
-        auto maybePseudo = createPseudoAccount(
-            view, broker->key(), PseudoAccountOwnerType::LoanBroker);
+        auto maybePseudo =
+            createPseudoAccount(view, broker->key(), sfLoanBrokerID);
         if (!maybePseudo)
             return maybePseudo.error();
         auto& pseudo = *maybePseudo;

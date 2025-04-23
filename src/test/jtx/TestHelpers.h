@@ -174,20 +174,15 @@ struct valueUnitField
     using OV = ValueType;
     using base = JTxField<SF, SV, OV>;
 
+    static_assert(std::is_same_v<SV, typename SField::type::value_type>);
     static_assert(
-        std::is_same_v<SV, typename SField::type::value_type::value_type>);
-    static_assert(std::is_same_v<
-                  OV,
-                  typename SField::type::value_type::value_type::value_type>);
+        std::is_same_v<OV, typename SField::type::value_type::value_type>);
 
 protected:
     using base::value_;
 
 public:
-    explicit valueUnitField(SF const& sfield, SV const& value)
-        : JTxField(sfield, value)
-    {
-    }
+    using base::JTxField;
 
     OV
     value() const override
@@ -675,7 +670,7 @@ auto const coverRateMinimum =
     valueUnitWrapper<SF_TENTHBIPS32>(sfCoverRateMinimum);
 
 auto const coverRateLiquidation =
-    simpleField<SF_TENTHBIPS32>(sfCoverRateLiquidation);
+    valueUnitWrapper<SF_TENTHBIPS32>(sfCoverRateLiquidation);
 
 }  // namespace loanBroker
 

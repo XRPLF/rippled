@@ -49,6 +49,8 @@ template <int>
 class STBitString;
 template <class>
 class STInteger;
+template <class>
+class STTypedInteger;
 class STNumber;
 class STXChainBridge;
 class STVector256;
@@ -89,6 +91,8 @@ class STCurrency;
     STYPE(STI_ISSUE, 24)                          \
     STYPE(STI_XCHAIN_BRIDGE, 25)                  \
     STYPE(STI_CURRENCY, 26)                       \
+    STYPE(STI_TENTHBIPS16, 27)                    \
+    STYPE(STI_TENTHBIPS32, 28)                    \
                                                   \
     /* high-level types */                        \
     /* cannot be serialized inside other types */ \
@@ -358,15 +362,12 @@ using SF_UINT256 = TypedField<STBitString<256>>;
 using SF_UINT384 = TypedField<STBitString<384>>;
 using SF_UINT512 = TypedField<STBitString<512>>;
 
-// These BIPS and TENTHBIPS values are serialized as the underlying type.
+// These TENTHBIPS values are serialized as the underlying type.
 // The tag is only applied when deserialized.
 //
-// Basis points (bips) values:
-using SF_BIPS16 = TypedField<STInteger<Bips16>>;
-using SF_BIPS32 = TypedField<STInteger<Bips32>>;
 // Tenth of a basis point values:
-using SF_TENTHBIPS16 = TypedField<STInteger<TenthBips16>>;
-using SF_TENTHBIPS32 = TypedField<STInteger<TenthBips32>>;
+using SF_TENTHBIPS16 = TypedField<STTypedInteger<TenthBips16>>;
+using SF_TENTHBIPS32 = TypedField<STTypedInteger<TenthBips32>>;
 
 using SF_ACCOUNT = TypedField<STAccount>;
 using SF_AMOUNT = TypedField<STAmount>;
@@ -384,23 +385,17 @@ using SF_XCHAIN_BRIDGE = TypedField<STXChainBridge>;
 #undef UNTYPED_SFIELD
 #pragma push_macro("TYPED_SFIELD")
 #undef TYPED_SFIELD
-#pragma push_macro("INTERPRETED_SFIELD")
-#undef INTERPRETED_SFIELD
 
 #define UNTYPED_SFIELD(sfName, stiSuffix, fieldValue, ...) \
     extern SField const sfName;
 #define TYPED_SFIELD(sfName, stiSuffix, fieldValue, ...) \
     extern SF_##stiSuffix const sfName;
-#define INTERPRETED_SFIELD(sfName, stiSuffix, fieldValue, stiInterpreted, ...) \
-    extern SF_##stiInterpreted const sfName;
 
 extern SField const sfInvalid;
 extern SField const sfGeneric;
 
 #include <xrpl/protocol/detail/sfields.macro>
 
-#undef INTERPRETED_SFIELD
-#pragma pop_macro("INTERPRETED_SFIELD")
 #undef TYPED_SFIELD
 #pragma pop_macro("TYPED_SFIELD")
 #undef UNTYPED_SFIELD

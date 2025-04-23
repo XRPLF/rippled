@@ -190,6 +190,12 @@ STVar::constructST(SerializedTypeID id, int depth, Args&&... args)
         case STI_UINT64:
             construct<STUInt64>(std::forward<Args>(args)...);
             return;
+        case STI_TENTHBIPS16:
+            construct<STTenthBips16>(std::forward<Args>(args)...);
+            return;
+        case STI_TENTHBIPS32:
+            construct<STTenthBips32>(std::forward<Args>(args)...);
+            return;
         case STI_AMOUNT:
             construct<STAmount>(std::forward<Args>(args)...);
             return;

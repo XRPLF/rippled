@@ -61,6 +61,26 @@ struct STExchange<STInteger<U>, T>
     }
 };
 
+template <class U, class T>
+struct STExchange<STTypedInteger<U>, T>
+{
+    explicit STExchange() = default;
+
+    using value_type = U;
+
+    static void
+    get(std::optional<T>& t, STTypedInteger<U> const& u)
+    {
+        t = u.value();
+    }
+
+    static std::unique_ptr<STInteger<U>>
+    set(SField const& f, T const& t)
+    {
+        return std::make_unique<STTypedInteger<U>>(f, t);
+    }
+};
+
 template <>
 struct STExchange<STBlob, Slice>
 {

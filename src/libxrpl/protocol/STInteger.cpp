@@ -229,4 +229,18 @@ STUInt64::getJson(JsonOptions) const
     return convertToString(value_, 16);  // Convert to base 16
 }
 
+template <>
+SerializedTypeID
+STTenthBips16::getSType() const override
+{
+    return STI_TENTHBIPS16;
+}
+
+template <>
+SerializedTypeID
+STTenthBips32::getSType() const override
+{
+    return STI_TENTHBIPS32;
+}
+
 }  // namespace ripple
