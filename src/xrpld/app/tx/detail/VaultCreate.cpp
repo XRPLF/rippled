@@ -56,10 +56,10 @@ VaultCreate::preflight(PreflightContext const& ctx)
             return temMALFORMED;
     }
 
-    if (auto const data = ctx.tx[~sfWithdrawalPolicy])
+    if (auto const withdrawalPolicy = ctx.tx[~sfWithdrawalPolicy])
     {
         // Enforce valid withdrawal policy
-        if (*data != vaultStrategyFirstComeFirstServe)
+        if (*withdrawalPolicy != vaultStrategyFirstComeFirstServe)
             return temMALFORMED;
     }
 
@@ -151,22 +151,21 @@ VaultCreate::doApply()
     // we can consider downgrading them to `tef` or `tem`.
 
     auto const& tx = ctx_.tx;
-    auto const& ownerId = account_;
     auto sequence = tx.getSeqValue();
+    auto owner = view().peek(keylet::account(account_));
+    if (owner == nullptr)
+        return tefINTERNAL;
 
-    auto owner = view().peek(keylet::account(ownerId));
-    auto vault = std::make_shared<SLE>(keylet::vault(ownerId, sequence));
+    auto vault = std::make_shared<SLE>(keylet::vault(account_, sequence));
 
-    if (auto ter = dirLink(view(), ownerId, vault))
+    if (auto ter = dirLink(view(), account_, vault))
         return ter;
-    // Should the next 3 lines be folded into `dirLink`?
     adjustOwnerCount(view(), owner, 1, j_);
     auto ownerCount = owner->at(sfOwnerCount);
     if (mPriorBalance < view().fees().accountReserve(ownerCount))
         return tecINSUFFICIENT_RESERVE;
 
-    auto maybePseudo = createPseudoAccount(
-        view(), vault->key(), PseudoAccountOwnerType::Vault);
+    auto maybePseudo = createPseudoAccount(view(), vault->key(), sfVaultID);
     if (!maybePseudo)
         return maybePseudo.error();
     auto& pseudo = *maybePseudo;
@@ -206,7 +205,7 @@ VaultCreate::doApply()
 
     vault->at(sfFlags) = txFlags & tfVaultPrivate;
     vault->at(sfSequence) = sequence;
-    vault->at(sfOwner) = ownerId;
+    vault->at(sfOwner) = account_;
     vault->at(sfAccount) = pseudoId;
     vault->at(sfAsset) = asset;
     vault->at(sfAssetsTotal) = Number(0);

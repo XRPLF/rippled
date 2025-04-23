@@ -227,8 +227,7 @@ applyCreate(
     auto const ammKeylet = keylet::amm(amount.issue(), amount2.issue());
 
     // Mitigate same account exists possibility
-    auto const maybeAccount =
-        createPseudoAccount(sb, ammKeylet.key, PseudoAccountOwnerType::AMM);
+    auto const maybeAccount = createPseudoAccount(sb, ammKeylet.key, sfAMMID);
     // AMM account already exists (should not happen)
     if (!maybeAccount)
     {

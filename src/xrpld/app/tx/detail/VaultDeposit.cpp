@@ -83,7 +83,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     if (isFrozen(ctx.view, account, share))
         return tecLOCKED;
 
-    if ((vault->getFlags() & tfVaultPrivate) && account != vault->at(sfOwner))
+    if (vault->isFlag(tfVaultPrivate) && account != vault->at(sfOwner))
     {
         auto const maybeDomainID = sleIssuance->at(~sfDomainID);
         // Since this is a private vault and the account is not its owner, we
@@ -176,7 +176,7 @@ VaultDeposit::doApply()
         }
 
         // If the vault is private, set the authorized flag for the vault owner
-        if (vault->getFlags() & tfVaultPrivate)
+        if (vault->isFlag(tfVaultPrivate))
         {
             if (auto const err = MPTokenAuthorize::authorize(
                     view(),

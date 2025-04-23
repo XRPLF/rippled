@@ -17,10 +17,9 @@
 */
 //==============================================================================
 
-#include <xrpld/ledger/ReadView.h>
-// TODO: Move the helper out of the `app` module.
 #include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/app/tx/detail/MPTokenAuthorize.h>
+#include <xrpld/ledger/ReadView.h>
 #include <xrpld/ledger/View.h>
 
 #include <xrpl/basics/Expected.h>
@@ -328,8 +327,8 @@ isVaultPseudoAccountFrozen(
     if (!mptIssuer->isFieldPresent(sfVaultID))
         return false;  // not a Vault pseudo-account, common case
 
-    if (depth >= maxFreezeCheckDepth)
-        return true;  // fail at maximum 2^maxFreezeCheckDepth checks
+    if (depth >= maxAssetCheckDepth)
+        return true;  // fail at maximum 2^maxAssetCheckDepth checks
 
     auto const vault =
         view.read(keylet::vault(mptIssuer->getFieldH256(sfVaultID)));
@@ -1063,12 +1062,31 @@ pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey)
     return beast::zero;
 }
 
+// Note, the list of the pseudo-account designator fields below MUST be
+// maintained but it does NOT need to be amendment-gated, since a
+// non-active amendment will not set any field, by definition. Specific
+// properties of a pseudo-account are NOT checked here, that's what
+// InvariantCheck is for.
+static std::array<SField const*, 2> const pseudoAccountOwnerFields = {
+    &sfAMMID,    //
+    &sfVaultID,  //
+};
+
 Expected<std::shared_ptr<SLE>, TER>
 createPseudoAccount(
     ApplyView& view,
     uint256 const& pseudoOwnerKey,
-    PseudoAccountOwnerType type)
+    SField const& ownerField)
 {
+    XRPL_ASSERT(
+        std::count_if(
+            pseudoAccountOwnerFields.begin(),
+            pseudoAccountOwnerFields.end(),
+            [&ownerField](SField const* sf) -> bool {
+                return *sf == ownerField;
+            }) == 1,
+        "ripple::createPseudoAccount : valid owner field");
+
     auto const accountId = pseudoAccountAddress(view, pseudoOwnerKey);
     if (accountId == beast::zero)
         return Unexpected(tecDUPLICATE);
@@ -1081,12 +1099,10 @@ createPseudoAccount(
     // Pseudo-accounts can't submit transactions, so set the sequence number
     // to 0 to make them easier to spot and verify, and add an extra level
     // of protection.
-    std::uint32_t const seqno =                           //
-        view.rules().enabled(featureSingleAssetVault)     //
-        ? 0                                               //
-        : view.rules().enabled(featureDeletableAccounts)  //
-            ? view.seq()                                  //
-            : 1;
+    std::uint32_t const seqno =                        //
+        view.rules().enabled(featureSingleAssetVault)  //
+        ? 0                                            //
+        : view.seq();
     account->setFieldU32(sfSequence, seqno);
     // Ignore reserves requirement, disable the master key, allow default
     // rippling, and enable deposit authorization to prevent payments into
@@ -1094,19 +1110,7 @@ createPseudoAccount(
     account->setFieldU32(
         sfFlags, lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth);
     // Link the pseudo-account with its owner object.
-    switch (type)
-    {
-        case PseudoAccountOwnerType::AMM:
-            account->setFieldH256(sfAMMID, pseudoOwnerKey);
-            break;
-        case PseudoAccountOwnerType::Vault:
-            account->setFieldH256(sfVaultID, pseudoOwnerKey);
-            break;
-        default:
-            UNREACHABLE(  // LCOV_EXCL_LINE
-                "ripple::createPseudoAccount : unknown owner key type");  // LCOV_EXCL_LINE
-            return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
-    }
+    account->setFieldH256(ownerField, pseudoOwnerKey);
 
     view.insert(account);
 
@@ -1116,21 +1120,13 @@ createPseudoAccount(
 [[nodiscard]] bool
 isPseudoAccount(std::shared_ptr<SLE const> sleAcct)
 {
-    // Note, the list of the pseudo-account designator fields below MUST be
-    // maintained but it does NOT need to be amendment-gated, since a non-active
-    // amendment will not set any field, by definition. Specific properties of a
-    // pseudo-account are NOT checked here, that's what InvariantCheck is for.
-    static std::array<SField const*, 2> const fields =  //
-        {
-            &sfAMMID,    //
-            &sfVaultID,  //
-        };
-
     // Intentionally use defensive coding here because it's cheap and makes the
     // semantics of true return value clean.
     return sleAcct && sleAcct->getType() == ltACCOUNT_ROOT &&
         std::count_if(
-            fields.begin(), fields.end(), [&sleAcct](SField const* sf) -> bool {
+            pseudoAccountOwnerFields.begin(),
+            pseudoAccountOwnerFields.end(),
+            [&sleAcct](SField const* sf) -> bool {
                 return sleAcct->isFieldPresent(*sf);
             }) > 0;
 }
@@ -2301,7 +2297,7 @@ requireAuth(
             if (!sleVault)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
 
-            if (depth >= maxFreezeCheckDepth)
+            if (depth >= maxAssetCheckDepth)
                 return tecKILLED;  // VaultCreate looks for this error code
 
             auto const asset = sleVault->at(sfAsset);
@@ -2342,8 +2338,8 @@ requireAuth(
         return tecNO_AUTH;
 
     // mptoken must be authorized if issuance enabled requireAuth
-    if (sleIssuance->getFieldU32(sfFlags) & lsfMPTRequireAuth &&
-        !(sleToken->getFlags() & lsfMPTAuthorized))
+    if (sleIssuance->isFlag(lsfMPTRequireAuth) &&
+        !(sleToken->isFlag(lsfMPTAuthorized)))
         return tecNO_AUTH;
 
     // We are authorized by permissioned domain.
@@ -2364,7 +2360,7 @@ enforceMPTokenAuthorization(
         return tefINTERNAL;
 
     XRPL_ASSERT(
-        sleIssuance->getFlags() & lsfMPTRequireAuth,
+        sleIssuance->isFlag(lsfMPTRequireAuth),
         "ripple::enforceMPTokenAuthorization : authorization required");
 
     if (account == sleIssuance->at(sfIssuer))
@@ -2401,7 +2397,7 @@ enforceMPTokenAuthorization(
         XRPL_ASSERT(
             sleToken != nullptr && !maybeDomainID.has_value(),
             "ripple::enforceMPTokenAuthorization : found MPToken");
-        if (sleToken->getFlags() & lsfMPTAuthorized)
+        if (sleToken->isFlag(lsfMPTAuthorized))
             return tesSUCCESS;
 
         return tecNO_AUTH;

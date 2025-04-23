@@ -93,7 +93,9 @@ struct JsonOptions
 };
 
 template <typename T>
-    requires requires(T const& t) { t.getJson(JsonOptions::none); }
+    requires requires(T const& t) {
+        { t.getJson(JsonOptions::none) } -> std::convertible_to<Json::Value>;
+    }
 Json::Value
 to_json(T const& t)
 {

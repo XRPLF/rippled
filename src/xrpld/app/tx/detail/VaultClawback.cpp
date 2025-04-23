@@ -97,7 +97,7 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
             return tecWRONG_ASSET;
 
         std::uint32_t const issueFlags = mptIssue->getFieldU32(sfFlags);
-        if (!(issueFlags & lsfMPTCanClawback) || !(issueFlags & lsfMPTCanLock))
+        if (!(issueFlags & lsfMPTCanClawback))
             return tecNO_PERMISSION;
     }
     else if (asset.holds<Issue>())

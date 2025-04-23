@@ -89,7 +89,6 @@ JSS(SettleDelay);                        // in: TransactionSign
 JSS(SendMax);                            // in: TransactionSign
 JSS(Sequence);                           // in/out: TransactionSign; field.
 JSS(SetFlag);                            // field.
-JSS(SharesTotal);                        // out: Vault
 JSS(Signer);                             // field.
 JSS(Signers);                            // field.
 JSS(SigningPubKey);                      // field.
@@ -101,7 +100,6 @@ JSS(TransactionType);                    // in: TransactionSign.
 JSS(TransferRate);                       // in: TransferRate.
 JSS(TxnSignature);                       // field.
 JSS(URI);                                // field.
-JSS(VaultID);                            // field.
 JSS(VoteSlots);                          // out: AMM Vote
 JSS(aborted);                            // out: InboundLedger
 JSS(accepted);               // out: LedgerToJson, OwnerInfo, SubmitTransaction

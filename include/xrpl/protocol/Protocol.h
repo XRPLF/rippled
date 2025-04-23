@@ -124,7 +124,7 @@ std::uint8_t constexpr vaultStrategyFirstComeFirstServe = 1;
 
 /** Maximum recursion depth for vault shares being put as an asset inside
  * another vault; counted from 0 */
-std::uint8_t constexpr maxFreezeCheckDepth = 5;
+std::uint8_t constexpr maxAssetCheckDepth = 5;
 
 /** A ledger index. */
 using LedgerIndex = std::uint32_t;

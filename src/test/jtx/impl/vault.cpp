@@ -50,7 +50,7 @@ Vault::set(SetArgs const& args)
     Json::Value jv;
     jv[jss::TransactionType] = jss::VaultSet;
     jv[jss::Account] = args.owner.human();
-    jv[jss::VaultID] = to_string(args.id);
+    jv[sfVaultID] = to_string(args.id);
     return jv;
 }
 
@@ -60,7 +60,7 @@ Vault::del(DeleteArgs const& args)
     Json::Value jv;
     jv[jss::TransactionType] = jss::VaultDelete;
     jv[jss::Account] = args.owner.human();
-    jv[jss::VaultID] = to_string(args.id);
+    jv[sfVaultID] = to_string(args.id);
     return jv;
 }
 
@@ -70,7 +70,7 @@ Vault::deposit(DepositArgs const& args)
     Json::Value jv;
     jv[jss::TransactionType] = jss::VaultDeposit;
     jv[jss::Account] = args.depositor.human();
-    jv[jss::VaultID] = to_string(args.id);
+    jv[sfVaultID] = to_string(args.id);
     jv[jss::Amount] = to_json(args.amount);
     return jv;
 }
@@ -81,7 +81,7 @@ Vault::withdraw(WithdrawArgs const& args)
     Json::Value jv;
     jv[jss::TransactionType] = jss::VaultWithdraw;
     jv[jss::Account] = args.depositor.human();
-    jv[jss::VaultID] = to_string(args.id);
+    jv[sfVaultID] = to_string(args.id);
     jv[jss::Amount] = to_json(args.amount);
     return jv;
 }
@@ -92,7 +92,7 @@ Vault::clawback(ClawbackArgs const& args)
     Json::Value jv;
     jv[jss::TransactionType] = jss::VaultClawback;
     jv[jss::Account] = args.issuer.human();
-    jv[jss::VaultID] = to_string(args.id);
+    jv[sfVaultID] = to_string(args.id);
     jv[jss::Holder] = args.holder.human();
     if (args.amount)
         jv[jss::Amount] = to_json(*args.amount);

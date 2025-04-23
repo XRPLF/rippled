@@ -155,6 +155,12 @@ isFrozen(
     MPTIssue const& mptIssue,
     int depth = 0);
 
+/**
+ * isFrozen check is recursive for MPT shares in a vault, descending to assets
+ * in the vault. These assets could be themselves MPT shares in another vault.
+ * For this reason we limit depth of check, up to maxAssetCheckDepth. If this
+ * depth is exceeded, we return true (i.e. the asset is considered frozen).
+ */
 [[nodiscard]] inline bool
 isFrozen(
     ReadView const& view,
@@ -502,14 +508,19 @@ dirLink(ApplyView& view, AccountID const& owner, std::shared_ptr<SLE>& object);
 AccountID
 pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey);
 
-// Which of the owner-object fields should we set: sfAMMID, sfVaultID
-enum class PseudoAccountOwnerType : int { AMM, Vault };
-
+/**
+ *
+ * Create pseudo-account, storing pseudoOwnerKey into ownerField.
+ *
+ * The list of valid ownerField is maintained in View.cpp and the caller to
+ * this function must perform necessary amendment check(s) before using a
+ * field. The amendment check is **not** performed in createPseudoAccount.
+ */
 [[nodiscard]] Expected<std::shared_ptr<SLE>, TER>
 createPseudoAccount(
     ApplyView& view,
     uint256 const& pseudoOwnerKey,
-    PseudoAccountOwnerType type);
+    SField const& ownerField);
 
 // Returns true iff sleAcct is a pseudo-account.
 //
@@ -691,12 +702,6 @@ transferXRP(
     STAmount const& amount,
     beast::Journal j);
 
-struct TokenDescriptor
-{
-    std::shared_ptr<SLE const> token;
-    std::shared_ptr<SLE const> issuance;
-};
-
 /** Check if the account lacks required authorization.
  *
  *   Return tecNO_AUTH or tecNO_LINE if it does
@@ -711,6 +716,13 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account);
  *   from preclaim, the user should convert result tecEXPIRED to tesSUCCESS and
  *   proceed to also check permissions with enforceMPTokenAuthorization inside
  *   doApply. This will ensure that any expired credentials are deleted.
+ *
+ *   requireAuth check is recursive for MPT shares in a vault, descending to
+ *   assets in the vault. These assets could be themselves MPT shares in another
+ *   vault. For this reason we limit depth of check, up to maxAssetCheckDepth.
+ *   This function will return tecKILLED if maximum depth is exceeded.
+ *   Transaction VaultCreate checks for tecKILLED to prevent such vaults being
+ *   created.
  */
 [[nodiscard]] TER
 requireAuth(
@@ -728,7 +740,7 @@ requireAuth(
  *   in order for the transactor to proceed to doApply.
  *
  *   This function will create MPToken (if needed) on the basis of any
- *   non-expired credentals and will delete any expired credentials, indirectly
+ *   non-expired credentials and will delete any expired credentials, indirectly
  *   via verifyValidDomain, as per DomainID (if set in MPTokenIssuance).
  *
  *   The caller does NOT need to ensure that DomainID is actually set - this
