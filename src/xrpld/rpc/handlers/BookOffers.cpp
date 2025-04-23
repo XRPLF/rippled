@@ -176,8 +176,8 @@ doBookOffers(RPC::JsonContext& context)
     if (context.params.isMember(jss::domain))
     {
         uint256 num;
-        if (auto const s = context.params[jss::domain].asString();
-            !num.parseHex(s))
+        if (!context.params[jss::domain].isString() ||
+            !num.parseHex(context.params[jss::domain].asString()))
         {
             return RPC::make_error(
                 rpcDOMAIN_MALFORMED, "Unable to parse domain.");

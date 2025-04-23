@@ -977,7 +977,7 @@ class Invariants_test : public beast::unit_test::suite
     }
 
     void
-    createPD(
+    createPermissionedDomain(
         ApplyContext& ac,
         std::shared_ptr<SLE>& sle,
         test::jtx::Account const& A1,
@@ -1115,7 +1115,7 @@ class Invariants_test : public beast::unit_test::suite
                 auto slePd = std::make_shared<SLE>(pdKeylet);
 
                 // create PD
-                createPD(ac, slePd, A1, A2);
+                createPermissionedDomain(ac, slePd, A1, A2);
 
                 // update PD with empty rules
                 {
@@ -1139,7 +1139,7 @@ class Invariants_test : public beast::unit_test::suite
                 auto slePd = std::make_shared<SLE>(pdKeylet);
 
                 // create PD
-                createPD(ac, slePd, A1, A2);
+                createPermissionedDomain(ac, slePd, A1, A2);
 
                 // update PD
                 {
@@ -1174,7 +1174,7 @@ class Invariants_test : public beast::unit_test::suite
                 auto slePd = std::make_shared<SLE>(pdKeylet);
 
                 // create PD
-                createPD(ac, slePd, A1, A2);
+                createPermissionedDomain(ac, slePd, A1, A2);
 
                 // update PD
                 {
@@ -1209,7 +1209,7 @@ class Invariants_test : public beast::unit_test::suite
                 auto slePd = std::make_shared<SLE>(pdKeylet);
 
                 // create PD
-                createPD(ac, slePd, A1, A2);
+                createPermissionedDomain(ac, slePd, A1, A2);
 
                 // update PD
                 {
@@ -1271,7 +1271,7 @@ class Invariants_test : public beast::unit_test::suite
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 Keylet const pdKeylet = keylet::permissionedDomain(A1.id(), 10);
                 auto slePd = std::make_shared<SLE>(pdKeylet);
-                createPD(ac, slePd, A1, A2);
+                createPermissionedDomain(ac, slePd, A1, A2);
 
                 Keylet const offerKey = keylet::offer(A2.id(), 10);
                 auto sleOffer = std::make_shared<SLE>(offerKey);
@@ -1296,7 +1296,7 @@ class Invariants_test : public beast::unit_test::suite
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 Keylet const pdKeylet = keylet::permissionedDomain(A1.id(), 10);
                 auto slePd = std::make_shared<SLE>(pdKeylet);
-                createPD(ac, slePd, A1, A2);
+                createPermissionedDomain(ac, slePd, A1, A2);
 
                 Keylet const offerKey = keylet::offer(A2.id(), 10);
                 auto sleOffer = std::make_shared<SLE>(offerKey);
@@ -1323,7 +1323,7 @@ class Invariants_test : public beast::unit_test::suite
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 Keylet const pdKeylet = keylet::permissionedDomain(A1.id(), 10);
                 auto slePd = std::make_shared<SLE>(pdKeylet);
-                createPD(ac, slePd, A1, A2);
+                createPermissionedDomain(ac, slePd, A1, A2);
 
                 Keylet const offerKey = keylet::offer(A2.id(), 10);
                 auto sleOffer = std::make_shared<SLE>(offerKey);
@@ -1344,12 +1344,12 @@ class Invariants_test : public beast::unit_test::suite
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 Keylet const pdKeylet = keylet::permissionedDomain(A1.id(), 10);
                 auto slePd = std::make_shared<SLE>(pdKeylet);
-                createPD(ac, slePd, A1, A2);
+                createPermissionedDomain(ac, slePd, A1, A2);
 
                 Keylet const badDomainKeylet =
                     keylet::permissionedDomain(A1.id(), 20);
                 auto sleBadPd = std::make_shared<SLE>(badDomainKeylet);
-                createPD(ac, sleBadPd, A1, A2);
+                createPermissionedDomain(ac, sleBadPd, A1, A2);
 
                 Keylet const offerKey = keylet::offer(A2.id(), 10);
                 auto sleOffer = std::make_shared<SLE>(offerKey);
@@ -1378,7 +1378,7 @@ class Invariants_test : public beast::unit_test::suite
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
                 Keylet const pdKeylet = keylet::permissionedDomain(A1.id(), 10);
                 auto slePd = std::make_shared<SLE>(pdKeylet);
-                createPD(ac, slePd, A1, A2);
+                createPermissionedDomain(ac, slePd, A1, A2);
 
                 Keylet const offerKey = keylet::offer(A2.id(), 10);
                 auto sleOffer = std::make_shared<SLE>(offerKey);

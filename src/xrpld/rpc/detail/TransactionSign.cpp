@@ -227,7 +227,8 @@ checkPayment(
     if (tx_json.isMember(jss::domain))
     {
         uint256 num;
-        if (auto const s = tx_json[jss::domain].asString(); !num.parseHex(s))
+        if (!tx_json[jss::domain].isString() ||
+            !num.parseHex(tx_json[jss::domain].asString()))
         {
             return RPC::make_error(
                 rpcDOMAIN_MALFORMED, "Unable to parse 'domain'.");

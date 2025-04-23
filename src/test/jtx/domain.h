@@ -17,8 +17,7 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TEST_JTX_DOMAIN_H_INCLUDED
-#define RIPPLE_TEST_JTX_DOMAIN_H_INCLUDED
+#pragma once
 
 #include <test/jtx/Env.h>
 
@@ -44,5 +43,3 @@ public:
 }  // namespace jtx
 }  // namespace test
 }  // namespace ripple
-
-#endif

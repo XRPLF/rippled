@@ -441,7 +441,8 @@ PathRequest::parseJson(Json::Value const& jvParams)
     if (jvParams.isMember(jss::domain))
     {
         uint256 num;
-        if (auto const s = jvParams[jss::domain].asString(); !num.parseHex(s))
+        if (!jvParams[jss::domain].isString() ||
+            !num.parseHex(jvParams[jss::domain].asString()))
         {
             jvStatus = rpcError(rpcDOMAIN_MALFORMED);
             return PFR_PJ_INVALID;

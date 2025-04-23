@@ -79,7 +79,8 @@ offerInDomain(
         !sleOffer->isFieldPresent(sfAdditionalBooks))
     {
         JLOG(j.error()) << "Hybrid offer " << offerID
-                        << " missing AdditionalBooks field";  // LCOV_EXCL_LINE
+                        << " missing AdditionalBooks field";
+        return false;  // LCOV_EXCL_LINE
     }
 
     return accountInDomain(view, sleOffer->getAccountID(sfAccount), domainID);

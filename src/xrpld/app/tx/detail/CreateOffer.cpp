@@ -1013,7 +1013,7 @@ CreateOffer::applyHybrid(
 
     auto dir =
         keylet::quality(keylet::book(book), getRate(saTakerGets, saTakerPays));
-    bool const bookExists = static_cast<bool>(sb.peek(dir));
+    bool const bookExists = static_cast<bool>(sb.exists(dir));
 
     auto const bookNode = sb.dirAppend(dir, offerKey, [&](SLE::ref sle) {
         // don't set domainID on the directory object since this directory is
@@ -1335,7 +1335,8 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     auto dir = keylet::quality(keylet::book(book), uRate);
     bool const bookExisted = static_cast<bool>(sb.peek(dir));
 
-    auto setBookDir = [&](SLE::ref sle, std::optional<uint256> maybeDomain) {
+    auto setBookDir = [&](SLE::ref sle,
+                          std::optional<uint256> const& maybeDomain) {
         sle->setFieldH160(sfTakerPaysCurrency, saTakerPays.issue().currency);
         sle->setFieldH160(sfTakerPaysIssuer, saTakerPays.issue().account);
         sle->setFieldH160(sfTakerGetsCurrency, saTakerGets.issue().currency);

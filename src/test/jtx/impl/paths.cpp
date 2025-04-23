@@ -40,6 +40,8 @@ paths::operator()(Env& env, JTx& jt) const
     std::optional<uint256> domain;
     if (jv.isMember(sfDomainID.jsonName))
     {
+        if (!jv[sfDomainID.jsonName].isString())
+            return;
         uint256 num;
         auto const s = jv[sfDomainID.jsonName].asString();
         if (num.parseHex(s))
