@@ -18,8 +18,8 @@
 //==============================================================================
 
 #include <test/jtx.h>
-#include <test/jtx/TestSuite.h>
 #include <test/jtx/TestHelpers.h>
+#include <test/jtx/TestSuite.h>
 #include <test/jtx/WSClient.h>
 #include <test/jtx/envconfig.h>
 #include <test/jtx/ticket.h>
@@ -165,7 +165,8 @@ class TxQPosNegFlows_test : public beast::unit_test::suite
         // metrics to reset to defaults, EXCEPT the maxQueue size.
         using namespace std::chrono_literals;
         env.close(env.now() + 5s, 10000ms);
-        checkMetrics(*this, __LINE__, env, 0, flagMaxQueue, 0, expectedPerLedger);
+        checkMetrics(
+            *this, __LINE__, env, 0, flagMaxQueue, 0, expectedPerLedger);
         auto const fees = env.current()->fees();
         BEAST_EXPECT(fees.base == XRPAmount{base});
         BEAST_EXPECT(fees.reserve == XRPAmount{reserve});
@@ -4420,7 +4421,12 @@ public:
         auto expectedPerLedger = ripple::detail::numUpVotedAmendments() + 1;
         checkMetrics(
             *this,
-            __LINE__, env, 0, 5 * expectedPerLedger, 0, expectedPerLedger);
+            __LINE__,
+            env,
+            0,
+            5 * expectedPerLedger,
+            0,
+            expectedPerLedger);
 
         // Now wait 2 weeks modulo 256 ledgers for the amendments to be
         // enabled.  Speed the process by closing ledgers every 80 minutes,
