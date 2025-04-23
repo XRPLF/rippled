@@ -353,7 +353,9 @@ public:
         May be called concurrently
     */
     ManifestDisposition
-    applyManifest(Manifest m);
+    applyManifest(
+        Manifest m,
+        std::unique_ptr<std::stringstream> const& ss = {});
 
     /** Populate manifest cache with manifests in database and config.
 

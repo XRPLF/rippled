@@ -36,6 +36,7 @@
 #include <cmath>
 #include <numeric>
 #include <shared_mutex>
+#include <sstream>
 
 namespace ripple {
 
@@ -943,10 +944,11 @@ ValidatorList::applyListsAndBroadcast(
     uint256 const& hash,
     Overlay& overlay,
     HashRouter& hashRouter,
-    NetworkOPs& networkOPs)
+    NetworkOPs& networkOPs,
+    std::unique_ptr<std::stringstream> const& ss)
 {
     auto const result =
-        applyLists(manifest, version, blobs, std::move(siteUri), hash);
+        applyLists(manifest, version, blobs, std::move(siteUri), hash, ss);
     auto const disposition = result.bestDisposition();
 
     if (disposition == ListDisposition::accepted)
@@ -998,7 +1000,8 @@ ValidatorList::applyLists(
     std::uint32_t version,
     std::vector<ValidatorBlobInfo> const& blobs,
     std::string siteUri,
-    std::optional<uint256> const& hash /* = {} */)
+    std::optional<uint256> const& hash /* = {} */,
+    std::unique_ptr<std::stringstream> const& ss)
 {
     if (std::count(
             std::begin(supportedListVersions),
@@ -1019,7 +1022,8 @@ ValidatorList::applyLists(
             version,
             siteUri,
             hash,
-            lock);
+            lock,
+            ss);
 
         if (stats.bestDisposition() < result.bestDisposition() ||
             (stats.bestDisposition() == result.bestDisposition() &&
@@ -1141,13 +1145,15 @@ ValidatorList::applyList(
     std::uint32_t version,
     std::string siteUri,
     std::optional<uint256> const& hash,
-    ValidatorList::lock_guard const& lock)
+    ValidatorList::lock_guard const& lock,
+    std::unique_ptr<std::stringstream> const& ss)
 {
     using namespace std::string_literals;
 
     Json::Value list;
     auto const& manifest = localManifest ? *localManifest : globalManifest;
-    auto [result, pubKeyOpt] = verify(lock, list, manifest, blob, signature);
+    auto [result, pubKeyOpt] =
+        verify(lock, list, manifest, blob, signature, ss);
 
     if (!pubKeyOpt)
     {
@@ -1356,17 +1362,34 @@ ValidatorList::verify(
     Json::Value& list,
     std::string const& manifest,
     std::string const& blob,
-    std::string const& signature)
+    std::string const& signature,
+    std::unique_ptr<std::stringstream> const& ss)
 {
     auto m = deserializeManifest(base64_decode(manifest));
 
     if (!m || !publisherLists_.count(m->masterKey))
+    {
+        JLOG(j_.debug()) << "problem verifying manifest: deserialize "
+                         << (m ? "success" : "failure") << ", master key "
+                         << (publisherLists_.count(m->masterKey) ? "" : "not")
+                         << " in publisherLists_";
+        if (ss)
+        {
+            *ss << "setting ListDisposition::untrusted. problem verifying "
+                   "manifest: deserialize "
+                << (m ? "success" : "failure") << ", master key "
+                << (publisherLists_.count(m->masterKey) ? "" : "not")
+                << " in publisherLists_. ";
+        }
         return {ListDisposition::untrusted, {}};
+    }
 
     PublicKey masterPubKey = m->masterKey;
     auto const revoked = m->revoked();
 
-    auto const result = publisherManifests_.applyManifest(std::move(*m));
+    auto applySs = std::make_unique<std::stringstream>();
+    auto const result =
+        publisherManifests_.applyManifest(std::move(*m), applySs);
 
     if (revoked && result == ManifestDisposition::accepted)
     {
@@ -1378,7 +1401,19 @@ ValidatorList::verify(
     auto const signingKey = publisherManifests_.getSigningKey(masterPubKey);
 
     if (revoked || !signingKey || result == ManifestDisposition::invalid)
+    {
+        if (ss)
+        {
+            *ss << "setting ListDisposition::untrusted. "
+                << (revoked ? " revoked " : " not revoked ")
+                << (signingKey ? "" : " bad signing key ")
+                << (result == ManifestDisposition::invalid ? " invalid result. "
+                                                           : "");
+            if (!applySs->str().empty())
+                *ss << " reason: " << applySs->str() << ". ";
+        }
         return {ListDisposition::untrusted, masterPubKey};
+    }
 
     auto const sig = strUnHex(signature);
     auto const data = base64_decode(blob);

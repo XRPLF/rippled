@@ -379,7 +379,9 @@ ManifestCache::revoked(PublicKey const& pk) const
 }
 
 ManifestDisposition
-ManifestCache::applyManifest(Manifest m)
+ManifestCache::applyManifest(
+    Manifest m,
+    std::unique_ptr<std::stringstream> const& ss)
 {
     // Check the manifest against the conditions that do not require a
     // `unique_lock` (write lock) on the `mutex_`. Since the signature can be
@@ -388,7 +390,7 @@ ManifestCache::applyManifest(Manifest m)
     // comment below), `checkSignature` only needs to be set to true on the
     // first run.
     auto prewriteCheck =
-        [this, &m](auto const& iter, bool checkSignature, auto const& lock)
+        [this, &m, &ss](auto const& iter, bool checkSignature, auto const& lock)
         -> std::optional<ManifestDisposition> {
         XRPL_ASSERT(
             lock.owns_lock(),
@@ -415,6 +417,11 @@ ManifestCache::applyManifest(Manifest m)
         {
             if (auto stream = j_.warn())
                 logMftAct(stream, "Invalid", m.masterKey, m.sequence);
+            if (ss)
+            {
+                *ss << to_string(m)
+                    << ": not verified. Hence, the manifest is invalid";
+            }
             return ManifestDisposition::invalid;
         }
 
@@ -450,6 +457,13 @@ ManifestCache::applyManifest(Manifest m)
                                 << ": is not revoked and the manifest has no "
                                    "signing key. Hence, the manifest is "
                                    "invalid";
+                if (ss)
+                {
+                    *ss << to_string(m)
+                        << ": is not revoked and the manifest has no "
+                           "signing key. Hence, the manifest is "
+                           "invalid";
+                }
                 return ManifestDisposition::invalid;
             }
 

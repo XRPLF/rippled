@@ -42,6 +42,7 @@
 #include <cstdint>
 #include <optional>
 #include <queue>
+#include <sstream>
 
 namespace ripple {
 
@@ -55,6 +56,9 @@ class PeerImp : public Peer,
 public:
     /** Whether the peer's view of the ledger converges or diverges from ours */
     enum class Tracking { diverged, unknown, converged };
+
+    std::stringstream log;
+    std::stringstream close_reason;
 
 private:
     using clock_type = std::chrono::steady_clock;
@@ -444,7 +448,7 @@ public:
 
 private:
     void
-    close();
+    close(const char* r);
 
     void
     fail(std::string const& name, error_code ec);
@@ -525,6 +529,9 @@ private:
     // reduce_relay::WAIT_ON_BOOTUP time passed since the start
     bool
     reduceRelayReady();
+
+    void
+    initLog();
 
 public:
     //--------------------------------------------------------------------------
@@ -724,6 +731,8 @@ PeerImp::PeerImp(
                           << " tx reduce-relay enabled "
                           << txReduceRelayEnabled_ << " on " << remote_address_
                           << " " << id_;
+    log << "ctor1 ";
+    initLog();
 }
 
 template <class FwdIt, class>

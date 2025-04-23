@@ -249,6 +249,24 @@ public:
         return ss.str();
     }
 
+    std::string
+    stats() const
+    {
+        std::stringstream ss;
+        ss << "peer stats, "
+           << "outbound attempts: " << m_attempts
+           << " active connections: " << m_active
+           << " inbound slots: " << m_in_max
+           << " active inbound slots: " << m_in_active
+           << " outbound slots: " << m_out_max
+           << " active outbound slots: " << m_out_active
+           << " fixed: " << m_fixed << " active fixed: " << m_fixed_active
+           << " reserved: " << m_reserved
+           << " inbound not active or closing: " << m_acceptCount
+           << " closing: " << m_closingCount << ". ";
+        return ss.str();
+    }
+
     //--------------------------------------------------------------------------
 private:
     // Adjusts counts based on the specified slot, in the direction indicated.

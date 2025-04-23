@@ -424,7 +424,8 @@ public:
         uint256 const& hash,
         Overlay& overlay,
         HashRouter& hashRouter,
-        NetworkOPs& networkOPs);
+        NetworkOPs& networkOPs,
+        std::unique_ptr<std::stringstream> const& ss = {});
 
     /** Apply multiple published lists of public keys.
 
@@ -452,7 +453,8 @@ public:
         std::uint32_t version,
         std::vector<ValidatorBlobInfo> const& blobs,
         std::string siteUri,
-        std::optional<uint256> const& hash = {});
+        std::optional<uint256> const& hash = {},
+        std::unique_ptr<std::stringstream> const& ss = {});
 
     /* Attempt to read previously stored list files. Expected to only be
        called when loading from URL fails.
@@ -786,7 +788,8 @@ private:
         std::uint32_t version,
         std::string siteUri,
         std::optional<uint256> const& hash,
-        lock_guard const&);
+        lock_guard const&,
+        std::unique_ptr<std::stringstream> const& ss = {});
 
     // This function updates the keyListings_ counts for all the trusted
     // master keys
@@ -879,7 +882,8 @@ private:
         Json::Value& list,
         std::string const& manifest,
         std::string const& blob,
-        std::string const& signature);
+        std::string const& signature,
+        std::unique_ptr<std::stringstream> const& ss = {});
 
     /** Stop trusting publisher's list of keys.
 

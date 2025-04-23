@@ -41,6 +41,7 @@
 #include <map>
 #include <memory>
 #include <set>
+#include <sstream>
 
 namespace ripple {
 namespace PeerFinder {
@@ -492,6 +493,8 @@ public:
     std::vector<beast::IP::Endpoint>
     autoconnect()
     {
+        std::stringstream ss;
+        ss << "AUTOCONNECT " << counts_.stats();
         std::vector<beast::IP::Endpoint> const none;
 
         std::lock_guard _(lock_);
@@ -500,7 +503,12 @@ public:
         //
         auto needed(counts_.attempts_needed());
         if (needed == 0)
+        {
+            ss << "0 attempts needed, returning none";
+            JLOG(m_journal.debug()) << ss.str();
             return none;
+        }
+        ss << "attempts needed: " << needed << ". ";
 
         ConnectHandouts h(needed, m_squelches);
 
@@ -524,8 +532,10 @@ public:
 
             if (!h.list().empty())
             {
-                JLOG(m_journal.debug()) << beast::leftw(18) << "Logic connect "
-                                        << h.list().size() << " fixed";
+                //                JLOG(m_journal.debug()) << beast::leftw(18) <<
+                //                "Logic connect "
+                ss << "returning Logic connect " << h.list().size() << " fixed";
+                JLOG(m_journal.debug()) << ss.str();
                 return h.list();
             }
 
@@ -534,6 +544,9 @@ public:
                 JLOG(m_journal.debug())
                     << beast::leftw(18) << "Logic waiting on "
                     << counts_.attempts() << " attempts";
+                ss << "returning none, pending outbound attempts "
+                   << counts_.attempts();
+                JLOG(m_journal.debug()) << ss.str();
                 return none;
             }
         }
@@ -542,7 +555,14 @@ public:
         // have less than the desired number of outbound slots
         //
         if (!config_.autoConnect || counts_.out_active() >= counts_.out_max())
+        {
+            ss << "returning none based on autoConnect || out_active >= "
+                  "out_max: "
+               << config_.autoConnect << ',' << counts_.out_active() << ','
+               << counts_.out_max();
+            JLOG(m_journal.debug()) << ss.str();
             return none;
+        }
 
         // 2. Use Livecache if:
         //    There are any entries in the cache OR
@@ -554,17 +574,18 @@ public:
                 &h, (&h) + 1, livecache_.hops.rbegin(), livecache_.hops.rend());
             if (!h.list().empty())
             {
-                JLOG(m_journal.debug())
-                    << beast::leftw(18) << "Logic connect " << h.list().size()
-                    << " live "
-                    << ((h.list().size() > 1) ? "endpoints" : "endpoint");
+                //                JLOG(m_journal.debug())
+                ss << "returning Logic connect " << h.list().size() << " live "
+                   << ((h.list().size() > 1) ? "endpoints" : "endpoint");
+                JLOG(m_journal.debug()) << ss.str();
                 return h.list();
             }
             else if (counts_.attempts() > 0)
             {
-                JLOG(m_journal.debug())
-                    << beast::leftw(18) << "Logic waiting on "
-                    << counts_.attempts() << " attempts";
+                //                JLOG(m_journal.debug())
+                ss << "returning none, Logic waiting on " << counts_.attempts()
+                   << " attempts";
+                JLOG(m_journal.debug()) << ss.str();
                 return none;
             }
         }
@@ -592,14 +613,16 @@ public:
 
         if (!h.list().empty())
         {
-            JLOG(m_journal.debug())
-                << beast::leftw(18) << "Logic connect " << h.list().size()
-                << " boot "
-                << ((h.list().size() > 1) ? "addresses" : "address");
+            //            JLOG(m_journal.debug())
+            ss << "returning Logic connect " << h.list().size() << " boot "
+               << ((h.list().size() > 1) ? "addresses" : "address");
+            JLOG(m_journal.debug()) << ss.str();
             return h.list();
         }
 
         // If we get here we are stuck
+        ss << "returning none, we are stuck";
+        JLOG(m_journal.debug()) << ss.str();
         return none;
     }
 

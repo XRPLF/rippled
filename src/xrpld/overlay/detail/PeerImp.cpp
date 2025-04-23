@@ -34,6 +34,7 @@
 #include <xrpld/perflog/PerfLog.h>
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/basics/base64.h>
+#include <xrpl/basics/chrono.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/protocol/digest.h>
@@ -128,6 +129,9 @@ PeerImp::PeerImp(
                           << " tx reduce-relay enabled "
                           << txReduceRelayEnabled_ << " on " << remote_address_
                           << " " << id_;
+
+    log << "ctor2 ";
+    initLog();
 }
 
 PeerImp::~PeerImp()
@@ -143,6 +147,9 @@ PeerImp::~PeerImp()
     {
         JLOG(journal_.warn()) << name() << " left cluster";
     }
+    JLOG(journal_.debug()) << log.str() << ". Disconnect reason: "
+                           << (close_reason.str().empty() ? "unknown"
+                                                          : close_reason.str());
 }
 
 // Helper function to check for valid uint256 values in protobuf buffers
@@ -231,7 +238,7 @@ PeerImp::stop()
             JLOG(journal_.info()) << "Stop";
         }
     }
-    close();
+    close("stopping");
 }
 
 //------------------------------------------------------------------------------
@@ -563,7 +570,7 @@ PeerImp::hasRange(std::uint32_t uMin, std::uint32_t uMax)
 //------------------------------------------------------------------------------
 
 void
-PeerImp::close()
+PeerImp::close(const char* r)
 {
     XRPL_ASSERT(
         strand_.running_in_this_thread(),
@@ -574,6 +581,7 @@ PeerImp::close()
         error_code ec;
         timer_.cancel(ec);
         socket_.close(ec);
+        close_reason << r;
         overlay_.incPeerDisconnect();
         if (inbound_)
         {
@@ -602,7 +610,9 @@ PeerImp::fail(std::string const& reason)
         JLOG(journal_.warn()) << (n.empty() ? remote_address_.to_string() : n)
                               << " failed: " << reason;
     }
-    close();
+    std::stringstream ss;
+    ss << "failed: " << reason;
+    close(ss.str().c_str());
 }
 
 void
@@ -617,7 +627,9 @@ PeerImp::fail(std::string const& name, error_code ec)
             << name << " from " << toBase58(TokenType::NodePublic, publicKey_)
             << " at " << remote_address_.to_string() << ": " << ec.message();
     }
-    close();
+    std::stringstream ss;
+    ss << "failed with error: " << name << ", " << ec.message();
+    close(ss.str().c_str());
 }
 
 void
@@ -689,7 +701,9 @@ PeerImp::onTimer(error_code const& ec)
     {
         // This should never happen
         JLOG(journal_.error()) << "onTimer: " << ec.message();
-        return close();
+        std::stringstream ss;
+        ss << "onTimer error " << ec.message();
+        return close(ss.str().c_str());
     }
 
     if (large_sendq_++ >= Tuning::sendqIntervals)
@@ -745,11 +759,13 @@ PeerImp::onShutdown(error_code ec)
     if (!ec)
     {
         JLOG(journal_.error()) << "onShutdown: expected error condition";
-        return close();
+        return close("onShutdown no eof/error");
     }
     if (ec != boost::asio::error::eof)
         return fail("onShutdown", ec);
-    close();
+    std::stringstream ss;
+    ss << "onShutdown non-eof error: " << ec.message();
+    close(ss.str().c_str());
 }
 
 //------------------------------------------------------------------------------
@@ -2017,6 +2033,7 @@ PeerImp::onValidatorListMessage(
         return;
     }
 
+    auto ss = std::make_unique<std::stringstream>();
     auto const applyResult = app_.validators().applyListsAndBroadcast(
         manifest,
         version,
@@ -2025,7 +2042,8 @@ PeerImp::onValidatorListMessage(
         hash,
         app_.overlay(),
         app_.getHashRouter(),
-        app_.getOPs());
+        app_.getOPs(),
+        ss);
 
     JLOG(p_journal_.debug())
         << "Processed " << messageType << " version " << version << " from "
@@ -2176,7 +2194,7 @@ PeerImp::onValidatorListMessage(
             case ListDisposition::untrusted:
                 JLOG(p_journal_.warn())
                     << "Ignored " << count << " untrusted " << messageType
-                    << "(s) from peer " << remote_address_;
+                    << "(s) from peer " << remote_address_ << ". " << ss->str();
                 break;
             case ListDisposition::unsupported_version:
                 JLOG(p_journal_.warn())
@@ -3448,6 +3466,15 @@ PeerImp::reduceRelayReady()
             reduce_relay::epoch<std::chrono::minutes>(UptimeClock::now()) >
             reduce_relay::WAIT_ON_BOOTUP;
     return vpReduceRelayEnabled_ && reduceRelayReady_;
+}
+
+void
+PeerImp::initLog()
+{
+    log << "PEERLIFE start " << to_string(std::chrono::system_clock::now())
+        << ". remote ip: " << remote_address_ << ". id: " << id_
+        << ". public key: " << publicKey_ << ". ";
+    JLOG(journal_.debug()) << "connected " << log.str();
 }
 
 void

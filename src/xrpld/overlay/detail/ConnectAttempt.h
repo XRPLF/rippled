@@ -22,6 +22,7 @@
 
 #include <xrpld/overlay/detail/OverlayImpl.h>
 #include <xrpld/overlay/detail/Tuning.h>
+#include <sstream>
 
 namespace ripple {
 
@@ -62,6 +63,9 @@ private:
     request_type req_;
 
 public:
+    std::stringstream log;
+    std::stringstream close_reason;
+
     ConnectAttempt(
         Application& app,
         boost::asio::io_service& io_service,
@@ -83,7 +87,7 @@ public:
 
 private:
     void
-    close();
+    close(const char* reason);
     void
     fail(std::string const& reason);
     void

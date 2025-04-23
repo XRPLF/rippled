@@ -288,6 +288,7 @@ OverlayImpl::onHandoff(
             consumer,
             std::move(stream_ptr),
             *this);
+        peer->log << "inbound. ";
         {
             // As we are not on the strand, run() must be called
             // while holding the lock, otherwise new I/O can be
@@ -1338,6 +1339,7 @@ OverlayImpl::stopChildren()
 void
 OverlayImpl::autoConnect()
 {
+    JLOG(journal_.debug()) << "getting AUTOCONNECT list, num peers: " << size();
     auto const result = m_peerFinder->autoconnect();
     for (auto addr : result)
         connect(addr);

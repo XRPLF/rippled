@@ -51,7 +51,10 @@ ConnectAttempt::ConnectAttempt(
     , stream_(*stream_ptr_)
     , slot_(slot)
 {
-    JLOG(journal_.debug()) << "Connect " << remote_endpoint;
+    log << "CONNECTATTEMPT start "
+        << to_string(std::chrono::system_clock::now())
+        << ". remote ip: " << remote_endpoint_ << ". id: " << id_;
+    JLOG(journal_.debug()) << "connecting " << log.str();
 }
 
 ConnectAttempt::~ConnectAttempt()
@@ -59,6 +62,9 @@ ConnectAttempt::~ConnectAttempt()
     if (slot_ != nullptr)
         overlay_.peerFinder().on_closed(slot_);
     JLOG(journal_.trace()) << "~ConnectAttempt";
+    JLOG(journal_.debug()) << log.str() << ". end reason: "
+                           << (close_reason.str().empty() ? "unknown"
+                                                          : close_reason.str());
 }
 
 void
@@ -71,7 +77,7 @@ ConnectAttempt::stop()
     {
         JLOG(journal_.debug()) << "Stop";
     }
-    close();
+    close("stop");
 }
 
 void
@@ -88,7 +94,7 @@ ConnectAttempt::run()
 //------------------------------------------------------------------------------
 
 void
-ConnectAttempt::close()
+ConnectAttempt::close(const char* reason)
 {
     XRPL_ASSERT(
         strand_.running_in_this_thread(),
@@ -99,6 +105,8 @@ ConnectAttempt::close()
         timer_.cancel(ec);
         socket_.close(ec);
         JLOG(journal_.debug()) << "Closed";
+        log << "close ";
+        close_reason << reason;
     }
 }
 
@@ -106,14 +114,16 @@ void
 ConnectAttempt::fail(std::string const& reason)
 {
     JLOG(journal_.debug()) << reason;
-    close();
+    close(reason.c_str());
 }
 
 void
 ConnectAttempt::fail(std::string const& name, error_code ec)
 {
+    std::stringstream ss;
+    ss << name << ", error: " << ec.message();
     JLOG(journal_.debug()) << name << ": " << ec.message();
-    close();
+    close(ss.str().c_str());
 }
 
 void
@@ -149,7 +159,9 @@ ConnectAttempt::onTimer(error_code ec)
     {
         // This should never happen
         JLOG(journal_.error()) << "onTimer: " << ec.message();
-        return close();
+        std::stringstream ss;
+        ss << "onTimer, error: " << ec.message();
+        return close(ss.str().c_str());
     }
     fail("Timeout");
 }
@@ -201,7 +213,7 @@ ConnectAttempt::onHandshake(error_code ec)
 
     auto const sharedValue = makeSharedValue(*stream_ptr_, journal_);
     if (!sharedValue)
-        return close();  // makeSharedValue logs
+        return close("onHandshake no sharedValue");  // makeSharedValue logs
 
     req_ = makeRequest(
         !overlay_.peerFinder().config().peerPrivate,
@@ -278,11 +290,11 @@ ConnectAttempt::onShutdown(error_code ec)
     if (!ec)
     {
         JLOG(journal_.error()) << "onShutdown: expected error condition";
-        return close();
+        return close("onShutdown: expected error condition");
     }
     if (ec != boost::asio::error::eof)
         return fail("onShutdown", ec);
-    close();
+    close("onShutdown eof");
 }
 
 //--------------------------------------------------------------------------
@@ -331,7 +343,10 @@ ConnectAttempt::processResponse()
         JLOG(journal_.info())
             << "Unable to upgrade to peer protocol: " << response_.result()
             << " (" << response_.reason() << ")";
-        return close();
+        std::stringstream ss;
+        ss << "unable to upgrade peer protocol: " << response_.result() << " ("
+           << response_.reason() << ")";
+        return close(ss.str().c_str());
     }
 
     // Just because our peer selected a particular protocol version doesn't
@@ -351,7 +366,7 @@ ConnectAttempt::processResponse()
 
     auto const sharedValue = makeSharedValue(*stream_ptr_, journal_);
     if (!sharedValue)
-        return close();  // makeSharedValue logs
+        return close("processResponse no sharedValue");  // makeSharedValue logs
 
     try
     {
@@ -365,14 +380,17 @@ ConnectAttempt::processResponse()
 
         JLOG(journal_.info())
             << "Public Key: " << toBase58(TokenType::NodePublic, publicKey);
+        log << "public key: " << toBase58(TokenType::NodePublic, publicKey);
 
         JLOG(journal_.debug())
             << "Protocol: " << to_string(*negotiatedProtocol);
+        log << " protocol: " << to_string(*negotiatedProtocol);
 
         auto const member = app_.cluster().member(publicKey);
         if (member)
         {
             JLOG(journal_.info()) << "Cluster name: " << *member;
+            log << "cluster name: " << *member;
         }
 
         auto const result = overlay_.peerFinder().activate(
@@ -391,6 +409,7 @@ ConnectAttempt::processResponse()
             *negotiatedProtocol,
             id_,
             overlay_);
+        peer->log << "outbound ( " << log.str() << "). ";
 
         overlay_.add_active(peer);
     }
@@ -398,6 +417,7 @@ ConnectAttempt::processResponse()
     {
         return fail(std::string("Handshake failure (") + e.what() + ")");
     }
+    close_reason << "successful connection";
 }
 
 }  // namespace ripple
