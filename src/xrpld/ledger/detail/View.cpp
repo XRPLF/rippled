@@ -2298,7 +2298,7 @@ requireAuth(
                 return tefINTERNAL;  // LCOV_EXCL_LINE
 
             if (depth >= maxAssetCheckDepth)
-                return tecKILLED;  // VaultCreate looks for this error code
+                return tecLIMIT_EXCEEDED;  // VaultCreate looks for this code
 
             auto const asset = sleVault->at(sfAsset);
             if (auto const err = std::visit(

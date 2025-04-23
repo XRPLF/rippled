@@ -720,9 +720,9 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account);
  *   requireAuth check is recursive for MPT shares in a vault, descending to
  *   assets in the vault. These assets could be themselves MPT shares in another
  *   vault. For this reason we limit depth of check, up to maxAssetCheckDepth.
- *   This function will return tecKILLED if maximum depth is exceeded.
- *   Transaction VaultCreate checks for tecKILLED to prevent such vaults being
- *   created.
+ *   This function will return tecLIMIT_EXCEEDED if maximum depth is exceeded.
+ *   Transaction VaultCreate checks for this error code, to prevent such vaults
+ *   being created.
  */
 [[nodiscard]] TER
 requireAuth(

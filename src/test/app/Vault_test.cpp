@@ -1122,7 +1122,7 @@ class Vault_test : public beast::unit_test::suite
 
             env(std::get<Json::Value>(vault.create(
                     {.owner = owner, .asset = vaults.back().shares})),
-                ter{tecKILLED});  // exceeded maximum recursion depth
+                ter{tecLIMIT_EXCEEDED});  // exceeded maximum recursion depth
 
             for (auto& v : vaults)
             {
