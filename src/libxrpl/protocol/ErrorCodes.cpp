@@ -18,9 +18,13 @@
 //==============================================================================
 
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
+#include <xrpl/protocol/jss.h>
+
 #include <array>
 #include <stdexcept>
+#include <string>
 
 namespace ripple {
 namespace RPC {
@@ -92,6 +96,7 @@ constexpr static ErrorInfo unorderedErrorInfos[]{
     {rpcNOT_SYNCED,             "notSynced",            "Not synced to the network.", 503},
     {rpcNO_EVENTS,              "noEvents",             "Current transport does not support events.", 405},
     {rpcNO_NETWORK,             "noNetwork",            "Not synced to the network.", 503},
+    {rpcWRONG_NETWORK,          "wrongNetwork",         "Wrong network.", 503},
     {rpcNO_PERMISSION,          "noPermission",         "You don't have permission for this command.", 401},
     {rpcNO_PF_REQUEST,          "noPathRequest",        "No pathfinding request in progress.", 404},
     {rpcOBJECT_NOT_FOUND,       "objectNotFound",       "The requested object was not found.", 404},

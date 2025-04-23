@@ -21,7 +21,6 @@
 #define RIPPLE_CORE_LOADEVENT_H_INCLUDED
 
 #include <chrono>
-#include <memory>
 #include <string>
 
 namespace ripple {

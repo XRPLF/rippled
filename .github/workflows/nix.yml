@@ -1,9 +1,10 @@
 name: nix
 on:
   pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
   push:
     # If the branches list is ever changed, be sure to change it on all
-    # build/test jobs (nix, macos, windows, instrumentation)
+    # build/test jobs (nix, macos, windows)
     branches:
       # Always build the package branches
       - develop
@@ -15,9 +16,9 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
-# This workflow has two job matrixes.
-# They can be considered phases because the second matrix ("test")
-# depends on the first ("dependencies").
+# This workflow has multiple job matrixes.
+# They can be considered phases because most of the matrices ("test",
+# "coverage", "conan", ) depend on the first ("dependencies").
 #
 # The first phase has a job in the matrix for each combination of
 # variables that affects dependency ABI:
@@ -30,12 +31,16 @@ concurrency:
 # to hold the binaries if they are built locally.
 # We must use the "{upload,download}-artifact" actions instead.
 #
-# The second phase has a job in the matrix for each test configuration.
-# It installs dependency binaries from the cache, whichever was used,
-# and builds and tests rippled.
+# The remaining phases have a job in the matrix for each test
+# configuration. They install dependency binaries from the cache,
+# whichever was used, and build and test rippled.
+#
+# "instrumentation" is independent, but is included here because it also
+# builds on linux in the same "on:" conditions.
 
 jobs:
   dependencies:
+    if: ${{ github.event_name == 'push' || github.event.pull_request.draft != true || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     strategy:
       fail-fast: false
       matrix:
@@ -59,7 +64,7 @@ jobs:
               cc: /usr/bin/clang-14
               cxx: /usr/bin/clang++-14
     runs-on: [self-hosted, heavy]
-    container: rippleci/rippled-build-ubuntu:aaf5e3e
+    container: ghcr.io/xrplf/rippled-build-ubuntu:aaf5e3e
     env:
       build_dir: .build
     steps:
@@ -121,7 +126,7 @@ jobs:
           - "-Dunity=ON"
     needs: dependencies
     runs-on: [self-hosted, heavy]
-    container: rippleci/rippled-build-ubuntu:aaf5e3e
+    container: ghcr.io/xrplf/rippled-build-ubuntu:aaf5e3e
     env:
       build_dir: .build
     steps:
@@ -155,7 +160,61 @@ jobs:
         with:
           generator: Ninja
           configuration: ${{ matrix.configuration }}
-          cmake-args: ${{ matrix.cmake-args }}
+          cmake-args: "-Dassert=TRUE -Dwerr=TRUE ${{ matrix.cmake-args }}"
+      - name: test
+        run: |
+          ${build_dir}/rippled --unittest --unittest-jobs $(nproc)
+
+  reference-fee-test:
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - linux
+        compiler:
+          - gcc
+        configuration:
+          - Debug
+        cmake-args:
+          - "-DUNIT_TEST_REFERENCE_FEE=200"
+          - "-DUNIT_TEST_REFERENCE_FEE=1000"
+    needs: dependencies
+    runs-on: [self-hosted, heavy]
+    container: ghcr.io/xrplf/rippled-build-ubuntu:aaf5e3e
+    env:
+      build_dir: .build
+    steps:
+      - name: upgrade conan
+        run: |
+          pip install --upgrade "conan<2"
+      - name: download cache
+        uses: actions/download-artifact@v4
+        with:
+          name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
+      - name: extract cache
+        run: |
+          mkdir -p ~/.conan
+          tar -xzf conan.tar -C ~/.conan
+      - name: check environment
+        run: |
+          env | sort
+          echo ${PATH} | tr ':' '\n'
+          conan --version
+          cmake --version
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: dependencies
+        uses: ./.github/actions/dependencies
+        env:
+          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
+        with:
+          configuration: ${{ matrix.configuration }}
+      - name: build
+        uses: ./.github/actions/build
+        with:
+          generator: Ninja
+          configuration: ${{ matrix.configuration }}
+          cmake-args: "-Dassert=TRUE -Dwerr=TRUE ${{ matrix.cmake-args }}"
       - name: test
         run: |
           ${build_dir}/rippled --unittest --unittest-jobs $(nproc)
@@ -172,7 +231,7 @@ jobs:
           - Debug
     needs: dependencies
     runs-on: [self-hosted, heavy]
-    container: rippleci/rippled-build-ubuntu:aaf5e3e
+    container: ghcr.io/xrplf/rippled-build-ubuntu:aaf5e3e
     env:
       build_dir: .build
     steps:
@@ -211,6 +270,8 @@ jobs:
           generator: Ninja
           configuration: ${{ matrix.configuration }}
           cmake-args: >-
+            -Dassert=TRUE
+            -Dwerr=TRUE
             -Dcoverage=ON
             -Dcoverage_format=xml
             -DCODE_COVERAGE_VERBOSE=ON
@@ -244,7 +305,7 @@ jobs:
   conan:
     needs: dependencies
     runs-on: [self-hosted, heavy]
-    container: rippleci/rippled-build-ubuntu:aaf5e3e
+    container: ghcr.io/xrplf/rippled-build-ubuntu:aaf5e3e
     env:
       build_dir: .build
       configuration: Release
@@ -283,7 +344,7 @@ jobs:
           echo "reference=${reference}" >> "${GITHUB_ENV}"
       - name: build
         run: |
-          cd examples/example
+          cd tests/conan
           mkdir ${build_dir}
           cd ${build_dir}
           conan install .. --output-folder . \
@@ -293,3 +354,90 @@ jobs:
             -DCMAKE_BUILD_TYPE=${configuration}
           cmake --build .
           ./example | grep '^[[:digit:]]\+\.[[:digit:]]\+\.[[:digit:]]\+'
+
+  # NOTE we are not using dependencies built above because it lags with
+  # compiler versions. Instrumentation requires clang version 16 or
+  # later
+
+  instrumentation-build:
+    if: ${{ github.event_name == 'push' || github.event.pull_request.draft != true || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
+    env:
+      CLANG_RELEASE: 16
+    strategy:
+      fail-fast: false
+    runs-on: [self-hosted, heavy]
+    container: debian:bookworm
+    steps:
+        - name: install prerequisites
+          env:
+            DEBIAN_FRONTEND: noninteractive
+          run: |
+            apt-get update
+            apt-get install --yes --no-install-recommends \
+              clang-${CLANG_RELEASE} clang++-${CLANG_RELEASE} \
+              python3-pip python-is-python3 make cmake git wget
+            apt-get clean
+            update-alternatives --install \
+              /usr/bin/clang clang /usr/bin/clang-${CLANG_RELEASE} 100 \
+              --slave /usr/bin/clang++ clang++ /usr/bin/clang++-${CLANG_RELEASE}
+            update-alternatives --auto clang
+            pip install --no-cache --break-system-packages "conan<2"
+
+        - name: checkout
+          uses: actions/checkout@v4
+
+        - name: prepare environment
+          run: |
+            mkdir ${GITHUB_WORKSPACE}/.build
+            echo "SOURCE_DIR=$GITHUB_WORKSPACE" >> $GITHUB_ENV
+            echo "BUILD_DIR=$GITHUB_WORKSPACE/.build" >> $GITHUB_ENV
+            echo "CC=/usr/bin/clang" >> $GITHUB_ENV
+            echo "CXX=/usr/bin/clang++" >> $GITHUB_ENV
+
+        - name: configure Conan
+          run: |
+            conan profile new --detect default
+            conan profile update settings.compiler=clang default
+            conan profile update settings.compiler.version=${CLANG_RELEASE} default
+            conan profile update settings.compiler.libcxx=libstdc++11 default
+            conan profile update settings.compiler.cppstd=20 default
+            conan profile update options.rocksdb=False default
+            conan profile update \
+              'conf.tools.build:compiler_executables={"c": "/usr/bin/clang", "cpp": "/usr/bin/clang++"}' default
+            conan profile update 'env.CXXFLAGS="-DBOOST_ASIO_DISABLE_CONCEPTS"' default
+            conan profile update 'conf.tools.build:cxxflags+=["-DBOOST_ASIO_DISABLE_CONCEPTS"]' default
+            conan export external/snappy snappy/1.1.10@
+            conan export external/soci soci/4.0.3@
+
+        - name: build dependencies
+          run: |
+            cd ${BUILD_DIR}
+            conan install ${SOURCE_DIR} \
+              --output-folder ${BUILD_DIR} \
+              --install-folder ${BUILD_DIR} \
+              --build missing \
+              --settings build_type=Debug
+
+        - name: build with instrumentation
+          run: |
+            cd ${BUILD_DIR}
+            cmake -S ${SOURCE_DIR} -B ${BUILD_DIR} \
+              -Dvoidstar=ON \
+              -Dtests=ON \
+              -Dxrpld=ON \
+              -DCMAKE_BUILD_TYPE=Debug \
+              -DSECP256K1_BUILD_BENCHMARK=OFF \
+              -DSECP256K1_BUILD_TESTS=OFF \
+              -DSECP256K1_BUILD_EXHAUSTIVE_TESTS=OFF \
+              -DCMAKE_TOOLCHAIN_FILE=${BUILD_DIR}/build/generators/conan_toolchain.cmake
+            cmake --build .  --parallel $(nproc)
+
+        - name: verify instrumentation enabled
+          run: |
+            cd ${BUILD_DIR}
+            ./rippled --version | grep libvoidstar
+
+        - name: run unit tests
+          run: |
+            cd ${BUILD_DIR}
+            ./rippled -u --unittest-jobs $(( $(nproc)/4 ))

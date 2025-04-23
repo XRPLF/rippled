@@ -17,23 +17,20 @@
 */
 //==============================================================================
 
-#include <xrpld/app/tx/detail/Escrow.h>
-
 #include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/app/misc/HashRouter.h>
+#include <xrpld/app/tx/detail/Escrow.h>
 #include <xrpld/conditions/Condition.h>
 #include <xrpld/conditions/Fulfillment.h>
 #include <xrpld/ledger/ApplyView.h>
 #include <xrpld/ledger/View.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
-#include <xrpl/basics/safe_cast.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
-#include <xrpl/protocol/digest.h>
-#include <xrpl/protocol/st.h>
 
 // During an EscrowFinish, the transaction must specify both
 // a condition and a fulfillment. We track whether that
@@ -78,18 +75,6 @@ namespace ripple {
 */
 
 //------------------------------------------------------------------------------
-
-/** Has the specified time passed?
-
-    @param now  the current time
-    @param mark the cutoff point
-    @return true if \a now refers to a time strictly after \a mark, else false.
-*/
-static inline bool
-after(NetClock::time_point now, std::uint32_t mark)
-{
-    return now.time_since_epoch().count() > mark;
-}
 
 TxConsequences
 EscrowCreate::makeTxConsequences(PreflightContext const& ctx)

@@ -18,14 +18,11 @@
 //==============================================================================
 
 #include <xrpld/app/ledger/LedgerMaster.h>
-#include <xrpld/app/ledger/LedgerToJson.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/misc/detail/AccountTxPaging.h>
+
 #include <xrpl/protocol/Serializer.h>
-#include <xrpl/protocol/UintTypes.h>
-#include <boost/format.hpp>
-#include <memory>
 
 namespace ripple {
 
@@ -44,11 +41,18 @@ convertBlobsToTxResult(
 
     auto tr = std::make_shared<Transaction>(txn, reason, app);
 
-    tr->setStatus(Transaction::sqlTransactionStatus(status));
-    tr->setLedger(ledger_index);
-
     auto metaset =
         std::make_shared<TxMeta>(tr->getID(), tr->getLedger(), rawMeta);
+
+    // if properly formed meta is available we can use it to generate ctid
+    if (metaset->getAsObject().isFieldPresent(sfTransactionIndex))
+        tr->setStatus(
+            Transaction::sqlTransactionStatus(status),
+            ledger_index,
+            metaset->getAsObject().getFieldU32(sfTransactionIndex),
+            app.config().NETWORK_ID);
+    else
+        tr->setStatus(Transaction::sqlTransactionStatus(status), ledger_index);
 
     to.emplace_back(std::move(tr), metaset);
 };

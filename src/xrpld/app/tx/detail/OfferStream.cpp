@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/app/tx/detail/OfferStream.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/Feature.h>
 
@@ -268,6 +269,20 @@ TOfferStreamBase<TIn, TOut>::step()
         if (amount.empty())
         {
             JLOG(j_.warn()) << "Removing bad offer " << entry->key();
+            permRmOffer(entry->key());
+            offer_ = TOffer<TIn, TOut>{};
+            continue;
+        }
+
+        bool const deepFrozen = isDeepFrozen(
+            view_,
+            offer_.owner(),
+            offer_.issueIn().currency,
+            offer_.issueIn().account);
+        if (deepFrozen)
+        {
+            JLOG(j_.trace())
+                << "Removing deep frozen unfunded offer " << entry->key();
             permRmOffer(entry->key());
             offer_ = TOffer<TIn, TOut>{};
             continue;

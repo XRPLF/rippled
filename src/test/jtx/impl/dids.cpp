@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2024 Ripple Labs Inc.
+    Copyright (c) 2019 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,9 +17,8 @@
 */
 //==============================================================================
 
-#include <test/jtx/ledgerStateFix.h>
+#include <test/jtx/did.h>
 
-#include <xrpld/app/tx/detail/LedgerStateFix.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
@@ -27,23 +26,43 @@ namespace ripple {
 namespace test {
 namespace jtx {
 
-namespace ledgerStateFix {
+/** DID operations. */
+namespace did {
 
-// Fix NFTokenPage links on owner's account.  acct pays fee.
 Json::Value
-nftPageLinks(jtx::Account const& acct, jtx::Account const& owner)
+set(jtx::Account const& account)
 {
     Json::Value jv;
-    jv[sfAccount.jsonName] = acct.human();
-    jv[sfLedgerFixType.jsonName] = LedgerStateFix::nfTokenPageLink;
-    jv[sfOwner.jsonName] = owner.human();
-    jv[sfTransactionType.jsonName] = jss::LedgerStateFix;
-    jv[sfFlags.jsonName] = tfUniversal;
+    jv[jss::TransactionType] = jss::DIDSet;
+    jv[jss::Account] = to_string(account.id());
+    jv[jss::Flags] = tfUniversal;
     return jv;
 }
 
-}  // namespace ledgerStateFix
+Json::Value
+setValid(jtx::Account const& account)
+{
+    Json::Value jv;
+    jv[jss::TransactionType] = jss::DIDSet;
+    jv[jss::Account] = to_string(account.id());
+    jv[jss::Flags] = tfUniversal;
+    jv[sfURI.jsonName] = strHex(std::string{"uri"});
+    return jv;
+}
+
+Json::Value
+del(jtx::Account const& account)
+{
+    Json::Value jv;
+    jv[jss::TransactionType] = jss::DIDDelete;
+    jv[jss::Account] = to_string(account.id());
+    jv[jss::Flags] = tfUniversal;
+    return jv;
+}
+
+}  // namespace did
 
 }  // namespace jtx
+
 }  // namespace test
 }  // namespace ripple

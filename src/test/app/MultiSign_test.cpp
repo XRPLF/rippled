@@ -16,7 +16,9 @@
 //==============================================================================
 
 #include <test/jtx.h>
+
 #include <xrpld/core/ConfigSections.h>
+
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
 
@@ -139,6 +141,7 @@ public:
         Env env{*this, features};
         Account const alice{"alice", KeyType::ed25519};
         env.fund(XRP(1000), alice);
+        env.close();
 
         // Add alice as a multisigner for herself.  Should fail.
         env(signers(alice, 1, {{alice, 1}}), ter(temBAD_SIGNER));
@@ -886,6 +889,7 @@ public:
         Env env{*this, features};
         Account const alice{"alice", KeyType::ed25519};
         env.fund(XRP(1000), alice);
+        env.close();
 
         // There are three negative tests we need to make:
         //  M0. A lone master key cannot be disabled.
@@ -967,6 +971,7 @@ public:
         Env env{*this, features};
         Account const alice{"alice", KeyType::secp256k1};
         env.fund(XRP(1000), alice);
+        env.close();
 
         // Give alice a regular key with a zero fee.  Should succeed.  Once.
         Account const alie{"alie", KeyType::ed25519};
@@ -983,6 +988,7 @@ public:
         // fee should always fail.  Even the first time.
         Account const becky{"becky", KeyType::ed25519};
         env.fund(XRP(1000), becky);
+        env.close();
 
         env(signers(becky, 1, {{alice, 1}}), sig(becky));
         env(regkey(becky, alie), msig(alice), fee(0), ter(telINSUF_FEE_P));
@@ -1101,6 +1107,7 @@ public:
 
         Account const alice{"alice"};
         env.fund(XRP(1000), alice);
+        env.close();
         env(signers(alice, 1, {{bogie, 1}, {demon, 1}}), sig(alice));
 
         auto const baseFee = env.current()->fees().base;
@@ -1673,6 +1680,29 @@ public:
     }
 
     void
+    test_signerListSetFlags(FeatureBitset features)
+    {
+        using namespace test::jtx;
+
+        Env env{*this, features};
+        Account const alice{"alice"};
+
+        env.fund(XRP(1000), alice);
+        env.close();
+
+        bool const enabled = features[fixInvalidTxFlags];
+        testcase(
+            std::string("SignerListSet flag, fix ") +
+            (enabled ? "enabled" : "disabled"));
+
+        ter const expected(enabled ? TER(temINVALID_FLAG) : TER(tesSUCCESS));
+        env(signers(alice, 2, {{bogie, 1}, {ghost, 1}}),
+            expected,
+            txflags(tfPassive));
+        env.close();
+    }
+
+    void
     testAll(FeatureBitset features)
     {
         test_noReserve(features);
@@ -1708,6 +1738,10 @@ public:
         testAll(all - featureMultiSignReserve - featureExpandedSignerList);
         testAll(all - featureExpandedSignerList);
         testAll(all);
+
+        test_signerListSetFlags(all - fixInvalidTxFlags);
+        test_signerListSetFlags(all);
+
         test_amendmentTransition();
     }
 };

@@ -19,8 +19,17 @@
 
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/StringUtilities.h>
-#include <boost/regex.hpp>
-#include <algorithm>
+
+#include <boost/regex/v5/regbase.hpp>
+#include <boost/regex/v5/regex.hpp>
+#include <boost/regex/v5/regex_fwd.hpp>
+#include <boost/regex/v5/regex_match.hpp>
+
+#include <ostream>
+#include <string>
+#include <tuple>
+#include <utility>
+#include <vector>
 
 namespace ripple {
 

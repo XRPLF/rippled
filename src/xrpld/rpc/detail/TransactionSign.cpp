@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/DeliverMax.h>
@@ -29,16 +28,16 @@
 #include <xrpld/rpc/detail/LegacyPathFind.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/TransactionSign.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/mulDiv.h>
 #include <xrpl/json/json_writer.h>
 #include <xrpl/protocol/ErrorCodes.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/RPCErr.h>
-#include <xrpl/protocol/STAccount.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/Sign.h>
 #include <xrpl/protocol/TxFlags.h>
+
 #include <algorithm>
 #include <iterator>
 
@@ -467,6 +466,13 @@ transactionPreProcessImpl(
 
         if (!tx_json.isMember(jss::Flags))
             tx_json[jss::Flags] = tfFullyCanonicalSig;
+
+        if (!tx_json.isMember(jss::NetworkID))
+        {
+            auto const networkId = app.config().NETWORK_ID;
+            if (networkId > 1024)
+                tx_json[jss::NetworkID] = to_string(networkId);
+        }
     }
 
     {

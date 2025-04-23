@@ -20,6 +20,7 @@
 #include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/app/tx/detail/PermissionedDomainSet.h>
 #include <xrpld/ledger/View.h>
+
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/TxFlags.h>
 
@@ -30,8 +31,10 @@ namespace ripple {
 NotTEC
 PermissionedDomainSet::preflight(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featurePermissionedDomains))
+    if (!ctx.rules.enabled(featurePermissionedDomains) ||
+        !ctx.rules.enabled(featureCredentials))
         return temDISABLED;
+
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 

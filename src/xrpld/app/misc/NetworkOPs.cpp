@@ -47,26 +47,26 @@
 #include <xrpld/overlay/predicates.h>
 #include <xrpld/perflog/PerfLog.h>
 #include <xrpld/rpc/BookChanges.h>
+#include <xrpld/rpc/CTID.h>
 #include <xrpld/rpc/DeliveredAmount.h>
 #include <xrpld/rpc/MPTokenIssuanceID.h>
 #include <xrpld/rpc/ServerHandler.h>
+
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/basics/mulDiv.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/basics/scope.h>
-#include <xrpl/beast/rfc2616.h>
 #include <xrpl/beast/utility/rngfill.h>
 #include <xrpl/crypto/RFC1751.h>
 #include <xrpl/crypto/csprng.h>
-#include <xrpl/json/to_string.h>
 #include <xrpl/protocol/BuildInfo.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/MultiApiJson.h>
 #include <xrpl/protocol/RPCErr.h>
-#include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/resource/ResourceManager.h>
+
 #include <boost/asio/ip/host_name.hpp>
 #include <boost/asio/steady_timer.hpp>
 
@@ -75,10 +75,10 @@
 #include <mutex>
 #include <optional>
 #include <set>
+#include <sstream>
 #include <string>
 #include <tuple>
 #include <unordered_map>
-#include <utility>
 
 namespace ripple {
 
@@ -251,6 +251,12 @@ public:
               beast::get_abstract_clock<std::chrono::steady_clock>(),
               validatorKeys,
               app_.logs().journal("LedgerConsensus"))
+        , validatorPK_(
+              validatorKeys.keys ? validatorKeys.keys->publicKey
+                                 : decltype(validatorPK_){})
+        , validatorMasterPK_(
+              validatorKeys.keys ? validatorKeys.keys->masterPublicKey
+                                 : decltype(validatorMasterPK_){})
         , m_ledgerMaster(ledgerMaster)
         , m_job_queue(job_queue)
         , m_standalone(standalone)
@@ -381,9 +387,11 @@ private:
 
 public:
     bool
-    beginConsensus(uint256 const& networkClosed) override;
+    beginConsensus(
+        uint256 const& networkClosed,
+        std::unique_ptr<std::stringstream> const& clog) override;
     void
-    endConsensus() override;
+    endConsensus(std::unique_ptr<std::stringstream> const& clog) override;
     void
     setStandAlone() override;
 
@@ -732,6 +740,9 @@ private:
 
     RCLConsensus mConsensus;
 
+    std::optional<PublicKey> const validatorPK_;
+    std::optional<PublicKey> const validatorMasterPK_;
+
     ConsensusPhase mLastConsensusPhase;
 
     LedgerMaster& m_ledgerMaster;
@@ -1008,12 +1019,14 @@ NetworkOPsImp::setAccountHistoryJobTimer(SubAccountHistoryInfoWeak subInfo)
 void
 NetworkOPsImp::processHeartbeatTimer()
 {
+    RclConsensusLogger clog(
+        "Heartbeat Timer", mConsensus.validating(), m_journal);
     {
         std::unique_lock lock{app_.getMasterMutex()};
 
         // VFALCO NOTE This is for diagnosing a crash on exit
         LoadManager& mgr(app_.getLoadManager());
-        mgr.resetDeadlockDetector();
+        mgr.heartbeat();
 
         std::size_t const numPeers = app_.overlay().size();
 
@@ -1023,9 +1036,17 @@ NetworkOPsImp::processHeartbeatTimer()
             if (mMode != OperatingMode::DISCONNECTED)
             {
                 setMode(OperatingMode::DISCONNECTED);
-                JLOG(m_journal.warn())
-                    << "Node count (" << numPeers << ") has fallen "
-                    << "below required minimum (" << minPeerCount_ << ").";
+                std::stringstream ss;
+                ss << "Node count (" << numPeers << ") has fallen "
+                   << "below required minimum (" << minPeerCount_ << ").";
+                JLOG(m_journal.warn()) << ss.str();
+                CLOG(clog.ss()) << "set mode to DISCONNECTED: " << ss.str();
+            }
+            else
+            {
+                CLOG(clog.ss())
+                    << "already DISCONNECTED. too few peers (" << numPeers
+                    << "), need at least " << minPeerCount_;
             }
 
             // MasterMutex lock need not be held to call setHeartbeatTimer()
@@ -1033,6 +1054,7 @@ NetworkOPsImp::processHeartbeatTimer()
             // We do not call mConsensus.timerEntry until there are enough
             // peers providing meaningful inputs to consensus
             setHeartbeatTimer();
+
             return;
         }
 
@@ -1041,24 +1063,38 @@ NetworkOPsImp::processHeartbeatTimer()
             setMode(OperatingMode::CONNECTED);
             JLOG(m_journal.info())
                 << "Node count (" << numPeers << ") is sufficient.";
+            CLOG(clog.ss()) << "setting mode to CONNECTED based on " << numPeers
+                            << " peers. ";
         }
 
         // Check if the last validated ledger forces a change between these
         // states.
+        auto origMode = mMode.load();
+        CLOG(clog.ss()) << "mode: " << strOperatingMode(origMode, true);
         if (mMode == OperatingMode::SYNCING)
             setMode(OperatingMode::SYNCING);
         else if (mMode == OperatingMode::CONNECTED)
             setMode(OperatingMode::CONNECTED);
+        auto newMode = mMode.load();
+        if (origMode != newMode)
+        {
+            CLOG(clog.ss())
+                << ", changing to " << strOperatingMode(newMode, true);
+        }
+        CLOG(clog.ss()) << ". ";
     }
 
-    mConsensus.timerEntry(app_.timeKeeper().closeTime());
+    mConsensus.timerEntry(app_.timeKeeper().closeTime(), clog.ss());
 
+    CLOG(clog.ss()) << "consensus phase " << to_string(mLastConsensusPhase);
     const ConsensusPhase currPhase = mConsensus.phase();
     if (mLastConsensusPhase != currPhase)
     {
         reportConsensusStateChange(currPhase);
         mLastConsensusPhase = currPhase;
+        CLOG(clog.ss()) << " changed to " << to_string(mLastConsensusPhase);
     }
+    CLOG(clog.ss()) << ". ";
 
     setHeartbeatTimer();
 }
@@ -1815,7 +1851,9 @@ NetworkOPsImp::switchLastClosedLedger(
 }
 
 bool
-NetworkOPsImp::beginConsensus(uint256 const& networkClosed)
+NetworkOPsImp::beginConsensus(
+    uint256 const& networkClosed,
+    std::unique_ptr<std::stringstream> const& clog)
 {
     XRPL_ASSERT(
         networkClosed.isNonZero(),
@@ -1835,8 +1873,10 @@ NetworkOPsImp::beginConsensus(uint256 const& networkClosed)
         {
             JLOG(m_journal.warn()) << "Don't have LCL, going to tracking";
             setMode(OperatingMode::TRACKING);
+            CLOG(clog) << "beginConsensus Don't have LCL, going to tracking. ";
         }
 
+        CLOG(clog) << "beginConsensus no previous ledger. ";
         return false;
     }
 
@@ -1871,7 +1911,8 @@ NetworkOPsImp::beginConsensus(uint256 const& networkClosed)
         networkClosed,
         prevLedger,
         changes.removed,
-        changes.added);
+        changes.added,
+        clog);
 
     const ConsensusPhase currPhase = mConsensus.phase();
     if (mLastConsensusPhase != currPhase)
@@ -1887,6 +1928,26 @@ NetworkOPsImp::beginConsensus(uint256 const& networkClosed)
 bool
 NetworkOPsImp::processTrustedProposal(RCLCxPeerPos peerPos)
 {
+    auto const& peerKey = peerPos.publicKey();
+    if (validatorPK_ == peerKey || validatorMasterPK_ == peerKey)
+    {
+        // Could indicate a operator misconfiguration where two nodes are
+        // running with the same validator key configured, so this isn't fatal,
+        // and it doesn't necessarily indicate peer misbehavior. But since this
+        // is a trusted message, it could be a very big deal. Either way, we
+        // don't want to relay the proposal. Note that the byzantine behavior
+        // detection in handleNewValidation will notify other peers.
+        //
+        // Another, innocuous explanation is unusual message routing and delays,
+        // causing this node to receive its own messages back.
+        JLOG(m_journal.error())
+            << "Received a proposal signed by MY KEY from a peer. This may "
+               "indicate a misconfiguration where another node has the same "
+               "validator key, or may be caused by unusual message routing and "
+               "delays.";
+        return false;
+    }
+
     return mConsensus.peerProposal(app_.timeKeeper().closeTime(), peerPos);
 }
 
@@ -1910,7 +1971,7 @@ NetworkOPsImp::mapComplete(std::shared_ptr<SHAMap> const& map, bool fromAcquire)
 }
 
 void
-NetworkOPsImp::endConsensus()
+NetworkOPsImp::endConsensus(std::unique_ptr<std::stringstream> const& clog)
 {
     uint256 deadLedger = m_ledgerMaster.getClosedLedger()->info().parentHash;
 
@@ -1928,7 +1989,10 @@ NetworkOPsImp::endConsensus()
         checkLastClosedLedger(app_.overlay().getActivePeers(), networkClosed);
 
     if (networkClosed.isZero())
+    {
+        CLOG(clog) << "endConsensus last closed ledger is zero. ";
         return;
+    }
 
     // WRITEME: Unless we are in FULL and in the process of doing a consensus,
     // we must count how many nodes share our LCL, how many nodes disagree with
@@ -1962,7 +2026,7 @@ NetworkOPsImp::endConsensus()
         }
     }
 
-    beginConsensus(networkClosed);
+    beginConsensus(networkClosed, clog);
 }
 
 void
@@ -2355,6 +2419,21 @@ NetworkOPsImp::recvValidation(
 
     pubValidation(val);
 
+    JLOG(m_journal.debug()) << [this, &val]() -> auto {
+        std::stringstream ss;
+        ss << "VALIDATION: " << val->render() << " master_key: ";
+        auto master = app_.validators().getTrustedKey(val->getSignerPublic());
+        if (master)
+        {
+            ss << toBase58(TokenType::NodePublic, *master);
+        }
+        else
+        {
+            ss << "none";
+        }
+        return ss.str();
+    }();
+
     // We will always relay trusted validations; if configured, we will
     // also relay all untrusted validations.
     return app_.config().RELAY_UNTRUSTED_VALIDATIONS == 1 || val->isTrusted();
@@ -2493,6 +2572,18 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
                 x[jss::expiration] = "unknown";
             }
         }
+
+#if defined(GIT_COMMIT_HASH) || defined(GIT_BRANCH)
+        {
+            auto& x = (info[jss::git] = Json::objectValue);
+#ifdef GIT_COMMIT_HASH
+            x[jss::hash] = GIT_COMMIT_HASH;
+#endif
+#ifdef GIT_BRANCH
+            x[jss::branch] = GIT_BRANCH;
+#endif
+        }
+#endif
     }
     info[jss::io_latency_ms] =
         static_cast<Json::UInt>(app_.getIOLatency().count());
@@ -2990,6 +3081,20 @@ NetworkOPsImp::transJson(
             jvObj[jss::meta], transaction, meta->get());
     }
 
+    // add CTID where the needed data for it exists
+    if (auto const& lookup = ledger->txRead(transaction->getTransactionID());
+        lookup.second && lookup.second->isFieldPresent(sfTransactionIndex))
+    {
+        uint32_t const txnSeq = lookup.second->getFieldU32(sfTransactionIndex);
+        uint32_t netID = app_.config().NETWORK_ID;
+        if (transaction->isFieldPresent(sfNetworkID))
+            netID = transaction->getFieldU32(sfNetworkID);
+
+        if (std::optional<std::string> ctid =
+                RPC::encodeCTID(ledger->info().seq, txnSeq, netID);
+            ctid)
+            jvObj[jss::ctid] = *ctid;
+    }
     if (!ledger->open())
         jvObj[jss::ledger_hash] = to_string(ledger->info().hash);
 
@@ -3863,7 +3968,7 @@ NetworkOPsImp::acceptLedger(
 
     // FIXME Could we improve on this and remove the need for a specialized
     // API in Consensus?
-    beginConsensus(m_ledgerMaster.getClosedLedger()->info().hash);
+    beginConsensus(m_ledgerMaster.getClosedLedger()->info().hash, {});
     mConsensus.simulate(app_.timeKeeper().closeTime(), consensusDelay);
     return m_ledgerMaster.getCurrentLedger()->info().seq;
 }

@@ -19,10 +19,12 @@
 
 #include <xrpld/net/RPCCall.h>
 #include <xrpld/net/RPCSub.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/json/to_string.h>
+
 #include <deque>
 
 namespace ripple {
@@ -77,13 +79,6 @@ public:
     send(Json::Value const& jvObj, bool broadcast) override
     {
         std::lock_guard sl(mLock);
-
-        if (mDeque.size() >= eventQueueMax)
-        {
-            // Drop the previous event.
-            JLOG(j_.warn()) << "RPCCall::fromNetwork drop";
-            mDeque.pop_back();
-        }
 
         auto jm = broadcast ? j_.debug() : j_.info();
         JLOG(jm) << "RPCCall::fromNetwork push: " << jvObj;
@@ -182,8 +177,6 @@ private:
     }
 
 private:
-    enum { eventQueueMax = 32 };
-
     boost::asio::io_service& m_io_service;
     JobQueue& m_jobQueue;
 

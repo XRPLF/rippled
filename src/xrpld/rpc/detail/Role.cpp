@@ -18,10 +18,11 @@
 //==============================================================================
 
 #include <xrpld/rpc/Role.h>
+
 #include <boost/beast/http/field.hpp>
 #include <boost/utility/string_view.hpp>
+
 #include <algorithm>
-#include <tuple>
 
 namespace ripple {
 

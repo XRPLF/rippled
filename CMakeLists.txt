@@ -16,15 +16,35 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+if(CMAKE_CXX_COMPILER_ID MATCHES "GNU")
+    # GCC-specific fixes
+    add_compile_options(-Wno-unknown-pragmas -Wno-subobject-linkage)
+    # -Wno-subobject-linkage can be removed when we upgrade GCC version to at least 13.3
+elseif(CMAKE_CXX_COMPILER_ID MATCHES "Clang")
+    # Clang-specific fixes
+    add_compile_options(-Wno-unknown-warning-option) # Ignore unknown warning options
+elseif(MSVC)
+    # MSVC-specific fixes
+    add_compile_options(/wd4068) # Ignore unknown pragmas
+endif()
+
 # make GIT_COMMIT_HASH define available to all sources
 find_package(Git)
 if(Git_FOUND)
-    execute_process(COMMAND ${GIT_EXECUTABLE} --git-dir=${CMAKE_CURRENT_SOURCE_DIR}/.git describe --always --abbrev=40
+    execute_process(COMMAND ${GIT_EXECUTABLE} --git-dir=${CMAKE_CURRENT_SOURCE_DIR}/.git rev-parse HEAD
         OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE gch)
     if(gch)
         set(GIT_COMMIT_HASH "${gch}")
         message(STATUS gch: ${GIT_COMMIT_HASH})
         add_definitions(-DGIT_COMMIT_HASH="${GIT_COMMIT_HASH}")
+    endif()
+
+    execute_process(COMMAND ${GIT_EXECUTABLE} --git-dir=${CMAKE_CURRENT_SOURCE_DIR}/.git rev-parse --abbrev-ref HEAD
+        OUTPUT_STRIP_TRAILING_WHITESPACE OUTPUT_VARIABLE gb)
+    if(gb)
+        set(GIT_BRANCH "${gb}")
+        message(STATUS gb: ${GIT_BRANCH})
+        add_definitions(-DGIT_BRANCH="${GIT_BRANCH}")
     endif()
 endif() #git
 

@@ -22,9 +22,9 @@
 
 #include <xrpld/ledger/CachedSLEs.h>
 #include <xrpld/ledger/ReadView.h>
+
 #include <xrpl/basics/hardened_hash.h>
-#include <map>
-#include <memory>
+
 #include <mutex>
 #include <type_traits>
 

@@ -29,12 +29,14 @@
 #include <test/jtx/require.h>
 #include <test/jtx/tags.h>
 #include <test/unit_test/SuiteJournal.h>
+
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/paths/Pathfinder.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -46,6 +48,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
+
 #include <functional>
 #include <string>
 #include <tuple>
@@ -207,8 +210,10 @@ public:
      * @param args collection of features
      *
      */
-    Env(beast::unit_test::suite& suite_, FeatureBitset features)
-        : Env(suite_, envconfig(), features)
+    Env(beast::unit_test::suite& suite_,
+        FeatureBitset features,
+        std::unique_ptr<Logs> logs = nullptr)
+        : Env(suite_, envconfig(), features, std::move(logs))
     {
     }
 
