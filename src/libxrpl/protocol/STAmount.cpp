@@ -503,6 +503,65 @@ getRate(STAmount const& offerOut, STAmount const& offerIn)
     return 0;
 }
 
+/** returns true if adding or subtracting results in less than or equal to
+ * 0.01% precision loss **/
+bool
+isAddable(STAmount const& amt1, STAmount const& amt2)
+{
+    // special case: adding anything to zero is always fine
+    if (amt1 == beast::zero || amt2 == beast::zero)
+        return true;
+
+    // cannot add different currencies
+    if (!areComparable(amt1, amt2))
+        return false;
+
+    // XRP case (overflow & underflow check)
+    if (isXRP(amt1) && isXRP(amt2))
+    {
+        XRPAmount A = (amt1.signum() == -1 ? -(amt1.xrp()) : amt1.xrp());
+        XRPAmount B = (amt2.signum() == -1 ? -(amt2.xrp()) : amt2.xrp());
+
+        if ((B > XRPAmount{0} &&
+             A > std::numeric_limits<XRPAmount::value_type>::max() - B) ||
+            (B < XRPAmount{0} &&
+             A < std::numeric_limits<XRPAmount::value_type>::min() - B))
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    // IOU case (precision check)
+    if (amt1.holds<Issue>() && amt2.holds<Issue>())
+    {
+        static const STAmount one{IOUAmount{1, 0}, noIssue()};
+        static const STAmount maxLoss{IOUAmount{1, -4}, noIssue()};
+        STAmount lhs = divide((amt1 - amt2) + amt2, amt1, noIssue()) - one;
+        STAmount rhs = divide((amt2 - amt1) + amt1, amt2, noIssue()) - one;
+        return ((rhs.negative() ? -rhs : rhs) +
+                (lhs.negative() ? -lhs : lhs)) <= maxLoss;
+    }
+
+    // MPT (overflow & underflow check)
+    if (amt1.holds<MPTIssue>() && amt2.holds<MPTIssue>())
+    {
+        MPTAmount A = (amt1.signum() == -1 ? -(amt1.mpt()) : amt1.mpt());
+        MPTAmount B = (amt2.signum() == -1 ? -(amt2.mpt()) : amt2.mpt());
+        constexpr auto maxMPT = (std::int64_t{1} << 62) - 1;  // 63 bits signed
+        constexpr auto minMPT = -(std::int64_t{1} << 62);
+        if ((B > MPTAmount{0} && A > maxMPT - B) ||
+            (B < MPTAmount{0} && A < minMPT - B))
+        {
+            return false;
+        }
+
+        return true;
+    }
+    return false;
+}
+
 void
 STAmount::setJson(Json::Value& elem) const
 {

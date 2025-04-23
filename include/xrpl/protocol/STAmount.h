@@ -686,53 +686,8 @@ isXRP(STAmount const& amount)
 
 /** returns true if adding or subtracting results in less than or equal to
  * 0.01% precision loss **/
-inline bool
-isAddable(STAmount const& amt1, STAmount const& amt2)
-{
-    // special case: adding anything to zero is always fine
-    if (amt1 == beast::zero || amt2 == beast::zero)
-        return true;
-
-    // special case: adding two xrp amounts together.
-    // this is just an overflow check
-    if (isXRP(amt1) && isXRP(amt2))
-    {
-        XRPAmount A = (amt1.signum() == -1 ? -(amt1.xrp()) : amt1.xrp());
-        XRPAmount B = (amt2.signum() == -1 ? -(amt2.xrp()) : amt2.xrp());
-
-        if ((B > XRPAmount{0} &&
-             A > std::numeric_limits<XRPAmount::value_type>::max() - B) ||
-            (B < XRPAmount{0} &&
-             A < std::numeric_limits<XRPAmount::value_type>::min() - B))
-        {
-            return false;
-        }
-
-        XRPAmount finalAmt = A + B;
-        return (finalAmt >= A && finalAmt >= B);
-    }
-
-    static const STAmount one{IOUAmount{1, 0}, noIssue()};
-    static const STAmount maxLoss{IOUAmount{1, -4}, noIssue()};
-
-    STAmount A = amt1;
-    STAmount B = amt2;
-
-    if (isXRP(A))
-        A = STAmount{IOUAmount{A.xrp().drops(), -6}, noIssue()};
-
-    if (isXRP(B))
-        B = STAmount{IOUAmount{B.xrp().drops(), -6}, noIssue()};
-
-    A.setIssue(noIssue());
-    B.setIssue(noIssue());
-
-    STAmount lhs = divide((A - B) + B, A, noIssue()) - one;
-    STAmount rhs = divide((B - A) + A, B, noIssue()) - one;
-
-    return ((rhs.negative() ? -rhs : rhs) + (lhs.negative() ? -lhs : lhs)) <=
-        maxLoss;
-}
+bool
+isAddable(STAmount const& amt1, STAmount const& amt2);
 
 // Since `canonicalize` does not have access to a ledger, this is needed to put
 // the low-level routine stAmountCanonicalize on an amendment switch. Only
