@@ -757,7 +757,7 @@ SHAMap::delItem(uint256 const& id)
         {
             // we may have made this a node with 1 or 0 children
             // And, if so, we need to remove this branch
-            const int bc = node->getBranchCount();
+            int const bc = node->getBranchCount();
             if (bc == 0)
             {
                 // no children below this branch
