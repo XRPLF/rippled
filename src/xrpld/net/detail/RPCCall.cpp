@@ -1631,7 +1631,7 @@ void
 fromNetwork(
     boost::asio::io_service& io_service,
     std::string const& strIp,
-    const std::uint16_t iPort,
+    std::uint16_t const iPort,
     std::string const& strUsername,
     std::string const& strPassword,
     std::string const& strPath,
