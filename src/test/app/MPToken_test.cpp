@@ -412,6 +412,9 @@ class MPToken_test : public beast::unit_test::suite
             // bob creates a mptoken
             mptAlice.authorize({.account = bob, .holderCount = 1});
 
+            mptAlice.authorize(
+                {.account = bob, .holderCount = 1, .err = tecDUPLICATE});
+
             // bob deletes his mptoken
             mptAlice.authorize(
                 {.account = bob, .holderCount = 0, .flags = tfMPTUnauthorize});
@@ -2303,15 +2306,21 @@ public:
 
         // MPTokenIssuanceCreate
         testCreateValidation(all);
+        testCreateValidation(all | featureSingleAssetVault);
         testCreateEnabled(all);
+        testCreateEnabled(all | featureSingleAssetVault);
 
         // MPTokenIssuanceDestroy
         testDestroyValidation(all);
+        testDestroyValidation(all | featureSingleAssetVault);
         testDestroyEnabled(all);
+        testDestroyEnabled(all | featureSingleAssetVault);
 
         // MPTokenAuthorize
         testAuthorizeValidation(all);
+        testAuthorizeValidation(all | featureSingleAssetVault);
         testAuthorizeEnabled(all);
+        testAuthorizeEnabled(all | featureSingleAssetVault);
 
         // MPTokenIssuanceSet
         testSetValidation(all);

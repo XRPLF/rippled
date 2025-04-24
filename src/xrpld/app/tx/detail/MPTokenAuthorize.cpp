@@ -83,6 +83,10 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
                 return tecHAS_OBLIGATIONS;
             }
 
+            if (ctx.view.rules().enabled(featureSingleAssetVault) &&
+                sleMpt->isFlag(lsfMPTLocked))
+                return tecNO_PERMISSION;
+
             return tesSUCCESS;
         }
 
@@ -165,7 +169,7 @@ MPTokenAuthorize::authorize(
             if ((*sleMpt)[sfMPTAmount] != 0)
                 return tecHAS_OBLIGATIONS;
             if (view.rules().enabled(featureSingleAssetVault) &&
-                (sleMpt->getFlags() & lsfMPTLocked))
+                sleMpt->isFlag(lsfMPTLocked))
                 return tecNO_PERMISSION;
 
             if (!view.dirRemove(
@@ -199,7 +203,7 @@ MPTokenAuthorize::authorize(
             return tecINSUFFICIENT_RESERVE;
 
         if (sleMpt)
-            return tecDUPLICATE;
+            return tecDUPLICATE;  // Also returned in preclaim
         sleMpt = std::make_shared<SLE>(mptokenKey);
 
         if (auto ter = dirLink(view, args.accountID, sleMpt))
