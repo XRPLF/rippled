@@ -359,7 +359,7 @@ public:
         std::shared_ptr<ReadView const>& lpLedger,
         Book const&,
         AccountID const& uTakerID,
-        const bool bProof,
+        bool const bProof,
         unsigned int iLimit,
         Json::Value const& jvMarker,
         Json::Value& jvResult) override;
@@ -383,7 +383,7 @@ private:
     void
     switchLastClosedLedger(std::shared_ptr<Ledger const> const& newLCL);
     bool
-    checkLastClosedLedger(const Overlay::PeerSequence&, uint256& networkClosed);
+    checkLastClosedLedger(Overlay::PeerSequence const&, uint256& networkClosed);
 
 public:
     bool
@@ -944,7 +944,7 @@ NetworkOPsImp::setStateTimer()
 void
 NetworkOPsImp::setTimer(
     boost::asio::steady_timer& timer,
-    const std::chrono::milliseconds& expiry_time,
+    std::chrono::milliseconds const& expiry_time,
     std::function<void()> onExpire,
     std::function<void()> onError)
 {
@@ -1692,7 +1692,7 @@ NetworkOPsImp::clearUNLBlocked()
 
 bool
 NetworkOPsImp::checkLastClosedLedger(
-    const Overlay::PeerSequence& peerList,
+    Overlay::PeerSequence const& peerList,
     uint256& networkClosed)
 {
     // Returns true if there's an *abnormal* ledger issue, normal changing in
@@ -2419,7 +2419,8 @@ NetworkOPsImp::recvValidation(
 
     pubValidation(val);
 
-    JLOG(m_journal.debug()) << [this, &val]() -> auto {
+    JLOG(m_journal.debug()) << [ this, &val ]() -> auto
+    {
         std::stringstream ss;
         ss << "VALIDATION: " << val->render() << " master_key: ";
         auto master = app_.validators().getTrustedKey(val->getSignerPublic());
@@ -2432,7 +2433,8 @@ NetworkOPsImp::recvValidation(
             ss << "none";
         }
         return ss.str();
-    }();
+    }
+    ();
 
     // We will always relay trusted validations; if configured, we will
     // also relay all untrusted validations.
@@ -3163,7 +3165,7 @@ NetworkOPsImp::transJson(
 void
 NetworkOPsImp::pubValidatedTransaction(
     std::shared_ptr<ReadView const> const& ledger,
-    const AcceptedLedgerTx& transaction,
+    AcceptedLedgerTx const& transaction,
     bool last)
 {
     auto const& stTxn = transaction.getTxn();
@@ -3308,8 +3310,8 @@ NetworkOPsImp::pubAccountTransaction(
     }
 
     JLOG(m_journal.trace())
-        << "pubAccountTransaction: " << "proposed=" << iProposed
-        << ", accepted=" << iAccepted;
+        << "pubAccountTransaction: "
+        << "proposed=" << iProposed << ", accepted=" << iAccepted;
 
     if (!notify.empty() || !accountHistoryNotify.empty())
     {
@@ -3514,7 +3516,7 @@ void
 NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
 {
     enum DatabaseType { Sqlite, None };
-    static const auto databaseType = [&]() -> DatabaseType {
+    static auto const databaseType = [&]() -> DatabaseType {
         // Use a dynamic_cast to return DatabaseType::None
         // on failure.
         if (dynamic_cast<SQLiteDatabase*>(&app_.getRelationalDatabase()))
@@ -3906,7 +3908,7 @@ NetworkOPsImp::unsubAccountHistory(
 void
 NetworkOPsImp::unsubAccountHistoryInternal(
     std::uint64_t seq,
-    const AccountID& account,
+    AccountID const& account,
     bool historyOnly)
 {
     std::lock_guard sl(mSubLock);
@@ -4455,7 +4457,7 @@ NetworkOPsImp::getBookPage(
 
     auto const rate = transferRate(lesActive, book.out.account);
 
-    const bool bGlobalFreeze = lesActive.isGlobalFrozen(book.out.account) ||
+    bool const bGlobalFreeze = lesActive.isGlobalFrozen(book.out.account) ||
         lesActive.isGlobalFrozen(book.in.account);
 
     while (iLimit-- > 0 && obIterator.nextOffer())
