@@ -1471,7 +1471,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env.close();
         }
 
-        // tecNO_AUTH: requireAuthIfNeeded set: account not authorized
+        // tecNO_AUTH: requireAuth set: account not authorized
         {
             Env env{*this, features};
             auto const baseFee = env.current()->fees().base;
@@ -1503,7 +1503,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env.close();
         }
 
-        // tecNO_AUTH: requireAuthIfNeeded set: dest not authorized
+        // tecNO_AUTH: requireAuth set: dest not authorized
         {
             Env env{*this, features};
             auto const baseFee = env.current()->fees().base;
@@ -1662,7 +1662,7 @@ struct EscrowToken_test : public beast::unit_test::suite
         using namespace test::jtx;
         using namespace std::literals;
 
-        // tecNO_AUTH: requireAuthIfNeeded set: dest not authorized
+        // tecNO_AUTH: requireAuth set: dest not authorized
         {
             Env env{*this, features};
             auto const baseFee = env.current()->fees().base;
@@ -1872,7 +1872,7 @@ struct EscrowToken_test : public beast::unit_test::suite
         using namespace test::jtx;
         using namespace std::literals;
 
-        // tecNO_AUTH: requireAuthIfNeeded set: account not authorized
+        // tecNO_AUTH: requireAuth set: account not authorized
         {
             Env env{*this, features};
             auto const baseFee = env.current()->fees().base;

@@ -20,6 +20,7 @@
 #include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/app/misc/HashRouter.h>
 #include <xrpld/app/tx/detail/Escrow.h>
+#include <xrpld/app/tx/detail/MPTokenAuthorize.h>
 #include <xrpld/conditions/Condition.h>
 #include <xrpld/conditions/Fulfillment.h>
 #include <xrpld/ledger/ApplyView.h>
@@ -324,16 +325,18 @@ escrowCreatePreclaimHelper<MPTIssue>(
     if (!ctx.view.exists(keylet::mptoken(issuanceKey.key, account)))
         return tecOBJECT_NOT_FOUND;
 
-    // If the issuer has requireAuthIfNeeded set, check if the account is
+    // If the issuer has requireAuth set, check if the account is
     // authorized
     auto const& mptIssue = amount.get<MPTIssue>();
-    if (auto const ter = requireAuthIfNeeded(ctx.view, mptIssue, account);
+    if (auto const ter =
+            requireAuth(ctx.view, mptIssue, account, MPTAuthType::WeakAuth);
         ter != tesSUCCESS)
         return ter;
 
-    // If the issuer has requireAuthIfNeeded set, check if the destination is
+    // If the issuer has requireAuth set, check if the destination is
     // authorized
-    if (auto const ter = requireAuthIfNeeded(ctx.view, mptIssue, dest);
+    if (auto const ter =
+            requireAuth(ctx.view, mptIssue, dest, MPTAuthType::WeakAuth);
         ter != tesSUCCESS)
         return ter;
 
@@ -756,10 +759,11 @@ escrowFinishPreclaimHelper<MPTIssue>(
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    // If the issuer has requireAuthIfNeeded set, check if the destination is
+    // If the issuer has requireAuth set, check if the destination is
     // authorized
     auto const& mptIssue = amount.get<MPTIssue>();
-    if (auto const ter = requireAuthIfNeeded(ctx.view, mptIssue, dest);
+    if (auto const ter =
+            requireAuth(ctx.view, mptIssue, dest, MPTAuthType::WeakAuth);
         ter != tesSUCCESS)
         return ter;
 
@@ -934,8 +938,8 @@ escrowUnlockApplyHelper<MPTIssue>(
     bool const senderIssuer = issuer == sender;
     bool const receiverIssuer = issuer == receiver;
 
-    auto const issuanceKey =
-        keylet::mptIssuance(amount.get<MPTIssue>().getMptID());
+    auto const mptID = amount.get<MPTIssue>().getMptID();
+    auto const issuanceKey = keylet::mptIssuance(mptID);
     if (!view.exists(keylet::mptoken(issuanceKey.key, receiver)) &&
         createAsset && !receiverIssuer)
     {
@@ -945,22 +949,12 @@ escrowUnlockApplyHelper<MPTIssue>(
             return tecINSUFFICIENT_RESERVE;
         }
 
-        /*
-        TODO: Replace with helper function from MPTDex PR
-        */
-        auto const mptokenKey = keylet::mptoken(issuanceKey.key, receiver);
-        auto const ownerNode = view.dirInsert(
-            keylet::ownerDir(receiver), mptokenKey, describeOwnerDir(receiver));
-
-        if (!ownerNode)
-            return tecDIR_FULL;
-
-        auto mptoken = std::make_shared<SLE>(mptokenKey);
-        (*mptoken)[sfAccount] = receiver;
-        (*mptoken)[sfMPTokenIssuanceID] = amount.get<MPTIssue>().getMptID();
-        (*mptoken)[sfFlags] = 0;
-        (*mptoken)[sfOwnerNode] = *ownerNode;
-        view.insert(mptoken);
+        if (auto const ter =
+                MPTokenAuthorize::createMPToken(view, mptID, receiver, 0);
+            !isTesSuccess(ter))
+        {
+            return ter;
+        }
 
         // Update owner count.
         adjustOwnerCount(view, sleDest, 1, journal);
@@ -1235,10 +1229,11 @@ escrowCancelPreclaimHelper<MPTIssue>(
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    // If the issuer has requireAuthIfNeeded set, check if the account is
+    // If the issuer has requireAuth set, check if the account is
     // authorized
     auto const& mptIssue = amount.get<MPTIssue>();
-    if (auto const ter = requireAuthIfNeeded(ctx.view, mptIssue, account);
+    if (auto const ter =
+            requireAuth(ctx.view, mptIssue, account, MPTAuthType::WeakAuth);
         ter != tesSUCCESS)
         return ter;
 

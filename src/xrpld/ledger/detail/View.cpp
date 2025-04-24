@@ -1944,7 +1944,8 @@ TER
 requireAuth(
     ReadView const& view,
     MPTIssue const& mptIssue,
-    AccountID const& account)
+    AccountID const& account,
+    MPTAuthType authType)
 {
     auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
     auto const sleIssuance = view.read(mptID);
@@ -1962,7 +1963,7 @@ requireAuth(
     auto const sleToken = view.read(mptokenID);
 
     // if account has no MPToken, fail
-    if (!sleToken)
+    if (!sleToken && authType == MPTAuthType::StrongAuth)
         return tecNO_AUTH;
 
     // mptoken must be authorized if issuance enabled requireAuth
@@ -1970,37 +1971,6 @@ requireAuth(
         !(sleToken->getFlags() & lsfMPTAuthorized))
         return tecNO_AUTH;
 
-    return tesSUCCESS;
-}
-
-TER
-requireAuthIfNeeded(
-    ReadView const& view,
-    MPTIssue const& mptIssue,
-    AccountID const& account)
-{
-    auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
-    auto const sleIssuance = view.read(mptID);
-
-    if (!sleIssuance)
-        return tecOBJECT_NOT_FOUND;
-
-    auto const mptIssuer = sleIssuance->getAccountID(sfIssuer);
-
-    // issuer is always "authorized"
-    if (mptIssuer == account)
-        return tesSUCCESS;
-
-    if (sleIssuance->getFieldU32(sfFlags) & lsfMPTRequireAuth)
-    {
-        auto const mptokenID = keylet::mptoken(mptID.key, account);
-        auto const sleToken = view.read(mptokenID);
-        if (!sleToken)
-            return tecNO_AUTH;
-
-        if (!(sleToken->getFlags() & lsfMPTAuthorized))
-            return tecNO_AUTH;
-    }
     return tesSUCCESS;
 }
 

@@ -560,6 +560,12 @@ transferXRP(
     STAmount const& amount,
     beast::Journal j);
 
+/* Check if MPToken exists:
+ * - StrongAuth - before checking lsfMPTRequireAuth is set
+ * - WeakAuth - after checking if lsfMPTRequireAuth is set
+ */
+enum class MPTAuthType : bool { StrongAuth = true, WeakAuth = false };
+
 /** Check if the account lacks required authorization.
  *   Return tecNO_AUTH or tecNO_LINE if it does
  *   and tesSUCCESS otherwise.
@@ -570,12 +576,8 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account);
 requireAuth(
     ReadView const& view,
     MPTIssue const& mptIssue,
-    AccountID const& account);
-[[nodiscard]] TER
-requireAuthIfNeeded(
-    ReadView const& view,
-    MPTIssue const& mptIssue,
-    AccountID const& account);
+    AccountID const& account,
+    MPTAuthType authType = MPTAuthType::StrongAuth);
 
 /** Check if the destination account is allowed
  *  to receive MPT. Return tecNO_AUTH if it doesn't
