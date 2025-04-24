@@ -65,8 +65,7 @@ public:
     {
     }
 
-    constexpr
-    operator char const*() const
+    constexpr operator char const*() const
     {
         return str_;
     }
