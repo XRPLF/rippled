@@ -1382,11 +1382,7 @@ class Invariants_test : public beast::unit_test::suite
                         sle->at(sfOwner) = sle->at(sfAccount);
                     },
                     [](SLE::pointer& sle) {
-                        // The operator overloads aren't playing nice with the
-                        // custom class, so just do it the hard way for now.
-                        auto value = sle->at(sfManagementFeeRate).value();
-                        ++value;
-                        sle->at(sfManagementFeeRate) = value;
+                        sle->at(sfManagementFeeRate) += TenthBips16(1);
                     },
                     [](SLE::pointer& sle) { sle->at(sfCoverRateMinimum) += 1; },
                     [](SLE::pointer& sle) {

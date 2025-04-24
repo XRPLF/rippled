@@ -518,8 +518,26 @@ protected:
 // Constraint += and -= ValueProxy operators
 // to value types that support arithmetic operations
 template <typename U>
-concept IsArithmetic = std::is_arithmetic_v<U> || std::is_same_v<U, STAmount> ||
-    std::is_same_v<U, STNumber> || std::is_same_v<U, Number>;
+concept IsArithmeticNumber = std::is_arithmetic_v<U> ||
+    std::is_same_v<U, Number> || std::is_same_v<U, STAmount>;
+template <
+    typename U,
+    typename Value = U::value_type,
+    typename Unit = U::unit_type>
+concept IsArithmeticValueUnit =
+    std::is_same_v<U, unit::ValueUnit<Unit, Value>> &&
+    IsArithmeticNumber<Value> && std::is_class_v<Unit>;
+template <typename U, typename Value = U::value_type>
+concept IsArithmeticST = !IsArithmeticValueUnit<U> && IsArithmeticNumber<Value>;
+template <typename U>
+concept IsArithmetic =
+    IsArithmeticNumber<U> || IsArithmeticST<U> || IsArithmeticValueUnit<U>;
+
+template <class T, class U>
+concept Addable = requires(T t, U u) { t = t + u; };
+template <typename T, typename U>
+concept IsArithmeticCompatible =
+    IsArithmetic<typename T::value_type> && Addable<typename T::value_type, U>;
 
 template <class T>
 class STObject::ValueProxy : public Proxy<T>
@@ -539,10 +557,12 @@ public:
     // Convenience operators for value types supporting
     // arithmetic operations
     template <IsArithmetic U>
+        requires IsArithmeticCompatible<T, U>
     ValueProxy&
     operator+=(U const& u);
 
     template <IsArithmetic U>
+        requires IsArithmeticCompatible<T, U>
     ValueProxy&
     operator-=(U const& u);
 
@@ -778,6 +798,7 @@ STObject::ValueProxy<T>::operator=(U&& u)
 
 template <typename T>
 template <IsArithmetic U>
+    requires IsArithmeticCompatible<T, U>
 STObject::ValueProxy<T>&
 STObject::ValueProxy<T>::operator+=(U const& u)
 {
@@ -787,6 +808,7 @@ STObject::ValueProxy<T>::operator+=(U const& u)
 
 template <class T>
 template <IsArithmetic U>
+    requires IsArithmeticCompatible<T, U>
 STObject::ValueProxy<T>&
 STObject::ValueProxy<T>::operator-=(U const& u)
 {
