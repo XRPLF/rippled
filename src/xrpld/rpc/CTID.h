@@ -57,7 +57,7 @@ encodeCTID(uint32_t ledgerSeq, uint32_t txnIndex, uint32_t networkID) noexcept
 
 template <typename T>
 inline std::optional<std::tuple<uint32_t, uint16_t, uint16_t>>
-decodeCTID(const T ctid) noexcept
+decodeCTID(T const ctid) noexcept
 {
     uint64_t ctidValue{0};
     if constexpr (
