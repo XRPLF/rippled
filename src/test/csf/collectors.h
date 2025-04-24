@@ -283,62 +283,66 @@ struct TxCollector
 
         if (printBreakline)
         {
-            log << std::setw(11) << std::setfill('-') << "-" << "-"
-                << std::setw(7) << std::setfill('-') << "-" << "-"
-                << std::setw(7) << std::setfill('-') << "-" << "-"
-                << std::setw(36) << std::setfill('-') << "-" << std::endl;
+            log << std::setw(11) << std::setfill('-') << "-"
+                << "-" << std::setw(7) << std::setfill('-') << "-"
+                << "-" << std::setw(7) << std::setfill('-') << "-"
+                << "-" << std::setw(36) << std::setfill('-') << "-"
+                << std::endl;
             log << std::setfill(' ');
         }
 
-        log << std::left << std::setw(11) << "TxStats" << "|" << std::setw(7)
-            << "Count" << "|" << std::setw(7) << "Per Sec" << "|"
-            << std::setw(15) << "Latency (sec)" << std::right << std::setw(7)
-            << "10-ile" << std::setw(7) << "50-ile" << std::setw(7) << "90-ile"
-            << std::left << std::endl;
+        log << std::left << std::setw(11) << "TxStats"
+            << "|" << std::setw(7) << "Count"
+            << "|" << std::setw(7) << "Per Sec"
+            << "|" << std::setw(15) << "Latency (sec)" << std::right
+            << std::setw(7) << "10-ile" << std::setw(7) << "50-ile"
+            << std::setw(7) << "90-ile" << std::left << std::endl;
 
-        log << std::setw(11) << std::setfill('-') << "-" << "|" << std::setw(7)
-            << std::setfill('-') << "-" << "|" << std::setw(7)
-            << std::setfill('-') << "-" << "|" << std::setw(36)
-            << std::setfill('-') << "-" << std::endl;
+        log << std::setw(11) << std::setfill('-') << "-"
+            << "|" << std::setw(7) << std::setfill('-') << "-"
+            << "|" << std::setw(7) << std::setfill('-') << "-"
+            << "|" << std::setw(36) << std::setfill('-') << "-" << std::endl;
         log << std::setfill(' ');
 
-        log << std::left << std::setw(11) << "Submit " << "|" << std::right
-            << std::setw(7) << submitted << "|" << std::setw(7)
-            << std::setprecision(2) << perSec(submitted) << "|" << std::setw(36)
-            << "" << std::endl;
+        log << std::left << std::setw(11) << "Submit "
+            << "|" << std::right << std::setw(7) << submitted << "|"
+            << std::setw(7) << std::setprecision(2) << perSec(submitted) << "|"
+            << std::setw(36) << "" << std::endl;
 
-        log << std::left << std::setw(11) << "Accept " << "|" << std::right
-            << std::setw(7) << accepted << "|" << std::setw(7)
-            << std::setprecision(2) << perSec(accepted) << "|" << std::setw(15)
-            << std::left << "From Submit" << std::right << std::setw(7)
-            << std::setprecision(2) << fmtS(submitToAccept.percentile(0.1f))
+        log << std::left << std::setw(11) << "Accept "
+            << "|" << std::right << std::setw(7) << accepted << "|"
+            << std::setw(7) << std::setprecision(2) << perSec(accepted) << "|"
+            << std::setw(15) << std::left << "From Submit" << std::right
             << std::setw(7) << std::setprecision(2)
-            << fmtS(submitToAccept.percentile(0.5f)) << std::setw(7)
-            << std::setprecision(2) << fmtS(submitToAccept.percentile(0.9f))
-            << std::endl;
-
-        log << std::left << std::setw(11) << "Validate " << "|" << std::right
-            << std::setw(7) << validated << "|" << std::setw(7)
-            << std::setprecision(2) << perSec(validated) << "|" << std::setw(15)
-            << std::left << "From Submit" << std::right << std::setw(7)
-            << std::setprecision(2) << fmtS(submitToValidate.percentile(0.1f))
+            << fmtS(submitToAccept.percentile(0.1f)) << std::setw(7)
+            << std::setprecision(2) << fmtS(submitToAccept.percentile(0.5f))
             << std::setw(7) << std::setprecision(2)
-            << fmtS(submitToValidate.percentile(0.5f)) << std::setw(7)
-            << std::setprecision(2) << fmtS(submitToValidate.percentile(0.9f))
-            << std::endl;
+            << fmtS(submitToAccept.percentile(0.9f)) << std::endl;
 
-        log << std::left << std::setw(11) << "Orphan" << "|" << std::right
-            << std::setw(7) << orphaned() << "|" << std::setw(7) << "" << "|"
-            << std::setw(36) << std::endl;
+        log << std::left << std::setw(11) << "Validate "
+            << "|" << std::right << std::setw(7) << validated << "|"
+            << std::setw(7) << std::setprecision(2) << perSec(validated) << "|"
+            << std::setw(15) << std::left << "From Submit" << std::right
+            << std::setw(7) << std::setprecision(2)
+            << fmtS(submitToValidate.percentile(0.1f)) << std::setw(7)
+            << std::setprecision(2) << fmtS(submitToValidate.percentile(0.5f))
+            << std::setw(7) << std::setprecision(2)
+            << fmtS(submitToValidate.percentile(0.9f)) << std::endl;
 
-        log << std::left << std::setw(11) << "Unvalidated" << "|" << std::right
-            << std::setw(7) << unvalidated() << "|" << std::setw(7) << "" << "|"
-            << std::setw(43) << std::endl;
+        log << std::left << std::setw(11) << "Orphan"
+            << "|" << std::right << std::setw(7) << orphaned() << "|"
+            << std::setw(7) << ""
+            << "|" << std::setw(36) << std::endl;
 
-        log << std::setw(11) << std::setfill('-') << "-" << "-" << std::setw(7)
-            << std::setfill('-') << "-" << "-" << std::setw(7)
-            << std::setfill('-') << "-" << "-" << std::setw(36)
-            << std::setfill('-') << "-" << std::endl;
+        log << std::left << std::setw(11) << "Unvalidated"
+            << "|" << std::right << std::setw(7) << unvalidated() << "|"
+            << std::setw(7) << ""
+            << "|" << std::setw(43) << std::endl;
+
+        log << std::setw(11) << std::setfill('-') << "-"
+            << "-" << std::setw(7) << std::setfill('-') << "-"
+            << "-" << std::setw(7) << std::setfill('-') << "-"
+            << "-" << std::setw(36) << std::setfill('-') << "-" << std::endl;
         log << std::setfill(' ');
     }
 
@@ -360,15 +364,34 @@ struct TxCollector
 
         if (printHeaders)
         {
-            log << "tag" << "," << "txNumSubmitted" << "," << "txNumAccepted"
-                << "," << "txNumValidated" << "," << "txNumOrphaned" << ","
-                << "txUnvalidated" << "," << "txRateSumbitted" << ","
-                << "txRateAccepted" << "," << "txRateValidated" << ","
-                << "txLatencySubmitToAccept10Pctl" << ","
-                << "txLatencySubmitToAccept50Pctl" << ","
-                << "txLatencySubmitToAccept90Pctl" << ","
-                << "txLatencySubmitToValidatet10Pctl" << ","
-                << "txLatencySubmitToValidatet50Pctl" << ","
+            log << "tag"
+                << ","
+                << "txNumSubmitted"
+                << ","
+                << "txNumAccepted"
+                << ","
+                << "txNumValidated"
+                << ","
+                << "txNumOrphaned"
+                << ","
+                << "txUnvalidated"
+                << ","
+                << "txRateSumbitted"
+                << ","
+                << "txRateAccepted"
+                << ","
+                << "txRateValidated"
+                << ","
+                << "txLatencySubmitToAccept10Pctl"
+                << ","
+                << "txLatencySubmitToAccept50Pctl"
+                << ","
+                << "txLatencySubmitToAccept90Pctl"
+                << ","
+                << "txLatencySubmitToValidatet10Pctl"
+                << ","
+                << "txLatencySubmitToValidatet50Pctl"
+                << ","
                 << "txLatencySubmitToValidatet90Pctl" << std::endl;
         }
 
@@ -527,50 +550,52 @@ struct LedgerCollector
 
         if (printBreakline)
         {
-            log << std::setw(11) << std::setfill('-') << "-" << "-"
-                << std::setw(7) << std::setfill('-') << "-" << "-"
-                << std::setw(7) << std::setfill('-') << "-" << "-"
-                << std::setw(36) << std::setfill('-') << "-" << std::endl;
+            log << std::setw(11) << std::setfill('-') << "-"
+                << "-" << std::setw(7) << std::setfill('-') << "-"
+                << "-" << std::setw(7) << std::setfill('-') << "-"
+                << "-" << std::setw(36) << std::setfill('-') << "-"
+                << std::endl;
             log << std::setfill(' ');
         }
 
-        log << std::left << std::setw(11) << "LedgerStats" << "|"
-            << std::setw(7) << "Count" << "|" << std::setw(7) << "Per Sec"
+        log << std::left << std::setw(11) << "LedgerStats"
+            << "|" << std::setw(7) << "Count"
+            << "|" << std::setw(7) << "Per Sec"
             << "|" << std::setw(15) << "Latency (sec)" << std::right
             << std::setw(7) << "10-ile" << std::setw(7) << "50-ile"
             << std::setw(7) << "90-ile" << std::left << std::endl;
 
-        log << std::setw(11) << std::setfill('-') << "-" << "|" << std::setw(7)
-            << std::setfill('-') << "-" << "|" << std::setw(7)
-            << std::setfill('-') << "-" << "|" << std::setw(36)
-            << std::setfill('-') << "-" << std::endl;
+        log << std::setw(11) << std::setfill('-') << "-"
+            << "|" << std::setw(7) << std::setfill('-') << "-"
+            << "|" << std::setw(7) << std::setfill('-') << "-"
+            << "|" << std::setw(36) << std::setfill('-') << "-" << std::endl;
         log << std::setfill(' ');
 
-        log << std::left << std::setw(11) << "Accept " << "|" << std::right
-            << std::setw(7) << accepted << "|" << std::setw(7)
-            << std::setprecision(2) << perSec(accepted) << "|" << std::setw(15)
-            << std::left << "From Accept" << std::right << std::setw(7)
-            << std::setprecision(2) << fmtS(acceptToAccept.percentile(0.1f))
+        log << std::left << std::setw(11) << "Accept "
+            << "|" << std::right << std::setw(7) << accepted << "|"
+            << std::setw(7) << std::setprecision(2) << perSec(accepted) << "|"
+            << std::setw(15) << std::left << "From Accept" << std::right
             << std::setw(7) << std::setprecision(2)
-            << fmtS(acceptToAccept.percentile(0.5f)) << std::setw(7)
-            << std::setprecision(2) << fmtS(acceptToAccept.percentile(0.9f))
-            << std::endl;
+            << fmtS(acceptToAccept.percentile(0.1f)) << std::setw(7)
+            << std::setprecision(2) << fmtS(acceptToAccept.percentile(0.5f))
+            << std::setw(7) << std::setprecision(2)
+            << fmtS(acceptToAccept.percentile(0.9f)) << std::endl;
 
-        log << std::left << std::setw(11) << "Validate " << "|" << std::right
-            << std::setw(7) << fullyValidated << "|" << std::setw(7)
-            << std::setprecision(2) << perSec(fullyValidated) << "|"
-            << std::setw(15) << std::left << "From Validate " << std::right
-            << std::setw(7) << std::setprecision(2)
+        log << std::left << std::setw(11) << "Validate "
+            << "|" << std::right << std::setw(7) << fullyValidated << "|"
+            << std::setw(7) << std::setprecision(2) << perSec(fullyValidated)
+            << "|" << std::setw(15) << std::left << "From Validate "
+            << std::right << std::setw(7) << std::setprecision(2)
             << fmtS(fullyValidToFullyValid.percentile(0.1f)) << std::setw(7)
             << std::setprecision(2)
             << fmtS(fullyValidToFullyValid.percentile(0.5f)) << std::setw(7)
             << std::setprecision(2)
             << fmtS(fullyValidToFullyValid.percentile(0.9f)) << std::endl;
 
-        log << std::setw(11) << std::setfill('-') << "-" << "-" << std::setw(7)
-            << std::setfill('-') << "-" << "-" << std::setw(7)
-            << std::setfill('-') << "-" << "-" << std::setw(36)
-            << std::setfill('-') << "-" << std::endl;
+        log << std::setw(11) << std::setfill('-') << "-"
+            << "-" << std::setw(7) << std::setfill('-') << "-"
+            << "-" << std::setw(7) << std::setfill('-') << "-"
+            << "-" << std::setw(36) << std::setfill('-') << "-" << std::endl;
         log << std::setfill(' ');
     }
 
@@ -592,14 +617,26 @@ struct LedgerCollector
 
         if (printHeaders)
         {
-            log << "tag" << "," << "ledgerNumAccepted" << ","
-                << "ledgerNumFullyValidated" << "," << "ledgerRateAccepted"
-                << "," << "ledgerRateFullyValidated" << ","
-                << "ledgerLatencyAcceptToAccept10Pctl" << ","
-                << "ledgerLatencyAcceptToAccept50Pctl" << ","
-                << "ledgerLatencyAcceptToAccept90Pctl" << ","
-                << "ledgerLatencyFullyValidToFullyValid10Pctl" << ","
-                << "ledgerLatencyFullyValidToFullyValid50Pctl" << ","
+            log << "tag"
+                << ","
+                << "ledgerNumAccepted"
+                << ","
+                << "ledgerNumFullyValidated"
+                << ","
+                << "ledgerRateAccepted"
+                << ","
+                << "ledgerRateFullyValidated"
+                << ","
+                << "ledgerLatencyAcceptToAccept10Pctl"
+                << ","
+                << "ledgerLatencyAcceptToAccept50Pctl"
+                << ","
+                << "ledgerLatencyAcceptToAccept90Pctl"
+                << ","
+                << "ledgerLatencyFullyValidToFullyValid10Pctl"
+                << ","
+                << "ledgerLatencyFullyValidToFullyValid50Pctl"
+                << ","
                 << "ledgerLatencyFullyValidToFullyValid90Pctl" << std::endl;
         }
 
@@ -660,16 +697,16 @@ struct StreamCollector
     on(PeerID who, SimTime when, AcceptLedger const& e)
     {
         out << when.time_since_epoch().count() << ": Node " << who
-            << " accepted " << "L" << e.ledger.id() << " " << e.ledger.txs()
-            << "\n";
+            << " accepted "
+            << "L" << e.ledger.id() << " " << e.ledger.txs() << "\n";
     }
 
     void
     on(PeerID who, SimTime when, FullyValidateLedger const& e)
     {
         out << when.time_since_epoch().count() << ": Node " << who
-            << " fully-validated " << "L" << e.ledger.id() << " "
-            << e.ledger.txs() << "\n";
+            << " fully-validated "
+            << "L" << e.ledger.id() << " " << e.ledger.txs() << "\n";
     }
 };
 

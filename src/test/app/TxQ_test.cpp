@@ -382,7 +382,7 @@ public:
         //////////////////////////////////////////////////////////////
 
         constexpr auto largeFeeMultiplier = 700;
-        const auto largeFee = baseFee * largeFeeMultiplier;
+        auto const largeFee = baseFee * largeFeeMultiplier;
 
         // Stuff the ledger and queue so we can verify that
         // stuff gets kicked out.
@@ -878,7 +878,7 @@ public:
         env(noop(alice), json(R"({"LastLedgerSequence":8})"), queued);
 
         constexpr auto largeFeeMultiplier = 700;
-        const auto largeFee = baseFee * largeFeeMultiplier;
+        auto const largeFee = baseFee * largeFeeMultiplier;
 
         // Queue items with higher fees to force the previous
         // txn to wait.
@@ -928,7 +928,7 @@ public:
         BEAST_EXPECT(env.seq(alice) == 3);
 
         constexpr auto anotherLargeFeeMultiplier = 800;
-        const auto anotherLargeFee = baseFee * anotherLargeFeeMultiplier;
+        auto const anotherLargeFee = baseFee * anotherLargeFeeMultiplier;
         // Keep alice's transaction waiting.
         // clang-format off
         env(noop(bob), fee(anotherLargeFee), queued);

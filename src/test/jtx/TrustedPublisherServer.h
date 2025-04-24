@@ -220,8 +220,9 @@ public:
         getList_ = [blob = blob, sig, manifest, version](int interval) {
             // Build the contents of a version 1 format UNL file
             std::stringstream l;
-            l << "{\"blob\":\"" << blob << "\"" << ",\"signature\":\"" << sig
-              << "\"" << ",\"manifest\":\"" << manifest << "\""
+            l << "{\"blob\":\"" << blob << "\""
+              << ",\"signature\":\"" << sig << "\""
+              << ",\"manifest\":\"" << manifest << "\""
               << ",\"refresh_interval\": " << interval
               << ",\"version\":" << version << '}';
             return l.str();
@@ -256,14 +257,15 @@ public:
             std::stringstream l;
             for (auto const& info : blobInfo)
             {
-                l << "{\"blob\":\"" << info.blob << "\"" << ",\"signature\":\""
-                  << info.signature << "\"},";
+                l << "{\"blob\":\"" << info.blob << "\""
+                  << ",\"signature\":\"" << info.signature << "\"},";
             }
             std::string blobs = l.str();
             blobs.pop_back();
             l.str(std::string());
             l << "{\"blobs_v2\": [ " << blobs << "],\"manifest\":\"" << manifest
-              << "\"" << ",\"refresh_interval\": " << interval
+              << "\""
+              << ",\"refresh_interval\": " << interval
               << ",\"version\":" << (version + 1) << '}';
             return l.str();
         };

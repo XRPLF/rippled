@@ -83,7 +83,7 @@ MPTTester::MPTTester(Env& env, Account const& issuer, MPTInit const& arg)
 }
 
 void
-MPTTester::create(const MPTCreate& arg)
+MPTTester::create(MPTCreate const& arg)
 {
     if (id_)
         Throw<std::runtime_error>("MPT can't be reused");
@@ -411,7 +411,7 @@ MPTTester::getFlags(std::optional<Account> const& holder) const
 }
 
 MPT
-MPTTester::operator[](const std::string& name)
+MPTTester::operator[](std::string const& name)
 {
     return MPT(name, issuanceID());
 }

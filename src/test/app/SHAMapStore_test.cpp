@@ -72,7 +72,7 @@ class SHAMapStore_test : public beast::unit_test::suite
             env.app().getRelationalDatabase().getLedgerInfoByIndex(seq);
         if (!oinfo)
             return false;
-        const LedgerInfo& info = oinfo.value();
+        LedgerInfo const& info = oinfo.value();
 
         const std::string outHash = to_string(info.hash);
         const LedgerIndex outSeq = info.seq;
@@ -124,7 +124,7 @@ class SHAMapStore_test : public beast::unit_test::suite
     void
     ledgerCheck(jtx::Env& env, int const rows, int const first)
     {
-        const auto [actualRows, actualFirst, actualLast] =
+        auto const [actualRows, actualFirst, actualLast] =
             dynamic_cast<SQLiteDatabase*>(&env.app().getRelationalDatabase())
                 ->getLedgerCountMinMax();
 

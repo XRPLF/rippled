@@ -49,8 +49,7 @@ struct nonhash
         memcpy(data_.data(), key, len);
     }
 
-    explicit
-    operator std::size_t() noexcept
+    explicit operator std::size_t() noexcept
     {
         return WIDTH;
     }

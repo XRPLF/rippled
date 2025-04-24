@@ -45,7 +45,7 @@ Overload(Ts...) -> Overload<Ts...>;
 struct MultiApiJson_test : beast::unit_test::suite
 {
     static auto
-    makeJson(const char* key, int val)
+    makeJson(char const* key, int val)
     {
         Json::Value obj1(Json::objectValue);
         obj1[key] = val;
@@ -80,7 +80,7 @@ struct MultiApiJson_test : beast::unit_test::suite
             testcase("forApiVersions, forAllApiVersions");
 
             // Some static data for test inputs
-            static const int primes[] = {2,  3,  5,  7,  11, 13, 17, 19, 23,
+            static int const primes[] = {2,  3,  5,  7,  11, 13, 17, 19, 23,
                                          29, 31, 37, 41, 43, 47, 53, 59, 61,
                                          67, 71, 73, 79, 83, 89, 97};
             static_assert(std::size(primes) > RPC::apiMaximumValidVersion);
@@ -166,114 +166,115 @@ struct MultiApiJson_test : beast::unit_test::suite
             // Several overloads we want to fail
             static_assert([](auto&& v) {
                 return !requires {
-                    forAllApiVersions(
-                        std::forward<decltype(v)>(v).visit(),  //
-                        [](Json::Value&, auto) {});            // missing const
-                };
+                            forAllApiVersions(
+                                std::forward<decltype(v)>(v).visit(),  //
+                                [](Json::Value&, auto) {});  // missing const
+                        };
             }(std::as_const(s1)));
             static_assert([](auto&& v) {
                 return !requires {
-                    forAllApiVersions(
-                        std::forward<decltype(v)>(v).visit(),  //
-                        [](Json::Value&) {});                  // missing const
-                };
+                            forAllApiVersions(
+                                std::forward<decltype(v)>(v).visit(),  //
+                                [](Json::Value&) {});  // missing const
+                        };
             }(std::as_const(s1)));
             static_assert([](auto&& v) {
                 return !requires {
-                    forAllApiVersions(
-                        std::forward<decltype(v)>(v).visit(),  //
-                        []() {});  // missing parameters
-                };
+                            forAllApiVersions(
+                                std::forward<decltype(v)>(v).visit(),  //
+                                []() {});  // missing parameters
+                        };
             }(std::as_const(s1)));
             static_assert([](auto&& v) {
                 return !requires {
-                    forAllApiVersions(
-                        std::forward<decltype(v)>(v).visit(),  //
-                        [](auto) {},
-                        1);  // missing parameters
-                };
+                            forAllApiVersions(
+                                std::forward<decltype(v)>(v).visit(),  //
+                                [](auto) {},
+                                1);  // missing parameters
+                        };
             }(std::as_const(s1)));
             static_assert([](auto&& v) {
                 return !requires {
-                    forAllApiVersions(
-                        std::forward<decltype(v)>(v).visit(),  //
-                        [](auto, auto) {},
-                        1);  // missing parameters
-                };
+                            forAllApiVersions(
+                                std::forward<decltype(v)>(v).visit(),  //
+                                [](auto, auto) {},
+                                1);  // missing parameters
+                        };
             }(std::as_const(s1)));
             static_assert([](auto&& v) {
                 return !requires {
-                    forAllApiVersions(
-                        std::forward<decltype(v)>(v).visit(),  //
-                        [](auto, auto, const char*) {},
-                        1);  // parameter type mismatch
-                };
+                            forAllApiVersions(
+                                std::forward<decltype(v)>(v).visit(),  //
+                                [](auto, auto, const char*) {},
+                                1);  // parameter type mismatch
+                        };
             }(std::as_const(s1)));
 
             // Sanity checks
             static_assert([](auto&& v) {
                 return requires {
-                    forAllApiVersions(
-                        std::forward<decltype(v)>(v).visit(),  //
-                        [](auto) {});
-                };
+                           forAllApiVersions(
+                               std::forward<decltype(v)>(v).visit(),  //
+                               [](auto) {});
+                       };
             }(s1));
             static_assert([](auto&& v) {
                 return requires {
-                    forAllApiVersions(
-                        std::forward<decltype(v)>(v).visit(),  //
-                        [](Json::Value const&) {});
-                };
+                           forAllApiVersions(
+                               std::forward<decltype(v)>(v).visit(),  //
+                               [](Json::Value const&) {});
+                       };
             }(std::as_const(s1)));
             static_assert([](auto&& v) {
                 return requires {
-                    forAllApiVersions(
-                        std::forward<decltype(v)>(v).visit(),  //
-                        [](auto...) {});
-                };
+                           forAllApiVersions(
+                               std::forward<decltype(v)>(v).visit(),  //
+                               [](auto...) {});
+                       };
             }(s1));
             static_assert([](auto&& v) {
                 return requires {
-                    forAllApiVersions(
-                        std::forward<decltype(v)>(v).visit(),  //
-                        [](Json::Value const&, auto...) {});
-                };
+                           forAllApiVersions(
+                               std::forward<decltype(v)>(v).visit(),  //
+                               [](Json::Value const&, auto...) {});
+                       };
             }(std::as_const(s1)));
             static_assert([](auto&& v) {
                 return requires {
-                    forAllApiVersions(
-                        std::forward<decltype(v)>(v).visit(),  //
-                        [](Json::Value&, auto, auto, auto...) {},
-                        0,
-                        "");
-                };
+                           forAllApiVersions(
+                               std::forward<decltype(v)>(v).visit(),  //
+                               [](Json::Value&, auto, auto, auto...) {},
+                               0,
+                               "");
+                       };
             }(s1));
             static_assert([](auto&& v) {
                 return requires {
-                    forAllApiVersions(
-                        std::forward<decltype(v)>(v).visit(),  //
-                        []<unsigned int Version>(
-                            Json::Value const&,
-                            std::integral_constant<unsigned int, Version>,
-                            int,
-                            const char*) {},
-                        0,
-                        "");
-                };
+                           forAllApiVersions(
+                               std::forward<decltype(v)>(v).visit(),  //
+                               []<unsigned int Version>(
+                                   Json::Value const&,
+                                   std::
+                                       integral_constant<unsigned int, Version>,
+                                   int,
+                                   const char*) {},
+                               0,
+                               "");
+                       };
             }(std::as_const(s1)));
             static_assert([](auto&& v) {
                 return requires {
-                    forAllApiVersions(
-                        std::forward<decltype(v)>(v).visit(),  //
-                        [](auto...) {});
-                };
+                           forAllApiVersions(
+                               std::forward<decltype(v)>(v).visit(),  //
+                               [](auto...) {});
+                       };
             }(std::move(s1)));
             static_assert([](auto&& v) {
                 return requires {
-                    forAllApiVersions(
-                        std::forward<decltype(v)>(v).visit(),  //
-                        [](auto...) {});
-                };
+                           forAllApiVersions(
+                               std::forward<decltype(v)>(v).visit(),  //
+                               [](auto...) {});
+                       };
             }(std::move(std::as_const(s1))));
         }
 
@@ -403,12 +404,12 @@ struct MultiApiJson_test : beast::unit_test::suite
             // Test different overloads
             static_assert([](auto&& v) {
                 return requires {
-                    v.visitor(
-                        v,
-                        std::integral_constant<unsigned, 1>{},
-                        [](Json::Value&, std::integral_constant<unsigned, 1>) {
-                        });
-                };
+                           v.visitor(
+                               v,
+                               std::integral_constant<unsigned, 1>{},
+                               [](Json::Value&,
+                                  std::integral_constant<unsigned, 1>) {});
+                       };
             }(s1));
             BEAST_EXPECT(
                 s1.visitor(
@@ -424,11 +425,11 @@ struct MultiApiJson_test : beast::unit_test::suite
 
             static_assert([](auto&& v) {
                 return requires {
-                    v.visitor(
-                        v,
-                        std::integral_constant<unsigned, 1>{},
-                        [](Json::Value&) {});
-                };
+                           v.visitor(
+                               v,
+                               std::integral_constant<unsigned, 1>{},
+                               [](Json::Value&) {});
+                       };
             }(s1));
             BEAST_EXPECT(
                 s1.visitor(
@@ -441,12 +442,12 @@ struct MultiApiJson_test : beast::unit_test::suite
 
             static_assert([](auto&& v) {
                 return requires {
-                    v.visitor(
-                        v,
-                        std::integral_constant<unsigned, 1>{},
-                        [](Json::Value const&,
-                           std::integral_constant<unsigned, 1>) {});
-                };
+                           v.visitor(
+                               v,
+                               std::integral_constant<unsigned, 1>{},
+                               [](Json::Value const&,
+                                  std::integral_constant<unsigned, 1>) {});
+                       };
             }(std::as_const(s1)));
             BEAST_EXPECT(
                 s1.visitor(
@@ -462,11 +463,11 @@ struct MultiApiJson_test : beast::unit_test::suite
 
             static_assert([](auto&& v) {
                 return requires {
-                    v.visitor(
-                        v,
-                        std::integral_constant<unsigned, 1>{},
-                        [](Json::Value const&) {});
-                };
+                           v.visitor(
+                               v,
+                               std::integral_constant<unsigned, 1>{},
+                               [](Json::Value const&) {});
+                       };
             }(std::as_const(s1)));
             BEAST_EXPECT(
                 s1.visitor(
@@ -479,8 +480,8 @@ struct MultiApiJson_test : beast::unit_test::suite
 
             static_assert([](auto&& v) {
                 return requires {
-                    v.visitor(v, 1, [](Json::Value&, unsigned) {});
-                };
+                           v.visitor(v, 1, [](Json::Value&, unsigned) {});
+                       };
             }(s1));
             BEAST_EXPECT(
                 s1.visitor(
@@ -507,8 +508,8 @@ struct MultiApiJson_test : beast::unit_test::suite
 
             static_assert([](auto&& v) {
                 return requires {
-                    v.visitor(v, 1, [](Json::Value const&, unsigned) {});
-                };
+                           v.visitor(v, 1, [](Json::Value const&, unsigned) {});
+                       };
             }(std::as_const(s1)));
             BEAST_EXPECT(
                 s1.visitor(
@@ -626,38 +627,39 @@ struct MultiApiJson_test : beast::unit_test::suite
             // Several overloads we want to fail
             static_assert([](auto&& v) {
                 return !requires {
-                    v.visitor(
-                        v,
-                        1,                           //
-                        [](Json::Value&, auto) {});  // missing const
-                };
+                            v.visitor(
+                                v,
+                                1,                           //
+                                [](Json::Value&, auto) {});  // missing const
+                        };
             }(std::as_const(s1)));
 
             static_assert([](auto&& v) {
                 return !requires {
-                    v.visitor(
-                        std::move(v),  // cannot bind rvalue
-                        1,
-                        [](Json::Value&, auto) {});
-                };
+                            v.visitor(
+                                std::move(v),  // cannot bind rvalue
+                                1,
+                                [](Json::Value&, auto) {});
+                        };
             }(s1));
 
             static_assert([](auto&& v) {
                 return !requires {
-                    v.visitor(
-                        v,
-                        1,         //
-                        []() {});  // missing parameter
-                };
+                            v.visitor(
+                                v,
+                                1,         //
+                                []() {});  // missing parameter
+                        };
             }(s1));
 
             static_assert([](auto&& v) {
                 return !requires {
-                    v.visitor(
-                        v,
-                        1,                               //
-                        [](Json::Value&, int, int) {});  // too many parameters
-                };
+                            v.visitor(
+                                v,
+                                1,  //
+                                [](Json::Value&, int, int) {
+                                });  // too many parameters
+                        };
             }(s1));
 
             // Want these to be unambiguous
@@ -671,8 +673,8 @@ struct MultiApiJson_test : beast::unit_test::suite
 
             static_assert([](auto&& v) {
                 return requires {
-                    v.visitor(v, 1, [](Json::Value&, auto...) {});
-                };
+                           v.visitor(v, 1, [](Json::Value&, auto...) {});
+                       };
             }(s1));
 
             static_assert([](auto&& v) {
@@ -681,8 +683,8 @@ struct MultiApiJson_test : beast::unit_test::suite
 
             static_assert([](auto&& v) {
                 return requires {
-                    v.visitor(v, 1, [](Json::Value const&, auto...) {});
-                };
+                           v.visitor(v, 1, [](Json::Value const&, auto...) {});
+                       };
             }(s1));
 
             static_assert([](auto&& v) {
@@ -695,20 +697,22 @@ struct MultiApiJson_test : beast::unit_test::suite
 
             static_assert([](auto&& v) {
                 return requires {
-                    v.visitor(v, 1, [](auto, auto, auto...) {});
-                };
+                           v.visitor(v, 1, [](auto, auto, auto...) {});
+                       };
             }(s1));
 
             static_assert([](auto&& v) {
                 return requires {
-                    v.visitor(v, 1, [](auto, auto, auto...) {}, "");
-                };
+                           v.visitor(
+                               v, 1, [](auto, auto, auto...) {}, "");
+                       };
             }(s1));
 
             static_assert([](auto&& v) {
                 return requires {
-                    v.visitor(v, 1, [](auto, auto, auto, auto...) {}, "");
-                };
+                           v.visitor(
+                               v, 1, [](auto, auto, auto, auto...) {}, "");
+                       };
             }(s1));
         }
 
@@ -723,11 +727,11 @@ struct MultiApiJson_test : beast::unit_test::suite
             // Test different overloads
             static_assert([](auto&& v) {
                 return requires {
-                    v.visit(
-                        std::integral_constant<unsigned, 1>{},
-                        [](Json::Value&, std::integral_constant<unsigned, 1>) {
-                        });
-                };
+                           v.visit(
+                               std::integral_constant<unsigned, 1>{},
+                               [](Json::Value&,
+                                  std::integral_constant<unsigned, 1>) {});
+                       };
             }(s1));
             BEAST_EXPECT(
                 s1.visit(
@@ -741,11 +745,11 @@ struct MultiApiJson_test : beast::unit_test::suite
                         [](auto, auto) { return 0; }}) == 2);
             static_assert([](auto&& v) {
                 return requires {
-                    v.visit()(
-                        std::integral_constant<unsigned, 1>{},
-                        [](Json::Value&, std::integral_constant<unsigned, 1>) {
-                        });
-                };
+                           v.visit()(
+                               std::integral_constant<unsigned, 1>{},
+                               [](Json::Value&,
+                                  std::integral_constant<unsigned, 1>) {});
+                       };
             }(s1));
             BEAST_EXPECT(
                 s1.visit()(
@@ -760,10 +764,10 @@ struct MultiApiJson_test : beast::unit_test::suite
 
             static_assert([](auto&& v) {
                 return requires {
-                    v.visit(
-                        std::integral_constant<unsigned, 1>{},
-                        [](Json::Value&) {});
-                };
+                           v.visit(
+                               std::integral_constant<unsigned, 1>{},
+                               [](Json::Value&) {});
+                       };
             }(s1));
             BEAST_EXPECT(
                 s1.visit(
@@ -774,10 +778,10 @@ struct MultiApiJson_test : beast::unit_test::suite
                         [](auto...) { return 0; }}) == 2);
             static_assert([](auto&& v) {
                 return requires {
-                    v.visit()(
-                        std::integral_constant<unsigned, 1>{},
-                        [](Json::Value&) {});
-                };
+                           v.visit()(
+                               std::integral_constant<unsigned, 1>{},
+                               [](Json::Value&) {});
+                       };
             }(s1));
             BEAST_EXPECT(
                 s1.visit()(
@@ -789,11 +793,11 @@ struct MultiApiJson_test : beast::unit_test::suite
 
             static_assert([](auto&& v) {
                 return requires {
-                    v.visit(
-                        std::integral_constant<unsigned, 1>{},
-                        [](Json::Value const&,
-                           std::integral_constant<unsigned, 1>) {});
-                };
+                           v.visit(
+                               std::integral_constant<unsigned, 1>{},
+                               [](Json::Value const&,
+                                  std::integral_constant<unsigned, 1>) {});
+                       };
             }(std::as_const(s1)));
             BEAST_EXPECT(
                 std::as_const(s1).visit(
@@ -807,11 +811,11 @@ struct MultiApiJson_test : beast::unit_test::suite
                         [](auto, auto) { return 0; }}) == 3);
             static_assert([](auto&& v) {
                 return requires {
-                    v.visit()(
-                        std::integral_constant<unsigned, 1>{},
-                        [](Json::Value const&,
-                           std::integral_constant<unsigned, 1>) {});
-                };
+                           v.visit()(
+                               std::integral_constant<unsigned, 1>{},
+                               [](Json::Value const&,
+                                  std::integral_constant<unsigned, 1>) {});
+                       };
             }(std::as_const(s1)));
             BEAST_EXPECT(
                 std::as_const(s1).visit()(
@@ -826,10 +830,10 @@ struct MultiApiJson_test : beast::unit_test::suite
 
             static_assert([](auto&& v) {
                 return requires {
-                    v.visit(
-                        std::integral_constant<unsigned, 1>{},
-                        [](Json::Value const&) {});
-                };
+                           v.visit(
+                               std::integral_constant<unsigned, 1>{},
+                               [](Json::Value const&) {});
+                       };
             }(std::as_const(s1)));
             BEAST_EXPECT(
                 std::as_const(s1).visit(
@@ -840,10 +844,10 @@ struct MultiApiJson_test : beast::unit_test::suite
                         [](auto...) { return 0; }}) == 3);
             static_assert([](auto&& v) {
                 return requires {
-                    v.visit()(
-                        std::integral_constant<unsigned, 1>{},
-                        [](Json::Value const&) {});
-                };
+                           v.visit()(
+                               std::integral_constant<unsigned, 1>{},
+                               [](Json::Value const&) {});
+                       };
             }(std::as_const(s1)));
             BEAST_EXPECT(
                 std::as_const(s1).visit()(
@@ -868,8 +872,8 @@ struct MultiApiJson_test : beast::unit_test::suite
                         [](auto, auto) { return 0; }}) == 5);
             static_assert([](auto&& v) {
                 return requires {
-                    v.visit()(1, [](Json::Value&, unsigned) {});
-                };
+                           v.visit()(1, [](Json::Value&, unsigned) {});
+                       };
             }(s1));
             BEAST_EXPECT(
                 s1.visit()(
@@ -905,8 +909,8 @@ struct MultiApiJson_test : beast::unit_test::suite
 
             static_assert([](auto&& v) {
                 return requires {
-                    v.visit(1, [](Json::Value const&, unsigned) {});
-                };
+                           v.visit(1, [](Json::Value const&, unsigned) {});
+                       };
             }(std::as_const(s1)));
             BEAST_EXPECT(
                 std::as_const(s1).visit(
@@ -920,8 +924,8 @@ struct MultiApiJson_test : beast::unit_test::suite
                         [](auto, auto) { return 0; }}) == 3);
             static_assert([](auto&& v) {
                 return requires {
-                    v.visit()(1, [](Json::Value const&, unsigned) {});
-                };
+                           v.visit()(1, [](Json::Value const&, unsigned) {});
+                       };
             }(std::as_const(s1)));
             BEAST_EXPECT(
                 std::as_const(s1).visit()(
@@ -958,111 +962,115 @@ struct MultiApiJson_test : beast::unit_test::suite
             // Rvalue MultivarJson visitor only binds to regular reference
             static_assert([](auto&& v) {
                 return !requires {
-                    std::forward<decltype(v)>(v).visit(1, [](Json::Value&&) {});
-                };
+                            std::forward<decltype(v)>(v).visit(
+                                1, [](Json::Value&&) {});
+                        };
             }(std::move(s1)));
             static_assert([](auto&& v) {
                 return !requires {
-                    std::forward<decltype(v)>(v).visit(
-                        1, [](Json::Value const&&) {});
-                };
+                            std::forward<decltype(v)>(v).visit(
+                                1, [](Json::Value const&&) {});
+                        };
             }(std::move(s1)));
             static_assert([](auto&& v) {
                 return requires {
-                    std::forward<decltype(v)>(v).visit(1, [](Json::Value&) {});
-                };
+                           std::forward<decltype(v)>(v).visit(
+                               1, [](Json::Value&) {});
+                       };
             }(std::move(s1)));
             static_assert([](auto&& v) {
                 return requires {
-                    std::forward<decltype(v)>(v).visit(
-                        1, [](Json::Value const&) {});
-                };
+                           std::forward<decltype(v)>(v).visit(
+                               1, [](Json::Value const&) {});
+                       };
             }(std::move(s1)));
             static_assert([](auto&& v) {
                 return !requires {
-                    std::forward<decltype(v)>(v).visit()(
-                        1, [](Json::Value&&) {});
-                };
+                            std::forward<decltype(v)>(v).visit()(
+                                1, [](Json::Value&&) {});
+                        };
             }(std::move(s1)));
             static_assert([](auto&& v) {
                 return !requires {
-                    std::forward<decltype(v)>(v).visit()(
-                        1, [](Json::Value const&&) {});
-                };
+                            std::forward<decltype(v)>(v).visit()(
+                                1, [](Json::Value const&&) {});
+                        };
             }(std::move(s1)));
             static_assert([](auto&& v) {
                 return requires {
-                    std::forward<decltype(v)>(v).visit()(
-                        1, [](Json::Value&) {});
-                };
+                           std::forward<decltype(v)>(v).visit()(
+                               1, [](Json::Value&) {});
+                       };
             }(std::move(s1)));
             static_assert([](auto&& v) {
                 return requires {
-                    std::forward<decltype(v)>(v).visit()(
-                        1, [](Json::Value const&) {});
-                };
+                           std::forward<decltype(v)>(v).visit()(
+                               1, [](Json::Value const&) {});
+                       };
             }(std::move(s1)));
             static_assert([](auto&& v) {
                 return !requires {
-                    std::forward<decltype(v)>(v).visit(
-                        1, [](Json::Value const&&) {});
-                };
+                            std::forward<decltype(v)>(v).visit(
+                                1, [](Json::Value const&&) {});
+                        };
             }(std::move(std::as_const(s1))));
             static_assert([](auto&& v) {
                 return requires {
-                    std::forward<decltype(v)>(v).visit(
-                        1, [](Json::Value const&) {});
-                };
+                           std::forward<decltype(v)>(v).visit(
+                               1, [](Json::Value const&) {});
+                       };
             }(std::move(std::as_const(s1))));
             static_assert([](auto&& v) {
                 return !requires {
-                    std::forward<decltype(v)>(v).visit()(
-                        1, [](Json::Value const&&) {});
-                };
+                            std::forward<decltype(v)>(v).visit()(
+                                1, [](Json::Value const&&) {});
+                        };
             }(std::move(std::as_const(s1))));
             static_assert([](auto&& v) {
                 return requires {
-                    std::forward<decltype(v)>(v).visit()(
-                        1, [](Json::Value const&) {});
-                };
+                           std::forward<decltype(v)>(v).visit()(
+                               1, [](Json::Value const&) {});
+                       };
             }(std::move(std::as_const(s1))));
 
             // Missing const
             static_assert([](auto&& v) {
                 return !requires {
-                    std::forward<decltype(v)>(v).visit(
-                        1, [](Json::Value&, auto) {});
-                };
+                            std::forward<decltype(v)>(v).visit(
+                                1, [](Json::Value&, auto) {});
+                        };
             }(std::as_const(s1)));
             static_assert([](auto&& v) {
                 return !requires {
-                    std::forward<decltype(v)>(v).visit()(
-                        1, [](Json::Value&, auto) {});
-                };
+                            std::forward<decltype(v)>(v).visit()(
+                                1, [](Json::Value&, auto) {});
+                        };
             }(std::as_const(s1)));
 
             // Missing parameter
             static_assert([](auto&& v) {
                 return !requires {
-                    std::forward<decltype(v)>(v).visit(1, []() {});
-                };
+                            std::forward<decltype(v)>(v).visit(1, []() {});
+                        };
             }(s1));
             static_assert([](auto&& v) {
                 return !requires {
-                    std::forward<decltype(v)>(v).visit()(1, []() {});
-                };
+                            std::forward<decltype(v)>(v).visit()(1, []() {});
+                        };
             }(s1));
 
             // Sanity checks
             static_assert([](auto&& v) {
                 return requires {
-                    std::forward<decltype(v)>(v).visit(1, [](auto...) {});
-                };
+                           std::forward<decltype(v)>(v).visit(
+                               1, [](auto...) {});
+                       };
             }(std::as_const(s1)));
             static_assert([](auto&& v) {
                 return requires {
-                    std::forward<decltype(v)>(v).visit()(1, [](auto...) {});
-                };
+                           std::forward<decltype(v)>(v).visit()(
+                               1, [](auto...) {});
+                       };
             }(std::as_const(s1)));
         }
     }

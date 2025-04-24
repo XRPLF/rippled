@@ -339,7 +339,7 @@ public:
 
         using namespace jtx;
 
-        const char credType[] = "abcde";
+        char const credType[] = "abcde";
 
         Account const alice{"alice"};
         Account const becky{"becky"};
@@ -571,7 +571,7 @@ public:
             testcase("deposit_authorized with expired credentials");
 
             // check expired credentials
-            const char credType2[] = "fghijk";
+            char const credType2[] = "fghijk";
             std::uint32_t const x = env.current()
                                         ->info()
                                         .parentCloseTime.time_since_epoch()

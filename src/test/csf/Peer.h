@@ -553,7 +553,7 @@ struct Peer
         ConsensusCloseTimes const& rawCloseTimes,
         ConsensusMode const& mode,
         Json::Value&& consensusJson,
-        const bool validating)
+        bool const validating)
     {
         schedule(delays.ledgerAccept, [=, this]() {
             const bool proposing = mode == ConsensusMode::proposing;
