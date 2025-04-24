@@ -1075,9 +1075,9 @@ accountTxPage(
     else
     {
         char const* const compare = forward ? ">=" : "<=";
-        const std::uint32_t minLedger =
+        std::uint32_t const minLedger =
             forward ? findLedger + 1 : options.minLedger;
-        const std::uint32_t maxLedger =
+        std::uint32_t const maxLedger =
             forward ? options.maxLedger : findLedger - 1;
 
         auto b58acct = toBase58(options.account);

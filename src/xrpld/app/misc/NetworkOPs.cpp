@@ -1087,7 +1087,7 @@ NetworkOPsImp::processHeartbeatTimer()
     mConsensus.timerEntry(app_.timeKeeper().closeTime(), clog.ss());
 
     CLOG(clog.ss()) << "consensus phase " << to_string(mLastConsensusPhase);
-    const ConsensusPhase currPhase = mConsensus.phase();
+    ConsensusPhase const currPhase = mConsensus.phase();
     if (mLastConsensusPhase != currPhase)
     {
         reportConsensusStateChange(currPhase);
@@ -1914,7 +1914,7 @@ NetworkOPsImp::beginConsensus(
         changes.added,
         clog);
 
-    const ConsensusPhase currPhase = mConsensus.phase();
+    ConsensusPhase const currPhase = mConsensus.phase();
     if (mLastConsensusPhase != currPhase)
     {
         reportConsensusStateChange(currPhase);
@@ -2419,8 +2419,7 @@ NetworkOPsImp::recvValidation(
 
     pubValidation(val);
 
-    JLOG(m_journal.debug()) << [ this, &val ]() -> auto
-    {
+    JLOG(m_journal.debug()) << [this, &val]() -> auto {
         std::stringstream ss;
         ss << "VALIDATION: " << val->render() << " master_key: ";
         auto master = app_.validators().getTrustedKey(val->getSignerPublic());
@@ -2433,8 +2432,7 @@ NetworkOPsImp::recvValidation(
             ss << "none";
         }
         return ss.str();
-    }
-    ();
+    }();
 
     // We will always relay trusted validations; if configured, we will
     // also relay all untrusted validations.
@@ -3572,7 +3570,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
 
                     if (node.isFieldPresent(sfNewFields))
                     {
-                        if (auto inner = dynamic_cast<const STObject*>(
+                        if (auto inner = dynamic_cast<STObject const*>(
                                 node.peekAtPField(sfNewFields));
                             inner)
                         {
@@ -4245,8 +4243,8 @@ NetworkOPsImp::getBookPage(
         (jvResult[jss::offers] = Json::Value(Json::arrayValue));
 
     std::unordered_map<AccountID, STAmount> umBalance;
-    const uint256 uBookBase = getBookBase(book);
-    const uint256 uBookEnd = getQualityNext(uBookBase);
+    uint256 const uBookBase = getBookBase(book);
+    uint256 const uBookEnd = getQualityNext(uBookBase);
     uint256 uTipIndex = uBookBase;
 
     if (auto stream = m_journal.trace())
