@@ -96,7 +96,7 @@ static const std::uint64_t tenTo17 = tenTo14 * 1000;
 
 //------------------------------------------------------------------------------
 static std::int64_t
-getInt64Value(STAmount const& amount, bool valid, const char* error)
+getInt64Value(STAmount const& amount, bool valid, char const* error)
 {
     if (!valid)
         Throw<std::runtime_error>(error);
@@ -680,9 +680,9 @@ STAmount::add(Serializer& s) const
 }
 
 bool
-STAmount::isEquivalent(const STBase& t) const
+STAmount::isEquivalent(STBase const& t) const
 {
-    const STAmount* v = dynamic_cast<const STAmount*>(&t);
+    STAmount const* v = dynamic_cast<STAmount const*>(&t);
     return v && (*v == *this);
 }
 
@@ -1065,7 +1065,7 @@ amountFromJsonNoThrow(STAmount& result, Json::Value const& jvSource)
         result = amountFromJson(sfGeneric, jvSource);
         return true;
     }
-    catch (const std::exception& e)
+    catch (std::exception const& e)
     {
         JLOG(debugLog().warn())
             << "amountFromJsonNoThrow: caught: " << e.what();
