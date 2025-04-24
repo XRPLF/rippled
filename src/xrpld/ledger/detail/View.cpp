@@ -2261,6 +2261,8 @@ rippleUnlockEscrowMPT(
         view.update(sle);
     }
     return tesSUCCESS;
+}
+
 bool
 after(NetClock::time_point now, std::uint32_t mark)
 {
