@@ -1059,7 +1059,7 @@ accountTxPage(
 
     // SQL's BETWEEN uses a closed interval ([a,b])
 
-    const char* const order = forward ? "ASC" : "DESC";
+    char const* const order = forward ? "ASC" : "DESC";
 
     if (findLedger == 0)
     {
@@ -1074,7 +1074,7 @@ accountTxPage(
     }
     else
     {
-        const char* const compare = forward ? ">=" : "<=";
+        char const* const compare = forward ? ">=" : "<=";
         const std::uint32_t minLedger =
             forward ? findLedger + 1 : options.minLedger;
         const std::uint32_t maxLedger =
