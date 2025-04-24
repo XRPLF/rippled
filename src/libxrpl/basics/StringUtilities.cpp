@@ -89,13 +89,13 @@ parseUrl(parsedURL& pUrl, std::string const& strUrl)
     boost::algorithm::to_lower(pUrl.scheme);
     pUrl.username = smMatch[2];
     pUrl.password = smMatch[3];
-    const std::string domain = smMatch[4];
+    std::string const domain = smMatch[4];
     // We need to use Endpoint to parse the domain to
     // strip surrounding brackets from IPv6 addresses,
     // e.g. [::1] => ::1.
     auto const result = beast::IP::Endpoint::from_string_checked(domain);
     pUrl.domain = result ? result->address().to_string() : domain;
-    const std::string port = smMatch[5];
+    std::string const port = smMatch[5];
     if (!port.empty())
     {
         pUrl.port = beast::lexicalCast<std::uint16_t>(port);

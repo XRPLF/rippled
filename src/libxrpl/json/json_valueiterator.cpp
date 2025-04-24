@@ -108,7 +108,7 @@ ValueIteratorBase::copy(SelfType const& other)
 Value
 ValueIteratorBase::key() const
 {
-    const Value::CZString czstring = (*current_).first;
+    Value::CZString const czstring = (*current_).first;
 
     if (czstring.c_str())
     {
@@ -124,7 +124,7 @@ ValueIteratorBase::key() const
 UInt
 ValueIteratorBase::index() const
 {
-    const Value::CZString czstring = (*current_).first;
+    Value::CZString const czstring = (*current_).first;
 
     if (!czstring.c_str())
         return czstring.index();

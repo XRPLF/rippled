@@ -469,7 +469,7 @@ Number::operator/=(Number const& y)
     }
     // Shift by 10^17 gives greatest precision while not overflowing uint128_t
     // or the cast back to int64_t
-    const uint128_t f = 100'000'000'000'000'000;
+    uint128_t const f = 100'000'000'000'000'000;
     mantissa_ = static_cast<std::int64_t>(uint128_t(nm) * f / uint128_t(dm));
     exponent_ = ne - de - 17;
     mantissa_ *= np * dp;

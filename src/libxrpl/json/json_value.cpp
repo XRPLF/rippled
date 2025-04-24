@@ -31,10 +31,10 @@
 
 namespace Json {
 
-const Value Value::null;
-const Int Value::minInt = Int(~(UInt(-1) / 2));
-const Int Value::maxInt = Int(UInt(-1) / 2);
-const UInt Value::maxUInt = UInt(-1);
+Value const Value::null;
+Int const Value::minInt = Int(~(UInt(-1) / 2));
+Int const Value::maxInt = Int(UInt(-1) / 2);
+UInt const Value::maxUInt = UInt(-1);
 
 class DefaultValueAllocator : public ValueAllocator
 {
