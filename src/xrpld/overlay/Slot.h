@@ -157,7 +157,7 @@ private:
     deletePeer(PublicKey const& validator, id_t id, bool erase);
 
     /** Get the time of the last peer selection round */
-    const time_point&
+    time_point const&
     getLastSelected() const
     {
         return lastSelected_;
