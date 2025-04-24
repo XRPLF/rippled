@@ -203,11 +203,11 @@ struct MultiApiJson_test : beast::unit_test::suite
             }(std::as_const(s1)));
             static_assert([](auto&& v) {
                 return !requires {
-                            forAllApiVersions(
-                                std::forward<decltype(v)>(v).visit(),  //
-                                [](auto, auto, char const*) {},
-                                1);  // parameter type mismatch
-                        };
+                    forAllApiVersions(
+                        std::forward<decltype(v)>(v).visit(),  //
+                        [](auto, auto, char const*) {},
+                        1);  // parameter type mismatch
+                };
             }(std::as_const(s1)));
 
             // Sanity checks
@@ -250,17 +250,16 @@ struct MultiApiJson_test : beast::unit_test::suite
             }(s1));
             static_assert([](auto&& v) {
                 return requires {
-                           forAllApiVersions(
-                               std::forward<decltype(v)>(v).visit(),  //
-                               []<unsigned int Version>(
-                                   Json::Value const&,
-                                   std::
-                                       integral_constant<unsigned int, Version>,
-                                   int,
-                                   char const*) {},
-                               0,
-                               "");
-                       };
+                    forAllApiVersions(
+                        std::forward<decltype(v)>(v).visit(),  //
+                        []<unsigned int Version>(
+                            Json::Value const&,
+                            std::integral_constant<unsigned int, Version>,
+                            int,
+                            char const*) {},
+                        0,
+                        "");
+                };
             }(std::as_const(s1)));
             static_assert([](auto&& v) {
                 return requires {
