@@ -190,7 +190,7 @@ parseInteger(Slice& s, std::size_t count, std::error_code& ec)
 
     bool const isSigned = std::numeric_limits<Integer>::is_signed;
     // unsigned types may have a leading zero octet
-    const size_t maxLength = isSigned ? sizeof(Integer) : sizeof(Integer) + 1;
+    size_t const maxLength = isSigned ? sizeof(Integer) : sizeof(Integer) + 1;
     if (count > maxLength)
     {
         ec = error::large_size;
