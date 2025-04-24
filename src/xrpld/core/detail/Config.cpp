@@ -158,7 +158,7 @@ static_assert(
 #define SECTION_DEFAULT_NAME ""
 
 IniFileSections
-parseIniFile(std::string const& strInput, const bool bTrim)
+parseIniFile(std::string const& strInput, bool const bTrim)
 {
     std::string strData(strInput);
     std::vector<std::string> vLines;

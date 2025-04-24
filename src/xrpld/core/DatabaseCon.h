@@ -75,8 +75,7 @@ public:
     {
         return session_.get();
     }
-    explicit
-    operator bool() const
+    explicit operator bool() const
     {
         return bool(session_);
     }
