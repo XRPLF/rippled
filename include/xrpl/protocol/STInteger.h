@@ -37,7 +37,7 @@ private:
 
 public:
     explicit STInteger(Integer v);
-    STInteger(SField const& n, Integer v = 0);
+    STInteger(SField const& n, Integer v = {});
     STInteger(SerialIter& sit, SField const& name);
 
     SerializedTypeID
@@ -82,42 +82,9 @@ using STUInt16 = STInteger<std::uint16_t>;
 using STUInt32 = STInteger<std::uint32_t>;
 using STUInt64 = STInteger<std::uint64_t>;
 
-template <class TypedInteger>
-class STTypedInteger : public STInteger<typename TypedInteger::value_type>,
-                       public CountedObject<STTypedInteger<TypedInteger>>
-{
-public:
-    using value_type = TypedInteger;
-    using base_value_type = TypedInteger::value_type;
-    using base = STInteger<base_value_type>;
-
-public:
-    using base::add;
-    using base::getJson;
-    using base::getSType;
-    using base::getText;
-    using base::isDefault;
-    using base::isEquivalent;
-    using base::STInteger;
-
-    SerializedTypeID
-    getSType() const override;
-
-    STTypedInteger&
-    operator=(value_type const& v);
-
-    value_type
-    value() const noexcept;
-
-    void
-    setValue(TypedInteger v);
-
-    operator TypedInteger() const;
-};
-
 // Tenth of a basis point values:
-using STTenthBips16 = STTypedInteger<TenthBips16>;
-using STTenthBips32 = STTypedInteger<TenthBips32>;
+using STTenthBips16 = STInteger<TenthBips16>;
+using STTenthBips32 = STInteger<TenthBips32>;
 
 template <typename Integer>
 inline STInteger<Integer>::STInteger(Integer v) : value_(v)
@@ -197,34 +164,6 @@ template <typename Integer>
 inline STInteger<Integer>::operator Integer() const
 {
     return value_;
-}
-
-template <typename TypedInteger>
-inline STTypedInteger<TypedInteger>&
-STTypedInteger<TypedInteger>::operator=(value_type const& v)
-{
-    base::setValue(v.value());
-    return *this;
-}
-
-template <typename TypedInteger>
-inline typename STTypedInteger<TypedInteger>::value_type
-STTypedInteger<TypedInteger>::value() const noexcept
-{
-    return value_type(base::value());
-}
-
-template <typename TypedInteger>
-inline void
-STTypedInteger<TypedInteger>::setValue(TypedInteger v)
-{
-    base::setValue(v.value());
-}
-
-template <typename TypedInteger>
-inline STTypedInteger<TypedInteger>::operator TypedInteger() const
-{
-    return TypedInteger(base::value());
 }
 
 }  // namespace ripple

@@ -49,12 +49,13 @@ template <int>
 class STBitString;
 template <class>
 class STInteger;
-template <class>
-class STTypedInteger;
 class STNumber;
 class STXChainBridge;
 class STVector256;
 class STCurrency;
+
+template <class Integer>
+concept HasValue = requires(Integer i) { i.value(); };
 
 #pragma push_macro("XMACRO")
 #undef XMACRO
@@ -366,8 +367,8 @@ using SF_UINT512 = TypedField<STBitString<512>>;
 // The tag is only applied when deserialized.
 //
 // Tenth of a basis point values:
-using SF_TENTHBIPS16 = TypedField<STTypedInteger<TenthBips16>>;
-using SF_TENTHBIPS32 = TypedField<STTypedInteger<TenthBips32>>;
+using SF_TENTHBIPS16 = TypedField<STInteger<TenthBips16>>;
+using SF_TENTHBIPS32 = TypedField<STInteger<TenthBips32>>;
 
 using SF_ACCOUNT = TypedField<STAccount>;
 using SF_AMOUNT = TypedField<STAmount>;

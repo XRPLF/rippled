@@ -229,18 +229,62 @@ STUInt64::getJson(JsonOptions) const
     return convertToString(value_, 16);  // Convert to base 16
 }
 
+//------------------------------------------------------------------------------
+
+template <>
+STTenthBips16::STInteger(SerialIter& sit, SField const& name)
+    : STInteger(name, TenthBips16(sit.get16()))
+{
+}
+
 template <>
 SerializedTypeID
-STTenthBips16::getSType() const override
+STTenthBips16::getSType() const
 {
     return STI_TENTHBIPS16;
 }
 
 template <>
+std::string
+STTenthBips16::getText() const
+{
+    return std::to_string(value_.value());
+}
+
+template <>
+Json::Value
+STTenthBips16::getJson(JsonOptions) const
+{
+    return value_.value();
+}
+
+//------------------------------------------------------------------------------
+
+template <>
+STTenthBips32::STInteger(SerialIter& sit, SField const& name)
+    : STInteger(name, TenthBips32(sit.get32()))
+{
+}
+
+template <>
 SerializedTypeID
-STTenthBips32::getSType() const override
+STTenthBips32::getSType() const
 {
     return STI_TENTHBIPS32;
+}
+
+template <>
+std::string
+STTenthBips32::getText() const
+{
+    return std::to_string(value_.value());
+}
+
+template <>
+Json::Value
+STTenthBips32::getJson(JsonOptions) const
+{
+    return value_.value();
 }
 
 }  // namespace ripple

@@ -62,22 +62,22 @@ struct STExchange<STInteger<U>, T>
 };
 
 template <class U, class T>
-struct STExchange<STTypedInteger<U>, T>
+struct STExchange<STInteger<TenthBips<U>>, T>
 {
     explicit STExchange() = default;
 
-    using value_type = U;
+    using value_type = TenthBips<U>;
 
     static void
-    get(std::optional<T>& t, STTypedInteger<U> const& u)
+    get(std::optional<T>& t, STInteger<value_type> const& u)
     {
         t = u.value();
     }
 
-    static std::unique_ptr<STInteger<U>>
+    static std::unique_ptr<STInteger<value_type>>
     set(SField const& f, T const& t)
     {
-        return std::make_unique<STTypedInteger<U>>(f, t);
+        return std::make_unique<STInteger<value_type>>(f, t);
     }
 };
 

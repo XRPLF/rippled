@@ -594,6 +594,17 @@ safe_cast(Src s) noexcept
 
 template <class Dest, class Src>
 constexpr std::enable_if_t<
+    std::is_integral_v<typename Dest::value_type> &&
+        std::is_integral_v<typename Src>,
+    Dest>
+safe_cast(Src s) noexcept
+{
+    // Dest may not have an explicit value constructor
+    return Dest{safe_cast<typename Dest::value_type>(s)};
+}
+
+template <class Dest, class Src>
+constexpr std::enable_if_t<
     std::is_same_v<typename Dest::unit_type, typename Src::unit_type> &&
         std::is_integral_v<typename Dest::value_type> &&
         std::is_integral_v<typename Src::value_type>,
@@ -602,6 +613,17 @@ unsafe_cast(Src s) noexcept
 {
     // Dest may not have an explicit value constructor
     return Dest{unsafe_cast<typename Dest::value_type>(s.value())};
+}
+
+template <class Dest, class Src>
+constexpr std::enable_if_t<
+    std::is_integral_v<typename Dest::value_type> &&
+        std::is_integral_v<typename Src>,
+    Dest>
+unsafe_cast(Src s) noexcept
+{
+    // Dest may not have an explicit value constructor
+    return Dest{unsafe_cast<typename Dest::value_type>(s)};
 }
 
 }  // namespace ripple
