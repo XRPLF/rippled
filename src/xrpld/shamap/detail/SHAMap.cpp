@@ -521,7 +521,7 @@ SHAMap::firstBelow(
 
     return belowHelper(node, stack, branch, {init, cmp, incr});
 }
-static const boost::intrusive_ptr<SHAMapItem const> no_item;
+static boost::intrusive_ptr<SHAMapItem const> const no_item;
 
 boost::intrusive_ptr<SHAMapItem const> const&
 SHAMap::onlyBelow(SHAMapTreeNode* node) const
