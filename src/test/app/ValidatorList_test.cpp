@@ -551,7 +551,7 @@ private:
                 auto const version,
                 std::vector<std::pair<std::string, std::string>> const&
                     expected) {
-                const auto available = trustedKeys->getAvailable(hexPublic);
+                auto const available = trustedKeys->getAvailable(hexPublic);
 
                 BEAST_EXPECT(!version || available);
                 if (available)

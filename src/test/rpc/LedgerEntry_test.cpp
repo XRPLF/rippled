@@ -774,7 +774,7 @@ class LedgerEntry_test : public beast::unit_test::suite
         {
             // Failed, authorized_credentials is too long
 
-            static const std::string_view credTypes[] = {
+            static std::string_view const credTypes[] = {
                 "cred1",
                 "cred2",
                 "cred3",

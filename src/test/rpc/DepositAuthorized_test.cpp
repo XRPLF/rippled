@@ -477,7 +477,7 @@ public:
         }
 
         {
-            static const std::vector<std::string> credIds = {
+            static std::vector<std::string> const credIds = {
                 "18004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288B"
                 "E4",
                 "28004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288B"

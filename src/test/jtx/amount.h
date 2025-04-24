@@ -334,8 +334,10 @@ public:
         return {amountFromString(issue(), std::to_string(v)), account.name()};
     }
 
-    PrettyAmount operator()(epsilon_t) const;
-    PrettyAmount operator()(detail::epsilon_multiple) const;
+    PrettyAmount
+    operator()(epsilon_t) const;
+    PrettyAmount
+    operator()(detail::epsilon_multiple) const;
 
     // VFALCO TODO
     // STAmount operator()(char const* s) const;
@@ -401,8 +403,10 @@ public:
         return {amountFromString(mpt(), std::to_string(v)), name};
     }
 
-    PrettyAmount operator()(epsilon_t) const;
-    PrettyAmount operator()(detail::epsilon_multiple) const;
+    PrettyAmount
+    operator()(epsilon_t) const;
+    PrettyAmount
+    operator()(detail::epsilon_multiple) const;
 
     friend BookSpec
     operator~(MPT const& mpt)
