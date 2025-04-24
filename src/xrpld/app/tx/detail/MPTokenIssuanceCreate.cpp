@@ -77,6 +77,11 @@ MPTokenIssuanceCreate::create(
     if (!acct)
         return Unexpected(tecINTERNAL);
 
+    if (args.priorBalance &&
+        *(args.priorBalance) <
+            view.fees().accountReserve((*acct)[sfOwnerCount] + 1))
+        return Unexpected(tecINSUFFICIENT_RESERVE);
+
     auto mptId = makeMptID(args.sequence, args.account);
     auto const mptIssuanceKeylet = keylet::mptIssuance(mptId);
 
@@ -125,11 +130,6 @@ TER
 MPTokenIssuanceCreate::doApply()
 {
     auto const& tx = ctx_.tx;
-
-    auto const acct = view().peek(keylet::account(account_));
-    if (mPriorBalance < view().fees().accountReserve((*acct)[sfOwnerCount] + 1))
-        return tecINSUFFICIENT_RESERVE;
-
     auto result = create(
         view(),
         j_,
@@ -139,7 +139,8 @@ MPTokenIssuanceCreate::doApply()
          .maxAmount = tx[~sfMaximumAmount],
          .assetScale = tx[~sfAssetScale],
          .transferFee = tx[~sfTransferFee],
-         .metadata = tx[~sfMPTokenMetadata]});
+         .metadata = tx[~sfMPTokenMetadata],
+         .priorBalance = mPriorBalance});
     return result ? tesSUCCESS : result.error();
 }
 

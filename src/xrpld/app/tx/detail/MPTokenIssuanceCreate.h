@@ -37,6 +37,7 @@ struct MPTCreateArgs
     std::optional<std::uint16_t> transferFee{};
     std::optional<Slice> const& metadata{};
     std::optional<uint256> domainId{};
+    std::optional<XRPAmount> priorBalance{};
 };
 
 class MPTokenIssuanceCreate : public Transactor
