@@ -24,6 +24,8 @@
 
 namespace ripple {
 
+constexpr std::uint32_t MICRO_DROPS_PER_DROP{1'000'000};
+
 /** Reflects the fee settings for a particular ledger.
 
     The fees are always the same for any transactions applied
@@ -37,6 +39,7 @@ struct Fees
     std::uint32_t extensionComputeLimit{
         0};  // Extension compute limit (instructions)
     std::uint32_t extensionSizeLimit{0};  // Extension size limit (bytes)
+    std::uint32_t gasPrice{0};            // price of WASM gas (micro-drops)
 
     explicit Fees() = default;
     Fees(Fees const&) = default;

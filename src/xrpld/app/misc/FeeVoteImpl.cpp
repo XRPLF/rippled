@@ -216,6 +216,7 @@ FeeVoteImpl::doValidation(
             target_.extension_size_limit,
             "extension size limit",
             sfExtensionSizeLimit);
+        vote(lastFees.gasPrice, target_.gas_price, "gas price", sfGasPrice);
     }
 }
 
@@ -246,6 +247,9 @@ FeeVoteImpl::doVoting(
     detail::VotableValue extensionSizeVote(
         lastClosedLedger->fees().extensionSizeLimit,
         target_.extension_size_limit);
+
+    detail::VotableValue gasPriceVote(
+        lastClosedLedger->fees().gasPrice, target_.gas_price);
 
     auto const& rules = lastClosedLedger->rules();
     if (rules.enabled(featureXRPFees))
@@ -332,6 +336,7 @@ FeeVoteImpl::doVoting(
                 continue;
             doVote(val, extensionComputeVote, sfExtensionComputeLimit);
             doVote(val, extensionSizeVote, sfExtensionSizeLimit);
+            doVote(val, gasPriceVote, sfGasPrice);
         }
     }
 
@@ -344,12 +349,13 @@ FeeVoteImpl::doVoting(
     auto const incReserve = incReserveVote.getVotes();
     auto const extensionCompute = extensionComputeVote.getVotes();
     auto const extensionSize = extensionSizeVote.getVotes();
+    auto const gasPrice = gasPriceVote.getVotes();
 
     auto const seq = lastClosedLedger->info().seq + 1;
 
     // add transactions to our position
     if (baseFee.second || baseReserve.second || incReserve.second ||
-        extensionCompute.second || extensionSize.second)
+        extensionCompute.second || extensionSize.second || gasPrice.second)
     {
         JLOG(journal_.warn())
             << "We are voting for a fee change: " << baseFee.first << "/"
@@ -381,6 +387,7 @@ FeeVoteImpl::doVoting(
             {
                 obj[sfExtensionComputeLimit] = extensionCompute.first;
                 obj[sfExtensionSizeLimit] = extensionSize.first;
+                obj[sfGasPrice] = gasPrice.first;
             }
         });
 

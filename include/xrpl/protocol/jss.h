@@ -267,6 +267,7 @@ JSS(expiration);              // out: AccountOffers, AccountChannels,
                               //      ValidatorList, amm_info
 JSS(extension_compute);       // out: NetworkOps
 JSS(extension_size);          // out: NetworkOps
+JSS(gas_price);               // out: NetworkOps
 JSS(fail_hard);               // in: Sign, Submit
 JSS(failed);                  // out: InboundLedger
 JSS(feature);                 // in: Feature
