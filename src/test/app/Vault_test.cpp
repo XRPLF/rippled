@@ -17,6 +17,8 @@
 */
 //==============================================================================
 
+#include <test/jtx/AMM.h>
+#include <test/jtx/AMMTest.h>
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
@@ -761,21 +763,71 @@ class Vault_test : public beast::unit_test::suite
     testCreateFailIOU()
     {
         using namespace test::jtx;
-        Env env{*this, supported_amendments() | featureSingleAssetVault};
-        Account issuer{"issuer"};
-        Account owner{"owner"};
-        Account depositor{"depositor"};
-        env.fund(XRP(1000), issuer, owner, depositor);
-        env.close();
-        Vault vault{env};
-        Asset asset = issuer["IOU"];
+        {
+            testcase("IOU fail create frozen");
+            Env env{*this, supported_amendments() | featureSingleAssetVault};
+            Account issuer{"issuer"};
+            Account owner{"owner"};
+            Account depositor{"depositor"};
+            env.fund(XRP(1000), issuer, owner, depositor);
+            env.close();
+            Vault vault{env};
+            Asset asset = issuer["IOU"];
 
-        auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
 
-        env(fset(issuer, asfGlobalFreeze));
-        env.close();
-        env(tx, ter(tecFROZEN));
-        env.close();
+            env(fset(issuer, asfGlobalFreeze));
+            env.close();
+            env(tx, ter(tecFROZEN));
+            env.close();
+        }
+
+        {
+            testcase("IOU fail create vault for AMM LPToken");
+            Env env{*this, supported_amendments() | featureSingleAssetVault};
+            Account const gw("gateway");
+            Account const alice("alice");
+            Account const carol("carol");
+            IOU const USD = gw["USD"];
+
+            auto const [asset1, asset2] =
+                std::pair<STAmount, STAmount>(XRP(10000), USD(10000));
+            auto tofund = [&](STAmount const& a) -> STAmount {
+                if (a.native())
+                {
+                    auto const defXRP = XRP(30000);
+                    if (a <= defXRP)
+                        return defXRP;
+                    return a + XRP(1000);
+                }
+                auto const defIOU = STAmount{a.issue(), 30000};
+                if (a <= defIOU)
+                    return defIOU;
+                return a + STAmount{a.issue(), 1000};
+            };
+            auto const toFund1 = tofund(asset1);
+            auto const toFund2 = tofund(asset2);
+            BEAST_EXPECT(asset1 <= toFund1 && asset2 <= toFund2);
+
+            if (!asset1.native() && !asset2.native())
+                fund(env, gw, {alice, carol}, {toFund1, toFund2}, Fund::All);
+            else if (asset1.native())
+                fund(env, gw, {alice, carol}, toFund1, {toFund2}, Fund::All);
+            else if (asset2.native())
+                fund(env, gw, {alice, carol}, toFund2, {toFund1}, Fund::All);
+
+            AMM ammAlice(
+                env, alice, asset1, asset2, CreateArg{.log = false, .tfee = 0});
+
+            Account const owner{"owner"};
+            env.fund(XRP(1000000), owner);
+
+            Vault vault{env};
+            auto [tx, k] =
+                vault.create({.owner = owner, .asset = ammAlice.lptIssue()});
+            env(tx, ter{tecWRONG_ASSET});
+            env.close();
+        }
     }
 
     void
@@ -1065,7 +1117,7 @@ class Vault_test : public beast::unit_test::suite
         });
 
         {
-            testcase("MPT maximum asset recursion");
+            testcase("MPT shares to a vault");
 
             Env env{*this, supported_amendments() | featureSingleAssetVault};
             Account owner{"owner"};
@@ -1074,119 +1126,27 @@ class Vault_test : public beast::unit_test::suite
             env.close();
             Vault vault{env};
 
-            struct VaultInfo
-            {
-                Keylet keylet;
-                PrettyAsset shares;
-                PrettyAsset assets;
-                VaultInfo(
-                    Keylet const& keylet_,
-                    PrettyAsset const& shares_,
-                    PrettyAsset const& assets_)
-                    : keylet(keylet_), shares(shares_), assets(assets_)
-                {
-                }
-            };
-            std::vector<VaultInfo> vaults;
-
             MPTTester mptt{env, issuer, mptInitNoFund};
             mptt.create(
                 {.flags = tfMPTCanTransfer | tfMPTCanLock | lsfMPTCanClawback |
                      tfMPTRequireAuth});
             mptt.authorize({.account = owner});
             mptt.authorize({.account = issuer, .holder = owner});
-            {
-                for (int i = 0; i < 5; ++i)
-                    vaults.emplace_back(
-                        keylet::vault(beast::zero), xrpIssue(), xrpIssue());
+            PrettyAsset asset = mptt.issuanceID();
+            env(pay(issuer, owner, asset(100)));
+            auto [tx1, k1] = vault.create({.owner = owner, .asset = asset});
+            env(tx1);
+            env.close();
 
-                PrettyAsset asset = mptt.issuanceID();
-                env(pay(issuer, owner, asset(100)));
-                for (auto& v : vaults)
-                {
-                    auto [tx, k] =
-                        vault.create({.owner = owner, .asset = asset});
-                    env(tx);
-                    env.close();
+            auto const shares = [&env, keylet = k1, this]() -> Asset {
+                auto const vault = env.le(keylet);
+                BEAST_EXPECT(vault != nullptr);
+                return MPTIssue(vault->at(sfShareMPTID));
+            }();
 
-                    v.keylet = k;
-                    v.assets = asset;
-                    v.shares = [&env, keylet = k, this]() -> Asset {
-                        auto const vault = env.le(keylet);
-                        BEAST_EXPECT(vault != nullptr);
-                        return MPTIssue(vault->at(sfShareMPTID));
-                    }();
-                    asset = v.shares;
-                }
-            }
-
-            env(std::get<Json::Value>(vault.create(
-                    {.owner = owner, .asset = vaults.back().shares})),
-                ter{tecLIMIT_EXCEEDED});  // exceeded maximum recursion depth
-
-            for (auto& v : vaults)
-            {
-                env(vault.deposit(
-                    {.depositor = owner,
-                     .id = v.keylet.key,
-                     .amount = v.assets(100)}));
-                env.close();
-            }
-
-            {
-                testcase("MPT recursive authorization and lock check");
-                auto& v = vaults.back();
-
-                mptt.authorize(
-                    {.account = issuer,
-                     .holder = owner,
-                     .flags = tfMPTUnauthorize});
-
-                env(vault.deposit(
-                        {.depositor = owner,
-                         .id = v.keylet.key,
-                         .amount = v.assets(10)}),
-                    ter{tecNO_AUTH});
-                env(vault.withdraw(
-                        {.depositor = owner,
-                         .id = v.keylet.key,
-                         .amount = v.assets(10)}),
-                    ter{tecNO_AUTH});
-                env.close();
-
-                mptt.authorize({.account = issuer, .holder = owner});
-                mptt.set(
-                    {.account = issuer, .holder = owner, .flags = tfMPTLock});
-
-                env(vault.deposit(
-                        {.depositor = owner,
-                         .id = v.keylet.key,
-                         .amount = v.assets(10)}),
-                    ter{tecLOCKED});
-                env(vault.withdraw(
-                        {.depositor = owner,
-                         .id = v.keylet.key,
-                         .amount = v.assets(10)}),
-                    ter{tecLOCKED});
-                env.close();
-
-                mptt.set(
-                    {.account = issuer, .holder = owner, .flags = tfMPTUnlock});
-            }
-
-            for (auto i = vaults.rbegin(); i != vaults.rend(); ++i)
-            {
-                auto v = *i;
-                env(vault.withdraw(
-                    {.depositor = owner,
-                     .id = v.keylet.key,
-                     .amount = v.shares(100)}));
-            }
-
-            for (auto& v : vaults)
-            {
-                env(vault.del({.owner = owner, .id = v.keylet.key}));
-            }
+            auto [tx2, k2] = vault.create({.owner = owner, .asset = shares});
+            env(tx2, ter{tecWRONG_ASSET});
+            env.close();
         }
     }
 

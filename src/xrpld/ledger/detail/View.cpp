@@ -328,7 +328,7 @@ isVaultPseudoAccountFrozen(
         return false;  // not a Vault pseudo-account, common case
 
     if (depth >= maxAssetCheckDepth)
-        return true;  // fail at maximum 2^maxAssetCheckDepth checks
+        return true;  // LCOV_EXCL_LINE
 
     auto const vault =
         view.read(keylet::vault(mptIssuer->getFieldH256(sfVaultID)));
@@ -2298,7 +2298,7 @@ requireAuth(
                 return tefINTERNAL;  // LCOV_EXCL_LINE
 
             if (depth >= maxAssetCheckDepth)
-                return tecLIMIT_EXCEEDED;  // VaultCreate looks for this code
+                return tecINTERNAL;  // LCOV_EXCL_LINE
 
             auto const asset = sleVault->at(sfAsset);
             if (auto const err = std::visit(

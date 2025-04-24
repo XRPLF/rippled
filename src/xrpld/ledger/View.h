@@ -156,10 +156,9 @@ isFrozen(
     int depth = 0);
 
 /**
- * isFrozen check is recursive for MPT shares in a vault, descending to assets
- * in the vault. These assets could be themselves MPT shares in another vault.
- * For this reason we limit depth of check, up to maxAssetCheckDepth. If this
- * depth is exceeded, we return true (i.e. the asset is considered frozen).
+ *   isFrozen check is recursive for MPT shares in a vault, descending to
+ *   assets in the vault, up to maxAssetCheckDepth recursion depth. This is
+ *   purely defensive, as we currently do not allow such vaults to be created.
  */
 [[nodiscard]] inline bool
 isFrozen(
@@ -718,11 +717,8 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account);
  *   doApply. This will ensure that any expired credentials are deleted.
  *
  *   requireAuth check is recursive for MPT shares in a vault, descending to
- *   assets in the vault. These assets could be themselves MPT shares in another
- *   vault. For this reason we limit depth of check, up to maxAssetCheckDepth.
- *   This function will return tecLIMIT_EXCEEDED if maximum depth is exceeded.
- *   Transaction VaultCreate checks for this error code, to prevent such vaults
- *   being created.
+ *   assets in the vault, up to maxAssetCheckDepth recursion depth. This is
+ *   purely defensive, as we currently do not allow such vaults to be created.
  */
 [[nodiscard]] TER
 requireAuth(

@@ -110,16 +110,13 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
             return tecNO_AUTH;
     }
 
-    // Check for excessive vault shares recursion, which is reported by
-    // requireAuth as tecLIMIT_EXCEEDED. The vault owner might not be
-    // permissioned to hold assets but that's OK, it only means that the owner
-    // won't be able to withdraw from or deposit into the vault, or hold shares.
-    if (asset.holds<MPTIssue>())
+    // Check for pseudo-account issuers - we do not want a vault to hold such
+    // assets (e.g. MPT shares to other vaults or AMM LPTokens) as they would be
+    // impossible to clawback (should the need arise)
+    if (!asset.native())
     {
-        auto const mptIssue = asset.get<MPTIssue>();
-        if (auto const ter = requireAuth(ctx.view, mptIssue, account, 1);
-            ter == tecLIMIT_EXCEEDED)
-            return ter;
+        if (isPseudoAccount(ctx.view, asset.getIssuer()))
+            return tecWRONG_ASSET;
     }
 
     // Cannot create Vault for an Asset frozen for the vault owner
