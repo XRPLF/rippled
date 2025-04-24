@@ -828,7 +828,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
         Account const john{"john"};
 
         {
-            testcase("Payment failed with disabled credentials rule.");
+            testcase("Payment failure with disabled credentials rule.");
 
             Env env(*this, supported_amendments() - featureCredentials);
 
@@ -930,7 +930,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
         }
 
         {
-            testcase("Payment failed with invalid credentials.");
+            testcase("Payment failure with invalid credentials.");
 
             Env env(*this);
 
@@ -1206,7 +1206,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
         Account const zelda{"zelda"};
 
         {
-            testcase("Payment failed with expired credentials.");
+            testcase("Payment failure with expired credentials.");
 
             Env env(*this);
 
@@ -1353,7 +1353,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
         {
             using namespace std::chrono;
 
-            testcase("Escrow failed with expired credentials.");
+            testcase("Escrow failure with expired credentials.");
 
             Env env(*this);
 

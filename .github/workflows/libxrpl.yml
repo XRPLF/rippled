@@ -8,19 +8,21 @@ on:
     paths:
       - 'src/libxrpl/protocol/BuildInfo.cpp'
       - '.github/workflows/libxrpl.yml'
+    types: [opened, reopened, synchronize, ready_for_review]
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 jobs:
   publish:
+    if: ${{ github.event_name == 'push' || github.event.pull_request.draft != true || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     name: Publish libXRPL
     outputs:
       outcome: ${{ steps.upload.outputs.outcome }}
       version: ${{ steps.version.outputs.version }}
       channel: ${{ steps.channel.outputs.channel }}
     runs-on: [self-hosted, heavy]
-    container: rippleci/rippled-build-ubuntu:aaf5e3e
+    container: ghcr.io/xrplf/rippled-build-ubuntu:aaf5e3e
     steps:
       - name: Wait for essential checks to succeed
         uses: lewagon/wait-on-check-action@v1.3.4

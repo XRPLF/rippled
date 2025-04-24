@@ -1,6 +1,7 @@
 name: nix
 on:
   pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
   push:
     # If the branches list is ever changed, be sure to change it on all
     # build/test jobs (nix, macos, windows)
@@ -39,6 +40,7 @@ concurrency:
 
 jobs:
   dependencies:
+    if: ${{ github.event_name == 'push' || github.event.pull_request.draft != true || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     strategy:
       fail-fast: false
       matrix:
@@ -62,7 +64,7 @@ jobs:
               cc: /usr/bin/clang-14
               cxx: /usr/bin/clang++-14
     runs-on: [self-hosted, heavy]
-    container: rippleci/rippled-build-ubuntu:aaf5e3e
+    container: ghcr.io/xrplf/rippled-build-ubuntu:aaf5e3e
     env:
       build_dir: .build
     steps:
@@ -124,7 +126,7 @@ jobs:
           - "-Dunity=ON"
     needs: dependencies
     runs-on: [self-hosted, heavy]
-    container: rippleci/rippled-build-ubuntu:aaf5e3e
+    container: ghcr.io/xrplf/rippled-build-ubuntu:aaf5e3e
     env:
       build_dir: .build
     steps:
@@ -178,7 +180,7 @@ jobs:
           - "-DUNIT_TEST_REFERENCE_FEE=1000"
     needs: dependencies
     runs-on: [self-hosted, heavy]
-    container: rippleci/rippled-build-ubuntu:aaf5e3e
+    container: ghcr.io/xrplf/rippled-build-ubuntu:aaf5e3e
     env:
       build_dir: .build
     steps:
@@ -229,7 +231,7 @@ jobs:
           - Debug
     needs: dependencies
     runs-on: [self-hosted, heavy]
-    container: rippleci/rippled-build-ubuntu:aaf5e3e
+    container: ghcr.io/xrplf/rippled-build-ubuntu:aaf5e3e
     env:
       build_dir: .build
     steps:
@@ -303,7 +305,7 @@ jobs:
   conan:
     needs: dependencies
     runs-on: [self-hosted, heavy]
-    container: rippleci/rippled-build-ubuntu:aaf5e3e
+    container: ghcr.io/xrplf/rippled-build-ubuntu:aaf5e3e
     env:
       build_dir: .build
       configuration: Release
@@ -358,6 +360,7 @@ jobs:
   # later
 
   instrumentation-build:
+    if: ${{ github.event_name == 'push' || github.event.pull_request.draft != true || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     env:
       CLANG_RELEASE: 16
     strategy:
