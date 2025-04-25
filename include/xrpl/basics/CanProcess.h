@@ -78,6 +78,11 @@ public:
             cleanup_();
     }
 
+    CanProcess(CanProcess const&) = delete;
+
+    CanProcess&
+    operator=(CanProcess const&) = delete;
+
     explicit
     operator bool() const
     {
