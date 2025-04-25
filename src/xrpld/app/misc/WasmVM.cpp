@@ -631,7 +631,7 @@ runEscrowWasm(
         }
         // escrowKeylet
         {
-            WasmEdge_ValType inputList[4] = {
+            WasmEdge_ValType inputList[3] = {
                 WasmEdge_ValTypeGenI32(),
                 WasmEdge_ValTypeGenI32(),
                 WasmEdge_ValTypeGenI32()};
