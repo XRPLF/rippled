@@ -17,8 +17,6 @@
 */
 //==============================================================================
 
-#include <xrpld/app/tx/detail/MPTokenAuthorize.h>
-#include <xrpld/app/tx/detail/MPTokenIssuanceDestroy.h>
 #include <xrpld/app/tx/detail/VaultDelete.h>
 #include <xrpld/ledger/View.h>
 
@@ -63,6 +61,19 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
     if (vault->at(sfAssetsTotal) != 0)
         return tecHAS_OBLIGATIONS;
 
+    // Verify we can destroy MPTokenIssuance
+    auto const sleMPT =
+        ctx.view.read(keylet::mptIssuance(vault->at(sfShareMPTID)));
+
+    if (!sleMPT)
+        return tecOBJECT_NOT_FOUND;
+
+    if (sleMPT->at(sfIssuer) != vault->getAccountID(sfAccount))
+        return tecNO_PERMISSION;
+
+    if (sleMPT->at(sfOutstandingAmount) != 0)
+        return tecHAS_OBLIGATIONS;
+
     return tesSUCCESS;
 }
 
@@ -79,35 +90,49 @@ VaultDelete::doApply()
         !isTesSuccess(ter))
         return ter;
 
-    // Destroy the share issuance.
-    if (auto ter = MPTokenIssuanceDestroy::destroy(
-            view(),
-            j_,
-            // The operator-> gives the underlying STAccount,
-            // whose value function returns a const&.
-            {.account = vault->at(sfAccount)->value(),
-             .issuanceID = vault->at(sfShareMPTID)}))
-        return ter;
-
-    // The psuedo-account's directory should have been deleted already.
     auto const& pseudoID = vault->at(sfAccount);
+    auto const pseudoAcct = view().peek(keylet::account(pseudoID));
+    if (!pseudoAcct)
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+
+    // Destroy the share issuance. Do not use MPTokenIssuanceDestroy for this,
+    // no special logic needed. First run few checks, duplicated from preclaim.
+    auto const mpt = view().peek(keylet::mptIssuance(vault->at(sfShareMPTID)));
+    if (!mpt)
+        return tefINTERNAL;  // LCOV_EXCL_LINE
+    if (pseudoID != mpt->getAccountID(sfIssuer))
+        return tefINTERNAL;  // LCOV_EXCL_LINE
+    if (mpt->at(sfOutstandingAmount) != 0)
+        return tefINTERNAL;  // LCOV_EXCL_LINE
+
+    if (!view().dirRemove(
+            keylet::ownerDir(pseudoID), (*mpt)[sfOwnerNode], mpt->key(), false))
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+    adjustOwnerCount(view(), pseudoAcct, -1, j_);
+
+    view().erase(mpt);
+
+    // The pseudo-account's directory should have been deleted already.
     if (view().peek(keylet::ownerDir(pseudoID)))
-        return tecHAS_OBLIGATIONS;
+        return tecHAS_OBLIGATIONS;  // LCOV_EXCL_LINE
 
     // Destroy the pseudo-account.
     view().erase(view().peek(keylet::account(pseudoID)));
 
     // Remove the vault from its owner's directory.
     auto const ownerID = vault->at(sfOwner);
+    if (ownerID != account_)
+        return tefINTERNAL;  // LCOV_EXCL_LINE
+
     if (!view().dirRemove(
             keylet::ownerDir(ownerID),
             vault->at(sfOwnerNode),
             vault->key(),
             false))
-        return tefBAD_LEDGER;
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const owner = view().peek(keylet::account(ownerID));
     if (!owner)
-        return tefBAD_LEDGER;
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     adjustOwnerCount(view(), owner, -1, j_);
 
     // Destroy the vault.
