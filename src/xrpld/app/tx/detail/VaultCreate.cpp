@@ -188,8 +188,7 @@ VaultCreate::doApply()
         view(),
         j_,
         {
-            // The operator-> gives the underlying STAccount,
-            // whose value function returns a const&.
+            .priorBalance = std::nullopt,
             .account = pseudoId->value(),
             .sequence = 1,
             .flags = mptFlags,

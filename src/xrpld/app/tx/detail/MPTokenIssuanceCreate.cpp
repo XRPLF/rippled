@@ -75,14 +75,14 @@ MPTokenIssuanceCreate::create(
 {
     auto const acct = view.peek(keylet::account(args.account));
     if (!acct)
-        return Unexpected(tecINTERNAL);
+        return Unexpected(tecINTERNAL);  // LCOV_EXCL_LINE
 
     if (args.priorBalance &&
         *(args.priorBalance) <
             view.fees().accountReserve((*acct)[sfOwnerCount] + 1))
         return Unexpected(tecINSUFFICIENT_RESERVE);
 
-    auto mptId = makeMptID(args.sequence, args.account);
+    auto const mptId = makeMptID(args.sequence, args.account);
     auto const mptIssuanceKeylet = keylet::mptIssuance(mptId);
 
     // create the MPTokenIssuance
@@ -93,7 +93,7 @@ MPTokenIssuanceCreate::create(
             describeOwnerDir(args.account));
 
         if (!ownerNode)
-            return Unexpected(tecDIR_FULL);
+            return Unexpected(tecDIR_FULL);  // LCOV_EXCL_LINE
 
         auto mptIssuance = std::make_shared<SLE>(mptIssuanceKeylet);
         (*mptIssuance)[sfFlags] = args.flags & ~tfUniversal;
@@ -130,17 +130,19 @@ TER
 MPTokenIssuanceCreate::doApply()
 {
     auto const& tx = ctx_.tx;
-    auto result = create(
+    auto const result = create(
         view(),
         j_,
-        {.account = account_,
-         .sequence = tx.getSeqValue(),
-         .flags = tx.getFlags(),
-         .maxAmount = tx[~sfMaximumAmount],
-         .assetScale = tx[~sfAssetScale],
-         .transferFee = tx[~sfTransferFee],
-         .metadata = tx[~sfMPTokenMetadata],
-         .priorBalance = mPriorBalance});
+        {
+            .priorBalance = mPriorBalance,
+            .account = account_,
+            .sequence = tx.getSeqValue(),
+            .flags = tx.getFlags(),
+            .maxAmount = tx[~sfMaximumAmount],
+            .assetScale = tx[~sfAssetScale],
+            .transferFee = tx[~sfTransferFee],
+            .metadata = tx[~sfMPTokenMetadata],
+        });
     return result ? tesSUCCESS : result.error();
 }
 

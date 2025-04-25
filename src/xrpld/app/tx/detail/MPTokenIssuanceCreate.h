@@ -29,6 +29,7 @@ namespace ripple {
 
 struct MPTCreateArgs
 {
+    std::optional<XRPAmount> priorBalance;
     AccountID const& account;
     std::uint32_t sequence;
     std::uint32_t flags = 0;
@@ -37,7 +38,6 @@ struct MPTCreateArgs
     std::optional<std::uint16_t> transferFee{};
     std::optional<Slice> const& metadata{};
     std::optional<uint256> domainId{};
-    std::optional<XRPAmount> priorBalance{};
 };
 
 class MPTokenIssuanceCreate : public Transactor
