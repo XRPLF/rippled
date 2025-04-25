@@ -496,6 +496,7 @@ LedgerEntryTypesMatch::visitEntry(
             case ltMPTOKEN:
             case ltCREDENTIAL:
             case ltPERMISSIONED_DOMAIN:
+            case ltOPTION_PAIR:
             case ltOPTION:
             case ltOPTION_OFFER:
                 break;
@@ -916,7 +917,8 @@ ValidNewAccountRoot::finalize(
     // From this point on we know exactly one account was created.
     if ((tx.getTxnType() == ttPAYMENT || tx.getTxnType() == ttAMM_CREATE ||
          tx.getTxnType() == ttXCHAIN_ADD_CLAIM_ATTESTATION ||
-         tx.getTxnType() == ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION) &&
+         tx.getTxnType() == ttXCHAIN_ADD_ACCOUNT_CREATE_ATTESTATION ||
+         tx.getTxnType() == ttOPTION_PAIR_CREATE) &&
         result == tesSUCCESS)
     {
         std::uint32_t const startingSeq{

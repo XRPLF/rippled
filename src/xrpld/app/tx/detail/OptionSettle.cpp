@@ -182,6 +182,14 @@ OptionSettle::doApply()
     std::uint32_t expiration =
         sleOffer->getFieldU32(sfExpiration);  // Expiration time
 
+    // Get the option pair
+    auto const optionPairKeylet =
+        keylet::optionPair(issue, strikePrice.issue());
+    auto const slePair = sb.peek(optionPairKeylet);
+    if (!slePair)
+        return tecINTERNAL;
+    auto const pseudoAccount = slePair->getAccountID(sfAccount);
+
     // Handle option closing
     if (flags & tfClose)
     {
@@ -190,6 +198,7 @@ OptionSettle::doApply()
         // Call utility function to handle the closing process
         auto const ter = option::closeOffer(
             sb,
+            pseudoAccount,
             account_,
             offerKeylet,
             isPut,
@@ -216,6 +225,7 @@ OptionSettle::doApply()
     // Call utility function to handle the option exercise
     if (auto const ter = option::exerciseOffer(
             sb,
+            pseudoAccount,
             isPut,
             strikePrice,
             account_,

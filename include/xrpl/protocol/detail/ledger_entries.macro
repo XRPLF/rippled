@@ -166,6 +166,7 @@ LEDGER_ENTRY(ltACCOUNT_ROOT, 0x0061, AccountRoot, account, ({
     {sfBurnedNFTokens,       soeDEFAULT},
     {sfFirstNFTokenSequence, soeOPTIONAL},
     {sfAMMID,                soeOPTIONAL},
+    {sfOptionPairID,         soeOPTIONAL},
 }))
 
 /** A ledger object which contains a list of object identifiers.
@@ -462,10 +463,23 @@ LEDGER_ENTRY(ltPERMISSIONED_DOMAIN, 0x0082, PermissionedDomain, permissioned_dom
     {sfPreviousTxnLgrSeq,   soeREQUIRED},
 }))
 
-/** A ledger object which tracks Options
+/** The ledger object which tracks the OptionPair.
+
+   \sa keylet::amm
+*/
+LEDGER_ENTRY(ltOPTION_PAIR, 0x0083, OptionPair, option_pair, ({
+    {sfAccount,              soeREQUIRED},
+    {sfAsset,                soeREQUIRED},
+    {sfAsset2,               soeREQUIRED},
+    {sfOwnerNode,            soeREQUIRED},
+    {sfPreviousTxnID,        soeOPTIONAL},
+    {sfPreviousTxnLgrSeq,    soeOPTIONAL},
+}))
+
+/** A ledger object which tracks the Options
     \sa keylet::option
  */
-LEDGER_ENTRY(ltOPTION, 0x0083, Option, option, ({
+LEDGER_ENTRY(ltOPTION, 0x0084, Option, option, ({
     {sfOwnerNode,            soeREQUIRED},
     {sfStrikePrice,          soeREQUIRED},
     {sfAsset,                soeREQUIRED},
@@ -474,19 +488,19 @@ LEDGER_ENTRY(ltOPTION, 0x0083, Option, option, ({
     {sfPreviousTxnLgrSeq,    soeREQUIRED}
 }))
 
-/** A ledger object which tracks OptionOffers
+/** A ledger object which tracks the OptionOffers
     \sa keylet::option_offer
  */
-LEDGER_ENTRY(ltOPTION_OFFER, 0x0084, OptionOffer, option_offer, ({
+LEDGER_ENTRY(ltOPTION_OFFER, 0x0085, OptionOffer, option_offer, ({
     {sfOwner,                soeREQUIRED},
     {sfOwnerNode,            soeREQUIRED},
     {sfStrikePrice,          soeREQUIRED},
     {sfAsset,                soeREQUIRED},
     {sfExpiration,           soeREQUIRED},
-    {sfPremium,              soeREQUIRED}, // Premium
-    {sfQuantity,             soeREQUIRED}, // Quantity
-    {sfAmount,               soeOPTIONAL}, // Locked Amount
-    {sfOpenInterest,         soeOPTIONAL}, // To Seal
+    {sfPremium,              soeREQUIRED},
+    {sfQuantity,             soeREQUIRED},
+    {sfAmount,               soeOPTIONAL},
+    {sfOpenInterest,         soeOPTIONAL},
     {sfSealedOptions,        soeOPTIONAL},
     {sfBookDirectory,        soeREQUIRED},
     {sfBookNode,             soeREQUIRED},

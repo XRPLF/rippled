@@ -94,6 +94,7 @@ enum class LedgerNameSpace : std::uint16_t {
     MPTOKEN = 't',
     CREDENTIAL = 'D',
     PERMISSIONED_DOMAIN = 'm',
+    OPTION_PAIR = 'Z',
     OPTION = 'X',
     OPTION_DIR = 'Y',
     OPTION_OFFER = 'y',
@@ -588,6 +589,19 @@ Keylet
 permissionedDomain(uint256 const& domainID) noexcept
 {
     return {ltPERMISSIONED_DOMAIN, domainID};
+}
+
+Keylet
+optionPair(Asset const& issue1, Asset const& issue2) noexcept
+{
+    auto const& [minI, maxI] =
+        std::minmax(issue1.get<Issue>(), issue2.get<Issue>());
+    return amm(indexHash(
+        LedgerNameSpace::OPTION_PAIR,
+        minI.account,
+        minI.currency,
+        maxI.account,
+        maxI.currency));
 }
 
 Keylet

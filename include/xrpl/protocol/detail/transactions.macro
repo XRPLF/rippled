@@ -465,8 +465,19 @@ TRANSACTION(ttPERMISSIONED_DOMAIN_DELETE, 63, PermissionedDomainDelete, ({
     {sfDomainID, soeREQUIRED},
 }))
 
+/** This transaction type creates an OptionPair */
+TRANSACTION(ttOPTION_PAIR_CREATE, 64, OptionPairCreate, ({
+    {sfAsset, soeREQUIRED},
+    {sfAsset2, soeREQUIRED},
+}))
+
+// /** This transaction type creates an OptionPair */
+// TRANSACTION(ttOPTION_PAIR_DELETE, 65, OptionPairDelete, ({
+//     {sfOptionID, soeREQUIRED},
+// }))
+
 /** This transaction type creates an OptionOffer */
-TRANSACTION(ttOPTION_CREATE, 64, OptionCreate, ({
+TRANSACTION(ttOPTION_CREATE, 66, OptionCreate, ({
     {sfStrikePrice, soeREQUIRED},
     {sfAsset, soeREQUIRED},
     {sfExpiration, soeREQUIRED},
@@ -475,7 +486,7 @@ TRANSACTION(ttOPTION_CREATE, 64, OptionCreate, ({
 }))
 
 /** This transaction type exercises an OptionOffer */
-TRANSACTION(ttOPTION_SETTLE, 65, OptionSettle, ({
+TRANSACTION(ttOPTION_SETTLE, 67, OptionSettle, ({
     {sfOptionID, soeREQUIRED},
     {sfOptionOfferID, soeREQUIRED},
 }))

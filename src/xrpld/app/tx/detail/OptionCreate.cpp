@@ -45,7 +45,7 @@ OptionCreate::preflight(PreflightContext const& ctx)
     // Verify no invalid flags are set
     if (ctx.tx.getFlags() & tfOptionCreateMask)
     {
-        JLOG(ctx.j.warn()) << "OptionCreate: Invalid flags set.";
+        JLOG(ctx.j.trace()) << "OptionCreate: Invalid flags set.";
         return temINVALID_FLAG;
     }
 
@@ -53,7 +53,7 @@ OptionCreate::preflight(PreflightContext const& ctx)
     std::uint32_t const quantity = ctx.tx[sfQuantity];
     if (quantity % 100)
     {
-        JLOG(ctx.j.warn()) << "OptionCreate: Invalid quantity.";
+        JLOG(ctx.j.trace()) << "OptionCreate: Invalid quantity.";
         return temMALFORMED;
     }
 
@@ -87,6 +87,16 @@ OptionCreate::doApply()
     auto sleSource = sb.peek(keylet::account(account_));
     if (!sleSource)
         return terNO_ACCOUNT;
+
+    // Verify source account exists
+    auto slePseudo = sb.read(keylet::optionPair(issue, strikePrice.issue()));
+    if (!slePseudo)
+    {
+        JLOG(j_.trace()) << "OptionCreate: OptionPair does not exist.";
+        return tecNO_ENTRY;
+    }
+
+    auto const pseudoAccount = slePseudo->getAccountID(sfAccount);
 
     // Determine option type flags
     bool const isPut = flags & tfPut;
@@ -184,6 +194,7 @@ OptionCreate::doApply()
                          << (isPut ? totalValue : quantityShares);
         auto const ter = option::lockTokens(
             sb,
+            pseudoAccount,
             mSourceBalance,
             account_,
             isPut ? totalValue : quantityShares,

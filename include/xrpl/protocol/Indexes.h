@@ -337,6 +337,9 @@ Keylet
 permissionedDomain(uint256 const& domainID) noexcept;
 
 Keylet
+optionPair(Asset const& issue1, Asset const& issue2) noexcept;
+
+Keylet
 option(
     AccountID const& issuer,
     Currency const& currency,

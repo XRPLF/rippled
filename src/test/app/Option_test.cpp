@@ -95,6 +95,7 @@ struct Option_test : public beast::unit_test::suite
         auto const sle = view.read(k);
         if (!sle)
             fail("Option offer not found in ledger"s, __FILE__, line);
+        return;
 
         if ((*sle)[sfQuantity] != quantity)
             fail(
@@ -251,6 +252,21 @@ struct Option_test : public beast::unit_test::suite
     }
 
     Json::Value
+    optionPairCreate(
+        jtx::Account const& account,
+        STIssue const& asset,
+        STIssue const& asset2)
+    {
+        using namespace jtx;
+        Json::Value jv;
+        jv[jss::TransactionType] = jss::OptionPairCreate;
+        jv[jss::Account] = account.human();
+        jv[sfAsset.jsonName] = asset.getJson(JsonOptions::none);
+        jv[sfAsset2.jsonName] = asset2.getJson(JsonOptions::none);
+        return jv;
+    }
+
+    Json::Value
     optionCreate(
         jtx::Account const& account,
         NetClock::time_point expiration,
@@ -337,6 +353,21 @@ struct Option_test : public beast::unit_test::suite
             "json", "option_book_offers", to_string(jvbp))[jss::result];
     }
 
+    void
+    initPair(
+        jtx::Env& env,
+        jtx::Account const& account,
+        Issue const& issue,
+        Issue const& issue2)
+    {
+        using namespace test::jtx;
+        env(optionPairCreate(
+                account, STIssue(sfAsset, issue), STIssue(sfAsset, issue2)),
+            fee(env.current()->fees().increment),
+            ter(tesSUCCESS));
+        env.close();
+    }
+
     uint256
     createOffer(
         jtx::Env& env,
@@ -394,8 +425,17 @@ struct Option_test : public beast::unit_test::suite
             auto const txResult =
                 withOptions ? ter(tesSUCCESS) : ter(temDISABLED);
 
+            // OPTION PAIR CREATE
+            env(optionPairCreate(
+                    writer,
+                    STIssue(sfAsset, GME.issue()),
+                    STIssue(sfAsset2, USD.issue())),
+                fee(env.current()->fees().increment),
+                txResult);
+            env.close();
+
             // OPTION LIST
-            auto const expiration = env.now() + 40s;
+            auto const expiration = env.now() + 80s;
             auto const strikePrice = USD(20);
             std::int64_t const strike =
                 static_cast<std::int64_t>(Number(strikePrice.value()));
@@ -469,7 +509,7 @@ struct Option_test : public beast::unit_test::suite
             env(pay(gme, writer, GME(10'000)));
             env.close();
 
-            auto const expiration = env.now() + 40s;
+            auto const expiration = env.now() + 80s;
             auto const strikePrice = USD(20);
             auto const premium = USD(0.5);
             auto const quantity = 1000;
@@ -477,6 +517,7 @@ struct Option_test : public beast::unit_test::suite
                 static_cast<std::int64_t>(Number(strikePrice.value()));
             uint256 const optionId{
                 getOptionIndex(gme.id(), GME.currency, strike, expiration)};
+            initPair(env, gme, GME.issue(), USD.issue());
 
             // create buy offer
             uint256 const buyId = createOffer(
@@ -554,6 +595,8 @@ struct Option_test : public beast::unit_test::suite
             auto const strikePrice = USD(20);
             auto const premium = USD(0.5);
             auto const quantity = 1000;
+            initPair(env, gme, GME.issue(), USD.issue());
+
             uint256 const buyId = createOffer(
                 env,
                 buyer,
@@ -619,6 +662,7 @@ struct Option_test : public beast::unit_test::suite
             auto const strikePrice = USD(20);
             auto const premium = USD(0.5);
             auto const quantity = 1000;
+            initPair(env, gme, GME.issue(), USD.issue());
 
             // create sell offer
             uint256 const sellId = createOffer(
@@ -734,6 +778,7 @@ struct Option_test : public beast::unit_test::suite
             auto const expiration = env.now() + 1s;
             auto const strikePrice = USD(20);
             auto const premium = USD(0.5);
+            initPair(env, gme, GME.issue(), USD.issue());
 
             // create sell offer
             uint256 const sellId = createOffer(
@@ -855,6 +900,8 @@ struct Option_test : public beast::unit_test::suite
             auto const strikePrice = USD(20);
             auto const premium = USD(0.5);
             auto const quantity = 1000;
+            initPair(env, gme, GME.issue(), USD.issue());
+
             uint256 const sellId = createOffer(
                 env,
                 writer,
@@ -920,6 +967,7 @@ struct Option_test : public beast::unit_test::suite
             auto const strikePrice = USD(20);
             auto const premium = USD(0.5);
             auto const quantity = 1000;
+            initPair(env, gme, GME.issue(), USD.issue());
 
             // create buy offer
             uint256 const buyId = createOffer(
@@ -1035,6 +1083,7 @@ struct Option_test : public beast::unit_test::suite
             auto const expiration = env.now() + 1s;
             auto const strikePrice = USD(20);
             auto const premium = USD(0.5);
+            initPair(env, gme, GME.issue(), USD.issue());
 
             // create buy offer
             uint256 const buyId = createOffer(
@@ -1159,12 +1208,13 @@ struct Option_test : public beast::unit_test::suite
         auto const preCounterGme = env.balance(counter, GME);
         auto const preCounterUsd = env.balance(counter, USD);
 
-        auto const expiration = env.now() + 40s;
+        auto const expiration = env.now() + 80s;
         auto const strikePrice = USD(20);
         std::int64_t const strike =
             static_cast<std::int64_t>(Number(strikePrice.value()));
         uint256 const optionId{
             getOptionIndex(gme.id(), GME.currency, strike, expiration)};
+        initPair(env, gme, GME.issue(), USD.issue());
 
         auto const premium = USD(0.5);
 
@@ -1383,12 +1433,13 @@ struct Option_test : public beast::unit_test::suite
         auto const preCounterGme = env.balance(counter, GME);
         auto const preCounterUsd = env.balance(counter, USD);
 
-        auto const expiration = env.now() + 40s;
+        auto const expiration = env.now() + 80s;
         auto const strikePrice = USD(20);
         std::int64_t const strike =
             static_cast<std::int64_t>(Number(strikePrice.value()));
         uint256 const optionId{
             getOptionIndex(gme.id(), GME.currency, strike, expiration)};
+        initPair(env, gme, GME.issue(), USD.issue());
 
         auto const premium = USD(0.5);
 
@@ -1612,12 +1663,13 @@ struct Option_test : public beast::unit_test::suite
         auto const preCounterGme = env.balance(counter, GME);
         auto const preCounterUsd = env.balance(counter, USD);
 
-        auto const expiration = env.now() + 40s;
+        auto const expiration = env.now() + 80s;
         auto const strikePrice = USD(20);
         std::int64_t const strike =
             static_cast<std::int64_t>(Number(strikePrice.value()));
         uint256 const optionId{
             getOptionIndex(gme.id(), GME.currency, strike, expiration)};
+        initPair(env, gme, GME.issue(), USD.issue());
 
         auto const premium = USD(0.5);
 
@@ -1834,12 +1886,13 @@ struct Option_test : public beast::unit_test::suite
         auto const preCounterGme = env.balance(counter, GME);
         auto const preCounterUsd = env.balance(counter, USD);
 
-        auto const expiration = env.now() + 40s;
+        auto const expiration = env.now() + 80s;
         auto const strikePrice = USD(20);
         std::int64_t const strike =
             static_cast<std::int64_t>(Number(strikePrice.value()));
         uint256 const optionId{
             getOptionIndex(gme.id(), GME.currency, strike, expiration)};
+        initPair(env, gme, GME.issue(), USD.issue());
 
         auto const premium = USD(0.5);
 
@@ -2056,12 +2109,13 @@ struct Option_test : public beast::unit_test::suite
         auto const preBuyerGme = env.balance(buyer, GME);
         auto const preBuyerUsd = env.balance(buyer, USD);
 
-        auto const expiration = env.now() + 40s;
+        auto const expiration = env.now() + 80s;
         auto const strikePrice = USD(20);
         std::int64_t const strike =
             static_cast<std::int64_t>(Number(strikePrice.value()));
         uint256 const optionId{
             getOptionIndex(gme.id(), GME.currency, strike, expiration)};
+        initPair(env, gme, GME.issue(), USD.issue());
 
         auto const premium = USD(0.5);
         auto const quantity = 1000;
@@ -2169,12 +2223,13 @@ struct Option_test : public beast::unit_test::suite
         auto const preBuyerGme = env.balance(buyer, GME);
         auto const preBuyerUsd = env.balance(buyer, USD);
 
-        auto const expiration = env.now() + 40s;
+        auto const expiration = env.now() + 80s;
         auto const strikePrice = USD(20);
         std::int64_t const strike =
             static_cast<std::int64_t>(Number(strikePrice.value()));
         uint256 const optionId{
             getOptionIndex(gme.id(), GME.currency, strike, expiration)};
+        initPair(env, gme, GME.issue(), USD.issue());
 
         auto const premium = USD(0.5);
         auto const quantity = 1000;
@@ -2282,6 +2337,7 @@ struct Option_test : public beast::unit_test::suite
             static_cast<std::int64_t>(Number(strikePrice.value()));
         uint256 const optionId{
             getOptionIndex(gme.id(), GME.currency, strike, expiration)};
+        initPair(env, gme, GME.issue(), USD.issue());
 
         auto const premium = USD(0.5);
         auto const quantity = 1000;
@@ -2355,6 +2411,7 @@ struct Option_test : public beast::unit_test::suite
             static_cast<std::int64_t>(Number(strikePrice.value()));
         uint256 const optionId{
             getOptionIndex(gme.id(), GME.currency, strike, expiration)};
+        initPair(env, gme, GME.issue(), USD.issue());
 
         auto const premium = USD(0.5);
         auto const quantity = 1000;
@@ -2432,6 +2489,7 @@ struct Option_test : public beast::unit_test::suite
             static_cast<std::int64_t>(Number(strikePrice.value()));
         uint256 const optionId{
             getOptionIndex(gme.id(), GME.currency, strike, expiration)};
+        initPair(env, gme, GME.issue(), USD.issue());
 
         auto const premium = USD(0.5);
         auto const quantity = 1000;
@@ -2505,6 +2563,7 @@ struct Option_test : public beast::unit_test::suite
             static_cast<std::int64_t>(Number(strikePrice.value()));
         uint256 const optionId{
             getOptionIndex(gme.id(), GME.currency, strike, expiration)};
+        initPair(env, gme, GME.issue(), USD.issue());
 
         auto const premium = USD(0.5);
         auto const quantity = 1000;

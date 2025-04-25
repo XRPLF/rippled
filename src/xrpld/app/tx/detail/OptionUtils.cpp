@@ -391,6 +391,7 @@ createOffer(
  * option expires or is exercised.
  *
  * @param sb Sandbox ledger view
+ * @param pseudoAccount OptionPair account (where tokens are locked)
  * @param sourceBalance Current XRP balance of the account
  * @param account Account whose tokens will be locked
  * @param amount Amount to lock as collateral
@@ -400,6 +401,7 @@ createOffer(
 TER
 lockTokens(
     Sandbox& sb,
+    AccountID const& pseudoAccount,
     XRPAmount const& sourceBalance,
     AccountID const& account,
     STAmount const& amount,
@@ -415,7 +417,7 @@ lockTokens(
     {
         // Log the operation
         JLOG(j.trace()) << "OptionUtils: XRP lock: " << amount.getCurrency()
-                        << ": " << amount.getIssuer() << ": " << amount;
+                        << ": " << pseudoAccount << ": " << amount;
 
         // Check if account has sufficient XRP balance
         if (sourceBalance < amount.xrp())
@@ -442,7 +444,7 @@ lockTokens(
     {
         // Log the operation
         JLOG(j.trace()) << "OptionUtils: IOU lock: " << amount.getCurrency()
-                        << ": " << amount.getIssuer() << ": " << amount;
+                        << ": " << pseudoAccount << ": " << amount;
 
         // Check how much of this currency the account can spend
         STAmount spendableAmount{accountHolds(
@@ -457,14 +459,16 @@ lockTokens(
         if (spendableAmount < amount)
             return tecINSUFFICIENT_FUNDS;
 
-        // Use rippleCredit to create the proper trust line entry
+        // Use accountSend to create the proper trust line entry
         // This adjusts the balance on the trust line between account and issuer
-        auto const ter =
-            rippleCredit(sb, account, amount.getIssuer(), amount, true, j);
+        auto const ter = accountSend(sb, account, pseudoAccount, amount, j);
 
-        // If rippleCredit failed, return the error
+        // If accountSend failed, return the error
         if (ter != tesSUCCESS)
+        {
+            JLOG(j.trace()) << "OptionUtils: accountSend failed: " << ter;
             return ter;  // LCOV_EXCL_LINE
+        }
     }
 
     return tesSUCCESS;
@@ -478,6 +482,7 @@ lockTokens(
  * and issued currencies differently.
  *
  * @param sb Sandbox ledger view
+ * @param pseudoAccount Account sending the unlocked tokens
  * @param receiver Account receiving the unlocked tokens
  * @param sleReceiver SLE of the receiving account (already loaded)
  * @param amount Amount to unlock
@@ -487,6 +492,7 @@ lockTokens(
 TER
 unlockTokens(
     Sandbox& sb,
+    AccountID const& pseudoAccount,
     AccountID const& receiver,
     std::shared_ptr<SLE> const& sleReceiver,
     STAmount const& amount,
@@ -520,15 +526,17 @@ unlockTokens(
         // Log the operation
         JLOG(j.trace()) << "OptionSettle: IOU unlock: " << amount;
 
-        // Use rippleCredit to adjust the trust line
-        // Note: For unlocking, the issuer is the source and the receiver is the
-        // destination
-        auto const ter =
-            rippleCredit(sb, amount.getIssuer(), receiver, amount, true, j);
+        // Use accountSend to adjust the trust line
+        // Note: For unlocking, the issuer is the pseudo account and the
+        // receiver is the destination
+        auto const ter = accountSend(sb, pseudoAccount, receiver, amount, j);
 
-        // If rippleCredit failed, return the error
+        // If accountSend failed, return the error
         if (ter != tesSUCCESS)
+        {
+            JLOG(j.trace()) << "OptionSettle: accountSend failed: " << ter;
             return ter;  // LCOV_EXCL_LINE
+        }
     }
 
     return tesSUCCESS;
@@ -618,6 +626,7 @@ transferTokens(
  * 5. Finally removing the offer from the ledger
  *
  * @param sb Sandbox ledger view
+ * @param pseudoAccount OptionPair account (where tokens are locked)
  * @param account Account closing the offer
  * @param offerKeylet Keylet of the offer to close
  * @param isPut Whether this is a put option
@@ -631,6 +640,7 @@ transferTokens(
 TER
 closeOffer(
     Sandbox& sb,
+    AccountID const& pseudoAccount,
     AccountID const& account,
     Keylet const& offerKeylet,
     bool isPut,
@@ -670,7 +680,8 @@ closeOffer(
                 return terNO_ACCOUNT;
 
             // Unlock the collateral or assets
-            auto ter = unlockTokens(sb, account, sleSeller, lockedAmount, j);
+            auto ter = unlockTokens(
+                sb, pseudoAccount, account, sleSeller, lockedAmount, j);
             if (ter != tesSUCCESS)
                 return ter;
 
@@ -1085,6 +1096,7 @@ closeOffer(
  * option writer, and updates or removes the option from the ledger.
  *
  * @param sb Sandbox ledger view
+ * @param pseudoAccount OptionPair account (where tokens are locked)
  * @param isPut Whether this is a put option
  * @param strikePrice The strike price of the option
  * @param buyer Account exercising the option
@@ -1097,6 +1109,7 @@ closeOffer(
 TER
 exerciseOffer(
     Sandbox& sb,
+    AccountID const& pseudoAccount,
     bool isPut,
     STAmount const& strikePrice,
     AccountID const& buyer,
@@ -1143,8 +1156,8 @@ exerciseOffer(
         STAmount const transferAmount = isPut ? quantityShares : totalValue;
 
         // Unlock the appropriate assets from the buyer
-        auto const ter =
-            option::unlockTokens(sb, buyer, sleBuyer, unlockAmount, j);
+        auto const ter = option::unlockTokens(
+            sb, pseudoAccount, buyer, sleBuyer, unlockAmount, j);
         if (ter != tesSUCCESS)
             return ter;
 
@@ -1203,6 +1216,16 @@ expireOffer(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
     if (!sleAccount)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
+    // Get the owner's account SLE
+    Issue const issue = sle->getFieldIssue(sfAsset).value().get<Issue>();
+    Issue const issue2 = sle->getFieldAmount(sfStrikePrice).issue();
+    auto const slePair = view.read(keylet::optionPair(issue, issue2));
+    if (!slePair)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    // Get the pseudo account for the owner
+    AccountID const pseudoAccount = slePair->getAccountID(sfAccount);
+
     // Get the option flags
     auto const optionFlags = sle->getFlags();
 
@@ -1250,18 +1273,17 @@ expireOffer(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
             {
                 JLOG(j.trace()) << "OptionSettle: IOU unlock: " << lockedAmount;
 
-                // Use rippleCredit to adjust the trust line
-                auto const ter = rippleCredit(
-                    view,
-                    lockedAmount.getIssuer(),
-                    account,
-                    lockedAmount,
-                    true,
-                    j);
+                // Use accountSend to adjust the trust line
+                auto const ter =
+                    accountSend(view, pseudoAccount, account, lockedAmount, j);
 
-                // If rippleCredit failed, return the error
+                // If accountSend failed, return the error
                 if (ter != tesSUCCESS)
+                {
+                    JLOG(j.trace())
+                        << "OptionSettle: Failed to unlock IOU: " << ter;
                     return ter;  // LCOV_EXCL_LINE
+                }
             }
 
             // Update the seller's account in the ledger

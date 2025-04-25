@@ -23,6 +23,7 @@
 #include <xrpld/app/tx/detail/Transactor.h>
 #include <xrpld/ledger/ApplyView.h>
 #include <xrpld/ledger/Sandbox.h>
+
 #include <xrpl/protocol/Option.h>
 
 namespace ripple {
@@ -138,18 +139,20 @@ createOffer(
  * the account's available balance.
  *
  * @param sb Sandbox ledger view
+ * @param pseudoAccount OptionPair account (where tokens are locked)
  * @param sourceBalance Current XRP balance of the account
  * @param account Account whose tokens will be locked
- * @param quantityShares Amount to lock
+ * @param amount Amount to lock
  * @param j Journal for logging
  * @return TER Transaction result code
  */
 TER
 lockTokens(
     Sandbox& sb,
+    AccountID const& pseudoAccount,
     XRPAmount const& sourceBalance,
     AccountID const& account,
-    STAmount const& quantityShares,
+    STAmount const& amount,
     beast::Journal j_);
 
 /**
@@ -159,6 +162,7 @@ lockTokens(
  * the locked collateral back to the specified account.
  *
  * @param sb Sandbox ledger view
+ * @param pseudoAccount Account sending the unlocked tokens
  * @param receiver Account receiving the unlocked tokens
  * @param sleReceiver SLE of the receiving account
  * @param quantityShares Amount to unlock
@@ -168,9 +172,10 @@ lockTokens(
 TER
 unlockTokens(
     Sandbox& sb,
+    AccountID const& pseudoAccount,
     AccountID const& receiver,
     std::shared_ptr<SLE> const& sleReceiver,
-    STAmount const& quantityShares,
+    STAmount const& amount,
     beast::Journal j_);
 
 /**
@@ -202,6 +207,7 @@ transferTokens(
  * to maintain their positions.
  *
  * @param sb Sandbox ledger view
+ * @param pseudoAccount OptionPair account (where tokens are locked)
  * @param account Account closing the offer
  * @param offerKeylet Keylet of the offer to close
  * @param isPut Whether this is a put option
@@ -215,6 +221,7 @@ transferTokens(
 TER
 closeOffer(
     Sandbox& sb,
+    AccountID const& pseudoAccount,
     AccountID const& account,
     Keylet const& offerKeylet,
     bool isPut,
@@ -231,6 +238,7 @@ closeOffer(
  * according to the option terms. Updates or removes the option from the ledger.
  *
  * @param sb Sandbox ledger view
+ * @param pseudoAccount OptionPair account (where tokens are locked)
  * @param isPut Whether this is a put option
  * @param strikePrice The strike price
  * @param buyer Account exercising the option
@@ -243,6 +251,7 @@ closeOffer(
 TER
 exerciseOffer(
     Sandbox& sb,
+    AccountID const& pseudoAccount,
     bool isPut,
     STAmount const& strikePrice,
     AccountID const& buyer,
