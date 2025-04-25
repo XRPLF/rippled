@@ -163,7 +163,7 @@ public:
 
     /** Add a suppression peer and get message's relay status.
      * Return pair:
-     * element 1: true if the peer is added.
+     * element 1: true if the key is added.
      * element 2: optional is seated to the relay time point or
      * is unseated if has not relayed yet. */
     std::pair<bool, std::optional<Stopwatch::time_point>>
