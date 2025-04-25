@@ -394,7 +394,7 @@ UNTYPED_SFIELD(sfXChainClaimAttestationCollectionElement, OBJECT, 30)
 UNTYPED_SFIELD(sfXChainCreateAccountAttestationCollectionElement, OBJECT, 31)
 UNTYPED_SFIELD(sfPriceData,              OBJECT,    32)
 UNTYPED_SFIELD(sfCredential,             OBJECT,    33)
-UNTYPED_SFIELD(sfCounterpartySignature,  OBJECT,    34)
+UNTYPED_SFIELD(sfCounterpartySignature,  OBJECT,    34, SField::sMD_Default, SField::notSigning)
 
 // array of objects (common)
 // ARRAY/1 is reserved for end of array

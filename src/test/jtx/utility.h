@@ -51,6 +51,12 @@ struct parse_error : std::logic_error
 STObject
 parse(Json::Value const& jv);
 
+/** Sign automatically into a specific Json field of the jv object.
+    @note This only works on accounts with multi-signing off.
+*/
+void
+sign(Json::Value& jv, Account const& account, Json::Value& sigObject);
+
 /** Sign automatically.
     @note This only works on accounts with multi-signing off.
 */

@@ -29,12 +29,18 @@ sig::operator()(Env&, JTx& jt) const
 {
     if (!manual_)
         return;
-    jt.fill_sig = false;
     if (account_)
     {
         // VFALCO Inefficient pre-C++14
         auto const account = *account_;
-        jt.signer = [account](Env&, JTx& jtx) { jtx::sign(jtx.jv, account); };
+        jt.signers.emplace_back([subField = subField, account](Env&, JTx& jtx) {
+            // Where to put the signature. Supports sfCounterPartySignature.
+            auto& sigObject = subField ? jtx[*subField] : jtx.jv;
+            if (jtx.fill_sig && !subField)
+                jtx.fill_sig = false;
+
+            jtx::sign(jtx.jv, account, sigObject);
+        });
     }
 }
 

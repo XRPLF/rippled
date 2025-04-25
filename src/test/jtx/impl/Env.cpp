@@ -481,8 +481,11 @@ void
 Env::autofill_sig(JTx& jt)
 {
     auto& jv = jt.jv;
-    if (jt.signer)
-        return jt.signer(*this, jt);
+    if (!jt.signers.empty())
+    {
+        for (auto const& signer : jt.signers)
+            signer(*this, jt);
+    }
     if (!jt.fill_sig)
         return;
     auto const account = lookup(jv[jss::Account].asString());
@@ -549,8 +552,9 @@ Env::st(JTx const& jt)
     {
         return sterilize(STTx{std::move(*obj)});
     }
-    catch (std::exception const&)
+    catch (std::exception const& e)
     {
+        test.log << e.what() << std::endl;
     }
     return nullptr;
 }

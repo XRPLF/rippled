@@ -276,20 +276,21 @@ LoanSet::doApply()
 
     // Account for the origination fee using two payments
     //
-    // 1. Transfer (principalRequested - originationFee) from vault
-    // pseudo-account to LoanBroker pseudo-account.
+    // 1. Transfer loanAssetsAvailable (principalRequested - originationFee)
+    // from vault pseudo-account to LoanBroker pseudo-account.
     //
-    // Create the holding if it doesn't already exist
+    // Create the holding if it doesn't already exist (necessary for MPTs)
     if (auto const ter = addEmptyHolding(
             view,
             brokerPseudo,
             brokerPseudoSle->at(sfBalance).value().xrp(),
             vaultAsset,
             j_);
-        ter != tesSUCCESS && ter != tecDUPLICATE)
+        !isTesSuccess(ter) && ter != tecDUPLICATE)
         // ignore tecDUPLICATE. That means the holding already exists, and is
         // fine here
         return ter;
+    // 1a. Transfer the loanAssetsAvailable to the pseudo-account
     if (auto const ter = accountSend(
             view,
             vaultPseudo,
@@ -302,7 +303,7 @@ LoanSet::doApply()
     // LoanBroker owner.
     if (originationFee)
     {
-        // Create the holding if it doesn't already exist
+        // Create the holding if it doesn't already exist (necessary for MPTs)
         if (auto const ter = addEmptyHolding(
                 view,
                 brokerOwner,
@@ -324,8 +325,11 @@ LoanSet::doApply()
     }
 
     auto const managementFeeRate = brokerSle->at(sfManagementFeeRate);
+    // The total amount if interest the loan is expected to generate
     auto const loanInterest =
         tenthBipsOfValue(principalRequested, interestRate);
+    // The portion of the loan interest that will go to the vault (total
+    // interest minus the management fee)
     auto const loanInterestToVault = loanInterest -
         tenthBipsOfValue(loanInterest, managementFeeRate.value());
     auto const loanSequence = tx.getSeqValue();
@@ -370,6 +374,7 @@ LoanSet::doApply()
         tx[~sfPaymentTotal].value_or(defaultPaymentTotal);
     loan->at(sfAssetsAvailable) = loanAssetsAvailable;
     loan->at(sfPrincipalOutstanding) = principalRequested;
+    view.insert(loan);
 
     // Update the balances in the vault
     vaultSle->at(sfAssetsAvailable) -= principalRequested;
@@ -378,15 +383,17 @@ LoanSet::doApply()
 
     // Update the balances in the loan broker
     brokerSle->at(sfDebtTotal) += principalRequested + loanInterestToVault;
+    // The broker's owner count is solely for the number of outstanding loans,
+    // and is distinct from the broker's pseudo-account's owner count
     adjustOwnerCount(view, brokerSle, 1, j_);
+    view.update(brokerSle);
 
+    // Put the loan into the pseudo-account's directory
     if (auto const ter = dirLink(view, brokerPseudo, loan, sfLoanBrokerNode))
         return ter;
-    // Borrower is effectively the owner of the loan
+    // Borrower is the owner of the loan
     if (auto const ter = dirLink(view, borrower, loan, sfOwnerNode))
         return ter;
-
-    view.update(brokerSle);
 
     return tesSUCCESS;
 }
