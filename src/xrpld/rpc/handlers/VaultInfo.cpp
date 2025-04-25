@@ -47,7 +47,7 @@ parseVault(Json::Value const& params, Json::Value& jvResult)
     {
         if (!uNodeIndex.parseHex(params[jss::vault_id].asString()))
         {
-            jvResult[jss::error] = "malformedRequest";
+            RPC::inject_error(rpcINVALID_PARAMS, jvResult);
             return std::nullopt;
         }
         // else uNodeIndex holds the value we need
@@ -57,12 +57,15 @@ parseVault(Json::Value const& params, Json::Value& jvResult)
         auto const id = parseBase58<AccountID>(params[jss::owner].asString());
         if (!id)
         {
-            jvResult[jss::error] = "malformedOwner";
+            RPC::inject_error(rpcACT_MALFORMED, jvResult);
             return std::nullopt;
         }
-        else if (!params[jss::seq].isIntegral())
+        else if (
+            !params[jss::seq].isIntegral() ||
+            params[jss::seq].asDouble() <= 0.0 ||
+            params[jss::seq].asDouble() > double(Json::Value::maxUInt))
         {
-            jvResult[jss::error] = "malformedRequest";
+            RPC::inject_error(rpcINVALID_PARAMS, jvResult);
             return std::nullopt;
         }
 
@@ -71,7 +74,7 @@ parseVault(Json::Value const& params, Json::Value& jvResult)
     else
     {
         // Invalid combination of fields vault_id/owner/seq
-        jvResult[jss::error] = "malformedRequest";
+        RPC::inject_error(rpcINVALID_PARAMS, jvResult);
         return std::nullopt;
     }
 

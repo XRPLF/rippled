@@ -2305,26 +2305,26 @@ public:
         FeatureBitset const all{supported_amendments()};
 
         // MPTokenIssuanceCreate
-        testCreateValidation(all);
+        testCreateValidation(all - featureSingleAssetVault);
         testCreateValidation(all | featureSingleAssetVault);
-        testCreateEnabled(all);
+        testCreateEnabled(all - featureSingleAssetVault);
         testCreateEnabled(all | featureSingleAssetVault);
 
         // MPTokenIssuanceDestroy
-        testDestroyValidation(all);
+        testDestroyValidation(all - featureSingleAssetVault);
         testDestroyValidation(all | featureSingleAssetVault);
-        testDestroyEnabled(all);
+        testDestroyEnabled(all - featureSingleAssetVault);
         testDestroyEnabled(all | featureSingleAssetVault);
 
         // MPTokenAuthorize
-        testAuthorizeValidation(all);
+        testAuthorizeValidation(all - featureSingleAssetVault);
         testAuthorizeValidation(all | featureSingleAssetVault);
-        testAuthorizeEnabled(all);
+        testAuthorizeEnabled(all - featureSingleAssetVault);
         testAuthorizeEnabled(all | featureSingleAssetVault);
 
         // MPTokenIssuanceSet
         testSetValidation(all);
-        testSetEnabled(all);
+        testSetEnabled(all - featureSingleAssetVault);
         testSetEnabled(all | featureSingleAssetVault);
 
         // MPT clawback

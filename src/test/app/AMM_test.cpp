@@ -56,11 +56,16 @@ private:
 
         using namespace jtx;
 
-        // XRP to IOU
-        testAMM([&](AMM& ammAlice, Env&) {
-            BEAST_EXPECT(ammAlice.expectBalances(
-                XRP(10'000), USD(10'000), IOUAmount{10'000'000, 0}));
-        });
+        // XRP to IOU, with featureSingleAssetVault
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'000), USD(10'000), IOUAmount{10'000'000, 0}));
+            },
+            {},
+            0,
+            {},
+            {supported_amendments() | featureSingleAssetVault});
 
         // XRP to IOU, without featureSingleAssetVault
         testAMM(
@@ -7187,7 +7192,8 @@ private:
                                                   : ter{tecDUPLICATE});
         };
 
-        testCase("tecDUPLICATE", supported_amendments());
+        testCase(
+            "tecDUPLICATE", supported_amendments() - featureSingleAssetVault);
         testCase(
             "terADDRESS_COLLISION",
             supported_amendments() | featureSingleAssetVault);
