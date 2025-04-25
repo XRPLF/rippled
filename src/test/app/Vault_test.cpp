@@ -48,6 +48,7 @@
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
+#include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/jss.h>
 
 namespace ripple {
@@ -56,16 +57,15 @@ using namespace test::jtx;
 
 class Vault_test : public beast::unit_test::suite
 {
+    static auto constexpr negativeAmount =
+        [](PrettyAsset const& asset) -> PrettyAmount {
+        return {STAmount{asset.raw(), 1ul, 0, true, STAmount::unchecked{}}, ""};
+    };
+
     void
     testSequences()
     {
         using namespace test::jtx;
-
-        static auto constexpr negativeAmount =
-            [](PrettyAsset const& asset) -> PrettyAmount {
-            return {
-                STAmount{asset.raw(), 1ul, 0, true, STAmount::unchecked{}}, ""};
-        };
 
         auto const testSequence = [this](
                                       std::string const& prefix,
@@ -528,6 +528,159 @@ class Vault_test : public beast::unit_test::suite
             });
     }
 
+    void
+    testPreflight()
+    {
+        {
+            testcase("disabled single asset vault");
+            Env env{*this, supported_amendments() - featureSingleAssetVault};
+            Account issuer{"issuer"};
+            Account owner{"owner"};
+            env.fund(XRP(100000), issuer, owner);
+            env.close();
+
+            PrettyAsset asset = issuer["IOU"];
+            env(trust(owner, asset(1000)));
+            env(pay(issuer, owner, asset(1000)));
+            env.close();
+
+            Vault vault{env};
+            auto [tx0, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx0, ter{temDISABLED});
+
+            {
+                auto tx = vault.set({.owner = owner, .id = keylet.key});
+                env(tx, ter{temDISABLED});
+            }
+
+            {
+                auto tx = vault.deposit(
+                    {.depositor = owner,
+                     .id = keylet.key,
+                     .amount = asset(10)});
+                env(tx, ter{temDISABLED});
+            }
+
+            {
+                auto tx = vault.withdraw(
+                    {.depositor = owner,
+                     .id = keylet.key,
+                     .amount = asset(10)});
+                env(tx, ter{temDISABLED});
+            }
+
+            {
+                auto tx = vault.clawback(
+                    {.issuer = issuer,
+                     .id = keylet.key,
+                     .holder = owner,
+                     .amount = asset(10)});
+                env(tx, ter{temDISABLED});
+            }
+
+            {
+                auto tx = vault.del({.owner = owner, .id = keylet.key});
+                env(tx, ter{temDISABLED});
+            }
+        }
+
+        {
+            testcase("invalid flags");
+            Env env{*this, supported_amendments() | featureSingleAssetVault};
+            Account issuer{"issuer"};
+            Account owner{"owner"};
+            env.fund(XRP(100000), issuer, owner);
+            env.close();
+
+            PrettyAsset asset = issuer["IOU"];
+            env(trust(owner, asset(1000)));
+            env(pay(issuer, owner, asset(1000)));
+            env.close();
+
+            Vault vault{env};
+            auto [tx0, keylet] = vault.create({.owner = owner, .asset = asset});
+            tx0[sfFlags] = tfClearDeepFreeze;
+            env(tx0, ter{temINVALID_FLAG});
+
+            {
+                auto [tx, keylet] =
+                    vault.create({.owner = owner, .asset = asset});
+                tx[sfFlags] = tfVaultPrivate | tfVaultShareNonTransferable;
+                env(tx);
+            }
+
+            {
+                auto tx = vault.set({.owner = owner, .id = keylet.key});
+                tx[sfFlags] = tfClearDeepFreeze;
+                env(tx, ter{temINVALID_FLAG});
+            }
+
+            {
+                auto tx = vault.deposit(
+                    {.depositor = owner,
+                     .id = keylet.key,
+                     .amount = asset(10)});
+                tx[sfFlags] = tfClearDeepFreeze;
+                env(tx, ter{temINVALID_FLAG});
+            }
+
+            {
+                auto tx = vault.withdraw(
+                    {.depositor = owner,
+                     .id = keylet.key,
+                     .amount = asset(10)});
+                tx[sfFlags] = tfClearDeepFreeze;
+                env(tx, ter{temINVALID_FLAG});
+            }
+
+            {
+                auto tx = vault.clawback(
+                    {.issuer = issuer,
+                     .id = keylet.key,
+                     .holder = owner,
+                     .amount = asset(10)});
+                tx[sfFlags] = tfClearDeepFreeze;
+                env(tx, ter{temINVALID_FLAG});
+            }
+
+            {
+                auto tx = vault.del({.owner = owner, .id = keylet.key});
+                tx[sfFlags] = tfClearDeepFreeze;
+                env(tx, ter{temINVALID_FLAG});
+            }
+        }
+
+        {
+            testcase("disabled permissioned domain");
+
+            Env env{
+                *this,
+                (supported_amendments() | featureSingleAssetVault) -
+                    featurePermissionedDomains};
+            Account owner{"owner"};
+            env.fund(XRP(100000), owner);
+            env.close();
+
+            Vault vault{env};
+            auto [tx, keylet] =
+                vault.create({.owner = owner, .asset = xrpIssue()});
+            tx[sfDomainID] = to_string(base_uint<256>(42ul));
+            env(tx, ter{temDISABLED});
+
+            {
+                auto [tx, keylet] =
+                    vault.create({.owner = owner, .asset = xrpIssue()});
+                env(tx);
+            }
+
+            {
+                auto tx = vault.set({.owner = owner, .id = keylet.key});
+                tx[sfDomainID] = to_string(base_uint<256>(42ul));
+                env(tx, ter{temDISABLED});
+            }
+        }
+    }
+
     // Test for non-asset specific behaviors.
     void
     testCreateFailXRP()
@@ -606,6 +759,32 @@ class Vault_test : public beast::unit_test::suite
             testcase("nothing to delete");
             auto tx = vault.del({.owner = owner, .id = keylet::skip().key});
             env(tx, ter(tecNO_ENTRY));
+        });
+
+        testCase([this](
+                     Env& env,
+                     Account const& issuer,
+                     Account const& owner,
+                     Account const& depositor,
+                     Asset const& asset,
+                     Vault& vault) {
+            testcase("cannot create public vault with domain");
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            tx[sfDomainID] = to_string(base_uint<256>(42ul));
+            env(tx, ter{temMALFORMED});
+        });
+
+        testCase([this](
+                     Env& env,
+                     Account const& issuer,
+                     Account const& owner,
+                     Account const& depositor,
+                     Asset const& asset,
+                     Vault& vault) {
+            testcase("cannot create public vault with negative maximum");
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            tx[sfAssetsMaximum] = negativeAmount(asset);
+            env(tx, ter{temMALFORMED});
         });
 
         testCase([this](
@@ -2079,6 +2258,7 @@ public:
     run() override
     {
         testSequences();
+        testPreflight();
         testCreateFailXRP();
         testCreateFailIOU();
         testCreateFailMPT();
