@@ -74,6 +74,8 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     auto const sleIssuance = ctx.view.read(keylet::mptIssuance(mptIssuanceID));
     if (!sleIssuance)
         return tefINTERNAL;
+    if (sleIssuance->isFlag(lsfMPTLocked))
+        return tefINTERNAL;
 
     // Cannot deposit inside Vault an Asset frozen for the depositor
     if (isFrozen(ctx.view, account, vaultAsset))

@@ -1187,7 +1187,7 @@ addEmptyHolding(
     auto const mpt = view.peek(keylet::mptIssuance(mptID));
     if (!mpt)
         return tecOBJECT_NOT_FOUND;
-    if (mpt->getFlags() & lsfMPTLocked)
+    if (mpt->isFlag(lsfMPTLocked))
         return tecLOCKED;
     if (view.peek(keylet::mptoken(mptID, accountID)))
         return tecDUPLICATE;
