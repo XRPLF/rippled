@@ -1040,7 +1040,7 @@ dirLink(ApplyView& view, AccountID const& owner, std::shared_ptr<SLE>& object)
     auto const page = view.dirInsert(
         keylet::ownerDir(owner), object->key(), describeOwnerDir(owner));
     if (!page)
-        return tecDIR_FULL;
+        return tecDIR_FULL;  // LCOV_EXCL_LINE
     object->setFieldU64(sfOwnerNode, *page);
     return tesSUCCESS;
 }
@@ -1186,15 +1186,18 @@ addEmptyHolding(
     auto const& mptID = mptIssue.getMptID();
     auto const mpt = view.peek(keylet::mptIssuance(mptID));
     if (!mpt)
-        return tefINTERNAL;
+        return tecOBJECT_NOT_FOUND;
     if (mpt->getFlags() & lsfMPTLocked)
         return tecLOCKED;
+    if (view.peek(keylet::mptoken(mptID, accountID)))
+        return tecDUPLICATE;
+
     return MPTokenAuthorize::authorize(
         view,
         journal,
         {.priorBalance = priorBalance,
          .mptIssuanceID = mptID,
-         .accountID = accountID});
+         .account = accountID});
 }
 
 TER
@@ -1386,13 +1389,21 @@ removeEmptyHolding(
     beast::Journal journal)
 {
     auto const& mptID = mptIssue.getMptID();
-    // `MPTokenAuthorize::authorize` asserts that the balance is 0.
+    auto const mptoken = view.peek(keylet::mptoken(mptID, accountID));
+    if (!mptoken)
+        return tecOBJECT_NOT_FOUND;
+    if (mptoken->at(sfMPTAmount) != 0)
+        return tecHAS_OBLIGATIONS;
+    if (view.rules().enabled(featureSingleAssetVault) &&
+        mptoken->isFlag(lsfMPTLocked))
+        return tecNO_PERMISSION;
+
     return MPTokenAuthorize::authorize(
         view,
         journal,
         {.priorBalance = {},
          .mptIssuanceID = mptID,
-         .accountID = accountID,
+         .account = accountID,
          .flags = tfMPTUnauthorize});
 }
 
@@ -2424,7 +2435,7 @@ enforceMPTokenAuthorization(
                 {
                     .priorBalance = priorBalance,
                     .mptIssuanceID = mptIssuanceID,
-                    .accountID = account,
+                    .account = account,
                     .flags = 0,
                 });
             !isTesSuccess(err))

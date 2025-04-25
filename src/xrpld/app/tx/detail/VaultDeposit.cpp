@@ -170,7 +170,7 @@ VaultDeposit::doApply()
                     ctx_.journal,
                     {.priorBalance = mPriorBalance,
                      .mptIssuanceID = mptIssuanceID->value(),
-                     .accountID = account_});
+                     .account = account_});
                 !isTesSuccess(err))
                 return err;
         }
@@ -184,7 +184,7 @@ VaultDeposit::doApply()
                     {
                         .priorBalance = mPriorBalance,
                         .mptIssuanceID = mptIssuanceID->value(),
-                        .accountID = sleIssuance->at(sfIssuer),
+                        .account = sleIssuance->at(sfIssuer),
                         .holderID = account_,
                     });
                 !isTesSuccess(err))

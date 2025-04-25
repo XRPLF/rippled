@@ -28,7 +28,7 @@ struct MPTAuthorizeArgs
 {
     XRPAmount const& priorBalance;
     MPTID const& mptIssuanceID;
-    AccountID const& accountID;
+    AccountID const& account;
     std::uint32_t flags{};
     std::optional<AccountID> holderID{};
 };
