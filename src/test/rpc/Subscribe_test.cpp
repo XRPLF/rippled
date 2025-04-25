@@ -1350,7 +1350,7 @@ public:
                 jrOffer[jss::currency_a].asString() == "XRP_drops" &&
                 jrOffer[jss::volume_a].asString() == "5000000" &&
                 jrOffer[jss::currency_b].asString() ==
-                "r9QxhA9RghPZBbUchA9HkrmLKaWvkLXU29/USD" &&
+                "rHUKYAZyUFn8PCZWbPfwHfbVQXTYrYKkHb/USD" &&
                 jrOffer[jss::volume_b].asString() == "5";
         }));
     }
