@@ -1013,7 +1013,7 @@ CreateOffer::applyHybrid(
 
     auto dir =
         keylet::quality(keylet::book(book), getRate(saTakerGets, saTakerPays));
-    bool const bookExists = static_cast<bool>(sb.exists(dir));
+    bool const bookExists = sb.exists(dir);
 
     auto const bookNode = sb.dirAppend(dir, offerKey, [&](SLE::ref sle) {
         // don't set domainID on the directory object since this directory is
@@ -1377,14 +1377,9 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     // if it's a hybrid offer, set hybrid flag, and create an open dir
     if (bHybrid)
     {
-        if (auto const res = applyHybrid(
-                sb,
-                sleOffer,
-                offer_index,
-                saTakerPays,
-                saTakerGets,
-                setBookDir);
-            res != tesSUCCESS)
+        auto const res = applyHybrid(
+            sb, sleOffer, offer_index, saTakerPays, saTakerGets, setBookDir);
+        if (res != tesSUCCESS)
             return {res, true};  // LCOV_EXCL_LINE
     }
 

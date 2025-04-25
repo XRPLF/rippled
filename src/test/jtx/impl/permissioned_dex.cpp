@@ -31,13 +31,13 @@ namespace test {
 namespace jtx {
 
 PermissionedDEX::PermissionedDEX(Env& env)
-    : gw("gateway")
-    , domainOwner("domainOwner")
-    , alice("alice")
-    , bob("bob")
-    , carol("carol")
+    : gw("permdex-gateway")
+    , domainOwner("permdex-domainOwner")
+    , alice("permdex-alice")
+    , bob("permdex-bob")
+    , carol("permdex-carol")
     , USD(gw["USD"])
-    , credType("abcde")
+    , credType("permdex-abcde")
 {
     // Fund accounts
     env.fund(XRP(100000), domainOwner, alice, bob, carol, gw);

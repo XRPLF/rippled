@@ -390,6 +390,7 @@ normalizePath(
    owner
    @param offerCrossing false -> payment; true -> offer crossing
    @param ammContext counts iterations with AMM offers
+   @param domainID the domain that order books will use
    @param j Journal for logging messages
    @return Error code and constructed Strand
 */
@@ -430,6 +431,7 @@ toStrand(
    owner
    @param offerCrossing false -> payment; true -> offer crossing
    @param ammContext counts iterations with AMM offers
+   @param domainID the domain that order books will use
    @param j Journal for logging messages
    @return error code and collection of strands
 */
@@ -557,7 +559,7 @@ struct StrandContext
     */
     boost::container::flat_set<Issue>& seenBookOuts;
     AMMContext& ammContext;
-    std::optional<uint256> domainID;
+    std::optional<uint256> domainID;  // the domain the order book will use
     beast::Journal const j;
 
     /** StrandContext constructor. */

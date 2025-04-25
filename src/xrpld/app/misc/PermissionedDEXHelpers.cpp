@@ -43,10 +43,7 @@ accountInDomain(
         credentials.begin(), credentials.end(), [&](auto const& credential) {
             auto const sleCred = view.read(keylet::credential(
                 account, credential[sfIssuer], credential[sfCredentialType]));
-            if (!sleCred)
-                return false;
-
-            if (!sleCred->isFlag(lsfAccepted))
+            if (!sleCred || !sleCred->isFlag(lsfAccepted))
                 return false;
 
             return !credentials::checkExpired(
