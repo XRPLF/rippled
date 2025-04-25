@@ -138,8 +138,6 @@ public:
                 return {};
             }
 
-            std::stringstream ss;
-
             bool isNew = true;
             std::shared_ptr<InboundLedger> inbound;
             {
