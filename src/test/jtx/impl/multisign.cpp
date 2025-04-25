@@ -81,12 +81,9 @@ void
 msig::operator()(Env& env, JTx& jt) const
 {
     auto const mySigners = signers;
-    jt.signers.emplace_back([subField = subField, mySigners, &env](
-                                Env&, JTx& jtx) {
+    auto callback = [subField = subField, mySigners, &env](Env&, JTx& jtx) {
         // Where to put the signature. Supports sfCounterPartySignature.
         auto& sigObject = subField ? jtx[*subField] : jtx.jv;
-        if (jtx.fill_sig && !subField)
-            jtx.fill_sig = false;
 
         sigObject[sfSigningPubKey] = "";
         std::optional<STObject> st;
@@ -113,7 +110,11 @@ msig::operator()(Env& env, JTx& jt) const
             jo[sfTxnSignature.getJsonName()] =
                 strHex(Slice{sig.data(), sig.size()});
         }
-    });
+    };
+    if (!subField)
+        jt.mainSigners.emplace_back(callback);
+    else
+        jt.postSigners.emplace_back(callback);
 }
 
 }  // namespace jtx

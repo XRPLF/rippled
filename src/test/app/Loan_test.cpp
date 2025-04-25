@@ -59,7 +59,8 @@ class Loan_test : public beast::unit_test::suite
             Env env(*this, features);
 
             Account const alice{"alice"};
-            env.fund(XRP(10000), alice);
+            Account const bob{"bob"};
+            env.fund(XRP(10000), alice, bob);
 
             auto const keylet = keylet::loanbroker(alice, env.seq(alice));
 
@@ -67,14 +68,16 @@ class Loan_test : public beast::unit_test::suite
             using namespace loan;
 
             // counter party signature is required on LoanSet
-            env(set(alice, keylet.key, Number(10000), env.now() + 720h),
+            auto setTx = env.jt(
+                set(alice, keylet.key, Number(10000), env.now() + 720h),
                 ter(temMALFORMED));
+            env(setTx);
 
             // All loan transactions are disabled.
             // 1. LoanSet
-            env(set(alice, keylet.key, Number(10000), env.now() + 720h),
-                sig(sfCounterpartySignature, alice),
-                ter(temDISABLED));
+            setTx = env.jt(
+                setTx, sig(sfCounterpartySignature, bob), ter(temDISABLED));
+            env(setTx);
             auto const loanKeylet =
                 keylet::loan(alice.id(), keylet.key, env.seq(alice));
 #if 0

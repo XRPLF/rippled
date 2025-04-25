@@ -35,6 +35,7 @@
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/basics/scope.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
@@ -481,13 +482,25 @@ void
 Env::autofill_sig(JTx& jt)
 {
     auto& jv = jt.jv;
-    if (!jt.signers.empty())
-    {
-        for (auto const& signer : jt.signers)
+
+    scope_success success([&]() {
+        // Call all the post-signers after the main signers or autofill are done
+        for (auto const& signer : jt.postSigners)
             signer(*this, jt);
+    });
+
+    // Call all the main signers
+    if (!jt.mainSigners.empty())
+    {
+        for (auto const& signer : jt.mainSigners)
+            signer(*this, jt);
+        return;
     }
+
+    // If the sig is still needed, get it here.
     if (!jt.fill_sig)
         return;
+
     auto const account = lookup(jv[jss::Account].asString());
     if (!app().checkSigs())
     {
@@ -552,9 +565,8 @@ Env::st(JTx const& jt)
     {
         return sterilize(STTx{std::move(*obj)});
     }
-    catch (std::exception const& e)
+    catch (std::exception const&)
     {
-        test.log << e.what() << std::endl;
     }
     return nullptr;
 }
