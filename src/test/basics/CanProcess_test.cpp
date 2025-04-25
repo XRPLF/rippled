@@ -20,6 +20,8 @@
 #include <xrpl/basics/CanProcess.h>
 #include <xrpl/beast/unit_test.h>
 
+#include <memory>
+
 namespace ripple {
 namespace test {
 
