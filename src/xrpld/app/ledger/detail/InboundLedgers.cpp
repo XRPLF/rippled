@@ -77,13 +77,85 @@ public:
                 hash.isNonZero(),
                 "ripple::InboundLedgersImp::acquire::doAcquire : nonzero hash");
 
-            // probably not the right rule
-            if (app_.getOPs().isNeedNetworkLedger() &&
-                (reason != InboundLedger::Reason::GENERIC) &&
-                (reason != InboundLedger::Reason::CONSENSUS))
-                return {};
+            bool const needNetworkLedger = app_.getOPs().isNeedNetworkLedger();
+            bool const shouldAcquire = [&]() {
+                if (!needNetworkLedger)
+                    return true;
+                if (reason == InboundLedger::Reason::GENERIC)
+                    return true;
+                if (reason == InboundLedger::Reason::CONSENSUS)
+                    return true;
+                return false;
+            }();
 
             std::stringstream ss;
+            ss << "InboundLedger::acquire: "
+               << "Request: " << to_string(hash) << ", " << seq
+               << " NeedNetworkLedger: " << (needNetworkLedger ? "yes" : "no")
+               << " Reason: " << to_string(reason)
+               << " Should acquire: " << (shouldAcquire ? "true." : "false.");
+
+            /*  Acquiring ledgers is somewhat expensive. It requires lots of
+             *  computation and network communication. Avoid it when it's not
+             *  appropriate. Every validation from a peer for a ledger that
+             *  we do not have locally results in a call to this function: even
+             *  if we are moments away from validating the same ledger.
+             */
+            bool const shouldBroadcast = [&]() {
+                // If the node is not in "full" state, it needs to sync to
+                // the network, and doesn't have the necessary tx's and
+                // ledger entries to build the ledger.
+                bool const isFull = app_.getOPs().isFull();
+                // If everything else is ok, don't try to acquire the ledger
+                // if the requested seq is in the near future relative to
+                // the validated ledger. If the requested ledger is between
+                // 1 and 19 inclusive ledgers ahead of the valid ledger this
+                // node has not built it yet, but it's possible/likely it
+                // has the tx's necessary to build it and get caught up.
+                // Plus it might not become validated. On the other hand, if
+                // it's more than 20 in the future, this node should request
+                // it so that it can jump ahead and get caught up.
+                LedgerIndex const validSeq =
+                    app_.getLedgerMaster().getValidLedgerIndex();
+                constexpr std::size_t lagLeeway = 20;
+                bool const nearFuture =
+                    (seq > validSeq) && (seq < validSeq + lagLeeway);
+                // If everything else is ok, don't try to acquire the ledger
+                // if the request is related to consensus. (Note that
+                // consensus calls usually pass a seq of 0, so nearFuture
+                // will be false other than on a brand new network.)
+                bool const consensus =
+                    reason == InboundLedger::Reason::CONSENSUS;
+                ss << " Evaluating whether to broadcast requests to peers"
+                   << ". full: " << (isFull ? "true" : "false")
+                   << ". ledger sequence " << seq
+                   << ". Valid sequence: " << validSeq
+                   << ". Lag leeway: " << lagLeeway
+                   << ". request for near future ledger: "
+                   << (nearFuture ? "true" : "false")
+                   << ". Consensus: " << (consensus ? "true" : "false");
+
+                // If the node is not synced, send requests.
+                if (!isFull)
+                    return true;
+                // If the ledger is in the near future, do NOT send requests.
+                // This node is probably about to build it.
+                if (nearFuture)
+                    return false;
+                // If the request is because of consensus, do NOT send requests.
+                // This node is probably about to build it.
+                if (consensus)
+                    return false;
+                return true;
+            }();
+            ss << ". Would broadcast to peers? "
+               << (shouldBroadcast ? "true." : "false.");
+
+            if (!shouldAcquire)
+            {
+                JLOG(j_.debug()) << "Abort(rule): " << ss.str();
+                return {};
+            }
 
             bool isNew = true;
             std::shared_ptr<InboundLedger> inbound;
