@@ -1,6 +1,6 @@
 name: Check libXRPL compatibility with Clio
 env:
-  CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
+  CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
   CONAN_LOGIN_USERNAME_RIPPLE: ${{ secrets.CONAN_USERNAME }}
   CONAN_PASSWORD_RIPPLE: ${{ secrets.CONAN_TOKEN }}
 on:
@@ -22,7 +22,7 @@ jobs:
       version: ${{ steps.version.outputs.version }}
       channel: ${{ steps.channel.outputs.channel }}
     runs-on: [self-hosted, heavy]
-    container: ghcr.io/xrplf/rippled-build-ubuntu:aaf5e3e
+    container: ghcr.io/legleux/rippled-build-ubuntu:conan2
     steps:
       - name: Wait for essential checks to succeed
         uses: lewagon/wait-on-check-action@v1.3.4
