@@ -293,7 +293,7 @@ TOfferStreamBase<TIn, TOut>::step()
         }
 
         if (entry->isFieldPresent(sfDomainID) &&
-            !permissionedDEX::offerInDomain(
+            !permissioned_dex::offerInDomain(
                 view_, entry->key(), entry->getFieldH256(sfDomainID), j_))
         {
             JLOG(j_.trace())

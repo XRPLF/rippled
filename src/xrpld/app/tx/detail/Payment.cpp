@@ -330,11 +330,11 @@ Payment::preclaim(PreclaimContext const& ctx)
 
     if (ctx.tx.isFieldPresent(sfDomainID))
     {
-        if (!permissionedDEX::accountInDomain(
+        if (!permissioned_dex::accountInDomain(
                 ctx.view, ctx.tx[sfAccount], ctx.tx[sfDomainID]))
             return tecNO_PERMISSION;
 
-        if (!permissionedDEX::accountInDomain(
+        if (!permissioned_dex::accountInDomain(
                 ctx.view, ctx.tx[sfDestination], ctx.tx[sfDomainID]))
             return tecNO_PERMISSION;
     }

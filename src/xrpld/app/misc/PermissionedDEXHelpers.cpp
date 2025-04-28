@@ -21,7 +21,7 @@
 #include <xrpld/app/misc/PermissionedDEXHelpers.h>
 
 namespace ripple {
-namespace permissionedDEX {
+namespace permissioned_dex {
 
 bool
 accountInDomain(
@@ -83,6 +83,6 @@ offerInDomain(
     return accountInDomain(view, sleOffer->getAccountID(sfAccount), domainID);
 }
 
-}  // namespace permissionedDEX
+}  // namespace permissioned_dex
 
 }  // namespace ripple

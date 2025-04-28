@@ -21,7 +21,7 @@
 #include <xrpld/ledger/View.h>
 
 namespace ripple {
-namespace permissionedDEX {
+namespace permissioned_dex {
 
 // Check if an account is in a permissioned domain
 [[nodiscard]] bool
@@ -38,6 +38,6 @@ offerInDomain(
     uint256 const& domainID,
     beast::Journal j);
 
-}  // namespace permissionedDEX
+}  // namespace permissioned_dex
 
 }  // namespace ripple

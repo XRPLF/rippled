@@ -223,7 +223,8 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
     // is part of the domain
     if (ctx.tx.isFieldPresent(sfDomainID))
     {
-        if (!permissionedDEX::accountInDomain(ctx.view, id, ctx.tx[sfDomainID]))
+        if (!permissioned_dex::accountInDomain(
+                ctx.view, id, ctx.tx[sfDomainID]))
             return tecNO_PERMISSION;
     }
 
