@@ -152,12 +152,11 @@ VaultDeposit::doApply()
         return tefINTERNAL;
 
     auto const& vaultAccount = vault->at(sfAccount);
-    MPTIssue const mptIssue(mptIssuanceID);
     // Note, vault owner is always authorized
     if ((vault->getFlags() & tfVaultPrivate) && account_ != vault->at(sfOwner))
     {
         if (auto const err = enforceMPTokenAuthorization(
-                ctx_.view(), mptIssue, account_, mPriorBalance, j_);
+                ctx_.view(), mptIssuanceID, account_, mPriorBalance, j_);
             !isTesSuccess(err))
             return err;
     }

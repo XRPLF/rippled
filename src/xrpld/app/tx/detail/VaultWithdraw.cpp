@@ -48,12 +48,9 @@ VaultWithdraw::preflight(PreflightContext const& ctx)
     if (ctx.tx[sfAmount] <= beast::zero)
         return temBAD_AMOUNT;
 
-    if (ctx.tx.isFieldPresent(sfDestination))
-    {
-        if (auto const dstAccountID = ctx.tx.getAccountID(sfDestination);
-            dstAccountID == beast::zero)
-            return temMALFORMED;
-    }
+    if (auto const destination = ctx.tx[~sfDestination];
+        destination && *destination == beast::zero)
+        return temMALFORMED;
 
     return preflight2(ctx);
 }

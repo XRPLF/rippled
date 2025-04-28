@@ -753,7 +753,7 @@ requireAuth(
 [[nodiscard]] TER
 enforceMPTokenAuthorization(
     ApplyView& view,
-    MPTIssue const& mptIssue,
+    MPTID const& mptIssuanceID,
     AccountID const& account,
     XRPAmount const& priorBalance,
     beast::Journal j);

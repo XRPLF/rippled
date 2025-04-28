@@ -2360,22 +2360,21 @@ requireAuth(
 [[nodiscard]] TER
 enforceMPTokenAuthorization(
     ApplyView& view,
-    MPTIssue const& mptIssue,
+    MPTID const& mptIssuanceID,
     AccountID const& account,
     XRPAmount const& priorBalance,  // for MPToken authorization
     beast::Journal j)
 {
-    auto const mptIssuanceID = mptIssue.getMptID();
     auto const sleIssuance = view.read(keylet::mptIssuance(mptIssuanceID));
     if (!sleIssuance)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     XRPL_ASSERT(
         sleIssuance->isFlag(lsfMPTRequireAuth),
         "ripple::enforceMPTokenAuthorization : authorization required");
 
     if (account == sleIssuance->at(sfIssuer))
-        return tesSUCCESS;  // Won't create MPToken for the token issuer
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const keylet = keylet::mptoken(mptIssuanceID, account);
     auto const sleToken = view.read(keylet);  //  NOTE: might be null
