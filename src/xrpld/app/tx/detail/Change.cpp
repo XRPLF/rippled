@@ -133,13 +133,15 @@ Change::preclaim(PreclaimContext const& ctx)
             if (ctx.view.rules().enabled(featureSmartEscrow))
             {
                 if (!ctx.tx.isFieldPresent(sfExtensionComputeLimit) ||
-                    !ctx.tx.isFieldPresent(sfExtensionSizeLimit))
+                    !ctx.tx.isFieldPresent(sfExtensionSizeLimit) ||
+                    !ctx.tx.isFieldPresent(sfGasPrice))
                     return temMALFORMED;
             }
             else
             {
                 if (ctx.tx.isFieldPresent(sfExtensionComputeLimit) ||
-                    ctx.tx.isFieldPresent(sfExtensionSizeLimit))
+                    ctx.tx.isFieldPresent(sfExtensionSizeLimit) ||
+                    ctx.tx.isFieldPresent(sfGasPrice))
                     return temDISABLED;
             }
             return tesSUCCESS;
@@ -393,6 +395,7 @@ Change::applyFee()
     {
         set(feeObject, ctx_.tx, sfExtensionComputeLimit);
         set(feeObject, ctx_.tx, sfExtensionSizeLimit);
+        set(feeObject, ctx_.tx, sfGasPrice);
     }
 
     view().update(feeObject);

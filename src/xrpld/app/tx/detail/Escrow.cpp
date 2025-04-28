@@ -34,6 +34,8 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 
+#include <algorithm>
+
 // During an EscrowFinish, the transaction must specify both
 // a condition and a fulfillment. We track whether that
 // fulfillment matches and validates the condition.
@@ -361,6 +363,13 @@ EscrowFinish::preflight(PreflightContext const& ctx)
         !ctx.rules.enabled(featureCredentials))
         return temDISABLED;
 
+    if (ctx.tx.isFieldPresent(sfComputationAllowance) &&
+        !ctx.rules.enabled(featureSmartEscrow))
+    {
+        JLOG(ctx.j.debug()) << "SmartEscrow not enabled";
+        return temDISABLED;
+    }
+
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
         return ret;
 
@@ -402,6 +411,16 @@ EscrowFinish::preflight(PreflightContext const& ctx)
         }
     }
 
+    if (auto const allowance = ctx.tx[~sfComputationAllowance]; allowance)
+    {
+        if (*allowance > ctx.app.config().FEES.extension_compute_limit)
+        {
+            JLOG(ctx.j.debug())
+                << "ComputationAllowance too large: " << *allowance;
+            return temBAD_LIMIT;
+        }
+    }
+
     if (auto const err = credentials::checkFields(ctx); !isTesSuccess(err))
         return err;
 
@@ -417,8 +436,10 @@ EscrowFinish::calculateBaseFee(ReadView const& view, STTx const& tx)
     {
         extraFee += view.fees().base * (32 + (fb->size() / 16));
     }
-    // TODO: make this fee increase based on the extra compute run
-
+    if (auto const allowance = tx[~sfComputationAllowance]; allowance)
+    {
+        extraFee += (*allowance) * view.fees().gasPrice / MICRO_DROPS_PER_DROP;
+    }
     return Transactor::calculateBaseFee(view, tx) + extraFee;
 }
 
@@ -427,6 +448,34 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
 {
     if (!ctx.view.rules().enabled(featureCredentials))
         return Transactor::preclaim(ctx);
+
+    if (ctx.view.rules().enabled(featureSmartEscrow))
+    {
+        // this check is done in doApply before this amendment is enabled
+        auto const k = keylet::escrow(ctx.tx[sfOwner], ctx.tx[sfOfferSequence]);
+        auto const slep = ctx.view.read(k);
+        if (!slep)
+            return tecNO_TARGET;
+
+        if (slep->isFieldPresent(sfFinishFunction))
+        {
+            if (!ctx.tx.isFieldPresent(sfComputationAllowance))
+            {
+                JLOG(ctx.j.debug())
+                    << "FinishFunction requires ComputationAllowance";
+                return tefWASM_FIELD_NOT_INCLUDED;
+            }
+        }
+        else
+        {
+            if (ctx.tx.isFieldPresent(sfComputationAllowance))
+            {
+                JLOG(ctx.j.debug()) << "FinishFunction not present, "
+                                       "ComputationAllowance present";
+                return tefNO_WASM;
+            }
+        }
+    }
 
     if (auto const err = credentials::valid(ctx, ctx.tx[sfAccount]);
         !isTesSuccess(err))
@@ -441,7 +490,8 @@ EscrowFinish::doApply()
     auto const k = keylet::escrow(ctx_.tx[sfOwner], ctx_.tx[sfOfferSequence]);
     auto const slep = ctx_.view().peek(k);
     if (!slep)
-        return tecNO_TARGET;
+        return ctx_.view().rules().enabled(featureSmartEscrow) ? tecINTERNAL
+                                                               : tecNO_TARGET;
 
     // Order of processing the release conditions (in order of performance):
     // FinishAfter/CancelAfter
@@ -579,17 +629,15 @@ EscrowFinish::doApply()
         std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
         std::string funcName("ready");
 
-        auto const escrowTx =
-            ctx_.tx.getJson(JsonOptions::none).toStyledString();
-        auto const escrowObj =
-            slep->getJson(JsonOptions::none).toStyledString();
-        std::vector<uint8_t> escrowTxData(escrowTx.begin(), escrowTx.end());
-        std::vector<uint8_t> escrowObjData(escrowObj.begin(), escrowObj.end());
-
         WasmHostFunctionsImpl ledgerDataProvider(ctx_, k);
 
-        std::uint32_t gasLimit = ctx_.app.config().FEES.extension_compute_limit;
-        auto re = runEscrowWasm(wasm, funcName, &ledgerDataProvider, gasLimit);
+        if (!ctx_.tx.isFieldPresent(sfComputationAllowance))
+        {
+            // already checked above, this check is just in case
+            return tecINTERNAL;
+        }
+        std::uint32_t allowance = ctx_.tx[sfComputationAllowance];
+        auto re = runEscrowWasm(wasm, funcName, &ledgerDataProvider, allowance);
         JLOG(j_.trace()) << "Escrow WASM ran";
         if (re.has_value())
         {

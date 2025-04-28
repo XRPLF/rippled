@@ -2295,6 +2295,9 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
             extensionSizeLimit)
             jvObj[jss::extension_size] = *extensionSizeLimit;
 
+        if (auto const gasPrice = ~val->at(~sfGasPrice); gasPrice)
+            jvObj[jss::gas_price] = *gasPrice;
+
         // NOTE Use MultiApiJson to publish two slightly different JSON objects
         // for consumers supporting different API versions
         MultiApiJson multiObj{jvObj};
@@ -2758,6 +2761,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
                 l[jss::extension_compute] =
                     lpClosed->fees().extensionComputeLimit;
                 l[jss::extension_size] = lpClosed->fees().extensionSizeLimit;
+                l[jss::gas_price] = lpClosed->fees().gasPrice;
             }
             l[jss::close_time] = Json::Value::UInt(
                 lpClosed->info().closeTime.time_since_epoch().count());
@@ -2773,6 +2777,7 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
                 l[jss::extension_compute] =
                     lpClosed->fees().extensionComputeLimit;
                 l[jss::extension_size] = lpClosed->fees().extensionSizeLimit;
+                l[jss::gas_price] = lpClosed->fees().gasPrice;
             }
 
             if (auto const closeOffset = app_.timeKeeper().closeOffset();
@@ -2965,6 +2970,7 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
                     lpAccepted->fees().extensionComputeLimit;
                 jvObj[jss::extension_size] =
                     lpAccepted->fees().extensionSizeLimit;
+                jvObj[jss::gas_price] = lpAccepted->fees().gasPrice;
             }
 
             jvObj[jss::txn_count] = Json::UInt(alpAccepted->size());
@@ -4007,6 +4013,7 @@ NetworkOPsImp::subLedger(InfoSub::ref isrListener, Json::Value& jvResult)
             jvResult[jss::extension_compute] =
                 lpClosed->fees().extensionComputeLimit;
             jvResult[jss::extension_size] = lpClosed->fees().extensionSizeLimit;
+            jvResult[jss::gas_price] = lpClosed->fees().gasPrice;
         }
     }
 

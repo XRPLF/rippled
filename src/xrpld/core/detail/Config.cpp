@@ -1108,6 +1108,8 @@ setup_FeeVote(Section const& section)
             setup.extension_compute_limit = temp;
         if (set(temp, "extension_size_limit", section))
             setup.extension_size_limit = temp;
+        if (set(temp, "gas_price", section))
+            setup.gas_price = temp;
     }
     return setup;
 }

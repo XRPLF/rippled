@@ -319,6 +319,7 @@ LEDGER_ENTRY(ltFEE_SETTINGS, 0x0073, FeeSettings, fee, ({
     // New fields
     {sfExtensionComputeLimit,  soeOPTIONAL},
     {sfExtensionSizeLimit,     soeOPTIONAL},
+    {sfGasPrice,               soeOPTIONAL},
 
     {sfPreviousTxnID,          soeOPTIONAL},
     {sfPreviousTxnLgrSeq,      soeOPTIONAL},
