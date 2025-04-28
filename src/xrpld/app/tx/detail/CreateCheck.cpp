@@ -97,8 +97,11 @@ CreateCheck::preclaim(PreclaimContext const& ctx)
         (flags & lsfDisallowIncomingCheck))
         return tecNO_PERMISSION;
 
-    // AMM can not cash the check
-    if (sleDst->isFieldPresent(sfAMMID))
+    // Pseudo-accounts cannot cash check. Note, this is not amendment-gated
+    // because all writes to pseudo-account discriminator fields **are**
+    // amendment gated, hence the behaviour of this check will always match the
+    // currently active amendments.
+    if (isPseudoAccount(sleDst))
         return tecNO_PERMISSION;
 
     if ((flags & lsfRequireDestTag) && !ctx.tx.isFieldPresent(sfDestinationTag))
