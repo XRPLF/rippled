@@ -19,2200 +19,137 @@
 
 #include <test/jtx.h>
 
-#include <xrpld/app/tx/applySteps.h>
-#include <xrpld/ledger/Dir.h>
+#include <xrpld/app/misc/WasmVM.h>
 
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/jss.h>
+#include <wasmedge/wasmedge.h>
 
-#include <algorithm>
 #include <iterator>
 
 namespace ripple {
 namespace test {
 
-struct Escrow_test : public beast::unit_test::suite
+/* Host function body definition. */
+WasmEdge_Result
+Add(void* Data,
+    const WasmEdge_CallingFrameContext* CallFrameCxt,
+    const WasmEdge_Value* In,
+    WasmEdge_Value* Out)
 {
-    // A PreimageSha256 fulfillments and its associated condition.
-    std::array<std::uint8_t, 4> const fb1 = {{0xA0, 0x02, 0x80, 0x00}};
+    int32_t Val1 = WasmEdge_ValueGetI32(In[0]);
+    int32_t Val2 = WasmEdge_ValueGetI32(In[1]);
+    // printf("Host function \"Add\": %d + %d\n", Val1, Val2);
+    Out[0] = WasmEdge_ValueGenI32(Val1 + Val2);
+    return WasmEdge_Result_Success;
+}
 
-    std::array<std::uint8_t, 39> const cb1 = {
-        {0xA0, 0x25, 0x80, 0x20, 0xE3, 0xB0, 0xC4, 0x42, 0x98, 0xFC,
-         0x1C, 0x14, 0x9A, 0xFB, 0xF4, 0xC8, 0x99, 0x6F, 0xB9, 0x24,
-         0x27, 0xAE, 0x41, 0xE4, 0x64, 0x9B, 0x93, 0x4C, 0xA4, 0x95,
-         0x99, 0x1B, 0x78, 0x52, 0xB8, 0x55, 0x81, 0x01, 0x00}};
+void
+invokeAdd()
+{
+    /* Create the VM context. */
+    WasmEdge_VMContext* VMCxt = WasmEdge_VMCreate(NULL, NULL);
 
-    // Another PreimageSha256 fulfillments and its associated condition.
-    std::array<std::uint8_t, 7> const fb2 = {
-        {0xA0, 0x05, 0x80, 0x03, 0x61, 0x61, 0x61}};
+    // clang-format off
+    /* The WASM module buffer. */
+    uint8_t WASM[] = {/* WASM header */
+                    0x00, 0x61, 0x73, 0x6D, 0x01, 0x00, 0x00, 0x00,
+                    /* Type section */
+                    0x01, 0x07, 0x01,
+                    /* function type {i32, i32} -> {i32} */
+                    0x60, 0x02, 0x7F, 0x7F, 0x01, 0x7F,
+                    /* Import section */
+                    0x02, 0x13, 0x01,
+                    /* module name: "extern" */
+                    0x06, 0x65, 0x78, 0x74, 0x65, 0x72, 0x6E,
+                    /* extern name: "func-add" */
+                    0x08, 0x66, 0x75, 0x6E, 0x63, 0x2D, 0x61, 0x64, 0x64,
+                    /* import desc: func 0 */
+                    0x00, 0x00,
+                    /* Function section */
+                    0x03, 0x02, 0x01, 0x00,
+                    /* Export section */
+                    0x07, 0x0A, 0x01,
+                    /* export name: "addTwo" */
+                    0x06, 0x61, 0x64, 0x64, 0x54, 0x77, 0x6F,
+                    /* export desc: func 0 */
+                    0x00, 0x01,
+                    /* Code section */
+                    0x0A, 0x0A, 0x01,
+                    /* code body */
+                    0x08, 0x00, 0x20, 0x00, 0x20, 0x01, 0x10, 0x00, 0x0B};
+    // clang-format on
 
-    std::array<std::uint8_t, 39> const cb2 = {
-        {0xA0, 0x25, 0x80, 0x20, 0x98, 0x34, 0x87, 0x6D, 0xCF, 0xB0,
-         0x5C, 0xB1, 0x67, 0xA5, 0xC2, 0x49, 0x53, 0xEB, 0xA5, 0x8C,
-         0x4A, 0xC8, 0x9B, 0x1A, 0xDF, 0x57, 0xF2, 0x8F, 0x2F, 0x9D,
-         0x09, 0xAF, 0x10, 0x7E, 0xE8, 0xF0, 0x81, 0x01, 0x03}};
+    /* Create the module instance. */
+    WasmEdge_String ExportName = WasmEdge_StringCreateByCString("extern");
+    WasmEdge_ModuleInstanceContext* HostModCxt =
+        WasmEdge_ModuleInstanceCreate(ExportName);
+    WasmEdge_ValType ParamList[2] = {
+        WasmEdge_ValTypeGenI32(), WasmEdge_ValTypeGenI32()};
+    WasmEdge_ValType ReturnList[1] = {WasmEdge_ValTypeGenI32()};
+    WasmEdge_FunctionTypeContext* HostFType =
+        WasmEdge_FunctionTypeCreate(ParamList, 2, ReturnList, 1);
+    WasmEdge_FunctionInstanceContext* HostFunc =
+        WasmEdge_FunctionInstanceCreate(HostFType, Add, NULL, 0);
+    WasmEdge_FunctionTypeDelete(HostFType);
+    WasmEdge_String HostFuncName = WasmEdge_StringCreateByCString("func-add");
+    WasmEdge_ModuleInstanceAddFunction(HostModCxt, HostFuncName, HostFunc);
+    WasmEdge_StringDelete(HostFuncName);
 
-    // Another PreimageSha256 fulfillment and its associated condition.
-    std::array<std::uint8_t, 8> const fb3 = {
-        {0xA0, 0x06, 0x80, 0x04, 0x6E, 0x69, 0x6B, 0x62}};
+    WasmEdge_VMRegisterModuleFromImport(VMCxt, HostModCxt);
 
-    std::array<std::uint8_t, 39> const cb3 = {
-        {0xA0, 0x25, 0x80, 0x20, 0x6E, 0x4C, 0x71, 0x45, 0x30, 0xC0,
-         0xA4, 0x26, 0x8B, 0x3F, 0xA6, 0x3B, 0x1B, 0x60, 0x6F, 0x2D,
-         0x26, 0x4A, 0x2D, 0x85, 0x7B, 0xE8, 0xA0, 0x9C, 0x1D, 0xFD,
-         0x57, 0x0D, 0x15, 0x85, 0x8B, 0xD4, 0x81, 0x01, 0x04}};
+    /* The parameters and returns arrays. */
+    WasmEdge_Value Params[2] = {
+        WasmEdge_ValueGenI32(1234), WasmEdge_ValueGenI32(5678)};
+    WasmEdge_Value Returns[1];
+    /* Function name. */
+    WasmEdge_String FuncName = WasmEdge_StringCreateByCString("addTwo");
+    /* Run the WASM function from buffer. */
+    WasmEdge_Result Res = WasmEdge_VMRunWasmFromBuffer(
+        VMCxt, WASM, sizeof(WASM), FuncName, Params, 2, Returns, 1);
 
-    void
-    testEnablement()
+    if (WasmEdge_ResultOK(Res))
     {
-        testcase("Enablement");
+        //        printf("invokeAdd get the result: %d\n",
+        //        WasmEdge_ValueGetI32(Returns[0]));
+    }
+    else
+    {
+        printf("Error message: %s\n", WasmEdge_ResultGetMessage(Res));
+    }
 
-        using namespace jtx;
-        using namespace std::chrono;
+    /* Resources deallocations. */
+    WasmEdge_VMDelete(VMCxt);
+    WasmEdge_StringDelete(FuncName);
+    WasmEdge_ModuleInstanceDelete(HostModCxt);
+}
 
-        Env env(*this);
-        auto const baseFee = env.current()->fees().base;
-        env.fund(XRP(5000), "alice", "bob");
-        env(escrow("alice", "bob", XRP(1000)), finish_time(env.now() + 1s));
-        env.close();
-
-        auto const seq1 = env.seq("alice");
-
-        env(escrow("alice", "bob", XRP(1000)),
-            condition(cb1),
-            finish_time(env.now() + 1s),
-            fee(baseFee * 150));
-        env.close();
-        env(finish("bob", "alice", seq1),
-            condition(cb1),
-            fulfillment(fb1),
-            fee(baseFee * 150));
-
-        auto const seq2 = env.seq("alice");
-
-        env(escrow("alice", "bob", XRP(1000)),
-            condition(cb2),
-            finish_time(env.now() + 1s),
-            cancel_time(env.now() + 2s),
-            fee(baseFee * 150));
-        env.close();
-        env(cancel("bob", "alice", seq2), fee(baseFee * 150));
+struct Wasm_test : public beast::unit_test::suite
+{
+    void
+    testWasmtimeLib()
+    {
+        testcase("wasmtime lib test");
+        invokeAdd();
+        BEAST_EXPECT(true);
     }
 
     void
-    testTiming()
+    testBadWasm()
     {
-        using namespace jtx;
-        using namespace std::chrono;
+        testcase("bad wasm test");
 
-        {
-            testcase("Timing: Finish Only");
-            Env env(*this);
-            auto const baseFee = env.current()->fees().base;
-            env.fund(XRP(5000), "alice", "bob");
-            env.close();
-
-            // We create an escrow that can be finished in the future
-            auto const ts = env.now() + 97s;
-
-            auto const seq = env.seq("alice");
-            env(escrow("alice", "bob", XRP(1000)), finish_time(ts));
-
-            // Advance the ledger, verifying that the finish won't complete
-            // prematurely.
-            for (; env.now() < ts; env.close())
-                env(finish("bob", "alice", seq),
-                    fee(baseFee * 150),
-                    ter(tecNO_PERMISSION));
-
-            env(finish("bob", "alice", seq), fee(baseFee * 150));
-        }
-
-        {
-            testcase("Timing: Cancel Only");
-            Env env(*this);
-            auto const baseFee = env.current()->fees().base;
-            env.fund(XRP(5000), "alice", "bob");
-            env.close();
-
-            // We create an escrow that can be cancelled in the future
-            auto const ts = env.now() + 117s;
-
-            auto const seq = env.seq("alice");
-            env(escrow("alice", "bob", XRP(1000)),
-                condition(cb1),
-                cancel_time(ts));
-
-            // Advance the ledger, verifying that the cancel won't complete
-            // prematurely.
-            for (; env.now() < ts; env.close())
-                env(cancel("bob", "alice", seq),
-                    fee(baseFee * 150),
-                    ter(tecNO_PERMISSION));
-
-            // Verify that a finish won't work anymore.
-            env(finish("bob", "alice", seq),
-                condition(cb1),
-                fulfillment(fb1),
-                fee(baseFee * 150),
-                ter(tecNO_PERMISSION));
-
-            // Verify that the cancel will succeed
-            env(cancel("bob", "alice", seq), fee(baseFee * 150));
-        }
-
-        {
-            testcase("Timing: Finish and Cancel -> Finish");
-            Env env(*this);
-            auto const baseFee = env.current()->fees().base;
-            env.fund(XRP(5000), "alice", "bob");
-            env.close();
-
-            // We create an escrow that can be cancelled in the future
-            auto const fts = env.now() + 117s;
-            auto const cts = env.now() + 192s;
-
-            auto const seq = env.seq("alice");
-            env(escrow("alice", "bob", XRP(1000)),
-                finish_time(fts),
-                cancel_time(cts));
-
-            // Advance the ledger, verifying that the finish and cancel won't
-            // complete prematurely.
-            for (; env.now() < fts; env.close())
-            {
-                env(finish("bob", "alice", seq),
-                    fee(baseFee * 150),
-                    ter(tecNO_PERMISSION));
-                env(cancel("bob", "alice", seq),
-                    fee(baseFee * 150),
-                    ter(tecNO_PERMISSION));
-            }
-
-            // Verify that a cancel still won't work
-            env(cancel("bob", "alice", seq),
-                fee(baseFee * 150),
-                ter(tecNO_PERMISSION));
-
-            // And verify that a finish will
-            env(finish("bob", "alice", seq), fee(baseFee * 150));
-        }
-
-        {
-            testcase("Timing: Finish and Cancel -> Cancel");
-            Env env(*this);
-            auto const baseFee = env.current()->fees().base;
-            env.fund(XRP(5000), "alice", "bob");
-            env.close();
-
-            // We create an escrow that can be cancelled in the future
-            auto const fts = env.now() + 109s;
-            auto const cts = env.now() + 184s;
-
-            auto const seq = env.seq("alice");
-            env(escrow("alice", "bob", XRP(1000)),
-                finish_time(fts),
-                cancel_time(cts));
-
-            // Advance the ledger, verifying that the finish and cancel won't
-            // complete prematurely.
-            for (; env.now() < fts; env.close())
-            {
-                env(finish("bob", "alice", seq),
-                    fee(baseFee * 150),
-                    ter(tecNO_PERMISSION));
-                env(cancel("bob", "alice", seq),
-                    fee(baseFee * 150),
-                    ter(tecNO_PERMISSION));
-            }
-
-            // Continue advancing, verifying that the cancel won't complete
-            // prematurely. At this point a finish would succeed.
-            for (; env.now() < cts; env.close())
-                env(cancel("bob", "alice", seq),
-                    fee(baseFee * 150),
-                    ter(tecNO_PERMISSION));
-
-            // Verify that finish will no longer work, since we are past the
-            // cancel activation time.
-            env(finish("bob", "alice", seq),
-                fee(baseFee * 150),
-                ter(tecNO_PERMISSION));
-
-            // And verify that a cancel will succeed.
-            env(cancel("bob", "alice", seq), fee(baseFee * 150));
-        }
+        HostFunctions hfs;
+        auto wasmHex = "00000000";
+        auto wasmStr = boost::algorithm::unhex(std::string(wasmHex));
+        std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
+        std::string funcName("mock_escrow");
+        auto re = runEscrowWasm(wasm, funcName, &hfs, 15);
+        BEAST_EXPECT(re.error());
     }
 
     void
-    testTags()
+    testEscrowWasmDN1()
     {
-        testcase("Tags");
-
-        using namespace jtx;
-        using namespace std::chrono;
-
-        Env env(*this);
-
-        auto const alice = Account("alice");
-        auto const bob = Account("bob");
-
-        env.fund(XRP(5000), alice, bob);
-
-        // Check to make sure that we correctly detect if tags are really
-        // required:
-        env(fset(bob, asfRequireDest));
-        env(escrow(alice, bob, XRP(1000)),
-            finish_time(env.now() + 1s),
-            ter(tecDST_TAG_NEEDED));
-
-        // set source and dest tags
-        auto const seq = env.seq(alice);
-
-        env(escrow(alice, bob, XRP(1000)),
-            finish_time(env.now() + 1s),
-            stag(1),
-            dtag(2));
-
-        auto const sle = env.le(keylet::escrow(alice.id(), seq));
-        BEAST_EXPECT(sle);
-        BEAST_EXPECT((*sle)[sfSourceTag] == 1);
-        BEAST_EXPECT((*sle)[sfDestinationTag] == 2);
-    }
-
-    void
-    testDisallowXRP()
-    {
-        testcase("Disallow XRP");
-
-        using namespace jtx;
-        using namespace std::chrono;
-
-        {
-            // Respect the "asfDisallowXRP" account flag:
-            Env env(*this, supported_amendments() - featureDepositAuth);
-
-            env.fund(XRP(5000), "bob", "george");
-            env(fset("george", asfDisallowXRP));
-            env(escrow("bob", "george", XRP(10)),
-                finish_time(env.now() + 1s),
-                ter(tecNO_TARGET));
-        }
-        {
-            // Ignore the "asfDisallowXRP" account flag, which we should
-            // have been doing before.
-            Env env(*this);
-
-            env.fund(XRP(5000), "bob", "george");
-            env(fset("george", asfDisallowXRP));
-            env(escrow("bob", "george", XRP(10)), finish_time(env.now() + 1s));
-        }
-    }
-
-    void
-    test1571()
-    {
-        using namespace jtx;
-        using namespace std::chrono;
-
-        {
-            testcase("Implied Finish Time (without fix1571)");
-
-            Env env(*this, supported_amendments() - fix1571);
-            auto const baseFee = env.current()->fees().base;
-            env.fund(XRP(5000), "alice", "bob", "carol");
-            env.close();
-
-            // Creating an escrow without a finish time and finishing it
-            // is allowed without fix1571:
-            auto const seq1 = env.seq("alice");
-            env(escrow("alice", "bob", XRP(100)),
-                cancel_time(env.now() + 1s),
-                fee(baseFee * 150));
-            env.close();
-            env(finish("carol", "alice", seq1), fee(baseFee * 150));
-            BEAST_EXPECT(env.balance("bob") == XRP(5100));
-
-            env.close();
-
-            // Creating an escrow without a finish time and a condition is
-            // also allowed without fix1571:
-            auto const seq2 = env.seq("alice");
-            env(escrow("alice", "bob", XRP(100)),
-                cancel_time(env.now() + 1s),
-                condition(cb1),
-                fee(baseFee * 150));
-            env.close();
-            env(finish("carol", "alice", seq2),
-                condition(cb1),
-                fulfillment(fb1),
-                fee(baseFee * 150));
-            BEAST_EXPECT(env.balance("bob") == XRP(5200));
-        }
-
-        {
-            testcase("Implied Finish Time (with fix1571)");
-
-            Env env(*this);
-            auto const baseFee = env.current()->fees().base;
-            env.fund(XRP(5000), "alice", "bob", "carol");
-            env.close();
-
-            // Creating an escrow with only a cancel time is not allowed:
-            env(escrow("alice", "bob", XRP(100)),
-                cancel_time(env.now() + 90s),
-                fee(baseFee * 150),
-                ter(temMALFORMED));
-
-            // Creating an escrow with only a cancel time and a condition is
-            // allowed:
-            auto const seq = env.seq("alice");
-            env(escrow("alice", "bob", XRP(100)),
-                cancel_time(env.now() + 90s),
-                condition(cb1),
-                fee(baseFee * 150));
-            env.close();
-            env(finish("carol", "alice", seq),
-                condition(cb1),
-                fulfillment(fb1),
-                fee(baseFee * 150));
-            BEAST_EXPECT(env.balance("bob") == XRP(5100));
-        }
-    }
-
-    void
-    testFails()
-    {
-        testcase("Failure Cases");
-
-        using namespace jtx;
-        using namespace std::chrono;
-
-        Env env(*this);
-        auto const baseFee = env.current()->fees().base;
-        env.fund(XRP(5000), "alice", "bob");
-        env.close();
-
-        // Finish time is in the past
-        env(escrow("alice", "bob", XRP(1000)),
-            finish_time(env.now() - 5s),
-            ter(tecNO_PERMISSION));
-
-        // Cancel time is in the past
-        env(escrow("alice", "bob", XRP(1000)),
-            condition(cb1),
-            cancel_time(env.now() - 5s),
-            ter(tecNO_PERMISSION));
-
-        // no destination account
-        env(escrow("alice", "carol", XRP(1000)),
-            finish_time(env.now() + 1s),
-            ter(tecNO_DST));
-
-        env.fund(XRP(5000), "carol");
-
-        // Using non-XRP:
-        env(escrow("alice", "carol", Account("alice")["USD"](500)),
-            finish_time(env.now() + 1s),
-            ter(temBAD_AMOUNT));
-
-        // Sending zero or no XRP:
-        env(escrow("alice", "carol", XRP(0)),
-            finish_time(env.now() + 1s),
-            ter(temBAD_AMOUNT));
-        env(escrow("alice", "carol", XRP(-1000)),
-            finish_time(env.now() + 1s),
-            ter(temBAD_AMOUNT));
-
-        // Fail if neither CancelAfter nor FinishAfter are specified:
-        env(escrow("alice", "carol", XRP(1)), ter(temBAD_EXPIRATION));
-
-        // Fail if neither a FinishTime nor a condition are attached:
-        env(escrow("alice", "carol", XRP(1)),
-            cancel_time(env.now() + 1s),
-            ter(temMALFORMED));
-
-        // Fail if FinishAfter has already passed:
-        env(escrow("alice", "carol", XRP(1)),
-            finish_time(env.now() - 1s),
-            ter(tecNO_PERMISSION));
-
-        // If both CancelAfter and FinishAfter are set, then CancelAfter must
-        // be strictly later than FinishAfter.
-        env(escrow("alice", "carol", XRP(1)),
-            condition(cb1),
-            finish_time(env.now() + 10s),
-            cancel_time(env.now() + 10s),
-            ter(temBAD_EXPIRATION));
-
-        env(escrow("alice", "carol", XRP(1)),
-            condition(cb1),
-            finish_time(env.now() + 10s),
-            cancel_time(env.now() + 5s),
-            ter(temBAD_EXPIRATION));
-
-        // Carol now requires the use of a destination tag
-        env(fset("carol", asfRequireDest));
-
-        // missing destination tag
-        env(escrow("alice", "carol", XRP(1)),
-            condition(cb1),
-            cancel_time(env.now() + 1s),
-            ter(tecDST_TAG_NEEDED));
-
-        // Success!
-        env(escrow("alice", "carol", XRP(1)),
-            condition(cb1),
-            cancel_time(env.now() + 1s),
-            dtag(1));
-
-        {  // Fail if the sender wants to send more than he has:
-            auto const accountReserve = drops(env.current()->fees().reserve);
-            auto const accountIncrement =
-                drops(env.current()->fees().increment);
-
-            env.fund(accountReserve + accountIncrement + XRP(50), "daniel");
-            env(escrow("daniel", "bob", XRP(51)),
-                finish_time(env.now() + 1s),
-                ter(tecUNFUNDED));
-
-            env.fund(accountReserve + accountIncrement + XRP(50), "evan");
-            env(escrow("evan", "bob", XRP(50)),
-                finish_time(env.now() + 1s),
-                ter(tecUNFUNDED));
-
-            env.fund(accountReserve, "frank");
-            env(escrow("frank", "bob", XRP(1)),
-                finish_time(env.now() + 1s),
-                ter(tecINSUFFICIENT_RESERVE));
-        }
-
-        {  // Specify incorrect sequence number
-            env.fund(XRP(5000), "hannah");
-            auto const seq = env.seq("hannah");
-            env(escrow("hannah", "hannah", XRP(10)),
-                finish_time(env.now() + 1s),
-                fee(150 * baseFee));
-            env.close();
-            env(finish("hannah", "hannah", seq + 7),
-                fee(150 * baseFee),
-                ter(tecNO_TARGET));
-        }
-
-        {  // Try to specify a condition for a non-conditional payment
-            env.fund(XRP(5000), "ivan");
-            auto const seq = env.seq("ivan");
-
-            env(escrow("ivan", "ivan", XRP(10)), finish_time(env.now() + 1s));
-            env.close();
-            env(finish("ivan", "ivan", seq),
-                condition(cb1),
-                fulfillment(fb1),
-                fee(150 * baseFee),
-                ter(tecCRYPTOCONDITION_ERROR));
-        }
-    }
-
-    void
-    testLockup()
-    {
-        testcase("Lockup");
-
-        using namespace jtx;
-        using namespace std::chrono;
-
-        {
-            // Unconditional
-            Env env(*this);
-            auto const baseFee = env.current()->fees().base;
-            env.fund(XRP(5000), "alice", "bob");
-            auto const seq = env.seq("alice");
-            env(escrow("alice", "alice", XRP(1000)),
-                finish_time(env.now() + 5s));
-            env.require(balance("alice", XRP(4000) - drops(baseFee)));
-
-            // Not enough time has elapsed for a finish and canceling isn't
-            // possible.
-            env(cancel("bob", "alice", seq), ter(tecNO_PERMISSION));
-            env(finish("bob", "alice", seq), ter(tecNO_PERMISSION));
-            env.close();
-
-            // Cancel continues to not be possible
-            env(cancel("bob", "alice", seq), ter(tecNO_PERMISSION));
-
-            // Finish should succeed. Verify funds.
-            env(finish("bob", "alice", seq));
-            env.require(balance("alice", XRP(5000) - drops(baseFee)));
-        }
-        {
-            // Unconditionally pay from Alice to Bob.  Zelda (neither source nor
-            // destination) signs all cancels and finishes.  This shows that
-            // Escrow will make a payment to Bob with no intervention from Bob.
-            Env env(*this);
-            auto const baseFee = env.current()->fees().base;
-            env.fund(XRP(5000), "alice", "bob", "zelda");
-            auto const seq = env.seq("alice");
-            env(escrow("alice", "bob", XRP(1000)), finish_time(env.now() + 5s));
-            env.require(balance("alice", XRP(4000) - drops(baseFee)));
-
-            // Not enough time has elapsed for a finish and canceling isn't
-            // possible.
-            env(cancel("zelda", "alice", seq), ter(tecNO_PERMISSION));
-            env(finish("zelda", "alice", seq), ter(tecNO_PERMISSION));
-            env.close();
-
-            // Cancel continues to not be possible
-            env(cancel("zelda", "alice", seq), ter(tecNO_PERMISSION));
-
-            // Finish should succeed. Verify funds.
-            env(finish("zelda", "alice", seq));
-            env.close();
-
-            env.require(balance("alice", XRP(4000) - drops(baseFee)));
-            env.require(balance("bob", XRP(6000)));
-            env.require(balance("zelda", XRP(5000) - drops(4 * baseFee)));
-        }
-        {
-            // Bob sets DepositAuth so only Bob can finish the escrow.
-            Env env(*this);
-            auto const baseFee = env.current()->fees().base;
-
-            env.fund(XRP(5000), "alice", "bob", "zelda");
-            env(fset("bob", asfDepositAuth));
-            env.close();
-
-            auto const seq = env.seq("alice");
-            env(escrow("alice", "bob", XRP(1000)), finish_time(env.now() + 5s));
-            env.require(balance("alice", XRP(4000) - drops(baseFee)));
-
-            // Not enough time has elapsed for a finish and canceling isn't
-            // possible.
-            env(cancel("zelda", "alice", seq), ter(tecNO_PERMISSION));
-            env(cancel("alice", "alice", seq), ter(tecNO_PERMISSION));
-            env(cancel("bob", "alice", seq), ter(tecNO_PERMISSION));
-            env(finish("zelda", "alice", seq), ter(tecNO_PERMISSION));
-            env(finish("alice", "alice", seq), ter(tecNO_PERMISSION));
-            env(finish("bob", "alice", seq), ter(tecNO_PERMISSION));
-            env.close();
-
-            // Cancel continues to not be possible. Finish will only succeed for
-            // Bob, because of DepositAuth.
-            env(cancel("zelda", "alice", seq), ter(tecNO_PERMISSION));
-            env(cancel("alice", "alice", seq), ter(tecNO_PERMISSION));
-            env(cancel("bob", "alice", seq), ter(tecNO_PERMISSION));
-            env(finish("zelda", "alice", seq), ter(tecNO_PERMISSION));
-            env(finish("alice", "alice", seq), ter(tecNO_PERMISSION));
-            env(finish("bob", "alice", seq));
-            env.close();
-
-            env.require(balance("alice", XRP(4000) - (baseFee * 5)));
-            env.require(balance("bob", XRP(6000) - (baseFee * 5)));
-            env.require(balance("zelda", XRP(5000) - (baseFee * 4)));
-        }
-        {
-            // Bob sets DepositAuth but preauthorizes Zelda, so Zelda can
-            // finish the escrow.
-            Env env(*this);
-            auto const baseFee = env.current()->fees().base;
-
-            env.fund(XRP(5000), "alice", "bob", "zelda");
-            env(fset("bob", asfDepositAuth));
-            env.close();
-            env(deposit::auth("bob", "zelda"));
-            env.close();
-
-            auto const seq = env.seq("alice");
-            env(escrow("alice", "bob", XRP(1000)), finish_time(env.now() + 5s));
-            env.require(balance("alice", XRP(4000) - drops(baseFee)));
-            env.close();
-
-            // DepositPreauth allows Finish to succeed for either Zelda or
-            // Bob. But Finish won't succeed for Alice since she is not
-            // preauthorized.
-            env(finish("alice", "alice", seq), ter(tecNO_PERMISSION));
-            env(finish("zelda", "alice", seq));
-            env.close();
-
-            env.require(balance("alice", XRP(4000) - (baseFee * 2)));
-            env.require(balance("bob", XRP(6000) - (baseFee * 2)));
-            env.require(balance("zelda", XRP(5000) - (baseFee * 1)));
-        }
-        {
-            // Conditional
-            Env env(*this);
-            auto const baseFee = env.current()->fees().base;
-            env.fund(XRP(5000), "alice", "bob");
-            auto const seq = env.seq("alice");
-            env(escrow("alice", "alice", XRP(1000)),
-                condition(cb2),
-                finish_time(env.now() + 5s));
-            env.require(balance("alice", XRP(4000) - drops(baseFee)));
-
-            // Not enough time has elapsed for a finish and canceling isn't
-            // possible.
-            env(cancel("alice", "alice", seq), ter(tecNO_PERMISSION));
-            env(cancel("bob", "alice", seq), ter(tecNO_PERMISSION));
-            env(finish("alice", "alice", seq), ter(tecNO_PERMISSION));
-            env(finish("alice", "alice", seq),
-                condition(cb2),
-                fulfillment(fb2),
-                fee(150 * baseFee),
-                ter(tecNO_PERMISSION));
-            env(finish("bob", "alice", seq), ter(tecNO_PERMISSION));
-            env(finish("bob", "alice", seq),
-                condition(cb2),
-                fulfillment(fb2),
-                fee(150 * baseFee),
-                ter(tecNO_PERMISSION));
-            env.close();
-
-            // Cancel continues to not be possible. Finish is possible but
-            // requires the fulfillment associated with the escrow.
-            env(cancel("alice", "alice", seq), ter(tecNO_PERMISSION));
-            env(cancel("bob", "alice", seq), ter(tecNO_PERMISSION));
-            env(finish("bob", "alice", seq), ter(tecCRYPTOCONDITION_ERROR));
-            env(finish("alice", "alice", seq), ter(tecCRYPTOCONDITION_ERROR));
-            env.close();
-
-            env(finish("bob", "alice", seq),
-                condition(cb2),
-                fulfillment(fb2),
-                fee(150 * baseFee));
-        }
-        {
-            // Self-escrowed conditional with DepositAuth.
-            Env env(*this);
-            auto const baseFee = env.current()->fees().base;
-
-            env.fund(XRP(5000), "alice", "bob");
-            auto const seq = env.seq("alice");
-            env(escrow("alice", "alice", XRP(1000)),
-                condition(cb3),
-                finish_time(env.now() + 5s));
-            env.require(balance("alice", XRP(4000) - drops(baseFee)));
-            env.close();
-
-            // Finish is now possible but requires the cryptocondition.
-            env(finish("bob", "alice", seq), ter(tecCRYPTOCONDITION_ERROR));
-            env(finish("alice", "alice", seq), ter(tecCRYPTOCONDITION_ERROR));
-
-            // Enable deposit authorization. After this only Alice can finish
-            // the escrow.
-            env(fset("alice", asfDepositAuth));
-            env.close();
-
-            env(finish("alice", "alice", seq),
-                condition(cb2),
-                fulfillment(fb2),
-                fee(150 * baseFee),
-                ter(tecCRYPTOCONDITION_ERROR));
-            env(finish("bob", "alice", seq),
-                condition(cb3),
-                fulfillment(fb3),
-                fee(150 * baseFee),
-                ter(tecNO_PERMISSION));
-            env(finish("alice", "alice", seq),
-                condition(cb3),
-                fulfillment(fb3),
-                fee(150 * baseFee));
-        }
-        {
-            // Self-escrowed conditional with DepositAuth and DepositPreauth.
-            Env env(*this);
-            auto const baseFee = env.current()->fees().base;
-
-            env.fund(XRP(5000), "alice", "bob", "zelda");
-            auto const seq = env.seq("alice");
-            env(escrow("alice", "alice", XRP(1000)),
-                condition(cb3),
-                finish_time(env.now() + 5s));
-            env.require(balance("alice", XRP(4000) - drops(baseFee)));
-            env.close();
-
-            // Alice preauthorizes Zelda for deposit, even though Alice has not
-            // set the lsfDepositAuth flag (yet).
-            env(deposit::auth("alice", "zelda"));
-            env.close();
-
-            // Finish is now possible but requires the cryptocondition.
-            env(finish("alice", "alice", seq), ter(tecCRYPTOCONDITION_ERROR));
-            env(finish("bob", "alice", seq), ter(tecCRYPTOCONDITION_ERROR));
-            env(finish("zelda", "alice", seq), ter(tecCRYPTOCONDITION_ERROR));
-
-            // Alice enables deposit authorization. After this only Alice or
-            // Zelda (because Zelda is preauthorized) can finish the escrow.
-            env(fset("alice", asfDepositAuth));
-            env.close();
-
-            env(finish("alice", "alice", seq),
-                condition(cb2),
-                fulfillment(fb2),
-                fee(150 * baseFee),
-                ter(tecCRYPTOCONDITION_ERROR));
-            env(finish("bob", "alice", seq),
-                condition(cb3),
-                fulfillment(fb3),
-                fee(150 * baseFee),
-                ter(tecNO_PERMISSION));
-            env(finish("zelda", "alice", seq),
-                condition(cb3),
-                fulfillment(fb3),
-                fee(150 * baseFee));
-        }
-    }
-
-    void
-    testEscrowConditions()
-    {
-        testcase("Escrow with CryptoConditions");
-
-        using namespace jtx;
-        using namespace std::chrono;
-
-        {  // Test cryptoconditions
-            Env env(*this);
-            auto const baseFee = env.current()->fees().base;
-            env.fund(XRP(5000), "alice", "bob", "carol");
-            auto const seq = env.seq("alice");
-            BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 0);
-            env(escrow("alice", "carol", XRP(1000)),
-                condition(cb1),
-                cancel_time(env.now() + 1s));
-            BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 1);
-            env.require(balance("alice", XRP(4000) - drops(baseFee)));
-            env.require(balance("carol", XRP(5000)));
-            env(cancel("bob", "alice", seq), ter(tecNO_PERMISSION));
-            BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 1);
-
-            // Attempt to finish without a fulfillment
-            env(finish("bob", "alice", seq), ter(tecCRYPTOCONDITION_ERROR));
-            BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 1);
-
-            // Attempt to finish with a condition instead of a fulfillment
-            env(finish("bob", "alice", seq),
-                condition(cb1),
-                fulfillment(cb1),
-                fee(150 * baseFee),
-                ter(tecCRYPTOCONDITION_ERROR));
-            BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 1);
-            env(finish("bob", "alice", seq),
-                condition(cb1),
-                fulfillment(cb2),
-                fee(150 * baseFee),
-                ter(tecCRYPTOCONDITION_ERROR));
-            BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 1);
-            env(finish("bob", "alice", seq),
-                condition(cb1),
-                fulfillment(cb3),
-                fee(150 * baseFee),
-                ter(tecCRYPTOCONDITION_ERROR));
-            BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 1);
-
-            // Attempt to finish with an incorrect condition and various
-            // combinations of correct and incorrect fulfillments.
-            env(finish("bob", "alice", seq),
-                condition(cb2),
-                fulfillment(fb1),
-                fee(150 * baseFee),
-                ter(tecCRYPTOCONDITION_ERROR));
-            BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 1);
-            env(finish("bob", "alice", seq),
-                condition(cb2),
-                fulfillment(fb2),
-                fee(150 * baseFee),
-                ter(tecCRYPTOCONDITION_ERROR));
-            BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 1);
-            env(finish("bob", "alice", seq),
-                condition(cb2),
-                fulfillment(fb3),
-                fee(150 * baseFee),
-                ter(tecCRYPTOCONDITION_ERROR));
-            BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 1);
-
-            // Attempt to finish with the correct condition & fulfillment
-            env(finish("bob", "alice", seq),
-                condition(cb1),
-                fulfillment(fb1),
-                fee(150 * baseFee));
-
-            // SLE removed on finish
-            BEAST_EXPECT(!env.le(keylet::escrow(Account("alice").id(), seq)));
-            BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 0);
-            env.require(balance("carol", XRP(6000)));
-            env(cancel("bob", "alice", seq), ter(tecNO_TARGET));
-            BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 0);
-            env(cancel("bob", "carol", 1), ter(tecNO_TARGET));
-        }
-        {  // Test cancel when condition is present
-            Env env(*this);
-            auto const baseFee = env.current()->fees().base;
-            env.fund(XRP(5000), "alice", "bob", "carol");
-            auto const seq = env.seq("alice");
-            BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 0);
-            env(escrow("alice", "carol", XRP(1000)),
-                condition(cb2),
-                cancel_time(env.now() + 1s));
-            env.close();
-            env.require(balance("alice", XRP(4000) - drops(baseFee)));
-            // balance restored on cancel
-            env(cancel("bob", "alice", seq));
-            env.require(balance("alice", XRP(5000) - drops(baseFee)));
-            // SLE removed on cancel
-            BEAST_EXPECT(!env.le(keylet::escrow(Account("alice").id(), seq)));
-        }
-        {
-            Env env(*this);
-            auto const baseFee = env.current()->fees().base;
-            env.fund(XRP(5000), "alice", "bob", "carol");
-            env.close();
-            auto const seq = env.seq("alice");
-            env(escrow("alice", "carol", XRP(1000)),
-                condition(cb3),
-                cancel_time(env.now() + 1s));
-            BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 1);
-            // cancel fails before expiration
-            env(cancel("bob", "alice", seq), ter(tecNO_PERMISSION));
-            BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 1);
-            env.close();
-            // finish fails after expiration
-            env(finish("bob", "alice", seq),
-                condition(cb3),
-                fulfillment(fb3),
-                fee(150 * baseFee),
-                ter(tecNO_PERMISSION));
-            BEAST_EXPECT((*env.le("alice"))[sfOwnerCount] == 1);
-            env.require(balance("carol", XRP(5000)));
-        }
-        {  // Test long & short conditions during creation
-            Env env(*this);
-            env.fund(XRP(5000), "alice", "bob", "carol");
-
-            std::vector<std::uint8_t> v;
-            v.resize(cb1.size() + 2, 0x78);
-            std::memcpy(v.data() + 1, cb1.data(), cb1.size());
-
-            auto const p = v.data();
-            auto const s = v.size();
-
-            auto const ts = env.now() + 1s;
-
-            // All these are expected to fail, because the
-            // condition we pass in is malformed in some way
-            env(escrow("alice", "carol", XRP(1000)),
-                condition(Slice{p, s}),
-                cancel_time(ts),
-                ter(temMALFORMED));
-            env(escrow("alice", "carol", XRP(1000)),
-                condition(Slice{p, s - 1}),
-                cancel_time(ts),
-                ter(temMALFORMED));
-            env(escrow("alice", "carol", XRP(1000)),
-                condition(Slice{p, s - 2}),
-                cancel_time(ts),
-                ter(temMALFORMED));
-            env(escrow("alice", "carol", XRP(1000)),
-                condition(Slice{p + 1, s - 1}),
-                cancel_time(ts),
-                ter(temMALFORMED));
-            env(escrow("alice", "carol", XRP(1000)),
-                condition(Slice{p + 1, s - 3}),
-                cancel_time(ts),
-                ter(temMALFORMED));
-            env(escrow("alice", "carol", XRP(1000)),
-                condition(Slice{p + 2, s - 2}),
-                cancel_time(ts),
-                ter(temMALFORMED));
-            env(escrow("alice", "carol", XRP(1000)),
-                condition(Slice{p + 2, s - 3}),
-                cancel_time(ts),
-                ter(temMALFORMED));
-
-            auto const seq = env.seq("alice");
-            auto const baseFee = env.current()->fees().base;
-            env(escrow("alice", "carol", XRP(1000)),
-                condition(Slice{p + 1, s - 2}),
-                cancel_time(ts),
-                fee(10 * baseFee));
-            env(finish("bob", "alice", seq),
-                condition(cb1),
-                fulfillment(fb1),
-                fee(150 * baseFee));
-            env.require(balance("alice", XRP(4000) - drops(10 * baseFee)));
-            env.require(balance("bob", XRP(5000) - drops(150 * baseFee)));
-            env.require(balance("carol", XRP(6000)));
-        }
-        {  // Test long and short conditions & fulfillments during finish
-            Env env(*this);
-            env.fund(XRP(5000), "alice", "bob", "carol");
-
-            std::vector<std::uint8_t> cv;
-            cv.resize(cb2.size() + 2, 0x78);
-            std::memcpy(cv.data() + 1, cb2.data(), cb2.size());
-
-            auto const cp = cv.data();
-            auto const cs = cv.size();
-
-            std::vector<std::uint8_t> fv;
-            fv.resize(fb2.size() + 2, 0x13);
-            std::memcpy(fv.data() + 1, fb2.data(), fb2.size());
-
-            auto const fp = fv.data();
-            auto const fs = fv.size();
-
-            auto const ts = env.now() + 1s;
-
-            // All these are expected to fail, because the
-            // condition we pass in is malformed in some way
-            env(escrow("alice", "carol", XRP(1000)),
-                condition(Slice{cp, cs}),
-                cancel_time(ts),
-                ter(temMALFORMED));
-            env(escrow("alice", "carol", XRP(1000)),
-                condition(Slice{cp, cs - 1}),
-                cancel_time(ts),
-                ter(temMALFORMED));
-            env(escrow("alice", "carol", XRP(1000)),
-                condition(Slice{cp, cs - 2}),
-                cancel_time(ts),
-                ter(temMALFORMED));
-            env(escrow("alice", "carol", XRP(1000)),
-                condition(Slice{cp + 1, cs - 1}),
-                cancel_time(ts),
-                ter(temMALFORMED));
-            env(escrow("alice", "carol", XRP(1000)),
-                condition(Slice{cp + 1, cs - 3}),
-                cancel_time(ts),
-                ter(temMALFORMED));
-            env(escrow("alice", "carol", XRP(1000)),
-                condition(Slice{cp + 2, cs - 2}),
-                cancel_time(ts),
-                ter(temMALFORMED));
-            env(escrow("alice", "carol", XRP(1000)),
-                condition(Slice{cp + 2, cs - 3}),
-                cancel_time(ts),
-                ter(temMALFORMED));
-
-            auto const seq = env.seq("alice");
-            auto const baseFee = env.current()->fees().base;
-            env(escrow("alice", "carol", XRP(1000)),
-                condition(Slice{cp + 1, cs - 2}),
-                cancel_time(ts),
-                fee(10 * baseFee));
-
-            // Now, try to fulfill using the same sequence of
-            // malformed conditions.
-            env(finish("bob", "alice", seq),
-                condition(Slice{cp, cs}),
-                fulfillment(Slice{fp, fs}),
-                fee(150 * baseFee),
-                ter(tecCRYPTOCONDITION_ERROR));
-            env(finish("bob", "alice", seq),
-                condition(Slice{cp, cs - 1}),
-                fulfillment(Slice{fp, fs}),
-                fee(150 * baseFee),
-                ter(tecCRYPTOCONDITION_ERROR));
-            env(finish("bob", "alice", seq),
-                condition(Slice{cp, cs - 2}),
-                fulfillment(Slice{fp, fs}),
-                fee(150 * baseFee),
-                ter(tecCRYPTOCONDITION_ERROR));
-            env(finish("bob", "alice", seq),
-                condition(Slice{cp + 1, cs - 1}),
-                fulfillment(Slice{fp, fs}),
-                fee(150 * baseFee),
-                ter(tecCRYPTOCONDITION_ERROR));
-            env(finish("bob", "alice", seq),
-                condition(Slice{cp + 1, cs - 3}),
-                fulfillment(Slice{fp, fs}),
-                fee(150 * baseFee),
-                ter(tecCRYPTOCONDITION_ERROR));
-            env(finish("bob", "alice", seq),
-                condition(Slice{cp + 2, cs - 2}),
-                fulfillment(Slice{fp, fs}),
-                fee(150 * baseFee),
-                ter(tecCRYPTOCONDITION_ERROR));
-            env(finish("bob", "alice", seq),
-                condition(Slice{cp + 2, cs - 3}),
-                fulfillment(Slice{fp, fs}),
-                fee(150 * baseFee),
-                ter(tecCRYPTOCONDITION_ERROR));
-
-            // Now, using the correct condition, try malformed fulfillments:
-            env(finish("bob", "alice", seq),
-                condition(Slice{cp + 1, cs - 2}),
-                fulfillment(Slice{fp, fs}),
-                fee(150 * baseFee),
-                ter(tecCRYPTOCONDITION_ERROR));
-            env(finish("bob", "alice", seq),
-                condition(Slice{cp + 1, cs - 2}),
-                fulfillment(Slice{fp, fs - 1}),
-                fee(150 * baseFee),
-                ter(tecCRYPTOCONDITION_ERROR));
-            env(finish("bob", "alice", seq),
-                condition(Slice{cp + 1, cs - 2}),
-                fulfillment(Slice{fp, fs - 2}),
-                fee(150 * baseFee),
-                ter(tecCRYPTOCONDITION_ERROR));
-            env(finish("bob", "alice", seq),
-                condition(Slice{cp + 1, cs - 2}),
-                fulfillment(Slice{fp + 1, fs - 1}),
-                fee(150 * baseFee),
-                ter(tecCRYPTOCONDITION_ERROR));
-            env(finish("bob", "alice", seq),
-                condition(Slice{cp + 1, cs - 2}),
-                fulfillment(Slice{fp + 1, fs - 3}),
-                fee(150 * baseFee),
-                ter(tecCRYPTOCONDITION_ERROR));
-            env(finish("bob", "alice", seq),
-                condition(Slice{cp + 1, cs - 2}),
-                fulfillment(Slice{fp + 1, fs - 3}),
-                fee(150 * baseFee),
-                ter(tecCRYPTOCONDITION_ERROR));
-            env(finish("bob", "alice", seq),
-                condition(Slice{cp + 1, cs - 2}),
-                fulfillment(Slice{fp + 2, fs - 2}),
-                fee(150 * baseFee),
-                ter(tecCRYPTOCONDITION_ERROR));
-            env(finish("bob", "alice", seq),
-                condition(Slice{cp + 1, cs - 2}),
-                fulfillment(Slice{fp + 2, fs - 3}),
-                fee(150 * baseFee),
-                ter(tecCRYPTOCONDITION_ERROR));
-
-            // Now try for the right one
-            env(finish("bob", "alice", seq),
-                condition(cb2),
-                fulfillment(fb2),
-                fee(150 * baseFee));
-            env.require(balance("alice", XRP(4000) - drops(10 * baseFee)));
-            env.require(balance("carol", XRP(6000)));
-        }
-        {  // Test empty condition during creation and
-           // empty condition & fulfillment during finish
-            Env env(*this);
-            env.fund(XRP(5000), "alice", "bob", "carol");
-
-            env(escrow("alice", "carol", XRP(1000)),
-                condition(Slice{}),
-                cancel_time(env.now() + 1s),
-                ter(temMALFORMED));
-
-            auto const seq = env.seq("alice");
-            auto const baseFee = env.current()->fees().base;
-            env(escrow("alice", "carol", XRP(1000)),
-                condition(cb3),
-                cancel_time(env.now() + 1s));
-
-            env(finish("bob", "alice", seq),
-                condition(Slice{}),
-                fulfillment(Slice{}),
-                fee(150 * baseFee),
-                ter(tecCRYPTOCONDITION_ERROR));
-            env(finish("bob", "alice", seq),
-                condition(cb3),
-                fulfillment(Slice{}),
-                fee(150 * baseFee),
-                ter(tecCRYPTOCONDITION_ERROR));
-            env(finish("bob", "alice", seq),
-                condition(Slice{}),
-                fulfillment(fb3),
-                fee(150 * baseFee),
-                ter(tecCRYPTOCONDITION_ERROR));
-
-            // Assemble finish that is missing the Condition or the Fulfillment
-            // since either both must be present, or neither can:
-            env(finish("bob", "alice", seq), condition(cb3), ter(temMALFORMED));
-            env(finish("bob", "alice", seq),
-                fulfillment(fb3),
-                ter(temMALFORMED));
-
-            // Now finish it.
-            env(finish("bob", "alice", seq),
-                condition(cb3),
-                fulfillment(fb3),
-                fee(150 * baseFee));
-            env.require(balance("carol", XRP(6000)));
-            env.require(balance("alice", XRP(4000) - drops(baseFee)));
-        }
-        {  // Test a condition other than PreimageSha256, which
-           // would require a separate amendment
-            Env env(*this);
-            env.fund(XRP(5000), "alice", "bob");
-
-            std::array<std::uint8_t, 45> cb = {
-                {0xA2, 0x2B, 0x80, 0x20, 0x42, 0x4A, 0x70, 0x49, 0x49,
-                 0x52, 0x92, 0x67, 0xB6, 0x21, 0xB3, 0xD7, 0x91, 0x19,
-                 0xD7, 0x29, 0xB2, 0x38, 0x2C, 0xED, 0x8B, 0x29, 0x6C,
-                 0x3C, 0x02, 0x8F, 0xA9, 0x7D, 0x35, 0x0F, 0x6D, 0x07,
-                 0x81, 0x03, 0x06, 0x34, 0xD2, 0x82, 0x02, 0x03, 0xC8}};
-
-            // FIXME: this transaction should, eventually, return temDISABLED
-            //        instead of temMALFORMED.
-            env(escrow("alice", "bob", XRP(1000)),
-                condition(cb),
-                cancel_time(env.now() + 1s),
-                ter(temMALFORMED));
-        }
-    }
-
-    void
-    testMetaAndOwnership()
-    {
-        using namespace jtx;
-        using namespace std::chrono;
-
-        auto const alice = Account("alice");
-        auto const bruce = Account("bruce");
-        auto const carol = Account("carol");
-
-        {
-            testcase("Metadata to self");
-
-            Env env(*this);
-            env.fund(XRP(5000), alice, bruce, carol);
-            auto const aseq = env.seq(alice);
-            auto const bseq = env.seq(bruce);
-
-            env(escrow(alice, alice, XRP(1000)),
-                finish_time(env.now() + 1s),
-                cancel_time(env.now() + 500s));
-            BEAST_EXPECT(
-                (*env.meta())[sfTransactionResult] ==
-                static_cast<std::uint8_t>(tesSUCCESS));
-            env.close(5s);
-            auto const aa = env.le(keylet::escrow(alice.id(), aseq));
-            BEAST_EXPECT(aa);
-
-            {
-                ripple::Dir aod(*env.current(), keylet::ownerDir(alice.id()));
-                BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
-                BEAST_EXPECT(
-                    std::find(aod.begin(), aod.end(), aa) != aod.end());
-            }
-
-            env(escrow(bruce, bruce, XRP(1000)),
-                finish_time(env.now() + 1s),
-                cancel_time(env.now() + 2s));
-            BEAST_EXPECT(
-                (*env.meta())[sfTransactionResult] ==
-                static_cast<std::uint8_t>(tesSUCCESS));
-            env.close(5s);
-            auto const bb = env.le(keylet::escrow(bruce.id(), bseq));
-            BEAST_EXPECT(bb);
-
-            {
-                ripple::Dir bod(*env.current(), keylet::ownerDir(bruce.id()));
-                BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 1);
-                BEAST_EXPECT(
-                    std::find(bod.begin(), bod.end(), bb) != bod.end());
-            }
-
-            env.close(5s);
-            env(finish(alice, alice, aseq));
-            {
-                BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), aseq)));
-                BEAST_EXPECT(
-                    (*env.meta())[sfTransactionResult] ==
-                    static_cast<std::uint8_t>(tesSUCCESS));
-
-                ripple::Dir aod(*env.current(), keylet::ownerDir(alice.id()));
-                BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 0);
-                BEAST_EXPECT(
-                    std::find(aod.begin(), aod.end(), aa) == aod.end());
-
-                ripple::Dir bod(*env.current(), keylet::ownerDir(bruce.id()));
-                BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 1);
-                BEAST_EXPECT(
-                    std::find(bod.begin(), bod.end(), bb) != bod.end());
-            }
-
-            env.close(5s);
-            env(cancel(bruce, bruce, bseq));
-            {
-                BEAST_EXPECT(!env.le(keylet::escrow(bruce.id(), bseq)));
-                BEAST_EXPECT(
-                    (*env.meta())[sfTransactionResult] ==
-                    static_cast<std::uint8_t>(tesSUCCESS));
-
-                ripple::Dir bod(*env.current(), keylet::ownerDir(bruce.id()));
-                BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 0);
-                BEAST_EXPECT(
-                    std::find(bod.begin(), bod.end(), bb) == bod.end());
-            }
-        }
-        {
-            testcase("Metadata to other");
-
-            Env env(*this);
-            env.fund(XRP(5000), alice, bruce, carol);
-            auto const aseq = env.seq(alice);
-            auto const bseq = env.seq(bruce);
-
-            env(escrow(alice, bruce, XRP(1000)), finish_time(env.now() + 1s));
-            BEAST_EXPECT(
-                (*env.meta())[sfTransactionResult] ==
-                static_cast<std::uint8_t>(tesSUCCESS));
-            env.close(5s);
-            env(escrow(bruce, carol, XRP(1000)),
-                finish_time(env.now() + 1s),
-                cancel_time(env.now() + 2s));
-            BEAST_EXPECT(
-                (*env.meta())[sfTransactionResult] ==
-                static_cast<std::uint8_t>(tesSUCCESS));
-            env.close(5s);
-
-            auto const ab = env.le(keylet::escrow(alice.id(), aseq));
-            BEAST_EXPECT(ab);
-
-            auto const bc = env.le(keylet::escrow(bruce.id(), bseq));
-            BEAST_EXPECT(bc);
-
-            {
-                ripple::Dir aod(*env.current(), keylet::ownerDir(alice.id()));
-                BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 1);
-                BEAST_EXPECT(
-                    std::find(aod.begin(), aod.end(), ab) != aod.end());
-
-                ripple::Dir bod(*env.current(), keylet::ownerDir(bruce.id()));
-                BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 2);
-                BEAST_EXPECT(
-                    std::find(bod.begin(), bod.end(), ab) != bod.end());
-                BEAST_EXPECT(
-                    std::find(bod.begin(), bod.end(), bc) != bod.end());
-
-                ripple::Dir cod(*env.current(), keylet::ownerDir(carol.id()));
-                BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 1);
-                BEAST_EXPECT(
-                    std::find(cod.begin(), cod.end(), bc) != cod.end());
-            }
-
-            env.close(5s);
-            env(finish(alice, alice, aseq));
-            {
-                BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), aseq)));
-                BEAST_EXPECT(env.le(keylet::escrow(bruce.id(), bseq)));
-
-                ripple::Dir aod(*env.current(), keylet::ownerDir(alice.id()));
-                BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 0);
-                BEAST_EXPECT(
-                    std::find(aod.begin(), aod.end(), ab) == aod.end());
-
-                ripple::Dir bod(*env.current(), keylet::ownerDir(bruce.id()));
-                BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 1);
-                BEAST_EXPECT(
-                    std::find(bod.begin(), bod.end(), ab) == bod.end());
-                BEAST_EXPECT(
-                    std::find(bod.begin(), bod.end(), bc) != bod.end());
-
-                ripple::Dir cod(*env.current(), keylet::ownerDir(carol.id()));
-                BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 1);
-            }
-
-            env.close(5s);
-            env(cancel(bruce, bruce, bseq));
-            {
-                BEAST_EXPECT(!env.le(keylet::escrow(alice.id(), aseq)));
-                BEAST_EXPECT(!env.le(keylet::escrow(bruce.id(), bseq)));
-
-                ripple::Dir aod(*env.current(), keylet::ownerDir(alice.id()));
-                BEAST_EXPECT(std::distance(aod.begin(), aod.end()) == 0);
-                BEAST_EXPECT(
-                    std::find(aod.begin(), aod.end(), ab) == aod.end());
-
-                ripple::Dir bod(*env.current(), keylet::ownerDir(bruce.id()));
-                BEAST_EXPECT(std::distance(bod.begin(), bod.end()) == 0);
-                BEAST_EXPECT(
-                    std::find(bod.begin(), bod.end(), ab) == bod.end());
-                BEAST_EXPECT(
-                    std::find(bod.begin(), bod.end(), bc) == bod.end());
-
-                ripple::Dir cod(*env.current(), keylet::ownerDir(carol.id()));
-                BEAST_EXPECT(std::distance(cod.begin(), cod.end()) == 0);
-            }
-        }
-    }
-
-    void
-    testConsequences()
-    {
-        testcase("Consequences");
-
-        using namespace jtx;
-        using namespace std::chrono;
-        Env env(*this);
-        auto const baseFee = env.current()->fees().base;
-
-        env.memoize("alice");
-        env.memoize("bob");
-        env.memoize("carol");
-
-        {
-            auto const jtx = env.jt(
-                escrow("alice", "carol", XRP(1000)),
-                finish_time(env.now() + 1s),
-                seq(1),
-                fee(baseFee));
-            auto const pf = preflight(
-                env.app(),
-                env.current()->rules(),
-                *jtx.stx,
-                tapNONE,
-                env.journal);
-            BEAST_EXPECT(pf.ter == tesSUCCESS);
-            BEAST_EXPECT(!pf.consequences.isBlocker());
-            BEAST_EXPECT(pf.consequences.fee() == drops(baseFee));
-            BEAST_EXPECT(pf.consequences.potentialSpend() == XRP(1000));
-        }
-
-        {
-            auto const jtx =
-                env.jt(cancel("bob", "alice", 3), seq(1), fee(baseFee));
-            auto const pf = preflight(
-                env.app(),
-                env.current()->rules(),
-                *jtx.stx,
-                tapNONE,
-                env.journal);
-            BEAST_EXPECT(pf.ter == tesSUCCESS);
-            BEAST_EXPECT(!pf.consequences.isBlocker());
-            BEAST_EXPECT(pf.consequences.fee() == drops(baseFee));
-            BEAST_EXPECT(pf.consequences.potentialSpend() == XRP(0));
-        }
-
-        {
-            auto const jtx =
-                env.jt(finish("bob", "alice", 3), seq(1), fee(baseFee));
-            auto const pf = preflight(
-                env.app(),
-                env.current()->rules(),
-                *jtx.stx,
-                tapNONE,
-                env.journal);
-            BEAST_EXPECT(pf.ter == tesSUCCESS);
-            BEAST_EXPECT(!pf.consequences.isBlocker());
-            BEAST_EXPECT(pf.consequences.fee() == drops(baseFee));
-            BEAST_EXPECT(pf.consequences.potentialSpend() == XRP(0));
-        }
-    }
-
-    void
-    testEscrowWithTickets()
-    {
-        testcase("Escrow with tickets");
-
-        using namespace jtx;
-        using namespace std::chrono;
-        Account const alice{"alice"};
-        Account const bob{"bob"};
-
-        {
-            // Create escrow and finish using tickets.
-            Env env(*this);
-            auto const baseFee = env.current()->fees().base;
-            env.fund(XRP(5000), alice, bob);
-            env.close();
-
-            // alice creates a ticket.
-            std::uint32_t const aliceTicket{env.seq(alice) + 1};
-            env(ticket::create(alice, 1));
-
-            // bob creates a bunch of tickets because he will be burning
-            // through them with tec transactions.  Just because we can
-            // we'll use them up starting from largest and going smaller.
-            constexpr static std::uint32_t bobTicketCount{20};
-            env(ticket::create(bob, bobTicketCount));
-            env.close();
-            std::uint32_t bobTicket{env.seq(bob)};
-            env.require(tickets(alice, 1));
-            env.require(tickets(bob, bobTicketCount));
-
-            // Note that from here on all transactions use tickets.  No account
-            // root sequences should change.
-            std::uint32_t const aliceRootSeq{env.seq(alice)};
-            std::uint32_t const bobRootSeq{env.seq(bob)};
-
-            // alice creates an escrow that can be finished in the future
-            auto const ts = env.now() + 97s;
-
-            std::uint32_t const escrowSeq = aliceTicket;
-            env(escrow(alice, bob, XRP(1000)),
-                finish_time(ts),
-                ticket::use(aliceTicket));
-            BEAST_EXPECT(env.seq(alice) == aliceRootSeq);
-            env.require(tickets(alice, 0));
-            env.require(tickets(bob, bobTicketCount));
-
-            // Advance the ledger, verifying that the finish won't complete
-            // prematurely.  Note that each tec consumes one of bob's tickets.
-            for (; env.now() < ts; env.close())
-            {
-                env(finish(bob, alice, escrowSeq),
-                    fee(150 * baseFee),
-                    ticket::use(--bobTicket),
-                    ter(tecNO_PERMISSION));
-                BEAST_EXPECT(env.seq(bob) == bobRootSeq);
-            }
-
-            // bob tries to re-use a ticket, which is rejected.
-            env(finish(bob, alice, escrowSeq),
-                fee(150 * baseFee),
-                ticket::use(bobTicket),
-                ter(tefNO_TICKET));
-
-            // bob uses one of his remaining tickets.  Success!
-            env(finish(bob, alice, escrowSeq),
-                fee(150 * baseFee),
-                ticket::use(--bobTicket));
-            env.close();
-            BEAST_EXPECT(env.seq(bob) == bobRootSeq);
-        }
-        {
-            // Create escrow and cancel using tickets.
-            Env env(*this);
-            auto const baseFee = env.current()->fees().base;
-            env.fund(XRP(5000), alice, bob);
-            env.close();
-
-            // alice creates a ticket.
-            std::uint32_t const aliceTicket{env.seq(alice) + 1};
-            env(ticket::create(alice, 1));
-
-            // bob creates a bunch of tickets because he will be burning
-            // through them with tec transactions.
-            constexpr std::uint32_t bobTicketCount{20};
-            std::uint32_t bobTicket{env.seq(bob) + 1};
-            env(ticket::create(bob, bobTicketCount));
-            env.close();
-            env.require(tickets(alice, 1));
-            env.require(tickets(bob, bobTicketCount));
-
-            // Note that from here on all transactions use tickets.  No account
-            // root sequences should change.
-            std::uint32_t const aliceRootSeq{env.seq(alice)};
-            std::uint32_t const bobRootSeq{env.seq(bob)};
-
-            // alice creates an escrow that can be finished in the future.
-            auto const ts = env.now() + 117s;
-
-            std::uint32_t const escrowSeq = aliceTicket;
-            env(escrow(alice, bob, XRP(1000)),
-                condition(cb1),
-                cancel_time(ts),
-                ticket::use(aliceTicket));
-            BEAST_EXPECT(env.seq(alice) == aliceRootSeq);
-            env.require(tickets(alice, 0));
-            env.require(tickets(bob, bobTicketCount));
-
-            // Advance the ledger, verifying that the cancel won't complete
-            // prematurely.
-            for (; env.now() < ts; env.close())
-            {
-                env(cancel(bob, alice, escrowSeq),
-                    fee(150 * baseFee),
-                    ticket::use(bobTicket++),
-                    ter(tecNO_PERMISSION));
-                BEAST_EXPECT(env.seq(bob) == bobRootSeq);
-            }
-
-            // Verify that a finish won't work anymore.
-            env(finish(bob, alice, escrowSeq),
-                condition(cb1),
-                fulfillment(fb1),
-                fee(150 * baseFee),
-                ticket::use(bobTicket++),
-                ter(tecNO_PERMISSION));
-            BEAST_EXPECT(env.seq(bob) == bobRootSeq);
-
-            // Verify that the cancel succeeds.
-            env(cancel(bob, alice, escrowSeq),
-                fee(150 * baseFee),
-                ticket::use(bobTicket++));
-            env.close();
-            BEAST_EXPECT(env.seq(bob) == bobRootSeq);
-
-            // Verify that bob actually consumed his tickets.
-            env.require(tickets(bob, env.seq(bob) - bobTicket));
-        }
-    }
-
-    void
-    testCredentials()
-    {
-        testcase("Test with credentials");
-
-        using namespace jtx;
-        using namespace std::chrono;
-
-        Account const alice{"alice"};
-        Account const bob{"bob"};
-        Account const carol{"carol"};
-        Account const dillon{"dillon"};
-        Account const zelda{"zelda"};
-
-        const char credType[] = "abcde";
-
-        {
-            // Credentials amendment not enabled
-            Env env(*this, supported_amendments() - featureCredentials);
-            env.fund(XRP(5000), alice, bob);
-            env.close();
-
-            auto const seq = env.seq(alice);
-            env(escrow(alice, bob, XRP(1000)), finish_time(env.now() + 1s));
-            env.close();
-
-            env(fset(bob, asfDepositAuth));
-            env.close();
-            env(deposit::auth(bob, alice));
-            env.close();
-
-            std::string const credIdx =
-                "48004829F915654A81B11C4AB8218D96FED67F209B58328A72314FB6EA288B"
-                "E4";
-            env(finish(bob, alice, seq),
-                credentials::ids({credIdx}),
-                ter(temDISABLED));
-        }
-
-        {
-            Env env(*this);
-
-            env.fund(XRP(5000), alice, bob, carol, dillon, zelda);
-            env.close();
-
-            env(credentials::create(carol, zelda, credType));
-            env.close();
-            auto const jv =
-                credentials::ledgerEntry(env, carol, zelda, credType);
-            std::string const credIdx = jv[jss::result][jss::index].asString();
-
-            auto const seq = env.seq(alice);
-            env(escrow(alice, bob, XRP(1000)), finish_time(env.now() + 50s));
-            env.close();
-
-            // Bob require preauthorization
-            env(fset(bob, asfDepositAuth));
-            env.close();
-
-            // Fail, credentials not accepted
-            env(finish(carol, alice, seq),
-                credentials::ids({credIdx}),
-                ter(tecBAD_CREDENTIALS));
-
-            env.close();
-
-            env(credentials::accept(carol, zelda, credType));
-            env.close();
-
-            // Fail, credentials doesn’t belong to root account
-            env(finish(dillon, alice, seq),
-                credentials::ids({credIdx}),
-                ter(tecBAD_CREDENTIALS));
-
-            // Fail, no depositPreauth
-            env(finish(carol, alice, seq),
-                credentials::ids({credIdx}),
-                ter(tecNO_PERMISSION));
-
-            env(deposit::authCredentials(bob, {{zelda, credType}}));
-            env.close();
-
-            // Success
-            env.close();
-            env(finish(carol, alice, seq), credentials::ids({credIdx}));
-            env.close();
-        }
-
-        {
-            testcase("Escrow with credentials without depositPreauth");
-            using namespace std::chrono;
-
-            Env env(*this);
-
-            env.fund(XRP(5000), alice, bob, carol, dillon, zelda);
-            env.close();
-
-            env(credentials::create(carol, zelda, credType));
-            env.close();
-            env(credentials::accept(carol, zelda, credType));
-            env.close();
-            auto const jv =
-                credentials::ledgerEntry(env, carol, zelda, credType);
-            std::string const credIdx = jv[jss::result][jss::index].asString();
-
-            auto const seq = env.seq(alice);
-            env(escrow(alice, bob, XRP(1000)), finish_time(env.now() + 50s));
-            // time advance
-            env.close();
-            env.close();
-            env.close();
-            env.close();
-            env.close();
-            env.close();
-
-            // Succeed, Bob doesn't require preauthorization
-            env(finish(carol, alice, seq), credentials::ids({credIdx}));
-            env.close();
-
-            {
-                const char credType2[] = "fghijk";
-
-                env(credentials::create(bob, zelda, credType2));
-                env.close();
-                env(credentials::accept(bob, zelda, credType2));
-                env.close();
-                auto const credIdxBob =
-                    credentials::ledgerEntry(
-                        env, bob, zelda, credType2)[jss::result][jss::index]
-                        .asString();
-
-                auto const seq = env.seq(alice);
-                env(escrow(alice, bob, XRP(1000)), finish_time(env.now() + 1s));
-                env.close();
-
-                // Bob require preauthorization
-                env(fset(bob, asfDepositAuth));
-                env.close();
-                env(deposit::authCredentials(bob, {{zelda, credType}}));
-                env.close();
-
-                // Use any valid credentials if account == dst
-                env(finish(bob, alice, seq), credentials::ids({credIdxBob}));
-                env.close();
-            }
-        }
-    }
-
-    void
-    testCreateFinishFunctionPreflight()
-    {
-        testcase("Test preflight checks involving FinishFunction");
-
-        using namespace jtx;
-        using namespace std::chrono;
-
-        Account const alice{"alice"};
-        Account const carol{"carol"};
-
-        // Tests whether the ledger index is >= 5
-        // #[no_mangle]
-        // pub fn ready() -> bool {
-        //     unsafe { host_lib::getLedgerSqn() >= 5}
-        // }
-        static auto wasmHex =
-            "0061736d010000000105016000017f02190108686f73745f6c69620c6765744c65"
-            "6467657253716e0000030201000405017001010105030100100619037f01418080"
-            "c0000b7f00418080c0000b7f00418080c0000b072d04066d656d6f727902000572"
-            "6561647900010a5f5f646174615f656e6403010b5f5f686561705f626173650302"
-            "0a0d010b0010808080800041044a0b006c046e616d65000e0d7761736d5f6c6962"
-            "2e7761736d01410200375f5a4e387761736d5f6c696238686f73745f6c69623132"
-            "6765744c656467657253716e313768303033306666356636376562356638314501"
-            "057265616479071201000f5f5f737461636b5f706f696e74657200550970726f64"
-            "756365727302086c616e6775616765010452757374000c70726f6365737365642d"
-            "62790105727573746325312e38332e302d6e696768746c79202863326637346333"
-            "663920323032342d30392d30392900490f7461726765745f666561747572657304"
-            "2b0a6d756c746976616c75652b0f6d757461626c652d676c6f62616c732b0f7265"
-            "666572656e63652d74797065732b087369676e2d657874";
-
-        {
-            // featureSmartEscrow disabled
-            Env env(*this, supported_amendments() - featureSmartEscrow);
-            env.fund(XRP(5000), alice, carol);
-            XRPAmount const txnFees = env.current()->fees().base + 1000;
-            auto escrowCreate = escrow(alice, carol, XRP(1000));
-            env(escrowCreate,
-                finish_function(wasmHex),
-                cancel_time(env.now() + 100s),
-                fee(txnFees),
-                ter(temDISABLED));
-            env.close();
-        }
-
-        {
-            // FinishFunction > max length
-            Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-                cfg->FEES.extension_size_limit = 10;  // 10 bytes
-                return cfg;
-            }));
-            XRPAmount const txnFees = env.current()->fees().base + 1000;
-            // create escrow
-            env.fund(XRP(5000), alice, carol);
-
-            auto escrowCreate = escrow(alice, carol, XRP(500));
-
-            // 11-byte string
-            std::string longWasmHex = "00112233445566778899AA";
-            env(escrowCreate,
-                finish_function(longWasmHex),
-                cancel_time(env.now() + 100s),
-                fee(txnFees),
-                ter(temMALFORMED));
-            env.close();
-        }
-
-        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-            cfg->START_UP = Config::FRESH;
-            return cfg;
-        }));
-        XRPAmount const txnFees = env.current()->fees().base + 1000;
-        // create escrow
-        env.fund(XRP(5000), alice, carol);
-
-        auto escrowCreate = escrow(alice, carol, XRP(500));
-
-        // Success situations
-        {
-            // FinishFunction + CancelAfter
-            env(escrowCreate,
-                finish_function(wasmHex),
-                cancel_time(env.now() + 100s),
-                fee(txnFees));
-            env.close();
-        }
-        {
-            // FinishFunction + Condition + CancelAfter
-            env(escrowCreate,
-                finish_function(wasmHex),
-                cancel_time(env.now() + 100s),
-                condition(cb1),
-                fee(txnFees));
-            env.close();
-        }
-        {
-            // FinishFunction + FinishAfter + CancelAfter
-            env(escrowCreate,
-                finish_function(wasmHex),
-                cancel_time(env.now() + 100s),
-                finish_time(env.now() + 2s),
-                fee(txnFees));
-            env.close();
-        }
-        {
-            // FinishFunction + FinishAfter + Condition + CancelAfter
-            env(escrowCreate,
-                finish_function(wasmHex),
-                cancel_time(env.now() + 100s),
-                condition(cb1),
-                finish_time(env.now() + 2s),
-                fee(txnFees));
-            env.close();
-        }
-
-        // Failure situations (i.e. all other combinations)
-        {
-            // only FinishFunction
-            env(escrowCreate,
-                finish_function(wasmHex),
-                fee(txnFees),
-                ter(temBAD_EXPIRATION));
-            env.close();
-        }
-        {
-            // FinishFunction + FinishAfter
-            env(escrowCreate,
-                finish_function(wasmHex),
-                finish_time(env.now() + 2s),
-                fee(txnFees),
-                ter(temBAD_EXPIRATION));
-            env.close();
-        }
-        {
-            // FinishFunction + Condition
-            env(escrowCreate,
-                finish_function(wasmHex),
-                condition(cb1),
-                fee(txnFees),
-                ter(temBAD_EXPIRATION));
-            env.close();
-        }
-        {
-            // FinishFunction + FinishAfter + Condition
-            env(escrowCreate,
-                finish_function(wasmHex),
-                condition(cb1),
-                finish_time(env.now() + 2s),
-                fee(txnFees),
-                ter(temBAD_EXPIRATION));
-            env.close();
-        }
-        {
-            // FinishFunction 0 length
-            env(escrowCreate,
-                finish_function(""),
-                cancel_time(env.now() + 100s),
-                fee(txnFees),
-                ter(temMALFORMED));
-            env.close();
-        }
-    }
-
-    void
-    testFinishWasmFailures()
-    {
-        testcase("EscrowFinish Smart Escrow failures");
-
-        using namespace jtx;
-        using namespace std::chrono;
-
-        Account const alice{"alice"};
-        Account const carol{"carol"};
-
-        // Tests whether the ledger index is >= 5
-        // #[no_mangle]
-        // pub fn ready() -> bool {
-        //     unsafe { host_lib::getLedgerSqn() >= 5}
-        // }
-        static auto wasmHex =
-            "0061736d010000000105016000017f02190108686f73745f6c69620c6765744c65"
-            "6467657253716e0000030201000405017001010105030100100619037f01418080"
-            "c0000b7f00418080c0000b7f00418080c0000b072d04066d656d6f727902000572"
-            "6561647900010a5f5f646174615f656e6403010b5f5f686561705f626173650302"
-            "0a0d010b0010808080800041044a0b006c046e616d65000e0d7761736d5f6c6962"
-            "2e7761736d01410200375f5a4e387761736d5f6c696238686f73745f6c69623132"
-            "6765744c656467657253716e313768303033306666356636376562356638314501"
-            "057265616479071201000f5f5f737461636b5f706f696e74657200550970726f64"
-            "756365727302086c616e6775616765010452757374000c70726f6365737365642d"
-            "62790105727573746325312e38332e302d6e696768746c79202863326637346333"
-            "663920323032342d30392d30392900490f7461726765745f666561747572657304"
-            "2b0a6d756c746976616c75652b0f6d757461626c652d676c6f62616c732b0f7265"
-            "666572656e63652d74797065732b087369676e2d657874";
-
-        {
-            // featureSmartEscrow disabled
-            Env env(*this, supported_amendments() - featureSmartEscrow);
-            env.fund(XRP(5000), alice, carol);
-            XRPAmount const txnFees = env.current()->fees().base + 1000;
-            env(finish(carol, alice, 1),
-                fee(txnFees),
-                comp_allowance(110),
-                ter(temDISABLED));
-            env.close();
-        }
-
-        {
-            // ComputationAllowance > max compute limit
-            Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
-                cfg->FEES.extension_compute_limit = 1'000;  // in gas
-                return cfg;
-            }));
-            env.fund(XRP(5000), alice, carol);
-            // Run past the flag ledger so that a Fee change vote occurs and
-            // updates FeeSettings. (It also activates all supported
-            // amendments.)
-            for (auto i = env.current()->seq(); i <= 257; ++i)
-                env.close();
-
-            auto const allowance = 1'001;
-            env(finish(carol, alice, 1),
-                fee(env.current()->fees().base + allowance),
-                comp_allowance(allowance),
-                ter(temBAD_LIMIT));
-        }
-
-        Env env(*this);
-
-        // Run past the flag ledger so that a Fee change vote occurs and
-        // updates FeeSettings. (It also activates all supported
-        // amendments.)
-        for (auto i = env.current()->seq(); i <= 257; ++i)
-            env.close();
-
-        XRPAmount const txnFees = env.current()->fees().base + 1000;
-        env.fund(XRP(5000), alice, carol);
-
-        // create escrow
-        auto const seq = env.seq(alice);
-        env(escrow(alice, carol, XRP(500)),
-            finish_function(wasmHex),
-            cancel_time(env.now() + 100s),
-            fee(txnFees));
-        env.close();
-
-        {
-            // no ComputationAllowance field
-            env(finish(carol, alice, seq), ter(tefWASM_FIELD_NOT_INCLUDED));
-        }
-
-        {
-            // not enough fees
-            // This function takes 110 gas
-            // In testing, 1 gas costs 1 drop
-            auto const finishFee = env.current()->fees().base + 109;
-            env(finish(carol, alice, seq),
-                fee(finishFee),
-                comp_allowance(110),
-                ter(telINSUF_FEE_P));
-        }
-
-        {
-            // not enough gas
-            // This function takes 110 gas
-            // In testing, 1 gas costs 1 drop
-            auto const finishFee = env.current()->fees().base + 108;
-            env(finish(carol, alice, seq),
-                fee(finishFee),
-                comp_allowance(108),
-                ter(tecFAILED_PROCESSING));
-        }
-
-        {
-            // ComputationAllowance field included w/no FinishFunction on
-            // escrow
-            auto const seq2 = env.seq(alice);
-            env(escrow(alice, carol, XRP(500)),
-                finish_time(env.now() + 10s),
-                cancel_time(env.now() + 100s));
-            env.close();
-
-            auto const allowance = 100;
-            env(finish(carol, alice, seq2),
-                fee(env.current()->fees().base + allowance),
-                comp_allowance(allowance),
-                ter(tefNO_WASM));
-        }
-    }
-
-    void
-    testFinishFunction()
-    {
-        testcase("PoC escrow function");
-
-        using namespace jtx;
-        using namespace std::chrono;
-
-        Account const alice{"alice"};
-        Account const carol{"carol"};
-
-        // Tests whether the ledger index is >= 5
-        // #[no_mangle]
-        // pub fn ready() -> bool {
-        //     unsafe { host_lib::getLedgerSqn() >= 5}
-        // }
-        static auto wasmHex =
-            "0061736d010000000105016000017f02190108686f73745f6c69620c6765744c65"
-            "6467657253716e0000030201000405017001010105030100100619037f01418080"
-            "c0000b7f00418080c0000b7f00418080c0000b072d04066d656d6f727902000572"
-            "6561647900010a5f5f646174615f656e6403010b5f5f686561705f626173650302"
-            "0a0d010b0010808080800041044a0b006c046e616d65000e0d7761736d5f6c6962"
-            "2e7761736d01410200375f5a4e387761736d5f6c696238686f73745f6c69623132"
-            "6765744c656467657253716e313768303033306666356636376562356638314501"
-            "057265616479071201000f5f5f737461636b5f706f696e74657200550970726f64"
-            "756365727302086c616e6775616765010452757374000c70726f6365737365642d"
-            "62790105727573746325312e38332e302d6e696768746c79202863326637346333"
-            "663920323032342d30392d30392900490f7461726765745f666561747572657304"
-            "2b0a6d756c746976616c75652b0f6d757461626c652d676c6f62616c732b0f7265"
-            "666572656e63652d74797065732b087369676e2d657874";
-
-        {
-            // basic FinishFunction situation
-            Env env(*this);
-            // create escrow
-            env.fund(XRP(5000), alice, carol);
-            auto const seq = env.seq(alice);
-            BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
-            auto escrowCreate = escrow(alice, carol, XRP(1000));
-            XRPAmount txnFees = env.current()->fees().base + 1000;
-            env(escrowCreate,
-                finish_function(wasmHex),
-                cancel_time(env.now() + 100s),
-                fee(txnFees));
-            env.close();
-
-            if (BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 2))
-            {
-                env.require(balance(alice, XRP(4000) - txnFees));
-                env.require(balance(carol, XRP(5000)));
-
-                env(finish(carol, alice, seq),
-                    comp_allowance(110),
-                    fee(txnFees),
-                    ter(tecWASM_REJECTED));
-                env(finish(alice, alice, seq),
-                    comp_allowance(110),
-                    fee(txnFees),
-                    ter(tecWASM_REJECTED));
-                env(finish(alice, alice, seq),
-                    comp_allowance(110),
-                    fee(txnFees),
-                    ter(tecWASM_REJECTED));
-                env(finish(carol, alice, seq),
-                    comp_allowance(110),
-                    fee(txnFees),
-                    ter(tecWASM_REJECTED));
-                env(finish(carol, alice, seq),
-                    comp_allowance(110),
-                    fee(txnFees),
-                    ter(tecWASM_REJECTED));
-                env.close();
-                env(finish(alice, alice, seq),
-                    fee(txnFees),
-                    comp_allowance(110),
-                    ter(tesSUCCESS));
-                env.close();
-
-                BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
-            }
-        }
-
-        {
-            // FinishFunction + Condition
-            Env env(*this);
-            // create escrow
-            env.fund(XRP(5000), alice, carol);
-            auto const seq = env.seq(alice);
-            BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
-            auto escrowCreate = escrow(alice, carol, XRP(1000));
-            XRPAmount txnFees = env.current()->fees().base + 1000;
-            env(escrowCreate,
-                finish_function(wasmHex),
-                condition(cb1),
-                cancel_time(env.now() + 100s),
-                fee(txnFees));
-            env.close();
-
-            if (BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 2))
-            {
-                env.require(balance(alice, XRP(4000) - txnFees));
-                env.require(balance(carol, XRP(5000)));
-
-                // no fulfillment provided, function fails
-                env(finish(carol, alice, seq),
-                    comp_allowance(110),
-                    fee(txnFees),
-                    ter(tecCRYPTOCONDITION_ERROR));
-                // fulfillment provided, function fails
-                env(finish(carol, alice, seq),
-                    condition(cb1),
-                    fulfillment(fb1),
-                    comp_allowance(110),
-                    fee(txnFees),
-                    ter(tecWASM_REJECTED));
-                env.close();
-                // no fulfillment provided, function succeeds
-                env(finish(alice, alice, seq),
-                    comp_allowance(110),
-                    fee(txnFees),
-                    ter(tecCRYPTOCONDITION_ERROR));
-                // wrong fulfillment provided, function succeeds
-                env(finish(alice, alice, seq),
-                    condition(cb1),
-                    fulfillment(fb2),
-                    comp_allowance(110),
-                    fee(txnFees),
-                    ter(tecCRYPTOCONDITION_ERROR));
-                // fulfillment provided, function succeeds, tx succeeds
-                env(finish(alice, alice, seq),
-                    condition(cb1),
-                    fulfillment(fb1),
-                    comp_allowance(110),
-                    fee(txnFees),
-                    ter(tesSUCCESS));
-                env.close();
-
-                BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
-            }
-        }
-
-        {
-            // FinishFunction + FinishAfter
-            Env env(*this);
-            // create escrow
-            env.fund(XRP(5000), alice, carol);
-            auto const seq = env.seq(alice);
-            BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
-            auto escrowCreate = escrow(alice, carol, XRP(1000));
-            XRPAmount txnFees = env.current()->fees().base + 1000;
-            auto const ts = env.now() + 97s;
-            env(escrowCreate,
-                finish_function(wasmHex),
-                finish_time(ts),
-                cancel_time(env.now() + 1000s),
-                fee(txnFees));
-            env.close();
-
-            if (BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 2))
-            {
-                env.require(balance(alice, XRP(4000) - txnFees));
-                env.require(balance(carol, XRP(5000)));
-
-                // finish time hasn't passed, function fails
-                env(finish(carol, alice, seq),
-                    comp_allowance(110),
-                    fee(txnFees + 1),
-                    ter(tecNO_PERMISSION));
-                env.close();
-                // finish time hasn't passed, function succeeds
-                for (; env.now() < ts; env.close())
-                    env(finish(carol, alice, seq),
-                        comp_allowance(110),
-                        fee(txnFees + 2),
-                        ter(tecNO_PERMISSION));
-
-                env(finish(carol, alice, seq),
-                    comp_allowance(110),
-                    fee(txnFees + 1),
-                    ter(tesSUCCESS));
-                BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
-            }
-        }
-
-        {
-            // FinishFunction + FinishAfter #2
-            Env env(*this);
-            // create escrow
-            env.fund(XRP(5000), alice, carol);
-            auto const seq = env.seq(alice);
-            BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
-            auto escrowCreate = escrow(alice, carol, XRP(1000));
-            XRPAmount txnFees = env.current()->fees().base + 1000;
-            env(escrowCreate,
-                finish_function(wasmHex),
-                finish_time(env.now() + 2s),
-                cancel_time(env.now() + 100s),
-                fee(txnFees));
-            // Don't close the ledger here
-
-            if (BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 2))
-            {
-                env.require(balance(alice, XRP(4000) - txnFees));
-                env.require(balance(carol, XRP(5000)));
-
-                // finish time hasn't passed, function fails
-                env(finish(carol, alice, seq),
-                    comp_allowance(110),
-                    fee(txnFees),
-                    ter(tecNO_PERMISSION));
-                env.close();
-
-                // finish time has passed, function fails
-                env(finish(carol, alice, seq),
-                    comp_allowance(110),
-                    fee(txnFees),
-                    ter(tecWASM_REJECTED));
-                env.close();
-                // finish time has passed, function succeeds, tx succeeds
-                env(finish(carol, alice, seq),
-                    comp_allowance(110),
-                    fee(txnFees),
-                    ter(tesSUCCESS));
-                env.close();
-
-                BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
-            }
-        }
-    }
-
-    void
-    testAllHostFunctions()
-    {
-        testcase("Test all host functions");
-
-        using namespace jtx;
-        using namespace std::chrono;
-
-        // TODO: figure out how to make this a fixture in a separate file
+        testcase("escrow wasm devnet 1 test");
         auto wasmHex =
             "0061736d0100000001690f60037f7f7f017f60027f7f017f60017f0060027f7f00"
             "60057f7f7f7f7f017f6000017f60037e7f7f017f60057f7f7f7f7f0060037f7f7f"
@@ -3320,6 +1257,10 @@ struct Escrow_test : public beast::unit_test::suite
             "392d30392900490f7461726765745f6665617475726573042b0a6d756c74697661"
             "6c75652b0f6d757461626c652d676c6f62616c732b0f7265666572656e63652d74"
             "797065732b087369676e2d657874";
+
+        auto wasmStr = boost::algorithm::unhex(std::string(wasmHex));
+        std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
+
         //        let sender = get_tx_account_id();
         //        let owner = get_current_escrow_account_id();
         //        let dest = get_current_escrow_destination();
@@ -3332,99 +1273,893 @@ struct Escrow_test : public beast::unit_test::suite
         //        sender == owner && dest_balance <= threshold_balance &&
         //        pl_time >= e_time
 
-        Account const alice{"alice"};
-        Account const carol{"carol"};
+        using namespace test::jtx;
+        struct TestHostFunctions : public HostFunctions
+        {
+            Env* env;
+            Bytes accountID;
+            Bytes data;
+            int clock_drift = 0;
+
+        public:
+            explicit TestHostFunctions(Env* env, int cd = 0)
+                : env(env), clock_drift(cd)
+            {
+                std::string s = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+                accountID = Bytes{s.begin(), s.end()};
+                std::string t = "10000";
+                data = Bytes{t.begin(), t.end()};
+            }
+
+            int32_t
+            getLedgerSqn() override
+            {
+                return (int32_t)env->current()->seq();
+            }
+
+            int32_t
+            getParentLedgerTime() override
+            {
+                return env->current()
+                           ->parentCloseTime()
+                           .time_since_epoch()
+                           .count() +
+                    clock_drift;
+            }
+
+            std::optional<Bytes>
+            getTxField(std::string const& fname) override
+            {
+                return accountID;
+            }
+
+            std::optional<Bytes>
+            getLedgerEntryField(
+                int32_t type,
+                Bytes const& kdata,
+                std::string const& fname) override
+            {
+                return data;
+            }
+
+            std::optional<Bytes>
+            getCurrentLedgerEntryField(std::string const& fname) override
+            {
+                if (fname == "Destination" || fname == "Account")
+                    return accountID;
+                else if (fname == "Data")
+                    return data;
+                else if (fname == "FinishAfter")
+                {
+                    auto t = env->current()
+                                 ->parentCloseTime()
+                                 .time_since_epoch()
+                                 .count();
+                    std::string s = std::to_string(t);
+                    return Bytes{s.begin(), s.end()};
+                }
+
+                return std::nullopt;
+            }
+        };
+
+        Env env{*this};
 
         {
-            // basic FinishFunction situation
-            Env env(*this);
-            // create escrow
-            env.fund(XRP(5000), alice, carol);
-            auto const seq = env.seq(alice);
-            BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
-            auto escrowCreate = escrow(alice, carol, XRP(1000));
-            XRPAmount txnFees = env.current()->fees().base + 1000;
-            env(escrowCreate,
-                finish_function(wasmHex),
-                finish_time(env.now() + 11s),
-                cancel_time(env.now() + 100s),
-                data("1000000000"),  // 1000 XRP in drops
-                fee(txnFees));
-            env.close();
-
-            if (BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 2))
+            TestHostFunctions nfs(&env);
+            std::string funcName("ready");
+            auto re = runEscrowWasm(wasm, funcName, &nfs, 100000);
+            if (BEAST_EXPECT(re.has_value()))
             {
-                env.require(balance(alice, XRP(4000) - txnFees));
-                env.require(balance(carol, XRP(5000)));
-
-                auto const allowance = 40'000;
-
-                // FinishAfter time hasn't passed
-                env(finish(carol, alice, seq),
-                    comp_allowance(allowance),
-                    fee(txnFees),
-                    ter(tecNO_PERMISSION));
-                env.close();
-
-                // tx sender not escrow creator (alice)
-                env(finish(carol, alice, seq),
-                    comp_allowance(allowance),
-                    fee(txnFees),
-                    ter(tecWASM_REJECTED));
-
-                // destination balance is too high
-                env(finish(carol, alice, seq),
-                    comp_allowance(allowance),
-                    fee(txnFees),
-                    ter(tecWASM_REJECTED));
-
-                env.close();
-
-                // reduce the destination balance
-                env(pay(carol, alice, XRP(4500)));
-                env.close();
-
-                // tx sender not escrow creator (alice)
-                env(finish(carol, alice, seq),
-                    comp_allowance(allowance),
-                    fee(txnFees),
-                    ter(tecWASM_REJECTED));
-                env.close();
-
-                env(finish(alice, alice, seq),
-                    comp_allowance(allowance),
-                    fee(txnFees),
-                    ter(tesSUCCESS));
-                env.close();
-
-                BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
+                BEAST_EXPECT(re.value().result);
+                std::cout << "good case result " << re.value().result
+                          << " cost: " << re.value().cost << std::endl;
             }
+        }
+
+        env.close();
+        env.close();
+        env.close();
+        env.close();
+
+        {  // fail because current time < escrow_finish_after time
+            TestHostFunctions nfs(&env);
+            nfs.clock_drift = -1;
+            std::string funcName("ready");
+            auto re = runEscrowWasm(wasm, funcName, &nfs, 100000);
+            if (BEAST_EXPECT(re.has_value()))
+            {
+                BEAST_EXPECT(!re.value().result);
+                std::cout << "bad case (current time < escrow_finish_after "
+                             "time) result "
+                          << re.value().result << " cost: " << re.value().cost
+                          << std::endl;
+            }
+        }
+
+        {  // fail because trying to access nonexistent field
+            struct BadTestHostFunctions : public TestHostFunctions
+            {
+                explicit BadTestHostFunctions(Env* env) : TestHostFunctions(env)
+                {
+                }
+                std::optional<Bytes>
+                getTxField(std::string const& fname) override
+                {
+                    return std::nullopt;
+                }
+            };
+            BadTestHostFunctions nfs(&env);
+            std::string funcName("ready");
+            auto re = runEscrowWasm(wasm, funcName, &nfs, 100000);
+            BEAST_EXPECT(re.error());
+            std::cout << "bad case (access nonexistent field) result "
+                      << re.error() << std::endl;
+        }
+
+        {  // fail because trying to allocate more than MAX_PAGES memory
+            struct BadTestHostFunctions : public TestHostFunctions
+            {
+                explicit BadTestHostFunctions(Env* env) : TestHostFunctions(env)
+                {
+                }
+                std::optional<Bytes>
+                getTxField(std::string const& fname) override
+                {
+                    return Bytes((MAX_PAGES + 1) * 64 * 1024, 1);
+                }
+            };
+            BadTestHostFunctions nfs(&env);
+            std::string funcName("ready");
+            auto re = runEscrowWasm(wasm, funcName, &nfs, 100000);
+            BEAST_EXPECT(re.error());
+            std::cout << "bad case (more than MAX_PAGES) result " << re.error()
+                      << std::endl;
+        }
+
+        {  // fail because recursion too deep
+            auto wasmHex =
+                "0061736d01000000013f0b60017f0060037f7f7f017f60027f7f017f60027f"
+                "7f0060000060037f7f7f006000017f60037e7f7f017f60047f7f7f7f017f60"
+                "017f017f60047f7f7f7f00032f2e0302040400030501030302020600030302"
+                "0700080301050202020404090202000a0a0102020403030300000a03010405"
+                "017001101005030100110619037f01418080c0000b7f0041b49ac0000b7f00"
+                "41c09ac0000b073905066d656d6f7279020005726563757200000972656375"
+                "7273697665000c0a5f5f646174615f656e6403010b5f5f686561705f626173"
+                "6503020915010041010b0f010a0b1e10171819262c1d1f2223240a927c2ea7"
+                "0704017f017e027f017e23808080800041e0006b2202248080808000200220"
+                "003602040240200041004c0d002001200128020041016a3602002000417f6a"
+                "20011080808080000b2002410236020c2002418480c0800036020820024201"
+                "37021420024181808080003602242002200241206a3602102002200241046a"
+                "3602202002410636022c2002419490c08000360228024041002d00c096c080"
+                "004103460d001082808080000b0240024002400240024041002903a89ac080"
+                "0022034200520d00024041002802b09ac0800022000d001083808080004100"
+                "2802b09ac0800021000b20002000280200220141016a3602002001417f4c0d"
+                "012000450d02200020002802002201417f6a36020020002903082103200141"
+                "01470d0020001084808080000b0240024002402003410029039896c0800051"
+                "0d0041002d00a496c08000210141012100410041013a00a496c08000200220"
+                "013a00382001450d012002420037025420024281808080c00037024c200241"
+                "bc91c08000360248200241386a200241c8006a108580808000000b02404100"
+                "2802a096c080002200417f460d00200041016a21000c020b419c92c0800041"
+                "2641e092c08000108680808000000b4100200337039896c080000b41002000"
+                "3602a096c080002002419896c0800036023041042100200241043a00382002"
+                "200241306a360240200241386a41c085c08000200241086a10878080800021"
+                "0120022d003821040240024020010d00420021034117200441ff0171764101"
+                "710d01200228023c220028020021010240200041046a280200220428020022"
+                "05450d002001200511808080800080808080000b024020042802042204450d"
+                "00200120041088808080000b2000410c108880808000410421000c010b2004"
+                "41ff01714104460d032002290338220642807e8321032006a721000b200228"
+                "023022012001280208417f6a2204360208024020040d00200141003a000c20"
+                "0142003703000b200041ff01714104470d03200241e0006a2480808080000f"
+                "0b000b418087c0800041de0041f487c08000108680808000000b2002410036"
+                "02582002410136024c2002418491c0800036024820024204370250200241c8"
+                "006a418c91c08000108980808000000b200220032000ad42ff018384370330"
+                "2002410236024c200241f48fc0800036024820024202370254200241828080"
+                "8000ad422086200241306aad843703402002418380808000ad422086200241"
+                "286aad843703382002200241386a360250200241c8006a418490c080001089"
+                "80808000000b2701017f200028020022002000411f7522027320026bad2000"
+                "417f73411f7620011091808080000bf10101027f23808080800041206b2200"
+                "248080808000024002400240024041002d00c096c080000e0400000301000b"
+                "410041023a00c096c0800041002d009096c080001a418008109c8080800022"
+                "01450d01410041033a00c096c08000410020013602b096c080004100428080"
+                "80808080013703a896c080004100420037039896c08000410041003a00b896"
+                "c08000410041003602b496c08000410041003a00a496c08000410041003602"
+                "a096c080000b200041206a2480808080000f0b000b20004100360218200041"
+                "0136020c200041bc93c0800036020820004204370210200041086a418c92c0"
+                "8000108980808000000bf90103027f037e017f23808080800041206b220024"
+                "808080800041002d009096c080001a0240024002404120109c808080002201"
+                "450d0020014102360210200142818080801037030041002903d096c0800021"
+                "0203402002427f510d024100200242017c220341002903d096c08000220420"
+                "0420025122051b3703d096c08000200421022005450d000b410020033703a8"
+                "9ac080002001200337030841002802b09ac08000450d022000410036021820"
+                "00410136020c200041c484c0800036020820004204370210200041086a419c"
+                "85c080001089808080000b000b109b80808000000b410020013602b09ac080"
+                "00200041206a2480808080000b5b01027f024020002802104101470d002000"
+                "280214220141003a000020002802182202450d00200120021088808080000b"
+                "02402000417f460d00200020002802042201417f6a36020420014101470d00"
+                "200041201088808080000b0b3a01017f23808080800041106b220224808080"
+                "8000200241ac85c0800036020c20022000360208200241086a2002410c6a20"
+                "01109680808000000b6a01017f23808080800041306b220324808080800020"
+                "03200136020c2003200036020820034101360214200341d488c08000360210"
+                "2003420137021c2003418380808000ad422086200341086aad843703282003"
+                "200341286a360218200341106a2002108980808000000bbf05010a7f238080"
+                "80800041306b2203248080808000200341033a002c2003412036021c410021"
+                "04200341003602282003200136022420032000360220200341003602142003"
+                "410036020c02400240024002400240200228021022050d00200228020c2200"
+                "450d0120022802082101200041037421062000417f6a41ffffffff01714101"
+                "6a21042002280200210003400240200041046a2802002207450d0020032802"
+                "2020002802002007200328022428020c11818080800080808080000d040b20"
+                "012802002003410c6a200128020411828080800080808080000d0320014108"
+                "6a2101200041086a2100200641786a22060d000c020b0b2002280214220145"
+                "0d00200141057421082001417f6a41ffffff3f7141016a2104200228020821"
+                "09200228020021004100210603400240200041046a2802002201450d002003"
+                "28022020002802002001200328022428020c11818080800080808080000d03"
+                "0b2003200520066a220141106a28020036021c20032001411c6a2d00003a00"
+                "2c2003200141186a2802003602282001410c6a28020021074100210a410021"
+                "0b024002400240200141086a2802000e03010002010b2007410374210c4100"
+                "210b2009200c6a220c2802040d01200c28020021070b4101210b0b20032007"
+                "3602102003200b36020c200141046a28020021070240024002402001280200"
+                "0e03010002010b2007410374210b2009200b6a220b2802040d01200b280200"
+                "21070b4101210a0b200320073602182003200a3602142009200141146a2802"
+                "004103746a22012802002003410c6a20012802041182808080008080808000"
+                "0d02200041086a21002008200641206a2206470d000b0b200420022802044f"
+                "0d012003280220200228020020044103746a22012802002001280204200328"
+                "022428020c1181808080008080808000450d010b410121010c010b41002101"
+                "0b200341306a24808080800020010b6c01027f024002402000417c6a280200"
+                "2202417871220341044108200241037122021b20016a490d0002402002450d"
+                "002003200141276a4b0d020b2000108d808080000f0b418186c0800041b086"
+                "c08000108e80808000000b41c086c0800041f086c08000108e80808000000b"
+                "5601017f23808080800041206b2202248080808000200241106a200041106a"
+                "290200370300200241086a200041086a290200370300200241013b011c2002"
+                "2001360218200220002902003703002002109280808000000be50301017f23"
+                "808080800041c0006b22022480808080000240024002400240024002402000"
+                "2d00000e0400010203000b2002200028020436020441002d009096c080001a"
+                "4114109c808080002200450d04200041106a410028008093c0800036000020"
+                "0041086a41002900f892c08000370000200041002900f092c0800037000020"
+                "0241143602102002200036020c200241143602082002410336022c200241a0"
+                "8fc08000360228200242023702342002418180808000ad422086200241046a"
+                "ad843703202002418480808000ad422086200241086aad8437031820022002"
+                "41186a36023020012802142001280218200241286a10878080800021002002"
+                "2802082201450d03200228020c20011088808080000c030b20002d00012100"
+                "2002410136022c200241d488c0800036022820024201370234200241838080"
+                "8000ad422086200241186aad8437030820022000410274220041c493c08000"
+                "6a28020036021c2002200041e894c080006a2802003602182002200241086a"
+                "36023020012802142001280218200241286a10878080800021000c020b2001"
+                "20002802042200280200200028020410958080800021000c010b2000280204"
+                "220028020020012000280204280210118280808000808080800021000b2002"
+                "41c0006a24808080800020000f0b000b140020012000280200200028020410"
+                "95808080000b3f01027f23808080800041106b220024808080800020004100"
+                "36020c41a08d062000410c6a108080808000200028020c2101200041106a24"
+                "808080800020010bbe0601057f200041786a22012000417c6a280200220241"
+                "787122006a21030240024020024101710d002002410271450d012001280200"
+                "220220006a21000240200120026b220141002802809ac08000470d00200328"
+                "02044103714103470d01410020003602f899c0800020032003280204417e71"
+                "36020420012000410172360204200320003602000f0b2001200210a8808080"
+                "000b024002400240024002400240200328020422024102710d002003410028"
+                "02849ac08000460d02200341002802809ac08000460d032003200241787122"
+                "0210a8808080002001200220006a2200410172360204200120006a20003602"
+                "00200141002802809ac08000470d01410020003602f899c080000f0b200320"
+                "02417e7136020420012000410172360204200120006a20003602000b200041"
+                "8002490d022001200010a78080800041002101410041002802989ac0800041"
+                "7f6a22003602989ac0800020000d04024041002802e097c080002200450d00"
+                "410021010340200141016a2101200028020822000d000b0b4100200141ff1f"
+                "200141ff1f4b1b3602989ac080000f0b410020013602849ac0800041004100"
+                "2802fc99c0800020006a22003602fc99c08000200120004101723602040240"
+                "200141002802809ac08000470d00410041003602f899c08000410041003602"
+                "809ac080000b200041002802909ac0800022044d0d0341002802849ac08000"
+                "2200450d034100210241002802fc99c0800022054129490d0241d897c08000"
+                "2101034002402001280200220320004b0d002000200320012802046a490d04"
+                "0b200128020821010c000b0b410020013602809ac08000410041002802f899"
+                "c0800020006a22003602f899c0800020012000410172360204200120006a20"
+                "003602000f0b200041f8017141e897c080006a21030240024041002802f099"
+                "c08000220241012000410376742200710d00410020022000723602f099c080"
+                "00200321000c010b200328020821000b200320013602082000200136020c20"
+                "01200336020c200120003602080f0b024041002802e097c080002201450d00"
+                "410021020340200241016a2102200128020822010d000b0b4100200241ff1f"
+                "200241ff1f4b1b3602989ac08000200520044d0d004100417f3602909ac080"
+                "000b0b4d01017f23808080800041206b220224808080800020024100360210"
+                "20024101360204200242043702082002412e36021c20022000360218200220"
+                "0241186a36020020022001108980808000000b7d02017f017e238080808000"
+                "41306b22022480808080002002200036020020022001360204200241023602"
+                "0c2002418484c08000360208200242023702142002418580808000ad422086"
+                "2203200241046aad84370328200220032002ad843703202002200241206a36"
+                "0210200241086a41b083c08000108980808000000b11002000350200410120"
+                "011091808080000bdf0703027f017e097f23808080800041306b2203248080"
+                "808000412721040240024020004290ce005a0d00200021050c010b41272104"
+                "0340200341096a20046a2206417c6a20004290ce0080220542f0b1037e2000"
+                "7ca7220741ffff037141e4006e220841017441c481c080006a2f00003b0000"
+                "2006417e6a2008419c7f6c20076a41ffff037141017441c481c080006a2f00"
+                "003b00002004417c6a2104200042ffc1d72f5621062005210020060d000b0b"
+                "02400240200542e300560d002005a721060c010b200341096a2004417e6a22"
+                "046a2005a7220741ffff037141e4006e2206419c7f6c20076a41ffff037141"
+                "017441c481c080006a2f00003b00000b024002402006410a490d0020034109"
+                "6a2004417e6a22046a200641017441c481c080006a2f00003b00000c010b20"
+                "0341096a2004417f6a22046a20064130723a00000b412720046b2109024002"
+                "4020010d00412820046b2107200228021c2106412d21010c010b412b418080"
+                "c400200228021c220641017122071b2101200720096a21070b200341096a20"
+                "046a210a2006410471410276210b0240024020022802000d00024020022802"
+                "142204200228021822062001200b109380808000450d00410121040c020b20"
+                "04200a2009200628020c118180808000808080800021040c010b0240024002"
+                "402002280204220c20074b0d0020022802142204200228021822062001200b"
+                "109380808000450d01410121040c030b2006410871450d012002280210210d"
+                "2002413036021020022d0020210e41012104200241013a0020200228021422"
+                "06200228021822082001200b1093808080000d02200c20076b41016a210402"
+                "4003402004417f6a2204450d01200641302008280210118280808000808080"
+                "8000450d000b410121040c030b02402006200a2009200828020c1181808080"
+                "008080808000450d00410121040c030b2002200e3a00202002200d36021041"
+                "0021040c020b2004200a2009200628020c118180808000808080800021040c"
+                "010b200c20076b210c02400240024020022d002022040e0402000100020b20"
+                "0c21044100210c0c010b200c4101762104200c41016a410176210c0b200441"
+                "016a2104200228021021082002280218210620022802142107024003402004"
+                "417f6a2204450d012007200820062802101182808080008080808000450d00"
+                "0b410121040c010b41012104200720062001200b1093808080000d00200720"
+                "0a2009200628020c11818080800080808080000d004100210403400240200c"
+                "2004470d00200c200c4921040c020b200441016a2104200720082006280210"
+                "1182808080008080808000450d000b2004417f6a200c4921040b200341306a"
+                "24808080800020040b5d01027f23808080800041206b220124808080800020"
+                "002802182102200141106a200041106a290200370300200141086a20004108"
+                "6a2902003703002001200036021c2001200236021820012000290200370300"
+                "200110a980808000000b490002402002418080c400460d0020002002200128"
+                "02101182808080008080808000450d0041010f0b024020030d0041000f0b20"
+                "0020034100200128020c11818080800080808080000b7d02017f017e238080"
+                "80800041306b22022480808080002002200036020020022001360204200241"
+                "0236020c200241a484c08000360208200242023702142002418580808000ad"
+                "4220862203200241046aad84370328200220032002ad843703202002200241"
+                "206a360210200241086a41c083c08000108980808000000bc20b010b7f2000"
+                "28020821030240024002400240200028020022040d002003410171450d010b"
+                "02402003410171450d00200120026a210502400240200028020c22060d0041"
+                "002107200121080c010b410021074100210920012108034020082203200546"
+                "0d020240024020032c00002208417f4c0d00200341016a21080c010b024020"
+                "0841604f0d00200341026a21080c010b0240200841704f0d00200341036a21"
+                "080c010b200341046a21080b200820036b20076a21072006200941016a2209"
+                "470d000b0b20082005460d00024020082c00002203417f4a0d002003416049"
+                "1a0b024002402007450d000240200720024f0d00200120076a2c000041bf7f"
+                "4a0d01410021030c020b20072002460d00410021030c010b200121030b2007"
+                "200220031b21022003200120031b21010b024020040d002000280214200120"
+                "02200028021828020c11818080800080808080000f0b2000280204210a0240"
+                "20024110490d0020022001200141036a417c7122076b22096a220b41037121"
+                "044100210641002103024020012007460d004100210302402009417c4b0d00"
+                "410021034100210503402003200120056a22082c000041bf7f4a6a20084101"
+                "6a2c000041bf7f4a6a200841026a2c000041bf7f4a6a200841036a2c000041"
+                "bf7f4a6a2103200541046a22050d000b0b200121080340200320082c000041"
+                "bf7f4a6a2103200841016a2108200941016a22090d000b0b02402004450d00"
+                "2007200b417c716a22082c000041bf7f4a210620044101460d00200620082c"
+                "000141bf7f4a6a210620044102460d00200620082c000241bf7f4a6a21060b"
+                "200b4102762105200620036a21060340200721042005450d04200541c00120"
+                "0541c001491b220b410371210c200b410274210d4100210802402005410449"
+                "0d002004200d41f007716a210941002108200421030340200328020c220741"
+                "7f7341077620074106767241818284087120032802082207417f7341077620"
+                "074106767241818284087120032802042207417f7341077620074106767241"
+                "818284087120032802002207417f7341077620074106767241818284087120"
+                "086a6a6a6a2108200341106a22032009470d000b0b2005200b6b2105200420"
+                "0d6a2107200841087641ff81fc0771200841ff81fc07716a418180046c4110"
+                "7620066a2106200c450d000b2004200b41fc01714102746a22082802002203"
+                "417f734107762003410676724181828408712103200c4101460d0220082802"
+                "042207417f7341077620074106767241818284087120036a2103200c410246"
+                "0d0220082802082208417f7341077620084106767241818284087120036a21"
+                "030c020b024020020d00410021060c030b2002410371210802400240200241"
+                "044f0d0041002106410021090c010b41002106200121032002410c71220921"
+                "070340200620032c000041bf7f4a6a200341016a2c000041bf7f4a6a200341"
+                "026a2c000041bf7f4a6a200341036a2c000041bf7f4a6a2106200341046a21"
+                "032007417c6a22070d000b0b2008450d02200120096a21030340200620032c"
+                "000041bf7f4a6a2106200341016a21032008417f6a22080d000c030b0b2000"
+                "28021420012002200028021828020c11818080800080808080000f0b200341"
+                "087641ff811c71200341ff81fc07716a418180046c41107620066a21060b02"
+                "400240200a20064d0d00200a20066b21054100210302400240024020002d00"
+                "200e0402000102020b20052103410021050c010b2005410176210320054101"
+                "6a41017621050b200341016a21032000280210210920002802182108200028"
+                "0214210703402003417f6a2203450d02200720092008280210118280808000"
+                "8080808000450d000b41010f0b200028021420012002200028021828020c11"
+                "818080800080808080000f0b0240200720012002200828020c118180808000"
+                "8080808000450d0041010f0b410021030340024020052003470d0020052005"
+                "490f0b200341016a2103200720092008280210118280808000808080800045"
+                "0d000b2003417f6a2005490b820302017f017e23808080800041f0006b2203"
+                "248080808000200341b085c0800036020c20032000360208200341b085c080"
+                "00360214200320013602102003410236021c200341bc80c080003602180240"
+                "20022802000d002003410336025c200341f080c08000360258200342033702"
+                "642003418680808000ad4220862204200341106aad84370348200320042003"
+                "41086aad843703402003418380808000ad422086200341186aad8437033820"
+                "03200341386a360260200341d8006a41e891c08000108980808000000b2003"
+                "41206a41106a200241106a290200370300200341206a41086a200241086a29"
+                "0200370300200320022902003703202003410436025c200341a481c0800036"
+                "0258200342043702642003418680808000ad4220862204200341106aad8437"
+                "035020032004200341086aad843703482003418780808000ad422086200341"
+                "206aad843703402003418380808000ad422086200341186aad843703382003"
+                "200341386a360260200341d8006a41e891c08000108980808000000b1c0020"
+                "002802002001200028020428020c11828080800080808080000b1400200128"
+                "0214200128021820001087808080000b22002001280214419480c08000410e"
+                "200128021828020c11818080800080808080000b6001017f23808080800041"
+                "306b22002480808080002000410136020c200041b480c08000360208200042"
+                "013702142000418880808000ad4220862000412f6aad843703202000200041"
+                "206a360210200041086a41cc8fc08000108980808000000b4701017f238080"
+                "80800041206b2200248080808000200041003602182000410136020c200041"
+                "bc88c0800036020820004204370210200041086a41c488c080001089808080"
+                "00000bcb2502087f017e02400240024002400240024002400240200041f501"
+                "490d0041002101200041cdff7b4f0d052000410b6a22014178712102410028"
+                "02f499c080002203450d04411f21040240200041f4ffff074b0d0020024106"
+                "20014108766722006b7641017120004101746b413e6a21040b410020026b21"
+                "010240200441027441d896c080006a28020022050d0041002100410021060c"
+                "020b4100210020024100411920044101766b2004411f461b74210741002106"
+                "034002402005220528020441787122082002490d00200820026b220820014f"
+                "0d00200821012005210620080d004100210120052106200521000c040b2005"
+                "28021422082000200820052007411d764104716a41106a2802002205471b20"
+                "0020081b2100200741017421072005450d020c000b0b024041002802f099c0"
+                "8000220541102000410b6a41f803712000410b491b22024103762201762200"
+                "410371450d00024002402000417f7341017120016a2207410374220041e897"
+                "c080006a2201200041f097c080006a28020022022802082206460d00200620"
+                "0136020c200120063602080c010b41002005417e200777713602f099c08000"
+                "0b20022000410372360204200220006a220020002802044101723602042002"
+                "41086a0f0b200241002802f899c080004d0d0302400240024020000d004100"
+                "2802f499c080002200450d0620006841027441d896c080006a280200220628"
+                "020441787120026b21012006210503400240200628021022000d0020062802"
+                "1422000d0020052802182104024002400240200528020c22002005470d0020"
+                "0541144110200528021422001b6a28020022060d01410021000c020b200528"
+                "02082206200036020c200020063602080c010b200541146a200541106a2000"
+                "1b21070340200721082006220041146a200041106a200028021422061b2107"
+                "20004114411020061b6a28020022060d000b200841003602000b2004450d04"
+                "0240200528021c41027441d896c080006a22062802002005460d0020044110"
+                "411420042802102005461b6a20003602002000450d050c040b200620003602"
+                "0020000d03410041002802f499c08000417e200528021c77713602f499c080"
+                "000c040b200028020441787120026b22062001200620014922061b21012000"
+                "200520061b2105200021060c000b0b02400240200020017441022001742200"
+                "410020006b7271682208410374220141e897c080006a2206200141f097c080"
+                "006a28020022002802082207460d002007200636020c200620073602080c01"
+                "0b41002005417e200877713602f099c080000b200020024103723602042000"
+                "20026a2207200120026b2206410172360204200020016a2006360200024041"
+                "002802f899c080002205450d00200541787141e897c080006a210141002802"
+                "809ac0800021020240024041002802f099c080002208410120054103767422"
+                "05710d00410020082005723602f099c08000200121050c010b200128020821"
+                "050b200120023602082005200236020c2002200136020c200220053602080b"
+                "410020073602809ac08000410020063602f899c08000200041086a0f0b2000"
+                "2004360218024020052802102206450d002000200636021020062000360218"
+                "0b20052802142206450d0020002006360214200620003602180b0240024002"
+                "4020014110490d0020052002410372360204200520026a2202200141017236"
+                "0204200220016a200136020041002802f899c080002207450d012007417871"
+                "41e897c080006a210641002802809ac0800021000240024041002802f099c0"
+                "8000220841012007410376742207710d00410020082007723602f099c08000"
+                "200621070c010b200628020821070b200620003602082007200036020c2000"
+                "200636020c200020073602080c010b2005200120026a220041037236020420"
+                "0520006a220020002802044101723602040c010b410020023602809ac08000"
+                "410020013602f899c080000b200541086a0f0b024020002006720d00410021"
+                "0641022004742200410020006b722003712200450d0320006841027441d896"
+                "c080006a28020021000b2000450d010b034020002006200028020441787122"
+                "0520026b220820014922041b2103200520024921072008200120041b210802"
+                "40200028021022050d00200028021421050b2006200320071b210620012008"
+                "20071b21012005210020050d000b0b2006450d00024041002802f899c08000"
+                "22002002490d002001200020026b4f0d010b20062802182104024002400240"
+                "200628020c22002006470d00200641144110200628021422001b6a28020022"
+                "050d01410021000c020b20062802082205200036020c200020053602080c01"
+                "0b200641146a200641106a20001b21070340200721082005220041146a2000"
+                "41106a200028021422051b210720004114411020051b6a28020022050d000b"
+                "200841003602000b2004450d030240200628021c41027441d896c080006a22"
+                "052802002006460d0020044110411420042802102006461b6a200036020020"
+                "00450d040c030b2005200036020020000d02410041002802f499c08000417e"
+                "200628021c77713602f499c080000c030b0240024002400240024002404100"
+                "2802f899c08000220020024f0d00024041002802fc99c08000220020024b0d"
+                "0041002101200241af80046a220641107640002200417f4622070d07200041"
+                "10742205450d07410041002802889ac08000410020064180807c7120071b22"
+                "086a22003602889ac080004100410028028c9ac0800022012000200120004b"
+                "1b36028c9ac0800002400240024041002802849ac080002201450d0041d897"
+                "c080002100034020002802002206200028020422076a2005460d0220002802"
+                "0822000d000c030b0b0240024041002802949ac080002200450d0020002005"
+                "4d0d010b410020053602949ac080000b410041ff1f3602989ac08000410020"
+                "083602dc97c08000410020053602d897c08000410041e897c080003602f497"
+                "c08000410041f097c080003602fc97c08000410041e897c080003602f097c0"
+                "8000410041f897c0800036028498c08000410041f097c080003602f897c080"
+                "004100418098c0800036028c98c08000410041f897c0800036028098c08000"
+                "4100418898c0800036029498c080004100418098c0800036028898c0800041"
+                "00419098c0800036029c98c080004100418898c0800036029098c080004100"
+                "419898c080003602a498c080004100419098c0800036029898c08000410041"
+                "a098c080003602ac98c080004100419898c080003602a098c0800041004100"
+                "3602e497c08000410041a898c080003602b498c08000410041a098c0800036"
+                "02a898c08000410041a898c080003602b098c08000410041b098c080003602"
+                "bc98c08000410041b098c080003602b898c08000410041b898c080003602c4"
+                "98c08000410041b898c080003602c098c08000410041c098c080003602cc98"
+                "c08000410041c098c080003602c898c08000410041c898c080003602d498c0"
+                "8000410041c898c080003602d098c08000410041d098c080003602dc98c080"
+                "00410041d098c080003602d898c08000410041d898c080003602e498c08000"
+                "410041d898c080003602e098c08000410041e098c080003602ec98c0800041"
+                "0041e098c080003602e898c08000410041e898c080003602f498c080004100"
+                "41f098c080003602fc98c08000410041e898c080003602f098c08000410041"
+                "f898c0800036028499c08000410041f098c080003602f898c0800041004180"
+                "99c0800036028c99c08000410041f898c0800036028099c080004100418899"
+                "c0800036029499c080004100418099c0800036028899c080004100419099c0"
+                "800036029c99c080004100418899c0800036029099c080004100419899c080"
+                "003602a499c080004100419099c0800036029899c08000410041a099c08000"
+                "3602ac99c080004100419899c080003602a099c08000410041a899c0800036"
+                "02b499c08000410041a099c080003602a899c08000410041b099c080003602"
+                "bc99c08000410041a899c080003602b099c08000410041b899c080003602c4"
+                "99c08000410041b099c080003602b899c08000410041c099c080003602cc99"
+                "c08000410041b899c080003602c099c08000410041c899c080003602d499c0"
+                "8000410041c099c080003602c899c08000410041d099c080003602dc99c080"
+                "00410041c899c080003602d099c08000410041d899c080003602e499c08000"
+                "410041d099c080003602d899c08000410041e099c080003602ec99c0800041"
+                "0041d899c080003602e099c08000410020053602849ac08000410041e099c0"
+                "80003602e899c080004100200841586a22003602fc99c08000200520004101"
+                "72360204200520006a4128360204410041808080013602909ac080000c080b"
+                "200120054f0d00200620014b0d00200028020c450d030b410041002802949a"
+                "c080002200200520002005491b3602949ac08000200520086a210641d897c0"
+                "800021000240024002400340200028020022072006460d0120002802082200"
+                "0d000c020b0b200028020c450d010b41d897c0800021000240034002402000"
+                "280200220620014b0d002001200620002802046a2206490d020b2000280208"
+                "21000c000b0b410020053602849ac080004100200841586a22003602fc99c0"
+                "800020052000410172360204200520006a4128360204410041808080013602"
+                "909ac080002001200641606a41787141786a22002000200141106a491b2207"
+                "411b36020441002902d897c080002109200741106a41002902e097c0800037"
+                "020020072009370208410020083602dc97c08000410020053602d897c08000"
+                "4100200741086a3602e097c08000410041003602e497c080002007411c6a21"
+                "00034020004107360200200041046a22002006490d000b20072001460d0720"
+                "072007280204417e713602042001200720016b220041017236020420072000"
+                "36020002402000418002490d002001200010a7808080000c080b200041f801"
+                "7141e897c080006a21060240024041002802f099c080002205410120004103"
+                "76742200710d00410020052000723602f099c08000200621000c010b200628"
+                "020821000b200620013602082000200136020c2001200636020c2001200036"
+                "02080c070b200020053602002000200028020420086a360204200520024103"
+                "723602042007410f6a41787141786a2201200520026a22006b210220014100"
+                "2802849ac08000460d03200141002802809ac08000460d0402402001280204"
+                "22064103714101470d0020012006417871220610a880808000200620026a21"
+                "02200120066a220128020421060b20012006417e7136020420002002410172"
+                "360204200020026a200236020002402002418002490d002000200210a78080"
+                "80000c060b200241f8017141e897c080006a21010240024041002802f099c0"
+                "8000220641012002410376742202710d00410020062002723602f099c08000"
+                "200121020c010b200128020821020b200120003602082002200036020c2000"
+                "200136020c200020023602080c050b4100200020026b22013602fc99c08000"
+                "410041002802849ac08000220020026a22063602849ac08000200620014101"
+                "7236020420002002410372360204200041086a21010c060b41002802809ac0"
+                "8000210102400240200020026b2206410f4b0d00410041003602809ac08000"
+                "410041003602f899c0800020012000410372360204200120006a2200200028"
+                "02044101723602040c010b410020063602f899c080004100200120026a2205"
+                "3602809ac0800020052006410172360204200120006a200636020020012002"
+                "4103723602040b200141086a0f0b2000200720086a36020441004100280284"
+                "9ac080002200410f6a417871220141786a22063602849ac080004100200020"
+                "016b41002802fc99c0800020086a22016a41086a22053602fc99c080002006"
+                "2005410172360204200020016a4128360204410041808080013602909ac080"
+                "000c030b410020003602849ac08000410041002802fc99c0800020026a2202"
+                "3602fc99c08000200020024101723602040c010b410020003602809ac08000"
+                "410041002802f899c0800020026a22023602f899c080002000200241017236"
+                "0204200020026a20023602000b200541086a0f0b4100210141002802fc99c0"
+                "8000220020024d0d004100200020026b22013602fc99c08000410041002802"
+                "849ac08000220020026a22063602849ac08000200620014101723602042000"
+                "2002410372360204200041086a0f0b20010f0b200020043602180240200628"
+                "02102205450d0020002005360210200520003602180b20062802142205450d"
+                "0020002005360214200520003602180b0240024020014110490d0020062002"
+                "410372360204200620026a22002001410172360204200020016a2001360200"
+                "02402001418002490d002000200110a7808080000c020b200141f8017141e8"
+                "97c080006a21020240024041002802f099c080002205410120014103767422"
+                "01710d00410020052001723602f099c08000200221010c010b200228020821"
+                "010b200220003602082001200036020c2000200236020c200020013602080c"
+                "010b2006200120026a2200410372360204200620006a220020002802044101"
+                "723602040b200641086a0b3000024020002802002d00000d002001418c83c0"
+                "800041051095808080000f0b2001419183c0800041041095808080000b1400"
+                "2001200028020420002802081095808080000b7001037f2000280204210102"
+                "40024020002d0000220041044b0d0020004103470d010b2001280200210002"
+                "40200141046a28020022022802002203450d00200020031180808080008080"
+                "8080000b024020022802042202450d00200020021088808080000b2001410c"
+                "1088808080000b0bab08010a7f23808080800041206b220424808080800002"
+                "40024002400240024020012802100d002001417f3602102003410020032002"
+                "41036a417c7120026b22056b41077120032005491b22066b21072003200649"
+                "0d0102402006450d0002400240200220036a2208417f6a22092d0000410a47"
+                "0d002006417f6a21060c010b200220076a220a2009460d0102402008417e6a"
+                "22092d0000410a470d002006417e6a21060c010b200a2009460d0102402008"
+                "417d6a22092d0000410a470d002006417d6a21060c010b200a2009460d0102"
+                "402008417c6a22092d0000410a470d002006417c6a21060c010b200a200946"
+                "0d0102402008417b6a22092d0000410a470d002006417b6a21060c010b200a"
+                "2009460d0102402008417a6a22092d0000410a470d002006417a6a21060c01"
+                "0b200a2009460d010240200841796a22092d0000410a470d00200641796a21"
+                "060c010b200a2009460d01200641787221060b200620076a41016a21060c04"
+                "0b20052003200320054b1b210b410020066b21082002417c6a210c2006417f"
+                "7320026a210a02400340200a21052008210620072209200b4d0d0120064178"
+                "6a2108200541786a210a41808284082002200941786a22076a280200220d41"
+                "8a94a8d000736b200d724180828408200c20096a280200220d418a94a8d000"
+                "736b200d727141808182847871418081828478460d000b0b200920034b0d02"
+                "02400340200320066a450d012006417f6a2106200520036a21092005417f6a"
+                "210520092d0000410a470d000b200320066a41016a21060c040b0240024020"
+                "01411c6a28020022060d00410021060c010b2006200141186a2802006a417f"
+                "6a2d0000410a470d0041002106200141003a00202001411c6a41003602000b"
+                "0240200128021420066b20034b0d002000200141146a2002200310a1808080"
+                "000c050b200128021820066a2002200310ad808080001a200041043a000020"
+                "01411c6a200620036a3602000c040b109a80808000000b20072003108f8080"
+                "8000000b20092003109480808000000b0240200320064f0d00200441003602"
+                "182004410136020c2004418c89c0800036020820044204370210200441086a"
+                "419489c08000108980808000000b02402001411c6a2802002205450d000240"
+                "0240200128021420056b20064d0d00200141186a28020020056a2002200610"
+                "ad808080001a2001411c6a200520066a22053602000c010b200441086a2001"
+                "41146a2002200610a180808000024020042d00084104460d00200020042903"
+                "083702000c030b2001411c6a28020021050b2005450d00200141003a002020"
+                "01411c6a41003602000b200220066a210502402001280214200320066b2206"
+                "4b0d002000200141146a2005200610a1808080000c010b200141186a280200"
+                "2005200610ad808080001a200041043a00002001411c6a20063602000b2001"
+                "200128021041016a360210200441206a2480808080000b7101027f20012802"
+                "002104024020012802082205450d00200420056b20034f0d00410021052001"
+                "4100360208200141003a000c0b0240200420034d0d00200128020420056a20"
+                "02200310ad808080001a200041043a00002001200520036a3602080f0b2000"
+                "4204370200200141003a000c0bc90103027f017e027f23808080800041106b"
+                "2203248080808000200341086a20002802082802002001200210a080808000"
+                "024020032d000822024104460d002000280204210420032903082105024002"
+                "4020002d0000220141044b0d0020014103470d010b20042802002101024020"
+                "0441046a28020022062802002207450d002001200711808080800080808080"
+                "000b024020062802042206450d00200120061088808080000b2004410c1088"
+                "808080000b200020053702000b200341106a24808080800020024104470b9c"
+                "0303027f017e037f23808080800041106b2202248080808000200241003602"
+                "0402400240024002402001418001490d002001418010490d01200141808004"
+                "4f0d0220022001413f71418001723a000620022001410c7641e001723a0004"
+                "20022001410676413f71418001723a0005410321010c030b200220013a0004"
+                "410121010c020b20022001413f71418001723a00052002200141067641c001"
+                "723a0004410221010c010b20022001413f71418001723a0007200220014112"
+                "7641f001723a000420022001410676413f71418001723a000620022001410c"
+                "76413f71418001723a0005410421010b200241086a20002802082802002002"
+                "41046a200110a080808000024020022d000822014104460d00200028020421"
+                "03200229030821040240024020002d0000220541044b0d0020054103470d01"
+                "0b200328020021050240200341046a28020022062802002207450d00200520"
+                "0711808080800080808080000b024020062802042206450d00200520061088"
+                "808080000b2003410c1088808080000b200020043702000b200241106a2480"
+                "8080800020014104470b1200200041c085c0800020011087808080000b0300"
+                "000b0900200041003602000bc30201047f411f21020240200141ffffff074b"
+                "0d002001410620014108766722026b7641017120024101746b413e6a21020b"
+                "200042003702102000200236021c200241027441d896c080006a2103024041"
+                "002802f499c0800041012002742204710d0020032000360200200020033602"
+                "182000200036020c20002000360208410041002802f499c080002004723602"
+                "f499c080000f0b024002400240200328020022042802044178712001470d00"
+                "200421020c010b20014100411920024101766b2002411f461b742103034020"
+                "042003411d764104716a41106a22052802002202450d022003410174210320"
+                "02210420022802044178712001470d000b0b20022802082203200036020c20"
+                "022000360208200041003602182000200236020c200020033602080f0b2005"
+                "2000360200200020043602182000200036020c200020003602080b82030104"
+                "7f200028020c21020240024002402001418002490d00200028021821030240"
+                "0240024020022000470d00200041144110200028021422021b6a2802002201"
+                "0d01410021020c020b20002802082201200236020c200220013602080c010b"
+                "200041146a200041106a20021b21040340200421052001220241146a200241"
+                "106a200228021422011b210420024114411020011b6a28020022010d000b20"
+                "0541003602000b2003450d020240200028021c41027441d896c080006a2201"
+                "2802002000460d0020034110411420032802102000461b6a20023602002002"
+                "450d030c020b2001200236020020020d01410041002802f499c08000417e20"
+                "0028021c77713602f499c080000c020b0240200220002802082204460d0020"
+                "04200236020c200220043602080f0b410041002802f099c08000417e200141"
+                "037677713602f099c080000f0b20022003360218024020002802102201450d"
+                "0020022001360210200120023602180b20002802142201450d002002200136"
+                "0214200120023602180f0b0b0b00200010aa80808000000bb50101037f2380"
+                "8080800041106b2201248080808000200028020c2102024002400240024020"
+                "002802040e020001020b20020d0141012102410021030c020b20020d002000"
+                "28020022022802042103200228020021020c010b2001418080808078360200"
+                "2001200036020c2001418980808000200028021c22002d001c20002d001d10"
+                "ab80808000000b20012003360204200120023602002001418a808080002000"
+                "28021c22002d001c20002d001d10ab80808000000b990101027f2380808080"
+                "0041106b2204248080808000410041002802cc96c08000220541016a3602cc"
+                "96c08000024020054100480d000240024041002d00a09ac080000d00410041"
+                "0028029c9ac0800041016a36029c9ac0800041002802c896c08000417f4a0d"
+                "010c020b200441086a200020011183808080008080808000000b410041003a"
+                "00a09ac080002002450d0010a580808000000b000b0c002000200129020037"
+                "03000bc10201087f02400240200241104f0d00200021030c010b2000410020"
+                "006b41037122046a210502402004450d002000210320012106034020032006"
+                "2d00003a0000200641016a2106200341016a22032005490d000b0b20052002"
+                "20046b2207417c7122086a210302400240200120046a2209410371450d0020"
+                "084101480d012009410374220641187121022009417c71220a41046a210141"
+                "0020066b4118712104200a2802002106034020052006200276200128020022"
+                "0620047472360200200141046a2101200541046a22052003490d000c020b0b"
+                "20084101480d0020092101034020052001280200360200200141046a210120"
+                "0541046a22052003490d000b0b20074103712102200920086a21010b024020"
+                "02450d00200320026a21050340200320012d00003a0000200141016a210120"
+                "0341016a22032005490d000b0b20000b0b96160100418080c0000b8c160a00"
+                "000001000000000000000000100001000000426f72726f774d75744572726f"
+                "72616c726561647920626f72726f7765643a2022001000120000003d3d6173"
+                "73657274696f6e20606c6566742020726967687460206661696c65640a2020"
+                "6c6566743a200a2072696768743a2000003e001000100000004e0010001700"
+                "0000650010000900000020726967687460206661696c65643a200a20206c65"
+                "66743a200000003e0010001000000088001000100000009800100009000000"
+                "65001000090000003030303130323033303430353036303730383039313031"
+                "31313231333134313531363137313831393230323132323233323432353236"
+                "32373238323933303331333233333334333533363337333833393430343134"
+                "32343334343435343634373438343935303531353235333534353535363537"
+                "35383539363036313632363336343635363636373638363937303731373237"
+                "33373437353736373737383739383038313832383338343835383638373838"
+                "3839393039313932393339343935393639373938393966616c736574727565"
+                "636f72652f7372632f736c6963652f6d656d6368722e727300000095011000"
+                "18000000830000001e00000095011000180000009f0000000900000072616e"
+                "676520737461727420696e64657820206f7574206f662072616e676520666f"
+                "7220736c696365206f66206c656e67746820d001100012000000e201100022"
+                "00000072616e676520656e6420696e646578201402100010000000e2011000"
+                "220000007265656e7472616e7420696e69740000340210000e0000002f7275"
+                "7374632f633266373463336639323861656235303366313562346539656635"
+                "373738653737663330353862382f6c6962726172792f636f72652f7372632f"
+                "63656c6c2f6f6e63652e72730000004c0210004d0000002301000042000000"
+                "000000000000000004000000040000000b0000000c0000000c000000040000"
+                "000d0000000e0000000f0000002f727573742f646570732f646c6d616c6c6f"
+                "632d302e322e362f7372632f646c6d616c6c6f632e7273617373657274696f"
+                "6e206661696c65643a207073697a65203e3d2073697a65202b206d696e5f6f"
+                "7665726865616400d802100029000000a80400000900000061737365727469"
+                "6f6e206661696c65643a207073697a65203c3d2073697a65202b206d61785f"
+                "6f766572686561640000d802100029000000ae0400000d000000757365206f"
+                "66207374643a3a7468726561643a3a63757272656e742829206973206e6f74"
+                "20706f737369626c6520616674657220746865207468726561642773206c6f"
+                "63616c206461746120686173206265656e2064657374726f7965647374642f"
+                "7372632f7468726561642f6d6f642e727300de03100015000000f102000013"
+                "0000006661696c656420746f2067656e657261746520756e69717565207468"
+                "726561642049443a2062697473706163652065786861757374656400040410"
+                "0037000000de03100015000000c40400000d00000001000000000000007374"
+                "642f7372632f696f2f62756666657265642f6c696e65777269746572736869"
+                "6d2e72736d6964203e206c656e000081041000090000005c04100025000000"
+                "0f01000029000000656e74697479206e6f7420666f756e647065726d697373"
+                "696f6e2064656e696564636f6e6e656374696f6e2072656675736564636f6e"
+                "6e656374696f6e207265736574686f737420756e726561636861626c656e65"
+                "74776f726b20756e726561636861626c65636f6e6e656374696f6e2061626f"
+                "727465646e6f7420636f6e6e65637465646164647265737320696e20757365"
+                "61646472657373206e6f7420617661696c61626c656e6574776f726b20646f"
+                "776e62726f6b656e2070697065656e7469747920616c726561647920657869"
+                "7374736f7065726174696f6e20776f756c6420626c6f636b6e6f7420612064"
+                "69726563746f727969732061206469726563746f72796469726563746f7279"
+                "206e6f7420656d707479726561642d6f6e6c792066696c6573797374656d20"
+                "6f722073746f72616765206d656469756d66696c6573797374656d206c6f6f"
+                "70206f7220696e646972656374696f6e206c696d69742028652e672e207379"
+                "6d6c696e6b206c6f6f70297374616c65206e6574776f726b2066696c652068"
+                "616e646c65696e76616c696420696e70757420706172616d65746572696e76"
+                "616c6964206461746174696d6564206f75747772697465207a65726f6e6f20"
+                "73746f726167652073706163657365656b206f6e20756e7365656b61626c65"
+                "2066696c6566696c6573797374656d2071756f746120657863656564656466"
+                "696c6520746f6f206c617267657265736f7572636520627573796578656375"
+                "7461626c652066696c652062757379646561646c6f636b63726f73732d6465"
+                "76696365206c696e6b206f722072656e616d65746f6f206d616e79206c696e"
+                "6b73696e76616c69642066696c656e616d65617267756d656e74206c697374"
+                "20746f6f206c6f6e676f7065726174696f6e20696e74657272757074656475"
+                "6e737570706f72746564756e657870656374656420656e64206f662066696c"
+                "656f7574206f66206d656d6f72796f74686572206572726f72756e63617465"
+                "676f72697a6564206572726f7220286f73206572726f722029000000010000"
+                "0000000000910710000b0000009c071000010000007374642f7372632f696f"
+                "2f737464696f2e727300b8071000130000002c030000140000006661696c65"
+                "64207072696e74696e6720746f203a20000000dc07100013000000ef071000"
+                "02000000b8071000130000005d040000090000007374646f75747374642f73"
+                "72632f696f2f6d6f642e72736120666f726d617474696e6720747261697420"
+                "696d706c656d656e746174696f6e2072657475726e656420616e206572726f"
+                "72207768656e2074686520756e6465726c79696e672073747265616d206469"
+                "64206e6f740000002b081000560000001a0810001100000028070000150000"
+                "0063616e6e6f74207265637572736976656c792061637175697265206d7574"
+                "65789c081000200000007374642f7372632f7379732f73796e632f6d757465"
+                "782f6e6f5f746872656164732e7273c4081000240000001400000009000000"
+                "7374642f7372632f73796e632f6f6e63652e7273f808100014000000d90000"
+                "00140000006c6f636b20636f756e74206f766572666c6f7720696e20726565"
+                "6e7472616e74206d757465787374642f7372632f73796e632f7265656e7472"
+                "616e745f6c6f636b2e7273420910001e000000220100002d0000006f706572"
+                "6174696f6e207375636365737366756c6f6e652d74696d6520696e69746961"
+                "6c697a6174696f6e206d6179206e6f7420626520706572666f726d65642072"
+                "65637572736976656c79840910003800000010000000110000001200000010"
+                "0000001000000013000000120000000d0000000e000000150000000c000000"
+                "0b00000015000000150000000f0000000e0000001300000026000000380000"
+                "0019000000170000000c000000090000000a00000010000000170000001900"
+                "00000e0000000d00000014000000080000001b0000000e0000001000000016"
+                "000000150000000b000000160000000d0000000b00000013000000a4041000"
+                "b4041000c5041000d7041000e7041000f70410000a0510001c051000290510"
+                "00370510004c0510005805100063051000780510008d0510009c051000aa05"
+                "1000bd051000e30510001b061000340610004b06100057061000600610006a"
+                "0610007a06100091061000aa061000b8061000c5061000d9061000e1061000"
+                "fc0610000a0710001a07100030071000450710005007100066071000730710"
+                "007e071000009118046e616d65000e0d7761736d5f6c69622e7761736d01d9"
+                "172e0005726563757201625f5a4e34636f726533666d74336e756d33696d70"
+                "35325f244c5424696d706c2475323024636f72652e2e666d742e2e44697370"
+                "6c61792475323024666f7224753230246933322447542433666d7431376863"
+                "6564393063376136333963303164644502495f5a4e337374643473796e6339"
+                "6f6e63655f6c6f636b31374f6e63654c6f636b244c54245424475424313069"
+                "6e697469616c697a6531376837663563353038646139653162303962450342"
+                "5f5a4e34636f72653463656c6c346f6e636531374f6e636543656c6c244c54"
+                "245424475424387472795f696e697431376863653633626632323835313931"
+                "65373145043e5f5a4e35616c6c6f633473796e633136417263244c54245424"
+                "432441244754243964726f705f736c6f773137686565396163636361643963"
+                "63313036394505355f5a4e34636f72653970616e69636b696e673133617373"
+                "6572745f6661696c6564313768323332363266326333633738623661624506"
+                "325f5a4e34636f7265366f7074696f6e31336578706563745f6661696c6564"
+                "313768663038613939653264373333366336614507265f5a4e34636f726533"
+                "666d743577726974653137683933353534653462653731663263376145080e"
+                "5f5f727573745f6465616c6c6f6309305f5a4e34636f72653970616e69636b"
+                "696e673970616e69635f666d74313768363534306363623264356664633361"
+                "62450a595f5a4e36305f244c54247374642e2e696f2e2e6572726f722e2e45"
+                "72726f72247532302461732475323024636f72652e2e666d742e2e44697370"
+                "6c61792447542433666d743137683930323731633762326136636538333945"
+                "0b495f5a4e34345f244c54242452462454247532302461732475323024636f"
+                "72652e2e666d742e2e446973706c61792447542433666d7431376837666634"
+                "643062383630396332343732450c097265637572736976650d415f5a4e3864"
+                "6c6d616c6c6f6338646c6d616c6c6f633137446c6d616c6c6f63244c542441"
+                "24475424346672656531376833393833346161616165336538393436450e2c"
+                "5f5a4e34636f72653970616e69636b696e673570616e696331376830346565"
+                "623931376464393363323239450f445f5a4e34636f726535736c6963653569"
+                "6e6465783236736c6963655f73746172745f696e6465785f6c656e5f666169"
+                "6c313768663931613361666538376231643434334510625f5a4e34636f7265"
+                "33666d74336e756d33696d7035325f244c5424696d706c2475323024636f72"
+                "652e2e666d742e2e446973706c61792475323024666f722475323024753332"
+                "2447542433666d74313768626633653032323834383365333735614511305f"
+                "5a4e34636f726533666d74336e756d33696d7037666d745f75363431376864"
+                "353231666136656636613036373261451211727573745f626567696e5f756e"
+                "77696e6413465f5a4e34636f726533666d7439466f726d6174746572313270"
+                "61645f696e74656772616c313277726974655f707265666978313768613961"
+                "343332383062363030366431324514425f5a4e34636f726535736c69636535"
+                "696e6465783234736c6963655f656e645f696e6465785f6c656e5f6661696c"
+                "3137683038386235366532393962656161616645152e5f5a4e34636f726533"
+                "666d7439466f726d6174746572337061643137683437363961653338393337"
+                "346363353145163b5f5a4e34636f72653970616e69636b696e673139617373"
+                "6572745f6661696c65645f696e6e6572313768366637653332353764383461"
+                "353034324517475f5a4e34325f244c54242452462454247532302461732475"
+                "323024636f72652e2e666d742e2e44656275672447542433666d7431376833"
+                "6136626161316262343761643230344518585f5a4e35395f244c5424636f72"
+                "652e2e666d742e2e417267756d656e7473247532302461732475323024636f"
+                "72652e2e666d742e2e446973706c61792447542433666d7431376836386133"
+                "65386535303963616663363445195c5f5a4e36335f244c5424636f72652e2e"
+                "63656c6c2e2e426f72726f774d75744572726f722475323024617324753230"
+                "24636f72652e2e666d742e2e44656275672447542433666d74313768313564"
+                "33643334333462646463636338451a395f5a4e34636f72653463656c6c3232"
+                "70616e69635f616c72656164795f626f72726f776564313768333134623532"
+                "61316263343662666534451b395f5a4e337374643674687265616438546872"
+                "6561644964336e657739657868617573746564313768333336626637613134"
+                "38383034346338451c435f5a4e38646c6d616c6c6f6338646c6d616c6c6f63"
+                "3137446c6d616c6c6f63244c54244124475424366d616c6c6f633137686536"
+                "3539333961346338393763633135451d475f5a4e34325f244c542424524624"
+                "54247532302461732475323024636f72652e2e666d742e2e44656275672447"
+                "542433666d7431376865313837343338386530376266653235451e595f5a4e"
+                "36305f244c5424616c6c6f632e2e737472696e672e2e537472696e67247532"
+                "302461732475323024636f72652e2e666d742e2e446973706c617924475424"
+                "33666d7431376863653432323661613166373236633163451f7a5f5a4e3463"
+                "6f726533707472383864726f705f696e5f706c616365244c54247374642e2e"
+                "696f2e2e57726974652e2e77726974655f666d742e2e41646170746572244c"
+                "5424616c6c6f632e2e7665632e2e566563244c542475382447542424475424"
+                "24475424313768313636646336316162303333346331654520605f5a4e3631"
+                "5f244c54247374642e2e696f2e2e737464696f2e2e5374646f75744c6f636b"
+                "2475323024617324753230247374642e2e696f2e2e57726974652447542439"
+                "77726974655f616c6c31376832346238323631303436316432353666452155"
+                "5f5a4e3373746432696f386275666665726564396275667772697465723138"
+                "427566577269746572244c54245724475424313477726974655f616c6c5f63"
+                "6f6c64313768353834626462626165623066623162624522735f5a4e38305f"
+                "244c54247374642e2e696f2e2e57726974652e2e77726974655f666d742e2e"
+                "41646170746572244c54245424475424247532302461732475323024636f72"
+                "652e2e666d742e2e5772697465244754243977726974655f73747231376837"
+                "6661636635626330656663643830384523325f5a4e34636f726533666d7435"
+                "5772697465313077726974655f636861723137686630623362653165633139"
+                "64653565374524305f5a4e34636f726533666d743557726974653977726974"
+                "655f666d743137686638383038663064663065343531336445250a72757374"
+                "5f70616e696326375f5a4e34636f72653570616e6963313250616e69635061"
+                "796c6f61643661735f73747231376836313439663134326439613265303265"
+                "4527505f5a4e38646c6d616c6c6f6338646c6d616c6c6f633137446c6d616c"
+                "6c6f63244c542441244754243138696e736572745f6c617267655f6368756e"
+                "6b3137686566653835316132373538326461376245284a5f5a4e38646c6d61"
+                "6c6c6f6338646c6d616c6c6f633137446c6d616c6c6f63244c542441244754"
+                "243132756e6c696e6b5f6368756e6b31376839333465336463333833626235"
+                "3861334529455f5a4e3373746433737973396261636b747261636532365f5f"
+                "727573745f656e645f73686f72745f6261636b747261636531376834646333"
+                "646534376432323032316239452a585f5a4e337374643970616e69636b696e"
+                "673139626567696e5f70616e69635f68616e646c657232385f247537622424"
+                "75376224636c6f737572652475376424247537642431376865313761333937"
+                "376638396331313738452b3b5f5a4e337374643970616e69636b696e673230"
+                "727573745f70616e69635f776974685f686f6f6b3137683737366537396339"
+                "6636353931626535452c83015f5a4e39395f244c54247374642e2e70616e69"
+                "636b696e672e2e626567696e5f70616e69635f68616e646c65722e2e537461"
+                "7469635374725061796c6f6164247532302461732475323024636f72652e2e"
+                "70616e69632e2e50616e69635061796c6f6164244754243661735f73747231"
+                "376865623366373232643232346534326638452d066d656d63707907120100"
+                "0f5f5f737461636b5f706f696e746572090a0100072e726f64617461005509"
+                "70726f64756365727302086c616e6775616765010452757374000c70726f63"
+                "65737365642d62790105727573746325312e38332e302d6e696768746c7920"
+                "2863326637346333663920323032342d30392d30392900490f746172676574"
+                "5f6665617475726573042b0a6d756c746976616c75652b0f6d757461626c65"
+                "2d676c6f62616c732b0f7265666572656e63652d74797065732b087369676e"
+                "2d657874";
+            auto wasmStr = boost::algorithm::unhex(std::string(wasmHex));
+            std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
+
+            TestHostFunctions nfs(&env);
+            std::string funcName("recursive");
+            auto re = runEscrowWasm(wasm, funcName, &nfs, 1000'000'000);
+            BEAST_EXPECT(re.error());
+            std::cout << "bad case (deep recursion) result " << re.error()
+                      << std::endl;
         }
     }
 
     void
     run() override
     {
-        testEnablement();
-        testTiming();
-        testTags();
-        testDisallowXRP();
-        test1571();
-        testFails();
-        testLockup();
-        testEscrowConditions();
-        testMetaAndOwnership();
-        testConsequences();
-        testEscrowWithTickets();
-        testCredentials();
-        testCreateFinishFunctionPreflight();
-        testFinishWasmFailures();
-        testFinishFunction();
-        testAllHostFunctions();
+        using namespace test::jtx;
+        testWasmtimeLib();
+        testBadWasm();
+        testEscrowWasmDN1();
     }
 };
 
-BEAST_DEFINE_TESTSUITE(Escrow, app, ripple);
+BEAST_DEFINE_TESTSUITE(Wasm, app, ripple);
 
 }  // namespace test
 }  // namespace ripple

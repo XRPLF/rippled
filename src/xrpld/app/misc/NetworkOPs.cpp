@@ -2290,6 +2290,18 @@ NetworkOPsImp::pubValidation(std::shared_ptr<STValidation> const& val)
             reserveIncXRP && reserveIncXRP->native())
             jvObj[jss::reserve_inc] = reserveIncXRP->xrp().jsonClipped();
 
+        if (auto const extensionComputeLimit =
+                ~val->at(~sfExtensionComputeLimit);
+            extensionComputeLimit)
+            jvObj[jss::extension_compute] = *extensionComputeLimit;
+
+        if (auto const extensionSizeLimit = ~val->at(~sfExtensionSizeLimit);
+            extensionSizeLimit)
+            jvObj[jss::extension_size] = *extensionSizeLimit;
+
+        if (auto const gasPrice = ~val->at(~sfGasPrice); gasPrice)
+            jvObj[jss::gas_price] = *gasPrice;
+
         // NOTE Use MultiApiJson to publish two slightly different JSON objects
         // for consumers supporting different API versions
         MultiApiJson multiObj{jvObj};
@@ -2739,12 +2751,22 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
         l[jss::seq] = Json::UInt(lpClosed->info().seq);
         l[jss::hash] = to_string(lpClosed->info().hash);
 
+        bool const smartEscrowEnabled =
+            m_ledgerMaster.getValidatedLedger()->rules().enabled(
+                featureSmartEscrow);
         if (!human)
         {
             l[jss::base_fee] = baseFee.jsonClipped();
             l[jss::reserve_base] =
                 lpClosed->fees().accountReserve(0).jsonClipped();
             l[jss::reserve_inc] = lpClosed->fees().increment.jsonClipped();
+            if (smartEscrowEnabled)
+            {
+                l[jss::extension_compute] =
+                    lpClosed->fees().extensionComputeLimit;
+                l[jss::extension_size] = lpClosed->fees().extensionSizeLimit;
+                l[jss::gas_price] = lpClosed->fees().gasPrice;
+            }
             l[jss::close_time] = Json::Value::UInt(
                 lpClosed->info().closeTime.time_since_epoch().count());
         }
@@ -2754,6 +2776,13 @@ NetworkOPsImp::getServerInfo(bool human, bool admin, bool counters)
             l[jss::reserve_base_xrp] =
                 lpClosed->fees().accountReserve(0).decimalXRP();
             l[jss::reserve_inc_xrp] = lpClosed->fees().increment.decimalXRP();
+            if (smartEscrowEnabled)
+            {
+                l[jss::extension_compute] =
+                    lpClosed->fees().extensionComputeLimit;
+                l[jss::extension_size] = lpClosed->fees().extensionSizeLimit;
+                l[jss::gas_price] = lpClosed->fees().gasPrice;
+            }
 
             if (auto const closeOffset = app_.timeKeeper().closeOffset();
                 std::abs(closeOffset.count()) >= 60)
@@ -2939,6 +2968,14 @@ NetworkOPsImp::pubLedger(std::shared_ptr<ReadView const> const& lpAccepted)
                 lpAccepted->fees().accountReserve(0).jsonClipped();
             jvObj[jss::reserve_inc] =
                 lpAccepted->fees().increment.jsonClipped();
+            if (lpAccepted->rules().enabled(featureSmartEscrow))
+            {
+                jvObj[jss::extension_compute] =
+                    lpAccepted->fees().extensionComputeLimit;
+                jvObj[jss::extension_size] =
+                    lpAccepted->fees().extensionSizeLimit;
+                jvObj[jss::gas_price] = lpAccepted->fees().gasPrice;
+            }
 
             jvObj[jss::txn_count] = Json::UInt(alpAccepted->size());
 
@@ -3989,6 +4026,13 @@ NetworkOPsImp::subLedger(InfoSub::ref isrListener, Json::Value& jvResult)
         jvResult[jss::reserve_base] =
             lpClosed->fees().accountReserve(0).jsonClipped();
         jvResult[jss::reserve_inc] = lpClosed->fees().increment.jsonClipped();
+        if (lpClosed->rules().enabled(featureSmartEscrow))
+        {
+            jvResult[jss::extension_compute] =
+                lpClosed->fees().extensionComputeLimit;
+            jvResult[jss::extension_size] = lpClosed->fees().extensionSizeLimit;
+            jvResult[jss::gas_price] = lpClosed->fees().gasPrice;
+        }
     }
 
     if ((mMode >= OperatingMode::SYNCING) && !isNeedNetworkLedger())
