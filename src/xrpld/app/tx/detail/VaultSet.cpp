@@ -55,12 +55,6 @@ VaultSet::preflight(PreflightContext const& ctx)
             return temMALFORMED;
     }
 
-    if (auto const domain = ctx.tx[~sfDomainID])
-    {
-        if (*domain == beast::zero)
-            return temMALFORMED;
-    }
-
     if (auto const assetMax = ctx.tx[~sfAssetsMaximum])
     {
         if (*assetMax < beast::zero)
@@ -97,10 +91,13 @@ VaultSet::preclaim(PreclaimContext const& ctx)
         if ((vault->getFlags() & tfVaultPrivate) == 0)
             return tecNO_PERMISSION;
 
-        auto const sleDomain =
-            ctx.view.read(keylet::permissionedDomain(*domain));
-        if (!sleDomain)
-            return tecOBJECT_NOT_FOUND;
+        if (*domain != beast::zero)
+        {
+            auto const sleDomain =
+                ctx.view.read(keylet::permissionedDomain(*domain));
+            if (!sleDomain)
+                return tecOBJECT_NOT_FOUND;
+        }
 
         // Sanity check only, this should be enforced by VaultCreate
         if ((sleIssuance->getFlags() & lsfMPTRequireAuth) == 0)
@@ -139,14 +136,24 @@ VaultSet::doApply()
             return tecLIMIT_EXCEEDED;
         vault->at(sfAssetsMaximum) = tx[sfAssetsMaximum];
     }
-    if (tx.isFieldPresent(sfDomainID))
+
+    if (auto const domainId = tx[~sfDomainID]; domainId)
     {
-        // In VaultSet::preclaim we enforce that tfVaultPrivate must have been
-        // set in the vault. We currently do not support making such a vault
-        // public (i.e. removal of tfVaultPrivate flag). The sfDomainID flag
-        // must be set in the MPTokenIssuance object and can be freely updated.
-        sleIssuance->setFieldH256(sfDomainID, tx.getFieldH256(sfDomainID));
-        view().update(sleIssuance);
+        if (*domainId != beast::zero)
+        {
+            // In VaultSet::preclaim we enforce that tfVaultPrivate must have
+            // been set in the vault. We currently do not support making such a
+            // vault public (i.e. removal of tfVaultPrivate flag). The
+            // sfDomainID flag must be set in the MPTokenIssuance object and can
+            // be freely updated.
+            sleIssuance->setFieldH256(sfDomainID, *domainId);
+            view().update(sleIssuance);
+        }
+        else if (sleIssuance->isFieldPresent(sfDomainID))
+        {
+            sleIssuance->makeFieldAbsent(sfDomainID);
+            view().update(sleIssuance);
+        }
     }
 
     view().update(vault);

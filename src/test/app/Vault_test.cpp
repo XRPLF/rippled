@@ -200,13 +200,6 @@ class Vault_test : public beast::unit_test::suite
             }
 
             {
-                testcase(prefix + " fail to set zero domain");
-                auto tx = vault.set({.owner = owner, .id = keylet.key});
-                tx[sfDomainID] = to_string(base_uint<256>(beast::zero));
-                env(tx, ter(temMALFORMED));
-            }
-
-            {
                 testcase(prefix + " fail to set domain on public vault");
                 auto tx = vault.set({.owner = owner, .id = keylet.key});
                 tx[sfDomainID] = to_string(base_uint<256>(42ul));
@@ -1501,26 +1494,24 @@ class Vault_test : public beast::unit_test::suite
         }
 
         {
-            testcase("private vault no authorization needed to withdraw");
-            env(credentials::deleteCred(
-                depositor, depositor, credIssuer2, credType));
+            testcase("private vault reset domainId");
+            auto tx = vault.set({.owner = owner, .id = keylet.key});
+            tx[sfDomainID] = "0";
+            env(tx);
             env.close();
 
-            auto tx = vault.withdraw(
-                {.depositor = depositor,
-                 .id = keylet.key,
-                 .amount = asset(100)});
-            env(tx);
-        }
-
-        {
-            testcase("private vault depositor not authorized");
-            auto tx = vault.deposit(
+            tx = vault.deposit(
                 {.depositor = depositor,
                  .id = keylet.key,
                  .amount = asset(50)});
             env(tx, ter{tecNO_AUTH});
             env.close();
+
+            tx = vault.withdraw(
+                {.depositor = depositor,
+                 .id = keylet.key,
+                 .amount = asset(100)});
+            env(tx);
         }
     }
 
