@@ -24,6 +24,13 @@ namespace ripple {
 namespace test {
 namespace jtx {
 
+uint256
+setupDomain(
+    jtx::Env& env,
+    std::vector<jtx::Account> const& accounts,
+    jtx::Account const& domainOwner = jtx::Account("domainOwner"),
+    std::string credType = "Cred");
+
 class PermissionedDEX
 {
 public:

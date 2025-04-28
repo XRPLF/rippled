@@ -28,6 +28,33 @@ namespace ripple {
 namespace test {
 namespace jtx {
 
+uint256
+setupDomain(
+    jtx::Env& env,
+    std::vector<jtx::Account> const& accounts,
+    jtx::Account const& domainOwner,
+    std::string credType)
+{
+    using namespace jtx;
+    env.fund(XRP(100000), domainOwner);
+    env.close();
+
+    pdomain::Credentials credentials{{domainOwner, credType}};
+    env(pdomain::setTx(domainOwner, credentials));
+
+    auto objects = pdomain::getObjects(domainOwner, env);
+    auto const domainID = objects.begin()->first;
+
+    for (auto const& account : accounts)
+    {
+        env(credentials::create(account, domainOwner, credType));
+        env.close();
+        env(credentials::accept(account, domainOwner, credType));
+        env.close();
+    }
+    return domainID;
+}
+
 PermissionedDEX::PermissionedDEX(Env& env)
     : gw("permdex-gateway")
     , domainOwner("permdex-domainOwner")
@@ -38,8 +65,10 @@ PermissionedDEX::PermissionedDEX(Env& env)
     , credType("permdex-abcde")
 {
     // Fund accounts
-    env.fund(XRP(100000), domainOwner, alice, bob, carol, gw);
+    env.fund(XRP(100000), alice, bob, carol, gw);
     env.close();
+
+    domainID = setupDomain(env, {alice, bob, carol, gw}, domainOwner, credType);
 
     auto setupTrustline = [&](Account const account) {
         env.trust(USD(1000), account);
@@ -51,22 +80,6 @@ PermissionedDEX::PermissionedDEX(Env& env)
 
     for (auto const& account : {alice, bob, carol, domainOwner})
         setupTrustline(account);
-
-    pdomain::Credentials credentials{{domainOwner, credType}};
-    env(pdomain::setTx(domainOwner, credentials));
-
-    auto objects = pdomain::getObjects(domainOwner, env);
-    domainID = objects.begin()->first;
-
-    auto setupDomain = [&](Account const& account) {
-        env(credentials::create(account, domainOwner, credType));
-        env.close();
-        env(credentials::accept(account, domainOwner, credType));
-        env.close();
-    };
-
-    for (auto const& account : {alice, bob, carol, gw})
-        setupDomain(account);
 }
 
 }  // namespace jtx

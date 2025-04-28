@@ -21,6 +21,7 @@
 #include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
 #include <test/jtx/envconfig.h>
+#include <test/jtx/permissioned_dex.h>
 
 #include <xrpld/core/JobQueue.h>
 #include <xrpld/rpc/RPCHandler.h>
@@ -233,31 +234,6 @@ public:
         }
 
         return std::make_tuple(std::move(paths), std::move(sa), std::move(da));
-    }
-
-    uint256
-    setupDomain(jtx::Env& env, std::vector<jtx::Account> const& accounts)
-    {
-        using namespace jtx;
-        Account domainOwner("domainOwner");
-        env.fund(XRP(100000), domainOwner);
-        env.close();
-
-        std::string credType = "Cred";
-        pdomain::Credentials credentials{{domainOwner, credType}};
-        env(pdomain::setTx(domainOwner, credentials));
-
-        auto objects = pdomain::getObjects(domainOwner, env);
-        auto const domainID = objects.begin()->first;
-
-        for (auto const& account : accounts)
-        {
-            env(credentials::create(account, domainOwner, credType));
-            env.close();
-            env(credentials::accept(account, domainOwner, credType));
-            env.close();
-        }
-        return domainID;
     }
 
     void
