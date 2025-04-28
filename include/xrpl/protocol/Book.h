@@ -21,11 +21,10 @@
 #define RIPPLE_PROTOCOL_BOOK_H_INCLUDED
 
 #include <xrpl/basics/CountedObject.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/Issue.h>
 
 #include <boost/utility/base_from_member.hpp>
-
-#include "xrpl/basics/base_uint.h"
 
 namespace ripple {
 
@@ -67,8 +66,9 @@ void
 hash_append(Hasher& h, Book const& b)
 {
     using beast::hash_append;
-    b.domain ? hash_append(h, b.in, b.out, *(b.domain))
-             : hash_append(h, b.in, b.out);
+    hash_append(h, b.in, b.out);
+    if (b.domain)
+        hash_append(h, *(b.domain));
 }
 
 Book

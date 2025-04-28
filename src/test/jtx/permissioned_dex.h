@@ -20,7 +20,6 @@
 #pragma once
 
 #include <test/jtx.h>
-#include <test/jtx/deposit.h>
 namespace ripple {
 namespace test {
 namespace jtx {

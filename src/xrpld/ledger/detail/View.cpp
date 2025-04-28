@@ -27,9 +27,8 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/st.h>
-
-#include "xrpl/protocol/SField.h"
 
 #include <optional>
 

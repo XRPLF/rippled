@@ -17,17 +17,15 @@
 
 #include <test/jtx.h>
 #include <test/jtx/WSClient.h>
-#include <test/jtx/permissioned_dex.h>
 
 #include <xrpld/rpc/detail/Tuning.h>
 
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-#include "test/jtx/txflags.h"
-#include "xrpl/protocol/LedgerFormats.h"
-#include "xrpl/protocol/TxFlags.h"
 namespace ripple {
 namespace test {
 

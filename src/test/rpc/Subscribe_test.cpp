@@ -18,7 +18,6 @@
 #include <test/jtx.h>
 #include <test/jtx/WSClient.h>
 #include <test/jtx/envconfig.h>
-#include <test/jtx/permissioned_dex.h>
 
 #include <xrpld/app/main/LoadManager.h>
 #include <xrpld/app/misc/LoadFeeTrack.h>

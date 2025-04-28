@@ -23,16 +23,14 @@
 #include <xrpld/app/tx/detail/CreateOffer.h>
 #include <xrpld/ledger/PaymentSandbox.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/WrappedSink.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/st.h>
 
-#include "xrpl/basics/base_uint.h"
 #include "xrpl/protocol/STAmount.h"
 #include "xrpl/protocol/TER.h"
-
-#include <memory>
 
 namespace ripple {
 TxConsequences

@@ -23,14 +23,13 @@
 #include <xrpld/app/paths/detail/AmountSpec.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/QualityFunction.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/TER.h>
 
 #include <boost/container/flat_set.hpp>
-
-#include "xrpl/basics/base_uint.h"
 
 #include <optional>
 

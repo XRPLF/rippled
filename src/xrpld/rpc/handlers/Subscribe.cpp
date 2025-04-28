@@ -308,8 +308,8 @@ doSubscribe(RPC::JsonContext& context)
             if (j.isMember(jss::domain))
             {
                 uint256 domain;
-                if (auto const s = j[jss::domain].asString();
-                    !domain.parseHex(s))
+                if (!j[jss::domain].isString() ||
+                    !domain.parseHex(j[jss::domain].asString()))
                 {
                     return rpcError(rpcDOMAIN_MALFORMED);
                 }

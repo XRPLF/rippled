@@ -22,8 +22,6 @@
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/Feature.h>
 
-#include "test/jtx/permissioned_dex.h"
-
 namespace ripple {
 namespace test {
 

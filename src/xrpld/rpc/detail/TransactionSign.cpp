@@ -227,11 +227,11 @@ checkPayment(
     if (tx_json.isMember(jss::domain))
     {
         uint256 num;
-        if (!tx_json[jss::domain].isString() ||
-            !num.parseHex(tx_json[jss::domain].asString()))
+        if (!tx_json[sfDomainID.jsonName].isString() ||
+            !num.parseHex(tx_json[sfDomainID.jsonName].asString()))
         {
             return RPC::make_error(
-                rpcDOMAIN_MALFORMED, "Unable to parse 'domain'.");
+                rpcDOMAIN_MALFORMED, "Unable to parse 'DomainID'.");
         }
         else
         {

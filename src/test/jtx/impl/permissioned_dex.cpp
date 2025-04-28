@@ -17,9 +17,7 @@
 */
 //==============================================================================
 
-#include <test/jtx.h>
 #include <test/jtx/permissioned_dex.h>
-#include <test/jtx/permissioned_domains.h>
 
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/jss.h>
@@ -52,9 +50,7 @@ PermissionedDEX::PermissionedDEX(Env& env)
     };
 
     for (auto const& account : {alice, bob, carol, domainOwner})
-    {
         setupTrustline(account);
-    }
 
     pdomain::Credentials credentials{{domainOwner, credType}};
     env(pdomain::setTx(domainOwner, credentials));
@@ -62,7 +58,7 @@ PermissionedDEX::PermissionedDEX(Env& env)
     auto objects = pdomain::getObjects(domainOwner, env);
     domainID = objects.begin()->first;
 
-    auto setupDomain = [&](Account const account) {
+    auto setupDomain = [&](Account const& account) {
         env(credentials::create(account, domainOwner, credType));
         env.close();
         env(credentials::accept(account, domainOwner, credType));
@@ -70,9 +66,7 @@ PermissionedDEX::PermissionedDEX(Env& env)
     };
 
     for (auto const& account : {alice, bob, carol, gw})
-    {
         setupDomain(account);
-    }
 }
 
 }  // namespace jtx

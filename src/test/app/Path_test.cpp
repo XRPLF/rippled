@@ -21,7 +21,6 @@
 #include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
 #include <test/jtx/envconfig.h>
-#include <test/jtx/permissioned_dex.h>
 
 #include <xrpld/core/JobQueue.h>
 #include <xrpld/rpc/RPCHandler.h>
@@ -34,9 +33,6 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
-
-#include "test/jtx/domain.h"
-#include "test/jtx/txflags.h"
 
 #include <chrono>
 #include <condition_variable>

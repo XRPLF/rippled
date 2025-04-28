@@ -20,28 +20,23 @@
 #include <test/jtx.h>
 #include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
-#include <test/jtx/permissioned_dex.h>
 
 #include <xrpld/app/tx/detail/PermissionedDomainSet.h>
 #include <xrpld/ledger/ApplyViewImpl.h>
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Slice.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Keylet.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
-
-#include "test/jtx/Account.h"
-#include "test/jtx/domain.h"
-#include "test/jtx/txflags.h"
-#include "xrpl/beast/unit_test/suite.h"
-#include "xrpl/protocol/Indexes.h"
-#include "xrpl/protocol/LedgerFormats.h"
-#include "xrpl/protocol/TER.h"
-#include "xrpl/protocol/TxFlags.h"
 
 #include <atomic>
 #include <cstdint>
@@ -62,9 +57,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
     [[nodiscard]] bool
     offerExists(Env const& env, Account const& account, std::uint32_t offerSeq)
     {
-        if (auto const sle = env.le(keylet::offer(account.id(), offerSeq)))
-            return true;
-        return false;
+        return static_cast<bool>(env.le(keylet::offer(account.id(), offerSeq)));
     }
 
     [[nodiscard]] bool
@@ -98,57 +91,52 @@ class PermissionedDEX_test : public beast::unit_test::suite
             return false;
         };
 
-        if (auto const sle = env.le(keylet::offer(account.id(), offerSeq)))
+        auto const sle = env.le(keylet::offer(account.id(), offerSeq));
+        if (!sle)
+            return false;
+        if (sle->getFieldAmount(sfTakerGets) != takerGets)
+            return false;
+        if (sle->getFieldAmount(sfTakerPays) != takerPays)
+            return false;
+        if (sle->getFlags() != flags)
+            return false;
+        if (domainOffer && !sle->isFieldPresent(sfDomainID))
+            return false;
+        if (!domainOffer && sle->isFieldPresent(sfDomainID))
+            return false;
+        if (!offerInDir(
+                sle->getFieldH256(sfBookDirectory),
+                sle->getFieldU64(sfBookNode),
+                (*sle)[~sfDomainID]))
+            return false;
+
+        if (sle->isFlag(lsfHybrid))
         {
-            if (sle->getFieldAmount(sfTakerGets) != takerGets)
+            if (!sle->isFieldPresent(sfDomainID))
                 return false;
-            if (sle->getFieldAmount(sfTakerPays) != takerPays)
+            if (!sle->isFieldPresent(sfAdditionalBooks))
                 return false;
-            if (sle->getFlags() != flags)
-                return false;
-            if (domainOffer && !sle->isFieldPresent(sfDomainID))
-                return false;
-            if (!domainOffer && sle->isFieldPresent(sfDomainID))
-                return false;
-            if (!offerInDir(
-                    sle->getFieldH256(sfBookDirectory),
-                    sle->getFieldU64(sfBookNode),
-                    (*sle)[~sfDomainID]))
+            if (sle->getFieldArray(sfAdditionalBooks).size() != 1)
                 return false;
 
-            if (sle->isFlag(lsfHybrid))
+            auto const& additionalBookDirs =
+                sle->getFieldArray(sfAdditionalBooks);
+
+            for (auto const& bookDir : additionalBookDirs)
             {
-                if (!sle->isFieldPresent(sfDomainID))
-                    return false;
-                if (!sle->isFieldPresent(sfAdditionalBooks))
-                    return false;
-                if (sle->getFieldArray(sfAdditionalBooks).size() != 1)
-                    return false;
+                auto const& dirIndex = bookDir.getFieldH256(sfBookDirectory);
+                auto const& dirNode = bookDir.getFieldU64(sfBookNode);
 
-                auto const& additionalBookDirs =
-                    sle->getFieldArray(sfAdditionalBooks);
-
-                for (auto const& bookDir : additionalBookDirs)
-                {
-                    auto const& dirIndex =
-                        bookDir.getFieldH256(sfBookDirectory);
-                    auto const& dirNode = bookDir.getFieldU64(sfBookNode);
-
-                    // the directory is for the open order book, so the dir
-                    // doesn't have domainID
-                    if (!offerInDir(dirIndex, dirNode, std::nullopt))
-                        return false;
-                }
-            }
-            else
-            {
-                if (sle->isFieldPresent(sfAdditionalBooks))
+                // the directory is for the open order book, so the dir
+                // doesn't have domainID
+                if (!offerInDir(dirIndex, dirNode, std::nullopt))
                     return false;
             }
         }
         else
         {
-            return false;
+            if (sle->isFieldPresent(sfAdditionalBooks))
+                return false;
         }
 
         return true;
@@ -305,9 +293,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
             env.close();
 
             // time advance
-            env.close();
-            env.close();
-            env.close();
+            env.close(std::chrono::seconds(20));
 
             // devin cannot create offer with expired cred
             env(offer(devin, XRP(10), USD(10)),
@@ -872,8 +858,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
                 checkOffer(env, devin, offerSeq, XRP(5), USD(5), 0, true));
 
             // advance time
-            env.close();
-            env.close();
+            env.close(std::chrono::seconds(20));
 
             // devin's offer is unfunded now due to expired cred
             env(pay(alice, carol, USD(5)),

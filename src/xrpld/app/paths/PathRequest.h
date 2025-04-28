@@ -25,10 +25,9 @@
 #include <xrpld/app/paths/RippleLineCache.h>
 #include <xrpld/net/InfoSub.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/UintTypes.h>
-
-#include "xrpl/basics/base_uint.h"
 
 #include <map>
 #include <mutex>
