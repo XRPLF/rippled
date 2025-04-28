@@ -556,9 +556,12 @@ Payment::doApply()
         return tecUNFUNDED_PAYMENT;
     }
 
-    // AMMs can never receive an XRP payment.
-    // Must use AMMDeposit transaction instead.
-    if (sleDst->isFieldPresent(sfAMMID))
+    // Pseudo-accounts cannot receive payments, other than these native to
+    // their underlying ledger object - implemented in their respective
+    // transaction types. Note, this is not amendment-gated because all writes
+    // to pseudo-account discriminator fields **are** amendment gated, hence the
+    // behaviour of this check will always match the active amendments.
+    if (isPseudoAccount(sleDst))
         return tecNO_PERMISSION;
 
     // The source account does have enough money.  Make sure the

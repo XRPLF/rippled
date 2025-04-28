@@ -148,7 +148,12 @@ EscrowCreate::preclaim(PreclaimContext const& ctx)
     auto const sled = ctx.view.read(keylet::account(ctx.tx[sfDestination]));
     if (!sled)
         return tecNO_DST;
-    if (sled->isFieldPresent(sfAMMID))
+
+    // Pseudo-accounts cannot receive escrow. Note, this is not amendment-gated
+    // because all writes to pseudo-account discriminator fields **are**
+    // amendment gated, hence the behaviour of this check will always match the
+    // currently active amendments.
+    if (isPseudoAccount(sled))
         return tecNO_PERMISSION;
 
     return tesSUCCESS;

@@ -97,7 +97,7 @@ CreateCheck::preclaim(PreclaimContext const& ctx)
         (flags & lsfDisallowIncomingCheck))
         return tecNO_PERMISSION;
 
-    // Pseudo-accounts cannot cash check. Note, this is not amendment-gated
+    // Pseudo-accounts cannot cash checks. Note, this is not amendment-gated
     // because all writes to pseudo-account discriminator fields **are**
     // amendment gated, hence the behaviour of this check will always match the
     // currently active amendments.

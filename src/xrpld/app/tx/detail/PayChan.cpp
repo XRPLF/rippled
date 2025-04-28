@@ -237,7 +237,13 @@ PayChanCreate::preclaim(PreclaimContext const& ctx)
             (flags & lsfDisallowXRP))
             return tecNO_TARGET;
 
-        if (sled->isFieldPresent(sfAMMID))
+        // Pseudo-accounts cannot receive payment channels, other than native
+        // to their underlying ledger object - implemented in their respective
+        // transaction types. Note, this is not amendment-gated because all
+        // writes to pseudo-account discriminator fields **are** amendment
+        // gated, hence the behaviour of this check will always match the
+        // currently active amendments.
+        if (isPseudoAccount(sled))
             return tecNO_PERMISSION;
     }
 

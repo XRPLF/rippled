@@ -228,6 +228,17 @@ SetTrust::preclaim(PreclaimContext const& ctx)
         }
     }
 
+    // Pseudo-accounts cannot receive trustlines, other than these native to
+    // their underlying ledger object - implemented in their respective
+    // transaction types. Note, this is not amendment-gated because all writes
+    // to pseudo-account discriminator fields **are** amendment gated, hence the
+    // behaviour of this check will always match the currently active
+    // amendments.
+    // The AMM destination is handled above, so exclude it from check here
+    // since AMM does allow trustline in certain conditions.
+    if (sleDst && !sleDst->isFieldPresent(sfAMMID) && isPseudoAccount(sleDst))
+        return tecPSEUDO_ACCOUNT;
+
     // Checking all freeze/deep freeze flag invariants.
     if (ctx.view.rules().enabled(featureDeepFreeze))
     {
