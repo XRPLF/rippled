@@ -41,8 +41,7 @@ convertBlobsToTxResult(
 
     auto tr = std::make_shared<Transaction>(txn, reason, app);
 
-    auto metaset =
-        std::make_shared<TxMeta>(tr->getID(), tr->getLedger(), rawMeta);
+    auto metaset = std::make_shared<TxMeta>(tr->getID(), ledger_index, rawMeta);
 
     // if properly formed meta is available we can use it to generate ctid
     if (metaset->getAsObject().isFieldPresent(sfTransactionIndex))
