@@ -2381,8 +2381,8 @@ struct EscrowToken_test : public beast::unit_test::suite
 
             MPTTester mptGw(env, gw, {.holders = {alice, bob}});
             mptGw.create(
-                {.ownerCount = 1,
-                 .transferFee = 25000,
+                {.transferFee = 25000,
+                 .ownerCount = 1,
                  .holderCount = 0,
                  .flags = tfMPTCanEscrow | tfMPTCanTransfer});
             mptGw.authorize({.account = alice});
