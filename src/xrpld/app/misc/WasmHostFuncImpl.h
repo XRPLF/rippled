@@ -54,11 +54,30 @@ public:
     std::optional<Bytes>
     getCurrentLedgerEntryField(std::string const& fname) override;
 
+    std::optional<Bytes>
+    getNFT(std::string const& account, std::string const& nftId) override;
+
     bool
     updateData(Bytes const& data) override;
 
     Hash
     computeSha512HalfHash(Bytes const& data) override;
+
+    std::optional<Bytes>
+    accountKeylet(std::string const& account) override;
+
+    std::optional<Bytes>
+    credentialKeylet(
+        std::string const& subject,
+        std::string const& issuer,
+        std::string const& credentialType) override;
+
+    std::optional<Bytes>
+    escrowKeylet(std::string const& account, std::uint32_t const& seq) override;
+
+    std::optional<Bytes>
+    oracleKeylet(std::string const& account, std::uint32_t const& documentId)
+        override;
 
 private:
     ApplyContext& ctx;

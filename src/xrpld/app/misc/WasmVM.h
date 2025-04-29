@@ -74,6 +74,12 @@ struct HostFunctions
         return Bytes{};
     }
 
+    virtual std::optional<Bytes>
+    getNFT(std::string const& account, std::string const& nftId)
+    {
+        return Bytes{};
+    }
+
     virtual bool
     updateData(Bytes const& data)
     {
@@ -84,6 +90,33 @@ struct HostFunctions
     computeSha512HalfHash(Bytes const& data)
     {
         return Hash{};
+    }
+
+    virtual std::optional<Bytes>
+    accountKeylet(std::string const& account)
+    {
+        return Bytes{};
+    }
+
+    virtual std::optional<Bytes>
+    credentialKeylet(
+        std::string const& subject,
+        std::string const& issuer,
+        std::string const& credentialType)
+    {
+        return Bytes{};
+    }
+
+    virtual std::optional<Bytes>
+    escrowKeylet(std::string const& account, std::uint32_t const& seq)
+    {
+        return Bytes{};
+    }
+
+    virtual std::optional<Bytes>
+    oracleKeylet(std::string const& account, std::uint32_t const& docId)
+    {
+        return Bytes{};
     }
 
     virtual ~HostFunctions() = default;

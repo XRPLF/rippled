@@ -221,6 +221,148 @@ getCurrentLedgerEntryField(
 }
 
 WasmEdge_Result
+getNFT(
+    void* data,
+    const WasmEdge_CallingFrameContext* fm,
+    const WasmEdge_Value* in,
+    WasmEdge_Value* out)
+{
+    auto account = getFieldName(fm, in, 0);
+    if (!account)
+        return account.error();
+
+    auto nftId = getFieldName(fm, in, 2);
+    if (!nftId)
+        return nftId.error();
+
+    auto nftURI =
+        ((HostFunctions*)data)->getNFT(account.value(), nftId.value());
+    if (!nftURI)
+        return WasmEdge_Result_Fail;
+
+    auto pointer = setData(fm, nftURI.value());
+    if (!pointer)
+        return pointer.error();
+
+    out[0] = pointer.value();
+    //    out[1] = WasmEdge_ValueGenI32((int)nftURI.value().size());
+    return WasmEdge_Result_Success;
+}
+
+WasmEdge_Result
+accountKeylet(
+    void* data,
+    const WasmEdge_CallingFrameContext* fm,
+    const WasmEdge_Value* in,
+    WasmEdge_Value* out)
+{
+    auto account = getFieldName(fm, in, 0);
+    if (!account)
+        return account.error();
+
+    auto keylet = ((HostFunctions*)data)->accountKeylet(account.value());
+    if (!keylet)
+        return WasmEdge_Result_Fail;
+
+    auto pointer = setData(fm, keylet.value());
+    if (!pointer)
+        return pointer.error();
+
+    out[0] = pointer.value();
+    //    out[1] = WasmEdge_ValueGenI32((int)nftURI.value().size());
+    return WasmEdge_Result_Success;
+}
+
+WasmEdge_Result
+credentialKeylet(
+    void* data,
+    const WasmEdge_CallingFrameContext* fm,
+    const WasmEdge_Value* in,
+    WasmEdge_Value* out)
+{
+    auto subject = getFieldName(fm, in, 0);
+    if (!subject)
+        return subject.error();
+
+    auto issuer = getFieldName(fm, in, 2);
+    if (!issuer)
+        return issuer.error();
+
+    auto credentialType = getFieldName(fm, in, 4);
+    if (!credentialType)
+        return credentialType.error();
+
+    auto keylet =
+        ((HostFunctions*)data)
+            ->credentialKeylet(
+                subject.value(), issuer.value(), credentialType.value());
+    if (!keylet)
+        return WasmEdge_Result_Fail;
+
+    auto pointer = setData(fm, keylet.value());
+    if (!pointer)
+        return pointer.error();
+
+    out[0] = pointer.value();
+    //    out[1] = WasmEdge_ValueGenI32((int)nftURI.value().size());
+    return WasmEdge_Result_Success;
+}
+
+WasmEdge_Result
+escrowKeylet(
+    void* data,
+    const WasmEdge_CallingFrameContext* fm,
+    const WasmEdge_Value* in,
+    WasmEdge_Value* out)
+{
+    auto account = getFieldName(fm, in, 0);
+    if (!account)
+        return account.error();
+
+    auto sequence = WasmEdge_ValueGetI32(in[2]);
+
+    auto keylet =
+        ((HostFunctions*)data)->escrowKeylet(account.value(), sequence);
+    if (!keylet)
+        return WasmEdge_Result_Fail;
+
+    auto pointer = setData(fm, keylet.value());
+    if (!pointer)
+        return pointer.error();
+
+    out[0] = pointer.value();
+    //    out[1] = WasmEdge_ValueGenI32((int)nftURI.value().size());
+    return WasmEdge_Result_Success;
+}
+
+WasmEdge_Result
+oracleKeylet(
+    void* data,
+    const WasmEdge_CallingFrameContext* fm,
+    const WasmEdge_Value* in,
+    WasmEdge_Value* out)
+{
+    auto account = getFieldName(fm, in, 0);
+    if (!account)
+        return account.error();
+
+    auto documentId = WasmEdge_ValueGetI32(in[2]);
+
+    auto keylet =
+        ((HostFunctions*)data)->escrowKeylet(account.value(), documentId);
+    if (!keylet)
+        return WasmEdge_Result_Fail;
+
+    auto pointer = setData(fm, keylet.value());
+    if (!pointer)
+        return pointer.error();
+
+    out[0] = pointer.value();
+    //    out[1] = WasmEdge_ValueGenI32((int)nftURI.value().size());
+    return WasmEdge_Result_Success;
+}
+
+WasmEdge_Result
 updateData(
     void* data,
     const WasmEdge_CallingFrameContext* fm,
@@ -393,6 +535,25 @@ runEscrowWasm(
             WasmEdge_ModuleInstanceAddFunction(hostMod, fName, hostFunc);
             //            WasmEdge_StringDelete(fName);
         }
+        // getNFT
+        {
+            WasmEdge_ValType inputList[4] = {
+                WasmEdge_ValTypeGenI32(),
+                WasmEdge_ValTypeGenI32(),
+                WasmEdge_ValTypeGenI32(),
+                WasmEdge_ValTypeGenI32()};
+            WasmEdge_ValType returnList[1] = {WasmEdge_ValTypeGenI32()};
+            WasmEdge_FunctionTypeContext* hostFuncType =
+                WasmEdge_FunctionTypeCreate(inputList, 2, returnList, 1);
+            WasmEdge_FunctionInstanceContext* hostFunc =
+                WasmEdge_FunctionInstanceCreate(hostFuncType, getNFT, hfs, 100);
+            //            WasmEdge_FunctionTypeDelete(hostFuncType);
+            //            WasmEdge_FunctionInstanceDelete(hostFunc);
+
+            WasmEdge_String fName = WasmEdge_StringCreateByCString("getNFT");
+            WasmEdge_ModuleInstanceAddFunction(hostMod, fName, hostFunc);
+            //            WasmEdge_StringDelete(fName);
+        }
         // updateData
         {
             WasmEdge_ValType inputList[2] = {
@@ -425,6 +586,86 @@ runEscrowWasm(
 
             WasmEdge_String fName =
                 WasmEdge_StringCreateByCString("computeSha512HalfHash");
+            WasmEdge_ModuleInstanceAddFunction(hostMod, fName, hostFunc);
+            //            WasmEdge_StringDelete(fName);
+        }
+        // accountKeylet
+        {
+            WasmEdge_ValType inputList[2] = {
+                WasmEdge_ValTypeGenI32(), WasmEdge_ValTypeGenI32()};
+            WasmEdge_ValType returnList[1] = {WasmEdge_ValTypeGenI32()};
+            WasmEdge_FunctionTypeContext* hostFuncType =
+                WasmEdge_FunctionTypeCreate(inputList, 2, returnList, 1);
+            WasmEdge_FunctionInstanceContext* hostFunc =
+                WasmEdge_FunctionInstanceCreate(
+                    hostFuncType, accountKeylet, hfs, 100);
+            //            WasmEdge_FunctionTypeDelete(hostFuncType);
+            //            WasmEdge_FunctionInstanceDelete(hostFunc);
+
+            WasmEdge_String fName =
+                WasmEdge_StringCreateByCString("accountKeylet");
+            WasmEdge_ModuleInstanceAddFunction(hostMod, fName, hostFunc);
+            //            WasmEdge_StringDelete(fName);
+        }
+        // credentialKeylet
+        {
+            WasmEdge_ValType inputList[6] = {
+                WasmEdge_ValTypeGenI32(),
+                WasmEdge_ValTypeGenI32(),
+                WasmEdge_ValTypeGenI32(),
+                WasmEdge_ValTypeGenI32(),
+                WasmEdge_ValTypeGenI32(),
+                WasmEdge_ValTypeGenI32()};
+            WasmEdge_ValType returnList[1] = {WasmEdge_ValTypeGenI32()};
+            WasmEdge_FunctionTypeContext* hostFuncType =
+                WasmEdge_FunctionTypeCreate(inputList, 6, returnList, 1);
+            WasmEdge_FunctionInstanceContext* hostFunc =
+                WasmEdge_FunctionInstanceCreate(
+                    hostFuncType, credentialKeylet, hfs, 100);
+            //            WasmEdge_FunctionTypeDelete(hostFuncType);
+            //            WasmEdge_FunctionInstanceDelete(hostFunc);
+            WasmEdge_String fName =
+                WasmEdge_StringCreateByCString("credentialKeylet");
+            WasmEdge_ModuleInstanceAddFunction(hostMod, fName, hostFunc);
+            //            WasmEdge_StringDelete(fName);
+        }
+        // escrowKeylet
+        {
+            WasmEdge_ValType inputList[3] = {
+                WasmEdge_ValTypeGenI32(),
+                WasmEdge_ValTypeGenI32(),
+                WasmEdge_ValTypeGenI32()};
+            WasmEdge_ValType returnList[1] = {WasmEdge_ValTypeGenI32()};
+            WasmEdge_FunctionTypeContext* hostFuncType =
+                WasmEdge_FunctionTypeCreate(inputList, 3, returnList, 1);
+            WasmEdge_FunctionInstanceContext* hostFunc =
+                WasmEdge_FunctionInstanceCreate(
+                    hostFuncType, escrowKeylet, hfs, 100);
+            //            WasmEdge_FunctionTypeDelete(hostFuncType);
+            //            WasmEdge_FunctionInstanceDelete(hostFunc);
+
+            WasmEdge_String fName =
+                WasmEdge_StringCreateByCString("escrowKeylet");
+            WasmEdge_ModuleInstanceAddFunction(hostMod, fName, hostFunc);
+            //            WasmEdge_StringDelete(fName);
+        }
+        // oracleKeylet
+        {
+            WasmEdge_ValType inputList[3] = {
+                WasmEdge_ValTypeGenI32(),
+                WasmEdge_ValTypeGenI32(),
+                WasmEdge_ValTypeGenI32()};
+            WasmEdge_ValType returnList[1] = {WasmEdge_ValTypeGenI32()};
+            WasmEdge_FunctionTypeContext* hostFuncType =
+                WasmEdge_FunctionTypeCreate(inputList, 3, returnList, 1);
+            WasmEdge_FunctionInstanceContext* hostFunc =
+                WasmEdge_FunctionInstanceCreate(
+                    hostFuncType, oracleKeylet, hfs, 100);
+            //            WasmEdge_FunctionTypeDelete(hostFuncType);
+            //            WasmEdge_FunctionInstanceDelete(hostFunc);
+
+            WasmEdge_String fName =
+                WasmEdge_StringCreateByCString("oracleKeylet");
             WasmEdge_ModuleInstanceAddFunction(hostMod, fName, hostFunc);
             //            WasmEdge_StringDelete(fName);
         }
