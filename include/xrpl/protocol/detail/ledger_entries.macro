@@ -519,10 +519,10 @@ LEDGER_ENTRY(ltLOAN_BROKER, 0x0088, LoanBroker, loan_broker, ({
 LEDGER_ENTRY(ltLOAN, 0x0089, Loan, loan, ({
     {sfPreviousTxnID,        soeREQUIRED},
     {sfPreviousTxnLgrSeq,    soeREQUIRED},
-    {sfSequence,             soeREQUIRED},
     {sfOwnerNode,            soeREQUIRED},
     {sfLoanBrokerNode,       soeREQUIRED},
     {sfLoanBrokerID,         soeREQUIRED},
+    {sfLoanSequence,         soeREQUIRED},
     {sfBorrower,             soeREQUIRED},
     {sfLoanOriginationFee,   soeREQUIRED},
     {sfLoanServiceFee,       soeREQUIRED},

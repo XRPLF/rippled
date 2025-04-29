@@ -395,10 +395,20 @@ class Loan_test : public beast::unit_test::suite
 
         std::array const assets{xrpAsset, iouAsset, mptAsset};
 
+        auto const coverDepositParameter = 1000;
+        auto const coverRateMinParameter = percentageToTenthBips(10);
+        auto const maxCoveredLoanValue = 1000 * 100 / 10;
+        auto const vaultDeposit = 50'000;
+        auto const debtMaximumParameter = 25'000;
+
         // Create vaults and loan brokers
         std::vector<BrokerInfo> brokers;
         for (auto const& asset : assets)
         {
+            auto const deposit = asset(vaultDeposit);
+            auto const debtMaximumValue = asset(debtMaximumParameter).value();
+            auto const coverDepositValue = asset(coverDepositParameter).value();
+
             auto [tx, vaultKeylet] =
                 vault.create({.owner = lender, .asset = asset});
             env(tx);
@@ -408,8 +418,13 @@ class Loan_test : public beast::unit_test::suite
             env(vault.deposit(
                 {.depositor = lender,
                  .id = vaultKeylet.key,
-                 .amount = asset(50'000)}));
+                 .amount = deposit}));
             env.close();
+            if (auto const vault = env.le(keylet::vault(vaultKeylet.key));
+                BEAST_EXPECT(vault))
+            {
+                BEAST_EXPECT(vault->at(sfAssetsAvailable) == deposit.value());
+            }
 
             auto const keylet =
                 keylet::loanbroker(lender.id(), env.seq(lender));
@@ -420,11 +435,11 @@ class Loan_test : public beast::unit_test::suite
                 fee(increment),
                 data(testData),
                 managementFeeRate(TenthBips16(100)),
-                debtMaximum(Number(25'000)),
-                coverRateMinimum(TenthBips32(percentageToTenthBips(10))),
+                debtMaximum(debtMaximumValue),
+                coverRateMinimum(TenthBips32(coverRateMinParameter)),
                 coverRateLiquidation(TenthBips32(percentageToTenthBips(25))));
 
-            env(coverDeposit(lender, keylet.key, asset(1000)));
+            env(coverDeposit(lender, keylet.key, coverDepositValue));
 
             brokers.emplace_back(asset, keylet.key);
         }
@@ -435,71 +450,208 @@ class Loan_test : public beast::unit_test::suite
             using namespace loan;
             using namespace std::chrono_literals;
 
-            auto const principalRequested = Number(1000);
+            Number const principalRequest = broker.asset(1000).value();
+            Number const maxCoveredLoanRequest =
+                broker.asset(maxCoveredLoanValue).value();
+            Number const totalVaultRequest = broker.asset(vaultDeposit).value();
+            Number const debtMaximumRequest =
+                broker.asset(debtMaximumParameter).value();
+
             auto const startDate = env.now() + 3600s;
             auto const loanSetFee = fee(env.current()->fees().base * 2);
 
             auto badKeylet = keylet::vault(lender.id(), env.seq(lender));
             // Try some failure cases
-            // insufficient fee - single sign
-            env(set(borrower, broker.brokerID, principalRequested, startDate),
-                sig(sfCounterpartySignature, lender),
-                ter(telINSUF_FEE_P));
-            // insufficient fee - multisign
-            env(set(borrower, broker.brokerID, principalRequested, startDate),
-                counterparty(lender),
-                msig(evan, lender),
-                msig(sfCounterpartySignature, evan, borrower),
-                fee(env.current()->fees().base * 5 - 1),
-                ter(telINSUF_FEE_P));
-            // multisign sufficient fee, but no signers set up
-            env(set(borrower, broker.brokerID, principalRequested, startDate),
-                counterparty(lender),
-                msig(evan, lender),
-                msig(sfCounterpartySignature, evan, borrower),
-                fee(env.current()->fees().base * 5),
-                ter(tefNOT_MULTI_SIGNING));
-            // not the broker owner, no counterparty, not signed by broker owner
-            env(set(borrower, broker.brokerID, principalRequested, startDate),
-                sig(sfCounterpartySignature, evan),
-                loanSetFee,
-                ter(tefBAD_AUTH));
-            // not the broker owner, counterparty is borrower
-            env(set(evan, broker.brokerID, principalRequested, startDate),
-                counterparty(borrower),
-                sig(sfCounterpartySignature, borrower),
-                loanSetFee,
-                ter(tecNO_PERMISSION));
-            // not a LoanBroker object, no counterparty
-            env(set(lender, badKeylet.key, principalRequested, startDate),
-                sig(sfCounterpartySignature, evan),
-                loanSetFee,
-                ter(temBAD_SIGNER));
-            // not a LoanBroker object, counterparty is valid
-            env(set(lender, badKeylet.key, principalRequested, startDate),
-                counterparty(borrower),
-                sig(sfCounterpartySignature, borrower),
-                loanSetFee,
-                ter(tecNO_ENTRY));
-            // borrower doesn't exist
-            env(set(lender, broker.brokerID, principalRequested, startDate),
-                counterparty(alice),
-                sig(sfCounterpartySignature, alice),
-                loanSetFee,
-                ter(terNO_ACCOUNT));
             // flags are checked first
             env(set(evan,
                     broker.brokerID,
-                    principalRequested,
+                    principalRequest,
                     startDate,
                     tfLoanSetMask),
                 sig(sfCounterpartySignature, lender),
                 loanSetFee,
                 ter(temINVALID_FLAG));
 
+            // field length validation
+            // sfData: good length, bad account
+            env(set(evan, broker.brokerID, principalRequest, startDate),
+                sig(sfCounterpartySignature, borrower),
+                data(std::string(maxDataPayloadLength, 'X')),
+                loanSetFee,
+                ter(tefBAD_AUTH));
+            // sfData: too long
+            env(set(evan, broker.brokerID, principalRequest, startDate),
+                sig(sfCounterpartySignature, lender),
+                data(std::string(maxDataPayloadLength + 1, 'Y')),
+                loanSetFee,
+                ter(temINVALID));
+
+            // field range validation
+            // sfOverpaymentFee: good value, bad account
+            env(set(evan, broker.brokerID, principalRequest, startDate),
+                sig(sfCounterpartySignature, borrower),
+                overpaymentFee(maxOverpaymentFee),
+                loanSetFee,
+                ter(tefBAD_AUTH));
+            // sfOverpaymentFee: too big
+            env(set(evan, broker.brokerID, principalRequest, startDate),
+                sig(sfCounterpartySignature, lender),
+                overpaymentFee(maxOverpaymentFee + 1),
+                loanSetFee,
+                ter(temINVALID));
+
+            // sfLateInterestRate: good value, bad account
+            env(set(evan, broker.brokerID, principalRequest, startDate),
+                sig(sfCounterpartySignature, borrower),
+                lateInterestRate(maxLateInterestRate),
+                loanSetFee,
+                ter(tefBAD_AUTH));
+            // sfLateInterestRate: too big
+            env(set(evan, broker.brokerID, principalRequest, startDate),
+                sig(sfCounterpartySignature, lender),
+                lateInterestRate(maxLateInterestRate + 1),
+                loanSetFee,
+                ter(temINVALID));
+
+            // sfCloseInterestRate: good value, bad account
+            env(set(evan, broker.brokerID, principalRequest, startDate),
+                sig(sfCounterpartySignature, borrower),
+                closeInterestRate(maxCloseInterestRate),
+                loanSetFee,
+                ter(tefBAD_AUTH));
+            // sfCloseInterestRate: too big
+            env(set(evan, broker.brokerID, principalRequest, startDate),
+                sig(sfCounterpartySignature, lender),
+                closeInterestRate(maxCloseInterestRate + 1),
+                loanSetFee,
+                ter(temINVALID));
+
+            // sfOverpaymentInterestRate: good value, bad account
+            env(set(evan, broker.brokerID, principalRequest, startDate),
+                sig(sfCounterpartySignature, borrower),
+                overpaymentInterestRate(maxOverpaymentInterestRate),
+                loanSetFee,
+                ter(tefBAD_AUTH));
+            // sfOverpaymentInterestRate: too big
+            env(set(evan, broker.brokerID, principalRequest, startDate),
+                sig(sfCounterpartySignature, lender),
+                overpaymentInterestRate(maxOverpaymentInterestRate + 1),
+                loanSetFee,
+                ter(temINVALID));
+
+            // sfPaymentTotal: good value, bad account
+            env(set(evan, broker.brokerID, principalRequest, startDate),
+                sig(sfCounterpartySignature, borrower),
+                paymentTotal(LoanSet::minPaymentTotal),
+                loanSetFee,
+                ter(tefBAD_AUTH));
+            // sfPaymentTotal: too small (there is no max)
+            env(set(evan, broker.brokerID, principalRequest, startDate),
+                sig(sfCounterpartySignature, lender),
+                paymentTotal(LoanSet::minPaymentTotal - 1),
+                loanSetFee,
+                ter(temINVALID));
+
+            // sfPaymentInterval: good value, bad account
+            env(set(evan, broker.brokerID, principalRequest, startDate),
+                sig(sfCounterpartySignature, borrower),
+                paymentInterval(LoanSet::minPaymentInterval),
+                loanSetFee,
+                ter(tefBAD_AUTH));
+            // sfPaymentInterval: too small (there is no max)
+            env(set(evan, broker.brokerID, principalRequest, startDate),
+                sig(sfCounterpartySignature, lender),
+                paymentInterval(LoanSet::minPaymentInterval - 1),
+                loanSetFee,
+                ter(temINVALID));
+
+            // sfGracePeriod: good value, bad account
+            env(set(evan, broker.brokerID, principalRequest, startDate),
+                sig(sfCounterpartySignature, borrower),
+                paymentInterval(LoanSet::minPaymentInterval * 2),
+                gracePeriod(LoanSet::minPaymentInterval * 2),
+                loanSetFee,
+                ter(tefBAD_AUTH));
+            // sfGracePeriod: larger than paymentInterval
+            env(set(evan, broker.brokerID, principalRequest, startDate),
+                sig(sfCounterpartySignature, lender),
+                paymentInterval(LoanSet::minPaymentInterval * 2),
+                gracePeriod(LoanSet::minPaymentInterval * 3),
+                loanSetFee,
+                ter(temINVALID));
+
+            // insufficient fee - single sign
+            env(set(borrower, broker.brokerID, principalRequest, startDate),
+                sig(sfCounterpartySignature, lender),
+                ter(telINSUF_FEE_P));
+            // insufficient fee - multisign
+            env(set(borrower, broker.brokerID, principalRequest, startDate),
+                counterparty(lender),
+                msig(evan, lender),
+                msig(sfCounterpartySignature, evan, borrower),
+                fee(env.current()->fees().base * 5 - 1),
+                ter(telINSUF_FEE_P));
+            // multisign sufficient fee, but no signers set up
+            env(set(borrower, broker.brokerID, principalRequest, startDate),
+                counterparty(lender),
+                msig(evan, lender),
+                msig(sfCounterpartySignature, evan, borrower),
+                fee(env.current()->fees().base * 5),
+                ter(tefNOT_MULTI_SIGNING));
+            // not the broker owner, no counterparty, not signed by broker
+            // owner
+            env(set(borrower, broker.brokerID, principalRequest, startDate),
+                sig(sfCounterpartySignature, evan),
+                loanSetFee,
+                ter(tefBAD_AUTH));
+            // not the broker owner, counterparty is borrower
+            env(set(evan, broker.brokerID, principalRequest, startDate),
+                counterparty(borrower),
+                sig(sfCounterpartySignature, borrower),
+                loanSetFee,
+                ter(tecNO_PERMISSION));
+            // can not lend money to yourself
+            env(set(lender, broker.brokerID, principalRequest, startDate),
+                sig(sfCounterpartySignature, lender),
+                loanSetFee,
+                ter(tecNO_PERMISSION));
+            // not a LoanBroker object, no counterparty
+            env(set(lender, badKeylet.key, principalRequest, startDate),
+                sig(sfCounterpartySignature, evan),
+                loanSetFee,
+                ter(temBAD_SIGNER));
+            // not a LoanBroker object, counterparty is valid
+            env(set(lender, badKeylet.key, principalRequest, startDate),
+                counterparty(borrower),
+                sig(sfCounterpartySignature, borrower),
+                loanSetFee,
+                ter(tecNO_ENTRY));
+            // borrower doesn't exist
+            env(set(lender, broker.brokerID, principalRequest, startDate),
+                counterparty(alice),
+                sig(sfCounterpartySignature, alice),
+                loanSetFee,
+                ter(terNO_ACCOUNT));
+
+            // Request more funds than the vault has available
+            env(set(evan, broker.brokerID, totalVaultRequest + 1, startDate),
+                sig(sfCounterpartySignature, lender),
+                loanSetFee,
+                ter(tecINSUFFICIENT_FUNDS));
+
+            // Request more funds than the broker's first-loss capital can
+            // cover.
+            env(set(evan,
+                    broker.brokerID,
+                    maxCoveredLoanRequest + 1,
+                    startDate),
+                sig(sfCounterpartySignature, lender),
+                loanSetFee,
+                ter(tecINSUFFICIENT_FUNDS));
+
             // Frozen trust line / locked MPT issuance
-            // XRP can not be frozen
-            if (!broker.asset.raw().native())
+            // XRP can not be frozen, but run through the loop anyway to test
+            // the tecLIMIT_EXCEEDED case
             {
                 auto const brokerSLE =
                     env.le(keylet::loanbroker(broker.brokerID));
@@ -509,143 +661,82 @@ class Loan_test : public beast::unit_test::suite
                 auto const pseudoAcct =
                     Account("Broker pseudo-account", brokerPseudo);
 
-                std::function<void(Account const& holder)> freeze;
-                std::function<void(Account const& holder)> unfreeze;
-                // Freeze / lock the asset
-                if (broker.asset.raw().holds<Issue>())
+                auto const [freeze, unfreeze, expectedResult] =
+                    [&]() -> std::tuple<
+                              std::function<void(Account const& holder)>,
+                              std::function<void(Account const& holder)>,
+                              TER> {
+                    // Freeze / lock the asset
+                    if (broker.asset.raw().native())
+                    {
+                        std::function<void(Account const& holder)> empty;
+                        return std::make_tuple(empty, empty, tesSUCCESS);
+                    }
+                    else if (broker.asset.raw().holds<Issue>())
+                    {
+                        auto freeze = [&](Account const& holder) {
+                            env(trust(
+                                issuer, holder[iouCurrency](0), tfSetFreeze));
+                        };
+                        auto unfreeze = [&](Account const& holder) {
+                            env(trust(
+                                issuer, holder[iouCurrency](0), tfClearFreeze));
+                        };
+                        return std::make_tuple(freeze, unfreeze, tecFROZEN);
+                    }
+                    else
+                    {
+                        auto freeze = [&](Account const& holder) {
+                            mptt.set(
+                                {.account = issuer,
+                                 .holder = holder,
+                                 .flags = tfMPTLock});
+                        };
+                        auto unfreeze = [&](Account const& holder) {
+                            mptt.set(
+                                {.account = issuer,
+                                 .holder = holder,
+                                 .flags = tfMPTUnlock});
+                        };
+                        return std::make_tuple(freeze, unfreeze, tecLOCKED);
+                    }
+                }();
+
+                // Try freezing both the lender and the pseudo-account
+                for (auto const& account : {lender, pseudoAcct})
                 {
-                    freeze = [&](Account const& holder) {
-                        env(trust(issuer, holder[iouCurrency](0), tfSetFreeze));
-                    };
-                    unfreeze = [&](Account const& holder) {
-                        env(trust(
-                            issuer, holder[iouCurrency](0), tfClearFreeze));
-                    };
-                }
-                else
-                {
-                    freeze = [&](Account const& holder) {
-                        mptt.set(
-                            {.account = issuer,
-                             .holder = holder,
-                             .flags = tfMPTLock});
-                    };
-                    unfreeze = [&](Account const& holder) {
-                        mptt.set(
-                            {.account = issuer,
-                             .holder = holder,
-                             .flags = tfMPTUnlock});
-                    };
+                    if (freeze)
+                    {
+                        // Freeze the account
+                        freeze(account);
+
+                        // Try to create a loan with a frozen line, ask too
+                        // large a balance
+                        env(set(evan,
+                                broker.brokerID,
+                                debtMaximumRequest + 1,
+                                startDate),
+                            sig(sfCounterpartySignature, lender),
+                            loanSetFee,
+                            ter(expectedResult));
+
+                        // Unfreeze the account
+                        BEAST_EXPECT(unfreeze);
+                        unfreeze(account);
+                    }
+
+                    // Ensure the line is unfrozen with a request that is fine
+                    // except too it requests more principal than the broker can
+                    // carry
+                    env(set(evan,
+                            broker.brokerID,
+                            debtMaximumRequest + 1,
+                            startDate),
+                        sig(sfCounterpartySignature, lender),
+                        loanSetFee,
+                        ter(tecLIMIT_EXCEEDED));
                 }
             }
-
-            // field length validation
-            // sfData: good length, bad account
-            env(set(evan, broker.brokerID, principalRequested, startDate),
-                sig(sfCounterpartySignature, borrower),
-                data(std::string(maxDataPayloadLength, 'X')),
-                loanSetFee,
-                ter(tefBAD_AUTH));
-            // sfData: too long
-            env(set(evan, broker.brokerID, principalRequested, startDate),
-                sig(sfCounterpartySignature, lender),
-                data(std::string(maxDataPayloadLength + 1, 'Y')),
-                loanSetFee,
-                ter(temINVALID));
-
-            // field range validation
-            // sfOverpaymentFee: good value, bad account
-            env(set(evan, broker.brokerID, principalRequested, startDate),
-                sig(sfCounterpartySignature, borrower),
-                overpaymentFee(maxOverpaymentFee),
-                loanSetFee,
-                ter(tefBAD_AUTH));
-            // sfOverpaymentFee: too big
-            env(set(evan, broker.brokerID, principalRequested, startDate),
-                sig(sfCounterpartySignature, lender),
-                overpaymentFee(maxOverpaymentFee + 1),
-                loanSetFee,
-                ter(temINVALID));
-
-            // sfLateInterestRate: good value, bad account
-            env(set(evan, broker.brokerID, principalRequested, startDate),
-                sig(sfCounterpartySignature, borrower),
-                lateInterestRate(maxLateInterestRate),
-                loanSetFee,
-                ter(tefBAD_AUTH));
-            // sfLateInterestRate: too big
-            env(set(evan, broker.brokerID, principalRequested, startDate),
-                sig(sfCounterpartySignature, lender),
-                lateInterestRate(maxLateInterestRate + 1),
-                loanSetFee,
-                ter(temINVALID));
-
-            // sfCloseInterestRate: good value, bad account
-            env(set(evan, broker.brokerID, principalRequested, startDate),
-                sig(sfCounterpartySignature, borrower),
-                closeInterestRate(maxCloseInterestRate),
-                loanSetFee,
-                ter(tefBAD_AUTH));
-            // sfCloseInterestRate: too big
-            env(set(evan, broker.brokerID, principalRequested, startDate),
-                sig(sfCounterpartySignature, lender),
-                closeInterestRate(maxCloseInterestRate + 1),
-                loanSetFee,
-                ter(temINVALID));
-
-            // sfOverpaymentInterestRate: good value, bad account
-            env(set(evan, broker.brokerID, principalRequested, startDate),
-                sig(sfCounterpartySignature, borrower),
-                overpaymentInterestRate(maxOverpaymentInterestRate),
-                loanSetFee,
-                ter(tefBAD_AUTH));
-            // sfOverpaymentInterestRate: too big
-            env(set(evan, broker.brokerID, principalRequested, startDate),
-                sig(sfCounterpartySignature, lender),
-                overpaymentInterestRate(maxOverpaymentInterestRate + 1),
-                loanSetFee,
-                ter(temINVALID));
-
-            // sfPaymentTotal: good value, bad account
-            env(set(evan, broker.brokerID, principalRequested, startDate),
-                sig(sfCounterpartySignature, borrower),
-                paymentTotal(LoanSet::minPaymentTotal),
-                loanSetFee,
-                ter(tefBAD_AUTH));
-            // sfPaymentTotal: too small (there is no max)
-            env(set(evan, broker.brokerID, principalRequested, startDate),
-                sig(sfCounterpartySignature, lender),
-                paymentTotal(LoanSet::minPaymentTotal - 1),
-                loanSetFee,
-                ter(temINVALID));
-
-            // sfPaymentInterval: good value, bad account
-            env(set(evan, broker.brokerID, principalRequested, startDate),
-                sig(sfCounterpartySignature, borrower),
-                paymentInterval(LoanSet::minPaymentInterval),
-                loanSetFee,
-                ter(tefBAD_AUTH));
-            // sfPaymentInterval: too small (there is no max)
-            env(set(evan, broker.brokerID, principalRequested, startDate),
-                sig(sfCounterpartySignature, lender),
-                paymentInterval(LoanSet::minPaymentInterval - 1),
-                loanSetFee,
-                ter(temINVALID));
-
-            // sfGracePeriod: good value, bad account
-            env(set(evan, broker.brokerID, principalRequested, startDate),
-                sig(sfCounterpartySignature, borrower),
-                paymentInterval(LoanSet::minPaymentInterval * 2),
-                gracePeriod(LoanSet::minPaymentInterval * 2),
-                loanSetFee,
-                ter(tefBAD_AUTH));
-            // sfGracePeriod: larger than paymentInterval
-            env(set(evan, broker.brokerID, principalRequested, startDate),
-                sig(sfCounterpartySignature, lender),
-                paymentInterval(LoanSet::minPaymentInterval * 2),
-                gracePeriod(LoanSet::minPaymentInterval * 3),
-                loanSetFee,
-                ter(temINVALID));
 
 #if 0
             std::string testData;

@@ -84,10 +84,12 @@ LoanSet::doPreflight(PreflightContext const& ctx)
     if (auto const paymentTotal = tx[~sfPaymentTotal];
         paymentTotal && *paymentTotal == 0)
         return temINVALID;
+
     if (auto const paymentInterval =
             tx[~sfPaymentInterval].value_or(LoanSet::defaultPaymentInterval);
         paymentInterval < LoanSet::minPaymentInterval)
         return temINVALID;
+
     else if (auto const gracePeriod =
                  tx[~sfGracePeriod].value_or(LoanSet::defaultGracePeriod);
              gracePeriod > paymentInterval)
@@ -173,6 +175,12 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     {
         JLOG(ctx.j.warn()) << "Neither Account nor Counterparty are the owner "
                               "of the LoanBroker.";
+        return tecNO_PERMISSION;
+    }
+    if (account == counterparty)
+    {
+        JLOG(ctx.j.warn()) << "Account and Counterparty are the same. Can not "
+                              "loan money to yourself.";
         return tecNO_PERMISSION;
     }
 
@@ -335,12 +343,10 @@ LoanSet::doApply()
     auto const startDate = tx[sfStartDate];
     auto const paymentInterval =
         tx[~sfPaymentInterval].value_or(defaultPaymentInterval);
-    auto const loanSequence = brokerSle->at(sfLoanSequence).value();
-    brokerSle->at(sfLoanSequence) += 1;
+    auto loanSequence = brokerSle->at(sfLoanSequence);
 
     // Create the loan
-    auto loan =
-        std::make_shared<SLE>(keylet::loan(borrower, brokerID, loanSequence));
+    auto loan = std::make_shared<SLE>(keylet::loan(brokerID, *loanSequence));
 
     // Prevent copy/paste errors
     auto setLoanField = [&loan, &tx](auto const& field) {
@@ -387,6 +393,7 @@ LoanSet::doApply()
     // The broker's owner count is solely for the number of outstanding loans,
     // and is distinct from the broker's pseudo-account's owner count
     adjustOwnerCount(view, brokerSle, 1, j_);
+    loanSequence += 1;
     view.update(brokerSle);
 
     // Put the loan into the pseudo-account's directory

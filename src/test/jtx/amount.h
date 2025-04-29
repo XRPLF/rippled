@@ -181,17 +181,17 @@ struct PrettyAsset
 {
 private:
     Asset asset_;
-    unsigned int scale_;
+    std::uint64_t scale_;
 
 public:
     template <typename A>
         requires std::convertible_to<A, Asset>
-    PrettyAsset(A const& asset, unsigned int scale = 1)
+    PrettyAsset(A const& asset, std::uint32_t scale = 1)
         : PrettyAsset{Asset{asset}, scale}
     {
     }
 
-    PrettyAsset(Asset const& asset, unsigned int scale = 1)
+    PrettyAsset(Asset const& asset, std::uint32_t scale = 1)
         : asset_(asset), scale_(scale)
     {
     }
