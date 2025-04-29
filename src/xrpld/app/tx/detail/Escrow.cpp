@@ -234,10 +234,6 @@ escrowCreatePreclaimHelper<Issue>(
     if (balance < beast::zero && issuer > account)
         return tecNO_PERMISSION;
 
-    // If the issuer has no default ripple state return tecNO_RIPPLE
-    if (!sleIssuer->isFlag(lsfDefaultRipple))
-        return terNO_RIPPLE;
-
     // If the issuer has requireAuth set, check if the account is authorized
     if (auto const ter = requireAuth(ctx.view, amount.issue(), account);
         ter != tesSUCCESS)
@@ -712,10 +708,6 @@ escrowFinishPreclaimHelper<Issue>(
     if (issuer == dest)
         return tesSUCCESS;
 
-    // If the issuer has no default ripple state return tecNO_RIPPLE
-    if (!isDefaultRipple(ctx.view, amount.issue()))
-        return terNO_RIPPLE;
-
     // If the issuer has requireAuth set, check if the destination is authorized
     if (auto const ter = requireAuth(ctx.view, amount.issue(), dest);
         ter != tesSUCCESS)
@@ -802,7 +794,7 @@ escrowUnlockApplyHelper(
     ApplyView& view,
     Rate lockedRate,
     std::shared_ptr<SLE> const& sleDest,
-    STAmount const& balance,
+    STAmount const& xrpBalance,
     STAmount const& amount,
     AccountID const& issuer,
     AccountID const& sender,
@@ -816,7 +808,7 @@ escrowUnlockApplyHelper<Issue>(
     ApplyView& view,
     Rate lockedRate,
     std::shared_ptr<SLE> const& sleDest,
-    STAmount const& balance,
+    STAmount const& xrpBalance,
     STAmount const& amount,
     AccountID const& issuer,
     AccountID const& sender,
@@ -829,6 +821,11 @@ escrowUnlockApplyHelper<Issue>(
     bool const senderIssuer = issuer == sender;
     bool const receiverIssuer = issuer == receiver;
 
+    // LCOV_EXCL_START
+    if (senderIssuer)
+        return tecINTERNAL;
+    // LCOV_EXCL_STOP
+
     if (receiverIssuer)
         return tesSUCCESS;
 
@@ -838,7 +835,7 @@ escrowUnlockApplyHelper<Issue>(
     {
         // Can the account cover the trust line's reserve?
         if (std::uint32_t const ownerCount = {sleDest->at(sfOwnerCount)};
-            balance < view.fees().accountReserve(ownerCount + 1))
+            xrpBalance < view.fees().accountReserve(ownerCount + 1))
         {
             JLOG(journal.trace()) << "Trust line does not exist. "
                                      "Insufficent reserve to create line.";
@@ -888,6 +885,11 @@ escrowUnlockApplyHelper<Issue>(
     // 1. Issuer is not involved in the transfer (senderIssuer or
     // receiverIssuer)
     // 2. The locked rate is different from the parity rate
+
+    // NOTE: Transfer fee in escrow works a bit differently from a normal
+    // payment. In escrow, the fee is deducted from the escrowed/sending amount,
+    // whereas in a normal payment, the transfer fee is taken on top of the
+    // sending amount.
     auto finalAmt = amount;
     if ((!senderIssuer && !receiverIssuer) && lockedRate != parityRate)
     {
@@ -915,7 +917,7 @@ escrowUnlockApplyHelper<MPTIssue>(
     ApplyView& view,
     Rate lockedRate,
     std::shared_ptr<SLE> const& sleDest,
-    STAmount const& balance,
+    STAmount const& xrpBalance,
     STAmount const& amount,
     AccountID const& issuer,
     AccountID const& sender,
@@ -932,7 +934,7 @@ escrowUnlockApplyHelper<MPTIssue>(
         createAsset && !receiverIssuer)
     {
         if (std::uint32_t const ownerCount = {sleDest->at(sfOwnerCount)};
-            balance < view.fees().accountReserve(ownerCount + 1))
+            xrpBalance < view.fees().accountReserve(ownerCount + 1))
         {
             return tecINSUFFICIENT_RESERVE;
         }
@@ -962,6 +964,10 @@ escrowUnlockApplyHelper<MPTIssue>(
     // receiverIssuer)
     // 2. The locked rate is different from the parity rate
 
+    // NOTE: Transfer fee in escrow works a bit differently from a normal
+    // payment. In escrow, the fee is deducted from the escrowed/sending amount,
+    // whereas in a normal payment, the transfer fee is taken on top of the
+    // sending amount.
     auto finalAmt = amount;
     if ((!senderIssuer && !receiverIssuer) && lockedRate != parityRate)
     {
@@ -1185,10 +1191,6 @@ escrowCancelPreclaimHelper<Issue>(
     // If the issuer is the same as the account, return tesSUCCESS
     if (issuer == account)
         return tesSUCCESS;
-
-    // If the issuer has no default ripple state return tecNO_RIPPLE
-    if (!isDefaultRipple(ctx.view, amount.issue()))
-        return terNO_RIPPLE;
 
     // If the issuer has requireAuth set, check if the account is authorized
     if (auto const ter = requireAuth(ctx.view, amount.issue(), account);

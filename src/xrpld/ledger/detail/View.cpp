@@ -171,18 +171,6 @@ hasExpired(ReadView const& view, std::optional<std::uint32_t> const& exp)
 }
 
 bool
-isDefaultRipple(ReadView const& view, Issue const& issue)
-{
-    if (isXRP(issue))
-        return true;
-
-    if (auto const sle = view.read(keylet::account(issue.account)))
-        return (sle->getFlags() & lsfDefaultRipple);
-
-    return false;
-}
-
-bool
 isGlobalFrozen(ReadView const& view, AccountID const& issuer)
 {
     if (isXRP(issuer))
@@ -2170,10 +2158,12 @@ rippleLockEscrowMPT(
         if (!sle)
             return tecOBJECT_NOT_FOUND;
 
+        // LCOV_EXCL_START
         auto const amt = sle->getFieldU64(sfMPTAmount);
         auto const pay = amount.mpt().value();
         if (amt < pay)
-            return tecINSUFFICIENT_FUNDS;
+            return tecINTERNAL;
+        // LCOV_EXCL_STOP
 
         (*sle)[sfMPTAmount] = amt - pay;
         if (sle->isFieldPresent(sfEscrowedAmount))
