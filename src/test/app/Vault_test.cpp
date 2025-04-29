@@ -1238,6 +1238,19 @@ class Vault_test : public beast::unit_test::suite
 
             tx[sfDestination] = issuer.human();
             env(tx, ter(tecLOCKED));
+
+            // Clawback is still permitted, even with global lock
+            tx = vault.clawback(
+                {.issuer = issuer,
+                 .id = keylet.key,
+                 .holder = depositor,
+                 .amount = asset(0)});
+            env(tx);
+            env.close();
+
+            // Cannot delete vault with a global lock
+            tx = vault.del({.owner = owner, .id = keylet.key});
+            env(tx, ter{tecNO_PERMISSION});
         });
 
         testCase([this](

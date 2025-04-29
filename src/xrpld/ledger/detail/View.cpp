@@ -1405,9 +1405,14 @@ removeEmptyHolding(
         return tecOBJECT_NOT_FOUND;
     if (mptoken->at(sfMPTAmount) != 0)
         return tecHAS_OBLIGATIONS;
-    if (view.rules().enabled(featureSingleAssetVault) &&
-        mptoken->isFlag(lsfMPTLocked))
-        return tecNO_PERMISSION;
+    if (view.rules().enabled(featureSingleAssetVault))
+    {
+        auto const sleIssuance = view.read(keylet::mptIssuance(mptID));
+        if (sleIssuance && sleIssuance->isFlag(lsfMPTLocked))
+            return tecNO_PERMISSION;
+        else if (mptoken->isFlag(lsfMPTLocked))
+            return tecNO_PERMISSION;
+    }
 
     return MPTokenAuthorize::authorize(
         view,
