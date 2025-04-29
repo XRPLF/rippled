@@ -1708,18 +1708,13 @@ class Vault_test : public beast::unit_test::suite
         env(tx);
         env.close();
 
-        auto const [vaultAccount, issuanceId] =
-            [&env, keylet = keylet, this]() -> std::tuple<AccountID, uint192> {
-            auto const vault = env.le(keylet);
-            BEAST_EXPECT(vault != nullptr);
-            return {vault->at(sfAccount), vault->at(sfShareMPTID)};
+        auto const vaultAccount = [&env, keylet = keylet]() -> AccountID {
+            return env.le(keylet)->at(sfAccount);
         }();
-
-        auto const share = [&env, keylet = keylet, this]() -> Asset {
-            auto const vault = env.le(keylet);
-            BEAST_EXPECT(vault != nullptr);
-            return MPTIssue(vault->at(sfShareMPTID));
+        auto const issuanceId = [&env, keylet = keylet]() -> uint192 {
+            return env.le(keylet)->at(sfShareMPTID);
         }();
+        auto const share = Asset(issuanceId);
 
         auto const vaultBalance =  //
             [&, account = vaultAccount, this]() -> PrettyAmount {
