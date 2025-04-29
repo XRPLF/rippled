@@ -1756,7 +1756,7 @@ struct Escrow_test : public beast::unit_test::suite
             cfg->START_UP = Config::FRESH;
             return cfg;
         }));
-        XRPAmount const txnFees = env.current()->fees().base + 1000;
+        XRPAmount const txnFees = env.current()->fees().base * 10 + 1000;
         // create escrow
         env.fund(XRP(5000), alice, carol);
 
@@ -2064,7 +2064,7 @@ struct Escrow_test : public beast::unit_test::suite
             auto const seq = env.seq(alice);
             BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
             auto escrowCreate = escrow(alice, carol, XRP(1000));
-            XRPAmount txnFees = env.current()->fees().base + 1000;
+            XRPAmount txnFees = env.current()->fees().base * 10 + 1000;
             env(escrowCreate,
                 finish_function(wasmHex),
                 condition(cb1),
