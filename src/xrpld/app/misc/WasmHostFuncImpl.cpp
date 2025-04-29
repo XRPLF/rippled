@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/app/misc/WasmHostFuncImpl.h>
+#include <xrpld/app/tx/detail/NFTokenUtils.h>
 
 #include <xrpl/protocol/digest.h>
 
@@ -98,6 +99,33 @@ WasmHostFunctionsImpl::getCurrentLedgerEntryField(const std::string& fname)
         return std::nullopt;
 }
 
+std::optional<Bytes>
+WasmHostFunctionsImpl::getNFT(
+    const std::string& account,
+    const std::string& nftId)
+{
+    auto const accountId = parseBase58<AccountID>(account);
+    if (!accountId || accountId->isZero())
+    {
+        return std::nullopt;
+    }
+
+    uint256 nftHash;
+    if (!nftHash.parseHex(nftId))
+    {
+        return std::nullopt;
+    }
+
+    auto jv = nft::findToken(ctx.view(), accountId.value(), nftHash);
+    if (!jv)
+    {
+        return std::nullopt;
+    }
+
+    Slice const s = (*jv)[sfURI];
+    return Bytes{s.begin(), s.end()};
+}
+
 bool
 WasmHostFunctionsImpl::updateData(const Bytes& data)
 {
@@ -114,5 +142,92 @@ WasmHostFunctionsImpl::computeSha512HalfHash(const Bytes& data)
 {
     auto const hash = sha512Half(data);
     return uint256::fromVoid(hash.data());
+}
+
+std::optional<Bytes>
+WasmHostFunctionsImpl::accountKeylet(const std::string& account)
+{
+    auto const accountId = parseBase58<AccountID>(account);
+    if (!accountId || accountId->isZero())
+    {
+        return std::nullopt;
+    }
+
+    auto keylet = keylet::account(*accountId).key;
+    if (!keylet)
+    {
+        return std::nullopt;
+    }
+
+    return Bytes{keylet.begin(), keylet.end()};
+}
+
+std::optional<Bytes>
+WasmHostFunctionsImpl::credentialKeylet(
+    const std::string& subject,
+    const std::string& issuer,
+    const std::string& credentialType)
+{
+    auto const subjectId = parseBase58<AccountID>(subject);
+    if (!subjectId || subjectId->isZero())
+    {
+        return std::nullopt;
+    }
+
+    auto const issuerId = parseBase58<AccountID>(issuer);
+    if (!issuerId || issuerId->isZero())
+    {
+        return std::nullopt;
+    }
+
+    auto keylet =
+        keylet::credential(*subjectId, *issuerId, makeSlice(credentialType))
+            .key;
+    if (!keylet)
+    {
+        return std::nullopt;
+    }
+
+    return Bytes{keylet.begin(), keylet.end()};
+}
+
+std::optional<Bytes>
+WasmHostFunctionsImpl::escrowKeylet(
+    const std::string& account,
+    const std::uint32_t& seq)
+{
+    auto const accountId = parseBase58<AccountID>(account);
+    if (!accountId || accountId->isZero())
+    {
+        return std::nullopt;
+    }
+
+    auto keylet = keylet::escrow(*accountId, seq).key;
+    if (!keylet)
+    {
+        return std::nullopt;
+    }
+
+    return Bytes{keylet.begin(), keylet.end()};
+}
+
+std::optional<Bytes>
+WasmHostFunctionsImpl::oracleKeylet(
+    const std::string& account,
+    const std::uint32_t& documentId)
+{
+    auto const accountId = parseBase58<AccountID>(account);
+    if (!accountId || accountId->isZero())
+    {
+        return std::nullopt;
+    }
+
+    auto keylet = keylet::oracle(*accountId, documentId).key;
+    if (!keylet)
+    {
+        return std::nullopt;
+    }
+
+    return Bytes{keylet.begin(), keylet.end()};
 }
 }  // namespace ripple
