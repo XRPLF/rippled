@@ -519,17 +519,18 @@ isAddable(STAmount const& amt1, STAmount const& amt2)
     // XRP case (overflow & underflow check)
     if (isXRP(amt1) && isXRP(amt2))
     {
-        XRPAmount A = (amt1.signum() == -1 ? -(amt1.xrp()) : amt1.xrp());
-        XRPAmount B = (amt2.signum() == -1 ? -(amt2.xrp()) : amt2.xrp());
+        XRPAmount A = amt1.xrp();
+        XRPAmount B = amt2.xrp();
 
         if ((B > XRPAmount{0} &&
-             A > std::numeric_limits<XRPAmount::value_type>::max() - B) ||
+             A > XRPAmount{std::numeric_limits<XRPAmount::value_type>::max()} -
+                     B) ||
             (B < XRPAmount{0} &&
-             A < std::numeric_limits<XRPAmount::value_type>::min() - B))
+             A < XRPAmount{std::numeric_limits<XRPAmount::value_type>::min()} -
+                     B))
         {
             return false;
         }
-
         return true;
     }
 

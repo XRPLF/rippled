@@ -716,8 +716,12 @@ public:
         }
 
         // Overflow check for min XRP amounts
-        // DA: This is not a valid test case, as the min value is not
-        // representable in STAmount.
+        {
+            STAmount minXRP(std::numeric_limits<std::int64_t>::max());
+            minXRP += XRPAmount(1);
+            STAmount smallXRP(XRPAmount(-1));
+            BEAST_EXPECT(isAddable(minXRP, smallXRP) == false);
+        }
 
         Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
 
