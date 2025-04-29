@@ -1977,7 +1977,7 @@ struct Escrow_test : public beast::unit_test::suite
     void
     testFinishFunction()
     {
-        testcase("PoC escrow function");
+        testcase("Example escrow function");
 
         using namespace jtx;
         using namespace std::chrono;
@@ -2059,23 +2059,26 @@ struct Escrow_test : public beast::unit_test::suite
         {
             // FinishFunction + Condition
             Env env(*this);
-            // create escrow
             env.fund(XRP(5000), alice, carol);
-            auto const seq = env.seq(alice);
             BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
+            auto const seq = env.seq(alice);
+            // create escrow
             auto escrowCreate = escrow(alice, carol, XRP(1000));
-            XRPAmount txnFees = env.current()->fees().base * 10 + 1000;
+            XRPAmount const createFee = env.current()->fees().base + 1000;
             env(escrowCreate,
                 finish_function(wasmHex),
                 condition(cb1),
                 cancel_time(env.now() + 100s),
-                fee(txnFees));
+                fee(createFee));
             env.close();
 
             if (BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 2))
             {
-                env.require(balance(alice, XRP(4000) - txnFees));
+                env.require(balance(alice, XRP(4000) - createFee));
                 env.require(balance(carol, XRP(5000)));
+
+                XRPAmount const txnFees =
+                    env.current()->fees().base * 34 + 1000;
 
                 // no fulfillment provided, function fails
                 env(finish(carol, alice, seq),
