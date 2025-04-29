@@ -1248,9 +1248,9 @@ class Vault_test : public beast::unit_test::suite
             env(tx);
             env.close();
 
-            // Cannot delete vault with a global lock
+            // Can delete empty vault, even if global lock
             tx = vault.del({.owner = owner, .id = keylet.key});
-            env(tx, ter{tecNO_PERMISSION});
+            env(tx);
         });
 
         testCase([this](
@@ -1361,10 +1361,9 @@ class Vault_test : public beast::unit_test::suite
                  .amount = asset(100)});
             env(tx);
 
-            // Cannot delete an empty vault, because its shares are
-            // (transitively, by asset) locked.
+            // Can delete an empty vault even when asset is locked.
             tx = vault.del({.owner = owner, .id = keylet.key});
-            env(tx, ter{tecNO_PERMISSION});
+            env(tx);
         });
 
         {
@@ -1802,12 +1801,6 @@ class Vault_test : public beast::unit_test::suite
             env(tx1);
             env.close();
 
-            // Cannot delete an empty vault, because its shares are
-            // (transitively, by asset) locked.
-            auto tx2 = vault.del({.owner = owner, .id = keylet.key});
-            env(tx2, ter{tecNO_PERMISSION});
-            env.close();
-
             tx0[jss::Flags] = tfClearFreeze;
             env(tx0);
             env.close();
@@ -1928,10 +1921,9 @@ class Vault_test : public beast::unit_test::suite
             env(tx3);
             env.close();
 
-            // Cannot delete an empty vault, because its shares are
-            // (transitively, by asset) locked.
+            // Can delete an empty vault, even under asset is under global lock
             auto tx4 = vault.del({.owner = owner, .id = keylet.key});
-            env(tx4, ter{tecNO_PERMISSION});
+            env(tx4);
             env.close();
         }
     }

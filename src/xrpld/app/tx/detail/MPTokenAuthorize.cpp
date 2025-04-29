@@ -73,23 +73,19 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
             if (!sleMpt)
                 return tecOBJECT_NOT_FOUND;
 
-            auto const sleMptIssuance =
-                ctx.view.read(keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
             if ((*sleMpt)[sfMPTAmount] != 0)
             {
+                auto const sleMptIssuance = ctx.view.read(
+                    keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
                 if (!sleMptIssuance)
                     return tefINTERNAL;
 
                 return tecHAS_OBLIGATIONS;
             }
 
-            if (ctx.view.rules().enabled(featureSingleAssetVault))
-            {
-                if (sleMptIssuance && sleMptIssuance->isFlag(lsfMPTLocked))
-                    return tecNO_PERMISSION;
-                else if (sleMpt->isFlag(lsfMPTLocked))
-                    return tecNO_PERMISSION;
-            }
+            if (ctx.view.rules().enabled(featureSingleAssetVault) &&
+                sleMpt->isFlag(lsfMPTLocked))
+                return tecNO_PERMISSION;
 
             return tesSUCCESS;
         }
