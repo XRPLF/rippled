@@ -1288,6 +1288,72 @@ class Vault_test : public beast::unit_test::suite
             env(tx);
         });
 
+        testCase([this](
+                     Env& env,
+                     Account const& issuer,
+                     Account const& owner,
+                     Account const& depositor,
+                     Asset const& asset,
+                     Vault& vault,
+                     MPTTester& mptt) {
+            testcase("MPT lock of vault pseudo-account");
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            auto const vaultAccount =
+                [&env, keylet = keylet, this]() -> AccountID {
+                auto const vault = env.le(keylet);
+                BEAST_EXPECT(vault != nullptr);
+                return vault->at(sfAccount);
+            }();
+
+            tx = vault.deposit(
+                {.depositor = depositor,
+                 .id = keylet.key,
+                 .amount = asset(100)});
+            env(tx);
+            env.close();
+
+            tx = [&]() {
+                Json::Value jv;
+                jv[jss::Account] = issuer.human();
+                jv[sfMPTokenIssuanceID] =
+                    to_string(asset.get<MPTIssue>().getMptID());
+                jv[jss::Holder] = toBase58(vaultAccount);
+                jv[jss::TransactionType] = jss::MPTokenIssuanceSet;
+                jv[jss::Flags] = tfMPTLock;
+                return jv;
+            }();
+            env(tx);
+            env.close();
+
+            tx = vault.deposit(
+                {.depositor = depositor,
+                 .id = keylet.key,
+                 .amount = asset(100)});
+            env(tx, ter(tecLOCKED));
+
+            tx = vault.withdraw(
+                {.depositor = depositor,
+                 .id = keylet.key,
+                 .amount = asset(100)});
+            env(tx, ter(tecLOCKED));
+
+            // Clawback works, even when locked
+            tx = vault.clawback(
+                {.issuer = issuer,
+                 .id = keylet.key,
+                 .holder = depositor,
+                 .amount = asset(100)});
+            env(tx);
+
+            // Cannot delete an empty vault, because its shares are
+            // (transitively, by asset) locked.
+            tx = vault.del({.owner = owner, .id = keylet.key});
+            env(tx, ter{tecNO_PERMISSION});
+        });
+
         {
             testcase("MPT shares to a vault");
 
@@ -1627,6 +1693,7 @@ class Vault_test : public beast::unit_test::suite
         Account const charlie{"charlie"};
         Vault vault{env};
         env.fund(XRP(1000), issuer, owner, charlie);
+        env(fset(issuer, asfAllowTrustLineClawback));
         env.close();
 
         PrettyAsset const asset = issuer["IOU"];
@@ -1665,6 +1732,81 @@ class Vault_test : public beast::unit_test::suite
             return {amount, env.lookup(issue.account).name()};
         };
         BEAST_EXPECT(vaultBalance() == asset(0));
+
+        {
+            testcase("IOU cannot update random trustline");
+            PrettyAsset const foo = issuer["FOO"];
+
+            auto tx = [&]() {
+                Json::Value jv;
+                jv[jss::Account] = issuer.human();
+                {
+                    auto& ja = jv[jss::LimitAmount] =
+                        foo(0).value().getJson(JsonOptions::none);
+                    ja[jss::issuer] = toBase58(vaultAccount);
+                }
+                jv[jss::TransactionType] = jss::TrustSet;
+                jv[jss::Flags] = tfSetFreeze;
+                return jv;
+            }();
+            env(tx, ter{tecNO_PERMISSION});
+            env.close();
+        }
+
+        {
+            testcase("IOU cannot deposit when frozen");
+
+            env(vault.deposit(
+                {.depositor = owner, .id = keylet.key, .amount = asset(100)}));
+            env.close();
+
+            auto tx0 = [&]() {
+                Json::Value jv;
+                jv[jss::Account] = issuer.human();
+                {
+                    auto& ja = jv[jss::LimitAmount] =
+                        asset(0).value().getJson(JsonOptions::none);
+                    ja[jss::issuer] = toBase58(vaultAccount);
+                }
+                jv[jss::TransactionType] = jss::TrustSet;
+                jv[jss::Flags] = tfSetFreeze;
+                return jv;
+            }();
+            env(tx0);
+            env.close();
+
+            // Note, the "frozen" state of the trust line is reported as
+            // "locked" state of the vault shares, because this state is
+            // attached to shares by means of the transitive isFrozen check.
+            env(vault.deposit(
+                    {.depositor = owner,
+                     .id = keylet.key,
+                     .amount = asset(100)}),
+                ter{tecLOCKED});
+            env.close();
+
+            // Clawback works, even when locked
+            auto tx1 = vault.clawback(
+                {.issuer = issuer,
+                 .id = keylet.key,
+                 .holder = owner,
+                 .amount = asset(0)});
+            env(tx1);
+            env.close();
+
+            // Cannot delete an empty vault, because its shares are
+            // (transitively, by asset) locked.
+            auto tx2 = vault.del({.owner = owner, .id = keylet.key});
+            env(tx2, ter{tecNO_PERMISSION});
+            env.close();
+
+            tx0[jss::Flags] = tfClearFreeze;
+            env(tx0);
+            env.close();
+
+            env(pay(issuer, owner, asset(100)));
+            env.close();
+        }
 
         {
             testcase("IOU zero fee on deposit");
@@ -1757,7 +1899,7 @@ class Vault_test : public beast::unit_test::suite
             env.close();
 
             auto tx = vault.withdraw(
-                {.depositor = owner, .id = keylet.key, .amount = asset(10)});
+                {.depositor = owner, .id = keylet.key, .amount = asset(1)});
             env(tx, ter{tecFROZEN});
 
             tx[sfDestination] = issuer.human();
@@ -1767,6 +1909,21 @@ class Vault_test : public beast::unit_test::suite
             env(tx1, ter{tecLOCKED});
             auto tx2 = test::jtx::pay(charlie, owner, STAmount{share, 10});
             env(tx2, ter{tecLOCKED});
+            env.close();
+
+            // Clawback is permitted
+            auto tx3 = vault.clawback(
+                {.issuer = issuer,
+                 .id = keylet.key,
+                 .holder = owner,
+                 .amount = asset(0)});
+            env(tx3);
+            env.close();
+
+            // Cannot delete an empty vault, because its shares are
+            // (transitively, by asset) locked.
+            auto tx4 = vault.del({.owner = owner, .id = keylet.key});
+            env(tx4, ter{tecNO_PERMISSION});
             env.close();
         }
     }

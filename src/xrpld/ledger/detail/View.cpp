@@ -1344,6 +1344,17 @@ removeEmptyHolding(
     if (line->at(sfBalance)->iou() != beast::zero)
         return tecHAS_OBLIGATIONS;
 
+    if (view.rules().enabled(featureSingleAssetVault))
+    {
+        // Check frozen flag, disallow delete if set
+        if (auto const issuer = view.read(keylet::account(issue.account));
+            issuer && issuer->isFlag(lsfGlobalFreeze))
+            return tecNO_PERMISSION;
+        if (line->isFlag(
+                (issue.account > accountID) ? lsfHighFreeze : lsfLowFreeze))
+            return tecNO_PERMISSION;
+    }
+
     // Adjust the owner count(s)
     if (line->isFlag(lsfLowReserve))
     {
