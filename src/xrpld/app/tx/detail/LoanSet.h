@@ -54,10 +54,17 @@ public:
     TER
     doApply() override;
 
-private:
+public:
+    static std::uint32_t constexpr minPaymentTotal = 1;
     static std::uint32_t constexpr defaultPaymentTotal = 1;
+    static_assert(defaultPaymentTotal >= minPaymentTotal);
+
+    static std::uint32_t constexpr minPaymentInterval = 60;
     static std::uint32_t constexpr defaultPaymentInterval = 60;
+    static_assert(defaultPaymentInterval >= minPaymentInterval);
+
     static std::uint32_t constexpr defaultGracePeriod = 60;
+    static_assert(defaultGracePeriod >= minPaymentInterval);
 };
 
 //------------------------------------------------------------------------------

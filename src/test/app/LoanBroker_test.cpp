@@ -148,6 +148,7 @@ class LoanBroker_test : public beast::unit_test::suite
             BEAST_EXPECT(broker->at(sfFlags) == 0);
             BEAST_EXPECT(broker->at(sfSequence) == env.seq(alice) - 1);
             BEAST_EXPECT(broker->at(sfOwnerCount) == 0);
+            BEAST_EXPECT(broker->at(sfLoanSequence) == 1);
             BEAST_EXPECT(broker->at(sfDebtTotal) == 0);
             BEAST_EXPECT(broker->at(sfCoverAvailable) == 0);
             if (checkBroker)

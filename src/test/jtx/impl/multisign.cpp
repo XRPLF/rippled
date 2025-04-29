@@ -85,7 +85,11 @@ msig::operator()(Env& env, JTx& jt) const
         // Where to put the signature. Supports sfCounterPartySignature.
         auto& sigObject = subField ? jtx[*subField] : jtx.jv;
 
-        sigObject[sfSigningPubKey] = "";
+        // The signing pub key is only required at the top level.
+        if (!subField)
+            sigObject[sfSigningPubKey] = "";
+        else if (sigObject.isNull())
+            sigObject = Json::Value(Json::objectValue);
         std::optional<STObject> st;
         try
         {

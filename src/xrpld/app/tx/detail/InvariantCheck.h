@@ -634,6 +634,7 @@ public:
  */
 class NoModifiedUnmodifiableFields
 {
+    // Pair is <before, after>.
     std::set<std::pair<SLE::const_pointer, SLE::const_pointer>> changedEntries_;
 
 public:
@@ -690,7 +691,9 @@ public:
  */
 class ValidLoanBroker
 {
-    std::vector<SLE::const_pointer> brokers_;
+    // Pair is <before, after>. After is used for most of the checks, except
+    // those that check changed values.
+    std::vector<std::pair<SLE::const_pointer, SLE::const_pointer>> brokers_;
 
     bool
     goodZeroDirectory(

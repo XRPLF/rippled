@@ -23,6 +23,8 @@
 #include <test/jtx/mpt.h>
 #include <test/jtx/vault.h>
 
+#include <xrpld/app/tx/detail/LoanSet.h>
+
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_forwards.h>
@@ -354,34 +356,40 @@ class Loan_test : public beast::unit_test::suite
         // MPT. That'll require three corresponding SAVs.
         Env env(*this, all);
 
-        Account issuer{"issuer"};
-        // For simplicity, alice will be the sole actor for the vault & brokers.
-        Account alice{"alice"};
+        Account const issuer{"issuer"};
+        // For simplicity, lender will be the sole actor for the vault &
+        // brokers.
+        Account const lender{"lender"};
+        // Borrower only wants to borrow
+        Account const borrower{"borrower"};
         // Evan will attempt to be naughty
-        Account evan{"evan"};
+        Account const evan{"evan"};
+        // Do not fund alice
+        Account const alice{"alice"};
         Vault vault{env};
 
         // Fund the accounts and trust lines with the same amount so that tests
         // can use the same values regardless of the asset.
-        env.fund(XRP(100'000), issuer, noripple(alice, evan));
+        env.fund(XRP(100'000), issuer, noripple(lender, borrower, evan));
         env.close();
 
         // Create assets
         PrettyAsset const xrpAsset{xrpIssue(), 1'000'000};
-        PrettyAsset const iouAsset = issuer["IOU"];
-        env(trust(alice, iouAsset(1'000'000)));
+        std::string const iouCurrency{"IOU"};
+        PrettyAsset const iouAsset = issuer[iouCurrency];
+        env(trust(lender, iouAsset(1'000'000)));
         env(trust(evan, iouAsset(1'000'000)));
         env(pay(issuer, evan, iouAsset(100'000)));
-        env(pay(issuer, alice, iouAsset(100'000)));
+        env(pay(issuer, lender, iouAsset(100'000)));
         env.close();
 
         MPTTester mptt{env, issuer, mptInitNoFund};
         mptt.create(
             {.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
         PrettyAsset const mptAsset = mptt.issuanceID();
-        mptt.authorize({.account = alice});
+        mptt.authorize({.account = lender});
         mptt.authorize({.account = evan});
-        env(pay(issuer, alice, mptAsset(100'000)));
+        env(pay(issuer, lender, mptAsset(100'000)));
         env(pay(issuer, evan, mptAsset(100'000)));
         env.close();
 
@@ -392,114 +400,259 @@ class Loan_test : public beast::unit_test::suite
         for (auto const& asset : assets)
         {
             auto [tx, vaultKeylet] =
-                vault.create({.owner = alice, .asset = asset});
+                vault.create({.owner = lender, .asset = asset});
             env(tx);
             env.close();
             BEAST_EXPECT(env.le(vaultKeylet));
 
             env(vault.deposit(
-                {.depositor = alice,
+                {.depositor = lender,
                  .id = vaultKeylet.key,
-                 .amount = asset(5000)}));
+                 .amount = asset(50'000)}));
             env.close();
 
-            auto const keylet = keylet::loanbroker(alice.id(), env.seq(alice));
+            auto const keylet =
+                keylet::loanbroker(lender.id(), env.seq(lender));
             auto const testData = "spam spam spam spam";
 
             using namespace loanBroker;
-            env(set(alice, vaultKeylet.key),
+            env(set(lender, vaultKeylet.key),
                 fee(increment),
                 data(testData),
-                managementFeeRate(TenthBips16(123)),
-                debtMaximum(Number(9)),
-                coverRateMinimum(TenthBips32(100)),
-                coverRateLiquidation(TenthBips32(200)));
+                managementFeeRate(TenthBips16(100)),
+                debtMaximum(Number(25'000)),
+                coverRateMinimum(TenthBips32(percentageToTenthBips(10))),
+                coverRateLiquidation(TenthBips32(percentageToTenthBips(25))));
+
+            env(coverDeposit(lender, keylet.key, asset(1000)));
 
             brokers.emplace_back(asset, keylet.key);
         }
 
-#if 0
-        // Create and update Loan Brokers
-        for (auto const& vault : vaults)
+        // Create and update Loans
+        for (auto const& broker : brokers)
         {
-            using namespace loanBroker;
+            using namespace loan;
+            using namespace std::chrono_literals;
 
-            auto badKeylet = keylet::vault(alice.id(), env.seq(alice));
+            auto const principalRequested = Number(1000);
+            auto const startDate = env.now() + 3600s;
+            auto const loanSetFee = fee(env.current()->fees().base * 2);
+
+            auto badKeylet = keylet::vault(lender.id(), env.seq(lender));
             // Try some failure cases
-            // insufficient fee
-            env(set(evan, vault.vaultID), ter(telINSUF_FEE_P));
-            // not the vault owner
-            env(set(evan, vault.vaultID),
-                fee(increment),
+            // insufficient fee - single sign
+            env(set(borrower, broker.brokerID, principalRequested, startDate),
+                sig(sfCounterpartySignature, lender),
+                ter(telINSUF_FEE_P));
+            // insufficient fee - multisign
+            env(set(borrower, broker.brokerID, principalRequested, startDate),
+                counterparty(lender),
+                msig(evan, lender),
+                msig(sfCounterpartySignature, evan, borrower),
+                fee(env.current()->fees().base * 5 - 1),
+                ter(telINSUF_FEE_P));
+            // multisign sufficient fee, but no signers set up
+            env(set(borrower, broker.brokerID, principalRequested, startDate),
+                counterparty(lender),
+                msig(evan, lender),
+                msig(sfCounterpartySignature, evan, borrower),
+                fee(env.current()->fees().base * 5),
+                ter(tefNOT_MULTI_SIGNING));
+            // not the broker owner, no counterparty, not signed by broker owner
+            env(set(borrower, broker.brokerID, principalRequested, startDate),
+                sig(sfCounterpartySignature, evan),
+                loanSetFee,
+                ter(tefBAD_AUTH));
+            // not the broker owner, counterparty is borrower
+            env(set(evan, broker.brokerID, principalRequested, startDate),
+                counterparty(borrower),
+                sig(sfCounterpartySignature, borrower),
+                loanSetFee,
                 ter(tecNO_PERMISSION));
-            // not a vault
-            env(set(alice, badKeylet.key), fee(increment), ter(tecNO_ENTRY));
+            // not a LoanBroker object, no counterparty
+            env(set(lender, badKeylet.key, principalRequested, startDate),
+                sig(sfCounterpartySignature, evan),
+                loanSetFee,
+                ter(temBAD_SIGNER));
+            // not a LoanBroker object, counterparty is valid
+            env(set(lender, badKeylet.key, principalRequested, startDate),
+                counterparty(borrower),
+                sig(sfCounterpartySignature, borrower),
+                loanSetFee,
+                ter(tecNO_ENTRY));
+            // borrower doesn't exist
+            env(set(lender, broker.brokerID, principalRequested, startDate),
+                counterparty(alice),
+                sig(sfCounterpartySignature, alice),
+                loanSetFee,
+                ter(terNO_ACCOUNT));
             // flags are checked first
-            env(set(evan, vault.vaultID, ~tfUniversal),
-                fee(increment),
+            env(set(evan,
+                    broker.brokerID,
+                    principalRequested,
+                    startDate,
+                    tfLoanSetMask),
+                sig(sfCounterpartySignature, lender),
+                loanSetFee,
                 ter(temINVALID_FLAG));
+
+            // Frozen trust line / locked MPT issuance
+            // XRP can not be frozen
+            if (!broker.asset.raw().native())
+            {
+                auto const brokerSLE =
+                    env.le(keylet::loanbroker(broker.brokerID));
+                if (!BEAST_EXPECT(brokerSLE))
+                    return;
+                auto const brokerPseudo = brokerSLE->at(sfAccount);
+                auto const pseudoAcct =
+                    Account("Broker pseudo-account", brokerPseudo);
+
+                std::function<void(Account const& holder)> freeze;
+                std::function<void(Account const& holder)> unfreeze;
+                // Freeze / lock the asset
+                if (broker.asset.raw().holds<Issue>())
+                {
+                    freeze = [&](Account const& holder) {
+                        env(trust(issuer, holder[iouCurrency](0), tfSetFreeze));
+                    };
+                    unfreeze = [&](Account const& holder) {
+                        env(trust(
+                            issuer, holder[iouCurrency](0), tfClearFreeze));
+                    };
+                }
+                else
+                {
+                    freeze = [&](Account const& holder) {
+                        mptt.set(
+                            {.account = issuer,
+                             .holder = holder,
+                             .flags = tfMPTLock});
+                    };
+                    unfreeze = [&](Account const& holder) {
+                        mptt.set(
+                            {.account = issuer,
+                             .holder = holder,
+                             .flags = tfMPTUnlock});
+                    };
+                }
+            }
+
             // field length validation
             // sfData: good length, bad account
-            env(set(evan, vault.vaultID),
-                fee(increment),
+            env(set(evan, broker.brokerID, principalRequested, startDate),
+                sig(sfCounterpartySignature, borrower),
                 data(std::string(maxDataPayloadLength, 'X')),
-                ter(tecNO_PERMISSION));
+                loanSetFee,
+                ter(tefBAD_AUTH));
             // sfData: too long
-            env(set(evan, vault.vaultID),
-                fee(increment),
+            env(set(evan, broker.brokerID, principalRequested, startDate),
+                sig(sfCounterpartySignature, lender),
                 data(std::string(maxDataPayloadLength + 1, 'Y')),
-                ter(temINVALID));
-            // sfManagementFeeRate: good value, bad account
-            env(set(evan, vault.vaultID),
-                managementFeeRate(maxManagementFeeRate),
-                fee(increment),
-                ter(tecNO_PERMISSION));
-            // sfManagementFeeRate: too big
-            env(set(evan, vault.vaultID),
-                managementFeeRate(maxManagementFeeRate + TenthBips16(10)),
-                fee(increment),
-                ter(temINVALID));
-            // sfCoverRateMinimum: good value, bad account
-            env(set(evan, vault.vaultID),
-                coverRateMinimum(maxCoverRate),
-                fee(increment),
-                ter(tecNO_PERMISSION));
-            // sfCoverRateMinimum: too big
-            env(set(evan, vault.vaultID),
-                coverRateMinimum(maxCoverRate + 1),
-                fee(increment),
-                ter(temINVALID));
-            // sfCoverRateLiquidation: good value, bad account
-            env(set(evan, vault.vaultID),
-                coverRateLiquidation(maxCoverRate),
-                fee(increment),
-                ter(tecNO_PERMISSION));
-            // sfCoverRateLiquidation: too big
-            env(set(evan, vault.vaultID),
-                coverRateLiquidation(maxCoverRate + 1),
-                fee(increment),
-                ter(temINVALID));
-            // sfDebtMaximum: good value, bad account
-            env(set(evan, vault.vaultID),
-                debtMaximum(Number(0)),
-                fee(increment),
-                ter(tecNO_PERMISSION));
-            // sfDebtMaximum: overflow
-            env(set(evan, vault.vaultID),
-                debtMaximum(Number(1, 100)),
-                fee(increment),
-                ter(temINVALID));
-            // sfDebtMaximum: negative
-            env(set(evan, vault.vaultID),
-                debtMaximum(Number(-1)),
-                fee(increment),
+                loanSetFee,
                 ter(temINVALID));
 
+            // field range validation
+            // sfOverpaymentFee: good value, bad account
+            env(set(evan, broker.brokerID, principalRequested, startDate),
+                sig(sfCounterpartySignature, borrower),
+                overpaymentFee(maxOverpaymentFee),
+                loanSetFee,
+                ter(tefBAD_AUTH));
+            // sfOverpaymentFee: too big
+            env(set(evan, broker.brokerID, principalRequested, startDate),
+                sig(sfCounterpartySignature, lender),
+                overpaymentFee(maxOverpaymentFee + 1),
+                loanSetFee,
+                ter(temINVALID));
+
+            // sfLateInterestRate: good value, bad account
+            env(set(evan, broker.brokerID, principalRequested, startDate),
+                sig(sfCounterpartySignature, borrower),
+                lateInterestRate(maxLateInterestRate),
+                loanSetFee,
+                ter(tefBAD_AUTH));
+            // sfLateInterestRate: too big
+            env(set(evan, broker.brokerID, principalRequested, startDate),
+                sig(sfCounterpartySignature, lender),
+                lateInterestRate(maxLateInterestRate + 1),
+                loanSetFee,
+                ter(temINVALID));
+
+            // sfCloseInterestRate: good value, bad account
+            env(set(evan, broker.brokerID, principalRequested, startDate),
+                sig(sfCounterpartySignature, borrower),
+                closeInterestRate(maxCloseInterestRate),
+                loanSetFee,
+                ter(tefBAD_AUTH));
+            // sfCloseInterestRate: too big
+            env(set(evan, broker.brokerID, principalRequested, startDate),
+                sig(sfCounterpartySignature, lender),
+                closeInterestRate(maxCloseInterestRate + 1),
+                loanSetFee,
+                ter(temINVALID));
+
+            // sfOverpaymentInterestRate: good value, bad account
+            env(set(evan, broker.brokerID, principalRequested, startDate),
+                sig(sfCounterpartySignature, borrower),
+                overpaymentInterestRate(maxOverpaymentInterestRate),
+                loanSetFee,
+                ter(tefBAD_AUTH));
+            // sfOverpaymentInterestRate: too big
+            env(set(evan, broker.brokerID, principalRequested, startDate),
+                sig(sfCounterpartySignature, lender),
+                overpaymentInterestRate(maxOverpaymentInterestRate + 1),
+                loanSetFee,
+                ter(temINVALID));
+
+            // sfPaymentTotal: good value, bad account
+            env(set(evan, broker.brokerID, principalRequested, startDate),
+                sig(sfCounterpartySignature, borrower),
+                paymentTotal(LoanSet::minPaymentTotal),
+                loanSetFee,
+                ter(tefBAD_AUTH));
+            // sfPaymentTotal: too small (there is no max)
+            env(set(evan, broker.brokerID, principalRequested, startDate),
+                sig(sfCounterpartySignature, lender),
+                paymentTotal(LoanSet::minPaymentTotal - 1),
+                loanSetFee,
+                ter(temINVALID));
+
+            // sfPaymentInterval: good value, bad account
+            env(set(evan, broker.brokerID, principalRequested, startDate),
+                sig(sfCounterpartySignature, borrower),
+                paymentInterval(LoanSet::minPaymentInterval),
+                loanSetFee,
+                ter(tefBAD_AUTH));
+            // sfPaymentInterval: too small (there is no max)
+            env(set(evan, broker.brokerID, principalRequested, startDate),
+                sig(sfCounterpartySignature, lender),
+                paymentInterval(LoanSet::minPaymentInterval - 1),
+                loanSetFee,
+                ter(temINVALID));
+
+            // sfGracePeriod: good value, bad account
+            env(set(evan, broker.brokerID, principalRequested, startDate),
+                sig(sfCounterpartySignature, borrower),
+                paymentInterval(LoanSet::minPaymentInterval * 2),
+                gracePeriod(LoanSet::minPaymentInterval * 2),
+                loanSetFee,
+                ter(tefBAD_AUTH));
+            // sfGracePeriod: larger than paymentInterval
+            env(set(evan, broker.brokerID, principalRequested, startDate),
+                sig(sfCounterpartySignature, lender),
+                paymentInterval(LoanSet::minPaymentInterval * 2),
+                gracePeriod(LoanSet::minPaymentInterval * 3),
+                loanSetFee,
+                ter(temINVALID));
+
+#if 0
             std::string testData;
             lifecycle(
                 "default fields",
                 env,
-                alice,
+                lender,
                 evan,
                 vault,
                 // No modifications
@@ -521,33 +674,33 @@ class Loan_test : public beast::unit_test::suite
 
                     // Update the fields
                     auto const nextKeylet =
-                        keylet::loanbroker(alice.id(), env.seq(alice));
+                        keylet::loanbroker(lender.id(), env.seq(lender));
 
                     // fields that can't be changed
                     // LoanBrokerID
-                    env(set(alice, vault.vaultID),
+                    env(set(lender, broker.brokerID),
                         loanBrokerID(nextKeylet.key),
                         ter(tecNO_ENTRY));
                     // VaultID
-                    env(set(alice, nextKeylet.key),
+                    env(set(lender, nextKeylet.key),
                         loanBrokerID(broker->key()),
                         ter(tecNO_PERMISSION));
                     // Owner
-                    env(set(evan, vault.vaultID),
+                    env(set(evan, broker.brokerID),
                         loanBrokerID(broker->key()),
                         ter(tecNO_PERMISSION));
                     // ManagementFeeRate
-                    env(set(alice, vault.vaultID),
+                    env(set(lender, broker.brokerID),
                         loanBrokerID(broker->key()),
                         managementFeeRate(maxManagementFeeRate),
                         ter(temINVALID));
                     // CoverRateMinimum
-                    env(set(alice, vault.vaultID),
+                    env(set(lender, broker.brokerID),
                         loanBrokerID(broker->key()),
                         coverRateMinimum(maxManagementFeeRate),
                         ter(temINVALID));
                     // CoverRateLiquidation
-                    env(set(alice, vault.vaultID),
+                    env(set(lender, broker.brokerID),
                         loanBrokerID(broker->key()),
                         coverRateLiquidation(maxManagementFeeRate),
                         ter(temINVALID));
@@ -555,18 +708,18 @@ class Loan_test : public beast::unit_test::suite
                     // fields that can be changed
                     testData = "Test Data 1234";
                     // Bad data: too long
-                    env(set(alice, vault.vaultID),
+                    env(set(lender, broker.brokerID),
                         loanBrokerID(broker->key()),
                         data(std::string(maxDataPayloadLength + 1, 'W')),
                         ter(temINVALID));
 
                     // Bad debt maximum
-                    env(set(alice, vault.vaultID),
+                    env(set(lender, broker.brokerID),
                         loanBrokerID(broker->key()),
                         debtMaximum(Number(-175, -1)),
                         ter(temINVALID));
                     // Data & Debt maximum
-                    env(set(alice, vault.vaultID),
+                    env(set(lender, broker.brokerID),
                         loanBrokerID(broker->key()),
                         data(testData),
                         debtMaximum(Number(175, -1)));
@@ -580,7 +733,7 @@ class Loan_test : public beast::unit_test::suite
             lifecycle(
                 "non-default fields",
                 env,
-                alice,
+                lender,
                 evan,
                 vault,
                 [&](jtx::JTx const& jv) {
@@ -605,7 +758,7 @@ class Loan_test : public beast::unit_test::suite
                 },
                 [&](SLE::const_ref broker) {
                     // Reset Data & Debt maximum to default values
-                    env(set(alice, vault.vaultID),
+                    env(set(lender, broker.brokerID),
                         loanBrokerID(broker->key()),
                         data(""),
                         debtMaximum(Number(0)));
@@ -615,8 +768,8 @@ class Loan_test : public beast::unit_test::suite
                     BEAST_EXPECT(!broker->isFieldPresent(sfData));
                     BEAST_EXPECT(!broker->isFieldPresent(sfDebtMaximum));
                 });
-        }
 #endif
+        }
     }
 
 public:

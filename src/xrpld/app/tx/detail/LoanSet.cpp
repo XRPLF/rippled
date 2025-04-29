@@ -71,6 +71,8 @@ LoanSet::doPreflight(PreflightContext const& ctx)
     if (auto const data = tx[~sfData]; data && !data->empty() &&
         !validDataLength(tx[~sfData], maxDataPayloadLength))
         return temINVALID;
+    if (!validNumericRange(tx[~sfOverpaymentFee], maxOverpaymentFee))
+        return temINVALID;
     if (!validNumericRange(tx[~sfLateInterestRate], maxLateInterestRate))
         return temINVALID;
     if (!validNumericRange(tx[~sfCloseInterestRate], maxCloseInterestRate))
@@ -84,7 +86,7 @@ LoanSet::doPreflight(PreflightContext const& ctx)
         return temINVALID;
     if (auto const paymentInterval =
             tx[~sfPaymentInterval].value_or(LoanSet::defaultPaymentInterval);
-        paymentInterval < LoanSet::defaultPaymentInterval)
+        paymentInterval < LoanSet::minPaymentInterval)
         return temINVALID;
     else if (auto const gracePeriod =
                  tx[~sfGracePeriod].value_or(LoanSet::defaultGracePeriod);
@@ -160,18 +162,13 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     auto const brokerSle = ctx.view.read(keylet::loanbroker(brokerID));
     if (!brokerSle)
     {
+        // This can only be hit if there's a counterparty specified, otherwise
+        // it'll fail in the signature check
         JLOG(ctx.j.warn()) << "LoanBroker does not exist.";
         return tecNO_ENTRY;
     }
     auto const brokerOwner = brokerSle->at(sfOwner);
-    if (!tx.isFieldPresent(sfCounterparty) && account != brokerOwner)
-    {
-        JLOG(ctx.j.warn())
-            << "Counterparty is not the owner of the LoanBroker.";
-        return tecNO_PERMISSION;
-    }
     auto const counterparty = tx[~sfCounterparty].value_or(brokerOwner);
-    auto const borrower = counterparty == brokerOwner ? account : counterparty;
     if (account != brokerOwner && counterparty != brokerOwner)
     {
         JLOG(ctx.j.warn()) << "Neither Account nor Counterparty are the owner "
@@ -179,11 +176,14 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
     }
 
+    auto const borrower = counterparty == brokerOwner ? account : counterparty;
     if (auto const borrowerSle = ctx.view.read(keylet::account(borrower));
         !borrowerSle)
     {
+        // It may not be possible to hit this case, because it'll fail the
+        // signature check with terNO_ACCOUNT.
         JLOG(ctx.j.warn()) << "Borrower does not exist.";
-        return tecNO_ENTRY;
+        return terNO_ACCOUNT;
     }
 
     auto const brokerPseudo = brokerSle->at(sfAccount);
@@ -332,10 +332,11 @@ LoanSet::doApply()
     // interest minus the management fee)
     auto const loanInterestToVault = loanInterest -
         tenthBipsOfValue(loanInterest, managementFeeRate.value());
-    auto const loanSequence = tx.getSeqValue();
     auto const startDate = tx[sfStartDate];
     auto const paymentInterval =
         tx[~sfPaymentInterval].value_or(defaultPaymentInterval);
+    auto const loanSequence = brokerSle->at(sfLoanSequence).value();
+    brokerSle->at(sfLoanSequence) += 1;
 
     // Create the loan
     auto loan =

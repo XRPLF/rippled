@@ -158,7 +158,7 @@ InnerObjectFormats::InnerObjectFormats()
     add(sfCounterpartySignature.jsonName,
         sfCounterpartySignature.getCode(),
         {
-            {sfSigningPubKey, soeREQUIRED},
+            {sfSigningPubKey, soeOPTIONAL},
             {sfTxnSignature, soeOPTIONAL},
             {sfSigners, soeOPTIONAL},
         });

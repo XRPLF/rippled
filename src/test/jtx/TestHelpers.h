@@ -145,6 +145,29 @@ public:
     }
 };
 
+struct accountIDField : public JTxField<SF_ACCOUNT, AccountID, std::string>
+{
+    using SF = SF_ACCOUNT;
+    using SV = AccountID;
+    using OV = std::string;
+    using base = JTxField<SF, SV, OV>;
+
+protected:
+    using base::value_;
+
+public:
+    explicit accountIDField(SF const& sfield, SV const& value)
+        : JTxField(sfield, value)
+    {
+    }
+
+    OV
+    value() const override
+    {
+        return toBase58(value_);
+    }
+};
+
 struct blobField : public JTxField<SF_VL, std::string>
 {
     using SF = SF_VL;
@@ -257,6 +280,10 @@ using valueUnitWrapper =
 
 template <class SField, class StoredValue = typename SField::type::value_type>
 using simpleField = JTxFieldWrapper<JTxField<SField, StoredValue>>;
+
+/** General field definitions, or fields used in multiple transaction namespaces
+ */
+auto const data = JTxFieldWrapper<blobField>(sfData);
 
 // TODO We only need this long "requires" clause as polyfill, for C++20
 // implementations which are missing <ranges> header. Replace with
@@ -659,8 +686,6 @@ coverWithdraw(
 
 auto const loanBrokerID = JTxFieldWrapper<uint256Field>(sfLoanBrokerID);
 
-auto const data = JTxFieldWrapper<blobField>(sfData);
-
 auto const managementFeeRate =
     valueUnitWrapper<SF_TENTHBIPS16>(sfManagementFeeRate);
 
@@ -685,7 +710,37 @@ set(AccountID const& account,
     NetClock::time_point const& startDate,
     uint32_t flags = 0);
 
-}
+auto const counterparty = JTxFieldWrapper<accountIDField>(sfCounterparty);
+
+// For `CounterPartySignature`, use `sig(sfCounterpartySignature, ...)`
+
+auto const loanOriginationFee = simpleField<SF_NUMBER>(sfLoanOriginationFee);
+
+auto const loanServiceFee = simpleField<SF_NUMBER>(sfLoanServiceFee);
+
+auto const latePaymentFee = simpleField<SF_NUMBER>(sfLatePaymentFee);
+
+auto const closePaymentFee = simpleField<SF_NUMBER>(sfClosePaymentFee);
+
+auto const overpaymentFee = valueUnitWrapper<SF_TENTHBIPS32>(sfOverpaymentFee);
+
+auto const interestRate = valueUnitWrapper<SF_TENTHBIPS32>(sfInterestRate);
+
+auto const lateInterestRate =
+    valueUnitWrapper<SF_TENTHBIPS32>(sfLateInterestRate);
+
+auto const closeInterestRate =
+    valueUnitWrapper<SF_TENTHBIPS32>(sfCloseInterestRate);
+
+auto const overpaymentInterestRate =
+    valueUnitWrapper<SF_TENTHBIPS32>(sfOverpaymentInterestRate);
+
+auto const paymentTotal = simpleField<SF_UINT32>(sfPaymentTotal);
+
+auto const paymentInterval = simpleField<SF_UINT32>(sfPaymentInterval);
+
+auto const gracePeriod = simpleField<SF_UINT32>(sfGracePeriod);
+}  // namespace loan
 
 }  // namespace jtx
 }  // namespace test

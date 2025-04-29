@@ -501,6 +501,7 @@ LEDGER_ENTRY(ltLOAN_BROKER, 0x0088, LoanBroker, loan_broker, ({
     {sfVaultID,              soeREQUIRED},
     {sfAccount,              soeREQUIRED},
     {sfOwner,                soeREQUIRED},
+    {sfLoanSequence,         soeREQUIRED},
     {sfData,                 soeDEFAULT},
     {sfManagementFeeRate,    soeDEFAULT},
     {sfOwnerCount,           soeDEFAULT},

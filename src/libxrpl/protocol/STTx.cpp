@@ -245,17 +245,19 @@ Expected<void, std::string>
 STTx::checkSign(
     RequireFullyCanonicalSig requireCanonicalSig,
     Rules const& rules,
-    STObject const& sigObject) const
+    STObject const* pSig) const
 {
     try
     {
         // Determine whether we're single- or multi-signing by looking
         // at the SigningPubKey.  If it's empty we must be
         // multi-signing.  Otherwise we're single-signing.
+        STObject const& sigObject{pSig ? *pSig : *this};
+
         Blob const& signingPubKey = sigObject.getFieldVL(sfSigningPubKey);
         return signingPubKey.empty()
-            ? checkMultiSign(requireCanonicalSig, rules, sigObject)
-            : checkSingleSign(requireCanonicalSig, sigObject);
+            ? checkMultiSign(requireCanonicalSig, rules, pSig)
+            : checkSingleSign(requireCanonicalSig, pSig);
     }
     catch (std::exception const&)
     {
@@ -268,13 +270,13 @@ STTx::checkSign(
     RequireFullyCanonicalSig requireCanonicalSig,
     Rules const& rules) const
 {
-    if (auto const ret = checkSign(requireCanonicalSig, rules, *this); !ret)
+    if (auto const ret = checkSign(requireCanonicalSig, rules, nullptr); !ret)
         return ret;
 
     if (isFieldPresent(sfCounterpartySignature))
     {
         auto const counterSig = getFieldObject(sfCounterpartySignature);
-        if (auto const ret = checkSign(requireCanonicalSig, rules, counterSig);
+        if (auto const ret = checkSign(requireCanonicalSig, rules, &counterSig);
             !ret)
             return Unexpected("Counterparty: " + ret.error());
     }
@@ -363,8 +365,10 @@ STTx::getMetaSQL(
 Expected<void, std::string>
 STTx::checkSingleSign(
     RequireFullyCanonicalSig requireCanonicalSig,
-    STObject const& sigObject) const
+    STObject const* pSig) const
 {
+    STObject const& sigObject{pSig ? *pSig : *this};
+
     // We don't allow both a non-empty sfSigningPubKey and an sfSigners.
     // That would allow the transaction to be signed two ways.  So if both
     // fields are present the signature is invalid.
@@ -406,8 +410,10 @@ Expected<void, std::string>
 STTx::checkMultiSign(
     RequireFullyCanonicalSig requireCanonicalSig,
     Rules const& rules,
-    STObject const& sigObject) const
+    STObject const* pSig) const
 {
+    STObject const& sigObject{pSig ? *pSig : *this};
+
     // Make sure the MultiSigners are present.  Otherwise they are not
     // attempting multi-signing and we just have a bad SigningPubKey.
     if (!sigObject.isFieldPresent(sfSigners))
@@ -444,8 +450,8 @@ STTx::checkMultiSign(
     {
         auto const accountID = signer.getAccountID(sfAccount);
 
-        // The account owner may not multisign for themselves.
-        if (accountID == txnAccountID)
+        // The account owner may not usually multisign for themselves.
+        if (!pSig && accountID == txnAccountID)
             return Unexpected("Invalid multisigner.");
 
         // No duplicate signers allowed.

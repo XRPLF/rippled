@@ -133,15 +133,15 @@ public:
         @param requireCanonicalSig If `true`, check that the signature is fully
             canonical. If `false`, only check that the signature is valid.
         @param rules The current ledger rules.
-        @param sigObject The object that contains the signature fields. Will
-       most often be *this.
+        @param pSig Pointer to object that contains the signature fields, if not
+            using "this". Will most often be null
         @return `true` if valid signature. If invalid, the error message string.
     */
     Expected<void, std::string>
     checkSign(
         RequireFullyCanonicalSig requireCanonicalSig,
         Rules const& rules,
-        STObject const& sigObject) const;
+        STObject const* pSig) const;
 
     /** Check the signature.
         @param requireCanonicalSig If `true`, check that the signature is fully
@@ -172,13 +172,13 @@ private:
     Expected<void, std::string>
     checkSingleSign(
         RequireFullyCanonicalSig requireCanonicalSig,
-        STObject const& sigObject) const;
+        STObject const* pSig) const;
 
     Expected<void, std::string>
     checkMultiSign(
         RequireFullyCanonicalSig requireCanonicalSig,
         Rules const& rules,
-        STObject const& sigObject) const;
+        STObject const* pSig) const;
 
     STBase*
     copy(std::size_t n, void* buf) const override;

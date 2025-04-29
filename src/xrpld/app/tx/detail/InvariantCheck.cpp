@@ -1846,7 +1846,7 @@ ValidLoanBroker::visitEntry(
 {
     if (after && after->getType() == ltLOAN_BROKER)
     {
-        brokers_.emplace_back(after);
+        brokers_.emplace_back(before, after);
     }
 }
 
@@ -1904,15 +1904,15 @@ ValidLoanBroker::finalize(
 {
     bool const enforce = view.rules().enabled(featureLendingProtocol);
 
-    for (auto const& broker : brokers_)
+    for (auto const& [before, after] : brokers_)
     {
         // https://github.com/Tapanito/XRPL-Standards/blob/xls-66-lending-protocol/XLS-0066d-lending-protocol/README.md#3123-invariants
         // If `LoanBroker.OwnerCount = 0` the `DirectoryNode` will have at most
         // one node (the root), which will only hold entries for `RippleState`
         // or `MPToken` objects.
-        if (broker->at(sfOwnerCount) == 0)
+        if (after->at(sfOwnerCount) == 0)
         {
-            auto const dir = view.read(keylet::ownerDir(broker->at(sfAccount)));
+            auto const dir = view.read(keylet::ownerDir(after->at(sfAccount)));
             if (dir)
             {
                 if (!goodZeroDirectory(view, dir, j))
@@ -1920,11 +1920,22 @@ ValidLoanBroker::finalize(
                     XRPL_ASSERT(
                         enforce,
                         "ripple::ValidLoanBroker::finalize : Enforcing "
-                        "invariant");
+                        "invariant: directory");
                     if (enforce)
                         return false;
                 }
             }
+        }
+        if (before && before->at(sfLoanSequence) > after->at(sfLoanSequence))
+        {
+            JLOG(j.fatal()) << "Invariant failed: Loan Broker sequence number "
+                               "decreased";
+            XRPL_ASSERT(
+                enforce,
+                "ripple::ValidLoanBroker::finalize : Enforcing "
+                "invariant: loan sequence");
+            if (enforce)
+                return false;
         }
     }
     return true;

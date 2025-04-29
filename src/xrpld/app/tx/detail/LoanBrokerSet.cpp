@@ -209,6 +209,7 @@ LoanBrokerSet::doApply()
         broker->at(sfVaultID) = vaultID;
         broker->at(sfOwner) = account_;
         broker->at(sfAccount) = pseudoId;
+        broker->at(sfLoanSequence) = 1;
         if (auto const data = tx[~sfData])
             broker->at(sfData) = *data;
         if (auto const rate = tx[~sfManagementFeeRate])

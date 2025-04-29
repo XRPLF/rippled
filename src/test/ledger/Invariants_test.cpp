@@ -1642,13 +1642,6 @@ class Invariants_test : public beast::unit_test::suite
                 return std::make_pair(slePseudo, sleDir);
             };
 
-            // JLOG(j.fatal()) << "Invariant failed:";
-            // JLOG(j.fatal()) << "Invariant failed: ";
-            // JLOG(j.fatal())
-            //     << "Invariant failed: ";
-            // JLOG(j.fatal())
-            //     << "Invariant failed: ";
-
             doInvariantCheck(
                 {{"Loan Broker with zero OwnerCount has multiple directory "
                   "pages"}},
@@ -1756,6 +1749,29 @@ class Invariants_test : public beast::unit_test::suite
 
                     directory::insertKey(
                         ac.view(), sleDir, 0, false, indexes, slePseudo->key());
+
+                    return true;
+                },
+                XRPAmount{},
+                STTx{ttLOAN_BROKER_SET, [](STObject& tx) {}},
+                {tecINVARIANT_FAILED, tefINVARIANT_FAILED},
+                createLoanBroker);
+
+            doInvariantCheck(
+                {{"Loan Broker sequence number decreased"}},
+                [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                    if (loanBrokerKeylet.type != ltLOAN_BROKER)
+                        return false;
+                    auto sleBroker = ac.view().peek(loanBrokerKeylet);
+                    if (!sleBroker)
+                        return false;
+                    if (!BEAST_EXPECT(sleBroker->at(sfLoanSequence) > 0))
+                        return false;
+                    // Need to touch sleBroker so that it is included in the
+                    // modified entries for the invariant to find
+                    ac.view().update(sleBroker);
+
+                    sleBroker->at(sfLoanSequence) -= 1;
 
                     return true;
                 },
