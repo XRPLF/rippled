@@ -594,8 +594,7 @@ safe_cast(Src s) noexcept
 
 template <class Dest, class Src>
 constexpr std::enable_if_t<
-    std::is_integral_v<typename Dest::value_type> &&
-        std::is_integral_v<typename Src>,
+    std::is_integral_v<typename Dest::value_type> && std::is_integral_v<Src>,
     Dest>
 safe_cast(Src s) noexcept
 {
@@ -617,8 +616,7 @@ unsafe_cast(Src s) noexcept
 
 template <class Dest, class Src>
 constexpr std::enable_if_t<
-    std::is_integral_v<typename Dest::value_type> &&
-        std::is_integral_v<typename Src>,
+    std::is_integral_v<typename Dest::value_type> && std::is_integral_v<Src>,
     Dest>
 unsafe_cast(Src s) noexcept
 {

@@ -241,7 +241,7 @@ LoanSet::doApply()
 
     auto const brokerSle = view.peek(keylet::loanbroker(brokerID));
     if (!brokerSle)
-        tefBAD_LEDGER;  // LCOV_EXCL_LINE
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const brokerOwner = brokerSle->at(sfOwner);
     auto const brokerOwnerSle = view.peek(keylet::account(brokerOwner));
 

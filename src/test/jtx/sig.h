@@ -35,9 +35,9 @@ class sig
 {
 private:
     bool manual_ = true;
-    std::optional<Account> account_;
     /// subField only supported with explicit account
     SField const* const subField = nullptr;
+    std::optional<Account> account_;
     static constexpr SField* const topLevel = nullptr;
 
 public:

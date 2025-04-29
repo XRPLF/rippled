@@ -205,7 +205,7 @@ protected:
     using base::value_;
 
 public:
-    using base::JTxField;
+    using JTxField<SF, SV, OV>::JTxField;
 
     OV
     value() const override

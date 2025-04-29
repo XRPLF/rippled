@@ -329,7 +329,7 @@ class LoanBroker_test : public beast::unit_test::suite
                      ? STAmount(env.current()->fees().base.value())
                      : vault.asset(0));
             env.require(balance(alice, expectedBalance));
-            env.require(balance(pseudoAccount, None(vault.asset.raw())));
+            env.require(balance(pseudoAccount, vault.asset(none)));
         }
     }
 
@@ -367,7 +367,7 @@ class LoanBroker_test : public beast::unit_test::suite
         MPTTester mptt{env, issuer, mptInitNoFund};
         mptt.create(
             {.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
-        PrettyAsset const mptAsset = mptt.issuanceID();
+        PrettyAsset const mptAsset = mptt["MPT"];
         mptt.authorize({.account = alice});
         mptt.authorize({.account = evan});
         env(pay(issuer, alice, mptAsset(100'000)));

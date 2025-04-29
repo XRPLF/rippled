@@ -225,6 +225,12 @@ public:
         STAmount amount{asset_, v * scale_, 0, negative};
         return {amount, ""};
     }
+
+    None
+    operator()(none_t) const
+    {
+        return {asset_};
+    }
 };
 //------------------------------------------------------------------------------
 
@@ -456,14 +462,32 @@ public:
         return issuanceID;
     }
 
-    /** Implicit conversion to MPTIssue.
+    /** Explicit conversion to MPTIssue or asset.
+     */
+    ripple::MPTIssue
+    mptIssue() const
+    {
+        return MPTIssue{issuanceID};
+    }
+    Asset
+    asset() const
+    {
+        return mptIssue();
+    }
+
+    /** Implicit conversion to MPTIssue or asset.
 
         This allows passing an MPT
         value where an MPTIssue is expected.
     */
     operator ripple::MPTIssue() const
     {
-        return MPTIssue{issuanceID};
+        return mptIssue();
+    }
+
+    operator PrettyAsset() const
+    {
+        return asset();
     }
 
     template <class T>
@@ -478,6 +502,13 @@ public:
     operator()(epsilon_t) const;
     PrettyAmount
     operator()(detail::epsilon_multiple) const;
+
+    /** Returns None-of-Issue */
+    None
+    operator()(none_t) const
+    {
+        return {mptIssue()};
+    }
 
     friend BookSpec
     operator~(MPT const& mpt)

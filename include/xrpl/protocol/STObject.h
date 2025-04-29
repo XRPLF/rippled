@@ -522,12 +522,12 @@ concept IsArithmeticNumber = std::is_arithmetic_v<U> ||
     std::is_same_v<U, Number> || std::is_same_v<U, STAmount>;
 template <
     typename U,
-    typename Value = U::value_type,
-    typename Unit = U::unit_type>
+    typename Value = typename U::value_type,
+    typename Unit = typename U::unit_type>
 concept IsArithmeticValueUnit =
     std::is_same_v<U, unit::ValueUnit<Unit, Value>> &&
     IsArithmeticNumber<Value> && std::is_class_v<Unit>;
-template <typename U, typename Value = U::value_type>
+template <typename U, typename Value = typename U::value_type>
 concept IsArithmeticST = !IsArithmeticValueUnit<U> && IsArithmeticNumber<Value>;
 template <typename U>
 concept IsArithmetic =

@@ -80,9 +80,9 @@ class Loan_test : public beast::unit_test::suite
             setTx = env.jt(
                 setTx, sig(sfCounterpartySignature, bob), ter(temDISABLED));
             env(setTx);
+#if 0
             auto const loanKeylet =
                 keylet::loan(alice.id(), keylet.key, env.seq(alice));
-#if 0
             // Other Loan transactions are disabled, too.
             // 2. LoanDelete
             env(delete(alice, loanKeylet.key),
