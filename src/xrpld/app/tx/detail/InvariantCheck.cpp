@@ -473,7 +473,19 @@ AccountRootsDeletedClean::finalize(
             XRPL_ASSERT(
                 enforce,
                 "ripple::AccountRootsDeletedClean::finalize : "
-                "account deletion left behind a non-zero balance");
+                "deleted account has zero balance");
+            if (enforce)
+                return false;
+        }
+        // An account should not be deleted with a non-zero owner count
+        if (after->at(sfOwnerCount) != 0)
+        {
+            JLOG(j.fatal()) << "Invariant failed: account deletion left "
+                               "behind a non-zero owner count";
+            XRPL_ASSERT(
+                enforce,
+                "ripple::AccountRootsDeletedClean::finalize : "
+                "deleted account has zero owner count");
             if (enforce)
                 return false;
         }

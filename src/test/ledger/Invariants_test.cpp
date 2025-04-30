@@ -209,12 +209,32 @@ class Invariants_test : public beast::unit_test::suite
         doInvariantCheck(
             {{"account deletion left behind a non-zero balance"}},
             [&](Account const& A1, Account const& A2, ApplyContext& ac) {
-                // Add an object to the ledger for account A1, then delete
-                // A1
+                // A1 has a balance. Delete A1
                 auto const a1 = A1.id();
                 auto const sleA1 = ac.view().peek(keylet::account(a1));
                 if (!sleA1)
                     return false;
+                if (!BEAST_EXPECT(*sleA1->at(sfBalance) != beast::zero))
+                    return false;
+
+                ac.view().erase(sleA1);
+
+                return true;
+            },
+            XRPAmount{},
+            STTx{ttACCOUNT_DELETE, [](STObject& tx) {}});
+
+        doInvariantCheck(
+            {{"account deletion left behind a non-zero owner count"}},
+            [&](Account const& A1, Account const& A2, ApplyContext& ac) {
+                // Increment A1's owner count, then delete A1
+                auto const a1 = A1.id();
+                auto const sleA1 = ac.view().peek(keylet::account(a1));
+                if (!sleA1)
+                    return false;
+                sleA1->at(sfBalance) = beast::zero;
+                BEAST_EXPECT(sleA1->at(sfOwnerCount) == 0);
+                adjustOwnerCount(ac.view(), sleA1, 1, ac.journal);
 
                 ac.view().erase(sleA1);
 
@@ -268,6 +288,7 @@ class Invariants_test : public beast::unit_test::suite
                 if (!sle)
                     return false;
                 sle->at(sfBalance) = beast::zero;
+                sle->at(sfOwnerCount) = 0;
                 ac.view().erase(sle);
                 return true;
             },
@@ -299,6 +320,7 @@ class Invariants_test : public beast::unit_test::suite
                 BEAST_EXPECT(sle->at(~sfAMMID) == ammKey);
 
                 sle->at(sfBalance) = beast::zero;
+                sle->at(sfOwnerCount) = 0;
                 ac.view().erase(sle);
 
                 return true;
@@ -362,6 +384,7 @@ class Invariants_test : public beast::unit_test::suite
                     ac.view().emptyDirDelete(ownerDirKeylet));
 
                 sle->at(sfBalance) = beast::zero;
+                sle->at(sfOwnerCount) = 0;
                 ac.view().erase(sle);
 
                 return true;
