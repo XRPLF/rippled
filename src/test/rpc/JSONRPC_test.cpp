@@ -2091,8 +2091,8 @@ static constexpr TxnTestData txnTestArray[] = {
         "Delegate": "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd"
     }
 })",
-     {{"Source account not found.",
-       "Source account not found.",
+     {{"Delegate account not found.",
+       "Delegate account not found.",
        "Missing field 'account'.",
        "Missing field 'tx_json.Sequence'."}}},
 

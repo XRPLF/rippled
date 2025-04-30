@@ -550,7 +550,7 @@ transactionPreProcessImpl(
                 auto delegatedSle = app.openLedger().current()->read(
                     keylet::account(delegatedAddressID));
                 if (!delegatedSle)
-                    return rpcError(rpcSRC_ACT_NOT_FOUND);
+                    return rpcError(rpcDELEGATE_ACT_NOT_FOUND);
 
                 auto const err =
                     acctMatchesPubKey(delegatedSle, delegatedAddressID, pk);
