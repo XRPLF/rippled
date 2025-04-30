@@ -82,10 +82,6 @@ using STUInt16 = STInteger<std::uint16_t>;
 using STUInt32 = STInteger<std::uint32_t>;
 using STUInt64 = STInteger<std::uint64_t>;
 
-// Tenth of a basis point values:
-using STTenthBips16 = STInteger<TenthBips16>;
-using STTenthBips32 = STInteger<TenthBips32>;
-
 template <typename Integer>
 inline STInteger<Integer>::STInteger(Integer v) : value_(v)
 {

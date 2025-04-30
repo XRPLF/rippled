@@ -1405,7 +1405,7 @@ class Invariants_test : public beast::unit_test::suite
                         sle->at(sfOwner) = sle->at(sfAccount);
                     },
                     [](SLE::pointer& sle) {
-                        sle->at(sfManagementFeeRate) += TenthBips16(1);
+                        sle->at(sfManagementFeeRate) += 1;
                     },
                     [](SLE::pointer& sle) { sle->at(sfCoverRateMinimum) += 1; },
                     [](SLE::pointer& sle) {

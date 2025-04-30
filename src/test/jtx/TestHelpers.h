@@ -197,9 +197,7 @@ struct valueUnitField
     using OV = ValueType;
     using base = JTxField<SF, SV, OV>;
 
-    static_assert(std::is_same_v<SV, typename SField::type::value_type>);
-    static_assert(
-        std::is_same_v<OV, typename SField::type::value_type::value_type>);
+    static_assert(std::is_same_v<OV, typename SField::type::value_type>);
 
 protected:
     using base::value_;
@@ -273,8 +271,8 @@ public:
 
 template <
     class SField,
-    class UnitTag = typename SField::type::value_type::unit_type,
-    class ValueType = typename SField::type::value_type::value_type>
+    class UnitTag,
+    class ValueType = typename SField::type::value_type>
 using valueUnitWrapper =
     JTxFieldWrapper<valueUnitField<SField, UnitTag, ValueType>>;
 
@@ -687,15 +685,15 @@ coverWithdraw(
 auto const loanBrokerID = JTxFieldWrapper<uint256Field>(sfLoanBrokerID);
 
 auto const managementFeeRate =
-    valueUnitWrapper<SF_TENTHBIPS16>(sfManagementFeeRate);
+    valueUnitWrapper<SF_UINT16, unit::TenthBipsTag>(sfManagementFeeRate);
 
 auto const debtMaximum = simpleField<SF_NUMBER>(sfDebtMaximum);
 
 auto const coverRateMinimum =
-    valueUnitWrapper<SF_TENTHBIPS32>(sfCoverRateMinimum);
+    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfCoverRateMinimum);
 
 auto const coverRateLiquidation =
-    valueUnitWrapper<SF_TENTHBIPS32>(sfCoverRateLiquidation);
+    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfCoverRateLiquidation);
 
 }  // namespace loanBroker
 
@@ -722,18 +720,20 @@ auto const latePaymentFee = simpleField<SF_NUMBER>(sfLatePaymentFee);
 
 auto const closePaymentFee = simpleField<SF_NUMBER>(sfClosePaymentFee);
 
-auto const overpaymentFee = valueUnitWrapper<SF_TENTHBIPS32>(sfOverpaymentFee);
+auto const overpaymentFee =
+    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfOverpaymentFee);
 
-auto const interestRate = valueUnitWrapper<SF_TENTHBIPS32>(sfInterestRate);
+auto const interestRate =
+    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfInterestRate);
 
 auto const lateInterestRate =
-    valueUnitWrapper<SF_TENTHBIPS32>(sfLateInterestRate);
+    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfLateInterestRate);
 
 auto const closeInterestRate =
-    valueUnitWrapper<SF_TENTHBIPS32>(sfCloseInterestRate);
+    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfCloseInterestRate);
 
 auto const overpaymentInterestRate =
-    valueUnitWrapper<SF_TENTHBIPS32>(sfOverpaymentInterestRate);
+    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfOverpaymentInterestRate);
 
 auto const paymentTotal = simpleField<SF_UINT32>(sfPaymentTotal);
 

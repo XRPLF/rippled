@@ -446,24 +446,8 @@ parseLeaf(
 
             break;
 
-        case STI_TENTHBIPS16:
-            ret = parseUnsigned<STTenthBips16, std::uint16_t>(
-                field, json_name, fieldName, name, value, error);
-            if (!ret)
-                return ret;
-
-            break;
-
         case STI_UINT32:
             ret = parseUnsigned<STUInt32, std::uint32_t>(
-                field, json_name, fieldName, name, value, error);
-            if (!ret)
-                return ret;
-
-            break;
-
-        case STI_TENTHBIPS32:
-            ret = parseUnsigned<STTenthBips32, std::uint32_t>(
                 field, json_name, fieldName, name, value, error);
             if (!ret)
                 return ret;

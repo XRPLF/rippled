@@ -92,8 +92,6 @@ concept HasValue = requires(Integer i) { i.value(); };
     STYPE(STI_ISSUE, 24)                          \
     STYPE(STI_XCHAIN_BRIDGE, 25)                  \
     STYPE(STI_CURRENCY, 26)                       \
-    STYPE(STI_TENTHBIPS16, 27)                    \
-    STYPE(STI_TENTHBIPS32, 28)                    \
                                                   \
     /* high-level types */                        \
     /* cannot be serialized inside other types */ \
@@ -362,13 +360,6 @@ using SF_UINT192 = TypedField<STBitString<192>>;
 using SF_UINT256 = TypedField<STBitString<256>>;
 using SF_UINT384 = TypedField<STBitString<384>>;
 using SF_UINT512 = TypedField<STBitString<512>>;
-
-// These TENTHBIPS values are serialized as the underlying type.
-// The tag is only applied when deserialized.
-//
-// Tenth of a basis point values:
-using SF_TENTHBIPS16 = TypedField<STInteger<TenthBips16>>;
-using SF_TENTHBIPS32 = TypedField<STInteger<TenthBips32>>;
 
 using SF_ACCOUNT = TypedField<STAccount>;
 using SF_AMOUNT = TypedField<STAmount>;

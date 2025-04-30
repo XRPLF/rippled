@@ -229,6 +229,13 @@ protected:
     static bool
     validNumericRange(std::optional<T> value, T max, T min = {});
 
+    template <class T, class Unit>
+    static bool
+    validNumericRange(
+        std::optional<T> value,
+        unit::ValueUnit<Unit, T> max,
+        unit::ValueUnit<Unit, T> min = {});
+
 private:
     std::pair<TER, XRPAmount>
     reset(XRPAmount fee);
@@ -320,6 +327,16 @@ Transactor::validNumericRange(std::optional<T> value, T max, T min)
     if (!value)
         return true;
     return value >= min && value <= max;
+}
+
+template <class T, class Unit>
+bool
+Transactor::validNumericRange(
+    std::optional<T> value,
+    unit::ValueUnit<Unit, T> max,
+    unit::ValueUnit<Unit, T> min)
+{
+    return validNumericRange(value, max.value(), min.value());
 }
 
 }  // namespace ripple

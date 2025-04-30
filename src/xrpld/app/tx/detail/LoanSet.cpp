@@ -229,7 +229,8 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     }
     if (brokerSle->at(sfCoverAvailable) <
         tenthBipsOfValue(
-            debtTotal + principalRequested, brokerSle->at(sfCoverRateMinimum)))
+            debtTotal + principalRequested,
+            TenthBips32(brokerSle->at(sfCoverRateMinimum))))
     {
         JLOG(ctx.j.warn())
             << "Insufficient first-loss capital to cover the loan.";
@@ -270,7 +271,7 @@ LoanSet::doApply()
     auto const brokerPseudo = brokerSle->at(sfAccount);
     auto const brokerPseudoSle = view.peek(keylet::account(brokerPseudo));
     auto const principalRequested = tx[sfPrincipalRequested];
-    auto const interestRate = tx[~sfInterestRate].value_or(TenthBips32(0));
+    TenthBips32 const interestRate{tx[~sfInterestRate].value_or(0)};
     auto const originationFee = tx[~sfLoanOriginationFee];
     auto const loanAssetsAvailable =
         principalRequested - originationFee.value_or(Number{});
@@ -332,14 +333,14 @@ LoanSet::doApply()
             return ter;
     }
 
-    auto const managementFeeRate = brokerSle->at(sfManagementFeeRate);
+    TenthBips32 const managementFeeRate{brokerSle->at(sfManagementFeeRate)};
     // The total amount if interest the loan is expected to generate
     auto const loanInterest =
         tenthBipsOfValue(principalRequested, interestRate);
     // The portion of the loan interest that will go to the vault (total
     // interest minus the management fee)
-    auto const loanInterestToVault = loanInterest -
-        tenthBipsOfValue(loanInterest, managementFeeRate.value());
+    auto const loanInterestToVault =
+        loanInterest - tenthBipsOfValue(loanInterest, managementFeeRate);
     auto const startDate = tx[sfStartDate];
     auto const paymentInterval =
         tx[~sfPaymentInterval].value_or(defaultPaymentInterval);
