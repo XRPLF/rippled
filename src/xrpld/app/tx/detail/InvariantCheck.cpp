@@ -1560,7 +1560,7 @@ ValidPermissionedDEX::visitEntry(
         if (after->isFieldPresent(sfDomainID))
             domains_.insert(after->getFieldH256(sfDomainID));
         else
-            regularOffers_++;
+            regularOffers_ = true;
 
         // if a hybrid offer is missing domain or additional book, there's
         // something wrong
@@ -1568,7 +1568,7 @@ ValidPermissionedDEX::visitEntry(
             (!after->isFieldPresent(sfDomainID) ||
              !after->isFieldPresent(sfAdditionalBooks) ||
              after->getFieldArray(sfAdditionalBooks).size() > 1))
-            badHybrids_++;
+            badHybrids_ = true;
     }
 }
 
@@ -1580,12 +1580,14 @@ ValidPermissionedDEX::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
-    if ((tx.getTxnType() != ttPAYMENT && tx.getTxnType() != ttOFFER_CREATE) ||
+    auto const txType = tx.getTxnType();
+    if ((txType != ttPAYMENT && txType != ttOFFER_CREATE) ||
         result != tesSUCCESS)
         return true;
 
-    // For each offercreate transaction, check if permissioned offers are valid
-    if (tx.getTxnType() == ttOFFER_CREATE && badHybrids_ > 0)
+    // For each offercreate transaction, check if
+    // permissioned offers are valid
+    if (txType == ttOFFER_CREATE && badHybrids_)
     {
         JLOG(j.fatal()) << "Invariant failed: hybrid offer is malformed";
         return false;
@@ -1614,7 +1616,7 @@ ValidPermissionedDEX::finalize(
         }
     }
 
-    if (regularOffers_ > 0)
+    if (regularOffers_)
     {
         JLOG(j.fatal()) << "Invariant failed: domain transaction"
                            " affected regular offers";

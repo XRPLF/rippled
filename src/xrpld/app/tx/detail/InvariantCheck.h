@@ -619,9 +619,9 @@ public:
 
 class ValidPermissionedDEX
 {
-    std::size_t regularOffers_{0};
-    std::size_t badHybrids_{0};
-    std::unordered_set<uint256> domains_;
+    bool regularOffers_ = false;
+    bool badHybrids_ = false;
+    hash_set<uint256> domains_;
 
 public:
     void

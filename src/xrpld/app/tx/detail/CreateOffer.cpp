@@ -956,11 +956,6 @@ CreateOffer::cross(
         return ret;
     }
 
-    XRPL_ASSERT(
-        !sb.rules().enabled(featurePermissionedDEX),
-        "ripple::CreateOffer::cross: featurePermissionedDEX must be enabled "
-        "with featureFlowCross.");
-
     Sandbox sbTaker{&sb};
     Sandbox sbCancelTaker{&sbCancel};
     auto const ret = takerCross(sbTaker, sbCancelTaker, takerAmount);

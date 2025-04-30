@@ -672,17 +672,11 @@ public:
         env.fund(XRP(10000), "alice", "bob", "carol", "dan", gw, gw2);
         env.close();
         env(rate("carol", 1.1));
-        env.close();
         env.trust(Account("carol")["USD"](800), "alice", "bob");
-        env.close();
         env.trust(Account("dan")["USD"](800), "alice", "bob");
-        env.close();
         env.trust(USD(800), "alice", "bob");
-        env.close();
         env.trust(gw2_USD(800), "alice", "bob");
-        env.close();
         env.trust(Account("alice")["USD"](800), "dan");
-        env.close();
         env.trust(Account("bob")["USD"](800), "dan");
         env.close();
         env(pay(gw2, "alice", gw2_USD(100)));
