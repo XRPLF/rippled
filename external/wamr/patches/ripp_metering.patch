@@ -1,0 +1,417 @@
+diff --git a/CMakeLists.txt b/CMakeLists.txt
+index 551991f8..5f48a0b8 100644
+--- a/CMakeLists.txt
++++ b/CMakeLists.txt
+@@ -1,7 +1,7 @@
+ # Copyright (C) 2019 Intel Corporation.  All rights reserved.
+ # SPDX-License-Identifier: Apache-2.0 WITH LLVM-exception
+ 
+-cmake_minimum_required (VERSION 3.14)
++cmake_minimum_required (VERSION 3.20)
+ 
+ option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
+ 
+diff --git a/build-scripts/config_common.cmake b/build-scripts/config_common.cmake
+index 1cb50235..bd103022 100644
+--- a/build-scripts/config_common.cmake
++++ b/build-scripts/config_common.cmake
+@@ -669,6 +669,10 @@ if (WAMR_BUILD_AOT_VALIDATOR EQUAL 1)
+   message ("     AOT validator enabled")
+   add_definitions (-DWASM_ENABLE_AOT_VALIDATOR=1)
+ endif ()
++if (WAMR_BUILD_INSTRUCTION_METERING EQUAL 1)
++  message ("     Instruction metering enabled")
++  add_definitions (-DWASM_ENABLE_INSTRUCTION_METERING=1)
++endif ()
+ 
+ ########################################
+ # Show Phase4 Wasm proposals status.
+diff --git a/core/config.h b/core/config.h
+index cb1189c9..a4e1499e 100644
+--- a/core/config.h
++++ b/core/config.h
+@@ -716,4 +716,8 @@ unless used elsewhere */
+ #define WASM_ENABLE_AOT_VALIDATOR 0
+ #endif
+ 
++#ifndef WASM_ENABLE_INSTRUCTION_METERING
++#define WASM_ENABLE_INSTRUCTION_METERING 0
++#endif
++
+ #endif /* end of _CONFIG_H_ */
+diff --git a/core/iwasm/common/wasm_c_api.c b/core/iwasm/common/wasm_c_api.c
+index 269ec577..bc6fd01b 100644
+--- a/core/iwasm/common/wasm_c_api.c
++++ b/core/iwasm/common/wasm_c_api.c
+@@ -5389,3 +5389,8 @@ wasm_instance_get_wasm_func_exec_time(const wasm_instance_t *instance,
+     return -1.0;
+ #endif
+ }
++
++wasm_exec_env_t wasm_instance_exec_env(const wasm_instance_t*instance)
++{
++    return wasm_runtime_get_exec_env_singleton(instance->inst_comm_rt);
++}
+diff --git a/core/iwasm/common/wasm_exec_env.c b/core/iwasm/common/wasm_exec_env.c
+index e33fd9f3..d1ff9c41 100644
+--- a/core/iwasm/common/wasm_exec_env.c
++++ b/core/iwasm/common/wasm_exec_env.c
+@@ -85,6 +85,12 @@ wasm_exec_env_create_internal(struct WASMModuleInstanceCommon *module_inst,
+     wasm_runtime_dump_exec_env_mem_consumption(exec_env);
+ #endif
+ 
++#if WASM_ENABLE_INSTRUCTION_METERING != 0
++    exec_env->instructions_to_execute = -1;
++    for(int i = 0; i < 256; ++i)
++        exec_env->instructions_schedule[i] = 1;
++#endif
++
+     return exec_env;
+ 
+ #ifdef OS_ENABLE_HW_BOUND_CHECK
+diff --git a/core/iwasm/common/wasm_exec_env.h b/core/iwasm/common/wasm_exec_env.h
+index ce0c1fa7..2713a092 100644
+--- a/core/iwasm/common/wasm_exec_env.h
++++ b/core/iwasm/common/wasm_exec_env.h
+@@ -87,6 +87,12 @@ typedef struct WASMExecEnv {
+         uint8 *bottom;
+     } wasm_stack;
+ 
++#if WASM_ENABLE_INSTRUCTION_METERING != 0
++    /* instructions to execute */
++    int64 instructions_to_execute;
++    int64 instructions_schedule[256];
++#endif
++
+ #if WASM_ENABLE_FAST_JIT != 0
+     /**
+      * Cache for
+diff --git a/core/iwasm/common/wasm_runtime_common.c b/core/iwasm/common/wasm_runtime_common.c
+index d33c0272..900fb536 100644
+--- a/core/iwasm/common/wasm_runtime_common.c
++++ b/core/iwasm/common/wasm_runtime_common.c
+@@ -2285,6 +2285,31 @@ wasm_runtime_access_exce_check_guard_page()
+ }
+ #endif
+ 
++#if WASM_ENABLE_INSTRUCTION_METERING != 0
++
++void
++wasm_runtime_set_instruction_count_limit(WASMExecEnv *exec_env,
++                                         int64 instructions_to_execute)
++{
++    exec_env->instructions_to_execute = instructions_to_execute;
++}
++
++int64
++wasm_runtime_get_instruction_count_limit(WASMExecEnv *exec_env)
++{
++    return exec_env->instructions_to_execute;
++}
++
++void
++wasm_runtime_set_instruction_schedule(WASMExecEnv *exec_env,
++                                         int64 const *instructions_schedule)
++{
++    for(int i = 0; i < 256; ++i)
++        exec_env->instructions_schedule[i] = instructions_schedule[i];
++}
++
++#endif
++
+ WASMFuncType *
+ wasm_runtime_get_function_type(const WASMFunctionInstanceCommon *function,
+                                uint32 module_type)
+@@ -7803,7 +7828,7 @@ wasm_runtime_detect_native_stack_overflow(WASMExecEnv *exec_env)
+     uint32 guard_page_count = STACK_OVERFLOW_CHECK_GUARD_PAGE_COUNT;
+     boundary = boundary + page_size * guard_page_count;
+ #endif
+-    if ((uint8 *)&boundary < boundary) {
++    if (((uint8 *)&boundary < boundary) && ((uint8 *)&boundary > exec_env->native_stack_boundary)){
+         wasm_runtime_set_exception(wasm_runtime_get_module_inst(exec_env),
+                                    "native stack overflow");
+         return false;
+diff --git a/core/iwasm/common/wasm_runtime_common.h b/core/iwasm/common/wasm_runtime_common.h
+index 8ac032bf..5ca5d489 100644
+--- a/core/iwasm/common/wasm_runtime_common.h
++++ b/core/iwasm/common/wasm_runtime_common.h
+@@ -791,9 +791,25 @@ WASM_RUNTIME_API_EXTERN void
+ wasm_runtime_set_native_stack_boundary(WASMExecEnv *exec_env,
+                                        uint8 *native_stack_boundary);
+ 
+-#if WASM_CONFIGURABLE_BOUNDS_CHECKS != 0
++#if WASM_ENABLE_INSTRUCTION_METERING != 0
++
+ /* See wasm_export.h for description */
+ WASM_RUNTIME_API_EXTERN void
++wasm_runtime_set_instruction_count_limit(WASMExecEnv *exec_env,
++                                         int64 instructions_to_execute);
++WASM_RUNTIME_API_EXTERN int64
++wasm_runtime_get_instruction_count_limit(WASMExecEnv *exec_env);
++
++WASM_RUNTIME_API_EXTERN void
++wasm_runtime_set_instruction_schedule(WASMExecEnv *exec_env,
++                                      int64 const *instructions_schedule);
++
++#endif
++
++#if WASM_CONFIGURABLE_BOUNDS_CHECKS != 0
++/* See wasm_export.h for description */
++WASM_RUNTIME_API_EXTERN
++void
+ wasm_runtime_set_bounds_checks(WASMModuleInstanceCommon *module_inst,
+                                bool enable);
+ 
+diff --git a/core/iwasm/include/wasm_c_api.h b/core/iwasm/include/wasm_c_api.h
+index 241a0eec..82e048c0 100644
+--- a/core/iwasm/include/wasm_c_api.h
++++ b/core/iwasm/include/wasm_c_api.h
+@@ -701,6 +701,11 @@ WASM_API_EXTERN double wasm_instance_sum_wasm_exec_time(const wasm_instance_t*);
+ // func_name. If the function is not found, return 0.
+ WASM_API_EXTERN double wasm_instance_get_wasm_func_exec_time(const wasm_instance_t*, const char *);
+ 
++struct WASMExecEnv;
++typedef struct WASMExecEnv *wasm_exec_env_t;
++
++WASM_API_EXTERN wasm_exec_env_t wasm_instance_exec_env(const wasm_instance_t*);
++
+ ///////////////////////////////////////////////////////////////////////////////
+ // Convenience
+ 
+diff --git a/core/iwasm/include/wasm_export.h b/core/iwasm/include/wasm_export.h
+index b73a0364..f7e20b24 100644
+--- a/core/iwasm/include/wasm_export.h
++++ b/core/iwasm/include/wasm_export.h
+@@ -1821,6 +1821,27 @@ WASM_RUNTIME_API_EXTERN void
+ wasm_runtime_set_native_stack_boundary(wasm_exec_env_t exec_env,
+                                        uint8_t *native_stack_boundary);
+ 
++/**
++ * Set the instruction count limit to the execution environment.
++ * By default the instruction count limit is -1, which means no limit.
++ * However, if the instruction count limit is set to a positive value,
++ * the execution will be terminated when the instruction count reaches
++ * the limit.
++ *
++ * @param exec_env the execution environment
++ * @param instruction_count the instruction count limit
++ */
++WASM_RUNTIME_API_EXTERN void
++wasm_runtime_set_instruction_count_limit(wasm_exec_env_t exec_env,
++                                         int64_t instruction_count);
++
++WASM_RUNTIME_API_EXTERN int64_t
++wasm_runtime_get_instruction_count_limit(wasm_exec_env_t exec_env);
++
++WASM_RUNTIME_API_EXTERN void
++wasm_runtime_set_instruction_schedule(wasm_exec_env_t exec_env,
++                                      int64_t const *instructions_schedule);
++
+ /**
+  * Dump runtime memory consumption, including:
+  *     Exec env memory consumption
+diff --git a/core/iwasm/interpreter/wasm_interp_classic.c b/core/iwasm/interpreter/wasm_interp_classic.c
+index 41ac4c72..1aa1fe1c 100644
+--- a/core/iwasm/interpreter/wasm_interp_classic.c
++++ b/core/iwasm/interpreter/wasm_interp_classic.c
+@@ -1516,10 +1516,13 @@ wasm_interp_call_func_import(WASMModuleInstance *module_inst,
+             }                                                                 \
+             os_mutex_unlock(&exec_env->wait_lock);                            \
+         }                                                                     \
++        CHECK_INSTRUCTION_LIMIT();                                            \
+         goto *handle_table[*frame_ip++];                                      \
+     } while (0)
+ #else
+-#define HANDLE_OP_END() FETCH_OPCODE_AND_DISPATCH()
++#define HANDLE_OP_END()        \
++    CHECK_INSTRUCTION_LIMIT(); \
++    FETCH_OPCODE_AND_DISPATCH()
+ #endif
+ 
+ #else /* else of WASM_ENABLE_LABELS_AS_VALUES */
+@@ -1542,9 +1545,12 @@ wasm_interp_call_func_import(WASMModuleInstance *module_inst,
+         }                                                                 \
+         os_mutex_unlock(&exec_env->wait_lock);                            \
+     }                                                                     \
++    CHECK_INSTRUCTION_LIMIT();                                            \
+     continue;
+ #else
+-#define HANDLE_OP_END() continue
++#define HANDLE_OP_END()        \
++    CHECK_INSTRUCTION_LIMIT(); \
++    continue;
+ #endif
+ 
+ #endif /* end of WASM_ENABLE_LABELS_AS_VALUES */
+@@ -1562,6 +1568,18 @@ get_global_addr(uint8 *global_data, WASMGlobalInstance *global)
+ #endif
+ }
+ 
++#if WASM_ENABLE_INSTRUCTION_METERING != 0
++#define CHECK_INSTRUCTION_LIMIT()                                 \
++    if (instructions_to_execute == 0) {                           \
++        wasm_set_exception(module, "instruction limit exceeded"); \
++        goto got_exception;                                       \
++    }                                                             \
++    else if (instructions_to_execute > 0)                         \
++        instructions_to_execute--;
++#else
++#define CHECK_INSTRUCTION_LIMIT() (void)0
++#endif
++
+ static void
+ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
+                                WASMExecEnv *exec_env,
+@@ -1605,6 +1623,13 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
+     uint32 local_idx, local_offset, global_idx;
+     uint8 local_type, *global_addr;
+     uint32 cache_index, type_index, param_cell_num, cell_num;
++
++#if WASM_ENABLE_INSTRUCTION_METERING != 0
++    int64 instructions_to_execute = -1;
++    if(exec_env)
++        instructions_to_execute = exec_env->instructions_to_execute;
++#endif
++
+ #if WASM_ENABLE_EXCE_HANDLING != 0
+     int32_t exception_tag_index;
+ #endif
+@@ -6859,6 +6884,11 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
+         FREE_FRAME(exec_env, frame);
+         wasm_exec_env_set_cur_frame(exec_env, prev_frame);
+ 
++#if WASM_ENABLE_INSTRUCTION_METERING != 0
++        if(exec_env)
++            exec_env->instructions_to_execute = instructions_to_execute;
++#endif
++
+         if (!prev_frame->ip) {
+             /* Called from native. */
+             return;
+@@ -6899,6 +6929,12 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
+         }
+ #endif
+         SYNC_ALL_TO_FRAME();
++
++#if WASM_ENABLE_INSTRUCTION_METERING != 0
++        if(exec_env)
++            exec_env->instructions_to_execute = instructions_to_execute;
++#endif
++
+         return;
+ 
+ #if WASM_ENABLE_LABELS_AS_VALUES == 0
+diff --git a/core/iwasm/interpreter/wasm_interp_fast.c b/core/iwasm/interpreter/wasm_interp_fast.c
+index f33ad60e..a7078fe8 100644
+--- a/core/iwasm/interpreter/wasm_interp_fast.c
++++ b/core/iwasm/interpreter/wasm_interp_fast.c
+@@ -105,6 +105,20 @@ typedef float64 CellType_F64;
+             goto unaligned_atomic;                 \
+     } while (0)
+ 
++#if WASM_ENABLE_INSTRUCTION_METERING != 0
++#define CHECK_INSTRUCTION_LIMIT()                                         \
++    if (instructions_to_execute >= 0)                                     \
++    {                                                                     \
++        instructions_to_execute -= instructions_schedule[opc];            \
++        if (instructions_to_execute < 0) {                                \
++                wasm_set_exception(module, "instruction limit exceeded"); \
++                goto got_exception;                                       \
++        }                                                                 \
++    }
++#else
++#define CHECK_INSTRUCTION_LIMIT() (void)0
++#endif
++
+ static inline uint32
+ rotl32(uint32 n, uint32 c)
+ {
+@@ -1439,8 +1453,10 @@ wasm_interp_dump_op_count()
+ #if WASM_CPU_SUPPORTS_UNALIGNED_ADDR_ACCESS != 0
+ #define FETCH_OPCODE_AND_DISPATCH()                    \
+     do {                                               \
++        const uint64 opc = *frame_ip;                  \
+         const void *p_label_addr = *(void **)frame_ip; \
+         frame_ip += sizeof(void *);                    \
++        CHECK_INSTRUCTION_LIMIT();                     \
+         goto *p_label_addr;                            \
+     } while (0)
+ #else
+@@ -1450,8 +1466,10 @@ wasm_interp_dump_op_count()
+         const void *p_label_addr;                                         \
+         bh_assert(((uintptr_t)frame_ip & 1) == 0);                        \
+         /* int32 relative offset was emitted in 64-bit target */          \
++        const uint64 opc = LOAD_U32_WITH_2U16S(frame_ip);                 \
+         p_label_addr = label_base + (int32)LOAD_U32_WITH_2U16S(frame_ip); \
+         frame_ip += sizeof(int32);                                        \
++        CHECK_INSTRUCTION_LIMIT();                                        \
+         goto *p_label_addr;                                               \
+     } while (0)
+ #else
+@@ -1460,8 +1478,10 @@ wasm_interp_dump_op_count()
+         const void *p_label_addr;                                        \
+         bh_assert(((uintptr_t)frame_ip & 1) == 0);                       \
+         /* uint32 label address was emitted in 32-bit target */          \
++        const uint64 opc = LOAD_U32_WITH_2U16S(frame_ip);                \
+         p_label_addr = (void *)(uintptr_t)LOAD_U32_WITH_2U16S(frame_ip); \
+         frame_ip += sizeof(int32);                                       \
++        CHECK_INSTRUCTION_LIMIT();                                       \
+         goto *p_label_addr;                                              \
+     } while (0)
+ #endif
+@@ -1538,6 +1558,17 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
+     uint8 *maddr = NULL;
+     uint32 local_idx, local_offset, global_idx;
+     uint8 opcode = 0, local_type, *global_addr;
++
++#if WASM_ENABLE_INSTRUCTION_METERING != 0
++    int64 instructions_to_execute = -1;
++    int64 const *instructions_schedule = NULL;
++    if(exec_env)
++    {
++        instructions_to_execute = exec_env->instructions_to_execute;
++        instructions_schedule = exec_env->instructions_schedule;
++    }
++#endif
++
+ #if !defined(OS_ENABLE_HW_BOUND_CHECK) \
+     || WASM_CPU_SUPPORTS_UNALIGNED_ADDR_ACCESS == 0
+ #if WASM_CONFIGURABLE_BOUNDS_CHECKS != 0
+@@ -7761,6 +7792,11 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
+         FREE_FRAME(exec_env, frame);
+         wasm_exec_env_set_cur_frame(exec_env, (WASMRuntimeFrame *)prev_frame);
+ 
++#if WASM_ENABLE_INSTRUCTION_METERING != 0
++        if(exec_env)
++            exec_env->instructions_to_execute = instructions_to_execute;
++#endif
++
+         if (!prev_frame->ip)
+             /* Called from native. */
+             return;
+@@ -7789,6 +7825,10 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
+ 
+     got_exception:
+         SYNC_ALL_TO_FRAME();
++#if WASM_ENABLE_INSTRUCTION_METERING != 0
++        if(exec_env)
++            exec_env->instructions_to_execute = instructions_to_execute;
++#endif
+         return;
+ 
+ #if WASM_ENABLE_LABELS_AS_VALUES == 0
+diff --git a/doc/build_wamr.md b/doc/build_wamr.md
+index 6425450b..94dd9628 100644
+--- a/doc/build_wamr.md
++++ b/doc/build_wamr.md
+@@ -327,6 +327,10 @@ And the wasm app can calls below APIs to allocate/free memory from/to the shared
+ - **WAMR_BUILD_SHRUNK_MEMORY**=1/0, default to enable if not set
+ > Note: When enabled, this feature will reduce memory usage by decreasing the size of the linear memory, particularly when the `memory.grow` opcode is not used and memory usage is somewhat predictable.
+ 
++## **Instruction metering**
++- **WAMR_BUILD_INSTRUCTION_METERING**=1/0, default to disable if not set
++> Note: Enabling this feature allows limiting the number of instructions a wasm module instance can execute. Use the `wasm_runtime_set_instruction_count_limit(...)` API before calling `wasm_runtime_call_*(...)` APIs to enforce this limit.
++
+ ## **Combination of configurations:**
+ 
+ We can combine the configurations. For example, if we want to disable interpreter, enable AOT and WASI, we can run command:
