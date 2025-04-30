@@ -701,6 +701,12 @@ transferXRP(
     STAmount const& amount,
     beast::Journal j);
 
+/* Check if MPToken exists:
+ * - StrongAuth - before checking lsfMPTRequireAuth is set
+ * - WeakAuth - after checking if lsfMPTRequireAuth is set
+ */
+enum class MPTAuthType : bool { StrongAuth = true, WeakAuth = false };
+
 /** Check if the account lacks required authorization.
  *
  *   Return tecNO_AUTH or tecNO_LINE if it does
@@ -711,21 +717,45 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account);
 
 /** Check if the account lacks required authorization.
  *
- *   This will also check for expired credentials. If it is called directly
- *   from preclaim, the user should convert result tecEXPIRED to tesSUCCESS and
- *   proceed to also check permissions with enforceMPTokenAuthorization inside
- *   doApply. This will ensure that any expired credentials are deleted.
+ * This will also check for expired credentials. If it is called directly
+ * from preclaim, the user should convert result tecEXPIRED to tesSUCCESS and
+ * proceed to also check permissions with enforceMPTokenAuthorization inside
+ * doApply. This will ensure that any expired credentials are deleted.
  *
- *   requireAuth check is recursive for MPT shares in a vault, descending to
- *   assets in the vault, up to maxAssetCheckDepth recursion depth. This is
- *   purely defensive, as we currently do not allow such vaults to be created.
+ * requireAuth check is recursive for MPT shares in a vault, descending to
+ * assets in the vault, up to maxAssetCheckDepth recursion depth. This is
+ * purely defensive, as we currently do not allow such vaults to be created.
+ *
+ * If StrongAuth then return tecNO_AUTH if MPToken doesn't exist or
+ * lsfMPTRequireAuth is set and MPToken is not authorized. If WeakAuth then
+ * return tecNO_AUTH if lsfMPTRequireAuth is set and MPToken doesn't exist or is
+ * not authorized (explicitly or via credentials, if DomainID is set in
+ * MPTokenIssuance). Consequently, if WeakAuth and lsfMPTRequireAuth is *not*
+ * set, this function will return true even if MPToken does *not* exist.
  */
 [[nodiscard]] TER
 requireAuth(
     ReadView const& view,
     MPTIssue const& mptIssue,
     AccountID const& account,
+    MPTAuthType authType = MPTAuthType::StrongAuth,
     int depth = 0);
+
+[[nodiscard]] TER inline requireAuth(
+    ReadView const& view,
+    Asset const& asset,
+    AccountID const& account,
+    MPTAuthType authType = MPTAuthType::StrongAuth)
+{
+    return std::visit(
+        [&]<ValidIssueType TIss>(TIss const& issue_) {
+            if constexpr (std::is_same_v<TIss, Issue>)
+                return requireAuth(view, issue_, account);
+            else
+                return requireAuth(view, issue_, account, authType);
+        },
+        asset.value());
+}
 
 /** Enforce account has MPToken to match its authorization.
  *
@@ -767,7 +797,8 @@ canTransfer(
     ReadView const& view,
     MPTIssue const& mptIssue,
     AccountID const& from,
-    AccountID const& to);
+    AccountID const& to,
+    int depth = 0);
 
 /** Deleter function prototype. Returns the status of the entry deletion
  * (if should not be skipped) and if the entry should be skipped. The status

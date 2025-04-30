@@ -63,9 +63,9 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         return tecNO_ENTRY;
 
     auto const assets = ctx.tx[sfAmount];
-    auto const asset = vault->at(sfAsset);
-    auto const share = vault->at(sfShareMPTID);
-    if (assets.asset() != asset && assets.asset() != share)
+    auto const vaultAsset = vault->at(sfAsset);
+    auto const vaultShare = vault->at(sfShareMPTID);
+    if (assets.asset() != vaultAsset && assets.asset() != vaultShare)
         return tecWRONG_ASSET;
 
     // Enforce valid withdrawal policy
@@ -95,29 +95,18 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
             if (!ctx.view.exists(keylet::depositPreauth(dstAcct, account)))
                 return tecNO_PERMISSION;
         }
-
-        if (assets.holds<MPTIssue>())
-        {
-            if (auto const ter = canTransfer(
-                    ctx.view, assets.get<MPTIssue>(), account, dstAcct);
-                !isTesSuccess(ter))
-                return ter;
-        }
     }
 
-    if (auto const ter = std::visit(
-            [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
-                return requireAuth(ctx.view, issue, dstAcct);
-            },
-            asset.value());
+    // Destination MPToken must exist (if asset is an MPT)
+    if (auto const ter = requireAuth(ctx.view, vaultAsset, dstAcct);
         !isTesSuccess(ter))
         return ter;
 
     // Cannot withdraw from a Vault an Asset frozen for the destination account
-    if (isFrozen(ctx.view, dstAcct, asset))
-        return asset.holds<Issue>() ? tecFROZEN : tecLOCKED;
+    if (isFrozen(ctx.view, dstAcct, vaultAsset))
+        return vaultAsset.holds<Issue>() ? tecFROZEN : tecLOCKED;
 
-    if (isFrozen(ctx.view, account, share))
+    if (isFrozen(ctx.view, account, vaultShare))
         return tecLOCKED;
 
     return tesSUCCESS;
@@ -128,12 +117,12 @@ VaultWithdraw::doApply()
 {
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
     if (!vault)
-        return tefINTERNAL;  // Enforced in preclaim
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const mptIssuanceID = (*vault)[sfShareMPTID];
     auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
     if (!sleIssuance)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // Note, we intentionally do not check lsfVaultPrivate flag on the Vault. If
     // you have a share in the vault, it means you were at some point authorized

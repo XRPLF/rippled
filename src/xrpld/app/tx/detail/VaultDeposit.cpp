@@ -67,22 +67,22 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         return tecWRONG_ASSET;
 
     auto const mptIssuanceID = vault->at(sfShareMPTID);
-    auto const share = MPTIssue(mptIssuanceID);
-    if (share == assets.asset())
-        return tefINTERNAL;
+    auto const vaultShare = MPTIssue(mptIssuanceID);
+    if (vaultShare == assets.asset())
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const sleIssuance = ctx.view.read(keylet::mptIssuance(mptIssuanceID));
     if (!sleIssuance)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
     if (sleIssuance->isFlag(lsfMPTLocked))
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // Cannot deposit inside Vault an Asset frozen for the depositor
     if (isFrozen(ctx.view, account, vaultAsset))
         return vaultAsset.holds<Issue>() ? tecFROZEN : tecLOCKED;
 
     // Cannot deposit if the shares of the vault are frozen
-    if (isFrozen(ctx.view, account, share))
+    if (isFrozen(ctx.view, account, vaultShare))
         return tecLOCKED;
 
     if (vault->isFlag(tfVaultPrivate) && account != vault->at(sfOwner))
@@ -106,23 +106,10 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
             return tecNO_AUTH;
     }
 
-    if (auto const ter = std::visit(
-            [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
-                return requireAuth(ctx.view, issue, account);
-            },
-            vaultAsset.value());
+    // Source MPToken must exist (if asset is an MPT)
+    if (auto const ter = requireAuth(ctx.view, vaultAsset, account);
         !isTesSuccess(ter))
         return ter;
-
-    if (assets.holds<MPTIssue>())
-    {
-        auto mptID = assets.get<MPTIssue>().getMptID();
-        auto issuance = ctx.view.read(keylet::mptIssuance(mptID));
-        if (!issuance)
-            return tecOBJECT_NOT_FOUND;
-        if ((issuance->getFlags() & lsfMPTCanTransfer) == 0)
-            return tecNO_AUTH;
-    }
 
     if (accountHolds(
             ctx.view,

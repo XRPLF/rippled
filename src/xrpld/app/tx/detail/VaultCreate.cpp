@@ -97,12 +97,12 @@ VaultCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
 TER
 VaultCreate::preclaim(PreclaimContext const& ctx)
 {
-    auto asset = ctx.tx[sfAsset];
+    auto vaultAsset = ctx.tx[sfAsset];
     auto account = ctx.tx[sfAccount];
 
-    if (asset.holds<MPTIssue>())
+    if (vaultAsset.holds<MPTIssue>())
     {
-        auto mptID = asset.get<MPTIssue>().getMptID();
+        auto mptID = vaultAsset.get<MPTIssue>().getMptID();
         auto issuance = ctx.view.read(keylet::mptIssuance(mptID));
         if (!issuance)
             return tecOBJECT_NOT_FOUND;
@@ -113,14 +113,14 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
     // Check for pseudo-account issuers - we do not want a vault to hold such
     // assets (e.g. MPT shares to other vaults or AMM LPTokens) as they would be
     // impossible to clawback (should the need arise)
-    if (!asset.native())
+    if (!vaultAsset.native())
     {
-        if (isPseudoAccount(ctx.view, asset.getIssuer()))
+        if (isPseudoAccount(ctx.view, vaultAsset.getIssuer()))
             return tecWRONG_ASSET;
     }
 
     // Cannot create Vault for an Asset frozen for the vault owner
-    if (isFrozen(ctx.view, account, asset))
+    if (isFrozen(ctx.view, account, vaultAsset))
         return tecFROZEN;
 
     if (auto const domain = ctx.tx[~sfDomainID])

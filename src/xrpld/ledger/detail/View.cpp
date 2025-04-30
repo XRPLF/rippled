@@ -501,7 +501,8 @@ accountHolds(
         if (zeroIfUnauthorized == ahZERO_IF_UNAUTHORIZED &&
             view.rules().enabled(featureSingleAssetVault))
         {
-            if (auto const err = requireAuth(view, mptIssue, account);
+            if (auto const err = requireAuth(
+                    view, mptIssue, account, MPTAuthType::StrongAuth);
                 !isTesSuccess(err))
                 amount.clear(mptIssue);
         }
@@ -2278,6 +2279,7 @@ requireAuth(
     ReadView const& view,
     MPTIssue const& mptIssue,
     AccountID const& account,
+    MPTAuthType authType,
     int depth)
 {
     auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
@@ -2314,7 +2316,8 @@ requireAuth(
                         if constexpr (std::is_same_v<TIss, Issue>)
                             return requireAuth(view, issue, account);
                         else
-                            return requireAuth(view, issue, account, depth + 1);
+                            return requireAuth(
+                                view, issue, account, authType, depth + 1);
                     },
                     asset.value());
                 !isTesSuccess(err))
@@ -2324,6 +2327,11 @@ requireAuth(
 
     auto const mptokenID = keylet::mptoken(mptID.key, account);
     auto const sleToken = view.read(mptokenID);
+
+    // if account has no MPToken, fail
+    if (!sleToken && authType == MPTAuthType::StrongAuth)
+        return tecNO_AUTH;
+
     // Note, this check is not amendment-gated because DomainID will be always
     // empty **unless** writing to it has been enabled by an amendment
     auto const maybeDomainID = sleIssuance->at(~sfDomainID);
@@ -2331,27 +2339,24 @@ requireAuth(
     {
         XRPL_ASSERT(
             sleIssuance->getFieldU32(sfFlags) & lsfMPTRequireAuth,
-            "ripple::requireAuth issuance requires authorization");
-        // We ignore error from validDomain if we found sleToken, as it could
-        // belong to someone who is explicitly authorized e.g. a vault owner.
-        // err = tefINTERNAL | tecOBJECT_NOT_FOUND | tecNO_AUTH | tecEXPIRED
+            "ripple::requireAuth : issuance requires authorization");
+        // ter = tefINTERNAL | tecOBJECT_NOT_FOUND | tecNO_AUTH | tecEXPIRED
         if (auto const ter =
                 credentials::validDomain(view, *maybeDomainID, account);
-            isTesSuccess(ter) || sleToken == nullptr)
+            isTesSuccess(ter))
+            return ter;  // Note: sleToken might be null
+        else if (!sleToken)
             return ter;
+        // We ignore error from validDomain if we found sleToken, as it could
+        // belong to someone who is explicitly authorized e.g. a vault owner.
     }
-
-    // if account has no MPToken, fail
-    if (!sleToken)
-        return tecNO_AUTH;
 
     // mptoken must be authorized if issuance enabled requireAuth
     if (sleIssuance->isFlag(lsfMPTRequireAuth) &&
-        !(sleToken->isFlag(lsfMPTAuthorized)))
+        (!sleToken || (!(sleToken->getFlags() & lsfMPTAuthorized))))
         return tecNO_AUTH;
 
-    // We are authorized by permissioned domain.
-    return tesSUCCESS;
+    return tesSUCCESS;  // Note: sleToken might be null
 }
 
 [[nodiscard]] TER
@@ -2450,7 +2455,8 @@ canTransfer(
     ReadView const& view,
     MPTIssue const& mptIssue,
     AccountID const& from,
-    AccountID const& to)
+    AccountID const& to,
+    int depth)
 {
     auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
     auto const sleIssuance = view.read(mptID);
