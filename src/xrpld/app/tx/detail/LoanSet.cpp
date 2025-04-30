@@ -355,17 +355,16 @@ LoanSet::doApply()
     };
 
     // Set required tx fields and pre-computed fields
-    loan->at(sfPrincipalRequested) = principalRequested;
+    loan->at(sfPrincipalOutstanding) = principalRequested;
     loan->at(sfStartDate) = startDate;
-    loan->at(sfSequence) = loanSequence;
+    loan->at(sfPaymentInterval) = paymentInterval;
+    loan->at(sfLoanSequence) = loanSequence;
     loan->at(sfLoanBrokerID) = brokerID;
     loan->at(sfBorrower) = borrower;
-    loan->at(~sfLoanOriginationFee) = originationFee;
-    loan->at(sfPaymentInterval) = paymentInterval;
     // Set all other transaction fields directly from the transaction
     if (tx.isFlag(tfLoanOverpayment))
         loan->setFlag(lsfLoanOverpayment);
-    setLoanField(~sfData);
+    setLoanField(~sfLoanOriginationFee);
     setLoanField(~sfLoanServiceFee);
     setLoanField(~sfLatePaymentFee);
     setLoanField(~sfClosePaymentFee);

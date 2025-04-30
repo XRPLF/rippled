@@ -116,18 +116,33 @@ class Loan_test : public beast::unit_test::suite
     lifecycle(
         const char* label,
         jtx::Env& env,
-        jtx::Account const& alice,
+        jtx::Account const& lender,
+        jtx::Account const& borrower,
         jtx::Account const& evan,
-        BrokerInfo const& vault,
+        BrokerInfo const& broker,
+        std::uint32_t flags,
         std::function<jtx::JTx(jtx::JTx const&)> modifyJTx,
-        std::function<void(SLE::const_ref)> checkBroker,
-        std::function<void(SLE::const_ref)> changeBroker,
-        std::function<void(SLE::const_ref)> checkChangedBroker)
+        std::function<void(SLE::const_ref)> checkLoan,
+        std::function<void(SLE::const_ref)> changeLoan,
+        std::function<void(SLE::const_ref)> checkChangedLoan)
     {
-#if 0
-        auto const keylet = keylet::loanbroker(alice.id(), env.seq(alice));
+        auto const [keylet, loanSequence] = [&]() {
+            auto const brokerSLE = env.le(keylet::loanbroker(broker.brokerID));
+            if (!BEAST_EXPECT(brokerSLE))
+                // will be invalid
+                return std::make_pair(
+                    keylet::loan(broker.brokerID), std::uint32_t(0));
+
+            // The loan keylet is based on the LoanSequence of the _LOAN_BROKER_
+            // object.
+            auto const loanSequence = brokerSLE->at(sfLoanSequence);
+            return std::make_pair(
+                keylet::loan(broker.brokerID, loanSequence), loanSequence);
+        }();
+        if (!BEAST_EXPECT(loanSequence != 0))
+            return;
         {
-            auto const& asset = vault.asset.raw();
+            auto const& asset = broker.asset.raw();
             testcase << "Lifecycle: "
                      << (asset.native()                ? "XRP "
                              : asset.holds<Issue>()    ? "IOU "
@@ -137,83 +152,104 @@ class Loan_test : public beast::unit_test::suite
         }
 
         using namespace jtx;
-        using namespace loanBroker;
+        using namespace loan;
+        using namespace std::chrono_literals;
 
-        {
-        auto const keylet = keylet::loanbroker(alice.id(), env.seq(alice));
-            // Start with default values
-            auto jtx = env.jt(set(alice, vault.vaultID), fee(increment));
-            // Modify as desired
-            if (modifyJTx)
-                jtx = modifyJTx(jtx);
-            // Successfully create a Loan Broker
-            env(jtx);
-        }
+        auto const loanSetFee = fee(env.current()->fees().base * 2);
+        Number const principalRequest = broker.asset(1000).value();
+        auto const startDate = env.now() + 3600s;
+        auto const originationFee = broker.asset(1).value();
+        auto const serviceFee = broker.asset(2).value();
+        auto const lateFee = broker.asset(3).value();
+        auto const closeFee = broker.asset(4).value();
+        auto const overFee = percentageToTenthBips(5) / 10;
+        auto const interest = percentageToTenthBips(12);
+        // 2.4%
+        auto const lateInterest = percentageToTenthBips(24) / 10;
+        auto const closeInterest = percentageToTenthBips(36) / 10;
+        auto const overpaymentInterest = percentageToTenthBips(48) / 10;
+        auto const total = 12;
+        auto const interval = 600;
+        auto const grace = 60;
+
+        // Use the defined values
+        auto createJtx = env.jt(
+            set(borrower, broker.brokerID, principalRequest, startDate, flags),
+            sig(sfCounterpartySignature, lender),
+            loanOriginationFee(originationFee),
+            loanServiceFee(serviceFee),
+            latePaymentFee(lateFee),
+            closePaymentFee(closeFee),
+            overpaymentFee(overFee),
+            interestRate(interest),
+            lateInterestRate(lateInterest),
+            closeInterestRate(closeInterest),
+            overpaymentInterestRate(overpaymentInterest),
+            paymentTotal(total),
+            paymentInterval(interval),
+            gracePeriod(grace),
+            fee(loanSetFee));
+        // Modify as desired
+        if (modifyJTx)
+            createJtx = modifyJTx(createJtx);
+        // Successfully create a Loan
+        env(createJtx);
 
         env.close();
-        if (auto broker = env.le(keylet); BEAST_EXPECT(broker))
+
+        if (auto loan = env.le(keylet); BEAST_EXPECT(loan))
         {
-            // log << "Broker after create: " << to_string(broker->getJson())
+            // log << "loan after create: " << to_string(loan->getJson())
             //     << std::endl;
-            BEAST_EXPECT(broker->at(sfVaultID) == vault.vaultID);
-            BEAST_EXPECT(broker->at(sfAccount) != alice.id());
-            BEAST_EXPECT(broker->at(sfOwner) == alice.id());
-            BEAST_EXPECT(broker->at(sfFlags) == 0);
-            BEAST_EXPECT(broker->at(sfSequence) == env.seq(alice) - 1);
-            BEAST_EXPECT(broker->at(sfOwnerCount) == 0);
-            BEAST_EXPECT(broker->at(sfDebtTotal) == 0);
-            BEAST_EXPECT(broker->at(sfCoverAvailable) == 0);
-            if (checkBroker)
-                checkBroker(broker);
+            BEAST_EXPECT(
+                loan->isFlag(lsfLoanOverpayment) ==
+                createJtx.stx->isFlag(tfLoanOverpayment));
+            BEAST_EXPECT(loan->at(sfLoanSequence) == loanSequence);
+            BEAST_EXPECT(loan->at(sfBorrower) == borrower.id());
+            BEAST_EXPECT(loan->at(sfLoanBrokerID) == broker.brokerID);
+            BEAST_EXPECT(loan->at(sfLoanOriginationFee) == originationFee);
+            BEAST_EXPECT(loan->at(sfLoanServiceFee) == serviceFee);
+            BEAST_EXPECT(loan->at(sfLatePaymentFee) == lateFee);
+            BEAST_EXPECT(loan->at(sfClosePaymentFee) == closeFee);
+            BEAST_EXPECT(loan->at(sfOverpaymentFee) == overFee);
+            BEAST_EXPECT(loan->at(sfInterestRate) == interest);
+            BEAST_EXPECT(loan->at(sfLateInterestRate) == lateInterest);
+            BEAST_EXPECT(loan->at(sfCloseInterestRate) == closeInterest);
+            BEAST_EXPECT(
+                loan->at(sfOverpaymentInterestRate) == overpaymentInterest);
+            BEAST_EXPECT(
+                loan->at(sfStartDate) == startDate.time_since_epoch().count());
+            BEAST_EXPECT(loan->at(sfPaymentInterval) == interval);
+            BEAST_EXPECT(loan->at(sfGracePeriod) == grace);
+            BEAST_EXPECT(loan->at(sfPreviousPaymentDate) == 0);
+            BEAST_EXPECT(
+                loan->at(sfNextPaymentDueDate) ==
+                startDate.time_since_epoch().count() + interval);
+            BEAST_EXPECT(loan->at(sfPaymentRemaining) == total);
+            BEAST_EXPECT(
+                loan->at(sfAssetsAvailable) ==
+                principalRequest - originationFee);
+            BEAST_EXPECT(loan->at(sfPrincipalOutstanding) == principalRequest);
+            if (checkLoan)
+                checkLoan(loan);
 
-            // if (auto const vaultSLE = env.le(keylet::vault(vault.vaultID)))
-            //{
-            //     log << "Vault: " << to_string(vaultSLE->getJson()) <<
-            //     std::endl;
-            // }
-            //  Load the pseudo-account
-            Account const pseudoAccount{
-                "Broker pseudo-account", broker->at(sfAccount)};
-            auto const pseudoKeylet = keylet::account(pseudoAccount);
-            if (auto const pseudo = env.le(pseudoKeylet); BEAST_EXPECT(pseudo))
-            {
-                // log << "Pseudo-account after create: "
-                //     << to_string(pseudo->getJson()) << std::endl
-                //     << std::endl;
+#if 0
+            auto verifyStatus = [&env, &broker, &loan, this](
+                                    auto previousPaymentDate,
+                                    auto nextPaymentDate,
+                                    auto paymentRemaining,
+                                    auto assetsAvailable,
+                                    auto principalOutstanding) {
+                auto const available = broker.asset(assetsAvailable);
+                auto const outstanding = broker.asset(principalOutstanding);
                 BEAST_EXPECT(
-                    pseudo->at(sfFlags) ==
-                    (lsfDisableMaster | lsfDefaultRipple | lsfDepositAuth));
-                BEAST_EXPECT(pseudo->at(sfSequence) == 0);
-                BEAST_EXPECT(pseudo->at(sfBalance) == beast::zero);
+                    loan->at(sfPreviousPaymentDate) == previousPaymentDate);
+                BEAST_EXPECT(loan->at(sfNextPaymentDueDate) == nextPaymentDate);
+                BEAST_EXPECT(loan->at(sfPaymentRemaining) == paymentRemaining);
+                BEAST_EXPECT(loan->at(sfAssetsAvailable) == available.number());
                 BEAST_EXPECT(
-                    pseudo->at(sfOwnerCount) ==
-                    (vault.asset.raw().native() ? 0 : 1));
-                BEAST_EXPECT(!pseudo->isFieldPresent(sfAccountTxnID));
-                BEAST_EXPECT(!pseudo->isFieldPresent(sfRegularKey));
-                BEAST_EXPECT(!pseudo->isFieldPresent(sfEmailHash));
-                BEAST_EXPECT(!pseudo->isFieldPresent(sfWalletLocator));
-                BEAST_EXPECT(!pseudo->isFieldPresent(sfWalletSize));
-                BEAST_EXPECT(!pseudo->isFieldPresent(sfMessageKey));
-                BEAST_EXPECT(!pseudo->isFieldPresent(sfTransferRate));
-                BEAST_EXPECT(!pseudo->isFieldPresent(sfDomain));
-                BEAST_EXPECT(!pseudo->isFieldPresent(sfTickSize));
-                BEAST_EXPECT(!pseudo->isFieldPresent(sfTicketCount));
-                BEAST_EXPECT(!pseudo->isFieldPresent(sfNFTokenMinter));
-                BEAST_EXPECT(!pseudo->isFieldPresent(sfMintedNFTokens));
-                BEAST_EXPECT(!pseudo->isFieldPresent(sfBurnedNFTokens));
-                BEAST_EXPECT(!pseudo->isFieldPresent(sfFirstNFTokenSequence));
-                BEAST_EXPECT(!pseudo->isFieldPresent(sfAMMID));
-                BEAST_EXPECT(!pseudo->isFieldPresent(sfVaultID));
-                BEAST_EXPECT(pseudo->at(sfLoanBrokerID) == keylet.key);
-            }
-
-            auto verifyCoverAmount =
-                [&env, &vault, &broker, &pseudoAccount, this](auto n) {
-                    auto const amount = vault.asset(n);
-                    BEAST_EXPECT(
-                        broker->at(sfCoverAvailable) == amount.number());
-                    env.require(balance(pseudoAccount, amount));
-                };
+                    loan->at(sfPrincipalOutstanding) == outstanding.number());
+            };
 
             // Test Cover funding before allowing alterations
             env(coverDeposit(alice, uint256(0), vault.asset(10)),
@@ -342,8 +378,8 @@ class Loan_test : public beast::unit_test::suite
                      : vault.asset(0));
             env.require(balance(alice, expectedBalance));
             env.require(balance(pseudoAccount, None(vault.asset.raw())));
-        }
 #endif
+        }
     }
 
     void
@@ -604,6 +640,14 @@ class Loan_test : public beast::unit_test::suite
                 sig(sfCounterpartySignature, evan),
                 loanSetFee,
                 ter(tefBAD_AUTH));
+            // bad start date - in the past
+            env(set(evan,
+                    broker.brokerID,
+                    principalRequest,
+                    env.closed()->info().closeTime - 1s),
+                sig(sfCounterpartySignature, lender),
+                loanSetFee,
+                ter(tecEXPIRED));
             // not the broker owner, counterparty is borrower
             env(set(evan, broker.brokerID, principalRequest, startDate),
                 counterparty(borrower),
@@ -661,16 +705,18 @@ class Loan_test : public beast::unit_test::suite
                 auto const pseudoAcct =
                     Account("Broker pseudo-account", brokerPseudo);
 
-                auto const [freeze, unfreeze, expectedResult] =
+                auto const [freeze, deepfreeze, unfreeze, expectedResult] =
                     [&]() -> std::tuple<
+                              std::function<void(Account const& holder)>,
                               std::function<void(Account const& holder)>,
                               std::function<void(Account const& holder)>,
                               TER> {
                     // Freeze / lock the asset
+                    std::function<void(Account const& holder)> empty;
                     if (broker.asset.raw().native())
                     {
-                        std::function<void(Account const& holder)> empty;
-                        return std::make_tuple(empty, empty, tesSUCCESS);
+                        // XRP can't be frozen
+                        return std::make_tuple(empty, empty, empty, tesSUCCESS);
                     }
                     else if (broker.asset.raw().holds<Issue>())
                     {
@@ -678,11 +724,20 @@ class Loan_test : public beast::unit_test::suite
                             env(trust(
                                 issuer, holder[iouCurrency](0), tfSetFreeze));
                         };
+                        auto deepfreeze = [&](Account const& holder) {
+                            env(trust(
+                                issuer,
+                                holder[iouCurrency](0),
+                                tfSetFreeze | tfSetDeepFreeze));
+                        };
                         auto unfreeze = [&](Account const& holder) {
                             env(trust(
-                                issuer, holder[iouCurrency](0), tfClearFreeze));
+                                issuer,
+                                holder[iouCurrency](0),
+                                tfClearFreeze | tfClearDeepFreeze));
                         };
-                        return std::make_tuple(freeze, unfreeze, tecFROZEN);
+                        return std::make_tuple(
+                            freeze, deepfreeze, unfreeze, tecFROZEN);
                     }
                     else
                     {
@@ -698,7 +753,8 @@ class Loan_test : public beast::unit_test::suite
                                  .holder = holder,
                                  .flags = tfMPTUnlock});
                         };
-                        return std::make_tuple(freeze, unfreeze, tecLOCKED);
+                        return std::make_tuple(
+                            freeze, empty, unfreeze, tecLOCKED);
                     }
                 }();
 
@@ -710,11 +766,10 @@ class Loan_test : public beast::unit_test::suite
                         // Freeze the account
                         freeze(account);
 
-                        // Try to create a loan with a frozen line, ask too
-                        // large a balance
+                        // Try to create a loan with a frozen line
                         env(set(evan,
                                 broker.brokerID,
-                                debtMaximumRequest + 1,
+                                debtMaximumRequest,
                                 startDate),
                             sig(sfCounterpartySignature, lender),
                             loanSetFee,
@@ -736,91 +791,71 @@ class Loan_test : public beast::unit_test::suite
                         loanSetFee,
                         ter(tecLIMIT_EXCEEDED));
                 }
+
+                // Deep freeze the borrower, which prevents them from receiving
+                // funds
+                if (deepfreeze)
+                {
+                    // Make sure evan has a trust line that so the issuer can
+                    // freeze it. (Don't need to do this for the borrower,
+                    // because LoanDraw will create a line to the borrower
+                    // automatically.)
+                    env(trust(evan, issuer[iouCurrency](100'000)));
+
+                    // Freeze evan
+                    deepfreeze(evan);
+
+                    // Try to create a loan with a deep frozen line
+                    env(set(evan,
+                            broker.brokerID,
+                            debtMaximumRequest,
+                            startDate),
+                        sig(sfCounterpartySignature, lender),
+                        loanSetFee,
+                        ter(expectedResult));
+
+                    // Unfreeze evan
+                    BEAST_EXPECT(unfreeze);
+                    unfreeze(evan);
+
+                    // Ensure the line is unfrozen with a request that is fine
+                    // except too it requests more principal than the broker can
+                    // carry
+                    env(set(evan,
+                            broker.brokerID,
+                            debtMaximumRequest + 1,
+                            startDate),
+                        sig(sfCounterpartySignature, lender),
+                        loanSetFee,
+                        ter(tecLIMIT_EXCEEDED));
+                }
             }
 
-#if 0
+            // Finally! Create a loan
             std::string testData;
+            // There are a lot of fields that can be set on a loan, but most of
+            // them only affect the "math" when a payment is made. The only one
+            // that really affects behavior is the `tfLoanOverpayment` flag.
             lifecycle(
-                "default fields",
+                "Loan overpayment allowed",
                 env,
                 lender,
+                borrower,
                 evan,
-                vault,
-                // No modifications
+                broker,
+                tfLoanOverpayment,
                 {},
                 [&](SLE::const_ref broker) {
                     // Extra checks
-                    BEAST_EXPECT(!broker->isFieldPresent(sfManagementFeeRate));
-                    BEAST_EXPECT(!broker->isFieldPresent(sfCoverRateMinimum));
-                    BEAST_EXPECT(
-                        !broker->isFieldPresent(sfCoverRateLiquidation));
-                    BEAST_EXPECT(!broker->isFieldPresent(sfData));
-                    BEAST_EXPECT(!broker->isFieldPresent(sfDebtMaximum));
-                    BEAST_EXPECT(broker->at(sfDebtMaximum) == 0);
-                    BEAST_EXPECT(broker->at(sfCoverRateMinimum) == 0);
-                    BEAST_EXPECT(broker->at(sfCoverRateLiquidation) == 0);
                 },
                 [&](SLE::const_ref broker) {
                     // Modifications
-
-                    // Update the fields
-                    auto const nextKeylet =
-                        keylet::loanbroker(lender.id(), env.seq(lender));
-
-                    // fields that can't be changed
-                    // LoanBrokerID
-                    env(set(lender, broker.brokerID),
-                        loanBrokerID(nextKeylet.key),
-                        ter(tecNO_ENTRY));
-                    // VaultID
-                    env(set(lender, nextKeylet.key),
-                        loanBrokerID(broker->key()),
-                        ter(tecNO_PERMISSION));
-                    // Owner
-                    env(set(evan, broker.brokerID),
-                        loanBrokerID(broker->key()),
-                        ter(tecNO_PERMISSION));
-                    // ManagementFeeRate
-                    env(set(lender, broker.brokerID),
-                        loanBrokerID(broker->key()),
-                        managementFeeRate(maxManagementFeeRate),
-                        ter(temINVALID));
-                    // CoverRateMinimum
-                    env(set(lender, broker.brokerID),
-                        loanBrokerID(broker->key()),
-                        coverRateMinimum(maxManagementFeeRate),
-                        ter(temINVALID));
-                    // CoverRateLiquidation
-                    env(set(lender, broker.brokerID),
-                        loanBrokerID(broker->key()),
-                        coverRateLiquidation(maxManagementFeeRate),
-                        ter(temINVALID));
-
-                    // fields that can be changed
-                    testData = "Test Data 1234";
-                    // Bad data: too long
-                    env(set(lender, broker.brokerID),
-                        loanBrokerID(broker->key()),
-                        data(std::string(maxDataPayloadLength + 1, 'W')),
-                        ter(temINVALID));
-
-                    // Bad debt maximum
-                    env(set(lender, broker.brokerID),
-                        loanBrokerID(broker->key()),
-                        debtMaximum(Number(-175, -1)),
-                        ter(temINVALID));
-                    // Data & Debt maximum
-                    env(set(lender, broker.brokerID),
-                        loanBrokerID(broker->key()),
-                        data(testData),
-                        debtMaximum(Number(175, -1)));
                 },
                 [&](SLE::const_ref broker) {
                     // Check the updated fields
-                    BEAST_EXPECT(checkVL(broker->at(sfData), testData));
-                    BEAST_EXPECT(broker->at(sfDebtMaximum) == Number(175, -1));
                 });
 
+#if 0
             lifecycle(
                 "non-default fields",
                 env,
