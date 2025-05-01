@@ -94,7 +94,7 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
         auto const mptIssue =
             ctx.view.read(keylet::mptIssuance(mpt.getMptID()));
         if (mptIssue == nullptr)
-            return tecWRONG_ASSET;
+            return tecOBJECT_NOT_FOUND;
 
         std::uint32_t const issueFlags = mptIssue->getFieldU32(sfFlags);
         if (!(issueFlags & lsfMPTCanClawback))
