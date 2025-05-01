@@ -19,13 +19,11 @@
 #ifndef RIPPLE_APP_MISC_WASMHOSTFUNCIMPL_H_INLCUDED
 #define RIPPLE_APP_MISC_WASMHOSTFUNCIMPL_H_INLCUDED
 
+#include <xrpld/app/misc/WasmVM.h>
+#include <xrpld/app/tx/detail/ApplyContext.h>
+
 #include <xrpl/basics/Expected.h>
 #include <xrpl/protocol/TER.h>
-
-#include "xrpl/basics/base_uint.h"
-#include "xrpld/app/misc/WasmVM.h"
-#include "xrpld/app/tx/detail/ApplyContext.h"
-#include <wasmedge/wasmedge.h>
 
 namespace ripple {
 class WasmHostFunctionsImpl : public HostFunctions

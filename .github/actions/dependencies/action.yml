@@ -17,6 +17,7 @@ runs:
         conan export external/rocksdb rocksdb/9.7.3@
         conan export external/soci soci/4.0.3@
         conan export external/nudb nudb/2.0.8@
+        conan export -k external/wamr wamr/2.2.0@
     - name: add Ripple Conan remote
       shell: bash
       run: |
