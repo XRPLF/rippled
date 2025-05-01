@@ -377,6 +377,59 @@ class Delegate_test : public beast::unit_test::suite
     }
 
     void
+    testSequence(FeatureBitset features)
+    {
+        testcase("test sequence");
+        using namespace jtx;
+
+        Env env(*this, features);
+        Account alice{"alice"};
+        Account bob{"bob"};
+        Account carol{"carol"};
+        env.fund(XRP(10000), alice, bob, carol);
+        env.close();
+
+        auto aliceSeq = env.seq(alice);
+        auto bobSeq = env.seq(bob);
+        env(delegate::set(alice, bob, {"Payment"}));
+        env(delegate::set(bob, alice, {"Payment"}));
+        env.close();
+        BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
+        BEAST_EXPECT(env.seq(bob) == bobSeq + 1);
+        aliceSeq = env.seq(alice);
+        bobSeq = env.seq(bob);
+
+        for (auto i = 0; i < 20; ++i)
+        {
+            // bob is the delegated account, his sequence won't increment
+            env(pay(alice, carol, XRP(10)), fee(XRP(10)), delegate::as(bob));
+            env.close();
+            BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
+            BEAST_EXPECT(env.seq(bob) == bobSeq);
+            aliceSeq = env.seq(alice);
+
+            // bob sends payment for himself, his sequence will increment
+            env(pay(bob, carol, XRP(10)), fee(XRP(10)));
+            BEAST_EXPECT(env.seq(alice) == aliceSeq);
+            BEAST_EXPECT(env.seq(bob) == bobSeq + 1);
+            bobSeq = env.seq(bob);
+
+            // alice is the delegated account, her sequence won't increment
+            env(pay(bob, carol, XRP(10)), fee(XRP(10)), delegate::as(alice));
+            env.close();
+            BEAST_EXPECT(env.seq(alice) == aliceSeq);
+            BEAST_EXPECT(env.seq(bob) == bobSeq + 1);
+            bobSeq = env.seq(bob);
+
+            // alice sends payment for herself, her sequence will increment
+            env(pay(alice, carol, XRP(10)), fee(XRP(10)));
+            BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
+            BEAST_EXPECT(env.seq(bob) == bobSeq);
+            aliceSeq = env.seq(alice);
+        }
+    }
+
+    void
     testAccountDelete(FeatureBitset features)
     {
         testcase("test deleting account");
@@ -1310,6 +1363,7 @@ class Delegate_test : public beast::unit_test::suite
         testInvalidRequest(all);
         testReserve(all);
         testFee(all);
+        testSequence(all);
         testAccountDelete(all);
         testDelegateTransaction(all);
         testPaymentGranular(all);
