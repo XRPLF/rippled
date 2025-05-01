@@ -1,3 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classripple_1_1InboundTransactionSet.html" title=" " alt="" coords="5,5,220,31"/>
+<area shape="rect" id="node1" href="$classripple_1_1InboundTransactions.html" title="Manages the acquisition and lifetime of transaction sets." alt="" coords="5,5,205,31"/>
+<area shape="rect" id="node2" href="$classripple_1_1InboundTransactionsImp.html" title=" " alt="" coords="253,5,479,31"/>
 </map>

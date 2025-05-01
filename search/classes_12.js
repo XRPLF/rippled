@@ -78,7 +78,7 @@ var searchData=
   ['setsignerlist_75',['SetSignerList',['../classripple_1_1SetSignerList.html',1,'ripple']]],
   ['settrust_76',['SetTrust',['../classripple_1_1SetTrust.html',1,'ripple']]],
   ['settrust_5ftest_77',['SetTrust_test',['../classripple_1_1test_1_1SetTrust__test.html',1,'ripple::test']]],
-  ['setup_78',['Setup',['../structripple_1_1DatabaseCon_1_1Setup.html',1,'ripple::DatabaseCon::Setup'],['../structripple_1_1Overlay_1_1Setup.html',1,'ripple::Overlay::Setup'],['../structripple_1_1perf_1_1PerfLog_1_1Setup.html',1,'ripple::perf::PerfLog::Setup'],['../structripple_1_1ServerHandler_1_1Setup.html',1,'ripple::ServerHandler::Setup'],['../structripple_1_1TxQ_1_1Setup.html',1,'ripple::TxQ::Setup']]],
+  ['setup_78',['Setup',['../structripple_1_1DatabaseCon_1_1Setup.html',1,'ripple::DatabaseCon::Setup'],['../structripple_1_1HashRouter_1_1Setup.html',1,'ripple::HashRouter::Setup'],['../structripple_1_1Overlay_1_1Setup.html',1,'ripple::Overlay::Setup'],['../structripple_1_1perf_1_1PerfLog_1_1Setup.html',1,'ripple::perf::PerfLog::Setup'],['../structripple_1_1ServerHandler_1_1Setup.html',1,'ripple::ServerHandler::Setup'],['../structripple_1_1TxQ_1_1Setup.html',1,'ripple::TxQ::Setup']]],
   ['setupdata_79',['SetupData',['../structripple_1_1LedgerLoad__test_1_1SetupData.html',1,'ripple::LedgerLoad_test']]],
   ['sfield_80',['SField',['../classripple_1_1SField.html',1,'ripple']]],
   ['shamap_81',['SHAMap',['../classripple_1_1SHAMap.html',1,'ripple']]],

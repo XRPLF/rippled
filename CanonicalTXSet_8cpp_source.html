@@ -144,27 +144,31 @@ $(function() {
 <div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>    <span class="comment">//  1. Prioritize transactions with Sequences over transactions with</span></div>
 <div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>    <span class="comment">//     Tickets.</span></div>
 <div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>    <span class="comment">//</span></div>
-<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>    <span class="comment">//  2. Don&#39;t worry about consecutive Sequence numbers.  Creating Tickets</span></div>
-<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>    <span class="comment">//     can introduce a discontinuity in Sequence numbers.</span></div>
-<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>    <span class="comment">//</span></div>
-<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>    <span class="comment">//  3. After handling all transactions with Sequences, return Tickets</span></div>
-<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>    <span class="comment">//     with the lowest Ticket ID first.</span></div>
-<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;STTx const&gt;</a> result;</div>
-<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>    <a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span> effectiveAccount{<a class="code hl_function" href="classripple_1_1CanonicalTXSet.html#a64b2837251beb6d376d6e990eddbec1a">accountKey</a>(tx-&gt;getAccountID(sfAccount))};</div>
-<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span> </div>
-<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>    <a class="code hl_class" href="classripple_1_1CanonicalTXSet_1_1Key.html">Key</a> <span class="keyword">const</span> <a class="code hl_function" href="namespaceripple.html#ac3e90afb749bb1f01e06729c7c860ba3">after</a>(effectiveAccount, tx-&gt;getSeqProxy(), beast::zero);</div>
-<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>    <span class="keyword">auto</span> <span class="keyword">const</span> itrNext{<a class="code hl_variable" href="classripple_1_1CanonicalTXSet.html#aaf107ed20af02d019f2b5a4b26d7a1c3">map_</a>.lower_bound(<a class="code hl_function" href="namespaceripple.html#ac3e90afb749bb1f01e06729c7c860ba3">after</a>)};</div>
-<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>    <span class="keywordflow">if</span> (itrNext != <a class="code hl_variable" href="classripple_1_1CanonicalTXSet.html#aaf107ed20af02d019f2b5a4b26d7a1c3">map_</a>.end() &amp;&amp;</div>
-<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>        itrNext-&gt;first.getAccount() == effectiveAccount)</div>
-<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>    {</div>
-<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>        result = std::move(itrNext-&gt;second);</div>
-<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>        <a class="code hl_variable" href="classripple_1_1CanonicalTXSet.html#aaf107ed20af02d019f2b5a4b26d7a1c3">map_</a>.erase(itrNext);</div>
-<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>    }</div>
-<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span> </div>
-<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>    <span class="keywordflow">return</span> result;</div>
-<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>}</div>
-<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span> </div>
-<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>    <span class="comment">//  2. For transactions not using Tickets, look for consecutive Sequence</span></div>
+<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>    <span class="comment">//     numbers. For transactions using Tickets, don&#39;t worry about</span></div>
+<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>    <span class="comment">//     consecutive Sequence numbers. Tickets can process out of order.</span></div>
+<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>    <span class="comment">//</span></div>
+<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>    <span class="comment">//  3. After handling all transactions with Sequences, return Tickets</span></div>
+<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>    <span class="comment">//     with the lowest Ticket ID first.</span></div>
+<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;STTx const&gt;</a> result;</div>
+<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>    <a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span> effectiveAccount{<a class="code hl_function" href="classripple_1_1CanonicalTXSet.html#a64b2837251beb6d376d6e990eddbec1a">accountKey</a>(tx-&gt;getAccountID(sfAccount))};</div>
+<div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span> </div>
+<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>    <span class="keyword">auto</span> <span class="keyword">const</span> seqProxy = tx-&gt;getSeqProxy();</div>
+<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>    <a class="code hl_class" href="classripple_1_1CanonicalTXSet_1_1Key.html">Key</a> <span class="keyword">const</span> <a class="code hl_function" href="namespaceripple.html#ac3e90afb749bb1f01e06729c7c860ba3">after</a>(effectiveAccount, seqProxy, beast::zero);</div>
+<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>    <span class="keyword">auto</span> <span class="keyword">const</span> itrNext{<a class="code hl_variable" href="classripple_1_1CanonicalTXSet.html#aaf107ed20af02d019f2b5a4b26d7a1c3">map_</a>.lower_bound(<a class="code hl_function" href="namespaceripple.html#ac3e90afb749bb1f01e06729c7c860ba3">after</a>)};</div>
+<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>    <span class="keywordflow">if</span> (itrNext != <a class="code hl_variable" href="classripple_1_1CanonicalTXSet.html#aaf107ed20af02d019f2b5a4b26d7a1c3">map_</a>.end() &amp;&amp;</div>
+<div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>        itrNext-&gt;first.getAccount() == effectiveAccount &amp;&amp;</div>
+<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>        (!itrNext-&gt;second-&gt;getSeqProxy().isSeq() ||</div>
+<div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>         itrNext-&gt;second-&gt;getSeqProxy().value() == seqProxy.value() + 1))</div>
+<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>    {</div>
+<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>        result = std::move(itrNext-&gt;second);</div>
+<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>        <a class="code hl_variable" href="classripple_1_1CanonicalTXSet.html#aaf107ed20af02d019f2b5a4b26d7a1c3">map_</a>.erase(itrNext);</div>
+<div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>    }</div>
+<div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span> </div>
+<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>    <span class="keywordflow">return</span> result;</div>
+<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>}</div>
+<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span> </div>
+<div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>}  <span class="comment">// namespace ripple</span></div>
 <div class="ttc" id="aclassripple_1_1CanonicalTXSet_1_1Key_html"><div class="ttname"><a href="classripple_1_1CanonicalTXSet_1_1Key.html">ripple::CanonicalTXSet::Key</a></div><div class="ttdef"><b>Definition:</b> <a href="CanonicalTXSet_8h_source.html#l00041">CanonicalTXSet.h:42</a></div></div>
 <div class="ttc" id="aclassripple_1_1CanonicalTXSet_1_1Key_html_a16065c51871cd59dcc60b35fc1f90d18"><div class="ttname"><a href="classripple_1_1CanonicalTXSet_1_1Key.html#a16065c51871cd59dcc60b35fc1f90d18">ripple::CanonicalTXSet::Key::account_</a></div><div class="ttdeci">uint256 account_</div><div class="ttdef"><b>Definition:</b> <a href="CanonicalTXSet_8h_source.html#l00095">CanonicalTXSet.h:95</a></div></div>
 <div class="ttc" id="aclassripple_1_1CanonicalTXSet_1_1Key_html_a49c5b1001f07fe16961579305836ebab"><div class="ttname"><a href="classripple_1_1CanonicalTXSet_1_1Key.html#a49c5b1001f07fe16961579305836ebab">ripple::CanonicalTXSet::Key::seqProxy_</a></div><div class="ttdeci">SeqProxy seqProxy_</div><div class="ttdef"><b>Definition:</b> <a href="CanonicalTXSet_8h_source.html#l00097">CanonicalTXSet.h:97</a></div></div>
