@@ -19,6 +19,7 @@
 
 #include <test/jtx.h>
 
+#include <xrpld/app/misc/WasmVM.h>
 #include <xrpld/app/tx/applySteps.h>
 #include <xrpld/ledger/Dir.h>
 
@@ -1948,12 +1949,12 @@ struct Escrow_test : public beast::unit_test::suite
 
         {
             // not enough gas
-            // This function takes 110 gas
+            // This function takes 4 gas
             // In testing, 1 gas costs 1 drop
-            auto const finishFee = env.current()->fees().base + 108;
+            auto const finishFee = env.current()->fees().base + 4;
             env(finish(carol, alice, seq),
                 fee(finishFee),
-                comp_allowance(108),
+                comp_allowance(2),
                 ter(tecFAILED_PROCESSING));
         }
 

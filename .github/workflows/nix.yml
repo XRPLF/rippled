@@ -408,6 +408,7 @@ jobs:
             conan profile update 'conf.tools.build:cxxflags+=["-DBOOST_ASIO_DISABLE_CONCEPTS"]' default
             conan export external/snappy snappy/1.1.10@
             conan export external/soci soci/4.0.3@
+            conan export -k external/wamr wamr/2.2.0@
 
         - name: build dependencies
           run: |
