@@ -1153,18 +1153,22 @@ addEmptyHolding(
     auto const& dstId = accountID;
     auto const high = srcId > dstId;
     auto const index = keylet::line(srcId, dstId, currency);
-    auto const sle = view.peek(keylet::account(accountID));
-    if (!sle)
+    auto const sleSrc = view.peek(keylet::account(srcId));
+    auto const sleDst = view.peek(keylet::account(dstId));
+    if (!sleDst || !sleSrc)
         return tefINTERNAL;
-    if ((sle->getFlags() & lsfDefaultRipple) == 0)
+    if (!sleSrc->isFlag(lsfDefaultRipple))
         return tecINTERNAL;
+    // If the line already exists, don't create it again.
+    if (view.read(index))
+        return tecDUPLICATE;
     return trustCreate(
         view,
         high,
         srcId,
         dstId,
         index.key,
-        sle,
+        sleDst,
         /*auth=*/false,
         /*noRipple=*/true,
         /*freeze=*/false,
