@@ -74,13 +74,13 @@ struct FeeSetup
     XRPAmount owner_reserve{2 * DROPS_PER_XRP};
 
     /** The compute limit for Feature Extensions. */
-    std::uint32_t extension_compute_limit{4294967295};
+    std::uint32_t extension_compute_limit{1'000'000};
 
     /** The WASM size limit for Feature Extensions. */
-    std::uint32_t extension_size_limit{4294967295};
+    std::uint32_t extension_size_limit{100'000};
 
     /** The price of 1 WASM gas, in micro-drops. */
-    std::uint32_t gas_price{1000000};
+    std::uint32_t gas_price{1'000'000};
 
     /* (Remember to update the example cfg files when changing any of these
      * values.) */
