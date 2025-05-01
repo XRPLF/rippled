@@ -1111,7 +1111,7 @@ class Vault_test : public beast::unit_test::suite
                 env.close();
 
                 Vault vault{env};
-                Asset asset = issuer["IOU"];
+                Asset asset = issuer["IOU"].asset();
                 auto [tx, keylet] =
                     vault.create({.owner = owner, .asset = asset});
 
@@ -1131,7 +1131,7 @@ class Vault_test : public beast::unit_test::suite
                 env.close();
 
                 Vault vault{env};
-                Asset asset = issuer["IOU"];
+                Asset asset = issuer["IOU"].asset();
                 auto [tx, keylet] =
                     vault.create({.owner = owner, .asset = asset});
                 env(tx, ter(terNO_RIPPLE));
