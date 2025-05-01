@@ -80,7 +80,7 @@ struct FeeSetup
     std::uint32_t extension_size_limit{100'000};
 
     /** The price of 1 WASM gas, in micro-drops. */
-    std::uint32_t gas_price{1'000'000};
+    std::uint32_t gas_price{1'000};
 
     /* (Remember to update the example cfg files when changing any of these
      * values.) */
