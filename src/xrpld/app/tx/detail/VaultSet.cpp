@@ -83,7 +83,7 @@ VaultSet::preclaim(PreclaimContext const& ctx)
     auto const mptIssuanceID = (*vault)[sfShareMPTID];
     auto const sleIssuance = ctx.view.read(keylet::mptIssuance(mptIssuanceID));
     if (!sleIssuance)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     if (auto const domain = ctx.tx[~sfDomainID])
     {
@@ -101,7 +101,7 @@ VaultSet::preclaim(PreclaimContext const& ctx)
 
         // Sanity check only, this should be enforced by VaultCreate
         if ((sleIssuance->getFlags() & lsfMPTRequireAuth) == 0)
-            return tefINTERNAL;
+            return tefINTERNAL;  // LCOV_EXCL_LINE
     }
 
     return tesSUCCESS;
@@ -119,12 +119,12 @@ VaultSet::doApply()
     // Update existing object.
     auto vault = view().peek(keylet::vault(tx[sfVaultID]));
     if (!vault)
-        return tefINTERNAL;  // Enforced in preclaim
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const mptIssuanceID = (*vault)[sfShareMPTID];
     auto const sleIssuance = view().peek(keylet::mptIssuance(mptIssuanceID));
     if (!sleIssuance)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // Update mutable flags and fields if given.
     if (tx.isFieldPresent(sfData))

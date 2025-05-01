@@ -76,21 +76,21 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
     auto account = ctx.tx[sfAccount];
     auto const issuer = ctx.view.read(keylet::account(account));
     if (!issuer)
-        return tefINTERNAL;  // Transactor should have enforced this
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    Asset const asset = vault->at(sfAsset);
-    if (asset.native())
-        return tecNO_PERMISSION;  // Cannot clawback XRP.
-    else if (asset.getIssuer() != account)
-        return tecNO_PERMISSION;  // Only issuers can clawback.
-
-    auto const amount = ctx.tx[~sfAmount];
-    if (amount && asset != amount->asset())
+    Asset const vaultAsset = vault->at(sfAsset);
+    if (auto const amount = ctx.tx[~sfAmount];
+        amount && vaultAsset != amount->asset())
         return tecWRONG_ASSET;
 
-    if (asset.holds<MPTIssue>())
+    if (vaultAsset.native())
+        return tecNO_PERMISSION;  // Cannot clawback XRP.
+    else if (vaultAsset.getIssuer() != account)
+        return tecNO_PERMISSION;  // Only issuers can clawback.
+
+    if (vaultAsset.holds<MPTIssue>())
     {
-        auto const mpt = asset.get<MPTIssue>();
+        auto const mpt = vaultAsset.get<MPTIssue>();
         auto const mptIssue =
             ctx.view.read(keylet::mptIssuance(mpt.getMptID()));
         if (mptIssue == nullptr)
@@ -100,7 +100,7 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
         if (!(issueFlags & lsfMPTCanClawback))
             return tecNO_PERMISSION;
     }
-    else if (asset.holds<Issue>())
+    else if (vaultAsset.holds<Issue>())
     {
         std::uint32_t const issuerFlags = issuer->getFieldU32(sfFlags);
         if (!(issuerFlags & lsfAllowTrustLineClawback) ||
@@ -117,12 +117,12 @@ VaultClawback::doApply()
     auto const& tx = ctx_.tx;
     auto const vault = view().peek(keylet::vault(tx[sfVaultID]));
     if (!vault)
-        return tefINTERNAL;  // Enforced in preclaim
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const mptIssuanceID = (*vault)[sfShareMPTID];
     auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
     if (!sleIssuance)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     Asset const asset = vault->at(sfAsset);
     STAmount const amount = [&]() -> STAmount {

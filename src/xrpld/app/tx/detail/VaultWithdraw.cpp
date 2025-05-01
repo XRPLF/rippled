@@ -70,7 +70,7 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
 
     // Enforce valid withdrawal policy
     if (vault->at(sfWithdrawalPolicy) != vaultStrategyFirstComeFirstServe)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const account = ctx.tx[sfAccount];
     auto const dstAcct = [&]() -> AccountID {
@@ -146,7 +146,7 @@ VaultWithdraw::doApply()
         assets = sharesToAssetsWithdraw(vault, sleIssuance, shares);
     }
     else
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     if (accountHolds(
             view(),
@@ -194,7 +194,7 @@ VaultWithdraw::doApply()
             FreezeHandling::fhIGNORE_FREEZE,
             AuthHandling::ahIGNORE_AUTH,
             j_) < beast::zero)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     return tesSUCCESS;
 }

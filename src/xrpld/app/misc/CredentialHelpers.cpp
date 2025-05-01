@@ -79,8 +79,9 @@ deleteSLE(
         auto const sleAccount = view.peek(keylet::account(account));
         if (!sleAccount)
         {
-            JLOG(j.fatal()) << "Internal error: can't retrieve Owner account.";
-            return tecINTERNAL;
+            JLOG(j.fatal())  // LCOV_EXCL_LINE
+                << "Internal error: can't retrieve Owner account.";  // LCOV_EXCL_LINE
+            return tecINTERNAL;  // LCOV_EXCL_LINE
         }
 
         // Remove object from owner directory
@@ -88,8 +89,9 @@ deleteSLE(
         if (!view.dirRemove(
                 keylet::ownerDir(account), page, sleCredential->key(), false))
         {
-            JLOG(j.fatal()) << "Unable to delete Credential from owner.";
-            return tefBAD_LEDGER;
+            JLOG(j.fatal())                                    // LCOV_EXCL_LINE
+                << "Unable to delete Credential from owner.";  // LCOV_EXCL_LINE
+            return tefBAD_LEDGER;                              // LCOV_EXCL_LINE
         }
 
         if (isOwner)
@@ -237,13 +239,13 @@ authorizedDepositPreauth(
     for (auto const& h : credIDs)
     {
         auto sleCred = view.read(keylet::credential(h));
-        if (!sleCred)  // already checked in preclaim
-            return tefINTERNAL;
+        if (!sleCred)            // already checked in preclaim
+            return tefINTERNAL;  // LCOV_EXCL_LINE
 
         auto [it, ins] =
             sorted.emplace((*sleCred)[sfIssuer], (*sleCred)[sfCredentialType]);
         if (!ins)
-            return tefINTERNAL;
+            return tefINTERNAL;  // LCOV_EXCL_LINE
         lifeExtender.push_back(std::move(sleCred));
     }
 

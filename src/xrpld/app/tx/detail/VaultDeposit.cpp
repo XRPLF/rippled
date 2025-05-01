@@ -128,15 +128,14 @@ VaultDeposit::doApply()
 {
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
     if (!vault)
-        return tefINTERNAL;  // Enforced in preclaim
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const assets = ctx_.tx[sfAmount];
-
     // Make sure the depositor can hold shares.
     auto const mptIssuanceID = (*vault)[sfShareMPTID];
     auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
     if (!sleIssuance)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto const& vaultAccount = vault->at(sfAccount);
     // Note, vault owner is always authorized
@@ -208,7 +207,7 @@ VaultDeposit::doApply()
             FreezeHandling::fhIGNORE_FREEZE,
             AuthHandling::ahIGNORE_AUTH,
             j_) < beast::zero)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // Transfer shares from vault to depositor.
     if (auto ter = accountSend(

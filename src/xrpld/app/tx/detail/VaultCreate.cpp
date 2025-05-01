@@ -151,7 +151,7 @@ VaultCreate::doApply()
     auto sequence = tx.getSeqValue();
     auto owner = view().peek(keylet::account(account_));
     if (owner == nullptr)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     auto vault = std::make_shared<SLE>(keylet::vault(account_, sequence));
 
@@ -164,7 +164,7 @@ VaultCreate::doApply()
 
     auto maybePseudo = createPseudoAccount(view(), vault->key(), sfVaultID);
     if (!maybePseudo)
-        return maybePseudo.error();
+        return maybePseudo.error();  // LCOV_EXCL_LINE
     auto& pseudo = *maybePseudo;
     auto pseudoId = pseudo->at(sfAccount);
     auto asset = tx[sfAsset];
@@ -196,7 +196,7 @@ VaultCreate::doApply()
             .domainId = tx[~sfDomainID],
         });
     if (!maybeShare)
-        return maybeShare.error();
+        return maybeShare.error();  // LCOV_EXCL_LINE
     auto& share = *maybeShare;
 
     vault->at(sfFlags) = txFlags & tfVaultPrivate;

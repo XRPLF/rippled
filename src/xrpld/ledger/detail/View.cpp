@@ -1156,9 +1156,9 @@ addEmptyHolding(
     auto const sleSrc = view.peek(keylet::account(srcId));
     auto const sleDst = view.peek(keylet::account(dstId));
     if (!sleDst || !sleSrc)
-        return tefINTERNAL;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
     if (!sleSrc->isFlag(lsfDefaultRipple))
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
     // If the line already exists, don't create it again.
     if (view.read(index))
         return tecDUPLICATE;

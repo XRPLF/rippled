@@ -82,7 +82,7 @@ VaultDelete::doApply()
 {
     auto const vault = view().peek(keylet::vault(ctx_.tx[sfVaultID]));
     if (!vault)
-        return tefINTERNAL;  // Enforced in preclaim
+        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     // Destroy the asset holding.
     auto asset = vault->at(sfAsset);
