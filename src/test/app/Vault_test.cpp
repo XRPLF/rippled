@@ -1128,6 +1128,23 @@ class Vault_test : public beast::unit_test::suite
                 env(tx, ter(terNO_RIPPLE));
                 env.close();
             }
+
+            {
+                testcase("IOU no issuer");
+                Env env{
+                    *this, supported_amendments() | featureSingleAssetVault};
+                Account issuer{"issuer"};
+                Account owner{"owner"};
+                env.fund(XRP(1000), owner);
+                env.close();
+
+                Vault vault{env};
+                Asset asset = issuer["IOU"];
+                auto [tx, keylet] =
+                    vault.create({.owner = owner, .asset = asset});
+                env(tx, ter(terNO_ACCOUNT));
+                env.close();
+            }
         }
 
         {

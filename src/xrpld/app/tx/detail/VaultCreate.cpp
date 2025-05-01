@@ -116,7 +116,7 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
         auto const issuer =
             ctx.view.read(keylet::account(vaultAsset.getIssuer()));
         if (!issuer)
-            return terNO_ACCOUNT;  // LCOV_EXCL_LINE
+            return terNO_ACCOUNT;
         else if (!issuer->isFlag(lsfDefaultRipple))
             return terNO_RIPPLE;
     }
