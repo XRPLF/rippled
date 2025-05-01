@@ -32,12 +32,6 @@ namespace ripple {
 static std::optional<uint256>
 parseVault(Json::Value const& params, Json::Value& jvResult)
 {
-    if (!params.isObject())
-    {
-        jvResult[jss::error] = "malformedRequest";
-        return std::nullopt;
-    }
-
     auto const hasVaultId = params.isMember(jss::vault_id);
     auto const hasOwner = params.isMember(jss::owner);
     auto const hasSeq = params.isMember(jss::seq);

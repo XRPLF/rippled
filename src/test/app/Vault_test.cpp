@@ -2229,6 +2229,16 @@ class Vault_test : public beast::unit_test::suite
         }
 
         {
+            testcase("RPC vault_info invalid vault_id");
+            Json::Value jvParams;
+            jvParams[jss::ledger_index] = jss::validated;
+            jvParams[jss::vault_id] = "foobar";
+            auto jv = env.rpc("json", "vault_info", to_string(jvParams));
+            BEAST_EXPECT(
+                jv[jss::result][jss::error].asString() == "malformedRequest");
+        }
+
+        {
             testcase("RPC vault_info json invalid index");
             Json::Value jvParams;
             jvParams[jss::ledger_index] = jss::validated;
