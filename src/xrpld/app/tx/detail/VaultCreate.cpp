@@ -100,7 +100,9 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
     auto vaultAsset = ctx.tx[sfAsset];
     auto account = ctx.tx[sfAccount];
 
-    if (vaultAsset.holds<MPTIssue>())
+    if (vaultAsset.native())
+        ;  // No special checks for XRP
+    else if (vaultAsset.holds<MPTIssue>())
     {
         auto mptID = vaultAsset.get<MPTIssue>().getMptID();
         auto issuance = ctx.view.read(keylet::mptIssuance(mptID));
@@ -108,6 +110,15 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
             return tecOBJECT_NOT_FOUND;
         if ((issuance->getFlags() & lsfMPTCanTransfer) == 0)
             return tecNO_AUTH;
+    }
+    else if (vaultAsset.holds<Issue>())
+    {
+        auto const issuer =
+            ctx.view.read(keylet::account(vaultAsset.getIssuer()));
+        if (!issuer)
+            return terNO_ACCOUNT;  // LCOV_EXCL_LINE
+        else if (!issuer->isFlag(lsfDefaultRipple))
+            return terNO_RIPPLE;
     }
 
     // Check for pseudo-account issuers - we do not want a vault to hold such

@@ -1090,22 +1090,44 @@ class Vault_test : public beast::unit_test::suite
     {
         using namespace test::jtx;
         {
-            testcase("IOU fail create frozen");
-            Env env{*this, supported_amendments() | featureSingleAssetVault};
-            Account issuer{"issuer"};
-            Account owner{"owner"};
-            Account depositor{"depositor"};
-            env.fund(XRP(1000), issuer, owner, depositor);
-            env.close();
-            Vault vault{env};
-            Asset asset = issuer["IOU"];
+            {
+                testcase("IOU fail create frozen");
+                Env env{
+                    *this, supported_amendments() | featureSingleAssetVault};
+                Account issuer{"issuer"};
+                Account owner{"owner"};
+                env.fund(XRP(1000), issuer, owner);
+                env.close();
+                env(fset(issuer, asfGlobalFreeze));
+                env.close();
 
-            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+                Vault vault{env};
+                Asset asset = issuer["IOU"];
+                auto [tx, keylet] =
+                    vault.create({.owner = owner, .asset = asset});
 
-            env(fset(issuer, asfGlobalFreeze));
-            env.close();
-            env(tx, ter(tecFROZEN));
-            env.close();
+                env(tx, ter(tecFROZEN));
+                env.close();
+            }
+
+            {
+                testcase("IOU fail create no ripling");
+                Env env{
+                    *this, supported_amendments() | featureSingleAssetVault};
+                Account issuer{"issuer"};
+                Account owner{"owner"};
+                env.fund(XRP(1000), issuer, owner);
+                env.close();
+                env(fclear(issuer, asfDefaultRipple));
+                env.close();
+
+                Vault vault{env};
+                Asset asset = issuer["IOU"];
+                auto [tx, keylet] =
+                    vault.create({.owner = owner, .asset = asset});
+                env(tx, ter(terNO_RIPPLE));
+                env.close();
+            }
         }
 
         {

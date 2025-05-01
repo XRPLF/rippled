@@ -1147,7 +1147,7 @@ addEmptyHolding(
     auto const& issuerId = issue.getIssuer();
     auto const& currency = issue.currency;
     if (isGlobalFrozen(view, issuerId))
-        return tecFROZEN;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     auto const& srcId = issuerId;
     auto const& dstId = accountID;
