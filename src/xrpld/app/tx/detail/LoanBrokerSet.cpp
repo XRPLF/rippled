@@ -141,6 +141,8 @@ LoanBrokerSet::preclaim(PreclaimContext const& ctx)
             JLOG(ctx.j.warn()) << "Account is not the owner of the Vault.";
             return tecNO_PERMISSION;
         }
+        if (auto const ter = canAddHolding(ctx.view, sleVault->at(sfAsset)))
+            return ter;
     }
     return tesSUCCESS;
 }

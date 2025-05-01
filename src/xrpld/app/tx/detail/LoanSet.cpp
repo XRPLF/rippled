@@ -200,6 +200,10 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         // Should be impossible
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const asset = vault->at(sfAsset);
+
+    if (auto const ter = canAddHolding(ctx.view, asset))
+        return ter;
+
     if (isFrozen(ctx.view, brokerOwner, asset) ||
         isFrozen(ctx.view, brokerPseudo, asset))
     {
@@ -212,6 +216,7 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         if (isDeepFrozen(ctx.view, borrower, issue.currency, issue.account))
             return tecFROZEN;
     }
+
     auto const principalRequested = tx[sfPrincipalRequested];
     if (auto const assetsAvailable = vault->at(sfAssetsAvailable);
         assetsAvailable < principalRequested)

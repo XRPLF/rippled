@@ -552,6 +552,11 @@ isPseudoAccount(ReadView const& view, AccountID accountId)
 }
 
 [[nodiscard]] TER
+canAddHolding(ReadView const& view, Asset const& asset);
+
+/// Any transactors that call addEmptyHolding() in doApply must call
+/// canAddHolding() in preflight with the same View and Asset
+[[nodiscard]] TER
 addEmptyHolding(
     ApplyView& view,
     AccountID const& accountID,

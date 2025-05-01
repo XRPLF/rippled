@@ -1151,6 +1151,44 @@ createPseudoAccount(
 }
 
 [[nodiscard]] TER
+canAddHolding(ReadView const& view, Issue const& issue)
+{
+    if (issue.native())
+        return tesSUCCESS;  // No special checks for XRP
+
+    auto const issuer = view.read(keylet::account(issue.getIssuer()));
+    if (!issuer)
+        return terNO_ACCOUNT;
+    else if (!issuer->isFlag(lsfDefaultRipple))
+        return terNO_RIPPLE;
+
+    return tesSUCCESS;
+}
+
+[[nodiscard]] TER
+canAddHolding(ReadView const& view, MPTIssue const& mptIssue)
+{
+    auto mptID = mptIssue.getMptID();
+    auto issuance = view.read(keylet::mptIssuance(mptID));
+    if (!issuance)
+        return tecOBJECT_NOT_FOUND;
+    if (!issuance->isFlag(lsfMPTCanTransfer))
+        return tecNO_AUTH;
+
+    return tesSUCCESS;
+}
+
+[[nodiscard]] TER
+canAddHolding(ReadView const& view, Asset const& asset)
+{
+    return std::visit(
+        [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
+            return canAddHolding(view, issue);
+        },
+        asset.value());
+}
+
+[[nodiscard]] TER
 addEmptyHolding(
     ApplyView& view,
     AccountID const& accountID,
