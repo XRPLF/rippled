@@ -48,8 +48,8 @@ print_wasm_error(const char* message, wasm_trap_t* trap)
 
 }  // namespace
 
-mod_inst_t
-my_mod_inst_t::init(
+InstancePtr
+InstanceWrapper::init(
     wasm_store_t* s,
     wasm_module_t* m,
     int32_t maxPages,
@@ -62,7 +62,7 @@ my_mod_inst_t::init(
         256 * 1024,
         static_cast<uint32_t>(maxPages > 0 ? maxPages : 0)};
 
-    mod_inst_t mi = mod_inst_t(
+    InstancePtr mi = InstancePtr(
         wasm_instance_new_with_args_ex(s, m, &imports, &trap, &inst_args),
         &wasm_instance_delete);
 
@@ -75,21 +75,21 @@ my_mod_inst_t::init(
     return mi;
 }
 
-my_mod_inst_t::my_mod_inst_t()
+InstanceWrapper::InstanceWrapper()
     : exports{0, nullptr, 0, 0, nullptr}
     , mod_inst(nullptr, &wasm_instance_delete)
 {
 }
 
-my_mod_inst_t::my_mod_inst_t(my_mod_inst_t&& o)
+InstanceWrapper::InstanceWrapper(InstanceWrapper&& o)
     : exports{0, nullptr, 0, 0, nullptr}
     , mod_inst(nullptr, &wasm_instance_delete)
 {
     *this = std::move(o);
 }
 
-my_mod_inst_t&
-my_mod_inst_t::operator=(my_mod_inst_t&& o)
+InstanceWrapper&
+InstanceWrapper::operator=(InstanceWrapper&& o)
 {
     if (this == &o)
         return *this;
@@ -104,7 +104,7 @@ my_mod_inst_t::operator=(my_mod_inst_t&& o)
     return *this;
 }
 
-my_mod_inst_t::my_mod_inst_t(
+InstanceWrapper::InstanceWrapper(
     wasm_store_t* s,
     wasm_module_t* m,
     int32_t maxPages,
@@ -113,19 +113,19 @@ my_mod_inst_t::my_mod_inst_t(
 {
 }
 
-my_mod_inst_t::~my_mod_inst_t()
+InstanceWrapper::~InstanceWrapper()
 {
     if (exports.size)
         wasm_extern_vec_delete(&exports);
 }
 
-my_mod_inst_t::operator bool() const
+InstanceWrapper::operator bool() const
 {
     return static_cast<bool>(mod_inst);
 }
 
 wasm_func_t*
-my_mod_inst_t::getFunc(
+InstanceWrapper::getFunc(
     std::string_view funcName,
     wasm_exporttype_vec_t const& export_types) const
 {
@@ -164,7 +164,7 @@ my_mod_inst_t::getFunc(
 }
 
 wmem
-my_mod_inst_t::getMem() const
+InstanceWrapper::getMem() const
 {
     wasm_memory_t* mem = nullptr;
     for (unsigned i = 0; i < exports.size; ++i)
@@ -187,8 +187,8 @@ my_mod_inst_t::getMem() const
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-module_t
-my_module_t::init(wasm_store_t* s, wbytes const& wasmBin)
+ModulePtr
+ModuleWrapper::init(wasm_store_t* s, wbytes const& wasmBin)
 {
     wasm_byte_vec_t const code{
         wasmBin.size(),
@@ -196,25 +196,25 @@ my_module_t::init(wasm_store_t* s, wbytes const& wasmBin)
         wasmBin.size(),
         sizeof(std::remove_reference_t<decltype(wasmBin)>::value_type),
         nullptr};
-    module_t m = module_t(wasm_module_new(s, &code), &wasm_module_delete);
+    ModulePtr m = ModulePtr(wasm_module_new(s, &code), &wasm_module_delete);
     return m;
 }
 
-my_module_t::my_module_t()
+ModuleWrapper::ModuleWrapper()
     : module(nullptr, &wasm_module_delete)
     , export_types{0, nullptr, 0, 0, nullptr}
 {
 }
 
-my_module_t::my_module_t(my_module_t&& o)
+ModuleWrapper::ModuleWrapper(ModuleWrapper&& o)
     : module(nullptr, &wasm_module_delete)
     , export_types{0, nullptr, 0, 0, nullptr}
 {
     *this = std::move(o);
 }
 
-my_module_t&
-my_module_t::operator=(my_module_t&& o)
+ModuleWrapper&
+ModuleWrapper::operator=(ModuleWrapper&& o)
 {
     if (this == &o)
         return *this;
@@ -230,7 +230,7 @@ my_module_t::operator=(my_module_t&& o)
     return *this;
 }
 
-my_module_t::my_module_t(
+ModuleWrapper::ModuleWrapper(
     wasm_store_t* s,
     wbytes const& wasmBin,
     bool instantiate,
@@ -249,19 +249,19 @@ my_module_t::my_module_t(
     }
 }
 
-my_module_t::~my_module_t()
+ModuleWrapper::~ModuleWrapper()
 {
     if (export_types.size)
         wasm_exporttype_vec_delete(&export_types);
 }
 
-my_module_t::operator bool() const
+ModuleWrapper::operator bool() const
 {
     return mod_inst;
 }
 
 void
-my_module_t::makeImpParams(wasm_valtype_vec_t& v, WasmImportFunc const& imp)
+ModuleWrapper::makeImpParams(wasm_valtype_vec_t& v, WasmImportFunc const& imp)
 {
     auto const paramSize = imp.params.size();
 
@@ -296,7 +296,7 @@ my_module_t::makeImpParams(wasm_valtype_vec_t& v, WasmImportFunc const& imp)
 }
 
 void
-my_module_t::makeImpReturn(wasm_valtype_vec_t& v, WasmImportFunc const& imp)
+ModuleWrapper::makeImpReturn(wasm_valtype_vec_t& v, WasmImportFunc const& imp)
 {
     if (imp.result)
     {
@@ -325,7 +325,7 @@ my_module_t::makeImpReturn(wasm_valtype_vec_t& v, WasmImportFunc const& imp)
 }
 
 wasm_extern_vec_t
-my_module_t::buildImports(
+ModuleWrapper::buildImports(
     wasm_store_t* s,
     std::vector<WasmImportFunc> const& imports)
 {
@@ -391,19 +391,19 @@ my_module_t::buildImports(
 }
 
 wasm_func_t*
-my_module_t::getFunc(std::string_view funcName) const
+ModuleWrapper::getFunc(std::string_view funcName) const
 {
     return mod_inst.getFunc(funcName, export_types);
 }
 
 wmem
-my_module_t::getMem() const
+ModuleWrapper::getMem() const
 {
     return mod_inst.getMem();
 }
 
 int
-my_module_t::addInstance(
+ModuleWrapper::addInstance(
     wasm_store_t* s,
     int32_t maxPages,
     wasm_extern_vec_t const& imports)
@@ -425,7 +425,7 @@ my_module_t::addInstance(
 // }
 
 std::int64_t
-my_module_t::setGas(std::int64_t gas)
+ModuleWrapper::setGas(std::int64_t gas)
 {
     if (exec_env)
     {
@@ -436,7 +436,7 @@ my_module_t::setGas(std::int64_t gas)
 }
 
 std::int64_t
-my_module_t::getGas()
+ModuleWrapper::getGas()
 {
     return exec_env ? wasm_runtime_get_instruction_count_limit(exec_env) : 0;
 }
@@ -469,7 +469,7 @@ WamrEngine::addModule(
     module.reset();
     store.reset();  // to free the memory before creating new store
     store = {wasm_store_new(engine.get()), &wasm_store_delete};
-    module = std::make_unique<my_module_t>(
+    module = std::make_unique<ModuleWrapper>(
         store.get(), wasmCode, instantiate, defMaxPages, imports);
     setGas(defGas);
     return module ? 0 : -1;
@@ -534,7 +534,7 @@ WamrEngine::add_param(std::vector<wasm_val_t>& in, int64_t p)
 }
 
 template <int NR, class... Types>
-wsm_res
+WamrResult
 WamrEngine::call(std::string_view func, Types... args)
 {
     // Lookup our export function
@@ -543,7 +543,7 @@ WamrEngine::call(std::string_view func, Types... args)
 }
 
 template <int NR, class... Types>
-wsm_res
+WamrResult
 WamrEngine::call(wasm_func_t* func, Types... args)
 {
     std::vector<wasm_val_t> in;
@@ -551,11 +551,11 @@ WamrEngine::call(wasm_func_t* func, Types... args)
 }
 
 template <int NR, class... Types>
-wsm_res
+WamrResult
 WamrEngine::call(wasm_func_t* func, std::vector<wasm_val_t>& in)
 {
     // wasm_val_t rs[1] = {WASM_I32_VAL(0)};
-    wsm_res ret(NR);
+    WamrResult ret(NR);
     // if (NR)  {   wasm_val_vec_new_uninitialized(&ret, NR);    //
     // wasm_val_vec_new(&ret, NR, &rs[0]);    // ret = WASM_ARRAY_VEC(rs);    }
 
@@ -578,7 +578,7 @@ WamrEngine::call(wasm_func_t* func, std::vector<wasm_val_t>& in)
 }
 
 template <int NR, class... Types>
-wsm_res
+WamrResult
 WamrEngine::call(
     wasm_func_t* func,
     std::vector<wasm_val_t>& in,
@@ -590,7 +590,7 @@ WamrEngine::call(
 }
 
 template <int NR, class... Types>
-wsm_res
+WamrResult
 WamrEngine::call(
     wasm_func_t* func,
 
@@ -603,7 +603,7 @@ WamrEngine::call(
 }
 
 template <int NR, class... Types>
-wsm_res
+WamrResult
 WamrEngine::call(
     wasm_func_t* func,
     std::vector<wasm_val_t>& in,
@@ -629,7 +629,7 @@ WamrEngine::call(
 }
 
 template <int NR, class... Types>
-wsm_res
+WamrResult
 WamrEngine::call(
     wasm_func_t* func,
     std::vector<wasm_val_t>& in,

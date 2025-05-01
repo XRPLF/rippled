@@ -27,31 +27,31 @@ namespace ripple {
 
 // clang-format off
 
-struct wsm_res
+struct WamrResult
 {
     wasm_val_vec_t r;
-    wsm_res(unsigned N = 0):r{0, nullptr, 0, 0, nullptr} {if (N) wasm_val_vec_new_uninitialized(&r, N);}
-    ~wsm_res() { if (r.size) wasm_val_vec_delete(&r); }
-    wsm_res(wsm_res const &) = delete;
-    wsm_res& operator=(wsm_res const &) = delete;
+    WamrResult(unsigned N = 0):r{0, nullptr, 0, 0, nullptr} {if (N) wasm_val_vec_new_uninitialized(&r, N);}
+    ~WamrResult() { if (r.size) wasm_val_vec_delete(&r); }
+    WamrResult(WamrResult const &) = delete;
+    WamrResult& operator=(WamrResult const &) = delete;
 
-    wsm_res(wsm_res &&o) {*this = std::move(o);}
-    wsm_res& operator=(wsm_res  &&o){r = o.r; o.r = {0, nullptr, 0, 0, nullptr}; return *this;}
+    WamrResult(WamrResult &&o) {*this = std::move(o);}
+    WamrResult& operator=(WamrResult  &&o){r = o.r; o.r = {0, nullptr, 0, 0, nullptr}; return *this;}
     //operator wasm_val_vec_t &() {return r;}
 };
 
-using module_t = std::unique_ptr<wasm_module_t, decltype(&wasm_module_delete)>;
-using mod_inst_t = std::unique_ptr<wasm_instance_t, decltype(&wasm_instance_delete)>;
+using ModulePtr = std::unique_ptr<wasm_module_t, decltype(&wasm_module_delete)>;
+using InstancePtr = std::unique_ptr<wasm_instance_t, decltype(&wasm_instance_delete)>;
 
 // clang-format on
 
-struct my_mod_inst_t
+struct InstanceWrapper
 {
     wasm_extern_vec_t exports;
-    mod_inst_t mod_inst;
+    InstancePtr mod_inst;
 
 private:
-    static mod_inst_t
+    static InstancePtr
     init(
         wasm_store_t* s,
         wasm_module_t* m,
@@ -60,20 +60,20 @@ private:
         wasm_extern_vec_t const& imports = WASM_EMPTY_VEC);
 
 public:
-    my_mod_inst_t();
+    InstanceWrapper();
 
-    my_mod_inst_t(my_mod_inst_t&& o);
+    InstanceWrapper(InstanceWrapper&& o);
 
-    my_mod_inst_t&
-    operator=(my_mod_inst_t&& o);
+    InstanceWrapper&
+    operator=(InstanceWrapper&& o);
 
-    my_mod_inst_t(
+    InstanceWrapper(
         wasm_store_t* s,
         wasm_module_t* m,
         int32_t maxPages,
         wasm_extern_vec_t const& imports = WASM_EMPTY_VEC);
 
-    ~my_mod_inst_t();
+    ~InstanceWrapper();
 
     operator bool() const;
 
@@ -86,29 +86,29 @@ public:
     getMem() const;
 };
 
-struct my_module_t
+struct ModuleWrapper
 {
-    module_t module;
+    ModulePtr module;
     wasm_exec_env_t exec_env = nullptr;
-    my_mod_inst_t mod_inst;
+    InstanceWrapper mod_inst;
     wasm_exporttype_vec_t export_types;
 
 private:
-    static module_t
+    static ModulePtr
     init(wasm_store_t* s, wbytes const& wasmBin);
 
 public:
-    my_module_t();
-    my_module_t(my_module_t&& o);
-    my_module_t&
-    operator=(my_module_t&& o);
-    my_module_t(
+    ModuleWrapper();
+    ModuleWrapper(ModuleWrapper&& o);
+    ModuleWrapper&
+    operator=(ModuleWrapper&& o);
+    ModuleWrapper(
         wasm_store_t* s,
         wbytes const& wasmBin,
         bool instantiate,
         int32_t maxPages,
         std::vector<WasmImportFunc> const& imports = {});
-    ~my_module_t();
+    ~ModuleWrapper();
 
     operator bool() const;
 
@@ -142,7 +142,7 @@ class WamrEngine
 {
     std::unique_ptr<wasm_engine_t, decltype(&wasm_engine_delete)> engine;
     std::unique_ptr<wasm_store_t, decltype(&wasm_store_delete)> store;
-    std::unique_ptr<my_module_t> module;
+    std::unique_ptr<ModuleWrapper> module;
     wasm_trap_t* trap = nullptr;
     std::int64_t defGas = -1;
     std::int32_t defMaxPages = -1;
@@ -216,19 +216,19 @@ private:
     add_param(std::vector<wasm_val_t>& in, int64_t p);
 
     template <int NR, class... Types>
-    inline wsm_res
+    inline WamrResult
     call(std::string_view func, Types... args);
 
     template <int NR, class... Types>
-    inline wsm_res
+    inline WamrResult
     call(wasm_func_t* func, Types... args);
 
     template <int NR, class... Types>
-    inline wsm_res
+    inline WamrResult
     call(wasm_func_t* f, std::vector<wasm_val_t>& in);
 
     template <int NR, class... Types>
-    inline wsm_res
+    inline WamrResult
     call(
         wasm_func_t* func,
         std::vector<wasm_val_t>& in,
@@ -236,7 +236,7 @@ private:
         Types... args);
 
     template <int NR, class... Types>
-    inline wsm_res
+    inline WamrResult
     call(
         wasm_func_t* func,
         std::vector<wasm_val_t>& in,
@@ -244,7 +244,7 @@ private:
         Types... args);
 
     template <int NR, class... Types>
-    inline wsm_res
+    inline WamrResult
     call(
         wasm_func_t* func,
         std::vector<wasm_val_t>& in,
@@ -253,7 +253,7 @@ private:
         Types... args);
 
     template <int NR, class... Types>
-    inline wsm_res
+    inline WamrResult
     call(
         wasm_func_t* func,
         std::vector<wasm_val_t>& in,
