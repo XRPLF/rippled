@@ -77,6 +77,8 @@ class Vault_test : public beast::unit_test::suite
                                       Vault& vault,
                                       PrettyAsset const& asset) {
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            tx[sfData] = "AFEED00E";
+            tx[sfAssetsMaximum] = asset(100).number();
             env(tx);
             env.close();
             BEAST_EXPECT(env.le(keylet));
@@ -148,6 +150,13 @@ class Vault_test : public beast::unit_test::suite
                 testcase(prefix + " set maximum higher than current amount");
                 auto tx = vault.set({.owner = owner, .id = keylet.key});
                 tx[sfAssetsMaximum] = asset(150).number();
+                env(tx);
+            }
+
+            {
+                testcase(prefix + " set data");
+                auto tx = vault.set({.owner = owner, .id = keylet.key});
+                tx[sfData] = "0";
                 env(tx);
             }
 
@@ -1140,10 +1149,12 @@ class Vault_test : public beast::unit_test::suite
 
                 Vault vault{env};
                 Asset asset = issuer["IOU"];
-                auto [tx, keylet] =
-                    vault.create({.owner = owner, .asset = asset});
-                env(tx, ter(terNO_ACCOUNT));
-                env.close();
+                {
+                    auto [tx, keylet] =
+                        vault.create({.owner = owner, .asset = asset});
+                    env(tx, ter(terNO_ACCOUNT));
+                    env.close();
+                }
             }
         }
 
@@ -1517,6 +1528,28 @@ class Vault_test : public beast::unit_test::suite
             env.close();
 
             {
+                auto [tx, keylet] =
+                    vault.create({.owner = depositor, .asset = asset});
+                env(tx, ter{tecOBJECT_NOT_FOUND});
+            }
+
+            {
+                auto tx = vault.deposit(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = asset(10)});
+                env(tx, ter{tecOBJECT_NOT_FOUND});
+            }
+
+            {
+                auto tx = vault.withdraw(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = asset(10)});
+                env(tx, ter{tecOBJECT_NOT_FOUND});
+            }
+
+            {
                 auto tx = vault.clawback(
                     {.issuer = issuer,
                      .id = keylet.key,
@@ -1524,6 +1557,8 @@ class Vault_test : public beast::unit_test::suite
                      .amount = asset(0)});
                 env(tx, ter{tecOBJECT_NOT_FOUND});
             }
+
+            env(vault.del({.owner = owner, .id = keylet.key}));
         });
 
         testCase(
@@ -1705,6 +1740,444 @@ class Vault_test : public beast::unit_test::suite
             env(tx2, ter{tecWRONG_ASSET});
             env.close();
         }
+    }
+
+    void
+    testWithIOU()
+    {
+        auto testCase =
+            [&, this](
+                std::function<void(
+                    Env & env,
+                    Account const& owner,
+                    Account const& issuer,
+                    Account const& charlie,
+                    std::function<AccountID(ripple::Keylet)> vaultAccount,
+                    Vault& vault,
+                    PrettyAsset const& asset,
+                    std::function<MPTID(ripple::Keylet)> issuanceId,
+                    std::function<PrettyAmount(ripple::Keylet)> vaultBalance)>
+                    test) {
+                Env env{
+                    *this, supported_amendments() | featureSingleAssetVault};
+                Account const owner{"owner"};
+                Account const issuer{"issuer"};
+                Account const charlie{"charlie"};
+                Vault vault{env};
+                env.fund(XRP(1000), issuer, owner, charlie);
+                env(fset(issuer, asfAllowTrustLineClawback));
+                env.close();
+
+                PrettyAsset const asset = issuer["IOU"];
+                env.trust(asset(1000), owner);
+                env(pay(issuer, owner, asset(200)));
+                env(rate(issuer, 1.25));
+                env.close();
+
+                auto const [tx, keylet] =
+                    vault.create({.owner = owner, .asset = asset});
+                env(tx);
+                env.close();
+
+                auto const vaultAccount =
+                    [&env](ripple::Keylet keylet) -> AccountID {
+                    return env.le(keylet)->at(sfAccount);
+                };
+                auto const issuanceId = [&env](ripple::Keylet keylet) -> MPTID {
+                    return env.le(keylet)->at(sfShareMPTID);
+                };
+                auto const vaultBalance =  //
+                    [&env, &vaultAccount, issue = asset.raw().get<Issue>()](
+                        ripple::Keylet keylet) -> PrettyAmount {
+                    auto const account = vaultAccount(keylet);
+                    auto const sle = env.le(keylet::line(account, issue));
+                    if (sle == nullptr)
+                        return {
+                            STAmount(issue, 0),
+                            env.lookup(issue.account).name()};
+                    auto amount = sle->getFieldAmount(sfBalance);
+                    amount.setIssuer(issue.account);
+                    if (account > issue.account)
+                        amount.negate();
+                    return {amount, env.lookup(issue.account).name()};
+                };
+
+                test(
+                    env,
+                    owner,
+                    issuer,
+                    charlie,
+                    vaultAccount,
+                    vault,
+                    asset,
+                    issuanceId,
+                    vaultBalance);
+            };
+
+        testCase([&, this](
+                     Env& env,
+                     Account const& owner,
+                     Account const& issuer,
+                     Account const&,
+                     auto vaultAccount,
+                     Vault& vault,
+                     PrettyAsset const& asset,
+                     auto&&...) {
+            testcase("IOU cannot use different asset");
+            PrettyAsset const foo = issuer["FOO"];
+
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            {
+                // Cannot create new trustline to a vault
+                auto tx = [&, account = vaultAccount(keylet)]() {
+                    Json::Value jv;
+                    jv[jss::Account] = issuer.human();
+                    {
+                        auto& ja = jv[jss::LimitAmount] =
+                            foo(0).value().getJson(JsonOptions::none);
+                        ja[jss::issuer] = toBase58(account);
+                    }
+                    jv[jss::TransactionType] = jss::TrustSet;
+                    jv[jss::Flags] = tfSetFreeze;
+                    return jv;
+                }();
+                env(tx, ter{tecNO_PERMISSION});
+                env.close();
+            }
+
+            {
+                auto tx = vault.deposit(
+                    {.depositor = issuer, .id = keylet.key, .amount = foo(20)});
+                env(tx, ter{tecWRONG_ASSET});
+                env.close();
+            }
+
+            {
+                auto tx = vault.withdraw(
+                    {.depositor = issuer, .id = keylet.key, .amount = foo(20)});
+                env(tx, ter{tecWRONG_ASSET});
+                env.close();
+            }
+
+            env(vault.del({.owner = owner, .id = keylet.key}));
+            env.close();
+        });
+
+        testCase([&, this](
+                     Env& env,
+                     Account const& owner,
+                     Account const& issuer,
+                     Account const& charlie,
+                     auto vaultAccount,
+                     Vault& vault,
+                     PrettyAsset const& asset,
+                     auto issuanceId,
+                     auto) {
+            testcase("IOU frozen trust line to vault account");
+
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            env(vault.deposit(
+                {.depositor = owner, .id = keylet.key, .amount = asset(100)}));
+            env.close();
+
+            Asset const share = Asset(issuanceId(keylet));
+
+            // Freeze the trustline to the vault
+            auto trustSet = [&, account = vaultAccount(keylet)]() {
+                Json::Value jv;
+                jv[jss::Account] = issuer.human();
+                {
+                    auto& ja = jv[jss::LimitAmount] =
+                        asset(0).value().getJson(JsonOptions::none);
+                    ja[jss::issuer] = toBase58(account);
+                }
+                jv[jss::TransactionType] = jss::TrustSet;
+                jv[jss::Flags] = tfSetFreeze;
+                return jv;
+            }();
+            env(trustSet);
+            env.close();
+
+            {
+                // Note, the "frozen" state of the trust line to vault account
+                // is reported as  "locked" state of the vault shares, because
+                // this state is attached to shares by means of the transitive
+                // isFrozen.
+                auto tx = vault.deposit(
+                    {.depositor = owner,
+                     .id = keylet.key,
+                     .amount = asset(80)});
+                env(tx, ter{tecLOCKED});
+            }
+
+            {
+                auto tx = vault.withdraw(
+                    {.depositor = owner,
+                     .id = keylet.key,
+                     .amount = asset(100)});
+                env(tx, ter{tecLOCKED});
+
+                // also when trying to withdraw to a 3rd party
+                tx[sfDestination] = charlie.human();
+                env(tx, ter{tecLOCKED});
+                env.close();
+            }
+
+            {
+                // Clawback works, even when locked
+                auto tx = vault.clawback(
+                    {.issuer = issuer,
+                     .id = keylet.key,
+                     .holder = owner,
+                     .amount = asset(50)});
+                env(tx);
+                env.close();
+            }
+
+            // Clear the frozen state
+            trustSet[jss::Flags] = tfClearFreeze;
+            env(trustSet);
+            env.close();
+
+            env(vault.withdraw(
+                {.depositor = owner, .id = keylet.key, .amount = share(50)}));
+
+            env(vault.del({.owner = owner, .id = keylet.key}));
+            env.close();
+        });
+
+        testCase([&, this](
+                     Env& env,
+                     Account const& owner,
+                     Account const& issuer,
+                     Account const& charlie,
+                     auto,
+                     Vault& vault,
+                     PrettyAsset const& asset,
+                     auto issuanceId,
+                     auto vaultBalance) {
+            testcase("IOU transfer fees not applied");
+
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            env(vault.deposit(
+                {.depositor = owner, .id = keylet.key, .amount = asset(100)}));
+            env.close();
+
+            auto const issue = asset.raw().get<Issue>();
+            Asset const share = Asset(issuanceId(keylet));
+
+            // transfer fees ignored on deposit
+            BEAST_EXPECT(env.balance(owner, issue) == asset(100));
+            BEAST_EXPECT(vaultBalance(keylet) == asset(100));
+
+            {
+                auto tx = vault.clawback(
+                    {.issuer = issuer,
+                     .id = keylet.key,
+                     .holder = owner,
+                     .amount = asset(50)});
+                env(tx);
+                env.close();
+            }
+
+            // transfer fees ignored on clawback
+            BEAST_EXPECT(env.balance(owner, issue) == asset(100));
+            BEAST_EXPECT(vaultBalance(keylet) == asset(50));
+
+            env(vault.withdraw(
+                {.depositor = owner, .id = keylet.key, .amount = share(20)}));
+
+            // transfer fees ignored on withdraw
+            BEAST_EXPECT(env.balance(owner, issue) == asset(120));
+            BEAST_EXPECT(vaultBalance(keylet) == asset(30));
+
+            {
+                auto tx = vault.withdraw(
+                    {.depositor = owner,
+                     .id = keylet.key,
+                     .amount = share(30)});
+                tx[sfDestination] = charlie.human();
+                env(tx);
+            }
+
+            // transfer fees ignored on withdraw to 3rd party
+            BEAST_EXPECT(env.balance(owner, issue) == asset(120));
+            BEAST_EXPECT(env.balance(charlie, issue) == asset(30));
+            BEAST_EXPECT(vaultBalance(keylet) == asset(0));
+
+            env(vault.del({.owner = owner, .id = keylet.key}));
+            env.close();
+        });
+
+        testCase([&, this](
+                     Env& env,
+                     Account const& owner,
+                     Account const& issuer,
+                     Account const& charlie,
+                     auto,
+                     Vault& vault,
+                     PrettyAsset const& asset,
+                     auto&&...) {
+            testcase("IOU frozen trust line to depositor");
+
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            env(vault.deposit(
+                {.depositor = owner, .id = keylet.key, .amount = asset(100)}));
+            env.close();
+
+            // Withdraw to 3rd party works
+            auto const withdrawToCharlie = [&](ripple::Keylet keylet) {
+                auto tx = vault.withdraw(
+                    {.depositor = owner,
+                     .id = keylet.key,
+                     .amount = asset(10)});
+                tx[sfDestination] = charlie.human();
+                return tx;
+            }(keylet);
+            env(withdrawToCharlie);
+
+            // Freeze the owner
+            env(trust(issuer, asset(0), owner, tfSetFreeze));
+            env.close();
+
+            // Cannot withdraw
+            auto const withdraw = vault.withdraw(
+                {.depositor = owner, .id = keylet.key, .amount = asset(10)});
+            env(withdraw, ter{tecFROZEN});
+
+            // Cannot withdraw to 3rd party
+            env(withdrawToCharlie, ter{tecLOCKED});
+            env.close();
+
+            {
+                // Clawback still works
+                auto tx = vault.clawback(
+                    {.issuer = issuer,
+                     .id = keylet.key,
+                     .holder = owner,
+                     .amount = asset(0)});
+                env(tx);
+                env.close();
+            }
+
+            env(vault.del({.owner = owner, .id = keylet.key}));
+            env.close();
+        });
+
+        testCase([&, this](
+                     Env& env,
+                     Account const& owner,
+                     Account const& issuer,
+                     Account const& charlie,
+                     auto,
+                     Vault& vault,
+                     PrettyAsset const& asset,
+                     auto&&...) {
+            testcase("IOU frozen trust line to 3rd party");
+
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            env(vault.deposit(
+                {.depositor = owner, .id = keylet.key, .amount = asset(100)}));
+            env.close();
+
+            // Withdraw to 3rd party works
+            auto const withdrawToCharlie = [&](ripple::Keylet keylet) {
+                auto tx = vault.withdraw(
+                    {.depositor = owner,
+                     .id = keylet.key,
+                     .amount = asset(10)});
+                tx[sfDestination] = charlie.human();
+                return tx;
+            }(keylet);
+            env(withdrawToCharlie);
+
+            // Freeze the 3rd party
+            env(trust(issuer, asset(0), charlie, tfSetFreeze));
+            env.close();
+
+            // Can withdraw
+            auto const withdraw = vault.withdraw(
+                {.depositor = owner, .id = keylet.key, .amount = asset(10)});
+            env(withdraw);
+            env.close();
+
+            // Cannot withdraw to 3rd party
+            env(withdrawToCharlie, ter{tecFROZEN});
+            env.close();
+
+            env(vault.clawback(
+                {.issuer = issuer,
+                 .id = keylet.key,
+                 .holder = owner,
+                 .amount = asset(0)}));
+            env.close();
+
+            env(vault.del({.owner = owner, .id = keylet.key}));
+            env.close();
+        });
+
+        testCase([&, this](
+                     Env& env,
+                     Account const& owner,
+                     Account const& issuer,
+                     Account const& charlie,
+                     auto,
+                     Vault& vault,
+                     PrettyAsset const& asset,
+                     auto&&...) {
+            testcase("IOU global freeze");
+
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            env(vault.deposit(
+                {.depositor = owner, .id = keylet.key, .amount = asset(100)}));
+            env.close();
+
+            env(fset(issuer, asfGlobalFreeze));
+            env.close();
+
+            {
+                // Cannot withdraw
+                auto tx = vault.withdraw(
+                    {.depositor = owner,
+                     .id = keylet.key,
+                     .amount = asset(10)});
+                env(tx, ter{tecFROZEN});
+
+                // Cannot withdraw to 3rd party
+                tx[sfDestination] = charlie.human();
+                env(tx, ter{tecFROZEN});
+                env.close();
+            }
+
+            // Clawback is permitted
+            env(vault.clawback(
+                {.issuer = issuer,
+                 .id = keylet.key,
+                 .holder = owner,
+                 .amount = asset(0)}));
+            env.close();
+
+            env(vault.del({.owner = owner, .id = keylet.key}));
+            env.close();
+        });
     }
 
     void
@@ -1895,7 +2368,27 @@ class Vault_test : public beast::unit_test::suite
             tx = vault.withdraw(
                 {.depositor = depositor,
                  .id = keylet.key,
-                 .amount = asset(100)});
+                 .amount = asset(50)});
+            env(tx);
+
+            tx = vault.clawback(
+                {.issuer = issuer,
+                 .id = keylet.key,
+                 .holder = depositor,
+                 .amount = asset(0)});
+            env(tx);
+
+            tx = vault.clawback(
+                {.issuer = issuer,
+                 .id = keylet.key,
+                 .holder = owner,
+                 .amount = asset(0)});
+            env(tx);
+
+            tx = vault.del({
+                .owner = owner,
+                .id = keylet.key,
+            });
             env(tx);
         }
     }
@@ -1999,240 +2492,6 @@ class Vault_test : public beast::unit_test::suite
             env.close();
 
             env(pay(owner, alice, shares(1)), ter{tecNO_AUTH});
-        }
-    }
-
-    void
-    testWithIOU()
-    {
-        testcase("IOU");
-        Env env{*this, supported_amendments() | featureSingleAssetVault};
-        Account const owner{"owner"};
-        Account const issuer{"issuer"};
-        Account const charlie{"charlie"};
-        Vault vault{env};
-        env.fund(XRP(1000), issuer, owner, charlie);
-        env(fset(issuer, asfAllowTrustLineClawback));
-        env.close();
-
-        PrettyAsset const asset = issuer["IOU"];
-        env.trust(asset(1000), owner);
-        env(pay(issuer, owner, asset(200)));
-        env(rate(issuer, 1.25));
-        env.close();
-        auto const issue = asset.raw().get<Issue>();
-
-        auto const [tx, keylet] =
-            vault.create({.owner = owner, .asset = asset});
-        env(tx);
-        env.close();
-
-        auto const vaultAccount = [&env, keylet = keylet]() -> AccountID {
-            return env.le(keylet)->at(sfAccount);
-        }();
-        auto const issuanceId = [&env, keylet = keylet]() -> uint192 {
-            return env.le(keylet)->at(sfShareMPTID);
-        }();
-        auto const share = Asset(issuanceId);
-
-        auto const vaultBalance =  //
-            [&, account = vaultAccount, this]() -> PrettyAmount {
-            auto const sle = env.le(keylet::line(account, issue));
-            BEAST_EXPECT(sle != nullptr);
-            auto amount = sle->getFieldAmount(sfBalance);
-            amount.setIssuer(issue.account);
-            if (account > issue.account)
-                amount.negate();
-            return {amount, env.lookup(issue.account).name()};
-        };
-        BEAST_EXPECT(vaultBalance() == asset(0));
-
-        {
-            testcase("IOU cannot update random trustline");
-            PrettyAsset const foo = issuer["FOO"];
-
-            auto tx = [&]() {
-                Json::Value jv;
-                jv[jss::Account] = issuer.human();
-                {
-                    auto& ja = jv[jss::LimitAmount] =
-                        foo(0).value().getJson(JsonOptions::none);
-                    ja[jss::issuer] = toBase58(vaultAccount);
-                }
-                jv[jss::TransactionType] = jss::TrustSet;
-                jv[jss::Flags] = tfSetFreeze;
-                return jv;
-            }();
-            env(tx, ter{tecNO_PERMISSION});
-            env.close();
-        }
-
-        {
-            testcase("IOU cannot deposit when frozen");
-
-            env(vault.deposit(
-                {.depositor = owner, .id = keylet.key, .amount = asset(100)}));
-            env.close();
-
-            auto tx0 = [&]() {
-                Json::Value jv;
-                jv[jss::Account] = issuer.human();
-                {
-                    auto& ja = jv[jss::LimitAmount] =
-                        asset(0).value().getJson(JsonOptions::none);
-                    ja[jss::issuer] = toBase58(vaultAccount);
-                }
-                jv[jss::TransactionType] = jss::TrustSet;
-                jv[jss::Flags] = tfSetFreeze;
-                return jv;
-            }();
-            env(tx0);
-            env.close();
-
-            // Note, the "frozen" state of the trust line is reported as
-            // "locked" state of the vault shares, because this state is
-            // attached to shares by means of the transitive isFrozen check.
-            env(vault.deposit(
-                    {.depositor = owner,
-                     .id = keylet.key,
-                     .amount = asset(100)}),
-                ter{tecLOCKED});
-            env.close();
-
-            // Clawback works, even when locked
-            auto tx1 = vault.clawback(
-                {.issuer = issuer,
-                 .id = keylet.key,
-                 .holder = owner,
-                 .amount = asset(0)});
-            env(tx1);
-            env.close();
-
-            tx0[jss::Flags] = tfClearFreeze;
-            env(tx0);
-            env.close();
-
-            env(pay(issuer, owner, asset(100)));
-            env.close();
-        }
-
-        {
-            testcase("IOU zero fee on deposit");
-            env(vault.deposit(
-                {.depositor = owner, .id = keylet.key, .amount = asset(100)}));
-            env.close();
-
-            BEAST_EXPECT(env.balance(owner, issue) == asset(100));
-            BEAST_EXPECT(vaultBalance() == asset(100));
-        }
-
-        {
-            testcase("IOU zero fee on withdraw");
-            env(vault.withdraw(
-                {.depositor = owner, .id = keylet.key, .amount = asset(60)}));
-            env.close();
-
-            BEAST_EXPECT(env.balance(owner, issue) == asset(160));
-            BEAST_EXPECT(vaultBalance() == asset(40));
-        }
-
-        {
-            testcase("IOU zero fee on withdraw for 3rd party");
-            auto tx = vault.withdraw(
-                {.depositor = owner, .id = keylet.key, .amount = asset(20)});
-            tx[sfDestination] = charlie.human();
-            env(tx);
-            env.close();
-
-            BEAST_EXPECT(env.balance(owner, issue) == asset(160));
-            BEAST_EXPECT(env.balance(charlie, issue) == asset(20));
-            BEAST_EXPECT(vaultBalance() == asset(20));
-        }
-
-        {
-            testcase("IOU froze trust line, cannot withdraw to 3rd party");
-            auto tx1 = test::jtx::pay(owner, charlie, STAmount{share, 10});
-            env(tx1, ter{tecNO_AUTH});
-            auto tx2 = test::jtx::pay(charlie, owner, STAmount{share, 10});
-            env(tx2, ter{tecNO_AUTH});
-            env.close();
-
-            env(trust(issuer, asset(0), owner, tfSetFreeze));
-            env.close();
-
-            // Since the vault is public, Charlie can simply create MPToken
-            // to gain authorization to receive its shares.
-            Json::Value jv;
-            jv[sfAccount] = charlie.human();
-            jv[sfTransactionType] = jss::MPTokenAuthorize;
-            jv[sfMPTokenIssuanceID] = to_string(issuanceId);
-            env(jv);
-            env.close();
-
-            auto tx = vault.withdraw(
-                {.depositor = owner, .id = keylet.key, .amount = asset(10)});
-            env(tx, ter{tecFROZEN});
-
-            tx[sfDestination] = charlie.human();
-            env(tx, ter{tecLOCKED});  // owner transitively locked via MPToken
-            env(tx1, ter{tecLOCKED});
-            env(tx2, ter{tecLOCKED});
-            env.close();
-
-            BEAST_EXPECT(env.balance(charlie, issue) == asset(20));
-        }
-
-        {
-            testcase("IOU unfroze trust line, can withdraw or pay");
-            env(trust(issuer, asset(500), owner, tfClearFreeze));
-            env.close();
-
-            auto tx = vault.withdraw(
-                {.depositor = owner, .id = keylet.key, .amount = asset(1)});
-            env(tx);
-
-            tx[sfDestination] = charlie.human();
-            env(tx);
-
-            auto tx1 = test::jtx::pay(owner, charlie, STAmount{share, 1});
-            env(tx1);
-
-            auto tx2 = test::jtx::pay(charlie, owner, STAmount{share, 1});
-            env(tx2);
-        }
-
-        {
-            testcase("IOU global freeze");
-            env(fset(issuer, asfGlobalFreeze));
-            env.close();
-
-            auto tx = vault.withdraw(
-                {.depositor = owner, .id = keylet.key, .amount = asset(1)});
-            env(tx, ter{tecFROZEN});
-
-            tx[sfDestination] = issuer.human();
-            env(tx, ter{tecFROZEN});
-
-            auto tx1 = test::jtx::pay(owner, charlie, STAmount{share, 10});
-            env(tx1, ter{tecLOCKED});
-            auto tx2 = test::jtx::pay(charlie, owner, STAmount{share, 10});
-            env(tx2, ter{tecLOCKED});
-            env.close();
-
-            // Clawback is permitted
-            auto tx3 = vault.clawback(
-                {.issuer = issuer,
-                 .id = keylet.key,
-                 .holder = owner,
-                 .amount = asset(0)});
-            env(tx3);
-            env.close();
-
-            // Can delete an empty vault, even under asset is under global
-            // lock
-            auto tx4 = vault.del({.owner = owner, .id = keylet.key});
-            env(tx4);
-            env.close();
         }
     }
 
