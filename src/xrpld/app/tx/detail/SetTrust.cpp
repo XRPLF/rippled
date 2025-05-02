@@ -179,14 +179,16 @@ SetTrust::preclaim(PreclaimContext const& ctx)
 
     // This might be nullptr
     auto const sleDst = ctx.view.read(keylet::account(uDstAccountID));
+    if ((ctx.view.rules().enabled(featureDisallowIncoming) ||
+         ammEnabled(ctx.view.rules()) ||
+         ctx.view.rules().enabled(featureSingleAssetVault)) &&
+        sleDst == nullptr)
+        return tecNO_DST;
 
     // If the destination has opted to disallow incoming trustlines
     // then honour that flag
     if (ctx.view.rules().enabled(featureDisallowIncoming))
     {
-        if (!sleDst)
-            return tecNO_DST;
-
         if (sleDst->getFlags() & lsfDisallowIncomingTrustline)
         {
             // The original implementation of featureDisallowIncoming was
@@ -204,18 +206,22 @@ SetTrust::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    // If destination is AMM and the trustline doesn't exist then only
-    // allow SetTrust if the asset is AMM LP token and AMM is not
-    // in empty state.
-    if (ammEnabled(ctx.view.rules()))
+    // In general, trust lines to pseudo accounts are not permitted, unless
+    // enabled in the code section below, for specific cases. This block is not
+    // amendment-gated because sleDst will not have a pseudo-account designator
+    // field populated, unless the appropriate amendment was already enabled.
+    if (sleDst && isPseudoAccount(sleDst))
     {
-        if (!sleDst)
-            return tecNO_DST;
-
-        if (sleDst->isFieldPresent(sfAMMID) &&
-            !ctx.view.read(keylet::line(id, uDstAccountID, currency)))
+        // If destination is AMM and the trustline doesn't exist then only allow
+        // SetTrust if the asset is AMM LP token and AMM is not in empty state.
+        if (sleDst->isFieldPresent(sfAMMID))
         {
-            if (auto const ammSle =
+            if (ctx.view.read(keylet::line(id, uDstAccountID, currency)))
+            {
+                // pass
+            }
+            else if (
+                auto const ammSle =
                     ctx.view.read({ltAMM, sleDst->getFieldH256(sfAMMID)}))
             {
                 if (auto const lpTokens =
@@ -226,29 +232,19 @@ SetTrust::preclaim(PreclaimContext const& ctx)
                     return tecNO_PERMISSION;
             }
             else
-                return tecINTERNAL;
+                return tecINTERNAL;  // LCOV_EXCL_LINE
         }
-    }
-
-    // If destination is Vault, allow changes to the existing trustline.
-    if (ctx.view.rules().enabled(featureSingleAssetVault))
-    {
-        if (!sleDst)
-            return tecNO_DST;
-
-        bool const isVault = sleDst->isFieldPresent(sfVaultID);
-        if (isVault &&
-            !ctx.view.read(keylet::line(id, uDstAccountID, currency)))
-            return tecNO_PERMISSION;
-        else if (isVault)
+        else if (sleDst->isFieldPresent(sfVaultID))
         {
-            if (ctx.view.read(keylet::vault(sleDst->getFieldH256(sfVaultID))))
+            if (ctx.view.read(keylet::line(id, uDstAccountID, currency)))
             {
-                // Allow updating the state of existing trust line for the vault
+                // pass
             }
             else
-                return tecINTERNAL;
+                return tecNO_PERMISSION;
         }
+        else
+            return tecPSEUDO_ACCOUNT;
     }
 
     // Checking all freeze/deep freeze flag invariants.
