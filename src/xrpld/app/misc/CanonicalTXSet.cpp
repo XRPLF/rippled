@@ -66,18 +66,22 @@ CanonicalTXSet::popAcctTransaction(std::shared_ptr<STTx const> const& tx)
     //  1. Prioritize transactions with Sequences over transactions with
     //     Tickets.
     //
-    //  2. Don't worry about consecutive Sequence numbers.  Creating Tickets
-    //     can introduce a discontinuity in Sequence numbers.
+    //  2. For transactions not using Tickets, look for consecutive Sequence
+    //     numbers. For transactions using Tickets, don't worry about
+    //     consecutive Sequence numbers. Tickets can process out of order.
     //
     //  3. After handling all transactions with Sequences, return Tickets
     //     with the lowest Ticket ID first.
     std::shared_ptr<STTx const> result;
     uint256 const effectiveAccount{accountKey(tx->getAccountID(sfAccount))};
 
-    Key const after(effectiveAccount, tx->getSeqProxy(), beast::zero);
+    auto const seqProxy = tx->getSeqProxy();
+    Key const after(effectiveAccount, seqProxy, beast::zero);
     auto const itrNext{map_.lower_bound(after)};
     if (itrNext != map_.end() &&
-        itrNext->first.getAccount() == effectiveAccount)
+        itrNext->first.getAccount() == effectiveAccount &&
+        (!itrNext->second->getSeqProxy().isSeq() ||
+         itrNext->second->getSeqProxy().value() == seqProxy.value() + 1))
     {
         result = std::move(itrNext->second);
         map_.erase(itrNext);
