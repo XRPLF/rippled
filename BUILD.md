@@ -225,7 +225,8 @@ It fixes some source files to add missing `#include`s.
 2. Use conan to generate CMake files for every configuration you want to build:
 
     ```
-    conan install .. --output-folder . --build missing --settings build_type=Release
+    conan install .. --output-folder . --build --settings build_type=Release
+
     conan install .. --output-folder . --build missing --settings build_type=Debug
     ```
 
@@ -251,7 +252,7 @@ It fixes some source files to add missing `#include`s.
     When `build_type` is `Debug`, `compiler.runtime` should be `MTd`.
 
     ```
-    conan install .. --output-folder . --build missing --settings build_type=Release --settings compiler.runtime=MT
+    conan install .. --output-folder . --build --settings build_type=Release --settings compiler.runtime=MT
     conan install .. --output-folder . --build missing --settings build_type=Debug --settings compiler.runtime=MTd
     ```
 

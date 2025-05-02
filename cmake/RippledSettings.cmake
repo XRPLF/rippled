@@ -6,6 +6,8 @@ include(ProcessorCount)
 
 ProcessorCount(PROCESSOR_COUNT)
 
+# Example usage:  
+# cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -Dassert=ON
 option(assert "Enables asserts, even in release builds" OFF)
 
 option(xrpld "Build xrpld" ON)
