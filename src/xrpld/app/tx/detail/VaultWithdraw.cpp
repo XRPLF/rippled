@@ -68,6 +68,23 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     if (assets.asset() != vaultAsset && assets.asset() != vaultShare)
         return tecWRONG_ASSET;
 
+    if (vaultAsset.native())
+        ;  // No special checks for XRP
+    else if (vaultAsset.holds<MPTIssue>())
+    {
+        auto mptID = vaultAsset.get<MPTIssue>().getMptID();
+        auto issuance = ctx.view.read(keylet::mptIssuance(mptID));
+        if (!issuance)
+            return tecOBJECT_NOT_FOUND;
+    }
+    else if (vaultAsset.holds<Issue>())
+    {
+        auto const issuer =
+            ctx.view.read(keylet::account(vaultAsset.getIssuer()));
+        if (!issuer)
+            return tefINTERNAL;  // LCOV_EXCL_LINE
+    }
+
     // Enforce valid withdrawal policy
     if (vault->at(sfWithdrawalPolicy) != vaultStrategyFirstComeFirstServe)
         return tefINTERNAL;  // LCOV_EXCL_LINE

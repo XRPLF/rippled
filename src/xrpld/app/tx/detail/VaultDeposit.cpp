@@ -66,6 +66,23 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
     if (assets.asset() != vaultAsset)
         return tecWRONG_ASSET;
 
+    if (vaultAsset.native())
+        ;  // No special checks for XRP
+    else if (vaultAsset.holds<MPTIssue>())
+    {
+        auto mptID = vaultAsset.get<MPTIssue>().getMptID();
+        auto issuance = ctx.view.read(keylet::mptIssuance(mptID));
+        if (!issuance)
+            return tecOBJECT_NOT_FOUND;
+    }
+    else if (vaultAsset.holds<Issue>())
+    {
+        auto const issuer =
+            ctx.view.read(keylet::account(vaultAsset.getIssuer()));
+        if (!issuer)
+            return tefINTERNAL;  // LCOV_EXCL_LINE
+    }
+
     auto const mptIssuanceID = vault->at(sfShareMPTID);
     auto const vaultShare = MPTIssue(mptIssuanceID);
     if (vaultShare == assets.asset())
