@@ -759,6 +759,7 @@ TRANSACTION(ttLOAN_SET, 78, LoanSet, noPriv, ({
 TRANSACTION(ttLOAN_DELETE, 79, LoanDelete, noPriv, ({
     {sfLoanID, soeREQUIRED},
 }))
+#endif
 
 /** This transaction is used to change the delinquency status of an existing Loan */
 #if TRANSACTION_INCLUDE
@@ -768,6 +769,7 @@ TRANSACTION(ttLOAN_MANAGE, 80, LoanManage, noPriv, ({
     {sfLoanID, soeREQUIRED},
 }))
 
+#if 0
 /** The Borrower uses this transaction to draws funds from the Loan. */
 #if TRANSACTION_INCLUDE
 #   include <xrpld/app/tx/detail/LoanDraw.h>

@@ -1953,4 +1953,46 @@ ValidLoanBroker::finalize(
     return true;
 }
 
+//------------------------------------------------------------------------------
+
+void
+ValidLoan::visitEntry(
+    bool isDelete,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
+{
+    if (after && after->getType() == ltLOAN)
+    {
+        loans_.emplace_back(before, after);
+    }
+}
+
+bool
+ValidLoan::finalize(
+    STTx const& tx,
+    TER const,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    bool const enforce = view.rules().enabled(featureLendingProtocol);
+
+    for (auto const& [before, after] : loans_)
+    {
+        // https://github.com/Tapanito/XRPL-Standards/blob/xls-66-lending-protocol/XLS-0066d-lending-protocol/README.md#3223-invariants
+        // If `Loan.PaymentRemaining = 0` then `Loan.PrincipalOutstanding = 0`
+        if (after->at(sfPaymentRemaining) == 0 &&
+            after->at(sfPrincipalOutstanding) != 0)
+        {
+            XRPL_ASSERT(
+                enforce,
+                "ripple::ValidLoan::finalize : Enforcing "
+                "invariant: zero payments remaining");
+            if (enforce)
+                return false;
+        }
+    }
+    return true;
+}
+
 }  // namespace ripple
