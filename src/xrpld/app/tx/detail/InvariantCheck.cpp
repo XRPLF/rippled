@@ -269,14 +269,38 @@ NoZeroEscrow::visitEntry(
     std::shared_ptr<SLE const> const& after)
 {
     auto isBad = [](STAmount const& amount) {
-        if (!amount.native())
-            return true;
+        // IOU case
+        if (amount.holds<Issue>())
+        {
+            if (amount <= beast::zero)
+                return true;
 
-        if (amount.xrp() <= XRPAmount{0})
-            return true;
+            if (!isLegalNet(amount))
+                return true;
 
-        if (amount.xrp() >= INITIAL_XRP)
-            return true;
+            if (badCurrency() == amount.getCurrency())
+                return true;
+        }
+
+        // MPT case
+        if (amount.holds<MPTIssue>())
+        {
+            if (amount <= beast::zero)
+                return true;
+
+            if (amount.mpt() > MPTAmount{maxMPTokenAmount})
+                return true;
+        }
+
+        // XRP case
+        if (amount.native())
+        {
+            if (amount.xrp() <= XRPAmount{0})
+                return true;
+
+            if (amount.xrp() >= INITIAL_XRP)
+                return true;
+        }
 
         return false;
     };
@@ -286,6 +310,25 @@ NoZeroEscrow::visitEntry(
 
     if (after && after->getType() == ltESCROW)
         bad_ |= isBad((*after)[sfAmount]);
+
+    auto checkAmount = [this](std::int64_t amount) {
+        if (amount > maxMPTokenAmount || amount < 0)
+            bad_ = true;
+    };
+
+    if (after && after->getType() == ltMPTOKEN_ISSUANCE)
+    {
+        checkAmount((*after)[sfOutstandingAmount]);
+        if (auto const escrowed = (*after)[~sfEscrowedAmount])
+            checkAmount(*escrowed);
+    }
+
+    if (after && after->getType() == ltMPTOKEN)
+    {
+        checkAmount((*after)[sfMPTAmount]);
+        if (auto const escrowed = (*after)[~sfEscrowedAmount])
+            checkAmount(*escrowed);
+    }
 }
 
 bool
@@ -296,18 +339,6 @@ NoZeroEscrow::finalize(
     ReadView const& rv,
     beast::Journal const& j)
 {
-    if (bad_ && rv.rules().enabled(featureTokenEscrow) &&
-        txn.isFieldPresent(sfTransactionType))
-    {
-        uint16_t const tt = txn.getTxnType();
-        if (tt == ttESCROW_CANCEL || tt == ttESCROW_FINISH)
-            return true;
-
-        if (txn.isFieldPresent(sfAmount) &&
-            !isXRP(txn.getFieldAmount(sfAmount)))
-            return true;
-    }
-
     if (bad_)
     {
         JLOG(j.fatal()) << "Invariant failed: escrow specifies invalid amount";

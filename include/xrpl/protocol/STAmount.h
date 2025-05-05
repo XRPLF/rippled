@@ -684,10 +684,11 @@ isXRP(STAmount const& amount)
     return amount.native();
 }
 
-/** returns true if adding or subtracting results in less than or equal to
- * 0.01% precision loss **/
 bool
-isAddable(STAmount const& amt1, STAmount const& amt2);
+canAdd(STAmount const& amt1, STAmount const& amt2);
+
+bool
+canSubtract(STAmount const& amt1, STAmount const& amt2);
 
 // Since `canonicalize` does not have access to a ledger, this is needed to put
 // the low-level routine stAmountCanonicalize on an amendment switch. Only

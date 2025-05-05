@@ -95,7 +95,7 @@ NotTEC
 escrowCreatePreflightHelper<Issue>(PreflightContext const& ctx)
 {
     STAmount const amount = ctx.tx[sfAmount];
-    if (!isLegalNet(amount))
+    if (!isLegalNet(amount) || amount <= beast::zero)
         return temBAD_AMOUNT;
 
     if (badCurrency() == amount.getCurrency())
@@ -270,7 +270,7 @@ escrowCreatePreclaimHelper<Issue>(
         return tecINSUFFICIENT_FUNDS;
 
     // If the amount is not addable to the balance, return tecPRECISION_LOSS
-    if (!isAddable(spendableAmount, amount))
+    if (!canAdd(spendableAmount, amount))
         return tecPRECISION_LOSS;
 
     return tesSUCCESS;
@@ -355,7 +355,7 @@ escrowCreatePreclaimHelper<MPTIssue>(
         return tecINSUFFICIENT_FUNDS;
 
     // If the amount is not addable to the balance, return tecPRECISION_LOSS
-    if (!isAddable(spendableAmount, amount))
+    if (!canAdd(spendableAmount, amount))
         return tecPRECISION_LOSS;
 
     return tesSUCCESS;

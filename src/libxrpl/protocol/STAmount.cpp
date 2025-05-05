@@ -503,24 +503,40 @@ getRate(STAmount const& offerOut, STAmount const& offerIn)
     return 0;
 }
 
-/** returns true if adding or subtracting results in less than or equal to
- * 0.01% precision loss **/
+/**
+ * @brief Safely checks if two STAmount values can be added without overflow,
+ * underflow, or precision loss.
+ *
+ * This function determines whether the addition of two STAmount objects is
+ * safe, depending on their type:
+ * - For XRP amounts, it checks for integer overflow and underflow.
+ * - For IOU amounts, it checks for acceptable precision loss.
+ * - For MPT amounts, it checks for overflow and underflow within 63-bit signed
+ * integer limits.
+ * - If either amount is zero, addition is always considered safe.
+ * - If the amounts are of different currencies or types, addition is not
+ * allowed.
+ *
+ * @param a The first STAmount to add.
+ * @param b The second STAmount to add.
+ * @return true if the addition is safe; false otherwise.
+ */
 bool
-isAddable(STAmount const& amt1, STAmount const& amt2)
+canAdd(STAmount const& a, STAmount const& b)
 {
     // special case: adding anything to zero is always fine
-    if (amt1 == beast::zero || amt2 == beast::zero)
+    if (a == beast::zero || b == beast::zero)
         return true;
 
     // cannot add different currencies
-    if (!areComparable(amt1, amt2))
+    if (!areComparable(a, b))
         return false;
 
     // XRP case (overflow & underflow check)
-    if (isXRP(amt1) && isXRP(amt2))
+    if (isXRP(a) && isXRP(b))
     {
-        XRPAmount A = amt1.xrp();
-        XRPAmount B = amt2.xrp();
+        XRPAmount A = a.xrp();
+        XRPAmount B = b.xrp();
 
         if ((B > XRPAmount{0} &&
              A > XRPAmount{std::numeric_limits<XRPAmount::value_type>::max()} -
@@ -535,21 +551,21 @@ isAddable(STAmount const& amt1, STAmount const& amt2)
     }
 
     // IOU case (precision check)
-    if (amt1.holds<Issue>() && amt2.holds<Issue>())
+    if (a.holds<Issue>() && b.holds<Issue>())
     {
         static const STAmount one{IOUAmount{1, 0}, noIssue()};
         static const STAmount maxLoss{IOUAmount{1, -4}, noIssue()};
-        STAmount lhs = divide((amt1 - amt2) + amt2, amt1, noIssue()) - one;
-        STAmount rhs = divide((amt2 - amt1) + amt1, amt2, noIssue()) - one;
+        STAmount lhs = divide((a - b) + b, a, noIssue()) - one;
+        STAmount rhs = divide((b - a) + a, b, noIssue()) - one;
         return ((rhs.negative() ? -rhs : rhs) +
                 (lhs.negative() ? -lhs : lhs)) <= maxLoss;
     }
 
     // MPT (overflow & underflow check)
-    if (amt1.holds<MPTIssue>() && amt2.holds<MPTIssue>())
+    if (a.holds<MPTIssue>() && b.holds<MPTIssue>())
     {
-        MPTAmount A = (amt1.signum() == -1 ? -(amt1.mpt()) : amt1.mpt());
-        MPTAmount B = (amt2.signum() == -1 ? -(amt2.mpt()) : amt2.mpt());
+        MPTAmount A = (a.signum() == -1 ? -(a.mpt()) : a.mpt());
+        MPTAmount B = (b.signum() == -1 ? -(b.mpt()) : b.mpt());
         constexpr auto maxMPT = (std::int64_t{1} << 62) - 1;  // 63 bits signed
         constexpr auto minMPT = -(std::int64_t{1} << 62);
         if ((B > MPTAmount{0} && A > maxMPT - B) ||
@@ -560,6 +576,64 @@ isAddable(STAmount const& amt1, STAmount const& amt2)
 
         return true;
     }
+    return false;
+}
+
+/**
+ * @brief Determines if it is safe to subtract one STAmount from another.
+ *
+ * This function checks whether subtracting amount `b` from amount `a` is valid,
+ * considering currency compatibility and underflow conditions for specific
+ * types.
+ *
+ * - Subtracting zero is always allowed.
+ * - Subtraction is only allowed between comparable currencies.
+ * - For XRP amounts, ensures no underflow occurs.
+ * - For IOU amounts, subtraction is always allowed (no underflow).
+ * - For MPT amounts, ensures no underflow occurs.
+ *
+ * @param a The minuend (amount to subtract from).
+ * @param b The subtrahend (amount to subtract).
+ * @return true if subtraction is allowed, false otherwise.
+ */
+bool
+canSubtract(STAmount const& a, STAmount const& b)
+{
+    // Special case: subtracting zero is always fine
+    if (b == beast::zero)
+        return true;
+
+    // Cannot subtract different currencies
+    if (!areComparable(a, b))
+        return false;
+
+    // XRP case (underflow check)
+    if (isXRP(a) && isXRP(b))
+    {
+        XRPAmount A = a.xrp();
+        XRPAmount B = b.xrp();
+        if (B > XRPAmount{0} && A < B)
+            return false;
+
+        return true;
+    }
+
+    // IOU case (no underflow)
+    if (a.holds<Issue>() && b.holds<Issue>())
+    {
+        return true;
+    }
+
+    // MPT case (underflow check)
+    if (a.holds<MPTIssue>() && b.holds<MPTIssue>())
+    {
+        MPTAmount A = (a.signum() == -1 ? -(a.mpt()) : a.mpt());
+        MPTAmount B = (b.signum() == -1 ? -(b.mpt()) : b.mpt());
+        if (B > MPTAmount{0} && A < B)
+            return false;
+        return true;
+    }
+
     return false;
 }
 
