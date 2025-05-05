@@ -1914,7 +1914,8 @@ ValidLoanBroker::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
-    bool const enforce = view.rules().enabled(featureLendingProtocol);
+    // Loan Brokers will not exist on ledger if the Lending Protocol amendment
+    // is not enabled, so there's no need to check it.
 
     for (auto const& [before, after] : brokers_)
     {
@@ -1929,12 +1930,7 @@ ValidLoanBroker::finalize(
             {
                 if (!goodZeroDirectory(view, dir, j))
                 {
-                    XRPL_ASSERT(
-                        enforce,
-                        "ripple::ValidLoanBroker::finalize : Enforcing "
-                        "invariant: directory");
-                    if (enforce)
-                        return false;
+                    return false;
                 }
             }
         }
@@ -1942,12 +1938,7 @@ ValidLoanBroker::finalize(
         {
             JLOG(j.fatal()) << "Invariant failed: Loan Broker sequence number "
                                "decreased";
-            XRPL_ASSERT(
-                enforce,
-                "ripple::ValidLoanBroker::finalize : Enforcing "
-                "invariant: loan sequence");
-            if (enforce)
-                return false;
+            return false;
         }
     }
     return true;
@@ -1975,7 +1966,8 @@ ValidLoan::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
-    bool const enforce = view.rules().enabled(featureLendingProtocol);
+    // Loan Brokers will not exist on ledger if the Lending Protocol amendment
+    // is not enabled, so there's no need to check it.
 
     for (auto const& [before, after] : loans_)
     {
@@ -1984,12 +1976,15 @@ ValidLoan::finalize(
         if (after->at(sfPaymentRemaining) == 0 &&
             after->at(sfPrincipalOutstanding) != 0)
         {
-            XRPL_ASSERT(
-                enforce,
-                "ripple::ValidLoan::finalize : Enforcing "
-                "invariant: zero payments remaining");
-            if (enforce)
-                return false;
+            return false;
+        }
+        if (before &&
+            (before->isFlag(lsfLoanOverpayment) !=
+             after->isFlag(lsfLoanOverpayment)))
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: Loan Overpayment flag changed";
+            return false;
         }
     }
     return true;

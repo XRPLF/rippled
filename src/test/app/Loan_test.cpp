@@ -112,6 +112,47 @@ class Loan_test : public beast::unit_test::suite
         }
     };
 
+    struct VerifyStatus
+    {
+    public:
+        jtx::Env const& env;
+        BrokerInfo const& broker;
+        Keylet const& keylet;
+
+        VerifyStatus(
+            jtx::Env const& env_,
+            BrokerInfo const& broker_,
+            Keylet const& keylet_)
+            : env(env_), broker(broker_), keylet(keylet_)
+        {
+        }
+
+        void
+        operator()(
+            std::uint32_t previousPaymentDate,
+            std::uint32_t nextPaymentDate,
+            std::uint32_t paymentRemaining,
+            Number const& assetsAvailable,
+            Number const& principalOutstanding,
+            std::uint32_t flags) const
+        {
+            if (auto loan = env.le(keylet); env.test.BEAST_EXPECT(loan))
+            {
+                env.test.BEAST_EXPECT(
+                    loan->at(sfPreviousPaymentDate) == previousPaymentDate);
+                env.test.BEAST_EXPECT(
+                    loan->at(sfNextPaymentDueDate) == nextPaymentDate);
+                env.test.BEAST_EXPECT(
+                    loan->at(sfPaymentRemaining) == paymentRemaining);
+                env.test.BEAST_EXPECT(
+                    loan->at(sfAssetsAvailable) == assetsAvailable);
+                env.test.BEAST_EXPECT(
+                    loan->at(sfPrincipalOutstanding) == principalOutstanding);
+                env.test.BEAST_EXPECT(loan->at(sfFlags) == flags);
+            }
+        }
+    };
+
     void
     lifecycle(
         const char* label,
@@ -121,10 +162,11 @@ class Loan_test : public beast::unit_test::suite
         jtx::Account const& evan,
         BrokerInfo const& broker,
         std::uint32_t flags,
-        std::function<jtx::JTx(jtx::JTx const&)> modifyJTx,
-        std::function<void(SLE::const_ref)> checkLoan,
-        std::function<void(SLE::const_ref)> changeLoan,
-        std::function<void(SLE::const_ref)> checkChangedLoan)
+        // The end of life callback is expected to take the loan to 0 payments
+        // remaining, one way or another
+        std::function<
+            void(Keylet const& loanKeylet, VerifyStatus const& verifyStatus)>
+            toEndOfLife)
     {
         auto const [keylet, loanSequence] = [&]() {
             auto const brokerSLE = env.le(keylet::loanbroker(broker.brokerID));
@@ -139,6 +181,9 @@ class Loan_test : public beast::unit_test::suite
             return std::make_pair(
                 keylet::loan(broker.brokerID, loanSequence), loanSequence);
         }();
+
+        VerifyStatus const verifyStatus(env, broker, keylet);
+
         if (!BEAST_EXPECT(loanSequence != 0))
             return;
         {
@@ -189,13 +234,13 @@ class Loan_test : public beast::unit_test::suite
             paymentInterval(interval),
             gracePeriod(grace),
             fee(loanSetFee));
-        // Modify as desired
-        if (modifyJTx)
-            createJtx = modifyJTx(createJtx);
         // Successfully create a Loan
         env(createJtx);
 
         env.close();
+
+        auto const loanFlags =
+            createJtx.stx->isFlag(tfLoanOverpayment) ? lsfLoanOverpayment : 0;
 
         if (auto loan = env.le(keylet); BEAST_EXPECT(loan))
         {
@@ -230,155 +275,59 @@ class Loan_test : public beast::unit_test::suite
                 loan->at(sfAssetsAvailable) ==
                 principalRequest - originationFee);
             BEAST_EXPECT(loan->at(sfPrincipalOutstanding) == principalRequest);
-            if (checkLoan)
-                checkLoan(loan);
+        }
 
-#if 0
-            auto verifyStatus = [&env, &broker, &loan, this](
-                                    auto previousPaymentDate,
-                                    auto nextPaymentDate,
-                                    auto paymentRemaining,
-                                    auto assetsAvailable,
-                                    auto principalOutstanding) {
-                auto const available = broker.asset(assetsAvailable);
-                auto const outstanding = broker.asset(principalOutstanding);
-                BEAST_EXPECT(
-                    loan->at(sfPreviousPaymentDate) == previousPaymentDate);
-                BEAST_EXPECT(loan->at(sfNextPaymentDueDate) == nextPaymentDate);
-                BEAST_EXPECT(loan->at(sfPaymentRemaining) == paymentRemaining);
-                BEAST_EXPECT(loan->at(sfAssetsAvailable) == available.number());
-                BEAST_EXPECT(
-                    loan->at(sfPrincipalOutstanding) == outstanding.number());
-            };
+        verifyStatus(
+            0,
+            startDate.time_since_epoch().count() + interval,
+            total,
+            principalRequest - originationFee,
+            principalRequest,
+            loanFlags | 0);
 
-            // Test Cover funding before allowing alterations
-            env(coverDeposit(alice, uint256(0), vault.asset(10)),
-                ter(temINVALID));
-            env(coverDeposit(evan, keylet.key, vault.asset(10)),
-                ter(tecNO_PERMISSION));
-            env(coverDeposit(evan, keylet.key, vault.asset(0)),
-                ter(temBAD_AMOUNT));
-            env(coverDeposit(evan, keylet.key, vault.asset(-10)),
-                ter(temBAD_AMOUNT));
-            env(coverDeposit(alice, vault.vaultID, vault.asset(10)),
-                ter(tecNO_ENTRY));
+        // Manage the loan
+        // no-op
+        env(manage(lender, keylet.key, 0));
+        // Only the lender can manage
+        env(manage(evan, keylet.key, 0), ter(tecNO_PERMISSION));
+        // unknown flags
+        env(manage(lender, keylet.key, tfLoanManageMask), ter(temINVALID_FLAG));
+        // combinations of flags are not allowed
+        env(manage(lender, keylet.key, tfLoanUnimpair | tfLoanImpair),
+            ter(temINVALID_FLAG));
+        env(manage(lender, keylet.key, tfLoanImpair | tfLoanDefault),
+            ter(temINVALID_FLAG));
+        env(manage(lender, keylet.key, tfLoanUnimpair | tfLoanDefault),
+            ter(temINVALID_FLAG));
+        env(manage(
+                lender,
+                keylet.key,
+                tfLoanUnimpair | tfLoanImpair | tfLoanDefault),
+            ter(temINVALID_FLAG));
+        // invalid loan ID
+        env(manage(lender, broker.brokerID, tfLoanImpair), ter(tecNO_ENTRY));
+        // Loan is unimpaired, can't unimpair it again
+        env(manage(lender, keylet.key, tfLoanUnimpair), ter(tecNO_PERMISSION));
+        // Loan is unimpaired, can't jump straight to default
+        env(manage(lender, keylet.key, tfLoanDefault), ter(tecNO_PERMISSION));
 
-            verifyCoverAmount(0);
+        // Impair the loan
+        env(manage(lender, keylet.key, tfLoanImpair));
+        // Unimpair the loan
+        env(manage(lender, keylet.key, tfLoanUnimpair));
 
-            // Fund the cover deposit
-            env(coverDeposit(alice, keylet.key, vault.asset(10)));
-            if (BEAST_EXPECT(broker = env.le(keylet)))
-            {
-                verifyCoverAmount(10);
-            }
+        env.close();
 
-            // Test withdrawal failure cases
-            env(coverWithdraw(alice, uint256(0), vault.asset(10)),
-                ter(temINVALID));
-            env(coverWithdraw(evan, keylet.key, vault.asset(10)),
-                ter(tecNO_PERMISSION));
-            env(coverWithdraw(evan, keylet.key, vault.asset(0)),
-                ter(temBAD_AMOUNT));
-            env(coverWithdraw(evan, keylet.key, vault.asset(-10)),
-                ter(temBAD_AMOUNT));
-            env(coverWithdraw(alice, vault.vaultID, vault.asset(10)),
-                ter(tecNO_ENTRY));
-            env(coverWithdraw(alice, keylet.key, vault.asset(900)),
-                ter(tecINSUFFICIENT_FUNDS));
+        // TODO: Draw and make some payments
 
-            // Withdraw some of the cover amount
-            env(coverWithdraw(alice, keylet.key, vault.asset(7)));
-            if (BEAST_EXPECT(broker = env.le(keylet)))
-            {
-                verifyCoverAmount(3);
-            }
+        if (BEAST_EXPECT(toEndOfLife))
+            toEndOfLife(keylet, verifyStatus);
 
-            // Add some more cover
-            env(coverDeposit(alice, keylet.key, vault.asset(5)));
-            if (BEAST_EXPECT(broker = env.le(keylet)))
-            {
-                verifyCoverAmount(8);
-            }
-
-            // Withdraw some more
-            env(coverWithdraw(alice, keylet.key, vault.asset(2)));
-            if (BEAST_EXPECT(broker = env.le(keylet)))
-            {
-                verifyCoverAmount(6);
-            }
-
-            env.close();
-
-            // no-op
-            env(set(alice, vault.vaultID), loanBrokerID(keylet.key));
-
-            // Make modifications to the broker
-            if (changeBroker)
-                changeBroker(broker);
-
-            env.close();
-
-            // Check the results of modifications
-            if (BEAST_EXPECT(broker = env.le(keylet)) && checkChangedBroker)
-                checkChangedBroker(broker);
-
-            // Verify that fields get removed when set to default values
-            // Debt maximum: explicit 0
-            // Data: explicit empty
-            env(set(alice, vault.vaultID),
-                loanBrokerID(broker->key()),
-                debtMaximum(Number(0)),
-                data(""));
-
-            // Check the updated fields
-            if (BEAST_EXPECT(broker = env.le(keylet)))
-            {
-                BEAST_EXPECT(!broker->isFieldPresent(sfDebtMaximum));
-                BEAST_EXPECT(!broker->isFieldPresent(sfData));
-            }
-
-            /////////////////////////////////////
-            // try to delete the wrong broker object
-            env(del(alice, vault.vaultID), ter(tecNO_ENTRY));
-            // evan tries to delete the broker
-            env(del(evan, keylet.key), ter(tecNO_PERMISSION));
-
-            // TODO: test deletion with an active loan
-
-            // Note alice's balance of the asset and the broker account's cover
-            // funds
-            auto const aliceBalance = env.balance(alice, vault.asset);
-            auto const coverFunds = env.balance(pseudoAccount, vault.asset);
-            BEAST_EXPECT(coverFunds.number() == broker->at(sfCoverAvailable));
-            BEAST_EXPECT(coverFunds != beast::zero);
-            verifyCoverAmount(6);
-
-            // delete the broker
-            // log << "Broker before delete: " << to_string(broker->getJson())
-            //    << std::endl;
-            // if (auto const pseudo = env.le(pseudoKeylet);
-            // BEAST_EXPECT(pseudo))
-            //{
-            //    log << "Pseudo-account before delete: "
-            //        << to_string(pseudo->getJson()) << std::endl
-            //        << std::endl;
-            //}
-
-            env(del(alice, keylet.key));
-            env.close();
-            {
-                broker = env.le(keylet);
-                BEAST_EXPECT(!broker);
-                auto pseudo = env.le(pseudoKeylet);
-                BEAST_EXPECT(!pseudo);
-            }
-            auto const expectedBalance = aliceBalance + coverFunds -
-                (aliceBalance.value().native()
-                     ? STAmount(env.current()->fees().base.value())
-                     : vault.asset(0));
-            env.require(balance(alice, expectedBalance));
-            env.require(balance(pseudoAccount, None(vault.asset.raw())));
-#endif
+        // Verify the loan is at EOL
+        if (auto loan = env.le(keylet); BEAST_EXPECT(loan))
+        {
+            BEAST_EXPECT(loan->at(sfPaymentRemaining) == 0);
+            BEAST_EXPECT(loan->at(sfPrincipalOutstanding) == 0);
         }
     }
 
@@ -833,66 +782,125 @@ class Loan_test : public beast::unit_test::suite
 
             // Finally! Create a loan
             std::string testData;
+
+            auto defaultBeforeStartDate = [&](std::uint32_t baseFlag) {
+                return [&, baseFlag](
+                           Keylet const& loanKeylet,
+                           VerifyStatus const& verifyStatus) {
+                    // toEndOfLife
+                    //
+                    // Default the loan
+
+                    // Impair the loan
+                    env(manage(lender, loanKeylet.key, tfLoanImpair));
+                    // Once the loan is impaired, it can't be impaired again
+                    env(manage(lender, loanKeylet.key, tfLoanImpair),
+                        ter(tecNO_PERMISSION));
+
+                    using d = NetClock::duration;
+                    using tp = NetClock::time_point;
+
+                    // start time = 3600s
+                    // interval = 600s
+                    // grace period = 60s
+                    auto const nextDueDate = [&]() {
+                        if (auto const loan = env.le(loanKeylet);
+                            BEAST_EXPECT(loan))
+                        {
+                            auto const dueDate =
+                                tp{d{loan->at(sfNextPaymentDueDate)}};
+                            BEAST_EXPECT(dueDate == env.now());
+                            return dueDate;
+                        }
+                        return tp{d{0}};
+                    }();
+
+                    // Can't default the loan yet. The grace period hasn't
+                    // expired
+                    env(manage(lender, loanKeylet.key, tfLoanDefault),
+                        ter(tecTOO_SOON));
+
+                    // Let some time pass so that the loan can be
+                    // defaulted
+                    env.close(nextDueDate + 60s);
+
+                    // Default the loan
+                    env(manage(lender, loanKeylet.key, tfLoanDefault));
+
+                    // Once a loan is defaulted, it can't be managed
+                    env(manage(lender, loanKeylet.key, tfLoanUnimpair),
+                        ter(tecNO_PERMISSION));
+                    env(manage(lender, loanKeylet.key, tfLoanImpair),
+                        ter(tecNO_PERMISSION));
+
+                    verifyStatus(
+                        0,
+                        nextDueDate.time_since_epoch().count(),
+                        0,
+                        0,
+                        0,
+                        baseFlag | tfLoanDefault);
+                };
+            };
+
             // There are a lot of fields that can be set on a loan, but most of
             // them only affect the "math" when a payment is made. The only one
             // that really affects behavior is the `tfLoanOverpayment` flag.
             lifecycle(
-                "Loan overpayment allowed",
+                "Loan overpayment allowed - Default before start date",
                 env,
                 lender,
                 borrower,
                 evan,
                 broker,
                 tfLoanOverpayment,
-                {},
-                [&](SLE::const_ref broker) {
-                    // Extra checks
-                },
-                [&](SLE::const_ref broker) {
-                    // Modifications
-                },
-                [&](SLE::const_ref broker) {
-                    // Check the updated fields
+                defaultBeforeStartDate(lsfLoanOverpayment));
+
+#if 0 
+            lifecycle(
+                "Loan overpayment allowed - Pay off",
+                env,
+                lender,
+                borrower,
+                evan,
+                broker,
+                tfLoanOverpayment,
+                [&](Keylet const& loanKeylet,
+                    VerifyStatus const& verifyStatus) {
+                    // toEndOfLife
+                    //
+                    // Make payments down to 0
+
+                    // TODO: Try to impair a paid off loan
                 });
+#endif
+
+            lifecycle(
+                "Loan overpayment prohibited - Default before start date",
+                env,
+                lender,
+                borrower,
+                evan,
+                broker,
+                0,
+                defaultBeforeStartDate(0));
 
 #if 0
             lifecycle(
-                "non-default fields",
+                "Loan overpayment prohibited - Pay off",
                 env,
                 lender,
+                borrower,
                 evan,
-                vault,
-                [&](jtx::JTx const& jv) {
-                    testData = "spam spam spam spam";
-                    // Finally, create another Loan Broker with none of the
-                    // values at default
-                    return env.jt(
-                        jv,
-                        data(testData),
-                        managementFeeRate(TenthBips16(123)),
-                        debtMaximum(Number(9)),
-                        coverRateMinimum(TenthBips32(100)),
-                        coverRateLiquidation(TenthBips32(200)));
-                },
-                [&](SLE::const_ref broker) {
-                    // Extra checks
-                    BEAST_EXPECT(broker->at(sfManagementFeeRate) == 123);
-                    BEAST_EXPECT(broker->at(sfCoverRateMinimum) == 100);
-                    BEAST_EXPECT(broker->at(sfCoverRateLiquidation) == 200);
-                    BEAST_EXPECT(broker->at(sfDebtMaximum) == Number(9));
-                    BEAST_EXPECT(checkVL(broker->at(sfData), testData));
-                },
-                [&](SLE::const_ref broker) {
-                    // Reset Data & Debt maximum to default values
-                    env(set(lender, broker.brokerID),
-                        loanBrokerID(broker->key()),
-                        data(""),
-                        debtMaximum(Number(0)));
-                },
-                [&](SLE::const_ref broker) {
-                    // Check the updated fields
-                    BEAST_EXPECT(!broker->isFieldPresent(sfData));
-                    BEAST_EXPECT(!broker->isFieldPresent(sfDebtMaximum));
+                broker,
+                0,
+                [&](Keylet const& loanKeylet,
+                    VerifyStatus const& verifyStatus) {
+                    // toEndOfLife
+                    //
+                    // Make payments down to 0
+
+                    // TODO: Try to impair a paid off loan
                 });
 #endif
         }

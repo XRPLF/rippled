@@ -476,10 +476,10 @@ namespace loan {
 
 Json::Value
 set(AccountID const& account,
-    uint256 loanBrokerID,
+    uint256 const& loanBrokerID,
     Number principalRequested,
     NetClock::time_point const& startDate,
-    uint32_t flags)
+    std::uint32_t flags)
 {
     Json::Value jv;
     jv[sfTransactionType] = jss::LoanSet;
@@ -488,6 +488,17 @@ set(AccountID const& account,
     jv[sfPrincipalRequested] = to_string(principalRequested);
     jv[sfFlags] = flags;
     jv[sfStartDate] = startDate.time_since_epoch().count();
+    return jv;
+}
+
+Json::Value
+manage(AccountID const& account, uint256 const& loanID, std::uint32_t flags)
+{
+    Json::Value jv;
+    jv[sfTransactionType] = jss::LoanManage;
+    jv[sfAccount] = to_string(account);
+    jv[sfLoanID] = to_string(loanID);
+    jv[sfFlags] = flags;
     return jv;
 }
 

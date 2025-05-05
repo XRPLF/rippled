@@ -100,7 +100,6 @@ LoanManage::preclaim(PreclaimContext const& ctx)
     // 2. It can get worse: unimpaired -> impaired -> default
     // 3. It can get better: impaired -> unimpaired
     // 4. If it's in a state, it can't be put in that state again.
-    // TODO: implement this.
     if (loanSle->isFlag(lsfLoanDefault))
     {
         JLOG(ctx.j.warn())
@@ -111,6 +110,14 @@ LoanManage::preclaim(PreclaimContext const& ctx)
     {
         JLOG(ctx.j.warn())
             << "Loan is impaired. A loan can not be impaired twice.";
+        return tecNO_PERMISSION;
+    }
+    if (!(loanSle->isFlag(lsfLoanImpaired) ||
+          loanSle->isFlag(lsfLoanDefault)) &&
+        (tx.isFlag(tfLoanDefault) || tx.isFlag(tfLoanUnimpair)))
+    {
+        JLOG(ctx.j.warn())
+            << "Loan is unimpaired. Only valid modification is to impair";
         return tecNO_PERMISSION;
     }
     if (loanSle->at(sfPaymentRemaining) == 0)
@@ -155,9 +162,63 @@ defaultLoan(
     SLE::ref vaultSle,
     Number const& principalOutstanding,
     Number const& interestOutstanding,
+    Asset const& vaultAsset,
     beast::Journal j)
 {
-    return temDISABLED;
+    // Calculate the amount of the Default that First-Loss Capital covers:
+
+    // The default Amount equals the outstanding principal and interest,
+    // excluding any funds unclaimed by the Borrower.
+    auto assetsAvailableProxy = loanSle->at(sfAssetsAvailable);
+    auto defaultAmount =
+        (principalOutstanding + interestOutstanding) - assetsAvailableProxy;
+    // Apply the First-Loss Capital to the Default Amount
+    auto debtTotalProxy = brokerSle->at(sfDebtTotal);
+    TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
+    TenthBips32 const coverRateLiquidation{
+        brokerSle->at(sfCoverRateLiquidation)};
+    auto const defaultCovered = std::min(
+        tenthBipsOfValue(
+            tenthBipsOfValue(debtTotalProxy.value(), coverRateMinimum),
+            coverRateLiquidation),
+        defaultAmount);
+    defaultAmount -= defaultCovered;
+
+    // Update the Vault object:
+
+    // Decrease the Total Value of the Vault:
+    vaultSle->at(sfAssetsTotal) -= defaultAmount;
+    // Increase the Asset Available of the Vault by liquidated First-Loss
+    // Capital and any unclaimed funds amount:
+    vaultSle->at(sfAssetsAvailable) += defaultCovered + assetsAvailableProxy;
+    view.update(vaultSle);
+
+    // Update the LoanBroker object:
+
+    // Decrease the Debt of the LoanBroker:
+    debtTotalProxy -=
+        principalOutstanding + interestOutstanding + assetsAvailableProxy;
+    // Decrease the First-Loss Capital Cover Available:
+    brokerSle->at(sfCoverAvailable) -= defaultCovered;
+    view.update(brokerSle);
+
+    // Update the Loan object:
+    loanSle->setFlag(lsfLoanDefault);
+    loanSle->clearFlag(lsfLoanImpaired);
+    loanSle->at(sfPaymentRemaining) = 0;
+    assetsAvailableProxy = 0;
+    loanSle->at(sfPrincipalOutstanding) = 0;
+    view.update(loanSle);
+
+    // Move the First-Loss Capital from the LoanBroker pseudo-account to the
+    // Vault pseudo-account:
+    return accountSend(
+        view,
+        brokerSle->at(sfAccount),
+        vaultSle->at(sfAccount),
+        STAmount{vaultAsset, defaultCovered},
+        j,
+        WaiveTransferFee::Yes);
 }
 
 TER
@@ -168,6 +229,7 @@ impairLoan(
     SLE::ref vaultSle,
     Number const& principalOutstanding,
     Number const& interestOutstanding,
+    Asset const& vaultAsset,
     beast::Journal j)
 {
     // Update the Vault object(set "paper loss")
@@ -176,7 +238,7 @@ impairLoan(
     view.update(vaultSle);
 
     // Update the Loan object
-    loanSle->at(sfFlags) = lsfLoanImpaired;
+    loanSle->setFlag(lsfLoanImpaired);
     auto nextDueProxy = loanSle->at(sfNextPaymentDueDate);
     if (!hasExpired(view, nextDueProxy))
     {
@@ -197,6 +259,7 @@ unimpairLoan(
     SLE::ref vaultSle,
     Number const& principalOutstanding,
     Number const& interestOutstanding,
+    Asset const& vaultAsset,
     beast::Journal j)
 {
     // Update the Vault object(clear "paper loss")
@@ -205,7 +268,7 @@ unimpairLoan(
     view.update(vaultSle);
 
     // Update the Loan object
-    loanSle->at(sfFlags) = 0;
+    loanSle->clearFlag(lsfLoanImpaired);
     auto const paymentInterval = loanSle->at(sfPaymentInterval);
     auto const normalPaymentDueDate =
         loanSle->at(sfPreviousPaymentDate) + paymentInterval;
@@ -250,9 +313,9 @@ LoanManage::doApply()
     TenthBips32 const interestRate{loanSle->at(sfInterestRate)};
     auto const principalOutstanding = loanSle->at(sfPrincipalOutstanding);
     auto const interestOutstanding =
-        tenthBipsOfValue(principalOutstanding, interestRate);
+        tenthBipsOfValue(principalOutstanding.value(), interestRate);
 
-    // Valid flag combinations are checked in preflight. Not flags is valid -
+    // Valid flag combinations are checked in preflight. No flags is valid -
     // just a noop.
     if (tx.isFlag(tfLoanDefault))
     {
@@ -263,6 +326,7 @@ LoanManage::doApply()
                 vaultSle,
                 principalOutstanding,
                 interestOutstanding,
+                vaultAsset,
                 j_))
             return ter;
     }
@@ -275,6 +339,7 @@ LoanManage::doApply()
                 vaultSle,
                 principalOutstanding,
                 interestOutstanding,
+                vaultAsset,
                 j_))
             return ter;
     }
@@ -287,23 +352,10 @@ LoanManage::doApply()
                 vaultSle,
                 principalOutstanding,
                 interestOutstanding,
+                vaultAsset,
                 j_))
             return ter;
     }
-    /*
-    auto const brokerOwner = brokerSle->at(sfOwner);
-    auto const brokerOwnerSle = view.peek(keylet::account(brokerOwner));
-
-    auto const vaultPseudo = vaultSle->at(sfAccount);
-
-    auto const brokerPseudo = brokerSle->at(sfAccount);
-    auto const brokerPseudoSle = view.peek(keylet::account(brokerPseudo));
-    auto const principalRequested = tx[sfPrincipalRequested];
-    TenthBips32 const interestRate{tx[~sfInterestRate].value_or(0)};
-    auto const originationFee = tx[~sfLoanOriginationFee];
-    auto const loanAssetsAvailable =
-        principalRequested - originationFee.value_or(Number{});
-        */
 
     return tesSUCCESS;
 }

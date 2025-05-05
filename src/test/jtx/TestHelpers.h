@@ -662,25 +662,27 @@ create(
 namespace loanBroker {
 
 Json::Value
-set(AccountID const& account, uint256 const& vaultId, uint32_t flags = 0);
+set(AccountID const& account, uint256 const& vaultId, std::uint32_t flags = 0);
 
 // Use "del" because "delete" is a reserved word in C++.
 Json::Value
-del(AccountID const& account, uint256 const& loanBrokerID, uint32_t flags = 0);
+del(AccountID const& account,
+    uint256 const& loanBrokerID,
+    std::uint32_t flags = 0);
 
 Json::Value
 coverDeposit(
     AccountID const& account,
     uint256 const& loanBrokerID,
     STAmount const& amount,
-    uint32_t flags = 0);
+    std::uint32_t flags = 0);
 
 Json::Value
 coverWithdraw(
     AccountID const& account,
     uint256 const& loanBrokerID,
     STAmount const& amount,
-    uint32_t flags = 0);
+    std::uint32_t flags = 0);
 
 auto const loanBrokerID = JTxFieldWrapper<uint256Field>(sfLoanBrokerID);
 
@@ -703,10 +705,10 @@ namespace loan {
 
 Json::Value
 set(AccountID const& account,
-    uint256 loanBrokerID,
+    uint256 const& loanBrokerID,
     Number principalRequested,
     NetClock::time_point const& startDate,
-    uint32_t flags = 0);
+    std::uint32_t flags = 0);
 
 auto const counterparty = JTxFieldWrapper<accountIDField>(sfCounterparty);
 
@@ -740,6 +742,10 @@ auto const paymentTotal = simpleField<SF_UINT32>(sfPaymentTotal);
 auto const paymentInterval = simpleField<SF_UINT32>(sfPaymentInterval);
 
 auto const gracePeriod = simpleField<SF_UINT32>(sfGracePeriod);
+
+Json::Value
+manage(AccountID const& account, uint256 const& loanID, std::uint32_t flags);
+
 }  // namespace loan
 
 }  // namespace jtx
