@@ -720,7 +720,8 @@ parseVault(Json::Value const& params, Json::Value& jvResult)
     }
 
     if (!params.isMember(jss::owner) || !params.isMember(jss::seq) ||
-        !params[jss::seq].isIntegral() || params[jss::seq].asDouble() <= 0.0 ||
+        !(params[jss::seq].isInt() || params[jss::seq].isUInt()) ||
+        params[jss::seq].asDouble() <= 0.0 ||
         params[jss::seq].asDouble() > double(Json::Value::maxUInt))
     {
         jvResult[jss::error] = "malformedRequest";
