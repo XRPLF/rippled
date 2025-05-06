@@ -195,7 +195,7 @@ bool
 isGlobalFrozen(ReadView const& view, MPTIssue const& mptIssue)
 {
     if (auto const sle = view.read(keylet::mptIssuance(mptIssue.getMptID())))
-        return sle->getFlags() & lsfMPTLocked;
+        return sle->isFlag(lsfMPTLocked);
     return false;
 }
 
@@ -240,7 +240,7 @@ isIndividualFrozen(
 {
     if (auto const sle =
             view.read(keylet::mptoken(mptIssue.getMptID(), account)))
-        return sle->getFlags() & lsfMPTLocked;
+        return sle->isFlag(lsfMPTLocked);
     return false;
 }
 
@@ -306,38 +306,32 @@ isVaultPseudoAccountFrozen(
     if (!view.rules().enabled(featureSingleAssetVault))
         return false;
 
+    if (depth >= maxAssetCheckDepth)
+        return true;  // LCOV_EXCL_LINE
+
     auto const mptIssuance =
         view.read(keylet::mptIssuance(mptShare.getMptID()));
     if (mptIssuance == nullptr)
-    {
-        UNREACHABLE(  // LCOV_EXCL_LINE
-            "ripple::isVaultPseudoAccountFrozen : null MPTokenIssuance");  // LCOV_EXCL_LINE
-        return false;  // LCOV_EXCL_LINE
-    }
+        return false;  // zero MPToken won't block deletion of MPTokenIssuance
 
     auto const issuer = mptIssuance->getAccountID(sfIssuer);
     auto const mptIssuer = view.read(keylet::account(issuer));
     if (mptIssuer == nullptr)
-    {
-        UNREACHABLE(  // LCOV_EXCL_LINE
-            "ripple::isVaultPseudoAccountFrozen : null MPToken issuer");  // LCOV_EXCL_LINE
-        return false;  // LCOV_EXCL_LINE
-    }
+    {  // LCOV_EXCL_START
+        UNREACHABLE("ripple::isVaultPseudoAccountFrozen : null MPToken issuer");
+        return false;
+    }  // LCOV_EXCL_STOP
 
     if (!mptIssuer->isFieldPresent(sfVaultID))
         return false;  // not a Vault pseudo-account, common case
 
-    if (depth >= maxAssetCheckDepth)
-        return true;  // LCOV_EXCL_LINE
-
     auto const vault =
         view.read(keylet::vault(mptIssuer->getFieldH256(sfVaultID)));
     if (vault == nullptr)
-    {
-        UNREACHABLE(  // LCOV_EXCL_LINE
-            "ripple::isVaultPseudoAccountFrozen : null vault");  // LCOV_EXCL_LINE
-        return false;  // LCOV_EXCL_LINE
-    }
+    {  // LCOV_EXCL_START
+        UNREACHABLE("ripple::isVaultPseudoAccountFrozen : null vault");
+        return false;
+    }  // LCOV_EXCL_STOP
 
     return isAnyFrozen(view, issuer, account, vault->at(sfAsset), depth + 1);
 }
@@ -2299,6 +2293,9 @@ requireAuth(
 
     if (view.rules().enabled(featureSingleAssetVault))
     {
+        if (depth >= maxAssetCheckDepth)
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+
         // requireAuth is recursive if the issuer is a vault pseudo-account
         auto const sleIssuer = view.read(keylet::account(mptIssuer));
         if (!sleIssuer)
@@ -2310,9 +2307,6 @@ requireAuth(
                 view.read(keylet::vault(sleIssuer->getFieldH256(sfVaultID)));
             if (!sleVault)
                 return tefINTERNAL;  // LCOV_EXCL_LINE
-
-            if (depth >= maxAssetCheckDepth)
-                return tecINTERNAL;  // LCOV_EXCL_LINE
 
             auto const asset = sleVault->at(sfAsset);
             if (auto const err = std::visit(
@@ -2449,18 +2443,18 @@ enforceMPTokenAuthorization(
         return tesSUCCESS;
     }
 
-    UNREACHABLE(  // LCOV_EXCL_LINE
-        "ripple::enforceMPTokenAuthorization : condition list is incomplete");  // LCOV_EXCL_LINE
-    return tefINTERNAL;  // LCOV_EXCL_LINE
-}
+    // LCOV_EXCL_START
+    UNREACHABLE(
+        "ripple::enforceMPTokenAuthorization : condition list is incomplete");
+    return tefINTERNAL;
+}  // LCOV_EXCL_STOP
 
 TER
 canTransfer(
     ReadView const& view,
     MPTIssue const& mptIssue,
     AccountID const& from,
-    AccountID const& to,
-    int depth)
+    AccountID const& to)
 {
     auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
     auto const sleIssuance = view.read(mptID);
