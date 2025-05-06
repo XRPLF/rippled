@@ -284,6 +284,13 @@ transferRate(ReadView const& view, AccountID const& issuer);
 [[nodiscard]] Rate
 transferRate(ReadView const& view, MPTID const& issuanceID);
 
+/** Returns the transfer fee as Rate based on the type of token
+ * @param view The ledger view
+ * @param amount The amount to transfer
+ */
+[[nodiscard]] Rate
+transferRate(ReadView const& view, STAmount const& amount);
+
 /** Returns `true` if the directory is empty
     @param key The key of the directory
 */
@@ -499,6 +506,21 @@ rippleCredit(
     bool bCheckIssuer,
     beast::Journal j);
 
+TER
+rippleLockEscrowMPT(
+    ApplyView& view,
+    AccountID const& uGrantorID,
+    STAmount const& saAmount,
+    beast::Journal j);
+
+TER
+rippleUnlockEscrowMPT(
+    ApplyView& view,
+    AccountID const& uGrantorID,
+    AccountID const& uGranteeID,
+    STAmount const& saAmount,
+    beast::Journal j);
+
 /** Calls static accountSendIOU if saAmount represents Issue.
  * Calls static accountSendMPT if saAmount represents MPTIssue.
  */
@@ -535,6 +557,12 @@ transferXRP(
     STAmount const& amount,
     beast::Journal j);
 
+/* Check if MPToken exists:
+ * - StrongAuth - before checking lsfMPTRequireAuth is set
+ * - WeakAuth - after checking if lsfMPTRequireAuth is set
+ */
+enum class MPTAuthType : bool { StrongAuth = true, WeakAuth = false };
+
 /** Check if the account lacks required authorization.
  *   Return tecNO_AUTH or tecNO_LINE if it does
  *   and tesSUCCESS otherwise.
@@ -545,7 +573,8 @@ requireAuth(ReadView const& view, Issue const& issue, AccountID const& account);
 requireAuth(
     ReadView const& view,
     MPTIssue const& mptIssue,
-    AccountID const& account);
+    AccountID const& account,
+    MPTAuthType authType = MPTAuthType::StrongAuth);
 
 /** Check if the destination account is allowed
  *  to receive MPT. Return tecNO_AUTH if it doesn't

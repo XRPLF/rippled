@@ -350,6 +350,8 @@ LEDGER_ENTRY(ltESCROW, 0x0075, Escrow, escrow, ({
     {sfPreviousTxnID,        soeREQUIRED},
     {sfPreviousTxnLgrSeq,    soeREQUIRED},
     {sfDestinationNode,      soeOPTIONAL},
+    {sfTransferRate,         soeOPTIONAL},
+    {sfIssuerNode,           soeOPTIONAL},
 }))
 
 /** A ledger object describing a single unidirectional XRP payment channel.
@@ -416,6 +418,7 @@ LEDGER_ENTRY(ltMPTOKEN_ISSUANCE, 0x007e, MPTokenIssuance, mpt_issuance, ({
     {sfAssetScale,               soeDEFAULT},
     {sfMaximumAmount,            soeOPTIONAL},
     {sfOutstandingAmount,        soeREQUIRED},
+    {sfEscrowedAmount,           soeOPTIONAL},
     {sfMPTokenMetadata,          soeOPTIONAL},
     {sfPreviousTxnID,            soeREQUIRED},
     {sfPreviousTxnLgrSeq,        soeREQUIRED},
@@ -428,6 +431,7 @@ LEDGER_ENTRY(ltMPTOKEN, 0x007f, MPToken, mptoken, ({
     {sfAccount,                  soeREQUIRED},
     {sfMPTokenIssuanceID,        soeREQUIRED},
     {sfMPTAmount,                soeDEFAULT},
+    {sfEscrowedAmount,           soeOPTIONAL},
     {sfOwnerNode,                soeREQUIRED},
     {sfPreviousTxnID,            soeREQUIRED},
     {sfPreviousTxnLgrSeq,        soeREQUIRED},

@@ -670,6 +670,19 @@ transferRate(ReadView const& view, MPTID const& issuanceID)
     return parityRate;
 }
 
+Rate
+transferRate(ReadView const& view, STAmount const& amount)
+{
+    return std::visit(
+        [&]<ValidIssueType TIss>(TIss const& issue) {
+            if constexpr (std::is_same_v<TIss, Issue>)
+                return transferRate(view, issue.getIssuer());
+            else
+                return transferRate(view, issue.getMptID());
+        },
+        amount.asset().value());
+}
+
 bool
 areCompatible(
     ReadView const& validLedger,
@@ -1919,7 +1932,8 @@ TER
 requireAuth(
     ReadView const& view,
     MPTIssue const& mptIssue,
-    AccountID const& account)
+    AccountID const& account,
+    MPTAuthType authType)
 {
     auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
     auto const sleIssuance = view.read(mptID);
@@ -1937,7 +1951,7 @@ requireAuth(
     auto const sleToken = view.read(mptokenID);
 
     // if account has no MPToken, fail
-    if (!sleToken)
+    if (!sleToken && authType == MPTAuthType::StrongAuth)
         return tecNO_AUTH;
 
     // mptoken must be authorized if issuance enabled requireAuth
@@ -2121,6 +2135,167 @@ rippleCredit(
             }
         },
         saAmount.asset().value());
+}
+
+TER
+rippleLockEscrowMPT(
+    ApplyView& view,
+    AccountID const& sender,
+    STAmount const& amount,
+    beast::Journal j)
+{
+    auto const mtpIssue = amount.get<MPTIssue>();
+    auto const mptID = keylet::mptIssuance(mtpIssue.getMptID());
+    auto sleIssuance = view.peek(mptID);
+    if (!sleIssuance)
+        return tecOBJECT_NOT_FOUND;
+
+    // 1. Decrease the MPT Holder MPTAmount
+    // 2. Increase the MPT Holder EscrowedAmount
+    if (amount.getIssuer() != sender)
+    {
+        auto const mptokenID = keylet::mptoken(mptID.key, sender);
+        auto sle = view.peek(mptokenID);
+        if (!sle)
+            return tecOBJECT_NOT_FOUND;
+
+        auto const amt = sle->getFieldU64(sfMPTAmount);
+        auto const pay = amount.mpt().value();
+
+        // Underflow check for subtraction
+        if (!canSubtract(STAmount(mtpIssue, amt), STAmount(mtpIssue, pay)))
+            return tecINTERNAL;
+
+        (*sle)[sfMPTAmount] = amt - pay;
+
+        // Overflow check for addition
+        uint64_t escrowed = sle->isFieldPresent(sfEscrowedAmount)
+            ? sle->getFieldU64(sfEscrowedAmount)
+            : 0;
+
+        if (!canAdd(STAmount(mtpIssue, escrowed), STAmount(mtpIssue, pay)))
+            return tecINTERNAL;
+
+        if (sle->isFieldPresent(sfEscrowedAmount))
+            (*sle)[sfEscrowedAmount] += pay;
+        else
+            sle->setFieldU64(sfEscrowedAmount, pay);
+
+        view.update(sle);
+    }
+
+    // 1. Increase the Issuance EscrowedAmount
+    // 2. DO NOT change the Issuance OutstandingAmount
+    {
+        uint64_t issuanceEscrowed =
+            sleIssuance->isFieldPresent(sfEscrowedAmount)
+            ? sleIssuance->getFieldU64(sfEscrowedAmount)
+            : 0;
+        auto pay = amount.mpt().value();
+
+        // Overflow check for addition
+        if (!canAdd(
+                STAmount(mtpIssue, issuanceEscrowed), STAmount(mtpIssue, pay)))
+            return tecINTERNAL;
+
+        if (sleIssuance->isFieldPresent(sfEscrowedAmount))
+            (*sleIssuance)[sfEscrowedAmount] += pay;
+        else
+            sleIssuance->setFieldU64(sfEscrowedAmount, pay);
+
+        view.update(sleIssuance);
+    }
+    return tesSUCCESS;
+}
+
+TER
+rippleUnlockEscrowMPT(
+    ApplyView& view,
+    AccountID const& sender,
+    AccountID const& receiver,
+    STAmount const& amount,
+    beast::Journal j)
+{
+    auto const issuer = amount.getIssuer();
+    auto const mtpIssue = amount.get<MPTIssue>();
+    auto const mptID = keylet::mptIssuance(mtpIssue.getMptID());
+    auto sleIssuance = view.peek(mptID);
+    if (!sleIssuance)
+        return tecOBJECT_NOT_FOUND;
+
+    // Decrease the Issuance EscrowedAmount
+    {
+        if (!sleIssuance->isFieldPresent(sfEscrowedAmount))
+            return tecINTERNAL;
+
+        auto const escrowed = sleIssuance->getFieldU64(sfEscrowedAmount);
+        auto const redeem = amount.mpt().value();
+
+        // Underflow check for subtraction
+        if (!canSubtract(
+                STAmount(mtpIssue, escrowed), STAmount(mtpIssue, redeem)))
+            return tecINTERNAL;
+
+        sleIssuance->setFieldU64(sfEscrowedAmount, escrowed - redeem);
+        view.update(sleIssuance);
+    }
+
+    if (issuer != receiver)
+    {
+        // Increase the MPT Holder MPTAmount
+        auto const mptokenID = keylet::mptoken(mptID.key, receiver);
+        auto sle = view.peek(mptokenID);
+        if (!sle)
+            return tecOBJECT_NOT_FOUND;
+
+        auto current = sle->getFieldU64(sfMPTAmount);
+        auto delta = amount.mpt().value();
+
+        // Overflow check for addition
+        if (!canAdd(STAmount(mtpIssue, current), STAmount(mtpIssue, delta)))
+            return tecINTERNAL;
+
+        (*sle)[sfMPTAmount] += delta;
+        view.update(sle);
+    }
+    else
+    {
+        // Decrease the Issuance OutstandingAmount
+        auto const outstanding = sleIssuance->getFieldU64(sfOutstandingAmount);
+        auto const redeem = amount.mpt().value();
+
+        // Underflow check for subtraction
+        if (!canSubtract(
+                STAmount(mtpIssue, outstanding), STAmount(mtpIssue, redeem)))
+            return tecINTERNAL;
+
+        sleIssuance->setFieldU64(sfOutstandingAmount, outstanding - redeem);
+        view.update(sleIssuance);
+    }
+
+    if (issuer != sender)
+    {
+        // Decrease the MPT Holder EscrowedAmount
+        auto const mptokenID = keylet::mptoken(mptID.key, sender);
+        auto sle = view.peek(mptokenID);
+        if (!sle)
+            return tecOBJECT_NOT_FOUND;
+
+        if (!sle->isFieldPresent(sfEscrowedAmount))
+            return tecINTERNAL;
+
+        auto escrowed = sle->getFieldU64(sfEscrowedAmount);
+        auto delta = amount.mpt().value();
+
+        // Underflow check for subtraction
+        if (!canSubtract(
+                STAmount(mtpIssue, escrowed), STAmount(mtpIssue, delta)))
+            return tecINTERNAL;
+
+        (*sle)[sfEscrowedAmount] -= delta;
+        view.update(sle);
+    }
+    return tesSUCCESS;
 }
 
 bool

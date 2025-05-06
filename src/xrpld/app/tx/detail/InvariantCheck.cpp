@@ -107,7 +107,8 @@ XRPNotCreated::visitEntry(
                     ((*before)[sfAmount] - (*before)[sfBalance]).xrp().drops();
                 break;
             case ltESCROW:
-                drops_ -= (*before)[sfAmount].xrp().drops();
+                if (isXRP((*before)[sfAmount]))
+                    drops_ -= (*before)[sfAmount].xrp().drops();
                 break;
             default:
                 break;
@@ -128,7 +129,7 @@ XRPNotCreated::visitEntry(
                                   .drops();
                 break;
             case ltESCROW:
-                if (!isDelete)
+                if (!isDelete && isXRP((*after)[sfAmount]))
                     drops_ += (*after)[sfAmount].xrp().drops();
                 break;
             default:
@@ -268,14 +269,38 @@ NoZeroEscrow::visitEntry(
     std::shared_ptr<SLE const> const& after)
 {
     auto isBad = [](STAmount const& amount) {
-        if (!amount.native())
-            return true;
+        // IOU case
+        if (amount.holds<Issue>())
+        {
+            if (amount <= beast::zero)
+                return true;
 
-        if (amount.xrp() <= XRPAmount{0})
-            return true;
+            if (!isLegalNet(amount))
+                return true;
 
-        if (amount.xrp() >= INITIAL_XRP)
-            return true;
+            if (badCurrency() == amount.getCurrency())
+                return true;
+        }
+
+        // MPT case
+        if (amount.holds<MPTIssue>())
+        {
+            if (amount <= beast::zero)
+                return true;
+
+            if (amount.mpt() > MPTAmount{maxMPTokenAmount})
+                return true;
+        }
+
+        // XRP case
+        if (amount.native())
+        {
+            if (amount.xrp() <= XRPAmount{0})
+                return true;
+
+            if (amount.xrp() >= INITIAL_XRP)
+                return true;
+        }
 
         return false;
     };
@@ -285,14 +310,33 @@ NoZeroEscrow::visitEntry(
 
     if (after && after->getType() == ltESCROW)
         bad_ |= isBad((*after)[sfAmount]);
+
+    auto checkAmount = [this](std::int64_t amount) {
+        if (amount > maxMPTokenAmount || amount < 0)
+            bad_ = true;
+    };
+
+    if (after && after->getType() == ltMPTOKEN_ISSUANCE)
+    {
+        checkAmount((*after)[sfOutstandingAmount]);
+        if (auto const escrowed = (*after)[~sfEscrowedAmount])
+            checkAmount(*escrowed);
+    }
+
+    if (after && after->getType() == ltMPTOKEN)
+    {
+        checkAmount((*after)[sfMPTAmount]);
+        if (auto const escrowed = (*after)[~sfEscrowedAmount])
+            checkAmount(*escrowed);
+    }
 }
 
 bool
 NoZeroEscrow::finalize(
-    STTx const&,
+    STTx const& txn,
     TER const,
     XRPAmount const,
-    ReadView const&,
+    ReadView const& rv,
     beast::Journal const& j)
 {
     if (bad_)
@@ -1419,6 +1463,9 @@ ValidMPTIssuance::finalize(
             return mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 0 &&
                 mptokensCreated_ == 0 && mptokensDeleted_ == 0;
         }
+
+        if (tx.getTxnType() == ttESCROW_FINISH)
+            return true;
     }
 
     if (mptIssuancesCreated_ != 0)
