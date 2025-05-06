@@ -614,7 +614,7 @@ PeerImp::fail(std::string const& reason)
         return post(
             strand_,
             std::bind(
-                (void (Peer::*)(std::string const&))&PeerImp::fail,
+                (void(Peer::*)(std::string const&)) & PeerImp::fail,
                 shared_from_this(),
                 reason));
     if (journal_.active(beast::severities::kWarning) && socket_.is_open())
@@ -1502,9 +1502,8 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProofPathRequest> const& m)
                 }
                 else
                 {
-                    peer->send(
-                        std::make_shared<Message>(
-                            reply, protocol::mtPROOF_PATH_RESPONSE));
+                    peer->send(std::make_shared<Message>(
+                        reply, protocol::mtPROOF_PATH_RESPONSE));
                 }
             }
         });
@@ -1558,9 +1557,8 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMReplayDeltaRequest> const& m)
                 }
                 else
                 {
-                    peer->send(
-                        std::make_shared<Message>(
-                            reply, protocol::mtREPLAY_DELTA_RESPONSE));
+                    peer->send(std::make_shared<Message>(
+                        reply, protocol::mtREPLAY_DELTA_RESPONSE));
                 }
             }
         });
