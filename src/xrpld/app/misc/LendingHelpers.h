@@ -20,80 +20,48 @@
 #ifndef RIPPLE_APP_MISC_LENDINGHELPERS_H_INCLUDED
 #define RIPPLE_APP_MISC_LENDINGHELPERS_H_INCLUDED
 
-#include <xrpld/app/tx/detail/Transactor.h>
-#include <xrpld/app/tx/detail/VaultCreate.h>
-
 #include <xrpl/basics/Number.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Protocol.h>
 
 namespace ripple {
 
-class PreflightContext;
+struct PreflightContext;
 
 // Lending protocol has dependencies, so capture them here.
-inline bool
-LendingProtocolEnabled(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featureLendingProtocol) &&
-        VaultCreate::isEnabled(ctx);
-}
+bool
+LendingProtocolEnabled(PreflightContext const& ctx);
 
-inline Number
-LoanPeriodicRate(TenthBips32 interestRate, std::uint32_t paymentInterval)
-{
-    // Need floating point math for this one, since we're dividing by some large
-    // numbers
-    return tenthBipsOfValue(Number(paymentInterval), interestRate) /
-        (365 * 24 * 60 * 60);
-}
+namespace detail {
+// These functions should rarely be used directly. More often, the ultimate
+// result needs to be roundToAsset'd.
 
-inline Number
+Number
+LoanPeriodicRate(TenthBips32 interestRate, std::uint32_t paymentInterval);
+
+Number
 LoanPeriodicPayment(
     Number principalOutstanding,
     TenthBips32 interestRate,
     std::uint32_t paymentInterval,
-    std::uint32_t paymentsRemaining)
-{
-    if (principalOutstanding == 0 || paymentsRemaining == 0)
-        return 0;
-    Number const periodicRate = LoanPeriodicRate(interestRate, paymentInterval);
+    std::uint32_t paymentsRemaining);
 
-    // TODO: Need a better name
-    Number const timeFactor = power(1 + periodicRate, paymentsRemaining);
-
-    return principalOutstanding * (periodicRate * timeFactor) /
-        (timeFactor - 1);
-}
-
-inline Number
+Number
 LoanTotalValueOutstanding(
     Number principalOutstanding,
     TenthBips32 interestRate,
     std::uint32_t paymentInterval,
-    std::uint32_t paymentsRemaining)
-{
-    return LoanPeriodicPayment(
-               principalOutstanding,
-               interestRate,
-               paymentInterval,
-               paymentsRemaining) *
-        paymentsRemaining;
-}
+    std::uint32_t paymentsRemaining);
 
-inline Number
+Number
 LoanTotalInterestOutstanding(
     Number principalOutstanding,
     TenthBips32 interestRate,
     std::uint32_t paymentInterval,
-    std::uint32_t paymentsRemaining)
-{
-    return LoanTotalValueOutstanding(
-               principalOutstanding,
-               interestRate,
-               paymentInterval,
-               paymentsRemaining) -
-        principalOutstanding;
-}
+    std::uint32_t paymentsRemaining);
+
+}  // namespace detail
 
 template <AssetType A>
 Number
@@ -108,7 +76,7 @@ LoanInterestOutstandingToVault(
     return roundToAsset(
         asset,
         tenthBipsOfValue(
-            LoanTotalInterestOutstanding(
+            detail::LoanTotalInterestOutstanding(
                 principalOutstanding,
                 interestRate,
                 paymentInterval,

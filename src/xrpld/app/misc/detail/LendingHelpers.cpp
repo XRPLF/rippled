@@ -26,4 +26,72 @@
 
 namespace ripple {
 
+bool
+LendingProtocolEnabled(PreflightContext const& ctx)
+{
+    return ctx.rules.enabled(featureLendingProtocol) &&
+        VaultCreate::isEnabled(ctx);
+}
+
+namespace detail {
+
+Number
+LoanPeriodicRate(TenthBips32 interestRate, std::uint32_t paymentInterval)
+{
+    // Need floating point math for this one, since we're dividing by some
+    // large numbers
+    return tenthBipsOfValue(Number(paymentInterval), interestRate) /
+        (365 * 24 * 60 * 60);
+}
+
+Number
+LoanPeriodicPayment(
+    Number principalOutstanding,
+    TenthBips32 interestRate,
+    std::uint32_t paymentInterval,
+    std::uint32_t paymentsRemaining)
+{
+    if (principalOutstanding == 0 || paymentsRemaining == 0)
+        return 0;
+    Number const periodicRate = LoanPeriodicRate(interestRate, paymentInterval);
+
+    // TODO: Need a better name
+    Number const timeFactor = power(1 + periodicRate, paymentsRemaining);
+
+    return principalOutstanding * (periodicRate * timeFactor) /
+        (timeFactor - 1);
+}
+
+Number
+LoanTotalValueOutstanding(
+    Number principalOutstanding,
+    TenthBips32 interestRate,
+    std::uint32_t paymentInterval,
+    std::uint32_t paymentsRemaining)
+{
+    return LoanPeriodicPayment(
+               principalOutstanding,
+               interestRate,
+               paymentInterval,
+               paymentsRemaining) *
+        paymentsRemaining;
+}
+
+Number
+LoanTotalInterestOutstanding(
+    Number principalOutstanding,
+    TenthBips32 interestRate,
+    std::uint32_t paymentInterval,
+    std::uint32_t paymentsRemaining)
+{
+    return LoanTotalValueOutstanding(
+               principalOutstanding,
+               interestRate,
+               paymentInterval,
+               paymentsRemaining) -
+        principalOutstanding;
+}
+
+}  // namespace detail
+
 }  // namespace ripple
