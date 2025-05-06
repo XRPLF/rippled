@@ -100,10 +100,6 @@ VaultDelete::doApply()
     auto const mpt = view().peek(keylet::mptIssuance(vault->at(sfShareMPTID)));
     if (!mpt)
         return tefINTERNAL;  // LCOV_EXCL_LINE
-    if (pseudoID != mpt->getAccountID(sfIssuer))
-        return tefINTERNAL;  // LCOV_EXCL_LINE
-    if (mpt->at(sfOutstandingAmount) != 0)
-        return tefINTERNAL;  // LCOV_EXCL_LINE
 
     if (!view().dirRemove(
             keylet::ownerDir(pseudoID), (*mpt)[sfOwnerNode], mpt->key(), false))
@@ -121,9 +117,6 @@ VaultDelete::doApply()
 
     // Remove the vault from its owner's directory.
     auto const ownerID = vault->at(sfOwner);
-    if (ownerID != account_)
-        return tefINTERNAL;  // LCOV_EXCL_LINE
-
     if (!view().dirRemove(
             keylet::ownerDir(ownerID),
             vault->at(sfOwnerNode),

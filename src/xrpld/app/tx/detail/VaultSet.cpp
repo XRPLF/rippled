@@ -147,13 +147,12 @@ VaultSet::doApply()
             // sfDomainID flag must be set in the MPTokenIssuance object and can
             // be freely updated.
             sleIssuance->setFieldH256(sfDomainID, *domainId);
-            view().update(sleIssuance);
         }
         else if (sleIssuance->isFieldPresent(sfDomainID))
         {
             sleIssuance->makeFieldAbsent(sfDomainID);
-            view().update(sleIssuance);
         }
+        view().update(sleIssuance);
     }
 
     view().update(vault);

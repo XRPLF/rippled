@@ -1141,7 +1141,7 @@ addEmptyHolding(
     auto const& issuerId = issue.getIssuer();
     auto const& currency = issue.currency;
     if (isGlobalFrozen(view, issuerId))
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+        return tecFROZEN;  // LCOV_EXCL_LINE
 
     auto const& srcId = issuerId;
     auto const& dstId = accountID;
@@ -1185,7 +1185,7 @@ addEmptyHolding(
     auto const& mptID = mptIssue.getMptID();
     auto const mpt = view.peek(keylet::mptIssuance(mptID));
     if (!mpt)
-        return tecOBJECT_NOT_FOUND;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
     if (mpt->isFlag(lsfMPTLocked))
         return tecLOCKED;
     if (view.peek(keylet::mptoken(mptID, accountID)))

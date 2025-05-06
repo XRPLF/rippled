@@ -76,6 +76,8 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         auto issuance = ctx.view.read(keylet::mptIssuance(mptID));
         if (!issuance)
             return tecOBJECT_NOT_FOUND;
+        if (!issuance->isFlag(lsfMPTCanTransfer))
+            return tecNO_AUTH;
     }
     else if (vaultAsset.holds<Issue>())
     {

@@ -108,7 +108,7 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
         auto issuance = ctx.view.read(keylet::mptIssuance(mptID));
         if (!issuance)
             return tecOBJECT_NOT_FOUND;
-        if ((issuance->getFlags() & lsfMPTCanTransfer) == 0)
+        if (!issuance->isFlag(lsfMPTCanTransfer))
             return tecNO_AUTH;
     }
     else if (vaultAsset.holds<Issue>())

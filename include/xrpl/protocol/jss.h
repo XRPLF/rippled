@@ -729,8 +729,6 @@ JSS(write_load);              // out: GetCounts
 
 #undef JSS
 
-// clang-format on
-
 }  // namespace jss
 }  // namespace ripple
 

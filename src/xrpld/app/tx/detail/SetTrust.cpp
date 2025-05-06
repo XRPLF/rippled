@@ -216,7 +216,7 @@ SetTrust::preclaim(PreclaimContext const& ctx)
         // SetTrust if the asset is AMM LP token and AMM is not in empty state.
         if (sleDst->isFieldPresent(sfAMMID))
         {
-            if (ctx.view.read(keylet::line(id, uDstAccountID, currency)))
+            if (ctx.view.exists(keylet::line(id, uDstAccountID, currency)))
             {
                 // pass
             }
@@ -236,7 +236,7 @@ SetTrust::preclaim(PreclaimContext const& ctx)
         }
         else if (sleDst->isFieldPresent(sfVaultID))
         {
-            if (ctx.view.read(keylet::line(id, uDstAccountID, currency)))
+            if (ctx.view.exists(keylet::line(id, uDstAccountID, currency)))
             {
                 // pass
             }
