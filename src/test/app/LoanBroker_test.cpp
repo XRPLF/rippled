@@ -72,7 +72,7 @@ class LoanBroker_test : public beast::unit_test::suite
 
             using namespace loanBroker;
             // Can't create a loan broker regardless of whether the vault exists
-            env(set(alice, keylet.key), fee(increment), ter(temDISABLED));
+            env(set(alice, keylet.key), ter(temDISABLED));
             auto const brokerKeylet =
                 keylet::loanbroker(alice.id(), env.seq(alice));
             // Other LoanBroker transactions are disabled, too.
@@ -129,7 +129,7 @@ class LoanBroker_test : public beast::unit_test::suite
 
         {
             // Start with default values
-            auto jtx = env.jt(set(alice, vault.vaultID), fee(increment));
+            auto jtx = env.jt(set(alice, vault.vaultID));
             // Modify as desired
             if (modifyJTx)
                 jtx = modifyJTx(jtx);
@@ -390,6 +390,8 @@ class LoanBroker_test : public beast::unit_test::suite
             env.close();
         }
 
+        auto const aliceOriginalCount = env.ownerCount(alice);
+
         // Create and update Loan Brokers
         for (auto const& vault : vaults)
         {
@@ -397,73 +399,56 @@ class LoanBroker_test : public beast::unit_test::suite
 
             auto badKeylet = keylet::vault(alice.id(), env.seq(alice));
             // Try some failure cases
-            // insufficient fee
-            env(set(evan, vault.vaultID), ter(telINSUF_FEE_P));
             // not the vault owner
-            env(set(evan, vault.vaultID),
-                fee(increment),
-                ter(tecNO_PERMISSION));
+            env(set(evan, vault.vaultID), ter(tecNO_PERMISSION));
             // not a vault
-            env(set(alice, badKeylet.key), fee(increment), ter(tecNO_ENTRY));
+            env(set(alice, badKeylet.key), ter(tecNO_ENTRY));
             // flags are checked first
-            env(set(evan, vault.vaultID, ~tfUniversal),
-                fee(increment),
-                ter(temINVALID_FLAG));
+            env(set(evan, vault.vaultID, ~tfUniversal), ter(temINVALID_FLAG));
             // field length validation
             // sfData: good length, bad account
             env(set(evan, vault.vaultID),
-                fee(increment),
                 data(std::string(maxDataPayloadLength, 'X')),
                 ter(tecNO_PERMISSION));
             // sfData: too long
             env(set(evan, vault.vaultID),
-                fee(increment),
                 data(std::string(maxDataPayloadLength + 1, 'Y')),
                 ter(temINVALID));
             // sfManagementFeeRate: good value, bad account
             env(set(evan, vault.vaultID),
                 managementFeeRate(maxManagementFeeRate),
-                fee(increment),
                 ter(tecNO_PERMISSION));
             // sfManagementFeeRate: too big
             env(set(evan, vault.vaultID),
                 managementFeeRate(maxManagementFeeRate + TenthBips16(10)),
-                fee(increment),
                 ter(temINVALID));
             // sfCoverRateMinimum: good value, bad account
             env(set(evan, vault.vaultID),
                 coverRateMinimum(maxCoverRate),
-                fee(increment),
                 ter(tecNO_PERMISSION));
             // sfCoverRateMinimum: too big
             env(set(evan, vault.vaultID),
                 coverRateMinimum(maxCoverRate + 1),
-                fee(increment),
                 ter(temINVALID));
             // sfCoverRateLiquidation: good value, bad account
             env(set(evan, vault.vaultID),
                 coverRateLiquidation(maxCoverRate),
-                fee(increment),
                 ter(tecNO_PERMISSION));
             // sfCoverRateLiquidation: too big
             env(set(evan, vault.vaultID),
                 coverRateLiquidation(maxCoverRate + 1),
-                fee(increment),
                 ter(temINVALID));
             // sfDebtMaximum: good value, bad account
             env(set(evan, vault.vaultID),
                 debtMaximum(Number(0)),
-                fee(increment),
                 ter(tecNO_PERMISSION));
             // sfDebtMaximum: overflow
             env(set(evan, vault.vaultID),
                 debtMaximum(Number(1, 100)),
-                fee(increment),
                 ter(temINVALID));
             // sfDebtMaximum: negative
             env(set(evan, vault.vaultID),
                 debtMaximum(Number(-1)),
-                fee(increment),
                 ter(temINVALID));
 
             std::string testData;
@@ -486,6 +471,9 @@ class LoanBroker_test : public beast::unit_test::suite
                     BEAST_EXPECT(broker->at(sfDebtMaximum) == 0);
                     BEAST_EXPECT(broker->at(sfCoverRateMinimum) == 0);
                     BEAST_EXPECT(broker->at(sfCoverRateLiquidation) == 0);
+
+                    BEAST_EXPECT(
+                        env.ownerCount(alice) == aliceOriginalCount + 2);
                 },
                 [&](SLE::const_ref broker) {
                     // Modifications
@@ -587,6 +575,8 @@ class LoanBroker_test : public beast::unit_test::suite
                     BEAST_EXPECT(!broker->isFieldPresent(sfDebtMaximum));
                 });
         }
+
+        BEAST_EXPECT(env.ownerCount(alice) == aliceOriginalCount);
     }
 
 public:

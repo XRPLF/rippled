@@ -17,40 +17,13 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_LOANBROKERSET_H_INCLUDED
-#define RIPPLE_TX_LOANBROKERSET_H_INCLUDED
-
+#include <xrpld/app/misc/LendingHelpers.h>
+//
 #include <xrpld/app/tx/detail/Transactor.h>
+#include <xrpld/app/tx/detail/VaultCreate.h>
+
+#include <xrpl/protocol/Feature.h>
 
 namespace ripple {
 
-class LoanBrokerSet : public Transactor
-{
-public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
-
-    explicit LoanBrokerSet(ApplyContext& ctx) : Transactor(ctx)
-    {
-    }
-
-    static bool
-    isEnabled(PreflightContext const& ctx);
-
-    static std::uint32_t
-    getFlagsMask(PreflightContext const& ctx);
-
-    static NotTEC
-    doPreflight(PreflightContext const& ctx);
-
-    static TER
-    preclaim(PreclaimContext const& ctx);
-
-    TER
-    doApply() override;
-};
-
-//------------------------------------------------------------------------------
-
 }  // namespace ripple
-
-#endif

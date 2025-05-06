@@ -18,6 +18,8 @@
 //==============================================================================
 
 #include <xrpld/app/tx/detail/LoanBrokerSet.h>
+//
+#include <xrpld/app/misc/LendingHelpers.h>
 #include <xrpld/app/tx/detail/SignerEntries.h>
 #include <xrpld/app/tx/detail/VaultCreate.h>
 #include <xrpld/ledger/ApplyView.h>
@@ -44,16 +46,9 @@
 namespace ripple {
 
 bool
-lendingProtocolEnabled(PreflightContext const& ctx)
-{
-    return ctx.rules.enabled(featureLendingProtocol) &&
-        VaultCreate::isEnabled(ctx);
-}
-
-bool
 LoanBrokerSet::isEnabled(PreflightContext const& ctx)
 {
-    return lendingProtocolEnabled(ctx);
+    return LendingProtocolEnabled(ctx);
 }
 
 std::uint32_t
@@ -90,15 +85,6 @@ LoanBrokerSet::doPreflight(PreflightContext const& ctx)
     }
 
     return tesSUCCESS;
-}
-
-XRPAmount
-LoanBrokerSet::calculateBaseFee(ReadView const& view, STTx const& tx)
-{
-    // One reserve increment is typically much greater than one base fee.
-    if (!tx.isFieldPresent(sfLoanBrokerID))
-        return calculateOwnerReserveFee(view, tx);
-    return Transactor::calculateBaseFee(view, tx);
 }
 
 TER
@@ -186,14 +172,10 @@ LoanBrokerSet::doApply()
         if (auto const ter = dirLink(view, vaultPseudoID, broker, sfVaultNode))
             return ter;
 
-        /* We're already charging a higher fee, so we probably don't want to
-        also charge a reserve.
-        *
-        adjustOwnerCount(view, owner, 1, j_);
-        auto ownerCount = owner->at(sfOwnerCount);
+        adjustOwnerCount(view, owner, 2, j_);
+        auto const ownerCount = owner->at(sfOwnerCount);
         if (mPriorBalance < view.fees().accountReserve(ownerCount))
             return tecINSUFFICIENT_RESERVE;
-            */
 
         auto maybePseudo =
             createPseudoAccount(view, broker->key(), sfLoanBrokerID);

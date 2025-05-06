@@ -18,7 +18,8 @@
 //==============================================================================
 
 #include <xrpld/app/tx/detail/LoanBrokerCoverWithdraw.h>
-#include <xrpld/app/tx/detail/LoanBrokerSet.h>
+//
+#include <xrpld/app/misc/LendingHelpers.h>
 #include <xrpld/ledger/ApplyView.h>
 #include <xrpld/ledger/View.h>
 
@@ -44,7 +45,7 @@ namespace ripple {
 bool
 LoanBrokerCoverWithdraw::isEnabled(PreflightContext const& ctx)
 {
-    return lendingProtocolEnabled(ctx);
+    return LendingProtocolEnabled(ctx);
 }
 
 std::uint32_t
@@ -122,7 +123,7 @@ LoanBrokerCoverWithdraw::preclaim(PreclaimContext const& ctx)
 
     if (accountHolds(
             ctx.view,
-            account,
+            pseudoAccountID,
             vaultAsset,
             FreezeHandling::fhZERO_IF_FROZEN,
             AuthHandling::ahZERO_IF_UNAUTHORIZED,

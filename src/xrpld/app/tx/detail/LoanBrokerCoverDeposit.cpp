@@ -18,7 +18,8 @@
 //==============================================================================
 
 #include <xrpld/app/tx/detail/LoanBrokerCoverDeposit.h>
-#include <xrpld/app/tx/detail/LoanBrokerSet.h>
+//
+#include <xrpld/app/misc/LendingHelpers.h>
 #include <xrpld/ledger/ApplyView.h>
 #include <xrpld/ledger/View.h>
 
@@ -44,7 +45,7 @@ namespace ripple {
 bool
 LoanBrokerCoverDeposit::isEnabled(PreflightContext const& ctx)
 {
-    return lendingProtocolEnabled(ctx);
+    return LendingProtocolEnabled(ctx);
 }
 
 std::uint32_t

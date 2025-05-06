@@ -24,21 +24,6 @@
 
 namespace ripple {
 
-template <AssetType A>
-Number
-LoanInterestOutstanding(
-    A const& asset,
-    Number principalOutstanding,
-    TenthBips32 interestRate,
-    TenthBips32 managementFeeRate)
-{
-    return roundToAsset(
-        asset,
-        tenthBipsOfValue(
-            tenthBipsOfValue(principalOutstanding, interestRate),
-            tenthBipsPerUnity - managementFeeRate));
-}
-
 class LoanSet : public Transactor
 {
 public:

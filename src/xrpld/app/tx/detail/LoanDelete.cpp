@@ -19,7 +19,7 @@
 
 #include <xrpld/app/tx/detail/LoanDelete.h>
 //
-#include <xrpld/app/tx/detail/LoanBrokerSet.h>
+#include <xrpld/app/misc/LendingHelpers.h>
 #include <xrpld/ledger/ApplyView.h>
 #include <xrpld/ledger/View.h>
 
@@ -47,7 +47,7 @@ namespace ripple {
 bool
 LoanDelete::isEnabled(PreflightContext const& ctx)
 {
-    return lendingProtocolEnabled(ctx);
+    return LendingProtocolEnabled(ctx);
 }
 
 std::uint32_t
@@ -110,6 +110,9 @@ LoanDelete::doApply()
     if (!loanSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const borrower = loanSle->at(sfBorrower);
+    auto const borrowerSle = view.peek(keylet::account(borrower));
+    if (!borrowerSle)
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
     auto const brokerID = loanSle->at(sfLoanBrokerID);
     auto const brokerSle = view.peek(keylet::loanbroker(brokerID));
@@ -156,6 +159,8 @@ LoanDelete::doApply()
 
     // Decrement the LoanBroker's owner count.
     adjustOwnerCount(view, brokerSle, -1, j_);
+    // Decrement the borrower's owner count
+    adjustOwnerCount(view, borrowerSle, -1, j_);
 
     return tesSUCCESS;
 }
