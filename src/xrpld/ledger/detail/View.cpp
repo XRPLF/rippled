@@ -1187,7 +1187,7 @@ addEmptyHolding(
     if (!mpt)
         return tefINTERNAL;  // LCOV_EXCL_LINE
     if (mpt->isFlag(lsfMPTLocked))
-        return tecLOCKED;
+        return tefINTERNAL;  // LCOV_EXCL_LINE
     if (view.peek(keylet::mptoken(mptID, accountID)))
         return tecDUPLICATE;
 
