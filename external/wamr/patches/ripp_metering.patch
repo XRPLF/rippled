@@ -187,10 +187,22 @@ index 8ac032bf..5ca5d489 100644
                                 bool enable);
  
 diff --git a/core/iwasm/include/wasm_c_api.h b/core/iwasm/include/wasm_c_api.h
-index 241a0eec..82e048c0 100644
+index 241a0eec..9eb0dde1 100644
 --- a/core/iwasm/include/wasm_c_api.h
 +++ b/core/iwasm/include/wasm_c_api.h
-@@ -701,6 +701,11 @@ WASM_API_EXTERN double wasm_instance_sum_wasm_exec_time(const wasm_instance_t*);
+@@ -19,8 +19,10 @@
+ #if defined(_MSC_BUILD)
+ #if defined(COMPILING_WASM_RUNTIME_API)
+ #define WASM_API_EXTERN __declspec(dllexport)
+-#else
++#elif defined(_DLL)
+ #define WASM_API_EXTERN __declspec(dllimport)
++#else
++#define WASM_API_EXTERN
+ #endif
+ #else
+ #define WASM_API_EXTERN
+@@ -701,6 +703,11 @@ WASM_API_EXTERN double wasm_instance_sum_wasm_exec_time(const wasm_instance_t*);
  // func_name. If the function is not found, return 0.
  WASM_API_EXTERN double wasm_instance_get_wasm_func_exec_time(const wasm_instance_t*, const char *);
  
@@ -203,10 +215,22 @@ index 241a0eec..82e048c0 100644
  // Convenience
  
 diff --git a/core/iwasm/include/wasm_export.h b/core/iwasm/include/wasm_export.h
-index b73a0364..f7e20b24 100644
+index b73a0364..3fd0949f 100644
 --- a/core/iwasm/include/wasm_export.h
 +++ b/core/iwasm/include/wasm_export.h
-@@ -1821,6 +1821,27 @@ WASM_RUNTIME_API_EXTERN void
+@@ -20,8 +20,10 @@
+ #if defined(_MSC_BUILD)
+ #if defined(COMPILING_WASM_RUNTIME_API)
+ #define WASM_RUNTIME_API_EXTERN __declspec(dllexport)
+-#else
++#elif defined(_DLL)
+ #define WASM_RUNTIME_API_EXTERN __declspec(dllimport)
++#else
++#define WASM_RUNTIME_API_EXTERN
+ #endif
+ #elif defined(__GNUC__) || defined(__clang__)
+ #define WASM_RUNTIME_API_EXTERN __attribute__((visibility("default")))
+@@ -1821,6 +1823,27 @@ WASM_RUNTIME_API_EXTERN void
  wasm_runtime_set_native_stack_boundary(wasm_exec_env_t exec_env,
                                         uint8_t *native_stack_boundary);
  
@@ -235,7 +259,7 @@ index b73a0364..f7e20b24 100644
   * Dump runtime memory consumption, including:
   *     Exec env memory consumption
 diff --git a/core/iwasm/interpreter/wasm_interp_classic.c b/core/iwasm/interpreter/wasm_interp_classic.c
-index 41ac4c72..13065b64 100644
+index 41ac4c72..bd8f714a 100644
 --- a/core/iwasm/interpreter/wasm_interp_classic.c
 +++ b/core/iwasm/interpreter/wasm_interp_classic.c
 @@ -1516,10 +1516,13 @@ wasm_interp_call_func_import(WASMModuleInstance *module_inst,
@@ -275,7 +299,7 @@ index 41ac4c72..13065b64 100644
 +#define CHECK_INSTRUCTION_LIMIT()                                         \
 +    if (instructions_to_execute >= 0)                                     \
 +    {                                                                     \
-+        instructions_to_execute -= instructions_schedule[*(frame_ip - 1)];\
++        instructions_to_execute -= instructions_schedule[opcode];\
 +        if (instructions_to_execute < 0) {                                \
 +                wasm_set_exception(module, "instruction limit exceeded"); \
 +                goto got_exception;                                       \
@@ -332,22 +356,21 @@ index 41ac4c72..13065b64 100644
  
  #if WASM_ENABLE_LABELS_AS_VALUES == 0
 diff --git a/core/iwasm/interpreter/wasm_interp_fast.c b/core/iwasm/interpreter/wasm_interp_fast.c
-index f33ad60e..91184e2e 100644
+index f33ad60e..9cbf2010 100644
 --- a/core/iwasm/interpreter/wasm_interp_fast.c
 +++ b/core/iwasm/interpreter/wasm_interp_fast.c
-@@ -105,6 +105,20 @@ typedef float64 CellType_F64;
+@@ -105,6 +105,19 @@ typedef float64 CellType_F64;
              goto unaligned_atomic;                 \
      } while (0)
  
 +#if WASM_ENABLE_INSTRUCTION_METERING != 0
-+#define CHECK_INSTRUCTION_LIMIT()                                         \
-+    if (instructions_to_execute >= 0)                                     \
-+    {                                                                     \
-+        instructions_to_execute -= instructions_schedule[opc];            \
-+        if (instructions_to_execute < 0) {                                \
-+                wasm_set_exception(module, "instruction limit exceeded"); \
-+                goto got_exception;                                       \
-+        }                                                                 \
++#define CHECK_INSTRUCTION_LIMIT()                                     \
++    if (instructions_to_execute >= 0) {                               \
++        instructions_to_execute -= instructions_schedule[opcode];     \
++        if (instructions_to_execute < 0) {                            \
++            wasm_set_exception(module, "instruction limit exceeded"); \
++            goto got_exception;                                       \
++        }                                                             \
 +    }
 +#else
 +#define CHECK_INSTRUCTION_LIMIT() (void)0
@@ -356,40 +379,24 @@ index f33ad60e..91184e2e 100644
  static inline uint32
  rotl32(uint32 n, uint32 c)
  {
-@@ -1439,8 +1453,10 @@ wasm_interp_dump_op_count()
- #if WASM_CPU_SUPPORTS_UNALIGNED_ADDR_ACCESS != 0
- #define FETCH_OPCODE_AND_DISPATCH()                    \
-     do {                                               \
-+        const uint64 opc = *frame_ip;                  \
-         const void *p_label_addr = *(void **)frame_ip; \
-         frame_ip += sizeof(void *);                    \
-+        CHECK_INSTRUCTION_LIMIT();                     \
-         goto *p_label_addr;                            \
-     } while (0)
- #else
-@@ -1450,8 +1466,10 @@ wasm_interp_dump_op_count()
-         const void *p_label_addr;                                         \
-         bh_assert(((uintptr_t)frame_ip & 1) == 0);                        \
-         /* int32 relative offset was emitted in 64-bit target */          \
-+        const uint64 opc = *frame_ip;                                     \
-         p_label_addr = label_base + (int32)LOAD_U32_WITH_2U16S(frame_ip); \
-         frame_ip += sizeof(int32);                                        \
-+        CHECK_INSTRUCTION_LIMIT();                                        \
-         goto *p_label_addr;                                               \
-     } while (0)
- #else
-@@ -1460,8 +1478,10 @@ wasm_interp_dump_op_count()
-         const void *p_label_addr;                                        \
-         bh_assert(((uintptr_t)frame_ip & 1) == 0);                       \
-         /* uint32 label address was emitted in 32-bit target */          \
-+        const uint64 opc = *frame_ip;                                    \
-         p_label_addr = (void *)(uintptr_t)LOAD_U32_WITH_2U16S(frame_ip); \
-         frame_ip += sizeof(int32);                                       \
-+        CHECK_INSTRUCTION_LIMIT();                                       \
-         goto *p_label_addr;                                              \
+@@ -1466,12 +1479,14 @@ wasm_interp_dump_op_count()
      } while (0)
  #endif
-@@ -1538,6 +1558,17 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
+ #endif /* end of WASM_CPU_SUPPORTS_UNALIGNED_ADDR_ACCESS */
+-#define HANDLE_OP_END() FETCH_OPCODE_AND_DISPATCH()
++#define HANDLE_OP_END() CHECK_INSTRUCTION_LIMIT(); FETCH_OPCODE_AND_DISPATCH()
+ 
+ #else /* else of WASM_ENABLE_LABELS_AS_VALUES */
+ 
+ #define HANDLE_OP(opcode) case opcode:
+-#define HANDLE_OP_END() continue
++#define HANDLE_OP_END()        \
++    CHECK_INSTRUCTION_LIMIT(); \
++    continue
+ 
+ #endif /* end of WASM_ENABLE_LABELS_AS_VALUES */
+ 
+@@ -1538,6 +1553,16 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
      uint8 *maddr = NULL;
      uint32 local_idx, local_offset, global_idx;
      uint8 opcode = 0, local_type, *global_addr;
@@ -397,8 +404,7 @@ index f33ad60e..91184e2e 100644
 +#if WASM_ENABLE_INSTRUCTION_METERING != 0
 +    int64 instructions_to_execute = -1;
 +    int64 const *instructions_schedule = NULL;
-+    if(exec_env)
-+    {
++    if (exec_env) {
 +        instructions_to_execute = exec_env->instructions_to_execute;
 +        instructions_schedule = exec_env->instructions_schedule;
 +    }
@@ -407,29 +413,46 @@ index f33ad60e..91184e2e 100644
  #if !defined(OS_ENABLE_HW_BOUND_CHECK) \
      || WASM_CPU_SUPPORTS_UNALIGNED_ADDR_ACCESS == 0
  #if WASM_CONFIGURABLE_BOUNDS_CHECKS != 0
-@@ -7761,6 +7792,11 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
+@@ -7761,6 +7786,11 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
          FREE_FRAME(exec_env, frame);
          wasm_exec_env_set_cur_frame(exec_env, (WASMRuntimeFrame *)prev_frame);
  
 +#if WASM_ENABLE_INSTRUCTION_METERING != 0
-+        if(exec_env)
++        if (exec_env)
 +            exec_env->instructions_to_execute = instructions_to_execute;
 +#endif
 +
          if (!prev_frame->ip)
              /* Called from native. */
              return;
-@@ -7789,6 +7825,10 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
+@@ -7789,6 +7819,10 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
  
      got_exception:
          SYNC_ALL_TO_FRAME();
 +#if WASM_ENABLE_INSTRUCTION_METERING != 0
-+        if(exec_env)
++        if (exec_env)
 +            exec_env->instructions_to_execute = instructions_to_execute;
 +#endif
          return;
  
  #if WASM_ENABLE_LABELS_AS_VALUES == 0
+diff --git a/core/shared/platform/include/platform_wasi_types.h b/core/shared/platform/include/platform_wasi_types.h
+index ac1a95ea..e23b500e 100644
+--- a/core/shared/platform/include/platform_wasi_types.h
++++ b/core/shared/platform/include/platform_wasi_types.h
+@@ -36,7 +36,11 @@ extern "C" {
+ #if WASM_ENABLE_UVWASI != 0 || WASM_ENABLE_LIBC_WASI == 0
+ #define assert_wasi_layout(expr, message) /* nothing */
+ #else
+-#define assert_wasi_layout(expr, message) _Static_assert(expr, message)
++    #ifndef _MSC_VER
++        #define assert_wasi_layout(expr, message) _Static_assert(expr, message)
++    #else
++        #define assert_wasi_layout(expr, message) static_assert(expr, message)
++    #endif
+ #endif
+
+ assert_wasi_layout(_Alignof(int8_t) == 1, "non-wasi data layout");
 diff --git a/doc/build_wamr.md b/doc/build_wamr.md
 index 6425450b..94dd9628 100644
 --- a/doc/build_wamr.md
