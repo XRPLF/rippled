@@ -442,7 +442,7 @@ class Loan_test : public beast::unit_test::suite
         env.close();
 
         // Verify the loan is at EOL
-        auto const assetsAvailable = [&]() {
+        auto const assetsAvailable = [&, &keylet = keylet]() {
             if (auto loan = env.le(keylet); BEAST_EXPECT(loan))
             {
                 BEAST_EXPECT(loan->at(sfPaymentRemaining) == 0);
