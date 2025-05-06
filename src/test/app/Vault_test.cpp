@@ -1410,7 +1410,7 @@ class Vault_test : public beast::unit_test::suite
             testcase("global lock blocks create");
             mptt.set({.account = issuer, .flags = tfMPTLock});
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
-            env(tx, ter(tecFROZEN));
+            env(tx, ter(tecLOCKED));
         });
 
         testCase([this](

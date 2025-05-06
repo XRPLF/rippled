@@ -132,7 +132,7 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
 
     // Cannot create Vault for an Asset frozen for the vault owner
     if (isFrozen(ctx.view, account, vaultAsset))
-        return tecFROZEN;
+        return vaultAsset.holds<Issue>() ? tecFROZEN : tecLOCKED;
 
     if (auto const domain = ctx.tx[~sfDomainID])
     {
