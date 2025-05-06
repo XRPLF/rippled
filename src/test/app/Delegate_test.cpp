@@ -919,6 +919,7 @@ class Delegate_test : public beast::unit_test::suite
             auto jt = noop(alice);
             jt[sfDomain.fieldName] = strHex(domain);
             jt[sfDelegate.fieldName] = bob.human();
+            jt[sfFlags.fieldName] = tfFullyCanonicalSig;
 
             // add granular permission related to AccountSet but is not the
             // correct permission for domain set
@@ -939,6 +940,15 @@ class Delegate_test : public beast::unit_test::suite
             jt[sfDomain.fieldName] = "";
             env(jt);
             BEAST_EXPECT(!env.le(alice)->isFieldPresent(sfDomain));
+
+            // if flag is not equal to tfFullyCanonicalSig, which means bob
+            // is trying to set the flag at the same time, it will fail
+            std::string const failDomain = "fail_domain_update";
+            jt[sfFlags.fieldName] = tfRequireAuth;
+            jt[sfDomain.fieldName] = strHex(failDomain);
+            env(jt, ter(tecNO_PERMISSION));
+            // reset flag number
+            jt[sfFlags.fieldName] = tfFullyCanonicalSig;
 
             // bob tries to update domain and set email hash,
             // but he does not have permission to set email hash
@@ -990,7 +1000,10 @@ class Delegate_test : public beast::unit_test::suite
                  "AccountMessageKeySet",
                  "AccountTransferRateSet"}));
             env.close();
-            env(rate(alice, 2.0), delegate::as(bob));
+            auto jtRate = rate(alice, 2.0);
+            jtRate[sfDelegate.fieldName] = bob.human();
+            jtRate[sfFlags.fieldName] = tfFullyCanonicalSig;
+            env(jtRate, delegate::as(bob));
             BEAST_EXPECT((*env.le(alice))[sfTransferRate] == 2000000000);
 
             // bob does not have permission to set ticksize for alice
@@ -1048,6 +1061,7 @@ class Delegate_test : public beast::unit_test::suite
             jt2[sfDomain.fieldName] = strHex(domain);
             jt2[sfDelegate.fieldName] = bob.human();
             jt2[sfWalletLocator.fieldName] = locator;
+            jt2[sfFlags.fieldName] = tfFullyCanonicalSig;
             env(jt2, ter(tecNO_PERMISSION));
         }
 
