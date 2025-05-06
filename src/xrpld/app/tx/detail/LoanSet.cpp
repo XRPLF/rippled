@@ -243,34 +243,24 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         return tecINSUFFICIENT_FUNDS;
     }
 
-    // Check that the lender will not make a profit on the lending fee if the
-    // loan defaults. (Not yet in spec. May not be included.)
-    TenthBips32 const interestRate{tx[~sfInterestRate].value_or(0)};
-    auto const paymentInterval =
-        tx[~sfPaymentInterval].value_or(defaultPaymentInterval);
-    auto const paymentTotal = tx[~sfPaymentTotal].value_or(defaultPaymentTotal);
-    TenthBips32 const coverRateLiquidation{
-        brokerSle->at(sfCoverRateLiquidation)};
-    TenthBips32 const managementFeeRate{brokerSle->at(sfManagementFeeRate)};
-
-    auto const totalInterestToVault = LoanInterestOutstandingToVault(
-        asset,
-        principalRequested,
-        interestRate,
-        paymentInterval,
-        paymentTotal,
-        managementFeeRate);
-
-    auto const maximumOriginationFee = tenthBipsOfValue(
-        tenthBipsOfValue(newDebtTotal, coverRateMinimum), coverRateLiquidation);
-
-    if (auto const originationFee = tx[~sfLoanOriginationFee];
-        originationFee && *originationFee > maximumOriginationFee)
+    if (auto const originationFee = tx[~sfLoanOriginationFee])
     {
-        JLOG(ctx.j.warn())
-            << "Loan origination fee is too high. The lender will make a "
-               "profit on the lending fee if the loan defaults.";
-        return tecINSUFFICIENT_FUNDS;
+        // Check that the lender will not make an unfair profit on the lending
+        // fee if the loan defaults. (Not yet in spec. May not be included.)
+        TenthBips32 const coverRateLiquidation{
+            brokerSle->at(sfCoverRateLiquidation)};
+
+        auto const maximumOriginationFee = tenthBipsOfValue(
+            tenthBipsOfValue(newDebtTotal, coverRateMinimum),
+            coverRateLiquidation);
+
+        if (*originationFee > maximumOriginationFee)
+        {
+            JLOG(ctx.j.warn())
+                << "Loan origination fee is too high. The lender will make a "
+                   "profit on the lending fee if the loan defaults.";
+            return tecINSUFFICIENT_FUNDS;
+        }
     }
 
     return tesSUCCESS;
