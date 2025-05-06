@@ -1390,7 +1390,7 @@ class Vault_test : public beast::unit_test::suite
                      PrettyAsset const& asset,
                      Vault& vault,
                      MPTTester& mptt) {
-            testcase("nothing to clawback from");
+            testcase("MPT nothing to clawback from");
             auto tx = vault.clawback(
                 {.issuer = issuer,
                  .id = keylet::skip().key,
@@ -1407,7 +1407,7 @@ class Vault_test : public beast::unit_test::suite
                      Asset const& asset,
                      Vault& vault,
                      MPTTester& mptt) {
-            testcase("global lock blocks create");
+            testcase("MPT global lock blocks create");
             mptt.set({.account = issuer, .flags = tfMPTLock});
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
             env(tx, ter(tecLOCKED));
@@ -1421,7 +1421,35 @@ class Vault_test : public beast::unit_test::suite
                      Asset const& asset,
                      Vault& vault,
                      MPTTester& mptt) {
-            testcase("global lock blocks withdrawal");
+            testcase("MPT global lock blocks deposit");
+            auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
+            env(tx);
+            env.close();
+
+            mptt.set({.account = issuer, .flags = tfMPTLock});
+            env.close();
+
+            tx = vault.deposit(
+                {.depositor = depositor,
+                 .id = keylet.key,
+                 .amount = asset(100)});
+            env(tx, ter{tecLOCKED});
+            env.close();
+
+            // Can delete empty vault, even if global lock
+            tx = vault.del({.owner = owner, .id = keylet.key});
+            env(tx);
+        });
+
+        testCase([this](
+                     Env& env,
+                     Account const& issuer,
+                     Account const& owner,
+                     Account const& depositor,
+                     Asset const& asset,
+                     Vault& vault,
+                     MPTTester& mptt) {
+            testcase("MPT global lock blocks withdrawal");
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
             env(tx);
             env.close();
@@ -1443,6 +1471,8 @@ class Vault_test : public beast::unit_test::suite
             BEAST_EXPECT(outstandingShares == 100);
 
             mptt.set({.account = issuer, .flags = tfMPTLock});
+            env.close();
+
             tx = vault.withdraw(
                 {.depositor = depositor,
                  .id = keylet.key,
@@ -1474,7 +1504,7 @@ class Vault_test : public beast::unit_test::suite
                      PrettyAsset const& asset,
                      Vault& vault,
                      MPTTester& mptt) {
-            testcase("only issuer can clawback");
+            testcase("MPT only issuer can clawback");
 
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
             env(tx);
@@ -1603,7 +1633,7 @@ class Vault_test : public beast::unit_test::suite
                      Asset const& asset,
                      Vault& vault,
                      MPTTester& mptt) {
-            testcase("MPT un-authorization blocks withdrawal");
+            testcase("MPT un-authorization");
             auto [tx, keylet] = vault.create({.owner = owner, .asset = asset});
             env(tx);
             env.close();
@@ -1618,17 +1648,31 @@ class Vault_test : public beast::unit_test::suite
                 {.account = issuer,
                  .holder = depositor,
                  .flags = tfMPTUnauthorize});
-            tx = vault.withdraw(
-                {.depositor = depositor,
-                 .id = keylet.key,
-                 .amount = asset(100)});
-            env(tx, ter(tecNO_AUTH));
+            env.close();
 
-            // Withdrawal to other (authorized) accounts works
-            tx[sfDestination] = issuer.human();
-            env(tx);
-            tx[sfDestination] = owner.human();
-            env(tx);
+            {
+                auto tx = vault.withdraw(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = asset(100)});
+                env(tx, ter(tecNO_AUTH));
+
+                // Withdrawal to other (authorized) accounts works
+                tx[sfDestination] = issuer.human();
+                env(tx);
+                tx[sfDestination] = owner.human();
+                env(tx);
+                env.close();
+            }
+
+            {
+                // Cannot deposit some more
+                auto tx = vault.deposit(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = asset(100)});
+                env(tx, ter(tecNO_AUTH));
+            }
 
             // Clawback works
             tx = vault.clawback(
@@ -1638,9 +1682,7 @@ class Vault_test : public beast::unit_test::suite
                  .amount = asset(800)});
             env(tx);
 
-            // Can delete empty vault
-            tx = vault.del({.owner = owner, .id = keylet.key});
-            env(tx);
+            env(vault.del({.owner = owner, .id = keylet.key}));
         });
 
         testCase([this](
@@ -2062,6 +2104,15 @@ class Vault_test : public beast::unit_test::suite
             env.close();
 
             {
+                // Cannot deposit some more
+                auto tx = vault.deposit(
+                    {.depositor = owner,
+                     .id = keylet.key,
+                     .amount = asset(10)});
+                env(tx, ter{tecFROZEN});
+            }
+
+            {
                 // Clawback still works
                 auto tx = vault.clawback(
                     {.issuer = issuer,
@@ -2165,6 +2216,14 @@ class Vault_test : public beast::unit_test::suite
                 tx[sfDestination] = charlie.human();
                 env(tx, ter{tecFROZEN});
                 env.close();
+
+                // Cannot deposit some more
+                tx = vault.deposit(
+                    {.depositor = owner,
+                     .id = keylet.key,
+                     .amount = asset(10)});
+
+                env(tx, ter{tecFROZEN});
             }
 
             // Clawback is permitted
