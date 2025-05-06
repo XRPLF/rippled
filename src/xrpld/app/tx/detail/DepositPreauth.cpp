@@ -45,12 +45,6 @@ DepositPreauth::isEnabled(PreflightContext const& ctx)
     return !authCredPresent || ctx.rules.enabled(featureCredentials);
 }
 
-std::uint32_t
-DepositPreauth::getFlagsMask(PreflightContext const& ctx)
-{
-    return tfUniversalMask;
-}
-
 NotTEC
 DepositPreauth::doPreflight(PreflightContext const& ctx)
 {

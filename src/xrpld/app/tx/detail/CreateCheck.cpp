@@ -34,12 +34,6 @@ CreateCheck::isEnabled(PreflightContext const& ctx)
     return ctx.rules.enabled(featureChecks);
 }
 
-std::uint32_t
-CreateCheck::getFlagsMask(PreflightContext const& ctx)
-{
-    return tfUniversalMask;
-}
-
 NotTEC
 CreateCheck::doPreflight(PreflightContext const& ctx)
 {

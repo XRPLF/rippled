@@ -153,6 +153,7 @@ public:
         static bool
         isEnabled(PreflightContext const& ctx);
 
+        // Optional if the transaction uses any flags other than tfUniversal
         static std::uint32_t
         getFlagsMask(PreflightContext const& ctx);
 
@@ -221,6 +222,10 @@ protected:
     // Base class always returns true
     static bool
     isEnabled(PreflightContext const& ctx);
+
+    // Base class always returns tfUniversalMask
+    static std::uint32_t
+    getFlagsMask(PreflightContext const& ctx);
 
     static bool
     validDataLength(std::optional<Slice> const& slice, std::size_t maxLength);

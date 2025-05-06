@@ -39,12 +39,6 @@ CreateTicket::isEnabled(PreflightContext const& ctx)
     return ctx.rules.enabled(featureTicketBatch);
 }
 
-std::uint32_t
-CreateTicket::getFlagsMask(PreflightContext const& ctx)
-{
-    return tfUniversalMask;
-}
-
 NotTEC
 CreateTicket::doPreflight(PreflightContext const& ctx)
 {

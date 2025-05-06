@@ -33,12 +33,6 @@ AMMVote::isEnabled(PreflightContext const& ctx)
     return ammEnabled(ctx.rules);
 }
 
-std::uint32_t
-AMMVote::getFlagsMask(PreflightContext const& ctx)
-{
-    return tfUniversalMask;
-}
-
 NotTEC
 AMMVote::doPreflight(PreflightContext const& ctx)
 {

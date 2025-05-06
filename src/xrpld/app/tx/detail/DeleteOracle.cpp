@@ -32,12 +32,6 @@ DeleteOracle::isEnabled(PreflightContext const& ctx)
     return ctx.rules.enabled(featurePriceOracle);
 }
 
-std::uint32_t
-DeleteOracle::getFlagsMask(PreflightContext const& ctx)
-{
-    return tfUniversalMask;
-}
-
 NotTEC
 DeleteOracle::doPreflight(PreflightContext const& ctx)
 {

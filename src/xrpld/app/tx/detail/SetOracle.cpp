@@ -42,12 +42,6 @@ SetOracle::isEnabled(PreflightContext const& ctx)
     return ctx.rules.enabled(featurePriceOracle);
 }
 
-std::uint32_t
-SetOracle::getFlagsMask(PreflightContext const& ctx)
-{
-    return tfUniversalMask;
-}
-
 NotTEC
 SetOracle::doPreflight(PreflightContext const& ctx)
 {

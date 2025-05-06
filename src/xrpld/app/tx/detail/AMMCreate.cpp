@@ -37,12 +37,6 @@ AMMCreate::isEnabled(PreflightContext const& ctx)
     return ammEnabled(ctx.rules);
 }
 
-std::uint32_t
-AMMCreate::getFlagsMask(PreflightContext const& ctx)
-{
-    return tfUniversalMask;
-}
-
 NotTEC
 AMMCreate::doPreflight(PreflightContext const& ctx)
 {

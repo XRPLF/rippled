@@ -25,12 +25,6 @@
 
 namespace ripple {
 
-std::uint32_t
-CancelOffer::getFlagsMask(PreflightContext const& ctx)
-{
-    return tfUniversalMask;
-}
-
 NotTEC
 CancelOffer::doPreflight(PreflightContext const& ctx)
 {

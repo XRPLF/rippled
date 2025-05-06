@@ -47,12 +47,6 @@ DeleteAccount::isEnabled(PreflightContext const& ctx)
         ctx.rules.enabled(featureCredentials);
 }
 
-std::uint32_t
-DeleteAccount::getFlagsMask(PreflightContext const& ctx)
-{
-    return tfUniversalMask;
-}
-
 NotTEC
 DeleteAccount::doPreflight(PreflightContext const& ctx)
 {

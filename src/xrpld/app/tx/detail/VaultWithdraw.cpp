@@ -36,12 +36,6 @@ VaultWithdraw::isEnabled(PreflightContext const& ctx)
     return ctx.rules.enabled(featureSingleAssetVault);
 }
 
-std::uint32_t
-VaultWithdraw::getFlagsMask(PreflightContext const& ctx)
-{
-    return tfUniversalMask;
-}
-
 NotTEC
 VaultWithdraw::doPreflight(PreflightContext const& ctx)
 {

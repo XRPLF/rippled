@@ -36,12 +36,6 @@ AMMBid::isEnabled(PreflightContext const& ctx)
     return ammEnabled(ctx.rules);
 }
 
-std::uint32_t
-AMMBid::getFlagsMask(PreflightContext const& ctx)
-{
-    return tfUniversalMask;
-}
-
 NotTEC
 AMMBid::doPreflight(PreflightContext const& ctx)
 {

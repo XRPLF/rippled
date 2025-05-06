@@ -51,12 +51,6 @@ LoanBrokerSet::isEnabled(PreflightContext const& ctx)
     return LendingProtocolEnabled(ctx);
 }
 
-std::uint32_t
-LoanBrokerSet::getFlagsMask(PreflightContext const& ctx)
-{
-    return tfUniversalMask;
-}
-
 NotTEC
 LoanBrokerSet::doPreflight(PreflightContext const& ctx)
 {

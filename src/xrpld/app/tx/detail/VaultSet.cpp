@@ -40,12 +40,6 @@ VaultSet::isEnabled(PreflightContext const& ctx)
         ctx.rules.enabled(featurePermissionedDomains);
 }
 
-std::uint32_t
-VaultSet::getFlagsMask(PreflightContext const& ctx)
-{
-    return tfUniversalMask;
-}
-
 NotTEC
 VaultSet::doPreflight(PreflightContext const& ctx)
 {

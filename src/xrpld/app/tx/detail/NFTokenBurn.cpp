@@ -32,12 +32,6 @@ NFTokenBurn::isEnabled(PreflightContext const& ctx)
     return ctx.rules.enabled(featureNonFungibleTokensV1);
 }
 
-std::uint32_t
-NFTokenBurn::getFlagsMask(PreflightContext const& ctx)
-{
-    return tfUniversalMask;
-}
-
 NotTEC
 NFTokenBurn::doPreflight(PreflightContext const& ctx)
 {

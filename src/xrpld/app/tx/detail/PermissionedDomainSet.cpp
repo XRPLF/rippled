@@ -35,12 +35,6 @@ PermissionedDomainSet::isEnabled(PreflightContext const& ctx)
         ctx.rules.enabled(featureCredentials);
 }
 
-std::uint32_t
-PermissionedDomainSet::getFlagsMask(PreflightContext const& ctx)
-{
-    return tfUniversalMask;
-}
-
 NotTEC
 PermissionedDomainSet::doPreflight(PreflightContext const& ctx)
 {

@@ -33,12 +33,6 @@ AMMDelete::isEnabled(PreflightContext const& ctx)
     return ammEnabled(ctx.rules);
 }
 
-std::uint32_t
-AMMDelete::getFlagsMask(PreflightContext const& ctx)
-{
-    return tfUniversalMask;
-}
-
 NotTEC
 AMMDelete::doPreflight(PreflightContext const& ctx)
 {

@@ -38,12 +38,6 @@ CashCheck::isEnabled(PreflightContext const& ctx)
     return ctx.rules.enabled(featureChecks);
 }
 
-std::uint32_t
-CashCheck::getFlagsMask(PreflightContext const& ctx)
-{
-    return tfUniversalMask;
-}
-
 NotTEC
 CashCheck::doPreflight(PreflightContext const& ctx)
 {

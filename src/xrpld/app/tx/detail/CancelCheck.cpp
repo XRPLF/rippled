@@ -35,12 +35,6 @@ CancelCheck::isEnabled(PreflightContext const& ctx)
     return ctx.rules.enabled(featureChecks);
 }
 
-std::uint32_t
-CancelCheck::getFlagsMask(PreflightContext const& ctx)
-{
-    return tfUniversalMask;
-}
-
 NotTEC
 CancelCheck::doPreflight(PreflightContext const& ctx)
 {

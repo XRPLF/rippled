@@ -32,12 +32,6 @@ NFTokenModify::isEnabled(PreflightContext const& ctx)
         ctx.rules.enabled(featureDynamicNFT);
 }
 
-std::uint32_t
-NFTokenModify::getFlagsMask(PreflightContext const& ctx)
-{
-    return tfUniversalMask;
-}
-
 NotTEC
 NFTokenModify::doPreflight(PreflightContext const& ctx)
 {

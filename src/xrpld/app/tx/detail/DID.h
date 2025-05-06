@@ -36,9 +36,6 @@ public:
     static bool
     isEnabled(PreflightContext const& ctx);
 
-    static std::uint32_t
-    getFlagsMask(PreflightContext const& ctx);
-
     static NotTEC
     doPreflight(PreflightContext const& ctx);
 
@@ -59,9 +56,6 @@ public:
 
     static bool
     isEnabled(PreflightContext const& ctx);
-
-    static std::uint32_t
-    getFlagsMask(PreflightContext const& ctx);
 
     static NotTEC
     doPreflight(PreflightContext const& ctx);

@@ -36,12 +36,6 @@ VaultClawback::isEnabled(PreflightContext const& ctx)
     return ctx.rules.enabled(featureSingleAssetVault);
 }
 
-std::uint32_t
-VaultClawback::getFlagsMask(PreflightContext const& ctx)
-{
-    return tfUniversalMask;
-}
-
 NotTEC
 VaultClawback::doPreflight(PreflightContext const& ctx)
 {

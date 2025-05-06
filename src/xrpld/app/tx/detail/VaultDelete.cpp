@@ -33,12 +33,6 @@ VaultDelete::isEnabled(PreflightContext const& ctx)
     return ctx.rules.enabled(featureSingleAssetVault);
 }
 
-std::uint32_t
-VaultDelete::getFlagsMask(PreflightContext const& ctx)
-{
-    return tfUniversalMask;
-}
-
 NotTEC
 VaultDelete::doPreflight(PreflightContext const& ctx)
 {

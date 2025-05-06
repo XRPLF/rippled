@@ -48,12 +48,6 @@ LoanBrokerCoverWithdraw::isEnabled(PreflightContext const& ctx)
     return LendingProtocolEnabled(ctx);
 }
 
-std::uint32_t
-LoanBrokerCoverWithdraw::getFlagsMask(PreflightContext const& ctx)
-{
-    return tfUniversalMask;
-}
-
 NotTEC
 LoanBrokerCoverWithdraw::doPreflight(PreflightContext const& ctx)
 {

@@ -48,12 +48,6 @@ LoanBrokerCoverDeposit::isEnabled(PreflightContext const& ctx)
     return LendingProtocolEnabled(ctx);
 }
 
-std::uint32_t
-LoanBrokerCoverDeposit::getFlagsMask(PreflightContext const& ctx)
-{
-    return tfUniversalMask;
-}
-
 NotTEC
 LoanBrokerCoverDeposit::doPreflight(PreflightContext const& ctx)
 {

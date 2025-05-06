@@ -33,12 +33,6 @@ LedgerStateFix::isEnabled(PreflightContext const& ctx)
     return ctx.rules.enabled(fixNFTokenPageLinks);
 }
 
-std::uint32_t
-LedgerStateFix::getFlagsMask(PreflightContext const& ctx)
-{
-    return tfUniversalMask;
-}
-
 NotTEC
 LedgerStateFix::doPreflight(PreflightContext const& ctx)
 {

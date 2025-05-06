@@ -38,12 +38,6 @@ VaultDeposit::isEnabled(PreflightContext const& ctx)
     return ctx.rules.enabled(featureSingleAssetVault);
 }
 
-std::uint32_t
-VaultDeposit::getFlagsMask(PreflightContext const& ctx)
-{
-    return tfUniversalMask;
-}
-
 NotTEC
 VaultDeposit::doPreflight(PreflightContext const& ctx)
 {

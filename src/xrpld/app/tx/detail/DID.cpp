@@ -48,12 +48,6 @@ DIDSet::isEnabled(PreflightContext const& ctx)
     return ctx.rules.enabled(featureDID);
 }
 
-std::uint32_t
-DIDSet::getFlagsMask(PreflightContext const& ctx)
-{
-    return tfUniversalMask;
-}
-
 NotTEC
 DIDSet::doPreflight(PreflightContext const& ctx)
 {
@@ -178,12 +172,6 @@ bool
 DIDDelete::isEnabled(PreflightContext const& ctx)
 {
     return ctx.rules.enabled(featureDID);
-}
-
-std::uint32_t
-DIDDelete::getFlagsMask(PreflightContext const& ctx)
-{
-    return tfUniversalMask;
 }
 
 NotTEC

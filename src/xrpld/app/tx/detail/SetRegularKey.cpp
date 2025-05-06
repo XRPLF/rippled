@@ -48,12 +48,6 @@ SetRegularKey::calculateBaseFee(ReadView const& view, STTx const& tx)
     return Transactor::calculateBaseFee(view, tx);
 }
 
-std::uint32_t
-SetRegularKey::getFlagsMask(PreflightContext const& ctx)
-{
-    return tfUniversalMask;
-}
-
 NotTEC
 SetRegularKey::doPreflight(PreflightContext const& ctx)
 {

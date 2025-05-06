@@ -48,12 +48,6 @@ LoanBrokerDelete::isEnabled(PreflightContext const& ctx)
     return LendingProtocolEnabled(ctx);
 }
 
-std::uint32_t
-LoanBrokerDelete::getFlagsMask(PreflightContext const& ctx)
-{
-    return tfUniversalMask;
-}
-
 NotTEC
 LoanBrokerDelete::doPreflight(PreflightContext const& ctx)
 {

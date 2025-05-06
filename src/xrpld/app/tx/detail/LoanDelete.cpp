@@ -50,12 +50,6 @@ LoanDelete::isEnabled(PreflightContext const& ctx)
     return LendingProtocolEnabled(ctx);
 }
 
-std::uint32_t
-LoanDelete::getFlagsMask(PreflightContext const& ctx)
-{
-    return tfUniversalMask;
-}
-
 NotTEC
 LoanDelete::doPreflight(PreflightContext const& ctx)
 {

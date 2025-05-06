@@ -30,12 +30,6 @@ PermissionedDomainDelete::isEnabled(PreflightContext const& ctx)
     return ctx.rules.enabled(featurePermissionedDomains);
 }
 
-std::uint32_t
-PermissionedDomainDelete::getFlagsMask(PreflightContext const& ctx)
-{
-    return tfUniversalMask;
-}
-
 NotTEC
 PermissionedDomainDelete::doPreflight(PreflightContext const& ctx)
 {

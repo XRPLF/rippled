@@ -1372,12 +1372,6 @@ XChainCreateBridge::isEnabled(PreflightContext const& ctx)
     return ctx.rules.enabled(featureXChainBridge);
 }
 
-std::uint32_t
-XChainCreateBridge::getFlagsMask(PreflightContext const& ctx)
-{
-    return tfUniversalMask;
-}
-
 NotTEC
 XChainCreateBridge::doPreflight(PreflightContext const& ctx)
 {
@@ -1669,12 +1663,6 @@ XChainClaim::isEnabled(PreflightContext const& ctx)
     return ctx.rules.enabled(featureXChainBridge);
 }
 
-std::uint32_t
-XChainClaim::getFlagsMask(PreflightContext const& ctx)
-{
-    return tfUniversalMask;
-}
-
 NotTEC
 XChainClaim::doPreflight(PreflightContext const& ctx)
 {
@@ -1910,12 +1898,6 @@ XChainCommit::isEnabled(PreflightContext const& ctx)
     return ctx.rules.enabled(featureXChainBridge);
 }
 
-std::uint32_t
-XChainCommit::getFlagsMask(PreflightContext const& ctx)
-{
-    return tfUniversalMask;
-}
-
 NotTEC
 XChainCommit::doPreflight(PreflightContext const& ctx)
 {
@@ -2025,12 +2007,6 @@ bool
 XChainCreateClaimID::isEnabled(PreflightContext const& ctx)
 {
     return ctx.rules.enabled(featureXChainBridge);
-}
-
-std::uint32_t
-XChainCreateClaimID::getFlagsMask(PreflightContext const& ctx)
-{
-    return tfUniversalMask;
 }
 
 NotTEC
@@ -2145,12 +2121,6 @@ XChainAddClaimAttestation::isEnabled(PreflightContext const& ctx)
     return ctx.rules.enabled(featureXChainBridge);
 }
 
-std::uint32_t
-XChainAddClaimAttestation::getFlagsMask(PreflightContext const& ctx)
-{
-    return tfUniversalMask;
-}
-
 NotTEC
 XChainAddClaimAttestation::doPreflight(PreflightContext const& ctx)
 {
@@ -2177,12 +2147,6 @@ XChainAddAccountCreateAttestation::isEnabled(PreflightContext const& ctx)
     return ctx.rules.enabled(featureXChainBridge);
 }
 
-std::uint32_t
-XChainAddAccountCreateAttestation::getFlagsMask(PreflightContext const& ctx)
-{
-    return tfUniversalMask;
-}
-
 NotTEC
 XChainAddAccountCreateAttestation::doPreflight(PreflightContext const& ctx)
 {
@@ -2207,12 +2171,6 @@ bool
 XChainCreateAccountCommit::isEnabled(PreflightContext const& ctx)
 {
     return ctx.rules.enabled(featureXChainBridge);
-}
-
-std::uint32_t
-XChainCreateAccountCommit::getFlagsMask(PreflightContext const& ctx)
-{
-    return tfUniversalMask;
 }
 
 NotTEC
