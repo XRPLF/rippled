@@ -717,20 +717,24 @@ class Delegate_test : public beast::unit_test::suite
             Account alice{"alice"};
             Account bob{"bob"};
             env.fund(XRP(10000), gw, alice, bob);
-            env(fset(alice, asfRequireAuth));
+            env(fset(gw, asfRequireAuth));
             env.close();
 
             env(delegate::set(alice, bob, {"TrustlineUnfreeze"}));
             env.close();
             // bob can not create trustline on behalf of alice because he only
             // has unfreeze permission
-            env(trust(alice, gw["USD"](50), 0),
+            env(trust(alice, gw["USD"](50)),
                 delegate::as(bob),
                 ter(tecNO_PERMISSION));
             env.close();
 
             // alice creates trustline by herself
-            env(trust(alice, gw["USD"](50), 0));
+            env(trust(alice, gw["USD"](50)));
+            env.close();
+
+            // gw gives bob unfreeze permission
+            env(delegate::set(gw, bob, {"TrustlineUnfreeze"}));
             env.close();
 
             // unsupported flags
@@ -740,53 +744,58 @@ class Delegate_test : public beast::unit_test::suite
             env(trust(alice, gw["USD"](50), tfClearNoRipple),
                 delegate::as(bob),
                 ter(tecNO_PERMISSION));
-            env(trust(alice, gw["USD"](50), tfSetDeepFreeze),
+            env(trust(gw, gw["USD"](0), alice, tfSetDeepFreeze),
                 delegate::as(bob),
                 ter(tecNO_PERMISSION));
-            env(trust(alice, gw["USD"](50), tfClearDeepFreeze),
+            env(trust(gw, gw["USD"](0), alice, tfClearDeepFreeze),
                 delegate::as(bob),
                 ter(tecNO_PERMISSION));
             env.close();
 
             // supported flags with wrong permission
-            env(trust(alice, gw["USD"](50), tfSetfAuth),
+            env(trust(gw, gw["USD"](0), alice, tfSetfAuth),
                 delegate::as(bob),
                 ter(tecNO_PERMISSION));
-            env(trust(alice, gw["USD"](50), tfSetFreeze),
+            env(trust(gw, gw["USD"](0), alice, tfSetFreeze),
                 delegate::as(bob),
                 ter(tecNO_PERMISSION));
             env.close();
-            env(delegate::set(alice, bob, {"TrustlineAuthorize"}));
+
+            env(delegate::set(gw, bob, {"TrustlineAuthorize"}));
             env.close();
-            env(trust(alice, gw["USD"](50), tfClearFreeze),
+            env(trust(gw, gw["USD"](0), alice, tfClearFreeze),
+                delegate::as(bob),
+                ter(tecNO_PERMISSION));
+            env.close();
+            // although trustline authorize is granted, bob can not change the
+            // limit number
+            env(trust(gw, gw["USD"](50), alice, tfSetfAuth),
                 delegate::as(bob),
                 ter(tecNO_PERMISSION));
             env.close();
 
             // supported flags with correct permission
-            env(trust(alice, gw["USD"](50), tfSetfAuth), delegate::as(bob));
+            env(trust(gw, gw["USD"](0), alice, tfSetfAuth), delegate::as(bob));
             env.close();
             env(delegate::set(
-                alice, bob, {"TrustlineAuthorize", "TrustlineFreeze"}));
+                gw, bob, {"TrustlineAuthorize", "TrustlineFreeze"}));
             env.close();
-            env(trust(alice, gw["USD"](50), tfSetFreeze), delegate::as(bob));
+            env(trust(gw, gw["USD"](0), alice, tfSetFreeze), delegate::as(bob));
             env.close();
             env(delegate::set(
-                alice, bob, {"TrustlineAuthorize", "TrustlineUnfreeze"}));
+                gw, bob, {"TrustlineAuthorize", "TrustlineUnfreeze"}));
             env.close();
-            env(trust(alice, gw["USD"](50), tfClearFreeze), delegate::as(bob));
+            env(trust(gw, gw["USD"](0), alice, tfClearFreeze),
+                delegate::as(bob));
             env.close();
             // but bob can not freeze trustline because he no longer has freeze
             // permission
-            env(trust(alice, gw["USD"](50), tfSetFreeze),
+            env(trust(gw, gw["USD"](0), alice, tfSetFreeze),
                 delegate::as(bob),
                 ter(tecNO_PERMISSION));
 
             // cannot update LimitAmount with granular permission, both high and
             // low account
-            env(trust(gw, alice["USD"](50), 0));
-            env(delegate::set(gw, bob, {"TrustlineUnfreeze"}));
-            env.close();
             env(trust(alice, gw["USD"](100)),
                 delegate::as(bob),
                 ter(tecNO_PERMISSION));
@@ -798,10 +807,28 @@ class Delegate_test : public beast::unit_test::suite
             auto tx = trust(alice, gw["USD"](50));
             tx["QualityIn"] = "1000";
             env(tx, delegate::as(bob), ter(tecNO_PERMISSION));
-
             auto tx2 = trust(alice, gw["USD"](50));
-            tx["QualityOut"] = "1000";
-            env(tx, delegate::as(bob), ter(tecNO_PERMISSION));
+            tx2["QualityOut"] = "1000";
+            env(tx2, delegate::as(bob), ter(tecNO_PERMISSION));
+            auto tx3 = trust(gw, alice["USD"](50));
+            tx3["QualityIn"] = "1000";
+            env(tx3, delegate::as(bob), ter(tecNO_PERMISSION));
+            auto tx4 = trust(gw, alice["USD"](50));
+            tx4["QualityOut"] = "1000";
+            env(tx4, delegate::as(bob), ter(tecNO_PERMISSION));
+
+            // granting TrustSet can make it work
+            env(delegate::set(gw, bob, {"TrustSet"}));
+            env.close();
+            auto tx5 = trust(gw, alice["USD"](50));
+            tx5["QualityOut"] = "1000";
+            env(tx5, delegate::as(bob));
+            auto tx6 = trust(alice, gw["USD"](50));
+            tx6["QualityOut"] = "1000";
+            env(tx6, delegate::as(bob), ter(tecNO_PERMISSION));
+            env(delegate::set(alice, bob, {"TrustSet"}));
+            env.close();
+            env(tx6, delegate::as(bob));
         }
 
         // test mix of transaction level delegation and granular delegation
@@ -811,18 +838,18 @@ class Delegate_test : public beast::unit_test::suite
             Account alice{"alice"};
             Account bob{"bob"};
             env.fund(XRP(10000), gw, alice, bob);
-            env(fset(alice, asfRequireAuth));
+            env(fset(gw, asfRequireAuth));
             env.close();
 
             // bob does not have permission
-            env(trust(alice, gw["USD"](50), 0),
+            env(trust(alice, gw["USD"](50)),
                 delegate::as(bob),
                 ter(tecNO_PERMISSION));
             env(delegate::set(
                 alice, bob, {"TrustlineUnfreeze", "NFTokenCreateOffer"}));
             env.close();
             // bob still does not have permission
-            env(trust(alice, gw["USD"](50), 0),
+            env(trust(alice, gw["USD"](50)),
                 delegate::as(bob),
                 ter(tecNO_PERMISSION));
 
@@ -835,17 +862,33 @@ class Delegate_test : public beast::unit_test::suite
                  "TrustSet",
                  "AccountTransferRateSet"}));
             env.close();
-            env(trust(alice, gw["USD"](50), 0), delegate::as(bob));
+            env(trust(alice, gw["USD"](50)), delegate::as(bob));
+            env.close();
+
+            env(delegate::set(
+                gw,
+                bob,
+                {"TrustlineUnfreeze",
+                 "NFTokenCreateOffer",
+                 "TrustSet",
+                 "AccountTransferRateSet"}));
             env.close();
 
             // since bob has TrustSet permission, he does not need
             // TrustlineFreeze granular permission to freeze the trustline
-            env(trust(alice, gw["USD"](50), tfSetFreeze), delegate::as(bob));
-            env(trust(alice, gw["USD"](50), tfClearFreeze), delegate::as(bob));
+            env(trust(gw, gw["USD"](0), alice, tfSetFreeze), delegate::as(bob));
+            env(trust(gw, gw["USD"](0), alice, tfClearFreeze),
+                delegate::as(bob));
+            // bob can perform all the operations regarding TrustSet
+            env(trust(gw, gw["USD"](0), alice, tfSetFreeze), delegate::as(bob));
+            env(trust(gw, gw["USD"](0), alice, tfSetDeepFreeze),
+                delegate::as(bob));
+            env(trust(gw, gw["USD"](0), alice, tfClearDeepFreeze),
+                delegate::as(bob));
+            env(trust(gw, gw["USD"](0), alice, tfSetfAuth), delegate::as(bob));
             env(trust(alice, gw["USD"](50), tfSetNoRipple), delegate::as(bob));
             env(trust(alice, gw["USD"](50), tfClearNoRipple),
                 delegate::as(bob));
-            env(trust(alice, gw["USD"](50), tfSetfAuth), delegate::as(bob));
         }
     }
 
