@@ -295,8 +295,6 @@ class LoanBroker_test : public beast::unit_test::suite
             // evan tries to delete the broker
             env(del(evan, keylet.key), ter(tecNO_PERMISSION));
 
-            // TODO: test deletion with an active loan
-
             // Note alice's balance of the asset and the broker account's cover
             // funds
             auto const aliceBalance = env.balance(alice, vault.asset);

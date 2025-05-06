@@ -502,6 +502,17 @@ manage(AccountID const& account, uint256 const& loanID, std::uint32_t flags)
     return jv;
 }
 
+Json::Value
+del(AccountID const& account, uint256 const& loanID, std::uint32_t flags)
+{
+    Json::Value jv;
+    jv[sfTransactionType] = jss::LoanDelete;
+    jv[sfAccount] = to_string(account);
+    jv[sfLoanID] = to_string(loanID);
+    jv[sfFlags] = flags;
+    return jv;
+}
+
 }  // namespace loan
 }  // namespace jtx
 }  // namespace test

@@ -339,13 +339,10 @@ LoanSet::doApply()
     }
 
     TenthBips32 const managementFeeRate{brokerSle->at(sfManagementFeeRate)};
-    // The total amount if interest the loan is expected to generate
-    auto const loanInterest =
-        tenthBipsOfValue(principalRequested, interestRate);
     // The portion of the loan interest that will go to the vault (total
     // interest minus the management fee)
-    auto const loanInterestToVault =
-        loanInterest - tenthBipsOfValue(loanInterest, managementFeeRate);
+    auto const loanInterestToVault = LoanInterestOutstanding(
+        vaultAsset, principalRequested, interestRate, managementFeeRate);
     auto const startDate = tx[sfStartDate];
     auto const paymentInterval =
         tx[~sfPaymentInterval].value_or(defaultPaymentInterval);
@@ -356,7 +353,7 @@ LoanSet::doApply()
 
     // Prevent copy/paste errors
     auto setLoanField = [&loan, &tx](auto const& field) {
-        loan->at(field) = tx[field];
+        loan->at(field) = tx[field].value_or(0);
     };
 
     // Set required tx fields and pre-computed fields

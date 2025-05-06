@@ -78,9 +78,9 @@ LoanBrokerDelete::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.warn()) << "Account is not the owner of the LoanBroker.";
         return tecNO_PERMISSION;
     }
-    if (sleBroker->at(sfOwnerCount) != 0)
+    if (auto const ownerCount = sleBroker->at(sfOwnerCount); ownerCount != 0)
     {
-        JLOG(ctx.j.warn()) << "LoanBrokerDelete: Owner count is not zero";
+        JLOG(ctx.j.warn()) << "LoanBrokerDelete: Owner count is " << ownerCount;
         return tecHAS_OBLIGATIONS;
     }
 

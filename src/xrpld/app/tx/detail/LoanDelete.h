@@ -17,34 +17,19 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_LOANSET_H_INCLUDED
-#define RIPPLE_TX_LOANSET_H_INCLUDED
+#ifndef RIPPLE_TX_LOANDELETE_H_INCLUDED
+#define RIPPLE_TX_LOANDELETE_H_INCLUDED
 
 #include <xrpld/app/tx/detail/Transactor.h>
 
 namespace ripple {
 
-template <AssetType A>
-Number
-LoanInterestOutstanding(
-    A const& asset,
-    Number principalOutstanding,
-    TenthBips32 interestRate,
-    TenthBips32 managementFeeRate)
-{
-    return roundToAsset(
-        asset,
-        tenthBipsOfValue(
-            tenthBipsOfValue(principalOutstanding, interestRate),
-            tenthBipsPerUnity - managementFeeRate));
-}
-
-class LoanSet : public Transactor
+class LoanDelete : public Transactor
 {
 public:
     static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
 
-    explicit LoanSet(ApplyContext& ctx) : Transactor(ctx)
+    explicit LoanDelete(ApplyContext& ctx) : Transactor(ctx)
     {
     }
 
@@ -57,29 +42,11 @@ public:
     static NotTEC
     doPreflight(PreflightContext const& ctx);
 
-    static NotTEC
-    checkSign(PreclaimContext const& ctx);
-
-    static XRPAmount
-    calculateBaseFee(ReadView const& view, STTx const& tx);
-
     static TER
     preclaim(PreclaimContext const& ctx);
 
     TER
     doApply() override;
-
-public:
-    static std::uint32_t constexpr minPaymentTotal = 1;
-    static std::uint32_t constexpr defaultPaymentTotal = 1;
-    static_assert(defaultPaymentTotal >= minPaymentTotal);
-
-    static std::uint32_t constexpr minPaymentInterval = 60;
-    static std::uint32_t constexpr defaultPaymentInterval = 60;
-    static_assert(defaultPaymentInterval >= minPaymentInterval);
-
-    static std::uint32_t constexpr defaultGracePeriod = 60;
-    static_assert(defaultGracePeriod >= minPaymentInterval);
 };
 
 //------------------------------------------------------------------------------

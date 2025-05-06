@@ -746,6 +746,9 @@ auto const gracePeriod = simpleField<SF_UINT32>(sfGracePeriod);
 Json::Value
 manage(AccountID const& account, uint256 const& loanID, std::uint32_t flags);
 
+Json::Value
+del(AccountID const& account, uint256 const& loanID, std::uint32_t flags = 0);
+
 }  // namespace loan
 
 }  // namespace jtx

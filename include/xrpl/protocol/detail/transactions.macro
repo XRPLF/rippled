@@ -751,7 +751,6 @@ TRANSACTION(ttLOAN_SET, 78, LoanSet, noPriv, ({
     {sfGracePeriod, soeOPTIONAL},
 }))
 
-#if 0
 /** This transaction deletes an existing Loan */
 #if TRANSACTION_INCLUDE
 #   include <xrpld/app/tx/detail/LoanDelete.h>
@@ -759,7 +758,6 @@ TRANSACTION(ttLOAN_SET, 78, LoanSet, noPriv, ({
 TRANSACTION(ttLOAN_DELETE, 79, LoanDelete, noPriv, ({
     {sfLoanID, soeREQUIRED},
 }))
-#endif
 
 /** This transaction is used to change the delinquency status of an existing Loan */
 #if TRANSACTION_INCLUDE

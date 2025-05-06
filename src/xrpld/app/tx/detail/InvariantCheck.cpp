@@ -1940,6 +1940,18 @@ ValidLoanBroker::finalize(
                                "decreased";
             return false;
         }
+        if (after->at(sfDebtTotal) < 0)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: Loan Broker debt total is negative";
+            return false;
+        }
+        if (after->at(sfCoverAvailable) < 0)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: Loan Broker cover available is negative";
+            return false;
+        }
     }
     return true;
 }
@@ -1984,6 +1996,18 @@ ValidLoan::finalize(
         {
             JLOG(j.fatal())
                 << "Invariant failed: Loan Overpayment flag changed";
+            return false;
+        }
+        if (after->at(sfAssetsAvailable) < 0)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: Loan assets available is negative";
+            return false;
+        }
+        if (after->at(sfPrincipalOutstanding) < 0)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: Loan principal outstanding is negative";
             return false;
         }
     }

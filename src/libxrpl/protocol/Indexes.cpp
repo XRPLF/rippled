@@ -559,7 +559,7 @@ loanbroker(AccountID const& owner, std::uint32_t seq) noexcept
 }
 
 Keylet
-loan(uint256 loanBrokerID, std::uint32_t loanSeq) noexcept
+loan(uint256 const& loanBrokerID, std::uint32_t loanSeq) noexcept
 {
     return loan(indexHash(LedgerNameSpace::LOAN, loanBrokerID, loanSeq));
 }

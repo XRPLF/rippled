@@ -1017,7 +1017,7 @@ adjustOwnerCount(
     AccountID const id = (*sle)[sfAccount];
     std::uint32_t const adjusted = confineOwnerCount(current, amount, id, j);
     view.adjustOwnerCountHook(id, current, adjusted);
-    sle->setFieldU32(sfOwnerCount, adjusted);
+    sle->at(sfOwnerCount) = adjusted;
     view.update(sle);
 }
 
