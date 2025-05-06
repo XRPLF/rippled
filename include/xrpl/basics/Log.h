@@ -157,6 +157,48 @@ private:
         boost::filesystem::path m_path;
     };
 
+    class AsioTrackingBuf : public std::streambuf
+    {
+    public:
+        explicit AsioTrackingBuf(beast::Journal j)
+        {
+        }
+
+    protected:
+        int
+        overflow(int ch) override
+        {
+            if (ch == '\n')
+            {
+                flush();
+            }
+            else if (ch != EOF)
+            {
+                buffer_ += static_cast<char>(ch);
+            }
+            return ch;
+        }
+
+        int
+        sync() override
+        {
+            flush();
+            return 0;
+        }
+
+    private:
+        void
+        flush()
+        {
+            if (!buffer_.empty())
+            {
+                buffer_.clear();
+            }
+        }
+
+        std::string buffer_;
+    };
+
     std::mutex mutable mutex_;
     std::map<
         std::string,
@@ -166,6 +208,8 @@ private:
     beast::severities::Severity thresh_;
     File file_;
     bool silent_ = false;
+    std::unique_ptr<AsioTrackingBuf> asioBuf_;
+    std::unique_ptr<std::ostream> asioStream_;
 
 public:
     Logs(beast::severities::Severity level);

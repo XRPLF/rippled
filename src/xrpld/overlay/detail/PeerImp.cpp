@@ -580,8 +580,21 @@ PeerImp::close()
     {
         detaching_ = true;  // DEPRECATED
         error_code ec;
+
         timer_.cancel(ec);
+        if (ec)
+        {
+            JLOG(journal_.info())
+                << "PeerImp::close timer_.cancel ec: " << ec.message();
+        }
+
         socket_.close(ec);
+        if (ec)
+        {
+            JLOG(journal_.info())
+                << "PeerImp::close socket_.close ec: " << ec.message();
+        }
+
         overlay_.incPeerDisconnect();
         if (inbound_)
         {
@@ -601,7 +614,7 @@ PeerImp::fail(std::string const& reason)
         return post(
             strand_,
             std::bind(
-                (void(Peer::*)(std::string const&)) & PeerImp::fail,
+                (void (Peer::*)(std::string const&))&PeerImp::fail,
                 shared_from_this(),
                 reason));
     if (journal_.active(beast::severities::kWarning) && socket_.is_open())
@@ -672,6 +685,10 @@ PeerImp::cancelTimer()
 {
     error_code ec;
     timer_.cancel(ec);
+    if (ec)
+    {
+        JLOG(journal_.info()) << "PeerImp::cancelTimer ec: " << ec.message();
+    }
 }
 
 //------------------------------------------------------------------------------
@@ -1485,8 +1502,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProofPathRequest> const& m)
                 }
                 else
                 {
-                    peer->send(std::make_shared<Message>(
-                        reply, protocol::mtPROOF_PATH_RESPONSE));
+                    peer->send(
+                        std::make_shared<Message>(
+                            reply, protocol::mtPROOF_PATH_RESPONSE));
                 }
             }
         });
@@ -1540,8 +1558,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMReplayDeltaRequest> const& m)
                 }
                 else
                 {
-                    peer->send(std::make_shared<Message>(
-                        reply, protocol::mtREPLAY_DELTA_RESPONSE));
+                    peer->send(
+                        std::make_shared<Message>(
+                            reply, protocol::mtREPLAY_DELTA_RESPONSE));
                 }
             }
         });

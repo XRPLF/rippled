@@ -134,6 +134,9 @@ Logs::File::writeln(char const* text)
 Logs::Logs(beast::severities::Severity thresh)
     : thresh_(thresh)  // default severity
 {
+    asioBuf_ = std::make_unique<AsioTrackingBuf>(journal("AsioTracking"));
+    asioStream_ = std::make_unique<std::ostream>(asioBuf_.get());
+    std::clog.rdbuf(asioStream_->rdbuf());
 }
 
 bool
