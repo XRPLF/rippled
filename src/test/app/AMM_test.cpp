@@ -3404,7 +3404,7 @@ private:
             auto const settleDelay = 100s;
             NetClock::time_point const cancelAfter =
                 env.current()->info().parentCloseTime + 200s;
-            env(create(
+            env(paychan::create(
                     carol,
                     ammAlice.ammAccount(),
                     XRP(1'000),

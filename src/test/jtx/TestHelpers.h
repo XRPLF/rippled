@@ -224,67 +224,6 @@ expectLedgerEntryRoot(
     Account const& acct,
     STAmount const& expectedValue);
 
-/* Payment Channel */
-/******************************************************************************/
-
-Json::Value
-create(
-    AccountID const& account,
-    AccountID const& to,
-    STAmount const& amount,
-    NetClock::duration const& settleDelay,
-    PublicKey const& pk,
-    std::optional<NetClock::time_point> const& cancelAfter = std::nullopt,
-    std::optional<std::uint32_t> const& dstTag = std::nullopt);
-
-inline Json::Value
-create(
-    Account const& account,
-    Account const& to,
-    STAmount const& amount,
-    NetClock::duration const& settleDelay,
-    PublicKey const& pk,
-    std::optional<NetClock::time_point> const& cancelAfter = std::nullopt,
-    std::optional<std::uint32_t> const& dstTag = std::nullopt)
-{
-    return create(
-        account.id(), to.id(), amount, settleDelay, pk, cancelAfter, dstTag);
-}
-
-Json::Value
-fund(
-    AccountID const& account,
-    uint256 const& channel,
-    STAmount const& amount,
-    std::optional<NetClock::time_point> const& expiration = std::nullopt);
-
-Json::Value
-claim(
-    AccountID const& account,
-    uint256 const& channel,
-    std::optional<STAmount> const& balance = std::nullopt,
-    std::optional<STAmount> const& amount = std::nullopt,
-    std::optional<Slice> const& signature = std::nullopt,
-    std::optional<PublicKey> const& pk = std::nullopt);
-
-uint256
-channel(
-    AccountID const& account,
-    AccountID const& dst,
-    std::uint32_t seqProxyValue);
-
-inline uint256
-channel(Account const& account, Account const& dst, std::uint32_t seqProxyValue)
-{
-    return channel(account.id(), dst.id(), seqProxyValue);
-}
-
-STAmount
-channelBalance(ReadView const& view, uint256 const& chan);
-
-bool
-channelExists(ReadView const& view, uint256 const& chan);
-
 /* Crossing Limits */
 /******************************************************************************/
 

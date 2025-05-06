@@ -231,10 +231,11 @@ WorkBase<Impl>::onResolve(error_code const& ec, results_type results)
 
     socket_.async_connect(
         lastEndpoint_,
-        strand_.wrap(std::bind(
-            &Impl::onConnect,
-            impl().shared_from_this(),
-            std::placeholders::_1)));
+        strand_.wrap(
+            std::bind(
+                &Impl::onConnect,
+                impl().shared_from_this(),
+                std::placeholders::_1)));
 }
 
 template <class Impl>
