@@ -33,7 +33,7 @@ setupDomain(
     jtx::Env& env,
     std::vector<jtx::Account> const& accounts,
     jtx::Account const& domainOwner,
-    std::string credType)
+    std::string const& credType)
 {
     using namespace jtx;
     env.fund(XRP(100000), domainOwner);
@@ -42,7 +42,7 @@ setupDomain(
     pdomain::Credentials credentials{{domainOwner, credType}};
     env(pdomain::setTx(domainOwner, credentials));
 
-    auto objects = pdomain::getObjects(domainOwner, env);
+    auto const objects = pdomain::getObjects(domainOwner, env);
     auto const domainID = objects.begin()->first;
 
     for (auto const& account : accounts)
@@ -70,16 +70,14 @@ PermissionedDEX::PermissionedDEX(Env& env)
 
     domainID = setupDomain(env, {alice, bob, carol, gw}, domainOwner, credType);
 
-    auto setupTrustline = [&](Account const account) {
+    for (auto const& account : {alice, bob, carol, domainOwner})
+    {
         env.trust(USD(1000), account);
         env.close();
 
         env(pay(gw, account, USD(100)));
         env.close();
-    };
-
-    for (auto const& account : {alice, bob, carol, domainOwner})
-        setupTrustline(account);
+    }
 }
 
 }  // namespace jtx

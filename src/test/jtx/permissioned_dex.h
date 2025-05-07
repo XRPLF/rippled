@@ -29,7 +29,7 @@ setupDomain(
     jtx::Env& env,
     std::vector<jtx::Account> const& accounts,
     jtx::Account const& domainOwner = jtx::Account("domainOwner"),
-    std::string credType = "Cred");
+    std::string const& credType = "Cred");
 
 class PermissionedDEX
 {
