@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <xrpld/app/tx/detail/LoanDelete.h>
+#include <xrpld/app/tx/detail/LoanDraw.h>
 //
 #include <xrpld/app/misc/LendingHelpers.h>
 #include <xrpld/ledger/ApplyView.h>
@@ -45,27 +45,31 @@
 namespace ripple {
 
 bool
-LoanDelete::isEnabled(PreflightContext const& ctx)
+LoanDraw::isEnabled(PreflightContext const& ctx)
 {
     return LendingProtocolEnabled(ctx);
 }
 
 NotTEC
-LoanDelete::doPreflight(PreflightContext const& ctx)
+LoanDraw::doPreflight(PreflightContext const& ctx)
 {
     if (ctx.tx[sfLoanID] == beast::zero)
         return temINVALID;
+
+    if (ctx.tx[sfAmount] <= beast::zero)
+        return temBAD_AMOUNT;
 
     return tesSUCCESS;
 }
 
 TER
-LoanDelete::preclaim(PreclaimContext const& ctx)
+LoanDraw::preclaim(PreclaimContext const& ctx)
 {
     auto const& tx = ctx.tx;
 
     auto const account = tx[sfAccount];
     auto const loanID = tx[sfLoanID];
+    auto const amount = tx[sfAmount];
 
     auto const loanSle = ctx.view.read(keylet::loan(loanID));
     if (!loanSle)
@@ -73,23 +77,78 @@ LoanDelete::preclaim(PreclaimContext const& ctx)
         JLOG(ctx.j.warn()) << "Loan does not exist.";
         return tecNO_ENTRY;
     }
-    if (loanSle->at(sfPaymentRemaining) > 0)
+
+    if (loanSle->at(sfBorrower) != account)
     {
-        JLOG(ctx.j.warn()) << "Active loan can not be deleted.";
-        return tecHAS_OBLIGATIONS;
+        JLOG(ctx.j.warn()) << "Loan does not belong to the account.";
+        return tecNO_PERMISSION;
+    }
+
+    if (loanSle->isFlag(lsfLoanImpaired) || loanSle->isFlag(lsfLoanDefault))
+    {
+        JLOG(ctx.j.warn()) << "Loan is impaired or in default.";
+        return tecNO_PERMISSION;
+    }
+
+    if (!hasExpired(ctx.view, loanSle->at(sfStartDate)))
+    {
+        JLOG(ctx.j.warn()) << "Loan has not started yet.";
+        return tecTOO_SOON;
+    }
+
+    if (loanSle->at(sfAssetsAvailable) < amount)
+    {
+        JLOG(ctx.j.warn()) << "Loan does not have enough assets available.";
+        return tecINSUFFICIENT_FUNDS;
     }
 
     auto const loanBrokerID = loanSle->at(sfLoanBrokerID);
     auto const loanBrokerSle = ctx.view.read(keylet::loanbroker(loanBrokerID));
     if (!loanBrokerSle)
     {
-        // should be impossible
-        return tecINTERNAL;  // LCOV_EXCL_LINE
+        // This should be impossible
+        // LCOV_EXCL_START
+        JLOG(ctx.j.fatal()) << "LoanBroker does not exist.";
+        return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
     }
-    if (loanBrokerSle->at(sfOwner) != account)
+    auto const brokerPseudoAccount = loanBrokerSle->at(sfAccount);
+    auto const vaultID = loanBrokerSle->at(sfVaultID);
+    auto const vaultSle = ctx.view.read(keylet::vault(vaultID));
+    if (!vaultSle)
     {
-        JLOG(ctx.j.warn())
-            << "LoanBroker for Loan does not belong to the account.";
+        // This should be impossible
+        // LCOV_EXCL_START
+        JLOG(ctx.j.fatal()) << "Vault does not exist.";
+        return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
+    }
+    auto const asset = vaultSle->at(sfAsset);
+
+    if (amount.asset() != asset)
+    {
+        JLOG(ctx.j.warn()) << "Loan amount does not match the Vault asset.";
+        return tecWRONG_ASSET;
+    }
+
+    if (isFrozen(ctx.view, brokerPseudoAccount, asset))
+    {
+        JLOG(ctx.j.warn()) << "Loan Broker pseudo-account is frozen.";
+        return asset.holds<Issue>() ? tecFROZEN : tecLOCKED;
+    }
+    if (asset.holds<Issue>())
+    {
+        auto const issue = asset.get<Issue>();
+        if (isDeepFrozen(ctx.view, account, issue.currency, issue.account))
+        {
+            JLOG(ctx.j.warn()) << "Borrower account is frozen.";
+            return tecFROZEN;
+        }
+    }
+
+    if (hasExpired(ctx.view, loanSle->at(sfNextPaymentDueDate)))
+    {
+        JLOG(ctx.j.warn()) << "Loan payment is overdue.";
         return tecNO_PERMISSION;
     }
 
@@ -97,18 +156,16 @@ LoanDelete::preclaim(PreclaimContext const& ctx)
 }
 
 TER
-LoanDelete::doApply()
+LoanDraw::doApply()
 {
     auto const& tx = ctx_.tx;
     auto& view = ctx_.view();
 
+    auto const amount = tx[sfAmount];
+
     auto const loanID = tx[sfLoanID];
     auto const loanSle = view.peek(keylet::loan(loanID));
     if (!loanSle)
-        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
-    auto const borrower = loanSle->at(sfBorrower);
-    auto const borrowerSle = view.peek(keylet::account(borrower));
-    if (!borrowerSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
 
     auto const brokerID = loanSle->at(sfLoanBrokerID);
@@ -117,47 +174,17 @@ LoanDelete::doApply()
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     auto const brokerPseudoAccount = brokerSle->at(sfAccount);
 
-    auto const vaultSle = view.peek(keylet ::vault(brokerSle->at(sfVaultID)));
-    if (!vaultSle)
-        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
-    auto const vaultAsset = vaultSle->at(sfAsset);
+    if (auto const ter = accountSend(
+            view,
+            brokerPseudoAccount,
+            account_,
+            amount,
+            j_,
+            WaiveTransferFee::Yes))
+        return ter;
 
-    // transfer any remaining funds to the borrower
-    auto assetsAvailableProxy = loanSle->at(sfAssetsAvailable);
-    if (assetsAvailableProxy != 0)
-    {
-        if (auto const ter = accountSend(
-                view,
-                brokerPseudoAccount,
-                borrower,
-                STAmount{vaultAsset, assetsAvailableProxy},
-                j_,
-                WaiveTransferFee::Yes))
-            return ter;
-    }
-
-    // Remove LoanID from Directory of the LoanBroker pseudo-account.
-    if (!view.dirRemove(
-            keylet::ownerDir(brokerPseudoAccount),
-            loanSle->at(sfLoanBrokerNode),
-            loanID,
-            false))
-        return tefBAD_LEDGER;
-    // Remove LoanID from Directory of the Borrower.
-    if (!view.dirRemove(
-            keylet::ownerDir(borrower),
-            loanSle->at(sfOwnerNode),
-            loanID,
-            false))
-        return tefBAD_LEDGER;
-
-    // Delete the Loan object
-    view.erase(loanSle);
-
-    // Decrement the LoanBroker's owner count.
-    adjustOwnerCount(view, brokerSle, -1, j_);
-    // Decrement the borrower's owner count
-    adjustOwnerCount(view, borrowerSle, -1, j_);
+    loanSle->at(sfAssetsAvailable) -= amount;
+    view.update(loanSle);
 
     return tesSUCCESS;
 }

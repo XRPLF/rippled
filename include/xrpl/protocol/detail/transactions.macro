@@ -767,7 +767,6 @@ TRANSACTION(ttLOAN_MANAGE, 80, LoanManage, noPriv, ({
     {sfLoanID, soeREQUIRED},
 }))
 
-#if 0
 /** The Borrower uses this transaction to draws funds from the Loan. */
 #if TRANSACTION_INCLUDE
 #   include <xrpld/app/tx/detail/LoanDraw.h>
@@ -777,6 +776,7 @@ TRANSACTION(ttLOAN_DRAW, 81, LoanDraw, noPriv, ({
     {sfAmount, soeREQUIRED, soeMPTSupported},
 }))
 
+#if 0
 /** The Borrower uses this transaction to make a Payment on the Loan. */
 #if TRANSACTION_INCLUDE
 #   include <xrpld/app/tx/detail/LoanPay.h>

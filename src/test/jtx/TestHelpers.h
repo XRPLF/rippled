@@ -749,6 +749,13 @@ manage(AccountID const& account, uint256 const& loanID, std::uint32_t flags);
 Json::Value
 del(AccountID const& account, uint256 const& loanID, std::uint32_t flags = 0);
 
+Json::Value
+draw(
+    AccountID const& account,
+    uint256 const& loanID,
+    STAmount const& amount,
+    std::uint32_t flags = 0);
+
 }  // namespace loan
 
 }  // namespace jtx

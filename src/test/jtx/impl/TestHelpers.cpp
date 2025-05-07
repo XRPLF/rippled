@@ -513,6 +513,22 @@ del(AccountID const& account, uint256 const& loanID, std::uint32_t flags)
     return jv;
 }
 
+Json::Value
+draw(
+    AccountID const& account,
+    uint256 const& loanID,
+    STAmount const& amount,
+    std::uint32_t flags)
+{
+    Json::Value jv;
+    jv[sfTransactionType] = jss::LoanDraw;
+    jv[sfAccount] = to_string(account);
+    jv[sfLoanID] = to_string(loanID);
+    jv[sfAmount] = amount.getJson();
+    jv[sfFlags] = flags;
+    return jv;
+}
+
 }  // namespace loan
 }  // namespace jtx
 }  // namespace test

@@ -89,11 +89,11 @@ class Loan_test : public beast::unit_test::suite
             env(del(alice, loanKeylet.key), ter(temDISABLED));
             // 3. LoanManage
             env(manage(alice, loanKeylet.key, tfLoanImpair), ter(temDISABLED));
-#if 0
             // 4. LoanDraw
-            env(draw(alice, loanKeylet.key, Number(500)), ter(temDISABLED));
+            env(draw(alice, loanKeylet.key, XRP(500)), ter(temDISABLED));
+#if 0
             // 5. LoanPay
-            env(pay(alice, loanKeylet.key, Number(500)), ter(temDISABLED));
+            env(pay(alice, loanKeylet.key, XRP(500)), ter(temDISABLED));
 #endif
         };
         failAll(all - featureMPTokensV1);
@@ -110,6 +110,18 @@ class Loan_test : public beast::unit_test::suite
             : asset(asset_), brokerID(brokerID_)
         {
         }
+    };
+
+    struct LoanState
+    {
+        std::uint32_t previousPaymentDate = 0;
+        NetClock::time_point startDate = {};
+        std::uint32_t nextPaymentDate = 0;
+        std::uint32_t paymentRemaining = 0;
+        Number assetsAvailable = 0;
+        Number principalOutstanding = 0;
+        std::uint32_t flags = 0;
+        std::uint32_t paymentInterval = 0;
     };
 
     struct VerifyLoanStatus
@@ -185,6 +197,21 @@ class Loan_test : public beast::unit_test::suite
         }
 
         void
+        checkBroker(
+            LoanState const& state,
+            TenthBips32 interestRate,
+            std::uint32_t ownerCount) const
+        {
+            checkBroker(
+                state.assetsAvailable,
+                state.principalOutstanding,
+                interestRate,
+                state.paymentInterval,
+                state.paymentRemaining,
+                ownerCount);
+        }
+
+        void
         operator()(
             std::uint32_t previousPaymentDate,
             std::uint32_t nextPaymentDate,
@@ -251,6 +278,18 @@ class Loan_test : public beast::unit_test::suite
                 }
             }
         }
+
+        void
+        operator()(LoanState const& state) const
+        {
+            operator()(
+                state.previousPaymentDate,
+                state.nextPaymentDate,
+                state.paymentRemaining,
+                state.assetsAvailable,
+                state.principalOutstanding,
+                state.flags);
+        };
     };
 
     void
@@ -464,7 +503,8 @@ class Loan_test : public beast::unit_test::suite
             }
             return Number(0);
         }();
-        auto const borrowerBalance = env.balance(borrower, broker.asset);
+        auto const borrowerStartingBalance =
+            env.balance(borrower, broker.asset);
 
         // Try to delete the loan broker with an active loan
         env(loanBroker::del(lender, broker.brokerID), ter(tecHAS_OBLIGATIONS));
@@ -486,7 +526,7 @@ class Loan_test : public beast::unit_test::suite
 
         BEAST_EXPECT(
             env.balance(borrower, broker.asset).value() ==
-            borrowerBalance.value() + assetsAvailable);
+            borrowerStartingBalance.value() + assetsAvailable);
         BEAST_EXPECT(env.ownerCount(borrower) == borrowerOwnerCount);
 
         if (auto const brokerSle = env.le(keylet::loanbroker(broker.brokerID));
@@ -528,9 +568,12 @@ class Loan_test : public beast::unit_test::suite
         std::string const iouCurrency{"IOU"};
         PrettyAsset const iouAsset = issuer[iouCurrency];
         env(trust(lender, iouAsset(1'000'000)));
+        env(trust(borrower, iouAsset(1'000'000)));
         env(trust(evan, iouAsset(1'000'000)));
         env(pay(issuer, evan, iouAsset(100'000)));
         env(pay(issuer, lender, iouAsset(100'000)));
+        // Fund the borrower with enough to cover interest and fees
+        env(pay(issuer, borrower, iouAsset(1'000)));
         env.close();
 
         MPTTester mptt{env, issuer, mptInitNoFund};
@@ -538,9 +581,12 @@ class Loan_test : public beast::unit_test::suite
             {.flags = tfMPTCanClawback | tfMPTCanTransfer | tfMPTCanLock});
         PrettyAsset const mptAsset = mptt.issuanceID();
         mptt.authorize({.account = lender});
+        mptt.authorize({.account = borrower});
         mptt.authorize({.account = evan});
         env(pay(issuer, lender, mptAsset(100'000)));
         env(pay(issuer, evan, mptAsset(100'000)));
+        // Fund the borrower with enough to cover interest and fees
+        env(pay(issuer, borrower, mptAsset(1'000)));
         env.close();
 
         std::array const assets{xrpAsset, iouAsset, mptAsset};
@@ -606,6 +652,8 @@ class Loan_test : public beast::unit_test::suite
 
             using namespace loan;
             using namespace std::chrono_literals;
+            using d = NetClock::duration;
+            using tp = NetClock::time_point;
 
             Number const principalRequest = broker.asset(1000).value();
             Number const maxCoveredLoanRequest =
@@ -961,6 +1009,38 @@ class Loan_test : public beast::unit_test::suite
             // Finally! Create a loan
             std::string testData;
 
+            auto currentState = [&](Keylet const& loanKeylet,
+                                    VerifyLoanStatus const& verifyLoanStatus) {
+                // Lookup the current loan state
+                LoanState state;
+                if (auto loan = env.le(loanKeylet); BEAST_EXPECT(loan))
+                {
+                    state.previousPaymentDate = loan->at(sfPreviousPaymentDate);
+                    BEAST_EXPECT(state.previousPaymentDate == 0);
+                    state.startDate = tp{d{loan->at(sfStartDate)}};
+                    state.nextPaymentDate = loan->at(sfNextPaymentDueDate);
+                    BEAST_EXPECT(
+                        tp{d{state.nextPaymentDate}} == state.startDate + 600s);
+                    state.paymentRemaining = loan->at(sfPaymentRemaining);
+                    BEAST_EXPECT(state.paymentRemaining == 12);
+                    state.assetsAvailable = loan->at(sfAssetsAvailable);
+                    BEAST_EXPECT(
+                        state.assetsAvailable == broker.asset(999).value());
+                    state.principalOutstanding =
+                        loan->at(sfPrincipalOutstanding);
+                    BEAST_EXPECT(
+                        state.principalOutstanding ==
+                        broker.asset(1000).value());
+                    state.paymentInterval = loan->at(sfPaymentInterval);
+                    BEAST_EXPECT(state.paymentInterval == 600);
+                    state.flags = loan->at(sfFlags);
+                }
+
+                verifyLoanStatus(state);
+
+                return state;
+            };
+
             auto defaultBeforeStartDate = [&](std::uint32_t baseFlag) {
                 return [&, baseFlag](
                            Keylet const& loanKeylet,
@@ -970,64 +1050,22 @@ class Loan_test : public beast::unit_test::suite
                     // Default the loan
 
                     // Initialize values with the current state
-                    std::uint32_t previousPaymentDate = 0;
-                    std::uint32_t nextPaymentDate = 0;
-                    std::uint32_t paymentRemaining = 0;
-                    Number assetsAvailable = 0;
-                    Number principalOutstanding = 0;
-                    std::uint32_t flags = 0;
-                    std::uint32_t paymentInterval = 0;
-
-                    if (auto loan = env.le(loanKeylet); BEAST_EXPECT(loan))
-                    {
-                        previousPaymentDate = loan->at(sfPreviousPaymentDate);
-                        BEAST_EXPECT(previousPaymentDate == 0);
-                        nextPaymentDate = loan->at(sfNextPaymentDueDate);
-                        BEAST_EXPECT(
-                            nextPaymentDate == loan->at(sfStartDate) + 600);
-                        paymentRemaining = loan->at(sfPaymentRemaining);
-                        BEAST_EXPECT(paymentRemaining == 12);
-                        assetsAvailable = loan->at(sfAssetsAvailable);
-                        BEAST_EXPECT(
-                            assetsAvailable == broker.asset(999).value());
-                        principalOutstanding = loan->at(sfPrincipalOutstanding);
-                        BEAST_EXPECT(
-                            principalOutstanding == broker.asset(1000).value());
-                        paymentInterval = loan->at(sfPaymentInterval);
-                        BEAST_EXPECT(paymentInterval == 600);
-                        flags = loan->at(sfFlags);
-                        BEAST_EXPECT(flags == baseFlag);
-                    }
-
-                    verifyLoanStatus(
-                        previousPaymentDate,
-                        nextPaymentDate,
-                        paymentRemaining,
-                        assetsAvailable,
-                        principalOutstanding,
-                        flags);
+                    auto state = currentState(loanKeylet, verifyLoanStatus);
+                    BEAST_EXPECT(state.flags == baseFlag);
 
                     // Impair the loan
                     env(manage(lender, loanKeylet.key, tfLoanImpair));
 
-                    flags |= tfLoanImpair;
-                    nextPaymentDate = env.now().time_since_epoch().count();
-                    verifyLoanStatus(
-                        previousPaymentDate,
-                        nextPaymentDate,
-                        paymentRemaining,
-                        assetsAvailable,
-                        principalOutstanding,
-                        flags);
+                    state.flags |= tfLoanImpair;
+                    state.nextPaymentDate =
+                        env.now().time_since_epoch().count();
+                    verifyLoanStatus(state);
 
                     // Once the loan is impaired, it can't be impaired again
                     env(manage(lender, loanKeylet.key, tfLoanImpair),
                         ter(tecNO_PERMISSION));
 
-                    using d = NetClock::duration;
-                    using tp = NetClock::time_point;
-
-                    auto const nextDueDate = tp{d{nextPaymentDate}};
+                    auto const nextDueDate = tp{d{state.nextPaymentDate}};
 
                     // Can't default the loan yet. The grace period hasn't
                     // expired
@@ -1038,20 +1076,22 @@ class Loan_test : public beast::unit_test::suite
                     // defaulted
                     env.close(nextDueDate + 60s);
 
+                    // Impaired loans can't be drawn against
+                    env(draw(borrower, loanKeylet.key, broker.asset(100)),
+                        ter(tecNO_PERMISSION));
+
                     // Default the loan
                     env(manage(lender, loanKeylet.key, tfLoanDefault));
 
-                    flags |= tfLoanDefault;
-                    paymentRemaining = 0;
-                    assetsAvailable = 0;
-                    principalOutstanding = 0;
-                    verifyLoanStatus(
-                        previousPaymentDate,
-                        nextPaymentDate,
-                        paymentRemaining,
-                        assetsAvailable,
-                        principalOutstanding,
-                        flags);
+                    state.flags |= tfLoanDefault;
+                    state.paymentRemaining = 0;
+                    state.assetsAvailable = 0;
+                    state.principalOutstanding = 0;
+                    verifyLoanStatus(state);
+
+                    // Defaulted loans can't be drawn against, either
+                    env(draw(borrower, loanKeylet.key, broker.asset(100)),
+                        ter(tecNO_PERMISSION));
 
                     // Once a loan is defaulted, it can't be managed
                     env(manage(lender, loanKeylet.key, tfLoanUnimpair),
@@ -1086,9 +1126,8 @@ class Loan_test : public beast::unit_test::suite
                 0,
                 defaultBeforeStartDate(0));
 
-#if 0 
             lifecycle(
-                "Loan overpayment allowed - Pay off",
+                "Loan overpayment allowed - Draw then default",
                 env,
                 lender,
                 borrower,
@@ -1100,13 +1139,74 @@ class Loan_test : public beast::unit_test::suite
                     VerifyLoanStatus const& verifyLoanStatus) {
                     // toEndOfLife
                     //
-        // TODO: Draw and make some payments
+                    // Initialize values with the current state
+                    auto state = currentState(loanKeylet, verifyLoanStatus);
+                    BEAST_EXPECT(state.flags == lsfLoanOverpayment);
+                    auto const borrowerStartingBalance =
+                        env.balance(borrower, broker.asset);
 
-                    // Make payments down to 0
+                    // Draw the balance
+                    env(draw(
+                            borrower,
+                            keylet::loan(uint256(0)).key,
+                            broker.asset(10)),
+                        ter(temINVALID));
+                    env(draw(borrower, loanKeylet.key, broker.asset(-100)),
+                        ter(temBAD_AMOUNT));
+                    env(draw(borrower, broker.brokerID, broker.asset(100)),
+                        ter(tecNO_ENTRY));
+                    env(draw(evan, loanKeylet.key, broker.asset(500)),
+                        ter(tecNO_PERMISSION));
+                    env(draw(borrower, loanKeylet.key, broker.asset(500)),
+                        ter(tecTOO_SOON));
 
-                    // TODO: Try to impair a paid off loan
+                    // Advance to the start date of the loan
+                    env.close(state.startDate + 5s);
+                    env(draw(borrower, loanKeylet.key, broker.asset(10000)),
+                        ter(tecINSUFFICIENT_FUNDS));
+                    {
+                        auto const otherAsset =
+                            broker.asset.raw() == assets[0].raw() ? assets[1]
+                                                                  : assets[0];
+                        env(draw(borrower, loanKeylet.key, otherAsset(100)),
+                            ter(tecWRONG_ASSET));
+                    }
+
+                    verifyLoanStatus(state);
+
+                    // Draw about half the balance
+                    auto const drawAmount = broker.asset(500);
+                    env(draw(borrower, loanKeylet.key, drawAmount));
+
+                    state.assetsAvailable -= drawAmount.number();
+                    verifyLoanStatus(state);
+                    BEAST_EXPECT(
+                        env.balance(borrower, broker.asset) ==
+                        borrowerStartingBalance + drawAmount);
+
+                    // move past the due date
+                    env.close(tp{d{state.nextPaymentDate}} + 20s);
+                    // Try to draw
+                    env(draw(borrower, loanKeylet.key, broker.asset(100)),
+                        ter(tecNO_PERMISSION));
+
+                    // default the loan
+                    env(manage(lender, loanKeylet.key, tfLoanDefault));
+                    state.paymentRemaining = 0;
+                    state.assetsAvailable = 0;
+                    state.principalOutstanding = 0;
+                    state.flags |= tfLoanDefault;
+
+                    verifyLoanStatus(state);
+
+                    // Same error, different check
+                    env(draw(borrower, loanKeylet.key, broker.asset(100)),
+                        ter(tecNO_PERMISSION));
+
+                    // Default
                 });
 
+#if 0 
             lifecycle(
                 "Loan overpayment prohibited - Pay off",
                 env,
