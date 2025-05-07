@@ -96,12 +96,6 @@ LoanDraw::preclaim(PreclaimContext const& ctx)
         return tecTOO_SOON;
     }
 
-    if (loanSle->at(sfAssetsAvailable) < amount)
-    {
-        JLOG(ctx.j.warn()) << "Loan does not have enough assets available.";
-        return tecINSUFFICIENT_FUNDS;
-    }
-
     auto const loanBrokerID = loanSle->at(sfLoanBrokerID);
     auto const loanBrokerSle = ctx.view.read(keylet::loanbroker(loanBrokerID));
     if (!loanBrokerSle)
@@ -129,6 +123,12 @@ LoanDraw::preclaim(PreclaimContext const& ctx)
     {
         JLOG(ctx.j.warn()) << "Loan amount does not match the Vault asset.";
         return tecWRONG_ASSET;
+    }
+
+    if (loanSle->at(sfAssetsAvailable) < amount)
+    {
+        JLOG(ctx.j.warn()) << "Loan does not have enough assets available.";
+        return tecINSUFFICIENT_FUNDS;
     }
 
     if (isFrozen(ctx.view, brokerPseudoAccount, asset))

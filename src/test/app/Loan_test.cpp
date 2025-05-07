@@ -1174,6 +1174,13 @@ class Loan_test : public beast::unit_test::suite
 
                     verifyLoanStatus(state);
 
+                    // Need to account for fees if the loan is in XRP
+                    PrettyAmount adjustment = broker.asset(0);
+                    if (broker.asset.raw().native())
+                    {
+                        adjustment = 5 * env.current()->fees().base;
+                    }
+
                     // Draw about half the balance
                     auto const drawAmount = broker.asset(500);
                     env(draw(borrower, loanKeylet.key, drawAmount));
@@ -1182,10 +1189,10 @@ class Loan_test : public beast::unit_test::suite
                     verifyLoanStatus(state);
                     BEAST_EXPECT(
                         env.balance(borrower, broker.asset) ==
-                        borrowerStartingBalance + drawAmount);
+                        borrowerStartingBalance + drawAmount - adjustment);
 
-                    // move past the due date
-                    env.close(tp{d{state.nextPaymentDate}} + 20s);
+                    // move past the due date + grace period (60s)
+                    env.close(tp{d{state.nextPaymentDate}} + 60s + 20s);
                     // Try to draw
                     env(draw(borrower, loanKeylet.key, broker.asset(100)),
                         ter(tecNO_PERMISSION));
