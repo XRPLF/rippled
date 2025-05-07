@@ -26,12 +26,12 @@ namespace test {
 class Delegate_test : public beast::unit_test::suite
 {
     void
-    testFeatureDisabled(FeatureBitset features)
+    testFeatureDisabled()
     {
         testcase("test featurePermissionDelegation not enabled");
         using namespace jtx;
 
-        Env env(*this, features);
+        Env env{*this, supported_amendments() - featurePermissionDelegation};
         Account gw{"gateway"};
         Account alice{"alice"};
         Account bob{"bob"};
@@ -46,12 +46,12 @@ class Delegate_test : public beast::unit_test::suite
     }
 
     void
-    testDelegateSet(FeatureBitset features)
+    testDelegateSet()
     {
         testcase("test valid request creating, updating, deleting permissions");
         using namespace jtx;
 
-        Env env(*this, features);
+        Env env(*this);
         Account gw{"gateway"};
         Account alice{"alice"};
         env.fund(XRP(100000), gw, alice);
@@ -139,12 +139,12 @@ class Delegate_test : public beast::unit_test::suite
     }
 
     void
-    testInvalidRequest(FeatureBitset features)
+    testInvalidRequest()
     {
         testcase("test invalid DelegateSet");
         using namespace jtx;
 
-        Env env(*this, features);
+        Env env(*this);
         Account gw{"gateway"};
         Account alice{"alice"};
         Account bob{"bob"};
@@ -233,14 +233,14 @@ class Delegate_test : public beast::unit_test::suite
     }
 
     void
-    testReserve(FeatureBitset features)
+    testReserve()
     {
         testcase("test reserve");
         using namespace jtx;
 
         // test reserve for DelegateSet
         {
-            Env env(*this, features);
+            Env env(*this);
             Account alice{"alice"};
             Account bob{"bob"};
             Account carol{"carol"};
@@ -266,7 +266,7 @@ class Delegate_test : public beast::unit_test::suite
 
         // test reserve when sending transaction on behalf of other account
         {
-            Env env(*this, features);
+            Env env(*this);
             Account alice{"alice"};
             Account bob{"bob"};
 
@@ -292,12 +292,12 @@ class Delegate_test : public beast::unit_test::suite
     }
 
     void
-    testFee(FeatureBitset features)
+    testFee()
     {
         testcase("test fee");
         using namespace jtx;
 
-        Env env(*this, features);
+        Env env(*this);
         Account alice{"alice"};
         Account bob{"bob"};
         Account carol{"carol"};
@@ -377,12 +377,12 @@ class Delegate_test : public beast::unit_test::suite
     }
 
     void
-    testSequence(FeatureBitset features)
+    testSequence()
     {
         testcase("test sequence");
         using namespace jtx;
 
-        Env env(*this, features);
+        Env env(*this);
         Account alice{"alice"};
         Account bob{"bob"};
         Account carol{"carol"};
@@ -430,12 +430,12 @@ class Delegate_test : public beast::unit_test::suite
     }
 
     void
-    testAccountDelete(FeatureBitset features)
+    testAccountDelete()
     {
         testcase("test deleting account");
         using namespace jtx;
 
-        Env env(*this, features);
+        Env env(*this);
         Account alice{"alice"};
         Account bob{"bob"};
         env.fund(XRP(100000), alice, bob);
@@ -466,12 +466,12 @@ class Delegate_test : public beast::unit_test::suite
     }
 
     void
-    testDelegateTransaction(FeatureBitset features)
+    testDelegateTransaction()
     {
         testcase("test delegate transaction");
         using namespace jtx;
 
-        Env env(*this, features);
+        Env env(*this);
         Account alice{"alice"};
         Account bob{"bob"};
         Account carol{"carol"};
@@ -532,14 +532,14 @@ class Delegate_test : public beast::unit_test::suite
     }
 
     void
-    testPaymentGranular(FeatureBitset features)
+    testPaymentGranular()
     {
         testcase("test payment granular");
         using namespace jtx;
 
         // test PaymentMint and PaymentBurn
         {
-            Env env(*this, features);
+            Env env(*this);
             Account alice{"alice"};
             Account bob{"bob"};
             Account gw{"gateway"};
@@ -653,7 +653,7 @@ class Delegate_test : public beast::unit_test::suite
 
         // test PaymentMint won't affect Payment transaction level delegation.
         {
-            Env env(*this, features);
+            Env env(*this);
             Account alice{"alice"};
             Account bob{"bob"};
             Account gw{"gateway"};
@@ -705,14 +705,14 @@ class Delegate_test : public beast::unit_test::suite
     }
 
     void
-    testTrustSetGranular(FeatureBitset features)
+    testTrustSetGranular()
     {
         testcase("test TrustSet granular permissions");
         using namespace jtx;
 
         // test TrustlineUnfreeze, TrustlineFreeze and TrustlineAuthorize
         {
-            Env env(*this, features);
+            Env env(*this);
             Account gw{"gw"};
             Account alice{"alice"};
             Account bob{"bob"};
@@ -833,7 +833,7 @@ class Delegate_test : public beast::unit_test::suite
 
         // test mix of transaction level delegation and granular delegation
         {
-            Env env(*this, features);
+            Env env(*this);
             Account gw{"gw"};
             Account alice{"alice"};
             Account bob{"bob"};
@@ -893,7 +893,7 @@ class Delegate_test : public beast::unit_test::suite
     }
 
     void
-    testAccountSetGranular(FeatureBitset features)
+    testAccountSetGranular()
     {
         testcase("test AccountSet granular permissions");
         using namespace jtx;
@@ -902,7 +902,7 @@ class Delegate_test : public beast::unit_test::suite
         // AccountMessageKeySet,AccountTransferRateSet, and AccountTickSizeSet
         // granular permissions
         {
-            Env env(*this, features);
+            Env env(*this);
             auto const alice = Account{"alice"};
             auto const bob = Account{"bob"};
             env.fund(XRP(10000), alice, bob);
@@ -1067,7 +1067,7 @@ class Delegate_test : public beast::unit_test::suite
 
         // can not set AccountSet flags on behalf of other account
         {
-            Env env(*this, features);
+            Env env(*this);
             auto const alice = Account{"alice"};
             auto const bob = Account{"bob"};
             env.fund(XRP(10000), alice, bob);
@@ -1163,14 +1163,14 @@ class Delegate_test : public beast::unit_test::suite
     }
 
     void
-    testMPTokenIssuanceSetGranular(FeatureBitset features)
+    testMPTokenIssuanceSetGranular()
     {
         testcase("test MPTokenIssuanceSet granular");
         using namespace jtx;
 
         // test MPTokenIssuanceUnlock and MPTokenIssuanceLock permissions
         {
-            Env env(*this, features);
+            Env env(*this);
             Account alice{"alice"};
             Account bob{"bob"};
             env.fund(XRP(100000), alice, bob);
@@ -1218,7 +1218,7 @@ class Delegate_test : public beast::unit_test::suite
 
         // test mix of granular and transaction level permission
         {
-            Env env(*this, features);
+            Env env(*this);
             Account alice{"alice"};
             Account bob{"bob"};
             env.fund(XRP(100000), alice, bob);
@@ -1271,12 +1271,12 @@ class Delegate_test : public beast::unit_test::suite
     }
 
     void
-    testSingleSign(FeatureBitset features)
+    testSingleSign()
     {
         testcase("test single sign");
         using namespace jtx;
 
-        Env env(*this, features);
+        Env env(*this);
         Account alice{"alice"};
         Account bob{"bob"};
         Account carol{"carol"};
@@ -1301,12 +1301,12 @@ class Delegate_test : public beast::unit_test::suite
     }
 
     void
-    testSingleSignBadSecret(FeatureBitset features)
+    testSingleSignBadSecret()
     {
         testcase("test single sign with bad secret");
         using namespace jtx;
 
-        Env env(*this, features);
+        Env env(*this);
         Account alice{"alice"};
         Account bob{"bob"};
         Account carol{"carol"};
@@ -1332,12 +1332,12 @@ class Delegate_test : public beast::unit_test::suite
     }
 
     void
-    testMultiSign(FeatureBitset features)
+    testMultiSign()
     {
         testcase("test multi sign");
         using namespace jtx;
 
-        Env env(*this, features);
+        Env env(*this);
         Account alice{"alice"};
         Account bob{"bob"};
         Account carol{"carol"};
@@ -1371,12 +1371,12 @@ class Delegate_test : public beast::unit_test::suite
     }
 
     void
-    testMultiSignQuorumNotMet(FeatureBitset features)
+    testMultiSignQuorumNotMet()
     {
         testcase("test multi sign which does not meet quorum");
         using namespace jtx;
 
-        Env env(*this, features);
+        Env env(*this);
         Account alice{"alice"};
         Account bob{"bob"};
         Account carol{"carol"};
@@ -1414,23 +1414,22 @@ class Delegate_test : public beast::unit_test::suite
     void
     run() override
     {
-        FeatureBitset const all{jtx::supported_amendments()};
-        testFeatureDisabled(all - featurePermissionDelegation);
-        testDelegateSet(all);
-        testInvalidRequest(all);
-        testReserve(all);
-        testFee(all);
-        testSequence(all);
-        testAccountDelete(all);
-        testDelegateTransaction(all);
-        testPaymentGranular(all);
-        testTrustSetGranular(all);
-        testAccountSetGranular(all);
-        testMPTokenIssuanceSetGranular(all);
-        testSingleSign(all);
-        testSingleSignBadSecret(all);
-        testMultiSign(all);
-        testMultiSignQuorumNotMet(all);
+        testFeatureDisabled();
+        testDelegateSet();
+        testInvalidRequest();
+        testReserve();
+        testFee();
+        testSequence();
+        testAccountDelete();
+        testDelegateTransaction();
+        testPaymentGranular();
+        testTrustSetGranular();
+        testAccountSetGranular();
+        testMPTokenIssuanceSetGranular();
+        testSingleSign();
+        testSingleSignBadSecret();
+        testMultiSign();
+        testMultiSignQuorumNotMet();
     }
 };
 BEAST_DEFINE_TESTSUITE(Delegate, app, ripple);
