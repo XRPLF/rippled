@@ -75,7 +75,7 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         if (!issuance)
             return tecOBJECT_NOT_FOUND;
         if (!issuance->isFlag(lsfMPTCanTransfer))
-            return tecNO_AUTH;
+            return tecNO_AUTH;  // LCOV_EXCL_LINE
     }
     else if (vaultAsset.holds<Issue>())
     {
