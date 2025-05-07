@@ -31,12 +31,13 @@
 #include <type_traits>
 #include <utility>
 
-#ifdef BOOST_COMP_MSVC
+#ifdef _MSC_VER
+#pragma message("Using boost::multiprecision::uint128_t")
 #include <boost/multiprecision/cpp_int.hpp>
 using uint128_t = boost::multiprecision::uint128_t;
-#else   // !defined(_MSVC_LANG)
+#else   // !defined(_MSC_VER)
 using uint128_t = __uint128_t;
-#endif  // !defined(_MSVC_LANG)
+#endif  // !defined(_MSC_VER)
 
 namespace ripple {
 
