@@ -776,7 +776,6 @@ TRANSACTION(ttLOAN_DRAW, 81, LoanDraw, noPriv, ({
     {sfAmount, soeREQUIRED, soeMPTSupported},
 }))
 
-#if 0
 /** The Borrower uses this transaction to make a Payment on the Loan. */
 #if TRANSACTION_INCLUDE
 #   include <xrpld/app/tx/detail/LoanPay.h>
@@ -785,7 +784,6 @@ TRANSACTION(ttLOAN_PAY, 82, LoanPay, noPriv, ({
     {sfLoanID, soeREQUIRED},
     {sfAmount, soeREQUIRED, soeMPTSupported},
 }))
-#endif
 
 /** This system-generated transaction type is used to update the status of the various amendments.
 

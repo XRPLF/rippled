@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <xrpld/app/tx/detail/LoanDraw.h>
+#include <xrpld/app/tx/detail/LoanPay.h>
 //
 #include <xrpld/app/misc/LendingHelpers.h>
 #include <xrpld/ledger/ApplyView.h>
@@ -45,13 +45,13 @@
 namespace ripple {
 
 bool
-LoanDraw::isEnabled(PreflightContext const& ctx)
+LoanPay::isEnabled(PreflightContext const& ctx)
 {
     return lendingProtocolEnabled(ctx);
 }
 
 NotTEC
-LoanDraw::doPreflight(PreflightContext const& ctx)
+LoanPay::doPreflight(PreflightContext const& ctx)
 {
     if (ctx.tx[sfLoanID] == beast::zero)
         return temINVALID;
@@ -63,7 +63,7 @@ LoanDraw::doPreflight(PreflightContext const& ctx)
 }
 
 TER
-LoanDraw::preclaim(PreclaimContext const& ctx)
+LoanPay::preclaim(PreclaimContext const& ctx)
 {
     auto const& tx = ctx.tx;
 
@@ -78,22 +78,32 @@ LoanDraw::preclaim(PreclaimContext const& ctx)
         return tecNO_ENTRY;
     }
 
+    auto const principalOutstanding = loanSle->at(sfPrincipalOutstanding);
+    TenthBips32 const interestRate{loanSle->at(sfInterestRate)};
+    auto const paymentInterval = loanSle->at(sfPaymentInterval);
+    auto const paymentRemaining = loanSle->at(sfPaymentRemaining);
+    TenthBips32 const lateInterestRate{loanSle->at(sfLateInterestRate)};
+    auto const latePaymentFee = loanSle->at(sfLatePaymentFee);
+    auto const prevPaymentDate = loanSle->at(sfPreviousPaymentDate);
+    auto const startDate = loanSle->at(sfStartDate);
+    auto const nextDueDate = loanSle->at(sfNextPaymentDueDate);
+
     if (loanSle->at(sfBorrower) != account)
     {
         JLOG(ctx.j.warn()) << "Loan does not belong to the account.";
         return tecNO_PERMISSION;
     }
 
-    if (loanSle->isFlag(lsfLoanImpaired) || loanSle->isFlag(lsfLoanDefault))
-    {
-        JLOG(ctx.j.warn()) << "Loan is impaired or in default.";
-        return tecNO_PERMISSION;
-    }
-
-    if (!hasExpired(ctx.view, loanSle->at(sfStartDate)))
+    if (!hasExpired(ctx.view, startDate))
     {
         JLOG(ctx.j.warn()) << "Loan has not started yet.";
         return tecTOO_SOON;
+    }
+
+    if (paymentRemaining == 0 || principalOutstanding == 0)
+    {
+        JLOG(ctx.j.warn()) << "Loan is already paid off.";
+        return tecKILLED;
     }
 
     auto const loanBrokerID = loanSle->at(sfLoanBrokerID);
@@ -125,12 +135,6 @@ LoanDraw::preclaim(PreclaimContext const& ctx)
         return tecWRONG_ASSET;
     }
 
-    if (loanSle->at(sfAssetsAvailable) < amount)
-    {
-        JLOG(ctx.j.warn()) << "Loan does not have enough assets available.";
-        return tecINSUFFICIENT_FUNDS;
-    }
-
     if (isFrozen(ctx.view, brokerPseudoAccount, asset))
     {
         JLOG(ctx.j.warn()) << "Loan Broker pseudo-account is frozen.";
@@ -146,17 +150,47 @@ LoanDraw::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    if (hasExpired(ctx.view, loanSle->at(sfNextPaymentDueDate)))
+    auto const periodicPaymentAmount = LoanPeriodicPayment(
+        asset,
+        principalOutstanding,
+        interestRate,
+        paymentInterval,
+        paymentRemaining);
+
+    if (hasExpired(ctx.view, nextDueDate))
     {
-        JLOG(ctx.j.warn()) << "Loan payment is overdue.";
-        return tecNO_PERMISSION;
+        // Need to pay the late payment amount
+        auto const latePaymentInterest = LoanLatePaymentInterest(
+            asset,
+            principalOutstanding,
+            lateInterestRate,
+            ctx.view.parentCloseTime(),
+            startDate,
+            prevPaymentDate);
+        auto const latePaymentAmount =
+            periodicPaymentAmount + latePaymentInterest + latePaymentFee;
+        if (amount < latePaymentAmount)
+        {
+            JLOG(ctx.j.warn())
+                << "Late loan payment amount is insufficient. Due: "
+                << latePaymentAmount << ", paid: " << amount;
+            return tecINSUFFICIENT_PAYMENT;
+        }
+    }
+    else if (amount < periodicPaymentAmount)
+    {
+        // Need to pay the regular payment amount
+        JLOG(ctx.j.warn())
+            << "Periodic loan payment amount is insufficient. Due: "
+            << periodicPaymentAmount << ", paid: " << amount;
+        return tecINSUFFICIENT_PAYMENT;
     }
 
     return tesSUCCESS;
 }
 
 TER
-LoanDraw::doApply()
+LoanPay::doApply()
 {
     auto const& tx = ctx_.tx;
     auto& view = ctx_.view();

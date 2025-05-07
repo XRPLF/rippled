@@ -48,7 +48,7 @@ namespace ripple {
 bool
 LoanBrokerSet::isEnabled(PreflightContext const& ctx)
 {
-    return LendingProtocolEnabled(ctx);
+    return lendingProtocolEnabled(ctx);
 }
 
 NotTEC

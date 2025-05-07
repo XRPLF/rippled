@@ -48,7 +48,7 @@ namespace ripple {
 bool
 LoanManage::isEnabled(PreflightContext const& ctx)
 {
-    return LendingProtocolEnabled(ctx);
+    return lendingProtocolEnabled(ctx);
 }
 
 std::uint32_t
@@ -377,7 +377,7 @@ LoanManage::doApply()
     TenthBips32 const managementFeeRate{brokerSle->at(sfManagementFeeRate)};
     auto const paymentInterval = loanSle->at(sfPaymentInterval);
     auto const paymentsRemaining = loanSle->at(sfPaymentRemaining);
-    auto const interestOutstanding = LoanInterestOutstandingToVault(
+    auto const interestOutstanding = LoanInterestOutstandingMinusFee(
         vaultAsset,
         principalOutstanding.value(),
         interestRate,

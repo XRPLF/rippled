@@ -45,7 +45,7 @@ namespace ripple {
 bool
 LoanBrokerCoverDeposit::isEnabled(PreflightContext const& ctx)
 {
-    return LendingProtocolEnabled(ctx);
+    return lendingProtocolEnabled(ctx);
 }
 
 NotTEC

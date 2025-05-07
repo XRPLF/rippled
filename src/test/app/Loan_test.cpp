@@ -159,7 +159,7 @@ class Loan_test : public beast::unit_test::suite
             {
                 TenthBips16 const managementFeeRate{
                     brokerSle->at(sfManagementFeeRate)};
-                auto const loanInterest = LoanInterestOutstandingToVault(
+                auto const loanInterest = LoanInterestOutstandingMinusFee(
                     broker.asset,
                     principalOutstanding,
                     interestRate,
@@ -261,7 +261,7 @@ class Loan_test : public beast::unit_test::suite
                             env.test.BEAST_EXPECT(
                                 vaultSle->at(sfLossUnrealized) ==
                                 principalOutstanding +
-                                    LoanInterestOutstandingToVault(
+                                    LoanInterestOutstandingMinusFee(
                                         broker.asset,
                                         principalOutstanding,
                                         interestRate,

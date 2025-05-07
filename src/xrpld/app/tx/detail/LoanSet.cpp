@@ -49,7 +49,7 @@ namespace ripple {
 bool
 LoanSet::isEnabled(PreflightContext const& ctx)
 {
-    return LendingProtocolEnabled(ctx);
+    return lendingProtocolEnabled(ctx);
 }
 
 std::uint32_t
@@ -359,7 +359,7 @@ LoanSet::doApply()
     TenthBips32 const managementFeeRate{brokerSle->at(sfManagementFeeRate)};
     // The portion of the loan interest that will go to the vault (total
     // interest minus the management fee)
-    auto const loanInterestToVault = LoanInterestOutstandingToVault(
+    auto const loanInterestToVault = LoanInterestOutstandingMinusFee(
         vaultAsset,
         principalRequested,
         interestRate,

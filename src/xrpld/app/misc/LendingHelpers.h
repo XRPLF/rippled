@@ -20,6 +20,8 @@
 #ifndef RIPPLE_APP_MISC_LENDINGHELPERS_H_INCLUDED
 #define RIPPLE_APP_MISC_LENDINGHELPERS_H_INCLUDED
 
+#include <xrpld/ledger/ApplyView.h>
+
 #include <xrpl/basics/Number.h>
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Feature.h>
@@ -31,21 +33,22 @@ struct PreflightContext;
 
 // Lending protocol has dependencies, so capture them here.
 bool
-LendingProtocolEnabled(PreflightContext const& ctx);
+lendingProtocolEnabled(PreflightContext const& ctx);
 
 namespace detail {
 // These functions should rarely be used directly. More often, the ultimate
 // result needs to be roundToAsset'd.
 
-Number
-LoanPeriodicRate(TenthBips32 interestRate, std::uint32_t paymentInterval);
+struct LoanPaymentParts
+{
+    Number principalPaid;
+    Number interestPaid;
+    Number valueChange;
+    Number feePaid;
+};
 
 Number
-LoanPeriodicPayment(
-    Number principalOutstanding,
-    TenthBips32 interestRate,
-    std::uint32_t paymentInterval,
-    std::uint32_t paymentsRemaining);
+LoanPeriodicRate(TenthBips32 interestRate, std::uint32_t paymentInterval);
 
 Number
 LoanTotalValueOutstanding(
@@ -61,11 +64,37 @@ LoanTotalInterestOutstanding(
     std::uint32_t paymentInterval,
     std::uint32_t paymentsRemaining);
 
+Number
+LoanPeriodicPayment(
+    Number principalOutstanding,
+    TenthBips32 interestRate,
+    std::uint32_t paymentInterval,
+    std::uint32_t paymentsRemaining);
+
+Number
+LoanLatePaymentInterest(
+    Number principalOutstanding,
+    TenthBips32 lateInterestRate,
+    NetClock::time_point parentCloseTime,
+    std::uint32_t startDate,
+    std::uint32_t prevPaymentDate);
+
+LoanPaymentParts
+LoanComputePaymentParts(ApplyView& view, SLE::ref loan);
+
 }  // namespace detail
 
 template <AssetType A>
 Number
-LoanInterestOutstandingToVault(
+MinusFee(A const& asset, Number value, TenthBips32 managementFeeRate)
+{
+    return roundToAsset(
+        asset, tenthBipsOfValue(value, tenthBipsPerUnity - managementFeeRate));
+}
+
+template <AssetType A>
+Number
+LoanInterestOutstandingMinusFee(
     A const& asset,
     Number principalOutstanding,
     TenthBips32 interestRate,
@@ -73,15 +102,72 @@ LoanInterestOutstandingToVault(
     std::uint32_t paymentsRemaining,
     TenthBips32 managementFeeRate)
 {
+    return MinusFee(
+        asset,
+        detail::LoanTotalInterestOutstanding(
+            principalOutstanding,
+            interestRate,
+            paymentInterval,
+            paymentsRemaining),
+        managementFeeRate);
+}
+
+template <AssetType A>
+Number
+LoanPeriodicPayment(
+    A const& asset,
+    Number principalOutstanding,
+    TenthBips32 interestRate,
+    std::uint32_t paymentInterval,
+    std::uint32_t paymentsRemaining)
+{
     return roundToAsset(
         asset,
-        tenthBipsOfValue(
-            detail::LoanTotalInterestOutstanding(
-                principalOutstanding,
-                interestRate,
-                paymentInterval,
-                paymentsRemaining),
-            tenthBipsPerUnity - managementFeeRate));
+        detail::LoanPeriodicPayment(
+            principalOutstanding,
+            interestRate,
+            paymentInterval,
+            paymentsRemaining));
+}
+
+template <AssetType A>
+Number
+LoanLatePaymentInterest(
+    A const& asset,
+    Number principalOutstanding,
+    TenthBips32 lateInterestRate,
+    NetClock::time_point parentCloseTime,
+    std::uint32_t startDate,
+    std::uint32_t prevPaymentDate)
+{
+    return roundToAsset(
+        asset,
+        detail::LoanLatePaymentInterest(
+            principalOutstanding,
+            lateInterestRate,
+            parentCloseTime,
+            startDate,
+            prevPaymentDate));
+}
+
+struct LoanPaymentParts
+{
+    STAmount principalPaid;
+    STAmount interestPaid;
+    STAmount valueChange;
+    STAmount feePaid;
+};
+
+template <AssetType A>
+LoanPaymentParts
+LoanComputePaymentParts(A const& asset, ApplyView& view, SLE::ref loan)
+{
+    auto const parts = detail::LoanComputePaymentParts(view, loan);
+    return LoanPaymentParts{
+        roundToAsset(asset, parts.principalPaid),
+        roundToAsset(asset, parts.interestPaid),
+        roundToAsset(asset, parts.valueChange),
+        roundToAsset(asset, parts.feePaid)};
 }
 
 }  // namespace ripple
