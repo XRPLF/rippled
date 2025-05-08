@@ -230,7 +230,7 @@ LoanPay::doApply()
     // Move funds
     STAmount const paidToVault(asset, totalPaidToVault);
     STAmount const paidToBroker(asset, totalFee);
-    XRPL_ASSERT2(
+    XRPL_ASSERT_PARTS(
         paidToVault + paidToBroker == amount,
         "ripple::LoanPay::doApply",
         "correct payment totals");
