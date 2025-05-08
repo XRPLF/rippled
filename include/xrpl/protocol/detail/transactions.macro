@@ -383,7 +383,7 @@ TRANSACTION(ttCLAWBACK, 30, Clawback,
 #endif
 TRANSACTION(ttAMM_CLAWBACK, 31, AMMClawback,
     Delegation::delegatable,
-    overrideFreeze, ({
+    mayDeleteAcct | overrideFreeze, ({
     {sfHolder, soeREQUIRED},
     {sfAsset, soeREQUIRED},
     {sfAsset2, soeREQUIRED},
@@ -747,7 +747,7 @@ TRANSACTION(ttDELEGATE_SET, 64, DelegateSet,
 #endif
 TRANSACTION(ttVAULT_CREATE, 65, VaultCreate,
     Delegation::delegatable,
-    createMPTIssuance, ({
+    createPseudoAcct | createMPTIssuance, ({
     {sfAsset, soeREQUIRED, soeMPTSupported},
     {sfAssetsMaximum, soeOPTIONAL},
     {sfMPTokenMetadata, soeOPTIONAL},
@@ -775,7 +775,7 @@ TRANSACTION(ttVAULT_SET, 66, VaultSet,
 #endif
 TRANSACTION(ttVAULT_DELETE, 67, VaultDelete,
     Delegation::delegatable,
-    destroyMPTIssuance, ({
+    mustDeleteAcct | destroyMPTIssuance, ({
     {sfVaultID, soeREQUIRED},
 }))
 
@@ -822,7 +822,7 @@ TRANSACTION(ttVAULT_CLAWBACK, 70, VaultClawback,
 #endif
 TRANSACTION(ttLOAN_BROKER_SET, 74, LoanBrokerSet,
     Delegation::delegatable,
-    mayAuthorizeMPT, ({
+    createPseudoAcct | mayAuthorizeMPT, ({
     {sfVaultID, soeREQUIRED},
     {sfLoanBrokerID, soeOPTIONAL},
     {sfData, soeOPTIONAL},
@@ -838,7 +838,7 @@ TRANSACTION(ttLOAN_BROKER_SET, 74, LoanBrokerSet,
 #endif
 TRANSACTION(ttLOAN_BROKER_DELETE, 75, LoanBrokerDelete,
     Delegation::delegatable,
-    mayAuthorizeMPT, ({
+    mustDeleteAcct | mayAuthorizeMPT, ({
     {sfLoanBrokerID, soeREQUIRED},
 }))
 
