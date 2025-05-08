@@ -67,9 +67,9 @@ public:
     static Permission const&
     getInstance();
 
-    Permission(const Permission&) = delete;
+    Permission(Permission const&) = delete;
     Permission&
-    operator=(const Permission&) = delete;
+    operator=(Permission const&) = delete;
 
     std::optional<std::uint32_t>
     getGranularValue(std::string const& name) const;
@@ -85,7 +85,7 @@ public:
 
     // for tx level permission, permission value is equal to tx type plus one
     uint32_t
-    txToPermissionType(const TxType& type) const;
+    txToPermissionType(TxType const& type) const;
 
     // tx type value is permission value minus one
     TxType
