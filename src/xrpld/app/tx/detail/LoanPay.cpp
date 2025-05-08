@@ -150,42 +150,6 @@ LoanPay::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    auto const periodicPaymentAmount = LoanPeriodicPayment(
-        asset,
-        principalOutstanding,
-        interestRate,
-        paymentInterval,
-        paymentRemaining);
-
-    if (hasExpired(ctx.view, nextDueDate))
-    {
-        // Need to pay the late payment amount
-        auto const latePaymentInterest = LoanLatePaymentInterest(
-            asset,
-            principalOutstanding,
-            lateInterestRate,
-            ctx.view.parentCloseTime(),
-            startDate,
-            prevPaymentDate);
-        auto const latePaymentAmount =
-            periodicPaymentAmount + latePaymentInterest + latePaymentFee;
-        if (amount < latePaymentAmount)
-        {
-            JLOG(ctx.j.warn())
-                << "Late loan payment amount is insufficient. Due: "
-                << latePaymentAmount << ", paid: " << amount;
-            return tecINSUFFICIENT_PAYMENT;
-        }
-    }
-    else if (amount < periodicPaymentAmount)
-    {
-        // Need to pay the regular payment amount
-        JLOG(ctx.j.warn())
-            << "Periodic loan payment amount is insufficient. Due: "
-            << periodicPaymentAmount << ", paid: " << amount;
-        return tecINSUFFICIENT_PAYMENT;
-    }
-
     return tesSUCCESS;
 }
 
@@ -206,19 +170,91 @@ LoanPay::doApply()
     auto const brokerSle = view.peek(keylet::loanbroker(brokerID));
     if (!brokerSle)
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+    auto const brokerOwner = brokerSle->at(sfOwner);
     auto const brokerPseudoAccount = brokerSle->at(sfAccount);
+    auto const vaultID = brokerSle->at(sfVaultID);
+    auto const vaultSle = view.peek(keylet::vault(vaultID));
+    if (!vaultSle)
+        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+    auto const vaultPseudoAccount = vaultSle->at(sfAccount);
+    auto const asset = vaultSle->at(sfAsset);
+
+    //------------------------------------------------------
+    // Loan object state changes
+    view.update(loanSle);
+
+    Expected<LoanPaymentParts, TER> paymentParts =
+        loanComputePaymentParts(asset, view, loanSle, amount, j_);
+
+    if (!paymentParts)
+        return paymentParts.error();
+
+    // If the loan was impaired, it isn't anymore.
+    loanSle->clearFlag(lsfLoanImpaired);
+
+    //------------------------------------------------------
+    // LoanBroker object state changes
+    view.update(brokerSle);
+
+    TenthBips32 managementFeeRate{brokerSle->at(sfManagementFeeRate)};
+    auto const managementFee = roundToAsset(
+        asset, tenthBipsOfValue(paymentParts->interestPaid, managementFeeRate));
+
+    auto const totalPaidToVault = paymentParts->principalPaid +
+        paymentParts->interestPaid - managementFee;
+
+    auto const totalFee = paymentParts->feePaid + managementFee;
+
+    // If there is not enough first-loss capital
+    auto coverAvailableField = brokerSle->at(sfCoverAvailable);
+    auto debtTotalField = brokerSle->at(sfDebtTotal);
+    TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
+
+    bool const sufficientCover = coverAvailableField >=
+        tenthBipsOfValue(debtTotalField.value(), coverRateMinimum);
+    if (!sufficientCover)
+    {
+        // Add the fee to to First Loss Cover Pool
+        coverAvailableField += totalFee;
+    }
+
+    // Decrease LoanBroker Debt by the amount paid, add the Loan value change,
+    // and subtract the change in the management fee
+    auto const vaultValueChange = paymentParts->valueChange -
+        tenthBipsOfValue(paymentParts->valueChange, managementFeeRate);
+    debtTotalField += vaultValueChange - totalPaidToVault;
+
+    //------------------------------------------------------
+    // Vault object state changes
+    view.update(vaultSle);
+
+    vaultSle->at(sfAssetsAvailable) += totalPaidToVault;
+    vaultSle->at(sfAssetsTotal) += vaultValueChange;
+
+    // Move funds
+    STAmount const paidToVault(asset, totalPaidToVault);
+    STAmount const paidToBroker(asset, totalFee);
+    XRPL_ASSERT2(
+        paidToVault + paidToBroker == amount,
+        "ripple::LoanPay::doApply",
+        "correct payment totals");
 
     if (auto const ter = accountSend(
             view,
-            brokerPseudoAccount,
             account_,
-            amount,
+            vaultPseudoAccount,
+            paidToVault,
             j_,
             WaiveTransferFee::Yes))
         return ter;
-
-    loanSle->at(sfAssetsAvailable) -= amount;
-    view.update(loanSle);
+    if (auto const ter = accountSend(
+            view,
+            account_,
+            sufficientCover ? brokerOwner : brokerPseudoAccount,
+            paidToBroker,
+            j_,
+            WaiveTransferFee::Yes))
+        return ter;
 
     return tesSUCCESS;
 }

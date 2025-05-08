@@ -377,7 +377,7 @@ LoanManage::doApply()
     TenthBips32 const managementFeeRate{brokerSle->at(sfManagementFeeRate)};
     auto const paymentInterval = loanSle->at(sfPaymentInterval);
     auto const paymentsRemaining = loanSle->at(sfPaymentRemaining);
-    auto const interestOutstanding = LoanInterestOutstandingMinusFee(
+    auto const interestOutstanding = loanInterestOutstandingMinusFee(
         vaultAsset,
         principalOutstanding.value(),
         interestRate,
