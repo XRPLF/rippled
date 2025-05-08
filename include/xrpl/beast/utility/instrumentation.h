@@ -40,7 +40,7 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 
 #define XRPL_ASSERT ALWAYS_OR_UNREACHABLE
 #define XRPL_ASSERT2(cond, location, message, ...) \
-    XRPL_ASSERT(cond, location##" : "##message)
+    XRPL_ASSERT(cond, std::string(location) + " : " + message)
 
 // How to use the instrumentation macros:
 //

@@ -80,13 +80,9 @@ LoanPay::preclaim(PreclaimContext const& ctx)
 
     auto const principalOutstanding = loanSle->at(sfPrincipalOutstanding);
     TenthBips32 const interestRate{loanSle->at(sfInterestRate)};
-    auto const paymentInterval = loanSle->at(sfPaymentInterval);
     auto const paymentRemaining = loanSle->at(sfPaymentRemaining);
     TenthBips32 const lateInterestRate{loanSle->at(sfLateInterestRate)};
-    auto const latePaymentFee = loanSle->at(sfLatePaymentFee);
-    auto const prevPaymentDate = loanSle->at(sfPreviousPaymentDate);
     auto const startDate = loanSle->at(sfStartDate);
-    auto const nextDueDate = loanSle->at(sfNextPaymentDueDate);
 
     if (loanSle->at(sfBorrower) != account)
     {
