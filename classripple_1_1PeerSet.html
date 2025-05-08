@@ -109,9 +109,9 @@ Public Member Functions</h2></td></tr>
 <tr class="separator:a751ba29d7fa5e1411ddd406e84f84d67"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a91ee198dcb5053d841a2d220ca662ba7"><td class="memItemLeft" align="right" valign="top">virtual void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerSet.html#a91ee198dcb5053d841a2d220ca662ba7">sendRequest</a> (::google::protobuf::Message const &amp;message, protocol::MessageType type, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Peer.html">Peer</a> &gt; const &amp;peer)=0</td></tr>
 <tr class="separator:a91ee198dcb5053d841a2d220ca662ba7"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a9094a203988f57254cadc3ef7c7a103a"><td class="memItemLeft" align="right" valign="top">virtual const <a class="elRef" href="http://en.cppreference.com/w/cpp/container/set.html">std::set</a>&lt; <a class="el" href="classripple_1_1Peer.html#a56cc3cdd9c73921f23cb43a2bfa696a1">Peer::id_t</a> &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerSet.html#a9094a203988f57254cadc3ef7c7a103a">getPeerIds</a> () const =0</td></tr>
-<tr class="memdesc:a9094a203988f57254cadc3ef7c7a103a"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the set of ids of previously added peers  <a href="classripple_1_1PeerSet.html#a9094a203988f57254cadc3ef7c7a103a">More...</a><br /></td></tr>
-<tr class="separator:a9094a203988f57254cadc3ef7c7a103a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a19e0c6ddb4adc29007d8702b8bd40916"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/container/set.html">std::set</a>&lt; <a class="el" href="classripple_1_1Peer.html#a56cc3cdd9c73921f23cb43a2bfa696a1">Peer::id_t</a> &gt; const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerSet.html#a19e0c6ddb4adc29007d8702b8bd40916">getPeerIds</a> () const =0</td></tr>
+<tr class="memdesc:a19e0c6ddb4adc29007d8702b8bd40916"><td class="mdescLeft">&#160;</td><td class="mdescRight">get the set of ids of previously added peers  <a href="classripple_1_1PeerSet.html#a19e0c6ddb4adc29007d8702b8bd40916">More...</a><br /></td></tr>
+<tr class="separator:a19e0c6ddb4adc29007d8702b8bd40916"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p >Supports data retrieval by managing a set of peers. </p>
@@ -278,8 +278,8 @@ template&lt;typename MessageType &gt; </div>
 
 </div>
 </div>
-<a id="a9094a203988f57254cadc3ef7c7a103a" name="a9094a203988f57254cadc3ef7c7a103a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a9094a203988f57254cadc3ef7c7a103a">&#9670;&#160;</a></span>getPeerIds()</h2>
+<a id="a19e0c6ddb4adc29007d8702b8bd40916" name="a19e0c6ddb4adc29007d8702b8bd40916"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a19e0c6ddb4adc29007d8702b8bd40916">&#9670;&#160;</a></span>getPeerIds()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -288,7 +288,7 @@ template&lt;typename MessageType &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual const <a class="elRef" href="http://en.cppreference.com/w/cpp/container/set.html">std::set</a>&lt; <a class="el" href="classripple_1_1Peer.html#a56cc3cdd9c73921f23cb43a2bfa696a1">Peer::id_t</a> &gt; &amp; ripple::PeerSet::getPeerIds </td>
+          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/container/set.html">std::set</a>&lt; <a class="el" href="classripple_1_1Peer.html#a56cc3cdd9c73921f23cb43a2bfa696a1">Peer::id_t</a> &gt; const  &amp; ripple::PeerSet::getPeerIds </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -303,7 +303,7 @@ template&lt;typename MessageType &gt; </div>
 
 <p>get the set of ids of previously added peers </p>
 
-<p>Implemented in <a class="el" href="structripple_1_1test_1_1TestPeerSet.html#af9028f9dd084400397b924a2be6da3f0">ripple::test::TestPeerSet</a>, <a class="el" href="classripple_1_1PeerSetImpl.html#a9b4e77787bac0d756b1dda78fa7771f6">ripple::PeerSetImpl</a>, and <a class="el" href="classripple_1_1DummyPeerSet.html#a641e5266e952248fddf80e6cc027f9bd">ripple::DummyPeerSet</a>.</p>
+<p>Implemented in <a class="el" href="structripple_1_1test_1_1TestPeerSet.html#ae2219852ebf7c6a76cbe930b76780811">ripple::test::TestPeerSet</a>, <a class="el" href="classripple_1_1PeerSetImpl.html#ab7f50468a49ec1710f95fcb42fce10b1">ripple::PeerSetImpl</a>, and <a class="el" href="classripple_1_1DummyPeerSet.html#a702cd2490b72fa679e9fd452fdc94008">ripple::DummyPeerSet</a>.</p>
 
 </div>
 </div>

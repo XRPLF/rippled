@@ -246,8 +246,8 @@ Private Attributes</h2></td></tr>
 <tr class="separator:afe9ffe7340cdb8c89133cb8e9c362996"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a524a13145148ff9d6e69328577a11446"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classripple_1_1Consensus.html#ab3549c5ca51ce1c6fcbb4ed8ccc65d75">Ledger_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Consensus.html#a524a13145148ff9d6e69328577a11446">previousLedger_</a></td></tr>
 <tr class="separator:a524a13145148ff9d6e69328577a11446"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:ab57a91d996ce21835688096fc17de88b"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a46c521271235f4e2715d7fa8b68940ca">hash_map</a>&lt; typename TxSet_t::ID, const <a class="el" href="classripple_1_1Consensus.html#a524b889667609917d080a6ec775ab2e4">TxSet_t</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Consensus.html#ab57a91d996ce21835688096fc17de88b">acquired_</a></td></tr>
-<tr class="separator:ab57a91d996ce21835688096fc17de88b"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a08e34bf8fcdea5788758f790e97ef3e8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a46c521271235f4e2715d7fa8b68940ca">hash_map</a>&lt; typename TxSet_t::ID, <a class="el" href="classripple_1_1Consensus.html#a524b889667609917d080a6ec775ab2e4">TxSet_t</a> const  &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Consensus.html#a08e34bf8fcdea5788758f790e97ef3e8">acquired_</a></td></tr>
+<tr class="separator:a08e34bf8fcdea5788758f790e97ef3e8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afa98029589f3d8025211f44f70484b3e"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1Consensus.html#ad0357314ce3da5e84d4b4fdadb07f11b">Result</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Consensus.html#afa98029589f3d8025211f44f70484b3e">result_</a></td></tr>
 <tr class="separator:afa98029589f3d8025211f44f70484b3e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aedc9943cfe16c077edd70659be0123e1"><td class="memItemLeft" align="right" valign="top"><a class="el" href="structripple_1_1ConsensusCloseTimes.html">ConsensusCloseTimes</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1Consensus.html#aedc9943cfe16c077edd70659be0123e1">rawCloseTimes_</a></td></tr>
@@ -1307,7 +1307,7 @@ template&lt;class Adaptor &gt; </div>
 <p >In the establish phase, the ledger has closed and we work with peers to reach consensus. Update our position only on the timer, and in this phase.</p>
 <p >If we have consensus, move to the accepted phase. </p>
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01364">1364</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01366">1366</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1345,7 +1345,7 @@ template&lt;class Adaptor &gt; </div>
 <p >No particular threshold guarantees consensus. Lower thresholds are easier to achieve than higher, but higher thresholds are more likely to reach consensus. Cycle through the phases if lack of synchronization continues.</p>
 <p >Current information indicates that no phase is likely to be intrinsically better than any other: the lower the threshold, the less likely that up-to-date nodes will be able to reach consensus without the laggards. But the higher the threshold, the longer the likely resulting pause. 100% is slightly less desirable in the long run because the potential of a single dawdling peer to slow down everything else. So if we accept that no phase is any better than any other phase, but that all of them will potentially enable us to arrive at consensus, cycling through them seems to be appropriate. Further, if we do reach the point of having to cycle back around, then it's likely that something else out of the scope of this delay mechanism is wrong with the network.</p>
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01242">1242</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01243">1243</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1375,7 +1375,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01432">1432</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01434">1434</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1405,7 +1405,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01490">1490</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01492">1492</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1435,7 +1435,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01680">1680</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01682">1682</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1475,7 +1475,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01805">1805</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01807">1807</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1515,7 +1515,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01876">1876</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01878">1878</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1545,7 +1545,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01786">1786</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01788">1788</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1575,7 +1575,7 @@ template&lt;class Adaptor &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01896">1896</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="Consensus_8h_source.html#l01898">1898</a> of file <a class="el" href="Consensus_8h_source.html">Consensus.h</a>.</p>
 
 </div>
 </div>
@@ -1973,8 +1973,8 @@ template&lt;class Adaptor &gt; </div>
 
 </div>
 </div>
-<a id="ab57a91d996ce21835688096fc17de88b" name="ab57a91d996ce21835688096fc17de88b"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#ab57a91d996ce21835688096fc17de88b">&#9670;&#160;</a></span>acquired_</h2>
+<a id="a08e34bf8fcdea5788758f790e97ef3e8" name="a08e34bf8fcdea5788758f790e97ef3e8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a08e34bf8fcdea5788758f790e97ef3e8">&#9670;&#160;</a></span>acquired_</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1985,7 +1985,7 @@ template&lt;class Adaptor &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname"><a class="el" href="namespaceripple.html#a46c521271235f4e2715d7fa8b68940ca">hash_map</a>&lt;typename TxSet_t::ID, const <a class="el" href="classripple_1_1Consensus.html#a524b889667609917d080a6ec775ab2e4">TxSet_t</a>&gt; <a class="el" href="classripple_1_1Consensus.html">ripple::Consensus</a>&lt; Adaptor &gt;::acquired_</td>
+          <td class="memname"><a class="el" href="namespaceripple.html#a46c521271235f4e2715d7fa8b68940ca">hash_map</a>&lt;typename TxSet_t::ID, <a class="el" href="classripple_1_1Consensus.html#a524b889667609917d080a6ec775ab2e4">TxSet_t</a> const&gt; <a class="el" href="classripple_1_1Consensus.html">ripple::Consensus</a>&lt; Adaptor &gt;::acquired_</td>
         </tr>
       </table>
   </td>

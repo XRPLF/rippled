@@ -155,7 +155,7 @@ var searchData=
   ['expectoffers_152',['expectOffers',['../namespaceripple_1_1test_1_1jtx.html#a42c675c50453fc1b12f9e6a3bd169035',1,'ripple::test::jtx']]],
   ['expectprice_153',['expectPrice',['../classripple_1_1test_1_1jtx_1_1oracle_1_1Oracle.html#a8e282a6e9e8aa286b579841e68f1826e',1,'ripple::test::jtx::oracle::Oracle']]],
   ['expectresult_154',['expectResult',['../classripple_1_1test_1_1TestOutputSuite.html#a00c9442a96fffa188458039aba3d4efc',1,'ripple::test::TestOutputSuite::expectResult()'],['../classJson_1_1JsonObject__test.html#a6033852e7f20d03ff4a95021b507e662',1,'Json::JsonObject_test::expectResult()']]],
-  ['expecttoken_155',['expectToken',['../classJson_1_1Reader.html#a442d779d60825634625040eed83eadc5',1,'Json::Reader']]],
+  ['expecttoken_155',['expectToken',['../classJson_1_1Reader.html#a42fabdc924e82f84457c25d2f97cc12f',1,'Json::Reader']]],
   ['expecttradingfee_156',['expectTradingFee',['../classripple_1_1test_1_1jtx_1_1AMM.html#a7b8b82f23b5bda291a992947b10abc3e',1,'ripple::test::jtx::AMM']]],
   ['expectvalues_157',['expectValues',['../structripple_1_1SeqProxy__test.html#a4a9009571f33a8133772983678607333',1,'ripple::SeqProxy_test']]],
   ['expint_158',['expint',['http://en.cppreference.com/w/cpp/numeric/special_math/expint.html',1,'std']]],

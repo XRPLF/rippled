@@ -8,7 +8,7 @@ var searchData=
   ['xmin_5f_5',['xmin_',['../classripple_1_1test_1_1csf_1_1PowerLawDistribution.html#ae5d0dad195562fa147ba23f698709a30',1,'ripple::test::csf::PowerLawDistribution']]],
   ['xrp_6',['xrp',['../structripple_1_1test_1_1jtx_1_1MPTInit.html#a4ba79b663438d5b0c2752f9b4f6f7800',1,'ripple::test::jtx::MPTInit::xrp()'],['../structripple_1_1AmountSpec.html#a384d7bdc0d3dc3295fb3f2a86bb6272f',1,'ripple::AmountSpec::xrp()'],['../structripple_1_1EitherAmount.html#aec8b0d37cced4ef89d51eaff7fc8e6f8',1,'ripple::EitherAmount::xrp()']]],
   ['xrp_7',['XRP',['../namespaceripple_1_1test_1_1jtx.html#aea9cd3d4e6b5df2e62d53b34b605957e',1,'ripple::test::jtx']]],
-  ['xrp_5fdust_8',['xrp_dust',['../structripple_1_1test_1_1jtx_1_1XChainBridgeObjects.html#a81f9a362295c2538411a619595792a45',1,'ripple::test::jtx::XChainBridgeObjects']]],
+  ['xrp_5fdust_8',['xrp_dust',['../structripple_1_1test_1_1jtx_1_1XChainBridgeObjects.html#a3f3e734dae892724281b39922b0b80b8',1,'ripple::test::jtx::XChainBridgeObjects']]],
   ['xrp_5fflow_5f_9',['xrp_flow_',['../classripple_1_1Taker.html#ab99434315e89cedcba47d5170fbd6cef',1,'ripple::Taker']]],
   ['xrp_5fledger_5fearliest_5ffees_10',['XRP_LEDGER_EARLIEST_FEES',['../namespaceripple.html#a6fc7a232cc9b90d4b5846057977fcf63',1,'ripple']]],
   ['xrp_5fledger_5fearliest_5fseq_11',['XRP_LEDGER_EARLIEST_SEQ',['../namespaceripple.html#a2c550f167665d94744b297523ff07de2',1,'ripple']]],

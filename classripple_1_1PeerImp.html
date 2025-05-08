@@ -385,8 +385,8 @@ Private Member Functions</h2></td></tr>
 <tr class="separator:a84d4a07ead2085223f3969cbe6734e9d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5e02cee2bfb4677906e9e2eeca08b517"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerImp.html#a5e02cee2bfb4677906e9e2eeca08b517">addLedger</a> (<a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const &amp;hash, <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/thread/mutex.html">std::mutex</a> &gt; const &amp;lockedRecentLock)</td></tr>
 <tr class="separator:a5e02cee2bfb4677906e9e2eeca08b517"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aac04a8a35d5e84ec934cd76d2185b84a"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerImp.html#aac04a8a35d5e84ec934cd76d2185b84a">doFetchPack</a> (const <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; protocol::TMGetObjectByHash &gt; &amp;packet)</td></tr>
-<tr class="separator:aac04a8a35d5e84ec934cd76d2185b84a"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a291bccd0eaca096ff29e9c01411e2381"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerImp.html#a291bccd0eaca096ff29e9c01411e2381">doFetchPack</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; protocol::TMGetObjectByHash &gt; const &amp;packet)</td></tr>
+<tr class="separator:a291bccd0eaca096ff29e9c01411e2381"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a07d0441dd1b4d2111290baced384eedb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerImp.html#a07d0441dd1b4d2111290baced384eedb">onValidatorListMessage</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;messageType, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;<a class="el" href="namespaceripple.html#ad5143ceada01141772ae4aab984f94bda7f5cb74af5d7f4b82200738fdbdc5a45">manifest</a>, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> version, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="structripple_1_1ValidatorBlobInfo.html">ValidatorBlobInfo</a> &gt; const &amp;blobs)</td></tr>
 <tr class="separator:a07d0441dd1b4d2111290baced384eedb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aa5cc780ed6bff1f0f3e3b6654fd76af2"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1PeerImp.html#aa5cc780ed6bff1f0f3e3b6654fd76af2">doTransactions</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; protocol::TMGetObjectByHash &gt; const &amp;packet)</td></tr>
@@ -3183,8 +3183,8 @@ template&lt;class FwdIt , class &gt; </div>
 
 </div>
 </div>
-<a id="aac04a8a35d5e84ec934cd76d2185b84a" name="aac04a8a35d5e84ec934cd76d2185b84a"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aac04a8a35d5e84ec934cd76d2185b84a">&#9670;&#160;</a></span>doFetchPack()</h2>
+<a id="a291bccd0eaca096ff29e9c01411e2381" name="a291bccd0eaca096ff29e9c01411e2381"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a291bccd0eaca096ff29e9c01411e2381">&#9670;&#160;</a></span>doFetchPack()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3195,7 +3195,7 @@ template&lt;class FwdIt , class &gt; </div>
         <tr>
           <td class="memname">void ripple::PeerImp::doFetchPack </td>
           <td>(</td>
-          <td class="paramtype">const <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; protocol::TMGetObjectByHash &gt; &amp;&#160;</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; protocol::TMGetObjectByHash &gt; const &amp;&#160;</td>
           <td class="paramname"><em>packet</em></td><td>)</td>
           <td></td>
         </tr>

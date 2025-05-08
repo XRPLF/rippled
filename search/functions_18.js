@@ -18,7 +18,7 @@ var searchData=
   ['xchaincreatebridge_15',['XChainCreateBridge',['../classripple_1_1XChainCreateBridge.html#addf055d2953559872a11b14100fc7ee6',1,'ripple::XChainCreateBridge']]],
   ['xchaincreateclaimid_16',['XChainCreateClaimID',['../classripple_1_1XChainCreateClaimID.html#a7126be446f8394959432230b233c4925',1,'ripple::XChainCreateClaimID']]],
   ['xenv_17',['XEnv',['../structripple_1_1test_1_1XEnv.html#a74440c6cae97bcb0ac32c9b9ed4e2ea0',1,'ripple::test::XEnv']]],
-  ['xfer_18',['xfer',['../structripple_1_1test_1_1XChainSim__test.html#a5e275c867b33993bb8ad283bbca5f5e6',1,'ripple::test::XChainSim_test']]],
+  ['xfer_18',['xfer',['../structripple_1_1test_1_1XChainSim__test.html#a4d47fd0da2bdfb04e5f4b6692fae3662',1,'ripple::test::XChainSim_test']]],
   ['xferfee_19',['xferFee',['../classripple_1_1test_1_1jtx_1_1token_1_1xferFee.html#ac106700d07dac4fa116d8be28cb52f57',1,'ripple::test::jtx::token::xferFee']]],
   ['xor_5fshift_5fengine_20',['xor_shift_engine',['../classbeast_1_1detail_1_1xor__shift__engine.html#a16edb0ef62460730cc1f48409905419d',1,'beast::detail::xor_shift_engine::xor_shift_engine(result_type val=1977u)'],['../classbeast_1_1detail_1_1xor__shift__engine.html#aae4328d24a4c7c8ad8138c2eb293ae5b',1,'beast::detail::xor_shift_engine::xor_shift_engine(xor_shift_engine const &amp;)=default']]],
   ['xrp_21',['xrp',['../classripple_1_1Taker__test.html#aa6d58841e7ccc3cec0dcc9278d13ce81',1,'ripple::Taker_test::xrp()'],['../classripple_1_1STAmount.html#a6c2ca92e9c91e2a34493d61e02d79ebf',1,'ripple::STAmount::xrp()']]],

@@ -62,7 +62,7 @@ var searchData=
   ['fullyvalidateledger_59',['FullyValidateLedger',['../structripple_1_1test_1_1csf_1_1FullyValidateLedger.html',1,'ripple::test::csf']]],
   ['function_60',['function',['http://en.cppreference.com/w/cpp/utility/functional/function.html',1,'std']]],
   ['function_3c_20bool_28_29_3e_61',['function&lt; bool()&gt;',['http://en.cppreference.com/w/cpp/utility/functional/function.html',1,'std']]],
-  ['function_3c_20bool_28const_20boost_3a_3asystem_3a_3aerror_5fcode_20_26ecresult_2c_20int_20istatus_2c_20std_3a_3astring_20const_20_26strdata_29_3e_62',['function&lt; bool(const boost::system::error_code &amp;ecResult, int iStatus, std::string const &amp;strData)&gt;',['http://en.cppreference.com/w/cpp/utility/functional/function.html',1,'std']]],
+  ['function_3c_20bool_28boost_3a_3asystem_3a_3aerror_5fcode_20const_20_26ecresult_2c_20int_20istatus_2c_20std_3a_3astring_20const_20_26strdata_29_3e_62',['function&lt; bool(boost::system::error_code const &amp;ecResult, int iStatus, std::string const &amp;strData)&gt;',['http://en.cppreference.com/w/cpp/utility/functional/function.html',1,'std']]],
   ['function_3c_20json_3a_3avalue_20_3e_63',['function&lt; Json::Value &gt;',['http://en.cppreference.com/w/cpp/utility/functional/function.html',1,'std']]],
   ['function_3c_20request_2c_20response_20_3e_64',['function&lt; Request, Response &gt;',['http://en.cppreference.com/w/cpp/utility/functional/function.html',1,'std']]],
   ['function_3c_20ripple_3a_3akeylet_28keyletparams_2e_2e_2e_29_3e_65',['function&lt; ripple::Keylet(keyletParams...)&gt;',['http://en.cppreference.com/w/cpp/utility/functional/function.html',1,'std']]],

@@ -266,9 +266,9 @@ $(function() {
 <div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span>        <span class="keywordflow">return</span> v;</div>
 <div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span>    }</div>
 <div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span> </div>
-<div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span>    <span class="keyword">const</span> <span class="keywordtype">bool</span> isSigned = <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/numeric_limits.html">std::numeric_limits&lt;Integer&gt;::is_signed</a>;</div>
+<div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span>    <span class="keywordtype">bool</span> <span class="keyword">const</span> isSigned = <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/numeric_limits.html">std::numeric_limits&lt;Integer&gt;::is_signed</a>;</div>
 <div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span>    <span class="comment">// unsigned types may have a leading zero octet</span></div>
-<div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span>    <span class="keyword">const</span> <span class="keywordtype">size_t</span> maxLength = isSigned ? <span class="keyword">sizeof</span>(Integer) : <span class="keyword">sizeof</span>(Integer) + 1;</div>
+<div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span>    <span class="keywordtype">size_t</span> <span class="keyword">const</span> maxLength = isSigned ? <span class="keyword">sizeof</span>(Integer) : <span class="keyword">sizeof</span>(Integer) + 1;</div>
 <div class="line"><a id="l00194" name="l00194"></a><span class="lineno">  194</span>    <span class="keywordflow">if</span> (count &gt; maxLength)</div>
 <div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span>    {</div>
 <div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span>        ec = <a class="code hl_enumvalue" href="namespaceripple_1_1cryptoconditions.html#ae0bee5541ce10d52809660ad2d100a23aeec30238a1c1154b9beb6c425f6640e8">error::large_size</a>;</div>

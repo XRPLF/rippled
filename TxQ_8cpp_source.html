@@ -399,7 +399,7 @@ $(function() {
 <div class="line"><a id="l00323" name="l00323"></a><span class="lineno">  323</span>{</div>
 <div class="line"><a id="l00324" name="l00324"></a><span class="lineno">  324</span>}</div>
 <div class="line"><a id="l00325" name="l00325"></a><span class="lineno">  325</span> </div>
-<div class="line"><a id="l00326" name="l00326"></a><span class="lineno"><a class="line" href="classripple_1_1TxQ_1_1TxQAccount.html#ad8fa1737d690b8290ad57d494cee0dd9">  326</a></span><a class="code hl_function" href="classripple_1_1TxQ_1_1TxQAccount.html#a02221dc3f6672270b858d46681fad3d9">TxQ::TxQAccount::TxQAccount</a>(<span class="keyword">const</span> <a class="code hl_class" href="classripple_1_1base__uint.html">AccountID</a>&amp; account_) : account(account_)</div>
+<div class="line"><a id="l00326" name="l00326"></a><span class="lineno"><a class="line" href="classripple_1_1TxQ_1_1TxQAccount.html#a0411da73b580cc0f69fab93e00d277ce">  326</a></span><a class="code hl_function" href="classripple_1_1TxQ_1_1TxQAccount.html#a02221dc3f6672270b858d46681fad3d9">TxQ::TxQAccount::TxQAccount</a>(<a class="code hl_class" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; account_) : account(account_)</div>
 <div class="line"><a id="l00327" name="l00327"></a><span class="lineno">  327</span>{</div>
 <div class="line"><a id="l00328" name="l00328"></a><span class="lineno">  328</span>}</div>
 <div class="line"><a id="l00329" name="l00329"></a><span class="lineno">  329</span> </div>
@@ -1579,11 +1579,11 @@ $(function() {
 <div class="line"><a id="l01504" name="l01504"></a><span class="lineno"> 1504</span>            }</div>
 <div class="line"><a id="l01505" name="l01505"></a><span class="lineno"> 1505</span>            <span class="keywordflow">else</span></div>
 <div class="line"><a id="l01506" name="l01506"></a><span class="lineno"> 1506</span>            {</div>
-<div class="line"><a id="l01507" name="l01507"></a><span class="lineno"> 1507</span>                JLOG(j_.<a class="code hl_function" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>())</div>
-<div class="line"><a id="l01508" name="l01508"></a><span class="lineno"> 1508</span>                    &lt;&lt; <span class="stringliteral">&quot;Queued transaction &quot;</span> &lt;&lt; candidateIter-&gt;txID</div>
-<div class="line"><a id="l01509" name="l01509"></a><span class="lineno"> 1509</span>                    &lt;&lt; <span class="stringliteral">&quot; failed with &quot;</span> &lt;&lt; <a class="code hl_function" href="namespaceripple.html#a875ae996b37ed036597d70628ae053e3">transToken</a>(txnResult)</div>
-<div class="line"><a id="l01510" name="l01510"></a><span class="lineno"> 1510</span>                    &lt;&lt; <span class="stringliteral">&quot;. Leave in queue.&quot;</span> &lt;&lt; <span class="stringliteral">&quot; Applied: &quot;</span> &lt;&lt; didApply</div>
-<div class="line"><a id="l01511" name="l01511"></a><span class="lineno"> 1511</span>                    &lt;&lt; <span class="stringliteral">&quot;. Flags: &quot;</span> &lt;&lt; candidateIter-&gt;flags;</div>
+<div class="line"><a id="l01507" name="l01507"></a><span class="lineno"> 1507</span>                JLOG(j_.<a class="code hl_function" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>()) &lt;&lt; <span class="stringliteral">&quot;Queued transaction &quot;</span> &lt;&lt; candidateIter-&gt;txID</div>
+<div class="line"><a id="l01508" name="l01508"></a><span class="lineno"> 1508</span>                                 &lt;&lt; <span class="stringliteral">&quot; failed with &quot;</span> &lt;&lt; <a class="code hl_function" href="namespaceripple.html#a875ae996b37ed036597d70628ae053e3">transToken</a>(txnResult)</div>
+<div class="line"><a id="l01509" name="l01509"></a><span class="lineno"> 1509</span>                                 &lt;&lt; <span class="stringliteral">&quot;. Leave in queue.&quot;</span></div>
+<div class="line"><a id="l01510" name="l01510"></a><span class="lineno"> 1510</span>                                 &lt;&lt; <span class="stringliteral">&quot; Applied: &quot;</span> &lt;&lt; didApply</div>
+<div class="line"><a id="l01511" name="l01511"></a><span class="lineno"> 1511</span>                                 &lt;&lt; <span class="stringliteral">&quot;. Flags: &quot;</span> &lt;&lt; candidateIter-&gt;flags;</div>
 <div class="line"><a id="l01512" name="l01512"></a><span class="lineno"> 1512</span>                <span class="keywordflow">if</span> (account.retryPenalty &amp;&amp; candidateIter-&gt;retriesRemaining &gt; 2)</div>
 <div class="line"><a id="l01513" name="l01513"></a><span class="lineno"> 1513</span>                    candidateIter-&gt;retriesRemaining = 1;</div>
 <div class="line"><a id="l01514" name="l01514"></a><span class="lineno"> 1514</span>                <span class="keywordflow">else</span></div>

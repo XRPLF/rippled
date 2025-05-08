@@ -5,5 +5,5 @@ var searchData=
   ['weeks_2',['weeks',['../namespaceripple.html#a6eab3a5ee85e00078b47947e27e59535',1,'ripple']]],
   ['wptr_3',['wptr',['../classripple_1_1PathRequest.html#ad636d59928143972adaea19428ccad9e',1,'ripple::PathRequest::wptr()'],['../classripple_1_1InfoSub.html#aaf94a98105c180340881bf6eef915670',1,'ripple::InfoSub::wptr()']]],
   ['wrappedvalidationtype_4',['WrappedValidationType',['../classripple_1_1Validations.html#aed95c3c0f3992ca0755fe6a07e39e268',1,'ripple::Validations']]],
-  ['wref_5',['wref',['../classripple_1_1PathRequest.html#ae3eea02e2671729dd81e5bbcb32c44eb',1,'ripple::PathRequest']]]
+  ['wref_5',['wref',['../classripple_1_1PathRequest.html#a3158eda2f4888f7f4aafd93cd37a5b3b',1,'ripple::PathRequest']]]
 ];

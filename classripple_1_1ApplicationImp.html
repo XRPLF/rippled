@@ -302,8 +302,8 @@ Public Member Functions</h2></td></tr>
 <tr class="memitem:a3b65a8d56c16411d8b53c25511270564"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ApplicationImp.html#a3b65a8d56c16411d8b53c25511270564">getMaxDisallowedLedger</a> () override</td></tr>
 <tr class="memdesc:a3b65a8d56c16411d8b53c25511270564"><td class="mdescLeft">&#160;</td><td class="mdescRight">Ensure that a newly-started validator does not sign proposals older than the last ledger it persisted.  <a href="classripple_1_1ApplicationImp.html#a3b65a8d56c16411d8b53c25511270564">More...</a><br /></td></tr>
 <tr class="separator:a3b65a8d56c16411d8b53c25511270564"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a47404b738189809542e77436a781b589"><td class="memItemLeft" align="right" valign="top">virtual const <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt; &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ApplicationImp.html#a47404b738189809542e77436a781b589">trapTxID</a> () const override</td></tr>
-<tr class="separator:a47404b738189809542e77436a781b589"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4e7d01c782ae8dbc7ef10323d720e6b3"><td class="memItemLeft" align="right" valign="top">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt; const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ApplicationImp.html#a4e7d01c782ae8dbc7ef10323d720e6b3">trapTxID</a> () const override</td></tr>
+<tr class="separator:a4e7d01c782ae8dbc7ef10323d720e6b3"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a5672372869d3a59c7cd2f7ce3056ae33"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classbeast_1_1PropertyStream_1_1Source.html#a5672372869d3a59c7cd2f7ce3056ae33">name</a> () const</td></tr>
 <tr class="memdesc:a5672372869d3a59c7cd2f7ce3056ae33"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the name of this source.  <a href="classbeast_1_1PropertyStream_1_1Source.html#a5672372869d3a59c7cd2f7ce3056ae33">More...</a><br /></td></tr>
 <tr class="separator:a5672372869d3a59c7cd2f7ce3056ae33"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -479,7 +479,7 @@ Private Member Functions</h2></td></tr>
 <tr class="separator:a2a1919f5396ea66098a6c326c15e9ed5"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a92cbe78002001fb6211e97947d5df91d"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Ledger.html">Ledger</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ApplicationImp.html#a92cbe78002001fb6211e97947d5df91d">loadLedgerFromFile</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;ledgerID)</td></tr>
 <tr class="separator:a92cbe78002001fb6211e97947d5df91d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a4cdb1faad304fe40ee102a6d89b187aa"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ApplicationImp.html#a4cdb1faad304fe40ee102a6d89b187aa">loadOldLedger</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;ledgerID, bool replay, bool isFilename, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt; <a class="el" href="classripple_1_1ApplicationImp.html#a47404b738189809542e77436a781b589">trapTxID</a>)</td></tr>
+<tr class="memitem:a4cdb1faad304fe40ee102a6d89b187aa"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ApplicationImp.html#a4cdb1faad304fe40ee102a6d89b187aa">loadOldLedger</a> (<a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;ledgerID, bool replay, bool isFilename, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt; <a class="el" href="classripple_1_1ApplicationImp.html#a4e7d01c782ae8dbc7ef10323d720e6b3">trapTxID</a>)</td></tr>
 <tr class="separator:a4cdb1faad304fe40ee102a6d89b187aa"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aab0c06671c109dc2b487a1aab6dcb168"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ApplicationImp.html#aab0c06671c109dc2b487a1aab6dcb168">setMaxDisallowedLedger</a> ()</td></tr>
 <tr class="separator:aab0c06671c109dc2b487a1aab6dcb168"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -2451,8 +2451,8 @@ Private Attributes</h2></td></tr>
 
 </div>
 </div>
-<a id="a47404b738189809542e77436a781b589" name="a47404b738189809542e77436a781b589"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a47404b738189809542e77436a781b589">&#9670;&#160;</a></span>trapTxID()</h2>
+<a id="a4e7d01c782ae8dbc7ef10323d720e6b3" name="a4e7d01c782ae8dbc7ef10323d720e6b3"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4e7d01c782ae8dbc7ef10323d720e6b3">&#9670;&#160;</a></span>trapTxID()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -2461,7 +2461,7 @@ Private Attributes</h2></td></tr>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">virtual const <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt; &amp; ripple::ApplicationImp::trapTxID </td>
+          <td class="memname">virtual <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> &gt; const  &amp; ripple::ApplicationImp::trapTxID </td>
           <td>(</td>
           <td class="paramname"></td><td>)</td>
           <td> const</td>
@@ -2474,7 +2474,7 @@ Private Attributes</h2></td></tr>
 </table>
 </div><div class="memdoc">
 
-<p>Implements <a class="el" href="classripple_1_1Application.html#a43e7d6b9a54db220da67532d2708e90c">ripple::Application</a>.</p>
+<p>Implements <a class="el" href="classripple_1_1Application.html#a006577b8e45097a163d2a0eac4dbc19e">ripple::Application</a>.</p>
 
 <p class="definition">Definition at line <a class="el" href="Application_8cpp_source.html#l01141">1141</a> of file <a class="el" href="Application_8cpp_source.html">Application.cpp</a>.</p>
 

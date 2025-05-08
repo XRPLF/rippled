@@ -103,9 +103,9 @@ Functions</h2></td></tr>
 <tr class="separator:a05a394877a70f3d8ee8ec2a42b906763"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:aef38cd26fe2b2e924f8c117aff08b598"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a>&lt; <a class="el" href="classripple_1_1perf_1_1PerfLog.html">PerfLog</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1perf.html#aef38cd26fe2b2e924f8c117aff08b598">make_PerfLog</a> (<a class="el" href="structripple_1_1perf_1_1PerfLog_1_1Setup.html">PerfLog::Setup</a> const &amp;setup, <a class="el" href="classripple_1_1Application.html">Application</a> &amp;app, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> journal, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void()&gt; &amp;&amp;signalStop)</td></tr>
 <tr class="separator:aef38cd26fe2b2e924f8c117aff08b598"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a47220e1038e7393e35b434ad415cb641"><td class="memTemplParams" colspan="2">template&lt;typename Func , class Rep , class Period &gt; </td></tr>
-<tr class="memitem:a47220e1038e7393e35b434ad415cb641"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1perf.html#a47220e1038e7393e35b434ad415cb641">measureDurationAndLog</a> (Func &amp;&amp;func, const <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &amp;actionDescription, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::duration</a>&lt; Rep, Period &gt; maxDelay, const <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> &amp;journal)</td></tr>
-<tr class="separator:a47220e1038e7393e35b434ad415cb641"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a2b533bab386ca1e6c4ecfeac09871d9e"><td class="memTemplParams" colspan="2">template&lt;typename Func , class Rep , class Period &gt; </td></tr>
+<tr class="memitem:a2b533bab386ca1e6c4ecfeac09871d9e"><td class="memTemplItemLeft" align="right" valign="top">auto&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1perf.html#a2b533bab386ca1e6c4ecfeac09871d9e">measureDurationAndLog</a> (Func &amp;&amp;func, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;actionDescription, <a class="elRef" href="http://en.cppreference.com/w/cpp/chrono/duration.html">std::chrono::duration</a>&lt; Rep, Period &gt; maxDelay, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> const &amp;journal)</td></tr>
+<tr class="separator:a2b533bab386ca1e6c4ecfeac09871d9e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p >Dummy class for unit tests. </p>
@@ -182,8 +182,8 @@ Functions</h2></td></tr>
 
 </div>
 </div>
-<a id="a47220e1038e7393e35b434ad415cb641" name="a47220e1038e7393e35b434ad415cb641"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a47220e1038e7393e35b434ad415cb641">&#9670;&#160;</a></span>measureDurationAndLog()</h2>
+<a id="a2b533bab386ca1e6c4ecfeac09871d9e" name="a2b533bab386ca1e6c4ecfeac09871d9e"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a2b533bab386ca1e6c4ecfeac09871d9e">&#9670;&#160;</a></span>measureDurationAndLog()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -199,7 +199,7 @@ template&lt;typename Func , class Rep , class Period &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &amp;&#160;</td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;&#160;</td>
           <td class="paramname"><em>actionDescription</em>, </td>
         </tr>
         <tr>
@@ -211,7 +211,7 @@ template&lt;typename Func , class Rep , class Period &gt; </div>
         <tr>
           <td class="paramkey"></td>
           <td></td>
-          <td class="paramtype">const <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> const &amp;&#160;</td>
           <td class="paramname"><em>journal</em>&#160;</td>
         </tr>
         <tr>

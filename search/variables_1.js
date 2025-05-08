@@ -54,7 +54,7 @@ var searchData=
   ['bout_5f_51',['bout_',['../classripple_1_1test_1_1JSONRPCClient.html#a72e462c62df648fd930fa1d7e6268a33',1,'ripple::test::JSONRPCClient']]],
   ['branchfactor_52',['branchFactor',['../classripple_1_1SHAMapInnerNode.html#a42a7132ff24a6edf8ca1e022f61826d9',1,'ripple::SHAMapInnerNode::branchFactor()'],['../classripple_1_1SHAMap.html#af8599964238eb94d795606f220654db9',1,'ripple::SHAMap::branchFactor()']]],
   ['branchsupport_53',['branchSupport',['../structripple_1_1ledger__trie__detail_1_1Node.html#acf740747e95a5ae8d806aa3e9513e093',1,'ripple::ledger_trie_detail::Node']]],
-  ['bridge_5f_54',['bridge_',['../classripple_1_1test_1_1XChainSim__test_1_1SmBase.html#a2d667d7971f6f04c70a275a2bd8ebf2c',1,'ripple::test::XChainSim_test::SmBase']]],
+  ['bridge_5f_54',['bridge_',['../classripple_1_1test_1_1XChainSim__test_1_1SmBase.html#a6566d6d8885938ed0eead3d11cd25a68',1,'ripple::test::XChainSim_test::SmBase']]],
   ['bridge_5fcrossings_5f_55',['bridge_crossings_',['../classripple_1_1Taker.html#abfa08f2942029105ed3beba9e116ec2c',1,'ripple::Taker']]],
   ['broadcast_56',['broadcast',['../structripple_1_1Transaction_1_1SubmitResult.html#a1055868f6cbb6df3ec8a5bc1e57a12ea',1,'ripple::Transaction::SubmitResult']]],
   ['brokerfee_5f_57',['brokerFee_',['../classripple_1_1test_1_1jtx_1_1token_1_1brokerFee.html#a388b2713218572dcee7668a27162a53b',1,'ripple::test::jtx::token::brokerFee']]],

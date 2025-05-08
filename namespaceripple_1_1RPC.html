@@ -188,9 +188,9 @@ Functions</h2></td></tr>
 <tr class="separator:a2e549c81edcbd0befcfa4ee871c6f27e"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a193a678f625ec77262c8d5f3ca91df03"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a193a678f625ec77262c8d5f3ca91df03">encodeCTID</a> (uint32_t ledgerSeq, uint32_t txnIndex, uint32_t networkID) noexcept</td></tr>
 <tr class="separator:a193a678f625ec77262c8d5f3ca91df03"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a077733484afe4bf4398a699dd7a15d70"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
-<tr class="memitem:a077733484afe4bf4398a699dd7a15d70"><td class="memTemplItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/tuple.html">std::tuple</a>&lt; uint32_t, uint16_t, uint16_t &gt; &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a077733484afe4bf4398a699dd7a15d70">decodeCTID</a> (const T ctid) noexcept</td></tr>
-<tr class="separator:a077733484afe4bf4398a699dd7a15d70"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ae4b48e37f1a6940816047cd107faebca"><td class="memTemplParams" colspan="2">template&lt;typename T &gt; </td></tr>
+<tr class="memitem:ae4b48e37f1a6940816047cd107faebca"><td class="memTemplItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/tuple.html">std::tuple</a>&lt; uint32_t, uint16_t, uint16_t &gt; &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#ae4b48e37f1a6940816047cd107faebca">decodeCTID</a> (T const ctid) noexcept</td></tr>
+<tr class="separator:ae4b48e37f1a6940816047cd107faebca"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a58fb48a81509167c40346305cea629c5"><td class="memTemplParams" colspan="2">template&lt;class GetLedgerIndex , class GetCloseTime &gt; </td></tr>
 <tr class="memitem:a58fb48a81509167c40346305cea629c5"><td class="memTemplItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="classripple_1_1STAmount.html">STAmount</a> &gt;&#160;</td><td class="memTemplItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a58fb48a81509167c40346305cea629c5">getDeliveredAmount</a> (GetLedgerIndex const &amp;getLedgerIndex, GetCloseTime const &amp;getCloseTime, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STTx.html">STTx</a> const &gt; const &amp;serializedTx, <a class="el" href="classripple_1_1TxMeta.html">TxMeta</a> const &amp;transactionMeta)</td></tr>
 <tr class="separator:a58fb48a81509167c40346305cea629c5"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -293,9 +293,9 @@ Functions</h2></td></tr>
 <tr class="memitem:a449a1f72668a0d861d60f136efa09db9"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a449a1f72668a0d861d60f136efa09db9">isAccountObjectsValidType</a> (<a class="el" href="namespaceripple.html#ac151bf19e1f4daae2b04c65c65117139">LedgerEntryType</a> const  &amp;type)</td></tr>
 <tr class="memdesc:a449a1f72668a0d861d60f136efa09db9"><td class="mdescLeft">&#160;</td><td class="mdescRight">Check if the type is a valid filtering type for account_objects method.  <a href="namespaceripple_1_1RPC.html#a449a1f72668a0d861d60f136efa09db9">More...</a><br /></td></tr>
 <tr class="separator:a449a1f72668a0d861d60f136efa09db9"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a1913cdcfd25a883affb49c4f40174cd6"><td class="memItemLeft" align="right" valign="top">unsigned int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a1913cdcfd25a883affb49c4f40174cd6">getAPIVersionNumber</a> (const <a class="el" href="classJson_1_1Value.html">Json::Value</a> &amp;value, bool betaEnabled)</td></tr>
-<tr class="memdesc:a1913cdcfd25a883affb49c4f40174cd6"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve the api version number from the json value.  <a href="namespaceripple_1_1RPC.html#a1913cdcfd25a883affb49c4f40174cd6">More...</a><br /></td></tr>
-<tr class="separator:a1913cdcfd25a883affb49c4f40174cd6"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a4f4d5d12384c7c76f873c16166c8da43"><td class="memItemLeft" align="right" valign="top">unsigned int&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a4f4d5d12384c7c76f873c16166c8da43">getAPIVersionNumber</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> const  &amp;value, bool betaEnabled)</td></tr>
+<tr class="memdesc:a4f4d5d12384c7c76f873c16166c8da43"><td class="mdescLeft">&#160;</td><td class="mdescRight">Retrieve the api version number from the json value.  <a href="namespaceripple_1_1RPC.html#a4f4d5d12384c7c76f873c16166c8da43">More...</a><br /></td></tr>
+<tr class="separator:a4f4d5d12384c7c76f873c16166c8da43"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3d184448118cdb346afad3a14ac36ddd"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/variant.html">std::variant</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1Ledger.html">Ledger</a> const &gt;, <a class="el" href="classJson_1_1Value.html">Json::Value</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a3d184448118cdb346afad3a14ac36ddd">getLedgerByContext</a> (<a class="el" href="structripple_1_1RPC_1_1JsonContext.html">RPC::JsonContext</a> &amp;context)</td></tr>
 <tr class="memdesc:a3d184448118cdb346afad3a14ac36ddd"><td class="mdescLeft">&#160;</td><td class="mdescRight">Return a ledger based on ledger_hash or ledger_index, or an <a class="el" href="namespaceripple_1_1RPC.html" title="API version numbers used in later API versions.">RPC</a> error.  <a href="namespaceripple_1_1RPC.html#a3d184448118cdb346afad3a14ac36ddd">More...</a><br /></td></tr>
 <tr class="separator:a3d184448118cdb346afad3a14ac36ddd"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1413,8 +1413,8 @@ template&lt;class L &gt; </div>
 
 </div>
 </div>
-<a id="a077733484afe4bf4398a699dd7a15d70" name="a077733484afe4bf4398a699dd7a15d70"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a077733484afe4bf4398a699dd7a15d70">&#9670;&#160;</a></span>decodeCTID()</h2>
+<a id="ae4b48e37f1a6940816047cd107faebca" name="ae4b48e37f1a6940816047cd107faebca"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ae4b48e37f1a6940816047cd107faebca">&#9670;&#160;</a></span>decodeCTID()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -1427,7 +1427,7 @@ template&lt;typename T &gt; </div>
         <tr>
           <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/tuple.html">std::tuple</a>&lt; uint32_t, uint16_t, uint16_t &gt; &gt; ripple::RPC::decodeCTID </td>
           <td>(</td>
-          <td class="paramtype">const T&#160;</td>
+          <td class="paramtype">T const&#160;</td>
           <td class="paramname"><em>ctid</em></td><td>)</td>
           <td></td>
         </tr>
@@ -3033,8 +3033,8 @@ template&lt;class T &gt; </div>
 
 </div>
 </div>
-<a id="a1913cdcfd25a883affb49c4f40174cd6" name="a1913cdcfd25a883affb49c4f40174cd6"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a1913cdcfd25a883affb49c4f40174cd6">&#9670;&#160;</a></span>getAPIVersionNumber()</h2>
+<a id="a4f4d5d12384c7c76f873c16166c8da43" name="a4f4d5d12384c7c76f873c16166c8da43"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a4f4d5d12384c7c76f873c16166c8da43">&#9670;&#160;</a></span>getAPIVersionNumber()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -3042,7 +3042,7 @@ template&lt;class T &gt; </div>
         <tr>
           <td class="memname">unsigned int ripple::RPC::getAPIVersionNumber </td>
           <td>(</td>
-          <td class="paramtype">const <a class="el" href="classJson_1_1Value.html">Json::Value</a> &amp;&#160;</td>
+          <td class="paramtype"><a class="el" href="classJson_1_1Value.html">Json::Value</a> const &amp;&#160;</td>
           <td class="paramname"><em>value</em>, </td>
         </tr>
         <tr>
@@ -3192,7 +3192,7 @@ template&lt;class Object &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l00751">751</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l00750">750</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
 
 </div>
 </div>
@@ -3258,7 +3258,7 @@ template&lt;class Object &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l00817">817</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l00816">816</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
 
 </div>
 </div>
@@ -3333,7 +3333,7 @@ template&lt;class Object &gt; </div>
 </dl>
 <dl class="section return"><dt>Returns</dt><dd>A JSON object containing the error results, if any </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l00858">858</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l00857">857</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
 
 </div>
 </div>
@@ -3389,7 +3389,7 @@ template&lt;class Object &gt; </div>
 
 <p>Returns a <a class="el" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6" title="object value (collection of name/value pairs).">Json::objectValue</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l00927">927</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l00926">926</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
 
 </div>
 </div>
@@ -3451,7 +3451,7 @@ template&lt;class Object &gt; </div>
 
 <p>Returns a <a class="el" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6" title="object value (collection of name/value pairs).">Json::objectValue</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l00961">961</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l00960">960</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
 
 </div>
 </div>
@@ -3507,7 +3507,7 @@ template&lt;class Object &gt; </div>
 
 <p>Returns a <a class="el" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6" title="object value (collection of name/value pairs).">Json::objectValue</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l01091">1091</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l01090">1090</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
 
 </div>
 </div>
@@ -3569,7 +3569,7 @@ template&lt;class Object &gt; </div>
 
 <p>Returns a <a class="el" href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6" title="object value (collection of name/value pairs).">Json::objectValue</a>. </p>
 
-<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l01201">1201</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TransactionSign_8cpp_source.html#l01200">1200</a> of file <a class="el" href="TransactionSign_8cpp_source.html">TransactionSign.cpp</a>.</p>
 
 </div>
 </div>

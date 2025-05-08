@@ -136,7 +136,7 @@ Friends</h2></td></tr>
 <tr class="separator:a477257c99c31ffd909ede2c4d26b5c76"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
-<div class="textblock"><div class="compoundTemplParams">template&lt;typename Key, typename Value, typename Hash, typename Pred = std::equal_to&lt;Key&gt;, typename Alloc = std::allocator&lt;std::pair&lt;const Key, Value&gt;&gt;&gt;<br />
+<div class="textblock"><div class="compoundTemplParams">template&lt;typename Key, typename Value, typename Hash, typename Pred = std::equal_to&lt;Key&gt;, typename Alloc = std::allocator&lt;std::pair&lt;Key const, Value&gt;&gt;&gt;<br />
 struct ripple::partitioned_unordered_map&lt; Key, Value, Hash, Pred, Alloc &gt;::const_iterator</div>
 <p class="definition">Definition at line <a class="el" href="partitioned__unordered__map_8h_source.html#l00146">146</a> of file <a class="el" href="partitioned__unordered__map_8h_source.html">partitioned_unordered_map.h</a>.</p>
 </div><h2 class="groupheader">Member Typedef Documentation</h2>
@@ -146,7 +146,7 @@ struct ripple::partitioned_unordered_map&lt; Key, Value, Hash, Pred, Alloc &gt;:
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Key , typename Value , typename Hash , typename Pred  = std::equal_to&lt;Key&gt;, typename Alloc  = std::allocator&lt;std::pair&lt;const Key, Value&gt;&gt;&gt; </div>
+template&lt;typename Key , typename Value , typename Hash , typename Pred  = std::equal_to&lt;Key&gt;, typename Alloc  = std::allocator&lt;std::pair&lt;Key const, Value&gt;&gt;&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname">using <a class="el" href="classripple_1_1partitioned__unordered__map.html">ripple::partitioned_unordered_map</a>&lt; Key, Value, Hash, Pred, Alloc &gt;::const_iterator::iterator_category =  <a class="elRef" href="http://en.cppreference.com/w/cpp/iterator/iterator_tags.html">std::forward_iterator_tag</a></td>
@@ -165,7 +165,7 @@ template&lt;typename Key , typename Value , typename Hash , typename Pred  = std
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Key , typename Value , typename Hash , typename Pred  = std::equal_to&lt;Key&gt;, typename Alloc  = std::allocator&lt;std::pair&lt;const Key, Value&gt;&gt;&gt; </div>
+template&lt;typename Key , typename Value , typename Hash , typename Pred  = std::equal_to&lt;Key&gt;, typename Alloc  = std::allocator&lt;std::pair&lt;Key const, Value&gt;&gt;&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -192,7 +192,7 @@ template&lt;typename Key , typename Value , typename Hash , typename Pred  = std
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Key , typename Value , typename Hash , typename Pred  = std::equal_to&lt;Key&gt;, typename Alloc  = std::allocator&lt;std::pair&lt;const Key, Value&gt;&gt;&gt; </div>
+template&lt;typename Key , typename Value , typename Hash , typename Pred  = std::equal_to&lt;Key&gt;, typename Alloc  = std::allocator&lt;std::pair&lt;Key const, Value&gt;&gt;&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname"><a class="el" href="classripple_1_1partitioned__unordered__map.html">ripple::partitioned_unordered_map</a>&lt; Key, Value, Hash, Pred, Alloc &gt;::const_iterator::const_iterator </td>
@@ -214,7 +214,7 @@ template&lt;typename Key , typename Value , typename Hash , typename Pred  = std
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Key , typename Value , typename Hash , typename Pred  = std::equal_to&lt;Key&gt;, typename Alloc  = std::allocator&lt;std::pair&lt;const Key, Value&gt;&gt;&gt; </div>
+template&lt;typename Key , typename Value , typename Hash , typename Pred  = std::equal_to&lt;Key&gt;, typename Alloc  = std::allocator&lt;std::pair&lt;Key const, Value&gt;&gt;&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname"><a class="el" href="classripple_1_1partitioned__unordered__map.html">ripple::partitioned_unordered_map</a>&lt; Key, Value, Hash, Pred, Alloc &gt;::const_iterator::const_iterator </td>
@@ -237,7 +237,7 @@ template&lt;typename Key , typename Value , typename Hash , typename Pred  = std
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Key , typename Value , typename Hash , typename Pred  = std::equal_to&lt;Key&gt;, typename Alloc  = std::allocator&lt;std::pair&lt;const Key, Value&gt;&gt;&gt; </div>
+template&lt;typename Key , typename Value , typename Hash , typename Pred  = std::equal_to&lt;Key&gt;, typename Alloc  = std::allocator&lt;std::pair&lt;Key const, Value&gt;&gt;&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname"><a class="el" href="classripple_1_1partitioned__unordered__map.html#a0cf26cd7eefbaeb8be063507796be448">const_reference</a> <a class="el" href="classripple_1_1partitioned__unordered__map.html">ripple::partitioned_unordered_map</a>&lt; Key, Value, Hash, Pred, Alloc &gt;::const_iterator::operator* </td>
@@ -258,7 +258,7 @@ template&lt;typename Key , typename Value , typename Hash , typename Pred  = std
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Key , typename Value , typename Hash , typename Pred  = std::equal_to&lt;Key&gt;, typename Alloc  = std::allocator&lt;std::pair&lt;const Key, Value&gt;&gt;&gt; </div>
+template&lt;typename Key , typename Value , typename Hash , typename Pred  = std::equal_to&lt;Key&gt;, typename Alloc  = std::allocator&lt;std::pair&lt;Key const, Value&gt;&gt;&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname"><a class="el" href="classripple_1_1partitioned__unordered__map.html#a4f5537e419bad0fe6591db57858c410f">const_pointer</a> <a class="el" href="classripple_1_1partitioned__unordered__map.html">ripple::partitioned_unordered_map</a>&lt; Key, Value, Hash, Pred, Alloc &gt;::const_iterator::operator-&gt; </td>
@@ -279,7 +279,7 @@ template&lt;typename Key , typename Value , typename Hash , typename Pred  = std
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Key , typename Value , typename Hash , typename Pred  = std::equal_to&lt;Key&gt;, typename Alloc  = std::allocator&lt;std::pair&lt;const Key, Value&gt;&gt;&gt; </div>
+template&lt;typename Key , typename Value , typename Hash , typename Pred  = std::equal_to&lt;Key&gt;, typename Alloc  = std::allocator&lt;std::pair&lt;Key const, Value&gt;&gt;&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname">void <a class="el" href="classripple_1_1partitioned__unordered__map.html">ripple::partitioned_unordered_map</a>&lt; Key, Value, Hash, Pred, Alloc &gt;::const_iterator::inc </td>
@@ -300,7 +300,7 @@ template&lt;typename Key , typename Value , typename Hash , typename Pred  = std
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Key , typename Value , typename Hash , typename Pred  = std::equal_to&lt;Key&gt;, typename Alloc  = std::allocator&lt;std::pair&lt;const Key, Value&gt;&gt;&gt; </div>
+template&lt;typename Key , typename Value , typename Hash , typename Pred  = std::equal_to&lt;Key&gt;, typename Alloc  = std::allocator&lt;std::pair&lt;Key const, Value&gt;&gt;&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname"><a class="el" href="structripple_1_1partitioned__unordered__map_1_1const__iterator.html">const_iterator</a> &amp; <a class="el" href="classripple_1_1partitioned__unordered__map.html">ripple::partitioned_unordered_map</a>&lt; Key, Value, Hash, Pred, Alloc &gt;::const_iterator::operator++ </td>
@@ -321,7 +321,7 @@ template&lt;typename Key , typename Value , typename Hash , typename Pred  = std
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Key , typename Value , typename Hash , typename Pred  = std::equal_to&lt;Key&gt;, typename Alloc  = std::allocator&lt;std::pair&lt;const Key, Value&gt;&gt;&gt; </div>
+template&lt;typename Key , typename Value , typename Hash , typename Pred  = std::equal_to&lt;Key&gt;, typename Alloc  = std::allocator&lt;std::pair&lt;Key const, Value&gt;&gt;&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname"><a class="el" href="structripple_1_1partitioned__unordered__map_1_1const__iterator.html">const_iterator</a> <a class="el" href="classripple_1_1partitioned__unordered__map.html">ripple::partitioned_unordered_map</a>&lt; Key, Value, Hash, Pred, Alloc &gt;::const_iterator::operator++ </td>
@@ -344,7 +344,7 @@ template&lt;typename Key , typename Value , typename Hash , typename Pred  = std
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Key , typename Value , typename Hash , typename Pred  = std::equal_to&lt;Key&gt;, typename Alloc  = std::allocator&lt;std::pair&lt;const Key, Value&gt;&gt;&gt; </div>
+template&lt;typename Key , typename Value , typename Hash , typename Pred  = std::equal_to&lt;Key&gt;, typename Alloc  = std::allocator&lt;std::pair&lt;Key const, Value&gt;&gt;&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -384,7 +384,7 @@ template&lt;typename Key , typename Value , typename Hash , typename Pred  = std
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Key , typename Value , typename Hash , typename Pred  = std::equal_to&lt;Key&gt;, typename Alloc  = std::allocator&lt;std::pair&lt;const Key, Value&gt;&gt;&gt; </div>
+template&lt;typename Key , typename Value , typename Hash , typename Pred  = std::equal_to&lt;Key&gt;, typename Alloc  = std::allocator&lt;std::pair&lt;Key const, Value&gt;&gt;&gt; </div>
 <table class="mlabels">
   <tr>
   <td class="mlabels-left">
@@ -425,7 +425,7 @@ template&lt;typename Key , typename Value , typename Hash , typename Pred  = std
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Key , typename Value , typename Hash , typename Pred  = std::equal_to&lt;Key&gt;, typename Alloc  = std::allocator&lt;std::pair&lt;const Key, Value&gt;&gt;&gt; </div>
+template&lt;typename Key , typename Value , typename Hash , typename Pred  = std::equal_to&lt;Key&gt;, typename Alloc  = std::allocator&lt;std::pair&lt;Key const, Value&gt;&gt;&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname"><a class="el" href="classripple_1_1partitioned__unordered__map.html#abf9c1f75af287db7f40c4c9efcfe8cd5">partition_map_type</a>* <a class="el" href="classripple_1_1partitioned__unordered__map.html">ripple::partitioned_unordered_map</a>&lt; Key, Value, Hash, Pred, Alloc &gt;::const_iterator::map_ {nullptr}</td>
@@ -443,7 +443,7 @@ template&lt;typename Key , typename Value , typename Hash , typename Pred  = std
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Key , typename Value , typename Hash , typename Pred  = std::equal_to&lt;Key&gt;, typename Alloc  = std::allocator&lt;std::pair&lt;const Key, Value&gt;&gt;&gt; </div>
+template&lt;typename Key , typename Value , typename Hash , typename Pred  = std::equal_to&lt;Key&gt;, typename Alloc  = std::allocator&lt;std::pair&lt;Key const, Value&gt;&gt;&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname">partition_map_type::iterator <a class="el" href="classripple_1_1partitioned__unordered__map.html">ripple::partitioned_unordered_map</a>&lt; Key, Value, Hash, Pred, Alloc &gt;::const_iterator::ait_</td>
@@ -461,7 +461,7 @@ template&lt;typename Key , typename Value , typename Hash , typename Pred  = std
 <div class="memitem">
 <div class="memproto">
 <div class="memtemplate">
-template&lt;typename Key , typename Value , typename Hash , typename Pred  = std::equal_to&lt;Key&gt;, typename Alloc  = std::allocator&lt;std::pair&lt;const Key, Value&gt;&gt;&gt; </div>
+template&lt;typename Key , typename Value , typename Hash , typename Pred  = std::equal_to&lt;Key&gt;, typename Alloc  = std::allocator&lt;std::pair&lt;Key const, Value&gt;&gt;&gt; </div>
       <table class="memname">
         <tr>
           <td class="memname">map_type::iterator <a class="el" href="classripple_1_1partitioned__unordered__map.html">ripple::partitioned_unordered_map</a>&lt; Key, Value, Hash, Pred, Alloc &gt;::const_iterator::mit_</td>

@@ -155,7 +155,7 @@ $(function() {
 <div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>        <span class="keywordflow">return</span> uNodeIndex;</div>
 <div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>    }</div>
 <div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span> </div>
-<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>    <span class="keywordflow">if</span> (!params.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::asset) || !params.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::asset2))</div>
+<div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>    <span class="keywordflow">if</span> (!params.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(jss::asset) || !params.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(jss::asset2))</div>
 <div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>    {</div>
 <div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>        jvResult[jss::error] = <span class="stringliteral">&quot;malformedRequest&quot;</span>;</div>
 <div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>        <span class="keywordflow">return</span> std::nullopt;</div>
@@ -182,7 +182,7 @@ $(function() {
 <div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>    <span class="keyword">auto</span> <span class="keyword">const</span> maybeKeylet = [&amp;]() -&gt; <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional&lt;Keylet&gt;</a> {</div>
 <div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>        <span class="keywordflow">try</span></div>
 <div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>        {</div>
-<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>            <span class="keywordflow">if</span> (!params.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::bridge_account))</div>
+<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>            <span class="keywordflow">if</span> (!params.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(jss::bridge_account))</div>
 <div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>                <span class="keywordflow">return</span> std::nullopt;</div>
 <div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span> </div>
 <div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>            <span class="keyword">auto</span> <span class="keyword">const</span>&amp; jsBridgeAccount = params[jss::bridge_account];</div>
@@ -252,9 +252,9 @@ $(function() {
 <div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span>        <span class="keywordflow">return</span> uNodeIndex;</div>
 <div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span>    }</div>
 <div class="line"><a id="l00176" name="l00176"></a><span class="lineno">  176</span> </div>
-<div class="line"><a id="l00177" name="l00177"></a><span class="lineno">  177</span>    <span class="keywordflow">if</span> ((!cred.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::subject) || !cred[jss::subject].<a class="code hl_function" href="classJson_1_1Value.html#a71e1f82cf1c3eaf969d400dcffb163a6">isString</a>()) ||</div>
-<div class="line"><a id="l00178" name="l00178"></a><span class="lineno">  178</span>        (!cred.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::issuer) || !cred[jss::issuer].<a class="code hl_function" href="classJson_1_1Value.html#a71e1f82cf1c3eaf969d400dcffb163a6">isString</a>()) ||</div>
-<div class="line"><a id="l00179" name="l00179"></a><span class="lineno">  179</span>        (!cred.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::credential_type) ||</div>
+<div class="line"><a id="l00177" name="l00177"></a><span class="lineno">  177</span>    <span class="keywordflow">if</span> ((!cred.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(jss::subject) || !cred[jss::subject].<a class="code hl_function" href="classJson_1_1Value.html#a71e1f82cf1c3eaf969d400dcffb163a6">isString</a>()) ||</div>
+<div class="line"><a id="l00178" name="l00178"></a><span class="lineno">  178</span>        (!cred.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(jss::issuer) || !cred[jss::issuer].<a class="code hl_function" href="classJson_1_1Value.html#a71e1f82cf1c3eaf969d400dcffb163a6">isString</a>()) ||</div>
+<div class="line"><a id="l00179" name="l00179"></a><span class="lineno">  179</span>        (!cred.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(jss::credential_type) ||</div>
 <div class="line"><a id="l00180" name="l00180"></a><span class="lineno">  180</span>         !cred[jss::credential_type].<a class="code hl_function" href="classJson_1_1Value.html#a71e1f82cf1c3eaf969d400dcffb163a6">isString</a>()))</div>
 <div class="line"><a id="l00181" name="l00181"></a><span class="lineno">  181</span>    {</div>
 <div class="line"><a id="l00182" name="l00182"></a><span class="lineno">  182</span>        jvResult[jss::error] = <span class="stringliteral">&quot;malformedRequest&quot;</span>;</div>
@@ -321,7 +321,7 @@ $(function() {
 <div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span>        }</div>
 <div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span>        <span class="keywordflow">return</span> uNodeIndex;</div>
 <div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span>    }</div>
-<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span>    <span class="keywordflow">if</span> (!params.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::account) || !params.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::authorize))</div>
+<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span>    <span class="keywordflow">if</span> (!params.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(jss::account) || !params.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(jss::authorize))</div>
 <div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span>    {</div>
 <div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span>        jvResult[jss::error] = <span class="stringliteral">&quot;malformedRequest&quot;</span>;</div>
 <div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span>        <span class="keywordflow">return</span> std::nullopt;</div>
@@ -364,10 +364,10 @@ $(function() {
 <div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span> </div>
 <div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span>    <span class="comment">// clang-format off</span></div>
 <div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span>    <span class="keywordflow">if</span> (</div>
-<div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span>        (!dp.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::owner) || !dp[jss::owner].<a class="code hl_function" href="classJson_1_1Value.html#a71e1f82cf1c3eaf969d400dcffb163a6">isString</a>()) ||</div>
-<div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span>        (dp.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::authorized) == dp.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::authorized_credentials)) ||</div>
-<div class="line"><a id="l00291" name="l00291"></a><span class="lineno">  291</span>        (dp.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::authorized) &amp;&amp; !dp[jss::authorized].<a class="code hl_function" href="classJson_1_1Value.html#a71e1f82cf1c3eaf969d400dcffb163a6">isString</a>()) ||</div>
-<div class="line"><a id="l00292" name="l00292"></a><span class="lineno">  292</span>        (dp.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::authorized_credentials) &amp;&amp; !dp[jss::authorized_credentials].<a class="code hl_function" href="classJson_1_1Value.html#a1627eb9d6568d6d0252fa8bb711c0a59">isArray</a>())</div>
+<div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span>        (!dp.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(jss::owner) || !dp[jss::owner].<a class="code hl_function" href="classJson_1_1Value.html#a71e1f82cf1c3eaf969d400dcffb163a6">isString</a>()) ||</div>
+<div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span>        (dp.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(jss::authorized) == dp.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(jss::authorized_credentials)) ||</div>
+<div class="line"><a id="l00291" name="l00291"></a><span class="lineno">  291</span>        (dp.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(jss::authorized) &amp;&amp; !dp[jss::authorized].<a class="code hl_function" href="classJson_1_1Value.html#a71e1f82cf1c3eaf969d400dcffb163a6">isString</a>()) ||</div>
+<div class="line"><a id="l00292" name="l00292"></a><span class="lineno">  292</span>        (dp.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(jss::authorized_credentials) &amp;&amp; !dp[jss::authorized_credentials].<a class="code hl_function" href="classJson_1_1Value.html#a1627eb9d6568d6d0252fa8bb711c0a59">isArray</a>())</div>
 <div class="line"><a id="l00293" name="l00293"></a><span class="lineno">  293</span>        )</div>
 <div class="line"><a id="l00294" name="l00294"></a><span class="lineno">  294</span>    <span class="comment">// clang-format on</span></div>
 <div class="line"><a id="l00295" name="l00295"></a><span class="lineno">  295</span>    {</div>
@@ -382,7 +382,7 @@ $(function() {
 <div class="line"><a id="l00304" name="l00304"></a><span class="lineno">  304</span>        <span class="keywordflow">return</span> std::nullopt;</div>
 <div class="line"><a id="l00305" name="l00305"></a><span class="lineno">  305</span>    }</div>
 <div class="line"><a id="l00306" name="l00306"></a><span class="lineno">  306</span> </div>
-<div class="line"><a id="l00307" name="l00307"></a><span class="lineno">  307</span>    <span class="keywordflow">if</span> (dp.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::authorized))</div>
+<div class="line"><a id="l00307" name="l00307"></a><span class="lineno">  307</span>    <span class="keywordflow">if</span> (dp.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(jss::authorized))</div>
 <div class="line"><a id="l00308" name="l00308"></a><span class="lineno">  308</span>    {</div>
 <div class="line"><a id="l00309" name="l00309"></a><span class="lineno">  309</span>        <span class="keyword">auto</span> <span class="keyword">const</span> <a class="code hl_function" href="namespaceripple_1_1credentials.html#ab7ad084e43c9038fdbe7497f127d6ea9">authorized</a> =</div>
 <div class="line"><a id="l00310" name="l00310"></a><span class="lineno">  310</span>            parseBase58&lt;AccountID&gt;(dp[jss::authorized].asString());</div>
@@ -446,20 +446,20 @@ $(function() {
 <div class="line"><a id="l00368" name="l00368"></a><span class="lineno">  368</span>        <span class="keywordflow">return</span> uNodeIndex;</div>
 <div class="line"><a id="l00369" name="l00369"></a><span class="lineno">  369</span>    }</div>
 <div class="line"><a id="l00370" name="l00370"></a><span class="lineno">  370</span> </div>
-<div class="line"><a id="l00371" name="l00371"></a><span class="lineno">  371</span>    <span class="keywordflow">if</span> (params.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::sub_index) &amp;&amp; !params[jss::sub_index].<a class="code hl_function" href="classJson_1_1Value.html#ab6798954f6e80281cf22708ef45198a7">isIntegral</a>())</div>
+<div class="line"><a id="l00371" name="l00371"></a><span class="lineno">  371</span>    <span class="keywordflow">if</span> (params.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(jss::sub_index) &amp;&amp; !params[jss::sub_index].<a class="code hl_function" href="classJson_1_1Value.html#ab6798954f6e80281cf22708ef45198a7">isIntegral</a>())</div>
 <div class="line"><a id="l00372" name="l00372"></a><span class="lineno">  372</span>    {</div>
 <div class="line"><a id="l00373" name="l00373"></a><span class="lineno">  373</span>        jvResult[jss::error] = <span class="stringliteral">&quot;malformedRequest&quot;</span>;</div>
 <div class="line"><a id="l00374" name="l00374"></a><span class="lineno">  374</span>        <span class="keywordflow">return</span> std::nullopt;</div>
 <div class="line"><a id="l00375" name="l00375"></a><span class="lineno">  375</span>    }</div>
 <div class="line"><a id="l00376" name="l00376"></a><span class="lineno">  376</span> </div>
 <div class="line"><a id="l00377" name="l00377"></a><span class="lineno">  377</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint64_t</a> uSubIndex =</div>
-<div class="line"><a id="l00378" name="l00378"></a><span class="lineno">  378</span>        params.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::sub_index) ? params[jss::sub_index].<a class="code hl_function" href="classJson_1_1Value.html#a74b305583ec3aacf4f9dd06e799dc265">asUInt</a>() : 0;</div>
+<div class="line"><a id="l00378" name="l00378"></a><span class="lineno">  378</span>        params.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(jss::sub_index) ? params[jss::sub_index].<a class="code hl_function" href="classJson_1_1Value.html#a74b305583ec3aacf4f9dd06e799dc265">asUInt</a>() : 0;</div>
 <div class="line"><a id="l00379" name="l00379"></a><span class="lineno">  379</span> </div>
-<div class="line"><a id="l00380" name="l00380"></a><span class="lineno">  380</span>    <span class="keywordflow">if</span> (params.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::dir_root))</div>
+<div class="line"><a id="l00380" name="l00380"></a><span class="lineno">  380</span>    <span class="keywordflow">if</span> (params.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(jss::dir_root))</div>
 <div class="line"><a id="l00381" name="l00381"></a><span class="lineno">  381</span>    {</div>
 <div class="line"><a id="l00382" name="l00382"></a><span class="lineno">  382</span>        <a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> uDirRoot;</div>
 <div class="line"><a id="l00383" name="l00383"></a><span class="lineno">  383</span> </div>
-<div class="line"><a id="l00384" name="l00384"></a><span class="lineno">  384</span>        <span class="keywordflow">if</span> (params.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::owner))</div>
+<div class="line"><a id="l00384" name="l00384"></a><span class="lineno">  384</span>        <span class="keywordflow">if</span> (params.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(jss::owner))</div>
 <div class="line"><a id="l00385" name="l00385"></a><span class="lineno">  385</span>        {</div>
 <div class="line"><a id="l00386" name="l00386"></a><span class="lineno">  386</span>            <span class="comment">// May not specify both dir_root and owner.</span></div>
 <div class="line"><a id="l00387" name="l00387"></a><span class="lineno">  387</span>            jvResult[jss::error] = <span class="stringliteral">&quot;malformedRequest&quot;</span>;</div>
@@ -474,7 +474,7 @@ $(function() {
 <div class="line"><a id="l00396" name="l00396"></a><span class="lineno">  396</span>        <span class="keywordflow">return</span> <a class="code hl_function" href="namespaceripple_1_1keylet.html#aaa5be5f268b3d5d79e99ce5bcbc4fab2">keylet::page</a>(uDirRoot, uSubIndex).<a class="code hl_variable" href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">key</a>;</div>
 <div class="line"><a id="l00397" name="l00397"></a><span class="lineno">  397</span>    }</div>
 <div class="line"><a id="l00398" name="l00398"></a><span class="lineno">  398</span> </div>
-<div class="line"><a id="l00399" name="l00399"></a><span class="lineno">  399</span>    <span class="keywordflow">if</span> (params.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::owner))</div>
+<div class="line"><a id="l00399" name="l00399"></a><span class="lineno">  399</span>    <span class="keywordflow">if</span> (params.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(jss::owner))</div>
 <div class="line"><a id="l00400" name="l00400"></a><span class="lineno">  400</span>    {</div>
 <div class="line"><a id="l00401" name="l00401"></a><span class="lineno">  401</span>        <span class="keyword">auto</span> <span class="keyword">const</span> ownerID =</div>
 <div class="line"><a id="l00402" name="l00402"></a><span class="lineno">  402</span>            parseBase58&lt;AccountID&gt;(params[jss::owner].asString());</div>
@@ -507,7 +507,7 @@ $(function() {
 <div class="line"><a id="l00429" name="l00429"></a><span class="lineno">  429</span>        <span class="keywordflow">return</span> uNodeIndex;</div>
 <div class="line"><a id="l00430" name="l00430"></a><span class="lineno">  430</span>    }</div>
 <div class="line"><a id="l00431" name="l00431"></a><span class="lineno">  431</span> </div>
-<div class="line"><a id="l00432" name="l00432"></a><span class="lineno">  432</span>    <span class="keywordflow">if</span> (!params.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::owner) || !params.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::seq) ||</div>
+<div class="line"><a id="l00432" name="l00432"></a><span class="lineno">  432</span>    <span class="keywordflow">if</span> (!params.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(jss::owner) || !params.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(jss::seq) ||</div>
 <div class="line"><a id="l00433" name="l00433"></a><span class="lineno">  433</span>        !params[jss::seq].<a class="code hl_function" href="classJson_1_1Value.html#ab6798954f6e80281cf22708ef45198a7">isIntegral</a>())</div>
 <div class="line"><a id="l00434" name="l00434"></a><span class="lineno">  434</span>    {</div>
 <div class="line"><a id="l00435" name="l00435"></a><span class="lineno">  435</span>        jvResult[jss::error] = <span class="stringliteral">&quot;malformedRequest&quot;</span>;</div>
@@ -539,8 +539,8 @@ $(function() {
 <div class="line"><a id="l00461" name="l00461"></a><span class="lineno">  461</span>        <span class="keywordflow">return</span> uNodeIndex;</div>
 <div class="line"><a id="l00462" name="l00462"></a><span class="lineno">  462</span>    }</div>
 <div class="line"><a id="l00463" name="l00463"></a><span class="lineno">  463</span> </div>
-<div class="line"><a id="l00464" name="l00464"></a><span class="lineno">  464</span>    <span class="keywordflow">if</span> (!mptJson.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::mpt_issuance_id) ||</div>
-<div class="line"><a id="l00465" name="l00465"></a><span class="lineno">  465</span>        !mptJson.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::account))</div>
+<div class="line"><a id="l00464" name="l00464"></a><span class="lineno">  464</span>    <span class="keywordflow">if</span> (!mptJson.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(jss::mpt_issuance_id) ||</div>
+<div class="line"><a id="l00465" name="l00465"></a><span class="lineno">  465</span>        !mptJson.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(jss::account))</div>
 <div class="line"><a id="l00466" name="l00466"></a><span class="lineno">  466</span>    {</div>
 <div class="line"><a id="l00467" name="l00467"></a><span class="lineno">  467</span>        jvResult[jss::error] = <span class="stringliteral">&quot;malformedRequest&quot;</span>;</div>
 <div class="line"><a id="l00468" name="l00468"></a><span class="lineno">  468</span>        <span class="keywordflow">return</span> std::nullopt;</div>
@@ -625,7 +625,7 @@ $(function() {
 <div class="line"><a id="l00547" name="l00547"></a><span class="lineno">  547</span>        <span class="keywordflow">return</span> uNodeIndex;</div>
 <div class="line"><a id="l00548" name="l00548"></a><span class="lineno">  548</span>    }</div>
 <div class="line"><a id="l00549" name="l00549"></a><span class="lineno">  549</span> </div>
-<div class="line"><a id="l00550" name="l00550"></a><span class="lineno">  550</span>    <span class="keywordflow">if</span> (!params.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::account) || !params.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::seq) ||</div>
+<div class="line"><a id="l00550" name="l00550"></a><span class="lineno">  550</span>    <span class="keywordflow">if</span> (!params.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(jss::account) || !params.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(jss::seq) ||</div>
 <div class="line"><a id="l00551" name="l00551"></a><span class="lineno">  551</span>        !params[jss::seq].<a class="code hl_function" href="classJson_1_1Value.html#ab6798954f6e80281cf22708ef45198a7">isIntegral</a>())</div>
 <div class="line"><a id="l00552" name="l00552"></a><span class="lineno">  552</span>    {</div>
 <div class="line"><a id="l00553" name="l00553"></a><span class="lineno">  553</span>        jvResult[jss::error] = <span class="stringliteral">&quot;malformedRequest&quot;</span>;</div>
@@ -656,8 +656,8 @@ $(function() {
 <div class="line"><a id="l00578" name="l00578"></a><span class="lineno">  578</span>        <span class="keywordflow">return</span> uNodeIndex;</div>
 <div class="line"><a id="l00579" name="l00579"></a><span class="lineno">  579</span>    }</div>
 <div class="line"><a id="l00580" name="l00580"></a><span class="lineno">  580</span> </div>
-<div class="line"><a id="l00581" name="l00581"></a><span class="lineno">  581</span>    <span class="keywordflow">if</span> (!params.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::oracle_document_id) ||</div>
-<div class="line"><a id="l00582" name="l00582"></a><span class="lineno">  582</span>        !params.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::account))</div>
+<div class="line"><a id="l00581" name="l00581"></a><span class="lineno">  581</span>    <span class="keywordflow">if</span> (!params.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(jss::oracle_document_id) ||</div>
+<div class="line"><a id="l00582" name="l00582"></a><span class="lineno">  582</span>        !params.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(jss::account))</div>
 <div class="line"><a id="l00583" name="l00583"></a><span class="lineno">  583</span>    {</div>
 <div class="line"><a id="l00584" name="l00584"></a><span class="lineno">  584</span>        jvResult[jss::error] = <span class="stringliteral">&quot;malformedRequest&quot;</span>;</div>
 <div class="line"><a id="l00585" name="l00585"></a><span class="lineno">  585</span>        <span class="keywordflow">return</span> std::nullopt;</div>
@@ -724,7 +724,7 @@ $(function() {
 <div class="line"><a id="l00646" name="l00646"></a><span class="lineno">  646</span>        <span class="keywordflow">return</span> std::nullopt;</div>
 <div class="line"><a id="l00647" name="l00647"></a><span class="lineno">  647</span>    }</div>
 <div class="line"><a id="l00648" name="l00648"></a><span class="lineno">  648</span> </div>
-<div class="line"><a id="l00649" name="l00649"></a><span class="lineno">  649</span>    <span class="keywordflow">if</span> (!pd.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::account))</div>
+<div class="line"><a id="l00649" name="l00649"></a><span class="lineno">  649</span>    <span class="keywordflow">if</span> (!pd.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(jss::account))</div>
 <div class="line"><a id="l00650" name="l00650"></a><span class="lineno">  650</span>    {</div>
 <div class="line"><a id="l00651" name="l00651"></a><span class="lineno">  651</span>        jvResult[jss::error] = <span class="stringliteral">&quot;malformedRequest&quot;</span>;</div>
 <div class="line"><a id="l00652" name="l00652"></a><span class="lineno">  652</span>        <span class="keywordflow">return</span> std::nullopt;</div>
@@ -736,7 +736,7 @@ $(function() {
 <div class="line"><a id="l00658" name="l00658"></a><span class="lineno">  658</span>        <span class="keywordflow">return</span> std::nullopt;</div>
 <div class="line"><a id="l00659" name="l00659"></a><span class="lineno">  659</span>    }</div>
 <div class="line"><a id="l00660" name="l00660"></a><span class="lineno">  660</span> </div>
-<div class="line"><a id="l00661" name="l00661"></a><span class="lineno">  661</span>    <span class="keywordflow">if</span> (!pd.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::seq) ||</div>
+<div class="line"><a id="l00661" name="l00661"></a><span class="lineno">  661</span>    <span class="keywordflow">if</span> (!pd.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(jss::seq) ||</div>
 <div class="line"><a id="l00662" name="l00662"></a><span class="lineno">  662</span>        (pd[jss::seq].<a class="code hl_function" href="classJson_1_1Value.html#aff51d8b52979ca06cf9d909accd5f695">isInt</a>() &amp;&amp; pd[jss::seq].<a class="code hl_function" href="classJson_1_1Value.html#a614d635bc248a592593feb322cd15ab8">asInt</a>() &lt; 0) ||</div>
 <div class="line"><a id="l00663" name="l00663"></a><span class="lineno">  663</span>        (!pd[jss::seq].<a class="code hl_function" href="classJson_1_1Value.html#aff51d8b52979ca06cf9d909accd5f695">isInt</a>() &amp;&amp; !pd[jss::seq].<a class="code hl_function" href="classJson_1_1Value.html#abdda463d3269015f883587349726cfbc">isUInt</a>()))</div>
 <div class="line"><a id="l00664" name="l00664"></a><span class="lineno">  664</span>    {</div>
@@ -759,8 +759,8 @@ $(function() {
 <div class="line"><a id="l00681" name="l00681"></a><span class="lineno">  681</span>{</div>
 <div class="line"><a id="l00682" name="l00682"></a><span class="lineno">  682</span>    <a class="code hl_class" href="classripple_1_1base__uint.html">Currency</a> uCurrency;</div>
 <div class="line"><a id="l00683" name="l00683"></a><span class="lineno">  683</span> </div>
-<div class="line"><a id="l00684" name="l00684"></a><span class="lineno">  684</span>    <span class="keywordflow">if</span> (!jvRippleState.<a class="code hl_function" href="classJson_1_1Value.html#a8cf96c0f2a552051fcfc78ffee60e037">isObject</a>() || !jvRippleState.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::currency) ||</div>
-<div class="line"><a id="l00685" name="l00685"></a><span class="lineno">  685</span>        !jvRippleState.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::accounts) ||</div>
+<div class="line"><a id="l00684" name="l00684"></a><span class="lineno">  684</span>    <span class="keywordflow">if</span> (!jvRippleState.<a class="code hl_function" href="classJson_1_1Value.html#a8cf96c0f2a552051fcfc78ffee60e037">isObject</a>() || !jvRippleState.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(jss::currency) ||</div>
+<div class="line"><a id="l00685" name="l00685"></a><span class="lineno">  685</span>        !jvRippleState.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(jss::accounts) ||</div>
 <div class="line"><a id="l00686" name="l00686"></a><span class="lineno">  686</span>        !jvRippleState[jss::accounts].<a class="code hl_function" href="classJson_1_1Value.html#a1627eb9d6568d6d0252fa8bb711c0a59">isArray</a>() ||</div>
 <div class="line"><a id="l00687" name="l00687"></a><span class="lineno">  687</span>        2 != jvRippleState[jss::accounts].<a class="code hl_function" href="classJson_1_1Value.html#a23c7027ca674f989f90564d63ef36c74">size</a>() ||</div>
 <div class="line"><a id="l00688" name="l00688"></a><span class="lineno">  688</span>        !jvRippleState[jss::accounts][0u].<a class="code hl_function" href="classJson_1_1Value.html#a71e1f82cf1c3eaf969d400dcffb163a6">isString</a>() ||</div>
@@ -805,7 +805,7 @@ $(function() {
 <div class="line"><a id="l00727" name="l00727"></a><span class="lineno">  727</span>        <span class="keywordflow">return</span> uNodeIndex;</div>
 <div class="line"><a id="l00728" name="l00728"></a><span class="lineno">  728</span>    }</div>
 <div class="line"><a id="l00729" name="l00729"></a><span class="lineno">  729</span> </div>
-<div class="line"><a id="l00730" name="l00730"></a><span class="lineno">  730</span>    <span class="keywordflow">if</span> (!params.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::account) || !params.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::ticket_seq) ||</div>
+<div class="line"><a id="l00730" name="l00730"></a><span class="lineno">  730</span>    <span class="keywordflow">if</span> (!params.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(jss::account) || !params.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(jss::ticket_seq) ||</div>
 <div class="line"><a id="l00731" name="l00731"></a><span class="lineno">  731</span>        !params[jss::ticket_seq].<a class="code hl_function" href="classJson_1_1Value.html#ab6798954f6e80281cf22708ef45198a7">isIntegral</a>())</div>
 <div class="line"><a id="l00732" name="l00732"></a><span class="lineno">  732</span>    {</div>
 <div class="line"><a id="l00733" name="l00733"></a><span class="lineno">  733</span>        jvResult[jss::error] = <span class="stringliteral">&quot;malformedRequest&quot;</span>;</div>
@@ -838,13 +838,13 @@ $(function() {
 <div class="line"><a id="l00760" name="l00760"></a><span class="lineno">  760</span>    }</div>
 <div class="line"><a id="l00761" name="l00761"></a><span class="lineno">  761</span> </div>
 <div class="line"><a id="l00762" name="l00762"></a><span class="lineno">  762</span>    <span class="keywordflow">if</span> (!claim_id.<a class="code hl_function" href="classJson_1_1Value.html#a8cf96c0f2a552051fcfc78ffee60e037">isObject</a>() ||</div>
-<div class="line"><a id="l00763" name="l00763"></a><span class="lineno">  763</span>        !(claim_id.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(sfIssuingChainDoor.getJsonName()) &amp;&amp;</div>
+<div class="line"><a id="l00763" name="l00763"></a><span class="lineno">  763</span>        !(claim_id.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(sfIssuingChainDoor.getJsonName()) &amp;&amp;</div>
 <div class="line"><a id="l00764" name="l00764"></a><span class="lineno">  764</span>          claim_id[sfIssuingChainDoor.getJsonName()].<a class="code hl_function" href="classJson_1_1Value.html#a71e1f82cf1c3eaf969d400dcffb163a6">isString</a>()) ||</div>
-<div class="line"><a id="l00765" name="l00765"></a><span class="lineno">  765</span>        !(claim_id.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(sfLockingChainDoor.getJsonName()) &amp;&amp;</div>
+<div class="line"><a id="l00765" name="l00765"></a><span class="lineno">  765</span>        !(claim_id.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(sfLockingChainDoor.getJsonName()) &amp;&amp;</div>
 <div class="line"><a id="l00766" name="l00766"></a><span class="lineno">  766</span>          claim_id[sfLockingChainDoor.getJsonName()].<a class="code hl_function" href="classJson_1_1Value.html#a71e1f82cf1c3eaf969d400dcffb163a6">isString</a>()) ||</div>
-<div class="line"><a id="l00767" name="l00767"></a><span class="lineno">  767</span>        !claim_id.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(sfIssuingChainIssue.getJsonName()) ||</div>
-<div class="line"><a id="l00768" name="l00768"></a><span class="lineno">  768</span>        !claim_id.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(sfLockingChainIssue.getJsonName()) ||</div>
-<div class="line"><a id="l00769" name="l00769"></a><span class="lineno">  769</span>        !claim_id.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::xchain_owned_claim_id))</div>
+<div class="line"><a id="l00767" name="l00767"></a><span class="lineno">  767</span>        !claim_id.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(sfIssuingChainIssue.getJsonName()) ||</div>
+<div class="line"><a id="l00768" name="l00768"></a><span class="lineno">  768</span>        !claim_id.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(sfLockingChainIssue.getJsonName()) ||</div>
+<div class="line"><a id="l00769" name="l00769"></a><span class="lineno">  769</span>        !claim_id.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(jss::xchain_owned_claim_id))</div>
 <div class="line"><a id="l00770" name="l00770"></a><span class="lineno">  770</span>    {</div>
 <div class="line"><a id="l00771" name="l00771"></a><span class="lineno">  771</span>        jvResult[jss::error] = <span class="stringliteral">&quot;malformedRequest&quot;</span>;</div>
 <div class="line"><a id="l00772" name="l00772"></a><span class="lineno">  772</span>        <span class="keywordflow">return</span> std::nullopt;</div>
@@ -913,13 +913,13 @@ $(function() {
 <div class="line"><a id="l00835" name="l00835"></a><span class="lineno">  835</span>    }</div>
 <div class="line"><a id="l00836" name="l00836"></a><span class="lineno">  836</span> </div>
 <div class="line"><a id="l00837" name="l00837"></a><span class="lineno">  837</span>    <span class="keywordflow">if</span> (!claim_id.<a class="code hl_function" href="classJson_1_1Value.html#a8cf96c0f2a552051fcfc78ffee60e037">isObject</a>() ||</div>
-<div class="line"><a id="l00838" name="l00838"></a><span class="lineno">  838</span>        !(claim_id.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(sfIssuingChainDoor.getJsonName()) &amp;&amp;</div>
+<div class="line"><a id="l00838" name="l00838"></a><span class="lineno">  838</span>        !(claim_id.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(sfIssuingChainDoor.getJsonName()) &amp;&amp;</div>
 <div class="line"><a id="l00839" name="l00839"></a><span class="lineno">  839</span>          claim_id[sfIssuingChainDoor.getJsonName()].<a class="code hl_function" href="classJson_1_1Value.html#a71e1f82cf1c3eaf969d400dcffb163a6">isString</a>()) ||</div>
-<div class="line"><a id="l00840" name="l00840"></a><span class="lineno">  840</span>        !(claim_id.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(sfLockingChainDoor.getJsonName()) &amp;&amp;</div>
+<div class="line"><a id="l00840" name="l00840"></a><span class="lineno">  840</span>        !(claim_id.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(sfLockingChainDoor.getJsonName()) &amp;&amp;</div>
 <div class="line"><a id="l00841" name="l00841"></a><span class="lineno">  841</span>          claim_id[sfLockingChainDoor.getJsonName()].<a class="code hl_function" href="classJson_1_1Value.html#a71e1f82cf1c3eaf969d400dcffb163a6">isString</a>()) ||</div>
-<div class="line"><a id="l00842" name="l00842"></a><span class="lineno">  842</span>        !claim_id.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(sfIssuingChainIssue.getJsonName()) ||</div>
-<div class="line"><a id="l00843" name="l00843"></a><span class="lineno">  843</span>        !claim_id.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(sfLockingChainIssue.getJsonName()) ||</div>
-<div class="line"><a id="l00844" name="l00844"></a><span class="lineno">  844</span>        !claim_id.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::xchain_owned_create_account_claim_id))</div>
+<div class="line"><a id="l00842" name="l00842"></a><span class="lineno">  842</span>        !claim_id.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(sfIssuingChainIssue.getJsonName()) ||</div>
+<div class="line"><a id="l00843" name="l00843"></a><span class="lineno">  843</span>        !claim_id.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(sfLockingChainIssue.getJsonName()) ||</div>
+<div class="line"><a id="l00844" name="l00844"></a><span class="lineno">  844</span>        !claim_id.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(jss::xchain_owned_create_account_claim_id))</div>
 <div class="line"><a id="l00845" name="l00845"></a><span class="lineno">  845</span>    {</div>
 <div class="line"><a id="l00846" name="l00846"></a><span class="lineno">  846</span>        jvResult[jss::error] = <span class="stringliteral">&quot;malformedRequest&quot;</span>;</div>
 <div class="line"><a id="l00847" name="l00847"></a><span class="lineno">  847</span>        <span class="keywordflow">return</span> std::nullopt;</div>
@@ -1037,9 +1037,9 @@ $(function() {
 <div class="line"><a id="l00959" name="l00959"></a><span class="lineno">  959</span>    <span class="keywordflow">try</span></div>
 <div class="line"><a id="l00960" name="l00960"></a><span class="lineno">  960</span>    {</div>
 <div class="line"><a id="l00961" name="l00961"></a><span class="lineno">  961</span>        <span class="keywordtype">bool</span> found = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l00962" name="l00962"></a><span class="lineno">  962</span>        <span class="keywordflow">for</span> (<span class="keyword">const</span> <span class="keyword">auto</span>&amp; ledgerEntry : ledgerEntryParsers)</div>
+<div class="line"><a id="l00962" name="l00962"></a><span class="lineno">  962</span>        <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; ledgerEntry : ledgerEntryParsers)</div>
 <div class="line"><a id="l00963" name="l00963"></a><span class="lineno">  963</span>        {</div>
-<div class="line"><a id="l00964" name="l00964"></a><span class="lineno">  964</span>            <span class="keywordflow">if</span> (context.<a class="code hl_variable" href="structripple_1_1RPC_1_1JsonContext.html#a036b2c14552fbca49011c3d0e78017fa">params</a>.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(ledgerEntry.fieldName))</div>
+<div class="line"><a id="l00964" name="l00964"></a><span class="lineno">  964</span>            <span class="keywordflow">if</span> (context.<a class="code hl_variable" href="structripple_1_1RPC_1_1JsonContext.html#a036b2c14552fbca49011c3d0e78017fa">params</a>.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(ledgerEntry.fieldName))</div>
 <div class="line"><a id="l00965" name="l00965"></a><span class="lineno">  965</span>            {</div>
 <div class="line"><a id="l00966" name="l00966"></a><span class="lineno">  966</span>                expectedType = ledgerEntry.expectedType;</div>
 <div class="line"><a id="l00967" name="l00967"></a><span class="lineno">  967</span>                <span class="comment">// `Bridge` is the only type that involves two fields at the</span></div>
@@ -1091,7 +1091,7 @@ $(function() {
 <div class="line"><a id="l01013" name="l01013"></a><span class="lineno"> 1013</span>    <span class="keyword">auto</span> <span class="keyword">const</span> sleNode = lpLedger-&gt;read(<a class="code hl_function" href="namespaceripple_1_1keylet.html#aaaeecce79e0ef09bd851bce0c0f2dfde">keylet::unchecked</a>(uNodeIndex));</div>
 <div class="line"><a id="l01014" name="l01014"></a><span class="lineno"> 1014</span> </div>
 <div class="line"><a id="l01015" name="l01015"></a><span class="lineno"> 1015</span>    <span class="keywordtype">bool</span> bNodeBinary = <span class="keyword">false</span>;</div>
-<div class="line"><a id="l01016" name="l01016"></a><span class="lineno"> 1016</span>    <span class="keywordflow">if</span> (context.<a class="code hl_variable" href="structripple_1_1RPC_1_1JsonContext.html#a036b2c14552fbca49011c3d0e78017fa">params</a>.<a class="code hl_function" href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">isMember</a>(jss::binary))</div>
+<div class="line"><a id="l01016" name="l01016"></a><span class="lineno"> 1016</span>    <span class="keywordflow">if</span> (context.<a class="code hl_variable" href="structripple_1_1RPC_1_1JsonContext.html#a036b2c14552fbca49011c3d0e78017fa">params</a>.<a class="code hl_function" href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">isMember</a>(jss::binary))</div>
 <div class="line"><a id="l01017" name="l01017"></a><span class="lineno"> 1017</span>        bNodeBinary = context.<a class="code hl_variable" href="structripple_1_1RPC_1_1JsonContext.html#a036b2c14552fbca49011c3d0e78017fa">params</a>[jss::binary].<a class="code hl_function" href="classJson_1_1Value.html#ab693fb7b9b1595bb0adc49658bbf780d">asBool</a>();</div>
 <div class="line"><a id="l01018" name="l01018"></a><span class="lineno"> 1018</span> </div>
 <div class="line"><a id="l01019" name="l01019"></a><span class="lineno"> 1019</span>    <span class="keywordflow">if</span> (!sleNode)</div>
@@ -1189,7 +1189,7 @@ $(function() {
 <div class="ttc" id="aclassJson_1_1Value_html_ab693fb7b9b1595bb0adc49658bbf780d"><div class="ttname"><a href="classJson_1_1Value.html#ab693fb7b9b1595bb0adc49658bbf780d">Json::Value::asBool</a></div><div class="ttdeci">bool asBool() const</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8cpp_source.html#l00625">json_value.cpp:625</a></div></div>
 <div class="ttc" id="aclassJson_1_1Value_html_abdda463d3269015f883587349726cfbc"><div class="ttname"><a href="classJson_1_1Value.html#abdda463d3269015f883587349726cfbc">Json::Value::isUInt</a></div><div class="ttdeci">bool isUInt() const</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8cpp_source.html#l01004">json_value.cpp:1004</a></div></div>
 <div class="ttc" id="aclassJson_1_1Value_html_abde4070e21e46dc4f8203f66582cb19f"><div class="ttname"><a href="classJson_1_1Value.html#abde4070e21e46dc4f8203f66582cb19f">Json::Value::isNull</a></div><div class="ttdeci">bool isNull() const</div><div class="ttdoc">isNull() tests to see if this field is null.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8cpp_source.html#l00986">json_value.cpp:986</a></div></div>
-<div class="ttc" id="aclassJson_1_1Value_html_ad6d4df2227321bab05e86667609a7fad"><div class="ttname"><a href="classJson_1_1Value.html#ad6d4df2227321bab05e86667609a7fad">Json::Value::isMember</a></div><div class="ttdeci">bool isMember(const char *key) const</div><div class="ttdoc">Return true if the object has a member named key.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8cpp_source.html#l00949">json_value.cpp:949</a></div></div>
+<div class="ttc" id="aclassJson_1_1Value_html_abfa90c81f6aee7877bd5fb4c8445994f"><div class="ttname"><a href="classJson_1_1Value.html#abfa90c81f6aee7877bd5fb4c8445994f">Json::Value::isMember</a></div><div class="ttdeci">bool isMember(char const *key) const</div><div class="ttdoc">Return true if the object has a member named key.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8cpp_source.html#l00949">json_value.cpp:949</a></div></div>
 <div class="ttc" id="aclassJson_1_1Value_html_aff51d8b52979ca06cf9d909accd5f695"><div class="ttname"><a href="classJson_1_1Value.html#aff51d8b52979ca06cf9d909accd5f695">Json::Value::isInt</a></div><div class="ttdeci">bool isInt() const</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8cpp_source.html#l00998">json_value.cpp:998</a></div></div>
 <div class="ttc" id="aclassripple_1_1Issue_html"><div class="ttname"><a href="classripple_1_1Issue.html">ripple::Issue</a></div><div class="ttdoc">A currency issued by an account.</div><div class="ttdef"><b>Definition:</b> <a href="Issue_8h_source.html#l00035">Issue.h:36</a></div></div>
 <div class="ttc" id="aclassripple_1_1STArray_html"><div class="ttname"><a href="classripple_1_1STArray.html">ripple::STArray</a></div><div class="ttdef"><b>Definition:</b> <a href="STArray_8h_source.html#l00028">STArray.h:29</a></div></div>
