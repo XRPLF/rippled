@@ -109,7 +109,7 @@ class FeatureCollections
     };
 
     // Intermediate types to help with readability
-    template <class tag, typename Type, Type Feature::*PtrToMember>
+    template <class tag, typename Type, Type Feature::* PtrToMember>
     using feature_hashed_unique = boost::multi_index::hashed_unique<
         boost::multi_index::tag<tag>,
         boost::multi_index::member<Feature, Type, PtrToMember>>;
@@ -437,9 +437,13 @@ featureToName(uint256 const& f)
     uint256 const feature##name = registerFeature(#name, supported, vote);
 #define XRPL_FIX(name, supported, vote) \
     uint256 const fix##name = registerFeature("fix" #name, supported, vote);
-#define XRPL_RETIRE(name)                                      \
-    [[deprecated("The referenced amendment has been retired"), \
-      maybe_unused]] uint256 const retired##name = retireFeature(#name);
+
+// clang-format off
+#define XRPL_RETIRE(name)                                       \
+    [[deprecated("The referenced amendment has been retired")]] \
+    [[maybe_unused]]                                            \
+    uint256 const retired##name = retireFeature(#name);
+// clang-format on
 
 #include <xrpl/protocol/detail/features.macro>
 
