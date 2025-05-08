@@ -50,8 +50,8 @@ struct Credentials_test : public beast::unit_test::suite
     {
         using namespace test::jtx;
 
-        const char credType[] = "abcde";
-        const char uri[] = "uri";
+        char const credType[] = "abcde";
+        char const uri[] = "uri";
 
         Account const issuer{"issuer"};
         Account const subject{"subject"};
@@ -199,7 +199,7 @@ struct Credentials_test : public beast::unit_test::suite
     {
         using namespace test::jtx;
 
-        const char credType[] = "abcde";
+        char const credType[] = "abcde";
 
         Account const issuer{"issuer"};
         Account const subject{"subject"};
@@ -448,7 +448,7 @@ struct Credentials_test : public beast::unit_test::suite
     {
         using namespace test::jtx;
 
-        const char credType[] = "abcde";
+        char const credType[] = "abcde";
 
         Account const issuer{"issuer"};
         Account const subject{"subject"};
@@ -606,7 +606,7 @@ struct Credentials_test : public beast::unit_test::suite
     {
         using namespace jtx;
 
-        const char credType[] = "abcde";
+        char const credType[] = "abcde";
         Account const issuer{"issuer"};
         Account const subject{"subject"};
         Account const other{"other"};
@@ -716,7 +716,7 @@ struct Credentials_test : public beast::unit_test::suite
             }
 
             {
-                const char credType2[] = "efghi";
+                char const credType2[] = "efghi";
 
                 testcase("CredentialsAccept fail, expired credentials.");
                 auto jv = credentials::create(subject, issuer, credType2);
@@ -787,7 +787,7 @@ struct Credentials_test : public beast::unit_test::suite
     {
         using namespace test::jtx;
 
-        const char credType[] = "abcde";
+        char const credType[] = "abcde";
         Account const issuer{"issuer"};
         Account const subject{"subject"};
         Account const other{"other"};
@@ -832,7 +832,7 @@ struct Credentials_test : public beast::unit_test::suite
             }
 
             {
-                const char credType2[] = "fghij";
+                char const credType2[] = "fghij";
 
                 env(credentials::create(subject, issuer, credType2));
                 env.close();
@@ -934,7 +934,7 @@ struct Credentials_test : public beast::unit_test::suite
     {
         using namespace test::jtx;
 
-        const char credType[] = "abcde";
+        char const credType[] = "abcde";
         Account const issuer{"issuer"};
         Account const subject{"subject"};
 
@@ -962,7 +962,7 @@ struct Credentials_test : public beast::unit_test::suite
     {
         using namespace test::jtx;
 
-        const char credType[] = "abcde";
+        char const credType[] = "abcde";
         Account const issuer{"issuer"};
         Account const subject{"subject"};
 
@@ -1059,7 +1059,7 @@ struct Credentials_test : public beast::unit_test::suite
             std::string("Test flag, fix ") +
             (enabled ? "enabled" : "disabled"));
 
-        const char credType[] = "abcde";
+        char const credType[] = "abcde";
         Account const issuer{"issuer"};
         Account const subject{"subject"};
 

@@ -29,7 +29,7 @@ namespace ripple {
 TxFormats::TxFormats()
 {
     // Fields shared by all txFormats:
-    static const std::initializer_list<SOElement> commonFields{
+    static std::initializer_list<SOElement> const commonFields{
         {sfTransactionType, soeREQUIRED},
         {sfFlags, soeOPTIONAL},
         {sfSourceTag, soeOPTIONAL},
@@ -46,6 +46,7 @@ TxFormats::TxFormats()
         {sfTxnSignature, soeOPTIONAL},
         {sfSigners, soeOPTIONAL},  // submit_multisigned
         {sfNetworkID, soeOPTIONAL},
+        {sfDelegate, soeOPTIONAL},
     };
 
 #pragma push_macro("UNWRAP")
@@ -54,7 +55,7 @@ TxFormats::TxFormats()
 #undef TRANSACTION
 
 #define UNWRAP(...) __VA_ARGS__
-#define TRANSACTION(tag, value, name, fields) \
+#define TRANSACTION(tag, value, name, delegatable, fields) \
     add(jss::name, tag, UNWRAP fields, commonFields);
 
 #include <xrpl/protocol/detail/transactions.macro>

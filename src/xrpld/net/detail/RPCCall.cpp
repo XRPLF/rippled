@@ -1059,7 +1059,7 @@ private:
 
         if (jvParams.size() >= 3)
         {
-            const auto offset = jvParams.size() == 3 ? 0 : 1;
+            auto const offset = jvParams.size() == 3 ? 0 : 1;
 
             jvRequest[jss::min_ledger] = jvParams[1u + offset].asString();
             jvRequest[jss::max_ledger] = jvParams[2u + offset].asString();
@@ -1123,7 +1123,7 @@ private:
     parseGatewayBalances(Json::Value const& jvParams)
     {
         unsigned int index = 0;
-        const unsigned int size = jvParams.size();
+        unsigned int const size = jvParams.size();
 
         Json::Value jvRequest{Json::objectValue};
 
@@ -1207,7 +1207,7 @@ public:
 
         struct Command
         {
-            const char* name;
+            char const* name;
             parseFuncPtr parse;
             int minParams;
             int maxParams;
@@ -1370,7 +1370,7 @@ struct RPCCallImp
     static bool
     onResponse(
         std::function<void(Json::Value const& jvInput)> callbackFuncP,
-        const boost::system::error_code& ecResult,
+        boost::system::error_code const& ecResult,
         int iStatus,
         std::string const& strData,
         beast::Journal j)
@@ -1633,7 +1633,7 @@ namespace RPCCall {
 int
 fromCommandLine(
     Config const& config,
-    const std::vector<std::string>& vCmd,
+    std::vector<std::string> const& vCmd,
     Logs& logs)
 {
     auto const result =
@@ -1650,14 +1650,14 @@ void
 fromNetwork(
     boost::asio::io_service& io_service,
     std::string const& strIp,
-    const std::uint16_t iPort,
+    std::uint16_t const iPort,
     std::string const& strUsername,
     std::string const& strPassword,
     std::string const& strPath,
     std::string const& strMethod,
     Json::Value const& jvParams,
-    const bool bSSL,
-    const bool quiet,
+    bool const bSSL,
+    bool const quiet,
     Logs& logs,
     std::function<void(Json::Value const& jvInput)> callbackFuncP,
     std::unordered_map<std::string, std::string> headers)

@@ -27,6 +27,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAccount.h>
 #include <xrpl/protocol/STAmount.h>
@@ -374,10 +375,35 @@ parseLeaf(
             {
                 if (value.isString())
                 {
-                    ret = detail::make_stvar<STUInt32>(
-                        field,
-                        beast::lexicalCastThrow<std::uint32_t>(
-                            value.asString()));
+                    if (field == sfPermissionValue)
+                    {
+                        std::string const strValue = value.asString();
+                        auto const granularPermission =
+                            Permission::getInstance().getGranularValue(
+                                strValue);
+                        if (granularPermission)
+                        {
+                            ret = detail::make_stvar<STUInt32>(
+                                field, *granularPermission);
+                        }
+                        else
+                        {
+                            auto const& txType =
+                                TxFormats::getInstance().findTypeByName(
+                                    strValue);
+                            ret = detail::make_stvar<STUInt32>(
+                                field,
+                                Permission::getInstance().txToPermissionType(
+                                    txType));
+                        }
+                    }
+                    else
+                    {
+                        ret = detail::make_stvar<STUInt32>(
+                            field,
+                            beast::lexicalCastThrow<std::uint32_t>(
+                                value.asString()));
+                    }
                 }
                 else if (value.isInt())
                 {
@@ -840,7 +866,7 @@ parseLeaf(
     return ret;
 }
 
-static const int maxDepth = 64;
+static int const maxDepth = 64;
 
 // Forward declaration since parseObject() and parseArray() call each other.
 static std::optional<detail::STVar>
@@ -1026,7 +1052,8 @@ parseArray(
             Json::Value const objectFields(json[i][objectName]);
 
             std::stringstream ss;
-            ss << json_name << "." << "[" << i << "]." << objectName;
+            ss << json_name << "."
+               << "[" << i << "]." << objectName;
 
             auto ret = parseObject(
                 ss.str(), objectFields, nameField, depth + 1, error);

@@ -50,7 +50,7 @@ public:
     Json::Value getJson(JsonOptions) const override;
 
     bool
-    isEquivalent(const STBase& t) const override;
+    isEquivalent(STBase const& t) const override;
 
     bool
     isDefault() const override;
@@ -62,7 +62,7 @@ public:
     operator=(std::vector<uint256>&& v);
 
     void
-    setValue(const STVector256& v);
+    setValue(STVector256 const& v);
 
     /** Retrieve a copy of the vector we contain */
     explicit
@@ -153,7 +153,7 @@ STVector256::operator=(std::vector<uint256>&& v)
 }
 
 inline void
-STVector256::setValue(const STVector256& v)
+STVector256::setValue(STVector256 const& v)
 {
     mValue = v.mValue;
 }

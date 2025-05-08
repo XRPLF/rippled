@@ -62,20 +62,20 @@ private:
 public:
     using value_type = STAmount;
 
-    static const int cMinOffset = -96;
-    static const int cMaxOffset = 80;
+    static int const cMinOffset = -96;
+    static int const cMaxOffset = 80;
 
     // Maximum native value supported by the code
-    static const std::uint64_t cMinValue = 1000000000000000ull;
-    static const std::uint64_t cMaxValue = 9999999999999999ull;
-    static const std::uint64_t cMaxNative = 9000000000000000000ull;
+    static std::uint64_t const cMinValue = 1000000000000000ull;
+    static std::uint64_t const cMaxValue = 9999999999999999ull;
+    static std::uint64_t const cMaxNative = 9000000000000000000ull;
 
     // Max native value on network.
-    static const std::uint64_t cMaxNativeN = 100000000000000000ull;
-    static const std::uint64_t cIssuedCurrency = 0x8000000000000000ull;
-    static const std::uint64_t cPositive = 0x4000000000000000ull;
-    static const std::uint64_t cMPToken = 0x2000000000000000ull;
-    static const std::uint64_t cValueMask = ~(cPositive | cMPToken);
+    static std::uint64_t const cMaxNativeN = 100000000000000000ull;
+    static std::uint64_t const cIssuedCurrency = 0x8000000000000000ull;
+    static std::uint64_t const cPositive = 0x4000000000000000ull;
+    static std::uint64_t const cMPToken = 0x2000000000000000ull;
+    static std::uint64_t const cValueMask = ~(cPositive | cMPToken);
 
     static std::uint64_t const uRateOne;
 
@@ -283,7 +283,7 @@ public:
     add(Serializer& s) const override;
 
     bool
-    isEquivalent(const STBase& t) const override;
+    isEquivalent(STBase const& t) const override;
 
     bool
     isDefault() const override;

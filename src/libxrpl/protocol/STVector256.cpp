@@ -86,9 +86,9 @@ STVector256::add(Serializer& s) const
 }
 
 bool
-STVector256::isEquivalent(const STBase& t) const
+STVector256::isEquivalent(STBase const& t) const
 {
-    const STVector256* v = dynamic_cast<const STVector256*>(&t);
+    STVector256 const* v = dynamic_cast<STVector256 const*>(&t);
     return v && (mValue == v->mValue);
 }
 

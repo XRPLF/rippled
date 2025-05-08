@@ -279,6 +279,10 @@ amm(Asset const& issue1, Asset const& issue2) noexcept;
 Keylet
 amm(uint256 const& amm) noexcept;
 
+/** A keylet for Delegate object */
+Keylet
+delegate(AccountID const& account, AccountID const& authorizedAccount) noexcept;
+
 Keylet
 bridge(STXChainBridge const& bridge, STXChainBridge::ChainType chainType);
 
