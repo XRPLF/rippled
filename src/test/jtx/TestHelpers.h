@@ -756,6 +756,12 @@ draw(
     STAmount const& amount,
     std::uint32_t flags = 0);
 
+Json::Value
+pay(AccountID const& account,
+    uint256 const& loanID,
+    STAmount const& amount,
+    std::uint32_t flags = 0);
+
 }  // namespace loan
 
 }  // namespace jtx

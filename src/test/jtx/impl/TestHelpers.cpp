@@ -529,6 +529,21 @@ draw(
     return jv;
 }
 
+Json::Value
+pay(AccountID const& account,
+    uint256 const& loanID,
+    STAmount const& amount,
+    std::uint32_t flags)
+{
+    Json::Value jv;
+    jv[sfTransactionType] = jss::LoanPay;
+    jv[sfAccount] = to_string(account);
+    jv[sfLoanID] = to_string(loanID);
+    jv[sfAmount] = amount.getJson();
+    jv[sfFlags] = flags;
+    return jv;
+}
+
 }  // namespace loan
 }  // namespace jtx
 }  // namespace test
