@@ -155,6 +155,10 @@ std::size_t constexpr maxPriceScale = 20;
  */
 std::size_t constexpr maxTrim = 25;
 
+/** The maximum number of delegate permissions an account can grant
+ */
+std::size_t constexpr permissionMaxSize = 10;
+
 }  // namespace ripple
 
 #endif

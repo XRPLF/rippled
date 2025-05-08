@@ -20,6 +20,7 @@
 #include <test/jtx.h>
 #include <test/jtx/Oracle.h>
 #include <test/jtx/attester.h>
+#include <test/jtx/delegate.h>
 #include <test/jtx/multisign.h>
 #include <test/jtx/xchain_bridge.h>
 

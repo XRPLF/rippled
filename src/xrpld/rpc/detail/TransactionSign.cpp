@@ -531,10 +531,40 @@ transactionPreProcessImpl(
         if (!signingArgs.isMultiSigning())
         {
             // Make sure the account and secret belong together.
-            auto const err = acctMatchesPubKey(sle, srcAddressID, pk);
+            if (tx_json.isMember(sfDelegate.jsonName))
+            {
+                // Delegated transaction
+                auto const delegateJson = tx_json[sfDelegate.jsonName];
+                auto const ptrDelegatedAddressID = delegateJson.isString()
+                    ? parseBase58<AccountID>(delegateJson.asString())
+                    : std::nullopt;
 
-            if (err != rpcSUCCESS)
-                return rpcError(err);
+                if (!ptrDelegatedAddressID)
+                {
+                    return RPC::make_error(
+                        rpcSRC_ACT_MALFORMED,
+                        RPC::invalid_field_message("tx_json.Delegate"));
+                }
+
+                auto delegatedAddressID = *ptrDelegatedAddressID;
+                auto delegatedSle = app.openLedger().current()->read(
+                    keylet::account(delegatedAddressID));
+                if (!delegatedSle)
+                    return rpcError(rpcDELEGATE_ACT_NOT_FOUND);
+
+                auto const err =
+                    acctMatchesPubKey(delegatedSle, delegatedAddressID, pk);
+
+                if (err != rpcSUCCESS)
+                    return rpcError(err);
+            }
+            else
+            {
+                auto const err = acctMatchesPubKey(sle, srcAddressID, pk);
+
+                if (err != rpcSUCCESS)
+                    return rpcError(err);
+            }
         }
     }
 

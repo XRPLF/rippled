@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2025 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,44 +17,46 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TX_PAYMENT_H_INCLUDED
-#define RIPPLE_TX_PAYMENT_H_INCLUDED
+#pragma once
 
-#include <xrpld/app/tx/detail/Transactor.h>
+#include <test/jtx/Account.h>
+#include <test/jtx/Env.h>
 
 namespace ripple {
+namespace test {
+namespace jtx {
 
-class Payment : public Transactor
+namespace delegate {
+
+Json::Value
+set(jtx::Account const& account,
+    jtx::Account const& authorize,
+    std::vector<std::string> const& permissions);
+
+Json::Value
+entry(
+    jtx::Env& env,
+    jtx::Account const& account,
+    jtx::Account const& authorize);
+
+struct as
 {
-    /* The largest number of paths we allow */
-    static std::size_t const MaxPathSize = 6;
-
-    /* The longest path we allow */
-    static std::size_t const MaxPathLength = 8;
+private:
+    jtx::Account delegate_;
 
 public:
-    static constexpr ConsequencesFactoryType ConsequencesFactory{Custom};
-
-    explicit Payment(ApplyContext& ctx) : Transactor(ctx)
+    explicit as(jtx::Account const& account) : delegate_(account)
     {
     }
 
-    static TxConsequences
-    makeTxConsequences(PreflightContext const& ctx);
-
-    static NotTEC
-    preflight(PreflightContext const& ctx);
-
-    static TER
-    checkPermission(ReadView const& view, STTx const& tx);
-
-    static TER
-    preclaim(PreclaimContext const& ctx);
-
-    TER
-    doApply() override;
+    void
+    operator()(jtx::Env&, jtx::JTx& jtx) const
+    {
+        jtx.jv[sfDelegate.jsonName] = delegate_.human();
+    }
 };
 
+}  // namespace delegate
+}  // namespace jtx
+}  // namespace test
 }  // namespace ripple
-
-#endif
