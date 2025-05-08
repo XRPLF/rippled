@@ -281,7 +281,6 @@ struct TxCollector
             return duration_cast<duration<float>>(dur).count();
         };
 
-        // clang-format off
         if (printBreakline)
         {
             log << std::setw(11) << std::setfill('-') << "-" << "-"
@@ -341,7 +340,6 @@ struct TxCollector
             << std::setfill('-') << "-" << "-" << std::setw(36)
             << std::setfill('-') << "-" << std::endl;
         log << std::setfill(' ');
-        // clang-format on
     }
 
     template <class T, class Tag>
@@ -359,7 +357,7 @@ struct TxCollector
         auto fmtS = [](SimDuration dur) {
             return duration_cast<duration<float>>(dur).count();
         };
-        // clang-format off
+
         if (printHeaders)
         {
             log << "tag" << "," << "txNumSubmitted" << "," << "txNumAccepted"
@@ -373,7 +371,6 @@ struct TxCollector
                 << "txLatencySubmitToValidatet50Pctl" << ","
                 << "txLatencySubmitToValidatet90Pctl" << std::endl;
         }
-        // clang-format on
 
         log << tag
             << ","
@@ -528,7 +525,6 @@ struct LedgerCollector
             return duration_cast<duration<float>>(dur).count();
         };
 
-        // clang-format off
         if (printBreakline)
         {
             log << std::setw(11) << std::setfill('-') << "-" << "-"
@@ -576,7 +572,6 @@ struct LedgerCollector
             << std::setfill('-') << "-" << "-" << std::setw(36)
             << std::setfill('-') << "-" << std::endl;
         log << std::setfill(' ');
-        // clang-format on
     }
 
     template <class T, class Tag>
@@ -595,7 +590,6 @@ struct LedgerCollector
             return duration_cast<duration<float>>(dur).count();
         };
 
-        // clang-format off
         if (printHeaders)
         {
             log << "tag" << "," << "ledgerNumAccepted" << ","
@@ -608,7 +602,6 @@ struct LedgerCollector
                 << "ledgerLatencyFullyValidToFullyValid50Pctl" << ","
                 << "ledgerLatencyFullyValidToFullyValid90Pctl" << std::endl;
         }
-        // clang-format on
 
         log << tag
             << ","
@@ -666,21 +659,17 @@ struct StreamCollector
     void
     on(PeerID who, SimTime when, AcceptLedger const& e)
     {
-        // clang-format off
         out << when.time_since_epoch().count() << ": Node " << who
             << " accepted " << "L" << e.ledger.id() << " " << e.ledger.txs()
             << "\n";
-        // clang-format on
     }
 
     void
     on(PeerID who, SimTime when, FullyValidateLedger const& e)
     {
-        // clang-format off
         out << when.time_since_epoch().count() << ": Node " << who
             << " fully-validated " << "L" << e.ledger.id() << " "
             << e.ledger.txs() << "\n";
-        // clang-format on
     }
 };
 

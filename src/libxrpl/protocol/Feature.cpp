@@ -109,7 +109,7 @@ class FeatureCollections
     };
 
     // Intermediate types to help with readability
-    template <class tag, typename Type, Type Feature::* PtrToMember>
+    template <class tag, typename Type, Type Feature::*PtrToMember>
     using feature_hashed_unique = boost::multi_index::hashed_unique<
         boost::multi_index::tag<tag>,
         boost::multi_index::member<Feature, Type, PtrToMember>>;
