@@ -209,6 +209,16 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "(GNU|Clang)")
     if(HAVE_c_fprofile_abs_path)
         set(COVERAGE_C_COMPILER_FLAGS "${COVERAGE_COMPILER_FLAGS} -fprofile-abs-path")
     endif()
+
+    check_cxx_compiler_flag(-fprofile-update HAVE_cxx_fprofile_update)
+    if(HAVE_cxx_fprofile_update)
+        set(COVERAGE_CXX_COMPILER_FLAGS "${COVERAGE_COMPILER_FLAGS}  -fprofile-update=atomic")
+    endif()
+    include(CheckCCompilerFlag)
+    check_c_compiler_flag(-fprofile-update HAVE_c_fprofile_update)
+    if(HAVE_c_fprofile_update)
+        set(COVERAGE_C_COMPILER_FLAGS "${COVERAGE_COMPILER_FLAGS} -fprofile-update=atomic")
+    endif()
 endif()
 
 set(CMAKE_Fortran_FLAGS_COVERAGE
