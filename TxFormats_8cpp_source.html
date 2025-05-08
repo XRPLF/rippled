@@ -124,35 +124,36 @@ $(function() {
 <div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>        {sfTxnSignature, <a class="code hl_enumvalue" href="namespaceripple.html#ad905dc8b70717f4492bebb6b7e189042a148febf7586dd994c342f8279d664a12">soeOPTIONAL</a>},</div>
 <div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>        {sfSigners, <a class="code hl_enumvalue" href="namespaceripple.html#ad905dc8b70717f4492bebb6b7e189042a148febf7586dd994c342f8279d664a12">soeOPTIONAL</a>},  <span class="comment">// submit_multisigned</span></div>
 <div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>        {sfNetworkID, <a class="code hl_enumvalue" href="namespaceripple.html#ad905dc8b70717f4492bebb6b7e189042a148febf7586dd994c342f8279d664a12">soeOPTIONAL</a>},</div>
-<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>    };</div>
-<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span> </div>
-<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span><span class="preprocessor">#pragma push_macro(&quot;UNWRAP&quot;</span>)</div>
-<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span><span class="preprocessor">#undef UNWRAP</span></div>
-<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span><span class="preprocessor">#pragma push_macro(&quot;TRANSACTION&quot;</span>)</div>
-<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span><span class="preprocessor">#undef TRANSACTION</span></div>
-<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span> </div>
-<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span><span class="preprocessor">#define UNWRAP(...) __VA_ARGS__</span></div>
-<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span><span class="preprocessor">#define TRANSACTION(tag, value, name, fields) \</span></div>
-<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span><span class="preprocessor">    add(jss::name, tag, UNWRAP fields, commonFields);</span></div>
-<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span> </div>
-<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span><span class="preprocessor">#include &lt;xrpl/protocol/detail/transactions.macro&gt;</span></div>
-<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span> </div>
-<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span><span class="preprocessor">#undef TRANSACTION</span></div>
-<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span><span class="preprocessor">#pragma pop_macro(&quot;TRANSACTION&quot;</span>)</div>
-<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span><span class="preprocessor">#undef UNWRAP</span></div>
-<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span><span class="preprocessor">#pragma pop_macro(&quot;UNWRAP&quot;</span>)</div>
-<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>}</div>
-<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span> </div>
-<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span><a class="code hl_class" href="classripple_1_1TxFormats.html">TxFormats</a> <span class="keyword">const</span>&amp;</div>
-<div class="line"><a id="l00069" name="l00069"></a><span class="lineno"><a class="line" href="classripple_1_1TxFormats.html#a1db8e0fb64564b47c2c33ff763ccc8c3">   69</a></span><a class="code hl_function" href="classripple_1_1TxFormats.html#a1db8e0fb64564b47c2c33ff763ccc8c3">TxFormats::getInstance</a>()</div>
-<div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>{</div>
-<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>    <span class="keyword">static</span> <a class="code hl_class" href="classripple_1_1TxFormats.html">TxFormats</a> <span class="keyword">const</span> instance;</div>
-<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>    <span class="keywordflow">return</span> instance;</div>
-<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>}</div>
-<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span> </div>
-<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>        {sfDelegate, <a class="code hl_enumvalue" href="namespaceripple.html#ad905dc8b70717f4492bebb6b7e189042a148febf7586dd994c342f8279d664a12">soeOPTIONAL</a>},</div>
+<div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>    };</div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span> </div>
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span><span class="preprocessor">#pragma push_macro(&quot;UNWRAP&quot;</span>)</div>
+<div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span><span class="preprocessor">#undef UNWRAP</span></div>
+<div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span><span class="preprocessor">#pragma push_macro(&quot;TRANSACTION&quot;</span>)</div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span><span class="preprocessor">#undef TRANSACTION</span></div>
+<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span> </div>
+<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span><span class="preprocessor">#define UNWRAP(...) __VA_ARGS__</span></div>
+<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span><span class="preprocessor">#define TRANSACTION(tag, value, name, delegatable, fields) \</span></div>
+<div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span><span class="preprocessor">    add(jss::name, tag, UNWRAP fields, commonFields);</span></div>
+<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span> </div>
+<div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span><span class="preprocessor">#include &lt;xrpl/protocol/detail/transactions.macro&gt;</span></div>
+<div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span> </div>
+<div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span><span class="preprocessor">#undef TRANSACTION</span></div>
+<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span><span class="preprocessor">#pragma pop_macro(&quot;TRANSACTION&quot;</span>)</div>
+<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span><span class="preprocessor">#undef UNWRAP</span></div>
+<div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span><span class="preprocessor">#pragma pop_macro(&quot;UNWRAP&quot;</span>)</div>
+<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>}</div>
+<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span> </div>
+<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span><a class="code hl_class" href="classripple_1_1TxFormats.html">TxFormats</a> <span class="keyword">const</span>&amp;</div>
+<div class="line"><a id="l00070" name="l00070"></a><span class="lineno"><a class="line" href="classripple_1_1TxFormats.html#a1db8e0fb64564b47c2c33ff763ccc8c3">   70</a></span><a class="code hl_function" href="classripple_1_1TxFormats.html#a1db8e0fb64564b47c2c33ff763ccc8c3">TxFormats::getInstance</a>()</div>
+<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>{</div>
+<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>    <span class="keyword">static</span> <a class="code hl_class" href="classripple_1_1TxFormats.html">TxFormats</a> <span class="keyword">const</span> instance;</div>
+<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>    <span class="keywordflow">return</span> instance;</div>
+<div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>}</div>
+<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span> </div>
+<div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>}  <span class="comment">// namespace ripple</span></div>
 <div class="ttc" id="aclassripple_1_1TxFormats_html"><div class="ttname"><a href="classripple_1_1TxFormats.html">ripple::TxFormats</a></div><div class="ttdoc">Manages the list of known transaction formats.</div><div class="ttdef"><b>Definition:</b> <a href="TxFormats_8h_source.html#l00085">TxFormats.h:86</a></div></div>
-<div class="ttc" id="aclassripple_1_1TxFormats_html_a1db8e0fb64564b47c2c33ff763ccc8c3"><div class="ttname"><a href="classripple_1_1TxFormats.html#a1db8e0fb64564b47c2c33ff763ccc8c3">ripple::TxFormats::getInstance</a></div><div class="ttdeci">static TxFormats const &amp; getInstance()</div><div class="ttdef"><b>Definition:</b> <a href="TxFormats_8cpp_source.html#l00069">TxFormats.cpp:69</a></div></div>
+<div class="ttc" id="aclassripple_1_1TxFormats_html_a1db8e0fb64564b47c2c33ff763ccc8c3"><div class="ttname"><a href="classripple_1_1TxFormats.html#a1db8e0fb64564b47c2c33ff763ccc8c3">ripple::TxFormats::getInstance</a></div><div class="ttdeci">static TxFormats const &amp; getInstance()</div><div class="ttdef"><b>Definition:</b> <a href="TxFormats_8cpp_source.html#l00070">TxFormats.cpp:70</a></div></div>
 <div class="ttc" id="aclassripple_1_1TxFormats_html_a54e184544beb0cd141f171aa7040e0d7"><div class="ttname"><a href="classripple_1_1TxFormats.html#a54e184544beb0cd141f171aa7040e0d7">ripple::TxFormats::TxFormats</a></div><div class="ttdeci">TxFormats()</div><div class="ttdoc">Create the object.</div><div class="ttdef"><b>Definition:</b> <a href="TxFormats_8cpp_source.html#l00029">TxFormats.cpp:29</a></div></div>
 <div class="ttc" id="ainitializer_list_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/initializer_list.html">initializer_list</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="algorithm_8h_source.html#l00026">algorithm.h:26</a></div></div>

@@ -1,8 +1,6 @@
 var searchData=
 [
-  ['offercrossing_0',['OfferCrossing',['../namespaceripple.html#a786c40cb27211e1704047accb2ca26bd',1,'ripple']]],
-  ['offertype_1',['OfferType',['../classripple_1_1BookStep.html#a3de148b04c2f04ef3f46a569f8d63d0b',1,'ripple::BookStep']]],
-  ['operatingmode_2',['OperatingMode',['../namespaceripple.html#a597325d7385ff9c19686e14e5bead510',1,'ripple']]],
-  ['operation_3',['Operation',['../classripple_1_1SetSignerList.html#a6a367d4aa89f471f6d9b44eb6a49e2d4',1,'ripple::SetSignerList']]],
-  ['options_4',['Options',['../structripple_1_1LedgerFill.html#acb9af41b82a8550a08d2288b6f9fc826',1,'ripple::LedgerFill']]]
+  ['negativeunlmodify_0',['NegativeUNLModify',['../classripple_1_1NegativeUNLVote.html#a4fc6405fdb02e58c350e175b6d58e7cf',1,'ripple::NegativeUNLVote']]],
+  ['nodeobjecttype_1',['NodeObjectType',['../namespaceripple.html#a57d7e7b27df7e719fdf5569f96be60a3',1,'ripple']]],
+  ['nodetype_2',['NodeType',['../classripple_1_1Pathfinder.html#a404497923954f689fbde4d0a46fd8304',1,'ripple::Pathfinder']]]
 ];

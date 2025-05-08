@@ -233,9 +233,9 @@ $(function() {
 <div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span>    <span class="keywordflow">else</span></div>
 <div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span>    {</div>
 <div class="line"><a id="l00157" name="l00157"></a><span class="lineno">  157</span>        <a class="code hl_class" href="classripple_1_1PeerFinder_1_1Bootcache_1_1Entry.html">Entry</a> entry(result.first-&gt;right);</div>
-<div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span>        <span class="keywordflow">if</span> (entry.<a class="code hl_function" href="classripple_1_1PeerFinder_1_1Bootcache_1_1Entry.html#a581be978321271123284c7284fd771c3">valence</a>() &lt; 0)</div>
-<div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span>            entry.<a class="code hl_function" href="classripple_1_1PeerFinder_1_1Bootcache_1_1Entry.html#a581be978321271123284c7284fd771c3">valence</a>() = 0;</div>
-<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span>        ++entry.<a class="code hl_function" href="classripple_1_1PeerFinder_1_1Bootcache_1_1Entry.html#a581be978321271123284c7284fd771c3">valence</a>();</div>
+<div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span>        <span class="keywordflow">if</span> (entry.valence() &lt; 0)</div>
+<div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span>            entry.valence() = 0;</div>
+<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span>        ++entry.valence();</div>
 <div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span>        m_map.erase(result.first);</div>
 <div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span>        result = m_map.insert(<a class="code hl_typedef" href="classripple_1_1PeerFinder_1_1Bootcache.html#a7b29b6612ede739e3df1da76c79ae871">value_type</a>(endpoint, entry));</div>
 <div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span>        XRPL_ASSERT(</div>
@@ -244,8 +244,8 @@ $(function() {
 <div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span>    }</div>
 <div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span>    <a class="code hl_class" href="classripple_1_1PeerFinder_1_1Bootcache_1_1Entry.html">Entry</a> <span class="keyword">const</span>&amp; entry(result.first-&gt;right);</div>
 <div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span>    JLOG(m_journal.info()) &lt;&lt; <a class="code hl_struct" href="structbeast_1_1leftw.html">beast::leftw</a>(18) &lt;&lt; <span class="stringliteral">&quot;Bootcache connect &quot;</span></div>
-<div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span>                           &lt;&lt; endpoint &lt;&lt; <span class="stringliteral">&quot; with &quot;</span> &lt;&lt; entry.<a class="code hl_function" href="classripple_1_1PeerFinder_1_1Bootcache_1_1Entry.html#a581be978321271123284c7284fd771c3">valence</a>()</div>
-<div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span>                           &lt;&lt; ((entry.<a class="code hl_function" href="classripple_1_1PeerFinder_1_1Bootcache_1_1Entry.html#a581be978321271123284c7284fd771c3">valence</a>() &gt; 1) ? <span class="stringliteral">&quot; successes&quot;</span></div>
+<div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span>                           &lt;&lt; endpoint &lt;&lt; <span class="stringliteral">&quot; with &quot;</span> &lt;&lt; entry.valence()</div>
+<div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span>                           &lt;&lt; ((entry.valence() &gt; 1) ? <span class="stringliteral">&quot; successes&quot;</span></div>
 <div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span>                                                     : <span class="stringliteral">&quot; success&quot;</span>);</div>
 <div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span>    flagForUpdate();</div>
 <div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span>}</div>
@@ -261,9 +261,9 @@ $(function() {
 <div class="line"><a id="l00183" name="l00183"></a><span class="lineno">  183</span>    <span class="keywordflow">else</span></div>
 <div class="line"><a id="l00184" name="l00184"></a><span class="lineno">  184</span>    {</div>
 <div class="line"><a id="l00185" name="l00185"></a><span class="lineno">  185</span>        <a class="code hl_class" href="classripple_1_1PeerFinder_1_1Bootcache_1_1Entry.html">Entry</a> entry(result.first-&gt;right);</div>
-<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span>        <span class="keywordflow">if</span> (entry.<a class="code hl_function" href="classripple_1_1PeerFinder_1_1Bootcache_1_1Entry.html#a581be978321271123284c7284fd771c3">valence</a>() &gt; 0)</div>
-<div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span>            entry.<a class="code hl_function" href="classripple_1_1PeerFinder_1_1Bootcache_1_1Entry.html#a581be978321271123284c7284fd771c3">valence</a>() = 0;</div>
-<div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span>        --entry.<a class="code hl_function" href="classripple_1_1PeerFinder_1_1Bootcache_1_1Entry.html#a581be978321271123284c7284fd771c3">valence</a>();</div>
+<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span>        <span class="keywordflow">if</span> (entry.valence() &gt; 0)</div>
+<div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span>            entry.valence() = 0;</div>
+<div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span>        --entry.valence();</div>
 <div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span>        m_map.erase(result.first);</div>
 <div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span>        result = m_map.insert(<a class="code hl_typedef" href="classripple_1_1PeerFinder_1_1Bootcache.html#a7b29b6612ede739e3df1da76c79ae871">value_type</a>(endpoint, entry));</div>
 <div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span>        XRPL_ASSERT(</div>
@@ -271,7 +271,7 @@ $(function() {
 <div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span>            <span class="stringliteral">&quot;ripple:PeerFinder::Bootcache::on_failure : endpoint inserted&quot;</span>);</div>
 <div class="line"><a id="l00194" name="l00194"></a><span class="lineno">  194</span>    }</div>
 <div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span>    <a class="code hl_class" href="classripple_1_1PeerFinder_1_1Bootcache_1_1Entry.html">Entry</a> <span class="keyword">const</span>&amp; entry(result.first-&gt;right);</div>
-<div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span>    <span class="keyword">auto</span> <span class="keyword">const</span> n(std::abs(entry.<a class="code hl_function" href="classripple_1_1PeerFinder_1_1Bootcache_1_1Entry.html#a581be978321271123284c7284fd771c3">valence</a>()));</div>
+<div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span>    <span class="keyword">auto</span> <span class="keyword">const</span> n(std::abs(entry.valence()));</div>
 <div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span>    JLOG(m_journal.debug())</div>
 <div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span>        &lt;&lt; <a class="code hl_struct" href="structbeast_1_1leftw.html">beast::leftw</a>(18) &lt;&lt; <span class="stringliteral">&quot;Bootcache failed &quot;</span> &lt;&lt; endpoint &lt;&lt; <span class="stringliteral">&quot; with &quot;</span> &lt;&lt; n</div>
 <div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span>        &lt;&lt; ((n &gt; 1) ? <span class="stringliteral">&quot; attempts&quot;</span> : <span class="stringliteral">&quot; attempt&quot;</span>);</div>
@@ -321,7 +321,7 @@ $(function() {
 <div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span>        <a class="code hl_class" href="classripple_1_1PeerFinder_1_1Bootcache_1_1Entry.html">Entry</a> <span class="keyword">const</span>&amp; entry(iter-&gt;get_right());</div>
 <div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span>        JLOG(m_journal.trace())</div>
 <div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span>            &lt;&lt; <a class="code hl_struct" href="structbeast_1_1leftw.html">beast::leftw</a>(18) &lt;&lt; <span class="stringliteral">&quot;Bootcache pruned&quot;</span> &lt;&lt; endpoint</div>
-<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span>            &lt;&lt; <span class="stringliteral">&quot; at valence &quot;</span> &lt;&lt; entry.<a class="code hl_function" href="classripple_1_1PeerFinder_1_1Bootcache_1_1Entry.html#a581be978321271123284c7284fd771c3">valence</a>();</div>
+<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span>            &lt;&lt; <span class="stringliteral">&quot; at valence &quot;</span> &lt;&lt; entry.valence();</div>
 <div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span>        iter = m_map.right.erase(iter);</div>
 <div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span>    }</div>
 <div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span> </div>
@@ -374,7 +374,6 @@ $(function() {
 <div class="ttc" id="aclassbeast_1_1PropertyStream_1_1Set_html"><div class="ttname"><a href="classbeast_1_1PropertyStream_1_1Set.html">beast::PropertyStream::Set</a></div><div class="ttdef"><b>Definition:</b> <a href="PropertyStream_8h_source.html#l00294">PropertyStream.h:295</a></div></div>
 <div class="ttc" id="aclassbeast_1_1abstract__clock_html"><div class="ttname"><a href="classbeast_1_1abstract__clock.html">beast::abstract_clock&lt; std::chrono::steady_clock &gt;</a></div></div>
 <div class="ttc" id="aclassripple_1_1PeerFinder_1_1Bootcache_1_1Entry_html"><div class="ttname"><a href="classripple_1_1PeerFinder_1_1Bootcache_1_1Entry.html">ripple::PeerFinder::Bootcache::Entry</a></div><div class="ttdef"><b>Definition:</b> <a href="Bootcache_8h_source.html#l00056">Bootcache.h:57</a></div></div>
-<div class="ttc" id="aclassripple_1_1PeerFinder_1_1Bootcache_1_1Entry_html_a581be978321271123284c7284fd771c3"><div class="ttname"><a href="classripple_1_1PeerFinder_1_1Bootcache_1_1Entry.html#a581be978321271123284c7284fd771c3">ripple::PeerFinder::Bootcache::Entry::valence</a></div><div class="ttdeci">int &amp; valence()</div><div class="ttdef"><b>Definition:</b> <a href="Bootcache_8h_source.html#l00064">Bootcache.h:64</a></div></div>
 <div class="ttc" id="aclassripple_1_1PeerFinder_1_1Bootcache_html_a1a13e9bdc42c02f364375431983118bc"><div class="ttname"><a href="classripple_1_1PeerFinder_1_1Bootcache.html#a1a13e9bdc42c02f364375431983118bc">ripple::PeerFinder::Bootcache::size</a></div><div class="ttdeci">map_type::size_type size() const</div><div class="ttdoc">Returns the number of entries in the cache.</div><div class="ttdef"><b>Definition:</b> <a href="Bootcache_8cpp_source.html#l00050">Bootcache.cpp:50</a></div></div>
 <div class="ttc" id="aclassripple_1_1PeerFinder_1_1Bootcache_html_a20861a3135f1b80d119d7feaf8bcadb4"><div class="ttname"><a href="classripple_1_1PeerFinder_1_1Bootcache.html#a20861a3135f1b80d119d7feaf8bcadb4">ripple::PeerFinder::Bootcache::clear</a></div><div class="ttdeci">void clear()</div><div class="ttdef"><b>Definition:</b> <a href="Bootcache_8cpp_source.html#l00080">Bootcache.cpp:80</a></div></div>
 <div class="ttc" id="aclassripple_1_1PeerFinder_1_1Bootcache_html_a2af4b38d2c56f03120d3920b80afa4eb"><div class="ttname"><a href="classripple_1_1PeerFinder_1_1Bootcache.html#a2af4b38d2c56f03120d3920b80afa4eb">ripple::PeerFinder::Bootcache::cbegin</a></div><div class="ttdeci">const_iterator cbegin() const</div><div class="ttdef"><b>Definition:</b> <a href="Bootcache_8cpp_source.html#l00062">Bootcache.cpp:62</a></div></div>
