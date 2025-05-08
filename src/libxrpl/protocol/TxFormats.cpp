@@ -29,7 +29,7 @@ namespace ripple {
 TxFormats::TxFormats()
 {
     // Fields shared by all txFormats:
-    static const std::initializer_list<SOElement> commonFields{
+    static std::initializer_list<SOElement> const commonFields{
         {sfTransactionType, soeREQUIRED},
         {sfFlags, soeOPTIONAL},
         {sfSourceTag, soeOPTIONAL},

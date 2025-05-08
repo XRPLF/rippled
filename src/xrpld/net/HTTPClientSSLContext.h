@@ -191,7 +191,7 @@ public:
 private:
     boost::asio::ssl::context ssl_context_;
     beast::Journal const j_;
-    const bool verify_;
+    bool const verify_;
 };
 
 }  // namespace ripple

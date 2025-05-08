@@ -151,7 +151,7 @@ private:
     };
 
     // Single common genesis instance
-    static const Instance genesis;
+    static Instance const genesis;
 
     Ledger(ID id, Instance const* i) : id_{id}, instance_{i}
     {

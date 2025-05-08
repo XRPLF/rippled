@@ -253,7 +253,7 @@ class LedgerEntry_test : public beast::unit_test::suite
         Account const issuer{"issuer"};
         Account const alice{"alice"};
         Account const bob{"bob"};
-        const char credType[] = "abcde";
+        char const credType[] = "abcde";
 
         env.fund(XRP(5000), issuer, alice, bob);
         env.close();
@@ -692,7 +692,7 @@ class LedgerEntry_test : public beast::unit_test::suite
         Account const issuer{"issuer"};
         Account const alice{"alice"};
         Account const bob{"bob"};
-        const char credType[] = "abcde";
+        char const credType[] = "abcde";
 
         env.fund(XRP(5000), issuer, alice, bob);
         env.close();
@@ -885,7 +885,7 @@ class LedgerEntry_test : public beast::unit_test::suite
         {
             // Failed, authorized_credentials is too long
 
-            static const std::string_view credTypes[] = {
+            static std::string_view const credTypes[] = {
                 "cred1",
                 "cred2",
                 "cred3",

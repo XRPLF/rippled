@@ -115,7 +115,7 @@ public:
     sweep();
 
     bool
-    del(const key_type& key, bool valid);
+    del(key_type const& key, bool valid);
 
 public:
     /** Replace aliased objects with originals.
@@ -134,20 +134,20 @@ public:
     template <class R>
     bool
     canonicalize(
-        const key_type& key,
+        key_type const& key,
         SharedPointerType& data,
         R&& replaceCallback);
 
     bool
     canonicalize_replace_cache(
-        const key_type& key,
+        key_type const& key,
         SharedPointerType const& data);
 
     bool
-    canonicalize_replace_client(const key_type& key, SharedPointerType& data);
+    canonicalize_replace_client(key_type const& key, SharedPointerType& data);
 
     SharedPointerType
-    fetch(const key_type& key);
+    fetch(key_type const& key);
 
     /** Insert the element into the container.
         If the key already exists, nothing happens.
@@ -168,7 +168,7 @@ public:
     //             simply return an iterator.
     //
     bool
-    retrieve(const key_type& key, T& data);
+    retrieve(key_type const& key, T& data);
 
     mutex_type&
     peekMutex();
@@ -322,10 +322,10 @@ private:
     std::string m_name;
 
     // Desired number of cache entries (0 = ignore)
-    const int m_target_size;
+    int const m_target_size;
 
     // Desired maximum cache age
-    const clock_type::duration m_target_age;
+    clock_type::duration const m_target_age;
 
     // Number of items cached
     int m_cache_count;

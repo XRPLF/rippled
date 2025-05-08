@@ -64,7 +64,7 @@ class Transaction : public std::enable_shared_from_this<Transaction>,
 {
 public:
     using pointer = std::shared_ptr<Transaction>;
-    using ref = const pointer&;
+    using ref = pointer const&;
 
     Transaction(
         std::shared_ptr<STTx const> const&,

@@ -746,8 +746,7 @@ transactionFormatResultImpl(Transaction::pointer tpTrans, unsigned apiVersion)
 
 //------------------------------------------------------------------------------
 
-[[nodiscard]]
-static XRPAmount
+[[nodiscard]] static XRPAmount
 getTxFee(Application const& app, Config const& config, Json::Value tx)
 {
     // autofilling only needed in this function so that the `STParsedJSONObject`
@@ -945,7 +944,7 @@ transactionSign(
     if (!preprocResult.second)
         return preprocResult.first;
 
-    std::shared_ptr<const ReadView> ledger = app.openLedger().current();
+    std::shared_ptr<ReadView const> ledger = app.openLedger().current();
     // Make sure the STTx makes a legitimate Transaction.
     std::pair<Json::Value, Transaction::pointer> txn =
         transactionConstructImpl(preprocResult.second, ledger->rules(), app);
@@ -1101,7 +1100,7 @@ transactionSignFor(
     JLOG(j.debug()) << "transactionSignFor: " << jvRequest;
 
     // Verify presence of the signer's account field.
-    const char accountField[] = "account";
+    char const accountField[] = "account";
 
     if (!jvRequest.isMember(accountField))
         return RPC::missing_field_error(accountField);

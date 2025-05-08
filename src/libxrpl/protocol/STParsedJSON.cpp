@@ -851,7 +851,7 @@ parseLeaf(
     return ret;
 }
 
-static const int maxDepth = 64;
+static int const maxDepth = 64;
 
 // Forward declaration since parseObject() and parseArray() call each other.
 static std::optional<detail::STVar>
@@ -1037,7 +1037,8 @@ parseArray(
             Json::Value const objectFields(json[i][objectName]);
 
             std::stringstream ss;
-            ss << json_name << "." << "[" << i << "]." << objectName;
+            ss << json_name << "."
+               << "[" << i << "]." << objectName;
 
             auto ret = parseObject(
                 ss.str(), objectFields, nameField, depth + 1, error);
