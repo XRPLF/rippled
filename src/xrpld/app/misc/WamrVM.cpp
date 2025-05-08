@@ -31,10 +31,11 @@ static void
 print_wasm_error(const char* message, wasm_trap_t* trap)
 {
     fprintf(stderr, "WAMR error: %s\n", message);
-    wasm_byte_vec_t error_message;
 
     if (trap)
     {
+        wasm_byte_vec_t error_message;
+
         wasm_trap_message(trap, &error_message);
         wasm_trap_delete(trap);
         fprintf(

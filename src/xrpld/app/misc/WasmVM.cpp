@@ -57,11 +57,20 @@ runEscrowWasm(
 
     std::int64_t const sgas = gasLimit;  // vm.getGas();
     auto ret = vm.run(wasmCode, funcName, imports);
+
+    // std::cout << "runEscrowWasm, mod size: " << wasmCode.size()
+    //           << ", gasLimit: " << gasLimit << ", funcName: " << funcName;
+
     if (!ret.has_value())
+    {
+        // std::cout << ", error: " << ret.error() << std::endl;
         return Unexpected<TER>(ret.error());
+    }
     std::int64_t const egas = vm.getGas();
     std::uint64_t const spent = static_cast<std::uint64_t>(sgas - egas);
 
+    // std::cout << ", ret: " << ret.value() << ", gas spent: " << spent
+    //           << std::endl;
     return EscrowResult{static_cast<bool>(ret.value()), spent};
 }
 
