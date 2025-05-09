@@ -127,10 +127,11 @@ computePeriodicPaymentParts(
     Number const interest =
         roundToAsset(asset, principalOutstanding * periodicRate);
     XRPL_ASSERT(
-        interest > 0,
+        interest >= 0,
         "ripple::detail::computePeriodicPayment : valid interest");
 
-    Number const principal = periodicPaymentAmount - interest;
+    Number const principal =
+        roundToAsset(asset, periodicPaymentAmount - interest);
     XRPL_ASSERT(
         principal > 0 && principal <= principalOutstanding,
         "ripple::detail::computePeriodicPayment : valid principal");
@@ -233,7 +234,8 @@ loanComputePaymentParts(
 
     Number const serviceFee = loan->at(sfLoanServiceFee);
     Number const latePaymentFee = loan->at(sfLatePaymentFee);
-    Number const closePaymentFee = loan->at(sfClosePaymentFee);
+    Number const closePaymentFee =
+        roundToAsset(asset, loan->at(sfClosePaymentFee));
     TenthBips32 const overpaymentFee{loan->at(sfOverpaymentFee)};
 
     std::uint32_t const paymentInterval = loan->at(sfPaymentInterval);
@@ -257,10 +259,10 @@ loanComputePaymentParts(
     XRPL_ASSERT(
         periodicRate > 0, "ripple::loanComputePaymentParts : valid rate");
 
-    Number const periodicPaymentAmount = roundToAsset(
-        asset,
-        detail::loanPeriodicPayment(
-            principalOutstandingField, periodicRate, paymentRemainingField));
+    // Don't round the payment amount. Only round the final computations using
+    // it.
+    Number const periodicPaymentAmount = detail::loanPeriodicPayment(
+        principalOutstandingField, periodicRate, paymentRemainingField);
     XRPL_ASSERT(
         periodicPaymentAmount > 0,
         "ripple::computePeriodicPayment : valid payment");
@@ -268,8 +270,10 @@ loanComputePaymentParts(
     auto const periodic = detail::computePeriodicPaymentParts(
         asset, principalOutstandingField, periodicPaymentAmount, periodicRate);
 
-    Number const totalValueOutstanding = detail::loanTotalValueOutstanding(
-        periodicPaymentAmount, paymentRemainingField);
+    Number const totalValueOutstanding = roundToAsset(
+        asset,
+        detail::loanTotalValueOutstanding(
+            periodicPaymentAmount, paymentRemainingField));
     XRPL_ASSERT(
         totalValueOutstanding > 0,
         "ripple::loanComputePaymentParts : valid total value");
@@ -277,7 +281,7 @@ loanComputePaymentParts(
         detail::loanTotalInterestOutstanding(
             principalOutstandingField, totalValueOutstanding);
     XRPL_ASSERT(
-        totalInterestOutstanding > 0,
+        totalInterestOutstanding >= 0,
         "ripple::loanComputePaymentParts : valid total interest");
 
     view.update(loan);
@@ -351,29 +355,29 @@ loanComputePaymentParts(
             closePrepaymentInterest >= 0,
             "ripple::loanComputePaymentParts : valid prepayment "
             "interest");
-        auto const closeFullPayment = principalOutstandingField +
-            accruedInterest + closePrepaymentInterest + closePaymentFee;
+        auto const totalInterest = accruedInterest + closePrepaymentInterest;
+        auto const closeFullPayment =
+            principalOutstandingField + totalInterest + closePaymentFee;
 
         // if the payment is equal or higher than full payment amount, make a
         // full payment
         if (amount >= closeFullPayment)
         {
-            paymentRemainingField = 0;
-            principalOutstandingField = 0;
-
             // A full payment decreases the value of the loan by the
             // difference between the interest paid and the expected
             // outstanding interest return
-            auto const valueChange = accruedInterest - totalInterestOutstanding;
-            XRPL_ASSERT(
-                valueChange <= 0,
-                "ripple::loanComputePaymentParts : valid full payment "
-                "value change");
-            return LoanPaymentParts{
+            auto const valueChange = totalInterest - totalInterestOutstanding;
+
+            LoanPaymentParts const result{
                 principalOutstandingField,
-                accruedInterest,
+                totalInterest,
                 valueChange,
                 closePaymentFee};
+
+            paymentRemainingField = 0;
+            principalOutstandingField = 0;
+
+            return result;
         }
     }
 
@@ -384,7 +388,8 @@ loanComputePaymentParts(
     // periodic one, with possible overpayments
 
     std::optional<NumberRoundModeGuard> mg(Number::downward);
-    std::int64_t const fullPeriodicPayments{amount / periodicPaymentAmount};
+    std::int64_t const fullPeriodicPayments{
+        amount / roundToAsset(asset, periodicPaymentAmount, Number::upward)};
     mg.reset();
     // Temporary asserts
     XRPL_ASSERT(
@@ -441,13 +446,14 @@ loanComputePaymentParts(
             principalOutstandingField.value(),
             amount - periodicPaymentAmount * fullPeriodicPayments);
 
-        if (overpayment > 0)
+        if (roundToAsset(asset, overpayment) > 0)
         {
             Number const interestPortion = roundToAsset(
                 asset, tenthBipsOfValue(overpayment, overpaymentInterestRate));
             Number const feePortion = roundToAsset(
                 asset, tenthBipsOfValue(overpayment, overpaymentFee));
-            Number const remainder = overpayment - interestPortion - feePortion;
+            Number const remainder =
+                roundToAsset(asset, overpayment - interestPortion - feePortion);
 
             // Don't process an overpayment if the whole amount (or more!) gets
             // eaten by fees

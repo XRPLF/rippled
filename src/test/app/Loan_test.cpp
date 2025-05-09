@@ -1229,7 +1229,7 @@ class Loan_test : public beast::unit_test::suite
                     // toEndOfLife
                     //
                     auto state = currentState(loanKeylet, verifyLoanStatus);
-                    BEAST_EXPECT(state.flags == lsfLoanOverpayment);
+                    BEAST_EXPECT(state.flags == 0);
                     auto const borrowerStartingBalance =
                         env.balance(borrower, broker.asset);
 
@@ -1246,7 +1246,7 @@ class Loan_test : public beast::unit_test::suite
                     PrettyAmount adjustment = broker.asset(0);
                     if (broker.asset.raw().native())
                     {
-                        adjustment = env.current()->fees().base;
+                        adjustment = 2 * env.current()->fees().base;
                     }
 
                     // Draw the entire available balance
@@ -1256,6 +1256,8 @@ class Loan_test : public beast::unit_test::suite
                         broker.asset, state.assetsAvailable};
                     env(draw(borrower, loanKeylet.key, drawAmount));
                     env.close(state.startDate + 20s);
+                    auto const loanAge = (env.now() - state.startDate).count();
+                    BEAST_EXPECT(loanAge == 30);
 
                     state.assetsAvailable -= drawAmount;
                     verifyLoanStatus(state);
@@ -1283,8 +1285,14 @@ class Loan_test : public beast::unit_test::suite
                             ter(tecWRONG_ASSET));
                     }
 
+                    // Amount doesn't cover a single payment
+                    env(pay(borrower,
+                            loanKeylet.key,
+                            STAmount{broker.asset, 1}),
+                        ter(tecINSUFFICIENT_PAYMENT));
+
                     // Get the balance after these failed transactions take fees
-                    auto const borrowerBeforePaymentBalance =
+                    auto const borrowerBalanceBeforePayment =
                         env.balance(borrower, broker.asset);
 
                     // Full payoff amount will consist of
@@ -1294,26 +1302,42 @@ class Loan_test : public beast::unit_test::suite
                     // 4. close payment fee (4)
                     // Calculate these values without the helper functions to
                     // verify they're working correctly
+                    // The numbers in the below BEAST_EXPECTs may not hold
+                    // across assets.
                     Number const interval = state.paymentInterval;
                     auto const periodicRate =
-                        interval * (12 / 100) / (365 * 24 * 60 * 60);
-                    // 20 seconds since the loan started (last env.close call)
+                        interval * Number(12, -2) / (365 * 24 * 60 * 60);
+                    BEAST_EXPECT(
+                        periodicRate ==
+                        Number(2283105022831050, -21, Number::unchecked{}));
                     STAmount const accruedInterest{
                         broker.asset,
-                        state.principalOutstanding * periodicRate * 20 /
+                        state.principalOutstanding * periodicRate * loanAge /
                             interval};
+                    BEAST_EXPECT(
+                        accruedInterest ==
+                        broker.asset(Number(1141552511415525, -19)));
                     STAmount const prepaymentPenalty{
                         broker.asset,
-                        state.principalOutstanding * 36 / 10 / 100};
+                        state.principalOutstanding * Number(36, -3)};
+                    BEAST_EXPECT(prepaymentPenalty == broker.asset(36));
                     STAmount const closePaymentFee = broker.asset(4);
                     auto const payoffAmount =
                         STAmount{broker.asset, state.principalOutstanding} +
                         accruedInterest + prepaymentPenalty + closePaymentFee;
+                    BEAST_EXPECT(
+                        payoffAmount ==
+                        broker.asset(Number(1040000114155251, -12)));
+                    BEAST_EXPECT(payoffAmount > drawAmount);
                     // Try to pay a little extra to show that it's _not_ taken
                     auto const transactionAmount =
                         payoffAmount + broker.asset(10);
-                    BEAST_EXPECT(payoffAmount > drawAmount);
+                    BEAST_EXPECT(
+                        transactionAmount ==
+                        broker.asset(Number(1050000114155251, -12)));
                     env(pay(borrower, loanKeylet.key, transactionAmount));
+
+                    env.close();
 
                     // Need to account for fees if the loan is in XRP
                     adjustment = broker.asset(0);
@@ -1328,10 +1352,14 @@ class Loan_test : public beast::unit_test::suite
 
                     BEAST_EXPECT(
                         env.balance(borrower, broker.asset) ==
-                        borrowerBeforePaymentBalance - payoffAmount -
+                        borrowerBalanceBeforePayment - payoffAmount -
                             adjustment);
 
-                    // TODO: Try to impair a paid off loan
+                    // Can't impair or default a paid off loan
+                    env(manage(lender, loanKeylet.key, tfLoanImpair),
+                        ter(tecNO_PERMISSION));
+                    env(manage(lender, loanKeylet.key, tfLoanDefault),
+                        ter(tecNO_PERMISSION));
                 });
 
 #if 0 

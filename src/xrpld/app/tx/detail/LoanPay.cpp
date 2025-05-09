@@ -188,6 +188,19 @@ LoanPay::doApply()
     // If the loan was impaired, it isn't anymore.
     loanSle->clearFlag(lsfLoanImpaired);
 
+    XRPL_ASSERT_PARTS(
+        paymentParts->principalPaid > 0,
+        "ripple::LoanPay::doApply",
+        "valid principal paid");
+    XRPL_ASSERT_PARTS(
+        paymentParts->interestPaid >= 0,
+        "ripple::LoanPay::doApply",
+        "valid interest paid");
+    XRPL_ASSERT_PARTS(
+        paymentParts->feePaid >= 0,
+        "ripple::LoanPay::doApply",
+        "valid fee paid");
+
     //------------------------------------------------------
     // LoanBroker object state changes
     view.update(brokerSle);
@@ -206,8 +219,10 @@ LoanPay::doApply()
     auto debtTotalField = brokerSle->at(sfDebtTotal);
     TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
 
-    bool const sufficientCover = coverAvailableField >=
-        tenthBipsOfValue(debtTotalField.value(), coverRateMinimum);
+    bool const sufficientCover =
+        coverAvailableField >=
+        roundToAsset(
+            asset, tenthBipsOfValue(debtTotalField.value(), coverRateMinimum));
     if (!sufficientCover)
     {
         // Add the fee to to First Loss Cover Pool
@@ -217,7 +232,9 @@ LoanPay::doApply()
     // Decrease LoanBroker Debt by the amount paid, add the Loan value change,
     // and subtract the change in the management fee
     auto const vaultValueChange = paymentParts->valueChange -
-        tenthBipsOfValue(paymentParts->valueChange, managementFeeRate);
+        roundToAsset(asset,
+                     tenthBipsOfValue(
+                         paymentParts->valueChange, managementFeeRate));
     debtTotalField += vaultValueChange - totalPaidToVault;
 
     //------------------------------------------------------
@@ -231,9 +248,14 @@ LoanPay::doApply()
     STAmount const paidToVault(asset, totalPaidToVault);
     STAmount const paidToBroker(asset, totalFee);
     XRPL_ASSERT_PARTS(
-        paidToVault + paidToBroker == amount,
+        paidToVault + paidToBroker <= amount,
         "ripple::LoanPay::doApply",
-        "correct payment totals");
+        "amount is sufficient");
+    XRPL_ASSERT_PARTS(
+        paidToVault + paidToBroker <= paymentParts->principalPaid +
+                paymentParts->interestPaid + paymentParts->feePaid,
+        "ripple::LoanPay::doApply",
+        "payment agreement");
 
     if (auto const ter = accountSend(
             view,

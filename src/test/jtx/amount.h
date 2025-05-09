@@ -216,13 +216,13 @@ public:
     PrettyAmount
     operator()(T v) const
     {
-        bool negative = false;
-        if (v < 0)
-        {
-            v = -v;
-            negative = true;
-        }
-        STAmount amount{asset_, v * scale_, 0, negative};
+        return operator()(Number(v));
+    }
+
+    PrettyAmount
+    operator()(Number v) const
+    {
+        STAmount amount{asset_, v * scale_};
         return {amount, ""};
     }
 

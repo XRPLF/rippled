@@ -697,12 +697,14 @@ getRate(STAmount const& offerOut, STAmount const& offerIn);
 
 template <AssetType A>
 Number
-roundToAsset(A const& asset, Number const& value)
+roundToAsset(
+    A const& asset,
+    Number const& value,
+    Number::rounding_mode rounding = Number::getround())
 {
+    NumberRoundModeGuard mg(rounding);
     STAmount const amount{asset, value};
-    if (amount != value)
-        return amount;
-    return value;
+    return amount;
 }
 
 //------------------------------------------------------------------------------
