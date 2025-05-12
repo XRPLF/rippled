@@ -98,6 +98,9 @@
 # 2024-04-03, Bronek Kozicki
 #     - add support for output formats: jacoco, clover, lcov
 #
+# 2025-05-12, Jingchen Wu
+#     - add -fprofile-update=atomic to ensure atomic profile generation
+#
 # USAGE:
 #
 # 1. Copy this file into your cmake modules path.
