@@ -1527,16 +1527,16 @@ class Loan_test : public beast::unit_test::suite
                             state.paymentRemaining < 12 ||
                             interest ==
                                 broker.asset(Number(2283105022831050, -18)));
-                        BEAST_EXPECT(interest >= 0);
+                        BEAST_EXPECT(interest >= Number(0));
 
-                        auto const principal = roundToAsset(
-                            broker.asset, periodicPayment - interest);
+                        auto const principal =
+                            STAmount(broker.asset, periodicPayment - interest);
                         BEAST_EXPECT(
                             state.paymentRemaining < 12 ||
                             principal ==
                                 broker.asset(Number(8333228700000000, -14)));
                         BEAST_EXPECT(
-                            principal > 0 &&
+                            principal > Number(0) &&
                             principal <= state.principalOutstanding);
                         BEAST_EXPECT(
                             state.paymentRemaining > 1 ||
