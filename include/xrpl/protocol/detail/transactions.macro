@@ -396,7 +396,7 @@ TRANSACTION(ttORACLE_DELETE, 52, OracleDelete, Delegation::delegatable, ({
 }))
 
 /** This transaction type fixes a problem in the ledger state */
-TRANSACTION(ttLEDGER_STATE_FIX, 53, LedgerStateFix, Delegation::notDelegatable, ({
+TRANSACTION(ttLEDGER_STATE_FIX, 53, LedgerStateFix, Delegation::delegatable, ({
     {sfLedgerFixType, soeREQUIRED},
     {sfOwner, soeOPTIONAL},
 }))
