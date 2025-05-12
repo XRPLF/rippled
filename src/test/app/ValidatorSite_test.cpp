@@ -39,7 +39,7 @@
 namespace ripple {
 namespace test {
 namespace detail {
-constexpr const char*
+constexpr char const*
 realValidatorContents()
 {
     return R"vl({

@@ -1328,7 +1328,7 @@ class MPToken_test : public beast::unit_test::suite
         Account const diana("diana");
         Account const dpIssuer("dpIssuer");  // holder
 
-        const char credType[] = "abcde";
+        char const credType[] = "abcde";
 
         {
             Env env(*this);
