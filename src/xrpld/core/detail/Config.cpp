@@ -158,7 +158,7 @@ static_assert(
 #define SECTION_DEFAULT_NAME ""
 
 IniFileSections
-parseIniFile(std::string const& strInput, const bool bTrim)
+parseIniFile(std::string const& strInput, bool const bTrim)
 {
     std::string strData(strInput);
     std::vector<std::string> vLines;
@@ -490,7 +490,7 @@ Config::loadFromString(std::string const& fileContents)
     // if the user has specified ip:port then replace : with a space.
     {
         auto replaceColons = [](std::vector<std::string>& strVec) {
-            const static std::regex e(":([0-9]+)$");
+            static std::regex const e(":([0-9]+)$");
             for (auto& line : strVec)
             {
                 // skip anything that might be an ipv6 address

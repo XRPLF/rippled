@@ -19,6 +19,7 @@
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/CredentialHelpers.h>
+#include <xrpld/app/misc/DelegateUtils.h>
 #include <xrpld/app/misc/LoadFeeTrack.h>
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
@@ -87,6 +88,15 @@ preflight1(PreflightContext const& ctx)
         !ctx.rules.enabled(featureTicketBatch))
     {
         return temMALFORMED;
+    }
+
+    if (ctx.tx.isFieldPresent(sfDelegate))
+    {
+        if (!ctx.rules.enabled(featurePermissionDelegation))
+            return temDISABLED;
+
+        if (ctx.tx[sfDelegate] == ctx.tx[sfAccount])
+            return temBAD_SIGNER;
     }
 
     auto const ret = preflight0(ctx);
@@ -190,6 +200,22 @@ Transactor::Transactor(ApplyContext& ctx)
 {
 }
 
+TER
+Transactor::checkPermission(ReadView const& view, STTx const& tx)
+{
+    auto const delegate = tx[~sfDelegate];
+    if (!delegate)
+        return tesSUCCESS;
+
+    auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
+    auto const sle = view.read(delegateKey);
+
+    if (!sle)
+        return tecNO_PERMISSION;
+
+    return checkTxPermission(sle, tx);
+}
+
 XRPAmount
 Transactor::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
@@ -246,7 +272,9 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
     if (feePaid == beast::zero)
         return tesSUCCESS;
 
-    auto const id = ctx.tx.getAccountID(sfAccount);
+    auto const id = ctx.tx.isFieldPresent(sfDelegate)
+        ? ctx.tx.getAccountID(sfDelegate)
+        : ctx.tx.getAccountID(sfAccount);
     auto const sle = ctx.view.read(keylet::account(id));
     if (!sle)
         return terNO_ACCOUNT;
@@ -255,9 +283,9 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
 
     if (balance < feePaid)
     {
-        JLOG(ctx.j.trace())
-            << "Insufficient balance:" << " balance=" << to_string(balance)
-            << " paid=" << to_string(feePaid);
+        JLOG(ctx.j.trace()) << "Insufficient balance:"
+                            << " balance=" << to_string(balance)
+                            << " paid=" << to_string(feePaid);
 
         if ((balance > beast::zero) && !ctx.view.open())
         {
@@ -276,17 +304,32 @@ Transactor::payFee()
 {
     auto const feePaid = ctx_.tx[sfFee].xrp();
 
-    auto const sle = view().peek(keylet::account(account_));
-    if (!sle)
-        return tefINTERNAL;
+    if (ctx_.tx.isFieldPresent(sfDelegate))
+    {
+        // Delegated transactions are paid by the delegated account.
+        auto const delegate = ctx_.tx.getAccountID(sfDelegate);
+        auto const delegatedSle = view().peek(keylet::account(delegate));
+        if (!delegatedSle)
+            return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    // Deduct the fee, so it's not available during the transaction.
-    // Will only write the account back if the transaction succeeds.
+        delegatedSle->setFieldAmount(
+            sfBalance, delegatedSle->getFieldAmount(sfBalance) - feePaid);
+        view().update(delegatedSle);
+    }
+    else
+    {
+        auto const sle = view().peek(keylet::account(account_));
+        if (!sle)
+            return tefINTERNAL;  // LCOV_EXCL_LINE
 
-    mSourceBalance -= feePaid;
-    sle->setFieldAmount(sfBalance, mSourceBalance);
+        // Deduct the fee, so it's not available during the transaction.
+        // Will only write the account back if the transaction succeeds.
 
-    // VFALCO Should we call view().rawDestroyXRP() here as well?
+        mSourceBalance -= feePaid;
+        sle->setFieldAmount(sfBalance, mSourceBalance);
+
+        // VFALCO Should we call view().rawDestroyXRP() here as well?
+    }
 
     return tesSUCCESS;
 }
@@ -542,7 +585,9 @@ Transactor::checkSingleSign(PreclaimContext const& ctx)
     }
 
     // Look up the account.
-    auto const idAccount = ctx.tx.getAccountID(sfAccount);
+    auto const idAccount = ctx.tx.isFieldPresent(sfDelegate)
+        ? ctx.tx.getAccountID(sfDelegate)
+        : ctx.tx.getAccountID(sfAccount);
     auto const sleAccount = ctx.view.read(keylet::account(idAccount));
     if (!sleAccount)
         return terNO_ACCOUNT;
@@ -612,7 +657,9 @@ Transactor::checkSingleSign(PreclaimContext const& ctx)
 NotTEC
 Transactor::checkMultiSign(PreclaimContext const& ctx)
 {
-    auto const id = ctx.tx.getAccountID(sfAccount);
+    auto const id = ctx.tx.isFieldPresent(sfDelegate)
+        ? ctx.tx.getAccountID(sfDelegate)
+        : ctx.tx.getAccountID(sfAccount);
     // Get mTxnAccountID's SignerList and Quorum.
     std::shared_ptr<STLedgerEntry const> sleAccountSigners =
         ctx.view.read(keylet::signers(id));
@@ -870,15 +917,22 @@ Transactor::reset(XRPAmount fee)
         // is missing then we can't very well charge it a fee, can we?
         return {tefINTERNAL, beast::zero};
 
-    auto const balance = txnAcct->getFieldAmount(sfBalance).xrp();
+    auto const payerSle = ctx_.tx.isFieldPresent(sfDelegate)
+        ? view().peek(keylet::account(ctx_.tx.getAccountID(sfDelegate)))
+        : txnAcct;
+    if (!payerSle)
+        return {tefINTERNAL, beast::zero};  // LCOV_EXCL_LINE
+
+    auto const balance = payerSle->getFieldAmount(sfBalance).xrp();
 
     // balance should have already been checked in checkFee / preFlight.
     XRPL_ASSERT(
         balance != beast::zero && (!view().open() || balance >= fee),
         "ripple::Transactor::reset : valid balance");
 
-    // We retry/reject the transaction if the account balance is zero or we're
-    // applying against an open ledger and the balance is less than the fee
+    // We retry/reject the transaction if the account balance is zero or
+    // we're applying against an open ledger and the balance is less than
+    // the fee
     if (fee > balance)
         fee = balance;
 
@@ -888,13 +942,17 @@ Transactor::reset(XRPAmount fee)
     // If for some reason we are unable to consume the ticket or sequence
     // then the ledger is corrupted.  Rather than make things worse we
     // reject the transaction.
-    txnAcct->setFieldAmount(sfBalance, balance - fee);
+    payerSle->setFieldAmount(sfBalance, balance - fee);
     TER const ter{consumeSeqProxy(txnAcct)};
     XRPL_ASSERT(
         isTesSuccess(ter), "ripple::Transactor::reset : result is tesSUCCESS");
 
     if (isTesSuccess(ter))
+    {
         view().update(txnAcct);
+        if (payerSle != txnAcct)
+            view().update(payerSle);
+    }
 
     return {ter, fee};
 }

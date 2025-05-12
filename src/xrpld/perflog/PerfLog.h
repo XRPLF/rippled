@@ -186,9 +186,9 @@ template <typename Func, class Rep, class Period>
 auto
 measureDurationAndLog(
     Func&& func,
-    const std::string& actionDescription,
+    std::string const& actionDescription,
     std::chrono::duration<Rep, Period> maxDelay,
-    const beast::Journal& journal)
+    beast::Journal const& journal)
 {
     auto start_time = std::chrono::high_resolution_clock::now();
 

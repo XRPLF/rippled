@@ -2042,6 +2042,78 @@ static constexpr TxnTestData txnTestArray[] = {
        "Cannot specify differing 'Amount' and 'DeliverMax'",
        "Cannot specify differing 'Amount' and 'DeliverMax'"}}},
 
+    {"Minimal delegated transaction.",
+     __LINE__,
+     R"({
+    "command": "doesnt_matter",
+    "secret": "a",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment",
+        "Delegate": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA"
+    }
+})",
+     {{"",
+       "",
+       "Missing field 'account'.",
+       "Missing field 'tx_json.Sequence'."}}},
+
+    {"Delegate not well formed.",
+     __LINE__,
+     R"({
+    "command": "doesnt_matter",
+    "secret": "a",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi",
+        "TransactionType": "Payment",
+        "Delegate": "NotAnAccount"
+    }
+})",
+     {{"Invalid field 'tx_json.Delegate'.",
+       "Invalid field 'tx_json.Delegate'.",
+       "Missing field 'account'.",
+       "Missing field 'tx_json.Sequence'."}}},
+
+    {"Delegate not in ledger.",
+     __LINE__,
+     R"({
+    "command": "doesnt_matter",
+    "secret": "a",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi",
+        "TransactionType": "Payment",
+        "Delegate": "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd"
+    }
+})",
+     {{"Delegate account not found.",
+       "Delegate account not found.",
+       "Missing field 'account'.",
+       "Missing field 'tx_json.Sequence'."}}},
+
+    {"Delegate and secret not match.",
+     __LINE__,
+     R"({
+    "command": "doesnt_matter",
+    "secret": "aa",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi",
+        "TransactionType": "Payment",
+        "Delegate": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA"
+    }
+})",
+     {{"Secret does not match account.",
+       "Secret does not match account.",
+       "Missing field 'account'.",
+       "Missing field 'tx_json.Sequence'."}}},
+
 };
 
 class JSONRPC_test : public beast::unit_test::suite
