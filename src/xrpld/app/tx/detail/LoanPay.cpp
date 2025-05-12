@@ -212,7 +212,7 @@ LoanPay::doApply()
     auto const totalPaidToVault = paymentParts->principalPaid +
         paymentParts->interestPaid - managementFee;
 
-    auto const totalFee = paymentParts->feePaid + managementFee;
+    auto const totalPaidToBroker = paymentParts->feePaid + managementFee;
 
     // If there is not enough first-loss capital
     auto coverAvailableField = brokerSle->at(sfCoverAvailable);
@@ -226,15 +226,13 @@ LoanPay::doApply()
     if (!sufficientCover)
     {
         // Add the fee to to First Loss Cover Pool
-        coverAvailableField += totalFee;
+        coverAvailableField += totalPaidToBroker;
     }
 
     // Decrease LoanBroker Debt by the amount paid, add the Loan value change,
     // and subtract the change in the management fee
-    auto const vaultValueChange = paymentParts->valueChange -
-        roundToAsset(asset,
-                     tenthBipsOfValue(
-                         paymentParts->valueChange, managementFeeRate));
+    auto const vaultValueChange = valueMinusManagementFee(
+        asset, paymentParts->valueChange, managementFeeRate);
     debtTotalField += vaultValueChange - totalPaidToVault;
 
     //------------------------------------------------------
@@ -246,7 +244,7 @@ LoanPay::doApply()
 
     // Move funds
     STAmount const paidToVault(asset, totalPaidToVault);
-    STAmount const paidToBroker(asset, totalFee);
+    STAmount const paidToBroker(asset, totalPaidToBroker);
     XRPL_ASSERT_PARTS(
         paidToVault + paidToBroker <= amount,
         "ripple::LoanPay::doApply",

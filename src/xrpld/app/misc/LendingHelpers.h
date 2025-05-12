@@ -33,6 +33,8 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/st.h>
 
+#include <algorithm>
+
 namespace ripple {
 
 struct PreflightContext;
@@ -69,29 +71,62 @@ loanPeriodicPayment(
     std::uint32_t paymentInterval,
     std::uint32_t paymentsRemaining);
 
+template <AssetType A>
 Number
 loanTotalValueOutstanding(
+    A asset,
     Number periodicPayment,
-    std::uint32_t paymentsRemaining);
+    std::uint32_t paymentsRemaining)
+{
+    return roundToAsset(
+        asset, periodicPayment * paymentsRemaining, Number::upward);
+}
 
+template <AssetType A>
 Number
 loanTotalValueOutstanding(
+    A asset,
     Number principalOutstanding,
     TenthBips32 interestRate,
     std::uint32_t paymentInterval,
-    std::uint32_t paymentsRemaining);
+    std::uint32_t paymentsRemaining)
+{
+    return loanTotalValueOutstanding(
+        asset,
+        loanPeriodicPayment(
+            principalOutstanding,
+            interestRate,
+            paymentInterval,
+            paymentsRemaining),
+        paymentsRemaining);
+}
 
-Number
+inline Number
 loanTotalInterestOutstanding(
     Number principalOutstanding,
-    Number totalValueOutstanding);
+    Number totalValueOutstanding)
+{
+    return totalValueOutstanding - principalOutstanding;
+}
 
+template <AssetType A>
 Number
 loanTotalInterestOutstanding(
+    A asset,
     Number principalOutstanding,
     TenthBips32 interestRate,
     std::uint32_t paymentInterval,
-    std::uint32_t paymentsRemaining);
+    std::uint32_t paymentsRemaining)
+{
+    return loanTotalInterestOutstanding(
+        principalOutstanding,
+        loanTotalValueOutstanding(
+            asset,
+            principalOutstanding,
+            interestRate,
+            paymentInterval,
+            paymentsRemaining));
+}
 
 Number
 loanLatePaymentInterest(
@@ -149,6 +184,17 @@ minusManagementFee(Number value, TenthBips32 managementFeeRate)
 
 template <AssetType A>
 Number
+valueMinusManagementFee(
+    A const& asset,
+    Number value,
+    TenthBips32 managementFeeRate)
+{
+    return roundToAsset(
+        asset, detail::minusManagementFee(value, managementFeeRate));
+}
+
+template <AssetType A>
+Number
 loanInterestOutstandingMinusFee(
     A const& asset,
     Number principalOutstanding,
@@ -157,15 +203,15 @@ loanInterestOutstandingMinusFee(
     std::uint32_t paymentsRemaining,
     TenthBips32 managementFeeRate)
 {
-    return roundToAsset(
+    return valueMinusManagementFee(
         asset,
-        detail::minusManagementFee(
-            detail::loanTotalInterestOutstanding(
-                principalOutstanding,
-                interestRate,
-                paymentInterval,
-                paymentsRemaining),
-            managementFeeRate));
+        detail::loanTotalInterestOutstanding(
+            asset,
+            principalOutstanding,
+            interestRate,
+            paymentInterval,
+            paymentsRemaining),
+        managementFeeRate);
 }
 
 template <AssetType A>
@@ -270,19 +316,23 @@ loanComputePaymentParts(
     auto const periodic = detail::computePeriodicPaymentParts(
         asset, principalOutstandingField, periodicPaymentAmount, periodicRate);
 
-    Number const totalValueOutstanding = roundToAsset(
-        asset,
-        detail::loanTotalValueOutstanding(
-            periodicPaymentAmount, paymentRemainingField));
+    Number const totalValueOutstanding = detail::loanTotalValueOutstanding(
+        asset, periodicPaymentAmount, paymentRemainingField);
     XRPL_ASSERT(
         totalValueOutstanding > 0,
         "ripple::loanComputePaymentParts : valid total value");
     Number const totalInterestOutstanding =
         detail::loanTotalInterestOutstanding(
             principalOutstandingField, totalValueOutstanding);
-    XRPL_ASSERT(
+    XRPL_ASSERT_PARTS(
         totalInterestOutstanding >= 0,
-        "ripple::loanComputePaymentParts : valid total interest");
+        "ripple::loanComputePaymentParts",
+        "valid total interest");
+    XRPL_ASSERT_PARTS(
+        totalValueOutstanding - totalInterestOutstanding ==
+            principalOutstandingField,
+        "ripple::loanComputePaymentParts",
+        "valid principal computation");
 
     view.update(loan);
 
@@ -388,8 +438,13 @@ loanComputePaymentParts(
     // periodic one, with possible overpayments
 
     std::optional<NumberRoundModeGuard> mg(Number::downward);
-    std::int64_t const fullPeriodicPayments{
-        amount / roundToAsset(asset, periodicPaymentAmount, Number::upward)};
+    std::int64_t const fullPeriodicPayments = [&]() {
+        std::int64_t const full{
+            amount /
+            roundToAsset(
+                asset, (periodicPaymentAmount + serviceFee), Number::upward)};
+        return full < paymentRemainingField ? full : paymentRemainingField;
+    }();
     mg.reset();
     // Temporary asserts
     XRPL_ASSERT(
@@ -424,10 +479,10 @@ loanComputePaymentParts(
                 periodicPaymentAmount,
                 periodicRate);
         XRPL_ASSERT(
-            future->interest < periodic.interest,
+            future->interest <= periodic.interest,
             "ripple::loanComputePaymentParts : decreasing interest");
         XRPL_ASSERT(
-            future->principal > periodic.principal,
+            future->principal >= periodic.principal,
             "ripple::loanComputePaymentParts : increasing principal");
 
         totalPrincipalPaid += future->principal;
@@ -465,13 +520,12 @@ loanComputePaymentParts(
 
                 principalOutstandingField -= remainder;
 
-                Number const newInterest = roundToAsset(
+                Number const newInterest = detail::loanTotalInterestOutstanding(
                     asset,
-                    detail::loanTotalInterestOutstanding(
-                        principalOutstandingField,
-                        interestRate,
-                        paymentInterval,
-                        paymentRemainingField));
+                    principalOutstandingField,
+                    interestRate,
+                    paymentInterval,
+                    paymentRemainingField);
 
                 loanValueChange =
                     (newInterest - totalInterestOutstanding) + interestPortion;

@@ -246,7 +246,7 @@ LoanSet::preclaim(PreclaimContext const& ctx)
     if (auto const originationFee = tx[~sfLoanOriginationFee])
     {
         // Check that the lender will not make an unfair profit on the lending
-        // fee if the loan defaults. (Not yet in spec. May not be included.)
+        // fee if the loan defaults. (Not yet in spec. May need to be removed.)
         TenthBips32 const coverRateLiquidation{
             brokerSle->at(sfCoverRateLiquidation)};
 

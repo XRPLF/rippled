@@ -71,54 +71,6 @@ loanPeriodicPayment(
 }
 
 Number
-loanTotalValueOutstanding(
-    Number periodicPayment,
-    std::uint32_t paymentsRemaining)
-{
-    return periodicPayment * paymentsRemaining;
-}
-
-Number
-loanTotalValueOutstanding(
-    Number principalOutstanding,
-    TenthBips32 interestRate,
-    std::uint32_t paymentInterval,
-    std::uint32_t paymentsRemaining)
-{
-    return loanTotalValueOutstanding(
-        loanPeriodicPayment(
-            principalOutstanding,
-            interestRate,
-            paymentInterval,
-            paymentsRemaining),
-        paymentsRemaining);
-}
-
-Number
-loanTotalInterestOutstanding(
-    Number principalOutstanding,
-    Number totalValueOutstanding)
-{
-    return totalValueOutstanding - principalOutstanding;
-}
-
-Number
-loanTotalInterestOutstanding(
-    Number principalOutstanding,
-    TenthBips32 interestRate,
-    std::uint32_t paymentInterval,
-    std::uint32_t paymentsRemaining)
-{
-    return loanTotalInterestOutstanding(
-        principalOutstanding,
-        loanTotalValueOutstanding(
-            principalOutstanding,
-            interestRate,
-            paymentInterval,
-            paymentsRemaining));
-}
-
-Number
 loanLatePaymentInterest(
     Number principalOutstanding,
     TenthBips32 lateInterestRate,
