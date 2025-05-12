@@ -203,11 +203,13 @@ set(COVERAGE_COMPILER_FLAGS "-g --coverage"
     CACHE INTERNAL "")
 if(CMAKE_CXX_COMPILER_ID MATCHES "(GNU|Clang)")
     include(CheckCXXCompilerFlag)
+    include(CheckCCompilerFlag)
+
     check_cxx_compiler_flag(-fprofile-abs-path HAVE_cxx_fprofile_abs_path)
     if(HAVE_cxx_fprofile_abs_path)
         set(COVERAGE_CXX_COMPILER_FLAGS "${COVERAGE_COMPILER_FLAGS} -fprofile-abs-path")
     endif()
-    include(CheckCCompilerFlag)
+
     check_c_compiler_flag(-fprofile-abs-path HAVE_c_fprofile_abs_path)
     if(HAVE_c_fprofile_abs_path)
         set(COVERAGE_C_COMPILER_FLAGS "${COVERAGE_COMPILER_FLAGS} -fprofile-abs-path")
@@ -217,7 +219,7 @@ if(CMAKE_CXX_COMPILER_ID MATCHES "(GNU|Clang)")
     if(HAVE_cxx_fprofile_update)
         set(COVERAGE_CXX_COMPILER_FLAGS "${COVERAGE_COMPILER_FLAGS}  -fprofile-update=atomic")
     endif()
-    include(CheckCCompilerFlag)
+
     check_c_compiler_flag(-fprofile-update HAVE_c_fprofile_update)
     if(HAVE_c_fprofile_update)
         set(COVERAGE_C_COMPILER_FLAGS "${COVERAGE_COMPILER_FLAGS} -fprofile-update=atomic")
