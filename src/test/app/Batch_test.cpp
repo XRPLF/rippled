@@ -3664,6 +3664,110 @@ class Batch_test : public beast::unit_test::suite
     }
 
     void
+    testBatchDelegate(FeatureBitset features)
+    {
+        testcase("batch delegate");
+
+        using namespace test::jtx;
+        using namespace std::literals;
+
+        // delegated non atomic inner
+        {
+            test::jtx::Env env{*this, envconfig()};
+
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const gw = Account("gw");
+            auto const USD = gw["USD"];
+            env.fund(XRP(10000), alice, bob, gw);
+            env.close();
+
+            env(delegate::set(alice, bob, {"Payment"}));
+            env.close();
+
+            auto const preAlice = env.balance(alice);
+            auto const preBob = env.balance(bob);
+
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto const seq = env.seq(alice);
+
+            auto tx = batch::inner(pay(alice, bob, XRP(1)), seq + 1);
+            tx[jss::Delegate] = bob.human();
+            auto const [txIDs, batchID] = submitBatch(
+                env,
+                tesSUCCESS,
+                batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                tx,
+                batch::inner(pay(alice, bob, XRP(2)), seq + 2));
+            env.close();
+
+            std::vector<TestLedgerData> testCases = {
+                {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
+                {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
+                {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
+            };
+            validateClosedLedger(env, testCases);
+
+            // Alice consumes sequences (# of txns)
+            BEAST_EXPECT(env.seq(alice) == seq + 3);
+
+            // Alice pays XRP & Fee; Bob receives XRP
+            BEAST_EXPECT(env.balance(alice) == preAlice - XRP(3) - batchFee);
+            BEAST_EXPECT(env.balance(bob) == preBob + XRP(3));
+        }
+
+        // delegated atomic inner
+        {
+            test::jtx::Env env{*this, envconfig()};
+
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const carol = Account("carol");
+            auto const gw = Account("gw");
+            auto const USD = gw["USD"];
+            env.fund(XRP(10000), alice, bob, carol, gw);
+            env.close();
+
+            env(delegate::set(bob, carol, {"Payment"}));
+            env.close();
+
+            auto const preAlice = env.balance(alice);
+            auto const preBob = env.balance(bob);
+            auto const preCarol = env.balance(carol);
+
+            auto const batchFee = batch::calcBatchFee(env, 1, 2);
+            auto const aliceSeq = env.seq(alice);
+            auto const bobSeq = env.seq(bob);
+
+            auto tx = batch::inner(pay(bob, alice, XRP(1)), bobSeq);
+            tx[jss::Delegate] = carol.human();
+            auto const [txIDs, batchID] = submitBatch(
+                env,
+                tesSUCCESS,
+                batch::outer(alice, aliceSeq, batchFee, tfAllOrNothing),
+                tx,
+                batch::inner(pay(alice, bob, XRP(2)), aliceSeq + 1),
+                batch::sig(bob));
+            env.close();
+
+            std::vector<TestLedgerData> testCases = {
+                {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
+                {1, "Payment", "tesSUCCESS", txIDs[0], batchID},
+                {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
+            };
+            validateClosedLedger(env, testCases);
+
+            BEAST_EXPECT(env.seq(alice) == aliceSeq + 2);
+            BEAST_EXPECT(env.seq(bob) == bobSeq + 1);
+            BEAST_EXPECT(env.balance(alice) == preAlice - XRP(1) - batchFee);
+            BEAST_EXPECT(env.balance(bob) == preBob + XRP(1));
+            // NOTE: Carol would normally pay the fee for delegated txns, but
+            // because the batch is atomic, the fee is paid by the batch
+            BEAST_EXPECT(env.balance(carol) == preCarol);
+        }
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testEnable(features);
@@ -3692,6 +3796,7 @@ class Batch_test : public beast::unit_test::suite
         testOpenLedger(features);
         testBatchTxQueue(features);
         testBatchNetworkOps(features);
+        testBatchDelegate(features);
     }
 
 public:
