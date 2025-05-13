@@ -1041,7 +1041,7 @@ class Loan_test : public beast::unit_test::suite
 
             auto defaultBeforeStartDate = [&](std::uint32_t baseFlag,
                                               bool impair = true) {
-                return [&, baseFlag](
+                return [&, impair, baseFlag](
                            Keylet const& loanKeylet,
                            VerifyLoanStatus const& verifyLoanStatus) {
                     // toEndOfLife
