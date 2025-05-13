@@ -1572,20 +1572,20 @@ public:
         FeatureBitset const all{jtx::supported_amendments()};
 
         // Test domain offer (w/o hyrbid)
-        // testOfferCreate(all);
-        // testPayment(all);
+        testOfferCreate(all);
+        testPayment(all);
         testBookStep(all);
-        // testRippling(all);
-        // testOfferTokenIssuerInDomain(all);
-        // testRemoveUnfundedOffer(all);
-        // testAmmNotUsed(all);
-        // testAutoBridge(all);
+        testRippling(all);
+        testOfferTokenIssuerInDomain(all);
+        testRemoveUnfundedOffer(all);
+        testAmmNotUsed(all);
+        testAutoBridge(all);
 
-        // // Test hybrid offers
-        // testHybridOfferCreate(all);
-        // testHybridBookStep(all);
-        // testHybridInvalidOffer(all);
-        // testHybridOfferDirectories(all);
+        // Test hybrid offers
+        testHybridOfferCreate(all);
+        testHybridBookStep(all);
+        testHybridInvalidOffer(all);
+        testHybridOfferDirectories(all);
     }
 };
 
