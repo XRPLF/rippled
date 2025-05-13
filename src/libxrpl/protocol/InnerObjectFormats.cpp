@@ -157,18 +157,14 @@ InnerObjectFormats::InnerObjectFormats()
 
     add(sfPermission.jsonName.c_str(),
         sfPermission.getCode(),
-        {
-            {sfPermissionValue, soeREQUIRED}
-        });
+        {{sfPermissionValue, soeREQUIRED}});
 
     add(sfBatchSigner.jsonName.c_str(),
         sfBatchSigner.getCode(),
-        {
-            {sfAccount, soeREQUIRED},
-            {sfSigningPubKey, soeOPTIONAL},
-            {sfTxnSignature, soeOPTIONAL},
-            {sfSigners, soeOPTIONAL}
-        });
+        {{sfAccount, soeREQUIRED},
+         {sfSigningPubKey, soeOPTIONAL},
+         {sfTxnSignature, soeOPTIONAL},
+         {sfSigners, soeOPTIONAL}});
 }
 
 InnerObjectFormats const&
