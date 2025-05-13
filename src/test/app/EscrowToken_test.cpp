@@ -35,33 +35,6 @@ namespace test {
 
 struct EscrowToken_test : public beast::unit_test::suite
 {
-    static STAmount
-    limitAmount(
-        jtx::Env const& env,
-        jtx::Account const& account,
-        jtx::Account const& gw,
-        jtx::IOU const& iou)
-    {
-        auto const aHigh = account.id() > gw.id();
-        auto const sle = env.le(keylet::line(account, gw, iou.currency));
-        if (sle && sle->isFieldPresent(aHigh ? sfLowLimit : sfHighLimit))
-            return (*sle)[aHigh ? sfLowLimit : sfHighLimit];
-        return STAmount(iou, 0);
-    }
-
-    static STAmount
-    lineBalance(
-        jtx::Env const& env,
-        jtx::Account const& account,
-        jtx::Account const& gw,
-        jtx::IOU const& iou)
-    {
-        auto const sle = env.le(keylet::line(account, gw, iou.currency));
-        if (sle && sle->isFieldPresent(sfBalance))
-            return (*sle)[sfBalance];
-        return STAmount(iou, 0);
-    }
-
     static uint64_t
     mptBalance(
         jtx::Env const& env,
@@ -604,8 +577,8 @@ struct EscrowToken_test : public beast::unit_test::suite
             env.close();
 
             // dst can finish escrow
-            auto const preSrc = lineBalance(env, t.src, t.gw, USD);
-            auto const preDst = lineBalance(env, t.dst, t.gw, USD);
+            auto const preSrc = env.balance(t.src, USD);
+            auto const preDst = env.balance(t.dst, USD);
 
             env(escrow::finish(t.dst, t.src, seq1),
                 escrow::condition(escrow::cb1),
@@ -613,10 +586,8 @@ struct EscrowToken_test : public beast::unit_test::suite
                 fee(baseFee * 150));
             env.close();
 
-            BEAST_EXPECT(lineBalance(env, t.src, t.gw, USD) == preSrc);
-            BEAST_EXPECT(
-                lineBalance(env, t.dst, t.gw, USD) ==
-                (t.negative ? (preDst - delta) : (preDst + delta)));
+            BEAST_EXPECT(env.balance(t.src, USD) == preSrc);
+            BEAST_EXPECT(env.balance(t.dst, USD) == preDst + delta);
         }
     }
 
@@ -632,7 +603,6 @@ struct EscrowToken_test : public beast::unit_test::suite
             Account src;
             Account dst;
             bool hasTrustline;
-            bool negative;
         };
 
         // issuer is source
@@ -662,13 +632,13 @@ struct EscrowToken_test : public beast::unit_test::suite
 
         std::array<TestAccountData, 4> gwDstTests = {{
             // src > dst && src > issuer && dst has trustline
-            {Account("alice2"), Account{"gw0"}, true, true},
+            {Account("alice2"), Account{"gw0"}, true},
             // src < dst && src < issuer && dst has trustline
-            {Account("carol0"), Account{"gw1"}, true, false},
+            {Account("carol0"), Account{"gw1"}, true},
             // dst > src && dst > issuer && dst has trustline
-            {Account("dan1"), Account{"gw0"}, true, true},
+            {Account("dan1"), Account{"gw0"}, true},
             // dst < src && dst < issuer && dst has trustline
-            {Account("bob0"), Account{"gw1"}, true, false},
+            {Account("bob0"), Account{"gw1"}, true},
         }};
 
         // issuer is destination
@@ -689,7 +659,7 @@ struct EscrowToken_test : public beast::unit_test::suite
 
             // issuer can receive escrow
             auto const seq1 = env.seq(t.src);
-            auto const preSrc = lineBalance(env, t.src, t.dst, USD);
+            auto const preSrc = env.balance(t.src, USD);
             env(escrow::create(t.src, t.dst, USD(1'000)),
                 escrow::condition(escrow::cb1),
                 escrow::finish_time(env.now() + 1s),
@@ -703,13 +673,10 @@ struct EscrowToken_test : public beast::unit_test::suite
                 fee(baseFee * 150));
             env.close();
             auto const preAmount = 10'000;
-            BEAST_EXPECT(
-                preSrc == (t.negative ? -USD(preAmount) : USD(preAmount)));
+            BEAST_EXPECT(preSrc == USD(preAmount));
             auto const postAmount = 9000;
-            BEAST_EXPECT(
-                lineBalance(env, t.src, t.dst, USD) ==
-                (t.negative ? -USD(postAmount) : USD(postAmount)));
-            BEAST_EXPECT(lineBalance(env, t.dst, t.dst, USD) == USD(0));
+            BEAST_EXPECT(env.balance(t.src, USD) == USD(postAmount));
+            BEAST_EXPECT(env.balance(t.dst, USD) == USD(0));
         }
 
         // issuer is source and destination
@@ -904,13 +871,13 @@ struct EscrowToken_test : public beast::unit_test::suite
             env.close();
 
             // bob can finish
-            auto const preBobLimit = limitAmount(env, bob, gw, USD);
+            auto const preBobLimit = env.limit(bob, USD);
             env(escrow::finish(bob, alice, seq1),
                 escrow::condition(escrow::cb1),
                 escrow::fulfillment(escrow::fb1),
                 fee(baseFee * 150));
             env.close();
-            auto const postBobLimit = limitAmount(env, bob, gw, USD);
+            auto const postBobLimit = env.limit(bob, USD);
             // bobs limit is NOT changed
             BEAST_EXPECT(postBobLimit == preBobLimit);
         }

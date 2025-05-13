@@ -199,6 +199,18 @@ Env::balance(Account const& account, Issue const& issue) const
     return {amount, lookup(issue.account).name()};
 }
 
+PrettyAmount
+Env::limit(Account const& account, Issue const& issue) const
+{
+    auto const sle = le(keylet::line(account.id(), issue));
+    if (!sle)
+        return {STAmount(issue, 0), account.name()};
+    auto const aHigh = account.id() > issue.account;
+    if (sle && sle->isFieldPresent(aHigh ? sfLowLimit : sfHighLimit))
+        return {(*sle)[aHigh ? sfLowLimit : sfHighLimit], account.name()};
+    return {STAmount(issue, 0), account.name()};
+}
+
 std::uint32_t
 Env::ownerCount(Account const& account) const
 {
