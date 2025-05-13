@@ -207,7 +207,7 @@ Batch::preflight(PreflightContext const& ctx)
             JLOG(ctx.j.trace()) << "BatchTrace[" << parentBatchId << "]: "
                                 << "inner txn cannot include TxnSignature. "
                                 << "txID: " << hash;
-            return temINVALID;
+            return temBAD_SIGNATURE;
         }
 
         if (stx.isFieldPresent(sfSigners))
@@ -215,7 +215,7 @@ Batch::preflight(PreflightContext const& ctx)
             JLOG(ctx.j.trace()) << "BatchTrace[" << parentBatchId << "]: "
                                 << "inner txn cannot include Signers. "
                                 << "txID: " << hash;
-            return temINVALID;
+            return temBAD_SIGNER;
         }
 
         if (!stx.getSigningPubKey().empty())
@@ -223,7 +223,7 @@ Batch::preflight(PreflightContext const& ctx)
             JLOG(ctx.j.trace()) << "BatchTrace[" << parentBatchId << "]: "
                                 << "inner txn SigningPubKey must be empty. "
                                 << "txID: " << hash;
-            return temINVALID;
+            return temBAD_REGKEY;
         }
 
         auto const innerAccount = stx.getAccountID(sfAccount);

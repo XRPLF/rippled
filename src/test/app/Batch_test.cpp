@@ -358,7 +358,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
         }
 
-        // temINVALID: Batch: inner txn cannot include TxnSignature.
+        // temBAD_SIGNATURE: Batch: inner txn cannot include TxnSignature.
         {
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
@@ -368,11 +368,11 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner_nofill(jt.jv),
                 batch::inner(pay(alice, bob, XRP(1)), seq + 2),
-                ter(temINVALID));
+                ter(temBAD_SIGNATURE));
             env.close();
         }
 
-        // temINVALID: Batch: inner txn cannot include Signers.
+        // temBAD_SIGNER: Batch: inner txn cannot include Signers.
         {
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
@@ -388,11 +388,11 @@ class Batch_test : public beast::unit_test::suite
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(tx1, seq + 1),
                 batch::inner(pay(alice, bob, XRP(1)), seq + 2),
-                ter(temINVALID));
+                ter(temBAD_SIGNER));
             env.close();
         }
 
-        // temINVALID: Batch: inner txn must include empty
+        // temBAD_REGKEY: Batch: inner txn must include empty
         // SigningPubKey.
         {
             auto const seq = env.seq(alice);
@@ -404,7 +404,7 @@ class Batch_test : public beast::unit_test::suite
                 tx1,
                 batch::inner(pay(alice, bob, XRP(1)), seq + 2));
 
-            env(jt.jv, ter(temINVALID));
+            env(jt.jv, ter(temBAD_REGKEY));
             env.close();
         }
 
