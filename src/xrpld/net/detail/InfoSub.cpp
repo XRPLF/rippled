@@ -124,12 +124,12 @@ InfoSub::clearRequest()
 }
 
 void
-InfoSub::setRequest(const std::shared_ptr<InfoSubRequest>& req)
+InfoSub::setRequest(std::shared_ptr<InfoSubRequest> const& req)
 {
     request_ = req;
 }
 
-const std::shared_ptr<InfoSubRequest>&
+std::shared_ptr<InfoSubRequest> const&
 InfoSub::getRequest()
 {
     return request_;

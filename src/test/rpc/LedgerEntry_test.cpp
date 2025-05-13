@@ -20,6 +20,7 @@
 #include <test/jtx.h>
 #include <test/jtx/Oracle.h>
 #include <test/jtx/attester.h>
+#include <test/jtx/delegate.h>
 #include <test/jtx/multisign.h>
 #include <test/jtx/xchain_bridge.h>
 
@@ -252,7 +253,7 @@ class LedgerEntry_test : public beast::unit_test::suite
         Account const issuer{"issuer"};
         Account const alice{"alice"};
         Account const bob{"bob"};
-        const char credType[] = "abcde";
+        char const credType[] = "abcde";
 
         env.fund(XRP(5000), issuer, alice, bob);
         env.close();
@@ -440,6 +441,116 @@ class LedgerEntry_test : public beast::unit_test::suite
     }
 
     void
+    testLedgerEntryDelegate()
+    {
+        testcase("ledger_entry Delegate");
+
+        using namespace test::jtx;
+
+        Env env{*this};
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        env.fund(XRP(10000), alice, bob);
+        env.close();
+        env(delegate::set(alice, bob, {"Payment", "CheckCreate"}));
+        env.close();
+        std::string const ledgerHash{to_string(env.closed()->info().hash)};
+        std::string delegateIndex;
+        {
+            // Request by account and authorize
+            Json::Value jvParams;
+            jvParams[jss::delegate][jss::account] = alice.human();
+            jvParams[jss::delegate][jss::authorize] = bob.human();
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(
+                jrr[jss::node][sfLedgerEntryType.jsonName] == jss::Delegate);
+            BEAST_EXPECT(jrr[jss::node][sfAccount.jsonName] == alice.human());
+            BEAST_EXPECT(jrr[jss::node][sfAuthorize.jsonName] == bob.human());
+            delegateIndex = jrr[jss::node][jss::index].asString();
+        }
+        {
+            // Request by index.
+            Json::Value jvParams;
+            jvParams[jss::delegate] = delegateIndex;
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            BEAST_EXPECT(
+                jrr[jss::node][sfLedgerEntryType.jsonName] == jss::Delegate);
+            BEAST_EXPECT(jrr[jss::node][sfAccount.jsonName] == alice.human());
+            BEAST_EXPECT(jrr[jss::node][sfAuthorize.jsonName] == bob.human());
+        }
+        {
+            // Malformed request: delegate neither object nor string.
+            Json::Value jvParams;
+            jvParams[jss::delegate] = 5;
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "malformedRequest", "");
+        }
+        {
+            // Malformed request: delegate not hex string.
+            Json::Value jvParams;
+            jvParams[jss::delegate] = "0123456789ABCDEFG";
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "malformedRequest", "");
+        }
+        {
+            // Malformed request: account not a string
+            Json::Value jvParams;
+            jvParams[jss::delegate][jss::account] = 5;
+            jvParams[jss::delegate][jss::authorize] = bob.human();
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "malformedAddress", "");
+        }
+        {
+            // Malformed request: authorize not a string
+            Json::Value jvParams;
+            jvParams[jss::delegate][jss::account] = alice.human();
+            jvParams[jss::delegate][jss::authorize] = 5;
+            jvParams[jss::ledger_hash] = ledgerHash;
+            Json::Value const jrr = env.rpc(
+                "json", "ledger_entry", to_string(jvParams))[jss::result];
+            checkErrorValue(jrr, "malformedAddress", "");
+        }
+        {
+            // this lambda function is used test malformed account and authroize
+            auto testMalformedAccount =
+                [&](std::optional<std::string> const& account,
+                    std::optional<std::string> const& authorize,
+                    std::string const& error) {
+                    Json::Value jvParams;
+                    jvParams[jss::ledger_hash] = ledgerHash;
+                    if (account)
+                        jvParams[jss::delegate][jss::account] = *account;
+                    if (authorize)
+                        jvParams[jss::delegate][jss::authorize] = *authorize;
+                    auto const jrr = env.rpc(
+                        "json",
+                        "ledger_entry",
+                        to_string(jvParams))[jss::result];
+                    checkErrorValue(jrr, error, "");
+                };
+            // missing account
+            testMalformedAccount(std::nullopt, bob.human(), "malformedRequest");
+            // missing authorize
+            testMalformedAccount(
+                alice.human(), std::nullopt, "malformedRequest");
+            // malformed account
+            testMalformedAccount("-", bob.human(), "malformedAddress");
+            // malformed authorize
+            testMalformedAccount(alice.human(), "-", "malformedAddress");
+        }
+    }
+
+    void
     testLedgerEntryDepositPreauth()
     {
         testcase("ledger_entry Deposit Preauth");
@@ -581,7 +692,7 @@ class LedgerEntry_test : public beast::unit_test::suite
         Account const issuer{"issuer"};
         Account const alice{"alice"};
         Account const bob{"bob"};
-        const char credType[] = "abcde";
+        char const credType[] = "abcde";
 
         env.fund(XRP(5000), issuer, alice, bob);
         env.close();
@@ -774,7 +885,7 @@ class LedgerEntry_test : public beast::unit_test::suite
         {
             // Failed, authorized_credentials is too long
 
-            static const std::string_view credTypes[] = {
+            static std::string_view const credTypes[] = {
                 "cred1",
                 "cred2",
                 "cred3",
@@ -2265,6 +2376,7 @@ public:
         testLedgerEntryAccountRoot();
         testLedgerEntryCheck();
         testLedgerEntryCredentials();
+        testLedgerEntryDelegate();
         testLedgerEntryDepositPreauth();
         testLedgerEntryDepositPreauthCred();
         testLedgerEntryDirectory();

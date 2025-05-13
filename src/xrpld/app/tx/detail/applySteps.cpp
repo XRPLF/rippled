@@ -37,6 +37,7 @@
 #include <xrpld/app/tx/detail/CreateTicket.h>
 #include <xrpld/app/tx/detail/Credentials.h>
 #include <xrpld/app/tx/detail/DID.h>
+#include <xrpld/app/tx/detail/DelegateSet.h>
 #include <xrpld/app/tx/detail/DeleteAccount.h>
 #include <xrpld/app/tx/detail/DeleteOracle.h>
 #include <xrpld/app/tx/detail/DepositPreauth.h>
@@ -90,8 +91,8 @@ with_txn_type(TxType txnType, F&& f)
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
-#define TRANSACTION(tag, value, name, fields) \
-    case tag:                                 \
+#define TRANSACTION(tag, value, name, delegatable, fields) \
+    case tag:                                              \
         return f.template operator()<name>();
 
 #include <xrpl/protocol/detail/transactions.macro>
@@ -192,6 +193,11 @@ invoke_preclaim(PreclaimContext const& ctx)
                     return result;
 
                 result = T::checkFee(ctx, calculateBaseFee(ctx.view, ctx.tx));
+
+                if (result != tesSUCCESS)
+                    return result;
+
+                result = T::checkPermission(ctx.view, ctx.tx);
 
                 if (result != tesSUCCESS)
                     return result;

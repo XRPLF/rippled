@@ -128,13 +128,13 @@ public:
     add(Serializer& s) const override;
 
     void
-    sort(bool (*compare)(const STObject& o1, const STObject& o2));
+    sort(bool (*compare)(STObject const& o1, STObject const& o2));
 
     bool
-    operator==(const STArray& s) const;
+    operator==(STArray const& s) const;
 
     bool
-    operator!=(const STArray& s) const;
+    operator!=(STArray const& s) const;
 
     iterator
     erase(iterator pos);
@@ -152,7 +152,7 @@ public:
     getSType() const override;
 
     bool
-    isEquivalent(const STBase& t) const override;
+    isEquivalent(STBase const& t) const override;
 
     bool
     isDefault() const override;
@@ -275,13 +275,13 @@ STArray::swap(STArray& a) noexcept
 }
 
 inline bool
-STArray::operator==(const STArray& s) const
+STArray::operator==(STArray const& s) const
 {
     return v_ == s.v_;
 }
 
 inline bool
-STArray::operator!=(const STArray& s) const
+STArray::operator!=(STArray const& s) const
 {
     return v_ != s.v_;
 }
