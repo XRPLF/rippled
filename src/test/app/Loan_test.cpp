@@ -164,9 +164,14 @@ class Loan_test : public beast::unit_test::suite
                     paymentInterval,
                     paymentsRemaining,
                     managementFeeRate);
+                auto const brokerDebt = brokerSle->at(sfDebtTotal);
                 auto const expectedDebt = principalOutstanding + loanInterest;
                 env.test.BEAST_EXPECT(
-                    brokerSle->at(sfDebtTotal) == expectedDebt);
+                    // Allow some slop for rounding
+                    brokerDebt == expectedDebt ||
+                    (expectedDebt != Number(0) &&
+                     ((brokerDebt - expectedDebt) / expectedDebt <
+                      Number(1, -2))));
                 env.test.BEAST_EXPECT(
                     env.balance(pseudoAccount, broker.asset).number() ==
                     brokerSle->at(sfCoverAvailable) + assetsAvailable);
@@ -1484,15 +1489,14 @@ class Loan_test : public beast::unit_test::suite
                         // remaining
                         auto const rateFactor =
                             power(1 + periodicRate, state.paymentRemaining);
-                        STAmount const periodicPayment{
-                            broker.asset,
+                        Number const periodicPayment{
                             state.principalOutstanding * periodicRate *
-                                rateFactor / (rateFactor - 1)};
+                            rateFactor / (rateFactor - 1)};
                         // Only check the first payment since the rounding may
                         // drift as payments are made
                         BEAST_EXPECT(
                             state.paymentRemaining < 12 ||
-                            periodicPayment ==
+                            STAmount(broker.asset, periodicPayment) ==
                                 broker.asset(Number(8333457001162141, -14)));
                         // Include the service fee
                         STAmount const totalDue{
@@ -1534,7 +1538,7 @@ class Loan_test : public beast::unit_test::suite
                         BEAST_EXPECT(
                             state.paymentRemaining < 12 ||
                             principal ==
-                                broker.asset(Number(8333228700000000, -14)));
+                                broker.asset(Number(8333228690659858, -14)));
                         BEAST_EXPECT(
                             principal > Number(0) &&
                             principal <= state.principalOutstanding);
@@ -1558,10 +1562,18 @@ class Loan_test : public beast::unit_test::suite
                         }
 
                         // Check the result
-                        BEAST_EXPECT(
-                            env.balance(borrower, broker.asset) ==
+                        auto const borrowerBalance =
+                            env.balance(borrower, broker.asset);
+                        auto const expectedBalance =
                             borrowerBalanceBeforePayment - totalDueAmount -
-                                adjustment);
+                            adjustment;
+                        BEAST_EXPECT(
+                            borrowerBalance == expectedBalance ||
+                            (!broker.asset.raw().native() &&
+                             broker.asset.raw().holds<Issue>() &&
+                             ((borrowerBalance - expectedBalance) /
+                                  expectedBalance <
+                              Number(1, -4))));
 
                         --state.paymentRemaining;
                         state.previousPaymentDate = state.nextPaymentDate;

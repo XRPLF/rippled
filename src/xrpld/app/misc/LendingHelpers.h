@@ -437,21 +437,21 @@ loanComputePaymentParts(
     // if the payment is not late nor if it's a full payment, then it must be a
     // periodic one, with possible overpayments
 
+    auto const totalDue =
+        roundToAsset(asset, periodicPaymentAmount + serviceFee, Number::upward);
+
     std::optional<NumberRoundModeGuard> mg(Number::downward);
     std::int64_t const fullPeriodicPayments = [&]() {
-        std::int64_t const full{
-            amount /
-            roundToAsset(
-                asset, (periodicPaymentAmount + serviceFee), Number::upward)};
+        std::int64_t const full{amount / totalDue};
         return full < paymentRemainingField ? full : paymentRemainingField;
     }();
     mg.reset();
     // Temporary asserts
     XRPL_ASSERT(
-        amount >= periodicPaymentAmount || fullPeriodicPayments == 0,
+        amount >= totalDue || fullPeriodicPayments == 0,
         "temp full periodic rounding");
     XRPL_ASSERT(
-        amount < periodicPaymentAmount || fullPeriodicPayments >= 1,
+        amount < totalDue || fullPeriodicPayments >= 1,
         "temp full periodic rounding");
 
     if (fullPeriodicPayments < 1)
@@ -499,7 +499,7 @@ loanComputePaymentParts(
     {
         Number const overpayment = std::min(
             principalOutstandingField.value(),
-            amount - periodicPaymentAmount * fullPeriodicPayments);
+            amount - (totalPrincipalPaid + totalInterestPaid + totalFeePaid));
 
         if (roundToAsset(asset, overpayment) > 0)
         {

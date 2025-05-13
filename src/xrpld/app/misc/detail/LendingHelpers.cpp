@@ -51,8 +51,7 @@ loanPeriodicPayment(
     // TODO: Need a better name
     Number const timeFactor = power(1 + periodicRate, paymentsRemaining);
 
-    return principalOutstanding * (periodicRate * timeFactor) /
-        (timeFactor - 1);
+    return principalOutstanding * periodicRate * timeFactor / (timeFactor - 1);
 }
 
 Number
