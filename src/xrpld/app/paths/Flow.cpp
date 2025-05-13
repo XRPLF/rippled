@@ -126,8 +126,8 @@ flow(
         }
     }
 
-    const bool srcIsXRP = isXRP(srcIssue.currency);
-    const bool dstIsXRP = isXRP(dstIssue.currency);
+    bool const srcIsXRP = isXRP(srcIssue.currency);
+    bool const dstIsXRP = isXRP(dstIssue.currency);
 
     auto const asDeliver = toAmountSpec(deliver);
 

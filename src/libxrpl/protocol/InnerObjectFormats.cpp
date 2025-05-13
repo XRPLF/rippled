@@ -155,6 +155,10 @@ InnerObjectFormats::InnerObjectFormats()
             {sfCredentialType, soeREQUIRED},
         });
 
+    add(sfPermission.jsonName.c_str(),
+        sfPermission.getCode(),
+        {{sfPermissionValue, soeREQUIRED}});
+
     add(sfBook.jsonName,
         sfBook.getCode(),
         {

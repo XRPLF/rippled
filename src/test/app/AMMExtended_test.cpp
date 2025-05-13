@@ -3846,7 +3846,7 @@ private:
         int const signerListOwners{features[featureMultiSignReserve] ? 2 : 5};
         env.require(owners(alice, signerListOwners + 0));
 
-        const msig ms{becky, bogie};
+        msig const ms{becky, bogie};
 
         // Multisign all AMM transactions
         AMM ammAlice(

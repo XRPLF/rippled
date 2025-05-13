@@ -39,7 +39,7 @@ public:
     {
     }
     virtual std::string
-    write(const Value& root) = 0;
+    write(Value const& root) = 0;
 };
 
 /** \brief Outputs a Value in <a HREF="http://www.json.org">JSON</a> format
@@ -60,11 +60,11 @@ public:
 
 public:  // overridden from Writer
     std::string
-    write(const Value& root) override;
+    write(Value const& root) override;
 
 private:
     void
-    writeValue(const Value& value);
+    writeValue(Value const& value);
 
     std::string document_;
 };
@@ -101,15 +101,15 @@ public:  // overridden from Writer
      * JSON document that represents the root value.
      */
     std::string
-    write(const Value& root) override;
+    write(Value const& root) override;
 
 private:
     void
-    writeValue(const Value& value);
+    writeValue(Value const& value);
     void
-    writeArrayValue(const Value& value);
+    writeArrayValue(Value const& value);
     bool
-    isMultineArray(const Value& value);
+    isMultineArray(Value const& value);
     void
     pushValue(std::string const& value);
     void
@@ -168,15 +168,15 @@ public:
      * return a value.
      */
     void
-    write(std::ostream& out, const Value& root);
+    write(std::ostream& out, Value const& root);
 
 private:
     void
-    writeValue(const Value& value);
+    writeValue(Value const& value);
     void
-    writeArrayValue(const Value& value);
+    writeArrayValue(Value const& value);
     bool
-    isMultineArray(const Value& value);
+    isMultineArray(Value const& value);
     void
     pushValue(std::string const& value);
     void
@@ -207,12 +207,12 @@ valueToString(double value);
 std::string
 valueToString(bool value);
 std::string
-valueToQuotedString(const char* value);
+valueToQuotedString(char const* value);
 
 /// \brief Output using the StyledStreamWriter.
 /// \see Json::operator>>()
 std::ostream&
-operator<<(std::ostream&, const Value& root);
+operator<<(std::ostream&, Value const& root);
 
 //------------------------------------------------------------------------------
 

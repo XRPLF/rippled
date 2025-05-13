@@ -271,7 +271,7 @@ class ValidatorList
     // collection with more than 5 entries will be considered malformed.
     static constexpr std::size_t maxSupportedBlobs = 5;
     // Prefix of the file name used to store cache files.
-    static const std::string filePrefix_;
+    static std::string const filePrefix_;
 
 public:
     ValidatorList(

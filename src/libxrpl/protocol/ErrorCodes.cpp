@@ -107,6 +107,7 @@ constexpr static ErrorInfo unorderedErrorInfos[]{
     {rpcSRC_ACT_MALFORMED,      "srcActMalformed",      "Source account is malformed.", 400},
     {rpcSRC_ACT_MISSING,        "srcActMissing",        "Source account not provided.", 400},
     {rpcSRC_ACT_NOT_FOUND,      "srcActNotFound",       "Source account not found.", 404},
+    {rpcDELEGATE_ACT_NOT_FOUND, "delegateActNotFound",  "Delegate account not found.", 404},
     {rpcSRC_CUR_MALFORMED,      "srcCurMalformed",      "Source currency is malformed.", 400},
     {rpcSRC_ISR_MALFORMED,      "srcIsrMalformed",      "Source issuer is malformed.", 400},
     {rpcSTREAM_MALFORMED,       "malformedStream",      "Stream malformed.", 400},

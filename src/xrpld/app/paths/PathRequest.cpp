@@ -41,7 +41,7 @@ namespace ripple {
 
 PathRequest::PathRequest(
     Application& app,
-    const std::shared_ptr<InfoSub>& subscriber,
+    std::shared_ptr<InfoSub> const& subscriber,
     int id,
     PathRequests& owner,
     beast::Journal journal)

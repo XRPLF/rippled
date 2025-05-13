@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/app/misc/CredentialHelpers.h>
+#include <xrpld/app/misc/DelegateUtils.h>
 #include <xrpld/app/misc/PermissionedDEXHelpers.h>
 #include <xrpld/app/paths/RippleCalc.h>
 #include <xrpld/app/tx/detail/Payment.h>
@@ -241,6 +242,39 @@ Payment::preflight(PreflightContext const& ctx)
         return err;
 
     return preflight2(ctx);
+}
+
+TER
+Payment::checkPermission(ReadView const& view, STTx const& tx)
+{
+    auto const delegate = tx[~sfDelegate];
+    if (!delegate)
+        return tesSUCCESS;
+
+    auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
+    auto const sle = view.read(delegateKey);
+
+    if (!sle)
+        return tecNO_PERMISSION;
+
+    if (checkTxPermission(sle, tx) == tesSUCCESS)
+        return tesSUCCESS;
+
+    std::unordered_set<GranularPermissionType> granularPermissions;
+    loadGranularPermission(sle, ttPAYMENT, granularPermissions);
+
+    auto const& dstAmount = tx.getFieldAmount(sfAmount);
+    auto const& amountIssue = dstAmount.issue();
+
+    if (granularPermissions.contains(PaymentMint) && !isXRP(amountIssue) &&
+        amountIssue.account == tx[sfAccount])
+        return tesSUCCESS;
+
+    if (granularPermissions.contains(PaymentBurn) && !isXRP(amountIssue) &&
+        amountIssue.account == tx[sfDestination])
+        return tesSUCCESS;
+
+    return tecNO_PERMISSION;
 }
 
 TER

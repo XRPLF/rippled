@@ -454,25 +454,17 @@ LedgerMaster::storeLedger(std::shared_ptr<Ledger const> ledger)
 void
 LedgerMaster::applyHeldTransactions()
 {
-    std::lock_guard sl(m_mutex);
+    CanonicalTXSet const set = [this]() {
+        std::lock_guard sl(m_mutex);
+        // VFALCO NOTE The hash for an open ledger is undefined so we use
+        // something that is a reasonable substitute.
+        CanonicalTXSet set(app_.openLedger().current()->info().parentHash);
+        std::swap(mHeldTransactions, set);
+        return set;
+    }();
 
-    app_.openLedger().modify([&](OpenView& view, beast::Journal j) {
-        bool any = false;
-        for (auto const& it : mHeldTransactions)
-        {
-            ApplyFlags flags = tapNONE;
-            auto const result =
-                app_.getTxQ().apply(app_, view, it.second, flags, j);
-            any |= result.applied;
-        }
-        return any;
-    });
-
-    // VFALCO TODO recreate the CanonicalTxSet object instead of resetting
-    // it.
-    // VFALCO NOTE The hash for an open ledger is undefined so we use
-    // something that is a reasonable substitute.
-    mHeldTransactions.reset(app_.openLedger().current()->info().parentHash);
+    if (!set.empty())
+        app_.getOPs().processTransactionSet(set);
 }
 
 std::shared_ptr<STTx const>
@@ -1534,7 +1526,7 @@ LedgerMaster::newOrderBookDB()
  */
 bool
 LedgerMaster::newPFWork(
-    const char* name,
+    char const* name,
     std::unique_lock<std::recursive_mutex>&)
 {
     if (!app_.isStopping() && mPathFindThread < 2 &&
