@@ -17,10 +17,12 @@
 */
 //==============================================================================
 
+#include <xrpld/app/tx/detail/MPTokenAuthorize.h>
 #include <xrpld/app/tx/detail/VaultClawback.h>
 #include <xrpld/ledger/View.h>
 
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/STAmount.h>
@@ -39,7 +41,7 @@ VaultClawback::preflight(PreflightContext const& ctx)
     if (auto const ter = preflight1(ctx))
         return ter;
 
-    if (ctx.tx.getFlags() & tfUniversalMask)
+    if (ctx.tx.getFlags() & tfVaultClawbackMask)
         return temINVALID_FLAG;
 
     if (ctx.tx[sfVaultID] == beast::zero)
@@ -136,10 +138,10 @@ VaultClawback::doApply()
         "ripple::VaultClawback::doApply : matching asset");
 
     AccountID holder = tx[sfHolder];
+    Asset share = *(*vault)[sfShareMPTID];
     STAmount assets, shares;
     if (amount == beast::zero)
     {
-        Asset share = *(*vault)[sfShareMPTID];
         shares = accountHolds(
             view(),
             holder,
@@ -175,6 +177,30 @@ VaultClawback::doApply()
     if (auto ter = accountSend(
             view(), holder, vaultAccount, shares, j_, WaiveTransferFee::Yes))
         return ter;
+
+    // Sanity check
+    if (accountHolds(
+            view(),
+            holder,
+            share,
+            FreezeHandling::fhIGNORE_FREEZE,
+            AuthHandling::ahIGNORE_AUTH,
+            j_) < beast::zero)
+        return tefINTERNAL;
+
+    if (ctx_.tx.getFlags() & tfVaultClawbackUnauth)
+    {
+        // Will return tecHAS_OBLIGATIONS if the holder has remaining shares
+        if (auto const ter = MPTokenAuthorize::authorize(
+                view(),
+                ctx_.journal,
+                {.priorBalance = XRPAmount(0),
+                 .mptIssuanceID = mptIssuanceID->value(),
+                 .accountID = holder,
+                 .flags = tfMPTUnauthorize});
+            !isTesSuccess(ter))
+            return ter;
+    }
 
     // Transfer assets from vault to issuer.
     if (auto ter = accountSend(
