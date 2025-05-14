@@ -136,8 +136,11 @@ SetTrust::checkPermission(ReadView const& view, STTx const& tx)
         return terNO_DELEGATE_PERMISSION;
 
     auto const saLimitAmount = tx.getFieldAmount(sfLimitAmount);
-    auto const sleRippleState = view.read(keylet::line(
-        tx[sfAccount], saLimitAmount.getIssuer(), saLimitAmount.getCurrency()));
+    auto const sleRippleState = view.read(
+        keylet::line(
+            tx[sfAccount],
+            saLimitAmount.getIssuer(),
+            saLimitAmount.getCurrency()));
 
     // if the trustline does not exist, granular permissions are
     // not allowed to create trustline
