@@ -92,7 +92,7 @@ hash_append(Hasher& h, Issue const& r)
 operator==(Issue const& lhs, Issue const& rhs)
 {
     return (lhs.currency == rhs.currency) &&
-        (isXRP(lhs.currency) || lhs.account == rhs.account);
+        (isAFRO(lhs.currency) || lhs.account == rhs.account);
 }
 /** @} */
 
@@ -104,7 +104,7 @@ operator<=>(Issue const& lhs, Issue const& rhs)
     if (auto const c{lhs.currency <=> rhs.currency}; c != 0)
         return c;
 
-    if (isXRP(lhs.currency))
+    if (isAFRO(lhs.currency))
         return std::weak_ordering::equivalent;
 
     return (lhs.account <=> rhs.account);
@@ -113,11 +113,11 @@ operator<=>(Issue const& lhs, Issue const& rhs)
 
 //------------------------------------------------------------------------------
 
-/** Returns an asset specifier that represents XRP. */
+/** Returns an asset specifier that represents AFRO. */
 inline Issue const&
-xrpIssue()
+afroIssue()
 {
-    static Issue issue{xrpCurrency(), xrpAccount()};
+    static Issue issue{afroCurrency(), afroAccount()};
     return issue;
 }
 
