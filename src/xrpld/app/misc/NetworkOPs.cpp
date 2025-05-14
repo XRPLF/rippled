@@ -425,7 +425,7 @@ public:
     isFull() override;
 
     void
-    setMode(OperatingMode om, const char* reason) override;
+    setMode(OperatingMode om, char const* reason) override;
 
     bool
     isBlocked() override;
@@ -2507,7 +2507,7 @@ NetworkOPsImp::pubPeerStatus(std::function<Json::Value(void)> const& func)
 }
 
 void
-NetworkOPsImp::setMode(OperatingMode om, const char* reason)
+NetworkOPsImp::setMode(OperatingMode om, char const* reason)
 {
     using namespace std::chrono_literals;
     if (om == OperatingMode::CONNECTED)
