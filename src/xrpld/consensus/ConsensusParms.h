@@ -80,7 +80,7 @@ struct ConsensusParms
 
     //! The duration a ledger may remain idle before closing
     std::chrono::milliseconds const ledgerIDLE_INTERVAL =
-        std::chrono::seconds{15};
+        std::chrono::seconds{2};
 
     //! The number of seconds we wait minimum to ensure participation
     std::chrono::milliseconds const ledgerMIN_CONSENSUS =
