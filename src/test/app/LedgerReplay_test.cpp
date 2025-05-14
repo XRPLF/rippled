@@ -79,7 +79,7 @@ public:
         uint256 const& hash,
         std::uint32_t seq,
         InboundLedger::Reason,
-        const char*) override
+        char const*) override
     {
         if (bhvr == InboundLedgersBehavior::DropAll)
             return {};
