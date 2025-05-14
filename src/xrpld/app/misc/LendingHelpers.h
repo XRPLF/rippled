@@ -75,11 +75,15 @@ template <AssetType A>
 Number
 loanTotalValueOutstanding(
     A asset,
+    Number principalOutstanding,
     Number periodicPayment,
     std::uint32_t paymentsRemaining)
 {
     return roundToAsset(
-        asset, periodicPayment * paymentsRemaining, Number::upward);
+        asset,
+        periodicPayment * paymentsRemaining,
+        principalOutstanding,
+        Number::upward);
 }
 
 template <AssetType A>
@@ -93,6 +97,7 @@ loanTotalValueOutstanding(
 {
     return loanTotalValueOutstanding(
         asset,
+        principalOutstanding,
         loanPeriodicPayment(
             principalOutstanding,
             interestRate,
@@ -157,16 +162,28 @@ computePeriodicPaymentParts(
     A const& asset,
     Number const& principalOutstanding,
     Number const& periodicPaymentAmount,
-    Number const& periodicRate)
+    Number const& periodicRate,
+    std::uint32_t paymentRemaining)
 {
-    Number const interest =
-        roundToAsset(asset, principalOutstanding * periodicRate);
+    if (paymentRemaining == 1)
+    {
+        // If there's only one payment left, we need to pay off the principal.
+        Number const interest = roundToAsset(
+            asset,
+            periodicPaymentAmount - principalOutstanding,
+            principalOutstanding);
+        return {interest, principalOutstanding};
+    }
+    Number const interest = roundToAsset(
+        asset, principalOutstanding * periodicRate, principalOutstanding);
     XRPL_ASSERT(
         interest >= 0,
         "ripple::detail::computePeriodicPayment : valid interest");
 
+    auto const roundedPayment =
+        roundToAsset(asset, periodicPaymentAmount, principalOutstanding);
     Number const principal =
-        roundToAsset(asset, periodicPaymentAmount - interest);
+        roundToAsset(asset, roundedPayment - interest, principalOutstanding);
     XRPL_ASSERT(
         principal > 0 && principal <= principalOutstanding,
         "ripple::detail::computePeriodicPayment : valid principal");
@@ -190,7 +207,7 @@ valueMinusManagementFee(
     TenthBips32 managementFeeRate)
 {
     return roundToAsset(
-        asset, detail::minusManagementFee(value, managementFeeRate));
+        asset, detail::minusManagementFee(value, managementFeeRate), value);
 }
 
 template <AssetType A>
@@ -229,7 +246,8 @@ loanPeriodicPayment(
             principalOutstanding,
             interestRate,
             paymentInterval,
-            paymentsRemaining));
+            paymentsRemaining),
+        principalOutstanding);
 }
 
 template <AssetType A>
@@ -249,7 +267,8 @@ loanLatePaymentInterest(
             lateInterestRate,
             parentCloseTime,
             startDate,
-            prevPaymentDate));
+            prevPaymentDate),
+        principalOutstanding);
 }
 
 struct LoanPaymentParts
@@ -280,8 +299,8 @@ loanComputePaymentParts(
 
     Number const serviceFee = loan->at(sfLoanServiceFee);
     Number const latePaymentFee = loan->at(sfLatePaymentFee);
-    Number const closePaymentFee =
-        roundToAsset(asset, loan->at(sfClosePaymentFee));
+    Number const closePaymentFee = roundToAsset(
+        asset, loan->at(sfClosePaymentFee), principalOutstandingField);
     TenthBips32 const overpaymentFee{loan->at(sfOverpaymentFee)};
 
     std::uint32_t const paymentInterval = loan->at(sfPaymentInterval);
@@ -314,10 +333,17 @@ loanComputePaymentParts(
         "ripple::computePeriodicPayment : valid payment");
 
     auto const periodic = detail::computePeriodicPaymentParts(
-        asset, principalOutstandingField, periodicPaymentAmount, periodicRate);
+        asset,
+        principalOutstandingField,
+        periodicPaymentAmount,
+        periodicRate,
+        paymentRemainingField);
 
     Number const totalValueOutstanding = detail::loanTotalValueOutstanding(
-        asset, periodicPaymentAmount, paymentRemainingField);
+        asset,
+        principalOutstandingField,
+        periodicPaymentAmount,
+        paymentRemainingField);
     XRPL_ASSERT(
         totalValueOutstanding > 0,
         "ripple::loanComputePaymentParts : valid total value");
@@ -393,14 +419,16 @@ loanComputePaymentParts(
                 view.parentCloseTime(),
                 startDate,
                 prevPaymentDateField,
-                paymentInterval));
+                paymentInterval),
+            principalOutstandingField);
         XRPL_ASSERT(
             accruedInterest >= 0,
             "ripple::loanComputePaymentParts : valid accrued interest");
         auto const closePrepaymentInterest = roundToAsset(
             asset,
             tenthBipsOfValue(
-                principalOutstandingField.value(), closeInterestRate));
+                principalOutstandingField.value(), closeInterestRate),
+            principalOutstandingField);
         XRPL_ASSERT(
             closePrepaymentInterest >= 0,
             "ripple::loanComputePaymentParts : valid prepayment "
@@ -437,8 +465,11 @@ loanComputePaymentParts(
     // if the payment is not late nor if it's a full payment, then it must be a
     // periodic one, with possible overpayments
 
-    auto const totalDue =
-        roundToAsset(asset, periodicPaymentAmount + serviceFee, Number::upward);
+    auto const totalDue = roundToAsset(
+        asset,
+        periodicPaymentAmount + serviceFee,
+        principalOutstandingField,
+        Number::upward);
 
     std::optional<NumberRoundModeGuard> mg(Number::downward);
     std::int64_t const fullPeriodicPayments = [&]() {
@@ -477,7 +508,8 @@ loanComputePaymentParts(
                 asset,
                 principalOutstandingField,
                 periodicPaymentAmount,
-                periodicRate);
+                periodicRate,
+                paymentRemainingField);
         XRPL_ASSERT(
             future->interest <= periodic.interest,
             "ripple::loanComputePaymentParts : decreasing interest");
@@ -501,14 +533,20 @@ loanComputePaymentParts(
             principalOutstandingField.value(),
             amount - (totalPrincipalPaid + totalInterestPaid + totalFeePaid));
 
-        if (roundToAsset(asset, overpayment) > 0)
+        if (roundToAsset(asset, overpayment, principalOutstandingField) > 0)
         {
             Number const interestPortion = roundToAsset(
-                asset, tenthBipsOfValue(overpayment, overpaymentInterestRate));
+                asset,
+                tenthBipsOfValue(overpayment, overpaymentInterestRate),
+                principalOutstandingField);
             Number const feePortion = roundToAsset(
-                asset, tenthBipsOfValue(overpayment, overpaymentFee));
-            Number const remainder =
-                roundToAsset(asset, overpayment - interestPortion - feePortion);
+                asset,
+                tenthBipsOfValue(overpayment, overpaymentFee),
+                principalOutstandingField);
+            Number const remainder = roundToAsset(
+                asset,
+                overpayment - interestPortion - feePortion,
+                principalOutstandingField);
 
             // Don't process an overpayment if the whole amount (or more!) gets
             // eaten by fees
@@ -540,16 +578,20 @@ loanComputePaymentParts(
     // Check the final results are rounded, to double-check that the
     // intermediate steps were rounded.
     XRPL_ASSERT(
-        roundToAsset(asset, totalPrincipalPaid) == totalPrincipalPaid,
+        roundToAsset(asset, totalPrincipalPaid, principalOutstandingField) ==
+            totalPrincipalPaid,
         "ripple::loanComputePaymentParts : totalPrincipalPaid rounded");
     XRPL_ASSERT(
-        roundToAsset(asset, totalInterestPaid) == totalInterestPaid,
+        roundToAsset(asset, totalInterestPaid, principalOutstandingField) ==
+            totalInterestPaid,
         "ripple::loanComputePaymentParts : totalInterestPaid rounded");
     XRPL_ASSERT(
-        roundToAsset(asset, loanValueChange) == loanValueChange,
+        roundToAsset(asset, loanValueChange, principalOutstandingField) ==
+            loanValueChange,
         "ripple::loanComputePaymentParts : loanValueChange rounded");
     XRPL_ASSERT(
-        roundToAsset(asset, totalFeePaid) == totalFeePaid,
+        roundToAsset(asset, totalFeePaid, principalOutstandingField) ==
+            totalFeePaid,
         "ripple::loanComputePaymentParts : totalFeePaid rounded");
     return LoanPaymentParts{
         totalPrincipalPaid, totalInterestPaid, loanValueChange, totalFeePaid};

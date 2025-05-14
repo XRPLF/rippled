@@ -1485,29 +1485,37 @@ class Loan_test : public beast::unit_test::suite
                     {
                         testcase << "Payments remaining: "
                                  << state.paymentRemaining;
+
+                        STAmount const principalOutstandingAmount{
+                            broker.asset, state.principalOutstanding};
                         // Compute the payment based on the number of payments
                         // remaining
                         auto const rateFactor =
                             power(1 + periodicRate, state.paymentRemaining);
-                        Number const periodicPayment{
+                        Number const rawPeriodicPayment =
                             state.principalOutstanding * periodicRate *
-                            rateFactor / (rateFactor - 1)};
+                            rateFactor / (rateFactor - 1);
+                        STAmount const periodicPayment = roundToReference(
+                            STAmount{broker.asset, rawPeriodicPayment},
+                            principalOutstandingAmount);
                         // Only check the first payment since the rounding may
                         // drift as payments are made
                         BEAST_EXPECT(
                             state.paymentRemaining < 12 ||
-                            STAmount(broker.asset, periodicPayment) ==
+                            STAmount(broker.asset, rawPeriodicPayment) ==
                                 broker.asset(Number(8333457001162141, -14)));
                         // Include the service fee
-                        STAmount const totalDue{
-                            broker.asset,
-                            periodicPayment + broker.asset(2).value()};
+                        STAmount const totalDue = roundToReference(
+                            periodicPayment + broker.asset(2),
+                            principalOutstandingAmount);
                         // Only check the first payment since the rounding may
                         // drift as payments are made
                         BEAST_EXPECT(
                             state.paymentRemaining < 12 ||
                             totalDue ==
-                                broker.asset(Number(8533457001162141, -14)));
+                                roundToReference(
+                                    broker.asset(Number(8533457001162141, -14)),
+                                    principalOutstandingAmount));
 
                         // Try to pay a little extra to show that it's _not_
                         // taken
@@ -1518,33 +1526,51 @@ class Loan_test : public beast::unit_test::suite
                         BEAST_EXPECT(
                             state.paymentRemaining < 12 ||
                             transactionAmount ==
-                                broker.asset(Number(9533457001162141, -14)));
+                                roundToReference(
+                                    broker.asset(Number(9533457001162141, -14)),
+                                    principalOutstandingAmount));
 
                         auto const totalDueAmount =
                             STAmount{broker.asset, totalDue};
 
                         // Compute the expected principal amount
-                        STAmount const interest{
-                            broker.asset,
-                            state.principalOutstanding * periodicRate};
+                        Number const rawInterest =
+                            state.principalOutstanding * periodicRate;
+                        STAmount const interest = roundToReference(
+                            STAmount{broker.asset, rawInterest},
+                            principalOutstandingAmount);
                         BEAST_EXPECT(
                             state.paymentRemaining < 12 ||
-                            interest ==
-                                broker.asset(Number(2283105022831050, -18)));
+                            roundToReference(
+                                STAmount{broker.asset, rawInterest},
+                                principalOutstandingAmount) ==
+                                roundToReference(
+                                    broker.asset(Number(2283105022831050, -18)),
+                                    principalOutstandingAmount));
                         BEAST_EXPECT(interest >= Number(0));
 
-                        auto const principal =
-                            STAmount(broker.asset, periodicPayment - interest);
+                        auto const rawPrincipal =
+                            rawPeriodicPayment - rawInterest;
                         BEAST_EXPECT(
                             state.paymentRemaining < 12 ||
-                            principal ==
-                                broker.asset(Number(8333228690659858, -14)));
+                            roundToReference(
+                                STAmount{broker.asset, rawPrincipal},
+                                principalOutstandingAmount) ==
+                                roundToReference(
+                                    broker.asset(Number(8333228690659858, -14)),
+                                    principalOutstandingAmount));
+                        auto const principal = roundToReference(
+                            STAmount{broker.asset, periodicPayment - interest},
+                            principalOutstandingAmount);
                         BEAST_EXPECT(
                             principal > Number(0) &&
                             principal <= state.principalOutstanding);
                         BEAST_EXPECT(
                             state.paymentRemaining > 1 ||
                             principal == state.principalOutstanding);
+                        BEAST_EXPECT(
+                            rawPrincipal + rawInterest == rawPeriodicPayment);
+                        BEAST_EXPECT(principal + interest == periodicPayment);
 
                         auto const borrowerBalanceBeforePayment =
                             env.balance(borrower, broker.asset);

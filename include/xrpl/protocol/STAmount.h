@@ -695,16 +695,47 @@ divRoundStrict(
 std::uint64_t
 getRate(STAmount const& offerOut, STAmount const& offerIn);
 
+inline STAmount
+roundToReference(
+    STAmount const value,
+    STAmount const referenceValue,
+    Number::rounding_mode rounding = Number::getround())
+{
+    NumberRoundModeGuard mg(rounding);
+    if (value >= referenceValue)
+        return value;
+    // With an IOU, the total will be truncated to the precision of the
+    // larger value: referenceValue
+    STAmount const total = referenceValue + value;
+    STAmount const result = total - referenceValue;
+    XRPL_ASSERT_PARTS(
+        (!value.asset().native() && value.asset().holds<Issue>()) ||
+            value == result,
+        "ripple::roundToReference",
+        "rounding only on IOU");
+    return result;
+}
+
+/** Round an arbitrary precision Number to the precision of a given Asset.
+ *
+ * @param asset The relevant asset
+ * @param value The value to be rounded
+ * @param referenceValue Only relevant to IOU assets. A reference value to
+ *     establish the precision limit of `value`. Should be larger than
+ * `value`.
+ * @param rounding Optional Number rounding mode
+ */
 template <AssetType A>
 Number
 roundToAsset(
     A const& asset,
     Number const& value,
+    Number const& referenceValue,
     Number::rounding_mode rounding = Number::getround())
 {
     NumberRoundModeGuard mg(rounding);
-    STAmount const amount{asset, value};
-    return amount;
+    return roundToReference(
+        STAmount{asset, value}, STAmount{asset, referenceValue});
 }
 
 //------------------------------------------------------------------------------
@@ -715,10 +746,10 @@ isXRP(STAmount const& amount)
     return amount.native();
 }
 
-// Since `canonicalize` does not have access to a ledger, this is needed to put
-// the low-level routine stAmountCanonicalize on an amendment switch. Only
-// transactions need to use this switchover. Outside of a transaction it's safe
-// to unconditionally use the new behavior.
+// Since `canonicalize` does not have access to a ledger, this is needed to
+// put the low-level routine stAmountCanonicalize on an amendment switch.
+// Only transactions need to use this switchover. Outside of a transaction
+// it's safe to unconditionally use the new behavior.
 
 bool
 getSTAmountCanonicalizeSwitchover();

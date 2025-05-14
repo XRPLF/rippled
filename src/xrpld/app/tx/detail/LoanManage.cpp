@@ -191,7 +191,8 @@ defaultLoan(
                 tenthBipsOfValue(
                     brokerDebtTotalProxy.value(), coverRateMinimum),
                 coverRateLiquidation),
-            defaultAmount));
+            defaultAmount),
+        std::max(brokerDebtTotalProxy.value(), defaultAmount));
     auto const returnToVault = defaultCovered + loanAssetsAvailableProxy;
     auto const vaultDefaultAmount = defaultAmount - defaultCovered;
 

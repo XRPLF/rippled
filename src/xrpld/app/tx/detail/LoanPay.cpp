@@ -177,6 +177,9 @@ LoanPay::doApply()
 
     //------------------------------------------------------
     // Loan object state changes
+    auto const originalPrincipalOutstanding =
+        loanSle->at(sfPrincipalOutstanding);
+
     view.update(loanSle);
 
     Expected<LoanPaymentParts, TER> paymentParts =
@@ -207,7 +210,9 @@ LoanPay::doApply()
 
     TenthBips32 managementFeeRate{brokerSle->at(sfManagementFeeRate)};
     auto const managementFee = roundToAsset(
-        asset, tenthBipsOfValue(paymentParts->interestPaid, managementFeeRate));
+        asset,
+        tenthBipsOfValue(paymentParts->interestPaid, managementFeeRate),
+        originalPrincipalOutstanding);
 
     auto const totalPaidToVault = paymentParts->principalPaid +
         paymentParts->interestPaid - managementFee;
@@ -219,10 +224,10 @@ LoanPay::doApply()
     auto debtTotalField = brokerSle->at(sfDebtTotal);
     TenthBips32 const coverRateMinimum{brokerSle->at(sfCoverRateMinimum)};
 
-    bool const sufficientCover =
-        coverAvailableField >=
-        roundToAsset(
-            asset, tenthBipsOfValue(debtTotalField.value(), coverRateMinimum));
+    bool const sufficientCover = coverAvailableField >=
+        roundToAsset(asset,
+                     tenthBipsOfValue(debtTotalField.value(), coverRateMinimum),
+                     originalPrincipalOutstanding);
     if (!sufficientCover)
     {
         // Add the fee to to First Loss Cover Pool
@@ -233,7 +238,12 @@ LoanPay::doApply()
     // and subtract the change in the management fee
     auto const vaultValueChange = valueMinusManagementFee(
         asset, paymentParts->valueChange, managementFeeRate);
-    debtTotalField += vaultValueChange - totalPaidToVault;
+    // debtDecrease may be negative, increasing the debt
+    auto const debtDecrease = totalPaidToVault - vaultValueChange;
+    if (debtDecrease >= debtTotalField)
+        debtTotalField = 0;
+    else
+        debtTotalField -= debtDecrease;
 
     //------------------------------------------------------
     // Vault object state changes

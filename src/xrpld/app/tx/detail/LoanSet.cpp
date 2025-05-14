@@ -302,7 +302,8 @@ LoanSet::doApply()
     {
         return tefBAD_LEDGER;  // LCOV_EXCL_LINE
     }
-    auto const principalRequested = tx[sfPrincipalRequested];
+    auto const principalRequested = roundToAsset(
+        vaultAsset, tx[sfPrincipalRequested], tx[sfPrincipalRequested]);
     TenthBips32 const interestRate{tx[~sfInterestRate].value_or(0)};
     auto const originationFee = tx[~sfLoanOriginationFee];
     auto const loanAssetsAvailable =
@@ -405,7 +406,6 @@ LoanSet::doApply()
     loan->at(sfNextPaymentDueDate) = startDate + paymentInterval;
     loan->at(sfPaymentRemaining) = paymentTotal;
     loan->at(sfAssetsAvailable) = loanAssetsAvailable;
-    loan->at(sfPrincipalOutstanding) = principalRequested;
     view.insert(loan);
 
     // Update the balances in the vault
