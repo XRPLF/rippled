@@ -181,9 +181,9 @@ STArray::getSType() const
 }
 
 bool
-STArray::isEquivalent(const STBase& t) const
+STArray::isEquivalent(STBase const& t) const
 {
-    auto v = dynamic_cast<const STArray*>(&t);
+    auto v = dynamic_cast<STArray const*>(&t);
     return v != nullptr && v_ == v->v_;
 }
 
@@ -194,7 +194,7 @@ STArray::isDefault() const
 }
 
 void
-STArray::sort(bool (*compare)(const STObject&, const STObject&))
+STArray::sort(bool (*compare)(STObject const&, STObject const&))
 {
     std::sort(v_.begin(), v_.end(), compare);
 }
