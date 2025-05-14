@@ -71,7 +71,7 @@ public:
         uint256 const& hash,
         std::uint32_t seq,
         InboundLedger::Reason reason,
-        const char* context) override
+        char const* context) override
     {
         auto doAcquire = [&, seq, reason]() -> std::shared_ptr<Ledger const> {
             XRPL_ASSERT(
