@@ -45,7 +45,7 @@ Overload(Ts...) -> Overload<Ts...>;
 struct MultiApiJson_test : beast::unit_test::suite
 {
     static auto
-    makeJson(const char* key, int val)
+    makeJson(char const* key, int val)
     {
         Json::Value obj1(Json::objectValue);
         obj1[key] = val;
@@ -80,7 +80,7 @@ struct MultiApiJson_test : beast::unit_test::suite
             testcase("forApiVersions, forAllApiVersions");
 
             // Some static data for test inputs
-            static const int primes[] = {2,  3,  5,  7,  11, 13, 17, 19, 23,
+            static int const primes[] = {2,  3,  5,  7,  11, 13, 17, 19, 23,
                                          29, 31, 37, 41, 43, 47, 53, 59, 61,
                                          67, 71, 73, 79, 83, 89, 97};
             static_assert(std::size(primes) > RPC::apiMaximumValidVersion);
@@ -205,7 +205,7 @@ struct MultiApiJson_test : beast::unit_test::suite
                 return !requires {
                     forAllApiVersions(
                         std::forward<decltype(v)>(v).visit(),  //
-                        [](auto, auto, const char*) {},
+                        [](auto, auto, char const*) {},
                         1);  // parameter type mismatch
                 };
             }(std::as_const(s1)));
@@ -256,7 +256,7 @@ struct MultiApiJson_test : beast::unit_test::suite
                             Json::Value const&,
                             std::integral_constant<unsigned int, Version>,
                             int,
-                            const char*) {},
+                            char const*) {},
                         0,
                         "");
                 };

@@ -246,7 +246,7 @@ public:
     static std::string
     to_string(category cat)
     {
-        static const std::unordered_map<category, std::string> category_map = {
+        static std::unordered_map<category, std::string> const category_map = {
             {base, "overhead"},
             {cluster, "overhead_cluster"},
             {overlay, "overhead_overlay"},

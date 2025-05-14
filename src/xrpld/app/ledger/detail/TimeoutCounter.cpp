@@ -109,8 +109,8 @@ TimeoutCounter::invokeOnTimer()
     if (!progress_)
     {
         ++timeouts_;
-        JLOG(journal_.debug())
-            << "Timeout(" << timeouts_ << ") " << " acquiring " << hash_;
+        JLOG(journal_.debug()) << "Timeout(" << timeouts_ << ") "
+                               << " acquiring " << hash_;
         onTimer(false, sl);
     }
     else

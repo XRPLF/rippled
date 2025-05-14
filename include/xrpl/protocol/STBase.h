@@ -129,16 +129,16 @@ class STBase
 public:
     virtual ~STBase() = default;
     STBase();
-    STBase(const STBase&) = default;
+    STBase(STBase const&) = default;
     STBase&
-    operator=(const STBase& t);
+    operator=(STBase const& t);
 
     explicit STBase(SField const& n);
 
     bool
-    operator==(const STBase& t) const;
+    operator==(STBase const& t) const;
     bool
-    operator!=(const STBase& t) const;
+    operator!=(STBase const& t) const;
 
     template <class D>
     D&
@@ -197,7 +197,7 @@ private:
 //------------------------------------------------------------------------------
 
 std::ostream&
-operator<<(std::ostream& out, const STBase& t);
+operator<<(std::ostream& out, STBase const& t);
 
 template <class D>
 D&

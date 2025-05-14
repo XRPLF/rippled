@@ -314,11 +314,11 @@ public:
     {
     }
     void
-    addTxQueue(const uint256&) override
+    addTxQueue(uint256 const&) override
     {
     }
     void
-    removeTxQueue(const uint256&) override
+    removeTxQueue(uint256 const&) override
     {
     }
     bool
@@ -416,7 +416,7 @@ struct TestPeerSet : public PeerSet
         }
     }
 
-    const std::set<Peer::id_t>&
+    std::set<Peer::id_t> const&
     getPeerIds() const override
     {
         static std::set<Peer::id_t> emptyPeers;
