@@ -44,7 +44,7 @@ public:
         uint256 const& hash,
         std::uint32_t seq,
         InboundLedger::Reason,
-        const char* context) = 0;
+        char const* context) = 0;
 
     // Callers should use this if they are known to be executing on the Job
     // Queue. TODO review whether all callers of acquire() can use this
