@@ -243,26 +243,6 @@ LoanSet::preclaim(PreclaimContext const& ctx)
         return tecINSUFFICIENT_FUNDS;
     }
 
-    if (auto const originationFee = tx[~sfLoanOriginationFee])
-    {
-        // Check that the lender will not make an unfair profit on the lending
-        // fee if the loan defaults. (Not yet in spec. May need to be removed.)
-        TenthBips32 const coverRateLiquidation{
-            brokerSle->at(sfCoverRateLiquidation)};
-
-        auto const maximumOriginationFee = tenthBipsOfValue(
-            tenthBipsOfValue(newDebtTotal, coverRateMinimum),
-            coverRateLiquidation);
-
-        if (*originationFee > maximumOriginationFee)
-        {
-            JLOG(ctx.j.warn())
-                << "Loan origination fee is too high. The lender will make a "
-                   "profit on the lending fee if the loan defaults.";
-            return tecINSUFFICIENT_FUNDS;
-        }
-    }
-
     return tesSUCCESS;
 }
 
