@@ -695,26 +695,11 @@ divRoundStrict(
 std::uint64_t
 getRate(STAmount const& offerOut, STAmount const& offerIn);
 
-inline STAmount
+STAmount
 roundToReference(
     STAmount const value,
-    STAmount const referenceValue,
-    Number::rounding_mode rounding = Number::getround())
-{
-    NumberRoundModeGuard mg(rounding);
-    if (value >= referenceValue)
-        return value;
-    // With an IOU, the total will be truncated to the precision of the
-    // larger value: referenceValue
-    STAmount const total = referenceValue + value;
-    STAmount const result = total - referenceValue;
-    XRPL_ASSERT_PARTS(
-        (!value.asset().native() && value.asset().holds<Issue>()) ||
-            value == result,
-        "ripple::roundToReference",
-        "rounding only on IOU");
-    return result;
-}
+    STAmount referenceValue,
+    Number::rounding_mode rounding = Number::getround());
 
 /** Round an arbitrary precision Number to the precision of a given Asset.
  *
@@ -734,8 +719,10 @@ roundToAsset(
     Number::rounding_mode rounding = Number::getround())
 {
     NumberRoundModeGuard mg(rounding);
-    return roundToReference(
-        STAmount{asset, value}, STAmount{asset, referenceValue});
+    STAmount const ret{asset, value};
+    if (ret.asset().native() || !ret.asset().holds<Issue>())
+        return ret;
+    return roundToReference(ret, STAmount{asset, referenceValue});
 }
 
 //------------------------------------------------------------------------------

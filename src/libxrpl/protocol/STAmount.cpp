@@ -1353,6 +1353,30 @@ canonicalizeRoundStrict(
     }
 }
 
+STAmount
+roundToReference(
+    STAmount const value,
+    STAmount referenceValue,
+    Number::rounding_mode rounding)
+{
+    if (value.asset().native() || !value.asset().holds<Issue>())
+        return value;
+
+    NumberRoundModeGuard mg(rounding);
+    if (referenceValue.negative() != value.negative())
+        referenceValue.negate();
+
+    if (value.exponent() > referenceValue.exponent() &&
+        (value.exponent() == referenceValue.exponent() &&
+         value.mantissa() >= referenceValue.mantissa()))
+        return value;
+    // With an IOU, the total will be truncated to the precision of the
+    // larger value: referenceValue
+    STAmount const total = referenceValue + value;
+    STAmount const result = total - referenceValue;
+    return result;
+}
+
 namespace {
 
 // We need a class that has an interface similar to NumberRoundModeGuard

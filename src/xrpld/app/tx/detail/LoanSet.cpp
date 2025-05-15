@@ -363,6 +363,7 @@ LoanSet::doApply()
     auto const loanInterestToVault = loanInterestOutstandingMinusFee(
         vaultAsset,
         principalRequested,
+        principalRequested,
         interestRate,
         paymentInterval,
         paymentTotal,
@@ -382,6 +383,7 @@ LoanSet::doApply()
         };
 
     // Set required tx fields and pre-computed fields
+    loan->at(sfPrincipalRequested) = principalRequested;
     loan->at(sfPrincipalOutstanding) = principalRequested;
     loan->at(sfStartDate) = startDate;
     loan->at(sfPaymentInterval) = paymentInterval;

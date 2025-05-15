@@ -177,8 +177,7 @@ LoanPay::doApply()
 
     //------------------------------------------------------
     // Loan object state changes
-    auto const originalPrincipalOutstanding =
-        loanSle->at(sfPrincipalOutstanding);
+    Number const originalPrincipalRequested = loanSle->at(sfPrincipalRequested);
 
     view.update(loanSle);
 
@@ -212,7 +211,7 @@ LoanPay::doApply()
     auto const managementFee = roundToAsset(
         asset,
         tenthBipsOfValue(paymentParts->interestPaid, managementFeeRate),
-        originalPrincipalOutstanding);
+        originalPrincipalRequested);
 
     auto const totalPaidToVault = paymentParts->principalPaid +
         paymentParts->interestPaid - managementFee;
@@ -227,7 +226,7 @@ LoanPay::doApply()
     bool const sufficientCover = coverAvailableField >=
         roundToAsset(asset,
                      tenthBipsOfValue(debtTotalField.value(), coverRateMinimum),
-                     originalPrincipalOutstanding);
+                     originalPrincipalRequested);
     if (!sufficientCover)
     {
         // Add the fee to to First Loss Cover Pool
@@ -237,9 +236,17 @@ LoanPay::doApply()
     // Decrease LoanBroker Debt by the amount paid, add the Loan value change,
     // and subtract the change in the management fee
     auto const vaultValueChange = valueMinusManagementFee(
-        asset, paymentParts->valueChange, managementFeeRate);
+        asset,
+        paymentParts->valueChange,
+        managementFeeRate,
+        originalPrincipalRequested);
     // debtDecrease may be negative, increasing the debt
     auto const debtDecrease = totalPaidToVault - vaultValueChange;
+    XRPL_ASSERT_PARTS(
+        roundToAsset(asset, debtDecrease, originalPrincipalRequested) ==
+            debtDecrease,
+        "ripple::LoanPay::doApply",
+        "debtDecrease rounding good");
     if (debtDecrease >= debtTotalField)
         debtTotalField = 0;
     else

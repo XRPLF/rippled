@@ -172,6 +172,7 @@ defaultLoan(
 {
     // Calculate the amount of the Default that First-Loss Capital covers:
 
+    Number const originalPrincipalRequested = loanSle->at(sfPrincipalRequested);
     TenthBips32 const managementFeeRate{brokerSle->at(sfManagementFeeRate)};
     auto brokerDebtTotalProxy = brokerSle->at(sfDebtTotal);
     auto const totalDefaultAmount = principalOutstanding + interestOutstanding;
@@ -192,7 +193,7 @@ defaultLoan(
                     brokerDebtTotalProxy.value(), coverRateMinimum),
                 coverRateLiquidation),
             defaultAmount),
-        std::max(brokerDebtTotalProxy.value(), defaultAmount));
+        originalPrincipalRequested);
     auto const returnToVault = defaultCovered + loanAssetsAvailableProxy;
     auto const vaultDefaultAmount = defaultAmount - defaultCovered;
 
@@ -373,6 +374,7 @@ LoanManage::doApply()
     auto const vaultAsset = vaultSle->at(sfAsset);
 
     TenthBips32 const interestRate{loanSle->at(sfInterestRate)};
+    Number const originalPrincipalRequested = loanSle->at(sfPrincipalRequested);
     auto const principalOutstanding = loanSle->at(sfPrincipalOutstanding);
 
     TenthBips32 const managementFeeRate{brokerSle->at(sfManagementFeeRate)};
@@ -380,6 +382,7 @@ LoanManage::doApply()
     auto const paymentsRemaining = loanSle->at(sfPaymentRemaining);
     auto const interestOutstanding = loanInterestOutstandingMinusFee(
         vaultAsset,
+        originalPrincipalRequested,
         principalOutstanding.value(),
         interestRate,
         paymentInterval,

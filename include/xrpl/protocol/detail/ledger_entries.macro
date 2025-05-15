@@ -553,6 +553,9 @@ LEDGER_ENTRY(ltLOAN, 0x0089, Loan, loan, ({
     {sfPaymentRemaining,     soeREQUIRED},
     {sfAssetsAvailable,      soeREQUIRED},
     {sfPrincipalOutstanding, soeREQUIRED},
+    // Save the original request amount for rounding / scaling of
+    // other computations, particularly for IOUs
+    {sfPrincipalRequested,   soeREQUIRED},
 }))
 
 #undef EXPAND
