@@ -644,10 +644,12 @@ WamrEngine::run(
     wbytes const& wasmCode,
     std::string_view funcName,
     std::vector<WasmImportFunc> const& imports,
-    std::vector<WasmParam> const& params)
+    std::vector<WasmParam> const& params,
+    beast::Journal j)
 {
     try
     {
+        j_ = j;
         return runHlp(wasmCode, funcName, imports, params);
     }
     catch (std::exception const&)

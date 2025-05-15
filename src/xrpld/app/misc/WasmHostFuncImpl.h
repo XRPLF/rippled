@@ -23,6 +23,7 @@
 #include <xrpld/app/tx/detail/ApplyContext.h>
 
 #include <xrpl/basics/Expected.h>
+#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/TER.h>
 
 namespace ripple {
@@ -32,6 +33,12 @@ public:
     WasmHostFunctionsImpl(ApplyContext& ctx, Keylet leKey)
         : ctx(ctx), leKey(leKey)
     {
+    }
+
+    beast::Journal
+    getJournal() override
+    {
+        return ctx.journal;
     }
 
     int32_t

@@ -158,7 +158,8 @@ public:
     run(wbytes const& wasmCode,
         std::string_view funcName,
         std::vector<WasmImportFunc> const& imports,
-        std::vector<WasmParam> const& params);
+        std::vector<WasmParam> const& params,
+        beast::Journal j);
 
     std::int64_t
     initGas(std::int64_t def);
