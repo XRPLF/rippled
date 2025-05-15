@@ -639,6 +639,32 @@ WamrEngine::call(
     return call<NR>(func, in, p.data(), p.size(), std::forward<Types>(args)...);
 }
 
+static log_level_t
+getLogLevel(beast::severities::Severity severity)
+{
+    using namespace beast::severities;
+    switch (severity)
+    {
+        case kTrace:
+            return WASM_LOG_LEVEL_VERBOSE;
+        case kDebug:
+            return WASM_LOG_LEVEL_DEBUG;
+        case kInfo:
+        case kWarning:
+            return WASM_LOG_LEVEL_WARNING;
+        case kError:
+            return WASM_LOG_LEVEL_ERROR;
+        default:
+            UNREACHABLE("invalid severity");
+            [[fallthrough]];
+        case kFatal:
+        case kNone:
+            break;
+    }
+
+    return WASM_LOG_LEVEL_FATAL;
+}
+
 Expected<int32_t, TER>
 WamrEngine::run(
     wbytes const& wasmCode,
@@ -649,6 +675,7 @@ WamrEngine::run(
 {
     try
     {
+        wasm_runtime_set_log_level(getLogLevel(j.sink().threshold()));
         j_ = j;
         return runHlp(wasmCode, funcName, imports, params);
     }
