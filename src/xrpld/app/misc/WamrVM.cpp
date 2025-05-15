@@ -28,9 +28,9 @@ namespace ripple {
 namespace {
 
 static void
-print_wasm_error(const char* message, wasm_trap_t* trap)
+print_wasm_error(const char* message, wasm_trap_t* trap, beast::Journal j)
 {
-    fprintf(stderr, "WAMR error: %s\n", message);
+    j.debug() << "WAMR error: " << message;
 
     if (trap)
     {
@@ -38,11 +38,7 @@ print_wasm_error(const char* message, wasm_trap_t* trap)
 
         wasm_trap_message(trap, &error_message);
         wasm_trap_delete(trap);
-        fprintf(
-            stderr,
-            "WAMR trap: %.*s\n",
-            (int)error_message.size,
-            error_message.data);
+        j.debug() << "WAMR trap: " << error_message.data;
         wasm_byte_vec_delete(&error_message);
     }
 }
@@ -69,7 +65,10 @@ InstanceWrapper::init(
 
     if (!mi || trap)
     {
-        print_wasm_error("can't create instance", trap);
+        print_wasm_error(
+            "can't create instance",
+            trap,
+            beast::Journal(beast::Journal::getNullSink()));
         throw std::runtime_error("WAMR: can't create instance");
     }
     wasm_instance_exports(mi.get(), expt);
@@ -570,7 +569,7 @@ WamrEngine::call(wasm_func_t* func, std::vector<wasm_val_t>& in)
               nullptr};
     trap = wasm_func_call(func, &inv, &ret.r);
     if (trap)
-        print_wasm_error("failed to call func", trap);
+        print_wasm_error("failed to call func", trap, j_);
 
     // assert(results[0].kind == WASM_I32);
     // if (NR) printf("Result P5: %d\n", ret[0].of.i32);

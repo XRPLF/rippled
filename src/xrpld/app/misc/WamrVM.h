@@ -20,6 +20,8 @@
 
 #include <xrpld/app/misc/WasmVM.h>
 
+#include <xrpl/beast/utility/Journal.h>
+
 #include <iwasm/wasm_c_api.h>
 #include <iwasm/wasm_export.h>
 
@@ -146,6 +148,7 @@ class WamrEngine
     wasm_trap_t* trap = nullptr;
     std::int64_t defGas = -1;
     std::int32_t defMaxPages = -1;
+    beast::Journal j_ = beast::Journal(beast::Journal::getNullSink());
 
 public:
     WamrEngine();
