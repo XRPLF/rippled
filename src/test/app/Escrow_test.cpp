@@ -41,7 +41,8 @@ getWasmFixture(std::string const& fixtureName)
     namespace fs = std::filesystem;
     auto const currentFile = fs::path(__FILE__);
     auto const filename =
-        fs::canonical(currentFile / "../wasm_fixtures" / fixtureName).string();
+        fs::weakly_canonical(currentFile / "../wasm_fixtures" / fixtureName)
+            .string();
     std::ifstream file(filename);  // Open the file
     if (!file.is_open())
     {
