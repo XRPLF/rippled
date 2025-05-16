@@ -252,6 +252,15 @@ WasmImpFunc(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+struct HostFunctionsDummy : public HostFunctions
+{
+    HostFunctionsDummy()
+    {
+    }
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 struct WasmParam
 {
     WasmTypes type = WT_I32;
@@ -333,6 +342,13 @@ public:
     static WasmEngine&
     instance();
 
+    Expected<int32_t, NotTEC>
+    preflight(
+        wbytes const& wasmCode,
+        std::string_view funcName = {},
+        std::vector<WasmImportFunc> const& imports = {},
+        std::vector<WasmParam> const& params = {});
+
     Expected<int32_t, TER>
     run(wbytes const& wasmCode,
         std::string_view funcName = {},
@@ -364,6 +380,13 @@ public:
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+NotTEC
+preflightEscrowWasm(
+    Bytes const& wasmCode,
+    std::string_view funcName,
+    HostFunctions* hfs,
+    uint64_t gasLimit);
 
 Expected<EscrowResult, TER>
 runEscrowWasm(

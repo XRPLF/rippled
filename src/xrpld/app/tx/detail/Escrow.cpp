@@ -181,7 +181,16 @@ EscrowCreate::preflight(PreflightContext const& ctx)
                 << "EscrowCreate.FinishFunction bad size " << code.size();
             return temMALFORMED;
         }
-        // TODO: add check to ensure this is valid WASM code
+
+        // ensure that this is valid WASM code
+        HostFunctionsDummy ledgerDataProvider;
+        auto re =
+            preflightEscrowWasm(code, "ready", &ledgerDataProvider, 100000);
+        if (!isTesSuccess(re))
+        {
+            JLOG(ctx.j.debug()) << "EscrowCreate.FinishFunction bad WASM";
+            return re;
+        }
     }
 
     return preflight2(ctx);

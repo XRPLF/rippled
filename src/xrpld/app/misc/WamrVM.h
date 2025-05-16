@@ -154,6 +154,13 @@ public:
     WamrEngine();
     ~WamrEngine() = default;
 
+    Expected<int32_t, NotTEC>
+    preflight(
+        wbytes const& wasmCode,
+        std::string_view funcName,
+        std::vector<WasmImportFunc> const& imports,
+        std::vector<WasmParam> const& params);
+
     Expected<int32_t, TER>
     run(wbytes const& wasmCode,
         std::string_view funcName,
@@ -184,6 +191,13 @@ public:
     newTrap(std::string_view msg);
 
 private:
+    Expected<int32_t, NotTEC>
+    preflightHlp(
+        wbytes const& wasmCode,
+        std::string_view funcName,
+        std::vector<WasmImportFunc> const& imports,
+        std::vector<WasmParam> const& params);
+
     Expected<int32_t, TER>
     runHlp(
         wbytes const& wasmCode,
