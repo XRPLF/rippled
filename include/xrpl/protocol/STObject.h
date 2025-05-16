@@ -25,7 +25,6 @@
 #include <xrpl/basics/chrono.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
-#include <xrpl/protocol/FeeUnits.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/SOTemplate.h>
 #include <xrpl/protocol/STAmount.h>
@@ -34,6 +33,7 @@
 #include <xrpl/protocol/STIssue.h>
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/STVector256.h>
+#include <xrpl/protocol/Units.h>
 #include <xrpl/protocol/detail/STVar.h>
 
 #include <boost/iterator/transform_iterator.hpp>

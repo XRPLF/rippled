@@ -532,12 +532,28 @@ createPseudoAccount(
 [[nodiscard]] bool
 isPseudoAccount(std::shared_ptr<SLE const> sleAcct);
 
+// Returns the list of fields that define an ACCOUNT_ROOT as a pseudo-account if
+// set
+// Pseudo-account designator fields MUST be maintained by including the
+// SField::sMD_PseudoAccount flag in the SField definition. (Don't forget to
+// "| SField::sMD_Default"!) The fields do NOT need to be amendment-gated,
+// since a non-active amendment will not set any field, by definition.
+// Specific properties of a pseudo-account are NOT checked here, that's what
+// InvariantCheck is for.
+[[nodiscard]] std::vector<SField const*> const&
+getPseudoAccountFields();
+
 [[nodiscard]] inline bool
 isPseudoAccount(ReadView const& view, AccountID accountId)
 {
     return isPseudoAccount(view.read(keylet::account(accountId)));
 }
 
+[[nodiscard]] TER
+canAddHolding(ReadView const& view, Asset const& asset);
+
+/// Any transactors that call addEmptyHolding() in doApply must call
+/// canAddHolding() in preflight with the same View and Asset
 [[nodiscard]] TER
 addEmptyHolding(
     ApplyView& view,

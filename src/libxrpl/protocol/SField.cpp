@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/SField.h>
 
 #include <map>
@@ -28,6 +29,7 @@ namespace ripple {
 SField::IsSigning const SField::notSigning;
 int SField::num = 0;
 std::map<int, SField const*> SField::knownCodeToField;
+std::map<std::string, SField const*> SField::knownNameToField;
 
 // Give only this translation unit permission to construct SFields
 struct SField::private_access_tag_t
@@ -45,7 +47,7 @@ TypedField<T>::TypedField(private_access_tag_t pat, Args&&... args)
 }
 
 // Construct all compile-time SFields, and register them in the knownCodeToField
-// database:
+// and knownNameToField databases:
 
 // Use macros for most SField construction to enforce naming conventions.
 #pragma push_macro("UNTYPED_SFIELD")
@@ -99,7 +101,14 @@ SField::SField(
     , signingField(signing)
     , jsonName(fieldName.c_str())
 {
+    XRPL_ASSERT(
+        !knownCodeToField.contains(fieldCode),
+        "ripple::SField::SField(tid,fv,fn,meta,signing) : fieldCode is unique");
+    XRPL_ASSERT(
+        !knownNameToField.contains(fieldName),
+        "ripple::SField::SField(tid,fv,fn,meta,signing) : fieldName is unique");
     knownCodeToField[fieldCode] = this;
+    knownNameToField[fieldName] = this;
 }
 
 SField::SField(private_access_tag_t, int fc)
@@ -111,6 +120,9 @@ SField::SField(private_access_tag_t, int fc)
     , signingField(IsSigning::yes)
     , jsonName(fieldName.c_str())
 {
+    XRPL_ASSERT(
+        !knownCodeToField.contains(fieldCode),
+        "ripple::SField::SField(fc) : fieldCode is unique");
     knownCodeToField[fieldCode] = this;
 }
 
@@ -145,11 +157,11 @@ SField::compare(SField const& f1, SField const& f2)
 SField const&
 SField::getField(std::string const& fieldName)
 {
-    for (auto const& [_, f] : knownCodeToField)
+    auto it = knownNameToField.find(fieldName);
+
+    if (it != knownNameToField.end())
     {
-        (void)_;
-        if (f->fieldName == fieldName)
-            return *f;
+        return *(it->second);
     }
     return sfInvalid;
 }
