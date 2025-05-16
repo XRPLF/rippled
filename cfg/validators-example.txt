@@ -26,7 +26,7 @@
 #
 #   Examples:
 #    https://vl.ripple.com
-#    https://vl.xrplf.org
+#    https://unl.xrplf.org
 #    http://127.0.0.1:8000
 #    file:///etc/opt/ripple/vl.txt
 #
