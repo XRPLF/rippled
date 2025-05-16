@@ -798,6 +798,7 @@ WamrEngine::run(
     }
     catch (...)
     {
+        return temUNKNOWN;
     }
     return Unexpected<TER>(tecFAILED_PROCESSING);
 }
