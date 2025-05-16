@@ -627,6 +627,16 @@ Transactor::checkSign(
     AccountID const& id,
     STObject const& sigObject)
 {
+    {
+        auto const sle = ctx.view.read(keylet::account(id));
+
+        if (ctx.view.rules().enabled(featureLendingProtocol) &&
+            isPseudoAccount(sle))
+            // Pseudo-accounts can't sign transactions. This check is gated on
+            // the Lending Protocol amendment because that's the project it was
+            // added under, and it doesn't justify another amendment
+            return tefBAD_AUTH;
+    }
     if (ctx.flags & tapDRY_RUN)
     {
         // This code must be different for `simulate`

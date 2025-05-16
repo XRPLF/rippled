@@ -167,6 +167,7 @@ LEDGER_ENTRY(ltACCOUNT_ROOT, 0x0061, AccountRoot, account, ({
     {sfFirstNFTokenSequence, soeOPTIONAL},
     {sfAMMID,                soeOPTIONAL}, // pseudo-account designator
     {sfVaultID,              soeOPTIONAL}, // pseudo-account designator
+    {sfLoanBrokerID,         soeOPTIONAL}, // pseudo-account designator
 }))
 
 /** A ledger object which contains a list of object identifiers.
@@ -495,6 +496,66 @@ LEDGER_ENTRY(ltVAULT, 0x0084, Vault, vault, ({
     {sfWithdrawalPolicy,     soeREQUIRED},
     // no SharesTotal ever (use MPTIssuance.sfOutstandingAmount)
     // no PermissionedDomainID ever (use MPTIssuance.sfDomainID)
+}))
+
+/** Reserve 0x0084-0x0087 for future Vault-related objects. */
+
+/** A ledger object representing a loan broker
+
+    \sa keylet::loanbroker
+ */
+LEDGER_ENTRY(ltLOAN_BROKER, 0x0088, LoanBroker, loan_broker, ({
+    {sfPreviousTxnID,        soeREQUIRED},
+    {sfPreviousTxnLgrSeq,    soeREQUIRED},
+    {sfSequence,             soeREQUIRED},
+    {sfOwnerNode,            soeREQUIRED},
+    {sfVaultNode,            soeREQUIRED},
+    {sfVaultID,              soeREQUIRED},
+    {sfAccount,              soeREQUIRED},
+    {sfOwner,                soeREQUIRED},
+    {sfLoanSequence,         soeREQUIRED},
+    {sfData,                 soeDEFAULT},
+    {sfManagementFeeRate,    soeDEFAULT},
+    {sfOwnerCount,           soeDEFAULT},
+    {sfDebtTotal,            soeDEFAULT},
+    {sfDebtMaximum,          soeDEFAULT},
+    {sfCoverAvailable,       soeDEFAULT},
+    {sfCoverRateMinimum,     soeDEFAULT},
+    {sfCoverRateLiquidation, soeDEFAULT},
+}))
+
+/** A ledger object representing a loan between a Borrower and a Loan Broker
+
+    \sa keylet::loan
+ */
+LEDGER_ENTRY(ltLOAN, 0x0089, Loan, loan, ({
+    {sfPreviousTxnID,        soeREQUIRED},
+    {sfPreviousTxnLgrSeq,    soeREQUIRED},
+    {sfOwnerNode,            soeREQUIRED},
+    {sfLoanBrokerNode,       soeREQUIRED},
+    {sfLoanBrokerID,         soeREQUIRED},
+    {sfLoanSequence,         soeREQUIRED},
+    {sfBorrower,             soeREQUIRED},
+    {sfLoanOriginationFee,   soeREQUIRED},
+    {sfLoanServiceFee,       soeREQUIRED},
+    {sfLatePaymentFee,       soeREQUIRED},
+    {sfClosePaymentFee,      soeREQUIRED},
+    {sfOverpaymentFee,       soeREQUIRED},
+    {sfInterestRate,         soeREQUIRED},
+    {sfLateInterestRate,     soeREQUIRED},
+    {sfCloseInterestRate,    soeREQUIRED},
+    {sfOverpaymentInterestRate, soeREQUIRED},
+    {sfStartDate,            soeREQUIRED},
+    {sfPaymentInterval,      soeREQUIRED},
+    {sfGracePeriod,          soeREQUIRED},
+    {sfPreviousPaymentDate,  soeREQUIRED},
+    {sfNextPaymentDueDate,   soeREQUIRED},
+    {sfPaymentRemaining,     soeREQUIRED},
+    {sfAssetsAvailable,      soeREQUIRED},
+    {sfPrincipalOutstanding, soeREQUIRED},
+    // Save the original request amount for rounding / scaling of
+    // other computations, particularly for IOUs
+    {sfPrincipalRequested,   soeREQUIRED},
 }))
 
 #undef EXPAND

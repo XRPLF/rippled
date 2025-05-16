@@ -415,10 +415,10 @@ void
 AccountRootsDeletedClean::visitEntry(
     bool isDelete,
     std::shared_ptr<SLE const> const& before,
-    std::shared_ptr<SLE const> const&)
+    std::shared_ptr<SLE const> const& after)
 {
     if (isDelete && before && before->getType() == ltACCOUNT_ROOT)
-        accountsDeleted_.emplace_back(before);
+        accountsDeleted_.emplace_back(before, after);
 }
 
 bool
@@ -434,7 +434,8 @@ AccountRootsDeletedClean::finalize(
     // feature is enabled. Enabled, or not, though, a fatal-level message will
     // be logged
     [[maybe_unused]] bool const enforce =
-        view.rules().enabled(featureInvariantsV1_1);
+        view.rules().enabled(featureInvariantsV1_1) ||
+        view.rules().enabled(featureLendingProtocol);
 
     auto const objectExists = [&view, enforce, &j](auto const& keylet) {
         (void)enforce;
@@ -462,9 +463,33 @@ AccountRootsDeletedClean::finalize(
         return false;
     };
 
-    for (auto const& accountSLE : accountsDeleted_)
+    for (auto const& [before, after] : accountsDeleted_)
     {
-        auto const accountID = accountSLE->getAccountID(sfAccount);
+        auto const accountID = before->getAccountID(sfAccount);
+        // An account should not be deleted with a balance
+        if (after->at(sfBalance) != beast::zero)
+        {
+            JLOG(j.fatal()) << "Invariant failed: account deletion left "
+                               "behind a non-zero balance";
+            XRPL_ASSERT(
+                enforce,
+                "ripple::AccountRootsDeletedClean::finalize : "
+                "deleted account has zero balance");
+            if (enforce)
+                return false;
+        }
+        // An account should not be deleted with a non-zero owner count
+        if (after->at(sfOwnerCount) != 0)
+        {
+            JLOG(j.fatal()) << "Invariant failed: account deletion left "
+                               "behind a non-zero owner count";
+            XRPL_ASSERT(
+                enforce,
+                "ripple::AccountRootsDeletedClean::finalize : "
+                "deleted account has zero owner count");
+            if (enforce)
+                return false;
+        }
         // Simple types
         for (auto const& [keyletfunc, _, __] : directAccountKeylets)
         {
@@ -490,9 +515,9 @@ AccountRootsDeletedClean::finalize(
         // Keys directly stored in the AccountRoot object
         for (auto const& field : getPseudoAccountFields())
         {
-            if (accountSLE->isFieldPresent(*field))
+            if (before->isFieldPresent(*field))
             {
-                auto const key = accountSLE->getFieldH256(*field);
+                auto const key = before->getFieldH256(*field);
                 if (objectExists(keylet::unchecked(key)) && enforce)
                     return false;
             }
@@ -949,7 +974,9 @@ ValidNewAccountRoot::finalize(
         result == tesSUCCESS)
     {
         bool const pseudoAccount =
-            (pseudoAccount_ && view.rules().enabled(featureSingleAssetVault));
+            (pseudoAccount_ &&
+             (view.rules().enabled(featureSingleAssetVault) ||
+              view.rules().enabled(featureLendingProtocol)));
 
         if (pseudoAccount && !checkMyPrivilege(tx, createPseudoAcct))
         {
@@ -1433,6 +1460,12 @@ ValidMPTIssuance::finalize(
                                    "succeeded but deleted issuances";
                 return false;
             }
+            else if (mptokensCreated_ + mptokensDeleted_ > 1)
+            {
+                JLOG(j.fatal()) << "Invariant failed: MPT authorize succeeded "
+                                   "but created/deleted bad number mptokens";
+                return false;
+            }
             else if (
                 submittedByIssuer &&
                 (mptokensCreated_ > 0 || mptokensDeleted_ > 0))
@@ -1610,6 +1643,122 @@ ValidPermissionedDomain::finalize(
 //------------------------------------------------------------------------------
 
 void
+NoModifiedUnmodifiableFields::visitEntry(
+    bool isDelete,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
+{
+    if (isDelete || !before)
+        // Creation and deletion are ignored
+        return;
+
+    changedEntries_.emplace(before, after);
+}
+
+bool
+NoModifiedUnmodifiableFields::finalize(
+    STTx const& tx,
+    TER const,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    static auto const fieldChanged =
+        [](auto const& before, auto const& after, auto const& field) {
+            bool const beforeField = before->isFieldPresent(field);
+            bool const afterField = after->isFieldPresent(field);
+            return beforeField != afterField ||
+                (afterField && before->at(field) != after->at(field));
+        };
+    for (auto const& slePair : changedEntries_)
+    {
+        auto const& before = slePair.first;
+        auto const& after = slePair.second;
+        auto const type = after->getType();
+        bool bad = false;
+        [[maybe_unused]] bool enforce = false;
+        switch (type)
+        {
+            case ltLOAN_BROKER:
+                /*
+                 * We check this invariant regardless of lending protocol
+                 * amendment status, allowing for detection and logging of
+                 * potential issues even when the amendment is disabled.
+                 */
+                enforce = view.rules().enabled(featureLendingProtocol);
+                bad = fieldChanged(before, after, sfLedgerEntryType) ||
+                    fieldChanged(before, after, sfLedgerIndex) ||
+                    fieldChanged(before, after, sfSequence) ||
+                    fieldChanged(before, after, sfOwnerNode) ||
+                    fieldChanged(before, after, sfVaultNode) ||
+                    fieldChanged(before, after, sfVaultID) ||
+                    fieldChanged(before, after, sfAccount) ||
+                    fieldChanged(before, after, sfOwner) ||
+                    fieldChanged(before, after, sfManagementFeeRate) ||
+                    fieldChanged(before, after, sfCoverRateMinimum) ||
+                    fieldChanged(before, after, sfCoverRateLiquidation);
+                break;
+            case ltLOAN:
+                /*
+                 * We check this invariant regardless of lending protocol
+                 * amendment status, allowing for detection and logging of
+                 * potential issues even when the amendment is disabled.
+                 */
+                enforce = view.rules().enabled(featureLendingProtocol);
+                bad = fieldChanged(before, after, sfLedgerEntryType) ||
+                    fieldChanged(before, after, sfLedgerIndex) ||
+                    fieldChanged(before, after, sfSequence) ||
+                    fieldChanged(before, after, sfOwnerNode) ||
+                    fieldChanged(before, after, sfLoanBrokerNode) ||
+                    fieldChanged(before, after, sfLoanBrokerID) ||
+                    fieldChanged(before, after, sfBorrower) ||
+                    fieldChanged(before, after, sfLoanOriginationFee) ||
+                    fieldChanged(before, after, sfLoanServiceFee) ||
+                    fieldChanged(before, after, sfLatePaymentFee) ||
+                    fieldChanged(before, after, sfClosePaymentFee) ||
+                    fieldChanged(before, after, sfOverpaymentFee) ||
+                    fieldChanged(before, after, sfInterestRate) ||
+                    fieldChanged(before, after, sfLateInterestRate) ||
+                    fieldChanged(before, after, sfCloseInterestRate) ||
+                    fieldChanged(before, after, sfOverpaymentInterestRate) ||
+                    fieldChanged(before, after, sfStartDate) ||
+                    fieldChanged(before, after, sfPaymentInterval) ||
+                    fieldChanged(before, after, sfGracePeriod) ||
+                    fieldChanged(before, after, sfPrincipalRequested);
+                break;
+            default:
+                /*
+                 * We check this invariant regardless of lending protocol
+                 * amendment status, allowing for detection and logging of
+                 * potential issues even when the amendment is disabled.
+                 *
+                 * We use the lending protocol as a gate, even though
+                 * all transactions are affected because that's when it
+                 * was added.
+                 */
+                enforce = view.rules().enabled(featureLendingProtocol);
+                bad = fieldChanged(before, after, sfLedgerEntryType) ||
+                    fieldChanged(before, after, sfLedgerIndex);
+        }
+        XRPL_ASSERT(
+            !bad || enforce,
+            "ripple::NoModifiedUnmodifiableFields::finalize : no bad "
+            "changes or enforce invariant");
+        if (bad)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: changed an unchangable field for "
+                << tx.getTransactionID();
+            if (enforce)
+                return false;
+        }
+    }
+    return true;
+}
+
+//------------------------------------------------------------------------------
+
+void
 ValidPseudoAccounts::visitEntry(
     bool isDelete,
     std::shared_ptr<SLE const> const& before,
@@ -1697,6 +1846,172 @@ ValidPseudoAccounts::finalize(
         }
         if (enforce)
             return false;
+    }
+    return true;
+}
+
+//------------------------------------------------------------------------------
+
+void
+ValidLoanBroker::visitEntry(
+    bool isDelete,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
+{
+    if (after && after->getType() == ltLOAN_BROKER)
+    {
+        brokers_.emplace_back(before, after);
+    }
+}
+
+bool
+ValidLoanBroker::goodZeroDirectory(
+    ReadView const& view,
+    SLE::const_ref dir,
+    beast::Journal const& j) const
+{
+    auto const next = dir->at(~sfIndexNext);
+    auto const prev = dir->at(~sfIndexPrevious);
+    if ((prev && *prev) || (next && *next))
+    {
+        JLOG(j.fatal()) << "Invariant failed: Loan Broker with zero "
+                           "OwnerCount has multiple directory pages";
+        return false;
+    }
+    auto indexes = dir->getFieldV256(sfIndexes);
+    if (indexes.size() > 1)
+    {
+        JLOG(j.fatal())
+            << "Invariant failed: Loan Broker with zero "
+               "OwnerCount has multiple indexes in the Directory root";
+        return false;
+    }
+    if (indexes.size() == 1)
+    {
+        auto const index = indexes.value().front();
+        auto const sle = view.read(keylet::unchecked(index));
+        if (!sle)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: Loan Broker directory corrupt";
+            return false;
+        }
+        if (sle->getType() != ltRIPPLE_STATE && sle->getType() != ltMPTOKEN)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: Loan Broker with zero "
+                   "OwnerCount has an unexpected entry in the directory";
+            return false;
+        }
+    }
+
+    return true;
+}
+
+bool
+ValidLoanBroker::finalize(
+    STTx const& tx,
+    TER const,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    // Loan Brokers will not exist on ledger if the Lending Protocol amendment
+    // is not enabled, so there's no need to check it.
+
+    for (auto const& [before, after] : brokers_)
+    {
+        // https://github.com/Tapanito/XRPL-Standards/blob/xls-66-lending-protocol/XLS-0066d-lending-protocol/README.md#3123-invariants
+        // If `LoanBroker.OwnerCount = 0` the `DirectoryNode` will have at most
+        // one node (the root), which will only hold entries for `RippleState`
+        // or `MPToken` objects.
+        if (after->at(sfOwnerCount) == 0)
+        {
+            auto const dir = view.read(keylet::ownerDir(after->at(sfAccount)));
+            if (dir)
+            {
+                if (!goodZeroDirectory(view, dir, j))
+                {
+                    return false;
+                }
+            }
+        }
+        if (before && before->at(sfLoanSequence) > after->at(sfLoanSequence))
+        {
+            JLOG(j.fatal()) << "Invariant failed: Loan Broker sequence number "
+                               "decreased";
+            return false;
+        }
+        if (after->at(sfDebtTotal) < 0)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: Loan Broker debt total is negative";
+            return false;
+        }
+        if (after->at(sfCoverAvailable) < 0)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: Loan Broker cover available is negative";
+            return false;
+        }
+    }
+    return true;
+}
+
+//------------------------------------------------------------------------------
+
+void
+ValidLoan::visitEntry(
+    bool isDelete,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
+{
+    if (after && after->getType() == ltLOAN)
+    {
+        loans_.emplace_back(before, after);
+    }
+}
+
+bool
+ValidLoan::finalize(
+    STTx const& tx,
+    TER const,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    // Loan Brokers will not exist on ledger if the Lending Protocol amendment
+    // is not enabled, so there's no need to check it.
+
+    for (auto const& [before, after] : loans_)
+    {
+        // https://github.com/Tapanito/XRPL-Standards/blob/xls-66-lending-protocol/XLS-0066d-lending-protocol/README.md#3223-invariants
+        // If `Loan.PaymentRemaining = 0` then `Loan.PrincipalOutstanding = 0`
+        if (after->at(sfPaymentRemaining) == 0 &&
+            after->at(sfPrincipalOutstanding) != 0)
+        {
+            return false;
+        }
+        if (before &&
+            (before->isFlag(lsfLoanOverpayment) !=
+             after->isFlag(lsfLoanOverpayment)))
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: Loan Overpayment flag changed";
+            return false;
+        }
+        if (after->at(sfAssetsAvailable) < 0)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: Loan assets available is negative";
+            return false;
+        }
+        if (after->at(sfPrincipalOutstanding) < 0)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: Loan principal outstanding is negative";
+            return false;
+        }
     }
     return true;
 }

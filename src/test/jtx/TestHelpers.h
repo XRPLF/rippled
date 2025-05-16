@@ -656,6 +656,114 @@ create(
 
 }  // namespace check
 
+/* LoanBroker */
+/******************************************************************************/
+
+namespace loanBroker {
+
+Json::Value
+set(AccountID const& account, uint256 const& vaultId, std::uint32_t flags = 0);
+
+// Use "del" because "delete" is a reserved word in C++.
+Json::Value
+del(AccountID const& account,
+    uint256 const& loanBrokerID,
+    std::uint32_t flags = 0);
+
+Json::Value
+coverDeposit(
+    AccountID const& account,
+    uint256 const& loanBrokerID,
+    STAmount const& amount,
+    std::uint32_t flags = 0);
+
+Json::Value
+coverWithdraw(
+    AccountID const& account,
+    uint256 const& loanBrokerID,
+    STAmount const& amount,
+    std::uint32_t flags = 0);
+
+auto const loanBrokerID = JTxFieldWrapper<uint256Field>(sfLoanBrokerID);
+
+auto const managementFeeRate =
+    valueUnitWrapper<SF_UINT16, unit::TenthBipsTag>(sfManagementFeeRate);
+
+auto const debtMaximum = simpleField<SF_NUMBER>(sfDebtMaximum);
+
+auto const coverRateMinimum =
+    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfCoverRateMinimum);
+
+auto const coverRateLiquidation =
+    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfCoverRateLiquidation);
+
+}  // namespace loanBroker
+
+/* Loan */
+/******************************************************************************/
+namespace loan {
+
+Json::Value
+set(AccountID const& account,
+    uint256 const& loanBrokerID,
+    Number principalRequested,
+    NetClock::time_point const& startDate,
+    std::uint32_t flags = 0);
+
+auto const counterparty = JTxFieldWrapper<accountIDField>(sfCounterparty);
+
+// For `CounterPartySignature`, use `sig(sfCounterpartySignature, ...)`
+
+auto const loanOriginationFee = simpleField<SF_NUMBER>(sfLoanOriginationFee);
+
+auto const loanServiceFee = simpleField<SF_NUMBER>(sfLoanServiceFee);
+
+auto const latePaymentFee = simpleField<SF_NUMBER>(sfLatePaymentFee);
+
+auto const closePaymentFee = simpleField<SF_NUMBER>(sfClosePaymentFee);
+
+auto const overpaymentFee =
+    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfOverpaymentFee);
+
+auto const interestRate =
+    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfInterestRate);
+
+auto const lateInterestRate =
+    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfLateInterestRate);
+
+auto const closeInterestRate =
+    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfCloseInterestRate);
+
+auto const overpaymentInterestRate =
+    valueUnitWrapper<SF_UINT32, unit::TenthBipsTag>(sfOverpaymentInterestRate);
+
+auto const paymentTotal = simpleField<SF_UINT32>(sfPaymentTotal);
+
+auto const paymentInterval = simpleField<SF_UINT32>(sfPaymentInterval);
+
+auto const gracePeriod = simpleField<SF_UINT32>(sfGracePeriod);
+
+Json::Value
+manage(AccountID const& account, uint256 const& loanID, std::uint32_t flags);
+
+Json::Value
+del(AccountID const& account, uint256 const& loanID, std::uint32_t flags = 0);
+
+Json::Value
+draw(
+    AccountID const& account,
+    uint256 const& loanID,
+    STAmount const& amount,
+    std::uint32_t flags = 0);
+
+Json::Value
+pay(AccountID const& account,
+    uint256 const& loanID,
+    STAmount const& amount,
+    std::uint32_t flags = 0);
+
+}  // namespace loan
+
 }  // namespace jtx
 }  // namespace test
 }  // namespace ripple

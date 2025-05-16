@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2025 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,37 +17,37 @@
 */
 //==============================================================================
 
-#include <test/jtx/sig.h>
-#include <test/jtx/utility.h>
+#ifndef RIPPLE_TX_LOANDELETE_H_INCLUDED
+#define RIPPLE_TX_LOANDELETE_H_INCLUDED
+
+#include <xrpld/app/tx/detail/Transactor.h>
 
 namespace ripple {
-namespace test {
-namespace jtx {
 
-void
-sig::operator()(Env&, JTx& jt) const
+class LoanDelete : public Transactor
 {
-    if (!manual_)
-        return;
-    if (!subField)
-        jt.fill_sig = false;
-    if (account_)
+public:
+    static constexpr ConsequencesFactoryType ConsequencesFactory{Normal};
+
+    explicit LoanDelete(ApplyContext& ctx) : Transactor(ctx)
     {
-        // VFALCO Inefficient pre-C++14
-        auto const account = *account_;
-        auto callback = [subField = subField, account](Env&, JTx& jtx) {
-            // Where to put the signature. Supports sfCounterPartySignature.
-            auto& sigObject = subField ? jtx[*subField] : jtx.jv;
-
-            jtx::sign(jtx.jv, account, sigObject);
-        };
-        if (!subField)
-            jt.mainSigners.emplace_back(callback);
-        else
-            jt.postSigners.emplace_back(callback);
     }
-}
 
-}  // namespace jtx
-}  // namespace test
+    static bool
+    isEnabled(PreflightContext const& ctx);
+
+    static NotTEC
+    doPreflight(PreflightContext const& ctx);
+
+    static TER
+    preclaim(PreclaimContext const& ctx);
+
+    TER
+    doApply() override;
+};
+
+//------------------------------------------------------------------------------
+
 }  // namespace ripple
+
+#endif

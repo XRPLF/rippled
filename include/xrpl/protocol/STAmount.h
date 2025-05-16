@@ -695,6 +695,36 @@ divRoundStrict(
 std::uint64_t
 getRate(STAmount const& offerOut, STAmount const& offerIn);
 
+STAmount
+roundToReference(
+    STAmount const value,
+    STAmount referenceValue,
+    Number::rounding_mode rounding = Number::getround());
+
+/** Round an arbitrary precision Number to the precision of a given Asset.
+ *
+ * @param asset The relevant asset
+ * @param value The value to be rounded
+ * @param referenceValue Only relevant to IOU assets. A reference value to
+ *     establish the precision limit of `value`. Should be larger than
+ * `value`.
+ * @param rounding Optional Number rounding mode
+ */
+template <AssetType A>
+Number
+roundToAsset(
+    A const& asset,
+    Number const& value,
+    Number const& referenceValue,
+    Number::rounding_mode rounding = Number::getround())
+{
+    NumberRoundModeGuard mg(rounding);
+    STAmount const ret{asset, value};
+    if (ret.asset().native() || !ret.asset().holds<Issue>())
+        return ret;
+    return roundToReference(ret, STAmount{asset, referenceValue});
+}
+
 //------------------------------------------------------------------------------
 
 inline bool
@@ -703,10 +733,10 @@ isXRP(STAmount const& amount)
     return amount.native();
 }
 
-// Since `canonicalize` does not have access to a ledger, this is needed to put
-// the low-level routine stAmountCanonicalize on an amendment switch. Only
-// transactions need to use this switchover. Outside of a transaction it's safe
-// to unconditionally use the new behavior.
+// Since `canonicalize` does not have access to a ledger, this is needed to
+// put the low-level routine stAmountCanonicalize on an amendment switch.
+// Only transactions need to use this switchover. Outside of a transaction
+// it's safe to unconditionally use the new behavior.
 
 bool
 getSTAmountCanonicalizeSwitchover();

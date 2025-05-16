@@ -35,7 +35,10 @@ class sig
 {
 private:
     bool manual_ = true;
+    /// subField only supported with explicit account
+    SField const* const subField = nullptr;
     std::optional<Account> account_;
+    static constexpr SField* const topLevel = nullptr;
 
 public:
     explicit sig(autofill_t) : manual_(false)
@@ -46,7 +49,17 @@ public:
     {
     }
 
-    explicit sig(Account const& account) : account_(account)
+    explicit sig(SField const* subField_, Account const& account)
+        : subField(subField_), account_(account)
+    {
+    }
+
+    explicit sig(SField const& subField_, Account const& account)
+        : sig(&subField_, account)
+    {
+    }
+
+    explicit sig(Account const& account) : sig(topLevel, account)
     {
     }
 

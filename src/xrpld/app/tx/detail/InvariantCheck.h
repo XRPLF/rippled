@@ -174,7 +174,14 @@ public:
  */
 class AccountRootsDeletedClean
 {
-    std::vector<std::shared_ptr<SLE const>> accountsDeleted_;
+    // Pair is <before, after>. Before is used for most of the checks, so that
+    // if, for example, and object ID field is cleared, but the object is not
+    // deleted, it can still be found. After is used specifically for any checks
+    // that are expected as part of the deletion, such as zeroing out the
+    // balance.
+    std::vector<
+        std::pair<std::shared_ptr<SLE const>, std::shared_ptr<SLE const>>>
+        accountsDeleted_;
 
 public:
     void
@@ -619,6 +626,34 @@ public:
 };
 
 /**
+ * @brief Invariants: Some fields are unmodifiable
+ *
+ * Check that any fields specified as unmodifiable are not modified when the
+ * object is modified. Creation and deletion are ignored.
+ *
+ */
+class NoModifiedUnmodifiableFields
+{
+    // Pair is <before, after>.
+    std::set<std::pair<SLE::const_pointer, SLE::const_pointer>> changedEntries_;
+
+public:
+    void
+    visitEntry(
+        bool,
+        std::shared_ptr<SLE const> const&,
+        std::shared_ptr<SLE const> const&);
+
+    bool
+    finalize(
+        STTx const&,
+        TER const,
+        XRPAmount const,
+        ReadView const&,
+        beast::Journal const&);
+};
+
+/**
  * @brief Invariants: Pseudo-accounts have valid and consisent properties
  *
  * Pseudo-accounts have certain properties, and some of those properties are
@@ -629,6 +664,70 @@ public:
 class ValidPseudoAccounts
 {
     std::vector<std::string> errors_;
+
+public:
+    void
+    visitEntry(
+        bool,
+        std::shared_ptr<SLE const> const&,
+        std::shared_ptr<SLE const> const&);
+
+    bool
+    finalize(
+        STTx const&,
+        TER const,
+        XRPAmount const,
+        ReadView const&,
+        beast::Journal const&);
+};
+
+/**
+ * @brief Invariants: Loan brokers are internally consistent
+ *
+ * 1. If `LoanBroker.OwnerCount = 0` the `DirectoryNode` will have at most one
+ *    node (the root), which will only hold entries for `RippleState` or
+ * `MPToken` objects.
+ *
+ */
+class ValidLoanBroker
+{
+    // Pair is <before, after>. After is used for most of the checks, except
+    // those that check changed values.
+    std::vector<std::pair<SLE::const_pointer, SLE::const_pointer>> brokers_;
+
+    bool
+    goodZeroDirectory(
+        ReadView const& view,
+        SLE::const_ref dir,
+        beast::Journal const& j) const;
+
+public:
+    void
+    visitEntry(
+        bool,
+        std::shared_ptr<SLE const> const&,
+        std::shared_ptr<SLE const> const&);
+
+    bool
+    finalize(
+        STTx const&,
+        TER const,
+        XRPAmount const,
+        ReadView const&,
+        beast::Journal const&);
+};
+
+/**
+ * @brief Invariants: Loans are internally consistent
+ *
+ * 1. If `Loan.PaymentRemaining = 0` then `Loan.PrincipalOutstanding = 0`
+ *
+ */
+class ValidLoan
+{
+    // Pair is <before, after>. After is used for most of the checks, except
+    // those that check changed values.
+    std::vector<std::pair<SLE::const_pointer, SLE::const_pointer>> loans_;
 
 public:
     void
@@ -666,7 +765,10 @@ using InvariantChecks = std::tuple<
     ValidClawback,
     ValidMPTIssuance,
     ValidPermissionedDomain,
-    ValidPseudoAccounts>;
+    NoModifiedUnmodifiableFields,
+    ValidPseudoAccounts,
+    ValidLoanBroker,
+    ValidLoan>;
 
 /**
  * @brief get a tuple of all invariant checks
