@@ -32,19 +32,6 @@ SHAMapLeafNode::SHAMapLeafNode(
         "SHAMapItem const>, std::uint32_t) : minimum input size");
 }
 
-SHAMapLeafNode::SHAMapLeafNode(
-    boost::intrusive_ptr<SHAMapItem const> item,
-    std::uint32_t cowid,
-    SHAMapHash const& hash)
-    : SHAMapTreeNode(cowid, hash), item_(std::move(item))
-{
-    XRPL_ASSERT(
-        item_->size() >= 12,
-        "ripple::SHAMapLeafNode::SHAMapLeafNode(boost::intrusive_ptr<"
-        "SHAMapItem const>, std::uint32_t, SHAMapHash const&) : minimum input "
-        "size");
-}
-
 boost::intrusive_ptr<SHAMapItem const> const&
 SHAMapLeafNode::peekItem() const
 {
@@ -57,11 +44,14 @@ SHAMapLeafNode::setItem(boost::intrusive_ptr<SHAMapItem const> item)
     XRPL_ASSERT(cowid_, "ripple::SHAMapLeafNode::setItem : nonzero cowid");
     item_ = std::move(item);
 
-    auto const oldHash = hash_;
+    // auto const oldHash = hash_;
 
-    updateHash();
+    // updateHash();
 
-    return (oldHash != hash_);
+    // return (oldHash != hash_);
+
+    // TODO : return updateHash();
+    return true;
 }
 
 std::string
@@ -82,8 +72,8 @@ SHAMapLeafNode::getString(const SHAMapNodeID& id) const
 
     ret += "  Tag=";
     ret += to_string(item_->key());
-    ret += "\n  Hash=";
-    ret += to_string(hash_);
+    // ret += "\n  Hash=";
+    // ret += to_string(hash_);
     ret += "/";
     ret += std::to_string(item_->size());
     return ret;
@@ -92,8 +82,6 @@ SHAMapLeafNode::getString(const SHAMapNodeID& id) const
 void
 SHAMapLeafNode::invariants(bool) const
 {
-    XRPL_ASSERT(
-        hash_.isNonZero(), "ripple::SHAMapLeafNode::invariants : nonzero hash");
     XRPL_ASSERT(item_, "ripple::SHAMapLeafNode::invariants : non-null item");
 }
 

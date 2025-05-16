@@ -83,7 +83,6 @@ SHAMapInnerNode::clone(std::uint32_t cowid) const
     auto const branchCount = getBranchCount();
     auto const thisIsSparse = !hashesAndChildren_.isDense();
     auto p = intr_ptr::make_shared<SHAMapInnerNode>(cowid, branchCount);
-    p->hash_ = hash_;
     p->isBranch_ = isBranch_;
     p->fullBelowGen_ = fullBelowGen_;
     SHAMapHash *cloneHashes, *thisHashes;
@@ -154,10 +153,11 @@ SHAMapInnerNode::makeFullInner(
 
     ret->resizeChildArrays(ret->getBranchCount());
 
-    if (hashValid)
-        ret->hash_ = hash;
-    else
-        ret->updateHash();
+    // TODO: do this outside?
+    // if (hashValid)
+    //     ret->hash_ = hash;
+    // else
+    //     ret->updateHash();
 
     return ret;
 }
@@ -210,7 +210,9 @@ SHAMapInnerNode::updateHash()
         iterChildren([&](SHAMapHash const& hh) { hash_append(h, hh); });
         nh = static_cast<typename sha512_half_hasher::result_type>(h);
     }
-    hash_ = SHAMapHash{nh};
+
+    // TODO return SHAMapHash{nh};
+    // hash_ = SHAMapHash{nh};
 }
 
 void
@@ -313,8 +315,6 @@ SHAMapInnerNode::setChild(int m, intr_ptr::SharedPtr<SHAMapTreeNode> child)
         hashes[childIndex].zero();
         children[childIndex] = std::move(child);
     }
-
-    hash_.zero();
 
     XRPL_ASSERT(
         getBranchCount() <= hashesAndChildren_.capacity(),
@@ -473,14 +473,8 @@ SHAMapInnerNode::invariants(bool is_root) const
     if (!is_root)
     {
         XRPL_ASSERT(
-            hash_.isNonZero(),
-            "ripple::SHAMapInnerNode::invariants : nonzero hash");
-        XRPL_ASSERT(
             count >= 1, "ripple::SHAMapInnerNode::invariants : minimum count");
     }
-    XRPL_ASSERT(
-        (count == 0) ? hash_.isZero() : hash_.isNonZero(),
-        "ripple::SHAMapInnerNode::invariants : hash and count do match");
 }
 
 }  // namespace ripple
