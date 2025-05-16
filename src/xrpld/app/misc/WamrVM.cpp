@@ -756,11 +756,11 @@ WamrEngine::preflightHlp(
     {
         int const m = addModule(wasmCode, true, imports);
         if (m < 0)
-            return temBAD_AMOUNT;
+            return temBAD_WASM;
     }
 
     if (!module)
-        return temBAD_SIGNER;
+        return temBAD_WASM;
 
     // Call main
     auto* f = getFunc(!funcName.empty() ? funcName : "_start");
@@ -770,7 +770,7 @@ WamrEngine::preflightHlp(
     if (!res.r.size || trap)
     {
         std::cout << "WAMR: preflightHlp trap" << std::endl;
-        return temBAD_SIGNATURE;
+        return temBAD_WASM;
     }
 
     assert(res.r.data[0].kind == WASM_I32);
