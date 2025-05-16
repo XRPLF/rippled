@@ -664,7 +664,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
 
             {
                 // becky setup depositpreauth with credentials
-                const char credType[] = "abcde";
+                char const credType[] = "abcde";
                 Account const carol{"carol"};
                 env.fund(XRP(5000), carol);
                 env.close();
@@ -820,7 +820,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
     {
         using namespace jtx;
 
-        const char credType[] = "abcde";
+        char const credType[] = "abcde";
         Account const issuer{"issuer"};
         Account const alice{"alice"};
         Account const bob{"bob"};
@@ -828,7 +828,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
         Account const john{"john"};
 
         {
-            testcase("Payment failed with disabled credentials rule.");
+            testcase("Payment failure with disabled credentials rule.");
 
             Env env(*this, supported_amendments() - featureCredentials);
 
@@ -930,7 +930,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
         }
 
         {
-            testcase("Payment failed with invalid credentials.");
+            testcase("Payment failure with invalid credentials.");
 
             Env env(*this);
 
@@ -993,7 +993,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
 
             {
                 // create another valid credential
-                const char credType2[] = "fghij";
+                char const credType2[] = "fghij";
                 env(credentials::create(alice, issuer, credType2));
                 env.close();
                 env(credentials::accept(alice, issuer, credType2));
@@ -1025,7 +1025,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
     {
         using namespace jtx;
 
-        const char credType[] = "abcde";
+        char const credType[] = "abcde";
         Account const issuer{"issuer"};
         Account const alice{"alice"};
         Account const bob{"bob"};
@@ -1196,8 +1196,8 @@ struct DepositPreauth_test : public beast::unit_test::suite
     testExpiredCreds()
     {
         using namespace jtx;
-        const char credType[] = "abcde";
-        const char credType2[] = "fghijkl";
+        char const credType[] = "abcde";
+        char const credType2[] = "fghijkl";
         Account const issuer{"issuer"};
         Account const alice{"alice"};
         Account const bob{"bob"};
@@ -1206,7 +1206,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
         Account const zelda{"zelda"};
 
         {
-            testcase("Payment failed with expired credentials.");
+            testcase("Payment failure with expired credentials.");
 
             Env env(*this);
 
@@ -1353,7 +1353,7 @@ struct DepositPreauth_test : public beast::unit_test::suite
         {
             using namespace std::chrono;
 
-            testcase("Escrow failed with expired credentials.");
+            testcase("Escrow failure with expired credentials.");
 
             Env env(*this);
 

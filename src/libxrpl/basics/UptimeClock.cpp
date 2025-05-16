@@ -67,7 +67,7 @@ UptimeClock::time_point
 UptimeClock::now()
 {
     // start the update thread on first use
-    static const auto init = start_clock();
+    static auto const init = start_clock();
 
     // Return the number of seconds since rippled start
     return time_point{duration{now_}};

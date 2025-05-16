@@ -83,7 +83,7 @@ MPTTester::MPTTester(Env& env, Account const& issuer, MPTInit const& arg)
 }
 
 void
-MPTTester::create(const MPTCreate& arg)
+MPTTester::create(MPTCreate const& arg)
 {
     if (id_)
         Throw<std::runtime_error>("MPT can't be reused");
@@ -233,6 +233,8 @@ MPTTester::set(MPTSet const& arg)
     }
     if (arg.holder)
         jv[sfHolder] = arg.holder->human();
+    if (arg.delegate)
+        jv[sfDelegate] = arg.delegate->human();
     if (submit(arg, jv) == tesSUCCESS && arg.flags.value_or(0))
     {
         auto require = [&](std::optional<Account> const& holder,
@@ -411,7 +413,7 @@ MPTTester::getFlags(std::optional<Account> const& holder) const
 }
 
 MPT
-MPTTester::operator[](const std::string& name)
+MPTTester::operator[](std::string const& name)
 {
     return MPT(name, issuanceID());
 }

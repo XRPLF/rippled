@@ -602,7 +602,7 @@ private:
         std::lock_guard<std::mutex> const& lockedRecentLock);
 
     void
-    doFetchPack(const std::shared_ptr<protocol::TMGetObjectByHash>& packet);
+    doFetchPack(std::shared_ptr<protocol::TMGetObjectByHash> const& packet);
 
     void
     onValidatorListMessage(
@@ -705,10 +705,7 @@ PeerImp::PeerImp(
           headers_,
           FEATURE_TXRR,
           app_.config().TX_REDUCE_RELAY_ENABLE))
-    , vpReduceRelayEnabled_(peerFeatureEnabled(
-          headers_,
-          FEATURE_VPRR,
-          app_.config().VP_REDUCE_RELAY_ENABLE))
+    , vpReduceRelayEnabled_(app_.config().VP_REDUCE_RELAY_ENABLE)
     , ledgerReplayEnabled_(peerFeatureEnabled(
           headers_,
           FEATURE_LEDGER_REPLAY,
