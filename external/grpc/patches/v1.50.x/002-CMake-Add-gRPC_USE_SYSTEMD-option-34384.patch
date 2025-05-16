@@ -1,0 +1,57 @@
+From 64d855b0ddd944369e96b24210a1ce59e704a779 Mon Sep 17 00:00:00 2001
+From: Kirill <kirill@polushin.org>
+Date: Tue, 2 Apr 2024 13:17:47 -0700
+Subject: [PATCH] [CMake] Add gRPC_USE_SYSTEMD option (#34384)
+
+Issue https://github.com/grpc/grpc/issues/34304
+
+Allows to disable systemd support,
+as well as linking with libsystemd,
+when it is not required.
+
+The option has three possible values:
+AUTO - Default, Will try to find libsystemd. If found, systemd support will be enabled.
+ON - Enable systemd support. Build will fail if libsystemd is not found.
+OFF - Disable systemd support.
+
+Closes #34384
+
+COPYBARA_INTEGRATE_REVIEW=https://github.com/grpc/grpc/pull/34384 from kirpichik:cmake-use-systemd-option 96f5f4bd68251ca62ccc45a2d44a68a8203531ac
+PiperOrigin-RevId: 621274356
+---
+ cmake/systemd.cmake | 21 ++++++++++++++++-----
+ 1 file changed, 16 insertions(+), 5 deletions(-)
+
+diff --git a/cmake/systemd.cmake b/cmake/systemd.cmake
+index a34210177e..559c8d24b6 100644
+--- a/cmake/systemd.cmake
++++ b/cmake/systemd.cmake
+@@ -12,9 +12,20 @@
+ # See the License for the specific language governing permissions and
+ # limitations under the License.
+ 
+-find_package(systemd)
+-if(TARGET systemd)
+-  set(_gRPC_SYSTEMD_LIBRARIES systemd ${SYSTEMD_LINK_LIBRARIES})
+-  add_definitions(-DHAVE_LIBSYSTEMD)
++set(gRPC_USE_SYSTEMD "AUTO" CACHE STRING "Build with libsystemd support if available. Can be ON, OFF or AUTO")
++
++if (NOT gRPC_USE_SYSTEMD STREQUAL "OFF")
++  if (gRPC_USE_SYSTEMD STREQUAL "ON")
++    find_package(systemd REQUIRED)
++  elseif (gRPC_USE_SYSTEMD STREQUAL "AUTO")
++    find_package(systemd)
++  else()
++    message(FATAL_ERROR "Unknown value for gRPC_USE_SYSTEMD = ${gRPC_USE_SYSTEMD}")
++  endif()
++
++  if(TARGET systemd)
++    set(_gRPC_SYSTEMD_LIBRARIES systemd ${SYSTEMD_LINK_LIBRARIES})
++    add_definitions(-DHAVE_LIBSYSTEMD)
++  endif()
++  set(_gRPC_FIND_SYSTEMD "if(NOT systemd_FOUND)\n  find_package(systemd)\nendif()")
+ endif()
+-set(_gRPC_FIND_SYSTEMD "if(NOT systemd_FOUND)\n  find_package(systemd)\nendif()")
+-- 
+2.43.0
+

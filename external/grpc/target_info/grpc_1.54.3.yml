@@ -1,0 +1,152 @@
+grpc_version: 1.54.3
+grpc_targets:
+    - name: "address_sorting"
+      lib: "address_sorting"
+      requires:
+        - zlib::zlib
+    - name: "gpr"
+      lib: "gpr"
+      requires:
+        - zlib::zlib
+        - abseil::absl_base
+        - abseil::absl_core_headers
+        - abseil::absl_flags
+        - abseil::absl_flags_marshalling
+        - abseil::absl_any_invocable
+        - abseil::absl_memory
+        - abseil::absl_random_random
+        - abseil::absl_status
+        - abseil::absl_cord
+        - abseil::absl_str_format
+        - abseil::absl_strings
+        - abseil::absl_synchronization
+        - abseil::absl_time
+        - abseil::absl_optional
+        - abseil::absl_variant
+    - name: "_grpc"
+      lib: "grpc"
+      requires:
+        - zlib::zlib
+        - c-ares::cares
+        - address_sorting
+        - re2::re2
+        - upb
+        - abseil::absl_cleanup
+        - abseil::absl_flat_hash_map
+        - abseil::absl_flat_hash_set
+        - abseil::absl_inlined_vector
+        - abseil::absl_bind_front
+        - abseil::absl_function_ref
+        - abseil::absl_hash
+        - abseil::absl_type_traits
+        - abseil::absl_statusor
+        - abseil::absl_span
+        - abseil::absl_utility
+        - gpr
+        - openssl::ssl
+        - openssl::crypto
+        - address_sorting
+        - upb
+      frameworks: ['CoreFoundation']
+    - name: "grpc_unsecure"
+      lib: "grpc_unsecure"
+      requires:
+        - zlib::zlib
+        - c-ares::cares
+        - address_sorting
+        - re2::re2
+        - upb
+        - abseil::absl_cleanup
+        - abseil::absl_flat_hash_map
+        - abseil::absl_flat_hash_set
+        - abseil::absl_inlined_vector
+        - abseil::absl_bind_front
+        - abseil::absl_function_ref
+        - abseil::absl_hash
+        - abseil::absl_type_traits
+        - abseil::absl_statusor
+        - abseil::absl_span
+        - abseil::absl_utility
+        - gpr
+        - address_sorting
+        - upb
+      frameworks: ['CoreFoundation']
+    - name: "grpc++"
+      lib: "grpc++"
+      requires:
+        - protobuf::libprotobuf
+        - zlib::zlib
+        - _grpc
+    - name: "grpc++_alts"
+      lib: "grpc++_alts"
+      requires:
+        - protobuf::libprotobuf
+        - zlib::zlib
+        - grpc++
+    - name: "grpc++_error_details"
+      lib: "grpc++_error_details"
+      requires:
+        - protobuf::libprotobuf
+        - zlib::zlib
+        - grpc++
+    - name: "grpc++_reflection"
+      lib: "grpc++_reflection"
+      requires:
+        - protobuf::libprotobuf
+        - zlib::zlib
+        - grpc++
+    - name: "grpc++_unsecure"
+      lib: "grpc++_unsecure"
+      requires:
+        - protobuf::libprotobuf
+        - zlib::zlib
+        - grpc_unsecure
+    - name: "grpc_authorization_provider"
+      lib: "grpc_authorization_provider"
+      requires:
+        - protobuf::libprotobuf
+        - zlib::zlib
+        - re2::re2
+        - abseil::absl_cleanup
+        - abseil::absl_flat_hash_map
+        - abseil::absl_flat_hash_set
+        - abseil::absl_inlined_vector
+        - abseil::absl_function_ref
+        - abseil::absl_hash
+        - abseil::absl_type_traits
+        - abseil::absl_statusor
+        - abseil::absl_span
+        - abseil::absl_utility
+        - gpr
+        - upb
+    - name: "grpc_plugin_support"
+      lib: "grpc_plugin_support"
+      requires:
+        - protobuf::libprotoc
+        - protobuf::libprotobuf
+        - zlib::zlib
+    - name: "grpcpp_channelz"
+      lib: "grpcpp_channelz"
+      requires:
+        - protobuf::libprotobuf
+        - zlib::zlib
+        - grpc++
+    - name: "upb"
+      lib: "upb"
+      requires:
+        - zlib::zlib
+grpc_plugins:
+    - target: "gRPC::grpc_cpp_plugin"
+      executable: "grpc_cpp_plugin"
+    - target: "gRPC::grpc_csharp_plugin"
+      executable: "grpc_csharp_plugin"
+    - target: "gRPC::grpc_node_plugin"
+      executable: "grpc_node_plugin"
+    - target: "gRPC::grpc_objective_c_plugin"
+      executable: "grpc_objective_c_plugin"
+    - target: "gRPC::grpc_php_plugin"
+      executable: "grpc_php_plugin"
+    - target: "gRPC::grpc_python_plugin"
+      executable: "grpc_python_plugin"
+    - target: "gRPC::grpc_ruby_plugin"
+      executable: "grpc_ruby_plugin"

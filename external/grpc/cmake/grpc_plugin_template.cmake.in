@@ -1,0 +1,31 @@
+if(NOT TARGET @target_name@)
+    # Find @executable_name@
+    ## Workaround for legacy "cmake" generator in case of cross-build
+    if(CMAKE_CROSSCOMPILING)
+        find_program(@find_program_variable@
+            NAMES @executable_name@
+            PATHS ENV PATH
+            NO_DEFAULT_PATH
+        )
+    endif()
+    ## And here this will work fine with "CMakeToolchain" (for native & cross-build)
+    ## and legacy "cmake" generator in case of native build
+    if(NOT @find_program_variable@)
+        find_program(@find_program_variable@ NAMES @executable_name@)
+    endif()
+    ## Last resort: we search in package folder directly
+    if(NOT @find_program_variable@)
+        find_program(@find_program_variable@
+            NAMES @executable_name@
+            PATHS "${CMAKE_CURRENT_LIST_DIR}/@relative_path@bin/"
+            NO_DEFAULT_PATH
+        )
+    endif()
+
+    # Define @target_name@ imported target
+    if(@find_program_variable@)
+        get_filename_component(@find_program_variable@ "${@find_program_variable@}" ABSOLUTE)
+        add_executable(@target_name@ IMPORTED)
+        set_property(TARGET @target_name@ PROPERTY IMPORTED_LOCATION ${@find_program_variable@})
+    endif()
+endif()
