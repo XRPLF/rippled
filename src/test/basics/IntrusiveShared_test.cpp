@@ -47,7 +47,7 @@ struct Barrier
     std::mutex mtx;
     std::condition_variable cv;
     int count;
-    const int initial;
+    int const initial;
 
     Barrier(int n) : count(n), initial(n)
     {
