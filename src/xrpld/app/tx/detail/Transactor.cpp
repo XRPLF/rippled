@@ -34,13 +34,14 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/Protocol.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
 
 namespace ripple {
 
 /** Performs early sanity checks on the txid */
 NotTEC
-preflight0(PreflightContext const& ctx)
+preflight0(PreflightContext const& ctx, std::uint32_t flagMask)
 {
     if (!isPseudoTx(ctx.tx) || ctx.tx.isFieldPresent(sfNetworkID))
     {
@@ -75,12 +76,38 @@ preflight0(PreflightContext const& ctx)
         return temINVALID;
     }
 
+    if (ctx.tx.getFlags() & flagMask)
+    {
+        JLOG(ctx.j.debug())
+            << ctx.tx.peekAtField(sfTransactionType).getFullText()
+            << ": invalid flags.";
+        return temINVALID_FLAG;
+    }
+
+    return tesSUCCESS;
+}
+
+namespace detail {
+
+/** Checks the validity of the transactor signing key.
+ *
+ * Normally called from preflight1.
+ */
+NotTEC
+preflightCheckSigningKey(STObject const& sigObject, beast::Journal j)
+{
+    if (auto const spk = sigObject.getFieldVL(sfSigningPubKey);
+        !spk.empty() && !publicKeyType(makeSlice(spk)))
+    {
+        JLOG(j.debug()) << "preflightCheckSigningKey: invalid signing key";
+        return temBAD_SIGNATURE;
+    }
     return tesSUCCESS;
 }
 
 /** Performs early sanity checks on the account and fee fields */
 NotTEC
-preflight1(PreflightContext const& ctx)
+preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
 {
     // This is inappropriate in preflight0, because only Change transactions
     // skip this function, and those do not allow an sfTicketSequence field.
@@ -99,8 +126,7 @@ preflight1(PreflightContext const& ctx)
             return temBAD_SIGNER;
     }
 
-    auto const ret = preflight0(ctx);
-    if (!isTesSuccess(ret))
+    if (auto const ret = preflight0(ctx, flagMask))
         return ret;
 
     auto const id = ctx.tx.getAccountID(sfAccount);
@@ -118,13 +144,8 @@ preflight1(PreflightContext const& ctx)
         return temBAD_FEE;
     }
 
-    auto const spk = ctx.tx.getSigningPubKey();
-
-    if (!spk.empty() && !publicKeyType(makeSlice(spk)))
-    {
-        JLOG(ctx.j.debug()) << "preflight1: invalid signing key";
-        return temBAD_SIGNATURE;
-    }
+    if (auto const ret = preflightCheckSigningKey(ctx.tx, ctx.j))
+        return ret;
 
     // An AccountTxnID field constrains transaction ordering more than the
     // Sequence field.  Tickets, on the other hand, reduce ordering
@@ -181,6 +202,8 @@ preflight2(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
+}  // namespace detail
+
 //------------------------------------------------------------------------------
 
 PreflightContext::PreflightContext(
@@ -201,6 +224,22 @@ Transactor::Transactor(ApplyContext& ctx)
     , j_(sink_)
     , account_(ctx.tx.getAccountID(sfAccount))
 {
+}
+
+bool
+Transactor::validDataLength(
+    std::optional<Slice> const& slice,
+    std::size_t maxLength)
+{
+    if (!slice)
+        return true;
+    return !slice->empty() && slice->length() <= maxLength;
+}
+
+std::uint32_t
+Transactor::getFlagsMask(PreflightContext const& ctx)
+{
+    return tfUniversalMask;
 }
 
 TER
@@ -235,6 +274,18 @@ Transactor::calculateBaseFee(ReadView const& view, STTx const& tx)
         tx.isFieldPresent(sfSigners) ? tx.getFieldArray(sfSigners).size() : 0;
 
     return baseFee + (signerCount * baseFee);
+}
+
+// Returns the fee in fee units, not scaled for load.
+XRPAmount
+Transactor::calculateOwnerReserveFee(ReadView const& view, STTx const& tx)
+{
+    // One reserve increment is typically much greater than one base fee.
+    XRPL_ASSERT(
+        view.fees().increment > view.fees().base * 100,
+        "ripple::Transactor::calculateOwnerReserveFee : Owner reserve is much "
+        "greater than base fee");
+    return view.fees().increment;
 }
 
 XRPAmount
