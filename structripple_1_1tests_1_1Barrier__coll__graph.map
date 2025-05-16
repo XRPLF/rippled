@@ -1,0 +1,5 @@
+<map id="ripple::tests::Barrier" name="ripple::tests::Barrier">
+<area shape="rect" id="node1" title="Experimentally, we discovered that using std::barrier performs extremely poorly (~1 hour vs ~1 minute..." alt="" coords="53,93,204,119"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/mutex.html" title=" " alt="" coords="5,5,97,31"/>
+<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/thread/condition_variable.html" title=" " alt="" coords="122,5,293,31"/>
+</map>
