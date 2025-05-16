@@ -183,7 +183,7 @@ EscrowCreate::preflight(PreflightContext const& ctx)
         }
 
         // ensure that this is valid WASM code
-        HostFunctionsDummy ledgerDataProvider;
+        HostFunctionsMock ledgerDataProvider;
         auto re =
             preflightEscrowWasm(code, "ready", &ledgerDataProvider, 100000);
         if (!isTesSuccess(re))

@@ -252,9 +252,9 @@ WasmImpFunc(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-struct HostFunctionsDummy : public HostFunctions
+struct HostFunctionsMock : public HostFunctions
 {
-    HostFunctionsDummy()
+    HostFunctionsMock()
     {
     }
 };
