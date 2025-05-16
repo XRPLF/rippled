@@ -252,7 +252,7 @@ It fixes some source files to add missing `#include`s.
     When `build_type` is `Debug`, `compiler.runtime` should be `MTd`.
 
     ```
-    conan install .. --output-folder . --build --settings build_type=Release --settings compiler.runtime=MT
+    conan install .. --output-folder . --build missing --settings build_type=Release --settings compiler.runtime=MT
     conan install .. --output-folder . --build missing --settings build_type=Debug --settings compiler.runtime=MTd
     ```
 
