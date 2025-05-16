@@ -64,7 +64,7 @@ preflightEscrowWasm(
     if (!ret.has_value())
     {
         std::cout << ", error: " << ret.error() << std::endl;
-        return temUNKNOWN;
+        return ret.error();
     }
     std::int64_t const egas = vm.getGas();
     std::uint64_t const spent = static_cast<std::uint64_t>(sgas - egas);

@@ -1836,6 +1836,35 @@ struct Escrow_test : public beast::unit_test::suite
                 ter(temMALFORMED));
             env.close();
         }
+        {
+            // FinishFunction not WASM
+            env(escrowCreate,
+                finish_function("00112233445566778899AA"),
+                cancel_time(env.now() + 100s),
+                fee(txnFees),
+                ter(temBAD_WASM));
+            env.close();
+        }
+        {
+            // FinishFunction wrong function name
+            auto const badWasmHex =
+                "0061736d010000000105016000017f02190108686f73745f6c69620c6765"
+                "744c656467657253716e00000302010005030100100611027f00418080c0"
+                "000b7f00418080c0000b072b04066d656d6f727902000362616400010a5f"
+                "5f646174615f656e6403000b5f5f686561705f6261736503010a09010700"
+                "100041044a0b004d0970726f64756365727302086c616e67756167650104"
+                "52757374000c70726f6365737365642d6279010572757374631d312e3835"
+                "2e31202834656231363132353020323032352d30332d31352900490f7461"
+                "726765745f6665617475726573042b0f6d757461626c652d676c6f62616c"
+                "732b087369676e2d6578742b0f7265666572656e63652d74797065732b0a"
+                "6d756c746976616c7565";
+            env(escrowCreate,
+                finish_function(badWasmHex),
+                cancel_time(env.now() + 100s),
+                fee(txnFees),
+                ter(temBAD_WASM));
+            env.close();
+        }
     }
 
     void

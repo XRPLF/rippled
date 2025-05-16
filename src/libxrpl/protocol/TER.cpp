@@ -217,6 +217,7 @@ transResults()
         MAKE_ERROR(temARRAY_EMPTY,               "Malformed: Array is empty."),
         MAKE_ERROR(temARRAY_TOO_LARGE,           "Malformed: Array is too large."),
         MAKE_ERROR(temBAD_TRANSFER_FEE,          "Malformed: Transfer fee is outside valid range."),
+        MAKE_ERROR(temBAD_WASM,                  "Malformed: Provided WASM code is invalid."),
 
         MAKE_ERROR(terRETRY,                  "Retry transaction."),
         MAKE_ERROR(terFUNDS_SPENT,            "DEPRECATED."),

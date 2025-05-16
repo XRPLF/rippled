@@ -733,13 +733,14 @@ WamrEngine::preflight(
     {
         return preflightHlp(wasmCode, funcName, imports, params);
     }
-    catch (std::exception const&)
+    catch (std::exception const& e)
     {
+        std::cerr << "WAMR: preflight exception: " << e.what() << std::endl;
     }
     catch (...)
     {
     }
-    return Unexpected<NotTEC>(temARRAY_EMPTY);
+    return Unexpected<NotTEC>(temBAD_WASM);
 }
 
 Expected<int32_t, NotTEC>
@@ -763,16 +764,19 @@ WamrEngine::preflightHlp(
 
     // Call main
     auto* f = getFunc(!funcName.empty() ? funcName : "_start");
-    return 0;
-    // auto p = convertParams(params);
-    // auto res = call<1>(f, p);
-    // if (!res.r.size || trap)
-    //     return temBAD_SIGNATURE;
+    // return 0;
+    auto p = convertParams(params);
+    auto res = call<1>(f, p);
+    if (!res.r.size || trap)
+    {
+        std::cout << "WAMR: preflightHlp trap" << std::endl;
+        return temBAD_SIGNATURE;
+    }
 
-    // assert(res.r.data[0].kind == WASM_I32);
-    // // printf("Result: %d\n", results[0].of.i32);
-    // // return res.r.data[0].of.i32 != 0;
-    // return res.r.data[0].of.i32;
+    assert(res.r.data[0].kind == WASM_I32);
+    printf("Result: %d\n", res.r.data[0].of.i32);
+    // return res.r.data[0].of.i32 != 0;
+    return res.r.data[0].of.i32;
 }
 
 Expected<int32_t, TER>
