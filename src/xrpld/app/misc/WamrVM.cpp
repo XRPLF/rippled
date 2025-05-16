@@ -751,7 +751,6 @@ WamrEngine::preflightHlp(
     std::vector<WasmParam> const& params)
 {
     // Create and instantiate the module.
-    std::cout << "WAMR: preflightHlp" << std::endl;
     if (!wasmCode.empty())
     {
         int const m = addModule(wasmCode, true, imports);
@@ -769,13 +768,12 @@ WamrEngine::preflightHlp(
     auto res = call<1>(f, p);
     if (!res.r.size || trap)
     {
-        std::cout << "WAMR: preflightHlp trap" << std::endl;
+        // std::cout << "WAMR: preflightHlp trap" << std::endl;
         return temBAD_WASM;
     }
 
     assert(res.r.data[0].kind == WASM_I32);
-    printf("Result: %d\n", res.r.data[0].of.i32);
-    // return res.r.data[0].of.i32 != 0;
+    // printf("Result: %d\n", res.r.data[0].of.i32);
     return res.r.data[0].of.i32;
 }
 

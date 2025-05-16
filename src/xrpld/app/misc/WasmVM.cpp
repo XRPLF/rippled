@@ -55,22 +55,22 @@ preflightEscrowWasm(
     WASM_IMPORT_FUNC(imports, computeSha512HalfHash, hfs)
     WASM_IMPORT_FUNC(imports, print, hfs)
 
-    std::int64_t const sgas = gasLimit;  // vm.getGas();
+    // std::int64_t const sgas = gasLimit;  // vm.getGas();
     auto ret = vm.preflight(wasmCode, funcName, imports);
 
-    std::cout << "preflightEscrowWasm, mod size: " << wasmCode.size()
-              << ", gasLimit: " << gasLimit << ", funcName: " << funcName;
+    // std::cout << "preflightEscrowWasm, mod size: " << wasmCode.size()
+    //           << ", gasLimit: " << gasLimit << ", funcName: " << funcName;
 
     if (!ret.has_value())
     {
-        std::cout << ", error: " << ret.error() << std::endl;
+        // std::cout << ", error: " << ret.error();
         return ret.error();
     }
-    std::int64_t const egas = vm.getGas();
-    std::uint64_t const spent = static_cast<std::uint64_t>(sgas - egas);
+    // std::int64_t const egas = vm.getGas();
+    // std::uint64_t const spent = static_cast<std::uint64_t>(sgas - egas);
 
-    std::cout << ", ret: " << ret.value() << ", gas spent: " << spent
-              << std::endl;
+    // std::cout << ", ret: " << ret.value() << ", gas spent: " << spent
+    //           << std::endl;
     return tesSUCCESS;
 }
 
