@@ -9,6 +9,7 @@
 #include <atomic>
 #include <barrier>
 #include <chrono>
+#include <condition_variable>
 #include <latch>
 #include <optional>
 #include <random>
@@ -18,6 +19,55 @@
 
 namespace ripple {
 namespace tests {
+
+/**
+Experimentally, we discovered that using std::barrier performs extremely
+poorly (~1 hour vs ~1 minute to run the test suite) in certain macOS
+environments. To unblock our macOS CI pipeline, we replaced std::barrier with a
+custom mutex-based barrier (Barrier) that significantly improves performance
+without compromising correctness. For future reference, if we ever consider
+reintroducing std::barrier, the following configuration is known to exhibit the
+problem:
+
+    Model Name: Mac mini
+    Model Identifier: Mac14,3
+    Model Number: Z16K000R4LL/A
+    Chip: Apple M2
+    Total Number of Cores: 8 (4 performance and 4 efficiency)
+    Memory: 24 GB
+    System Firmware Version: 11881.41.5
+    OS Loader Version: 11881.1.1
+    Apple clang version 16.0.0 (clang-1600.0.26.3)
+    Target: arm64-apple-darwin24.0.0
+    Thread model: posix
+
+ */
+struct Barrier
+{
+    std::mutex mtx;
+    std::condition_variable cv;
+    int count;
+    int const initial;
+
+    Barrier(int n) : count(n), initial(n)
+    {
+    }
+
+    void
+    arrive_and_wait()
+    {
+        std::unique_lock lock(mtx);
+        if (--count == 0)
+        {
+            count = initial;
+            cv.notify_all();
+        }
+        else
+        {
+            cv.wait(lock, [&] { return count == initial; });
+        }
+    }
+};
 
 namespace {
 enum class TrackedState : std::uint8_t {
@@ -500,9 +550,9 @@ public:
         constexpr int loopIters = 2 * 1024;
         constexpr int numThreads = 16;
         std::vector<SharedIntrusive<TIBase>> toClone;
-        std::barrier loopStartSyncPoint{numThreads};
-        std::barrier postCreateToCloneSyncPoint{numThreads};
-        std::barrier postCreateVecOfPointersSyncPoint{numThreads};
+        Barrier loopStartSyncPoint{numThreads};
+        Barrier postCreateToCloneSyncPoint{numThreads};
+        Barrier postCreateVecOfPointersSyncPoint{numThreads};
         auto engines = [&]() -> std::vector<std::default_random_engine> {
             std::random_device rd;
             std::vector<std::default_random_engine> result;
@@ -628,10 +678,10 @@ public:
         constexpr int flipPointersLoopIters = 256;
         constexpr int numThreads = 16;
         std::vector<SharedIntrusive<TIBase>> toClone;
-        std::barrier loopStartSyncPoint{numThreads};
-        std::barrier postCreateToCloneSyncPoint{numThreads};
-        std::barrier postCreateVecOfPointersSyncPoint{numThreads};
-        std::barrier postFlipPointersLoopSyncPoint{numThreads};
+        Barrier loopStartSyncPoint{numThreads};
+        Barrier postCreateToCloneSyncPoint{numThreads};
+        Barrier postCreateVecOfPointersSyncPoint{numThreads};
+        Barrier postFlipPointersLoopSyncPoint{numThreads};
         auto engines = [&]() -> std::vector<std::default_random_engine> {
             std::random_device rd;
             std::vector<std::default_random_engine> result;
@@ -761,9 +811,9 @@ public:
         constexpr int lockWeakLoopIters = 256;
         constexpr int numThreads = 16;
         std::vector<SharedIntrusive<TIBase>> toLock;
-        std::barrier loopStartSyncPoint{numThreads};
-        std::barrier postCreateToLockSyncPoint{numThreads};
-        std::barrier postLockWeakLoopSyncPoint{numThreads};
+        Barrier loopStartSyncPoint{numThreads};
+        Barrier postCreateToLockSyncPoint{numThreads};
+        Barrier postLockWeakLoopSyncPoint{numThreads};
 
         // lockAndDestroy creates weak pointers from the strong pointer
         // and runs a loop that locks the weak pointer. At the end of the loop
