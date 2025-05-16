@@ -739,6 +739,7 @@ WamrEngine::preflight(
     }
     catch (...)
     {
+        return temUNKNOWN;
     }
     return Unexpected<NotTEC>(temBAD_WASM);
 }
@@ -755,11 +756,11 @@ WamrEngine::preflightHlp(
     {
         int const m = addModule(wasmCode, true, imports);
         if (m < 0)
-            return temBAD_WASM;
+            return temUNKNOWN;
     }
 
     if (!module)
-        return temBAD_WASM;
+        return temUNKNOWN;
 
     // Call main
     auto* f = getFunc(!funcName.empty() ? funcName : "_start");
