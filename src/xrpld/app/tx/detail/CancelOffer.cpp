@@ -35,8 +35,8 @@ CancelOffer::preflight(PreflightContext const& ctx)
 
     if (uTxFlags & tfUniversalMask)
     {
-        JLOG(ctx.j.trace())
-            << "Malformed transaction: " << "Invalid flags set.";
+        JLOG(ctx.j.trace()) << "Malformed transaction: "
+                            << "Invalid flags set.";
         return temINVALID_FLAG;
     }
 
@@ -63,8 +63,8 @@ CancelOffer::preclaim(PreclaimContext const& ctx)
 
     if ((*sle)[sfSequence] <= offerSequence)
     {
-        JLOG(ctx.j.trace()) << "Malformed transaction: " << "Sequence "
-                            << offerSequence << " is invalid.";
+        JLOG(ctx.j.trace()) << "Malformed transaction: "
+                            << "Sequence " << offerSequence << " is invalid.";
         return temBAD_SEQUENCE;
     }
 

@@ -77,7 +77,7 @@ struct AccountCandidate
     int priority;
     AccountID account;
 
-    static const int highPriority = 10000;
+    static int const highPriority = 10000;
 };
 
 bool
@@ -236,7 +236,8 @@ Pathfinder::findPaths(
     mSource = STPathElement(account, mSrcCurrency, issuer);
     auto issuerString =
         mSrcIssuer ? to_string(*mSrcIssuer) : std::string("none");
-    JLOG(j_.trace()) << "findPaths>" << " mSrcAccount=" << mSrcAccount
+    JLOG(j_.trace()) << "findPaths>"
+                     << " mSrcAccount=" << mSrcAccount
                      << " mDstAccount=" << mDstAccount
                      << " mDstAmount=" << mDstAmount.getFullText()
                      << " mSrcCurrency=" << mSrcCurrency
@@ -582,7 +583,7 @@ Pathfinder::getBestPaths(
     XRPL_ASSERT(
         fullLiquidityPath.empty(),
         "ripple::Pathfinder::getBestPaths : first empty path result");
-    const bool issuerIsSender =
+    bool const issuerIsSender =
         isXRP(mSrcCurrency) || (srcIssuer == mSrcAccount);
 
     std::vector<PathRank> extraPathRanks;
@@ -943,7 +944,7 @@ addUniquePath(STPathSet& pathSet, STPath const& path)
 
 void
 Pathfinder::addLink(
-    const STPath& currentPath,   // The path to build from
+    STPath const& currentPath,   // The path to build from
     STPathSet& incompletePaths,  // The set of partial paths we add to
     int addFlags,
     std::function<bool(void)> const& continueCallback)

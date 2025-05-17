@@ -44,7 +44,7 @@ struct AuthorizeCredentials
     std::string credType;
 
     auto
-    operator<=>(const AuthorizeCredentials&) const = default;
+    operator<=>(AuthorizeCredentials const&) const = default;
 
     Json::Value
     toJson() const

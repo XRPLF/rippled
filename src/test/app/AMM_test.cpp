@@ -1323,14 +1323,14 @@ private:
         // equal asset deposit: unit test to exercise the rounding-down of
         // LPTokens in the AMMHelpers.cpp: adjustLPTokens calculations
         // The LPTokens need to have 16 significant digits and a fractional part
-        for (const Number deltaLPTokens :
+        for (Number const deltaLPTokens :
              {Number{UINT64_C(100000'0000000009), -10},
               Number{UINT64_C(100000'0000000001), -10}})
         {
             testAMM([&](AMM& ammAlice, Env& env) {
                 // initial LPToken balance
                 IOUAmount const initLPToken = ammAlice.getLPTokensBalance();
-                const IOUAmount newLPTokens{
+                IOUAmount const newLPTokens{
                     deltaLPTokens.mantissa(), deltaLPTokens.exponent()};
 
                 // carol performs a two-asset deposit
@@ -1349,17 +1349,17 @@ private:
 
                 // fraction of newLPTokens/(existing LPToken balance). The
                 // existing LPToken balance is 1e7
-                const Number fr = deltaLPTokens / 1e7;
+                Number const fr = deltaLPTokens / 1e7;
 
                 // The below equations are based on Equation 1, 2 from XLS-30d
                 // specification, Section: 2.3.1.2
-                const Number deltaXRP = fr * 1e10;
-                const Number deltaUSD = fr * 1e4;
+                Number const deltaXRP = fr * 1e10;
+                Number const deltaUSD = fr * 1e4;
 
-                const STAmount depositUSD =
+                STAmount const depositUSD =
                     STAmount{USD, deltaUSD.mantissa(), deltaUSD.exponent()};
 
-                const STAmount depositXRP =
+                STAmount const depositXRP =
                     STAmount{XRP, deltaXRP.mantissa(), deltaXRP.exponent()};
 
                 // initial LPTokens (1e7) + newLPTokens
@@ -6682,11 +6682,11 @@ private:
         testcase("swapRounding");
         using namespace jtx;
 
-        const STAmount xrpPool{XRP, UINT64_C(51600'000981)};
-        const STAmount iouPool{USD, UINT64_C(803040'9987141784), -10};
+        STAmount const xrpPool{XRP, UINT64_C(51600'000981)};
+        STAmount const iouPool{USD, UINT64_C(803040'9987141784), -10};
 
-        const STAmount xrpBob{XRP, UINT64_C(1092'878933)};
-        const STAmount iouBob{
+        STAmount const xrpBob{XRP, UINT64_C(1092'878933)};
+        STAmount const iouBob{
             USD, UINT64_C(3'988035892323031), -28};  // 3.9...e-13
 
         testAMM(

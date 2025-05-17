@@ -266,7 +266,7 @@ SHAMapInnerNode::serializeWithPrefix(Serializer& s) const
 }
 
 std::string
-SHAMapInnerNode::getString(const SHAMapNodeID& id) const
+SHAMapInnerNode::getString(SHAMapNodeID const& id) const
 {
     std::string ret = SHAMapTreeNode::getString(id);
     auto hashes = hashesAndChildren_.getHashes();

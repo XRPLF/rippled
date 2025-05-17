@@ -80,7 +80,7 @@ registerSSLCerts(
     while ((pContext = CertEnumCertificatesInStore(hStore.get(), pContext)) !=
            NULL)
     {
-        const unsigned char* pbCertEncoded = pContext->pbCertEncoded;
+        unsigned char const* pbCertEncoded = pContext->pbCertEncoded;
         std::unique_ptr<X509, decltype(X509_free)*> x509{
             d2i_X509(NULL, &pbCertEncoded, pContext->cbCertEncoded), X509_free};
         if (!x509)

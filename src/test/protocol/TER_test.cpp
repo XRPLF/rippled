@@ -149,7 +149,7 @@ struct TER_test : public beast::unit_test::suite
             terRETRY,
             tesSUCCESS,
             tecCLAIM);
-        static const int hiIndex{
+        static int const hiIndex{
             std::tuple_size<decltype(terEnums)>::value - 1};
 
         // Verify that enums cannot be converted to other enum types.
@@ -277,7 +277,7 @@ struct TER_test : public beast::unit_test::suite
             tecCLAIM,
             NotTEC{telLOCAL_ERROR},
             TER{tecCLAIM});
-        static const int hiIndex{std::tuple_size<decltype(ters)>::value - 1};
+        static int const hiIndex{std::tuple_size<decltype(ters)>::value - 1};
 
         // Verify that all types in the ters tuple can be compared with all
         // the other types in ters.
