@@ -160,26 +160,28 @@ preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
     return tesSUCCESS;
 }
 
-/** Checks whether the signature appears valid */
-NotTEC
-preflight2(PreflightContext const& ctx)
+std::optional<NotTEC>
+preflightCheckSimulateKeys(
+    ApplyFlags flags,
+    STObject const& sigObject,
+    beast::Journal j)
 {
-    if (ctx.flags & tapDRY_RUN)  // simulation
+    if (flags & tapDRY_RUN)  // simulation
     {
-        if (!ctx.tx.getSignature().empty())
+        if (!sigObject.getFieldVL(sfTxnSignature).empty())
         {
             // NOTE: This code should never be hit because it's checked in the
             // `simulate` RPC
             return temINVALID;  // LCOV_EXCL_LINE
         }
 
-        if (!ctx.tx.isFieldPresent(sfSigners))
+        if (!sigObject.isFieldPresent(sfSigners))
         {
             // no signers, no signature - a valid simulation
             return tesSUCCESS;
         }
 
-        for (auto const& signer : ctx.tx.getFieldArray(sfSigners))
+        for (auto const& signer : sigObject.getFieldArray(sfSigners))
         {
             if (signer.isFieldPresent(sfTxnSignature) &&
                 !signer[sfTxnSignature].empty())
@@ -191,6 +193,17 @@ preflight2(PreflightContext const& ctx)
         }
         return tesSUCCESS;
     }
+    return {};
+}
+
+/** Checks whether the signature appears valid */
+NotTEC
+preflight2(PreflightContext const& ctx)
+{
+    if (auto const ret = preflightCheckSimulateKeys(ctx.flags, ctx.tx, ctx.j))
+        // Skips following checks if the transaction is being simulated,
+        // regardless of success or failure
+        return *ret;
 
     auto const sigValid = checkValidity(
         ctx.app.getHashRouter(), ctx.tx, ctx.rules, ctx.app.config());
@@ -609,28 +622,44 @@ Transactor::apply()
 }
 
 NotTEC
-Transactor::checkSign(PreclaimContext const& ctx)
+Transactor::checkSign(
+    PreclaimContext const& ctx,
+    AccountID const& id,
+    STObject const& sigObject)
 {
     if (ctx.flags & tapDRY_RUN)
     {
         // This code must be different for `simulate`
         // Since the public key may be empty even for single signing
-        if (ctx.tx.isFieldPresent(sfSigners))
-            return checkMultiSign(ctx);
-        return checkSingleSign(ctx);
+        if (sigObject.isFieldPresent(sfSigners))
+            return checkMultiSign(ctx, id, sigObject);
+        return checkSingleSign(ctx, id, sigObject);
     }
     // If the pk is empty, then we must be multi-signing.
-    if (ctx.tx.getSigningPubKey().empty())
-        return checkMultiSign(ctx);
+    if (sigObject.getFieldVL(sfSigningPubKey).empty())
+        return checkMultiSign(ctx, id, sigObject);
 
-    return checkSingleSign(ctx);
+    return checkSingleSign(ctx, id, sigObject);
 }
 
 NotTEC
-Transactor::checkSingleSign(PreclaimContext const& ctx)
+Transactor::checkSign(PreclaimContext const& ctx)
+{
+    auto const idAccount = ctx.tx.isFieldPresent(sfDelegate)
+        ? ctx.tx.getAccountID(sfDelegate)
+        : ctx.tx.getAccountID(sfAccount);
+    return checkSign(ctx, idAccount, ctx.tx);
+}
+
+// TODO generalize
+NotTEC
+Transactor::checkSingleSign(
+    PreclaimContext const& ctx,
+    AccountID const& idAccount,
+    STObject const& sigObject)
 {
     // Check that the value in the signing key slot is a public key.
-    auto const pkSigner = ctx.tx.getSigningPubKey();
+    auto const pkSigner = sigObject.getFieldVL(sfSigningPubKey);
     if (!(ctx.flags & tapDRY_RUN) && !publicKeyType(makeSlice(pkSigner)))
     {
         JLOG(ctx.j.trace())
@@ -639,9 +668,6 @@ Transactor::checkSingleSign(PreclaimContext const& ctx)
     }
 
     // Look up the account.
-    auto const idAccount = ctx.tx.isFieldPresent(sfDelegate)
-        ? ctx.tx.getAccountID(sfDelegate)
-        : ctx.tx.getAccountID(sfAccount);
     auto const sleAccount = ctx.view.read(keylet::account(idAccount));
     if (!sleAccount)
         return terNO_ACCOUNT;
@@ -708,13 +734,14 @@ Transactor::checkSingleSign(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
+// TODO generalize
 NotTEC
-Transactor::checkMultiSign(PreclaimContext const& ctx)
+Transactor::checkMultiSign(
+    PreclaimContext const& ctx,
+    AccountID const& id,
+    STObject const& sigObject)
 {
-    auto const id = ctx.tx.isFieldPresent(sfDelegate)
-        ? ctx.tx.getAccountID(sfDelegate)
-        : ctx.tx.getAccountID(sfAccount);
-    // Get mTxnAccountID's SignerList and Quorum.
+    // Get id's SignerList and Quorum.
     std::shared_ptr<STLedgerEntry const> sleAccountSigners =
         ctx.view.read(keylet::signers(id));
     // If the signer list doesn't exist the account is not multi-signing.
@@ -740,7 +767,7 @@ Transactor::checkMultiSign(PreclaimContext const& ctx)
         return accountSigners.error();
 
     // Get the array of transaction signers.
-    STArray const& txSigners(ctx.tx.getFieldArray(sfSigners));
+    STArray const& txSigners(sigObject.getFieldArray(sfSigners));
 
     // Walk the accountSigners performing a variety of checks and see if
     // the quorum is met.

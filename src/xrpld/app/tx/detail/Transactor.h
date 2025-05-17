@@ -217,6 +217,12 @@ protected:
     static XRPAmount
     calculateOwnerReserveFee(ReadView const& view, STTx const& tx);
 
+    static NotTEC
+    checkSign(
+        PreclaimContext const& ctx,
+        AccountID const& id,
+        STObject const& sigObject);
+
     // Base class always returns true
     static bool
     isEnabled(PreflightContext const& ctx);
@@ -248,9 +254,15 @@ private:
     TER
     payFee();
     static NotTEC
-    checkSingleSign(PreclaimContext const& ctx);
+    checkSingleSign(
+        PreclaimContext const& ctx,
+        AccountID const& id,
+        STObject const& sigObject);
     static NotTEC
-    checkMultiSign(PreclaimContext const& ctx);
+    checkMultiSign(
+        PreclaimContext const& ctx,
+        AccountID const& id,
+        STObject const& sigObject);
 
     void trapTransaction(uint256) const;
 };
@@ -280,6 +292,16 @@ preflightCheckSigningKey(STObject const& sigObject, beast::Journal j);
 */
 NotTEC
 preflight1(PreflightContext const& ctx, std::uint32_t flagMask);
+
+/** Checks the special signing key state needed for simulation
+ *
+ * Normally called from preflight2 with ctx.tx.
+ */
+std::optional<NotTEC>
+preflightCheckSimulateKeys(
+    ApplyFlags flags,
+    STObject const& sigObject,
+    beast::Journal j);
 
 /** Checks whether the signature appears valid */
 NotTEC
