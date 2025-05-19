@@ -23,6 +23,8 @@
 
 #include <iwasm/wasm_c_api.h>
 
+#include <filesystem>
+
 namespace ripple {
 namespace test {
 
