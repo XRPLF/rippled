@@ -128,7 +128,7 @@ struct Wasm_test : public beast::unit_test::suite
     testEscrowWasmDN1()
     {
         testcase("escrow wasm devnet 1 test");
-        auto wasmHex = ;
+        auto wasmHex = getWasmFixture("dn1.hex");
 
         auto wasmStr = boost::algorithm::unhex(std::string(wasmHex));
         std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
@@ -290,7 +290,7 @@ struct Wasm_test : public beast::unit_test::suite
         }
 
         {  // fail because recursion too deep
-            auto wasmHex = getWasmFixture("dn1.hex");
+            auto wasmHex = getWasmFixture("deep_recursion.hex");
             auto wasmStr = boost::algorithm::unhex(std::string(wasmHex));
             std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
 
