@@ -594,9 +594,7 @@ Transactor::checkSign(PreclaimContext const& ctx)
         return tesSUCCESS;
     }
 
-    auto const idAccount = ctx.tx.isFieldPresent(sfDelegate)
-        ? ctx.tx.getAccountID(sfDelegate)
-        : ctx.tx.getAccountID(sfAccount);
+    auto const idAccount = ctx.tx[~sfDelegate].value_or(ctx.tx[sfAccount]);
 
     // If the pk is empty and not simulate or simulate and signers,
     // then we must be multi-signing.
