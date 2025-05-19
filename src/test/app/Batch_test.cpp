@@ -2638,6 +2638,7 @@ class Batch_test : public beast::unit_test::suite
                 env,
                 tesSUCCESS,
                 batch::outer(alice, aliceSeq, batchFee, tfIndependent),
+                // tecDST_TAG_NEEDED - alice has enabled asfRequireDest
                 batch::inner(check::create(bob, alice, USD(10)), bobSeq),
                 batch::inner(check::cash(alice, chkID, USD(10)), aliceSeq + 1),
                 batch::sig(bob));
