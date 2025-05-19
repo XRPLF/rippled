@@ -598,158 +598,19 @@ struct Flow_test : public beast::unit_test::suite
         Account const bob("bob");
         Account const carol("carol");
 
-        {
-            // Simple payment through a gateway with a
-            // transfer rate
-            Env env(*this, features);
+        
+        // Offer where the owner is also the issuer, sender pays fee
+        Env env(*this, features);
 
-            env.fund(XRP(10000), alice, bob, carol, gw);
-            env.close();
-            env(rate(gw, 1.25));
-            env.trust(USD(1000), alice, bob, carol);
-            env(pay(gw, alice, USD(50)));
-            env.require(balance(alice, USD(50)));
-            env(pay(alice, bob, USD(40)), sendmax(USD(50)));
-            env.require(balance(bob, USD(40)), balance(alice, USD(0)));
-        }
-        {
-            // transfer rate is not charged when issuer is src or dst
-            Env env(*this, features);
-
-            env.fund(XRP(10000), alice, bob, carol, gw);
-            env.close();
-            env(rate(gw, 1.25));
-            env.trust(USD(1000), alice, bob, carol);
-            env(pay(gw, alice, USD(50)));
-            env.require(balance(alice, USD(50)));
-            env(pay(alice, gw, USD(40)), sendmax(USD(40)));
-            env.require(balance(alice, USD(10)));
-        }
-        {
-            // transfer fee on an offer
-            Env env(*this, features);
-
-            env.fund(XRP(10000), alice, bob, carol, gw);
-            env.close();
-            env(rate(gw, 1.25));
-            env.trust(USD(1000), alice, bob, carol);
-            env(pay(gw, bob, USD(65)));
-
-            env(offer(bob, XRP(50), USD(50)));
-
-            env(pay(alice, carol, USD(50)), path(~USD), sendmax(XRP(50)));
-            env.require(
-                balance(alice, xrpMinusFee(env, 10000 - 50)),
-                balance(bob, USD(2.5)),  // owner pays transfer fee
-                balance(carol, USD(50)));
-        }
-
-        {
-            // Transfer fee two consecutive offers
-            Env env(*this, features);
-
-            env.fund(XRP(10000), alice, bob, carol, gw);
-            env.close();
-            env(rate(gw, 1.25));
-            env.trust(USD(1000), alice, bob, carol);
-            env.trust(EUR(1000), alice, bob, carol);
-            env(pay(gw, bob, USD(50)));
-            env(pay(gw, bob, EUR(50)));
-
-            env(offer(bob, XRP(50), USD(50)));
-            env(offer(bob, USD(50), EUR(50)));
-
-            env(pay(alice, carol, EUR(40)), path(~USD, ~EUR), sendmax(XRP(40)));
-            env.require(
-                balance(alice, xrpMinusFee(env, 10000 - 40)),
-                balance(bob, USD(40)),
-                balance(bob, EUR(0)),
-                balance(carol, EUR(40)));
-        }
-
-        {
-            // First pass through a strand redeems, second pass issues, no
-            // offers limiting step is not an endpoint
-            Env env(*this, features);
-            auto const USDA = alice["USD"];
-            auto const USDB = bob["USD"];
-
-            env.fund(XRP(10000), alice, bob, carol, gw);
-            env.close();
-            env(rate(gw, 1.25));
-            env.trust(USD(1000), alice, bob, carol);
-            env.trust(USDA(1000), bob);
-            env.trust(USDB(1000), gw);
-            env(pay(gw, bob, USD(50)));
-            // alice -> bob -> gw -> carol. $50 should have transfer fee; $10,
-            // no fee
-            env(pay(alice, carol, USD(50)), path(bob), sendmax(USDA(60)));
-            env.require(
-                balance(bob, USD(-10)),
-                balance(bob, USDA(60)),
-                balance(carol, USD(50)));
-        }
-        {
-            // First pass through a strand redeems, second pass issues, through
-            // an offer limiting step is not an endpoint
-            Env env(*this, features);
-            auto const USDA = alice["USD"];
-            auto const USDB = bob["USD"];
-            Account const dan("dan");
-
-            env.fund(XRP(10000), alice, bob, carol, dan, gw);
-            env.close();
-            env(rate(gw, 1.25));
-            env.trust(USD(1000), alice, bob, carol, dan);
-            env.trust(EUR(1000), carol, dan);
-            env.trust(USDA(1000), bob);
-            env.trust(USDB(1000), gw);
-            env(pay(gw, bob, USD(50)));
-            env(pay(gw, dan, EUR(100)));
-            env(offer(dan, USD(100), EUR(100)));
-            // alice -> bob -> gw -> carol. $50 should have transfer fee; $10,
-            // no fee
-            env(pay(alice, carol, EUR(50)),
-                path(bob, gw, ~EUR),
-                sendmax(USDA(60)),
-                txflags(tfNoRippleDirect));
-            env.require(
-                balance(bob, USD(-10)),
-                balance(bob, USDA(60)),
-                balance(dan, USD(50)),
-                balance(dan, EUR(37.5)),
-                balance(carol, EUR(50)));
-        }
-
-        {
-            // Offer where the owner is also the issuer, owner pays fee
-            Env env(*this, features);
-
-            env.fund(XRP(10000), alice, bob, gw);
-            env.close();
-            env(rate(gw, 1.25));
-            env.trust(USD(1000), alice, bob);
-            env(offer(gw, XRP(100), USD(100)));
-            env(pay(alice, bob, USD(100)), sendmax(XRP(100)));
-            env.require(
-                balance(alice, xrpMinusFee(env, 10000 - 100)),
-                balance(bob, USD(100)));
-        }
-        if (!features[featureOwnerPaysFee])
-        {
-            // Offer where the owner is also the issuer, sender pays fee
-            Env env(*this, features);
-
-            env.fund(XRP(10000), alice, bob, gw);
-            env.close();
-            env(rate(gw, 1.25));
-            env.trust(USD(1000), alice, bob);
-            env(offer(gw, XRP(125), USD(125)));
-            env(pay(alice, bob, USD(100)), sendmax(XRP(200)));
-            env.require(
-                balance(alice, xrpMinusFee(env, 10000 - 125)),
-                balance(bob, USD(100)));
-        }
+        env.fund(XRP(10000), alice, bob, gw);
+        env.close();
+        env(rate(gw, 1.25));
+        env.trust(USD(1000), alice, bob);
+        env(offer(gw, XRP(125), USD(125)));
+        env(pay(alice, bob, USD(100)), sendmax(XRP(200)));
+        env.require(
+            balance(alice, xrpMinusFee(env, 10000 - 125)),
+            balance(bob, USD(100)));
     }
 
     void
@@ -1444,7 +1305,6 @@ struct Flow_test : public beast::unit_test::suite
     testWithFeats(FeatureBitset features)
     {
         using namespace jtx;
-        FeatureBitset const ownerPaysFee{featureOwnerPaysFee};
         FeatureBitset const reducedOffersV2(fixReducedOffersV2);
 
         testLineQuality(features);
@@ -1452,9 +1312,7 @@ struct Flow_test : public beast::unit_test::suite
         testBookStep(features - reducedOffersV2);
         testDirectStep(features);
         testBookStep(features);
-        testDirectStep(features | ownerPaysFee);
-        testBookStep(features | ownerPaysFee);
-        testTransferRate(features | ownerPaysFee);
+        testTransferRate(features);
         testSelfPayment1(features);
         testSelfPayment2(features);
         testSelfFundedXRPEndpoint(false, features);

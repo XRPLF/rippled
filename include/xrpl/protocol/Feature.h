@@ -129,6 +129,12 @@ numDownVotedAmendments();
 std::size_t
 numUpVotedAmendments();
 
+/** Amendments that this server doesn't support and are obsolete.
+
+    This function is only used in unit tests.
+*/
+std::size_t 
+numObsoleteUnsupportedAmendments();
 }  // namespace detail
 
 std::optional<uint256>

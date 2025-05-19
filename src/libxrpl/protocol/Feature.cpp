@@ -129,6 +129,7 @@ class FeatureCollections
     std::map<std::string, VoteBehavior> supported;
     std::size_t upVotes = 0;
     std::size_t downVotes = 0;
+    std::size_t obsoleteUnsupportedAmendments = 0;
     mutable std::atomic<bool> readOnly = false;
 
     // These helper functions provide access to the features collection by name,
@@ -218,6 +219,12 @@ public:
     {
         return upVotes;
     }
+
+    std::size_t
+    numObsoleteUnsupportedAmendments() const
+    {
+        return obsoleteUnsupportedAmendments;
+    }
 };
 
 //------------------------------------------------------------------------------
@@ -254,7 +261,7 @@ FeatureCollections::registerFeature(
 {
     check(!readOnly, "Attempting to register a feature after startup.");
     check(
-        support == Supported::yes || vote == VoteBehavior::DefaultNo,
+        support == Supported::yes || vote == VoteBehavior::DefaultNo || vote == VoteBehavior::Obsolete,
         "Invalid feature parameters. Must be supported to be up-voted.");
     Feature const* i = getByName(name);
     if (!i)
@@ -283,6 +290,10 @@ FeatureCollections::registerFeature(
                 ++upVotes;
             else
                 ++downVotes;
+        }
+        else if (support == Supported::no && vote == VoteBehavior::Obsolete)
+        {
+            ++obsoleteUnsupportedAmendments;
         }
         check(
             upVotes + downVotes == supported.size(),
@@ -374,6 +385,13 @@ std::size_t
 detail::numUpVotedAmendments()
 {
     return featureCollections.numUpVotedAmendments();
+}
+
+/** Amendments that this server doesn't support and are obsolete. */
+std::size_t
+detail::numObsoleteUnsupportedAmendments()
+{
+    return featureCollections.numObsoleteUnsupportedAmendments();
 }
 
 //------------------------------------------------------------------------------

@@ -35,6 +35,7 @@ class Feature_test : public beast::unit_test::suite
 
         auto const& supportedAmendments = ripple::detail::supportedAmendments();
         auto const& allAmendments = ripple::allAmendments();
+        auto const obsoleteUnsupportedAmendents = ripple::detail::numObsoleteUnsupportedAmendments();
 
         BEAST_EXPECT(
             supportedAmendments.size() ==
@@ -97,9 +98,13 @@ class Feature_test : public beast::unit_test::suite
                 }
             }
 
-            BEAST_EXPECT(supported + retired == supportedAmendments.size());
+            // `retired` includes retired features and unsupported but obsolete features
+            // so we should subtract them
+            BEAST_EXPECT(supported + 
+                        retired - 
+                        obsoleteUnsupportedAmendents == supportedAmendments.size());
             BEAST_EXPECT(
-                allAmendments.size() - unsupported ==
+                allAmendments.size() - unsupported - obsoleteUnsupportedAmendents ==
                 supportedAmendments.size());
         }
     }

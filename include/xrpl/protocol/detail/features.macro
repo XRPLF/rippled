@@ -108,7 +108,6 @@ XRPL_FEATURE(DepositAuth,                Supported::yes, VoteBehavior::DefaultYe
 XRPL_FIX    (1513,                       Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(FlowCross,                  Supported::yes, VoteBehavior::DefaultYes)
 XRPL_FEATURE(Flow,                       Supported::yes, VoteBehavior::DefaultYes)
-XRPL_FEATURE(OwnerPaysFee,               Supported::no,  VoteBehavior::DefaultNo)
 
 // The following amendments are obsolete, but must remain supported
 // because they could potentially get enabled.
@@ -125,6 +124,7 @@ XRPL_FIX    (NFTokenNegOffer,       Supported::yes, VoteBehavior::Obsolete)
 XRPL_FIX    (NFTokenDirV1,          Supported::yes, VoteBehavior::Obsolete)
 XRPL_FEATURE(NonFungibleTokensV1,   Supported::yes, VoteBehavior::Obsolete)
 XRPL_FEATURE(CryptoConditionsSuite, Supported::yes, VoteBehavior::Obsolete)
+XRPL_FEATURE(OwnerPaysFee,          Supported::no,  VoteBehavior::Obsolete)
 
 // The following amendments have been active for at least two years. Their
 // pre-amendment code has been removed and the identifiers are deprecated.
