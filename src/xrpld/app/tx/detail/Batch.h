@@ -43,6 +43,9 @@ public:
     static NotTEC
     preflight(PreflightContext const& ctx);
 
+    static NotTEC
+    checkSign(PreclaimContext const& ctx);
+
     TER
     doApply() override;
 };

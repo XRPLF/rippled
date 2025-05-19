@@ -380,6 +380,18 @@ Batch::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
+NotTEC
+Batch::checkSign(PreclaimContext const& ctx)
+{
+    if (auto ret = Transactor::checkSign(ctx); !isTesSuccess(ret))
+        return ret;
+
+    if (auto ret = Transactor::checkBatchSign(ctx); !isTesSuccess(ret))
+        return ret;
+
+    return tesSUCCESS;
+}
+
 TER
 Batch::doApply()
 {
