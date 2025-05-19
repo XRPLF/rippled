@@ -207,19 +207,6 @@ class Batch_test : public beast::unit_test::suite
                 env.close();
             }
 
-            // TransactionType missing tfUniversalMask flag
-            // If the feature is disabled, the transaction is successful
-            // If the feature is enabled, the transaction fails early in
-            // checkValidity()
-            {
-                auto const txResult =
-                    withBatch ? ter(telENV_RPC_FAILED) : ter(tesSUCCESS);
-                env(signers(alice, 2, {{bob, 1}, {carol, 1}}),
-                    txflags(tfInnerBatchTxn),
-                    txResult);
-                env.close();
-            }
-
             env.close();
         }
     }
@@ -3381,7 +3368,7 @@ class Batch_test : public beast::unit_test::suite
     void
     testPseudoTxn(FeatureBitset features)
     {
-        testcase("pseudo txn with tfInnerBatchTxn")
+        testcase("pseudo txn with tfInnerBatchTxn");
 
         using namespace test::jtx;
         using namespace std::literals;

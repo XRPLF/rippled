@@ -144,6 +144,9 @@ preflight1(PreflightContext const& ctx)
         ctx.tx.isFieldPresent(sfAccountTxnID))
         return temINVALID;
 
+    if (ctx.tx.isFlag(tfInnerBatchTxn) && !ctx.rules.enabled(featureBatch))
+        return temINVALID_FLAG;
+
     XRPL_ASSERT(
         ctx.tx.isFlag(tfInnerBatchTxn) == ctx.parentBatchId.has_value() ||
             !ctx.rules.enabled(featureBatch),
