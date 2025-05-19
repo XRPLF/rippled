@@ -63,15 +63,6 @@ outer(
 }
 
 void
-inner_nofill::operator()(Env& env, JTx& jt) const
-{
-    auto const index = jt.jv[jss::RawTransactions].size();
-    Json::Value& batchTransaction = jt.jv[jss::RawTransactions][index];
-    batchTransaction = Json::Value{};
-    batchTransaction[jss::RawTransaction] = txn_;
-}
-
-void
 inner::operator()(Env& env, JTx& jt) const
 {
     auto const index = jt.jv[jss::RawTransactions].size();

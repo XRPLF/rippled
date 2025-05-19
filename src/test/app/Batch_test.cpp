@@ -362,11 +362,9 @@ class Batch_test : public beast::unit_test::suite
         {
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
-            auto jt =
-                env.jt(batch::inner(pay(alice, bob, XRP(1)), seq + 1).getTxn());
-            jt.jv[jss::SigningPubKey] = "";
+            auto jt = env.jt(pay(alice, bob, XRP(1)));
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
-                batch::inner_nofill(jt.jv),
+                batch::inner(jt.jv, seq + 1),
                 batch::inner(pay(alice, bob, XRP(1)), seq + 2),
                 ter(temBAD_SIGNATURE));
             env.close();
@@ -540,7 +538,7 @@ class Batch_test : public beast::unit_test::suite
             env.close();
         }
 
-        // temBAD_SIGNATURE: Batch: no account signature for inner txn.
+        // temBAD_SIGNER: Batch: no account signature for inner txn.
         // Note: Extra signature by bob
         {
             auto const seq = env.seq(alice);
@@ -549,11 +547,11 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
                 batch::inner(pay(alice, bob, XRP(5)), seq + 2),
                 batch::sig(bob),
-                ter(temBAD_SIGNATURE));
+                ter(temBAD_SIGNER));
             env.close();
         }
 
-        // temBAD_SIGNATURE: Batch: no account signature for inner txn.
+        // temBAD_SIGNER: Batch: no account signature for inner txn.
         {
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 1, 2);
@@ -561,7 +559,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
                 batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
                 batch::sig(carol),
-                ter(temBAD_SIGNATURE));
+                ter(temBAD_SIGNER));
             env.close();
         }
 
@@ -732,7 +730,6 @@ class Batch_test : public beast::unit_test::suite
         {
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 2, 2);
-            Account const davo{"davo", KeyType::ed25519};
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
                 batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
@@ -745,7 +742,6 @@ class Batch_test : public beast::unit_test::suite
         {
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 3, 2);
-            Account const davo{"davo", KeyType::ed25519};
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
                 batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
@@ -758,7 +754,6 @@ class Batch_test : public beast::unit_test::suite
         {
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 4, 2);
-            Account const davo{"davo", KeyType::ed25519};
             env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
                 batch::inner(pay(alice, bob, XRP(10)), seq + 1),
                 batch::inner(pay(bob, alice, XRP(5)), env.seq(bob)),
@@ -3386,7 +3381,7 @@ class Batch_test : public beast::unit_test::suite
     void
     testPseudoTxn(FeatureBitset features)
     {
-        testcase("pseudo txn");
+        testcase("pseudo txn with tfInnerBatchTxn")
 
         using namespace test::jtx;
         using namespace std::literals;
@@ -3528,10 +3523,10 @@ class Batch_test : public beast::unit_test::suite
             env(noop(alice));
             env(noop(alice));
             env(noop(alice));
-            checkMetrics(*this, __LINE__, env, 0, std::nullopt, 3, 2);
+            checkMetrics(*this, __LINE__, __FILE__, env, 0, std::nullopt, 3, 2);
 
             env(noop(carol), ter(terQUEUED));
-            checkMetrics(*this, __LINE__, env, 1, std::nullopt, 3, 2);
+            checkMetrics(*this, __LINE__, __FILE__, env, 1, std::nullopt, 3, 2);
 
             auto const aliceSeq = env.seq(alice);
             auto const bobSeq = env.seq(bob);
@@ -3546,7 +3541,7 @@ class Batch_test : public beast::unit_test::suite
                     ter(terQUEUED));
             }
 
-            checkMetrics(*this, __LINE__, env, 2, std::nullopt, 3, 2);
+            checkMetrics(*this, __LINE__, __FILE__, env, 2, std::nullopt, 3, 2);
 
             // Replace Queued Batch
             {
@@ -3562,7 +3557,7 @@ class Batch_test : public beast::unit_test::suite
                 env.close();
             }
 
-            checkMetrics(*this, __LINE__, env, 0, 12, 1, 6);
+            checkMetrics(*this, __LINE__, __FILE__, env, 0, 12, 1, 6);
         }
 
         // inner batch transactions are counter towards the ledger tx count
@@ -3587,7 +3582,7 @@ class Batch_test : public beast::unit_test::suite
             // Fill the ledger leaving room for 1 queued transaction
             env(noop(alice));
             env(noop(alice));
-            checkMetrics(*this, __LINE__, env, 0, std::nullopt, 2, 2);
+            checkMetrics(*this, __LINE__, __FILE__, env, 0, std::nullopt, 2, 2);
 
             auto const aliceSeq = env.seq(alice);
             auto const bobSeq = env.seq(bob);
@@ -3602,10 +3597,10 @@ class Batch_test : public beast::unit_test::suite
                     ter(tesSUCCESS));
             }
 
-            checkMetrics(*this, __LINE__, env, 0, std::nullopt, 3, 2);
+            checkMetrics(*this, __LINE__, __FILE__, env, 0, std::nullopt, 3, 2);
 
             env(noop(carol), ter(terQUEUED));
-            checkMetrics(*this, __LINE__, env, 1, std::nullopt, 3, 2);
+            checkMetrics(*this, __LINE__, __FILE__, env, 1, std::nullopt, 3, 2);
         }
     }
 

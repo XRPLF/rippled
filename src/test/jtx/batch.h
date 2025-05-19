@@ -56,27 +56,6 @@ outer(
     STAmount const& fee,
     std::uint32_t flags);
 
-/** Adds a new Batch Txn on a JTx. */
-class inner_nofill
-{
-private:
-    Json::Value txn_;
-
-public:
-    inner_nofill(Json::Value const& txn) : txn_(txn)
-    {
-    }
-
-    void
-    operator()(Env&, JTx& jtx) const;
-
-    Json::Value&
-    operator[](Json::StaticString const& key)
-    {
-        return txn_[key];
-    }
-};
-
 /** Adds a new Batch Txn on a JTx and autofills. */
 class inner
 {

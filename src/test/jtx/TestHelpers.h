@@ -469,6 +469,7 @@ void
 checkMetrics(
     Suite& test,
     int line,
+    char const* file,
     jtx::Env& env,
     std::size_t expectedCount,
     std::optional<std::size_t> expectedMaxCount,
@@ -488,7 +489,7 @@ checkMetrics(
               "reference: "s +
                   std::to_string(metrics.referenceFeeLevel.value()) + "/" +
                   std::to_string(baseFeeLevel.value()),
-              __FILE__,
+              file,
               line);
 
     metrics.txCount == expectedCount
@@ -496,7 +497,7 @@ checkMetrics(
         : test.fail(
               "txCount: "s + std::to_string(metrics.txCount) + "/" +
                   std::to_string(expectedCount),
-              __FILE__,
+              file,
               line);
 
     metrics.txQMaxSize == expectedMaxCount
@@ -504,7 +505,7 @@ checkMetrics(
         : test.fail(
               "txQMaxSize: "s + std::to_string(metrics.txQMaxSize.value_or(0)) +
                   "/" + std::to_string(expectedMaxCount.value_or(0)),
-              __FILE__,
+              file,
               line);
 
     metrics.txInLedger == expectedInLedger
@@ -512,7 +513,7 @@ checkMetrics(
         : test.fail(
               "txInLedger: "s + std::to_string(metrics.txInLedger) + "/" +
                   std::to_string(expectedInLedger),
-              __FILE__,
+              file,
               line);
 
     metrics.txPerLedger == expectedPerLedger
@@ -520,7 +521,7 @@ checkMetrics(
         : test.fail(
               "txPerLedger: "s + std::to_string(metrics.txPerLedger) + "/" +
                   std::to_string(expectedPerLedger),
-              __FILE__,
+              file,
               line);
 
     metrics.minProcessingFeeLevel == expectedMin
@@ -529,7 +530,7 @@ checkMetrics(
               "minProcessingFeeLevel: "s +
                   std::to_string(metrics.minProcessingFeeLevel.value()) + "/" +
                   std::to_string(expectedMin.value()),
-              __FILE__,
+              file,
               line);
 
     metrics.medFeeLevel == expectedMed
@@ -537,7 +538,7 @@ checkMetrics(
         : test.fail(
               "medFeeLevel: "s + std::to_string(metrics.medFeeLevel.value()) +
                   "/" + std::to_string(expectedMed.value()),
-              __FILE__,
+              file,
               line);
 
     auto const expectedCurFeeLevel = expectedInLedger > expectedPerLedger
@@ -551,7 +552,7 @@ checkMetrics(
               "openLedgerFeeLevel: "s +
                   std::to_string(metrics.openLedgerFeeLevel.value()) + "/" +
                   std::to_string(expectedCurFeeLevel.value()),
-              __FILE__,
+              file,
               line);
 }
 
