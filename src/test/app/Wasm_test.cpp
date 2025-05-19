@@ -128,7 +128,7 @@ struct Wasm_test : public beast::unit_test::suite
     testEscrowWasmDN1()
     {
         testcase("escrow wasm devnet 1 test");
-        auto wasmHex = getWasmFixture("dn1.hex");
+        auto wasmHex = getWasmFixture("all_host_functions.hex");
 
         auto wasmStr = boost::algorithm::unhex(std::string(wasmHex));
         std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
@@ -219,7 +219,7 @@ struct Wasm_test : public beast::unit_test::suite
 
         {
             TestHostFunctions nfs(&env);
-            std::string funcName("ready");
+            std::string funcName("finish");
             auto re = runEscrowWasm(wasm, funcName, &nfs, 100000);
             if (BEAST_EXPECT(re.has_value()))
             {
@@ -237,7 +237,7 @@ struct Wasm_test : public beast::unit_test::suite
         {  // fail because current time < escrow_finish_after time
             TestHostFunctions nfs(&env);
             nfs.clock_drift = -1;
-            std::string funcName("ready");
+            std::string funcName("finish");
             auto re = runEscrowWasm(wasm, funcName, &nfs, 100000);
             if (BEAST_EXPECT(re.has_value()))
             {
@@ -262,7 +262,7 @@ struct Wasm_test : public beast::unit_test::suite
                 }
             };
             BadTestHostFunctions nfs(&env);
-            std::string funcName("ready");
+            std::string funcName("finish");
             auto re = runEscrowWasm(wasm, funcName, &nfs, 100000);
             BEAST_EXPECT(re.error());
             std::cout << "bad case (access nonexistent field) result "
@@ -282,7 +282,7 @@ struct Wasm_test : public beast::unit_test::suite
                 }
             };
             BadTestHostFunctions nfs(&env);
-            std::string funcName("ready");
+            std::string funcName("finish");
             auto re = runEscrowWasm(wasm, funcName, &nfs, 100000);
             if (BEAST_EXPECT(!re))
                 std::cout << "bad case (more than MAX_PAGES) result "
