@@ -249,11 +249,11 @@ Batch::preflight(PreflightContext const& ctx)
         }
 
         // Check that Sequence and TicketSequence are not both present
-        if (stx.isFieldPresent(sfTicketSequence) &&
-            stx.getFieldU32(sfSequence) != 0)
+        if (stx.isFieldPresent(sfTicketSequence) ==
+            (stx.getFieldU32(sfSequence) != 0))
         {
             JLOG(ctx.j.trace()) << "BatchTrace[" << parentBatchId << "]: "
-                                << "inner txn cannot have both Sequence and "
+                                << "inner txn must have exactly one of Sequence and "
                                    "TicketSequence. "
                                 << "txID: " << hash;
             return temSEQ_AND_TICKET;
