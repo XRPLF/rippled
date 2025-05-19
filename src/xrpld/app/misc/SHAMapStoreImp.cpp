@@ -162,20 +162,6 @@ std::unique_ptr<NodeStore::Database>
 SHAMapStoreImp::makeNodeStore(int readThreads)
 {
     auto nscfg = app_.config().section(ConfigSection::nodeDatabase());
-
-    // Provide default values:
-    if (!nscfg.exists("cache_size"))
-        nscfg.set(
-            "cache_size",
-            std::to_string(app_.config().getValueFor(
-                SizedItem::treeCacheSize, std::nullopt)));
-
-    if (!nscfg.exists("cache_age"))
-        nscfg.set(
-            "cache_age",
-            std::to_string(app_.config().getValueFor(
-                SizedItem::treeCacheAge, std::nullopt)));
-
     std::unique_ptr<NodeStore::Database> db;
 
     if (deleteInterval_)
