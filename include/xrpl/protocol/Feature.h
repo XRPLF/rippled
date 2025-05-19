@@ -133,7 +133,7 @@ numUpVotedAmendments();
 
     This function is only used in unit tests.
 */
-std::size_t 
+std::size_t
 numObsoleteUnsupportedAmendments();
 }  // namespace detail
 

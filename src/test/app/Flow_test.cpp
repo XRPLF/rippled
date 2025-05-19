@@ -598,7 +598,6 @@ struct Flow_test : public beast::unit_test::suite
         Account const bob("bob");
         Account const carol("carol");
 
-        
         // Offer where the owner is also the issuer, sender pays fee
         Env env(*this, features);
 
