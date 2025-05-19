@@ -31,8 +31,13 @@
 #include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/jss.h>
 
+#if (defined(__clang_major__) && __clang_major__ < 15)
+#include <experimental/source_location>
+using source_location = std::experimental::source_location;
+#else
 #include <source_location>
-
+using std::source_location;
+#endif
 namespace ripple {
 
 namespace test {
@@ -92,7 +97,7 @@ class LedgerEntry_test : public beast::unit_test::suite
         Json::Value const& jv,
         std::string const& err,
         std::string const& msg,
-        std::source_location const location = std::source_location::current())
+        source_location const location = source_location::current())
     {
         if (BEAST_EXPECT(jv.isMember(jss::status)))
             BEAST_EXPECTS(
@@ -289,7 +294,7 @@ class LedgerEntry_test : public beast::unit_test::suite
         FieldType const typeID,
         std::string const& expectedError,
         bool required = true,
-        std::source_location const location = std::source_location::current())
+        source_location const location = source_location::current())
     {
         forAllApiVersions([&, this](unsigned apiVersion) {
             if (required)
@@ -342,7 +347,7 @@ class LedgerEntry_test : public beast::unit_test::suite
         FieldType typeID,
         std::string const& expectedError,
         bool required = true,
-        std::source_location const location = std::source_location::current())
+        source_location const location = source_location::current())
     {
         forAllApiVersions([&, this](unsigned apiVersion) {
             if (required)
@@ -399,7 +404,7 @@ class LedgerEntry_test : public beast::unit_test::suite
     runLedgerEntryTest(
         test::jtx::Env& env,
         Json::StaticString const& parentField,
-        std::source_location const location = std::source_location::current())
+        source_location const location = source_location::current())
     {
         testMalformedField(
             env,
@@ -423,7 +428,7 @@ class LedgerEntry_test : public beast::unit_test::suite
         test::jtx::Env& env,
         Json::StaticString const& parentField,
         std::vector<Subfield> const& subfields,
-        std::source_location const location = std::source_location::current())
+        source_location const location = source_location::current())
     {
         testMalformedField(
             env,
