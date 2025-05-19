@@ -640,8 +640,10 @@ Transactor::checkBatchSign(PreclaimContext const& ctx)
         }
         else
         {
+            // LCOV_EXCL_START
             if (!publicKeyType(makeSlice(pkSigner)))
                 return tefBAD_AUTH;
+            // LCOV_EXCL_STOP
 
             auto const idSigner = calcAccountID(PublicKey(makeSlice(pkSigner)));
             auto const sleAccount = ctx.view.read(keylet::account(idAccount));
