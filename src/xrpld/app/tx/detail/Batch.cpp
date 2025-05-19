@@ -354,7 +354,7 @@ Batch::preflight(PreflightContext const& ctx)
             {
                 JLOG(ctx.j.trace()) << "BatchTrace[" << parentBatchId << "]: "
                                     << "no account signature for inner txn.";
-                return temBAD_SIGNATURE;
+                return temBAD_SIGNER;
             }
         }
 
