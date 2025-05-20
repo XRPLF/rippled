@@ -32,6 +32,14 @@
 
 #include <vector>
 
+#if (defined(__clang_major__) && __clang_major__ < 15)
+#include <experimental/source_location>
+using source_location = std::experimental::source_location;
+#else
+#include <source_location>
+using std::source_location;
+#endif
+
 namespace ripple {
 namespace test {
 namespace jtx {
@@ -468,16 +476,17 @@ template <class Suite>
 void
 checkMetrics(
     Suite& test,
-    int line,
-    char const* file,
     jtx::Env& env,
     std::size_t expectedCount,
     std::optional<std::size_t> expectedMaxCount,
     std::size_t expectedInLedger,
     std::size_t expectedPerLedger,
     std::uint64_t expectedMinFeeLevel = baseFeeLevel.fee(),
-    std::uint64_t expectedMedFeeLevel = minEscalationFeeLevel.fee())
+    std::uint64_t expectedMedFeeLevel = minEscalationFeeLevel.fee(),
+    source_location const location = source_location::current())
 {
+    int line = location.line();
+    char const* file = location.file_name();
     FeeLevel64 const expectedMin{expectedMinFeeLevel};
     FeeLevel64 const expectedMed{expectedMedFeeLevel};
     auto const metrics = env.app().getTxQ().getMetrics(*env.current());

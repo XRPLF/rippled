@@ -3525,10 +3525,10 @@ class Batch_test : public beast::unit_test::suite
             env(noop(alice));
             env(noop(alice));
             env(noop(alice));
-            checkMetrics(*this, __LINE__, __FILE__, env, 0, std::nullopt, 3, 2);
+            checkMetrics(*this, env, 0, std::nullopt, 3, 2);
 
             env(noop(carol), ter(terQUEUED));
-            checkMetrics(*this, __LINE__, __FILE__, env, 1, std::nullopt, 3, 2);
+            checkMetrics(*this, env, 1, std::nullopt, 3, 2);
 
             auto const aliceSeq = env.seq(alice);
             auto const bobSeq = env.seq(bob);
@@ -3543,7 +3543,7 @@ class Batch_test : public beast::unit_test::suite
                     ter(terQUEUED));
             }
 
-            checkMetrics(*this, __LINE__, __FILE__, env, 2, std::nullopt, 3, 2);
+            checkMetrics(*this, env, 2, std::nullopt, 3, 2);
 
             // Replace Queued Batch
             {
@@ -3559,7 +3559,7 @@ class Batch_test : public beast::unit_test::suite
                 env.close();
             }
 
-            checkMetrics(*this, __LINE__, __FILE__, env, 0, 12, 1, 6);
+            checkMetrics(*this, env, 0, 12, 1, 6);
         }
 
         // inner batch transactions are counter towards the ledger tx count
@@ -3584,7 +3584,7 @@ class Batch_test : public beast::unit_test::suite
             // Fill the ledger leaving room for 1 queued transaction
             env(noop(alice));
             env(noop(alice));
-            checkMetrics(*this, __LINE__, __FILE__, env, 0, std::nullopt, 2, 2);
+            checkMetrics(*this, env, 0, std::nullopt, 2, 2);
 
             auto const aliceSeq = env.seq(alice);
             auto const bobSeq = env.seq(bob);
@@ -3599,10 +3599,10 @@ class Batch_test : public beast::unit_test::suite
                     ter(tesSUCCESS));
             }
 
-            checkMetrics(*this, __LINE__, __FILE__, env, 0, std::nullopt, 3, 2);
+            checkMetrics(*this, env, 0, std::nullopt, 3, 2);
 
             env(noop(carol), ter(terQUEUED));
-            checkMetrics(*this, __LINE__, __FILE__, env, 1, std::nullopt, 3, 2);
+            checkMetrics(*this, env, 1, std::nullopt, 3, 2);
         }
     }
 
