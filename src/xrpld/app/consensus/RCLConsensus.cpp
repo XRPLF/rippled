@@ -539,6 +539,8 @@ RCLConsensus::Adaptor::doAccept(
 
     auto const newLCLHash = built.id();
     JLOG(j_.debug()) << "Built ledger #" << built.seq() << ": " << newLCLHash;
+    JLOG(j_.debug()) << "built ledger " << built.seq() << ": " << newLCLHash
+        << " base on position " << result.position.position();
 
     // Tell directly connected peers that we have a new LCL
     notify(protocol::neACCEPTED_LEDGER, built, haveCorrectLCL);

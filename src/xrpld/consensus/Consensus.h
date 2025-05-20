@@ -851,6 +851,14 @@ Consensus<Adaptor>::timerEntry(
         return;
     }
 
+    std::optional<typename TxSet_t::ID> startPosition;
+    if (result_) {
+        startPosition = result_->position.position();
+        CLOG(clog) << "start position " << *startPosition << ". ";
+    } else {
+        CLOG(clog) << "no start position. ";
+    }
+
     now_ = now;
     CLOG(clog) << "Set network adjusted time to " << to_string(now) << ". ";
 
@@ -867,6 +875,18 @@ Consensus<Adaptor>::timerEntry(
         phaseOpen(clog);
     else if (phase_ == ConsensusPhase::establish)
         phaseEstablish(clog);
+
+    if (result_) {
+        if (startPosition == result_->position.position())
+            CLOG(clog) << "no position change. ";
+        else
+            CLOG(clog) << "position change to " << result_->position.position() << ". ";
+    } else if (startPosition.has_value()) {
+        CLOG(clog) << "position change to no value. ";
+    } else {
+        CLOG(clog) << "no position change. ";
+    }
+
     CLOG(clog) << "timerEntry finishing in phase " << to_string(phase_) << ". ";
 }
 
@@ -1492,6 +1512,7 @@ Consensus<Adaptor>::updateOurPositions(
                 // peer's proposal is stale, so remove it
                 NodeID_t const& peerID = peerProp.nodeID();
                 JLOG(j_.warn()) << "Removing stale proposal from " << peerID;
+                CLOG(clog) << "Removing stale proposal from " << peerID << ". ";
                 for (auto& dt : result_->disputes)
                     dt.second.unVote(peerID);
                 it = currPeerPositions_.erase(it);
@@ -1503,6 +1524,18 @@ Consensus<Adaptor>::updateOurPositions(
                 ++it;
             }
         }
+    }
+
+    if (currPeerPositions_.empty()) {
+        CLOG(clog) << "no peer positions. ";
+    } else {
+        std::map<typename TxSet_t::ID, int> peerPositionCounts;
+        for (auto const& [_, pos] : currPeerPositions_)
+            ++peerPositionCounts[pos.proposal().position()];
+        CLOG(clog) << "peer positions,counts: ";
+        for (auto const& [pos, count] : peerPositionCounts)
+            CLOG(clog) << pos  << ',' << count << ';';
+        CLOG(clog) << ". ";
     }
 
     // This will stay unseated unless there are any changes
@@ -1548,6 +1581,7 @@ Consensus<Adaptor>::updateOurPositions(
         // no other times
         haveCloseTimeConsensus_ = true;
         consensusCloseTime = asCloseTime(result_->position.closeTime());
+        CLOG(clog) << " no peer positions. ";
     }
     else
     {
@@ -1586,11 +1620,14 @@ Consensus<Adaptor>::updateOurPositions(
 
         for (auto const& [t, v] : closeTimeVotes)
         {
-            JLOG(j_.debug())
+            std::stringstream ss2;
+            ss2
                 << "CCTime: seq "
                 << static_cast<std::uint32_t>(previousLedger_.seq()) + 1 << ": "
                 << t.time_since_epoch().count() << " has " << v << ", "
                 << threshVote << " required";
+            CLOG(clog) << ss2.str();
+            JLOG(j_.debug()) << ss2.str();
 
             if (v >= threshVote)
             {
@@ -1631,7 +1668,7 @@ Consensus<Adaptor>::updateOurPositions(
 
         std::stringstream ss;
         ss << "Position change: CTime "
-           << consensusCloseTime.time_since_epoch().count() << ", tx " << newID;
+           << consensusCloseTime.time_since_epoch().count() << ", tx " << newID << " . ";
         JLOG(j_.info()) << ss.str();
         CLOG(clog) << ss.str();
 

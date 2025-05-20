@@ -2929,15 +2929,17 @@ PeerImp::checkPropose(
     std::shared_ptr<protocol::TMProposeSet> const& packet,
     RCLCxPeerPos peerPos)
 {
-    JLOG(p_journal_.trace())
-        << "Checking " << (isTrusted ? "trusted" : "UNTRUSTED") << " proposal";
+    JLOG(p_journal_.debug())
+        << "Checking " << (isTrusted ? "trusted" : "UNTRUSTED") << " proposal: "
+        << peerPos.proposal().position() << " from "
+        << peerPos.proposal().nodeID();
 
     XRPL_ASSERT(packet, "ripple::PeerImp::checkPropose : non-null packet");
 
     if (!cluster() && !peerPos.checkSign())
     {
         std::string desc{"Proposal fails sig check"};
-        JLOG(p_journal_.warn()) << desc;
+        JLOG(p_journal_.warn()) << desc << " " << peerPos.proposal().position();
         charge(Resource::feeInvalidSignature, desc);
         return;
     }
