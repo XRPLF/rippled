@@ -616,6 +616,21 @@ class Batch_test : public beast::unit_test::suite
         env.close();
 
         //----------------------------------------------------------------------
+        // checkSign.checkSingleSign
+
+        // tefBAD_AUTH: Bob is not authorized to sign for Alice
+        {
+            auto const seq = env.seq(alice);
+            auto const batchFee = batch::calcBatchFee(env, 3, 2);
+            env(batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                batch::inner(pay(alice, bob, XRP(10)), seq + 1),
+                batch::inner(pay(alice, bob, XRP(20)), seq + 2),
+                sig(bob),
+                ter(tefBAD_AUTH));
+            env.close();
+        }
+
+        //----------------------------------------------------------------------
         // checkBatchSign.checkMultiSign
 
         // tefNOT_MULTI_SIGNING: SignersList not enabled

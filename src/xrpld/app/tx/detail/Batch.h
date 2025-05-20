@@ -50,8 +50,6 @@ public:
     doApply() override;
 };
 
-using Batch = Batch;
-
 }  // namespace ripple
 
 #endif

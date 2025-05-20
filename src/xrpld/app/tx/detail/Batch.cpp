@@ -249,8 +249,8 @@ Batch::preflight(PreflightContext const& ctx)
         }
 
         // Check that Sequence and TicketSequence are not both present
-        if (stx.isFieldPresent(sfTicketSequence) ==
-            (stx.getFieldU32(sfSequence) != 0))
+        if (stx.isFieldPresent(sfTicketSequence) &&
+            stx.getFieldU32(sfSequence) != 0)
         {
             JLOG(ctx.j.trace())
                 << "BatchTrace[" << parentBatchId << "]: "
