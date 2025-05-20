@@ -45,7 +45,10 @@ VaultDeposit::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
 
     if (ctx.tx[sfVaultID] == beast::zero)
+    {
+        JLOG(ctx.j.debug()) << "VaultDeposit: zero/empty vault ID.";
         return temMALFORMED;
+    }
 
     if (ctx.tx[sfAmount] <= beast::zero)
         return temBAD_AMOUNT;
@@ -75,26 +78,57 @@ VaultDeposit::preclaim(PreclaimContext const& ctx)
         if (!issuance)
             return tecOBJECT_NOT_FOUND;
         if (!issuance->isFlag(lsfMPTCanTransfer))
-            return tecNO_AUTH;  // LCOV_EXCL_LINE
+        {
+            // LCOV_EXCL_START
+            JLOG(ctx.j.error())
+                << "VaultDeposit: vault assets are non-transferable.";
+            return tecNO_AUTH;
+            // LCOV_EXCL_STOP
+        }
     }
     else if (vaultAsset.holds<Issue>())
     {
         auto const issuer =
             ctx.view.read(keylet::account(vaultAsset.getIssuer()));
         if (!issuer)
-            return tefINTERNAL;  // LCOV_EXCL_LINE
+        {
+            // LCOV_EXCL_START
+            JLOG(ctx.j.error())
+                << "VaultDeposit: missing issuer of vault assets.";
+            return tefINTERNAL;
+            // LCOV_EXCL_STOP
+        }
     }
 
     auto const mptIssuanceID = vault->at(sfShareMPTID);
     auto const vaultShare = MPTIssue(mptIssuanceID);
     if (vaultShare == assets.asset())
-        return tefINTERNAL;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        JLOG(ctx.j.error())
+            << "VaultDeposit: vault shares and assets cannot be same.";
+        return tefINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     auto const sleIssuance = ctx.view.read(keylet::mptIssuance(mptIssuanceID));
     if (!sleIssuance)
-        return tefINTERNAL;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        JLOG(ctx.j.error())
+            << "VaultDeposit: missing issuance of vault shares.";
+        return tefINTERNAL;
+        // LCOV_EXCL_STOP
+    }
+
     if (sleIssuance->isFlag(lsfMPTLocked))
-        return tefINTERNAL;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        JLOG(ctx.j.error())
+            << "VaultDeposit: issuance of vault shares is locked.";
+        return tefINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     // Cannot deposit inside Vault an Asset frozen for the depositor
     if (isFrozen(ctx.view, account, vaultAsset))
@@ -154,7 +188,12 @@ VaultDeposit::doApply()
     auto const mptIssuanceID = (*vault)[sfShareMPTID];
     auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
     if (!sleIssuance)
-        return tefINTERNAL;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        JLOG(j_.error()) << "VaultDeposit: missing issuance of vault shares.";
+        return tefINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     auto const& vaultAccount = vault->at(sfAccount);
     // Note, vault owner is always authorized
@@ -226,7 +265,12 @@ VaultDeposit::doApply()
             FreezeHandling::fhIGNORE_FREEZE,
             AuthHandling::ahIGNORE_AUTH,
             j_) < beast::zero)
-        return tefINTERNAL;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        JLOG(j_.error()) << "VaultDeposit: negative balance of account assets.";
+        return tefINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     // Transfer shares from vault to depositor.
     if (auto ter = accountSend(

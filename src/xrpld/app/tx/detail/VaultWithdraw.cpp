@@ -43,14 +43,20 @@ VaultWithdraw::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
 
     if (ctx.tx[sfVaultID] == beast::zero)
+    {
+        JLOG(ctx.j.debug()) << "VaultWithdraw: zero/empty vault ID.";
         return temMALFORMED;
+    }
 
     if (ctx.tx[sfAmount] <= beast::zero)
         return temBAD_AMOUNT;
 
     if (auto const destination = ctx.tx[~sfDestination];
         destination && *destination == beast::zero)
+    {
+        JLOG(ctx.j.debug()) << "VaultWithdraw: zero/empty destination account.";
         return temMALFORMED;
+    }
 
     return preflight2(ctx);
 }
@@ -77,19 +83,36 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
         if (!issuance)
             return tecOBJECT_NOT_FOUND;
         if (!issuance->isFlag(lsfMPTCanTransfer))
-            return tecNO_AUTH;  // LCOV_EXCL_LINE
+        {
+            // LCOV_EXCL_START
+            JLOG(ctx.j.error())
+                << "VaultWithdraw: vault assets are non-transferable.";
+            return tecNO_AUTH;
+            // LCOV_EXCL_STOP
+        }
     }
     else if (vaultAsset.holds<Issue>())
     {
         auto const issuer =
             ctx.view.read(keylet::account(vaultAsset.getIssuer()));
         if (!issuer)
-            return tefINTERNAL;  // LCOV_EXCL_LINE
+        {
+            // LCOV_EXCL_START
+            JLOG(ctx.j.error())
+                << "VaultWithdraw: missing issuer of vault assets.";
+            return tefINTERNAL;
+            // LCOV_EXCL_STOP
+        }
     }
 
     // Enforce valid withdrawal policy
     if (vault->at(sfWithdrawalPolicy) != vaultStrategyFirstComeFirstServe)
-        return tefINTERNAL;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        JLOG(ctx.j.error()) << "VaultWithdraw: invalid withdrawal policy.";
+        return tefINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     auto const account = ctx.tx[sfAccount];
     auto const dstAcct = [&]() -> AccountID {
@@ -141,7 +164,12 @@ VaultWithdraw::doApply()
     auto const mptIssuanceID = (*vault)[sfShareMPTID];
     auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
     if (!sleIssuance)
-        return tefINTERNAL;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        JLOG(j_.error()) << "VaultWithdraw: missing issuance of vault shares.";
+        return tefINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     // Note, we intentionally do not check lsfVaultPrivate flag on the Vault. If
     // you have a share in the vault, it means you were at some point authorized
@@ -175,6 +203,7 @@ VaultWithdraw::doApply()
             AuthHandling::ahIGNORE_AUTH,
             j_) < shares)
     {
+        JLOG(j_.debug()) << "VaultWithdraw: account doesn't hold enough shares";
         return tecINSUFFICIENT_FUNDS;
     }
 
@@ -182,7 +211,10 @@ VaultWithdraw::doApply()
     // it has already pledged. That is why we look at AssetAvailable instead of
     // the pseudo-account balance.
     if (*vault->at(sfAssetsAvailable) < assets)
+    {
+        JLOG(j_.debug()) << "VaultWithdraw: vault doesn't hold enough assets";
         return tecINSUFFICIENT_FUNDS;
+    }
 
     vault->at(sfAssetsTotal) -= assets;
     vault->at(sfAssetsAvailable) -= assets;
@@ -213,7 +245,12 @@ VaultWithdraw::doApply()
             FreezeHandling::fhIGNORE_FREEZE,
             AuthHandling::ahIGNORE_AUTH,
             j_) < beast::zero)
-        return tefINTERNAL;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        JLOG(j_.error()) << "VaultWithdraw: negative balance of vault assets.";
+        return tefINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     return tesSUCCESS;
 }

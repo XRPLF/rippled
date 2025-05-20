@@ -40,7 +40,10 @@ VaultDelete::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
 
     if (ctx.tx[sfVaultID] == beast::zero)
+    {
+        JLOG(ctx.j.debug()) << "VaultDelete: zero/empty vault ID.";
         return temMALFORMED;
+    }
 
     return preflight2(ctx);
 }
@@ -53,26 +56,49 @@ VaultDelete::preclaim(PreclaimContext const& ctx)
         return tecNO_ENTRY;
 
     if (vault->at(sfOwner) != ctx.tx[sfAccount])
+    {
+        JLOG(ctx.j.debug()) << "VaultDelete: account is not an owner.";
         return tecNO_PERMISSION;
+    }
 
     if (vault->at(sfAssetsAvailable) != 0)
+    {
+        JLOG(ctx.j.debug()) << "VaultDelete: nonzero assets available.";
         return tecHAS_OBLIGATIONS;
+    }
 
     if (vault->at(sfAssetsTotal) != 0)
+    {
+        JLOG(ctx.j.debug()) << "VaultDelete: nonzero assets total.";
         return tecHAS_OBLIGATIONS;
+    }
 
     // Verify we can destroy MPTokenIssuance
     auto const sleMPT =
         ctx.view.read(keylet::mptIssuance(vault->at(sfShareMPTID)));
 
     if (!sleMPT)
+    {
+        // LCOV_EXCL_START
+        JLOG(ctx.j.error())
+            << "VaultDeposit: missing issuance of vault shares.";
         return tecOBJECT_NOT_FOUND;
+        // LCOV_EXCL_STOP
+    }
 
     if (sleMPT->at(sfIssuer) != vault->getAccountID(sfAccount))
+    {
+        // LCOV_EXCL_START
+        JLOG(ctx.j.error()) << "VaultDeposit: invalid owner of vault shares.";
         return tecNO_PERMISSION;
+        // LCOV_EXCL_STOP
+    }
 
     if (sleMPT->at(sfOutstandingAmount) != 0)
+    {
+        JLOG(ctx.j.debug()) << "VaultDelete: nonzero outstanding shares.";
         return tecHAS_OBLIGATIONS;
+    }
 
     return tesSUCCESS;
 }
@@ -93,17 +119,32 @@ VaultDelete::doApply()
     auto const& pseudoID = vault->at(sfAccount);
     auto const pseudoAcct = view().peek(keylet::account(pseudoID));
     if (!pseudoAcct)
-        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        JLOG(j_.error()) << "VaultDelete: missing vault pseudo-account.";
+        return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
+    }
 
     // Destroy the share issuance. Do not use MPTokenIssuanceDestroy for this,
     // no special logic needed. First run few checks, duplicated from preclaim.
     auto const mpt = view().peek(keylet::mptIssuance(vault->at(sfShareMPTID)));
     if (!mpt)
-        return tefINTERNAL;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        JLOG(j_.error()) << "VaultDelete: missing issuance of vault shares.";
+        return tefINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     if (!view().dirRemove(
             keylet::ownerDir(pseudoID), (*mpt)[sfOwnerNode], mpt->key(), false))
-        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        JLOG(j_.error()) << "VaultDelete: failed to delete issuance object.";
+        return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
+    }
     adjustOwnerCount(view(), pseudoAcct, -1, j_);
 
     view().erase(mpt);
@@ -122,10 +163,21 @@ VaultDelete::doApply()
             vault->at(sfOwnerNode),
             vault->key(),
             false))
-        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        JLOG(j_.error()) << "VaultDelete: failed to delete vault object.";
+        return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
+    }
+
     auto const owner = view().peek(keylet::account(ownerID));
     if (!owner)
-        return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        JLOG(j_.error()) << "VaultDelete: missing vault owner account.";
+        return tefBAD_LEDGER;
+        // LCOV_EXCL_STOP
+    }
     adjustOwnerCount(view(), owner, -1, j_);
 
     // Destroy the vault.

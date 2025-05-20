@@ -109,7 +109,13 @@ VaultCreate::preclaim(PreclaimContext const& ctx)
         if (!issuance)
             return tecOBJECT_NOT_FOUND;
         if (!issuance->isFlag(lsfMPTCanTransfer))
+        {
+            // NOTE: flag lsfMPTCanTransfer is immutable, so this is debug in
+            // VaultCreate only; in other vault function it's an error.
+            JLOG(ctx.j.debug())
+                << "VaultCreate: vault assets are non-transferable.";
             return tecNO_AUTH;
+        }
     }
     else if (vaultAsset.holds<Issue>())
     {

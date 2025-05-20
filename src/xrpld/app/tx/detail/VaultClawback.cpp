@@ -43,13 +43,19 @@ VaultClawback::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
 
     if (ctx.tx[sfVaultID] == beast::zero)
+    {
+        JLOG(ctx.j.debug()) << "VaultClawback: zero/empty vault ID.";
         return temMALFORMED;
+    }
 
     AccountID const issuer = ctx.tx[sfAccount];
     AccountID const holder = ctx.tx[sfHolder];
 
     if (issuer == holder)
+    {
+        JLOG(ctx.j.debug()) << "VaultClawback: issuer cannot be holder.";
         return temMALFORMED;
+    }
 
     auto const amount = ctx.tx[~sfAmount];
     if (amount)
@@ -58,9 +64,16 @@ VaultClawback::preflight(PreflightContext const& ctx)
         if (*amount < beast::zero)
             return temBAD_AMOUNT;
         else if (isXRP(amount->asset()))
+        {
+            JLOG(ctx.j.debug()) << "VaultClawback: cannot clawback XRP.";
             return temMALFORMED;
+        }
         else if (amount->asset().getIssuer() != issuer)
+        {
+            JLOG(ctx.j.debug())
+                << "VaultClawback: only asset issuer can clawback.";
             return temMALFORMED;
+        }
     }
 
     return preflight2(ctx);
@@ -76,7 +89,12 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
     auto account = ctx.tx[sfAccount];
     auto const issuer = ctx.view.read(keylet::account(account));
     if (!issuer)
-        return tefINTERNAL;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        JLOG(ctx.j.error()) << "VaultClawback: missing issuer account.";
+        return tefINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     Asset const vaultAsset = vault->at(sfAsset);
     if (auto const amount = ctx.tx[~sfAmount];
@@ -84,9 +102,15 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
         return tecWRONG_ASSET;
 
     if (vaultAsset.native())
+    {
+        JLOG(ctx.j.debug()) << "VaultClawback: cannot clawback XRP.";
         return tecNO_PERMISSION;  // Cannot clawback XRP.
+    }
     else if (vaultAsset.getIssuer() != account)
+    {
+        JLOG(ctx.j.debug()) << "VaultClawback: only asset issuer can clawback.";
         return tecNO_PERMISSION;  // Only issuers can clawback.
+    }
 
     if (vaultAsset.holds<MPTIssue>())
     {
@@ -98,14 +122,22 @@ VaultClawback::preclaim(PreclaimContext const& ctx)
 
         std::uint32_t const issueFlags = mptIssue->getFieldU32(sfFlags);
         if (!(issueFlags & lsfMPTCanClawback))
+        {
+            JLOG(ctx.j.debug())
+                << "VaultClawback: cannot clawback MPT vault asset.";
             return tecNO_PERMISSION;
+        }
     }
     else if (vaultAsset.holds<Issue>())
     {
         std::uint32_t const issuerFlags = issuer->getFieldU32(sfFlags);
         if (!(issuerFlags & lsfAllowTrustLineClawback) ||
             (issuerFlags & lsfNoFreeze))
+        {
+            JLOG(ctx.j.debug())
+                << "VaultClawback: cannot clawback IOU vault asset.";
             return tecNO_PERMISSION;
+        }
     }
 
     return tesSUCCESS;
@@ -122,7 +154,12 @@ VaultClawback::doApply()
     auto const mptIssuanceID = (*vault)[sfShareMPTID];
     auto const sleIssuance = view().read(keylet::mptIssuance(mptIssuanceID));
     if (!sleIssuance)
-        return tefINTERNAL;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        JLOG(j_.error()) << "VaultClawback: missing issuance of vault shares.";
+        return tefINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     Asset const asset = vault->at(sfAsset);
     STAmount const amount = [&]() -> STAmount {
@@ -189,7 +226,12 @@ VaultClawback::doApply()
             FreezeHandling::fhIGNORE_FREEZE,
             AuthHandling::ahIGNORE_AUTH,
             j_) < beast::zero)
+    {
+        // LCOV_EXCL_START
+        JLOG(j_.error()) << "VaultClawback: negative balance of vault assets.";
         return tefINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     return tesSUCCESS;
 }

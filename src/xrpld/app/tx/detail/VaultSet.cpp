@@ -44,7 +44,10 @@ VaultSet::preflight(PreflightContext const& ctx)
         return ter;
 
     if (ctx.tx[sfVaultID] == beast::zero)
+    {
+        JLOG(ctx.j.debug()) << "VaultSet: zero/empty vault ID.";
         return temMALFORMED;
+    }
 
     if (ctx.tx.getFlags() & tfUniversalMask)
         return temINVALID_FLAG;
@@ -52,19 +55,28 @@ VaultSet::preflight(PreflightContext const& ctx)
     if (auto const data = ctx.tx[~sfData])
     {
         if (data->empty() || data->length() > maxDataPayloadLength)
+        {
+            JLOG(ctx.j.debug()) << "VaultSet: invalid data payload size.";
             return temMALFORMED;
+        }
     }
 
     if (auto const assetMax = ctx.tx[~sfAssetsMaximum])
     {
         if (*assetMax < beast::zero)
+        {
+            JLOG(ctx.j.debug()) << "VaultSet: invalid max assets.";
             return temMALFORMED;
+        }
     }
 
     if (!ctx.tx.isFieldPresent(sfDomainID) &&
         !ctx.tx.isFieldPresent(sfAssetsMaximum) &&
         !ctx.tx.isFieldPresent(sfData))
+    {
+        JLOG(ctx.j.debug()) << "VaultSet: nothing is being updated.";
         return temMALFORMED;
+    }
 
     return preflight2(ctx);
 }
@@ -78,18 +90,29 @@ VaultSet::preclaim(PreclaimContext const& ctx)
 
     // Assert that submitter is the Owner.
     if (ctx.tx[sfAccount] != vault->at(sfOwner))
+    {
+        JLOG(ctx.j.debug()) << "VaultSet: account is not an owner.";
         return tecNO_PERMISSION;
+    }
 
     auto const mptIssuanceID = (*vault)[sfShareMPTID];
     auto const sleIssuance = ctx.view.read(keylet::mptIssuance(mptIssuanceID));
     if (!sleIssuance)
-        return tefINTERNAL;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        JLOG(ctx.j.error()) << "VaultSet: missing issuance of vault shares.";
+        return tefINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     if (auto const domain = ctx.tx[~sfDomainID])
     {
         // We can only set domain if private flag was originally set
         if ((vault->getFlags() & tfVaultPrivate) == 0)
+        {
+            JLOG(ctx.j.debug()) << "VaultSet: vault is not private";
             return tecNO_PERMISSION;
+        }
 
         if (*domain != beast::zero)
         {
@@ -101,7 +124,13 @@ VaultSet::preclaim(PreclaimContext const& ctx)
 
         // Sanity check only, this should be enforced by VaultCreate
         if ((sleIssuance->getFlags() & lsfMPTRequireAuth) == 0)
-            return tefINTERNAL;  // LCOV_EXCL_LINE
+        {
+            // LCOV_EXCL_START
+            JLOG(ctx.j.error())
+                << "VaultSet: issuance of vault shares is not private.";
+            return tefINTERNAL;
+            // LCOV_EXCL_STOP
+        }
     }
 
     return tesSUCCESS;
@@ -124,7 +153,12 @@ VaultSet::doApply()
     auto const mptIssuanceID = (*vault)[sfShareMPTID];
     auto const sleIssuance = view().peek(keylet::mptIssuance(mptIssuanceID));
     if (!sleIssuance)
-        return tefINTERNAL;  // LCOV_EXCL_LINE
+    {
+        // LCOV_EXCL_START
+        JLOG(j_.error()) << "VaultSet: missing issuance of vault shares.";
+        return tefINTERNAL;
+        // LCOV_EXCL_STOP
+    }
 
     // Update mutable flags and fields if given.
     if (tx.isFieldPresent(sfData))
