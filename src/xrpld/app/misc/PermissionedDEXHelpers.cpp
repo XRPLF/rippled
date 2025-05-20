@@ -27,7 +27,7 @@ bool
 accountInDomain(
     ReadView const& view,
     AccountID const& account,
-    uint256 const& domainID)
+    Domain const& domainID)
 {
     auto const sleDomain = view.read(keylet::permissionedDomain(domainID));
     if (!sleDomain)
@@ -57,7 +57,7 @@ bool
 offerInDomain(
     ReadView const& view,
     uint256 const& offerID,
-    uint256 const& domainID,
+    Domain const& domainID,
     beast::Journal j)
 {
     auto const sleOffer = view.read(keylet::offer(offerID));

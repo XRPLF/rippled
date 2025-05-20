@@ -25,6 +25,7 @@
 #include <xrpld/app/main/Application.h>
 
 #include <xrpl/protocol/MultiApiJson.h>
+#include <xrpl/protocol/UintTypes.h>
 
 #include <mutex>
 #include <optional>
@@ -34,8 +35,6 @@ namespace ripple {
 class OrderBookDB
 {
 public:
-    using Domain = uint256;
-
     explicit OrderBookDB(Application& app);
 
     void

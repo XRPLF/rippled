@@ -28,8 +28,6 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/Indexes.h>
 
-#include <utility>
-
 namespace ripple {
 
 OrderBookDB::OrderBookDB(Application& app)

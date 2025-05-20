@@ -28,14 +28,14 @@ namespace permissioned_dex {
 accountInDomain(
     ReadView const& view,
     AccountID const& account,
-    uint256 const& domainID);
+    Domain const& domainID);
 
 // Check if an offer is in the permissioned domain
 [[nodiscard]] bool
 offerInDomain(
     ReadView const& view,
     uint256 const& offerID,
-    uint256 const& domainID,
+    Domain const& domainID,
     beast::Journal j);
 
 }  // namespace permissioned_dex

@@ -27,10 +27,9 @@
 #include <xrpl/beast/utility/WrappedSink.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/st.h>
-
-#include "xrpl/protocol/STAmount.h"
-#include "xrpl/protocol/TER.h"
 
 namespace ripple {
 TxConsequences
