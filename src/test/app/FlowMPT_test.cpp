@@ -19,12 +19,14 @@
 
 #include <test/jtx.h>
 #include <test/jtx/PathSet.h>
+
 #include <xrpld/app/paths/Flow.h>
 #include <xrpld/app/paths/detail/Steps.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/ledger/ApplyViewImpl.h>
 #include <xrpld/ledger/PaymentSandbox.h>
 #include <xrpld/ledger/Sandbox.h>
+
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
@@ -944,7 +946,7 @@ struct FlowMPT_test : public beast::unit_test::suite
         auto const bob = Account("bob");
         auto const gw = Account("gw");
         auto const USD = gw["USD"];
-        auto const usdC = USD.currency;
+        // auto const usdC = USD.currency;
 
         env.fund(XRP(10000), alice, bob, gw);
         env.close();

@@ -147,7 +147,7 @@ MPTAmount::value() const
 // Output MPTAmount as just the value.
 template <class Char, class Traits>
 std::basic_ostream<Char, Traits>&
-operator<<(std::basic_ostream<Char, Traits>& os, const MPTAmount& q)
+operator<<(std::basic_ostream<Char, Traits>& os, MPTAmount const& q)
 {
     return os << q.value();
 }

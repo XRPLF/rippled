@@ -609,7 +609,7 @@ Pathfinder::getBestPaths(
     XRPL_ASSERT(
         fullLiquidityPath.empty(),
         "ripple::Pathfinder::getBestPaths : first empty path result");
-    const bool issuerIsSender =
+    bool const issuerIsSender =
         isXRP(mSrcPathAsset) || (srcIssuer == mSrcAccount);
 
     std::vector<PathRank> extraPathRanks;

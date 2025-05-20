@@ -129,7 +129,7 @@ AssetCache::getRippleLines(AccountID const& accountID, LineDirection direction)
 }
 
 std::shared_ptr<std::vector<PathFindMPT>> const&
-AssetCache::getMPTs(const ripple::AccountID& account)
+AssetCache::getMPTs(ripple::AccountID const& account)
 {
     std::lock_guard sl(mLock);
 

@@ -75,7 +75,7 @@ ammHolds(
         auto const singleAsset =
             [&asset1, &asset2, &j](
                 Asset checkIssue,
-                const char* label) -> std::optional<std::pair<Asset, Asset>> {
+                char const* label) -> std::optional<std::pair<Asset, Asset>> {
             if (checkIssue == asset1)
                 return std::make_optional(std::make_pair(asset1, asset2));
             else if (checkIssue == asset2)

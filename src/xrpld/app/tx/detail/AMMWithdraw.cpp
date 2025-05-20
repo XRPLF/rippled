@@ -17,11 +17,10 @@
 */
 //==============================================================================
 
-#include <xrpld/app/tx/detail/AMMWithdraw.h>
-
 #include <xrpld/app/misc/AMMHelpers.h>
 #include <xrpld/app/misc/AMMUtils.h>
 #include <xrpld/app/misc/MPTUtils.h>
+#include <xrpld/app/tx/detail/AMMWithdraw.h>
 #include <xrpld/app/tx/detail/MPTokenAuthorize.h>
 #include <xrpld/ledger/Sandbox.h>
 #include <xrpld/ledger/View.h>

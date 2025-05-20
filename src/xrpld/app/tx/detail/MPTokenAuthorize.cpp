@@ -165,8 +165,8 @@ MPTokenAuthorize::createMPToken(
 TER
 MPTokenAuthorize::checkCreateMPT(
     ripple::ApplyView& view,
-    const ripple::MPTIssue& mptIssue,
-    const ripple::AccountID& holder,
+    ripple::MPTIssue const& mptIssue,
+    ripple::AccountID const& holder,
     beast::Journal j)
 {
     if (mptIssue.getIssuer() == holder)
