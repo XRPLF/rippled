@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <test/app/wasm_fixtures/fixtures.h>
 #include <test/jtx.h>
 
 #include <xrpld/app/misc/WasmVM.h>
@@ -34,30 +35,6 @@
 
 namespace ripple {
 namespace test {
-
-static std::string const
-getWasmFixture(std::string const& fixtureName)
-{
-    namespace fs = std::filesystem;
-    auto const currentFile = fs::path(__FILE__);
-    auto const filename =
-        fs::weakly_canonical(currentFile / "../wasm_fixtures" / fixtureName)
-            .string();
-    std::ifstream file(filename);  // Open the file
-    if (!file.is_open())
-    {
-        throw std::runtime_error("Unable to open file");
-    }
-    std::stringstream buffer;
-    buffer << file.rdbuf();  // Read the entire file content into the buffer
-    std::string bufferStr = buffer.str();
-
-    // strip all white spaces
-    std::erase(bufferStr, ' ');
-    std::erase(bufferStr, '\n');
-    file.close();  // Close the file
-    return bufferStr;
-}
 
 struct Escrow_test : public beast::unit_test::suite
 {
@@ -1727,7 +1704,7 @@ struct Escrow_test : public beast::unit_test::suite
         // pub fn finish() -> bool {
         //     unsafe { host_lib::getLedgerSqn() >= 5}
         // }
-        static auto wasmHex = getWasmFixture("ledger_sqn.hex");
+        static auto wasmHex = ledgerSqnHex;
 
         {
             // featureSmartEscrow disabled
@@ -1877,7 +1854,7 @@ struct Escrow_test : public beast::unit_test::suite
         // pub fn finish() -> bool {
         //     unsafe { host_lib::getLedgerSqn() >= 5}
         // }
-        static auto wasmHex = getWasmFixture("ledger_sqn.hex");
+        static auto wasmHex = ledgerSqnHex;
 
         {
             // featureSmartEscrow disabled
@@ -1990,7 +1967,7 @@ struct Escrow_test : public beast::unit_test::suite
         // pub fn finish() -> bool {
         //     unsafe { host_lib::getLedgerSqn() >= 5}
         // }
-        static auto wasmHex = getWasmFixture("ledger_sqn.hex");
+        static auto wasmHex = ledgerSqnHex;
 
         {
             // basic FinishFunction situation
@@ -2203,7 +2180,7 @@ struct Escrow_test : public beast::unit_test::suite
         using namespace std::chrono;
 
         // TODO: figure out how to make this a fixture in a separate file
-        static auto wasmHex = getWasmFixture("all_host_functions.hex");
+        static auto wasmHex = allHostFunctionsHex;
         //        let sender = get_tx_account_id();
         //        let owner = get_current_escrow_account_id();
         //        let dest = get_current_escrow_destination();

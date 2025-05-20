@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <test/app/wasm_fixtures/fixtures.h>
 #include <test/jtx.h>
 
 #include <xrpld/app/misc/WasmVM.h>
@@ -27,30 +28,6 @@
 
 namespace ripple {
 namespace test {
-
-static std::string const
-getWasmFixture(std::string const& fixtureName)
-{
-    namespace fs = std::filesystem;
-    auto const currentFile = fs::path(__FILE__);
-    auto const filename =
-        fs::weakly_canonical(currentFile / "../wasm_fixtures" / fixtureName)
-            .string();
-    std::ifstream file(filename);  // Open the file
-    if (!file.is_open())
-    {
-        throw std::runtime_error("Unable to open file");
-    }
-    std::stringstream buffer;
-    buffer << file.rdbuf();  // Read the entire file content into the buffer
-    std::string bufferStr = buffer.str();
-
-    // strip all white spaces
-    std::erase(bufferStr, ' ');
-    std::erase(bufferStr, '\n');
-    file.close();  // Close the file
-    return bufferStr;
-}
 
 /* Host function body definition. */
 using Add_proto = int32_t(int32_t, int32_t);
@@ -130,7 +107,7 @@ struct Wasm_test : public beast::unit_test::suite
     testEscrowWasmDN1()
     {
         testcase("escrow wasm devnet 1 test");
-        auto wasmHex = getWasmFixture("all_host_functions.hex");
+        auto wasmHex = allHostFunctionsHex;
 
         auto wasmStr = boost::algorithm::unhex(std::string(wasmHex));
         std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
@@ -292,7 +269,7 @@ struct Wasm_test : public beast::unit_test::suite
         }
 
         {  // fail because recursion too deep
-            auto wasmHex = getWasmFixture("deep_recursion.hex");
+            auto wasmHex = deepRecursionHex;
             auto wasmStr = boost::algorithm::unhex(std::string(wasmHex));
             std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
 
