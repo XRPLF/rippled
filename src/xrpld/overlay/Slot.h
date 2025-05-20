@@ -108,6 +108,9 @@ private:
     friend class Slots<clock_type>;
     using id_t = Peer::id_t;
     using time_point = typename clock_type::time_point;
+    // a function provided by the caller to report cases when a peer ignored
+    // squelch
+    using ignored_squelch_reporter = std::function<void()>;
 
     /** Constructor
      * @param journal Journal for logging
@@ -116,13 +119,16 @@ private:
     Slot(
         SquelchHandler const& handler,
         beast::Journal journal,
-        uint16_t maxSelectedPeers)
+        uint16_t maxSelectedPeers,
+        ignored_squelch_reporter reporter)
         : reachedThreshold_(0)
         , lastSelected_(clock_type::now())
         , state_(SlotState::Counting)
         , handler_(handler)
         , journal_(journal)
         , maxSelectedPeers_(maxSelectedPeers)
+        , reporter_(reporter)
+
     {
     }
 
@@ -247,6 +253,8 @@ private:
     // the maximum number of peers that should be selected as a validator
     // message source
     uint16_t const maxSelectedPeers_;
+
+    ignored_squelch_reporter reporter_;
 };
 
 template <typename clock_type>
@@ -314,6 +322,10 @@ Slot<clock_type>::update(
         << " " << (type == protocol::mtVALIDATION ? "validation" : "proposal");
 
     peer.lastMessage = now;
+
+    // report if we received a message from a squelched peer
+    if (peer.state == PeerState::Squelched)
+        reporter_();
 
     if (state_ != SlotState::Counting || peer.state == PeerState::Squelched)
         return;
@@ -554,17 +566,28 @@ class Slots final
         std::unordered_set<Peer::id_t>,
         clock_type,
         hardened_hash<strong_hash>>;
+    // a function provided by the caller to report cases when a peer ignored
+    // squelch
+    using ignored_squelch_reporter = std::function<void()>;
 
 public:
     /**
-     * @param app Applicaton reference
+     * @param logs reference to the logger
      * @param handler Squelch/unsquelch implementation
+     * @param config reference to the global config
+     * @param reporter a lambda function to report cases when a peer ignored
+     * squelch requests
      */
-    Slots(Logs& logs, SquelchHandler const& handler, Config const& config)
+    Slots(
+        Logs& logs,
+        SquelchHandler const& handler,
+        Config const& config,
+        ignored_squelch_reporter reporter = []() {})
         : handler_(handler)
         , logs_(logs)
         , journal_(logs.journal("Slots"))
         , config_(config)
+        , reporter_(reporter)
     {
     }
     ~Slots() = default;
@@ -673,6 +696,8 @@ private:
     beast::Journal const journal_;
 
     Config const& config_;
+
+    ignored_squelch_reporter reporter_;
     // Maintain aged container of message/peers. This is required
     // to discard duplicate message from the same peer. A message
     // is aged after IDLED seconds. A message received IDLED seconds
@@ -737,7 +762,8 @@ Slots<clock_type>::updateSlotAndSquelch(
                     Slot<clock_type>(
                         handler_,
                         logs_.journal("Slot"),
-                        config_.VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS)))
+                        config_.VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS,
+                        reporter_)))
                 .first;
         it->second.update(validator, id, type);
     }

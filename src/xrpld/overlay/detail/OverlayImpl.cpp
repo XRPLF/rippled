@@ -142,7 +142,11 @@ OverlayImpl::OverlayImpl(
     , m_resolver(resolver)
     , next_id_(1)
     , timer_count_(0)
-    , slots_(app.logs(), *this, app.config())
+    , slots_(
+          app.logs(),
+          *this,
+          app.config(),
+          [&]() { reportInboundTraffic(TrafficCount::squelch_ignored, 0); })
     , m_stats(
           std::bind(&OverlayImpl::collect_metrics, this),
           collector,
