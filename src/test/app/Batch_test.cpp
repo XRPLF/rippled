@@ -3763,6 +3763,53 @@ class Batch_test : public beast::unit_test::suite
             // because the batch is atomic, the fee is paid by the batch
             BEAST_EXPECT(env.balance(carol) == preCarol);
         }
+
+        // delegated non atomic inner (AccountSet)
+        {
+            test::jtx::Env env{*this, envconfig()};
+
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const gw = Account("gw");
+            auto const USD = gw["USD"];
+            env.fund(XRP(10000), alice, bob, gw);
+            env.close();
+
+            env(delegate::set(alice, bob, {"AccountDomainSet"}));
+            env.close();
+
+            auto const preAlice = env.balance(alice);
+            auto const preBob = env.balance(bob);
+
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto const seq = env.seq(alice);
+
+            auto tx = batch::inner(noop(alice), seq + 1);
+            std::string const domain = "example.com";
+            tx[sfDomain.jsonName] = strHex(domain);
+            tx[jss::Delegate] = bob.human();
+            auto const [txIDs, batchID] = submitBatch(
+                env,
+                tesSUCCESS,
+                batch::outer(alice, seq, batchFee, tfAllOrNothing),
+                tx,
+                batch::inner(pay(alice, bob, XRP(2)), seq + 2));
+            env.close();
+
+            std::vector<TestLedgerData> testCases = {
+                {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
+                {1, "AccountSet", "tesSUCCESS", txIDs[0], batchID},
+                {2, "Payment", "tesSUCCESS", txIDs[1], batchID},
+            };
+            validateClosedLedger(env, testCases);
+
+            // Alice consumes sequences (# of txns)
+            BEAST_EXPECT(env.seq(alice) == seq + 3);
+
+            // Alice pays XRP & Fee; Bob receives XRP
+            BEAST_EXPECT(env.balance(alice) == preAlice - XRP(2) - batchFee);
+            BEAST_EXPECT(env.balance(bob) == preBob + XRP(2));
+        }
     }
 
     void
