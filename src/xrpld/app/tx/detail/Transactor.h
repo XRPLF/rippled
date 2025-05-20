@@ -22,7 +22,9 @@
 
 #include <xrpld/app/tx/applySteps.h>
 #include <xrpld/app/tx/detail/ApplyContext.h>
+
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/XRPAmount.h>
 
 namespace ripple {
@@ -148,6 +150,9 @@ public:
         // after checkSeq/Fee/Sign.
         return tesSUCCESS;
     }
+
+    static TER
+    checkPermission(ReadView const& view, STTx const& tx);
     /////////////////////////////////////////////////////
 
     // Interface used by DeleteAccount

@@ -30,10 +30,7 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/Rules.h>
-#include <xrpl/protocol/STAccount.h>
 #include <xrpl/protocol/STAmount.h>
-
-#include <type_traits>
 
 namespace ripple {
 

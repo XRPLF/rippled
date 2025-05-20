@@ -21,6 +21,7 @@
 #define RIPPLE_APP_PATHS_ACCOUNTCURRENCIES_H_INCLUDED
 
 #include <xrpld/app/paths/AssetCache.h>
+
 #include <xrpl/protocol/UintTypes.h>
 
 namespace ripple {

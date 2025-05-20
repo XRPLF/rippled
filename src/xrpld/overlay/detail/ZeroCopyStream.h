@@ -23,7 +23,7 @@
 #include <xrpl/beast/utility/instrumentation.h>
 
 #include <boost/asio/buffer.hpp>
-#include <cstdint>
+
 #include <google/protobuf/io/zero_copy_stream.h>
 
 namespace ripple {
@@ -49,7 +49,7 @@ public:
     explicit ZeroCopyInputStream(Buffers const& buffers);
 
     bool
-    Next(const void** data, int* size) override;
+    Next(void const** data, int* size) override;
 
     void
     BackUp(int count) override;
@@ -76,7 +76,7 @@ ZeroCopyInputStream<Buffers>::ZeroCopyInputStream(Buffers const& buffers)
 
 template <class Buffers>
 bool
-ZeroCopyInputStream<Buffers>::Next(const void** data, int* size)
+ZeroCopyInputStream<Buffers>::Next(void const** data, int* size)
 {
     *data = boost::asio::buffer_cast<void const*>(pos_);
     *size = boost::asio::buffer_size(pos_);

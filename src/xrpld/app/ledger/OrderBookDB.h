@@ -23,6 +23,7 @@
 #include <xrpld/app/ledger/AcceptedLedgerTx.h>
 #include <xrpld/app/ledger/BookListeners.h>
 #include <xrpld/app/main/Application.h>
+
 #include <xrpl/protocol/MultiApiJson.h>
 
 #include <mutex>
@@ -64,7 +65,7 @@ public:
     void
     processTxn(
         std::shared_ptr<ReadView const> const& ledger,
-        const AcceptedLedgerTx& alTx,
+        AcceptedLedgerTx const& alTx,
         MultiApiJson const& jvObj);
 
 private:

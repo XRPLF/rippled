@@ -18,13 +18,14 @@
 //==============================================================================
 
 #include <test/jtx.h>
+
 #include <xrpld/rpc/detail/Handler.h>
+
 #include <xrpl/beast/unit_test.h>
 
 #include <chrono>
 #include <iostream>
 #include <limits>
-#include <numeric>
 #include <random>
 
 namespace ripple::test {
@@ -83,7 +84,7 @@ class Handler_test : public beast::unit_test::suite
             }
         }
 
-        const double mean_squared = (sum * sum) / (j * j);
+        double const mean_squared = (sum * sum) / (j * j);
         return std::make_tuple(
             clock::duration{static_cast<long>(sum / j)},
             clock::duration{
@@ -99,7 +100,7 @@ class Handler_test : public beast::unit_test::suite
         std::random_device dev;
         std::ranlux48 prng(dev());
 
-        std::vector<const char*> names =
+        std::vector<char const*> names =
             test::jtx::make_vector(ripple::RPC::getHandlerNames());
 
         std::uniform_int_distribution<std::size_t> distr{0, names.size() - 1};

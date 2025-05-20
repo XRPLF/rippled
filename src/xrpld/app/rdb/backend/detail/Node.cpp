@@ -22,16 +22,17 @@
 #include <xrpld/app/ledger/LedgerToJson.h>
 #include <xrpld/app/ledger/PendingSaves.h>
 #include <xrpld/app/ledger/TransactionMaster.h>
-#include <xrpld/app/misc/Manifest.h>
 #include <xrpld/app/rdb/RelationalDatabase.h>
 #include <xrpld/app/rdb/backend/detail/Node.h>
 #include <xrpld/core/DatabaseCon.h>
 #include <xrpld/core/SociDB.h>
+
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/json/to_string.h>
-#include <boost/algorithm/string.hpp>
+
 #include <boost/range/adaptor/transformed.hpp>
+
 #include <soci/sqlite3/soci-sqlite3.h>
 
 namespace ripple {
@@ -338,7 +339,11 @@ saveValidatedLedger(
                             seq, acceptedLedgerTx->getEscMeta()) +
                         ";");
 
-                app.getMasterTransaction().inLedger(transactionID, seq);
+                app.getMasterTransaction().inLedger(
+                    transactionID,
+                    seq,
+                    acceptedLedgerTx->getTxnSeq(),
+                    app.config().NETWORK_ID);
             }
 
             tr.commit();
@@ -1054,7 +1059,7 @@ accountTxPage(
 
     // SQL's BETWEEN uses a closed interval ([a,b])
 
-    const char* const order = forward ? "ASC" : "DESC";
+    char const* const order = forward ? "ASC" : "DESC";
 
     if (findLedger == 0)
     {
@@ -1069,10 +1074,10 @@ accountTxPage(
     }
     else
     {
-        const char* const compare = forward ? ">=" : "<=";
-        const std::uint32_t minLedger =
+        char const* const compare = forward ? ">=" : "<=";
+        std::uint32_t const minLedger =
             forward ? findLedger + 1 : options.minLedger;
-        const std::uint32_t maxLedger =
+        std::uint32_t const maxLedger =
             forward ? options.maxLedger : findLedger - 1;
 
         auto b58acct = toBase58(options.account);

@@ -24,6 +24,7 @@
 #include <test/jtx/check.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/xchain_bridge.h>
+
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
 
@@ -1341,7 +1342,7 @@ class MPToken_test : public beast::unit_test::suite
         Account const diana("diana");
         Account const dpIssuer("dpIssuer");  // holder
 
-        const char credType[] = "abcde";
+        char const credType[] = "abcde";
 
         {
             Env env(*this, features);
@@ -1782,7 +1783,9 @@ class MPToken_test : public beast::unit_test::suite
 
         Account const alice{"alice"};
 
-        Env env{*this, features};
+        auto cfg = envconfig();
+        cfg->FEES.reference_fee = 10;
+        Env env{*this, std::move(cfg), features};
         MPTTester mptAlice(env, alice);
 
         mptAlice.create();

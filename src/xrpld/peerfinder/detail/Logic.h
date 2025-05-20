@@ -30,10 +30,10 @@
 #include <xrpld/peerfinder/detail/Source.h>
 #include <xrpld/peerfinder/detail/Store.h>
 #include <xrpld/peerfinder/detail/iosformat.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/random.h>
-#include <xrpl/beast/container/aged_container_utility.h>
 #include <xrpl/beast/net/IPAddressConversion.h>
 
 #include <algorithm>
@@ -1132,9 +1132,9 @@ public:
         }
         else
         {
-            JLOG(m_journal.error())
-                << beast::leftw(18) << "Logic failed " << "'" << source->name()
-                << "' fetch, " << results.error.message();
+            JLOG(m_journal.error()) << beast::leftw(18) << "Logic failed "
+                                    << "'" << source->name() << "' fetch, "
+                                    << results.error.message();
         }
     }
 

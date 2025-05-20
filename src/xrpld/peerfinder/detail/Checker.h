@@ -21,15 +21,14 @@
 #define RIPPLE_PEERFINDER_CHECKER_H_INCLUDED
 
 #include <xrpl/beast/net/IPAddressConversion.h>
-#include <boost/asio/detail/handler_invoke_helpers.hpp>
+
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/intrusive/list.hpp>
-#include <boost/system/error_code.hpp>
+
 #include <condition_variable>
 #include <memory>
 #include <mutex>
-#include <utility>
 
 namespace ripple {
 namespace PeerFinder {

@@ -17,7 +17,6 @@
 */
 //==============================================================================
 
-#include <xrpl/basics/Log.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/STAmount.h>
@@ -301,7 +300,7 @@ public:
         unexpected(!to_currency(c, "USD"), "create USD currency");
         unexpected(to_string(c) != "USD", "check USD currency");
 
-        const std::string cur = "015841551A748AD2C1F76FF6ECB0CCCD00000000";
+        std::string const cur = "015841551A748AD2C1F76FF6ECB0CCCD00000000";
         unexpected(!to_currency(c, cur), "create custom currency");
         unexpected(to_string(c) != cur, "check custom currency");
     }

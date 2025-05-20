@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/app/ledger/AcceptedLedgerTx.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/protocol/UintTypes.h>

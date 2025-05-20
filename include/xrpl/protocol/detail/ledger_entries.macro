@@ -462,6 +462,18 @@ LEDGER_ENTRY(ltPERMISSIONED_DOMAIN, 0x0082, PermissionedDomain, permissioned_dom
     {sfPreviousTxnLgrSeq,   soeREQUIRED},
 }))
 
+/** A ledger object representing permissions an account has delegated to another account.
+    \sa keylet::delegate
+ */
+LEDGER_ENTRY(ltDELEGATE, 0x0083, Delegate, delegate, ({
+    {sfAccount,              soeREQUIRED},
+    {sfAuthorize,            soeREQUIRED},
+    {sfPermissions,          soeREQUIRED},
+    {sfOwnerNode,            soeREQUIRED},
+    {sfPreviousTxnID,        soeREQUIRED},
+    {sfPreviousTxnLgrSeq,    soeREQUIRED},
+}))
+
 #undef EXPAND
 #undef LEDGER_ENTRY_DUPLICATE
 

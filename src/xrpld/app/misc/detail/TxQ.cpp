@@ -19,13 +19,14 @@
 
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/LoadFeeTrack.h>
 #include <xrpld/app/misc/TxQ.h>
 #include <xrpld/app/tx/apply.h>
+
 #include <xrpl/basics/mulDiv.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/st.h>
+
 #include <algorithm>
 #include <limits>
 #include <numeric>
@@ -322,7 +323,7 @@ TxQ::TxQAccount::TxQAccount(std::shared_ptr<STTx const> const& txn)
 {
 }
 
-TxQ::TxQAccount::TxQAccount(const AccountID& account_) : account(account_)
+TxQ::TxQAccount::TxQAccount(AccountID const& account_) : account(account_)
 {
 }
 
@@ -1503,11 +1504,11 @@ TxQ::accept(Application& app, OpenView& view)
             }
             else
             {
-                JLOG(j_.debug())
-                    << "Queued transaction " << candidateIter->txID
-                    << " failed with " << transToken(txnResult)
-                    << ". Leave in queue." << " Applied: " << didApply
-                    << ". Flags: " << candidateIter->flags;
+                JLOG(j_.debug()) << "Queued transaction " << candidateIter->txID
+                                 << " failed with " << transToken(txnResult)
+                                 << ". Leave in queue."
+                                 << " Applied: " << didApply
+                                 << ". Flags: " << candidateIter->flags;
                 if (account.retryPenalty && candidateIter->retriesRemaining > 2)
                     candidateIter->retriesRemaining = 1;
                 else
@@ -1569,12 +1570,12 @@ TxQ::accept(Application& app, OpenView& view)
     // parent hash, so that transactions paying the same fee are
     // reordered.
     LedgerHash const& parentHash = view.info().parentHash;
-#if !NDEBUG
-    auto const startingSize = byFee_.size();
-    XRPL_ASSERT(
-        parentHash != parentHash_, "ripple::TxQ::accept : new parent hash");
-    parentHash_ = parentHash;
-#endif
+    if (parentHash == parentHash_)
+        JLOG(j_.warn()) << "Parent ledger hash unchanged from " << parentHash;
+    else
+        parentHash_ = parentHash;
+
+    [[maybe_unused]] auto const startingSize = byFee_.size();
     // byFee_ doesn't "own" the candidate objects inside it, so it's
     // perfectly safe to wipe it and start over, repopulating from
     // byAccount_.

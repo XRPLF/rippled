@@ -24,6 +24,7 @@
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/SecretKey.h>
+
 #include <utility>
 
 namespace ripple {
@@ -75,7 +76,7 @@ buildMultiSigningData(STObject const& obj, AccountID const& signingID);
 
     The following methods support that optimization:
      1. startMultiSigningData provides the large part which can be shared.
-     2. finishMuiltiSigningData caps the passed in serializer with each
+     2. finishMultiSigningData caps the passed in serializer with each
         signer's unique data.
 */
 Serializer

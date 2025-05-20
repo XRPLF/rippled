@@ -21,7 +21,9 @@
 #define RIPPLE_PROTOCOL_FEATURE_H_INCLUDED
 
 #include <xrpl/basics/base_uint.h>
+
 #include <boost/container/flat_map.hpp>
+
 #include <array>
 #include <bitset>
 #include <map>
@@ -33,36 +35,39 @@
  *
  * Steps required to add new features to the code:
  *
- * 1) In this file, increment `numFeatures` and add a uint256 declaration
- *    for the feature at the bottom
- * 2) Add a uint256 definition for the feature to the corresponding source
- *    file (Feature.cpp). Use `registerFeature` to create the feature with
- *    the feature's name, `Supported::no`, and `VoteBehavior::DefaultNo`. This
- *    should be the only place the feature's name appears in code as a string.
- * 3) Use the uint256 as the parameter to `view.rules.enabled()` to
- *    control flow into new code that this feature limits.
- * 4) If the feature development is COMPLETE, and the feature is ready to be
- *    SUPPORTED, change the `registerFeature` parameter to Supported::yes.
- * 5) When the feature is ready to be ENABLED, change the `registerFeature`
- *    parameter to `VoteBehavior::DefaultYes`.
- * In general, any newly supported amendments (`Supported::yes`) should have
- * a `VoteBehavior::DefaultNo` for at least one full release cycle. High
- * priority bug fixes can be an exception to this rule of thumb.
+ * 1) Add the appropriate XRPL_FEATURE or XRPL_FIX macro definition for the
+ *    feature to features.macro with the feature's name, `Supported::no`, and
+ *    `VoteBehavior::DefaultNo`.
+ *
+ * 2) Use the generated variable name as the parameter to `view.rules.enabled()`
+ *    to control flow into new code that this feature limits. (featureName or
+ *    fixName)
+ *
+ * 3) If the feature development is COMPLETE, and the feature is ready to be
+ *    SUPPORTED, change the macro parameter in features.macro to Supported::yes.
+ *
+ * 4) In general, any newly supported amendments (`Supported::yes`) should have
+ *    a `VoteBehavior::DefaultNo` indefinitely so that external governance can
+ *    make the decision on when to activate it. High priority bug fixes can be
+ *    an exception to this rule. In such cases, ensure the fix has been
+ *    clearly communicated to the community using appropriate channels,
+ *    then change the macro parameter in features.macro to
+ *    `VoteBehavior::DefaultYes`. The communication process is beyond
+ *    the scope of these instructions.
+ *
  *
  * When a feature has been enabled for several years, the conditional code
  * may be removed, and the feature "retired". To retire a feature:
- * 1) Remove the uint256 declaration from this file.
- * 2) MOVE the uint256 definition in features.macro to the "retired features"
- *    section at the end of Feature.cpp, which calls retireFeature().
- *    retireFeature() registers the retired feature as Supported::yes with
- *    VoteBehavior::Obsolete.
- * 3) CHANGE the name of the variable to start with "retired".
+ *
+ * 1) MOVE the macro definition in features.macro to the "retired features"
+ *    section at the end of the file, and change the macro to XRPL_RETIRE.
  *
  * The feature must remain registered and supported indefinitely because it
- * still exists in the ledger, but there is no need to vote for it because
- * there's nothing to vote for. If it is removed completely from the code, any
- * instances running that code will get amendment blocked. Removing the
- * feature from the ledger is beyond the scope of these instructions.
+ * may exist in the Amendments object on ledger. There is no need to vote
+ * for it because there's nothing to vote for. If the feature definition is
+ * removed completely from the code, any instances running that code will get
+ * amendment blocked. Removing the feature from the ledger is beyond the scope
+ * of these instructions.
  *
  */
 
@@ -77,11 +82,32 @@ allAmendments();
 
 namespace detail {
 
+#pragma push_macro("XRPL_FEATURE")
+#undef XRPL_FEATURE
+#pragma push_macro("XRPL_FIX")
+#undef XRPL_FIX
+#pragma push_macro("XRPL_RETIRE")
+#undef XRPL_RETIRE
+
+#define XRPL_FEATURE(name, supported, vote) +1
+#define XRPL_FIX(name, supported, vote) +1
+#define XRPL_RETIRE(name) +1
+
 // This value SHOULD be equal to the number of amendments registered in
 // Feature.cpp. Because it's only used to reserve storage, and determine how
 // large to make the FeatureBitset, it MAY be larger. It MUST NOT be less than
 // the actual number of amendments. A LogicError on startup will verify this.
-static constexpr std::size_t numFeatures = 90;
+static constexpr std::size_t numFeatures =
+    (0 +
+#include <xrpl/protocol/detail/features.macro>
+    );
+
+#undef XRPL_RETIRE
+#pragma pop_macro("XRPL_RETIRE")
+#undef XRPL_FIX
+#pragma pop_macro("XRPL_FIX")
+#undef XRPL_FEATURE
+#pragma pop_macro("XRPL_FEATURE")
 
 /** Amendments that this server supports and the default voting behavior.
    Whether they are enabled depends on the Rules defined in the validated
@@ -321,12 +347,17 @@ foreachFeature(FeatureBitset bs, F&& f)
 #undef XRPL_FEATURE
 #pragma push_macro("XRPL_FIX")
 #undef XRPL_FIX
+#pragma push_macro("XRPL_RETIRE")
+#undef XRPL_RETIRE
 
 #define XRPL_FEATURE(name, supported, vote) extern uint256 const feature##name;
 #define XRPL_FIX(name, supported, vote) extern uint256 const fix##name;
+#define XRPL_RETIRE(name)
 
 #include <xrpl/protocol/detail/features.macro>
 
+#undef XRPL_RETIRE
+#pragma pop_macro("XRPL_RETIRE")
 #undef XRPL_FIX
 #pragma pop_macro("XRPL_FIX")
 #undef XRPL_FEATURE

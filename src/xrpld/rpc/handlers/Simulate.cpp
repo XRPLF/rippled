@@ -21,11 +21,12 @@
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/misc/HashRouter.h>
 #include <xrpld/app/misc/Transaction.h>
+#include <xrpld/app/misc/TxQ.h>
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/GRPCHandlers.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/TransactionSign.h>
+
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/STParsedJSON.h>
@@ -232,7 +233,7 @@ simulateTxn(RPC::JsonContext& context, std::shared_ptr<Transaction> transaction)
     jvResult[jss::applied] = result.applied;
     jvResult[jss::ledger_index] = view.seq();
 
-    const bool isBinaryOutput = context.params.get(jss::binary, false).asBool();
+    bool const isBinaryOutput = context.params.get(jss::binary, false).asBool();
 
     // Convert the TER to human-readable values
     std::string token;

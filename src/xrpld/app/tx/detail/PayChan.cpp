@@ -21,6 +21,7 @@
 #include <xrpld/app/tx/detail/PayChan.h>
 #include <xrpld/ledger/ApplyView.h>
 #include <xrpld/ledger/View.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/protocol/Feature.h>
@@ -30,7 +31,6 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/digest.h>
-#include <xrpl/protocol/st.h>
 
 namespace ripple {
 
@@ -251,6 +251,13 @@ PayChanCreate::doApply()
     auto const sle = ctx_.view().peek(keylet::account(account));
     if (!sle)
         return tefINTERNAL;
+
+    if (ctx_.view().rules().enabled(fixPayChanCancelAfter))
+    {
+        auto const closeTime = ctx_.view().info().parentCloseTime;
+        if (ctx_.tx[~sfCancelAfter] && after(closeTime, ctx_.tx[sfCancelAfter]))
+            return tecEXPIRED;
+    }
 
     auto const dst = ctx_.tx[sfDestination];
 

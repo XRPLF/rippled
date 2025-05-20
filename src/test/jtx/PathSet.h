@@ -21,6 +21,7 @@
 #define RIPPLE_LEDGER_TESTS_PATHSET_H_INCLUDED
 
 #include <test/jtx.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/TxFlags.h>
 

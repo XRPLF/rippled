@@ -16,7 +16,6 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-
 #include <xrpld/app/tx/detail/AMMCreate.h>
 
 #include <xrpld/app/ledger/OrderBookDB.h>
@@ -26,9 +25,9 @@
 #include <xrpld/app/tx/detail/MPTokenAuthorize.h>
 #include <xrpld/ledger/Sandbox.h>
 #include <xrpld/ledger/View.h>
+
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/STAccount.h>
 #include <xrpl/protocol/STIssue.h>
 #include <xrpl/protocol/TxFlags.h>
 

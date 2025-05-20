@@ -21,6 +21,7 @@
 #define RIPPLE_RPC_TESTOUTPUTSUITE_H_INCLUDED
 
 #include <test/jtx/TestSuite.h>
+
 #include <xrpl/json/Output.h>
 #include <xrpl/json/Writer.h>
 

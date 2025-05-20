@@ -30,7 +30,7 @@ namespace ripple {
 
     @ingroup protocol
 */
-/** Transaction type identifieers
+/** Transaction type identifiers
 
     Each ledger object requires a unique type identifier, which is stored
     within the object itself; this makes it possible to iterate the entire
@@ -59,7 +59,7 @@ enum TxType : std::uint16_t
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
-#define TRANSACTION(tag, value, name, fields) tag = value,
+#define TRANSACTION(tag, value, name, delegatable, fields) tag = value,
 
 #include <xrpl/protocol/detail/transactions.macro>
 

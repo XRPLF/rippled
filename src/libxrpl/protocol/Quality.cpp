@@ -17,8 +17,13 @@
 */
 //==============================================================================
 
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/STAmount.h>
+
+#include <cstdint>
 #include <limits>
 
 namespace ripple {
@@ -178,7 +183,7 @@ Quality
 Quality::round(int digits) const
 {
     // Modulus for mantissa
-    static const std::uint64_t mod[17] = {
+    static std::uint64_t const mod[17] = {
         /* 0 */ 10000000000000000,
         /* 1 */ 1000000000000000,
         /* 2 */ 100000000000000,

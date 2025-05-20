@@ -23,6 +23,7 @@
 #include <xrpl/beast/utility/Zero.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/json_value.h>
+
 #include <boost/multiprecision/cpp_int.hpp>
 #include <boost/operators.hpp>
 
@@ -335,7 +336,7 @@ public:
 // Output Fees as just their numeric value.
 template <class Char, class Traits, class UnitTag, class T>
 std::basic_ostream<Char, Traits>&
-operator<<(std::basic_ostream<Char, Traits>& os, const TaggedFee<UnitTag, T>& q)
+operator<<(std::basic_ostream<Char, Traits>& os, TaggedFee<UnitTag, T> const& q)
 {
     return os << q.value();
 }

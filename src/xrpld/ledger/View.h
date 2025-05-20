@@ -20,26 +20,22 @@
 #ifndef RIPPLE_LEDGER_VIEW_H_INCLUDED
 #define RIPPLE_LEDGER_VIEW_H_INCLUDED
 
-#include <xrpld/core/Config.h>
 #include <xrpld/ledger/ApplyView.h>
 #include <xrpld/ledger/OpenView.h>
-#include <xrpld/ledger/RawView.h>
 #include <xrpld/ledger/ReadView.h>
+
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/STLedgerEntry.h>
 #include <xrpl/protocol/STObject.h>
-#include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/Serializer.h>
 #include <xrpl/protocol/TER.h>
+
 #include <functional>
 #include <map>
-#include <memory>
 #include <utility>
-
-#include <vector>
 
 namespace ripple {
 
@@ -361,7 +357,7 @@ areCompatible(
     ReadView const& validLedger,
     ReadView const& testLedger,
     beast::Journal::Stream& s,
-    const char* reason);
+    char const* reason);
 
 [[nodiscard]] bool
 areCompatible(
@@ -369,7 +365,7 @@ areCompatible(
     LedgerIndex validIndex,
     ReadView const& testLedger,
     beast::Journal::Stream& s,
-    const char* reason);
+    char const* reason);
 
 //------------------------------------------------------------------------------
 //
@@ -462,14 +458,14 @@ describeOwnerDir(AccountID const& account);
 [[nodiscard]] TER
 trustCreate(
     ApplyView& view,
-    const bool bSrcHigh,
+    bool const bSrcHigh,
     AccountID const& uSrcAccountID,
     AccountID const& uDstAccountID,
     uint256 const& uIndex,      // --> ripple state entry
     SLE::ref sleAccount,        // --> the account being set.
-    const bool bAuth,           // --> authorize account.
-    const bool bNoRipple,       // --> others cannot ripple through
-    const bool bFreeze,         // --> funds cannot leave
+    bool const bAuth,           // --> authorize account.
+    bool const bNoRipple,       // --> others cannot ripple through
+    bool const bFreeze,         // --> funds cannot leave
     bool bDeepFreeze,           // --> can neither receive nor send funds
     STAmount const& saBalance,  // --> balance of account being set.
                                 // Issuer should be noAccount()
@@ -650,6 +646,15 @@ deleteAMMMPToken(
     std::shared_ptr<SLE> sleMPT,
     AccountID const& ammAccountID,
     beast::Journal j);
+
+/** Has the specified time passed?
+
+    @param now  the current time
+    @param mark the cutoff point
+    @return true if \a now refers to a time strictly after \a mark, else false.
+*/
+bool
+after(NetClock::time_point now, std::uint32_t mark);
 
 }  // namespace ripple
 

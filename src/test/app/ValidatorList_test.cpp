@@ -18,8 +18,10 @@
 //==============================================================================
 
 #include <test/jtx.h>
+
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/overlay/detail/ProtocolMessage.h>
+
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/strHex.h>
@@ -549,7 +551,7 @@ private:
                 auto const version,
                 std::vector<std::pair<std::string, std::string>> const&
                     expected) {
-                const auto available = trustedKeys->getAvailable(hexPublic);
+                auto const available = trustedKeys->getAvailable(hexPublic);
 
                 BEAST_EXPECT(!version || available);
                 if (available)
@@ -619,7 +621,7 @@ private:
         auto const publisherSecret = randomSecretKey();
         auto const publisherPublic =
             derivePublicKey(KeyType::ed25519, publisherSecret);
-        const auto hexPublic =
+        auto const hexPublic =
             strHex(publisherPublic.begin(), publisherPublic.end());
         auto const pubSigningKeys1 = randomKeyPair(KeyType::secp256k1);
         auto const manifest1 = base64_encode(makeManifestString(
@@ -1003,7 +1005,7 @@ private:
         auto const publisherSecret = randomSecretKey();
         auto const publisherPublic =
             derivePublicKey(KeyType::ed25519, publisherSecret);
-        const auto hexPublic =
+        auto const hexPublic =
             strHex(publisherPublic.begin(), publisherPublic.end());
         auto const pubSigningKeys1 = randomKeyPair(KeyType::secp256k1);
         auto const manifest = base64_encode(makeManifestString(
@@ -1055,7 +1057,7 @@ private:
             // unknown public key
             auto const badSecret = randomSecretKey();
             auto const badPublic = derivePublicKey(KeyType::ed25519, badSecret);
-            const auto hexBad = strHex(badPublic.begin(), badPublic.end());
+            auto const hexBad = strHex(badPublic.begin(), badPublic.end());
 
             auto const available = trustedKeys->getAvailable(hexBad, 1);
             BEAST_EXPECT(!available);

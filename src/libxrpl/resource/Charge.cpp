@@ -18,7 +18,11 @@
 //==============================================================================
 
 #include <xrpl/resource/Charge.h>
+
+#include <compare>
+#include <ostream>
 #include <sstream>
+#include <string>
 
 namespace ripple {
 namespace Resource {
@@ -65,6 +69,12 @@ std::strong_ordering
 Charge::operator<=>(Charge const& c) const
 {
     return m_cost <=> c.m_cost;
+}
+
+Charge
+Charge::operator*(value_type m) const
+{
+    return Charge(m_cost * m, m_label);
 }
 
 }  // namespace Resource

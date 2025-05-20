@@ -20,27 +20,26 @@
 #include <test/jtx.h>
 #include <test/jtx/TrustedPublisherServer.h>
 #include <test/unit_test/FileDirGuard.h>
+
 #include <xrpld/app/misc/ValidatorSite.h>
-#include <xrpl/basics/Slice.h>
-#include <xrpl/basics/base64.h>
+
 #include <xrpl/basics/strHex.h>
-#include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/PublicKey.h>
-#include <xrpl/protocol/SecretKey.h>
-#include <xrpl/protocol/Sign.h>
-#include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
+
 #include <boost/algorithm/string/join.hpp>
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio.hpp>
 #include <boost/range/adaptor/transformed.hpp>
-#include <chrono>
+
 #include <date/date.h>
+
+#include <chrono>
 
 namespace ripple {
 namespace test {
 namespace detail {
-constexpr const char*
+constexpr char const*
 realValidatorContents()
 {
     return R"vl({

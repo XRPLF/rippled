@@ -20,6 +20,7 @@
 #include <xrpl/basics/Expected.h>
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/TER.h>
+
 #if BOOST_VERSION >= 107500
 #include <boost/json.hpp>  // Not part of boost before version 1.75
 #endif                     // BOOST_VERSION

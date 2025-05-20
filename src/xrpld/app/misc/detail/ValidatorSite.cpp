@@ -22,11 +22,11 @@
 #include <xrpld/app/misc/detail/WorkFile.h>
 #include <xrpld/app/misc/detail/WorkPlain.h>
 #include <xrpld/app/misc/detail/WorkSSL.h>
-#include <xrpl/basics/Slice.h>
-#include <xrpl/basics/base64.h>
+
 #include <xrpl/json/json_reader.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
+
 #include <algorithm>
 
 namespace ripple {
@@ -102,7 +102,7 @@ ValidatorSite::ValidatorSite(
 ValidatorSite::~ValidatorSite()
 {
     std::unique_lock<std::mutex> lock{state_mutex_};
-    if (timer_.expires_at() > clock_type::time_point{})
+    if (timer_.expiry() > clock_type::time_point{})
     {
         if (!stopping_)
         {
@@ -168,7 +168,7 @@ ValidatorSite::start()
 {
     std::lock_guard l0{sites_mutex_};
     std::lock_guard l1{state_mutex_};
-    if (timer_.expires_at() == clock_type::time_point{})
+    if (timer_.expiry() == clock_type::time_point{})
         setTimer(l0, l1);
 }
 

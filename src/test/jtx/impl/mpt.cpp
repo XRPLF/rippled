@@ -303,6 +303,8 @@ MPTTester::set(MPTSet const& arg)
     }
     if (arg.holder)
         jv[sfHolder] = arg.holder->human();
+    if (arg.delegate)
+        jv[sfDelegate] = arg.delegate->human();
     if (submit(arg, jv) == tesSUCCESS && arg.flags.value_or(0))
     {
         auto require = [&](std::optional<Account> const& holder,

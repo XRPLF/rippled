@@ -163,6 +163,7 @@ struct MPTSet
     std::optional<std::uint32_t> ownerCount = std::nullopt;
     std::optional<std::uint32_t> holderCount = std::nullopt;
     std::optional<std::uint32_t> flags = std::nullopt;
+    std::optional<Account> delegate = std::nullopt;
     std::optional<TER> err = std::nullopt;
 };
 

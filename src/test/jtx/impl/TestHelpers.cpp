@@ -18,10 +18,11 @@
 //==============================================================================
 
 #include <test/jtx/TestHelpers.h>
-
 #include <test/jtx/offer.h>
 #include <test/jtx/owners.h>
+
 #include <xrpld/rpc/RPCHandler.h>
+
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/resource/Fees.h>

@@ -18,7 +18,9 @@
 //==============================================================================
 
 #include <test/jtx.h>
+
 #include <xrpld/app/misc/AmendmentTable.h>
+
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
 
@@ -517,7 +519,7 @@ class Feature_test : public beast::unit_test::suite
 
         using namespace test::jtx;
         Env env{*this, FeatureBitset(featureMultiSignReserve)};
-        constexpr const char* featureName = "MultiSignReserve";
+        constexpr char const* featureName = "MultiSignReserve";
 
         auto jrr = env.rpc("feature", featureName)[jss::result];
         if (!BEAST_EXPECTS(jrr[jss::status] == jss::success, "status"))
@@ -568,7 +570,7 @@ class Feature_test : public beast::unit_test::suite
 
         using namespace test::jtx;
         Env env{*this};
-        constexpr const char* featureName = "NonFungibleTokensV1";
+        constexpr char const* featureName = "NonFungibleTokensV1";
 
         auto jrr = env.rpc("feature", featureName)[jss::result];
         if (!BEAST_EXPECTS(jrr[jss::status] == jss::success, "status"))

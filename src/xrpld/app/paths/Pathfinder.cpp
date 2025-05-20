@@ -23,9 +23,9 @@
 #include <xrpld/app/paths/Pathfinder.h>
 #include <xrpld/app/paths/RippleCalc.h>
 #include <xrpld/app/paths/detail/PathfinderUtils.h>
-#include <xrpld/core/Config.h>
 #include <xrpld/core/JobQueue.h>
 #include <xrpld/ledger/PaymentSandbox.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/join.h>
 #include <xrpl/json/to_string.h>
@@ -77,7 +77,7 @@ struct AccountCandidate
     int priority;
     AccountID account;
 
-    static const int highPriority = 10000;
+    static int const highPriority = 10000;
 };
 
 bool
@@ -1012,7 +1012,7 @@ addUniquePath(STPathSet& pathSet, STPath const& path)
 
 void
 Pathfinder::addLink(
-    const STPath& currentPath,   // The path to build from
+    STPath const& currentPath,   // The path to build from
     STPathSet& incompletePaths,  // The set of partial paths we add to
     int addFlags,
     std::function<bool(void)> const& continueCallback)

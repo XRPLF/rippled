@@ -17,12 +17,25 @@
 */
 //==============================================================================
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/AMMCore.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Rules.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STObject.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/digest.h>
+
+#include <algorithm>
+#include <cstdint>
+#include <optional>
+#include <utility>
 
 namespace ripple {
 

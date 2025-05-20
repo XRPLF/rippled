@@ -23,6 +23,7 @@
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/partitioned_unordered_map.h>
+
 #include <cstdint>
 
 namespace ripple {
@@ -153,6 +154,10 @@ std::size_t constexpr maxPriceScale = 20;
 /** The maximum percentage of outliers to trim
  */
 std::size_t constexpr maxTrim = 25;
+
+/** The maximum number of delegate permissions an account can grant
+ */
+std::size_t constexpr permissionMaxSize = 10;
 
 }  // namespace ripple
 

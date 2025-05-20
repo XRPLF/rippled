@@ -21,6 +21,7 @@
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/handlers/Handlers.h>
 #include <xrpld/rpc/handlers/Version.h>
+
 #include <xrpl/basics/contract.h>
 
 #include <map>
@@ -223,7 +224,7 @@ private:
     }
 
     template <std::size_t N>
-    explicit HandlerTable(const Handler (&entries)[N])
+    explicit HandlerTable(Handler const (&entries)[N])
     {
         for (auto const& entry : entries)
         {

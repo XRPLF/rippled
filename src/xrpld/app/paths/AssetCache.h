@@ -23,11 +23,11 @@
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/paths/MPT.h>
 #include <xrpld/app/paths/TrustLine.h>
+
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/hardened_hash.h>
 
 #include <cstddef>
-#include <memory>
 #include <mutex>
 #include <vector>
 

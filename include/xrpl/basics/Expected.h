@@ -24,9 +24,7 @@
 
 #include <boost/outcome.hpp>
 
-#include <concepts>
 #include <stdexcept>
-#include <type_traits>
 
 namespace ripple {
 
@@ -95,7 +93,7 @@ public:
     {
     }
 
-    constexpr const E&
+    constexpr E const&
     value() const&
     {
         return val_;
@@ -113,7 +111,7 @@ public:
         return std::move(val_);
     }
 
-    constexpr const E&&
+    constexpr E const&&
     value() const&&
     {
         return std::move(val_);

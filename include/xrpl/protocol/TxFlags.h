@@ -20,9 +20,9 @@
 #ifndef RIPPLE_PROTOCOL_TXFLAGS_H_INCLUDED
 #define RIPPLE_PROTOCOL_TXFLAGS_H_INCLUDED
 
-#include <cstdint>
-
 #include <xrpl/protocol/LedgerFormats.h>
+
+#include <cstdint>
 
 namespace ripple {
 
@@ -120,6 +120,13 @@ constexpr std::uint32_t tfTrustSetMask =
     ~(tfUniversal | tfSetfAuth | tfSetNoRipple | tfClearNoRipple | tfSetFreeze |
       tfClearFreeze | tfSetDeepFreeze | tfClearDeepFreeze);
 
+// valid flags for granular permission
+constexpr std::uint32_t tfTrustSetGranularMask = tfSetfAuth | tfSetFreeze | tfClearFreeze;
+
+// bits representing supportedGranularMask are set to 0 and the bits
+// representing other flags are set to 1 in tfPermissionMask.
+constexpr std::uint32_t tfTrustSetPermissionMask = (~tfTrustSetMask) & (~tfTrustSetGranularMask);
+
 // EnableAmendment flags:
 constexpr std::uint32_t tfGotMajority                      = 0x00010000;
 constexpr std::uint32_t tfLostMajority                     = 0x00020000;
@@ -155,6 +162,8 @@ constexpr std::uint32_t const tfMPTokenAuthorizeMask  = ~(tfUniversal | tfMPTUna
 constexpr std::uint32_t const tfMPTLock                   = 0x00000001;
 constexpr std::uint32_t const tfMPTUnlock                 = 0x00000002;
 constexpr std::uint32_t const tfMPTokenIssuanceSetMask  = ~(tfUniversal | tfMPTLock | tfMPTUnlock);
+constexpr std::uint32_t const tfMPTokenIssuanceSetGranularMask = tfMPTLock | tfMPTUnlock;
+constexpr std::uint32_t const tfMPTokenIssuanceSetPermissionMask = (~tfMPTokenIssuanceSetMask) & (~tfMPTokenIssuanceSetGranularMask);
 
 // MPTokenIssuanceDestroy flags:
 constexpr std::uint32_t const tfMPTokenIssuanceDestroyMask  = ~tfUniversal;

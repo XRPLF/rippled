@@ -23,17 +23,16 @@
 #include <xrpld/net/RPCCall.h>
 #include <xrpld/rpc/ServerHandler.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
+
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/core/LexicalCast.h>
-#include <xrpl/json/Object.h>
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/ErrorCodes.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -41,7 +40,6 @@
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/streambuf.hpp>
-#include <boost/beast/core/string.hpp>
 #include <boost/regex.hpp>
 
 #include <array>
@@ -1043,7 +1041,7 @@ private:
 
         if (jvParams.size() >= 3)
         {
-            const auto offset = jvParams.size() == 3 ? 0 : 1;
+            auto const offset = jvParams.size() == 3 ? 0 : 1;
 
             jvRequest[jss::min_ledger] = jvParams[1u + offset].asString();
             jvRequest[jss::max_ledger] = jvParams[2u + offset].asString();
@@ -1107,7 +1105,7 @@ private:
     parseGatewayBalances(Json::Value const& jvParams)
     {
         unsigned int index = 0;
-        const unsigned int size = jvParams.size();
+        unsigned int const size = jvParams.size();
 
         Json::Value jvRequest{Json::objectValue};
 
@@ -1191,7 +1189,7 @@ public:
 
         struct Command
         {
-            const char* name;
+            char const* name;
             parseFuncPtr parse;
             int minParams;
             int maxParams;
@@ -1353,7 +1351,7 @@ struct RPCCallImp
     static bool
     onResponse(
         std::function<void(Json::Value const& jvInput)> callbackFuncP,
-        const boost::system::error_code& ecResult,
+        boost::system::error_code const& ecResult,
         int iStatus,
         std::string const& strData,
         beast::Journal j)
@@ -1616,7 +1614,7 @@ namespace RPCCall {
 int
 fromCommandLine(
     Config const& config,
-    const std::vector<std::string>& vCmd,
+    std::vector<std::string> const& vCmd,
     Logs& logs)
 {
     auto const result =
@@ -1633,14 +1631,14 @@ void
 fromNetwork(
     boost::asio::io_service& io_service,
     std::string const& strIp,
-    const std::uint16_t iPort,
+    std::uint16_t const iPort,
     std::string const& strUsername,
     std::string const& strPassword,
     std::string const& strPath,
     std::string const& strMethod,
     Json::Value const& jvParams,
-    const bool bSSL,
-    const bool quiet,
+    bool const bSSL,
+    bool const quiet,
     Logs& logs,
     std::function<void(Json::Value const& jvInput)> callbackFuncP,
     std::unordered_map<std::string, std::string> headers)
@@ -1665,7 +1663,7 @@ fromNetwork(
     constexpr auto RPC_REPLY_MAX_BYTES = megabytes(256);
 
     using namespace std::chrono_literals;
-    auto constexpr RPC_NOTIFY = 10min;
+    auto constexpr RPC_WEBHOOK_TIMEOUT = 30s;
 
     HTTPClient::request(
         bSSL,
@@ -1682,7 +1680,7 @@ fromNetwork(
             std::placeholders::_2,
             j),
         RPC_REPLY_MAX_BYTES,
-        RPC_NOTIFY,
+        RPC_WEBHOOK_TIMEOUT,
         std::bind(
             &RPCCallImp::onResponse,
             callbackFuncP,

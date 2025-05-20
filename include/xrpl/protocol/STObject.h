@@ -35,7 +35,9 @@
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/detail/STVar.h>
+
 #include <boost/iterator/transform_iterator.hpp>
+
 #include <optional>
 #include <stdexcept>
 #include <type_traits>
@@ -97,8 +99,8 @@ public:
     STObject&
     operator=(STObject&& other);
 
-    STObject(const SOTemplate& type, SField const& name);
-    STObject(const SOTemplate& type, SerialIter& sit, SField const& name);
+    STObject(SOTemplate const& type, SField const& name);
+    STObject(SOTemplate const& type, SerialIter& sit, SField const& name);
     STObject(SerialIter& sit, SField const& name, int depth = 0);
     STObject(SerialIter&& sit, SField const& name);
     explicit STObject(SField const& name);
@@ -119,7 +121,7 @@ public:
     reserve(std::size_t n);
 
     void
-    applyTemplate(const SOTemplate& type);
+    applyTemplate(SOTemplate const& type);
 
     void
     applyTemplateFromSField(SField const&);
@@ -128,7 +130,7 @@ public:
     isFree() const;
 
     void
-    set(const SOTemplate&);
+    set(SOTemplate const&);
 
     bool
     set(SerialIter& u, int depth = 0);
@@ -137,7 +139,7 @@ public:
     getSType() const override;
 
     bool
-    isEquivalent(const STBase& t) const override;
+    isEquivalent(STBase const& t) const override;
 
     bool
     isDefault() const override;
@@ -181,13 +183,13 @@ public:
     uint256
     getSigningHash(HashPrefix prefix) const;
 
-    const STBase&
+    STBase const&
     peekAtIndex(int offset) const;
 
     STBase&
     getIndex(int offset);
 
-    const STBase*
+    STBase const*
     peekAtPIndex(int offset) const;
 
     STBase*
@@ -199,13 +201,13 @@ public:
     SField const&
     getFieldSType(int index) const;
 
-    const STBase&
+    STBase const&
     peekAtField(SField const& field) const;
 
     STBase&
     getField(SField const& field);
 
-    const STBase*
+    STBase const*
     peekAtPField(SField const& field) const;
 
     STBase*
@@ -239,11 +241,11 @@ public:
     getFieldAmount(SField const& field) const;
     STPathSet const&
     getFieldPathSet(SField const& field) const;
-    const STVector256&
+    STVector256 const&
     getFieldV256(SField const& field) const;
-    const STArray&
+    STArray const&
     getFieldArray(SField const& field) const;
-    const STCurrency&
+    STCurrency const&
     getFieldCurrency(SField const& field) const;
     STNumber const&
     getFieldNumber(SField const& field) const;
@@ -409,12 +411,12 @@ public:
     delField(int index);
 
     bool
-    hasMatchingEntry(const STBase&);
+    hasMatchingEntry(STBase const&);
 
     bool
-    operator==(const STObject& o) const;
+    operator==(STObject const& o) const;
     bool
-    operator!=(const STObject& o) const;
+    operator!=(STObject const& o) const;
 
     class FieldErr;
 
@@ -970,7 +972,7 @@ STObject::getCount() const
     return v_.size();
 }
 
-inline const STBase&
+inline STBase const&
 STObject::peekAtIndex(int offset) const
 {
     return v_[offset].get();
@@ -982,7 +984,7 @@ STObject::getIndex(int offset)
     return v_[offset].get();
 }
 
-inline const STBase*
+inline STBase const*
 STObject::peekAtPIndex(int offset) const
 {
     return &v_[offset].get();
@@ -1117,7 +1119,7 @@ STObject::setFieldH160(SField const& field, base_uint<160, Tag> const& v)
 }
 
 inline bool
-STObject::operator!=(const STObject& o) const
+STObject::operator!=(STObject const& o) const
 {
     return !(*this == o);
 }
@@ -1126,7 +1128,7 @@ template <typename T, typename V>
 V
 STObject::getFieldByValue(SField const& field) const
 {
-    const STBase* rf = peekAtPField(field);
+    STBase const* rf = peekAtPField(field);
 
     if (!rf)
         throwFieldNotFound(field);
@@ -1136,7 +1138,7 @@ STObject::getFieldByValue(SField const& field) const
     if (id == STI_NOTPRESENT)
         return V();  // optional field not present
 
-    const T* cf = dynamic_cast<const T*>(rf);
+    T const* cf = dynamic_cast<T const*>(rf);
 
     if (!cf)
         Throw<std::runtime_error>("Wrong field type");
@@ -1153,7 +1155,7 @@ template <typename T, typename V>
 V const&
 STObject::getFieldByConstRef(SField const& field, V const& empty) const
 {
-    const STBase* rf = peekAtPField(field);
+    STBase const* rf = peekAtPField(field);
 
     if (!rf)
         throwFieldNotFound(field);
@@ -1163,7 +1165,7 @@ STObject::getFieldByConstRef(SField const& field, V const& empty) const
     if (id == STI_NOTPRESENT)
         return empty;  // optional field not present
 
-    const T* cf = dynamic_cast<const T*>(rf);
+    T const* cf = dynamic_cast<T const*>(rf);
 
     if (!cf)
         Throw<std::runtime_error>("Wrong field type");

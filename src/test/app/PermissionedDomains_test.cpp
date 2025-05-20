@@ -18,12 +18,10 @@
 //==============================================================================
 
 #include <test/jtx.h>
+
 #include <xrpld/app/tx/detail/PermissionedDomainSet.h>
-#include <xrpld/ledger/ApplyViewImpl.h>
-#include <xrpl/basics/Blob.h>
-#include <xrpl/basics/Slice.h>
+
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/jss.h>
 
 #include <exception>
@@ -54,7 +52,8 @@ exceptionExpected(Env& env, Json::Value const& jv)
 
 class PermissionedDomains_test : public beast::unit_test::suite
 {
-    FeatureBitset withoutFeature_{supported_amendments()};
+    FeatureBitset withoutFeature_{
+        supported_amendments() - featurePermissionedDomains};
     FeatureBitset withFeature_{
         supported_amendments()  //
         | featurePermissionedDomains | featureCredentials};
@@ -286,7 +285,7 @@ class PermissionedDomains_test : public beast::unit_test::suite
         Env env(*this, withFeature_);
         env.set_parse_failure_expected(true);
 
-        const int accNum = 12;
+        int const accNum = 12;
         Account const alice[accNum] = {
             "alice",
             "alice2",

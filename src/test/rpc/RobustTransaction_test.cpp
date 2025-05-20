@@ -19,7 +19,9 @@
 
 #include <test/jtx.h>
 #include <test/jtx/WSClient.h>
+
 #include <xrpld/core/JobQueue.h>
+
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/jss.h>
 
@@ -458,7 +460,8 @@ public:
             Json::Value jv;
             jv[jss::secret] = toBase58(generateSeed("alice"));
             jv[jss::tx_json] = fset("alice", 0);
-            jv[jss::tx_json][jss::Fee] = 10;
+            jv[jss::tx_json][jss::Fee] =
+                static_cast<int>(env.current()->fees().base.drops());
             jv = wsc->invoke("submit", jv);
             if (wsc->version() == 2)
             {

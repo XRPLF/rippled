@@ -18,15 +18,16 @@
 //==============================================================================
 
 #include <xrpld/app/misc/CredentialHelpers.h>
+#include <xrpld/app/misc/DelegateUtils.h>
 #include <xrpld/app/paths/RippleCalc.h>
 #include <xrpld/app/tx/detail/Payment.h>
 #include <xrpld/ledger/View.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
-#include <xrpl/protocol/st.h>
 
 namespace ripple {
 
@@ -244,6 +245,39 @@ Payment::preflight(PreflightContext const& ctx)
         return err;
 
     return preflight2(ctx);
+}
+
+TER
+Payment::checkPermission(ReadView const& view, STTx const& tx)
+{
+    auto const delegate = tx[~sfDelegate];
+    if (!delegate)
+        return tesSUCCESS;
+
+    auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
+    auto const sle = view.read(delegateKey);
+
+    if (!sle)
+        return tecNO_PERMISSION;
+
+    if (checkTxPermission(sle, tx) == tesSUCCESS)
+        return tesSUCCESS;
+
+    std::unordered_set<GranularPermissionType> granularPermissions;
+    loadGranularPermission(sle, ttPAYMENT, granularPermissions);
+
+    auto const& dstAmount = tx.getFieldAmount(sfAmount);
+    auto const& amountAsset = dstAmount.asset();
+
+    if (granularPermissions.contains(PaymentMint) && !isXRP(amountAsset) &&
+        amountAsset.getIssuer() == tx[sfAccount])
+        return tesSUCCESS;
+
+    if (granularPermissions.contains(PaymentBurn) && !isXRP(amountAsset) &&
+        amountAsset.getIssuer() == tx[sfDestination])
+        return tesSUCCESS;
+
+    return tecNO_PERMISSION;
 }
 
 TER

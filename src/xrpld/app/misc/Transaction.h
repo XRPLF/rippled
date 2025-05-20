@@ -64,7 +64,7 @@ class Transaction : public std::enable_shared_from_this<Transaction>,
 {
 public:
     using pointer = std::shared_ptr<Transaction>;
-    using ref = const pointer&;
+    using ref = pointer const&;
 
     Transaction(
         std::shared_ptr<STTx const> const&,
@@ -128,7 +128,11 @@ public:
     }
 
     void
-    setStatus(TransStatus status, std::uint32_t ledgerSeq);
+    setStatus(
+        TransStatus status,
+        std::uint32_t ledgerSeq,
+        std::optional<uint32_t> transactionSeq = std::nullopt,
+        std::optional<uint32_t> networkID = std::nullopt);
 
     void
     setStatus(TransStatus status)
@@ -148,6 +152,8 @@ public:
     void
     setApplying()
     {
+        // Note that all access to mApplying are made by NetworkOPsImp, and must
+        // be done under that class's lock.
         mApplying = true;
     }
 
@@ -159,6 +165,8 @@ public:
     bool
     getApplying()
     {
+        // Note that all access to mApplying are made by NetworkOPsImp, and must
+        // be done under that class's lock.
         return mApplying;
     }
 
@@ -168,6 +176,8 @@ public:
     void
     clearApplying()
     {
+        // Note that all access to mApplying are made by NetworkOPsImp, and must
+        // be done under that class's lock.
         mApplying = false;
     }
 
@@ -388,8 +398,28 @@ private:
     uint256 mTransactionID;
 
     LedgerIndex mLedgerIndex = 0;
+    std::optional<uint32_t> mTxnSeq;
+    std::optional<uint32_t> mNetworkID;
     TransStatus mStatus = INVALID;
     TER mResult = temUNCERTAIN;
+    /* Note that all access to mApplying are made by NetworkOPsImp,
+        and must be done under that class's lock. This avoids the overhead of
+        taking a separate lock, and the consequences of a race condition are
+        nearly-zero.
+
+        1. If there is a race condition, and getApplying returns false when it
+            should be true, the transaction will be processed again. Not that
+            big a deal if it's a rare one-off. Most of the time, it'll get
+            tefALREADY or tefPAST_SEQ.
+        2. On the flip side, if it returns true, when it should be false, then
+            the transaction must have been attempted recently, so no big deal if
+            it doesn't immediately get tried right away.
+        3. If there's a race between setApplying and clearApplying, and the
+            flag ends up set, then a batch is about to try to process the
+            transaction and will call clearApplying later. If it ends up
+            cleared, then it might get attempted again later as is the case with
+            item 1.
+    */
     bool mApplying = false;
 
     /** different ways for transaction to be accepted */

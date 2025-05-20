@@ -25,6 +25,7 @@
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
@@ -292,7 +293,7 @@ doSubscribe(RPC::JsonContext& context)
                     context.app.getLedgerMaster().getPublishedLedger();
                 if (lpLedger)
                 {
-                    const Json::Value jvMarker = Json::Value(Json::nullValue);
+                    Json::Value const jvMarker = Json::Value(Json::nullValue);
                     Json::Value jvOffers(Json::objectValue);
 
                     auto add = [&](Json::StaticString field) {
