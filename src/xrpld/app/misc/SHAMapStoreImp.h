@@ -112,8 +112,6 @@ private:
     // as of run() or before
     NetworkOPs* netOPs_ = nullptr;
     LedgerMaster* ledgerMaster_ = nullptr;
-    FullBelowCache* fullBelowCache_ = nullptr;
-    TreeNodeCache* treeNodeCache_ = nullptr;
 
     static constexpr auto nodeStoreName_ = "NodeStore";
 

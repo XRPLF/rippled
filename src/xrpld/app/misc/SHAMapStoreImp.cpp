@@ -255,8 +255,6 @@ SHAMapStoreImp::run()
     LedgerIndex lastRotated = state_db_.getState().lastRotated;
     netOPs_ = &app_.getOPs();
     ledgerMaster_ = &app_.getLedgerMaster();
-    fullBelowCache_ = &(*app_.getNodeFamily().getFullBelowCache());
-    treeNodeCache_ = &(*app_.getNodeFamily().getTreeNodeCache());
 
     if (advisoryDelete_)
         canDelete_ = state_db_.getCanDelete();
@@ -549,16 +547,12 @@ void
 SHAMapStoreImp::clearCaches(LedgerIndex validatedSeq)
 {
     ledgerMaster_->clearLedgerCachePrior(validatedSeq);
-    fullBelowCache_->clear();
 }
 
 void
 SHAMapStoreImp::freshenCaches()
 {
-    if (freshenCache(*treeNodeCache_))
-        return;
-    if (freshenCache(app_.getMasterTransaction().getCache()))
-        return;
+    freshenCache(app_.getMasterTransaction().getCache());
 }
 
 void
