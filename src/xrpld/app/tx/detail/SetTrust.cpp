@@ -298,11 +298,11 @@ SetTrust::preclaim(PreclaimContext const& ctx)
             else
                 return tecINTERNAL;  // LCOV_EXCL_LINE
         }
-        else if (
-            sleDst->isFieldPresent(sfVaultID) &&
-            !ctx.view.exists(keylet::line(id, uDstAccountID, currency)))
+        else if (sleDst->isFieldPresent(sfVaultID))
         {
-            return tecNO_PERMISSION;
+            if (!ctx.view.exists(keylet::line(id, uDstAccountID, currency)))
+                return tecNO_PERMISSION;
+            // else pass
         }
         else
             return tecPSEUDO_ACCOUNT;
