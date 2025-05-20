@@ -93,7 +93,6 @@ Handler const handlerArray[]{
     {"account_offers", byRef(&doAccountOffers), Role::USER, NO_CONDITION},
     {"account_tx", byRef(&doAccountTxJson), Role::USER, NO_CONDITION},
     {"amm_info", byRef(&doAMMInfo), Role::USER, NO_CONDITION},
-    {"vault_info", byRef(&doVaultInfo), Role::USER, NO_CONDITION},
     {"blacklist", byRef(&doBlackList), Role::ADMIN, NO_CONDITION},
     {"book_changes", byRef(&doBookChanges), Role::USER, NO_CONDITION},
     {"book_offers", byRef(&doBookOffers), Role::USER, NO_CONDITION},
@@ -189,6 +188,7 @@ Handler const handlerArray[]{
      Role::ADMIN,
      NO_CONDITION},
     {"validator_info", byRef(&doValidatorInfo), Role::ADMIN, NO_CONDITION},
+    {"vault_info", byRef(&doVaultInfo), Role::USER, NO_CONDITION},
     {"wallet_propose", byRef(&doWalletPropose), Role::ADMIN, NO_CONDITION},
     // Evented methods
     {"subscribe", byRef(&doSubscribe), Role::USER, NO_CONDITION},
