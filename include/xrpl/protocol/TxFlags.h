@@ -233,6 +233,12 @@ constexpr std::uint32_t tfAMMClawbackMask = ~(tfUniversal | tfClawTwoAssets);
 // BridgeModify flags:
 constexpr std::uint32_t tfClearAccountCreateAmount     = 0x00010000;
 constexpr std::uint32_t tfBridgeModifyMask = ~(tfUniversal | tfClearAccountCreateAmount);
+
+// VaultCreate flags:
+constexpr std::uint32_t const tfVaultPrivate               = 0x00010000;
+static_assert(tfVaultPrivate == lsfVaultPrivate);
+constexpr std::uint32_t const tfVaultShareNonTransferable  = 0x00020000;
+constexpr std::uint32_t const tfVaultCreateMask = ~(tfUniversal | tfVaultPrivate | tfVaultShareNonTransferable);
 // clang-format on
 
 }  // namespace ripple
