@@ -153,6 +153,12 @@ public:
     template <AssetType A>
     STAmount(A const& asset, int mantissa, int exponent = 0);
 
+    template <AssetType A>
+    STAmount(A const& asset, Number const& number)
+        : STAmount(asset, number.mantissa(), number.exponent())
+    {
+    }
+
     // Legacy support for new-style amounts
     STAmount(IOUAmount const& amount, Issue const& issue);
     STAmount(XRPAmount const& amount);
@@ -230,6 +236,9 @@ public:
     STAmount&
     operator=(XRPAmount const& amount);
 
+    STAmount&
+    operator=(Number const&);
+
     //--------------------------------------------------------------------------
     //
     // Modification
@@ -268,7 +277,7 @@ public:
     std::string
     getText() const override;
 
-    Json::Value getJson(JsonOptions) const override;
+    Json::Value getJson(JsonOptions = JsonOptions::none) const override;
 
     void
     add(Serializer& s) const override;
@@ -417,7 +426,7 @@ STAmount
 amountFromQuality(std::uint64_t rate);
 
 STAmount
-amountFromString(Asset const& issue, std::string const& amount);
+amountFromString(Asset const& asset, std::string const& amount);
 
 STAmount
 amountFromJson(SField const& name, Json::Value const& v);
@@ -538,6 +547,16 @@ inline STAmount&
 STAmount::operator=(XRPAmount const& amount)
 {
     *this = STAmount(amount);
+    return *this;
+}
+
+inline STAmount&
+STAmount::operator=(Number const& number)
+{
+    mIsNegative = number.mantissa() < 0;
+    mValue = mIsNegative ? -number.mantissa() : number.mantissa();
+    mOffset = number.exponent();
+    canonicalize();
     return *this;
 }
 

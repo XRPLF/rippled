@@ -192,6 +192,9 @@ enum LedgerSpecificFlags {
 
     // ltCREDENTIAL
     lsfAccepted = 0x00010000,
+
+    // ltVAULT
+    lsfVaultPrivate = 0x00010000,
 };
 
 //------------------------------------------------------------------------------

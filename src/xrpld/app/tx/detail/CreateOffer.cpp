@@ -1055,7 +1055,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 
     // Note that we we use the value from the sequence or ticket as the
     // offer sequence.  For more explanation see comments in SeqProxy.h.
-    auto const offerSequence = ctx_.tx.getSeqProxy().value();
+    auto const offerSequence = ctx_.tx.getSeqValue();
 
     // This is the original rate of the offer, and is the rate at which
     // it will be placed, even if crossing offers change the amounts that
