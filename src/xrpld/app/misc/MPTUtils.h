@@ -38,7 +38,8 @@ isMPTTxAllowed(
     ReadView const& v,
     TxType tx,
     Asset const& asset,
-    AccountID const& accountID);
+    AccountID const& accountID,
+    std::optional<AccountID> const& destAccount = std::nullopt);
 
 TER
 isMPTDEXAllowed(

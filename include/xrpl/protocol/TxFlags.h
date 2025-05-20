@@ -106,7 +106,7 @@ constexpr std::uint32_t tfPartialPayment                   = 0x00020000;
 constexpr std::uint32_t tfLimitQuality                     = 0x00040000;
 constexpr std::uint32_t tfPaymentMask =
     ~(tfUniversal | tfPartialPayment | tfLimitQuality | tfNoRippleDirect);
-constexpr std::uint32_t tfMPTPaymentMask = ~(tfUniversal | tfPartialPayment);
+constexpr std::uint32_t tfMPTPaymentMaskV1 = ~(tfUniversal | tfPartialPayment);
 
 // TrustSet flags:
 constexpr std::uint32_t tfSetfAuth                         = 0x00010000;

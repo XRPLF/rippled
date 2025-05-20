@@ -366,7 +366,7 @@ initializeFeeAuctionVote(
     ApplyView& view,
     std::shared_ptr<SLE>& ammSle,
     AccountID const& account,
-    Asset const& lptIssue,
+    Asset const& lptAsset,
     std::uint16_t tfee)
 {
     auto const& rules = view.rules();
@@ -396,7 +396,7 @@ initializeFeeAuctionVote(
                                 .count() +
         TOTAL_TIME_SLOT_SECS;
     auctionSlot.setFieldU32(sfExpiration, expiration);
-    auctionSlot.setFieldAmount(sfPrice, STAmount{lptIssue, 0});
+    auctionSlot.setFieldAmount(sfPrice, STAmount{lptAsset, 0});
     // Set the fee
     if (tfee != 0)
         ammSle->setFieldU16(sfTradingFee, tfee);
@@ -496,7 +496,7 @@ isOnlyLiquidityProvider(
         if (uNodeNext == 0)
         {
             if (nLPTokenTrustLines != 1 || (nIOUTrustLines == 0 && nMPT == 0) ||
-                (nIOUTrustLines > 2 || nMPT > 2))
+                (nIOUTrustLines > 2 || nMPT > 2) || (nIOUTrustLines + nMPT) > 2)
                 return Unexpected<TER>(tecINTERNAL);  // LCOV_EXCL_LINE
             return true;
         }

@@ -37,12 +37,13 @@ isMPTAllowed(
 
     auto const& issuanceID = asset.get<MPTIssue>().getMptID();
     auto const isDEX = txType == ttPAYMENT && destAccount;
-    XRPL_ASSERT(
-        txType == ttAMM_CREATE || txType == ttAMM_DEPOSIT ||
-            txType == ttAMM_WITHDRAW || txType == ttOFFER_CREATE ||
-            txType == ttCHECK_CREATE || txType == ttCHECK_CASH ||
-            txType == ttPAYMENT || isDEX,
-        "ripple::isMPTAllowed : all MPT tx or DEX");
+    auto const validTxType = txType == ttAMM_CREATE ||
+        txType == ttAMM_DEPOSIT || txType == ttAMM_WITHDRAW ||
+        txType == ttOFFER_CREATE || txType == ttCHECK_CREATE ||
+        txType == ttCHECK_CASH || txType == ttPAYMENT || isDEX;
+    XRPL_ASSERT(validTxType, "ripple::isMPTAllowed : all MPT tx or DEX");
+    if (!validTxType)
+        return tefINTERNAL;
 
     auto const& issuer = asset.getIssuer();
     if (!view.exists(keylet::account(issuer)))
@@ -65,7 +66,8 @@ isMPTAllowed(
 
     if (accountID != issuer)
     {
-        if ((flags & lsfMPTCanTransfer) == 0)
+        if ((flags & lsfMPTCanTransfer) == 0 &&
+            (!destAccount || destAccount != issuer))
             return tecNO_PERMISSION;
 
         auto const mptSle =
@@ -75,7 +77,8 @@ isMPTAllowed(
         if (!mptSle)
             return tesSUCCESS;
 
-        if ((mptSle->getFlags() & lsfMPTLocked) && destAccount != issuer)
+        if ((mptSle->getFlags() & lsfMPTLocked) &&
+            (!destAccount || destAccount != issuer))
             return tecNO_PERMISSION;
     }
 
@@ -87,11 +90,12 @@ isMPTTxAllowed(
     ReadView const& view,
     TxType txType,
     Asset const& asset,
-    AccountID const& accountID)
+    AccountID const& accountID,
+    std::optional<AccountID> const& destAccount)
 {
     // use isDEXAllowed for payment/offer crossing
     assert(txType != ttPAYMENT);
-    return isMPTAllowed(view, txType, asset, accountID, std::nullopt);
+    return isMPTAllowed(view, txType, asset, accountID, destAccount);
 }
 
 TER

@@ -121,6 +121,9 @@ toAmount<MPTAmount>(STAmount const& amt)
         amt.holds<MPTIssue>() && amt.mantissa() <= maxMPTokenAmount &&
             amt.exponent() == 0,
         "ripple::toAmount<MPTAmount> : maximum mantissa");
+    if (amt.mantissa() > maxMPTokenAmount || amt.exponent() != 0)
+        Throw<std::runtime_error>(
+            "toAmount<MPTAmount>: invalid mantissa or exponent");
     bool const isNeg = amt.negative();
     std::int64_t const sMant =
         isNeg ? -std::int64_t(amt.mantissa()) : amt.mantissa();

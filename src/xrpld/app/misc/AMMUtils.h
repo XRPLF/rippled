@@ -112,7 +112,7 @@ initializeFeeAuctionVote(
     ApplyView& view,
     std::shared_ptr<SLE>& ammSle,
     AccountID const& account,
-    Asset const& lptIssue,
+    Asset const& lptAsset,
     std::uint16_t tfee);
 
 /** Return true if the Liquidity Provider is the only AMM provider, false

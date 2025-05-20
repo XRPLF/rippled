@@ -142,22 +142,19 @@ public:
 
 template <>
 struct hash<ripple::Asset>
-    : private boost::base_from_member<std::hash<ripple::Currency>, 0>,
-      private boost::base_from_member<std::hash<ripple::AccountID>, 1>,
-      private boost::base_from_member<std::hash<ripple::MPTID>, 2>
 {
 private:
-    using currency_hash_type =
-        boost::base_from_member<std::hash<ripple::Currency>, 0>;
-    using issuer_hash_type =
-        boost::base_from_member<std::hash<ripple::AccountID>, 1>;
-    using mpt_hash_type = boost::base_from_member<std::hash<ripple::MPTID>, 2>;
+    using value_type = std::size_t;
+    using argument_type = ripple::Asset;
+
+    using issue_hasher = std::hash<ripple::Issue>;
+    using mptissue_hasher = std::hash<ripple::MPTIssue>;
+
+    issue_hasher m_issue_hasher;
+    mptissue_hasher m_mptissue_hasher;
 
 public:
     explicit hash() = default;
-
-    using value_type = std::size_t;
-    using argument_type = ripple::Asset;
 
     value_type
     operator()(argument_type const& asset) const
@@ -166,16 +163,12 @@ public:
             [&]<ripple::ValidIssueType TIss>(TIss const& issue) {
                 if constexpr (std::is_same_v<TIss, ripple::Issue>)
                 {
-                    value_type result(
-                        currency_hash_type::member(issue.currency));
-                    if (!isXRP(issue.currency))
-                        boost::hash_combine(
-                            result, issuer_hash_type::member(issue.account));
+                    value_type result(m_issue_hasher(issue));
                     return result;
                 }
                 else if constexpr (std::is_same_v<TIss, ripple::MPTIssue>)
                 {
-                    value_type result(mpt_hash_type::member(issue.getMptID()));
+                    value_type result(m_mptissue_hasher(issue));
                     return result;
                 }
             },

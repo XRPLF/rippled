@@ -86,7 +86,7 @@ Payment::preflight(PreflightContext const& ctx)
     std::uint32_t const txFlags = tx.getFlags();
 
     std::uint32_t paymentMask =
-        (isDstMPT && !MPTokensV2) ? tfMPTPaymentMask : tfPaymentMask;
+        (isDstMPT && !MPTokensV2) ? tfMPTPaymentMaskV1 : tfPaymentMask;
 
     if (txFlags & paymentMask)
     {

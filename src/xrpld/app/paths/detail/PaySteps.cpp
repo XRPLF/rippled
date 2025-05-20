@@ -127,7 +127,7 @@ toStep(
         (e2->getNodeType() & STPathElement::typeAsset) ||
             (e2->getNodeType() & STPathElement::typeIssuer),
         "ripple::toStep : currency or issuer");
-    auto const outAsset = e2->getNodeType() & STPathElement::typeAsset
+    PathAsset const outAsset = e2->getNodeType() & STPathElement::typeAsset
         ? e2->getPathAsset()
         : curAsset;
     auto const outIssuer = e2->getNodeType() & STPathElement::typeIssuer
@@ -384,12 +384,14 @@ toStrand(
         auto cur = &normPath[i];
         auto const next = &normPath[i + 1];
 
-        // Switch over from MPT to Currency.
+        // Switch over from MPT to Currency. In this case curAsset account
+        // can be different from the issuer. If cur is MPT then curAsset
+        // is just set to MPTID.
         if (curAsset.holds<MPTIssue>() && cur->hasCurrency())
             curAsset = Issue{};
 
         // Can only update the account for Issue since MPTIssue's account
-        // is immutable as it is part of MPTID
+        // is immutable as it is part of MPTID.
         if (curAsset.holds<Issue>())
         {
             if (cur->isAccount())

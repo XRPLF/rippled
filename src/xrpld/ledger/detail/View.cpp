@@ -2159,7 +2159,7 @@ deleteAMMMPToken(
             (*sleMpt)[sfOwnerNode],
             sleMpt->key(),
             false))
-        return tecINTERNAL;
+        return tefBAD_LEDGER;
 
     view.erase(sleMpt);
 

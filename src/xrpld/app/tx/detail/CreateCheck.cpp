@@ -88,6 +88,7 @@ TER
 CreateCheck::preclaim(PreclaimContext const& ctx)
 {
     AccountID const dstId{ctx.tx[sfDestination]};
+    AccountID const srcId{ctx.tx[sfAccount]};
     auto const sleDst = ctx.view.read(keylet::account(dstId));
     if (!sleDst)
     {
@@ -120,7 +121,7 @@ CreateCheck::preclaim(PreclaimContext const& ctx)
         {
             // The currency may not be globally frozen
             AccountID const& issuerId{sendMax.getIssuer()};
-            if (isGlobalFrozen(ctx.view, issuerId))
+            if (isGlobalFrozen(ctx.view, sendMax.asset()))
             {
                 JLOG(ctx.j.warn()) << "Creating a check for frozen asset";
                 return tecFROZEN;
@@ -132,7 +133,6 @@ CreateCheck::preclaim(PreclaimContext const& ctx)
                 //
                 // Note that we DO allow create check for a currency that the
                 // account does not yet have a trustline to.
-                AccountID const srcId{ctx.tx.getAccountID(sfAccount)};
                 if (issuerId != srcId)
                 {
                     // Check if the issuer froze the line
@@ -165,7 +165,6 @@ CreateCheck::preclaim(PreclaimContext const& ctx)
             else
             {
                 auto const& mptIssue = sendMax.get<MPTIssue>();
-                auto const& srcId = ctx.tx[sfAccount];
                 if (srcId != mptIssue.getIssuer() &&
                     isFrozen(ctx.view, srcId, mptIssue))
                     return tecFROZEN;
@@ -182,10 +181,7 @@ CreateCheck::preclaim(PreclaimContext const& ctx)
     }
 
     if (auto const ter = isMPTTxAllowed(
-            ctx.view,
-            ttCHECK_CREATE,
-            ctx.tx[sfSendMax].asset(),
-            ctx.tx[sfAccount]);
+            ctx.view, ttCHECK_CREATE, ctx.tx[sfSendMax].asset(), srcId, dstId);
         ter != tesSUCCESS)
         return ter;
 

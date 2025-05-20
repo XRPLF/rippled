@@ -1632,4 +1632,97 @@ ValidPermissionedDomain::finalize(
         (sleStatus_[1] ? check(*sleStatus_[1], j) : true);
 }
 
+void
+ValidPayment::visitEntry(
+    bool,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
+{
+    if (overflow_)
+        return;
+
+    auto makeKey = [](SLE const& sle) {
+        if (sle.getType() == ltMPTOKEN_ISSUANCE)
+            return makeMptID(sle[sfSequence], sle[sfIssuer]);
+        return sle[sfMPTokenIssuanceID];
+    };
+
+    if (before)
+    {
+        auto const type = before->getType();
+        if (type == ltMPTOKEN_ISSUANCE)
+        {
+            data_[makeKey(*before)].outstandingBefore =
+                (*before)[sfOutstandingAmount];
+        }
+        else if (type == ltMPTOKEN)
+        {
+            auto const& account = (*before)[sfAccount];
+            data_[makeKey((*before))].mptAmount[account].before =
+                (*before)[sfMPTAmount];
+        }
+    }
+
+    if (after)
+    {
+        auto const type = after->getType();
+        if (type == ltMPTOKEN_ISSUANCE)
+        {
+            overflow_ = (*after)[sfOutstandingAmount] >
+                (*after)[~sfMaximumAmount].value_or(maxMPTokenAmount);
+            data_[makeKey(*after)].outstandingAfter =
+                (*after)[sfOutstandingAmount];
+        }
+        else if (type == ltMPTOKEN)
+        {
+            auto const& account = (*after)[sfAccount];
+            data_[makeKey((*after))].mptAmount[account].after =
+                (*after)[sfMPTAmount];
+        }
+    }
+}
+
+bool
+ValidPayment::finalize(
+    STTx const& tx,
+    TER const result,
+    XRPAmount const,
+    ReadView const&,
+    beast::Journal const& j)
+{
+    auto const txType = tx.getTxnType();
+    // Transactions that execute over the payment engine
+    if (result == tesSUCCESS &&
+        (txType == ttPAYMENT || txType == ttOFFER_CREATE ||
+         txType == ttCHECK_CASH))
+    {
+        if (overflow_)
+        {
+            JLOG(j.fatal()) << "Invariant failed: OutstandingAmount overflow";
+            return false;
+        }
+
+        for (auto const& [id, data] : data_)
+        {
+            (void)id;
+            std::int64_t diff = 0;
+            for (auto [acct, amount] : data.mptAmount)
+            {
+                (void)acct;
+                diff += amount.after - amount.before;
+            }
+            if (data.outstandingAfter != (data.outstandingBefore + diff))
+            {
+                JLOG(j.fatal())
+                    << "Invariant failed: invalid OutstandingAmount balance "
+                    << data.outstandingBefore << " " << data.outstandingAfter
+                    << " " << diff;
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
 }  // namespace ripple

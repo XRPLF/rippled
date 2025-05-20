@@ -973,15 +973,6 @@ MPTEndpointStep<TDerived>::check(StrandContext const& ctx) const
         return terNO_ACCOUNT;
     }
 
-    // pure issue/redeem can't be frozen - can this happen? can only be an
-    // endpoint
-    if (!(ctx.isLast && ctx.isFirst))
-    {
-        if (isFrozen(ctx.view, src_, mptIssue_) ||
-            isFrozen(ctx.view, dst_, mptIssue_))
-            return tecLOCKED;
-    }
-
     if (ctx.seenBookOuts.count(mptIssue_))
     {
         if (!ctx.prevStep)

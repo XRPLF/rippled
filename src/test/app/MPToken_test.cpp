@@ -3913,6 +3913,7 @@ class MPToken_test : public beast::unit_test::suite
         using namespace test::jtx;
         Account const gw{"gw"};
         Account const alice{"alice"};
+        Account const carol{"carol"};
 
         // MPTokensV2 is disabled
         {
@@ -3993,6 +3994,83 @@ class MPToken_test : public beast::unit_test::suite
             env(check::cash(alice, checkId, check::DeliverMin(MPT(100))));
             env.close();
             BEAST_EXPECT(mpt.checkMPTokenAmount(alice, 100));
+            BEAST_EXPECT(mpt.checkMPTokenOutstandingAmount(100));
+        }
+
+        // MPTCanTransfer disabled
+        {
+            Env env{*this, features};
+
+            MPTTester mpt(env, gw, {.holders = {alice, carol}});
+            mpt.create(
+                {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanTrade});
+            auto const MPT = mpt["MPT"];
+
+            // src is issuer
+            uint256 checkId{keylet::check(gw, env.seq(gw)).key};
+
+            // can create
+            env(check::create(gw, alice, MPT(100)));
+            env.close();
+
+            // can cash since source is issuer
+            env(check::cash(alice, checkId, MPT(100)));
+            env.close();
+
+            BEAST_EXPECT(mpt.checkMPTokenAmount(alice, 100));
+            BEAST_EXPECT(mpt.checkMPTokenOutstandingAmount(100));
+
+            // dst is issuer
+            checkId = keylet::check(alice, env.seq(alice)).key;
+
+            // can create
+            env(check::create(alice, gw, MPT(100)));
+            env.close();
+
+            // can cash since source is issuer
+            env(check::cash(gw, checkId, MPT(100)));
+            env.close();
+
+            BEAST_EXPECT(mpt.checkMPTokenAmount(alice, 0));
+            BEAST_EXPECT(mpt.checkMPTokenOutstandingAmount(0));
+
+            // neither src nor dst is issuer
+            checkId = keylet::check(alice, env.seq(alice)).key;
+
+            // can't create
+            env(check::create(alice, carol, MPT(100)), ter(tecNO_PERMISSION));
+            env.close();
+        }
+
+        // Can create check if src/dst don't own MPT
+        {
+            Env env{*this, features};
+
+            MPTTester mpt(env, gw);
+            mpt.create(
+                {.ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanTransfer | tfMPTCanTrade});
+            auto const MPT = mpt["MPT"];
+
+            env.fund(XRP(1'000), alice, carol);
+
+            // src is issuer
+            uint256 checkId{keylet::check(alice, env.seq(alice)).key};
+
+            // can create
+            env(check::create(alice, carol, MPT(100)));
+            env.close();
+
+            // authorize/fund alice
+            mpt.authorize({.account = alice});
+            mpt.pay(gw, alice, 100);
+
+            // carol can cash the check. MPToken is created automatically
+            env(check::cash(carol, checkId, MPT(100)));
+            env.close();
+
+            BEAST_EXPECT(mpt.checkMPTokenAmount(carol, 100));
             BEAST_EXPECT(mpt.checkMPTokenOutstandingAmount(100));
         }
 
