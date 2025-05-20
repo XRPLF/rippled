@@ -210,11 +210,11 @@ VaultCreate::doApply()
         return maybeShare.error();  // LCOV_EXCL_LINE
     auto& share = *maybeShare;
 
+    vault->setFieldIssue(sfAsset, STIssue{sfAsset, asset});
     vault->at(sfFlags) = txFlags & tfVaultPrivate;
     vault->at(sfSequence) = sequence;
     vault->at(sfOwner) = account_;
     vault->at(sfAccount) = pseudoId;
-    vault->at(sfAsset) = asset;
     vault->at(sfAssetsTotal) = Number(0);
     vault->at(sfAssetsAvailable) = Number(0);
     vault->at(sfLossUnrealized) = Number(0);

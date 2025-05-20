@@ -48,12 +48,6 @@ public:
 
     STIssue&
     operator=(STIssue const& rhs) = default;
-    STIssue&
-    operator=(Asset const& rhs)
-    {
-        asset_ = rhs;
-        return *this;
-    }
 
     template <ValidIssueType TIss>
     TIss const&

@@ -284,16 +284,26 @@ isFrozen(
 [[nodiscard]] bool
 isAnyFrozen(
     ReadView const& view,
-    AccountID const& account1,
-    AccountID const& account2,
+    std::initializer_list<AccountID> const& accounts,
     MPTIssue const& mptIssue,
     int depth)
 {
-    return isGlobalFrozen(view, mptIssue) ||
-        isIndividualFrozen(view, account1, mptIssue) ||
-        isIndividualFrozen(view, account2, mptIssue) ||
-        isVaultPseudoAccountFrozen(view, account1, mptIssue, depth) ||
-        isVaultPseudoAccountFrozen(view, account2, mptIssue, depth);
+    if (isGlobalFrozen(view, mptIssue))
+        return true;
+
+    for (auto const& account : accounts)
+    {
+        if (isIndividualFrozen(view, account, mptIssue))
+            return true;
+    }
+
+    for (auto const& account : accounts)
+    {
+        if (isVaultPseudoAccountFrozen(view, account, mptIssue, depth))
+            return true;
+    }
+
+    return false;
 }
 
 bool
@@ -333,7 +343,7 @@ isVaultPseudoAccountFrozen(
         return false;
     }  // LCOV_EXCL_STOP
 
-    return isAnyFrozen(view, issuer, account, vault->at(sfAsset), depth + 1);
+    return isAnyFrozen(view, {issuer, account}, vault->at(sfAsset), depth + 1);
 }
 
 bool

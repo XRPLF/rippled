@@ -35,6 +35,7 @@
 #include <xrpl/protocol/TER.h>
 
 #include <functional>
+#include <initializer_list>
 #include <map>
 #include <utility>
 
@@ -177,36 +178,37 @@ isFrozen(
 [[nodiscard]] bool
 isAnyFrozen(
     ReadView const& view,
-    AccountID const& account1,
-    AccountID const& account2,
+    std::initializer_list<AccountID> const& accounts,
     MPTIssue const& mptIssue,
     int depth = 0);
 
 [[nodiscard]] inline bool
 isAnyFrozen(
     ReadView const& view,
-    AccountID const& account1,
-    AccountID const& account2,
+    std::initializer_list<AccountID> const& accounts,
     Issue const& issue)
 {
-    return isFrozen(view, account1, issue.currency, issue.account) ||
-        isFrozen(view, account2, issue.currency, issue.account);
+    for (auto const& account : accounts)
+    {
+        if (isFrozen(view, account, issue.currency, issue.account))
+            return true;
+    }
+    return false;
 }
 
 [[nodiscard]] inline bool
 isAnyFrozen(
     ReadView const& view,
-    AccountID const& account1,
-    AccountID const& account2,
+    std::initializer_list<AccountID> const& accounts,
     Asset const& asset,
     int depth = 0)
 {
     return std::visit(
         [&]<ValidIssueType TIss>(TIss const& issue) {
             if constexpr (std::is_same_v<TIss, Issue>)
-                return isAnyFrozen(view, account1, account2, issue);
+                return isAnyFrozen(view, accounts, issue);
             else
-                return isAnyFrozen(view, account1, account2, issue, depth);
+                return isAnyFrozen(view, accounts, issue, depth);
         },
         asset.value());
 }

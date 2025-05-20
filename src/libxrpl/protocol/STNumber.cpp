@@ -25,6 +25,7 @@
 #include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/Serializer.h>
 
+#include <boost/lexical_cast.hpp>
 #include <boost/regex.hpp>
 
 #include <cstddef>
@@ -152,14 +153,13 @@ partsFromString(std::string const& number)
 
     if (!match[4].matched)  // integer only
     {
-        mantissa =
-            beast::lexicalCastThrow<std::uint64_t>(std::string(match[2]));
+        mantissa = boost::lexical_cast<std::uint64_t>(std::string(match[2]));
         exponent = 0;
     }
     else
     {
         // integer and fraction
-        mantissa = beast::lexicalCastThrow<std::uint64_t>(match[2] + match[4]);
+        mantissa = boost::lexical_cast<std::uint64_t>(match[2] + match[4]);
         exponent = -(match[4].length());
     }
 
@@ -167,9 +167,9 @@ partsFromString(std::string const& number)
     {
         // we have an exponent
         if (match[6].matched && (match[6] == "-"))
-            exponent -= beast::lexicalCastThrow<int>(std::string(match[7]));
+            exponent -= boost::lexical_cast<int>(std::string(match[7]));
         else
-            exponent += beast::lexicalCastThrow<int>(std::string(match[7]));
+            exponent += boost::lexical_cast<int>(std::string(match[7]));
     }
 
     return {mantissa, exponent, negative};
