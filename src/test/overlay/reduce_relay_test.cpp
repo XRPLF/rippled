@@ -517,7 +517,8 @@ class OverlaySim : public Overlay, public reduce_relay::SquelchHandler
 public:
     using id_t = Peer::id_t;
     using clock_type = ManualClock;
-    OverlaySim(Application& app) : slots_(app.logs(), *this), logs_(app.logs())
+    OverlaySim(Application& app)
+        : slots_(app.logs(), *this, app.config()), logs_(app.logs())
     {
     }
 
@@ -986,7 +987,10 @@ protected:
                     network_.overlay().isCountingState(validator);
                 BEAST_EXPECT(
                     countingState == false &&
-                    selected.size() == reduce_relay::MAX_SELECTED_PEERS);
+                    selected.size() ==
+                        env_.app()
+                            .config()
+                            .VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS);
             }
 
             // Trigger Link Down or Peer Disconnect event
@@ -1188,7 +1192,10 @@ protected:
                 {
                     BEAST_EXPECT(
                         squelched ==
-                        MAX_PEERS - reduce_relay::MAX_SELECTED_PEERS);
+                        MAX_PEERS -
+                            env_.app()
+                                .config()
+                                .VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS);
                     n++;
                 }
             },
@@ -1197,7 +1204,9 @@ protected:
             purge,
             resetClock);
         auto selected = network_.overlay().getSelected(network_.validator(0));
-        BEAST_EXPECT(selected.size() == reduce_relay::MAX_SELECTED_PEERS);
+        BEAST_EXPECT(
+            selected.size() ==
+            env_.app().config().VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS);
         BEAST_EXPECT(n == 1);  // only one selection round
         auto res = checkCounting(network_.validator(0), false);
         BEAST_EXPECT(res);
@@ -1261,7 +1270,11 @@ protected:
                     unsquelched++;
                 });
             BEAST_EXPECT(
-                unsquelched == MAX_PEERS - reduce_relay::MAX_SELECTED_PEERS);
+                unsquelched ==
+                MAX_PEERS -
+                    env_.app()
+                        .config()
+                        .VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS);
             BEAST_EXPECT(checkCounting(network_.validator(0), true));
         });
     }
@@ -1282,7 +1295,11 @@ protected:
                 });
             auto peers = network_.overlay().getPeers(network_.validator(0));
             BEAST_EXPECT(
-                unsquelched == MAX_PEERS - reduce_relay::MAX_SELECTED_PEERS);
+                unsquelched ==
+                MAX_PEERS -
+                    env_.app()
+                        .config()
+                        .VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS);
             BEAST_EXPECT(checkCounting(network_.validator(0), true));
         });
     }
@@ -1401,6 +1418,50 @@ vp_enable=0
 
             BEAST_EXPECT(error == expectedError);
         });
+
+        doTest("Test Config - max selected peers", log, [&](bool log) {
+            Config c;
+
+            std::string toLoad(R"rippleConfig(
+[reduce_relay]
+)rippleConfig");
+
+            c.loadFromString(toLoad);
+            BEAST_EXPECT(c.VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS == 5);
+
+            Config c1;
+
+            toLoad = R"rippleConfig(
+[reduce_relay]
+vp_base_squelch_max_selected_peers=6
+)rippleConfig";
+
+            c1.loadFromString(toLoad);
+            BEAST_EXPECT(c1.VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS == 6);
+
+            Config c2;
+
+            toLoad = R"rippleConfig(
+[reduce_relay]
+vp_base_squelch_max_selected_peers=2
+)rippleConfig";
+
+            std::string error;
+            auto const expectedError =
+                "Invalid reduce_relay"
+                ", vp_base_squelch_max_selected_peers must be "
+                "greater or equal to 3";
+            try
+            {
+                c2.loadFromString(toLoad);
+            }
+            catch (std::runtime_error& e)
+            {
+                error = e.what();
+            }
+
+            BEAST_EXPECT(error == expectedError);
+        });
     }
 
     void
@@ -1475,7 +1536,7 @@ vp_enable=0
             auto run = [&](int npeers) {
                 handler.maxDuration_ = 0;
                 reduce_relay::Slots<ManualClock> slots(
-                    env_.app().logs(), handler);
+                    env_.app().logs(), handler, env_.app().config());
                 // 1st message from a new peer switches the slot
                 // to counting state and resets the counts of all peers +
                 // MAX_MESSAGE_THRESHOLD + 1 messages to reach the threshold
@@ -1613,6 +1674,7 @@ vp_enable=0
 public:
     reduce_relay_test() : env_(*this), network_(env_.app())
     {
+        env_.app().config().VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS = 6;
     }
 
     void

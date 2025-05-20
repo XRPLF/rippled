@@ -757,6 +757,17 @@ Config::loadFromString(std::string const& fileContents)
         else
             VP_REDUCE_RELAY_TRUSTED_SQUELCH_ENABLE = false;
 
+        // this is a temporary code block to expose max_selected_peers as a
+        // config option it should be removed once squelching id the default
+        // routing algoritm
+        VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS =
+            sec.value_or("vp_base_squelch_max_selected_peers", 5);
+        if (VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS < 3)
+            Throw<std::runtime_error>("Invalid " SECTION_REDUCE_RELAY
+                                      ", vp_base_squelch_max_selected_peers must be "
+                                      "greater or equal to 3");
+        // end of temporary code block
+
         TX_REDUCE_RELAY_ENABLE = sec.value_or("tx_enable", false);
         TX_REDUCE_RELAY_METRICS = sec.value_or("tx_metrics", false);
         TX_REDUCE_RELAY_MIN_PEERS = sec.value_or("tx_min_peers", 20);

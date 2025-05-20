@@ -247,6 +247,11 @@ public:
     // Enable validation/proposal squelching of trusted validators
     bool VP_REDUCE_RELAY_TRUSTED_SQUELCH_ENABLE = false;
 
+    // A temporary config option to tune the number of peers selected as a
+    // source of validator messages it must be removed once squelching is made
+    // the default routing algorithm
+    std::size_t VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS = 5;
+
     // Transaction reduce-relay feature
     bool TX_REDUCE_RELAY_ENABLE = false;
     // If tx reduce-relay feature is disabled
