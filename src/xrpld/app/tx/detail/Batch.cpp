@@ -30,6 +30,26 @@
 
 namespace ripple {
 
+/**
+ * @brief Calculates the total base fee for a batch transaction.
+ *
+ * This function computes the required base fee for a batch transaction,
+ * including the base fee for the batch itself, the sum of base fees for
+ * all inner transactions, and additional fees for each batch signer.
+ * It performs overflow checks and validates the structure of the batch
+ * and its signers.
+ *
+ * @param view The ledger view providing fee and state information.
+ * @param tx The batch transaction to calculate the fee for.
+ * @return XRPAmount The total base fee required for the batch transaction.
+ *
+ * @throws std::overflow_error If any fee calculation would overflow the
+ * XRPAmount type.
+ * @throws std::length_error If the number of inner transactions or signers
+ * exceeds the allowed maximum.
+ * @throws std::invalid_argument If an inner transaction is itself a batch
+ * transaction.
+ */
 XRPAmount
 Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
@@ -124,6 +144,39 @@ Batch::calculateBaseFee(ReadView const& view, STTx const& tx)
     return signerFees + txnFees + batchBase;
 }
 
+/**
+ * @brief Performs preflight validation checks for a Batch transaction.
+ *
+ * This function validates the structure and contents of a Batch transaction
+ * before it is processed. It ensures that the Batch feature is enabled,
+ * checks for valid flags, validates the number and uniqueness of inner
+ * transactions, and enforces correct signing and fee requirements.
+ *
+ * The following validations are performed:
+ * - The Batch feature must be enabled in the current rules.
+ * - Only one of the mutually exclusive batch flags must be set.
+ * - The batch must contain at least two and no more than the maximum allowed
+ * inner transactions.
+ * - Each inner transaction must:
+ *   - Be unique within the batch.
+ *   - Not itself be a Batch transaction.
+ *   - Have the tfInnerBatchTxn flag set.
+ *   - Not include a TxnSignature or Signers field.
+ *   - Have an empty SigningPubKey.
+ *   - Pass its own preflight checks.
+ *   - Have a fee of zero.
+ *   - Have either Sequence or TicketSequence set, but not both or neither.
+ *   - Not duplicate Sequence or TicketSequence values for the same account (for
+ * certain flags).
+ * - Validates that all required inner transaction accounts are present in the
+ * batch signers array, and that all batch signers are unique and not the outer
+ * account.
+ * - Verifies the batch signature if batch signers are present.
+ *
+ * @param ctx The PreflightContext containing the transaction and environment.
+ * @return NotTEC Returns tesSUCCESS if all checks pass, or an appropriate error
+ * code otherwise.
+ */
 NotTEC
 Batch::preflight(PreflightContext const& ctx)
 {
@@ -380,6 +433,23 @@ Batch::preflight(PreflightContext const& ctx)
     return tesSUCCESS;
 }
 
+/**
+ * @brief Checks the validity of signatures for a batch transaction.
+ *
+ * This method first verifies the standard transaction signature by calling
+ * Transactor::checkSign. If the signature is not valid it returns the
+ * corresponding error code.
+ *
+ * Next, it verifies the batch-specific signature requirements by calling
+ * Transactor::checkBatchSign. If this check fails, it also returns the
+ * corresponding error code.
+ *
+ * If both checks succeed, the function returns tesSUCCESS.
+ *
+ * @param ctx The PreclaimContext containing transaction and environment data.
+ * @return NotTEC Returns tesSUCCESS if all signature checks pass, or an error
+ * code otherwise.
+ */
 NotTEC
 Batch::checkSign(PreclaimContext const& ctx)
 {
@@ -392,11 +462,19 @@ Batch::checkSign(PreclaimContext const& ctx)
     return tesSUCCESS;
 }
 
+/**
+ * @brief Applies the outer batch transaction.
+ *
+ * This method is responsible for applying the outer batch transaction.
+ * The inner transactions within the batch are applied separately in the
+ * `applyBatchTransactions` method after the outer transaction is processed.
+ *
+ * @return TER Returns tesSUCCESS to indicate successful application of the
+ * outer batch transaction.
+ */
 TER
 Batch::doApply()
 {
-    // Inner txns are applied in `applyBatchTransactions`, after the outer batch
-    // txn is applied
     return tesSUCCESS;
 }
 
