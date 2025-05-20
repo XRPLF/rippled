@@ -161,13 +161,13 @@ $(function() {
 <div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span><span class="comment">// Scale using load as well as base rate</span></div>
 <div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span><a class="code hl_class" href="classripple_1_1XRPAmount.html">XRPAmount</a></div>
 <div class="line"><a id="l00085" name="l00085"></a><span class="lineno"><a class="line" href="namespaceripple.html#ac9d3948299b3e1819062bb1327c26610">   85</a></span><a class="code hl_function" href="namespaceripple.html#ac9d3948299b3e1819062bb1327c26610">scaleFeeLoad</a>(</div>
-<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>    <a class="code hl_class" href="classripple_1_1XRPAmount.html">XRPAmount</a> fee,</div>
+<div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>    <a class="code hl_class" href="classripple_1_1XRPAmount.html">XRPAmount</a> <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>,</div>
 <div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>    <a class="code hl_class" href="classripple_1_1LoadFeeTrack.html">LoadFeeTrack</a> <span class="keyword">const</span>&amp; feeTrack,</div>
 <div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>    <a class="code hl_struct" href="structripple_1_1Fees.html">Fees</a> <span class="keyword">const</span>&amp; fees,</div>
 <div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>    <span class="keywordtype">bool</span> bUnlimited)</div>
 <div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>{</div>
-<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>    <span class="keywordflow">if</span> (fee == 0)</div>
-<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>        <span class="keywordflow">return</span> fee;</div>
+<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>    <span class="keywordflow">if</span> (<a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a> == 0)</div>
+<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>        <span class="keywordflow">return</span> <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>;</div>
 <div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span> </div>
 <div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>    <span class="comment">// Collect the fee rates</span></div>
 <div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>    <span class="keyword">auto</span> [feeFactor, uRemFee] = feeTrack.<a class="code hl_function" href="classripple_1_1LoadFeeTrack.html#ac50b1ad1039e83104d71f24200e5a145">getScalingFactors</a>();</div>
@@ -182,7 +182,7 @@ $(function() {
 <div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>    <span class="comment">// without overflow, and as accurately as possible</span></div>
 <div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span> </div>
 <div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>    <span class="keyword">auto</span> <span class="keyword">const</span> result = <a class="code hl_function" href="namespaceripple.html#ad012d6a36cd38b19ab4d8b47521fbd5f">mulDiv</a>(</div>
-<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>        fee, feeFactor, safe_cast&lt;std::uint64_t&gt;(feeTrack.<a class="code hl_function" href="classripple_1_1LoadFeeTrack.html#aba79fd95090f3faf3e4ab3e57e1739ce">getLoadBase</a>()));</div>
+<div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>        <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>, feeFactor, safe_cast&lt;std::uint64_t&gt;(feeTrack.<a class="code hl_function" href="classripple_1_1LoadFeeTrack.html#aba79fd95090f3faf3e4ab3e57e1739ce">getLoadBase</a>()));</div>
 <div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>    <span class="keywordflow">if</span> (!result)</div>
 <div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span>        Throw&lt;std::overflow_error&gt;(<span class="stringliteral">&quot;scaleFeeLoad&quot;</span>);</div>
 <div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>    <span class="keywordflow">return</span> *result;</div>
@@ -205,6 +205,7 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1LoadFeeTrack_html_ad14353dc6039f6c802287e7a2e814456"><div class="ttname"><a href="classripple_1_1LoadFeeTrack.html#ad14353dc6039f6c802287e7a2e814456">ripple::LoadFeeTrack::lftFeeDecFraction</a></div><div class="ttdeci">static std::uint32_t constexpr lftFeeDecFraction</div><div class="ttdef"><b>Definition:</b> <a href="LoadFeeTrack_8h_source.html#l00145">LoadFeeTrack.h:145</a></div></div>
 <div class="ttc" id="aclassripple_1_1LoadFeeTrack_html_afb1a884e52b3b98a03bfe1facd4491da"><div class="ttname"><a href="classripple_1_1LoadFeeTrack.html#afb1a884e52b3b98a03bfe1facd4491da">ripple::LoadFeeTrack::lftFeeMax</a></div><div class="ttdeci">static std::uint32_t constexpr lftFeeMax</div><div class="ttdef"><b>Definition:</b> <a href="LoadFeeTrack_8h_source.html#l00147">LoadFeeTrack.h:147</a></div></div>
 <div class="ttc" id="aclassripple_1_1XRPAmount_html"><div class="ttname"><a href="classripple_1_1XRPAmount.html">ripple::XRPAmount</a></div><div class="ttdef"><b>Definition:</b> <a href="XRPAmount_8h_source.html#l00039">XRPAmount.h:43</a></div></div>
+<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1fee_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1fee.html">ripple::test::jtx::fee</a></div><div class="ttdoc">Set the fee on a JTx.</div><div class="ttdef"><b>Definition:</b> <a href="fee_8h_source.html#l00036">fee.h:37</a></div></div>
 <div class="ttc" id="acstdint_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/cstdint.html">cstdint</a></div></div>
 <div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a></div></div>
 <div class="ttc" id="alock_guard_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a></div></div>

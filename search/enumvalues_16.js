@@ -7,5 +7,6 @@ var searchData=
   ['validation_5funtrusted_4',['validation_untrusted',['../classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7ae5bc7ae33da64addd84f544df555dcda',1,'ripple::TrafficCount']]],
   ['validatorlist_5',['validatorlist',['../classripple_1_1TrafficCount.html#adbaee77c7a063c9aac783e54594aeda7a603bba4843f1ab5e0a4259c22231be45',1,'ripple::TrafficCount']]],
   ['validatorlist2propagation_6',['ValidatorList2Propagation',['../namespaceripple.html#a3b423ad1ba6341f945c08c13fe141150abbd68b30711cfd4adc8abd9b5519abe1',1,'ripple']]],
-  ['validatorlistpropagation_7',['ValidatorListPropagation',['../namespaceripple.html#a3b423ad1ba6341f945c08c13fe141150a9a32e2a438c197a712d352ca4e69b65b',1,'ripple']]]
+  ['validatorlistpropagation_7',['ValidatorListPropagation',['../namespaceripple.html#a3b423ad1ba6341f945c08c13fe141150a9a32e2a438c197a712d352ca4e69b65b',1,'ripple']]],
+  ['vault_8',['VAULT',['../namespaceripple.html#a22768e0a41b646442c98d38f2f2a307bae9569439466b447c2678d48306e433f9',1,'ripple']]]
 ];

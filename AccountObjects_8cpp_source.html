@@ -291,89 +291,91 @@ $(function() {
 <div class="line"><a id="l00224" name="l00224"></a><span class="lineno">  224</span>            {jss::bridge, ltBRIDGE},</div>
 <div class="line"><a id="l00225" name="l00225"></a><span class="lineno">  225</span>            {jss::mpt_issuance, ltMPTOKEN_ISSUANCE},</div>
 <div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span>            {jss::mptoken, ltMPTOKEN},</div>
-<div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span>            {jss::permissioned_domain, ltPERMISSIONED_DOMAIN}};</div>
-<div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span> </div>
-<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span>        typeFilter.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/utility/optional/emplace.html">emplace</a>();</div>
-<div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span>        typeFilter-&gt;reserve(<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/iterator/size.html">std::size</a>(deletionBlockers));</div>
-<div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span> </div>
-<div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span>        <span class="keywordflow">for</span> (<span class="keyword">auto</span> [name, type] : deletionBlockers)</div>
-<div class="line"><a id="l00233" name="l00233"></a><span class="lineno">  233</span>        {</div>
-<div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span>            <span class="keywordflow">if</span> (params.isMember(jss::type) &amp;&amp; name != params[jss::type])</div>
-<div class="line"><a id="l00235" name="l00235"></a><span class="lineno">  235</span>            {</div>
-<div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span>                <span class="keywordflow">continue</span>;</div>
-<div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span>            }</div>
-<div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span> </div>
-<div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span>            typeFilter-&gt;push_back(type);</div>
-<div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span>        }</div>
-<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span>    }</div>
-<div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span>    <span class="keywordflow">else</span></div>
-<div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span>    {</div>
-<div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span>        <span class="keyword">auto</span> [rpcStatus, type] = <a class="code hl_function" href="namespaceripple_1_1RPC.html#a75647cbae9e0bae5c52d8b8288d78028">RPC::chooseLedgerEntryType</a>(params);</div>
-<div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span> </div>
-<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span>        <span class="keywordflow">if</span> (!<a class="code hl_function" href="namespaceripple_1_1RPC.html#a449a1f72668a0d861d60f136efa09db9">RPC::isAccountObjectsValidType</a>(type))</div>
-<div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span>            <span class="keywordflow">return</span> <a class="code hl_function" href="namespaceripple_1_1RPC.html#a3f2a31e585bbecb3af3740d34d7df15f">RPC::invalid_field_error</a>(jss::type);</div>
-<div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span> </div>
-<div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span>        <span class="keywordflow">if</span> (rpcStatus)</div>
-<div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span>        {</div>
-<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span>            result.clear();</div>
-<div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span>            rpcStatus.inject(result);</div>
-<div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span>            <span class="keywordflow">return</span> result;</div>
-<div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span>        }</div>
-<div class="line"><a id="l00255" name="l00255"></a><span class="lineno">  255</span>        <span class="keywordflow">else</span> <span class="keywordflow">if</span> (type != <a class="code hl_enumvalue" href="namespaceripple.html#ac151bf19e1f4daae2b04c65c65117139a926f3c33237e0c1bb2d4cb8afc0c82b4">ltANY</a>)</div>
-<div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span>        {</div>
-<div class="line"><a id="l00257" name="l00257"></a><span class="lineno">  257</span>            typeFilter = <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;LedgerEntryType&gt;</a>({type});</div>
-<div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span>        }</div>
-<div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span>    }</div>
-<div class="line"><a id="l00260" name="l00260"></a><span class="lineno">  260</span> </div>
-<div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span>    <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> limit;</div>
-<div class="line"><a id="l00262" name="l00262"></a><span class="lineno">  262</span>    <span class="keywordflow">if</span> (<span class="keyword">auto</span> err = readLimitField(limit, <a class="code hl_variable" href="namespaceripple_1_1RPC_1_1Tuning.html#ae8633e39a2d96d41bc5d9e79154fd380">RPC::Tuning::accountObjects</a>, context))</div>
-<div class="line"><a id="l00263" name="l00263"></a><span class="lineno">  263</span>        <span class="keywordflow">return</span> *err;</div>
-<div class="line"><a id="l00264" name="l00264"></a><span class="lineno">  264</span> </div>
-<div class="line"><a id="l00265" name="l00265"></a><span class="lineno">  265</span>    <a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> dirIndex;</div>
-<div class="line"><a id="l00266" name="l00266"></a><span class="lineno">  266</span>    <a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> entryIndex;</div>
-<div class="line"><a id="l00267" name="l00267"></a><span class="lineno">  267</span>    <span class="keywordflow">if</span> (params.isMember(jss::marker))</div>
-<div class="line"><a id="l00268" name="l00268"></a><span class="lineno">  268</span>    {</div>
-<div class="line"><a id="l00269" name="l00269"></a><span class="lineno">  269</span>        <span class="keyword">auto</span> <span class="keyword">const</span>&amp; marker = params[jss::marker];</div>
-<div class="line"><a id="l00270" name="l00270"></a><span class="lineno">  270</span>        <span class="keywordflow">if</span> (!marker.isString())</div>
-<div class="line"><a id="l00271" name="l00271"></a><span class="lineno">  271</span>            <span class="keywordflow">return</span> <a class="code hl_function" href="namespaceripple_1_1RPC.html#aa63398ec847d01de9d9af3598e3e2325">RPC::expected_field_error</a>(jss::marker, <span class="stringliteral">&quot;string&quot;</span>);</div>
-<div class="line"><a id="l00272" name="l00272"></a><span class="lineno">  272</span> </div>
-<div class="line"><a id="l00273" name="l00273"></a><span class="lineno">  273</span>        <span class="keyword">auto</span> <span class="keyword">const</span>&amp; markerStr = marker.asString();</div>
-<div class="line"><a id="l00274" name="l00274"></a><span class="lineno">  274</span>        <span class="keyword">auto</span> <span class="keyword">const</span>&amp; idx = markerStr.find(<span class="charliteral">&#39;,&#39;</span>);</div>
-<div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span>        <span class="keywordflow">if</span> (idx == std::string::npos)</div>
-<div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span>            <span class="keywordflow">return</span> <a class="code hl_function" href="namespaceripple_1_1RPC.html#a3f2a31e585bbecb3af3740d34d7df15f">RPC::invalid_field_error</a>(jss::marker);</div>
-<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span> </div>
-<div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span>        <span class="keywordflow">if</span> (!dirIndex.<a class="code hl_function" href="classripple_1_1base__uint.html#a698d3fd0c0f0155995c87d2f48ac90d5">parseHex</a>(markerStr.substr(0, idx)))</div>
-<div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span>            <span class="keywordflow">return</span> <a class="code hl_function" href="namespaceripple_1_1RPC.html#a3f2a31e585bbecb3af3740d34d7df15f">RPC::invalid_field_error</a>(jss::marker);</div>
-<div class="line"><a id="l00280" name="l00280"></a><span class="lineno">  280</span> </div>
-<div class="line"><a id="l00281" name="l00281"></a><span class="lineno">  281</span>        <span class="keywordflow">if</span> (!entryIndex.<a class="code hl_function" href="classripple_1_1base__uint.html#a698d3fd0c0f0155995c87d2f48ac90d5">parseHex</a>(markerStr.substr(idx + 1)))</div>
-<div class="line"><a id="l00282" name="l00282"></a><span class="lineno">  282</span>            <span class="keywordflow">return</span> <a class="code hl_function" href="namespaceripple_1_1RPC.html#a3f2a31e585bbecb3af3740d34d7df15f">RPC::invalid_field_error</a>(jss::marker);</div>
-<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span>    }</div>
-<div class="line"><a id="l00284" name="l00284"></a><span class="lineno">  284</span> </div>
-<div class="line"><a id="l00285" name="l00285"></a><span class="lineno">  285</span>    <span class="keywordflow">if</span> (!<a class="code hl_function" href="namespaceripple_1_1RPC.html#a8357793802bdb5dc41c19160d17943c1">RPC::getAccountObjects</a>(</div>
-<div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span>            *ledger,</div>
-<div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span>            accountID,</div>
-<div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span>            typeFilter,</div>
-<div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span>            dirIndex,</div>
-<div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span>            entryIndex,</div>
-<div class="line"><a id="l00291" name="l00291"></a><span class="lineno">  291</span>            limit,</div>
-<div class="line"><a id="l00292" name="l00292"></a><span class="lineno">  292</span>            result))</div>
-<div class="line"><a id="l00293" name="l00293"></a><span class="lineno">  293</span>        <span class="keywordflow">return</span> <a class="code hl_function" href="namespaceripple_1_1RPC.html#a3f2a31e585bbecb3af3740d34d7df15f">RPC::invalid_field_error</a>(jss::marker);</div>
-<div class="line"><a id="l00294" name="l00294"></a><span class="lineno">  294</span> </div>
-<div class="line"><a id="l00295" name="l00295"></a><span class="lineno">  295</span>    result[jss::account] = <a class="code hl_function" href="namespaceripple.html#a08a13b62b18272366f788632359e8793">toBase58</a>(accountID);</div>
-<div class="line"><a id="l00296" name="l00296"></a><span class="lineno">  296</span>    context.<a class="code hl_variable" href="structripple_1_1RPC_1_1Context.html#a53cf66700be4d73f6249db71ed263bc4">loadType</a> = <a class="code hl_variable" href="namespaceripple_1_1Resource.html#a38c76186a94f70d37812084660e723bf">Resource::feeMediumBurdenRPC</a>;</div>
-<div class="line"><a id="l00297" name="l00297"></a><span class="lineno">  297</span>    <span class="keywordflow">return</span> result;</div>
-<div class="line"><a id="l00298" name="l00298"></a><span class="lineno">  298</span>}</div>
-<div class="line"><a id="l00299" name="l00299"></a><span class="lineno">  299</span> </div>
-<div class="line"><a id="l00300" name="l00300"></a><span class="lineno">  300</span>}  <span class="comment">// namespace ripple</span></div>
-<div class="ttc" id="aclassJson_1_1StaticString_html"><div class="ttname"><a href="classJson_1_1StaticString.html">Json::StaticString</a></div><div class="ttdoc">Lightweight wrapper to tag static string.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00061">json_value.h:62</a></div></div>
-<div class="ttc" id="aclassJson_1_1Value_html"><div class="ttname"><a href="classJson_1_1Value.html">Json::Value</a></div><div class="ttdoc">Represents a JSON value.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00147">json_value.h:148</a></div></div>
-<div class="ttc" id="aclassJson_1_1Value_html_a21526b61dea2a1771030473e6248621e"><div class="ttname"><a href="classJson_1_1Value.html#a21526b61dea2a1771030473e6248621e">Json::Value::append</a></div><div class="ttdeci">Value &amp; append(Value const &amp;value)</div><div class="ttdoc">Append value to array at the end.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8cpp_source.html#l00897">json_value.cpp:897</a></div></div>
+<div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span>            {jss::permissioned_domain, ltPERMISSIONED_DOMAIN},</div>
+<div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span>            {jss::vault, ltVAULT},</div>
+<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span>        };</div>
+<div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span> </div>
+<div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span>        typeFilter.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/utility/optional/emplace.html">emplace</a>();</div>
+<div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span>        typeFilter-&gt;reserve(<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/iterator/size.html">std::size</a>(deletionBlockers));</div>
+<div class="line"><a id="l00233" name="l00233"></a><span class="lineno">  233</span> </div>
+<div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span>        <span class="keywordflow">for</span> (<span class="keyword">auto</span> [name, type] : deletionBlockers)</div>
+<div class="line"><a id="l00235" name="l00235"></a><span class="lineno">  235</span>        {</div>
+<div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span>            <span class="keywordflow">if</span> (params.isMember(jss::type) &amp;&amp; name != params[jss::type])</div>
+<div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span>            {</div>
+<div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span>                <span class="keywordflow">continue</span>;</div>
+<div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span>            }</div>
+<div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span> </div>
+<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span>            typeFilter-&gt;push_back(type);</div>
+<div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span>        }</div>
+<div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span>    }</div>
+<div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span>    <span class="keywordflow">else</span></div>
+<div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span>    {</div>
+<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span>        <span class="keyword">auto</span> [rpcStatus, type] = <a class="code hl_function" href="namespaceripple_1_1RPC.html#a75647cbae9e0bae5c52d8b8288d78028">RPC::chooseLedgerEntryType</a>(params);</div>
+<div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span> </div>
+<div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span>        <span class="keywordflow">if</span> (!<a class="code hl_function" href="namespaceripple_1_1RPC.html#a449a1f72668a0d861d60f136efa09db9">RPC::isAccountObjectsValidType</a>(type))</div>
+<div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span>            <span class="keywordflow">return</span> <a class="code hl_function" href="namespaceripple_1_1RPC.html#a3f2a31e585bbecb3af3740d34d7df15f">RPC::invalid_field_error</a>(jss::type);</div>
+<div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span> </div>
+<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span>        <span class="keywordflow">if</span> (rpcStatus)</div>
+<div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span>        {</div>
+<div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span>            result.clear();</div>
+<div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span>            rpcStatus.inject(result);</div>
+<div class="line"><a id="l00255" name="l00255"></a><span class="lineno">  255</span>            <span class="keywordflow">return</span> result;</div>
+<div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span>        }</div>
+<div class="line"><a id="l00257" name="l00257"></a><span class="lineno">  257</span>        <span class="keywordflow">else</span> <span class="keywordflow">if</span> (type != <a class="code hl_enumvalue" href="namespaceripple.html#ac151bf19e1f4daae2b04c65c65117139a926f3c33237e0c1bb2d4cb8afc0c82b4">ltANY</a>)</div>
+<div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span>        {</div>
+<div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span>            typeFilter = <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;LedgerEntryType&gt;</a>({type});</div>
+<div class="line"><a id="l00260" name="l00260"></a><span class="lineno">  260</span>        }</div>
+<div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span>    }</div>
+<div class="line"><a id="l00262" name="l00262"></a><span class="lineno">  262</span> </div>
+<div class="line"><a id="l00263" name="l00263"></a><span class="lineno">  263</span>    <span class="keywordtype">unsigned</span> <span class="keywordtype">int</span> limit;</div>
+<div class="line"><a id="l00264" name="l00264"></a><span class="lineno">  264</span>    <span class="keywordflow">if</span> (<span class="keyword">auto</span> err = readLimitField(limit, <a class="code hl_variable" href="namespaceripple_1_1RPC_1_1Tuning.html#ae8633e39a2d96d41bc5d9e79154fd380">RPC::Tuning::accountObjects</a>, context))</div>
+<div class="line"><a id="l00265" name="l00265"></a><span class="lineno">  265</span>        <span class="keywordflow">return</span> *err;</div>
+<div class="line"><a id="l00266" name="l00266"></a><span class="lineno">  266</span> </div>
+<div class="line"><a id="l00267" name="l00267"></a><span class="lineno">  267</span>    <a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> dirIndex;</div>
+<div class="line"><a id="l00268" name="l00268"></a><span class="lineno">  268</span>    <a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> entryIndex;</div>
+<div class="line"><a id="l00269" name="l00269"></a><span class="lineno">  269</span>    <span class="keywordflow">if</span> (params.isMember(jss::marker))</div>
+<div class="line"><a id="l00270" name="l00270"></a><span class="lineno">  270</span>    {</div>
+<div class="line"><a id="l00271" name="l00271"></a><span class="lineno">  271</span>        <span class="keyword">auto</span> <span class="keyword">const</span>&amp; marker = params[jss::marker];</div>
+<div class="line"><a id="l00272" name="l00272"></a><span class="lineno">  272</span>        <span class="keywordflow">if</span> (!marker.isString())</div>
+<div class="line"><a id="l00273" name="l00273"></a><span class="lineno">  273</span>            <span class="keywordflow">return</span> <a class="code hl_function" href="namespaceripple_1_1RPC.html#aa63398ec847d01de9d9af3598e3e2325">RPC::expected_field_error</a>(jss::marker, <span class="stringliteral">&quot;string&quot;</span>);</div>
+<div class="line"><a id="l00274" name="l00274"></a><span class="lineno">  274</span> </div>
+<div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span>        <span class="keyword">auto</span> <span class="keyword">const</span>&amp; markerStr = marker.asString();</div>
+<div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span>        <span class="keyword">auto</span> <span class="keyword">const</span>&amp; idx = markerStr.find(<span class="charliteral">&#39;,&#39;</span>);</div>
+<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span>        <span class="keywordflow">if</span> (idx == std::string::npos)</div>
+<div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span>            <span class="keywordflow">return</span> <a class="code hl_function" href="namespaceripple_1_1RPC.html#a3f2a31e585bbecb3af3740d34d7df15f">RPC::invalid_field_error</a>(jss::marker);</div>
+<div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span> </div>
+<div class="line"><a id="l00280" name="l00280"></a><span class="lineno">  280</span>        <span class="keywordflow">if</span> (!dirIndex.<a class="code hl_function" href="classripple_1_1base__uint.html#a698d3fd0c0f0155995c87d2f48ac90d5">parseHex</a>(markerStr.substr(0, idx)))</div>
+<div class="line"><a id="l00281" name="l00281"></a><span class="lineno">  281</span>            <span class="keywordflow">return</span> <a class="code hl_function" href="namespaceripple_1_1RPC.html#a3f2a31e585bbecb3af3740d34d7df15f">RPC::invalid_field_error</a>(jss::marker);</div>
+<div class="line"><a id="l00282" name="l00282"></a><span class="lineno">  282</span> </div>
+<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span>        <span class="keywordflow">if</span> (!entryIndex.<a class="code hl_function" href="classripple_1_1base__uint.html#a698d3fd0c0f0155995c87d2f48ac90d5">parseHex</a>(markerStr.substr(idx + 1)))</div>
+<div class="line"><a id="l00284" name="l00284"></a><span class="lineno">  284</span>            <span class="keywordflow">return</span> <a class="code hl_function" href="namespaceripple_1_1RPC.html#a3f2a31e585bbecb3af3740d34d7df15f">RPC::invalid_field_error</a>(jss::marker);</div>
+<div class="line"><a id="l00285" name="l00285"></a><span class="lineno">  285</span>    }</div>
+<div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span> </div>
+<div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span>    <span class="keywordflow">if</span> (!<a class="code hl_function" href="namespaceripple_1_1RPC.html#a8357793802bdb5dc41c19160d17943c1">RPC::getAccountObjects</a>(</div>
+<div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span>            *ledger,</div>
+<div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span>            accountID,</div>
+<div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span>            typeFilter,</div>
+<div class="line"><a id="l00291" name="l00291"></a><span class="lineno">  291</span>            dirIndex,</div>
+<div class="line"><a id="l00292" name="l00292"></a><span class="lineno">  292</span>            entryIndex,</div>
+<div class="line"><a id="l00293" name="l00293"></a><span class="lineno">  293</span>            limit,</div>
+<div class="line"><a id="l00294" name="l00294"></a><span class="lineno">  294</span>            result))</div>
+<div class="line"><a id="l00295" name="l00295"></a><span class="lineno">  295</span>        <span class="keywordflow">return</span> <a class="code hl_function" href="namespaceripple_1_1RPC.html#a3f2a31e585bbecb3af3740d34d7df15f">RPC::invalid_field_error</a>(jss::marker);</div>
+<div class="line"><a id="l00296" name="l00296"></a><span class="lineno">  296</span> </div>
+<div class="line"><a id="l00297" name="l00297"></a><span class="lineno">  297</span>    result[jss::account] = <a class="code hl_function" href="namespaceripple.html#a08a13b62b18272366f788632359e8793">toBase58</a>(accountID);</div>
+<div class="line"><a id="l00298" name="l00298"></a><span class="lineno">  298</span>    context.<a class="code hl_variable" href="structripple_1_1RPC_1_1Context.html#a53cf66700be4d73f6249db71ed263bc4">loadType</a> = <a class="code hl_variable" href="namespaceripple_1_1Resource.html#a38c76186a94f70d37812084660e723bf">Resource::feeMediumBurdenRPC</a>;</div>
+<div class="line"><a id="l00299" name="l00299"></a><span class="lineno">  299</span>    <span class="keywordflow">return</span> result;</div>
+<div class="line"><a id="l00300" name="l00300"></a><span class="lineno">  300</span>}</div>
+<div class="line"><a id="l00301" name="l00301"></a><span class="lineno">  301</span> </div>
+<div class="line"><a id="l00302" name="l00302"></a><span class="lineno">  302</span>}  <span class="comment">// namespace ripple</span></div>
+<div class="ttc" id="aclassJson_1_1StaticString_html"><div class="ttname"><a href="classJson_1_1StaticString.html">Json::StaticString</a></div><div class="ttdoc">Lightweight wrapper to tag static string.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00063">json_value.h:64</a></div></div>
+<div class="ttc" id="aclassJson_1_1Value_html"><div class="ttname"><a href="classJson_1_1Value.html">Json::Value</a></div><div class="ttdoc">Represents a JSON value.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00149">json_value.h:150</a></div></div>
+<div class="ttc" id="aclassJson_1_1Value_html_a21526b61dea2a1771030473e6248621e"><div class="ttname"><a href="classJson_1_1Value.html#a21526b61dea2a1771030473e6248621e">Json::Value::append</a></div><div class="ttdeci">Value &amp; append(Value const &amp;value)</div><div class="ttdoc">Append value to array at the end.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8cpp_source.html#l00910">json_value.cpp:910</a></div></div>
 <div class="ttc" id="aclassripple_1_1base__uint_html"><div class="ttname"><a href="classripple_1_1base__uint.html">ripple::base_uint&lt; 256 &gt;</a></div></div>
 <div class="ttc" id="aclassripple_1_1base__uint_html_a698d3fd0c0f0155995c87d2f48ac90d5"><div class="ttname"><a href="classripple_1_1base__uint.html#a698d3fd0c0f0155995c87d2f48ac90d5">ripple::base_uint::parseHex</a></div><div class="ttdeci">constexpr bool parseHex(std::string_view sv)</div><div class="ttdoc">Parse a hex string into a base_uint.</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00503">base_uint.h:503</a></div></div>
 <div class="ttc" id="aclassripple_1_1base__uint_html_a6fd7dba1ad932f4c1246c9a090c145e5"><div class="ttname"><a href="classripple_1_1base__uint.html#a6fd7dba1ad932f4c1246c9a090c145e5">ripple::base_uint::isZero</a></div><div class="ttdeci">bool isZero() const</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00540">base_uint.h:540</a></div></div>
 <div class="ttc" id="aemplace_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/optional/emplace.html">std::optional::emplace</a></div><div class="ttdeci">T emplace(T... args)</div></div>
 <div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a></div></div>
-<div class="ttc" id="anamespaceJson_html_a7d654b75c16a57007925868e38212b4eadc8f264f36b55b063c78126b335415f4"><div class="ttname"><a href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eadc8f264f36b55b063c78126b335415f4">Json::arrayValue</a></div><div class="ttdeci">@ arrayValue</div><div class="ttdoc">array value (ordered list)</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00043">json_value.h:43</a></div></div>
+<div class="ttc" id="anamespaceJson_html_a7d654b75c16a57007925868e38212b4eadc8f264f36b55b063c78126b335415f4"><div class="ttname"><a href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eadc8f264f36b55b063c78126b335415f4">Json::arrayValue</a></div><div class="ttdeci">@ arrayValue</div><div class="ttdoc">array value (ordered list)</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00045">json_value.h:45</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1RPC_1_1Tuning_html_ab9f82d3beb6e425d8bceafc7bd5460db"><div class="ttname"><a href="namespaceripple_1_1RPC_1_1Tuning.html#ab9f82d3beb6e425d8bceafc7bd5460db">ripple::RPC::Tuning::accountNFTokens</a></div><div class="ttdeci">static LimitRange constexpr accountNFTokens</div><div class="ttdoc">Limits for the account_nftokens command, in pages.</div><div class="ttdef"><b>Definition:</b> <a href="src_2xrpld_2rpc_2detail_2Tuning_8h_source.html#l00055">src/xrpld/rpc/detail/Tuning.h:55</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1RPC_1_1Tuning_html_ae8633e39a2d96d41bc5d9e79154fd380"><div class="ttname"><a href="namespaceripple_1_1RPC_1_1Tuning.html#ae8633e39a2d96d41bc5d9e79154fd380">ripple::RPC::Tuning::accountObjects</a></div><div class="ttdeci">static LimitRange constexpr accountObjects</div><div class="ttdoc">Limits for the account_objects command.</div><div class="ttdef"><b>Definition:</b> <a href="src_2xrpld_2rpc_2detail_2Tuning_8h_source.html#l00043">src/xrpld/rpc/detail/Tuning.h:43</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1RPC_html_a3f2a31e585bbecb3af3740d34d7df15f"><div class="ttname"><a href="namespaceripple_1_1RPC.html#a3f2a31e585bbecb3af3740d34d7df15f">ripple::RPC::invalid_field_error</a></div><div class="ttdeci">Json::Value invalid_field_error(std::string const &amp;name)</div><div class="ttdef"><b>Definition:</b> <a href="ErrorCodes_8h_source.html#l00315">ErrorCodes.h:315</a></div></div>
@@ -385,10 +387,10 @@ $(function() {
 <div class="ttc" id="anamespaceripple_1_1RPC_html_aaebfaaee35308269fab499f4e203a8c9"><div class="ttname"><a href="namespaceripple_1_1RPC.html#aaebfaaee35308269fab499f4e203a8c9">ripple::RPC::lookupLedger</a></div><div class="ttdeci">Status lookupLedger(std::shared_ptr&lt; ReadView const &gt; &amp;ledger, JsonContext &amp;context, Json::Value &amp;result)</div><div class="ttdoc">Look up a ledger from a request and fill a Json::Result with the data representing a ledger.</div><div class="ttdef"><b>Definition:</b> <a href="RPCHelpers_8cpp_source.html#l00622">RPCHelpers.cpp:622</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1RPC_html_aec2e1163b39a450d3917af9dd15b0f06"><div class="ttname"><a href="namespaceripple_1_1RPC.html#aec2e1163b39a450d3917af9dd15b0f06">ripple::RPC::missing_field_error</a></div><div class="ttdeci">Json::Value missing_field_error(std::string const &amp;name)</div><div class="ttdef"><b>Definition:</b> <a href="ErrorCodes_8h_source.html#l00273">ErrorCodes.h:273</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1Resource_html_a38c76186a94f70d37812084660e723bf"><div class="ttname"><a href="namespaceripple_1_1Resource.html#a38c76186a94f70d37812084660e723bf">ripple::Resource::feeMediumBurdenRPC</a></div><div class="ttdeci">Charge const feeMediumBurdenRPC</div></div>
-<div class="ttc" id="anamespaceripple_1_1keylet_html_a7c16b0abc727e34b4d83377b7f3da2dd"><div class="ttname"><a href="namespaceripple_1_1keylet.html#a7c16b0abc727e34b4d83377b7f3da2dd">ripple::keylet::nftpage</a></div><div class="ttdeci">Keylet nftpage(Keylet const &amp;k, uint256 const &amp;token)</div><div class="ttdef"><b>Definition:</b> <a href="Indexes_8cpp_source.html#l00411">Indexes.cpp:411</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1keylet_html_aa756e0f59b26042ed00a4d0ba6e96951"><div class="ttname"><a href="namespaceripple_1_1keylet.html#aa756e0f59b26042ed00a4d0ba6e96951">ripple::keylet::account</a></div><div class="ttdeci">Keylet account(AccountID const &amp;id) noexcept</div><div class="ttdoc">AccountID root.</div><div class="ttdef"><b>Definition:</b> <a href="Indexes_8cpp_source.html#l00176">Indexes.cpp:176</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1keylet_html_abf6a2f8678a82fc0ea6bf41e3972a9eb"><div class="ttname"><a href="namespaceripple_1_1keylet.html#abf6a2f8678a82fc0ea6bf41e3972a9eb">ripple::keylet::nftpage_min</a></div><div class="ttdeci">Keylet nftpage_min(AccountID const &amp;owner)</div><div class="ttdoc">NFT page keylets.</div><div class="ttdef"><b>Definition:</b> <a href="Indexes_8cpp_source.html#l00395">Indexes.cpp:395</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1keylet_html_acbbf19b6eb7d5e93f6448832d9e0288c"><div class="ttname"><a href="namespaceripple_1_1keylet.html#acbbf19b6eb7d5e93f6448832d9e0288c">ripple::keylet::nftpage_max</a></div><div class="ttdeci">Keylet nftpage_max(AccountID const &amp;owner)</div><div class="ttdoc">A keylet for the owner's last possible NFT page.</div><div class="ttdef"><b>Definition:</b> <a href="Indexes_8cpp_source.html#l00403">Indexes.cpp:403</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1keylet_html_a7c16b0abc727e34b4d83377b7f3da2dd"><div class="ttname"><a href="namespaceripple_1_1keylet.html#a7c16b0abc727e34b4d83377b7f3da2dd">ripple::keylet::nftpage</a></div><div class="ttdeci">Keylet nftpage(Keylet const &amp;k, uint256 const &amp;token)</div><div class="ttdef"><b>Definition:</b> <a href="Indexes_8cpp_source.html#l00412">Indexes.cpp:412</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1keylet_html_aa756e0f59b26042ed00a4d0ba6e96951"><div class="ttname"><a href="namespaceripple_1_1keylet.html#aa756e0f59b26042ed00a4d0ba6e96951">ripple::keylet::account</a></div><div class="ttdeci">Keylet account(AccountID const &amp;id) noexcept</div><div class="ttdoc">AccountID root.</div><div class="ttdef"><b>Definition:</b> <a href="Indexes_8cpp_source.html#l00177">Indexes.cpp:177</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1keylet_html_abf6a2f8678a82fc0ea6bf41e3972a9eb"><div class="ttname"><a href="namespaceripple_1_1keylet.html#abf6a2f8678a82fc0ea6bf41e3972a9eb">ripple::keylet::nftpage_min</a></div><div class="ttdeci">Keylet nftpage_min(AccountID const &amp;owner)</div><div class="ttdoc">NFT page keylets.</div><div class="ttdef"><b>Definition:</b> <a href="Indexes_8cpp_source.html#l00396">Indexes.cpp:396</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1keylet_html_acbbf19b6eb7d5e93f6448832d9e0288c"><div class="ttname"><a href="namespaceripple_1_1keylet.html#acbbf19b6eb7d5e93f6448832d9e0288c">ripple::keylet::nftpage_max</a></div><div class="ttdeci">Keylet nftpage_max(AccountID const &amp;owner)</div><div class="ttdoc">A keylet for the owner's last possible NFT page.</div><div class="ttdef"><b>Definition:</b> <a href="Indexes_8cpp_source.html#l00404">Indexes.cpp:404</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1nft_html_a19ab99ac39a753e73810e317d9253f83"><div class="ttname"><a href="namespaceripple_1_1nft.html#a19ab99ac39a753e73810e317d9253f83">ripple::nft::getTransferFee</a></div><div class="ttdeci">std::uint16_t getTransferFee(uint256 const &amp;id)</div><div class="ttdef"><b>Definition:</b> <a href="nft_8h_source.html#l00068">nft.h:68</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1nft_html_a1a5f9170a15fd6861ab81b1d021410cc"><div class="ttname"><a href="namespaceripple_1_1nft.html#a1a5f9170a15fd6861ab81b1d021410cc">ripple::nft::getFlags</a></div><div class="ttdeci">std::uint16_t getFlags(uint256 const &amp;id)</div><div class="ttdef"><b>Definition:</b> <a href="nft_8h_source.html#l00060">nft.h:60</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1nft_html_a208916396e6cd7c0940640fabfa7e199"><div class="ttname"><a href="namespaceripple_1_1nft.html#a208916396e6cd7c0940640fabfa7e199">ripple::nft::toUInt32</a></div><div class="ttdeci">std::uint32_t toUInt32(Taxon t)</div><div class="ttdef"><b>Definition:</b> <a href="nft_8h_source.html#l00048">nft.h:48</a></div></div>

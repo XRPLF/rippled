@@ -92,9 +92,10 @@ var searchData=
   ['num_5fput_89',['num_put',['http://en.cppreference.com/w/cpp/locale/num_put.html',1,'std']]],
   ['number_90',['Number',['../classripple_1_1Number.html',1,'ripple']]],
   ['number_5ftest_91',['Number_test',['../classripple_1_1Number__test.html',1,'ripple']]],
-  ['numberroundmodeguard_92',['NumberRoundModeGuard',['../classripple_1_1NumberRoundModeGuard.html',1,'ripple']]],
-  ['numberso_93',['NumberSO',['../classripple_1_1NumberSO.html',1,'ripple']]],
-  ['numeric_5flimits_94',['numeric_limits',['http://en.cppreference.com/w/cpp/types/numeric_limits.html',1,'std']]],
-  ['numpunct_95',['numpunct',['http://en.cppreference.com/w/cpp/locale/numpunct.html',1,'std']]],
-  ['numpunct_5fbyname_96',['numpunct_byname',['http://en.cppreference.com/w/cpp/locale/numpunct_byname.html',1,'std']]]
+  ['numberparts_92',['NumberParts',['../structripple_1_1NumberParts.html',1,'ripple']]],
+  ['numberroundmodeguard_93',['NumberRoundModeGuard',['../classripple_1_1NumberRoundModeGuard.html',1,'ripple']]],
+  ['numberso_94',['NumberSO',['../classripple_1_1NumberSO.html',1,'ripple']]],
+  ['numeric_5flimits_95',['numeric_limits',['http://en.cppreference.com/w/cpp/types/numeric_limits.html',1,'std']]],
+  ['numpunct_96',['numpunct',['http://en.cppreference.com/w/cpp/locale/numpunct.html',1,'std']]],
+  ['numpunct_5fbyname_97',['numpunct_byname',['http://en.cppreference.com/w/cpp/locale/numpunct_byname.html',1,'std']]]
 ];

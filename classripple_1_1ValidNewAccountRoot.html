@@ -90,7 +90,7 @@ Collaboration diagram for ripple::ValidNewAccountRoot:</div>
 <div class="dyncontent">
 <div class="center"><img src="classripple_1_1ValidNewAccountRoot__coll__graph.png" border="0" usemap="#aripple_1_1ValidNewAccountRoot_coll__map" alt="Collaboration graph"/></div>
 <map name="aripple_1_1ValidNewAccountRoot_coll__map" id="aripple_1_1ValidNewAccountRoot_coll__map">
-<area shape="rect" title="Invariant: a new account root must be the consequence of a payment, must have the right starting sequ..." alt="" coords="5,108,216,133"/>
+<area shape="rect" title="Invariant: a new account root must be the consequence of a payment, must have the right starting sequ..." alt="" coords="5,123,216,148"/>
 <area shape="rect" target="_parent" href="http://en.cppreference.com/w/cpp/types/integer.html" title=" " alt="" coords="59,5,162,31"/>
 </map>
 <center><span class="legend">[<a href="graph_legend.html">legend</a>]</span></center></div>
@@ -108,6 +108,10 @@ Private Attributes</h2></td></tr>
 <tr class="separator:a8d38d98fa92b004b8414b51b5b84bf37"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ad7a129c4e5e2a27845d3bfcea9d65f57"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ValidNewAccountRoot.html#ad7a129c4e5e2a27845d3bfcea9d65f57">accountSeq_</a> = 0</td></tr>
 <tr class="separator:ad7a129c4e5e2a27845d3bfcea9d65f57"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a1356762586cd4fd2e294025d397d16c4"><td class="memItemLeft" align="right" valign="top">bool&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ValidNewAccountRoot.html#a1356762586cd4fd2e294025d397d16c4">pseudoAccount_</a> = false</td></tr>
+<tr class="separator:a1356762586cd4fd2e294025d397d16c4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a740634049ba95ba30b5d8a1e70a8e874"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1ValidNewAccountRoot.html#a740634049ba95ba30b5d8a1e70a8e874">flags_</a> = 0</td></tr>
+<tr class="separator:a740634049ba95ba30b5d8a1e70a8e874"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table>
 <a name="details" id="details"></a><h2 class="groupheader">Detailed Description</h2>
 <div class="textblock"><p >Invariant: a new account root must be the consequence of a payment, must have the right starting sequence, and the payment may not create more than one new account root. </p>
@@ -146,7 +150,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InvariantCheck_8cpp_source.html#l00878">878</a> of file <a class="el" href="InvariantCheck_8cpp_source.html">InvariantCheck.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InvariantCheck_8cpp_source.html#l00880">880</a> of file <a class="el" href="InvariantCheck_8cpp_source.html">InvariantCheck.cpp</a>.</p>
 
 </div>
 </div>
@@ -194,7 +198,7 @@ Private Attributes</h2></td></tr>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="InvariantCheck_8cpp_source.html#l00891">891</a> of file <a class="el" href="InvariantCheck_8cpp_source.html">InvariantCheck.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="InvariantCheck_8cpp_source.html#l00895">895</a> of file <a class="el" href="InvariantCheck_8cpp_source.html">InvariantCheck.cpp</a>.</p>
 
 </div>
 </div>
@@ -244,6 +248,54 @@ Private Attributes</h2></td></tr>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="InvariantCheck_8h_source.html#l00440">440</a> of file <a class="el" href="InvariantCheck_8h_source.html">InvariantCheck.h</a>.</p>
+
+</div>
+</div>
+<a id="a1356762586cd4fd2e294025d397d16c4" name="a1356762586cd4fd2e294025d397d16c4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a1356762586cd4fd2e294025d397d16c4">&#9670;&#160;</a></span>pseudoAccount_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">bool ripple::ValidNewAccountRoot::pseudoAccount_ = false</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="InvariantCheck_8h_source.html#l00441">441</a> of file <a class="el" href="InvariantCheck_8h_source.html">InvariantCheck.h</a>.</p>
+
+</div>
+</div>
+<a id="a740634049ba95ba30b5d8a1e70a8e874" name="a740634049ba95ba30b5d8a1e70a8e874"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a740634049ba95ba30b5d8a1e70a8e874">&#9670;&#160;</a></span>flags_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ripple::ValidNewAccountRoot::flags_ = 0</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="InvariantCheck_8h_source.html#l00442">442</a> of file <a class="el" href="InvariantCheck_8h_source.html">InvariantCheck.h</a>.</p>
 
 </div>
 </div>
