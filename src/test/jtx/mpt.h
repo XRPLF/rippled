@@ -123,7 +123,7 @@ struct MPTInitDef
 {
     Env& env;
     Account issuer;
-    std::vector<Account> holders;
+    std::vector<Account> holders = {};
     std::uint16_t transferFee = 0;
     std::optional<std::uint64_t> pay = std::nullopt;
     std::uint32_t flags = MPTDEXFlags;
