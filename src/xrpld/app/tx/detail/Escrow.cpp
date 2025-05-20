@@ -615,7 +615,7 @@ EscrowFinish::doApply()
         // WASM execution
         auto const wasmStr = slep->getFieldVL(sfFinishFunction);
         std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
-        std::string funcName("ready");
+        std::string funcName("finish");
 
         WasmHostFunctionsImpl ledgerDataProvider(ctx_, k);
 
