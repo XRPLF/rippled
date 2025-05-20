@@ -474,7 +474,6 @@ public:
             std::stringstream str;
             str << "[reduce_relay]\n"
                 << "vp_enable=1\n"
-                << "vp_squelch=1\n"
                 << "[compression]\n"
                 << enable << "\n";
             c.loadFromString(str.str());
@@ -482,8 +481,6 @@ public:
             env->app().config().COMPRESSION = c.COMPRESSION;
             env->app().config().VP_REDUCE_RELAY_ENABLE =
                 c.VP_REDUCE_RELAY_ENABLE;
-            env->app().config().VP_REDUCE_RELAY_SQUELCH =
-                c.VP_REDUCE_RELAY_SQUELCH;
             return env;
         };
         auto handshake = [&](int outboundEnable, int inboundEnable) {

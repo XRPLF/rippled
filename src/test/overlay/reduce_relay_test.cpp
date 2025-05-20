@@ -1320,36 +1320,30 @@ protected:
             std::string toLoad(R"rippleConfig(
 [reduce_relay]
 vp_enable=1
-vp_squelch=1
 )rippleConfig");
 
             c.loadFromString(toLoad);
             BEAST_EXPECT(c.VP_REDUCE_RELAY_ENABLE == true);
-            BEAST_EXPECT(c.VP_REDUCE_RELAY_SQUELCH == true);
 
             Config c1;
 
             toLoad = (R"rippleConfig(
 [reduce_relay]
 vp_enable=0
-vp_squelch=0
 )rippleConfig");
 
             c1.loadFromString(toLoad);
             BEAST_EXPECT(c1.VP_REDUCE_RELAY_ENABLE == false);
-            BEAST_EXPECT(c1.VP_REDUCE_RELAY_SQUELCH == false);
 
             Config c2;
 
             toLoad = R"rippleConfig(
 [reduce_relay]
 vp_enabled=1
-vp_squelched=1
 )rippleConfig";
 
             c2.loadFromString(toLoad);
             BEAST_EXPECT(c2.VP_REDUCE_RELAY_ENABLE == false);
-            BEAST_EXPECT(c2.VP_REDUCE_RELAY_SQUELCH == false);
         });
     }
 
@@ -1503,14 +1497,12 @@ vp_squelched=1
                 std::stringstream str;
                 str << "[reduce_relay]\n"
                     << "vp_enable=" << enable << "\n"
-                    << "vp_squelch=" << enable << "\n"
                     << "[compression]\n"
                     << "1\n";
                 c.loadFromString(str.str());
                 env_.app().config().VP_REDUCE_RELAY_ENABLE =
                     c.VP_REDUCE_RELAY_ENABLE;
-                env_.app().config().VP_REDUCE_RELAY_SQUELCH =
-                    c.VP_REDUCE_RELAY_SQUELCH;
+
                 env_.app().config().COMPRESSION = c.COMPRESSION;
             };
             auto handshake = [&](int outboundEnable, int inboundEnable) {
