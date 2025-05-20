@@ -192,7 +192,7 @@ private:
     bool txReduceRelayEnabled_ = false;
     // true if validation/proposal reduce-relay feature is enabled
     // on the peer.
-    bool vpReduceRelayEnabled_ = false;
+    bool vpTrustedValidatorSquelchEnabled_ = false;
     bool ledgerReplayEnabled_ = false;
     LedgerReplayMsgHandler ledgerReplayMsgHandler_;
 
@@ -524,7 +524,7 @@ private:
     // Check if reduce-relay feature is enabled and
     // reduce_relay::WAIT_ON_BOOTUP time passed since the start
     bool
-    reduceRelayReady();
+    trustedValidatorSquelchReady();
 
 public:
     //--------------------------------------------------------------------------
@@ -705,7 +705,8 @@ PeerImp::PeerImp(
           headers_,
           FEATURE_TXRR,
           app_.config().TX_REDUCE_RELAY_ENABLE))
-    , vpReduceRelayEnabled_(app_.config().VP_REDUCE_RELAY_ENABLE)
+    , vpTrustedValidatorSquelchEnabled_(
+          app_.config().VP_REDUCE_RELAY_TRUSTED_SQUELCH_ENABLE)
     , ledgerReplayEnabled_(peerFeatureEnabled(
           headers_,
           FEATURE_LEDGER_REPLAY,
@@ -714,13 +715,15 @@ PeerImp::PeerImp(
 {
     read_buffer_.commit(boost::asio::buffer_copy(
         read_buffer_.prepare(boost::asio::buffer_size(buffers)), buffers));
-    JLOG(journal_.info()) << "compression enabled "
-                          << (compressionEnabled_ == Compressed::On)
-                          << " vp reduce-relay enabled "
-                          << vpReduceRelayEnabled_
-                          << " tx reduce-relay enabled "
-                          << txReduceRelayEnabled_ << " on " << remote_address_
-                          << " " << id_;
+    JLOG(journal_.info())
+        << "compression enabled " << (compressionEnabled_ == Compressed::On)
+        << " vp trusted validator squelch enabled "
+        << peerFeatureEnabled(
+               headers_,
+               FEATURE_VPRR,
+               app_.config().VP_REDUCE_RELAY_TRUSTED_SQUELCH_ENABLE)
+        << " tx reduce-relay enabled " << txReduceRelayEnabled_ << " on "
+        << remote_address_ << " " << id_;
 }
 
 template <class FwdIt, class>

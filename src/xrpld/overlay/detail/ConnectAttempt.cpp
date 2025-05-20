@@ -209,7 +209,7 @@ ConnectAttempt::onHandshake(error_code ec)
         app_.config().COMPRESSION,
         app_.config().LEDGER_REPLAY,
         app_.config().TX_REDUCE_RELAY_ENABLE,
-        app_.config().VP_REDUCE_RELAY_ENABLE);
+        app_.config().VP_REDUCE_RELAY_TRUSTED_SQUELCH_ENABLE);
 
     buildHandshake(
         req_,

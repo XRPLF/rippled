@@ -1314,7 +1314,7 @@ protected:
     void
     testConfig(bool log)
     {
-        doTest("Config Test", log, [&](bool log) {
+        doTest("Test Config - squelch enabled (legacy)", log, [&](bool log) {
             Config c;
 
             std::string toLoad(R"rippleConfig(
@@ -1323,27 +1323,83 @@ vp_enable=1
 )rippleConfig");
 
             c.loadFromString(toLoad);
-            BEAST_EXPECT(c.VP_REDUCE_RELAY_ENABLE == true);
+            BEAST_EXPECT(c.VP_REDUCE_RELAY_TRUSTED_SQUELCH_ENABLE == true);
+        });
 
-            Config c1;
+        doTest("Test Config - squelch disabled (legacy)", log, [&](bool log) {
+            Config c;
 
-            toLoad = (R"rippleConfig(
+            std::string toLoad(R"rippleConfig(
 [reduce_relay]
 vp_enable=0
 )rippleConfig");
 
-            c1.loadFromString(toLoad);
-            BEAST_EXPECT(c1.VP_REDUCE_RELAY_ENABLE == false);
+            c.loadFromString(toLoad);
+            BEAST_EXPECT(c.VP_REDUCE_RELAY_TRUSTED_SQUELCH_ENABLE == false);
 
-            Config c2;
+            Config c1;
 
             toLoad = R"rippleConfig(
 [reduce_relay]
 vp_enabled=1
 )rippleConfig";
 
-            c2.loadFromString(toLoad);
-            BEAST_EXPECT(c2.VP_REDUCE_RELAY_ENABLE == false);
+            c1.loadFromString(toLoad);
+            BEAST_EXPECT(c1.VP_REDUCE_RELAY_TRUSTED_SQUELCH_ENABLE == false);
+        });
+
+        doTest("Test Config - squelch enabled", log, [&](bool log) {
+            Config c;
+
+            std::string toLoad(R"rippleConfig(
+[reduce_relay]
+vp_base_squelch_enable=1
+)rippleConfig");
+
+            c.loadFromString(toLoad);
+            BEAST_EXPECT(c.VP_REDUCE_RELAY_TRUSTED_SQUELCH_ENABLE == true);
+        });
+
+        doTest("Test Config - squelch disabled", log, [&](bool log) {
+            Config c;
+
+            std::string toLoad(R"rippleConfig(
+[reduce_relay]
+vp_base_squelch_enable=0
+)rippleConfig");
+
+            c.loadFromString(toLoad);
+            BEAST_EXPECT(c.VP_REDUCE_RELAY_TRUSTED_SQUELCH_ENABLE == false);
+        });
+
+        doTest("Test Config - legacy and new", log, [&](bool log) {
+            Config c;
+
+            // new config takes precedence over legacy
+            std::string toLoad(R"rippleConfig(
+[reduce_relay]
+vp_base_squelch_enable=0
+vp_enable=0
+)rippleConfig");
+
+            std::string error;
+            auto const expectedError =
+                "Invalid reduce_relay"
+                "cannot specify both vp_base_squelch_enable and vp_enable "
+                "options. "
+                "vp_enable was deprecated and replaced by "
+                "vp_base_squelch_enable";
+
+            try
+            {
+                c.loadFromString(toLoad);
+            }
+            catch (std::runtime_error& e)
+            {
+                error = e.what();
+            }
+
+            BEAST_EXPECT(error == expectedError);
         });
     }
 
@@ -1500,8 +1556,8 @@ vp_enabled=1
                     << "[compression]\n"
                     << "1\n";
                 c.loadFromString(str.str());
-                env_.app().config().VP_REDUCE_RELAY_ENABLE =
-                    c.VP_REDUCE_RELAY_ENABLE;
+                env_.app().config().VP_REDUCE_RELAY_TRUSTED_SQUELCH_ENABLE =
+                    c.VP_REDUCE_RELAY_TRUSTED_SQUELCH_ENABLE;
 
                 env_.app().config().COMPRESSION = c.COMPRESSION;
             };
@@ -1515,7 +1571,7 @@ vp_enabled=1
                     env_.app().config().COMPRESSION,
                     false,
                     env_.app().config().TX_REDUCE_RELAY_ENABLE,
-                    env_.app().config().VP_REDUCE_RELAY_ENABLE);
+                    env_.app().config().VP_REDUCE_RELAY_TRUSTED_SQUELCH_ENABLE);
                 http_request_type http_request;
                 http_request.version(request.version());
                 http_request.base() = request.base();

@@ -737,7 +737,26 @@ Config::loadFromString(std::string const& fileContents)
     if (exists(SECTION_REDUCE_RELAY))
     {
         auto sec = section(SECTION_REDUCE_RELAY);
-        VP_REDUCE_RELAY_ENABLE = sec.value_or("vp_enable", false);
+        // vp_enable config option is deprecated by vp_base_squelch_enable
+        // this option is kept for backwards compatibility
+        // this code block can be removed once squelching is enabled by default
+        if (sec.exists("vp_base_squelch_enable") && sec.exists("vp_enable"))
+            Throw<std::runtime_error>(
+                "Invalid " SECTION_REDUCE_RELAY
+                "cannot specify both vp_base_squelch_enable and vp_enable "
+                "options. "
+                "vp_enable was deprecated and replaced by "
+                "vp_base_squelch_enable");
+
+        if (sec.exists("vp_base_squelch_enable"))
+            VP_REDUCE_RELAY_TRUSTED_SQUELCH_ENABLE =
+                sec.value_or("vp_base_squelch_enable", false);
+        else if (sec.exists("vp_enable"))
+            VP_REDUCE_RELAY_TRUSTED_SQUELCH_ENABLE =
+                sec.value_or("vp_enable", false);
+        else
+            VP_REDUCE_RELAY_TRUSTED_SQUELCH_ENABLE = false;
+
         TX_REDUCE_RELAY_ENABLE = sec.value_or("tx_enable", false);
         TX_REDUCE_RELAY_METRICS = sec.value_or("tx_metrics", false);
         TX_REDUCE_RELAY_MIN_PEERS = sec.value_or("tx_min_peers", 20);

@@ -414,7 +414,7 @@ makeResponse(
             app.config().COMPRESSION,
             app.config().LEDGER_REPLAY,
             app.config().TX_REDUCE_RELAY_ENABLE,
-            app.config().VP_REDUCE_RELAY_ENABLE));
+            app.config().VP_REDUCE_RELAY_TRUSTED_SQUELCH_ENABLE));
 
     buildHandshake(resp, sharedValue, networkID, public_ip, remote_ip, app);
 

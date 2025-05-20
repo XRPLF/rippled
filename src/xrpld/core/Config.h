@@ -243,10 +243,10 @@ public:
     std::optional<int> SWEEP_INTERVAL;
 
     // Reduce-relay - these parameters are experimental.
-    // Enable reduce-relay features
-    // Validation/proposal reduce-relay feature
-    bool VP_REDUCE_RELAY_ENABLE = false;
-    
+
+    // Enable validation/proposal squelching of trusted validators
+    bool VP_REDUCE_RELAY_TRUSTED_SQUELCH_ENABLE = false;
+
     // Transaction reduce-relay feature
     bool TX_REDUCE_RELAY_ENABLE = false;
     // If tx reduce-relay feature is disabled

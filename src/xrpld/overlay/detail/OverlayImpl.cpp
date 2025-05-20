@@ -1390,8 +1390,7 @@ makeSquelchMessage(
 void
 OverlayImpl::unsquelch(PublicKey const& validator, Peer::id_t id) const
 {
-    if (auto peer = findPeerByShortID(id);
-        peer)
+    if (auto peer = findPeerByShortID(id); peer)
     {
         // optimize - multiple message with different
         // validator might be sent to the same peer
@@ -1405,8 +1404,7 @@ OverlayImpl::squelch(
     Peer::id_t id,
     uint32_t squelchDuration) const
 {
-    if (auto peer = findPeerByShortID(id);
-        peer)
+    if (auto peer = findPeerByShortID(id); peer)
     {
         peer->send(makeSquelchMessage(validator, true, squelchDuration));
     }
