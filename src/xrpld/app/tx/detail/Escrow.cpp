@@ -185,7 +185,7 @@ EscrowCreate::preflight(PreflightContext const& ctx)
         // ensure that this is valid WASM code
         HostFunctionsMock ledgerDataProvider;
         auto re =
-            preflightEscrowWasm(code, "ready", &ledgerDataProvider, 100000);
+            preflightEscrowWasm(code, "finish", &ledgerDataProvider, 100000);
         if (!isTesSuccess(re))
         {
             JLOG(ctx.j.debug()) << "EscrowCreate.FinishFunction bad WASM";
