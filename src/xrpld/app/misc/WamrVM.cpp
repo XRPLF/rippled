@@ -77,7 +77,9 @@ getLogLevel(std::uint32_t severity)
     return kFatal;
 }
 
-static void [[maybe_unused]] wamr_log_to_rippled(
+[[maybe_unused]]
+static void
+wamr_log_to_rippled(
     std::uint32_t logLevel,
     const char* file,
     int line,
