@@ -69,6 +69,7 @@
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/resource/Fees.h>
+#include <xrpl/beast/core/FunctionProfiler.h>
 
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/asio/steady_timer.hpp>
@@ -1647,6 +1648,9 @@ ApplicationImp::run()
 void
 ApplicationImp::signalStop(std::string msg)
 {
+    std::cout << "signal stop!!!" << std::endl;
+    JLOG(m_journal.warn()) << beast::getProfilingResults();
+
     if (!isTimeToStop.exchange(true))
     {
         if (msg.empty())

@@ -27,6 +27,7 @@
 #include <cstddef>
 #include <new>
 #include <type_traits>
+#include <xrpl/beast/core/FunctionProfiler.h>
 
 namespace beast {
 
@@ -88,12 +89,14 @@ public:
     void
     operator()(void const* key, std::size_t len) noexcept
     {
+        FunctionProfiler _;
         XXH3_64bits_update(state_, key, len);
     }
 
     explicit
     operator std::size_t() noexcept
     {
+        FunctionProfiler _;
         return XXH3_64bits_digest(state_);
     }
 };
