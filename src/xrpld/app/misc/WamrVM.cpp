@@ -89,14 +89,23 @@ wamr_log_to_rippled(
     static beast::Journal j = beast::Journal(beast::Journal::getNullSink());
 
     // Format the variadic args
-    char buffer[512];
+    const char* safeFile = file ? file : "<null>";
+
+    std::ostringstream oss;
+    oss << "WAMR LOG (" << safeFile << ":" << line << "): ";
+
     va_list args;
     va_start(args, fmt);
-    vsnprintf(buffer, sizeof(buffer), fmt, args);
+
+    char formatted[1024];
+    vsnprintf(formatted, sizeof(formatted), fmt, args);
+    formatted[sizeof(formatted) - 1] = '\0';
+
     va_end(args);
 
-    j.stream(getLogLevel(logLevel))
-        << "WAMR LOG (" << file << ":" << line << "): " << buffer;
+    oss << formatted;
+
+    j.stream(getLogLevel(logLevel)) << oss.str();
 }
 
 static void
