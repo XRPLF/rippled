@@ -16,8 +16,8 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#ifndef RIPPLE_APP_MISC_WASMHOSTFUNCIMPL_H_INLCUDED
-#define RIPPLE_APP_MISC_WASMHOSTFUNCIMPL_H_INLCUDED
+#ifndef RIPPLE_APP_MISC_WASMHOSTFUNCIMPL_H_INCLUDED
+#define RIPPLE_APP_MISC_WASMHOSTFUNCIMPL_H_INCLUDED
 
 #include <xrpld/app/misc/WasmVM.h>
 #include <xrpld/app/tx/detail/ApplyContext.h>
@@ -90,4 +90,4 @@ private:
 };
 
 }  // namespace ripple
-#endif  // RIPPLE_APP_MISC_WASMHOSTFUNCIMPL_H_INLCUDED
+#endif  // RIPPLE_APP_MISC_WASMHOSTFUNCIMPL_H_INCLUDED

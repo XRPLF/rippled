@@ -16,7 +16,9 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#pragma once
+
+#ifndef RIPPLE_APP_MISC_WASMVM_H_INCLUDED
+#define RIPPLE_APP_MISC_WASMVM_H_INCLUDED
 
 #include <xrpl/basics/Expected.h>
 #include <xrpl/basics/base_uint.h>
@@ -373,3 +375,5 @@ runEscrowWasm(
     uint64_t gasLimit);
 
 }  // namespace ripple
+
+#endif  // RIPPLE_APP_MISC_WASMVM_H_INCLUDED

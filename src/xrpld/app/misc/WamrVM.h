@@ -16,7 +16,8 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
-#pragma once
+#ifndef RIPPLE_APP_MISC_WAMRVM_H_INCLUDED
+#define RIPPLE_APP_MISC_WAMRVM_H_INCLUDED
 
 #include <xrpld/app/misc/WasmVM.h>
 
@@ -266,3 +267,5 @@ private:
 };
 
 }  // namespace ripple
+
+#endif  // RIPPLE_APP_MISC_WAMRVM_H_INCLUDED
