@@ -38,7 +38,7 @@ inline std::string getProfilingResults()
     ss << "Function profiling results:" << std::endl;
     for (const auto& [name, duration] : FunctionProfiler::funcionDurations)
     {
-        ss << "  " << name << ": " << duration.count() << " ns" << std::endl;
+        ss << "  " << name << ": " << duration.first.count() << " ns" << ", counts: " << duration.second << std::endl;
     }
 
     return ss.str();
