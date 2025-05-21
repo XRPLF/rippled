@@ -787,6 +787,7 @@ Consensus<Adaptor>::peerProposalInternal(
         if (newPeerProp.isBowOut())
         {
             JLOG(j_.info()) << "Peer " << peerID << " bows out";
+            JLOG(j_.debug()) << "DISPUTES peerProposalInternal() bows out unvotes for " << peerID;
             if (result_)
             {
                 for (auto& it : result_->disputes)
@@ -830,6 +831,8 @@ Consensus<Adaptor>::peerProposalInternal(
         }
         else if (result_)
         {
+            JLOG(j_.debug()) << "DISPUTES peerProposalInternal() for "
+                << newPeerProp.position() << " calling updateDisputes()";
             updateDisputes(newPeerProp.nodeID(), ait->second);
         }
     }
@@ -843,13 +846,9 @@ Consensus<Adaptor>::timerEntry(
     NetClock::time_point const& now,
     std::unique_ptr<std::stringstream> const& clog)
 {
-    CLOG(clog) << "Consensus<Adaptor>::timerEntry. ";
-    // Nothing to do if we are currently working on a ledger
-    if (phase_ == ConsensusPhase::accepted)
-    {
-        CLOG(clog) << "Nothing to do during accepted phase. ";
-        return;
-    }
+    CLOG(clog) << "Consensus<Adaptor>::timerEntry; previous ledger ID,id(),seq: "
+        << prevLedgerID_ << ',' << previousLedger_.id() << ',' << previousLedger_.seq()
+        << " working towards seq " << previousLedger_.seq() + typename Ledger_t::Seq{1} << ". ";
 
     std::optional<typename TxSet_t::ID> startPosition;
     if (result_) {
@@ -859,6 +858,13 @@ Consensus<Adaptor>::timerEntry(
         CLOG(clog) << "no start position. ";
     }
 
+    // Nothing to do if we are currently working on a ledger
+    if (phase_ == ConsensusPhase::accepted)
+    {
+        CLOG(clog) << "Nothing to do during accepted phase. ";
+        return;
+    }
+
     now_ = now;
     CLOG(clog) << "Set network adjusted time to " << to_string(now) << ". ";
 
@@ -866,8 +872,7 @@ Consensus<Adaptor>::timerEntry(
     const auto phaseOrig = phase_;
     CLOG(clog) << "Phase " << to_string(phaseOrig) << ". ";
     checkLedger(clog);
-    if (phaseOrig != phase_)
-    {
+    if (phaseOrig != phase_) {
         CLOG(clog) << "Changed phase to << " << to_string(phase_) << ". ";
     }
 
@@ -925,6 +930,8 @@ Consensus<Adaptor>::gotTxSet(
         {
             if (peerPos.proposal().position() == id)
             {
+                JLOG(j_.debug()) << "DISPUTES gotTxSet() for " << peerPos.proposal().position()
+                    << " from " << nodeId << " calling updateDisputes";
                 updateDisputes(nodeId, txSet);
                 any = true;
             }
@@ -1450,17 +1457,24 @@ Consensus<Adaptor>::closeLedger(std::unique_ptr<std::stringstream> const& clog)
     CLOG(clog)
         << "closeLedger transitioned to ConsensusPhase::establish, mode: "
         << to_string(mode)
-        << ", number of peer positions: " << currPeerPositions_.size() << ". ";
+        << ", number of peer positions: " << currPeerPositions_.size()
+        << ", initial position: " << result_->position.position();
     if (mode == ConsensusMode::proposing)
         adaptor_.propose(result_->position);
 
     // Create disputes with any peer positions we have transactions for
+    if (!currPeerPositions_.empty()) {
+        JLOG(j_.debug()) << "DISPUTES createdisputes for initial peer positions";
+    }
     for (auto const& pit : currPeerPositions_)
     {
         auto const& pos = pit.second.proposal().position();
         auto const it = acquired_.find(pos);
-        if (it != acquired_.end())
+        if (it != acquired_.end()) {
+            JLOG(j_.debug()) << "DISPUTES closeLedger() calling createDisputes() for pos "
+                << it->second.id();
             createDisputes(it->second, clog);
+        }
     }
 }
 
@@ -1507,11 +1521,11 @@ Consensus<Adaptor>::updateOurPositions(
         while (it != currPeerPositions_.end())
         {
             Proposal_t const& peerProp = it->second.proposal();
-            if (peerProp.isStale(peerCutoff))
+             if (peerProp.isStale(peerCutoff))
             {
                 // peer's proposal is stale, so remove it
                 NodeID_t const& peerID = peerProp.nodeID();
-                JLOG(j_.warn()) << "Removing stale proposal from " << peerID;
+                JLOG(j_.warn()) << "DISPUTES Removing stale proposal from " << peerID;
                 CLOG(clog) << "Removing stale proposal from " << peerID << ". ";
                 for (auto& dt : result_->disputes)
                     dt.second.unVote(peerID);
@@ -1524,18 +1538,6 @@ Consensus<Adaptor>::updateOurPositions(
                 ++it;
             }
         }
-    }
-
-    if (currPeerPositions_.empty()) {
-        CLOG(clog) << "no peer positions. ";
-    } else {
-        std::map<typename TxSet_t::ID, int> peerPositionCounts;
-        for (auto const& [_, pos] : currPeerPositions_)
-            ++peerPositionCounts[pos.proposal().position()];
-        CLOG(clog) << "peer positions,counts: ";
-        for (auto const& [pos, count] : peerPositionCounts)
-            CLOG(clog) << pos  << ',' << count << ';';
-        CLOG(clog) << ". ";
     }
 
     // This will stay unseated unless there are any changes
@@ -1585,6 +1587,15 @@ Consensus<Adaptor>::updateOurPositions(
     }
     else
     {
+        {
+            std::map<typename TxSet_t::ID, int> peerPositionCounts;
+            for (auto const& [_, pos] : currPeerPositions_)
+                ++peerPositionCounts[pos.proposal().position()];
+            CLOG(clog) << "peer positions,counts: ";
+            for (auto const& [pos, count] : peerPositionCounts)
+                CLOG(clog) << pos  << ',' << count << ';';
+            CLOG(clog) << ". ";
+        }
         int neededWeight;
 
         if (convergePercent_ < parms.avMID_CONSENSUS_TIME)
@@ -1684,8 +1695,11 @@ Consensus<Adaptor>::updateOurPositions(
             for (auto const& [nodeId, peerPos] : currPeerPositions_)
             {
                 Proposal_t const& p = peerPos.proposal();
-                if (p.position() == newID)
+                if (p.position() == newID) {
+                    JLOG(j_.debug()) << "DISPUTES updateOurPositions() calling updateDisputes() for "
+                        << nodeId;
                     updateDisputes(nodeId, result_->txns);
+                }
             }
         }
 
@@ -1787,6 +1801,7 @@ Consensus<Adaptor>::createDisputes(
     TxSet_t const& o,
     std::unique_ptr<std::stringstream> const& clog)
 {
+    JLOG(j_.debug()) << "DISPUTES createDisputes txset " << o.id();
     // Cannot create disputes without our stance
     XRPL_ASSERT(result_, "ripple::Consensus::createDisputes : result is set");
 
@@ -1827,7 +1842,7 @@ Consensus<Adaptor>::createDisputes(
         if (result_->disputes.find(txID) != result_->disputes.end())
             continue;
 
-        JLOG(j_.debug()) << "Transaction " << txID << " is disputed";
+        JLOG(j_.debug()) << "DISPUTES Transaction " << txID << " is disputed";
 
         typename Result::Dispute_t dtx{
             tx,
@@ -1847,7 +1862,7 @@ Consensus<Adaptor>::createDisputes(
 
         result_->disputes.emplace(txID, std::move(dtx));
     }
-    JLOG(j_.debug()) << dc << " differences found";
+    JLOG(j_.debug()) << "DISPUTES createDisputes() with position " << o.id() << dc << " differences found";
     CLOG(clog) << "disputes: " << dc << ". ";
 }
 
@@ -1855,13 +1870,18 @@ template <class Adaptor>
 void
 Consensus<Adaptor>::updateDisputes(NodeID_t const& node, TxSet_t const& other)
 {
+    JLOG(j_.debug()) << "DISPUTES updateDisputes() node,txset: " << node
+        << ',' << other.id();
     // Cannot updateDisputes without our stance
     XRPL_ASSERT(result_, "ripple::Consensus::updateDisputes : result is set");
 
     // Ensure we have created disputes against this set if we haven't seen
     // it before
-    if (result_->compares.find(other.id()) == result_->compares.end())
+    if (result_->compares.find(other.id()) == result_->compares.end()) {
+        JLOG(j_.debug()) << "DISPUTES updateDisputes() calling createDisputes for "
+            << " node " << node << " position " << other.id();
         createDisputes(other);
+    }
 
     for (auto& it : result_->disputes)
     {

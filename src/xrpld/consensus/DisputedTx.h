@@ -246,7 +246,7 @@ DisputedTx<Tx_t, NodeID_t>::updateVote(
     }
 
     ourVote_ = newPosition;
-    JLOG(j_.debug()) << "We now vote " << (ourVote_ ? "YES" : "NO") << " on "
+    JLOG(j_.debug()) << "DISPUTES We now vote " << (ourVote_ ? "YES" : "NO") << " on "
                      << tx_.id();
     JLOG(j_.debug()) << Json::Compact{getJson()};
     return true;
