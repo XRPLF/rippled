@@ -19,7 +19,7 @@ class FunctionProfiler
 public:
 
     inline static std::unordered_map<std::string, std::chrono::nanoseconds> funcionDurations;
-    FunctionProfiler(std::source_location location = std::source_location::current()): functionName(location.function_name()), start(std::chrono::steady_clock::now()) 
+    FunctionProfiler(const std::string& tag, std::source_location location = std::source_location::current()): functionName(location.function_name() + tag), start(std::chrono::steady_clock::now()) 
     {
     }
 

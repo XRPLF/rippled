@@ -89,14 +89,14 @@ public:
     void
     operator()(void const* key, std::size_t len) noexcept
     {
-        FunctionProfiler _;
+        FunctionProfiler _{"-size-" + std::to_string(len)};
         XXH3_64bits_update(state_, key, len);
     }
 
     explicit
     operator std::size_t() noexcept
     {
-        FunctionProfiler _;
+        FunctionProfiler _{"-digest"};
         return XXH3_64bits_digest(state_);
     }
 };
