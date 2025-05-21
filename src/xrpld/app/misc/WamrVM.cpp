@@ -54,7 +54,7 @@ getLogLevel(beast::severities::Severity severity)
 }
 
 static beast::severities::Severity
-getLogLevel(std::uint32_t severity)
+getLogLevel(uint32_t severity)
 {
     using namespace beast::severities;
     switch (severity)
@@ -77,18 +77,26 @@ getLogLevel(std::uint32_t severity)
     return kFatal;
 }
 
-[[maybe_unused]]
-static void
+// This function is called from WAMR to log messages.
+extern "C" void
 wamr_log_to_rippled(
-    std::uint32_t logLevel,
+    uint32_t logLevel,
     const char* file,
     int line,
     const char* fmt,
     ...)
 {
     static beast::Journal j = beast::Journal(beast::Journal::getNullSink());
+
+    // Format the variadic args
+    char buffer[512];
+    va_list args;
+    va_start(args, fmt);
+    vsnprintf(buffer, sizeof(buffer), fmt, args);
+    va_end(args);
+
     j.stream(getLogLevel(logLevel))
-        << "WAMR LOG (" << file << ":" << line << "): " << fmt;
+        << "WAMR LOG (" << file << ":" << line << "): " << buffer;
 }
 
 static void
