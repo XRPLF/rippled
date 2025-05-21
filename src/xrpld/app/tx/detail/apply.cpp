@@ -191,7 +191,7 @@ applyBatchTransactions(
                 ret.applied == (isTesSuccess(ret.ter) || isTecClaim(ret.ter)),
                 "Inner transaction should not be applied");
 
-            JLOG(j.trace()) << "BatchTrace[" << parentBatchId
+            JLOG(j.debug()) << "BatchTrace[" << parentBatchId
                             << "]: " << tx.getTransactionID() << " "
                             << (ret.applied ? "applied" : "failure") << ": "
                             << transToken(ret.ter);
