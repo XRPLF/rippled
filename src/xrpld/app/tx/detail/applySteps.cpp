@@ -62,6 +62,12 @@
 #include <xrpld/app/tx/detail/SetRegularKey.h>
 #include <xrpld/app/tx/detail/SetSignerList.h>
 #include <xrpld/app/tx/detail/SetTrust.h>
+#include <xrpld/app/tx/detail/VaultClawback.h>
+#include <xrpld/app/tx/detail/VaultCreate.h>
+#include <xrpld/app/tx/detail/VaultDelete.h>
+#include <xrpld/app/tx/detail/VaultDeposit.h>
+#include <xrpld/app/tx/detail/VaultSet.h>
+#include <xrpld/app/tx/detail/VaultWithdraw.h>
 #include <xrpld/app/tx/detail/XChainBridge.h>
 
 #include <xrpl/protocol/TxFormats.h>

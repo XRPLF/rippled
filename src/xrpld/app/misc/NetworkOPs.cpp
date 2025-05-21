@@ -3740,7 +3740,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                 {
                     auto stx = tx->getSTransaction();
                     if (stx->getAccountID(sfAccount) == accountId &&
-                        stx->getSeqProxy().value() == 1)
+                        stx->getSeqValue() == 1)
                         return true;
                 }
 

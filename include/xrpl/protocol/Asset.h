@@ -20,6 +20,7 @@
 #ifndef RIPPLE_PROTOCOL_ASSET_H_INCLUDED
 #define RIPPLE_PROTOCOL_ASSET_H_INCLUDED
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
@@ -27,6 +28,7 @@
 namespace ripple {
 
 class Asset;
+class STAmount;
 
 template <typename TIss>
 concept ValidIssueType =
@@ -92,6 +94,9 @@ public:
     void
     setJson(Json::Value& jv) const;
 
+    STAmount
+    operator()(Number const&) const;
+
     bool
     native() const
     {
@@ -113,6 +118,14 @@ public:
     friend constexpr bool
     equalTokens(Asset const& lhs, Asset const& rhs);
 };
+
+inline Json::Value
+to_json(Asset const& asset)
+{
+    Json::Value jv;
+    asset.setJson(jv);
+    return jv;
+}
 
 template <ValidIssueType TIss>
 constexpr bool
@@ -218,9 +231,6 @@ validJSONAsset(Json::Value const& jv);
 
 Asset
 assetFromJson(Json::Value const& jv);
-
-Json::Value
-to_json(Asset const& asset);
 
 }  // namespace ripple
 
