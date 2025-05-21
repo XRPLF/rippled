@@ -566,8 +566,9 @@ EscrowCreate::doApply()
         (*slep)[sfDestinationNode] = *page;
     }
 
-    // If issuer is not source or destination, add escrow to issuers owner
-    // directory.
+    // IOU escrow objects are added to the issuer's owner directory to help
+    // track the total locked balance. For MPT, this isn't necessary because the
+    // locked balance is already stored directly in the MPTokenIssuance object.
     AccountID const issuer = amount.getIssuer();
     if (!isXRP(amount) && issuer != account_ && issuer != dest &&
         !amount.holds<MPTIssue>())
