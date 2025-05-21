@@ -27,6 +27,68 @@ namespace ripple {
 
 namespace {
 
+static log_level_t
+getLogLevel(beast::severities::Severity severity)
+{
+    using namespace beast::severities;
+    switch (severity)
+    {
+        case kTrace:
+            return WASM_LOG_LEVEL_VERBOSE;
+        case kDebug:
+            return WASM_LOG_LEVEL_DEBUG;
+        case kInfo:
+        case kWarning:
+            return WASM_LOG_LEVEL_WARNING;
+        case kError:
+            return WASM_LOG_LEVEL_ERROR;
+        default:
+            UNREACHABLE("invalid severity");
+            [[fallthrough]];
+        case kFatal:
+        case kNone:
+            break;
+    }
+
+    return WASM_LOG_LEVEL_FATAL;
+}
+
+static beast::severities::Severity
+getLogLevel(std::uint32_t severity)
+{
+    using namespace beast::severities;
+    switch (severity)
+    {
+        case WASM_LOG_LEVEL_VERBOSE:
+            return kTrace;
+        case WASM_LOG_LEVEL_DEBUG:
+            return kDebug;
+        case WASM_LOG_LEVEL_WARNING:
+            return kWarning;
+        case WASM_LOG_LEVEL_ERROR:
+            return kError;
+        default:
+            UNREACHABLE("invalid severity");
+            [[fallthrough]];
+        case WASM_LOG_LEVEL_FATAL:
+            break;
+    }
+
+    return kFatal;
+}
+
+static void
+wamr_log_to_rippled(
+    std::uint32_t logLevel,
+    const char* file,
+    int line,
+    const char* fmt,
+    ...)
+{
+    static beast::Journal j = beast::Journal(beast::Journal::getNullSink());
+    j.stream(getLogLevel(logLevel)) << file << ":" << line << ": " << fmt;
+}
+
 static void
 print_wasm_error(const char* message, wasm_trap_t* trap, beast::Journal j)
 {
@@ -637,32 +699,6 @@ WamrEngine::call(
     Types... args)
 {
     return call<NR>(func, in, p.data(), p.size(), std::forward<Types>(args)...);
-}
-
-static log_level_t
-getLogLevel(beast::severities::Severity severity)
-{
-    using namespace beast::severities;
-    switch (severity)
-    {
-        case kTrace:
-            return WASM_LOG_LEVEL_VERBOSE;
-        case kDebug:
-            return WASM_LOG_LEVEL_DEBUG;
-        case kInfo:
-        case kWarning:
-            return WASM_LOG_LEVEL_WARNING;
-        case kError:
-            return WASM_LOG_LEVEL_ERROR;
-        default:
-            UNREACHABLE("invalid severity");
-            [[fallthrough]];
-        case kFatal:
-        case kNone:
-            break;
-    }
-
-    return WASM_LOG_LEVEL_FATAL;
 }
 
 Expected<int32_t, TER>

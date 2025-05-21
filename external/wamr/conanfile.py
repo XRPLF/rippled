@@ -58,6 +58,7 @@ class WamrConan(ConanFile):
         tc.variables["WAMR_BUILD_FAST_JIT"] = 0
         tc.variables["WAMR_DISABLE_HW_BOUND_CHECK"] = 1
         tc.variables["WAMR_DISABLE_STACK_HW_BOUND_CHECK"] = 1
+        tc.variables["WAMR_BH_LOG"] = "wamr_log_to_rippled"
         # tc.variables["WAMR_BUILD_FAST_JIT"] = 0 if self.settings.os == "Windows" else 1
         # ll_dep = self.dependencies["llvm"]
         # self.output.info(f"-----------package_folder: {type(ll_dep.__dict__)}")
