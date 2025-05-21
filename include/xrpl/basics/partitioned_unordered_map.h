@@ -253,12 +253,11 @@ public:
     partitioned_unordered_map(
         std::optional<std::size_t> partitions = std::nullopt)
     {
-        // Set partitions to the number of hardware threads if the parameter
-        // is either empty or set to 0.
-        partitions_ = std::size_t{std::thread::hardware_concurrency() / 2};
-        // partitions && *partitions
-        //     ? *partitions
-        //     : std::thread::hardware_concurrency();
+        // Set partitions to use half of the number of hardware threads if the
+        // parameter is either empty or set to 0.
+        partitions_ = partitions && *partitions
+            ? *partitions
+            : std::size_t{std::thread::hardware_concurrency() / 2};
         map_.resize(partitions_);
         XRPL_ASSERT(
             partitions_,
