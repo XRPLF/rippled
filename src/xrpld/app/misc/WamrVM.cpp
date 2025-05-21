@@ -86,7 +86,8 @@ wamr_log_to_rippled(
     ...)
 {
     static beast::Journal j = beast::Journal(beast::Journal::getNullSink());
-    j.stream(getLogLevel(logLevel)) << file << ":" << line << ": " << fmt;
+    j.stream(getLogLevel(logLevel))
+        << "WAMR LOG (" << file << ":" << line << "): " << fmt;
 }
 
 static void
