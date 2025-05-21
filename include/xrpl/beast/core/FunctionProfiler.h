@@ -18,7 +18,7 @@ class FunctionProfiler
     std::chrono::steady_clock::time_point start;
 public:
 
-    inline static std::unordered_map<std::string, std::chrono::nanoseconds> funcionDurations;
+    inline static std::unordered_map<std::string, std::pair<std::chrono::nanoseconds, std::int64_t>> funcionDurations;
     FunctionProfiler(const std::string& tag, std::source_location location = std::source_location::current()): functionName(location.function_name() + tag), start(std::chrono::steady_clock::now()) 
     {
     }
@@ -26,7 +26,8 @@ public:
     ~FunctionProfiler() noexcept
     {
         auto duration = std::chrono::steady_clock::now() - start;
-        funcionDurations[functionName] += std::chrono::duration_cast<std::chrono::nanoseconds>(duration);
+        funcionDurations[functionName].first += std::chrono::duration_cast<std::chrono::nanoseconds>(duration);
+        funcionDurations[functionName].second++;
     }
 };
 
