@@ -83,6 +83,7 @@ public:
         state_ = allocState();
         XXH3_64bits_reset_withSeed(state_, seed);
         seed_ = seed;
+        writeSpan_ = buffer_;
     }
 
     template <
@@ -93,6 +94,7 @@ public:
         state_ = allocState();
         XXH3_64bits_reset_withSeed(state_, seed);
         seed_ = seed;
+        writeSpan_ = buffer_;
     }
 
     void
