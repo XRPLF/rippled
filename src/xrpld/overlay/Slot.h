@@ -578,7 +578,7 @@ public:
         Logs& logs,
         SquelchHandler const& handler,
         Config const& config,
-        Slot<clock_type>::ignored_squelch_reporter reporter = []() {})
+        typename Slot<clock_type>::ignored_squelch_reporter reporter = []() {})
         : handler_(handler)
         , logs_(logs)
         , journal_(logs.journal("Slots"))
@@ -711,7 +711,7 @@ private:
 
     Config const& config_;
 
-    Slot<clock_type>::ignored_squelch_reporter reporter_;
+    typename Slot<clock_type>::ignored_squelch_reporter reporter_;
     // Maintain aged container of message/peers. This is required
     // to discard duplicate message from the same peer. A message
     // is aged after IDLED seconds. A message received IDLED seconds
