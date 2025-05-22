@@ -51,7 +51,7 @@ reduceOffer(auto const& amount)
 
 }  // namespace detail
 
-enum class IsDeposit : bool { Yes, No };
+enum class IsDeposit : bool { No = false, Yes = true };
 
 /** Calculate LP Tokens given AMM pool reserves.
  * @param asset1 AMM one side of the pool reserve
