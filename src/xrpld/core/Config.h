@@ -242,15 +242,17 @@ public:
     // size, but we allow admins to explicitly set it in the config.
     std::optional<int> SWEEP_INTERVAL;
 
-    // Reduce-relay - these parameters are experimental.
+    // Reduce-relay - Experimental parameters to control p2p routing algorithms
 
-    // Enable validation/proposal squelching of trusted validators
+    // Enable base squelching of duplicate validation/proposal messages
     bool VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE = false;
 
-    // A temporary config option to tune the number of peers selected as a
-    // source of validator messages it must be removed once squelching is made
-    // the default routing algorithm
+    /////////////////////  !!TEMPORARY CODE BLOCK!! ////////////////////////
+    // Temporary squelching config for the peers selected as a source of  //
+    // validator messages. The config must be removed once squelching is  //
+    // made the default routing algorithm                                 //
     std::size_t VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS = 5;
+    /////////////////    END OF TEMPORARY CODE BLOCK    /////////////////////
 
     // Transaction reduce-relay feature
     bool TX_REDUCE_RELAY_ENABLE = false;

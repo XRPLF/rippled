@@ -120,7 +120,7 @@ PeerImp::PeerImp(
 {
     JLOG(journal_.info())
         << "compression enabled " << (compressionEnabled_ == Compressed::On)
-        << " vp trusted validator squelch enabled "
+        << " vp reduce-relay base squelch enabled "
         << peerFeatureEnabled(
                headers_,
                FEATURE_VPRR,
@@ -2368,8 +2368,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
         {
             // Count unique messages (Slots has it's own 'HashRouter'), which a
             // peer receives within IDLED seconds since the message has been
-            // relayed. Wait WAIT_ON_BOOTUP time to let the server establish
-            // connections to peers.
+            // relayed.
             if (relayed && (stopwatch().now() - *relayed) < reduce_relay::IDLED)
                 overlay_.updateSlotAndSquelch(
                     key, val->getSignerPublic(), id_, protocol::mtVALIDATION);

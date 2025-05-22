@@ -108,8 +108,8 @@ private:
     friend class Slots<clock_type>;
     using id_t = Peer::id_t;
     using time_point = typename clock_type::time_point;
-    // a function provided by the caller to report cases when a peer ignored
-    // squelch
+
+    // a callback to report ignored squelches
     using ignored_squelch_reporter = std::function<void()>;
 
     /** Constructor
@@ -566,23 +566,19 @@ class Slots final
         std::unordered_set<Peer::id_t>,
         clock_type,
         hardened_hash<strong_hash>>;
-    // a function provided by the caller to report cases when a peer ignored
-    // squelch
-    using ignored_squelch_reporter = std::function<void()>;
 
 public:
     /**
      * @param logs reference to the logger
      * @param handler Squelch/unsquelch implementation
      * @param config reference to the global config
-     * @param reporter a lambda function to report cases when a peer ignored
-     * squelch requests
+     * @param reporter a callback to report ignored squelches
      */
     Slots(
         Logs& logs,
         SquelchHandler const& handler,
         Config const& config,
-        ignored_squelch_reporter reporter = []() {})
+        Slot<clock_type>::ignored_squelch_reporter reporter = []() {})
         : handler_(handler)
         , logs_(logs)
         , journal_(logs.journal("Slots"))
@@ -715,7 +711,7 @@ private:
 
     Config const& config_;
 
-    ignored_squelch_reporter reporter_;
+    Slot<clock_type>::ignored_squelch_reporter reporter_;
     // Maintain aged container of message/peers. This is required
     // to discard duplicate message from the same peer. A message
     // is aged after IDLED seconds. A message received IDLED seconds
