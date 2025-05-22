@@ -112,8 +112,6 @@ PeerImp::PeerImp(
           headers_,
           FEATURE_TXRR,
           app_.config().TX_REDUCE_RELAY_ENABLE))
-    , vpTrustedValidatorSquelchEnabled_(
-          app_.config().VP_REDUCE_RELAY_TRUSTED_SQUELCH_ENABLE)
     , ledgerReplayEnabled_(peerFeatureEnabled(
           headers_,
           FEATURE_LEDGER_REPLAY,
@@ -1723,8 +1721,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
     {
         // Count unique messages (Slots has it's own 'HashRouter'), which a peer
         // receives within IDLED seconds since the message has been relayed.
-        if (trustedValidatorSquelchReady() && relayed &&
-            (stopwatch().now() - *relayed) < reduce_relay::IDLED)
+        if (relayed && (stopwatch().now() - *relayed) < reduce_relay::IDLED)
             overlay_.updateSlotAndSquelch(
                 suppression, publicKey, id_, protocol::mtPROPOSE_LEDGER);
 
@@ -2373,8 +2370,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
             // peer receives within IDLED seconds since the message has been
             // relayed. Wait WAIT_ON_BOOTUP time to let the server establish
             // connections to peers.
-            if (trustedValidatorSquelchReady() && relayed &&
-                (stopwatch().now() - *relayed) < reduce_relay::IDLED)
+            if (relayed && (stopwatch().now() - *relayed) < reduce_relay::IDLED)
                 overlay_.updateSlotAndSquelch(
                     key, val->getSignerPublic(), id_, protocol::mtVALIDATION);
 
@@ -2983,7 +2979,7 @@ PeerImp::checkPropose(
         // as part of the squelch logic.
         auto haveMessage = app_.overlay().relay(
             *packet, peerPos.suppressionID(), peerPos.publicKey());
-        if (trustedValidatorSquelchReady() && !haveMessage.empty())
+        if (!haveMessage.empty())
             overlay_.updateSlotAndSquelch(
                 peerPos.suppressionID(),
                 peerPos.publicKey(),
@@ -3018,7 +3014,7 @@ PeerImp::checkValidation(
             // as part of the squelch logic.
             auto haveMessage =
                 overlay_.relay(*packet, key, val->getSignerPublic());
-            if (trustedValidatorSquelchReady() && !haveMessage.empty())
+            if (!haveMessage.empty())
             {
                 overlay_.updateSlotAndSquelch(
                     key,
@@ -3482,16 +3478,6 @@ PeerImp::isHighLatency() const
 {
     std::lock_guard sl(recentLock_);
     return latency_ >= peerHighLatency;
-}
-
-bool
-PeerImp::trustedValidatorSquelchReady()
-{
-    if (!reduceRelayReady_)
-        reduceRelayReady_ =
-            reduce_relay::epoch<std::chrono::minutes>(UptimeClock::now()) >
-            reduce_relay::WAIT_ON_BOOTUP;
-    return vpTrustedValidatorSquelchEnabled_ && reduceRelayReady_;
 }
 
 void

@@ -116,7 +116,6 @@ private:
     clock_type::time_point const creationTime_;
 
     reduce_relay::Squelch<UptimeClock> squelch_;
-    inline static std::atomic_bool reduceRelayReady_{false};
 
     // Notes on thread locking:
     //
@@ -190,9 +189,7 @@ private:
     hash_set<uint256> txQueue_;
     // true if tx reduce-relay feature is enabled on the peer.
     bool txReduceRelayEnabled_ = false;
-    // true if validation/proposal reduce-relay feature is enabled
-    // on the peer.
-    bool vpTrustedValidatorSquelchEnabled_ = false;
+
     bool ledgerReplayEnabled_ = false;
     LedgerReplayMsgHandler ledgerReplayMsgHandler_;
 
@@ -705,8 +702,6 @@ PeerImp::PeerImp(
           headers_,
           FEATURE_TXRR,
           app_.config().TX_REDUCE_RELAY_ENABLE))
-    , vpTrustedValidatorSquelchEnabled_(
-          app_.config().VP_REDUCE_RELAY_TRUSTED_SQUELCH_ENABLE)
     , ledgerReplayEnabled_(peerFeatureEnabled(
           headers_,
           FEATURE_LEDGER_REPLAY,

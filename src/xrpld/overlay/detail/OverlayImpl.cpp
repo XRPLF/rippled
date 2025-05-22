@@ -1421,6 +1421,9 @@ OverlayImpl::updateSlotAndSquelch(
     std::set<Peer::id_t>&& peers,
     protocol::MessageType type)
 {
+    if (!slots_.baseSquelchReady())
+        return;
+
     if (!strand_.running_in_this_thread())
         return post(
             strand_,
@@ -1439,6 +1442,9 @@ OverlayImpl::updateSlotAndSquelch(
     Peer::id_t peer,
     protocol::MessageType type)
 {
+    if (!slots_.baseSquelchReady())
+        return;
+
     if (!strand_.running_in_this_thread())
         return post(strand_, [this, key, validator, peer, type]() {
             updateSlotAndSquelch(key, validator, peer, type);

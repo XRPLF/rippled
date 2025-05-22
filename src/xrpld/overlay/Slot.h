@@ -591,6 +591,22 @@ public:
     {
     }
     ~Slots() = default;
+
+    /** Check if base squelching feature is enabled and ready */
+    bool
+    baseSquelchReady()
+    {
+        if (!config_.VP_REDUCE_RELAY_TRUSTED_SQUELCH_ENABLE)
+            return false;
+
+        if (!reduceRelayReady_)
+            reduceRelayReady_ =
+                reduce_relay::epoch<std::chrono::minutes>(clock_type::now()) >
+                reduce_relay::WAIT_ON_BOOTUP;
+
+        return reduceRelayReady_;
+    }
+
     /** Calls Slot::update of Slot associated with the validator.
      * @param key Message's hash
      * @param validator Validator's public key
@@ -689,6 +705,8 @@ private:
      * Return true if added */
     bool
     addPeerMessage(uint256 const& key, id_t id);
+
+    std::atomic_bool reduceRelayReady_{false};
 
     hash_map<PublicKey, Slot<clock_type>> slots_;
     SquelchHandler const& handler_;  // squelch/unsquelch handler
