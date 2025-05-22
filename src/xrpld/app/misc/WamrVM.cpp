@@ -19,6 +19,8 @@
 
 #include <xrpld/app/misc/WamrVM.h>
 
+#include <xrpl/basics/Log.h>
+
 #include <memory>
 
 namespace ripple {
@@ -86,7 +88,7 @@ wamr_log_to_rippled(
     const char* fmt,
     ...)
 {
-    static beast::Journal j = beast::Journal(beast::Journal::getNullSink());
+    beast::Journal j = debugLog();
 
     // Format the variadic args
     const char* safeFile = file ? file : "<null>";
