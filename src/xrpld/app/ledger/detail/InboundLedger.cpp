@@ -1038,9 +1038,8 @@ InboundLedger::getNeededHashes()
             mLedger->txMap().family().db(), app_.getLedgerMaster());
         for (auto const& h : neededTxHashes(4, &filter))
         {
-            ret.push_back(
-                std::make_pair(
-                    protocol::TMGetObjectByHash::otTRANSACTION_NODE, h));
+            ret.push_back(std::make_pair(
+                protocol::TMGetObjectByHash::otTRANSACTION_NODE, h));
         }
     }
 

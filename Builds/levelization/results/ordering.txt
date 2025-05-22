@@ -162,6 +162,7 @@ xrpld.ledger > xrpl.basics
 xrpld.ledger > xrpl.json
 xrpld.ledger > xrpl.protocol
 xrpld.net > xrpl.basics
+xrpld.net > xrpld.perflog
 xrpld.net > xrpl.json
 xrpld.net > xrpl.protocol
 xrpld.net > xrpl.resource
