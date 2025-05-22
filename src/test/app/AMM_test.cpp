@@ -21,6 +21,7 @@
 #include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
 #include <test/jtx/CaptureLogs.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/sendmax.h>
 
@@ -31,6 +32,7 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/TER.h>
 
 #include <boost/regex.hpp>
 
@@ -54,11 +56,27 @@ private:
 
         using namespace jtx;
 
-        // XRP to IOU
-        testAMM([&](AMM& ammAlice, Env&) {
-            BEAST_EXPECT(ammAlice.expectBalances(
-                XRP(10'000), USD(10'000), IOUAmount{10'000'000, 0}));
-        });
+        // XRP to IOU, with featureSingleAssetVault
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'000), USD(10'000), IOUAmount{10'000'000, 0}));
+            },
+            {},
+            0,
+            {},
+            {supported_amendments() | featureSingleAssetVault});
+
+        // XRP to IOU, without featureSingleAssetVault
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'000), USD(10'000), IOUAmount{10'000'000, 0}));
+            },
+            {},
+            0,
+            {},
+            {supported_amendments() - featureSingleAssetVault});
 
         // IOU to IOU
         testAMM(
@@ -7138,6 +7156,50 @@ private:
     }
 
     void
+    testFailedPseudoAccount()
+    {
+        using namespace test::jtx;
+
+        auto const testCase = [&](std::string suffix, FeatureBitset features) {
+            testcase("Failed pseudo-account allocation " + suffix);
+            Env env{*this, features};
+            env.fund(XRP(30'000), gw, alice);
+            env.close();
+            env(trust(alice, gw["USD"](30'000), 0));
+            env(pay(gw, alice, USD(10'000)));
+            env.close();
+
+            STAmount amount = XRP(10'000);
+            STAmount amount2 = USD(10'000);
+            auto const keylet = keylet::amm(amount.issue(), amount2.issue());
+            for (int i = 0; i < 256; ++i)
+            {
+                AccountID const accountId =
+                    ripple::pseudoAccountAddress(*env.current(), keylet.key);
+
+                env(pay(env.master.id(), accountId, XRP(1000)),
+                    seq(autofill),
+                    fee(autofill),
+                    sig(autofill));
+            }
+
+            AMM ammAlice(
+                env,
+                alice,
+                amount,
+                amount2,
+                features[featureSingleAssetVault] ? ter{terADDRESS_COLLISION}
+                                                  : ter{tecDUPLICATE});
+        };
+
+        testCase(
+            "tecDUPLICATE", supported_amendments() - featureSingleAssetVault);
+        testCase(
+            "terADDRESS_COLLISION",
+            supported_amendments() | featureSingleAssetVault);
+    }
+
+    void
     run() override
     {
         FeatureBitset const all{jtx::supported_amendments()};
@@ -7192,6 +7254,7 @@ private:
         testAMMDepositWithFrozenAssets(all - fixAMMv1_1 - featureAMMClawback);
         testFixReserveCheckOnWithdrawal(all);
         testFixReserveCheckOnWithdrawal(all - fixAMMv1_2);
+        testFailedPseudoAccount();
     }
 };
 
