@@ -33,6 +33,8 @@
 // in include/xrpl/protocol/Feature.h.
 
 XRPL_FEATURE(TokenEscrow,                Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FEATURE(SingleAssetVault,           Supported::no, VoteBehavior::DefaultNo)
+XRPL_FEATURE(PermissionDelegation,       Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (PayChanCancelAfter,         Supported::yes, VoteBehavior::DefaultNo)
 // Check flags in Credential transactions
 XRPL_FIX    (InvalidTxFlags,             Supported::yes, VoteBehavior::DefaultNo)

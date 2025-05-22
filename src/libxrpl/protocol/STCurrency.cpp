@@ -72,9 +72,9 @@ STCurrency::add(Serializer& s) const
 }
 
 bool
-STCurrency::isEquivalent(const STBase& t) const
+STCurrency::isEquivalent(STBase const& t) const
 {
-    const STCurrency* v = dynamic_cast<const STCurrency*>(&t);
+    STCurrency const* v = dynamic_cast<STCurrency const*>(&t);
     return v && (*v == *this);
 }
 

@@ -1544,7 +1544,7 @@ struct Escrow_test : public beast::unit_test::suite
         Account const dillon{"dillon "};
         Account const zelda{"zelda"};
 
-        const char credType[] = "abcde";
+        char const credType[] = "abcde";
 
         {
             // Credentials amendment not enabled
@@ -1653,7 +1653,7 @@ struct Escrow_test : public beast::unit_test::suite
             env.close();
 
             {
-                const char credType2[] = "fghijk";
+                char const credType2[] = "fghijk";
 
                 env(credentials::create(bob, zelda, credType2));
                 env.close();

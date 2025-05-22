@@ -962,7 +962,7 @@ chooseLedgerEntryType(Json::Value const& params)
         // against the canonical name (case-insensitive) or the RPC name
         // (case-sensitive).
         auto const filter = p.asString();
-        const auto iter =
+        auto const iter =
             std::ranges::find_if(types, [&filter](decltype(types.front())& t) {
                 return boost::iequals(std::get<0>(t), filter) ||
                     std::get<1>(t) == filter;
@@ -1140,5 +1140,6 @@ getLedgerByContext(RPC::JsonContext& context)
     return RPC::make_error(
         rpcNOT_READY, "findCreate failed to return an inbound ledger");
 }
+
 }  // namespace RPC
 }  // namespace ripple

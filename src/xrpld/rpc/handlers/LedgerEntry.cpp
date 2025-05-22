@@ -29,6 +29,7 @@
 #include <xrpl/json/json_errors.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/jss.h>
@@ -228,6 +229,46 @@ parseAuthorizeCredentials(Json::Value const& jv)
     }
 
     return arr;
+}
+
+static std::optional<uint256>
+parseDelegate(Json::Value const& params, Json::Value& jvResult)
+{
+    if (!params.isObject())
+    {
+        uint256 uNodeIndex;
+        if (!params.isString() || !uNodeIndex.parseHex(params.asString()))
+        {
+            jvResult[jss::error] = "malformedRequest";
+            return std::nullopt;
+        }
+        return uNodeIndex;
+    }
+    if (!params.isMember(jss::account) || !params.isMember(jss::authorize))
+    {
+        jvResult[jss::error] = "malformedRequest";
+        return std::nullopt;
+    }
+    if (!params[jss::account].isString() || !params[jss::authorize].isString())
+    {
+        jvResult[jss::error] = "malformedAddress";
+        return std::nullopt;
+    }
+    auto const account =
+        parseBase58<AccountID>(params[jss::account].asString());
+    if (!account)
+    {
+        jvResult[jss::error] = "malformedAddress";
+        return std::nullopt;
+    }
+    auto const authorize =
+        parseBase58<AccountID>(params[jss::authorize].asString());
+    if (!authorize)
+    {
+        jvResult[jss::error] = "malformedAddress";
+        return std::nullopt;
+    }
+    return keylet::delegate(*account, *authorize).key;
 }
 
 static std::optional<uint256>
@@ -705,6 +746,39 @@ parseTicket(Json::Value const& params, Json::Value& jvResult)
 }
 
 static std::optional<uint256>
+parseVault(Json::Value const& params, Json::Value& jvResult)
+{
+    if (!params.isObject())
+    {
+        uint256 uNodeIndex;
+        if (!uNodeIndex.parseHex(params.asString()))
+        {
+            jvResult[jss::error] = "malformedRequest";
+            return std::nullopt;
+        }
+        return uNodeIndex;
+    }
+
+    if (!params.isMember(jss::owner) || !params.isMember(jss::seq) ||
+        !(params[jss::seq].isInt() || params[jss::seq].isUInt()) ||
+        params[jss::seq].asDouble() <= 0.0 ||
+        params[jss::seq].asDouble() > double(Json::Value::maxUInt))
+    {
+        jvResult[jss::error] = "malformedRequest";
+        return std::nullopt;
+    }
+
+    auto const id = parseBase58<AccountID>(params[jss::owner].asString());
+    if (!id)
+    {
+        jvResult[jss::error] = "malformedOwner";
+        return std::nullopt;
+    }
+
+    return keylet::vault(*id, params[jss::seq].asUInt()).key;
+}
+
+static std::optional<uint256>
 parseXChainOwnedClaimID(Json::Value const& claim_id, Json::Value& jvResult)
 {
     if (claim_id.isString())
@@ -884,6 +958,7 @@ doLedgerEntry(RPC::JsonContext& context)
         {jss::bridge, parseBridge, ltBRIDGE},
         {jss::check, parseCheck, ltCHECK},
         {jss::credential, parseCredential, ltCREDENTIAL},
+        {jss::delegate, parseDelegate, ltDELEGATE},
         {jss::deposit_preauth, parseDepositPreauth, ltDEPOSIT_PREAUTH},
         {jss::did, parseDID, ltDID},
         {jss::directory, parseDirectory, ltDIR_NODE},
@@ -910,6 +985,7 @@ doLedgerEntry(RPC::JsonContext& context)
         {jss::xchain_owned_create_account_claim_id,
          parseXChainOwnedCreateAccountClaimID,
          ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID},
+        {jss::vault, parseVault, ltVAULT},
     });
 
     uint256 uNodeIndex;
@@ -918,7 +994,7 @@ doLedgerEntry(RPC::JsonContext& context)
     try
     {
         bool found = false;
-        for (const auto& ledgerEntry : ledgerEntryParsers)
+        for (auto const& ledgerEntry : ledgerEntryParsers)
         {
             if (context.params.isMember(ledgerEntry.fieldName))
             {

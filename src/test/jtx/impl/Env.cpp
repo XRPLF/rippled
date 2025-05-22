@@ -477,7 +477,9 @@ Env::autofill_sig(JTx& jt)
         return jt.signer(*this, jt);
     if (!jt.fill_sig)
         return;
-    auto const account = lookup(jv[jss::Account].asString());
+    auto const account = jv.isMember(sfDelegate.jsonName)
+        ? lookup(jv[sfDelegate.jsonName].asString())
+        : lookup(jv[jss::Account].asString());
     if (!app().checkSigs())
     {
         jv[jss::SigningPubKey] = strHex(account.pk().slice());
@@ -613,6 +615,5 @@ Env::disableFeature(uint256 const feature)
 }
 
 }  // namespace jtx
-
 }  // namespace test
 }  // namespace ripple

@@ -165,7 +165,8 @@ LEDGER_ENTRY(ltACCOUNT_ROOT, 0x0061, AccountRoot, account, ({
     {sfMintedNFTokens,       soeDEFAULT},
     {sfBurnedNFTokens,       soeDEFAULT},
     {sfFirstNFTokenSequence, soeOPTIONAL},
-    {sfAMMID,                soeOPTIONAL},
+    {sfAMMID,                soeOPTIONAL}, // pseudo-account designator
+    {sfVaultID,              soeOPTIONAL}, // pseudo-account designator
 }))
 
 /** A ledger object which contains a list of object identifiers.
@@ -392,21 +393,6 @@ LEDGER_ENTRY(ltAMM, 0x0079, AMM, amm, ({
     {sfPreviousTxnLgrSeq,    soeOPTIONAL},
 }))
 
-/** A ledger object which tracks Oracle
-    \sa keylet::oracle
- */
-LEDGER_ENTRY(ltORACLE, 0x0080, Oracle, oracle, ({
-    {sfOwner,                soeREQUIRED},
-    {sfProvider,             soeREQUIRED},
-    {sfPriceDataSeries,      soeREQUIRED},
-    {sfAssetClass,           soeREQUIRED},
-    {sfLastUpdateTime,       soeREQUIRED},
-    {sfURI,                  soeOPTIONAL},
-    {sfOwnerNode,            soeREQUIRED},
-    {sfPreviousTxnID,        soeREQUIRED},
-    {sfPreviousTxnLgrSeq,    soeREQUIRED},
-}))
-
 /** A ledger object which tracks MPTokenIssuance
     \sa keylet::mptIssuance
  */
@@ -422,6 +408,7 @@ LEDGER_ENTRY(ltMPTOKEN_ISSUANCE, 0x007e, MPTokenIssuance, mpt_issuance, ({
     {sfMPTokenMetadata,          soeOPTIONAL},
     {sfPreviousTxnID,            soeREQUIRED},
     {sfPreviousTxnLgrSeq,        soeREQUIRED},
+    {sfDomainID,                 soeOPTIONAL},
 }))
 
 /** A ledger object which tracks MPToken
@@ -435,6 +422,21 @@ LEDGER_ENTRY(ltMPTOKEN, 0x007f, MPToken, mptoken, ({
     {sfOwnerNode,                soeREQUIRED},
     {sfPreviousTxnID,            soeREQUIRED},
     {sfPreviousTxnLgrSeq,        soeREQUIRED},
+}))
+
+/** A ledger object which tracks Oracle
+    \sa keylet::oracle
+ */
+LEDGER_ENTRY(ltORACLE, 0x0080, Oracle, oracle, ({
+    {sfOwner,                soeREQUIRED},
+    {sfProvider,             soeREQUIRED},
+    {sfPriceDataSeries,      soeREQUIRED},
+    {sfAssetClass,           soeREQUIRED},
+    {sfLastUpdateTime,       soeREQUIRED},
+    {sfURI,                  soeOPTIONAL},
+    {sfOwnerNode,            soeREQUIRED},
+    {sfPreviousTxnID,        soeREQUIRED},
+    {sfPreviousTxnLgrSeq,    soeREQUIRED},
 }))
 
 /** A ledger object which tracks Credential
@@ -462,6 +464,41 @@ LEDGER_ENTRY(ltPERMISSIONED_DOMAIN, 0x0082, PermissionedDomain, permissioned_dom
     {sfOwnerNode,           soeREQUIRED},
     {sfPreviousTxnID,       soeREQUIRED},
     {sfPreviousTxnLgrSeq,   soeREQUIRED},
+}))
+
+/** A ledger object representing permissions an account has delegated to another account.
+    \sa keylet::delegate
+ */
+LEDGER_ENTRY(ltDELEGATE, 0x0083, Delegate, delegate, ({
+    {sfAccount,              soeREQUIRED},
+    {sfAuthorize,            soeREQUIRED},
+    {sfPermissions,          soeREQUIRED},
+    {sfOwnerNode,            soeREQUIRED},
+    {sfPreviousTxnID,        soeREQUIRED},
+    {sfPreviousTxnLgrSeq,    soeREQUIRED},
+}))
+
+/** A ledger object representing a single asset vault.
+
+    \sa keylet::mptoken
+ */
+LEDGER_ENTRY(ltVAULT, 0x0084, Vault, vault, ({
+    {sfPreviousTxnID,        soeREQUIRED},
+    {sfPreviousTxnLgrSeq,    soeREQUIRED},
+    {sfSequence,             soeREQUIRED},
+    {sfOwnerNode,            soeREQUIRED},
+    {sfOwner,                soeREQUIRED},
+    {sfAccount,              soeREQUIRED},
+    {sfData,                 soeOPTIONAL},
+    {sfAsset,                soeREQUIRED},
+    {sfAssetsTotal,          soeREQUIRED},
+    {sfAssetsAvailable,      soeREQUIRED},
+    {sfAssetsMaximum,        soeDEFAULT},
+    {sfLossUnrealized,       soeREQUIRED},
+    {sfShareMPTID,           soeREQUIRED},
+    {sfWithdrawalPolicy,     soeREQUIRED},
+    // no SharesTotal ever (use MPTIssuance.sfOutstandingAmount)
+    // no PermissionedDomainID ever (use MPTIssuance.sfDomainID)
 }))
 
 #undef EXPAND

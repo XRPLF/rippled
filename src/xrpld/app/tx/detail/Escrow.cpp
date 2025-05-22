@@ -370,7 +370,12 @@ EscrowCreate::preclaim(PreclaimContext const& ctx)
     auto const sled = ctx.view.read(keylet::account(dest));
     if (!sled)
         return tecNO_DST;
-    if (sled->isFieldPresent(sfAMMID))
+
+    // Pseudo-accounts cannot receive escrow. Note, this is not amendment-gated
+    // because all writes to pseudo-account discriminator fields **are**
+    // amendment gated, hence the behaviour of this check will always match the
+    // currently active amendments.
+    if (isPseudoAccount(sled))
         return tecNO_PERMISSION;
 
     if (!isXRP(amount))
@@ -523,8 +528,7 @@ EscrowCreate::doApply()
 
     // Create escrow in ledger.  Note that we we use the value from the
     // sequence or ticket.  For more explanation see comments in SeqProxy.h.
-    Keylet const escrowKeylet =
-        keylet::escrow(account_, ctx_.tx.getSeqProxy().value());
+    Keylet const escrowKeylet = keylet::escrow(account, ctx_.tx.getSeqValue());
     auto const slep = std::make_shared<SLE>(escrowKeylet);
     (*slep)[sfAmount] = amount;
     (*slep)[sfAccount] = account_;

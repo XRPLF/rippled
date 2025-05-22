@@ -55,7 +55,7 @@ MPTokenIssuanceDestroy::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
 
     // ensure it has no outstanding balances
-    if ((*sleMPT)[~sfOutstandingAmount] != 0)
+    if ((*sleMPT)[sfOutstandingAmount] != 0)
         return tecHAS_OBLIGATIONS;
 
     if ((*sleMPT)[~sfEscrowedAmount].value_or(0) != 0)

@@ -28,6 +28,7 @@
 #include <test/jtx/envconfig.h>
 #include <test/jtx/require.h>
 #include <test/jtx/tags.h>
+#include <test/jtx/vault.h>
 #include <test/unit_test/SuiteJournal.h>
 
 #include <xrpld/app/ledger/Ledger.h>
@@ -72,7 +73,7 @@ noripple(Account const& account, Args const&... args)
 inline FeatureBitset
 supported_amendments()
 {
-    static const FeatureBitset ids = [] {
+    static FeatureBitset const ids = [] {
         auto const& sa = ripple::detail::supportedAmendments();
         std::vector<uint256> feats;
         feats.reserve(sa.size());

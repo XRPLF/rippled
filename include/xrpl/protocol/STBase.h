@@ -92,6 +92,16 @@ struct JsonOptions
     }
 };
 
+template <typename T>
+    requires requires(T const& t) {
+        { t.getJson(JsonOptions::none) } -> std::convertible_to<Json::Value>;
+    }
+Json::Value
+to_json(T const& t)
+{
+    return t.getJson(JsonOptions::none);
+}
+
 namespace detail {
 class STVar;
 }
@@ -129,16 +139,16 @@ class STBase
 public:
     virtual ~STBase() = default;
     STBase();
-    STBase(const STBase&) = default;
+    STBase(STBase const&) = default;
     STBase&
-    operator=(const STBase& t);
+    operator=(STBase const& t);
 
     explicit STBase(SField const& n);
 
     bool
-    operator==(const STBase& t) const;
+    operator==(STBase const& t) const;
     bool
-    operator!=(const STBase& t) const;
+    operator!=(STBase const& t) const;
 
     template <class D>
     D&
@@ -157,7 +167,7 @@ public:
     virtual std::string
     getText() const;
 
-    virtual Json::Value getJson(JsonOptions /*options*/) const;
+    virtual Json::Value getJson(JsonOptions = JsonOptions::none) const;
 
     virtual void
     add(Serializer& s) const;
@@ -197,7 +207,7 @@ private:
 //------------------------------------------------------------------------------
 
 std::ostream&
-operator<<(std::ostream& out, const STBase& t);
+operator<<(std::ostream& out, STBase const& t);
 
 template <class D>
 D&
