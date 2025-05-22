@@ -43,16 +43,6 @@ checkVL(
     return strHex(expected) == strHex(sle->getFieldVL(field));
 }
 
-static inline Keylet
-credentialKeylet(
-    test::jtx::Account const& subject,
-    test::jtx::Account const& issuer,
-    std::string_view credType)
-{
-    return keylet::credential(
-        subject.id(), issuer.id(), Slice(credType.data(), credType.size()));
-}
-
 struct Credentials_test : public beast::unit_test::suite
 {
     void
@@ -72,7 +62,7 @@ struct Credentials_test : public beast::unit_test::suite
         {
             testcase("Create for subject.");
 
-            auto const credKey = credentialKeylet(subject, issuer, credType);
+            auto const credKey = credentials::keylet(subject, issuer, credType);
 
             env.fund(XRP(5000), subject, issuer, other);
             env.close();
@@ -150,7 +140,7 @@ struct Credentials_test : public beast::unit_test::suite
         {
             testcase("Create for themself.");
 
-            auto const credKey = credentialKeylet(issuer, issuer, credType);
+            auto const credKey = credentials::keylet(issuer, issuer, credType);
 
             env(credentials::create(issuer, issuer, credType),
                 credentials::uri(uri));
@@ -224,7 +214,7 @@ struct Credentials_test : public beast::unit_test::suite
         {
             testcase("Delete issuer before accept");
 
-            auto const credKey = credentialKeylet(subject, issuer, credType);
+            auto const credKey = credentials::keylet(subject, issuer, credType);
             env(credentials::create(subject, issuer, credType));
             env.close();
 
@@ -260,7 +250,7 @@ struct Credentials_test : public beast::unit_test::suite
         {
             testcase("Delete issuer after accept");
 
-            auto const credKey = credentialKeylet(subject, issuer, credType);
+            auto const credKey = credentials::keylet(subject, issuer, credType);
             env(credentials::create(subject, issuer, credType));
             env.close();
             env(credentials::accept(subject, issuer, credType));
@@ -298,7 +288,7 @@ struct Credentials_test : public beast::unit_test::suite
         {
             testcase("Delete subject before accept");
 
-            auto const credKey = credentialKeylet(subject, issuer, credType);
+            auto const credKey = credentials::keylet(subject, issuer, credType);
             env(credentials::create(subject, issuer, credType));
             env.close();
 
@@ -334,7 +324,7 @@ struct Credentials_test : public beast::unit_test::suite
         {
             testcase("Delete subject after accept");
 
-            auto const credKey = credentialKeylet(subject, issuer, credType);
+            auto const credKey = credentials::keylet(subject, issuer, credType);
             env(credentials::create(subject, issuer, credType));
             env.close();
             env(credentials::accept(subject, issuer, credType));
@@ -372,7 +362,7 @@ struct Credentials_test : public beast::unit_test::suite
         {
             testcase("Delete by other");
 
-            auto const credKey = credentialKeylet(subject, issuer, credType);
+            auto const credKey = credentials::keylet(subject, issuer, credType);
             auto jv = credentials::create(subject, issuer, credType);
             uint32_t const t = env.current()
                                    ->info()
@@ -417,7 +407,7 @@ struct Credentials_test : public beast::unit_test::suite
             env.close();
             {
                 auto const credKey =
-                    credentialKeylet(subject, issuer, credType);
+                    credentials::keylet(subject, issuer, credType);
                 BEAST_EXPECT(!env.le(credKey));
                 BEAST_EXPECT(!ownerCount(env, subject));
                 BEAST_EXPECT(!ownerCount(env, issuer));
@@ -439,7 +429,7 @@ struct Credentials_test : public beast::unit_test::suite
             env.close();
             {
                 auto const credKey =
-                    credentialKeylet(subject, issuer, credType);
+                    credentials::keylet(subject, issuer, credType);
                 BEAST_EXPECT(!env.le(credKey));
                 BEAST_EXPECT(!ownerCount(env, subject));
                 BEAST_EXPECT(!ownerCount(env, issuer));
