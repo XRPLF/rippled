@@ -24,9 +24,12 @@
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/core/JobQueue.h>
+#include <xrpld/perflog/PerfLog.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/Indexes.h>
+
+using namespace std::chrono_literals;
 
 namespace ripple {
 
@@ -69,7 +72,13 @@ OrderBookDB::setup(std::shared_ptr<ReadView const> const& ledger)
             app_.getJobQueue().addJob(
                 jtUPDATE_PF,
                 "OrderBookDB::update: " + std::to_string(ledger->seq()),
-                [this, ledger]() { update(ledger); });
+                [this, ledger, journal = j_]() {
+                    perf::measureDurationAndLog(
+                        [&]() { update(ledger); },
+                        "OrderBookDB::update:",
+                        1s,
+                        journal);
+                });
     }
 }
 

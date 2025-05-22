@@ -25,6 +25,7 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/JobQueue.h>
 #include <xrpld/overlay/Overlay.h>
+#include <xrpld/perflog/PerfLog.h>
 #include <xrpld/shamap/SHAMapNodeID.h>
 
 #include <xrpl/basics/Log.h>
@@ -36,6 +37,8 @@
 
 #include <algorithm>
 #include <random>
+
+using namespace std::chrono_literals;
 
 namespace ripple {
 
@@ -473,15 +476,24 @@ InboundLedger::done()
 
     // We hold the PeerSet lock, so must dispatch
     app_.getJobQueue().addJob(
-        jtLEDGER_DATA, "AcquisitionDone", [self = shared_from_this()]() {
-            if (self->complete_ && !self->failed_)
-            {
-                self->app_.getLedgerMaster().checkAccept(self->getLedger());
-                self->app_.getLedgerMaster().tryAdvance();
-            }
-            else
-                self->app_.getInboundLedgers().logFailure(
-                    self->hash_, self->mSeq);
+        jtLEDGER_DATA,
+        "AcquisitionDone",
+        [self = shared_from_this(), journal = journal_]() {
+            perf::measureDurationAndLog(
+                [&]() {
+                    if (self->complete_ && !self->failed_)
+                    {
+                        self->app_.getLedgerMaster().checkAccept(
+                            self->getLedger());
+                        self->app_.getLedgerMaster().tryAdvance();
+                    }
+                    else
+                        self->app_.getInboundLedgers().logFailure(
+                            self->hash_, self->mSeq);
+                },
+                "AcquisitionDone",
+                1s,
+                journal);
         });
 }
 
@@ -1026,8 +1038,9 @@ InboundLedger::getNeededHashes()
             mLedger->txMap().family().db(), app_.getLedgerMaster());
         for (auto const& h : neededTxHashes(4, &filter))
         {
-            ret.push_back(std::make_pair(
-                protocol::TMGetObjectByHash::otTRANSACTION_NODE, h));
+            ret.push_back(
+                std::make_pair(
+                    protocol::TMGetObjectByHash::otTRANSACTION_NODE, h));
         }
     }
 
