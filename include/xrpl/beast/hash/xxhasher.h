@@ -107,8 +107,8 @@ public:
             exit(-1);
         }
         std::memcpy(writeSpan_.data(), key, len);
-        writeSpan_ = writeSpan_.subspan(len);
         readSpan_ = std::span<std::uint8_t>(std::begin(buffer_), readSpan_.size() + len);
+        writeSpan_ = std::span<std::uint8_t>(std::begin(buffer_) + readSpan_.size(), buffer_.size() - readSpan_.size());
     }
 
     explicit
