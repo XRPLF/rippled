@@ -28,6 +28,7 @@
 #include <new>
 #include <type_traits>
 #include <xrpl/beast/core/FunctionProfiler.h>
+#include <span>
 
 namespace beast {
 
@@ -38,6 +39,11 @@ private:
     static_assert(sizeof(std::size_t) == 8, "");
 
     XXH3_state_t* state_;
+
+    std::array<std::uint8_t, 40> buffer_;
+    std::span<std::uint8_t> readSpan_;
+    std::span<std::uint8_t> writeSpan_;
+    XXH64_hash_t seed_{};
 
     static XXH3_state_t*
     allocState()
@@ -61,6 +67,7 @@ public:
     {
         state_ = allocState();
         XXH3_64bits_reset(state_);
+        writeSpan_ = buffer_;
     }
 
     ~xxhasher() noexcept
@@ -75,6 +82,7 @@ public:
     {
         state_ = allocState();
         XXH3_64bits_reset_withSeed(state_, seed);
+        seed_ = seed;
     }
 
     template <
@@ -84,20 +92,30 @@ public:
     {
         state_ = allocState();
         XXH3_64bits_reset_withSeed(state_, seed);
+        seed_ = seed;
     }
 
     void
     operator()(void const* key, std::size_t len) noexcept
     {
         FunctionProfiler _{"-size-" + std::to_string(len)};
-        XXH3_64bits_update(state_, key, len);
+        //XXH3_64bits_update(state_, key, len);
+        if (len >= writeSpan_.size())
+        {
+            exit(-1);
+        }
+        std::memcpy(writeSpan_.data(), key, len);
+        writeSpan_ = writeSpan_.subspan(len);
+        readSpan_ = std::span<std::uint8_t>(std::begin(buffer_), readSpan_.size() + len);
     }
 
     explicit
     operator std::size_t() noexcept
     {
         FunctionProfiler _{"-digest"};
-        return XXH3_64bits_digest(state_);
+        // XXH3_64bits_update(state_, readSpan_.data(), readSpan_.size());
+        // return XXH3_64bits_digest(state_);
+        return XXH64(readSpan_.data(), readSpan_.size(), seed_);
     }
 };
 
