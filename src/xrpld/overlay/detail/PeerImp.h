@@ -716,7 +716,7 @@ PeerImp::PeerImp(
         << peerFeatureEnabled(
                headers_,
                FEATURE_VPRR,
-               app_.config().VP_REDUCE_RELAY_TRUSTED_SQUELCH_ENABLE)
+               app_.config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE)
         << " tx reduce-relay enabled " << txReduceRelayEnabled_ << " on "
         << remote_address_ << " " << id_;
 }

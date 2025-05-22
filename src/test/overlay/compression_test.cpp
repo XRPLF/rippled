@@ -479,8 +479,8 @@ public:
             c.loadFromString(str.str());
             auto env = std::make_shared<jtx::Env>(*this);
             env->app().config().COMPRESSION = c.COMPRESSION;
-            env->app().config().VP_REDUCE_RELAY_TRUSTED_SQUELCH_ENABLE =
-                c.VP_REDUCE_RELAY_TRUSTED_SQUELCH_ENABLE;
+            env->app().config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE =
+                c.VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE;
             return env;
         };
         auto handshake = [&](int outboundEnable, int inboundEnable) {
@@ -493,7 +493,7 @@ public:
                 env->app().config().COMPRESSION,
                 false,
                 env->app().config().TX_REDUCE_RELAY_ENABLE,
-                env->app().config().VP_REDUCE_RELAY_TRUSTED_SQUELCH_ENABLE);
+                env->app().config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE);
             http_request_type http_request;
             http_request.version(request.version());
             http_request.base() = request.base();

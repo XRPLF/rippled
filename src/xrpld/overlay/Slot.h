@@ -596,7 +596,7 @@ public:
     bool
     baseSquelchReady()
     {
-        if (!config_.VP_REDUCE_RELAY_TRUSTED_SQUELCH_ENABLE)
+        if (!config_.VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE)
             return false;
 
         if (!reduceRelayReady_)

@@ -245,7 +245,7 @@ public:
     // Reduce-relay - these parameters are experimental.
 
     // Enable validation/proposal squelching of trusted validators
-    bool VP_REDUCE_RELAY_TRUSTED_SQUELCH_ENABLE = false;
+    bool VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE = false;
 
     // A temporary config option to tune the number of peers selected as a
     // source of validator messages it must be removed once squelching is made
