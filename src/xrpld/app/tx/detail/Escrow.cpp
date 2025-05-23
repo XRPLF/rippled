@@ -94,7 +94,7 @@ NotTEC
 escrowCreatePreflightHelper<Issue>(PreflightContext const& ctx)
 {
     STAmount const amount = ctx.tx[sfAmount];
-    if (!isLegalNet(amount) || amount <= beast::zero)
+    if (amount.native() || amount <= beast::zero)
         return temBAD_AMOUNT;
 
     if (badCurrency() == amount.getCurrency())
@@ -111,7 +111,7 @@ escrowCreatePreflightHelper<MPTIssue>(PreflightContext const& ctx)
         return temDISABLED;
 
     auto const amount = ctx.tx[sfAmount];
-    if (amount.mpt() > MPTAmount{maxMPTokenAmount} || amount <= beast::zero)
+    if (amount.native() || amount.mpt() > MPTAmount{maxMPTokenAmount} || amount <= beast::zero)
         return temBAD_AMOUNT;
 
     return tesSUCCESS;

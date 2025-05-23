@@ -275,9 +275,6 @@ NoZeroEscrow::visitEntry(
             if (amount <= beast::zero)
                 return true;
 
-            if (!isLegalNet(amount))
-                return true;
-
             if (badCurrency() == amount.getCurrency())
                 return true;
         }
@@ -318,16 +315,24 @@ NoZeroEscrow::visitEntry(
 
     if (after && after->getType() == ltMPTOKEN_ISSUANCE)
     {
-        checkAmount((*after)[sfOutstandingAmount]);
+        auto const outstanding = (*after)[sfOutstandingAmount];
+        checkAmount(outstanding);
         if (auto const escrowed = (*after)[~sfEscrowedAmount])
+        {
             checkAmount(*escrowed);
+            bad_ = outstanding < *escrowed;
+        }
     }
 
     if (after && after->getType() == ltMPTOKEN)
     {
-        checkAmount((*after)[sfMPTAmount]);
+        auto const mptAmount = (*after)[sfMPTAmount];
+        checkAmount(mptAmount);
         if (auto const escrowed = (*after)[~sfEscrowedAmount])
+        {
             checkAmount(*escrowed);
+            bad_ = mptAmount < *escrowed;
+        }
     }
 }
 
