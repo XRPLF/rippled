@@ -96,7 +96,7 @@ var searchData=
   ['vector_3c_20ripple_3a_3atest_3a_3acsf_3a_3ajumpcollector_3a_3ajump_20_3e_93',['vector&lt; ripple::test::csf::JumpCollector::Jump &gt;',['http://en.cppreference.com/w/cpp/container/vector.html',1,'std']]],
   ['vector_3c_20ripple_3a_3atest_3a_3ajtx_3a_3aaccount_20_3e_94',['vector&lt; ripple::test::jtx::Account &gt;',['http://en.cppreference.com/w/cpp/container/vector.html',1,'std']]],
   ['vector_3c_20ripple_3a_3atest_3a_3ajtx_3a_3aiou_20_3e_95',['vector&lt; ripple::test::jtx::IOU &gt;',['http://en.cppreference.com/w/cpp/container/vector.html',1,'std']]],
-  ['vector_3c_20ripple_3a_3atest_3a_3ajtx_3a_3amsig_3a_3areg_20_3e_96',['vector&lt; ripple::test::jtx::msig::Reg &gt;',['http://en.cppreference.com/w/cpp/container/vector.html',1,'std']]],
+  ['vector_3c_20ripple_3a_3atest_3a_3ajtx_3a_3areg_20_3e_96',['vector&lt; ripple::test::jtx::Reg &gt;',['http://en.cppreference.com/w/cpp/container/vector.html',1,'std']]],
   ['vector_3c_20ripple_3a_3atest_3a_3ajtx_3a_3asigner_20_3e_97',['vector&lt; ripple::test::jtx::signer &gt;',['http://en.cppreference.com/w/cpp/container/vector.html',1,'std']]],
   ['vector_3c_20ripple_3a_3atest_3a_3avalidator_20_3e_98',['vector&lt; ripple::test::Validator &gt;',['http://en.cppreference.com/w/cpp/container/vector.html',1,'std']]],
   ['vector_3c_20ripple_3a_3atransfersnotfrozen_3a_3abalancechange_20_3e_99',['vector&lt; ripple::TransfersNotFrozen::BalanceChange &gt;',['http://en.cppreference.com/w/cpp/container/vector.html',1,'std']]],

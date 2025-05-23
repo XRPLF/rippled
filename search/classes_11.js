@@ -67,7 +67,7 @@ var searchData=
   ['reference_5fwrapper_3c_20ripple_3a_3aport_20const_20_3e_64',['reference_wrapper&lt; ripple::Port const &gt;',['http://en.cppreference.com/w/cpp/utility/functional/reference_wrapper.html',1,'std']]],
   ['reference_5fwrapper_3c_20ripple_3a_3asfield_20const_20_3e_65',['reference_wrapper&lt; ripple::SField const &gt;',['http://en.cppreference.com/w/cpp/utility/functional/reference_wrapper.html',1,'std']]],
   ['reference_5fwrapper_3c_20typename_20beast_3a_3amaybe_5fconst_3c_20isconst_2c_20list_5ftype_20_3e_3a_3atype_20_3e_66',['reference_wrapper&lt; typename beast::maybe_const&lt; IsConst, list_type &gt;::type &gt;',['http://en.cppreference.com/w/cpp/utility/functional/reference_wrapper.html',1,'std']]],
-  ['reg_67',['Reg',['../structripple_1_1test_1_1jtx_1_1msig_1_1Reg.html',1,'ripple::test::jtx::msig']]],
+  ['reg_67',['Reg',['../structripple_1_1test_1_1jtx_1_1Reg.html',1,'ripple::test::jtx']]],
   ['regex_68',['regex',['http://en.cppreference.com/w/cpp/regex/basic_regex.html',1,'std']]],
   ['regex_5ferror_69',['regex_error',['http://en.cppreference.com/w/cpp/regex/regex_error.html',1,'std']]],
   ['regex_5fiterator_70',['regex_iterator',['http://en.cppreference.com/w/cpp/regex/regex_iterator.html',1,'std']]],

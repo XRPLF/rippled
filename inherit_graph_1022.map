@@ -1,22 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integral_constant.html" title=" " alt="" coords="5,707,117,733"/>
-<area shape="rect" id="node2" href="$structbeast_1_1detail_1_1is__boost__reverse__iterator_3_01boost_1_1intrusive_1_1reverse__iterator_3_01It_01_4_01_4.html" title=" " alt="" coords="205,5,404,75"/>
-<area shape="rect" id="node3" href="$structbeast_1_1is__aged__container_3_01beast_1_1detail_1_1aged__ordered__container_3_01IsMulti_0338a9b22fe6c4be0d8f95d218bdfb0e7.html" title=" " alt="" coords="168,99,441,168"/>
-<area shape="rect" id="node4" href="$structbeast_1_1is__aged__container_3_01beast_1_1detail_1_1aged__unordered__container_3_01IsMultia80d60acae45fc077226391e490a323d.html" title=" " alt="" coords="189,193,420,277"/>
-<area shape="rect" id="node5" href="$structbeast_1_1is__uniquely__represented_3_01ripple_1_1base__uint_3_01Bits_00_01Tag_01_4_01_4.html" title=" " alt="" coords="208,301,401,355"/>
-<area shape="rect" id="node6" href="$classripple_1_1CanCvtToNotTEC_3_01TEFcodes_01_4.html" title=" " alt="" coords="217,380,393,420"/>
-<area shape="rect" id="node7" href="$classripple_1_1CanCvtToNotTEC_3_01TELcodes_01_4.html" title=" " alt="" coords="217,444,393,484"/>
-<area shape="rect" id="node8" href="$classripple_1_1CanCvtToNotTEC_3_01TEMcodes_01_4.html" title=" " alt="" coords="217,508,393,548"/>
-<area shape="rect" id="node9" href="$classripple_1_1CanCvtToNotTEC_3_01TERcodes_01_4.html" title=" " alt="" coords="217,572,393,612"/>
-<area shape="rect" id="node10" href="$classripple_1_1CanCvtToNotTEC_3_01TEScodes_01_4.html" title=" " alt="" coords="217,636,393,676"/>
-<area shape="rect" id="node11" href="$classripple_1_1CanCvtToTER_3_01NotTEC_01_4.html" title=" " alt="" coords="228,700,381,740"/>
-<area shape="rect" id="node12" href="$classripple_1_1CanCvtToTER_3_01TECcodes_01_4.html" title=" " alt="" coords="228,764,381,804"/>
-<area shape="rect" id="node13" href="$classripple_1_1CanCvtToTER_3_01TEFcodes_01_4.html" title=" " alt="" coords="228,828,381,868"/>
-<area shape="rect" id="node14" href="$classripple_1_1CanCvtToTER_3_01TELcodes_01_4.html" title=" " alt="" coords="228,892,381,932"/>
-<area shape="rect" id="node15" href="$classripple_1_1CanCvtToTER_3_01TEMcodes_01_4.html" title=" " alt="" coords="228,956,381,996"/>
-<area shape="rect" id="node16" href="$classripple_1_1CanCvtToTER_3_01TERcodes_01_4.html" title=" " alt="" coords="228,1020,381,1060"/>
-<area shape="rect" id="node17" href="$classripple_1_1CanCvtToTER_3_01TEScodes_01_4.html" title=" " alt="" coords="228,1084,381,1124"/>
-<area shape="rect" id="node18" href="$structripple_1_1detail_1_1is__contiguous__container_3_01Container_00_01std_1_1void__t_3_01declty5b72e96ce5f7645bf11da72bb5b4c85a.html" title=" " alt="" coords="165,1148,444,1276"/>
-<area shape="rect" id="node19" href="$structripple_1_1detail_1_1is__contiguous__container_3_01Slice_01_4.html" title=" " alt="" coords="221,1301,389,1355"/>
-<area shape="rect" id="node20" href="$structstd_1_1is__error__code__enum_3_01ripple_1_1TokenCodecErrc_01_4.html" title=" " alt="" coords="183,1380,426,1420"/>
+<area shape="rect" id="node1" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integral_constant.html" title=" " alt="" coords="5,5,183,75"/>
+<area shape="rect" id="node2" href="$structbeast_1_1detail_1_1is__empty__base__optimization__derived.html" title=" " alt="" coords="231,20,473,60"/>
 </map>

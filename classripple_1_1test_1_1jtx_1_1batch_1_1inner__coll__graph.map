@@ -1,0 +1,10 @@
+<map id="ripple::test::jtx::batch::inner" name="ripple::test::jtx::batch::inner">
+<area shape="rect" id="node1" title="Adds a new Batch Txn on a JTx and autofills." alt="" coords="209,372,334,412"/>
+<area shape="rect" id="node2" href="$classJson_1_1Value.html" title="Represents a JSON value." alt="" coords="49,277,142,302"/>
+<area shape="rect" id="node3" href="$unionJson_1_1Value_1_1ValueHolder.html" title=" " alt="" coords="5,181,185,207"/>
+<area shape="rect" id="node4" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/map.html" title=" " alt="" coords="28,93,163,119"/>
+<area shape="rect" id="node5" title=" " alt="" coords="44,5,83,31"/>
+<area shape="rect" id="node6" title=" " alt="" coords="109,5,148,31"/>
+<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="220,277,323,302"/>
+<area shape="rect" id="node8" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="347,269,486,309"/>
+</map>

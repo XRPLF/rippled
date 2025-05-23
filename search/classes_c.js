@@ -143,7 +143,7 @@ var searchData=
   ['mptset_140',['MPTSet',['../structripple_1_1test_1_1jtx_1_1MPTSet.html',1,'ripple::test::jtx']]],
   ['mpttester_141',['MPTTester',['../classripple_1_1test_1_1jtx_1_1MPTTester.html',1,'ripple::test::jtx']]],
   ['msg_142',['msg',['../structripple_1_1test_1_1WSClientImpl_1_1msg.html',1,'ripple::test::WSClientImpl']]],
-  ['msig_143',['msig',['../classripple_1_1test_1_1jtx_1_1msig.html',1,'ripple::test::jtx']]],
+  ['msig_143',['msig',['../classripple_1_1test_1_1jtx_1_1batch_1_1msig.html',1,'ripple::test::jtx::batch::msig'],['../classripple_1_1test_1_1jtx_1_1msig.html',1,'ripple::test::jtx::msig']]],
   ['mt19937_144',['mt19937',['http://en.cppreference.com/w/cpp/numeric/random/mersenne_twister_engine.html',1,'std']]],
   ['mt19937_5f64_145',['mt19937_64',['http://en.cppreference.com/w/cpp/numeric/random/mersenne_twister_engine.html',1,'std']]],
   ['muldiv_5ftest_146',['mulDiv_test',['../structripple_1_1test_1_1mulDiv__test.html',1,'ripple::test']]],

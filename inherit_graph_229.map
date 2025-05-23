@@ -1,17 +1,4 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="211,69,374,109"/>
-<area shape="rect" id="node2" href="$classripple_1_1Ledger.html" title="Holds a ledger." alt="" coords="503,106,614,131"/>
-<area shape="rect" id="node3" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/memory/enable_shared_from_this.html" title=" " alt="" coords="210,5,375,45"/>
-<area shape="rect" id="node4" href="$classripple_1_1RawView.html" title="Interface for ledger entry changes." alt="" coords="8,159,135,185"/>
-<area shape="rect" id="node5" href="$classripple_1_1TxsRawView.html" title="Interface for changing ledger entries with transactions." alt="" coords="217,134,368,159"/>
-<area shape="rect" id="node7" href="$classripple_1_1detail_1_1ApplyViewBase.html" title=" " alt="" coords="452,313,665,338"/>
-<area shape="rect" id="node6" href="$classripple_1_1OpenView.html" title="Writable ledger view that accumulates state and tx changes." alt="" coords="492,234,625,259"/>
-<area shape="rect" id="node8" href="$classripple_1_1ApplyViewImpl.html" title="Editable, discardable view that can build metadata for one tx." alt="" coords="725,263,890,289"/>
-<area shape="rect" id="node9" href="$classripple_1_1PaymentSandbox.html" title="A wrapper which makes credits unavailable to balances." alt="" coords="717,313,897,338"/>
-<area shape="rect" id="node10" href="$classripple_1_1Sandbox.html" title="Discardable, editable view to a ledger." alt="" coords="746,362,869,387"/>
-<area shape="rect" id="node11" href="$classripple_1_1ReadView.html" title="A view into a ledger." alt="" coords="5,234,137,259"/>
-<area shape="rect" id="node12" href="$classripple_1_1ApplyView.html" title="Writeable view to a ledger, for applying a transaction." alt="" coords="225,335,361,361"/>
-<area shape="rect" id="node13" href="$classripple_1_1DigestAwareReadView.html" title="ReadView that associates keys with digests." alt="" coords="185,183,400,209"/>
-<area shape="rect" id="node14" href="$classripple_1_1detail_1_1CachedViewImpl.html" title=" " alt="" coords="448,183,669,209"/>
-<area shape="rect" id="node15" href="$classripple_1_1CachedView.html" title="Wraps a DigestAwareReadView to provide caching." alt="" coords="734,176,881,216"/>
+<area shape="rect" id="node1" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="5,5,168,45"/>
+<area shape="rect" id="node2" href="$classripple_1_1Job.html" title=" " alt="" coords="216,13,303,38"/>
 </map>

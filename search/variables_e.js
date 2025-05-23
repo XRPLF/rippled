@@ -16,7 +16,7 @@ var searchData=
   ['one_5fxrp_13',['one_xrp',['../structripple_1_1test_1_1jtx_1_1XChainBridgeObjects.html#a936ab0a4cc30ec15a0caca9f52776ef0',1,'ripple::test::jtx::XChainBridgeObjects']]],
   ['open_14',['open',['../structripple_1_1NodeStore_1_1MemoryDB.html#a2ac1944192a27f05e81b802473b85270',1,'ripple::NodeStore::MemoryDB']]],
   ['open_5f_15',['open_',['../classripple_1_1OpenView.html#aa638259974fcbaf2ab81482342273118',1,'ripple::OpenView']]],
-  ['open_5fledger_16',['open_ledger',['../namespaceripple.html#ab30574a8f31dbd4d579a6a589f82fbe7',1,'ripple']]],
+  ['open_5fledger_16',['open_ledger',['../namespaceripple.html#a1a2328148244d911a8c4f04b96aa2605',1,'ripple']]],
   ['openledger_5f_17',['openLedger_',['../classripple_1_1ApplicationImp.html#a270567f27399e3ec2f600116028d3ef4',1,'ripple::ApplicationImp']]],
   ['openledgerfeelevel_18',['openLedgerFeeLevel',['../structripple_1_1TxQ_1_1Metrics.html#a0dfae7d857bda5f73e70b47d3bb46455',1,'ripple::TxQ::Metrics']]],
   ['opentime_5f_19',['openTime_',['../classripple_1_1Consensus.html#a24fad80b40d58dac52455f01b3d2e43a',1,'ripple::Consensus']]],

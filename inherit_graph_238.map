@@ -1,4 +1,13 @@
 <map id="Graphical Class Hierarchy" name="Graphical Class Hierarchy">
-<area shape="rect" id="node1" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="5,5,168,45"/>
-<area shape="rect" id="node2" href="$classripple_1_1SHAMapItem.html" title=" " alt="" coords="216,13,368,38"/>
+<area shape="rect" id="node1" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="475,5,729,45"/>
+<area shape="rect" id="node2" href="$classripple_1_1SHAMapAccountStateLeafNode.html" title="A leaf node for a state object." alt="" coords="777,21,985,61"/>
+<area shape="rect" id="node3" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="248,241,423,281"/>
+<area shape="rect" id="node4" href="$classripple_1_1SHAMapInnerNode.html" title=" " alt="" coords="507,249,697,274"/>
+<area shape="rect" id="node5" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="509,69,695,109"/>
+<area shape="rect" id="node6" href="$classripple_1_1SHAMapTxLeafNode.html" title="A leaf node for a transaction." alt="" coords="781,118,981,143"/>
+<area shape="rect" id="node7" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="479,184,725,224"/>
+<area shape="rect" id="node8" href="$classripple_1_1SHAMapTxPlusMetaLeafNode.html" title="A leaf node for a transaction and its associated metadata." alt="" coords="782,168,981,208"/>
+<area shape="rect" id="node9" href="$structripple_1_1IntrusiveRefCounts.html" title="Implement the strong count, weak count, and bit flags for an intrusive pointer." alt="" coords="5,163,196,189"/>
+<area shape="rect" id="node10" href="$classripple_1_1SHAMapTreeNode.html" title=" " alt="" coords="244,163,427,189"/>
+<area shape="rect" id="node11" href="$classripple_1_1SHAMapLeafNode.html" title=" " alt="" coords="510,134,694,159"/>
 </map>

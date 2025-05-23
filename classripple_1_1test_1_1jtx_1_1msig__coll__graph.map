@@ -1,7 +1,7 @@
 <map id="ripple::test::jtx::msig" name="ripple::test::jtx::msig">
-<area shape="rect" id="node1" title="Set a multisignature on a JTx." alt="" coords="1687,189,1844,214"/>
-<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="1419,181,1587,221"/>
-<area shape="rect" id="node3" href="$structripple_1_1test_1_1jtx_1_1msig_1_1Reg.html" title=" " alt="" coords="1125,181,1251,221"/>
+<area shape="rect" id="node1" title="Set a multisignature on a JTx." alt="" coords="1661,189,1819,214"/>
+<area shape="rect" id="node2" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/vector.html" title=" " alt="" coords="1419,181,1561,221"/>
+<area shape="rect" id="node3" href="$structripple_1_1test_1_1jtx_1_1Reg.html" title=" " alt="" coords="1113,189,1263,214"/>
 <area shape="rect" id="node4" href="$classripple_1_1test_1_1jtx_1_1Account.html" title="Immutable cryptographic account descriptor." alt="" coords="815,129,941,169"/>
 <area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/unordered_map.html" title=" " alt="" coords="1071,61,1305,131"/>
 <area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/pair.html" title=" " alt="" coords="799,19,957,59"/>

@@ -178,7 +178,7 @@ var searchData=
   ['sharedweakunion_175',['SharedWeakUnion',['../classripple_1_1SharedWeakUnion.html',1,'ripple']]],
   ['short_5fread_5ftest_176',['short_read_test',['../classripple_1_1short__read__test.html',1,'ripple']]],
   ['shuffle_5forder_5fengine_177',['shuffle_order_engine',['http://en.cppreference.com/w/cpp/numeric/random/shuffle_order_engine.html',1,'std']]],
-  ['sig_178',['sig',['../classripple_1_1test_1_1jtx_1_1sig.html',1,'ripple::test::jtx']]],
+  ['sig_178',['sig',['../classripple_1_1test_1_1jtx_1_1batch_1_1sig.html',1,'ripple::test::jtx::batch::sig'],['../classripple_1_1test_1_1jtx_1_1sig.html',1,'ripple::test::jtx::sig']]],
   ['sig_5fatomic_5ft_179',['sig_atomic_t',['http://en.cppreference.com/w/cpp/utility/program/sig_atomic_t.html',1,'std']]],
   ['signer_180',['signer',['../structripple_1_1test_1_1jtx_1_1signer.html',1,'ripple::test::jtx']]],
   ['signerentries_181',['SignerEntries',['../classripple_1_1SignerEntries.html',1,'ripple']]],
