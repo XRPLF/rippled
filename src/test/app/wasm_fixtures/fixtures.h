@@ -17,8 +17,7 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_TEST_APP_WASMFIXTURES_FIXTURES_H_INCLUDED
-#define RIPPLE_TEST_APP_WASMFIXTURES_FIXTURES_H_INCLUDED
+#pragma once
 
 // TODO: consider moving these to separate files (and figure out the build)
 
@@ -29,5 +28,3 @@ extern std::string const ledgerSqnHex;
 extern std::string const allHostFunctionsHex;
 
 extern std::string const deepRecursionHex;
-
-#endif
