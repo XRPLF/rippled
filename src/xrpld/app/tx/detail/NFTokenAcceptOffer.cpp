@@ -363,7 +363,11 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
                 auto res = nft::checkTrustlineAuthorized(
                     ctx.view, issuer, ctx.j, amount.asset().get<Issue>());
                 if (res != tesSUCCESS)
+                    return res;
 
+                res = nft::checkTrustlineDeepFrozen(
+                    ctx.view, issuer, ctx.j, amount.asset().get<Issue>());
+                if (res != tesSUCCESS)
                     return res;
             }
         }

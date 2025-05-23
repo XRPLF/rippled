@@ -1968,7 +1968,8 @@ class Freeze_test : public beast::unit_test::suite
         }
 
         // Testing brokered offer acceptance
-        if (features[fixEnforceNFTokenTrustlineV2])
+        if (features[featureDeepFreeze] &&
+            features[fixEnforceNFTokenTrustlineV2])
         {
             Account broker{"broker"};
             env.fund(XRP(10000), broker);
@@ -1988,12 +1989,14 @@ class Freeze_test : public beast::unit_test::suite
             env.close();
 
             env(token::brokerOffers(broker, buyIdx, sellIdx),
-                token::brokerFee(USD(1)));
+                token::brokerFee(USD(1)),
+                ter(tecFROZEN));
             env.close();
         }
 
         // Testing transfer fee
-        if (features[fixEnforceNFTokenTrustlineV2])
+        if (features[featureDeepFreeze] &&
+            features[fixEnforceNFTokenTrustlineV2])
         {
             Account minter{"minter"};
             env.fund(XRP(10000), minter);
@@ -2020,7 +2023,7 @@ class Freeze_test : public beast::unit_test::suite
                 txflags(tfSellNFToken));
             env(trust(G1, minter["USD"](1000), tfSetFreeze | tfSetDeepFreeze));
             env.close();
-            env(token::acceptSellOffer(A1, sellIdx));
+            env(token::acceptSellOffer(A1, sellIdx), ter(tecFROZEN));
             env.close();
         }
     }
