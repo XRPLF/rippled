@@ -68,6 +68,12 @@ typedef WasmResult<bool> EscrowResult;
 
 struct HostFunctions
 {
+    virtual beast::Journal
+    getJournal()
+    {
+        return beast::Journal{beast::Journal::getNullSink()};
+    }
+
     virtual int32_t
     getLedgerSqn()
     {
@@ -331,7 +337,8 @@ public:
     run(wbytes const& wasmCode,
         std::string_view funcName = {},
         std::vector<WasmImportFunc> const& imports = {},
-        std::vector<WasmParam> const& params = {});
+        std::vector<WasmParam> const& params = {},
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
 
     std::int64_t
     initGas(std::int64_t def = 1'000'000'000'000LL);

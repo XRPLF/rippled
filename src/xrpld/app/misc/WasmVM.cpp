@@ -56,7 +56,7 @@ runEscrowWasm(
     WASM_IMPORT_FUNC(imports, print, hfs)
 
     std::int64_t const sgas = gasLimit;  // vm.getGas();
-    auto ret = vm.run(wasmCode, funcName, imports);
+    auto ret = vm.run(wasmCode, funcName, imports, {}, hfs->getJournal());
 
     // std::cout << "runEscrowWasm, mod size: " << wasmCode.size()
     //           << ", gasLimit: " << gasLimit << ", funcName: " << funcName;
@@ -92,9 +92,10 @@ WasmEngine::run(
     wbytes const& wasmCode,
     std::string_view funcName,
     std::vector<WasmImportFunc> const& imports,
-    std::vector<WasmParam> const& params)
+    std::vector<WasmParam> const& params,
+    beast::Journal j)
 {
-    return impl->run(wasmCode, funcName, imports, params);
+    return impl->run(wasmCode, funcName, imports, params, j);
 }
 
 std::int64_t

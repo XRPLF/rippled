@@ -127,41 +127,58 @@ struct Wasm_test : public beast::unit_test::suite
         using namespace test::jtx;
         struct TestHostFunctions : public HostFunctions
         {
-            Env* env;
-            Bytes accountID;
-            Bytes data;
-            int clock_drift = 0;
+            Env* env_;
+            Bytes accountID_;
+            Bytes data_;
+            int clock_drift_ = 0;
+            test::StreamSink sink_;
+            beast::Journal jlog_;
 
         public:
             explicit TestHostFunctions(Env* env, int cd = 0)
-                : env(env), clock_drift(cd)
+                : env_(env)
+                , clock_drift_(cd)
+                , sink_(beast::severities::kTrace)
+                , jlog_(sink_)
             {
                 std::string s = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
-                accountID = Bytes{s.begin(), s.end()};
+                accountID_ = Bytes{s.begin(), s.end()};
                 std::string t = "10000";
-                data = Bytes{t.begin(), t.end()};
+                data_ = Bytes{t.begin(), t.end()};
+            }
+
+            test::StreamSink&
+            getSink()
+            {
+                return sink_;
+            }
+
+            beast::Journal
+            getJournal() override
+            {
+                return jlog_;
             }
 
             int32_t
             getLedgerSqn() override
             {
-                return (int32_t)env->current()->seq();
+                return (int32_t)env_->current()->seq();
             }
 
             int32_t
             getParentLedgerTime() override
             {
-                return env->current()
+                return env_->current()
                            ->parentCloseTime()
                            .time_since_epoch()
                            .count() +
-                    clock_drift;
+                    clock_drift_;
             }
 
             std::optional<Bytes>
             getTxField(std::string const& fname) override
             {
-                return accountID;
+                return accountID_;
             }
 
             std::optional<Bytes>
@@ -170,19 +187,19 @@ struct Wasm_test : public beast::unit_test::suite
                 Bytes const& kdata,
                 std::string const& fname) override
             {
-                return data;
+                return data_;
             }
 
             std::optional<Bytes>
             getCurrentLedgerEntryField(std::string const& fname) override
             {
                 if (fname == "Destination" || fname == "Account")
-                    return accountID;
+                    return accountID_;
                 else if (fname == "Data")
-                    return data;
+                    return data_;
                 else if (fname == "FinishAfter")
                 {
-                    auto t = env->current()
+                    auto t = env_->current()
                                  ->parentCloseTime()
                                  .time_since_epoch()
                                  .count();
@@ -197,14 +214,14 @@ struct Wasm_test : public beast::unit_test::suite
         Env env{*this};
 
         {
-            TestHostFunctions nfs(&env);
+            TestHostFunctions nfs(&env, 0);
             std::string funcName("finish");
             auto re = runEscrowWasm(wasm, funcName, &nfs, 100000);
             if (BEAST_EXPECT(re.has_value()))
             {
                 BEAST_EXPECT(re.value().result);
-                std::cout << "good case result " << re.value().result
-                          << " cost: " << re.value().cost << std::endl;
+                // std::cout << "good case result " << re.value().result
+                //           << " cost: " << re.value().cost << std::endl;
             }
         }
 
@@ -214,17 +231,17 @@ struct Wasm_test : public beast::unit_test::suite
         env.close();
 
         {  // fail because current time < escrow_finish_after time
-            TestHostFunctions nfs(&env);
-            nfs.clock_drift = -1;
+            TestHostFunctions nfs(&env, -1);
             std::string funcName("finish");
             auto re = runEscrowWasm(wasm, funcName, &nfs, 100000);
             if (BEAST_EXPECT(re.has_value()))
             {
                 BEAST_EXPECT(!re.value().result);
-                std::cout << "bad case (current time < escrow_finish_after "
-                             "time) result "
-                          << re.value().result << " cost: " << re.value().cost
-                          << std::endl;
+                // std::cout << "bad case (current time < escrow_finish_after "
+                //              "time) result "
+                //           << re.value().result << " cost: " <<
+                //           re.value().cost
+                //           << std::endl;
             }
         }
 
@@ -244,8 +261,8 @@ struct Wasm_test : public beast::unit_test::suite
             std::string funcName("finish");
             auto re = runEscrowWasm(wasm, funcName, &nfs, 100000);
             BEAST_EXPECT(re.error());
-            std::cout << "bad case (access nonexistent field) result "
-                      << re.error() << std::endl;
+            // std::cout << "bad case (access nonexistent field) result "
+            //           << re.error() << std::endl;
         }
 
         {  // fail because trying to allocate more than MAX_PAGES memory
@@ -263,9 +280,9 @@ struct Wasm_test : public beast::unit_test::suite
             BadTestHostFunctions nfs(&env);
             std::string funcName("finish");
             auto re = runEscrowWasm(wasm, funcName, &nfs, 100000);
-            if (BEAST_EXPECT(!re))
-                std::cout << "bad case (more than MAX_PAGES) result "
-                          << re.error() << std::endl;
+            BEAST_EXPECT(!re);
+            // std::cout << "bad case (more than MAX_PAGES) result "
+            //           << re.error() << std::endl;
         }
 
         {  // fail because recursion too deep
@@ -276,9 +293,31 @@ struct Wasm_test : public beast::unit_test::suite
             TestHostFunctions nfs(&env);
             std::string funcName("recursive");
             auto re = runEscrowWasm(wasm, funcName, &nfs, 1000'000'000);
-            if (BEAST_EXPECT(re.error()))
-                std::cout << "bad case (deep recursion) result " << re.error()
-                          << std::endl;
+            BEAST_EXPECT(re.error());
+            // std::cout << "bad case (deep recursion) result " << re.error()
+            //             << std::endl;
+
+            auto const& sink = nfs.getSink();
+            auto countSubstr = [](std::string const& str,
+                                  std::string const& substr) {
+                std::size_t pos = 0;
+                int occurrences = 0;
+                while ((pos = str.find(substr, pos)) != std::string::npos)
+                {
+                    occurrences++;
+                    pos += substr.length();
+                }
+                return occurrences;
+            };
+
+            BEAST_EXPECT(
+                countSubstr(
+                    sink.messages().str(), "WAMR error: failed to call func") ==
+                1);
+            BEAST_EXPECT(
+                countSubstr(
+                    sink.messages().str(),
+                    "WAMR trap: Exception: wasm operand stack overflow") == 1);
         }
     }
 

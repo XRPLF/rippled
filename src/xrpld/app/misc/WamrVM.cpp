@@ -19,6 +19,8 @@
 
 #include <xrpld/app/misc/WamrVM.h>
 
+#include <xrpl/basics/Log.h>
+
 #include <memory>
 
 namespace ripple {
@@ -27,10 +29,91 @@ namespace ripple {
 
 namespace {
 
-static void
-print_wasm_error(const char* message, wasm_trap_t* trap)
+static log_level_t
+getLogLevel(beast::severities::Severity severity)
 {
-    fprintf(stderr, "WAMR error: %s\n", message);
+    using namespace beast::severities;
+    switch (severity)
+    {
+        case kTrace:
+            return WASM_LOG_LEVEL_VERBOSE;
+        case kDebug:
+            return WASM_LOG_LEVEL_DEBUG;
+        case kInfo:
+        case kWarning:
+            return WASM_LOG_LEVEL_WARNING;
+        case kError:
+            return WASM_LOG_LEVEL_ERROR;
+        default:
+            UNREACHABLE("invalid severity");
+            [[fallthrough]];
+        case kFatal:
+        case kNone:
+            break;
+    }
+
+    return WASM_LOG_LEVEL_FATAL;
+}
+
+static beast::severities::Severity
+getLogLevel(uint32_t severity)
+{
+    using namespace beast::severities;
+    switch (severity)
+    {
+        case WASM_LOG_LEVEL_VERBOSE:
+            return kTrace;
+        case WASM_LOG_LEVEL_DEBUG:
+            return kDebug;
+        case WASM_LOG_LEVEL_WARNING:
+            return kWarning;
+        case WASM_LOG_LEVEL_ERROR:
+            return kError;
+        default:
+            UNREACHABLE("invalid severity");
+            [[fallthrough]];
+        case WASM_LOG_LEVEL_FATAL:
+            break;
+    }
+
+    return kFatal;
+}
+
+// This function is called from WAMR to log messages.
+extern "C" void
+wamr_log_to_rippled(
+    uint32_t logLevel,
+    const char* file,
+    int line,
+    const char* fmt,
+    ...)
+{
+    beast::Journal j = debugLog();
+
+    // Format the variadic args
+    const char* safeFile = file ? file : "<null>";
+
+    std::ostringstream oss;
+    oss << "WAMR LOG (" << safeFile << ":" << line << "): ";
+
+    va_list args;
+    va_start(args, fmt);
+
+    char formatted[1024];
+    vsnprintf(formatted, sizeof(formatted), fmt, args);
+    formatted[sizeof(formatted) - 1] = '\0';
+
+    va_end(args);
+
+    oss << formatted;
+
+    j.stream(getLogLevel(logLevel)) << oss.str();
+}
+
+static void
+print_wasm_error(const char* message, wasm_trap_t* trap, beast::Journal j)
+{
+    j.debug() << "WAMR error: " << message;
 
     if (trap)
     {
@@ -38,11 +121,7 @@ print_wasm_error(const char* message, wasm_trap_t* trap)
 
         wasm_trap_message(trap, &error_message);
         wasm_trap_delete(trap);
-        fprintf(
-            stderr,
-            "WAMR trap: %.*s\n",
-            (int)error_message.size,
-            error_message.data);
+        j.debug() << "WAMR trap: " << error_message.data;
         wasm_byte_vec_delete(&error_message);
     }
 }
@@ -69,7 +148,10 @@ InstanceWrapper::init(
 
     if (!mi || trap)
     {
-        print_wasm_error("can't create instance", trap);
+        print_wasm_error(
+            "can't create instance",
+            trap,
+            beast::Journal(beast::Journal::getNullSink()));
         throw std::runtime_error("WAMR: can't create instance");
     }
     wasm_instance_exports(mi.get(), expt);
@@ -570,7 +652,7 @@ WamrEngine::call(wasm_func_t* func, std::vector<wasm_val_t>& in)
               nullptr};
     trap = wasm_func_call(func, &inv, &ret.r);
     if (trap)
-        print_wasm_error("failed to call func", trap);
+        print_wasm_error("failed to call func", trap, j_);
 
     // assert(results[0].kind == WASM_I32);
     // if (NR) printf("Result P5: %d\n", ret[0].of.i32);
@@ -645,10 +727,13 @@ WamrEngine::run(
     wbytes const& wasmCode,
     std::string_view funcName,
     std::vector<WasmImportFunc> const& imports,
-    std::vector<WasmParam> const& params)
+    std::vector<WasmParam> const& params,
+    beast::Journal j)
 {
     try
     {
+        wasm_runtime_set_log_level(getLogLevel(j.sink().threshold()));
+        j_ = j;
         return runHlp(wasmCode, funcName, imports, params);
     }
     catch (std::exception const&)
