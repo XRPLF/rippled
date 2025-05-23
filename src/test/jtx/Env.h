@@ -472,6 +472,9 @@ public:
     PrettyAmount
     balance(Account const& account, Issue const& issue) const;
 
+    PrettyAmount
+    balance(Account const& account, MPTIssue const& mptIssue) const;
+
     /** Returns the IOU limit on an account.
         Returns 0 if the trust line does not exist.
     */

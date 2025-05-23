@@ -323,13 +323,13 @@ escrowCreatePreclaimHelper<MPTIssue>(
         ter != tesSUCCESS)
         return ter;
 
-    // If the issuer has frozen the account, return tecFROZEN
+    // If the issuer has frozen the account, return tecLOCKED
     if (isFrozen(ctx.view, account, mptIssue))
-        return tecFROZEN;
+        return tecLOCKED;
 
-    // If the issuer has frozen the destination, return tecFROZEN
+    // If the issuer has frozen the destination, return tecLOCKED
     if (isFrozen(ctx.view, dest, mptIssue))
-        return tecFROZEN;
+        return tecLOCKED;
 
     // If the mpt cannot be transferred, return tecNO_AUTH
     if (auto const ter = canTransfer(ctx.view, mptIssue, account, dest);
@@ -750,9 +750,9 @@ escrowFinishPreclaimHelper<MPTIssue>(
         ter != tesSUCCESS)
         return ter;
 
-    // If the issuer has frozen the destination, return tecFROZEN
+    // If the issuer has frozen the destination, return tecLOCKED
     if (isFrozen(ctx.view, dest, mptIssue))
-        return tecFROZEN;
+        return tecLOCKED;
 
     return tesSUCCESS;
 }
