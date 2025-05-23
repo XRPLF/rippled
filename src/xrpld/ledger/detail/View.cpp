@@ -1057,7 +1057,7 @@ pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey)
 {
     // This number must not be changed without an amendment
     constexpr int maxAccountAttempts = 256;
-    for (auto i = 0; i < maxAccountAttempts; ++i)
+    for (std::uint16_t i = 0; i < maxAccountAttempts; ++i)
     {
         ripesha_hasher rsh;
         auto const hash = sha512Half(i, view.info().parentHash, pseudoOwnerKey);
