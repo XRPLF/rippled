@@ -556,8 +556,8 @@ canAdd(STAmount const& a, STAmount const& b)
     // IOU case (precision check)
     if (a.holds<Issue>() && b.holds<Issue>())
     {
-        static const STAmount one{IOUAmount{1, 0}, noIssue()};
-        static const STAmount maxLoss{IOUAmount{1, -4}, noIssue()};
+        static STAmount const one{IOUAmount{1, 0}, noIssue()};
+        static STAmount const maxLoss{IOUAmount{1, -4}, noIssue()};
         STAmount lhs = divide((a - b) + b, a, noIssue()) - one;
         STAmount rhs = divide((b - a) + a, b, noIssue()) - one;
         return ((rhs.negative() ? -rhs : rhs) +
