@@ -32,6 +32,7 @@
 
 #include <boost/thread.hpp>
 
+#include <chrono>
 #include <numeric>
 #include <optional>
 
@@ -669,6 +670,12 @@ public:
     getNumPeers() const
     {
         return peers_.size();
+    }
+
+    reduce_relay::Slots<ManualClock>&
+    getSlots()
+    {
+        return slots_;
     }
 
 private:
@@ -1401,7 +1408,7 @@ vp_enable=0
             std::string error;
             auto const expectedError =
                 "Invalid reduce_relay"
-                "cannot specify both vp_base_squelch_enable and vp_enable "
+                " cannot specify both vp_base_squelch_enable and vp_enable "
                 "options. "
                 "vp_enable was deprecated and replaced by "
                 "vp_base_squelch_enable";
@@ -1448,7 +1455,7 @@ vp_base_squelch_max_selected_peers=2
             std::string error;
             auto const expectedError =
                 "Invalid reduce_relay"
-                ", vp_base_squelch_max_selected_peers must be "
+                " vp_base_squelch_max_selected_peers must be "
                 "greater than or equal to 3";
             try
             {
@@ -1460,6 +1467,34 @@ vp_base_squelch_max_selected_peers=2
             }
 
             BEAST_EXPECT(error == expectedError);
+        });
+    }
+
+    void
+    testBaseSquelchReady(bool log)
+    {
+        doTest("BaseSquelchReady", log, [&](bool log) {
+            ManualClock::reset();
+            env_.app().config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE = false;
+            // base squelching should not be ready if squelching is enabled
+            BEAST_EXPECT(!network_.overlay().getSlots().baseSquelchReady());
+
+            env_.app().config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE = true;
+
+            // base squelch must not be ready as not enough time passed from
+            // bootup
+            BEAST_EXPECT(!network_.overlay().getSlots().baseSquelchReady());
+
+            ManualClock::advance(reduce_relay::WAIT_ON_BOOTUP + minutes{1});
+
+            // base squelch enabled and bootup time passed
+            BEAST_EXPECT(network_.overlay().getSlots().baseSquelchReady());
+
+            env_.app().config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE = false;
+
+            // even if time passed, base squelching must not be ready if turned
+            // off in the config
+            BEAST_EXPECT(!network_.overlay().getSlots().baseSquelchReady());
         });
     }
 
@@ -1691,6 +1726,7 @@ public:
         testInternalHashRouter(log);
         testRandomSquelch(log);
         testHandshake(log);
+        testBaseSquelchReady(log);
     }
 };
 

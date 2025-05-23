@@ -592,9 +592,14 @@ public:
     bool
     baseSquelchReady()
     {
-        if (!config_.VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE)
-            return false;
+        return config_.VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE &&
+            reduceRelayReady();
+    }
 
+    /** Check if reduce_relay::WAIT_ON_BOOTUP time passed since startup */
+    bool
+    reduceRelayReady()
+    {
         if (!reduceRelayReady_)
             reduceRelayReady_ =
                 reduce_relay::epoch<std::chrono::minutes>(clock_type::now()) >

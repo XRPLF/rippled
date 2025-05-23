@@ -747,7 +747,7 @@ Config::loadFromString(std::string const& fileContents)
         if (sec.exists("vp_base_squelch_enable") && sec.exists("vp_enable"))
             Throw<std::runtime_error>(
                 "Invalid " SECTION_REDUCE_RELAY
-                "cannot specify both vp_base_squelch_enable and vp_enable "
+                " cannot specify both vp_base_squelch_enable and vp_enable "
                 "options. "
                 "vp_enable was deprecated and replaced by "
                 "vp_base_squelch_enable");
@@ -771,7 +771,7 @@ Config::loadFromString(std::string const& fileContents)
         if (VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS < 3)
             Throw<std::runtime_error>(
                 "Invalid " SECTION_REDUCE_RELAY
-                ", vp_base_squelch_max_selected_peers must be "
+                " vp_base_squelch_max_selected_peers must be "
                 "greater than or equal to 3");
         /////////////////  !!END OF TEMPORARY CODE BLOCK!! /////////////////////
 
