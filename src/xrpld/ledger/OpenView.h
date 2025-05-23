@@ -43,7 +43,7 @@ namespace ripple {
  */
 inline constexpr struct open_ledger_t
 {
-    constexpr open_ledger_t() = default;
+    explicit constexpr open_ledger_t() = default;
 } open_ledger{};
 
 /** Batch view construction tag.
@@ -53,7 +53,7 @@ inline constexpr struct open_ledger_t
  */
 inline constexpr struct batch_view_t
 {
-    constexpr batch_view_t() = default;
+    explicit constexpr batch_view_t() = default;
 } batch_view{};
 
 //------------------------------------------------------------------------------
