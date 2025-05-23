@@ -17,8 +17,7 @@
 */
 //==============================================================================
 
-#ifndef RIPPLE_APP_MISC_WASMHOSTFUNCWRAPPER_H_INCLUDED
-#define RIPPLE_APP_MISC_WASMHOSTFUNCWRAPPER_H_INCLUDED
+#pragma once
 
 #include <xrpld/app/misc/WamrVM.h>
 
@@ -112,5 +111,3 @@ wasm_trap_t*
 print_wrap(void* env, const wasm_val_vec_t* params, wasm_val_vec_t* results);
 
 }  // namespace ripple
-
-#endif  // RIPPLE_APP_MISC_WASMHOSTFUNCWRAPPER_H_INCLUDED
