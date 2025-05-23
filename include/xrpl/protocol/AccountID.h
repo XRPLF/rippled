@@ -149,7 +149,7 @@ namespace std {
 template <>
 struct hash<ripple::AccountID> : ripple::AccountID::hasher
 {
-    explicit hash() = default;
+    hash() = default;
 };
 
 }  // namespace std
