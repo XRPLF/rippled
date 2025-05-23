@@ -204,9 +204,7 @@ OrderBookDB::getBooksByTakerPays(
     {
         std::lock_guard sl(mLock);
 
-        auto getBooks = [&](auto const& container,
-                            auto const& key,
-                            std::optional<Domain> domain) {
+        auto getBooks = [&](auto const& container, auto const& key) {
             if (auto it = container.find(key); it != container.end())
             {
                 auto const& books = it->second;
@@ -218,9 +216,9 @@ OrderBookDB::getBooksByTakerPays(
         };
 
         if (!domain)
-            getBooks(allBooks_, issue, std::nullopt);
+            getBooks(allBooks_, issue);
         else
-            getBooks(domainBooks_, std::make_pair(issue, *domain), domain);
+            getBooks(domainBooks_, std::make_pair(issue, *domain));
     }
 
     return ret;
