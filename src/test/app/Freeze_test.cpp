@@ -2015,12 +2015,14 @@ class Freeze_test : public beast::unit_test::suite
                 keylet::nftoffer(minter, env.seq(minter)).key;
             env(token::createOffer(minter, nftID, drops(1)),
                 txflags(tfSellNFToken));
+            env.close();
             env(token::acceptSellOffer(A2, minterSellIdx));
             env.close();
 
             uint256 const sellIdx = keylet::nftoffer(A2, env.seq(A2)).key;
             env(token::createOffer(A2, nftID, USD(100)),
                 txflags(tfSellNFToken));
+            env.close();
             env(trust(G1, minter["USD"](1000), tfSetFreeze | tfSetDeepFreeze));
             env.close();
             env(token::acceptSellOffer(A1, sellIdx), ter(tecFROZEN));
