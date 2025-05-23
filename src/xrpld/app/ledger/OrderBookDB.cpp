@@ -204,27 +204,23 @@ OrderBookDB::getBooksByTakerPays(
     {
         std::lock_guard sl(mLock);
 
-        if (!domain)
-        {
-            if (auto it = allBooks_.find(issue); it != allBooks_.end())
+        auto getBooks = [&](auto const& container,
+                            auto const& key,
+                            std::optional<Domain> domain) {
+            if (auto it = container.find(key); it != container.end())
             {
-                ret.reserve(it->second.size());
+                auto const& books = it->second;
+                ret.reserve(books.size());
 
-                for (auto const& gets : it->second)
-                    ret.emplace_back(issue, gets, std::nullopt);
-            }
-        }
-        else
-        {
-            if (auto it = domainBooks_.find({issue, *domain});
-                it != domainBooks_.end())
-            {
-                ret.reserve(it->second.size());
-
-                for (auto const& gets : it->second)
+                for (auto const& gets : books)
                     ret.emplace_back(issue, gets, domain);
             }
-        }
+        };
+
+        if (!domain)
+            getBooks(allBooks_, issue, std::nullopt);
+        else
+            getBooks(domainBooks_, std::make_pair(issue, *domain), domain);
     }
 
     return ret;
@@ -274,7 +270,8 @@ OrderBookDB::makeBookListeners(Book const& book)
         mListeners[book] = ret;
         XRPL_ASSERT(
             getBookListeners(book) == ret,
-            "ripple::OrderBookDB::makeBookListeners : result roundtrip lookup");
+            "ripple::OrderBookDB::makeBookListeners : result roundtrip "
+            "lookup");
     }
 
     return ret;
