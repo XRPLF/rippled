@@ -1847,6 +1847,9 @@ struct Escrow_test : public beast::unit_test::suite
         }
         {
             // FinishFunction wrong function name
+            // pub fn bad() -> bool {
+            //     unsafe { host_lib::getLedgerSqn() >= 5 }
+            // }
             auto const badWasmHex =
                 "0061736d010000000105016000017f02190108686f73745f6c69620c6765"
                 "744c656467657253716e00000302010005030100100611027f00418080c0"
@@ -1867,6 +1870,9 @@ struct Escrow_test : public beast::unit_test::suite
         }
         {
             // FinishFunction nonexistent host function
+            // pub fn finish() -> bool {
+            //     unsafe { host_lib::bad() >= 5 }
+            // }
             auto const badWasmHex =
                 "0061736d010000000105016000017f02100108686f73745f6c696203626164"
                 "00000302010005030100100611027f00418080c0000b7f00418080c0000b07"
