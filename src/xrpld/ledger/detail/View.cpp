@@ -1294,8 +1294,10 @@ trustCreate(
         bSetHigh ? sfHighLimit : sfLowLimit, saLimit);
     sleRippleState->setFieldAmount(
         bSetHigh ? sfLowLimit : sfHighLimit,
-        STAmount(Issue{
-            saBalance.getCurrency(), bSetDst ? uSrcAccountID : uDstAccountID}));
+        STAmount(
+            Issue{
+                saBalance.getCurrency(),
+                bSetDst ? uSrcAccountID : uDstAccountID}));
 
     if (uQualityIn)
         sleRippleState->setFieldU32(
@@ -2737,9 +2739,7 @@ rippleLockEscrowMPT(
         (*sle)[sfMPTAmount] = amt - pay;
 
         // Overflow check for addition
-        uint64_t escrowed = sle->isFieldPresent(sfEscrowedAmount)
-            ? sle->getFieldU64(sfEscrowedAmount)
-            : 0;
+        uint64_t const escrowed = (*sle)[~sfEscrowedAmount].value_or(0);
 
         if (!canAdd(STAmount(mtpIssue, escrowed), STAmount(mtpIssue, pay)))
             return tecINTERNAL;
@@ -2755,11 +2755,9 @@ rippleLockEscrowMPT(
     // 1. Increase the Issuance EscrowedAmount
     // 2. DO NOT change the Issuance OutstandingAmount
     {
-        uint64_t issuanceEscrowed =
-            sleIssuance->isFieldPresent(sfEscrowedAmount)
-            ? sleIssuance->getFieldU64(sfEscrowedAmount)
-            : 0;
-        auto pay = amount.mpt().value();
+        uint64_t const issuanceEscrowed =
+            (*sleIssuance)[~sfEscrowedAmount].value_or(0);
+        auto const pay = amount.mpt().value();
 
         // Overflow check for addition
         if (!canAdd(
