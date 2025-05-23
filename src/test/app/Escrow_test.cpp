@@ -1837,7 +1837,7 @@ struct Escrow_test : public beast::unit_test::suite
             env.close();
         }
         {
-            // FinishFunction not WASM
+            // FinishFunction not valid WASM
             env(escrowCreate,
                 finish_function("00112233445566778899AA"),
                 cancel_time(env.now() + 100s),

@@ -31,11 +31,11 @@ NotTEC
 preflightEscrowWasm(
     Bytes const& wasmCode,
     std::string_view funcName,
-    HostFunctions* hfs,
-    uint64_t gasLimit)
+    HostFunctions* hfs)
 {
     //  create VM and set cost limit
     auto& vm = WasmEngine::instance();
+    auto const gasLimit = vm.getGas();
     vm.initGas(gasLimit);
     vm.initMaxPages(MAX_PAGES);
 
@@ -55,22 +55,23 @@ preflightEscrowWasm(
     WASM_IMPORT_FUNC(imports, computeSha512HalfHash, hfs)
     WASM_IMPORT_FUNC(imports, print, hfs)
 
-    // std::int64_t const sgas = gasLimit;  // vm.getGas();
-    auto ret = vm.preflight(wasmCode, funcName, imports);
+    std::int64_t const sgas = gasLimit;
+    auto const& j = hfs->getJournal();
+    auto ret = vm.preflight(wasmCode, funcName, imports, j);
 
-    // std::cout << "preflightEscrowWasm, mod size: " << wasmCode.size()
-    //           << ", gasLimit: " << gasLimit << ", funcName: " << funcName;
+    j.trace() << "preflightEscrowWasm, mod size: " << wasmCode.size()
+              << ", gasLimit: " << gasLimit << ", funcName: " << funcName;
 
     if (!ret.has_value())
     {
-        // std::cout << ", error: " << ret.error();
+        j.debug() << "error: " << ret.error();
         return ret.error();
     }
-    // std::int64_t const egas = vm.getGas();
-    // std::uint64_t const spent = static_cast<std::uint64_t>(sgas - egas);
+    std::int64_t const egas = vm.getGas();
+    std::uint64_t const spent = static_cast<std::uint64_t>(sgas - egas);
 
-    // std::cout << ", ret: " << ret.value() << ", gas spent: " << spent
-    //           << std::endl;
+    j.debug() << ", ret: " << ret.value() << ", gas spent: " << spent
+              << std::endl;
     return tesSUCCESS;
 }
 
@@ -103,21 +104,22 @@ runEscrowWasm(
     WASM_IMPORT_FUNC(imports, print, hfs)
 
     std::int64_t const sgas = gasLimit;  // vm.getGas();
-    auto ret = vm.run(wasmCode, funcName, imports, {}, hfs->getJournal());
+    auto const& j = hfs->getJournal();
+    auto ret = vm.run(wasmCode, funcName, imports, {}, j);
 
-    // std::cout << "runEscrowWasm, mod size: " << wasmCode.size()
-    //           << ", gasLimit: " << gasLimit << ", funcName: " << funcName;
+    j.trace() << "runEscrowWasm, mod size: " << wasmCode.size()
+              << ", gasLimit: " << gasLimit << ", funcName: " << funcName;
 
     if (!ret.has_value())
     {
-        // std::cout << ", error: " << ret.error() << std::endl;
+        j.debug() << "error: " << ret.error() << std::endl;
         return Unexpected<TER>(ret.error());
     }
     std::int64_t const egas = vm.getGas();
     std::uint64_t const spent = static_cast<std::uint64_t>(sgas - egas);
 
-    // std::cout << ", ret: " << ret.value() << ", gas spent: " << spent
-    //           << std::endl;
+    j.debug() << "runEscrowWasm ret: " << ret.value()
+              << ", gas spent: " << spent << std::endl;
     return EscrowResult{static_cast<bool>(ret.value()), spent};
 }
 
@@ -139,9 +141,9 @@ WasmEngine::preflight(
     wbytes const& wasmCode,
     std::string_view funcName,
     std::vector<WasmImportFunc> const& imports,
-    std::vector<WasmParam> const& params)
+    beast::Journal j)
 {
-    return impl->preflight(wasmCode, funcName, imports, params);
+    return impl->preflight(wasmCode, funcName, imports, j);
 }
 
 Expected<int32_t, TER>

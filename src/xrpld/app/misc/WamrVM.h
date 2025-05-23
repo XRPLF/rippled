@@ -159,7 +159,7 @@ public:
         wbytes const& wasmCode,
         std::string_view funcName,
         std::vector<WasmImportFunc> const& imports,
-        std::vector<WasmParam> const& params);
+        beast::Journal j);
 
     Expected<int32_t, TER>
     run(wbytes const& wasmCode,
@@ -195,8 +195,7 @@ private:
     preflightHlp(
         wbytes const& wasmCode,
         std::string_view funcName,
-        std::vector<WasmImportFunc> const& imports,
-        std::vector<WasmParam> const& params);
+        std::vector<WasmImportFunc> const& imports);
 
     Expected<int32_t, TER>
     runHlp(

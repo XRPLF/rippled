@@ -347,7 +347,7 @@ public:
         wbytes const& wasmCode,
         std::string_view funcName = {},
         std::vector<WasmImportFunc> const& imports = {},
-        std::vector<WasmParam> const& params = {});
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
 
     Expected<int32_t, TER>
     run(wbytes const& wasmCode,
@@ -385,8 +385,7 @@ NotTEC
 preflightEscrowWasm(
     Bytes const& wasmCode,
     std::string_view funcName,
-    HostFunctions* hfs,
-    uint64_t gasLimit);
+    HostFunctions* hfs);
 
 Expected<EscrowResult, TER>
 runEscrowWasm(

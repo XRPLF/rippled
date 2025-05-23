@@ -727,15 +727,17 @@ WamrEngine::preflight(
     wbytes const& wasmCode,
     std::string_view funcName,
     std::vector<WasmImportFunc> const& imports,
-    std::vector<WasmParam> const& params)
+    beast::Journal j)
 {
     try
     {
-        return preflightHlp(wasmCode, funcName, imports, params);
+        wasm_runtime_set_log_level(getLogLevel(j.sink().threshold()));
+        j_ = j;
+        return preflightHlp(wasmCode, funcName, imports);
     }
     catch (std::exception const& e)
     {
-        std::cerr << "WAMR: preflight exception: " << e.what() << std::endl;
+        j.debug() << "WAMR: preflight exception: " << e.what() << std::endl;
     }
     catch (...)
     {
@@ -748,8 +750,7 @@ Expected<int32_t, NotTEC>
 WamrEngine::preflightHlp(
     wbytes const& wasmCode,
     std::string_view funcName,
-    std::vector<WasmImportFunc> const& imports,
-    std::vector<WasmParam> const& params)
+    std::vector<WasmImportFunc> const& imports)
 {
     // Create and instantiate the module.
     if (!wasmCode.empty())
@@ -765,11 +766,10 @@ WamrEngine::preflightHlp(
     // Call main
     auto* f = getFunc(!funcName.empty() ? funcName : "_start");
     // return 0;
-    auto p = convertParams(params);
-    auto res = call<1>(f, p);
+    auto res = call<1>(f);
     if (!res.r.size || trap)
     {
-        // std::cout << "WAMR: preflightHlp trap" << std::endl;
+        j_.debug() << "WAMR: preflightHlp trap" << std::endl;
         return temBAD_WASM;
     }
 
@@ -794,7 +794,7 @@ WamrEngine::run(
     }
     catch (std::exception const& e)
     {
-        std::cerr << "WAMR: run exception: " << e.what() << std::endl;
+        j.debug() << "WAMR: run exception: " << e.what() << std::endl;
     }
     catch (...)
     {
