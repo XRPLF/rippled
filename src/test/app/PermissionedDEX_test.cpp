@@ -1487,7 +1487,7 @@ class PermissionedDEX_test : public beast::unit_test::suite
         offerSeqs.reserve(100);
 
         Book domainBook{Issue(XRP), Issue(USD), domainID};
-        Book openBook{Issue(XRP), Issue(USD)};
+        Book openBook{Issue(XRP), Issue(USD), std::nullopt};
 
         auto const domainDir = getBookDirKey(domainBook, XRP(10), USD(10));
         auto const openDir = getBookDirKey(openBook, XRP(10), USD(10));

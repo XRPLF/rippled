@@ -48,7 +48,7 @@ operator<<(std::ostream& os, Book const& x)
 Book
 reversed(Book const& book)
 {
-    return Book(book.out, book.in);
+    return Book(book.out, book.in, book.domain);
 }
 
 }  // namespace ripple

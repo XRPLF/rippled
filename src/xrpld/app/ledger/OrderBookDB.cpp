@@ -211,7 +211,7 @@ OrderBookDB::getBooksByTakerPays(
                 ret.reserve(it->second.size());
 
                 for (auto const& gets : it->second)
-                    ret.emplace_back(issue, gets);
+                    ret.emplace_back(issue, gets, std::nullopt);
             }
         }
         else

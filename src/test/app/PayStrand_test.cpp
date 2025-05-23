@@ -744,7 +744,7 @@ struct PayStrand_test : public beast::unit_test::suite
                 STPath(),
                 tesSUCCESS,
                 D{alice, gw, usdC},
-                B{USD, EUR},
+                B{USD, EUR, std::nullopt},
                 D{gw, bob, eurC});
 
             // Path with explicit offer
@@ -755,7 +755,7 @@ struct PayStrand_test : public beast::unit_test::suite
                 STPath({ipe(EUR)}),
                 tesSUCCESS,
                 D{alice, gw, usdC},
-                B{USD, EUR},
+                B{USD, EUR, std::nullopt},
                 D{gw, bob, eurC});
 
             // Path with offer that changes issuer only
@@ -767,7 +767,7 @@ struct PayStrand_test : public beast::unit_test::suite
                 STPath({iape(carol)}),
                 tesSUCCESS,
                 D{alice, gw, usdC},
-                B{USD, carol["USD"]},
+                B{USD, carol["USD"], std::nullopt},
                 D{carol, bob, usdC});
 
             // Path with XRP src currency
@@ -778,7 +778,7 @@ struct PayStrand_test : public beast::unit_test::suite
                 STPath({ipe(USD)}),
                 tesSUCCESS,
                 XRPS{alice},
-                B{XRP, USD},
+                B{XRP, USD, std::nullopt},
                 D{gw, bob, usdC});
 
             // Path with XRP dst currency.
@@ -793,7 +793,7 @@ struct PayStrand_test : public beast::unit_test::suite
                     xrpAccount()}}),
                 tesSUCCESS,
                 D{alice, gw, usdC},
-                B{USD, XRP},
+                B{USD, XRP, std::nullopt},
                 XRPS{bob});
 
             // Path with XRP cross currency bridged payment
@@ -804,8 +804,8 @@ struct PayStrand_test : public beast::unit_test::suite
                 STPath({cpe(xrpCurrency())}),
                 tesSUCCESS,
                 D{alice, gw, usdC},
-                B{USD, XRP},
-                B{XRP, EUR},
+                B{USD, XRP, std::nullopt},
+                B{XRP, EUR, std::nullopt},
                 D{gw, bob, eurC});
 
             // XRP -> XRP transaction can't include a path
@@ -1033,7 +1033,7 @@ struct PayStrand_test : public beast::unit_test::suite
             BEAST_EXPECT(equal(
                 strand,
                 D{alice, gw, usdC},
-                B{USD.issue(), xrpIssue()},
+                B{USD.issue(), xrpIssue(), std::nullopt},
                 XRPS{bob}));
         }
     }

@@ -396,7 +396,7 @@ CreateOffer::bridged_cross(
     OfferStream offers_direct(
         view,
         view_cancel,
-        Book(taker.issue_in(), taker.issue_out()),
+        Book(taker.issue_in(), taker.issue_out(), std::nullopt),
         when,
         stepCounter_,
         j_);
@@ -404,7 +404,7 @@ CreateOffer::bridged_cross(
     OfferStream offers_leg1(
         view,
         view_cancel,
-        Book(taker.issue_in(), xrpIssue()),
+        Book(taker.issue_in(), xrpIssue(), std::nullopt),
         when,
         stepCounter_,
         j_);
@@ -412,7 +412,7 @@ CreateOffer::bridged_cross(
     OfferStream offers_leg2(
         view,
         view_cancel,
-        Book(xrpIssue(), taker.issue_out()),
+        Book(xrpIssue(), taker.issue_out(), std::nullopt),
         when,
         stepCounter_,
         j_);
@@ -580,7 +580,7 @@ CreateOffer::direct_cross(
     OfferStream offers(
         view,
         view_cancel,
-        Book(taker.issue_in(), taker.issue_out()),
+        Book(taker.issue_in(), taker.issue_out(), std::nullopt),
         when,
         stepCounter_,
         j_);
@@ -1002,7 +1002,7 @@ CreateOffer::applyHybrid(
     sleOffer->setFlag(lsfHybrid);
 
     // if offer is hybrid, need to also place into open offer dir
-    Book const book{saTakerPays.issue(), saTakerGets.issue()};
+    Book const book{saTakerPays.issue(), saTakerGets.issue(), std::nullopt};
 
     auto dir =
         keylet::quality(keylet::book(book), getRate(saTakerGets, saTakerPays));

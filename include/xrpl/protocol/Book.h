@@ -46,7 +46,7 @@ public:
     Book(
         Issue const& in_,
         Issue const& out_,
-        std::optional<uint256> const& domain_ = std::nullopt)
+        std::optional<uint256> const& domain_)
         : in(in_), out(out_), domain(domain_)
     {
     }
