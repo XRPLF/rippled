@@ -19,6 +19,7 @@
 
 #include <xrpl/basics/Blob.h>
 #include <xrpl/basics/Expected.h>
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/basics/base_uint.h>
@@ -274,6 +275,11 @@ STTx::checkBatchSign(
         XRPL_ASSERT(
             getTxnType() == ttBATCH,
             "STTx::checkBatchSign : not a batch transaction");
+        if (getTxnType() != ttBATCH)
+        {
+            JLOG(debugLog().fatal()) << "not a batch transaction";
+            return Unexpected("Not a batch transaction.");
+        }
         STArray const& signers{getFieldArray(sfBatchSigners)};
         for (auto const& signer : signers)
         {
@@ -287,10 +293,12 @@ STTx::checkBatchSign(
         }
         return {};
     }
-    catch (std::exception const&)
+    catch (std::exception const& e)
     {
+        JLOG(debugLog().error())
+            << "Batch signature check failed: " << e.what();
     }
-    return Unexpected("Internal signature check failure.");
+    return Unexpected("Internal batch signature check failure.");
 }
 
 Json::Value

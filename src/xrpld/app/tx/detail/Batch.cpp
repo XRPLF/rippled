@@ -418,8 +418,9 @@ Batch::preflight(PreflightContext const& ctx)
 
         if (!sigResult)
         {
-            JLOG(ctx.j.debug()) << "BatchTrace[" << parentBatchId << "]: "
-                                << "invalid batch txn signature.";
+            JLOG(ctx.j.debug())
+                << "BatchTrace[" << parentBatchId << "]: "
+                << "invalid batch txn signature: " << sigResult.error();
             return temBAD_SIGNATURE;
         }
     }
