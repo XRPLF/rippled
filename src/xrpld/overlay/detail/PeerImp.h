@@ -707,7 +707,7 @@ PeerImp::PeerImp(
         read_buffer_.prepare(boost::asio::buffer_size(buffers)), buffers));
     JLOG(journal_.info())
         << "compression enabled " << (compressionEnabled_ == Compressed::On)
-        << " vp trusted validator squelch enabled "
+        << " vp reduce-relay base squelch enabled "
         << peerFeatureEnabled(
                headers_,
                FEATURE_VPRR,
