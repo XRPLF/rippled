@@ -2714,8 +2714,8 @@ rippleLockEscrowMPT(
     STAmount const& amount,
     beast::Journal j)
 {
-    auto const mtpIssue = amount.get<MPTIssue>();
-    auto const mptID = keylet::mptIssuance(mtpIssue.getMptID());
+    auto const mptIssue = amount.get<MPTIssue>();
+    auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
     auto sleIssuance = view.peek(mptID);
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
@@ -2733,7 +2733,7 @@ rippleLockEscrowMPT(
         auto const pay = amount.mpt().value();
 
         // Underflow check for subtraction
-        if (!canSubtract(STAmount(mtpIssue, amt), STAmount(mtpIssue, pay)))
+        if (!canSubtract(STAmount(mptIssue, amt), STAmount(mptIssue, pay)))
             return tecINTERNAL;
 
         (*sle)[sfMPTAmount] = amt - pay;
@@ -2741,7 +2741,7 @@ rippleLockEscrowMPT(
         // Overflow check for addition
         uint64_t const escrowed = (*sle)[~sfEscrowedAmount].value_or(0);
 
-        if (!canAdd(STAmount(mtpIssue, escrowed), STAmount(mtpIssue, pay)))
+        if (!canAdd(STAmount(mptIssue, escrowed), STAmount(mptIssue, pay)))
             return tecINTERNAL;
 
         if (sle->isFieldPresent(sfEscrowedAmount))
@@ -2761,7 +2761,7 @@ rippleLockEscrowMPT(
 
         // Overflow check for addition
         if (!canAdd(
-                STAmount(mtpIssue, issuanceEscrowed), STAmount(mtpIssue, pay)))
+                STAmount(mptIssue, issuanceEscrowed), STAmount(mptIssue, pay)))
             return tecINTERNAL;
 
         if (sleIssuance->isFieldPresent(sfEscrowedAmount))
@@ -2783,8 +2783,8 @@ rippleUnlockEscrowMPT(
     beast::Journal j)
 {
     auto const issuer = amount.getIssuer();
-    auto const mtpIssue = amount.get<MPTIssue>();
-    auto const mptID = keylet::mptIssuance(mtpIssue.getMptID());
+    auto const mptIssue = amount.get<MPTIssue>();
+    auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
     auto sleIssuance = view.peek(mptID);
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
@@ -2799,7 +2799,7 @@ rippleUnlockEscrowMPT(
 
         // Underflow check for subtraction
         if (!canSubtract(
-                STAmount(mtpIssue, escrowed), STAmount(mtpIssue, redeem)))
+                STAmount(mptIssue, escrowed), STAmount(mptIssue, redeem)))
             return tecINTERNAL;
 
         sleIssuance->setFieldU64(sfEscrowedAmount, escrowed - redeem);
@@ -2818,7 +2818,7 @@ rippleUnlockEscrowMPT(
         auto delta = amount.mpt().value();
 
         // Overflow check for addition
-        if (!canAdd(STAmount(mtpIssue, current), STAmount(mtpIssue, delta)))
+        if (!canAdd(STAmount(mptIssue, current), STAmount(mptIssue, delta)))
             return tecINTERNAL;
 
         (*sle)[sfMPTAmount] += delta;
@@ -2832,7 +2832,7 @@ rippleUnlockEscrowMPT(
 
         // Underflow check for subtraction
         if (!canSubtract(
-                STAmount(mtpIssue, outstanding), STAmount(mtpIssue, redeem)))
+                STAmount(mptIssue, outstanding), STAmount(mptIssue, redeem)))
             return tecINTERNAL;
 
         sleIssuance->setFieldU64(sfOutstandingAmount, outstanding - redeem);
@@ -2855,7 +2855,7 @@ rippleUnlockEscrowMPT(
 
         // Underflow check for subtraction
         if (!canSubtract(
-                STAmount(mtpIssue, escrowed), STAmount(mtpIssue, delta)))
+                STAmount(mptIssue, escrowed), STAmount(mptIssue, delta)))
             return tecINTERNAL;
 
         (*sle)[sfEscrowedAmount] -= delta;
