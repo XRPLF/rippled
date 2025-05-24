@@ -225,7 +225,6 @@ create(
 {
     Json::Value jv;
     jv[jss::TransactionType] = jss::PaymentChannelCreate;
-    jv[jss::Flags] = tfUniversal;
     jv[jss::Account] = to_string(account);
     jv[jss::Destination] = to_string(to);
     jv[jss::Amount] = amount.getJson(JsonOptions::none);
@@ -247,7 +246,6 @@ fund(
 {
     Json::Value jv;
     jv[jss::TransactionType] = jss::PaymentChannelFund;
-    jv[jss::Flags] = tfUniversal;
     jv[jss::Account] = to_string(account);
     jv[sfChannel.fieldName] = to_string(channel);
     jv[jss::Amount] = amount.getJson(JsonOptions::none);
@@ -267,7 +265,6 @@ claim(
 {
     Json::Value jv;
     jv[jss::TransactionType] = jss::PaymentChannelClaim;
-    jv[jss::Flags] = tfUniversal;
     jv[jss::Account] = to_string(account);
     jv["Channel"] = to_string(channel);
     if (amount)
