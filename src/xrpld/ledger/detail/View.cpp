@@ -2850,8 +2850,8 @@ rippleUnlockEscrowMPT(
         if (!sle->isFieldPresent(sfEscrowedAmount))
             return tecINTERNAL;
 
-        auto escrowed = sle->getFieldU64(sfEscrowedAmount);
-        auto delta = amount.mpt().value();
+        auto const escrowed = sle->getFieldU64(sfEscrowedAmount);
+        auto const delta = amount.mpt().value();
 
         // Underflow check for subtraction
         if (!canSubtract(
