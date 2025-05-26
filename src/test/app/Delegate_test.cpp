@@ -231,6 +231,7 @@ class Delegate_test : public beast::unit_test::suite
                 ter(tecNO_PERMISSION));
             env(delegate::set(gw, alice, {"UNLModify"}), ter(tecNO_PERMISSION));
             env(delegate::set(gw, alice, {"SetFee"}), ter(tecNO_PERMISSION));
+            env(delegate::set(gw, alice, {"Batch"}), ter(tecNO_PERMISSION));
         }
     }
 

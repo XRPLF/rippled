@@ -37,6 +37,7 @@
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/basics/safe_cast.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/digest.h>
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -1282,6 +1283,18 @@ PeerImp::handleTransaction(
     {
         auto stx = std::make_shared<STTx const>(sit);
         uint256 txID = stx->getTransactionID();
+
+        // Charge strongly for attempting to relay a txn with tfInnerBatchTxn
+        // LCOV_EXCL_START
+        if (stx->isFlag(tfInnerBatchTxn) &&
+            getCurrentTransactionRules()->enabled(featureBatch))
+        {
+            JLOG(p_journal_.warn()) << "Ignoring Network relayed Tx containing "
+                                       "tfInnerBatchTxn (handleTransaction).";
+            fee_.update(Resource::feeModerateBurdenPeer, "inner batch txn");
+            return;
+        }
+        // LCOV_EXCL_STOP
 
         int flags;
         constexpr std::chrono::seconds tx_interval = 10s;
@@ -2836,6 +2849,18 @@ PeerImp::checkTransaction(
     // VFALCO TODO Rewrite to not use exceptions
     try
     {
+        // charge strongly for relaying batch txns
+        // LCOV_EXCL_START
+        if (stx->isFlag(tfInnerBatchTxn) &&
+            getCurrentTransactionRules()->enabled(featureBatch))
+        {
+            JLOG(p_journal_.warn()) << "Ignoring Network relayed Tx containing "
+                                       "tfInnerBatchTxn (checkSignature).";
+            charge(Resource::feeModerateBurdenPeer, "inner batch txn");
+            return;
+        }
+        // LCOV_EXCL_STOP
+
         // Expired?
         if (stx->isFieldPresent(sfLastLedgerSequence) &&
             (stx->getFieldU32(sfLastLedgerSequence) <
