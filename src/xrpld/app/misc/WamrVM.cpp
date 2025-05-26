@@ -120,9 +120,11 @@ print_wasm_error(char const* message, wasm_trap_t* trap, beast::Journal j)
         wasm_byte_vec_t error_message;
 
         wasm_trap_message(trap, &error_message);
+        if (error_message.num_elems)
+            j.debug() << "WAMR trap: " << error_message.data;
+        if (error_message.size)
+            wasm_byte_vec_delete(&error_message);
         wasm_trap_delete(trap);
-        j.debug() << "WAMR trap: " << error_message.data;
-        wasm_byte_vec_delete(&error_message);
     }
 }
 
@@ -148,10 +150,7 @@ InstanceWrapper::init(
 
     if (!mi || trap)
     {
-        print_wasm_error(
-            "can't create instance",
-            trap,
-            beast::Journal(beast::Journal::getNullSink()));
+        print_wasm_error("can't create instance", trap, debugLog());
         throw std::runtime_error("WAMR: can't create instance");
     }
     wasm_instance_exports(mi.get(), expt);
@@ -207,19 +206,20 @@ InstanceWrapper::operator bool() const
     return static_cast<bool>(mod_inst);
 }
 
-wasm_func_t*
+FuncInfo
 InstanceWrapper::getFunc(
     std::string_view funcName,
     wasm_exporttype_vec_t const& export_types) const
 {
     wasm_func_t* f = nullptr;
+    wasm_functype_t* ft = nullptr;
 
-    if (!export_types.size)
+    if (!export_types.num_elems)
         throw std::runtime_error("WAMR: no export");
-    if (export_types.size != exports.size)
+    if (export_types.num_elems != exports.num_elems)
         throw std::runtime_error("WAMR: invalid export");
 
-    for (unsigned i = 0; i < export_types.size; ++i)
+    for (unsigned i = 0; i < export_types.num_elems; ++i)
     {
         auto const* exp_type(export_types.data[i]);
 
@@ -233,24 +233,26 @@ InstanceWrapper::getFunc(
                 if (wasm_extern_kind(exn) != WASM_EXTERN_FUNC)
                     throw std::runtime_error("WAMR: invalid export");
 
+                ft = wasm_externtype_as_functype(
+                    const_cast<wasm_externtype_t*>(exn_type));
                 f = wasm_extern_as_func(exn);
                 break;
             }
         }
     }
 
-    if (!f)
+    if (!f || !ft)
         throw std::runtime_error(
             "WAMR: can't find function " + std::string(funcName));
 
-    return f;
+    return {f, ft};
 }
 
 wmem
 InstanceWrapper::getMem() const
 {
     wasm_memory_t* mem = nullptr;
-    for (unsigned i = 0; i < exports.size; ++i)
+    for (unsigned i = 0; i < exports.num_elems; ++i)
     {
         auto* e(exports.data[i]);
         if (wasm_extern_kind(e) == WASM_EXTERN_MEMORY)
@@ -473,7 +475,7 @@ ModuleWrapper::buildImports(
     return wimports;
 }
 
-wasm_func_t*
+FuncInfo
 ModuleWrapper::getFunc(std::string_view funcName) const
 {
     return mod_inst.getFunc(funcName, export_types);
@@ -564,7 +566,7 @@ WamrEngine::addInstance()
     return module->addInstance(store.get(), defMaxPages);
 }
 
-wasm_func_t*
+FuncInfo
 WamrEngine::getFunc(std::string_view funcName)
 {
     return module->getFunc(funcName);
@@ -591,6 +593,16 @@ WamrEngine::convertParams(std::vector<WasmParam> const& params)
             case WT_F64:
                 v.push_back(WASM_F64_VAL(p.of.f64));
                 break;
+            case WT_U8V: {
+                auto const sz = p.of.u8v.sz;
+                auto const ptr = allocate(sz);
+                auto mem = getMem();
+                memcpy(mem.p + ptr, p.of.u8v.d, sz);
+
+                v.push_back(WASM_I32_VAL(ptr));
+                v.push_back(WASM_I32_VAL(sz));
+            }
+            break;
             default:
                 break;
         }
@@ -618,29 +630,36 @@ WamrEngine::add_param(std::vector<wasm_val_t>& in, int64_t p)
 
 template <int NR, class... Types>
 WamrResult
-WamrEngine::call(std::string_view func, Types... args)
+WamrEngine::call(std::string_view func, Types&&... args)
 {
     // Lookup our export function
-    auto* f = getFunc(func);
+    auto f = getFunc(func);
     return call<NR>(f, std::forward<Types>(args)...);
 }
 
 template <int NR, class... Types>
 WamrResult
-WamrEngine::call(wasm_func_t* func, Types... args)
+WamrEngine::call(FuncInfo const& f, Types&&... args)
 {
     std::vector<wasm_val_t> in;
-    return call<NR>(func, in, std::forward<Types>(args)...);
+    return call<NR>(f, in, std::forward<Types>(args)...);
 }
 
 template <int NR, class... Types>
 WamrResult
-WamrEngine::call(wasm_func_t* func, std::vector<wasm_val_t>& in)
+WamrEngine::call(FuncInfo const& f, std::vector<wasm_val_t>& in)
 {
     // wasm_val_t rs[1] = {WASM_I32_VAL(0)};
     WamrResult ret(NR);
     // if (NR)  {   wasm_val_vec_new_uninitialized(&ret, NR);    //
     // wasm_val_vec_new(&ret, NR, &rs[0]);    // ret = WASM_ARRAY_VEC(rs);    }
+
+    auto const* ftp = wasm_functype_params(f.second);
+    if (ftp->num_elems != in.size())
+    {
+        print_wasm_error("invalid num of params to call func", nullptr, j_);
+        return ret;
+    }
 
     wasm_val_vec_t const inv = in.empty()
         ? wasm_val_vec_t WASM_EMPTY_VEC
@@ -650,7 +669,7 @@ WamrEngine::call(wasm_func_t* func, std::vector<wasm_val_t>& in)
               in.size(),
               sizeof(std::remove_reference_t<decltype(in)>::value_type),
               nullptr};
-    trap = wasm_func_call(func, &inv, &ret.r);
+    trap = wasm_func_call(f.first, &inv, &ret.r);
     if (trap)
         print_wasm_error("failed to call func", trap, j_);
 
@@ -663,63 +682,54 @@ WamrEngine::call(wasm_func_t* func, std::vector<wasm_val_t>& in)
 template <int NR, class... Types>
 WamrResult
 WamrEngine::call(
-    wasm_func_t* func,
+    FuncInfo const& f,
     std::vector<wasm_val_t>& in,
     std::int32_t p,
-    Types... args)
+    Types&&... args)
 {
     add_param(in, p);
-    return call<NR>(func, in, std::forward<Types>(args)...);
+    return call<NR>(f, in, std::forward<Types>(args)...);
 }
 
 template <int NR, class... Types>
 WamrResult
 WamrEngine::call(
-    wasm_func_t* func,
-
+    FuncInfo const& f,
     std::vector<wasm_val_t>& in,
     std::int64_t p,
-    Types... args)
+    Types&&... args)
 {
     add_param(in, p);
-    return call<NR>(func, in, std::forward<Types>(args)...);
+    return call<NR>(f, in, std::forward<Types>(args)...);
 }
 
 template <int NR, class... Types>
 WamrResult
 WamrEngine::call(
-    wasm_func_t* func,
+    FuncInfo const& f,
     std::vector<wasm_val_t>& in,
     uint8_t const* d,
     std::size_t sz,
-    Types... args)
+    Types&&... args)
 {
-    auto res = call<1>(W_ALLOC, static_cast<int32_t>(sz));
-
-    if (trap || (res.r.data[0].kind != WASM_I32))
-        return {};
-    auto const ptr = res.r.data[0].of.i32;
-    if (!ptr)
-        throw std::runtime_error(
-            "WAMR: can't allocate memory, " + std::to_string(sz) + " bytes");
-
+    auto const ptr = allocate(sz);
     auto mem = getMem();
     memcpy(mem.p + ptr, d, sz);
 
     add_param(in, ptr);
     add_param(in, static_cast<int32_t>(sz));
-    return call<NR>(func, in, std::forward<Types>(args)...);
+    return call<NR>(f, in, std::forward<Types>(args)...);
 }
 
 template <int NR, class... Types>
 WamrResult
 WamrEngine::call(
-    wasm_func_t* func,
+    FuncInfo const& f,
     std::vector<wasm_val_t>& in,
     wbytes const& p,
-    Types... args)
+    Types&&... args)
 {
-    return call<NR>(func, in, p.data(), p.size(), std::forward<Types>(args)...);
+    return call<NR>(f, in, p.data(), p.size(), std::forward<Types>(args)...);
 }
 
 Expected<int32_t, TER>
@@ -736,11 +746,13 @@ WamrEngine::run(
         j_ = j;
         return runHlp(wasmCode, funcName, imports, params);
     }
-    catch (std::exception const&)
+    catch (std::exception const& e)
     {
+        j_.debug() << "Wasm exception: " << e.what() << std::endl;
     }
     catch (...)
     {
+        j_.debug() << "Wasm unknown exception." << std::endl;
     }
     return Unexpected<TER>(tecFAILED_PROCESSING);
 }
@@ -764,10 +776,10 @@ WamrEngine::runHlp(
         return Unexpected<TER>(tecFAILED_PROCESSING);
 
     // Call main
-    auto* f = getFunc(!funcName.empty() ? funcName : "_start");
+    auto f = getFunc(!funcName.empty() ? funcName : "_start");
     auto p = convertParams(params);
     auto res = call<1>(f, p);
-    if (!res.r.size || trap)
+    if (!res.r.num_elems || trap)
         return Unexpected<TER>(tecFAILED_PROCESSING);
 
     assert(res.r.data[0].kind == WASM_I32);
@@ -817,10 +829,8 @@ int32_t
 WamrEngine::allocate(int32_t sz)
 {
     auto res = call<1>(W_ALLOC, static_cast<int32_t>(sz));
-    if (trap || (res.r.data[0].kind != WASM_I32))
-        return {};
     auto const ptr = res.r.data[0].of.i32;
-    if (!ptr)
+    if (trap || (res.r.data[0].kind != WASM_I32) || !ptr)
         throw std::runtime_error(
             "WAMR: can't allocate memory, " + std::to_string(sz) + " bytes");
     return ptr;

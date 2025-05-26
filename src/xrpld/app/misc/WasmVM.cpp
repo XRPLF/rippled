@@ -20,6 +20,7 @@
 #include <xrpld/app/misc/WamrVM.h>
 #include <xrpld/app/misc/WasmHostFuncWrapper.h>
 
+#include <xrpl/basics/Log.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/LedgerFormats.h>
 
@@ -32,7 +33,8 @@ runEscrowWasm(
     Bytes const& wasmCode,
     std::string_view funcName,
     HostFunctions* hfs,
-    uint64_t gasLimit)
+    int64_t gasLimit,
+    std::vector<WasmParam> const& params)
 {
     //  create VM and set cost limit
     auto& vm = WasmEngine::instance();
@@ -41,22 +43,30 @@ runEscrowWasm(
 
     std::vector<WasmImportFunc> imports;
 
-    WASM_IMPORT_FUNC(imports, getLedgerSqn, hfs)
-    WASM_IMPORT_FUNC(imports, getParentLedgerTime, hfs)
-    WASM_IMPORT_FUNC(imports, getTxField, hfs)
-    WASM_IMPORT_FUNC(imports, getLedgerEntryField, hfs)
-    WASM_IMPORT_FUNC(imports, getCurrentLedgerEntryField, hfs)
-    WASM_IMPORT_FUNC(imports, getNFT, hfs)
-    WASM_IMPORT_FUNC(imports, accountKeylet, hfs)
-    WASM_IMPORT_FUNC(imports, credentialKeylet, hfs)
-    WASM_IMPORT_FUNC(imports, escrowKeylet, hfs)
-    WASM_IMPORT_FUNC(imports, oracleKeylet, hfs)
-    WASM_IMPORT_FUNC(imports, updateData, hfs)
-    WASM_IMPORT_FUNC(imports, computeSha512HalfHash, hfs)
-    WASM_IMPORT_FUNC(imports, print, hfs)
+    if (hfs)
+    {
+        WASM_IMPORT_FUNC(imports, getLedgerSqn, hfs);
+        WASM_IMPORT_FUNC(imports, getParentLedgerTime, hfs);
+        WASM_IMPORT_FUNC(imports, getTxField, hfs);
+        WASM_IMPORT_FUNC(imports, getLedgerEntryField, hfs);
+        WASM_IMPORT_FUNC(imports, getCurrentLedgerEntryField, hfs);
+        WASM_IMPORT_FUNC(imports, getNFT, hfs);
+        WASM_IMPORT_FUNC(imports, accountKeylet, hfs);
+        WASM_IMPORT_FUNC(imports, credentialKeylet, hfs);
+        WASM_IMPORT_FUNC(imports, escrowKeylet, hfs);
+        WASM_IMPORT_FUNC(imports, oracleKeylet, hfs);
+        WASM_IMPORT_FUNC(imports, updateData, hfs);
+        WASM_IMPORT_FUNC(imports, computeSha512HalfHash, hfs);
+        WASM_IMPORT_FUNC(imports, print, hfs);
+    }
 
     std::int64_t const sgas = gasLimit;  // vm.getGas();
-    auto ret = vm.run(wasmCode, funcName, imports, {}, hfs->getJournal());
+    auto ret = vm.run(
+        wasmCode,
+        funcName,
+        imports,
+        params,
+        hfs ? hfs->getJournal() : debugLog());
 
     // std::cout << "runEscrowWasm, mod size: " << wasmCode.size()
     //           << ", gasLimit: " << gasLimit << ", funcName: " << funcName;
@@ -67,7 +77,7 @@ runEscrowWasm(
         return Unexpected<TER>(ret.error());
     }
     std::int64_t const egas = vm.getGas();
-    std::uint64_t const spent = static_cast<std::uint64_t>(sgas - egas);
+    std::int64_t const spent = sgas - egas;
 
     // std::cout << ", ret: " << ret.value() << ", gas spent: " << spent
     //           << std::endl;

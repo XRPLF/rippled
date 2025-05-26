@@ -62,7 +62,7 @@ template <typename T>
 struct WasmResult
 {
     T result;
-    uint64_t cost;
+    int64_t cost;
 };
 typedef WasmResult<bool> EscrowResult;
 
@@ -157,7 +157,7 @@ struct HostFunctions
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
-enum WasmTypes { WT_I32, WT_I64, WT_F32, WT_F64 };
+enum WasmTypes { WT_I32, WT_I64, WT_F32, WT_F64, WT_U8V };
 
 struct WasmImportFunc
 {
@@ -171,7 +171,7 @@ struct WasmImportFunc
 
 #define WASM_IMPORT_FUNC(v, f, ...) \
     WasmImpFunc<f##_proto>(         \
-        v, #f, reinterpret_cast<void*>(&f##_wrap), ##__VA_ARGS__);
+        v, #f, reinterpret_cast<void*>(&f##_wrap), ##__VA_ARGS__)
 
 template <int N, int C, typename mpl>
 void
@@ -252,6 +252,12 @@ WasmImpFunc(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+struct WasmParamVec
+{
+    std::uint8_t const* d = nullptr;
+    std::int32_t sz = 0;
+};
+
 struct WasmParam
 {
     WasmTypes type = WT_I32;
@@ -261,53 +267,100 @@ struct WasmParam
         std::int64_t i64 = 0;
         float f32;
         double f64;
+        WasmParamVec u8v;
     } of;
 };
 
 template <class... Types>
+inline void
+wasmParamsHlp(std::vector<WasmParam>& v, std::int32_t p, Types&&... args)
+{
+    v.push_back({.type = WT_I32, .of = {.i32 = p}});
+    wasmParamsHlp(v, std::forward<Types>(args)...);
+}
+
+template <class... Types>
+inline void
+wasmParamsHlp(std::vector<WasmParam>& v, std::int64_t p, Types&&... args)
+{
+    v.push_back({.type = WT_I64, .of = {.i64 = p}});
+    wasmParamsHlp(v, std::forward<Types>(args)...);
+}
+
+template <class... Types>
+inline void
+wasmParamsHlp(std::vector<WasmParam>& v, float p, Types&&... args)
+{
+    v.push_back({.type = WT_F32, .of = {.f32 = p}});
+    wasmParamsHlp(v, std::forward<Types>(args)...);
+}
+
+template <class... Types>
+inline void
+wasmParamsHlp(std::vector<WasmParam>& v, double p, Types&&... args)
+{
+    v.push_back({.type = WT_F64, .of = {.f64 = p}});
+    wasmParamsHlp(v, std::forward<Types>(args)...);
+}
+
+template <class... Types>
+inline void
+wasmParamsHlp(
+    std::vector<WasmParam>& v,
+    std::uint8_t const* dt,
+    std::int32_t sz,
+    Types&&... args)
+{
+    v.push_back({.type = WT_U8V, .of = {.u8v = {.d = dt, .sz = sz}}});
+    wasmParamsHlp(v, std::forward<Types>(args)...);
+}
+
+template <class... Types>
+inline void
+wasmParamsHlp(std::vector<WasmParam>& v, wbytes const& p, Types&&... args)
+{
+    wasmParamsHlp(
+        v,
+        p.data(),
+        static_cast<std::int32_t>(p.size()),
+        std::forward<Types>(args)...);
+}
+
+template <class... Types>
+inline void
+wasmParamsHlp(std::vector<WasmParam>& v, std::string_view const& p, Types&&... args)
+{
+    wasmParamsHlp(
+        v,
+        reinterpret_cast<std::uint8_t const*>(p.data()),
+        static_cast<std::int32_t>(p.size()),
+        std::forward<Types>(args)...);
+}
+
+template <class... Types>
+inline void
+wasmParamsHlp(std::vector<WasmParam>& v, std::string const& p, Types&&... args)
+{
+    wasmParamsHlp(
+        v,
+        reinterpret_cast<std::uint8_t const*>(p.c_str()),
+        static_cast<std::int32_t>(p.size()),
+        std::forward<Types>(args)...);
+}
+
+inline void
+wasmParamsHlp(std::vector<WasmParam>& v)
+{
+    return;
+}
+
+template <class... Types>
 inline std::vector<WasmParam>
-wasmParams(Types... args)
+wasmParams(Types&&... args)
 {
     std::vector<WasmParam> v;
     v.reserve(sizeof...(args));
-    return wasmParams(v, std::forward<Types>(args)...);
-}
-
-template <class... Types>
-inline std::vector<WasmParam>
-wasmParams(std::vector<WasmParam>& v, std::int32_t p, Types... args)
-{
-    v.push_back({.type = WT_I32, .of = {.i32 = p}});
-    return wasmParams(v, std::forward<Types>(args)...);
-}
-
-template <class... Types>
-inline std::vector<WasmParam>
-wasmParams(std::vector<WasmParam>& v, std::int64_t p, Types... args)
-{
-    v.push_back({.type = WT_I64, .of = {.i64 = p}});
-    return wasmParams(v, std::forward<Types>(args)...);
-}
-
-template <class... Types>
-inline std::vector<WasmParam>
-wasmParams(std::vector<WasmParam>& v, float p, Types... args)
-{
-    v.push_back({.type = WT_F32, .of = {.f32 = p}});
-    return wasmParams(v, std::forward<Types>(args)...);
-}
-
-template <class... Types>
-inline std::vector<WasmParam>
-wasmParams(std::vector<WasmParam>& v, double p, Types... args)
-{
-    v.push_back({.type = WT_F64, .of = {.f64 = p}});
-    return wasmParams(v, std::forward<Types>(args)...);
-}
-
-inline std::vector<WasmParam>
-wasmParams(std::vector<WasmParam>& v)
-{
+    wasmParamsHlp(v, std::forward<Types>(args)...);
     return v;
 }
 
@@ -370,6 +423,7 @@ runEscrowWasm(
     Bytes const& wasmCode,
     std::string_view funcName,
     HostFunctions* hfs,
-    uint64_t gasLimit);
+    int64_t gasLimit,
+    std::vector<WasmParam> const& params = {});
 
 }  // namespace ripple

@@ -45,6 +45,8 @@ struct WamrResult
 using ModulePtr = std::unique_ptr<wasm_module_t, decltype(&wasm_module_delete)>;
 using InstancePtr = std::unique_ptr<wasm_instance_t, decltype(&wasm_instance_delete)>;
 
+using FuncInfo = std::pair<wasm_func_t const*, wasm_functype_t const*>;
+
 // clang-format on
 
 struct InstanceWrapper
@@ -79,7 +81,7 @@ public:
 
     operator bool() const;
 
-    wasm_func_t*
+FuncInfo
     getFunc(
         std::string_view funcName,
         wasm_exporttype_vec_t const& export_types) const;
@@ -114,7 +116,7 @@ public:
 
     operator bool() const;
 
-    wasm_func_t*
+    FuncInfo
     getFunc(std::string_view funcName) const;
     wmem
     getMem() const;
@@ -208,7 +210,7 @@ private:
         wbytes const& wasmCode,
         wasm_extern_vec_t const& imports = WASM_EMPTY_VEC);
 
-    wasm_func_t*
+    FuncInfo
     getFunc(std::string_view funcName);
 
     std::vector<wasm_val_t>
@@ -221,48 +223,50 @@ private:
 
     template <int NR, class... Types>
     inline WamrResult
-    call(std::string_view func, Types... args);
-
-    template <int NR, class... Types>
-    inline WamrResult
-    call(wasm_func_t* func, Types... args);
-
-    template <int NR, class... Types>
-    inline WamrResult
-    call(wasm_func_t* f, std::vector<wasm_val_t>& in);
+    call(std::string_view func, Types&&... args);
 
     template <int NR, class... Types>
     inline WamrResult
     call(
-        wasm_func_t* func,
+        FuncInfo const& f,
+        Types&&... args);
+
+    template <int NR, class... Types>
+    inline WamrResult
+    call(FuncInfo const& f, std::vector<wasm_val_t>& in);
+
+    template <int NR, class... Types>
+    inline WamrResult
+    call(
+        FuncInfo const& f,
         std::vector<wasm_val_t>& in,
         std::int32_t p,
-        Types... args);
+        Types&&... args);
 
     template <int NR, class... Types>
     inline WamrResult
     call(
-        wasm_func_t* func,
+        FuncInfo const& f,
         std::vector<wasm_val_t>& in,
         std::int64_t p,
-        Types... args);
+        Types&&... args);
 
     template <int NR, class... Types>
     inline WamrResult
     call(
-        wasm_func_t* func,
+        FuncInfo const& f,
         std::vector<wasm_val_t>& in,
         uint8_t const* d,
         std::size_t sz,
-        Types... args);
+        Types&&... args);
 
     template <int NR, class... Types>
     inline WamrResult
     call(
-        wasm_func_t* func,
+        FuncInfo const& f,
         std::vector<wasm_val_t>& in,
         wbytes const& p,
-        Types... args);
+        Types&&... args);
 };
 
 }  // namespace ripple

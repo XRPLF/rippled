@@ -24,14 +24,13 @@
 
 #include <iwasm/wasm_c_api.h>
 
-#include <filesystem>
-
 namespace ripple {
 namespace test {
 
-/* Host function body definition. */
+using get_ledger_sqn_proto = std::int32_t();
 using Add_proto = int32_t(int32_t, int32_t);
-wasm_trap_t*
+
+static wasm_trap_t*
 Add(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
     int32_t Val1 = params->data[0].of.i32;
@@ -41,10 +40,197 @@ Add(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     return nullptr;
 }
 
+struct TestLedgerDataProvider
+{
+    jtx::Env* env;
+
+public:
+    TestLedgerDataProvider(jtx::Env* env_) : env(env_)
+    {
+    }
+
+    int32_t
+    get_ledger_sqn()
+    {
+        return (int32_t)env->current()->seq();
+    }
+};
+
+static wasm_trap_t*
+get_ledger_sqn_wrap(void* env, wasm_val_vec_t const*, wasm_val_vec_t* results)
+{
+    auto sqn = reinterpret_cast<TestLedgerDataProvider*>(env)->get_ledger_sqn();
+    if (results->size)
+    {
+        results->data[0] = WASM_I32_VAL(sqn);
+        if (!results->num_elems)
+            results->num_elems = 1;
+    }
+
+    return nullptr;
+}
+
 struct Wasm_test : public beast::unit_test::suite
 {
     void
-    testWasmtimeLib()
+    testWasmFib()
+    {
+        testcase("Wasm fibo");
+
+        auto const ws = boost::algorithm::unhex(fib32Hex);
+        wbytes const wasm(ws.begin(), ws.end());
+        auto& engine = WasmEngine::instance();
+
+        auto const r = engine.run(wasm, "fib", {}, wasmParams(10));
+
+        BEAST_EXPECT(r.has_value() && (r.value() == 55));
+    }
+
+    void
+    testWasmSha()
+    {
+        testcase("Wasm sha");
+
+        auto const ws = boost::algorithm::unhex(sha512PureHex);
+        wbytes const wasm(ws.begin(), ws.end());
+        auto& engine = WasmEngine::instance();
+
+        auto const r =
+            engine.run(wasm, "sha512_process", {}, wasmParams(sha512PureHex));
+
+        BEAST_EXPECT(r.has_value() && (r.value() == 34432));
+    }
+
+    void
+    testWasmB58()
+    {
+        testcase("Wasm base58");
+        auto const ws = boost::algorithm::unhex(b58Hex);
+        wbytes const wasm(ws.begin(), ws.end());
+        auto& engine = WasmEngine::instance();
+
+        wbytes outb;
+        outb.resize(1024);
+
+        auto const r = engine.run(
+            wasm,
+            "b58enco",
+            {},
+            wasmParams(
+                outb,
+                std::string_view(
+                    b58Hex.c_str(), std::min(512ul, b58Hex.size()))));
+
+        BEAST_EXPECT(r.has_value() && r.value());
+    }
+
+    void
+    testWasmSP1Verifier()
+    {
+        testcase("Wasm sp1 zkproof verifier");
+        auto const ws = boost::algorithm::unhex(sp1_wasm);
+        wbytes const wasm(ws.begin(), ws.end());
+        auto& engine = WasmEngine::instance();
+
+        auto const r = engine.run(wasm, "sp1_groth16_verifier");
+
+        BEAST_EXPECT(r.has_value() && r.value());
+    }
+
+    void
+    testWasmBG16Verifier()
+    {
+        testcase("Wasm BG16 zkproof verifier");
+        auto const ws = boost::algorithm::unhex(zkProofHex);
+        wbytes const wasm(ws.begin(), ws.end());
+        auto& engine = WasmEngine::instance();
+
+        auto const r = engine.run(wasm, "bellman_groth16_test");
+
+        BEAST_EXPECT(r.has_value() && r.value());
+    }
+
+    void
+    testWasmLedgerSqn()
+    {
+        testcase("Wasm get ledger sequence");
+
+        auto wasmStr = boost::algorithm::unhex(ledgerSqnHex);
+        wbytes wasm(wasmStr.begin(), wasmStr.end());
+
+        using namespace test::jtx;
+
+        Env env{*this};
+        TestLedgerDataProvider ledgerDataProvider(&env);
+        std::string const funcName("ready");
+
+        std::vector<WasmImportFunc> imports;
+        WASM_IMPORT_FUNC(imports, get_ledger_sqn, &ledgerDataProvider);
+
+        auto& engine = WasmEngine::instance();
+
+        auto r = engine.run(wasm, funcName, imports);
+        if (BEAST_EXPECT(r.has_value()))
+            BEAST_EXPECT(!r.value());
+        env.close();
+        env.close();
+        env.close();
+        env.close();
+
+        r = engine.run({}, funcName, imports);
+        if (BEAST_EXPECT(r.has_value()))
+            BEAST_EXPECT(r.value());
+    }
+
+    void
+    testWasmCheckJson()
+    {
+        testcase("Wasm check json");
+
+        auto const wasmStr = boost::algorithm::unhex(checkJsonHex);
+        wbytes const wasm(wasmStr.begin(), wasmStr.end());
+        std::string const funcName("check_accountID");
+        {
+            std::string str = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
+            wbytes data(str.begin(), str.end());
+            auto re = runEscrowWasm(wasm, funcName, {}, -1, wasmParams(data));
+            if (BEAST_EXPECT(re.has_value()))
+                BEAST_EXPECT(re.value().result);
+        }
+        {
+            std::string str = "rHb9CJAWyB4rj91VRWn96DkukG4bwdty00";
+            wbytes data(str.begin(), str.end());
+            auto re = runEscrowWasm(wasm, funcName, {}, -1, wasmParams(data));
+            if (BEAST_EXPECT(re.has_value()))
+                BEAST_EXPECT(!re.value().result);
+        }
+    }
+
+    void
+    testWasmCompareJson()
+    {
+        testcase("Wasm compare json");
+
+        auto wasmStr = boost::algorithm::unhex(compareJsonHex);
+        std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
+        std::string funcName("compare_accountID");
+
+        std::vector<uint8_t> const tx_data(tx_js.begin(), tx_js.end());
+        std::vector<uint8_t> const lo_data(lo_js.begin(), lo_js.end());
+        auto re =
+            runEscrowWasm(wasm, funcName, {}, -1, wasmParams(tx_data, lo_data));
+        if (BEAST_EXPECT(re.has_value()))
+            BEAST_EXPECT(re.value().result);
+
+        std::vector<uint8_t> const lo_data2(lo_js2.begin(), lo_js2.end());
+        re = runEscrowWasm(
+            wasm, funcName, {}, -1, wasmParams(tx_data, lo_data2));
+        if (BEAST_EXPECT(re.has_value()))
+            BEAST_EXPECT(!re.value().result);
+    }
+
+    void
+    testWasmLib()
     {
         testcase("wasmtime lib test");
         // clang-format off
@@ -325,11 +511,30 @@ struct Wasm_test : public beast::unit_test::suite
     run() override
     {
         using namespace test::jtx;
-        testWasmtimeLib();
+
+        testWasmLib();
         testBadWasm();
+        testWasmCheckJson();
+        testWasmCompareJson();
         testEscrowWasmDN1();
+
+        testWasmFib();
+        testWasmSha();
+        testWasmB58();
+        // testWasmSP1Verifier();
+        // testWasmBG16Verifier();
     }
 };
+
+static inline uint64_t
+usecs()
+{
+    uint64_t x =
+        std::chrono::duration_cast<std::chrono::microseconds>(
+            std::chrono::high_resolution_clock::now().time_since_epoch())
+            .count();
+    return x;
+}
 
 BEAST_DEFINE_TESTSUITE(Wasm, app, ripple);
 

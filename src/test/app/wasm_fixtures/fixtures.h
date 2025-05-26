@@ -28,3 +28,31 @@ extern std::string const ledgerSqnHex;
 extern std::string const allHostFunctionsHex;
 
 extern std::string const deepRecursionHex;
+
+extern std::string const tx_js;
+
+extern std::string const lo_js;
+
+extern std::string const lo_js2;
+
+extern std::string const fib32Hex;
+
+extern std::string const fib64Hex;
+
+extern std::string const b58Hex;
+
+extern std::string const sha512PureHex;
+
+extern std::string const checkJsonHex;
+
+extern std::string const compareJsonHex;
+
+extern std::string const zkProofHex;
+
+extern std::string const sp1_wasm;
+
+extern std::string const xrpl_std_example_hex;
+
+
+
+
