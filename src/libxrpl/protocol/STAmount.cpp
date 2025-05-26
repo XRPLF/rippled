@@ -571,8 +571,8 @@ canAdd(STAmount const& a, STAmount const& b)
         MPTAmount B = (b.signum() == -1 ? -(b.mpt()) : b.mpt());
         constexpr auto maxMPT = (std::int64_t{1} << 62) - 1;  // 63 bits signed
         constexpr auto minMPT = -(std::int64_t{1} << 62);
-        if ((B > MPTAmount{0} && A > maxMPT - B) ||
-            (B < MPTAmount{0} && A < minMPT - B))
+        if ((B > MPTAmount{0} && A > MPTAmount{maxMPT} - B) ||
+            (B < MPTAmount{0} && A < MPTAmount{minMPT} - B))
         {
             return false;
         }
