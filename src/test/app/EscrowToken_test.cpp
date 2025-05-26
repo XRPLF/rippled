@@ -2757,6 +2757,13 @@ struct EscrowToken_test : public beast::unit_test::suite
                     std::find(aod.begin(), aod.end(), aa) != aod.end());
             }
 
+            {
+                ripple::Dir iod(*env.current(), keylet::ownerDir(gw.id()));
+                BEAST_EXPECT(std::distance(iod.begin(), iod.end()) == 1);
+                BEAST_EXPECT(
+                    std::find(iod.begin(), iod.end(), aa) == iod.end());
+            }
+
             env(escrow::create(bob, bob, MPT(1'000)),
                 escrow::finish_time(env.now() + 1s),
                 escrow::cancel_time(env.now() + 2s));

@@ -2718,9 +2718,11 @@ rippleLockEscrowMPT(
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
+    if (amount.getIssuer() == sender)
+        return tecINTERNAL;
+
     // 1. Decrease the MPT Holder MPTAmount
     // 2. Increase the MPT Holder EscrowedAmount
-    if (amount.getIssuer() != sender)
     {
         auto const mptokenID = keylet::mptoken(mptID.key, sender);
         auto sle = view.peek(mptokenID);
@@ -2837,7 +2839,9 @@ rippleUnlockEscrowMPT(
         view.update(sleIssuance);
     }
 
-    if (issuer != sender)
+    if (issuer == sender)
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+    else
     {
         // Decrease the MPT Holder EscrowedAmount
         auto const mptokenID = keylet::mptoken(mptID.key, sender);
