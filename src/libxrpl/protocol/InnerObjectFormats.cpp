@@ -159,6 +159,13 @@ InnerObjectFormats::InnerObjectFormats()
         sfPermission.getCode(),
         {{sfPermissionValue, soeREQUIRED}});
 
+    add(sfBatchSigner.jsonName.c_str(),
+        sfBatchSigner.getCode(),
+        {{sfAccount, soeREQUIRED},
+         {sfSigningPubKey, soeOPTIONAL},
+         {sfTxnSignature, soeOPTIONAL},
+         {sfSigners, soeOPTIONAL}});
+
     add(sfBook.jsonName,
         sfBook.getCode(),
         {

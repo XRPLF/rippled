@@ -58,7 +58,8 @@ namespace ripple {
 // clang-format off
 // Universal Transaction flags:
 constexpr std::uint32_t tfFullyCanonicalSig                = 0x80000000;
-constexpr std::uint32_t tfUniversal                        = tfFullyCanonicalSig;
+constexpr std::uint32_t tfInnerBatchTxn                    = 0x40000000;
+constexpr std::uint32_t tfUniversal                        = tfFullyCanonicalSig | tfInnerBatchTxn;
 constexpr std::uint32_t tfUniversalMask                    = ~tfUniversal;
 
 // AccountSet flags:
@@ -240,6 +241,20 @@ constexpr std::uint32_t const tfVaultPrivate               = 0x00010000;
 static_assert(tfVaultPrivate == lsfVaultPrivate);
 constexpr std::uint32_t const tfVaultShareNonTransferable  = 0x00020000;
 constexpr std::uint32_t const tfVaultCreateMask = ~(tfUniversal | tfVaultPrivate | tfVaultShareNonTransferable);
+
+// Batch Flags:
+constexpr std::uint32_t tfAllOrNothing                 = 0x00010000;
+constexpr std::uint32_t tfOnlyOne                      = 0x00020000;
+constexpr std::uint32_t tfUntilFailure                 = 0x00040000;
+constexpr std::uint32_t tfIndependent                  = 0x00080000;
+/**
+ * @note If nested Batch transactions are supported in the future, the tfInnerBatchTxn flag
+ *  will need to be removed from this mask to allow Batch transaction to be inside 
+ *  the sfRawTransactions array.
+ */
+constexpr std::uint32_t const tfBatchMask =
+    ~(tfUniversal | tfAllOrNothing | tfOnlyOne | tfUntilFailure | tfIndependent) | tfInnerBatchTxn;
+
 // clang-format on
 
 }  // namespace ripple

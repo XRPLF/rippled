@@ -2155,6 +2155,127 @@ public:
     }
 
     void
+    testAutoFillFails()
+    {
+        testcase("autofill fails");
+        using namespace test::jtx;
+
+        // test batch raw transactions max size
+        {
+            Env env(*this);
+            auto ledger = env.current();
+            auto const& feeTrack = env.app().getFeeTrack();
+            Json::Value req;
+            Account const alice("alice");
+            Account const bob("bob");
+            env.fund(XRP(100000), alice);
+            env.close();
+
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto const seq = env.seq(alice);
+            auto jt = env.jtnofill(
+                batch::outer(alice, env.seq(alice), batchFee, tfAllOrNothing),
+                batch::inner(pay(alice, bob, XRP(1)), seq + 1),
+                batch::inner(pay(alice, bob, XRP(2)), seq + 2),
+                batch::inner(pay(alice, bob, XRP(3)), seq + 3),
+                batch::inner(pay(alice, bob, XRP(4)), seq + 4),
+                batch::inner(pay(alice, bob, XRP(5)), seq + 5),
+                batch::inner(pay(alice, bob, XRP(6)), seq + 6),
+                batch::inner(pay(alice, bob, XRP(7)), seq + 7),
+                batch::inner(pay(alice, bob, XRP(8)), seq + 8),
+                batch::inner(pay(alice, bob, XRP(9)), seq + 9));
+
+            jt.jv.removeMember(jss::Fee);
+            jt.jv.removeMember(jss::TxnSignature);
+            req[jss::tx_json] = jt.jv;
+            Json::Value result = checkFee(
+                req,
+                Role::ADMIN,
+                true,
+                env.app().config(),
+                feeTrack,
+                env.app().getTxQ(),
+                env.app());
+            BEAST_EXPECT(result.size() == 0);
+            BEAST_EXPECT(
+                req[jss::tx_json].isMember(jss::Fee) &&
+                req[jss::tx_json][jss::Fee] ==
+                    env.current()->fees().base.jsonClipped());
+        }
+
+        // test signers max size
+        {
+            Env env(*this);
+            auto ledger = env.current();
+            auto const& feeTrack = env.app().getFeeTrack();
+            Json::Value req;
+            Account const alice("alice");
+            Account const bob("bob");
+            env.fund(XRP(100000), alice, bob);
+            env.close();
+
+            auto jt = env.jtnofill(
+                noop(alice),
+                msig(
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice));
+
+            req[jss::tx_json] = jt.jv;
+            Json::Value result = checkFee(
+                req,
+                Role::ADMIN,
+                true,
+                env.app().config(),
+                feeTrack,
+                env.app().getTxQ(),
+                env.app());
+            BEAST_EXPECT(result.size() == 0);
+            BEAST_EXPECT(
+                req[jss::tx_json].isMember(jss::Fee) &&
+                req[jss::tx_json][jss::Fee] ==
+                    env.current()->fees().base.jsonClipped());
+        }
+    }
+
+    void
     testAutoFillFees()
     {
         testcase("autofill fees");
@@ -2807,6 +2928,7 @@ public:
     run() override
     {
         testBadRpcCommand();
+        testAutoFillFails();
         testAutoFillFees();
         testAutoFillEscalatedFees();
         testAutoFillNetworkID();

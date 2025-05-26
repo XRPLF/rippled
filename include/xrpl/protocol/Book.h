@@ -124,7 +124,7 @@ private:
         boost::base_from_member<std::hash<ripple::AccountID>, 1>;
 
 public:
-    explicit hash() = default;
+    hash() = default;
 
     using value_type = std::size_t;
     using argument_type = ripple::Issue;
@@ -153,7 +153,7 @@ private:
     uint256_hasher m_uint256_hasher;
 
 public:
-    explicit hash() = default;
+    hash() = default;
 
     using value_type = std::size_t;
     using argument_type = ripple::Book;
@@ -180,7 +180,7 @@ namespace boost {
 template <>
 struct hash<ripple::Issue> : std::hash<ripple::Issue>
 {
-    explicit hash() = default;
+    hash() = default;
 
     using Base = std::hash<ripple::Issue>;
     // VFALCO NOTE broken in vs2012
@@ -190,7 +190,7 @@ struct hash<ripple::Issue> : std::hash<ripple::Issue>
 template <>
 struct hash<ripple::Book> : std::hash<ripple::Book>
 {
-    explicit hash() = default;
+    hash() = default;
 
     using Base = std::hash<ripple::Book>;
     // VFALCO NOTE broken in vs2012
