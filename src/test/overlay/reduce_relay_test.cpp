@@ -1476,7 +1476,7 @@ vp_base_squelch_max_selected_peers=2
         doTest("BaseSquelchReady", log, [&](bool log) {
             ManualClock::reset();
             env_.app().config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE = false;
-            // base squelching should not be ready if squelching is enabled
+            // base squelching must not be ready if squelching is disabled
             BEAST_EXPECT(!network_.overlay().getSlots().baseSquelchReady());
 
             env_.app().config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE = true;
