@@ -593,7 +593,7 @@ $(function() {
 <div class="line"><a id="l00515" name="l00515"></a><span class="lineno">  515</span>        LocationInfo location;</div>
 <div class="line"><a id="l00516" name="l00516"></a><span class="lineno">  516</span> </div>
 <div class="line"><a id="l00517" name="l00517"></a><span class="lineno">  517</span>        Assertion(<span class="keyword">const</span> <span class="keywordtype">char</span>* message, AssertionType type, LocationInfo&amp;&amp; location) : </div>
-<div class="line"><a id="l00518" name="l00518"></a><span class="lineno">  518</span>            state(), type(type), message(message), location(<a class="code hl_namespace" href="namespacestd.html">std</a>::move(location)) { </div>
+<div class="line"><a id="l00518" name="l00518"></a><span class="lineno">  518</span>            state(), type(type), message(message), location(<a class="code hl_namespace" href="namespacestd.html">std</a>::<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/algorithm/ranges/move.html">move</a>(location)) { </div>
 <div class="line"><a id="l00519" name="l00519"></a><span class="lineno">  519</span>            this-&gt;add_to_catalog();</div>
 <div class="line"><a id="l00520" name="l00520"></a><span class="lineno">  520</span>        }</div>
 <div class="line"><a id="l00521" name="l00521"></a><span class="lineno">  521</span> </div>
@@ -687,7 +687,7 @@ $(function() {
 <div class="line"><a id="l00609" name="l00609"></a><span class="lineno">  609</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair&lt;NumericValue, bool&gt;</a> extreme_half_gap;</div>
 <div class="line"><a id="l00610" name="l00610"></a><span class="lineno">  610</span> </div>
 <div class="line"><a id="l00611" name="l00611"></a><span class="lineno">  611</span>        NumericGuidepost(<span class="keyword">const</span> <span class="keywordtype">char</span>* message, LocationInfo&amp;&amp; location, GuidepostType type) :</div>
-<div class="line"><a id="l00612" name="l00612"></a><span class="lineno">  612</span>            message(message), location(<a class="code hl_namespace" href="namespacestd.html">std</a>::move(location)), type(type) {</div>
+<div class="line"><a id="l00612" name="l00612"></a><span class="lineno">  612</span>            message(message), location(<a class="code hl_namespace" href="namespacestd.html">std</a>::<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/algorithm/ranges/move.html">move</a>(location)), type(type) {</div>
 <div class="line"><a id="l00613" name="l00613"></a><span class="lineno">  613</span>                this-&gt;add_to_catalog();</div>
 <div class="line"><a id="l00614" name="l00614"></a><span class="lineno">  614</span>                <span class="keywordflow">if</span> (type == GUIDEPOST_MAXIMIZE) {</div>
 <div class="line"><a id="l00615" name="l00615"></a><span class="lineno">  615</span>                    extreme_half_gap = { <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/types/numeric_limits/max.html">std::numeric_limits&lt;NumericValue&gt;::max</a>(), <span class="keyword">false</span> }; </div>
@@ -730,13 +730,13 @@ $(function() {
 <div class="line"><a id="l00652" name="l00652"></a><span class="lineno">  652</span>                <span class="comment">// At this point both numbers are even, so the midpoint calculation is exact</span></div>
 <div class="line"><a id="l00653" name="l00653"></a><span class="lineno">  653</span>                NumericValue half_left = <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/io/manip/left.html">left</a> / 2;</div>
 <div class="line"><a id="l00654" name="l00654"></a><span class="lineno">  654</span>                NumericValue half_right = <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/io/manip/left.html">right</a> / 2;</div>
-<div class="line"><a id="l00655" name="l00655"></a><span class="lineno">  655</span>                NumericValue midpoint = half_left + half_right;</div>
+<div class="line"><a id="l00655" name="l00655"></a><span class="lineno">  655</span>                NumericValue <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/numeric/midpoint.html">midpoint</a> = half_left + half_right;</div>
 <div class="line"><a id="l00656" name="l00656"></a><span class="lineno">  656</span>                <span class="comment">// This won&#39;t overflow or underflow because we&#39;re subtracting the midpoint</span></div>
 <div class="line"><a id="l00657" name="l00657"></a><span class="lineno">  657</span>                <span class="comment">// We compute a positive value and a sign so that we don&#39;t have to do weird things with unsigned types</span></div>
 <div class="line"><a id="l00658" name="l00658"></a><span class="lineno">  658</span>                <span class="keywordflow">if</span> (left &gt; right) {</div>
-<div class="line"><a id="l00659" name="l00659"></a><span class="lineno">  659</span>                    <span class="keywordflow">return</span> { midpoint - <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/io/manip/left.html">right</a>, <span class="keyword">true</span> };</div>
+<div class="line"><a id="l00659" name="l00659"></a><span class="lineno">  659</span>                    <span class="keywordflow">return</span> { <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/numeric/midpoint.html">midpoint</a> - <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/io/manip/left.html">right</a>, <span class="keyword">true</span> };</div>
 <div class="line"><a id="l00660" name="l00660"></a><span class="lineno">  660</span>                } <span class="keywordflow">else</span> {</div>
-<div class="line"><a id="l00661" name="l00661"></a><span class="lineno">  661</span>                    <span class="keywordflow">return</span> { <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/io/manip/left.html">right</a> - midpoint, <span class="keyword">false</span> };</div>
+<div class="line"><a id="l00661" name="l00661"></a><span class="lineno">  661</span>                    <span class="keywordflow">return</span> { <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/io/manip/left.html">right</a> - <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/numeric/midpoint.html">midpoint</a>, <span class="keyword">false</span> };</div>
 <div class="line"><a id="l00662" name="l00662"></a><span class="lineno">  662</span>                }</div>
 <div class="line"><a id="l00663" name="l00663"></a><span class="lineno">  663</span>            } <span class="keywordflow">else</span> {</div>
 <div class="line"><a id="l00664" name="l00664"></a><span class="lineno">  664</span>                <span class="comment">// If it&#39;s floating point we don&#39;t need to worry about overflowing, just do the arithmetic</span></div>
@@ -806,7 +806,7 @@ $(function() {
 <div class="line"><a id="l00728" name="l00728"></a><span class="lineno">  728</span>        GuidepostType type;</div>
 <div class="line"><a id="l00729" name="l00729"></a><span class="lineno">  729</span> </div>
 <div class="line"><a id="l00730" name="l00730"></a><span class="lineno">  730</span>        BooleanGuidepost(<span class="keyword">const</span> <span class="keywordtype">char</span>* message, LocationInfo&amp;&amp; location, GuidepostType type) :</div>
-<div class="line"><a id="l00731" name="l00731"></a><span class="lineno">  731</span>            message(message), location(<a class="code hl_namespace" href="namespacestd.html">std</a>::move(location)), type(type) {</div>
+<div class="line"><a id="l00731" name="l00731"></a><span class="lineno">  731</span>            message(message), location(<a class="code hl_namespace" href="namespacestd.html">std</a>::<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/algorithm/ranges/move.html">move</a>(location)), type(type) {</div>
 <div class="line"><a id="l00732" name="l00732"></a><span class="lineno">  732</span>                this-&gt;add_to_catalog();</div>
 <div class="line"><a id="l00733" name="l00733"></a><span class="lineno">  733</span>            }</div>
 <div class="line"><a id="l00734" name="l00734"></a><span class="lineno">  734</span> </div>
@@ -1207,6 +1207,8 @@ $(function() {
 <div class="ttc" id="amax_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/numeric_limits/max.html">std::numeric_limits::max</a></div><div class="ttdeci">T max(T... args)</div></div>
 <div class="ttc" id="amemory_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/memory.html">memory</a></div></div>
 <div class="ttc" id="amersenne_twister_engine_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/numeric/random/mersenne_twister_engine.html">std::mt19937_64</a></div></div>
+<div class="ttc" id="amidpoint_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/numeric/midpoint.html">std::midpoint</a></div><div class="ttdeci">T midpoint(T... args)</div></div>
+<div class="ttc" id="amove_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/ranges/move.html">std::ranges::move</a></div><div class="ttdeci">T move(T... args)</div></div>
 <div class="ttc" id="anamespaceJson_html_a5f5d95b470299000b68a68ee391f0b52"><div class="ttname"><a href="namespaceJson.html#a5f5d95b470299000b68a68ee391f0b52">Json::to_json</a></div><div class="ttdeci">Value to_json(ripple::Number const &amp;number)</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00445">json_value.h:445</a></div></div>
 <div class="ttc" id="anamespaceantithesis_1_1internal_1_1random_html"><div class="ttname"><a href="namespaceantithesis_1_1internal_1_1random.html">antithesis::internal::random</a></div><div class="ttdef"><b>Definition:</b> <a href="antithesis__sdk_8h_source.html#l00078">antithesis_sdk.h:78</a></div></div>
 <div class="ttc" id="anamespaceantithesis_1_1internal_html"><div class="ttname"><a href="namespaceantithesis_1_1internal.html">antithesis::internal</a></div><div class="ttdef"><b>Definition:</b> <a href="antithesis__sdk_8h_source.html#l00078">antithesis_sdk.h:78</a></div></div>

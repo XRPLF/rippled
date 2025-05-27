@@ -185,7 +185,7 @@ $(function() {
 <div class="line"><a id="l00225" name="l00225"></a><span class="lineno"><a class="line" href="namespaceripple.html#af313083334c9a7fedf2bc3142b4b4ccd">  225</a></span><a class="code hl_function" href="namespaceripple.html#af313083334c9a7fedf2bc3142b4b4ccd">popcnt16</a>(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint16_t</a> a)</div>
 <div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span>{</div>
 <div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span><span class="preprocessor">#if __cpp_lib_bitops</span></div>
-<div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span>    <span class="keywordflow">return</span> std::popcount(a);</div>
+<div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span>    <span class="keywordflow">return</span> <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/numeric/popcount.html">std::popcount</a>(a);</div>
 <div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span><span class="preprocessor">#elif defined(__clang__) || defined(__GNUC__)</span></div>
 <div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span>    <span class="keywordflow">return</span> __builtin_popcount(a);</div>
 <div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span><span class="preprocessor">#else</span></div>
@@ -241,6 +241,7 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html_af313083334c9a7fedf2bc3142b4b4ccd"><div class="ttname"><a href="namespaceripple.html#af313083334c9a7fedf2bc3142b4b4ccd">ripple::popcnt16</a></div><div class="ttdeci">int popcnt16(std::uint16_t a)</div><div class="ttdef"><b>Definition:</b> <a href="TaggedPointer_8h_source.html#l00225">TaggedPointer.h:225</a></div></div>
 <div class="ttc" id="aoptional_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/optional.html">optional</a></div></div>
 <div class="ttc" id="apair_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a></div></div>
+<div class="ttc" id="apopcount_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/numeric/popcount.html">std::popcount</a></div><div class="ttdeci">T popcount(T... args)</div></div>
 <div class="ttc" id="astructripple_1_1TaggedPointer_1_1RawAllocateTag_html"><div class="ttname"><a href="structripple_1_1TaggedPointer_1_1RawAllocateTag.html">ripple::TaggedPointer::RawAllocateTag</a></div><div class="ttdef"><b>Definition:</b> <a href="TaggedPointer_8h_source.html#l00079">TaggedPointer.h:80</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->

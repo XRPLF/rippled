@@ -1041,7 +1041,7 @@ $(function() {
 <div class="line"><a id="l00963" name="l00963"></a><span class="lineno">  963</span>        <span class="comment">// (case-sensitive).</span></div>
 <div class="line"><a id="l00964" name="l00964"></a><span class="lineno">  964</span>        <span class="keyword">auto</span> <span class="keyword">const</span> filter = p.asString();</div>
 <div class="line"><a id="l00965" name="l00965"></a><span class="lineno">  965</span>        <span class="keyword">auto</span> <span class="keyword">const</span> iter =</div>
-<div class="line"><a id="l00966" name="l00966"></a><span class="lineno">  966</span>            std::ranges::find_if(types, [&amp;filter](<span class="keyword">decltype</span>(types.front())&amp; t) {</div>
+<div class="line"><a id="l00966" name="l00966"></a><span class="lineno">  966</span>            <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/algorithm/ranges/find.html">std::ranges::find_if</a>(types, [&amp;filter](<span class="keyword">decltype</span>(types.front())&amp; t) {</div>
 <div class="line"><a id="l00967" name="l00967"></a><span class="lineno">  967</span>                return boost::iequals(std::get&lt;0&gt;(t), filter) ||</div>
 <div class="line"><a id="l00968" name="l00968"></a><span class="lineno">  968</span>                    std::get&lt;1&gt;(t) == filter;</div>
 <div class="line"><a id="l00969" name="l00969"></a><span class="lineno">  969</span>            });</div>

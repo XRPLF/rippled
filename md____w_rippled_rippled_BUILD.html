@@ -213,7 +213,7 @@ cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -Dx
 <li><p class="startli">Build <code>rippled</code>.</p>
 <p class="startli">For a single-configuration generator, it will build whatever configuration you passed for <code>CMAKE_BUILD_TYPE</code>. For a multi-configuration generator, you must pass the option <code>--config</code> to select the build configuration.</p>
 <p class="startli">Single-config generators:</p>
-<div class="fragment"><div class="line">cmake --build .</div>
+<div class="fragment"><div class="line">cmake --build . -j $(nproc)</div>
 </div><!-- fragment --><p class="startli">Multi-config generators:</p>
 <div class="fragment"><div class="line">cmake --build . --config Release</div>
 <div class="line">cmake --build . --config Debug</div>

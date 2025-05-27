@@ -25,7 +25,8 @@ var searchData=
   ['jsonrpcclient_22',['JSONRPCClient',['../classripple_1_1test_1_1JSONRPCClient.html',1,'ripple::test']]],
   ['jsontypemismatcherror_23',['JsonTypeMismatchError',['../structJson_1_1JsonTypeMismatchError.html',1,'Json']]],
   ['jsonwriter_5ftest_24',['JsonWriter_test',['../classJson_1_1JsonWriter__test.html',1,'Json']]],
-  ['jtx_25',['JTx',['../structripple_1_1test_1_1jtx_1_1JTx.html',1,'ripple::test::jtx']]],
-  ['jump_26',['Jump',['../structripple_1_1test_1_1csf_1_1JumpCollector_1_1Jump.html',1,'ripple::test::csf::JumpCollector']]],
-  ['jumpcollector_27',['JumpCollector',['../structripple_1_1test_1_1csf_1_1JumpCollector.html',1,'ripple::test::csf']]]
+  ['jthread_25',['jthread',['http://en.cppreference.com/w/cpp/thread/jthread.html',1,'std']]],
+  ['jtx_26',['JTx',['../structripple_1_1test_1_1jtx_1_1JTx.html',1,'ripple::test::jtx']]],
+  ['jump_27',['Jump',['../structripple_1_1test_1_1csf_1_1JumpCollector_1_1Jump.html',1,'ripple::test::csf::JumpCollector']]],
+  ['jumpcollector_28',['JumpCollector',['../structripple_1_1test_1_1csf_1_1JumpCollector.html',1,'ripple::test::csf']]]
 ];

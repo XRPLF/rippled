@@ -519,7 +519,7 @@ $(function() {
 <div class="line"><a id="l00441" name="l00441"></a><span class="lineno">  441</span> </div>
 <div class="line"><a id="l00442" name="l00442"></a><span class="lineno">  442</span>    {</div>
 <div class="line"><a id="l00443" name="l00443"></a><span class="lineno">  443</span>        <span class="keyword">auto</span> <span class="keyword">const</span> result = <a class="code hl_variable" href="classripple_1_1OverlayImpl.html#ad71423fe133aa9534b31d3f86cce0221">ids_</a>.emplace(</div>
-<div class="line"><a id="l00444" name="l00444"></a><span class="lineno">  444</span>            std::piecewise_construct,</div>
+<div class="line"><a id="l00444" name="l00444"></a><span class="lineno">  444</span>            <a class="code hl_variableRef" href="http://en.cppreference.com/w/cpp/utility/piecewise_construct.html">std::piecewise_construct</a>,</div>
 <div class="line"><a id="l00445" name="l00445"></a><span class="lineno">  445</span>            <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/utility/tuple/make_tuple.html">std::make_tuple</a>(peer-&gt;id()),</div>
 <div class="line"><a id="l00446" name="l00446"></a><span class="lineno">  446</span>            <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/utility/tuple/make_tuple.html">std::make_tuple</a>(peer));</div>
 <div class="line"><a id="l00447" name="l00447"></a><span class="lineno">  447</span>        XRPL_ASSERT(</div>
@@ -677,7 +677,7 @@ $(function() {
 <div class="line"><a id="l00604" name="l00604"></a><span class="lineno">  604</span>    {</div>
 <div class="line"><a id="l00605" name="l00605"></a><span class="lineno">  605</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/thread/lock_guard.html">std::lock_guard</a> lock(<a class="code hl_variable" href="classripple_1_1OverlayImpl.html#a7df56f21d09513351c98a973f4022836">mutex_</a>);</div>
 <div class="line"><a id="l00606" name="l00606"></a><span class="lineno">  606</span>        <span class="keyword">auto</span> <span class="keyword">const</span> result(<a class="code hl_variable" href="classripple_1_1OverlayImpl.html#ad71423fe133aa9534b31d3f86cce0221">ids_</a>.emplace(</div>
-<div class="line"><a id="l00607" name="l00607"></a><span class="lineno">  607</span>            std::piecewise_construct,</div>
+<div class="line"><a id="l00607" name="l00607"></a><span class="lineno">  607</span>            <a class="code hl_variableRef" href="http://en.cppreference.com/w/cpp/utility/piecewise_construct.html">std::piecewise_construct</a>,</div>
 <div class="line"><a id="l00608" name="l00608"></a><span class="lineno">  608</span>            <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/utility/tuple/make_tuple.html">std::make_tuple</a>(peer-&gt;id()),</div>
 <div class="line"><a id="l00609" name="l00609"></a><span class="lineno">  609</span>            <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/utility/tuple/make_tuple.html">std::make_tuple</a>(peer)));</div>
 <div class="line"><a id="l00610" name="l00610"></a><span class="lineno">  610</span>        XRPL_ASSERT(</div>
@@ -1877,6 +1877,7 @@ $(function() {
 <div class="ttc" id="anamespacestd_html"><div class="ttname"><a href="namespacestd.html">std</a></div><div class="ttdoc">STL namespace.</div></div>
 <div class="ttc" id="anotify_all_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/thread/condition_variable_any/notify_all.html">std::condition_variable_any::notify_all</a></div><div class="ttdeci">T notify_all(T... args)</div></div>
 <div class="ttc" id="aoptional_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a></div></div>
+<div class="ttc" id="apiecewise_construct_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/piecewise_construct.html">std::piecewise_construct</a></div><div class="ttdeci">T piecewise_construct</div></div>
 <div class="ttc" id="apush_back_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/push_back.html">std::vector::push_back</a></div><div class="ttdeci">T push_back(T... args)</div></div>
 <div class="ttc" id="arandom_shuffle_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/random_shuffle.html">std::shuffle</a></div><div class="ttdeci">T shuffle(T... args)</div></div>
 <div class="ttc" id="areference_wrapper_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/functional/reference_wrapper.html">std::reference_wrapper</a></div></div>

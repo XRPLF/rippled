@@ -387,7 +387,7 @@ $(function() {
 <div class="line"><a id="l00324" name="l00324"></a><span class="lineno">  324</span>    }</div>
 <div class="line"><a id="l00325" name="l00325"></a><span class="lineno">  325</span> </div>
 <div class="line"><a id="l00326" name="l00326"></a><span class="lineno">  326</span>    FlowResult(TER ter_, boost::container::flat_set&lt;uint256&gt; ofrsToRm)</div>
-<div class="line"><a id="l00327" name="l00327"></a><span class="lineno">  327</span>        : removableOffers(<a class="code hl_namespace" href="namespacestd.html">std</a>::move(ofrsToRm)), ter(ter_)</div>
+<div class="line"><a id="l00327" name="l00327"></a><span class="lineno">  327</span>        : removableOffers(<a class="code hl_namespace" href="namespacestd.html">std</a>::<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/algorithm/ranges/move.html">move</a>(ofrsToRm)), ter(ter_)</div>
 <div class="line"><a id="l00328" name="l00328"></a><span class="lineno">  328</span>    {</div>
 <div class="line"><a id="l00329" name="l00329"></a><span class="lineno">  329</span>    }</div>
 <div class="line"><a id="l00330" name="l00330"></a><span class="lineno">  330</span> </div>
@@ -396,7 +396,7 @@ $(function() {
 <div class="line"><a id="l00333" name="l00333"></a><span class="lineno">  333</span>        TInAmt <span class="keyword">const</span>&amp; in_,</div>
 <div class="line"><a id="l00334" name="l00334"></a><span class="lineno">  334</span>        TOutAmt <span class="keyword">const</span>&amp; out_,</div>
 <div class="line"><a id="l00335" name="l00335"></a><span class="lineno">  335</span>        boost::container::flat_set&lt;uint256&gt; ofrsToRm)</div>
-<div class="line"><a id="l00336" name="l00336"></a><span class="lineno">  336</span>        : <a class="code hl_enumvalue" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569feda13b5bfe96f3e2fe411c9f66f4a582adf">in</a>(in_), <a class="code hl_enumvalue" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a>(out_), removableOffers(<a class="code hl_namespace" href="namespacestd.html">std</a>::move(ofrsToRm)), ter(ter_)</div>
+<div class="line"><a id="l00336" name="l00336"></a><span class="lineno">  336</span>        : <a class="code hl_enumvalue" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569feda13b5bfe96f3e2fe411c9f66f4a582adf">in</a>(in_), <a class="code hl_enumvalue" href="namespaceripple.html#a7cc64e12723fbc9606d85442a2569fedac68271a63ddbc431c307beb7d2918275">out</a>(out_), removableOffers(<a class="code hl_namespace" href="namespacestd.html">std</a>::<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/algorithm/ranges/move.html">move</a>(ofrsToRm)), ter(ter_)</div>
 <div class="line"><a id="l00337" name="l00337"></a><span class="lineno">  337</span>    {</div>
 <div class="line"><a id="l00338" name="l00338"></a><span class="lineno">  338</span>    }</div>
 <div class="line"><a id="l00339" name="l00339"></a><span class="lineno">  339</span>};</div>
@@ -954,6 +954,7 @@ $(function() {
 <div class="ttc" id="aiterator_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/iterator.html">iterator</a></div></div>
 <div class="ttc" id="amake_optional_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/optional/make_optional.html">std::make_optional</a></div><div class="ttdeci">T make_optional(T... args)</div></div>
 <div class="ttc" id="amin_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/min.html">std::min</a></div><div class="ttdeci">T min(T... args)</div></div>
+<div class="ttc" id="amove_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/ranges/move.html">std::ranges::move</a></div><div class="ttdeci">T move(T... args)</div></div>
 <div class="ttc" id="anamespaceripple_1_1credentials_html_abd2ed437891b9bd542d2afc3f5f4bc58"><div class="ttname"><a href="namespaceripple_1_1credentials.html#abd2ed437891b9bd542d2afc3f5f4bc58">ripple::credentials::valid</a></div><div class="ttdeci">TER valid(PreclaimContext const &amp;ctx, AccountID const &amp;src)</div><div class="ttdef"><b>Definition:</b> <a href="CredentialHelpers_8cpp_source.html#l00153">CredentialHelpers.cpp:153</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1keylet_html_aeffddd45805feb6cc0678738b5c21072"><div class="ttname"><a href="namespaceripple_1_1keylet.html#aeffddd45805feb6cc0678738b5c21072">ripple::keylet::offer</a></div><div class="ttdeci">Keylet offer(AccountID const &amp;id, std::uint32_t seq) noexcept</div><div class="ttdoc">An offer from an account.</div><div class="ttdef"><b>Definition:</b> <a href="Indexes_8cpp_source.html#l00267">Indexes.cpp:267</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="algorithm_8h_source.html#l00026">algorithm.h:26</a></div></div>

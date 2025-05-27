@@ -139,7 +139,7 @@ var searchData=
   ['versionhandler_136',['VersionHandler',['../classripple_1_1RPC_1_1VersionHandler.html',1,'ripple::RPC']]],
   ['view_5ftest_137',['View_test',['../classripple_1_1test_1_1View__test.html',1,'ripple::test']]],
   ['visitor_5ft_138',['visitor_t',['../structripple_1_1detail_1_1MultiApiJson_1_1visitor__t.html',1,'ripple::detail::MultiApiJson']]],
-  ['void_5ft_139',['void_t',['http://en.cppreference.com/w/cpp/types/void_t.html',1,'std']]],
+  ['void_5ft_139',['void_t',['http://en.cppreference.com/w/cpp/experimental/void_t.html',1,'std::experimental::void_t'],['http://en.cppreference.com/w/cpp/types/void_t.html',1,'std::void_t']]],
   ['voidhelper_140',['VoidHelper',['../structripple_1_1base__uint_1_1VoidHelper.html',1,'ripple::base_uint']]],
   ['votablevalue_141',['VotableValue',['../classripple_1_1detail_1_1VotableValue.html',1,'ripple::detail']]],
   ['votearg_142',['VoteArg',['../structripple_1_1test_1_1jtx_1_1VoteArg.html',1,'ripple::test::jtx']]]

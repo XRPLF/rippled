@@ -341,7 +341,7 @@ $(function() {
 <div class="line"><a id="l00263" name="l00263"></a><span class="lineno">  263</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;Serializer const&gt;</a> <span class="keyword">const</span>&amp; metaData)</div>
 <div class="line"><a id="l00264" name="l00264"></a><span class="lineno">  264</span>{</div>
 <div class="line"><a id="l00265" name="l00265"></a><span class="lineno">  265</span>    <span class="keyword">auto</span> <span class="keyword">const</span> result = <a class="code hl_variable" href="classripple_1_1OpenView.html#adf32abeccc0ca8255ad89872ca85ff25">txs_</a>.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/map/emplace.html">emplace</a>(</div>
-<div class="line"><a id="l00266" name="l00266"></a><span class="lineno">  266</span>        std::piecewise_construct,</div>
+<div class="line"><a id="l00266" name="l00266"></a><span class="lineno">  266</span>        <a class="code hl_variableRef" href="http://en.cppreference.com/w/cpp/utility/piecewise_construct.html">std::piecewise_construct</a>,</div>
 <div class="line"><a id="l00267" name="l00267"></a><span class="lineno">  267</span>        <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/utility/tuple/forward_as_tuple.html">std::forward_as_tuple</a>(key),</div>
 <div class="line"><a id="l00268" name="l00268"></a><span class="lineno">  268</span>        <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/utility/tuple/forward_as_tuple.html">std::forward_as_tuple</a>(txn, metaData));</div>
 <div class="line"><a id="l00269" name="l00269"></a><span class="lineno">  269</span>    <span class="keywordflow">if</span> (!result.second)</div>
@@ -419,6 +419,7 @@ $(function() {
 <div class="ttc" id="anamespacestd_html"><div class="ttname"><a href="namespacestd.html">std</a></div><div class="ttdoc">STL namespace.</div></div>
 <div class="ttc" id="aoptional_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a></div></div>
 <div class="ttc" id="apair_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/pair.html">std::pair</a></div></div>
+<div class="ttc" id="apiecewise_construct_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/piecewise_construct.html">std::piecewise_construct</a></div><div class="ttdeci">T piecewise_construct</div></div>
 <div class="ttc" id="ashared_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a></div></div>
 <div class="ttc" id="asize_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/map/size.html">std::map::size</a></div><div class="ttdeci">T size(T... args)</div></div>
 <div class="ttc" id="asize_t_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a></div></div>

@@ -132,7 +132,7 @@ $(function() {
 <div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span> </div>
 <div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>            <span class="comment">// And create dynamic information for all jobs</span></div>
 <div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>            <span class="keyword">auto</span> <span class="keyword">const</span> result(<a class="code hl_variable" href="classripple_1_1JobQueue.html#a44229c25e3074a4d76e4e8306ea1b1e8">m_jobData</a>.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/map/emplace.html">emplace</a>(</div>
-<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>                std::piecewise_construct,</div>
+<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>                <a class="code hl_variableRef" href="http://en.cppreference.com/w/cpp/utility/piecewise_construct.html">std::piecewise_construct</a>,</div>
 <div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>                <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/utility/tuple/forward_as_tuple.html">std::forward_as_tuple</a>(jt.<a class="code hl_function" href="classripple_1_1JobTypeInfo.html#a7f92faa9872d6eeb583b268a2578e7c9">type</a>()),</div>
 <div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>                <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/utility/tuple/forward_as_tuple.html">std::forward_as_tuple</a>(jt, <a class="code hl_variable" href="classripple_1_1JobQueue.html#a8f38dc86d76f91ac5b820e24fbdb7a50">m_collector</a>, logs)));</div>
 <div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>            XRPL_ASSERT(</div>
@@ -614,6 +614,7 @@ $(function() {
 <div class="ttc" id="anamespacestd_1_1chrono_html"><div class="ttname"><a href="http://en.cppreference.com/w/namespacestd_1_1chrono.html">std::chrono</a></div></div>
 <div class="ttc" id="anotify_all_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/thread/condition_variable/notify_all.html">std::condition_variable::notify_all</a></div><div class="ttdeci">T notify_all(T... args)</div></div>
 <div class="ttc" id="anow_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/chrono/steady_clock/now.html">std::chrono::steady_clock::now</a></div><div class="ttdeci">T now(T... args)</div></div>
+<div class="ttc" id="apiecewise_construct_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/piecewise_construct.html">std::piecewise_construct</a></div><div class="ttdeci">T piecewise_construct</div></div>
 <div class="ttc" id="aset_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/set.html">std::set</a></div></div>
 <div class="ttc" id="ashared_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt; Collector &gt;</a></div></div>
 <div class="ttc" id="astructripple_1_1JobTypeData_html"><div class="ttname"><a href="structripple_1_1JobTypeData.html">ripple::JobTypeData</a></div><div class="ttdef"><b>Definition:</b> <a href="JobTypeData_8h_source.html#l00030">JobTypeData.h:31</a></div></div>

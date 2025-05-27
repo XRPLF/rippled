@@ -1546,7 +1546,7 @@ $(function() {
 <div class="line"><a id="l01468" name="l01468"></a><span class="lineno"> 1468</span>            <span class="comment">// check sorting in object</span></div>
 <div class="line"><a id="l01469" name="l01469"></a><span class="lineno"> 1469</span>            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; 10; ++i)</div>
 <div class="line"><a id="l01470" name="l01470"></a><span class="lineno"> 1470</span>            {</div>
-<div class="line"><a id="l01471" name="l01471"></a><span class="lineno"> 1471</span>                std::ranges::shuffle(credentials, gen);</div>
+<div class="line"><a id="l01471" name="l01471"></a><span class="lineno"> 1471</span>                <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/algorithm/ranges/shuffle.html">std::ranges::shuffle</a>(credentials, gen);</div>
 <div class="line"><a id="l01472" name="l01472"></a><span class="lineno"> 1472</span>                env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1deposit.html#ac0c24df5082c3715d3be7a4a7617b9d5">deposit::authCredentials</a>(stock, credentials));</div>
 <div class="line"><a id="l01473" name="l01473"></a><span class="lineno"> 1473</span>                env.<a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1Env.html#a69095691c9bcfab1f3d69c645f2dbe33">close</a>();</div>
 <div class="line"><a id="l01474" name="l01474"></a><span class="lineno"> 1474</span> </div>
@@ -1569,7 +1569,7 @@ $(function() {
 <div class="line"><a id="l01491" name="l01491"></a><span class="lineno"> 1491</span>                            c[<span class="stringliteral">&quot;CredentialType&quot;</span>].asString());</div>
 <div class="line"><a id="l01492" name="l01492"></a><span class="lineno"> 1492</span>                }</div>
 <div class="line"><a id="l01493" name="l01493"></a><span class="lineno"> 1493</span> </div>
-<div class="line"><a id="l01494" name="l01494"></a><span class="lineno"> 1494</span>                BEAST_EXPECT(std::ranges::is_sorted(readedCreds));</div>
+<div class="line"><a id="l01494" name="l01494"></a><span class="lineno"> 1494</span>                BEAST_EXPECT(<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/algorithm/ranges/is_sorted.html">std::ranges::is_sorted</a>(readedCreds));</div>
 <div class="line"><a id="l01495" name="l01495"></a><span class="lineno"> 1495</span> </div>
 <div class="line"><a id="l01496" name="l01496"></a><span class="lineno"> 1496</span>                env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1deposit.html#a6cd9fd52c782e497970241a61d76eb51">deposit::unauthCredentials</a>(stock, credentials));</div>
 <div class="line"><a id="l01497" name="l01497"></a><span class="lineno"> 1497</span>                env.<a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1Env.html#a69095691c9bcfab1f3d69c645f2dbe33">close</a>();</div>
@@ -1577,14 +1577,14 @@ $(function() {
 <div class="line"><a id="l01499" name="l01499"></a><span class="lineno"> 1499</span>        }</div>
 <div class="line"><a id="l01500" name="l01500"></a><span class="lineno"> 1500</span> </div>
 <div class="line"><a id="l01501" name="l01501"></a><span class="lineno"> 1501</span>        {</div>
-<div class="line"><a id="l01502" name="l01502"></a><span class="lineno"> 1502</span>            std::ranges::shuffle(credentials, gen);</div>
+<div class="line"><a id="l01502" name="l01502"></a><span class="lineno"> 1502</span>            <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/algorithm/ranges/shuffle.html">std::ranges::shuffle</a>(credentials, gen);</div>
 <div class="line"><a id="l01503" name="l01503"></a><span class="lineno"> 1503</span>            env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1deposit.html#ac0c24df5082c3715d3be7a4a7617b9d5">deposit::authCredentials</a>(stock, credentials));</div>
 <div class="line"><a id="l01504" name="l01504"></a><span class="lineno"> 1504</span>            env.<a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1Env.html#a69095691c9bcfab1f3d69c645f2dbe33">close</a>();</div>
 <div class="line"><a id="l01505" name="l01505"></a><span class="lineno"> 1505</span> </div>
 <div class="line"><a id="l01506" name="l01506"></a><span class="lineno"> 1506</span>            <span class="comment">// check sorting in params</span></div>
 <div class="line"><a id="l01507" name="l01507"></a><span class="lineno"> 1507</span>            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; 10; ++i)</div>
 <div class="line"><a id="l01508" name="l01508"></a><span class="lineno"> 1508</span>            {</div>
-<div class="line"><a id="l01509" name="l01509"></a><span class="lineno"> 1509</span>                std::ranges::shuffle(credentials, gen);</div>
+<div class="line"><a id="l01509" name="l01509"></a><span class="lineno"> 1509</span>                <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/algorithm/ranges/shuffle.html">std::ranges::shuffle</a>(credentials, gen);</div>
 <div class="line"><a id="l01510" name="l01510"></a><span class="lineno"> 1510</span>                env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1deposit.html#ac0c24df5082c3715d3be7a4a7617b9d5">deposit::authCredentials</a>(stock, credentials),</div>
 <div class="line"><a id="l01511" name="l01511"></a><span class="lineno"> 1511</span>                    <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1ter.html">ter</a>(<a class="code hl_enumvalue" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38ca853b436b6effa0f0e1241bd508f96f03">tecDUPLICATE</a>));</div>
 <div class="line"><a id="l01512" name="l01512"></a><span class="lineno"> 1512</span>            }</div>
@@ -1596,7 +1596,7 @@ $(function() {
 <div class="line"><a id="l01518" name="l01518"></a><span class="lineno"> 1518</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;deposit::AuthorizeCredentials&gt;</a> copyCredentials(</div>
 <div class="line"><a id="l01519" name="l01519"></a><span class="lineno"> 1519</span>                credentials.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/begin.html">begin</a>(), credentials.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/end.html">end</a>() - 1);</div>
 <div class="line"><a id="l01520" name="l01520"></a><span class="lineno"> 1520</span> </div>
-<div class="line"><a id="l01521" name="l01521"></a><span class="lineno"> 1521</span>            std::ranges::shuffle(copyCredentials, gen);</div>
+<div class="line"><a id="l01521" name="l01521"></a><span class="lineno"> 1521</span>            <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/algorithm/ranges/shuffle.html">std::ranges::shuffle</a>(copyCredentials, gen);</div>
 <div class="line"><a id="l01522" name="l01522"></a><span class="lineno"> 1522</span>            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; c : copyCredentials)</div>
 <div class="line"><a id="l01523" name="l01523"></a><span class="lineno"> 1523</span>            {</div>
 <div class="line"><a id="l01524" name="l01524"></a><span class="lineno"> 1524</span>                <span class="keyword">auto</span> credentials2 = copyCredentials;</div>
@@ -1705,6 +1705,7 @@ $(function() {
 <div class="ttc" id="aemplace_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/unordered_map/emplace.html">std::unordered_map::emplace</a></div><div class="ttdeci">T emplace(T... args)</div></div>
 <div class="ttc" id="aend_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/end.html">std::vector::end</a></div><div class="ttdeci">T end(T... args)</div></div>
 <div class="ttc" id="ainteger_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a></div></div>
+<div class="ttc" id="ais_sorted_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/ranges/is_sorted.html">std::ranges::is_sorted</a></div><div class="ttdeci">T is_sorted(T... args)</div></div>
 <div class="ttc" id="amersenne_twister_engine_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/numeric/random/mersenne_twister_engine.html">std::mt19937</a></div></div>
 <div class="ttc" id="anamespaceJson_html_a7d654b75c16a57007925868e38212b4eadc8f264f36b55b063c78126b335415f4"><div class="ttname"><a href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eadc8f264f36b55b063c78126b335415f4">Json::arrayValue</a></div><div class="ttdeci">@ arrayValue</div><div class="ttdoc">array value (ordered list)</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00045">json_value.h:45</a></div></div>
 <div class="ttc" id="anamespaceJson_html_a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6"><div class="ttname"><a href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6">Json::objectValue</a></div><div class="ttdeci">@ objectValue</div><div class="ttdoc">object value (collection of name/value pairs).</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00047">json_value.h:46</a></div></div>
@@ -1767,6 +1768,7 @@ $(function() {
 <div class="ttc" id="anamespacestd_1_1chrono_html"><div class="ttname"><a href="http://en.cppreference.com/w/namespacestd_1_1chrono.html">std::chrono</a></div></div>
 <div class="ttc" id="apush_back_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/push_back.html">std::vector::push_back</a></div><div class="ttdeci">T push_back(T... args)</div></div>
 <div class="ttc" id="arandom_device_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/numeric/random/random_device.html">std::random_device</a></div></div>
+<div class="ttc" id="ashuffle_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/algorithm/ranges/shuffle.html">std::ranges::shuffle</a></div><div class="ttdeci">T shuffle(T... args)</div></div>
 <div class="ttc" id="astructripple_1_1test_1_1DepositAuth__test_html"><div class="ttname"><a href="structripple_1_1test_1_1DepositAuth__test.html">ripple::test::DepositAuth_test</a></div><div class="ttdef"><b>Definition:</b> <a href="DepositAuth__test_8cpp_source.html#l00044">DepositAuth_test.cpp:45</a></div></div>
 <div class="ttc" id="astructripple_1_1test_1_1DepositAuth__test_html_a05cef32d4d5e69155299d7045600ccfd"><div class="ttname"><a href="structripple_1_1test_1_1DepositAuth__test.html#a05cef32d4d5e69155299d7045600ccfd">ripple::test::DepositAuth_test::testNoRipple</a></div><div class="ttdeci">void testNoRipple()</div><div class="ttdef"><b>Definition:</b> <a href="DepositAuth__test_8cpp_source.html#l00283">DepositAuth_test.cpp:283</a></div></div>
 <div class="ttc" id="astructripple_1_1test_1_1DepositAuth__test_html_a20ae5a366bc09e8ee7d9b069593441f0"><div class="ttname"><a href="structripple_1_1test_1_1DepositAuth__test.html#a20ae5a366bc09e8ee7d9b069593441f0">ripple::test::DepositAuth_test::testPayIOU</a></div><div class="ttdeci">void testPayIOU()</div><div class="ttdef"><b>Definition:</b> <a href="DepositAuth__test_8cpp_source.html#l00084">DepositAuth_test.cpp:84</a></div></div>
