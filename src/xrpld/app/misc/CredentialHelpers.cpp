@@ -336,9 +336,7 @@ verifyValidDomain(
             credentials.push_back(keyletCredential.key);
     }
 
-    // Result intentionally ignored.
-    [[maybe_unused]] bool _ = credentials::removeExpired(view, credentials, j);
-
+    bool foundExpired = credentials::removeExpired(view, credentials, j);
     for (auto const& h : credentials)
     {
         auto sleCredential = view.read(keylet::credential(h));
@@ -349,7 +347,7 @@ verifyValidDomain(
             return tesSUCCESS;
     }
 
-    return tecNO_PERMISSION;
+    return foundExpired ? tecEXPIRED : tecNO_PERMISSION;
 }
 
 TER

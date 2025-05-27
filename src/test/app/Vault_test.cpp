@@ -2397,17 +2397,43 @@ class Vault_test : public beast::unit_test::suite
         }
 
         {
-            testcase("private vault depositor new authorization");
-            env(credentials::create(depositor, credIssuer2, credType));
+            testcase("private vault expired authorization");
+            auto tx0 = credentials::create(depositor, credIssuer2, credType);
+            uint32_t const closeTime = env.current()
+                                           ->info()
+                                           .parentCloseTime.time_since_epoch()
+                                           .count();
+            tx0[sfExpiration] = closeTime + 20;
+            env(tx0);
+            env.close();
+
             env(credentials::accept(depositor, credIssuer2, credType));
             env.close();
 
-            auto tx = vault.deposit(
+            auto tx1 = vault.deposit(
                 {.depositor = depositor,
                  .id = keylet.key,
                  .amount = asset(50)});
-            env(tx);
+            env(tx1);
             env.close();
+
+            // time advance
+            env.close();
+            env.close();
+            env.close();
+
+            auto const cred1 =
+                env.le(credentials::keylet(depositor, credIssuer2, credType));
+            BEAST_EXPECT(cred1 != nullptr);
+
+            auto tx2 = vault.deposit(
+                {.depositor = depositor, .id = keylet.key, .amount = asset(1)});
+            env(tx2, ter{tecEXPIRED});
+            env.close();
+
+            auto const cred2 =
+                env.le(credentials::keylet(depositor, credIssuer2, credType));
+            BEAST_EXPECT(cred2 == nullptr);
         }
 
         {
