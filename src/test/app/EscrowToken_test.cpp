@@ -631,7 +631,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env.close();
         }
 
-        // tecPATH_PARTIAL: alice submits; IOU Limit < balance + amount
+        // tecLIMIT_EXCEEDED: alice submits; IOU Limit < balance + amount
         {
             Env env{*this, features};
             auto const baseFee = env.current()->fees().base;
@@ -664,7 +664,7 @@ struct EscrowToken_test : public beast::unit_test::suite
                 escrow::condition(escrow::cb1),
                 escrow::fulfillment(escrow::fb1),
                 fee(baseFee * 150),
-                ter(tecPATH_PARTIAL));
+                ter(tecLIMIT_EXCEEDED));
             env.close();
         }
 

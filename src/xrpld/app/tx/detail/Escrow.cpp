@@ -922,9 +922,9 @@ escrowUnlockApplyHelper<Issue>(
         // add the final amount to the line balance
         lineBalance += finalAmt;
 
-        // if the transfer would exceed the line limit return tecPATH_PARTIAL
+        // if the transfer would exceed the line limit return tecLIMIT_EXCEEDED
         if (lineLimit < lineBalance)
-            return tecPATH_PARTIAL;
+            return tecLIMIT_EXCEEDED;
     }
 
     // if destination is not the issuer then transfer funds
