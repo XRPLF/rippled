@@ -1694,9 +1694,6 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
         return;
     }
 
-    // RH TODO: when isTrusted = false we should probably also cache a key
-    // suppression for 30 seconds to avoid doing a relatively expensive lookup
-    // every time a spam packet is received
     PublicKey const publicKey{makeSlice(set.nodepubkey())};
     auto const isTrusted = app_.validators().trusted(publicKey);
 

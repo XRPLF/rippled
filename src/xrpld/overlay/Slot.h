@@ -32,12 +32,12 @@
 #include <xrpl/protocol/messages.h>
 
 #include <algorithm>
-#include <memory>
 #include <optional>
 #include <set>
 #include <tuple>
 #include <unordered_map>
 #include <unordered_set>
+#include <vector>
 
 namespace ripple {
 
@@ -104,10 +104,54 @@ public:
 template <typename clock_type>
 class Slot final
 {
-private:
     friend class Slots<clock_type>;
+
+private:
     using id_t = Peer::id_t;
     using time_point = typename clock_type::time_point;
+    /** Data maintained for each peer */
+    struct PeerInfo
+    {
+        PeerState state;         // peer's state
+        std::size_t count;       // message count
+        time_point expire;       // squelch expiration time
+        time_point lastMessage;  // time last message received
+
+        bool
+        isSelected()
+        {
+            return state == PeerState::Selected;
+        }
+
+        bool
+        isSquelched()
+        {
+            return state == PeerState::Squelched;
+        }
+
+        bool
+        reachedMinThreshold()
+        {
+            return count > MIN_MESSAGE_THRESHOLD;
+        }
+
+        bool
+        reachedMaxThreshold()
+        {
+            return count > MAX_MESSAGE_THRESHOLD;
+        }
+    };
+    std::unordered_map<id_t, PeerInfo> peers_;  // peer's data
+    // pool of peers considered as the source of messages
+    // from validator - peers that reached MIN_MESSAGE_THRESHOLD
+    std::unordered_set<id_t> considered_;
+    // number of peers that reached MAX_MESSAGE_THRESHOLD
+    std::uint16_t reachedThreshold_;
+    // last time peers were selected, used to age the slot
+    time_point lastSelected_;
+    SlotState state_;                // slot's state
+    SquelchHandler const& handler_;  // squelch/unsquelch handler
+    beast::Journal const journal_;   // logging
 
     /** Constructor
      * @param journal Journal for logging
@@ -143,18 +187,29 @@ private:
     void
     update(PublicKey const& validator, id_t id, protocol::MessageType type);
 
-    /** Handle peer deletion when a peer disconnects.
-     * If the peer is in Selected state then
-     * call unsquelch handler for every peer in squelched state and reset
-     * every peer's state to Counting. Switch Slot's state to Counting.
+    /**
+     * Handle a single peer deletion.
      * @param validator Public key of the source validator
-     * @param id Deleted peer id
+     * @param ids A list of peer ids to delete
      * @param erase If true then erase the peer. The peer is not erased
      *      when the peer when is idled. The peer is deleted when it
      *      disconnects
      */
     void
     deletePeer(PublicKey const& validator, id_t id, bool erase);
+
+    /** Handle peer deletion when a peer disconnects.
+     * If the peer is in Selected state then
+     * call unsquelch handler for every peer in squelched state and reset
+     * every peer's state to Counting. Switch Slot's state to Counting.
+     * @param validator Public key of the source validator
+     * @param ids A list of peer ids to delete
+     * @param erase If true then erase the peer. The peer is not erased
+     *      when the peer when is idled. The peer is deleted when it
+     *      disconnects
+     */
+    void
+    deletePeers(PublicKey const& validator, std::vector<id_t> ids, bool erase);
 
     /** Get the time of the last peer selection round */
     time_point const&
@@ -166,17 +221,6 @@ private:
     /** Return number of peers in state */
     std::uint16_t
     inState(PeerState state) const;
-
-    /** Return number of peers not in state */
-    std::uint16_t
-    notInState(PeerState state) const;
-
-    /** Return Slot's state */
-    SlotState
-    getState() const
-    {
-        return state_;
-    }
 
     /** Return selected peers */
     std::set<id_t>
@@ -196,7 +240,7 @@ private:
      * @param validator Public key of the source validator
      */
     void
-    deleteIdlePeer(PublicKey const& validator);
+    deleteIdlePeers(PublicKey const& validator);
 
     /** Get random squelch duration between MIN_UNSQUELCH_EXPIRE and
      * min(max(MAX_UNSQUELCH_EXPIRE_DEFAULT, SQUELCH_PER_PEER * npeers),
@@ -206,58 +250,18 @@ private:
     std::chrono::seconds
     getSquelchDuration(std::size_t npeers);
 
-private:
     /** Reset counts of peers in Selected or Counting state */
     void
     resetCounts();
 
-    /** Initialize slot to Counting state */
+    /** Initialize slot to Counting state and reset all counters */
     void
     initCounting();
 
-    /** Data maintained for each peer */
-    struct PeerInfo
-    {
-        PeerState state;         // peer's state
-        std::size_t count;       // message count
-        time_point expire;       // squelch expiration time
-        time_point lastMessage;  // time last message received
-    };
-    std::unordered_map<id_t, PeerInfo> peers_;  // peer's data
-    // pool of peers considered as the source of messages
-    // from validator - peers that reached MIN_MESSAGE_THRESHOLD
-    std::unordered_set<id_t> considered_;
-    // number of peers that reached MAX_MESSAGE_THRESHOLD
-    std::uint16_t reachedThreshold_;
-    // last time peers were selected, used to age the slot
-    typename clock_type::time_point lastSelected_;
-    SlotState state_;                // slot's state
-    SquelchHandler const& handler_;  // squelch/unsquelch handler
-    beast::Journal const journal_;   // logging
+    /** Reset the slot state to Counting state */
+    void
+    resetState();
 };
-
-template <typename clock_type>
-void
-Slot<clock_type>::deleteIdlePeer(PublicKey const& validator)
-{
-    using namespace std::chrono;
-    auto now = clock_type::now();
-    for (auto it = peers_.begin(); it != peers_.end();)
-    {
-        auto& peer = it->second;
-        auto id = it->first;
-        ++it;
-        if (now - peer.lastMessage > IDLED)
-        {
-            JLOG(journal_.trace())
-                << "deleteIdlePeer: " << Slice(validator) << " " << id
-                << " idled "
-                << duration_cast<seconds>(now - peer.lastMessage).count()
-                << " selected " << (peer.state == PeerState::Selected);
-            deletePeer(validator, id, false);
-        }
-    }
-}
 
 template <typename clock_type>
 void
@@ -280,7 +284,7 @@ Slot<clock_type>::update(
         return;
     }
     // Message from a peer with expired squelch
-    if (it->second.state == PeerState::Squelched && now > it->second.expire)
+    if (it->second.isSquelched() && now > it->second.expire)
     {
         JLOG(journal_.trace())
             << "update: squelch expired " << Slice(validator) << " " << id;
@@ -302,12 +306,15 @@ Slot<clock_type>::update(
 
     peer.lastMessage = now;
 
-    if (state_ != SlotState::Counting || peer.state == PeerState::Squelched)
+    if (state_ != SlotState::Counting || peer.isSquelched())
         return;
 
-    if (++peer.count > MIN_MESSAGE_THRESHOLD)
+    ++peer.count;
+
+    if (peer.reachedMinThreshold())
         considered_.insert(id);
-    if (peer.count == (MAX_MESSAGE_THRESHOLD + 1))
+
+    if (peer.reachedMaxThreshold())
         ++reachedThreshold_;
 
     if (now - lastSelected_ > 2 * MAX_UNSQUELCH_EXPIRE_DEFAULT)
@@ -413,45 +420,105 @@ Slot<clock_type>::getSquelchDuration(std::size_t npeers)
 
 template <typename clock_type>
 void
+Slot<clock_type>::deleteIdlePeers(PublicKey const& validator)
+{
+    using namespace std::chrono;
+    auto const now = clock_type::now();
+    std::vector<id_t> targets = {};
+    for (auto const& [id, peer] : peers_)
+    {
+        if (now - peer.lastMessage > IDLED)
+        {
+            JLOG(journal_.trace())
+                << "deleteIdlePeer: " << Slice(validator) << " " << id
+                << " idled "
+                << duration_cast<seconds>(now - peer.lastMessage).count()
+                << " selected " << (peer.state == PeerState::Selected);
+            targets.push_back(id);
+        }
+    }
+
+    deletePeers(validator, targets, false);
+}
+
+template <typename clock_type>
+void
 Slot<clock_type>::deletePeer(PublicKey const& validator, id_t id, bool erase)
 {
-    auto it = peers_.find(id);
-    if (it != peers_.end())
+    deletePeers(validator, {id}, erase);
+}
+
+template <typename clock_type>
+void
+Slot<clock_type>::deletePeers(
+    PublicKey const& validator,
+    std::vector<id_t> ids,
+    bool erase)
+{
+    // if we are removing a peer that was selected
+    // as a source of validator messages, we need
+    // to unsquelch all peers to select new sources
+    auto unsquelch = false;
+
+    for (auto const id : ids)
     {
+        auto const it = peers_.find(id);
+        if (it == peers_.end())
+            continue;
+
         JLOG(journal_.trace())
             << "deletePeer: " << Slice(validator) << " " << id << " selected "
             << (it->second.state == PeerState::Selected) << " considered "
             << (considered_.find(id) != considered_.end()) << " erase "
             << erase;
-        auto now = clock_type::now();
-        if (it->second.state == PeerState::Selected)
-        {
-            for (auto& [k, v] : peers_)
-            {
-                if (v.state == PeerState::Squelched)
-                    handler_.unsquelch(validator, k);
-                v.state = PeerState::Counting;
-                v.count = 0;
-                v.expire = now;
-            }
 
-            considered_.clear();
-            reachedThreshold_ = 0;
-            state_ = SlotState::Counting;
-        }
-        else if (considered_.find(id) != considered_.end())
+        // A peer we are removing is a selected peer
+        // we need unsquelch all peers, and reset slot state
+        if (it->second.isSelected())
+            unsquelch = true;
+
+        // The peer we are removing is considered
+        // as potential source of validator messages
+        // we need to remove it
+        else if (considered_.contains(id))
         {
-            if (it->second.count > MAX_MESSAGE_THRESHOLD)
+            // if the peer reached the message threshold
+            // decrement the threshold count
+            if (it->second.reachedMaxThreshold())
                 --reachedThreshold_;
             considered_.erase(id);
         }
 
-        it->second.lastMessage = now;
+        it->second.lastMessage = clock_type::now();
         it->second.count = 0;
 
         if (erase)
-            peers_.erase(it);
+            peers_.erase(id);
     }
+
+    if (unsquelch)
+    {
+        for (auto& [id, peerInfo] : peers_)
+        {
+            // unsquelch previously squelched peer
+            if (peerInfo.isSquelched())
+                handler_.unsquelch(validator, id);
+
+            peerInfo.state = PeerState::Counting;
+            peerInfo.count = 0;
+            peerInfo.expire = clock_type::now();
+        }
+
+        resetState();
+    }
+}
+
+template <typename clock_type>
+void
+Slot<clock_type>::initCounting()
+{
+    resetState();
+    resetCounts();
 }
 
 template <typename clock_type>
@@ -467,12 +534,11 @@ Slot<clock_type>::resetCounts()
 
 template <typename clock_type>
 void
-Slot<clock_type>::initCounting()
+Slot<clock_type>::resetState()
 {
     state_ = SlotState::Counting;
     considered_.clear();
     reachedThreshold_ = 0;
-    resetCounts();
 }
 
 template <typename clock_type>
@@ -485,16 +551,7 @@ Slot<clock_type>::inState(PeerState state) const
 }
 
 template <typename clock_type>
-std::uint16_t
-Slot<clock_type>::notInState(PeerState state) const
-{
-    return std::count_if(peers_.begin(), peers_.end(), [&](auto const& it) {
-        return (it.second.state != state);
-    });
-}
-
-template <typename clock_type>
-std::set<typename Peer::id_t>
+std::set<id_t>
 Slot<clock_type>::getSelected() const
 {
     std::set<id_t> r;
@@ -505,9 +562,7 @@ Slot<clock_type>::getSelected() const
 }
 
 template <typename clock_type>
-std::unordered_map<
-    typename Peer::id_t,
-    std::tuple<PeerState, uint16_t, uint32_t, uint32_t>>
+std::unordered_map<id_t, std::tuple<PeerState, uint16_t, uint32_t, uint32_t>>
 Slot<clock_type>::getPeers() const
 {
     using namespace std::chrono;
@@ -538,7 +593,7 @@ class Slots final
     using id_t = typename Peer::id_t;
     using messages = beast::aged_unordered_map<
         uint256,
-        std::unordered_set<Peer::id_t>,
+        std::unordered_set<id_t>,
         clock_type,
         hardened_hash<strong_hash>>;
 
@@ -581,16 +636,6 @@ public:
         return {};
     }
 
-    /** Return number of peers not in state */
-    std::optional<std::uint16_t>
-    notInState(PublicKey const& validator, PeerState state) const
-    {
-        auto const& it = slots_.find(validator);
-        if (it != slots_.end())
-            return it->second.notInState(state);
-        return {};
-    }
-
     /** Return true if Slot is in state */
     bool
     inState(PublicKey const& validator, SlotState state) const
@@ -615,23 +660,13 @@ public:
      * expiration milliseconds.
      */
     std::unordered_map<
-        typename Peer::id_t,
+        id_t,
         std::tuple<PeerState, uint16_t, uint32_t, std::uint32_t>>
     getPeers(PublicKey const& validator)
     {
         auto const& it = slots_.find(validator);
         if (it != slots_.end())
             return it->second.getPeers();
-        return {};
-    }
-
-    /** Get Slot's state */
-    std::optional<SlotState>
-    getState(PublicKey const& validator)
-    {
-        auto const& it = slots_.find(validator);
-        if (it != slots_.end())
-            return it->second.getState();
         return {};
     }
 
@@ -645,12 +680,6 @@ public:
     deletePeer(id_t id, bool erase);
 
 private:
-    /** Add message/peer if have not seen this message
-     * from the peer. A message is aged after IDLED seconds.
-     * Return true if added */
-    bool
-    addPeerMessage(uint256 const& key, id_t id);
-
     hash_map<PublicKey, Slot<clock_type>> slots_;
     SquelchHandler const& handler_;  // squelch/unsquelch handler
     Logs& logs_;
@@ -661,6 +690,12 @@ private:
     // after it was relayed is ignored by PeerImp.
     inline static messages peersWithMessage_{
         beast::get_abstract_clock<clock_type>()};
+
+    /** Add message/peer if have not seen this message
+     * from the peer. A message is aged after IDLED seconds.
+     * Return true if added */
+    bool
+    addPeerMessage(uint256 const& key, id_t id);
 };
 
 template <typename clock_type>
@@ -712,15 +747,14 @@ Slots<clock_type>::updateSlotAndSquelch(
     {
         JLOG(journal_.trace())
             << "updateSlotAndSquelch: new slot " << Slice(validator);
-        auto it = slots_
-                      .emplace(std::make_pair(
-                          validator,
-                          Slot<clock_type>(handler_, logs_.journal("Slot"))))
-                      .first;
-        it->second.update(validator, id, type);
+        it = slots_
+                 .emplace(std::make_pair(
+                     validator,
+                     Slot<clock_type>(handler_, logs_.journal("Slot"))))
+                 .first;
     }
-    else
-        it->second.update(validator, id, type);
+
+    it->second.update(validator, id, type);
 }
 
 template <typename clock_type>
@@ -739,7 +773,7 @@ Slots<clock_type>::deleteIdlePeers()
 
     for (auto it = slots_.begin(); it != slots_.end();)
     {
-        it->second.deleteIdlePeer(it->first);
+        it->second.deleteIdlePeers(it->first);
         if (now - it->second.getLastSelected() > MAX_UNSQUELCH_EXPIRE_DEFAULT)
         {
             JLOG(journal_.trace())
