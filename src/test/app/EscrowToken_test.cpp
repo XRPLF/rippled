@@ -630,6 +630,80 @@ struct EscrowToken_test : public beast::unit_test::suite
                 ter(tecNO_LINE));
             env.close();
         }
+
+        // tecPATH_PARTIAL: alice submits; IOU Limit < balance + amount
+        {
+            Env env{*this, features};
+            auto const baseFee = env.current()->fees().base;
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const gw = Account{"gateway"};
+            auto const USD = gw["USD"];
+            env.fund(XRP(5000), alice, bob, gw);
+            env.close();
+            env(fset(gw, asfAllowTokenLocking));
+            env.close();
+            env.trust(USD(1000), alice, bob);
+            env.close();
+            env(pay(gw, alice, USD(1000)));
+            env.close();
+
+            auto const seq1 = env.seq(alice);
+            env(escrow::create(alice, bob, USD(5)),
+                escrow::condition(escrow::cb1),
+                escrow::finish_time(env.now() + 1s),
+                fee(baseFee * 150),
+                ter(tesSUCCESS));
+            env.close();
+
+            env.trust(USD(1), bob);
+            env.close();
+
+            // alice cannot finish because bobs limit is too low
+            env(escrow::finish(alice, alice, seq1),
+                escrow::condition(escrow::cb1),
+                escrow::fulfillment(escrow::fb1),
+                fee(baseFee * 150),
+                ter(tecPATH_PARTIAL));
+            env.close();
+        }
+
+        // tesSUCCESS: bob submits; IOU Limit < balance + amount
+        {
+            Env env{*this, features};
+            auto const baseFee = env.current()->fees().base;
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const gw = Account{"gateway"};
+            auto const USD = gw["USD"];
+            env.fund(XRP(5000), alice, bob, gw);
+            env.close();
+            env(fset(gw, asfAllowTokenLocking));
+            env.close();
+            env.trust(USD(1000), alice, bob);
+            env.close();
+            env(pay(gw, alice, USD(1000)));
+            env.close();
+
+            auto const seq1 = env.seq(alice);
+            env(escrow::create(alice, bob, USD(5)),
+                escrow::condition(escrow::cb1),
+                escrow::finish_time(env.now() + 1s),
+                fee(baseFee * 150),
+                ter(tesSUCCESS));
+            env.close();
+
+            env.trust(USD(1), bob);
+            env.close();
+
+            // bob can finish even if bobs limit is too low
+            env(escrow::finish(bob, alice, seq1),
+                escrow::condition(escrow::cb1),
+                escrow::fulfillment(escrow::fb1),
+                fee(baseFee * 150),
+                ter(tesSUCCESS));
+            env.close();
+        }
     }
 
     void

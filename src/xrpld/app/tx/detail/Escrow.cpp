@@ -824,6 +824,7 @@ escrowUnlockApplyHelper<Issue>(
     bool const recvLow = issuer > receiver;
     bool const senderIssuer = issuer == sender;
     bool const receiverIssuer = issuer == receiver;
+    bool const senderHigh = issuer > receiver;
 
     // LCOV_EXCL_START
     if (senderIssuer)
@@ -833,8 +834,6 @@ escrowUnlockApplyHelper<Issue>(
     if (receiverIssuer)
         return tesSUCCESS;
 
-    // Review Note: We could remove this and just say to use batch to auth the
-    // token first
     if (!view.exists(trustLineKey) && createAsset && !receiverIssuer)
     {
         // Can the account cover the trust line's reserve?
@@ -853,10 +852,10 @@ escrowUnlockApplyHelper<Issue>(
 
         // clang-format off
         if (TER const ter = trustCreate(
-                view,                            // payment sandbox
+                view,                           // payment sandbox
                 recvLow,                        // is dest low?
                 issuer,                         // source
-                receiver,                           // destination
+                receiver,                       // destination
                 trustLineKey.key,               // ledger index
                 sleDest,                        // Account to add to
                 false,                          // authorize account
@@ -864,7 +863,7 @@ escrowUnlockApplyHelper<Issue>(
                 false,                          // freeze trust line
                 false,                          // deep freeze trust line
                 initialBalance,                 // zero initial balance
-                Issue(currency, receiver),   // limit of zero
+                Issue(currency, receiver),      // limit of zero
                 0,                              // quality in
                 0,                              // quality out
                 journal);                       // journal
@@ -904,7 +903,31 @@ escrowUnlockApplyHelper<Issue>(
         finalAmt = amount.value() - xferFee;
     }
 
-    // If destination is not the issuer then transfer funds
+    // validate the line limit if the acount submitting txn is not the receiver
+    // of the funds
+    if (!createAsset)
+    {
+        auto const sleRippleState = view.peek(trustLineKey);
+        // if the sender is the high, then we use the low limit
+        // otherwise we use the high limit
+        STAmount const lineLimit = sleRippleState->getFieldAmount(
+            senderHigh ? sfLowLimit : sfHighLimit);
+
+        STAmount lineBalance = sleRippleState->getFieldAmount(sfBalance);
+
+        // flip the sign of the line balance if the sender is not high
+        if (!senderHigh)
+            lineBalance.negate();
+
+        // add the final amount to the line balance
+        lineBalance += finalAmt;
+
+        // if the transfer would exceed the line limit return tecPATH_PARTIAL
+        if (lineLimit < lineBalance)
+            return tecPATH_PARTIAL;
+    }
+
+    // if destination is not the issuer then transfer funds
     if (!receiverIssuer)
     {
         auto const ter =
@@ -950,7 +973,7 @@ escrowUnlockApplyHelper<MPTIssue>(
             return ter;
         }
 
-        // Update owner count.
+        // update owner count.
         adjustOwnerCount(view, sleDest, 1, journal);
     }
 
