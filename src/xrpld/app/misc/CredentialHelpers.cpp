@@ -336,7 +336,7 @@ verifyValidDomain(
             credentials.push_back(keyletCredential.key);
     }
 
-    bool foundExpired = credentials::removeExpired(view, credentials, j);
+    bool const foundExpired = credentials::removeExpired(view, credentials, j);
     for (auto const& h : credentials)
     {
         auto sleCredential = view.read(keylet::credential(h));
