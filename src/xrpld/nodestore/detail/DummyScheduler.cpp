@@ -30,12 +30,12 @@ DummyScheduler::scheduleTask(Task& task)
 }
 
 void
-DummyScheduler::onFetch(const FetchReport& report)
+DummyScheduler::onFetch(FetchReport const& report)
 {
 }
 
 void
-DummyScheduler::onBatchWrite(const BatchWriteReport& report)
+DummyScheduler::onBatchWrite(BatchWriteReport const& report)
 {
 }
 

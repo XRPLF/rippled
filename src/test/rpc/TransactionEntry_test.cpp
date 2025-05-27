@@ -19,7 +19,9 @@
 
 #include <test/jtx.h>
 #include <test/jtx/Env.h>
+
 #include <xrpld/rpc/detail/RPCHelpers.h>
+
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/jss.h>
@@ -35,7 +37,10 @@ class TransactionEntry_test : public beast::unit_test::suite
     {
         testcase("Invalid request params");
         using namespace test::jtx;
-        Env env{*this};
+        Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
+                    cfg->FEES.reference_fee = 10;
+                    return cfg;
+                })};
 
         {
             // no params
@@ -150,7 +155,10 @@ class TransactionEntry_test : public beast::unit_test::suite
     {
         testcase("Basic request API version " + std::to_string(apiVersion));
         using namespace test::jtx;
-        Env env{*this};
+        Env env{*this, envconfig([](std::unique_ptr<Config> cfg) {
+                    cfg->FEES.reference_fee = 10;
+                    return cfg;
+                })};
 
         auto check_tx = [this, &env, apiVersion](
                             int index,

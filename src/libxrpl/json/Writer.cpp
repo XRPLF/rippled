@@ -17,16 +17,24 @@
 */
 //==============================================================================
 
+#include <xrpl/basics/ToString.h>
 #include <xrpl/json/Output.h>
 #include <xrpl/json/Writer.h>
+
+#include <cstddef>
+#include <map>
+#include <memory>
 #include <set>
 #include <stack>
+#include <string>
+#include <utility>
+#include <vector>
 
 namespace Json {
 
 namespace {
 
-std::map<char, const char*> jsonSpecialCharacterEscape = {
+std::map<char, char const*> jsonSpecialCharacterEscape = {
     {'"', "\\\""},
     {'\\', "\\\\"},
     {'/', "\\/"},
@@ -39,13 +47,13 @@ std::map<char, const char*> jsonSpecialCharacterEscape = {
 static size_t const jsonEscapeLength = 2;
 
 // All other JSON punctuation.
-const char closeBrace = '}';
-const char closeBracket = ']';
-const char colon = ':';
-const char comma = ',';
-const char openBrace = '{';
-const char openBracket = '[';
-const char quote = '"';
+char const closeBrace = '}';
+char const closeBracket = ']';
+char const colon = ':';
+char const comma = ',';
+char const openBrace = '{';
+char const openBracket = '[';
+char const quote = '"';
 
 static auto const integralFloatsBecomeInts = false;
 

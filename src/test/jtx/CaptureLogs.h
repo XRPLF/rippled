@@ -17,6 +17,9 @@
 */
 //==============================================================================
 
+#ifndef RIPPLE_TEST_JTX_CAPTURELOGS_H_INCLUDED
+#define RIPPLE_TEST_JTX_CAPTURELOGS_H_INCLUDED
+
 #include <xrpl/basics/Log.h>
 
 namespace ripple {
@@ -92,3 +95,5 @@ public:
 
 }  // namespace test
 }  // namespace ripple
+
+#endif

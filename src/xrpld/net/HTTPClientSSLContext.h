@@ -22,8 +22,10 @@
 
 #include <xrpld/core/Config.h>
 #include <xrpld/net/RegisterSSLCerts.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
+
 #include <boost/asio.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl.hpp>
@@ -189,7 +191,7 @@ public:
 private:
     boost::asio::ssl::context ssl_context_;
     beast::Journal const j_;
-    const bool verify_;
+    bool const verify_;
 };
 
 }  // namespace ripple

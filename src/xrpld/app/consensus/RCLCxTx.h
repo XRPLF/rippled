@@ -20,10 +20,7 @@
 #ifndef RIPPLE_APP_CONSENSUS_RCLCXTX_H_INCLUDED
 #define RIPPLE_APP_CONSENSUS_RCLCXTX_H_INCLUDED
 
-#include <xrpld/app/misc/CanonicalTXSet.h>
 #include <xrpld/shamap/SHAMap.h>
-#include <xrpl/basics/chrono.h>
-#include <xrpl/protocol/UintTypes.h>
 
 namespace ripple {
 

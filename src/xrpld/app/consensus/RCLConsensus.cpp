@@ -37,6 +37,7 @@
 #include <xrpld/consensus/LedgerTiming.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/predicates.h>
+
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -318,8 +319,8 @@ RCLConsensus::Adaptor::onClose(
     NetClock::time_point const& closeTime,
     ConsensusMode mode) -> Result
 {
-    const bool wrongLCL = mode == ConsensusMode::wrongLedger;
-    const bool proposing = mode == ConsensusMode::proposing;
+    bool const wrongLCL = mode == ConsensusMode::wrongLedger;
+    bool const proposing = mode == ConsensusMode::proposing;
 
     notify(protocol::neCLOSING_LEDGER, ledger, !wrongLCL);
 
@@ -436,7 +437,7 @@ RCLConsensus::Adaptor::onAccept(
     ConsensusCloseTimes const& rawCloseTimes,
     ConsensusMode const& mode,
     Json::Value&& consensusJson,
-    const bool validating)
+    bool const validating)
 {
     app_.getJobQueue().addJob(
         jtACCEPT,
@@ -473,9 +474,9 @@ RCLConsensus::Adaptor::doAccept(
 
     bool closeTimeCorrect;
 
-    const bool proposing = mode == ConsensusMode::proposing;
-    const bool haveCorrectLCL = mode != ConsensusMode::wrongLedger;
-    const bool consensusFail = result.state == ConsensusState::MovedOn;
+    bool const proposing = mode == ConsensusMode::proposing;
+    bool const haveCorrectLCL = mode != ConsensusMode::wrongLedger;
+    bool const consensusFail = result.state == ConsensusState::MovedOn;
 
     auto consensusCloseTime = result.position.closeTime();
 
@@ -1019,7 +1020,7 @@ RCLConsensus::Adaptor::preStartRound(
         }
     }
 
-    const bool synced = app_.getOPs().getOperatingMode() == OperatingMode::FULL;
+    bool const synced = app_.getOPs().getOperatingMode() == OperatingMode::FULL;
 
     if (validating_)
     {
@@ -1104,8 +1105,8 @@ RCLConsensus::startRound(
 }
 
 RclConsensusLogger::RclConsensusLogger(
-    const char* label,
-    const bool validating,
+    char const* label,
+    bool const validating,
     beast::Journal j)
     : j_(j)
 {

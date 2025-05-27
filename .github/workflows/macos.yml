@@ -1,6 +1,7 @@
 name: macos
 on:
   pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
   push:
     # If the branches list is ever changed, be sure to change it on all
     # build/test jobs (nix, macos, windows, instrumentation)
@@ -18,6 +19,7 @@ concurrency:
 jobs:
 
   test:
+    if: ${{ github.event_name == 'push' || github.event.pull_request.draft != true || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     strategy:
       matrix:
         platform:
@@ -69,11 +71,13 @@ jobs:
           nproc --version
           echo -n "nproc returns: "
           nproc
+          system_profiler SPHardwareDataType
+          sysctl -n hw.logicalcpu
+          clang --version
       - name: configure Conan
         run : |
           conan profile new default --detect || true
           conan profile update settings.compiler.cppstd=20 default
-          conan profile update 'conf.tools.build:cxxflags+=["-DBOOST_ASIO_DISABLE_CONCEPTS"]' default
       - name: build dependencies
         uses: ./.github/actions/dependencies
         env:

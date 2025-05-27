@@ -50,7 +50,7 @@ class TokenCodecErrcCategory : public std::error_category
 {
 public:
     // Return a short descriptive name for the category
-    virtual const char*
+    virtual char const*
     name() const noexcept override final
     {
         return "TokenCodecError";
@@ -86,7 +86,7 @@ public:
 };
 }  // namespace detail
 
-inline const ripple::detail::TokenCodecErrcCategory&
+inline ripple::detail::TokenCodecErrcCategory const&
 TokenCodecErrcCategory()
 {
     static ripple::detail::TokenCodecErrcCategory c;

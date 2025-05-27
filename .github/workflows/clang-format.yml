@@ -1,9 +1,13 @@
 name: clang-format
 
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
 
 jobs:
   check:
+    if: ${{ github.event_name == 'push' || github.event.pull_request.draft != true || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     runs-on: ubuntu-24.04
     env:
       CLANG_VERSION: 18
@@ -20,7 +24,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install clang-format-${CLANG_VERSION}
       - name: Format first-party sources
-        run: find include src -type f \( -name '*.cpp' -o -name '*.hpp' -o -name '*.h' -o -name '*.ipp' \) -exec clang-format-${CLANG_VERSION} -i {} +
+        run: find include src tests -type f \( -name '*.cpp' -o -name '*.hpp' -o -name '*.h' -o -name '*.ipp' \) -exec clang-format-${CLANG_VERSION} -i {} +
       - name: Check for differences
         id: assert
         run: |

@@ -23,11 +23,12 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/ledger/ApplyViewImpl.h>
+
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/XRPAmount.h>
+
 #include <optional>
-#include <utility>
 
 namespace ripple {
 
@@ -38,11 +39,34 @@ public:
     explicit ApplyContext(
         Application& app,
         OpenView& base,
+        std::optional<uint256 const> const& parentBatchId,
         STTx const& tx,
         TER preclaimResult,
         XRPAmount baseFee,
         ApplyFlags flags,
-        beast::Journal = beast::Journal{beast::Journal::getNullSink()});
+        beast::Journal journal = beast::Journal{beast::Journal::getNullSink()});
+
+    explicit ApplyContext(
+        Application& app,
+        OpenView& base,
+        STTx const& tx,
+        TER preclaimResult,
+        XRPAmount baseFee,
+        ApplyFlags flags,
+        beast::Journal journal = beast::Journal{beast::Journal::getNullSink()})
+        : ApplyContext(
+              app,
+              base,
+              std::nullopt,
+              tx,
+              preclaimResult,
+              baseFee,
+              flags,
+              journal)
+    {
+        XRPL_ASSERT(
+            (flags & tapBATCH) == 0, "Batch apply flag should not be set");
+    }
 
     Application& app;
     STTx const& tx;
@@ -130,6 +154,9 @@ private:
     OpenView& base_;
     ApplyFlags flags_;
     std::optional<ApplyViewImpl> view_;
+
+    // The ID of the batch transaction we are executing under, if seated.
+    std::optional<uint256 const> parentBatchId_;
 };
 
 }  // namespace ripple

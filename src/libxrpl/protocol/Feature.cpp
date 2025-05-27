@@ -17,17 +17,26 @@
 */
 //==============================================================================
 
-#include <xrpl/protocol/Feature.h>
-
 #include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/digest.h>
+
 #include <boost/container_hash/hash.hpp>
 #include <boost/multi_index/hashed_index.hpp>
-#include <boost/multi_index/key_extractors.hpp>
+#include <boost/multi_index/indexed_by.hpp>
+#include <boost/multi_index/member.hpp>
 #include <boost/multi_index/random_access_index.hpp>
+#include <boost/multi_index/tag.hpp>
 #include <boost/multi_index_container.hpp>
-#include <cstring>
+
+#include <atomic>
+#include <cstddef>
+#include <map>
+#include <optional>
+#include <string>
 
 namespace ripple {
 
@@ -130,27 +139,27 @@ class FeatureCollections
     {
         if (i >= features.size())
             LogicError("Invalid FeatureBitset index");
-        const auto& sequence = features.get<Feature::byIndex>();
+        auto const& sequence = features.get<Feature::byIndex>();
         return sequence[i];
     }
     size_t
     getIndex(Feature const& feature) const
     {
-        const auto& sequence = features.get<Feature::byIndex>();
+        auto const& sequence = features.get<Feature::byIndex>();
         auto const it_to = sequence.iterator_to(feature);
         return it_to - sequence.begin();
     }
     Feature const*
     getByFeature(uint256 const& feature) const
     {
-        const auto& feature_index = features.get<Feature::byFeature>();
+        auto const& feature_index = features.get<Feature::byFeature>();
         auto const feature_it = feature_index.find(feature);
         return feature_it == feature_index.end() ? nullptr : &*feature_it;
     }
     Feature const*
     getByName(std::string const& name) const
     {
-        const auto& name_index = features.get<Feature::byName>();
+        auto const& name_index = features.get<Feature::byName>();
         auto const name_it = name_index.find(name);
         return name_it == name_index.end() ? nullptr : &*name_it;
     }
@@ -231,7 +240,7 @@ FeatureCollections::getRegisteredFeature(std::string const& name) const
 }
 
 void
-check(bool condition, const char* logicErrorMessage)
+check(bool condition, char const* logicErrorMessage)
 {
     if (!condition)
         LogicError(logicErrorMessage);
@@ -250,12 +259,9 @@ FeatureCollections::registerFeature(
     Feature const* i = getByName(name);
     if (!i)
     {
-        // If this check fails, and you just added a feature, increase the
-        // numFeatures value in Feature.h
         check(
             features.size() < detail::numFeatures,
-            "More features defined than allocated. Adjust numFeatures in "
-            "Feature.h.");
+            "More features defined than allocated.");
 
         auto const f = sha512Half(Slice(name.data(), name.size()));
 
@@ -424,51 +430,36 @@ featureToName(uint256 const& f)
 #undef XRPL_FEATURE
 #pragma push_macro("XRPL_FIX")
 #undef XRPL_FIX
+#pragma push_macro("XRPL_RETIRE")
+#undef XRPL_RETIRE
 
 #define XRPL_FEATURE(name, supported, vote) \
     uint256 const feature##name = registerFeature(#name, supported, vote);
 #define XRPL_FIX(name, supported, vote) \
     uint256 const fix##name = registerFeature("fix" #name, supported, vote);
 
+// clang-format off
+#define XRPL_RETIRE(name)                                       \
+    [[deprecated("The referenced amendment has been retired")]] \
+    [[maybe_unused]]                                            \
+    uint256 const retired##name = retireFeature(#name);
+// clang-format on
+
 #include <xrpl/protocol/detail/features.macro>
 
+#undef XRPL_RETIRE
+#pragma pop_macro("XRPL_RETIRE")
 #undef XRPL_FIX
 #pragma pop_macro("XRPL_FIX")
 #undef XRPL_FEATURE
 #pragma pop_macro("XRPL_FEATURE")
-
-// clang-format off
-
-// The following amendments have been active for at least two years. Their
-// pre-amendment code has been removed and the identifiers are deprecated.
-// All known amendments and amendments that may appear in a validated
-// ledger must be registered either here or above with the "active" amendments
-[[deprecated("The referenced amendment has been retired"), maybe_unused]]
-uint256 const
-    retiredMultiSign         = retireFeature("MultiSign"),
-    retiredTrustSetAuth      = retireFeature("TrustSetAuth"),
-    retiredFeeEscalation     = retireFeature("FeeEscalation"),
-    retiredPayChan           = retireFeature("PayChan"),
-    retiredCryptoConditions  = retireFeature("CryptoConditions"),
-    retiredTickSize          = retireFeature("TickSize"),
-    retiredFix1368           = retireFeature("fix1368"),
-    retiredEscrow            = retireFeature("Escrow"),
-    retiredFix1373           = retireFeature("fix1373"),
-    retiredEnforceInvariants = retireFeature("EnforceInvariants"),
-    retiredSortedDirectories = retireFeature("SortedDirectories"),
-    retiredFix1201           = retireFeature("fix1201"),
-    retiredFix1512           = retireFeature("fix1512"),
-    retiredFix1523           = retireFeature("fix1523"),
-    retiredFix1528           = retireFeature("fix1528");
-
-// clang-format on
 
 // All of the features should now be registered, since variables in a cpp file
 // are initialized from top to bottom.
 //
 // Use initialization of one final static variable to set
 // featureCollections::readOnly.
-[[maybe_unused]] static const bool readOnlySet =
+[[maybe_unused]] static bool const readOnlySet =
     featureCollections.registrationIsDone();
 
 }  // namespace ripple

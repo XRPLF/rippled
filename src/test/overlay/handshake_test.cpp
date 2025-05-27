@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/overlay/detail/Handshake.h>
+
 #include <xrpl/beast/unit_test.h>
 
 namespace ripple {

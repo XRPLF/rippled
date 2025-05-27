@@ -23,10 +23,11 @@
 #include <xrpl/basics/LocalValue.h>
 #include <xrpl/basics/Number.h>
 #include <xrpl/beast/utility/Zero.h>
+
 #include <boost/operators.hpp>
+
 #include <cstdint>
 #include <string>
-#include <utility>
 
 namespace ripple {
 

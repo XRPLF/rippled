@@ -28,13 +28,16 @@
 #include <test/jtx/envconfig.h>
 #include <test/jtx/require.h>
 #include <test/jtx/tags.h>
+#include <test/jtx/vault.h>
 #include <test/unit_test/SuiteJournal.h>
+
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/paths/Pathfinder.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -46,6 +49,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
+
 #include <functional>
 #include <string>
 #include <tuple>
@@ -69,7 +73,7 @@ noripple(Account const& account, Args const&... args)
 inline FeatureBitset
 supported_amendments()
 {
-    static const FeatureBitset ids = [] {
+    static FeatureBitset const ids = [] {
         auto const& sa = ripple::detail::supportedAmendments();
         std::vector<uint256> feats;
         feats.reserve(sa.size());
@@ -207,8 +211,10 @@ public:
      * @param args collection of features
      *
      */
-    Env(beast::unit_test::suite& suite_, FeatureBitset features)
-        : Env(suite_, envconfig(), features)
+    Env(beast::unit_test::suite& suite_,
+        FeatureBitset features,
+        std::unique_ptr<Logs> logs = nullptr)
+        : Env(suite_, envconfig(), features, std::move(logs))
     {
     }
 

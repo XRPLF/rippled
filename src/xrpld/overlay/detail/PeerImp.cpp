@@ -32,10 +32,12 @@
 #include <xrpld/overlay/detail/PeerImp.h>
 #include <xrpld/overlay/detail/Tuning.h>
 #include <xrpld/perflog/PerfLog.h>
+
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/basics/safe_cast.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/digest.h>
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -111,10 +113,7 @@ PeerImp::PeerImp(
           headers_,
           FEATURE_TXRR,
           app_.config().TX_REDUCE_RELAY_ENABLE))
-    , vpReduceRelayEnabled_(peerFeatureEnabled(
-          headers_,
-          FEATURE_VPRR,
-          app_.config().VP_REDUCE_RELAY_ENABLE))
+    , vpReduceRelayEnabled_(app_.config().VP_REDUCE_RELAY_ENABLE)
     , ledgerReplayEnabled_(peerFeatureEnabled(
           headers_,
           FEATURE_LEDGER_REPLAY,
@@ -132,7 +131,7 @@ PeerImp::PeerImp(
 
 PeerImp::~PeerImp()
 {
-    const bool inCluster{cluster()};
+    bool const inCluster{cluster()};
 
     overlay_.deletePeer(id_);
     overlay_.onPeerDeactivate(id_);
@@ -248,11 +247,21 @@ PeerImp::send(std::shared_ptr<Message> const& m)
 
     auto validator = m->getValidatorKey();
     if (validator && !squelch_.expireSquelch(*validator))
+    {
+        overlay_.reportOutboundTraffic(
+            TrafficCount::category::squelch_suppressed,
+            static_cast<int>(m->getBuffer(compressionEnabled_).size()));
         return;
+    }
 
-    overlay_.reportTraffic(
+    // report categorized outgoing traffic
+    overlay_.reportOutboundTraffic(
         safe_cast<TrafficCount::category>(m->getCategory()),
-        false,
+        static_cast<int>(m->getBuffer(compressionEnabled_).size()));
+
+    // report total outgoing traffic
+    overlay_.reportOutboundTraffic(
+        TrafficCount::category::total,
         static_cast<int>(m->getBuffer(compressionEnabled_).size()));
 
     auto sendq_size = send_queue_.size();
@@ -1013,8 +1022,17 @@ PeerImp::onMessageBegin(
     auto const name = protocolMessageName(type);
     load_event_ = app_.getJobQueue().makeLoadEvent(jtPEER, name);
     fee_ = {Resource::feeTrivialPeer, name};
-    auto const category = TrafficCount::categorize(*m, type, true);
-    overlay_.reportTraffic(category, true, static_cast<int>(size));
+
+    auto const category = TrafficCount::categorize(
+        *m, static_cast<protocol::MessageType>(type), true);
+
+    // report total incoming traffic
+    overlay_.reportInboundTraffic(
+        TrafficCount::category::total, static_cast<int>(size));
+
+    // increase the traffic received for a specific category
+    overlay_.reportInboundTraffic(category, static_cast<int>(size));
+
     using namespace protocol;
     if ((type == MessageType::mtTRANSACTION ||
          type == MessageType::mtHAVE_TRANSACTIONS ||
@@ -1253,8 +1271,8 @@ PeerImp::handleTransaction(
     {
         // If we've never been in synch, there's nothing we can do
         // with a transaction
-        JLOG(p_journal_.debug())
-            << "Ignoring incoming transaction: " << "Need network ledger";
+        JLOG(p_journal_.debug()) << "Ignoring incoming transaction: "
+                                 << "Need network ledger";
         return;
     }
 
@@ -1264,6 +1282,18 @@ PeerImp::handleTransaction(
     {
         auto stx = std::make_shared<STTx const>(sit);
         uint256 txID = stx->getTransactionID();
+
+        // Charge strongly for attempting to relay a txn with tfInnerBatchTxn
+        // LCOV_EXCL_START
+        if (stx->isFlag(tfInnerBatchTxn) &&
+            getCurrentTransactionRules()->enabled(featureBatch))
+        {
+            JLOG(p_journal_.warn()) << "Ignoring Network relayed Tx containing "
+                                       "tfInnerBatchTxn (handleTransaction).";
+            fee_.update(Resource::feeModerateBurdenPeer, "inner batch txn");
+            return;
+        }
+        // LCOV_EXCL_STOP
 
         int flags;
         constexpr std::chrono::seconds tx_interval = 10s;
@@ -1281,6 +1311,10 @@ PeerImp::handleTransaction(
             // seen this tx then the tx could not has been queued for this peer.
             else if (eraseTxQueue && txReduceRelayEnabled())
                 removeTxQueue(txID);
+
+            overlay_.reportInboundTraffic(
+                TrafficCount::category::transaction_duplicate,
+                Message::messageSize(*m));
 
             return;
         }
@@ -1669,8 +1703,16 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
     // If the operator has specified that untrusted proposals be dropped then
     // this happens here I.e. before further wasting CPU verifying the signature
     // of an untrusted key
-    if (!isTrusted && app_.config().RELAY_UNTRUSTED_PROPOSALS == -1)
-        return;
+    if (!isTrusted)
+    {
+        // report untrusted proposal messages
+        overlay_.reportInboundTraffic(
+            TrafficCount::category::proposal_untrusted,
+            Message::messageSize(*m));
+
+        if (app_.config().RELAY_UNTRUSTED_PROPOSALS == -1)
+            return;
+    }
 
     uint256 const proposeHash{set.currenttxhash()};
     uint256 const prevLedger{set.previousledger()};
@@ -1695,7 +1737,14 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
             (stopwatch().now() - *relayed) < reduce_relay::IDLED)
             overlay_.updateSlotAndSquelch(
                 suppression, publicKey, id_, protocol::mtPROPOSE_LEDGER);
+
+        // report duplicate proposal messages
+        overlay_.reportInboundTraffic(
+            TrafficCount::category::proposal_duplicate,
+            Message::messageSize(*m));
+
         JLOG(p_journal_.trace()) << "Proposal: duplicate";
+
         return;
     }
 
@@ -2309,17 +2358,26 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
         auto const isTrusted =
             app_.validators().trusted(val->getSignerPublic());
 
-        // If the operator has specified that untrusted validations be dropped
-        // then this happens here I.e. before further wasting CPU verifying the
-        // signature of an untrusted key
-        if (!isTrusted && app_.config().RELAY_UNTRUSTED_VALIDATIONS == -1)
-            return;
+        // If the operator has specified that untrusted validations be
+        // dropped then this happens here I.e. before further wasting CPU
+        // verifying the signature of an untrusted key
+        if (!isTrusted)
+        {
+            // increase untrusted validations received
+            overlay_.reportInboundTraffic(
+                TrafficCount::category::validation_untrusted,
+                Message::messageSize(*m));
+
+            if (app_.config().RELAY_UNTRUSTED_VALIDATIONS == -1)
+                return;
+        }
 
         auto key = sha512Half(makeSlice(m->validation()));
 
-        if (auto [added, relayed] =
-                app_.getHashRouter().addSuppressionPeerWithStatus(key, id_);
-            !added)
+        auto [added, relayed] =
+            app_.getHashRouter().addSuppressionPeerWithStatus(key, id_);
+
+        if (!added)
         {
             // Count unique messages (Slots has it's own 'HashRouter'), which a
             // peer receives within IDLED seconds since the message has been
@@ -2329,6 +2387,12 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
                 (stopwatch().now() - *relayed) < reduce_relay::IDLED)
                 overlay_.updateSlotAndSquelch(
                     key, val->getSignerPublic(), id_, protocol::mtVALIDATION);
+
+            // increase duplicate validations received
+            overlay_.reportInboundTraffic(
+                TrafficCount::category::validation_duplicate,
+                Message::messageSize(*m));
+
             JLOG(p_journal_.trace()) << "Validation: duplicate";
             return;
         }
@@ -2485,7 +2549,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
 
         for (int i = 0; i < packet.objects_size(); ++i)
         {
-            const protocol::TMIndexedObject& obj = packet.objects(i);
+            protocol::TMIndexedObject const& obj = packet.objects(i);
 
             if (obj.has_hash() && stringIsUint256Sized(obj.hash()))
             {
@@ -2651,16 +2715,6 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMSquelch> const& m)
     }
     PublicKey key(slice);
 
-    // Ignore non-validator squelch
-    if (!app_.validators().listed(key))
-    {
-        fee_.update(Resource::feeInvalidData, "squelch non-validator");
-        JLOG(p_journal_.debug())
-            << "onMessage: TMSquelch discarding non-validator squelch "
-            << slice;
-        return;
-    }
-
     // Ignore the squelch for validator's own messages.
     if (key == app_.getValidationPublicKey())
     {
@@ -2699,7 +2753,7 @@ PeerImp::addLedger(
 }
 
 void
-PeerImp::doFetchPack(const std::shared_ptr<protocol::TMGetObjectByHash>& packet)
+PeerImp::doFetchPack(std::shared_ptr<protocol::TMGetObjectByHash> const& packet)
 {
     // VFALCO TODO Invert this dependency using an observer and shared state
     // object. Don't queue fetch pack jobs if we're under load or we already
@@ -2797,6 +2851,18 @@ PeerImp::checkTransaction(
     // VFALCO TODO Rewrite to not use exceptions
     try
     {
+        // charge strongly for relaying batch txns
+        // LCOV_EXCL_START
+        if (stx->isFlag(tfInnerBatchTxn) &&
+            getCurrentTransactionRules()->enabled(featureBatch))
+        {
+            JLOG(p_journal_.warn()) << "Ignoring Network relayed Tx containing "
+                                       "tfInnerBatchTxn (checkSignature).";
+            charge(Resource::feeModerateBurdenPeer, "inner batch txn");
+            return;
+        }
+        // LCOV_EXCL_STOP
+
         // Expired?
         if (stx->isFieldPresent(sfLastLedgerSequence) &&
             (stx->getFieldU32(sfLastLedgerSequence) <
@@ -3400,19 +3466,19 @@ PeerImp::getScore(bool haveItem) const
 {
     // Random component of score, used to break ties and avoid
     // overloading the "best" peer
-    static const int spRandomMax = 9999;
+    static int const spRandomMax = 9999;
 
     // Score for being very likely to have the thing we are
     // look for; should be roughly spRandomMax
-    static const int spHaveItem = 10000;
+    static int const spHaveItem = 10000;
 
     // Score reduction for each millisecond of latency; should
     // be roughly spRandomMax divided by the maximum reasonable
     // latency
-    static const int spLatency = 30;
+    static int const spLatency = 30;
 
     // Penalty for unknown latency; should be roughly spRandomMax
-    static const int spNoLatency = 8000;
+    static int const spNoLatency = 8000;
 
     int score = rand_int(spRandomMax);
 

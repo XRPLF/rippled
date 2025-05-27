@@ -21,6 +21,7 @@
 #include <xrpld/app/misc/AmendmentTable.h>
 #include <xrpld/app/rdb/Wallet.h>
 #include <xrpld/core/ConfigSections.h>
+
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -30,6 +31,7 @@
 #include <boost/format.hpp>
 #include <boost/range/adaptor/transformed.hpp>
 #include <boost/regex.hpp>
+
 #include <algorithm>
 #include <mutex>
 
@@ -996,8 +998,8 @@ AmendmentTableImpl::trustChanged(hash_set<PublicKey> const& allTrusted)
 void
 AmendmentTableImpl::injectJson(
     Json::Value& v,
-    const uint256& id,
-    const AmendmentState& fs,
+    uint256 const& id,
+    AmendmentState const& fs,
     bool isAdmin,
     std::lock_guard<std::mutex> const&) const
 {

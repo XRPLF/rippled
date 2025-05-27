@@ -22,6 +22,7 @@
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/protocol/Issue.h>
+
 #include <boost/utility/base_from_member.hpp>
 
 namespace ripple {
@@ -103,7 +104,7 @@ private:
         boost::base_from_member<std::hash<ripple::AccountID>, 1>;
 
 public:
-    explicit hash() = default;
+    hash() = default;
 
     using value_type = std::size_t;
     using argument_type = ripple::Issue;
@@ -130,7 +131,7 @@ private:
     hasher m_hasher;
 
 public:
-    explicit hash() = default;
+    hash() = default;
 
     using value_type = std::size_t;
     using argument_type = ripple::Book;
@@ -153,7 +154,7 @@ namespace boost {
 template <>
 struct hash<ripple::Issue> : std::hash<ripple::Issue>
 {
-    explicit hash() = default;
+    hash() = default;
 
     using Base = std::hash<ripple::Issue>;
     // VFALCO NOTE broken in vs2012
@@ -163,7 +164,7 @@ struct hash<ripple::Issue> : std::hash<ripple::Issue>
 template <>
 struct hash<ripple::Book> : std::hash<ripple::Book>
 {
-    explicit hash() = default;
+    hash() = default;
 
     using Base = std::hash<ripple::Book>;
     // VFALCO NOTE broken in vs2012

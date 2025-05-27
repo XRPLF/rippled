@@ -19,18 +19,17 @@
 
 #include <xrpld/app/tx/detail/ApplyContext.h>
 #include <xrpld/app/tx/detail/InvariantCheck.h>
-#include <xrpld/app/tx/detail/Transactor.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/json/to_string.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Indexes.h>
 
 namespace ripple {
 
 ApplyContext::ApplyContext(
     Application& app_,
     OpenView& base,
+    std::optional<uint256 const> const& parentBatchId,
     STTx const& tx_,
     TER preclaimResult_,
     XRPAmount baseFee_,
@@ -43,7 +42,11 @@ ApplyContext::ApplyContext(
     , journal(journal_)
     , base_(base)
     , flags_(flags)
+    , parentBatchId_(parentBatchId)
 {
+    XRPL_ASSERT(
+        parentBatchId.has_value() == ((flags_ & tapBATCH) == tapBATCH),
+        "Parent Batch ID should be set if batch apply flag is set");
     view_.emplace(&base_, flags_);
 }
 
@@ -56,7 +59,8 @@ ApplyContext::discard()
 std::optional<TxMeta>
 ApplyContext::apply(TER ter)
 {
-    return view_->apply(base_, tx, ter, flags_ & tapDRY_RUN, journal);
+    return view_->apply(
+        base_, tx, ter, parentBatchId_, flags_ & tapDRY_RUN, journal);
 }
 
 std::size_t

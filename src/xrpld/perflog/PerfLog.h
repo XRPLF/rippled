@@ -22,8 +22,11 @@
 
 #include <xrpld/core/Config.h>
 #include <xrpld/core/JobTypes.h>
+
 #include <xrpl/json/json_value.h>
+
 #include <boost/filesystem.hpp>
+
 #include <chrono>
 #include <cstdint>
 #include <functional>
@@ -183,9 +186,9 @@ template <typename Func, class Rep, class Period>
 auto
 measureDurationAndLog(
     Func&& func,
-    const std::string& actionDescription,
+    std::string const& actionDescription,
     std::chrono::duration<Rep, Period> maxDelay,
-    const beast::Journal& journal)
+    beast::Journal const& journal)
 {
     auto start_time = std::chrono::high_resolution_clock::now();
 
