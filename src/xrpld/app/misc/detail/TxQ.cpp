@@ -323,7 +323,7 @@ TxQ::TxQAccount::TxQAccount(std::shared_ptr<STTx const> const& txn)
 {
 }
 
-TxQ::TxQAccount::TxQAccount(const AccountID& account_) : account(account_)
+TxQ::TxQAccount::TxQAccount(AccountID const& account_) : account(account_)
 {
 }
 
@@ -737,6 +737,13 @@ TxQ::apply(
     STAmountSO stAmountSO{view.rules().enabled(fixSTAmountCanonicalize)};
     NumberSO stNumberSO{view.rules().enabled(fixUniversalNumber)};
 
+    // See if the transaction is valid, properly formed,
+    // etc. before doing potentially expensive queue
+    // replace and multi-transaction operations.
+    auto const pfresult = preflight(app, view.rules(), *tx, flags, j);
+    if (pfresult.ter != tesSUCCESS)
+        return {pfresult.ter, false};
+
     // See if the transaction paid a high enough fee that it can go straight
     // into the ledger.
     if (auto directApplied = tryDirectApply(app, view, tx, flags, j))
@@ -748,13 +755,6 @@ TxQ::apply(
     //  o We will decide the transaction is unlikely to claim a fee.
     //  o The transaction paid a high enough fee that fee averaging will apply.
     //  o The transaction will be queued.
-
-    // See if the transaction is valid, properly formed,
-    // etc. before doing potentially expensive queue
-    // replace and multi-transaction operations.
-    auto const pfresult = preflight(app, view.rules(), *tx, flags, j);
-    if (pfresult.ter != tesSUCCESS)
-        return {pfresult.ter, false};
 
     // If the account is not currently in the ledger, don't queue its tx.
     auto const account = (*tx)[sfAccount];
@@ -1504,11 +1504,11 @@ TxQ::accept(Application& app, OpenView& view)
             }
             else
             {
-                JLOG(j_.debug())
-                    << "Queued transaction " << candidateIter->txID
-                    << " failed with " << transToken(txnResult)
-                    << ". Leave in queue." << " Applied: " << didApply
-                    << ". Flags: " << candidateIter->flags;
+                JLOG(j_.debug()) << "Queued transaction " << candidateIter->txID
+                                 << " failed with " << transToken(txnResult)
+                                 << ". Leave in queue."
+                                 << " Applied: " << didApply
+                                 << ". Flags: " << candidateIter->flags;
                 if (account.retryPenalty && candidateIter->retriesRemaining > 2)
                     candidateIter->retriesRemaining = 1;
                 else

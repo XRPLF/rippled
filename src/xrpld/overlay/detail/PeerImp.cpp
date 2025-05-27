@@ -37,6 +37,7 @@
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/basics/safe_cast.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/digest.h>
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -112,10 +113,7 @@ PeerImp::PeerImp(
           headers_,
           FEATURE_TXRR,
           app_.config().TX_REDUCE_RELAY_ENABLE))
-    , vpReduceRelayEnabled_(peerFeatureEnabled(
-          headers_,
-          FEATURE_VPRR,
-          app_.config().VP_REDUCE_RELAY_ENABLE))
+    , vpReduceRelayEnabled_(app_.config().VP_REDUCE_RELAY_ENABLE)
     , ledgerReplayEnabled_(peerFeatureEnabled(
           headers_,
           FEATURE_LEDGER_REPLAY,
@@ -133,7 +131,7 @@ PeerImp::PeerImp(
 
 PeerImp::~PeerImp()
 {
-    const bool inCluster{cluster()};
+    bool const inCluster{cluster()};
 
     overlay_.deletePeer(id_);
     overlay_.onPeerDeactivate(id_);
@@ -1273,8 +1271,8 @@ PeerImp::handleTransaction(
     {
         // If we've never been in synch, there's nothing we can do
         // with a transaction
-        JLOG(p_journal_.debug())
-            << "Ignoring incoming transaction: " << "Need network ledger";
+        JLOG(p_journal_.debug()) << "Ignoring incoming transaction: "
+                                 << "Need network ledger";
         return;
     }
 
@@ -1284,6 +1282,18 @@ PeerImp::handleTransaction(
     {
         auto stx = std::make_shared<STTx const>(sit);
         uint256 txID = stx->getTransactionID();
+
+        // Charge strongly for attempting to relay a txn with tfInnerBatchTxn
+        // LCOV_EXCL_START
+        if (stx->isFlag(tfInnerBatchTxn) &&
+            getCurrentTransactionRules()->enabled(featureBatch))
+        {
+            JLOG(p_journal_.warn()) << "Ignoring Network relayed Tx containing "
+                                       "tfInnerBatchTxn (handleTransaction).";
+            fee_.update(Resource::feeModerateBurdenPeer, "inner batch txn");
+            return;
+        }
+        // LCOV_EXCL_STOP
 
         int flags;
         constexpr std::chrono::seconds tx_interval = 10s;
@@ -2539,7 +2549,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMGetObjectByHash> const& m)
 
         for (int i = 0; i < packet.objects_size(); ++i)
         {
-            const protocol::TMIndexedObject& obj = packet.objects(i);
+            protocol::TMIndexedObject const& obj = packet.objects(i);
 
             if (obj.has_hash() && stringIsUint256Sized(obj.hash()))
             {
@@ -2705,16 +2715,6 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMSquelch> const& m)
     }
     PublicKey key(slice);
 
-    // Ignore non-validator squelch
-    if (!app_.validators().listed(key))
-    {
-        fee_.update(Resource::feeInvalidData, "squelch non-validator");
-        JLOG(p_journal_.debug())
-            << "onMessage: TMSquelch discarding non-validator squelch "
-            << slice;
-        return;
-    }
-
     // Ignore the squelch for validator's own messages.
     if (key == app_.getValidationPublicKey())
     {
@@ -2753,7 +2753,7 @@ PeerImp::addLedger(
 }
 
 void
-PeerImp::doFetchPack(const std::shared_ptr<protocol::TMGetObjectByHash>& packet)
+PeerImp::doFetchPack(std::shared_ptr<protocol::TMGetObjectByHash> const& packet)
 {
     // VFALCO TODO Invert this dependency using an observer and shared state
     // object. Don't queue fetch pack jobs if we're under load or we already
@@ -2851,6 +2851,18 @@ PeerImp::checkTransaction(
     // VFALCO TODO Rewrite to not use exceptions
     try
     {
+        // charge strongly for relaying batch txns
+        // LCOV_EXCL_START
+        if (stx->isFlag(tfInnerBatchTxn) &&
+            getCurrentTransactionRules()->enabled(featureBatch))
+        {
+            JLOG(p_journal_.warn()) << "Ignoring Network relayed Tx containing "
+                                       "tfInnerBatchTxn (checkSignature).";
+            charge(Resource::feeModerateBurdenPeer, "inner batch txn");
+            return;
+        }
+        // LCOV_EXCL_STOP
+
         // Expired?
         if (stx->isFieldPresent(sfLastLedgerSequence) &&
             (stx->getFieldU32(sfLastLedgerSequence) <
@@ -3454,19 +3466,19 @@ PeerImp::getScore(bool haveItem) const
 {
     // Random component of score, used to break ties and avoid
     // overloading the "best" peer
-    static const int spRandomMax = 9999;
+    static int const spRandomMax = 9999;
 
     // Score for being very likely to have the thing we are
     // look for; should be roughly spRandomMax
-    static const int spHaveItem = 10000;
+    static int const spHaveItem = 10000;
 
     // Score reduction for each millisecond of latency; should
     // be roughly spRandomMax divided by the maximum reasonable
     // latency
-    static const int spLatency = 30;
+    static int const spLatency = 30;
 
     // Penalty for unknown latency; should be roughly spRandomMax
-    static const int spNoLatency = 8000;
+    static int const spNoLatency = 8000;
 
     int score = rand_int(spRandomMax);
 
