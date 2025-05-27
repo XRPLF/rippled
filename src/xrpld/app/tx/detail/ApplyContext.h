@@ -83,6 +83,13 @@ public:
         view_->deliver(amount);
     }
 
+    /** Sets the gas used in the metadata */
+    void
+    setGasUsed(std::uint32_t const& gasUsed)
+    {
+        view_->setGasUsed(gasUsed);
+    }
+
     /** Discard changes and start fresh. */
     void
     discard();

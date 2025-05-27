@@ -130,6 +130,26 @@ public:
         return static_cast<bool>(mDelivered);
     }
 
+    void
+    setGasUsed(std::uint32_t const& gasUsed)
+    {
+        gasUsed_ = gasUsed;
+    }
+
+    std::uint32_t
+    getGasUsed() const
+    {
+        XRPL_ASSERT(
+            hasGasUsed(), "ripple::TxMeta::getGasUsed : non-null batch id");
+        return *gasUsed_;
+    }
+
+    bool
+    hasGasUsed() const
+    {
+        return static_cast<bool>(gasUsed_);
+    }
+
 private:
     uint256 mTransactionID;
     std::uint32_t mLedger;
@@ -137,6 +157,7 @@ private:
     int mResult;
 
     std::optional<STAmount> mDelivered;
+    std::optional<std::uint32_t> gasUsed_;
 
     STArray mNodes;
 };

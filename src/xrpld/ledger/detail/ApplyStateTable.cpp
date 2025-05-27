@@ -116,6 +116,7 @@ ApplyStateTable::apply(
     STTx const& tx,
     TER ter,
     std::optional<STAmount> const& deliver,
+    std::optional<std::uint32_t> const& gasUsed,
     bool isDryRun,
     beast::Journal j)
 {
@@ -129,6 +130,8 @@ ApplyStateTable::apply(
         TxMeta meta(tx.getTransactionID(), to.seq());
         if (deliver)
             meta.setDeliveredAmount(*deliver);
+        if (gasUsed)
+            meta.setGasUsed(*gasUsed);
         Mods newMod;
         for (auto& item : items_)
         {
