@@ -21,6 +21,7 @@
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/overlay/Overlay.h>
+
 #include <xrpl/basics/FileUtilities.h>
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/StringUtilities.h>
@@ -31,6 +32,7 @@
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/protocol/messages.h>
+
 #include <boost/regex.hpp>
 
 #include <cmath>
@@ -113,7 +115,7 @@ ValidatorList::MessageWithHash::MessageWithHash(
 {
 }
 
-const std::string ValidatorList::filePrefix_ = "cache.";
+std::string const ValidatorList::filePrefix_ = "cache.";
 
 ValidatorList::ValidatorList(
     ManifestCache& validatorManifests,

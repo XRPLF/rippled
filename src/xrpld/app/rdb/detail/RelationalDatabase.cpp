@@ -34,7 +34,7 @@ RelationalDatabase::init(
 {
     bool use_sqlite = false;
 
-    const Section& rdb_section{config.section(SECTION_RELATIONAL_DB)};
+    Section const& rdb_section{config.section(SECTION_RELATIONAL_DB)};
     if (!rdb_section.empty())
     {
         if (boost::iequals(get(rdb_section, "backend"), "sqlite"))

@@ -30,17 +30,20 @@
 #include <xrpld/overlay/detail/TxMetrics.h>
 #include <xrpld/peerfinder/PeerfinderManager.h>
 #include <xrpld/rpc/ServerHandler.h>
+
 #include <xrpl/basics/Resolver.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/resource/ResourceManager.h>
 #include <xrpl/server/Handoff.h>
+
 #include <boost/asio/basic_waitable_timer.hpp>
 #include <boost/asio/ip/tcp.hpp>
 #include <boost/asio/ssl/context.hpp>
 #include <boost/asio/strand.hpp>
 #include <boost/container/flat_map.hpp>
+
 #include <atomic>
 #include <chrono>
 #include <condition_variable>
@@ -342,7 +345,10 @@ public:
     makePrefix(std::uint32_t id);
 
     void
-    reportTraffic(TrafficCount::category cat, bool isInbound, int bytes);
+    reportInboundTraffic(TrafficCount::category cat, int bytes);
+
+    void
+    reportOutboundTraffic(TrafficCount::category cat, int bytes);
 
     void
     incJqTransOverflow() override
@@ -558,14 +564,16 @@ private:
     struct TrafficGauges
     {
         TrafficGauges(
-            char const* name,
+            std::string const& name,
             beast::insight::Collector::ptr const& collector)
-            : bytesIn(collector->make_gauge(name, "Bytes_In"))
+            : name(name)
+            , bytesIn(collector->make_gauge(name, "Bytes_In"))
             , bytesOut(collector->make_gauge(name, "Bytes_Out"))
             , messagesIn(collector->make_gauge(name, "Messages_In"))
             , messagesOut(collector->make_gauge(name, "Messages_Out"))
         {
         }
+        std::string const name;
         beast::insight::Gauge bytesIn;
         beast::insight::Gauge bytesOut;
         beast::insight::Gauge messagesIn;
@@ -578,7 +586,8 @@ private:
         Stats(
             Handler const& handler,
             beast::insight::Collector::ptr const& collector,
-            std::vector<TrafficGauges>&& trafficGauges_)
+            std::unordered_map<TrafficCount::category, TrafficGauges>&&
+                trafficGauges_)
             : peerDisconnects(
                   collector->make_gauge("Overlay", "Peer_Disconnects"))
             , trafficGauges(std::move(trafficGauges_))
@@ -587,7 +596,7 @@ private:
         }
 
         beast::insight::Gauge peerDisconnects;
-        std::vector<TrafficGauges> trafficGauges;
+        std::unordered_map<TrafficCount::category, TrafficGauges> trafficGauges;
         beast::insight::Hook hook;
     };
 
@@ -604,13 +613,25 @@ private:
             counts.size() == m_stats.trafficGauges.size(),
             "ripple::OverlayImpl::collect_metrics : counts size do match");
 
-        for (std::size_t i = 0; i < counts.size(); ++i)
+        for (auto const& [key, value] : counts)
         {
-            m_stats.trafficGauges[i].bytesIn = counts[i].bytesIn;
-            m_stats.trafficGauges[i].bytesOut = counts[i].bytesOut;
-            m_stats.trafficGauges[i].messagesIn = counts[i].messagesIn;
-            m_stats.trafficGauges[i].messagesOut = counts[i].messagesOut;
+            auto it = m_stats.trafficGauges.find(key);
+            if (it == m_stats.trafficGauges.end())
+                continue;
+
+            auto& gauge = it->second;
+
+            XRPL_ASSERT(
+                gauge.name == value.name,
+                "ripple::OverlayImpl::collect_metrics : gauge and counter "
+                "match");
+
+            gauge.bytesIn = value.bytesIn;
+            gauge.bytesOut = value.bytesOut;
+            gauge.messagesIn = value.messagesIn;
+            gauge.messagesOut = value.messagesOut;
         }
+
         m_stats.peerDisconnects = getPeerDisconnect();
     }
 };

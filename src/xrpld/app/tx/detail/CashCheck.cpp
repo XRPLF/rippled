@@ -20,11 +20,11 @@
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/paths/Flow.h>
 #include <xrpld/app/tx/detail/CashCheck.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/scope.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/STAccount.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 
@@ -212,7 +212,7 @@ CashCheck::preclaim(PreclaimContext const& ctx)
                 if (!sleTrustLine)
                 {
                     // We can only create a trust line if the issuer does not
-                    // have requireAuth set.
+                    // have lsfRequireAuth set.
                     return tecNO_AUTH;
                 }
 

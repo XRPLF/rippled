@@ -22,11 +22,11 @@
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/Job.h>
-#include <xrpl/beast/clock/abstract_clock.h>
+
 #include <xrpl/beast/utility/Journal.h>
-#include <xrpl/beast/utility/WrappedSink.h>
 
 #include <boost/asio/basic_waitable_timer.hpp>
+
 #include <mutex>
 
 namespace ripple {
@@ -123,7 +123,6 @@ protected:
     // Used in this class for access to boost::asio::io_service and
     // ripple::Overlay. Used in subtypes for the kitchen sink.
     Application& app_;
-    beast::WrappedSink sink_;
     beast::Journal journal_;
     mutable std::recursive_mutex mtx_;
 

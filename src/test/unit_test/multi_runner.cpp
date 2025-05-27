@@ -577,6 +577,16 @@ multi_runner_child::on_suite_begin(beast::unit_test::suite_info const& info)
 void
 multi_runner_child::on_suite_end()
 {
+    if (print_log_ || suite_results_.failed > 0)
+    {
+        std::stringstream s;
+        if (num_jobs_ > 1)
+            s << job_index_ << "> ";
+        s << (suite_results_.failed > 0 ? "failed: " : "")
+          << suite_results_.name << " had " << suite_results_.failed
+          << " failures." << std::endl;
+        message_queue_send(MessageType::log, s.str());
+    }
     results_.add(suite_results_);
     message_queue_send(MessageType::test_end, suite_results_.name);
 }

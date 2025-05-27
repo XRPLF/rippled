@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/overlay/detail/ProtocolVersion.h>
+
 #include <xrpl/beast/unit_test.h>
 
 namespace ripple {
@@ -87,8 +88,8 @@ public:
                 negotiateProtocolVersion("XRPL/2.2") == make_protocol(2, 2));
             BEAST_EXPECT(
                 negotiateProtocolVersion(
-                    "RTXP/1.2, XRPL/2.2, XRPL/2.3, XRPL/2.4, XRPL/999.999") ==
-                make_protocol(2, 3));
+                    "RTXP/1.2, XRPL/2.2, XRPL/2.3, XRPL/999.999") ==
+                make_protocol(2, 2));
             BEAST_EXPECT(
                 negotiateProtocolVersion("XRPL/999.999, WebSocket/1.0") ==
                 std::nullopt);

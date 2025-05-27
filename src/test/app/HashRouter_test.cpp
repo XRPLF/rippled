@@ -18,6 +18,8 @@
 //==============================================================================
 
 #include <xrpld/app/misc/HashRouter.h>
+#include <xrpld/core/Config.h>
+
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/unit_test.h>
 
@@ -26,12 +28,22 @@ namespace test {
 
 class HashRouter_test : public beast::unit_test::suite
 {
+    HashRouter::Setup
+    getSetup(std::chrono::seconds hold, std::chrono::seconds relay)
+    {
+        HashRouter::Setup setup;
+        setup.holdTime = hold;
+        setup.relayTime = relay;
+        return setup;
+    }
+
     void
     testNonExpiration()
     {
+        testcase("Non-expiration");
         using namespace std::chrono_literals;
         TestStopwatch stopwatch;
-        HashRouter router(stopwatch, 2s);
+        HashRouter router(getSetup(2s, 1s), stopwatch);
 
         uint256 const key1(1);
         uint256 const key2(2);
@@ -66,9 +78,10 @@ class HashRouter_test : public beast::unit_test::suite
     void
     testExpiration()
     {
+        testcase("Expiration");
         using namespace std::chrono_literals;
         TestStopwatch stopwatch;
-        HashRouter router(stopwatch, 2s);
+        HashRouter router(getSetup(2s, 1s), stopwatch);
 
         uint256 const key1(1);
         uint256 const key2(2);
@@ -143,10 +156,11 @@ class HashRouter_test : public beast::unit_test::suite
     void
     testSuppression()
     {
+        testcase("Suppression");
         // Normal HashRouter
         using namespace std::chrono_literals;
         TestStopwatch stopwatch;
-        HashRouter router(stopwatch, 2s);
+        HashRouter router(getSetup(2s, 1s), stopwatch);
 
         uint256 const key1(1);
         uint256 const key2(2);
@@ -172,9 +186,10 @@ class HashRouter_test : public beast::unit_test::suite
     void
     testSetFlags()
     {
+        testcase("Set Flags");
         using namespace std::chrono_literals;
         TestStopwatch stopwatch;
-        HashRouter router(stopwatch, 2s);
+        HashRouter router(getSetup(2s, 1s), stopwatch);
 
         uint256 const key1(1);
         BEAST_EXPECT(router.setFlags(key1, 10));
@@ -185,9 +200,10 @@ class HashRouter_test : public beast::unit_test::suite
     void
     testRelay()
     {
+        testcase("Relay");
         using namespace std::chrono_literals;
         TestStopwatch stopwatch;
-        HashRouter router(stopwatch, 1s);
+        HashRouter router(getSetup(50s, 1s), stopwatch);
 
         uint256 const key1(1);
 
@@ -228,9 +244,10 @@ class HashRouter_test : public beast::unit_test::suite
     void
     testProcess()
     {
+        testcase("Process");
         using namespace std::chrono_literals;
         TestStopwatch stopwatch;
-        HashRouter router(stopwatch, 5s);
+        HashRouter router(getSetup(5s, 1s), stopwatch);
         uint256 const key(1);
         HashRouter::PeerShortID peer = 1;
         int flags;
@@ -243,30 +260,108 @@ class HashRouter_test : public beast::unit_test::suite
     }
 
     void
-    testProcessPeer()
+    testSetup()
     {
-        using namespace std::chrono_literals;
-        TestStopwatch stopwatch;
-        HashRouter router(stopwatch, 5s);
-        uint256 const key(1);
-        HashRouter::PeerShortID peer1 = 1;
-        HashRouter::PeerShortID peer2 = 2;
-        auto const timeout = 2s;
+        testcase("setup_HashRouter");
 
-        BEAST_EXPECT(router.shouldProcessForPeer(key, peer1, timeout));
-        BEAST_EXPECT(!router.shouldProcessForPeer(key, peer1, timeout));
-        ++stopwatch;
-        BEAST_EXPECT(!router.shouldProcessForPeer(key, peer1, timeout));
-        BEAST_EXPECT(router.shouldProcessForPeer(key, peer2, timeout));
-        BEAST_EXPECT(!router.shouldProcessForPeer(key, peer2, timeout));
-        ++stopwatch;
-        BEAST_EXPECT(router.shouldProcessForPeer(key, peer1, timeout));
-        BEAST_EXPECT(!router.shouldProcessForPeer(key, peer2, timeout));
-        ++stopwatch;
-        BEAST_EXPECT(router.shouldProcessForPeer(key, peer2, timeout));
-        ++stopwatch;
-        BEAST_EXPECT(router.shouldProcessForPeer(key, peer1, timeout));
-        BEAST_EXPECT(!router.shouldProcessForPeer(key, peer2, timeout));
+        using namespace std::chrono_literals;
+        {
+            Config cfg;
+            // default
+            auto const setup = setup_HashRouter(cfg);
+            BEAST_EXPECT(setup.holdTime == 300s);
+            BEAST_EXPECT(setup.relayTime == 30s);
+        }
+        {
+            Config cfg;
+            // non-default
+            auto& h = cfg.section("hashrouter");
+            h.set("hold_time", "600");
+            h.set("relay_time", "15");
+            auto const setup = setup_HashRouter(cfg);
+            BEAST_EXPECT(setup.holdTime == 600s);
+            BEAST_EXPECT(setup.relayTime == 15s);
+        }
+        {
+            Config cfg;
+            // equal
+            auto& h = cfg.section("hashrouter");
+            h.set("hold_time", "400");
+            h.set("relay_time", "400");
+            auto const setup = setup_HashRouter(cfg);
+            BEAST_EXPECT(setup.holdTime == 400s);
+            BEAST_EXPECT(setup.relayTime == 400s);
+        }
+        {
+            Config cfg;
+            // wrong order
+            auto& h = cfg.section("hashrouter");
+            h.set("hold_time", "60");
+            h.set("relay_time", "120");
+            try
+            {
+                setup_HashRouter(cfg);
+                fail();
+            }
+            catch (std::exception const& e)
+            {
+                std::string expected =
+                    "HashRouter relay time must be less than or equal to hold "
+                    "time";
+                BEAST_EXPECT(e.what() == expected);
+            }
+        }
+        {
+            Config cfg;
+            // too small hold
+            auto& h = cfg.section("hashrouter");
+            h.set("hold_time", "10");
+            h.set("relay_time", "120");
+            try
+            {
+                setup_HashRouter(cfg);
+                fail();
+            }
+            catch (std::exception const& e)
+            {
+                std::string expected =
+                    "HashRouter hold time must be at least 12 seconds (the "
+                    "approximate validation time for three "
+                    "ledgers).";
+                BEAST_EXPECT(e.what() == expected);
+            }
+        }
+        {
+            Config cfg;
+            // too small relay
+            auto& h = cfg.section("hashrouter");
+            h.set("hold_time", "500");
+            h.set("relay_time", "6");
+            try
+            {
+                setup_HashRouter(cfg);
+                fail();
+            }
+            catch (std::exception const& e)
+            {
+                std::string expected =
+                    "HashRouter relay time must be at least 8 seconds (the "
+                    "approximate validation time for two ledgers).";
+                BEAST_EXPECT(e.what() == expected);
+            }
+        }
+        {
+            Config cfg;
+            // garbage
+            auto& h = cfg.section("hashrouter");
+            h.set("hold_time", "alice");
+            h.set("relay_time", "bob");
+            auto const setup = setup_HashRouter(cfg);
+            // The set function ignores values that don't covert, so the
+            // defaults are left unchanged
+            BEAST_EXPECT(setup.holdTime == 300s);
+            BEAST_EXPECT(setup.relayTime == 30s);
+        }
     }
 
 public:
@@ -279,7 +374,7 @@ public:
         testSetFlags();
         testRelay();
         testProcess();
-        testProcessPeer();
+        testSetup();
     }
 };
 

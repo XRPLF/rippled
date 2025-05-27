@@ -17,9 +17,21 @@
 */
 //==============================================================================
 
+#include <xrpl/basics/Buffer.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/Zero.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAccount.h>
+#include <xrpl/protocol/STBase.h>
+#include <xrpl/protocol/Serializer.h>
 
 #include <cstring>
+#include <stdexcept>
+#include <string>
+#include <utility>
 
 namespace ripple {
 
@@ -94,7 +106,7 @@ STAccount::add(Serializer& s) const
 }
 
 bool
-STAccount::isEquivalent(const STBase& t) const
+STAccount::isEquivalent(STBase const& t) const
 {
     auto const* const tPtr = dynamic_cast<STAccount const*>(&t);
     return tPtr && (default_ == tPtr->default_) && (value_ == tPtr->value_);

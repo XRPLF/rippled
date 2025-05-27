@@ -24,11 +24,10 @@
 #include <xrpld/app/ledger/detail/LedgerReplayMsgHandler.h>
 #include <xrpld/overlay/Squelch.h>
 #include <xrpld/overlay/detail/OverlayImpl.h>
-#include <xrpld/overlay/detail/ProtocolMessage.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
 #include <xrpld/peerfinder/PeerfinderManager.h>
+
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/RangeSet.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/beast/utility/WrappedSink.h>
 #include <xrpl/protocol/Protocol.h>
@@ -39,6 +38,7 @@
 #include <boost/circular_buffer.hpp>
 #include <boost/endian/conversion.hpp>
 #include <boost/thread/shared_mutex.hpp>
+
 #include <cstdint>
 #include <optional>
 #include <queue>
@@ -154,7 +154,8 @@ private:
         update(Resource::Charge f, std::string const& add)
         {
             XRPL_ASSERT(
-                f >= fee, "ripple::PeerImp::ChargeWithContext fee increases");
+                f >= fee,
+                "ripple::PeerImp::ChargeWithContext::update : fee increases");
             fee = f;
             if (!context.empty())
             {
@@ -194,15 +195,6 @@ private:
     bool vpReduceRelayEnabled_ = false;
     bool ledgerReplayEnabled_ = false;
     LedgerReplayMsgHandler ledgerReplayMsgHandler_;
-
-    // Track message requests and responses
-    // TODO: Use an expiring cache or something
-    using MessageCookieMap =
-        std::map<uint256, std::set<std::optional<uint64_t>>>;
-    using PeerCookieMap =
-        std::map<std::shared_ptr<Peer>, std::set<std::optional<uint64_t>>>;
-    std::mutex mutable cookieLock_;
-    MessageCookieMap messageRequestCookies_;
 
     friend class OverlayImpl;
 
@@ -450,13 +442,6 @@ public:
         return txReduceRelayEnabled_;
     }
 
-    //
-    // Messages
-    //
-
-    std::set<std::optional<uint64_t>>
-    releaseRequestCookies(uint256 const& requestHash) override;
-
 private:
     void
     close();
@@ -617,7 +602,7 @@ private:
         std::lock_guard<std::mutex> const& lockedRecentLock);
 
     void
-    doFetchPack(const std::shared_ptr<protocol::TMGetObjectByHash>& packet);
+    doFetchPack(std::shared_ptr<protocol::TMGetObjectByHash> const& packet);
 
     void
     onValidatorListMessage(
@@ -655,28 +640,16 @@ private:
     void
     sendLedgerBase(
         std::shared_ptr<Ledger const> const& ledger,
-        protocol::TMLedgerData& ledgerData,
-        PeerCookieMap const& destinations);
-
-    void
-    sendToMultiple(
-        protocol::TMLedgerData& ledgerData,
-        PeerCookieMap const& destinations);
+        protocol::TMLedgerData& ledgerData);
 
     std::shared_ptr<Ledger const>
-    getLedger(
-        std::shared_ptr<protocol::TMGetLedger> const& m,
-        uint256 const& mHash);
+    getLedger(std::shared_ptr<protocol::TMGetLedger> const& m);
 
     std::shared_ptr<SHAMap const>
-    getTxSet(
-        std::shared_ptr<protocol::TMGetLedger> const& m,
-        uint256 const& mHash) const;
+    getTxSet(std::shared_ptr<protocol::TMGetLedger> const& m) const;
 
     void
-    processLedgerRequest(
-        std::shared_ptr<protocol::TMGetLedger> const& m,
-        uint256 const& mHash);
+    processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m);
 };
 
 //------------------------------------------------------------------------------
@@ -732,10 +705,7 @@ PeerImp::PeerImp(
           headers_,
           FEATURE_TXRR,
           app_.config().TX_REDUCE_RELAY_ENABLE))
-    , vpReduceRelayEnabled_(peerFeatureEnabled(
-          headers_,
-          FEATURE_VPRR,
-          app_.config().VP_REDUCE_RELAY_ENABLE))
+    , vpReduceRelayEnabled_(app_.config().VP_REDUCE_RELAY_ENABLE)
     , ledgerReplayEnabled_(peerFeatureEnabled(
           headers_,
           FEATURE_LEDGER_REPLAY,

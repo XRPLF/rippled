@@ -23,13 +23,12 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
-#include <xrpld/ledger/CachedSLEs.h>
 #include <xrpld/nodestore/Database.h>
 #include <xrpld/rpc/Context.h>
+
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
-#include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
 
 namespace ripple {
@@ -38,7 +37,7 @@ static void
 textTime(
     std::string& text,
     UptimeClock::time_point& seconds,
-    const char* unitName,
+    char const* unitName,
     std::chrono::seconds unitVal)
 {
     auto i = seconds.time_since_epoch() / unitVal;

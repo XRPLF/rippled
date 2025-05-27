@@ -24,7 +24,9 @@
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/PeerSet.h>
+
 #include <xrpl/basics/CountedObject.h>
+
 #include <mutex>
 #include <set>
 #include <utility>
@@ -195,25 +197,6 @@ private:
     bool mReceiveDispatched;
     std::unique_ptr<PeerSet> mPeerSet;
 };
-
-inline std::string
-to_string(InboundLedger::Reason reason)
-{
-    using enum InboundLedger::Reason;
-    switch (reason)
-    {
-        case HISTORY:
-            return "HISTORY";
-        case GENERIC:
-            return "GENERIC";
-        case CONSENSUS:
-            return "CONSENSUS";
-        default:
-            UNREACHABLE(
-                "ripple::to_string(InboundLedger::Reason) : unknown value");
-            return "unknown";
-    }
-}
 
 }  // namespace ripple
 

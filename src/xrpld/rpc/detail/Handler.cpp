@@ -21,6 +21,7 @@
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/handlers/Handlers.h>
 #include <xrpld/rpc/handlers/Version.h>
+
 #include <xrpl/basics/contract.h>
 
 #include <map>
@@ -187,6 +188,7 @@ Handler const handlerArray[]{
      Role::ADMIN,
      NO_CONDITION},
     {"validator_info", byRef(&doValidatorInfo), Role::ADMIN, NO_CONDITION},
+    {"vault_info", byRef(&doVaultInfo), Role::USER, NO_CONDITION},
     {"wallet_propose", byRef(&doWalletPropose), Role::ADMIN, NO_CONDITION},
     // Evented methods
     {"subscribe", byRef(&doSubscribe), Role::USER, NO_CONDITION},
@@ -223,7 +225,7 @@ private:
     }
 
     template <std::size_t N>
-    explicit HandlerTable(const Handler (&entries)[N])
+    explicit HandlerTable(Handler const (&entries)[N])
     {
         for (auto const& entry : entries)
         {

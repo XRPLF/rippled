@@ -18,8 +18,10 @@
 //==============================================================================
 
 #include <test/jtx.h>
+
 #include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/ledger/ApplyViewImpl.h>
+
 #include <xrpl/basics/strHex.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -27,7 +29,6 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
-#include <iostream>
 #include <string_view>
 
 namespace ripple {
@@ -42,16 +43,6 @@ checkVL(
     return strHex(expected) == strHex(sle->getFieldVL(field));
 }
 
-static inline Keylet
-credentialKeylet(
-    test::jtx::Account const& subject,
-    test::jtx::Account const& issuer,
-    std::string_view credType)
-{
-    return keylet::credential(
-        subject.id(), issuer.id(), Slice(credType.data(), credType.size()));
-}
-
 struct Credentials_test : public beast::unit_test::suite
 {
     void
@@ -59,8 +50,8 @@ struct Credentials_test : public beast::unit_test::suite
     {
         using namespace test::jtx;
 
-        const char credType[] = "abcde";
-        const char uri[] = "uri";
+        char const credType[] = "abcde";
+        char const uri[] = "uri";
 
         Account const issuer{"issuer"};
         Account const subject{"subject"};
@@ -71,7 +62,7 @@ struct Credentials_test : public beast::unit_test::suite
         {
             testcase("Create for subject.");
 
-            auto const credKey = credentialKeylet(subject, issuer, credType);
+            auto const credKey = credentials::keylet(subject, issuer, credType);
 
             env.fund(XRP(5000), subject, issuer, other);
             env.close();
@@ -149,7 +140,7 @@ struct Credentials_test : public beast::unit_test::suite
         {
             testcase("Create for themself.");
 
-            auto const credKey = credentialKeylet(issuer, issuer, credType);
+            auto const credKey = credentials::keylet(issuer, issuer, credType);
 
             env(credentials::create(issuer, issuer, credType),
                 credentials::uri(uri));
@@ -208,7 +199,7 @@ struct Credentials_test : public beast::unit_test::suite
     {
         using namespace test::jtx;
 
-        const char credType[] = "abcde";
+        char const credType[] = "abcde";
 
         Account const issuer{"issuer"};
         Account const subject{"subject"};
@@ -223,7 +214,7 @@ struct Credentials_test : public beast::unit_test::suite
         {
             testcase("Delete issuer before accept");
 
-            auto const credKey = credentialKeylet(subject, issuer, credType);
+            auto const credKey = credentials::keylet(subject, issuer, credType);
             env(credentials::create(subject, issuer, credType));
             env.close();
 
@@ -259,7 +250,7 @@ struct Credentials_test : public beast::unit_test::suite
         {
             testcase("Delete issuer after accept");
 
-            auto const credKey = credentialKeylet(subject, issuer, credType);
+            auto const credKey = credentials::keylet(subject, issuer, credType);
             env(credentials::create(subject, issuer, credType));
             env.close();
             env(credentials::accept(subject, issuer, credType));
@@ -297,7 +288,7 @@ struct Credentials_test : public beast::unit_test::suite
         {
             testcase("Delete subject before accept");
 
-            auto const credKey = credentialKeylet(subject, issuer, credType);
+            auto const credKey = credentials::keylet(subject, issuer, credType);
             env(credentials::create(subject, issuer, credType));
             env.close();
 
@@ -333,7 +324,7 @@ struct Credentials_test : public beast::unit_test::suite
         {
             testcase("Delete subject after accept");
 
-            auto const credKey = credentialKeylet(subject, issuer, credType);
+            auto const credKey = credentials::keylet(subject, issuer, credType);
             env(credentials::create(subject, issuer, credType));
             env.close();
             env(credentials::accept(subject, issuer, credType));
@@ -371,7 +362,7 @@ struct Credentials_test : public beast::unit_test::suite
         {
             testcase("Delete by other");
 
-            auto const credKey = credentialKeylet(subject, issuer, credType);
+            auto const credKey = credentials::keylet(subject, issuer, credType);
             auto jv = credentials::create(subject, issuer, credType);
             uint32_t const t = env.current()
                                    ->info()
@@ -416,7 +407,7 @@ struct Credentials_test : public beast::unit_test::suite
             env.close();
             {
                 auto const credKey =
-                    credentialKeylet(subject, issuer, credType);
+                    credentials::keylet(subject, issuer, credType);
                 BEAST_EXPECT(!env.le(credKey));
                 BEAST_EXPECT(!ownerCount(env, subject));
                 BEAST_EXPECT(!ownerCount(env, issuer));
@@ -438,7 +429,7 @@ struct Credentials_test : public beast::unit_test::suite
             env.close();
             {
                 auto const credKey =
-                    credentialKeylet(subject, issuer, credType);
+                    credentials::keylet(subject, issuer, credType);
                 BEAST_EXPECT(!env.le(credKey));
                 BEAST_EXPECT(!ownerCount(env, subject));
                 BEAST_EXPECT(!ownerCount(env, issuer));
@@ -457,7 +448,7 @@ struct Credentials_test : public beast::unit_test::suite
     {
         using namespace test::jtx;
 
-        const char credType[] = "abcde";
+        char const credType[] = "abcde";
 
         Account const issuer{"issuer"};
         Account const subject{"subject"};
@@ -615,7 +606,7 @@ struct Credentials_test : public beast::unit_test::suite
     {
         using namespace jtx;
 
-        const char credType[] = "abcde";
+        char const credType[] = "abcde";
         Account const issuer{"issuer"};
         Account const subject{"subject"};
         Account const other{"other"};
@@ -725,7 +716,7 @@ struct Credentials_test : public beast::unit_test::suite
             }
 
             {
-                const char credType2[] = "efghi";
+                char const credType2[] = "efghi";
 
                 testcase("CredentialsAccept fail, expired credentials.");
                 auto jv = credentials::create(subject, issuer, credType2);
@@ -796,7 +787,7 @@ struct Credentials_test : public beast::unit_test::suite
     {
         using namespace test::jtx;
 
-        const char credType[] = "abcde";
+        char const credType[] = "abcde";
         Account const issuer{"issuer"};
         Account const subject{"subject"};
         Account const other{"other"};
@@ -841,7 +832,7 @@ struct Credentials_test : public beast::unit_test::suite
             }
 
             {
-                const char credType2[] = "fghij";
+                char const credType2[] = "fghij";
 
                 env(credentials::create(subject, issuer, credType2));
                 env.close();
@@ -943,7 +934,7 @@ struct Credentials_test : public beast::unit_test::suite
     {
         using namespace test::jtx;
 
-        const char credType[] = "abcde";
+        char const credType[] = "abcde";
         Account const issuer{"issuer"};
         Account const subject{"subject"};
 
@@ -971,7 +962,7 @@ struct Credentials_test : public beast::unit_test::suite
     {
         using namespace test::jtx;
 
-        const char credType[] = "abcde";
+        char const credType[] = "abcde";
         Account const issuer{"issuer"};
         Account const subject{"subject"};
 
@@ -1068,7 +1059,7 @@ struct Credentials_test : public beast::unit_test::suite
             std::string("Test flag, fix ") +
             (enabled ? "enabled" : "disabled"));
 
-        const char credType[] = "abcde";
+        char const credType[] = "abcde";
         Account const issuer{"issuer"};
         Account const subject{"subject"};
 

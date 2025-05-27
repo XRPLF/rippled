@@ -20,8 +20,8 @@
 #ifndef RIPPLE_RPC_CTID_H_INCLUDED
 #define RIPPLE_RPC_CTID_H_INCLUDED
 
-#include <boost/algorithm/string/predicate.hpp>
 #include <boost/regex.hpp>
+
 #include <optional>
 #include <regex>
 #include <sstream>
@@ -30,18 +30,24 @@ namespace ripple {
 
 namespace RPC {
 
+// CTID stands for Concise Transaction ID.
+//
+// The CTID comes from XLS-15d: Concise Transaction Identifier #34
+//
+//   https://github.com/XRPLF/XRPL-Standards/discussions/34
+//
+// The Concise Transaction ID provides a way to identify a transaction
+// that includes which network the transaction was submitted to.
+
 inline std::optional<std::string>
-encodeCTID(
-    uint32_t ledger_seq,
-    uint16_t txn_index,
-    uint16_t network_id) noexcept
+encodeCTID(uint32_t ledgerSeq, uint32_t txnIndex, uint32_t networkID) noexcept
 {
-    if (ledger_seq > 0x0FFF'FFFF)
+    if (ledgerSeq > 0x0FFF'FFFF || txnIndex > 0xFFFF || networkID > 0xFFFF)
         return {};
 
     uint64_t ctidValue =
-        ((0xC000'0000ULL + static_cast<uint64_t>(ledger_seq)) << 32) +
-        (static_cast<uint64_t>(txn_index) << 16) + network_id;
+        ((0xC000'0000ULL + static_cast<uint64_t>(ledgerSeq)) << 32) +
+        (static_cast<uint64_t>(txnIndex) << 16) + networkID;
 
     std::stringstream buffer;
     buffer << std::hex << std::uppercase << std::setfill('0') << std::setw(16)
@@ -51,12 +57,12 @@ encodeCTID(
 
 template <typename T>
 inline std::optional<std::tuple<uint32_t, uint16_t, uint16_t>>
-decodeCTID(const T ctid) noexcept
+decodeCTID(T const ctid) noexcept
 {
     uint64_t ctidValue{0};
     if constexpr (
         std::is_same_v<T, std::string> || std::is_same_v<T, char*> ||
-        std::is_same_v<T, const char*> || std::is_same_v<T, std::string_view>)
+        std::is_same_v<T, char const*> || std::is_same_v<T, std::string_view>)
     {
         std::string const ctidString(ctid);
 

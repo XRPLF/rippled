@@ -16,7 +16,9 @@
 //==============================================================================
 
 #include <test/jtx.h>
+
 #include <xrpld/core/ConfigSections.h>
+
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
 
@@ -139,6 +141,7 @@ public:
         Env env{*this, features};
         Account const alice{"alice", KeyType::ed25519};
         env.fund(XRP(1000), alice);
+        env.close();
 
         // Add alice as a multisigner for herself.  Should fail.
         env(signers(alice, 1, {{alice, 1}}), ter(temBAD_SIGNER));
@@ -457,7 +460,7 @@ public:
         // Attempt a multisigned transaction that meets the quorum.
         auto const baseFee = env.current()->fees().base;
         std::uint32_t aliceSeq = env.seq(alice);
-        env(noop(alice), msig(msig::Reg{cheri, cher}), fee(2 * baseFee));
+        env(noop(alice), msig(Reg{cheri, cher}), fee(2 * baseFee));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
@@ -477,7 +480,7 @@ public:
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
         aliceSeq = env.seq(alice);
-        env(noop(alice), msig(msig::Reg{becky, beck}), fee(2 * baseFee));
+        env(noop(alice), msig(Reg{becky, beck}), fee(2 * baseFee));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
@@ -485,7 +488,7 @@ public:
         aliceSeq = env.seq(alice);
         env(noop(alice),
             fee(3 * baseFee),
-            msig(msig::Reg{becky, beck}, msig::Reg{cheri, cher}));
+            msig(Reg{becky, beck}, Reg{cheri, cher}));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
     }
@@ -780,12 +783,12 @@ public:
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
         aliceSeq = env.seq(alice);
-        env(noop(alice), msig(msig::Reg{cheri, cher}), fee(2 * baseFee));
+        env(noop(alice), msig(Reg{cheri, cher}), fee(2 * baseFee));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
         aliceSeq = env.seq(alice);
-        env(noop(alice), msig(msig::Reg{daria, dari}), fee(2 * baseFee));
+        env(noop(alice), msig(Reg{daria, dari}), fee(2 * baseFee));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
@@ -798,7 +801,7 @@ public:
         aliceSeq = env.seq(alice);
         env(noop(alice),
             fee(5 * baseFee),
-            msig(becky, msig::Reg{cheri, cher}, msig::Reg{daria, dari}, jinni));
+            msig(becky, Reg{cheri, cher}, Reg{daria, dari}, jinni));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
@@ -817,7 +820,7 @@ public:
         aliceSeq = env.seq(alice);
         env(noop(alice),
             fee(9 * baseFee),
-            msig(becky, msig::Reg{cheri, cher}, msig::Reg{daria, dari}, jinni));
+            msig(becky, Reg{cheri, cher}, Reg{daria, dari}, jinni));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
@@ -825,7 +828,7 @@ public:
         aliceSeq = env.seq(alice);
         env(noop(alice),
             fee(5 * baseFee),
-            msig(becky, cheri, msig::Reg{daria, dari}, jinni));
+            msig(becky, cheri, Reg{daria, dari}, jinni));
         env.close();
         BEAST_EXPECT(env.seq(alice) == aliceSeq + 1);
 
@@ -850,8 +853,8 @@ public:
             fee(9 * baseFee),
             msig(
                 becky,
-                msig::Reg{cheri, cher},
-                msig::Reg{daria, dari},
+                Reg{cheri, cher},
+                Reg{daria, dari},
                 haunt,
                 jinni,
                 phase,
@@ -886,6 +889,7 @@ public:
         Env env{*this, features};
         Account const alice{"alice", KeyType::ed25519};
         env.fund(XRP(1000), alice);
+        env.close();
 
         // There are three negative tests we need to make:
         //  M0. A lone master key cannot be disabled.
@@ -967,6 +971,7 @@ public:
         Env env{*this, features};
         Account const alice{"alice", KeyType::secp256k1};
         env.fund(XRP(1000), alice);
+        env.close();
 
         // Give alice a regular key with a zero fee.  Should succeed.  Once.
         Account const alie{"alie", KeyType::ed25519};
@@ -983,6 +988,7 @@ public:
         // fee should always fail.  Even the first time.
         Account const becky{"becky", KeyType::ed25519};
         env.fund(XRP(1000), becky);
+        env.close();
 
         env(signers(becky, 1, {{alice, 1}}), sig(becky));
         env(regkey(becky, alie), msig(alice), fee(0), ter(telINSUF_FEE_P));
@@ -1101,6 +1107,7 @@ public:
 
         Account const alice{"alice"};
         env.fund(XRP(1000), alice);
+        env.close();
         env(signers(alice, 1, {{bogie, 1}, {demon, 1}}), sig(alice));
 
         auto const baseFee = env.current()->fees().base;
@@ -1342,7 +1349,7 @@ public:
         // Becky cannot 2-level multisign for alice.  2-level multisigning
         // is not supported.
         env(noop(alice),
-            msig(msig::Reg{becky, bogie}),
+            msig(Reg{becky, bogie}),
             fee(2 * baseFee),
             ter(tefBAD_SIGNATURE));
         env.close();
@@ -1351,7 +1358,7 @@ public:
         // not yet enabled.
         Account const beck{"beck", KeyType::ed25519};
         env(noop(alice),
-            msig(msig::Reg{becky, beck}),
+            msig(Reg{becky, beck}),
             fee(2 * baseFee),
             ter(tefBAD_SIGNATURE));
         env.close();
@@ -1361,13 +1368,13 @@ public:
         env(regkey(becky, beck), msig(demon), fee(2 * baseFee));
         env.close();
 
-        env(noop(alice), msig(msig::Reg{becky, beck}), fee(2 * baseFee));
+        env(noop(alice), msig(Reg{becky, beck}), fee(2 * baseFee));
         env.close();
 
         // The presence of becky's regular key does not influence whether she
         // can 2-level multisign; it still won't work.
         env(noop(alice),
-            msig(msig::Reg{becky, demon}),
+            msig(Reg{becky, demon}),
             fee(2 * baseFee),
             ter(tefBAD_SIGNATURE));
         env.close();

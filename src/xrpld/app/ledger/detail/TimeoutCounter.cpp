@@ -18,9 +18,7 @@
 //==============================================================================
 
 #include <xrpld/app/ledger/detail/TimeoutCounter.h>
-#include <xrpld/app/main/Application.h>
 #include <xrpld/core/JobQueue.h>
-#include <xrpld/overlay/Overlay.h>
 
 namespace ripple {
 
@@ -33,8 +31,7 @@ TimeoutCounter::TimeoutCounter(
     QueueJobParameter&& jobParameter,
     beast::Journal journal)
     : app_(app)
-    , sink_(journal, to_short_string(hash) + " ")
-    , journal_(sink_)
+    , journal_(journal)
     , hash_(hash)
     , timeouts_(0)
     , complete_(false)
@@ -54,8 +51,6 @@ TimeoutCounter::setTimer(ScopedLockType& sl)
 {
     if (isDone())
         return;
-    JLOG(journal_.debug()) << "Setting timer for " << timerInterval_.count()
-                           << "ms";
     timer_.expires_after(timerInterval_);
     timer_.async_wait(
         [wptr = pmDowncast()](boost::system::error_code const& ec) {
@@ -64,12 +59,6 @@ TimeoutCounter::setTimer(ScopedLockType& sl)
 
             if (auto ptr = wptr.lock())
             {
-                JLOG(ptr->journal_.debug())
-                    << "timer: ec: " << ec << " (operation_aborted: "
-                    << boost::asio::error::operation_aborted << " - "
-                    << (ec == boost::asio::error::operation_aborted ? "aborted"
-                                                                    : "other")
-                    << ")";
                 ScopedLockType sl(ptr->mtx_);
                 ptr->queueJob(sl);
             }
@@ -111,8 +100,8 @@ TimeoutCounter::invokeOnTimer()
     if (!progress_)
     {
         ++timeouts_;
-        JLOG(journal_.debug())
-            << "Timeout(" << timeouts_ << ") " << " acquiring " << hash_;
+        JLOG(journal_.debug()) << "Timeout(" << timeouts_ << ") "
+                               << " acquiring " << hash_;
         onTimer(false, sl);
     }
     else

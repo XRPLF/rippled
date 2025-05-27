@@ -26,7 +26,6 @@
 #include <xrpld/app/ledger/PendingSaves.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/misc/AmendmentTable.h>
-#include <xrpld/app/misc/HashRouter.h>
 #include <xrpld/app/misc/LoadFeeTrack.h>
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/misc/SHAMapStore.h>
@@ -35,14 +34,12 @@
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/app/paths/PathRequests.h>
 #include <xrpld/app/rdb/RelationalDatabase.h>
-#include <xrpld/app/tx/apply.h>
-#include <xrpld/core/DatabaseCon.h>
 #include <xrpld/core/TimeKeeper.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/Peer.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/MathUtilities.h>
-#include <xrpl/basics/TaggedCache.h>
 #include <xrpl/basics/UptimeClock.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
@@ -56,7 +53,6 @@
 #include <algorithm>
 #include <chrono>
 #include <cstdlib>
-#include <limits>
 #include <memory>
 #include <vector>
 
@@ -458,25 +454,17 @@ LedgerMaster::storeLedger(std::shared_ptr<Ledger const> ledger)
 void
 LedgerMaster::applyHeldTransactions()
 {
-    std::lock_guard sl(m_mutex);
+    CanonicalTXSet const set = [this]() {
+        std::lock_guard sl(m_mutex);
+        // VFALCO NOTE The hash for an open ledger is undefined so we use
+        // something that is a reasonable substitute.
+        CanonicalTXSet set(app_.openLedger().current()->info().parentHash);
+        std::swap(mHeldTransactions, set);
+        return set;
+    }();
 
-    app_.openLedger().modify([&](OpenView& view, beast::Journal j) {
-        bool any = false;
-        for (auto const& it : mHeldTransactions)
-        {
-            ApplyFlags flags = tapNONE;
-            auto const result =
-                app_.getTxQ().apply(app_, view, it.second, flags, j);
-            any |= result.applied;
-        }
-        return any;
-    });
-
-    // VFALCO TODO recreate the CanonicalTxSet object instead of resetting
-    // it.
-    // VFALCO NOTE The hash for an open ledger is undefined so we use
-    // something that is a reasonable substitute.
-    mHeldTransactions.reset(app_.openLedger().current()->info().parentHash);
+    if (!set.empty())
+        app_.getOPs().processTransactionSet(set);
 }
 
 std::shared_ptr<STTx const>
@@ -973,9 +961,8 @@ LedgerMaster::checkAccept(std::shared_ptr<Ledger const> const& ledger)
     }
 
     JLOG(m_journal.info()) << "Advancing accepted ledger to "
-                           << ledger->info().seq << " ("
-                           << to_short_string(ledger->info().hash)
-                           << ") with >= " << minVal << " validations";
+                           << ledger->info().seq << " with >= " << minVal
+                           << " validations";
 
     ledger->setValidated();
     ledger->setFull();
@@ -1539,7 +1526,7 @@ LedgerMaster::newOrderBookDB()
  */
 bool
 LedgerMaster::newPFWork(
-    const char* name,
+    char const* name,
     std::unique_lock<std::recursive_mutex>&)
 {
     if (!app_.isStopping() && mPathFindThread < 2 &&

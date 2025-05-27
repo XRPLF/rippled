@@ -25,12 +25,13 @@
 #include <xrpld/core/JobQueue.h>
 #include <xrpld/ledger/ReadView.h>
 #include <xrpld/net/InfoSub.h>
+
 #include <xrpl/protocol/STValidation.h>
 #include <xrpl/protocol/messages.h>
+
 #include <boost/asio.hpp>
-#include <deque>
+
 #include <memory>
-#include <tuple>
 
 namespace ripple {
 
@@ -41,6 +42,7 @@ class Peer;
 class LedgerMaster;
 class Transaction;
 class ValidatorKeys;
+class CanonicalTXSet;
 
 // This is the primary interface into the "client" portion of the program.
 // Code that wants to do normal operations on the network such as
@@ -139,6 +141,15 @@ public:
         bool bLocal,
         FailHard failType) = 0;
 
+    /**
+     * Process a set of transactions synchronously, and ensuring that they are
+     * processed in one batch.
+     *
+     * @param set Transaction object set
+     */
+    virtual void
+    processTransactionSet(CanonicalTXSet const& set) = 0;
+
     //--------------------------------------------------------------------------
     //
     // Owner functions
@@ -180,9 +191,11 @@ public:
 
     // network state machine
     virtual bool
-    beginConsensus(uint256 const& netLCL) = 0;
+    beginConsensus(
+        uint256 const& netLCL,
+        std::unique_ptr<std::stringstream> const& clog) = 0;
     virtual void
-    endConsensus() = 0;
+    endConsensus(std::unique_ptr<std::stringstream> const& clog) = 0;
     virtual void
     setStandAlone() = 0;
     virtual void
@@ -197,7 +210,7 @@ public:
     virtual bool
     isFull() = 0;
     virtual void
-    setMode(OperatingMode om, const char* reason) = 0;
+    setMode(OperatingMode om) = 0;
     virtual bool
     isBlocked() = 0;
     virtual bool

@@ -17,9 +17,9 @@
 */
 //==============================================================================
 
-#include <xrpl/protocol/detail/STVar.h>
-
 #include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAccount.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STArray.h>
@@ -34,7 +34,12 @@
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/STVector256.h>
 #include <xrpl/protocol/STXChainBridge.h>
-#include <xrpl/protocol/XChainAttestations.h>
+#include <xrpl/protocol/Serializer.h>
+#include <xrpl/protocol/detail/STVar.h>
+
+#include <stdexcept>
+#include <tuple>
+#include <type_traits>
 
 namespace ripple {
 namespace detail {
@@ -187,6 +192,9 @@ STVar::constructST(SerializedTypeID id, int depth, Args&&... args)
             return;
         case STI_AMOUNT:
             construct<STAmount>(std::forward<Args>(args)...);
+            return;
+        case STI_NUMBER:
+            construct<STNumber>(std::forward<Args>(args)...);
             return;
         case STI_UINT128:
             construct<STUInt128>(std::forward<Args>(args)...);

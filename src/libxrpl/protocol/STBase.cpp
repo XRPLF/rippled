@@ -18,8 +18,15 @@
 //==============================================================================
 
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
-#include <boost/checked_delete.hpp>
+#include <xrpl/protocol/Serializer.h>
+
+#include <cstddef>
+#include <ostream>
+#include <string>
+#include <utility>
 
 namespace ripple {
 
@@ -33,7 +40,7 @@ STBase::STBase(SField const& n) : fName(&n)
 }
 
 STBase&
-STBase::operator=(const STBase& t)
+STBase::operator=(STBase const& t)
 {
     if (!fName->isUseful())
         fName = t.fName;
@@ -41,13 +48,13 @@ STBase::operator=(const STBase& t)
 }
 
 bool
-STBase::operator==(const STBase& t) const
+STBase::operator==(STBase const& t) const
 {
     return (getSType() == t.getSType()) && isEquivalent(t);
 }
 
 bool
-STBase::operator!=(const STBase& t) const
+STBase::operator!=(STBase const& t) const
 {
     return (getSType() != t.getSType()) || !isEquivalent(t);
 }
@@ -109,7 +116,7 @@ STBase::add(Serializer& s) const
 }
 
 bool
-STBase::isEquivalent(const STBase& t) const
+STBase::isEquivalent(STBase const& t) const
 {
     XRPL_ASSERT(
         getSType() == STI_NOTPRESENT,
@@ -147,7 +154,7 @@ STBase::addFieldID(Serializer& s) const
 //------------------------------------------------------------------------------
 
 std::ostream&
-operator<<(std::ostream& out, const STBase& t)
+operator<<(std::ostream& out, STBase const& t)
 {
     return out << t.getFullText();
 }

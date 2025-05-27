@@ -23,12 +23,15 @@
 #include <xrpld/app/tx/applySteps.h>
 #include <xrpld/ledger/ApplyView.h>
 #include <xrpld/ledger/OpenView.h>
+
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SeqProxy.h>
 #include <xrpl/protocol/TER.h>
+
 #include <boost/circular_buffer.hpp>
 #include <boost/intrusive/set.hpp>
+
 #include <optional>
 
 namespace ripple {
@@ -647,7 +650,7 @@ private:
          *
          */
         bool
-        operator()(const MaybeTx& lhs, const MaybeTx& rhs) const
+        operator()(MaybeTx const& lhs, MaybeTx const& rhs) const
         {
             if (lhs.feeLevel == rhs.feeLevel)
                 return (lhs.txID ^ MaybeTx::parentHashComp) <
@@ -687,7 +690,7 @@ private:
         /// Construct from a transaction
         explicit TxQAccount(std::shared_ptr<STTx const> const& txn);
         /// Construct from an account
-        explicit TxQAccount(const AccountID& account);
+        explicit TxQAccount(AccountID const& account);
 
         /// Return the number of transactions currently queued for this account
         std::size_t
@@ -785,13 +788,10 @@ private:
     */
     std::optional<size_t> maxSize_;
 
-#if !NDEBUG
     /**
-        parentHash_ checks that no unexpected ledger transitions
-        happen, and is only checked via debug asserts.
+        parentHash_ used for logging only
     */
     LedgerHash parentHash_{beast::zero};
-#endif
 
     /** Most queue operations are done under the master lock,
         but use this mutex for the RPC "fee" command, which isn't.

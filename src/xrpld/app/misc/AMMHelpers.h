@@ -30,10 +30,7 @@
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/Rules.h>
-#include <xrpl/protocol/STAccount.h>
 #include <xrpl/protocol/STAmount.h>
-
-#include <type_traits>
 
 namespace ripple {
 
@@ -385,9 +382,9 @@ changeSpotPriceQuality(
             {
                 JLOG(j.error())
                     << "changeSpotPriceQuality failed: " << to_string(pool.in)
-                    << " " << to_string(pool.out) << " " << " " << quality
-                    << " " << tfee << " " << to_string(amounts.in) << " "
-                    << to_string(amounts.out);
+                    << " " << to_string(pool.out) << " "
+                    << " " << quality << " " << tfee << " "
+                    << to_string(amounts.in) << " " << to_string(amounts.out);
                 Throw<std::runtime_error>("changeSpotPriceQuality failed");
             }
             else

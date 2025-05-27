@@ -16,11 +16,15 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
+
 #include <test/jtx/Env.h>
+
 #include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/Peer.h>
 #include <xrpld/overlay/Slot.h>
+#include <xrpld/overlay/Squelch.h>
 #include <xrpld/overlay/detail/Handshake.h>
+
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/SecretKey.h>
@@ -175,17 +179,12 @@ public:
     {
     }
     void
-    addTxQueue(const uint256&) override
+    addTxQueue(uint256 const&) override
     {
     }
     void
-    removeTxQueue(const uint256&) override
+    removeTxQueue(uint256 const&) override
     {
-    }
-    std::set<std::optional<uint64_t>>
-    releaseRequestCookies(uint256 const& requestHash) override
-    {
-        return {};
     }
 };
 
@@ -197,7 +196,7 @@ public:
     typedef std::milli period;
     typedef std::chrono::duration<std::uint32_t, period> duration;
     typedef std::chrono::time_point<ManualClock> time_point;
-    inline static const bool is_steady = false;
+    inline static bool const is_steady = false;
 
     static void
     advance(duration d) noexcept
@@ -891,11 +890,12 @@ class reduce_relay_test : public beast::unit_test::suite
 
 protected:
     void
-    printPeers(const std::string& msg, std::uint16_t validator = 0)
+    printPeers(std::string const& msg, std::uint16_t validator = 0)
     {
         auto peers = network_.overlay().getPeers(network_.validator(validator));
-        std::cout << msg << " " << "num peers "
-                  << (int)network_.overlay().getNumPeers() << std::endl;
+        std::cout << msg << " "
+                  << "num peers " << (int)network_.overlay().getNumPeers()
+                  << std::endl;
         for (auto& [k, v] : peers)
             std::cout << k << ":" << (int)std::get<reduce_relay::PeerState>(v)
                       << " ";
@@ -1126,7 +1126,7 @@ protected:
     }
 
     void
-    doTest(const std::string& msg, bool log, std::function<void(bool)> f)
+    doTest(std::string const& msg, bool log, std::function<void(bool)> f)
     {
         testcase(msg);
         f(log);

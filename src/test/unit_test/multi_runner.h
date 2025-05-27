@@ -22,8 +22,8 @@
 
 #include <xrpl/beast/unit_test/global_suites.h>
 #include <xrpl/beast/unit_test/runner.h>
-#include <boost/beast/core/static_string.hpp>
 
+#include <boost/beast/core/static_string.hpp>
 #include <boost/container/static_vector.hpp>
 #include <boost/interprocess/ipc/message_queue.hpp>
 #include <boost/interprocess/mapped_region.hpp>
@@ -152,10 +152,10 @@ class multi_runner_base
         print_results(S& s);
     };
 
-    static constexpr const char* shared_mem_name_ = "RippledUnitTestSharedMem";
+    static constexpr char const* shared_mem_name_ = "RippledUnitTestSharedMem";
     // name of the message queue a multi_runner_child will use to communicate
     // with multi_runner_parent
-    static constexpr const char* message_queue_name_ =
+    static constexpr char const* message_queue_name_ =
         "RippledUnitTestMessageQueue";
 
     // `inner_` will be created in shared memory

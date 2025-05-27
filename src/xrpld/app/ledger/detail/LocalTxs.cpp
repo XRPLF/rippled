@@ -19,7 +19,7 @@
 
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/LocalTxs.h>
-#include <xrpld/app/main/Application.h>
+
 #include <xrpl/protocol/Indexes.h>
 
 /*
@@ -53,14 +53,9 @@ namespace ripple {
 class LocalTx
 {
 public:
-    // The number of ledgers to hold a transaction is essentially
-    // arbitrary. It should be sufficient to allow the transaction to
-    // get into a fully-validated ledger.
-    static int const holdLedgers = 5;
-
     LocalTx(LedgerIndex index, std::shared_ptr<STTx const> const& txn)
         : m_txn(txn)
-        , m_expire(index + holdLedgers)
+        , m_expire(index + LocalTxs::holdLedgers)
         , m_id(txn->getTransactionID())
         , m_account(txn->getAccountID(sfAccount))
         , m_seqProxy(txn->getSeqProxy())

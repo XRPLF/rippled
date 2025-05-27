@@ -24,6 +24,7 @@
 #include <xrpld/app/paths/detail/Steps.h>
 #include <xrpld/app/tx/detail/OfferStream.h>
 #include <xrpld/ledger/PaymentSandbox.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/beast/utility/instrumentation.h>
@@ -189,7 +190,8 @@ protected:
     logStringImpl(char const* name) const
     {
         std::ostringstream ostr;
-        ostr << name << ": " << "\ninIss: " << book_.in.account
+        ostr << name << ": "
+             << "\ninIss: " << book_.in.account
              << "\noutIss: " << book_.out.account
              << "\ninCur: " << book_.in.currency
              << "\noutCur: " << book_.out.currency;

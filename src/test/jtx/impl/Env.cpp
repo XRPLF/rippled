@@ -23,31 +23,27 @@
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/pay.h>
-#include <test/jtx/require.h>
 #include <test/jtx/seq.h>
 #include <test/jtx/sig.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/utility.h>
+
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/misc/NetworkOPs.h>
-#include <xrpld/app/misc/TxQ.h>
-#include <xrpld/consensus/LedgerTiming.h>
 #include <xrpld/net/HTTPClient.h>
 #include <xrpld/net/RPCCall.h>
+
 #include <xrpl/basics/Slice.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/ErrorCodes.h>
-#include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Indexes.h>
-#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/Serializer.h>
-#include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
+
 #include <memory>
 
 namespace ripple {
@@ -469,7 +465,9 @@ Env::autofill_sig(JTx& jt)
         return jt.signer(*this, jt);
     if (!jt.fill_sig)
         return;
-    auto const account = lookup(jv[jss::Account].asString());
+    auto const account = jv.isMember(sfDelegate.jsonName)
+        ? lookup(jv[sfDelegate.jsonName].asString())
+        : lookup(jv[jss::Account].asString());
     if (!app().checkSigs())
     {
         jv[jss::SigningPubKey] = strHex(account.pk().slice());
@@ -605,6 +603,5 @@ Env::disableFeature(uint256 const feature)
 }
 
 }  // namespace jtx
-
 }  // namespace test
 }  // namespace ripple

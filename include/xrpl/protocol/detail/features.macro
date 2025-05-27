@@ -23,12 +23,19 @@
 #if !defined(XRPL_FIX)
 #error "undefined macro: XRPL_FIX"
 #endif
+#if !defined(XRPL_RETIRE)
+#error "undefined macro: XRPL_RETIRE"
+#endif
 
 // Add new amendments to the top of this list.
 // Keep it sorted in reverse chronological order.
 // If you add an amendment here, then do not forget to increment `numFeatures`
 // in include/xrpl/protocol/Feature.h.
 
+XRPL_FEATURE(Batch,                      Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FEATURE(SingleAssetVault,           Supported::no, VoteBehavior::DefaultNo)
+XRPL_FEATURE(PermissionDelegation,       Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FIX    (PayChanCancelAfter,         Supported::yes, VoteBehavior::DefaultNo)
 // Check flags in Credential transactions
 XRPL_FIX    (InvalidTxFlags,             Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FIX    (FrozenLPTokenTransfer,      Supported::yes, VoteBehavior::DefaultNo)
@@ -121,3 +128,22 @@ XRPL_FIX    (NFTokenDirV1,          Supported::yes, VoteBehavior::Obsolete)
 XRPL_FEATURE(NonFungibleTokensV1,   Supported::yes, VoteBehavior::Obsolete)
 XRPL_FEATURE(CryptoConditionsSuite, Supported::yes, VoteBehavior::Obsolete)
 
+// The following amendments have been active for at least two years. Their
+// pre-amendment code has been removed and the identifiers are deprecated.
+// All known amendments and amendments that may appear in a validated
+// ledger must be registered either here or above with the "active" amendments
+XRPL_RETIRE(MultiSign)
+XRPL_RETIRE(TrustSetAuth)
+XRPL_RETIRE(FeeEscalation)
+XRPL_RETIRE(PayChan)
+XRPL_RETIRE(CryptoConditions)
+XRPL_RETIRE(TickSize)
+XRPL_RETIRE(fix1368)
+XRPL_RETIRE(Escrow)
+XRPL_RETIRE(fix1373)
+XRPL_RETIRE(EnforceInvariants)
+XRPL_RETIRE(SortedDirectories)
+XRPL_RETIRE(fix1201)
+XRPL_RETIRE(fix1512)
+XRPL_RETIRE(fix1523)
+XRPL_RETIRE(fix1528)

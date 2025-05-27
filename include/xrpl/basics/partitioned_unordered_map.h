@@ -22,6 +22,7 @@
 
 #include <xrpl/beast/hash/uhash.h>
 #include <xrpl/beast/utility/instrumentation.h>
+
 #include <functional>
 #include <optional>
 #include <string>
@@ -51,7 +52,7 @@ template <
     typename Value,
     typename Hash,
     typename Pred = std::equal_to<Key>,
-    typename Alloc = std::allocator<std::pair<const Key, Value>>>
+    typename Alloc = std::allocator<std::pair<Key const, Value>>>
 class partitioned_unordered_map
 {
     std::size_t partitions_;

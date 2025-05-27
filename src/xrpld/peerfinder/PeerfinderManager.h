@@ -22,8 +22,10 @@
 
 #include <xrpld/core/Config.h>
 #include <xrpld/peerfinder/Slot.h>
+
 #include <xrpl/beast/clock/abstract_clock.h>
 #include <xrpl/beast/utility/PropertyStream.h>
+
 #include <boost/asio/ip/tcp.hpp>
 
 namespace ripple {

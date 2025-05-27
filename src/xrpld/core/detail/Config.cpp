@@ -20,6 +20,7 @@
 #include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 #include <xrpld/net/HTTPClient.h>
+
 #include <xrpl/basics/FileUtilities.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>
@@ -28,11 +29,12 @@
 #include <xrpl/json/json_reader.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/SystemParameters.h>
+
 #include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
 #include <boost/predef.h>
 #include <boost/regex.hpp>
-#include <boost/system/error_code.hpp>
+
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
@@ -156,7 +158,7 @@ static_assert(
 #define SECTION_DEFAULT_NAME ""
 
 IniFileSections
-parseIniFile(std::string const& strInput, const bool bTrim)
+parseIniFile(std::string const& strInput, bool const bTrim)
 {
     std::string strData(strInput);
     std::vector<std::string> vLines;
@@ -488,7 +490,7 @@ Config::loadFromString(std::string const& fileContents)
     // if the user has specified ip:port then replace : with a space.
     {
         auto replaceColons = [](std::vector<std::string>& strVec) {
-            const static std::regex e(":([0-9]+)$");
+            static std::regex const e(":([0-9]+)$");
             for (auto& line : strVec)
             {
                 // skip anything that might be an ipv6 address
