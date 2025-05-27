@@ -142,7 +142,7 @@ doGatewayBalances(RPC::JsonContext& context)
     std::map<AccountID, std::vector<STAmount>> hotBalances;
     std::map<AccountID, std::vector<STAmount>> assets;
     std::map<AccountID, std::vector<STAmount>> frozenBalances;
-    std::map<Currency, STAmount> escrowed;
+    std::map<Currency, STAmount> locked;
 
     // Traverse the cold wallet's trust lines
     {
@@ -151,7 +151,7 @@ doGatewayBalances(RPC::JsonContext& context)
                 if (sle->getType() == ltESCROW)
                 {
                     auto const& escrow = sle->getFieldAmount(sfAmount);
-                    auto& bal = escrowed[escrow.getCurrency()];
+                    auto& bal = locked[escrow.getCurrency()];
                     if (bal == beast::zero)
                     {
                         // This is needed to set the currency code correctly
@@ -277,14 +277,14 @@ doGatewayBalances(RPC::JsonContext& context)
     populateResult(assets, jss::assets);
 
     // Add total escrow to the result
-    if (!escrowed.empty())
+    if (!locked.empty())
     {
         Json::Value j;
-        for (auto const& [k, v] : escrowed)
+        for (auto const& [k, v] : locked)
         {
             j[to_string(k)] = v.getText();
         }
-        result[jss::escrowed] = std::move(j);
+        result[jss::locked] = std::move(j);
     }
 
     return result;

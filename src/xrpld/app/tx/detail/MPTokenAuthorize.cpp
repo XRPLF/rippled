@@ -83,7 +83,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
                 return tecHAS_OBLIGATIONS;
             }
 
-            if ((*sleMpt)[~sfEscrowedAmount].value_or(0) != 0)
+            if ((*sleMpt)[~sfLockedAmount].value_or(0) != 0)
             {
                 auto const sleMptIssuance = ctx.view.read(
                     keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));

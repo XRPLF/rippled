@@ -2739,15 +2739,15 @@ rippleLockEscrowMPT(
         (*sle)[sfMPTAmount] = amt - pay;
 
         // Overflow check for addition
-        uint64_t const escrowed = (*sle)[~sfEscrowedAmount].value_or(0);
+        uint64_t const locked = (*sle)[~sfLockedAmount].value_or(0);
 
-        if (!canAdd(STAmount(mptIssue, escrowed), STAmount(mptIssue, pay)))
+        if (!canAdd(STAmount(mptIssue, locked), STAmount(mptIssue, pay)))
             return tecINTERNAL;
 
-        if (sle->isFieldPresent(sfEscrowedAmount))
-            (*sle)[sfEscrowedAmount] += pay;
+        if (sle->isFieldPresent(sfLockedAmount))
+            (*sle)[sfLockedAmount] += pay;
         else
-            sle->setFieldU64(sfEscrowedAmount, pay);
+            sle->setFieldU64(sfLockedAmount, pay);
 
         view.update(sle);
     }
@@ -2756,7 +2756,7 @@ rippleLockEscrowMPT(
     // 2. DO NOT change the Issuance OutstandingAmount
     {
         uint64_t const issuanceEscrowed =
-            (*sleIssuance)[~sfEscrowedAmount].value_or(0);
+            (*sleIssuance)[~sfLockedAmount].value_or(0);
         auto const pay = amount.mpt().value();
 
         // Overflow check for addition
@@ -2764,10 +2764,10 @@ rippleLockEscrowMPT(
                 STAmount(mptIssue, issuanceEscrowed), STAmount(mptIssue, pay)))
             return tecINTERNAL;
 
-        if (sleIssuance->isFieldPresent(sfEscrowedAmount))
-            (*sleIssuance)[sfEscrowedAmount] += pay;
+        if (sleIssuance->isFieldPresent(sfLockedAmount))
+            (*sleIssuance)[sfLockedAmount] += pay;
         else
-            sleIssuance->setFieldU64(sfEscrowedAmount, pay);
+            sleIssuance->setFieldU64(sfLockedAmount, pay);
 
         view.update(sleIssuance);
     }
@@ -2791,18 +2791,18 @@ rippleUnlockEscrowMPT(
 
     // Decrease the Issuance EscrowedAmount
     {
-        if (!sleIssuance->isFieldPresent(sfEscrowedAmount))
+        if (!sleIssuance->isFieldPresent(sfLockedAmount))
             return tecINTERNAL;
 
-        auto const escrowed = sleIssuance->getFieldU64(sfEscrowedAmount);
+        auto const locked = sleIssuance->getFieldU64(sfLockedAmount);
         auto const redeem = amount.mpt().value();
 
         // Underflow check for subtraction
         if (!canSubtract(
-                STAmount(mptIssue, escrowed), STAmount(mptIssue, redeem)))
+                STAmount(mptIssue, locked), STAmount(mptIssue, redeem)))
             return tecINTERNAL;
 
-        sleIssuance->setFieldU64(sfEscrowedAmount, escrowed - redeem);
+        sleIssuance->setFieldU64(sfLockedAmount, locked - redeem);
         view.update(sleIssuance);
     }
 
@@ -2849,18 +2849,17 @@ rippleUnlockEscrowMPT(
         if (!sle)
             return tecOBJECT_NOT_FOUND;
 
-        if (!sle->isFieldPresent(sfEscrowedAmount))
+        if (!sle->isFieldPresent(sfLockedAmount))
             return tecINTERNAL;
 
-        auto const escrowed = sle->getFieldU64(sfEscrowedAmount);
+        auto const locked = sle->getFieldU64(sfLockedAmount);
         auto const delta = amount.mpt().value();
 
         // Underflow check for subtraction
-        if (!canSubtract(
-                STAmount(mptIssue, escrowed), STAmount(mptIssue, delta)))
+        if (!canSubtract(STAmount(mptIssue, locked), STAmount(mptIssue, delta)))
             return tecINTERNAL;
 
-        (*sle)[sfEscrowedAmount] -= delta;
+        (*sle)[sfLockedAmount] -= delta;
         view.update(sle);
     }
     return tesSUCCESS;

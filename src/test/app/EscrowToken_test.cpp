@@ -42,8 +42,8 @@ struct EscrowToken_test : public beast::unit_test::suite
         jtx::MPT const& mpt)
     {
         auto const sle = env.le(keylet::mptoken(mpt.mpt(), account));
-        if (sle && sle->isFieldPresent(sfEscrowedAmount))
-            return (*sle)[sfEscrowedAmount];
+        if (sle && sle->isFieldPresent(sfLockedAmount))
+            return (*sle)[sfLockedAmount];
         return 0;
     }
 
@@ -51,8 +51,8 @@ struct EscrowToken_test : public beast::unit_test::suite
     issuerMPTEscrowed(jtx::Env const& env, jtx::MPT const& mpt)
     {
         auto const sle = env.le(keylet::mptIssuance(mpt.mpt()));
-        if (sle && sle->isFieldPresent(sfEscrowedAmount))
-            return (*sle)[sfEscrowedAmount];
+        if (sle && sle->isFieldPresent(sfLockedAmount))
+            return (*sle)[sfLockedAmount];
         return 0;
     }
 
@@ -62,7 +62,7 @@ struct EscrowToken_test : public beast::unit_test::suite
         jtx::Account const& account,
         Currency const& currency,
         int const& outstanding,
-        int const& escrowed)
+        int const& locked)
     {
         Json::Value params;
         params[jss::account] = account.human();
@@ -71,11 +71,11 @@ struct EscrowToken_test : public beast::unit_test::suite
         auto const actualOutstanding =
             result[jss::obligations][to_string(currency)];
         BEAST_EXPECT(actualOutstanding == to_string(outstanding));
-        if (escrowed != 0)
+        if (locked != 0)
         {
             auto const actualEscrowed =
-                result[jss::escrowed][to_string(currency)];
-            BEAST_EXPECT(actualEscrowed == to_string(escrowed));
+                result[jss::locked][to_string(currency)];
+            BEAST_EXPECT(actualEscrowed == to_string(locked));
         }
     }
 
@@ -697,12 +697,17 @@ struct EscrowToken_test : public beast::unit_test::suite
             env.close();
 
             // bob can finish even if bobs limit is too low
+            auto const bobPreLimit = env.limit(bob, USD);
+
             env(escrow::finish(bob, alice, seq1),
                 escrow::condition(escrow::cb1),
                 escrow::fulfillment(escrow::fb1),
                 fee(baseFee * 150),
                 ter(tesSUCCESS));
             env.close();
+
+            // bobs limit is not changed
+            BEAST_EXPECT(env.limit(bob, USD) == bobPreLimit);
         }
     }
 

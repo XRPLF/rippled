@@ -317,10 +317,10 @@ NoZeroEscrow::visitEntry(
     {
         auto const outstanding = (*after)[sfOutstandingAmount];
         checkAmount(outstanding);
-        if (auto const escrowed = (*after)[~sfEscrowedAmount])
+        if (auto const locked = (*after)[~sfLockedAmount])
         {
-            checkAmount(*escrowed);
-            bad_ = outstanding < *escrowed;
+            checkAmount(*locked);
+            bad_ = outstanding < *locked;
         }
     }
 
@@ -328,10 +328,10 @@ NoZeroEscrow::visitEntry(
     {
         auto const mptAmount = (*after)[sfMPTAmount];
         checkAmount(mptAmount);
-        if (auto const escrowed = (*after)[~sfEscrowedAmount])
+        if (auto const locked = (*after)[~sfLockedAmount])
         {
-            checkAmount(*escrowed);
-            bad_ = mptAmount < *escrowed;
+            checkAmount(*locked);
+            bad_ = mptAmount < *locked;
         }
     }
 }

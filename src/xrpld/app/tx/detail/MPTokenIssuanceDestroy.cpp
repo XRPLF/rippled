@@ -58,7 +58,7 @@ MPTokenIssuanceDestroy::preclaim(PreclaimContext const& ctx)
     if ((*sleMPT)[sfOutstandingAmount] != 0)
         return tecHAS_OBLIGATIONS;
 
-    if ((*sleMPT)[~sfEscrowedAmount].value_or(0) != 0)
+    if ((*sleMPT)[~sfLockedAmount].value_or(0) != 0)
         return tecHAS_OBLIGATIONS;
 
     return tesSUCCESS;
