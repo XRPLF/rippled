@@ -672,12 +672,6 @@ public:
         return peers_.size();
     }
 
-    reduce_relay::Slots<ManualClock>&
-    getSlots()
-    {
-        return slots_;
-    }
-
 private:
     void
     squelch(
@@ -1474,26 +1468,29 @@ vp_base_squelch_max_selected_peers=2
     {
         doTest("BaseSquelchReady", log, [&](bool log) {
             ManualClock::reset();
+            reduce_relay::Slots<ManualClock> slots(
+                env_.app().logs(), network_.overlay(), env_.app().config());
+
             env_.app().config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE = false;
             // base squelching must not be ready if squelching is disabled
-            BEAST_EXPECT(!network_.overlay().getSlots().baseSquelchReady());
+            BEAST_EXPECT(!slots.baseSquelchReady());
 
             env_.app().config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE = true;
 
             // base squelch must not be ready as not enough time passed from
             // bootup
-            BEAST_EXPECT(!network_.overlay().getSlots().baseSquelchReady());
+            BEAST_EXPECT(!slots.baseSquelchReady());
 
             ManualClock::advance(reduce_relay::WAIT_ON_BOOTUP + minutes{1});
 
             // base squelch enabled and bootup time passed
-            BEAST_EXPECT(network_.overlay().getSlots().baseSquelchReady());
+            BEAST_EXPECT(slots.baseSquelchReady());
 
             env_.app().config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE = false;
 
             // even if time passed, base squelching must not be ready if turned
             // off in the config
-            BEAST_EXPECT(!network_.overlay().getSlots().baseSquelchReady());
+            BEAST_EXPECT(!slots.baseSquelchReady());
         });
     }
 
