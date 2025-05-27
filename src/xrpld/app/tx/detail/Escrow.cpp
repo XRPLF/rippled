@@ -824,7 +824,7 @@ escrowUnlockApplyHelper<Issue>(
     bool const recvLow = issuer > receiver;
     bool const senderIssuer = issuer == sender;
     bool const receiverIssuer = issuer == receiver;
-    bool const senderHigh = issuer > receiver;
+    bool const issuerHigh = issuer > receiver;
 
     // LCOV_EXCL_START
     if (senderIssuer)
@@ -890,7 +890,7 @@ escrowUnlockApplyHelper<Issue>(
     // 2. The locked rate is different from the parity rate
 
     // NOTE: Transfer fee in escrow works a bit differently from a normal
-    // payment. In escrow, the fee is deducted from the escrowed/sending amount,
+    // payment. In escrow, the fee is deducted from the locked/sending amount,
     // whereas in a normal payment, the transfer fee is taken on top of the
     // sending amount.
     auto finalAmt = amount;
@@ -903,20 +903,23 @@ escrowUnlockApplyHelper<Issue>(
         finalAmt = amount.value() - xferFee;
     }
 
-    // validate the line limit if the acount submitting txn is not the receiver
+    // validate the line limit if the account submitting txn is not the receiver
     // of the funds
     if (!createAsset)
     {
         auto const sleRippleState = view.peek(trustLineKey);
-        // if the sender is the high, then we use the low limit
+        if (!sleRippleState)
+            return tecINTERNAL;
+
+        // if the issuer is the high, then we use the low limit
         // otherwise we use the high limit
         STAmount const lineLimit = sleRippleState->getFieldAmount(
-            senderHigh ? sfLowLimit : sfHighLimit);
+            issuerHigh ? sfLowLimit : sfHighLimit);
 
         STAmount lineBalance = sleRippleState->getFieldAmount(sfBalance);
 
-        // flip the sign of the line balance if the sender is not high
-        if (!senderHigh)
+        // flip the sign of the line balance if the issuer is not high
+        if (!issuerHigh)
             lineBalance.negate();
 
         // add the final amount to the line balance
@@ -992,7 +995,7 @@ escrowUnlockApplyHelper<MPTIssue>(
     // 2. The locked rate is different from the parity rate
 
     // NOTE: Transfer fee in escrow works a bit differently from a normal
-    // payment. In escrow, the fee is deducted from the escrowed/sending amount,
+    // payment. In escrow, the fee is deducted from the locked/sending amount,
     // whereas in a normal payment, the transfer fee is taken on top of the
     // sending amount.
     auto finalAmt = amount;
