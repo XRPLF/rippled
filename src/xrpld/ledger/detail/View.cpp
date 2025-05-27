@@ -2393,8 +2393,9 @@ enforceMPTokenAuthorization(
     auto const maybeDomainID = sleIssuance->at(~sfDomainID);
     bool expired = false;
     bool const authorizedByDomain = [&]() -> bool {
+        // NOTE: defensive here, shuld be checked in preclaim
         if (!maybeDomainID.has_value())
-            return false;
+            return false;  // LCOV_EXCL_LINE
 
         auto const ter = verifyValidDomain(view, account, *maybeDomainID, j);
         if (isTesSuccess(ter))
