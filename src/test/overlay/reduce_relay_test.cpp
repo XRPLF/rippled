@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <test/jtx.h>
 #include <test/jtx/Env.h>
 
 #include <xrpld/overlay/Message.h>
@@ -33,6 +34,7 @@
 #include <boost/thread.hpp>
 
 #include <chrono>
+#include <iostream>
 #include <numeric>
 #include <optional>
 
@@ -1468,29 +1470,28 @@ vp_base_squelch_max_selected_peers=2
     {
         doTest("BaseSquelchReady", log, [&](bool log) {
             ManualClock::reset();
-            reduce_relay::Slots<ManualClock> slots(
-                env_.app().logs(), network_.overlay(), env_.app().config());
-
-            env_.app().config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE = false;
+            auto createSlots = [&](bool baseSquelchEnabled)
+                -> reduce_relay::Slots<ManualClock> {
+                env_.app().config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE =
+                    baseSquelchEnabled;
+                return reduce_relay::Slots<ManualClock>(
+                    env_.app().logs(), network_.overlay(), env_.app().config());
+            };
             // base squelching must not be ready if squelching is disabled
-            BEAST_EXPECT(!slots.baseSquelchReady());
-
-            env_.app().config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE = true;
+            BEAST_EXPECT(!createSlots(false).baseSquelchReady());
 
             // base squelch must not be ready as not enough time passed from
             // bootup
-            BEAST_EXPECT(!slots.baseSquelchReady());
+            BEAST_EXPECT(!createSlots(true).baseSquelchReady());
 
             ManualClock::advance(reduce_relay::WAIT_ON_BOOTUP + minutes{1});
 
             // base squelch enabled and bootup time passed
-            BEAST_EXPECT(slots.baseSquelchReady());
-
-            env_.app().config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE = false;
+            BEAST_EXPECT(createSlots(true).baseSquelchReady());
 
             // even if time passed, base squelching must not be ready if turned
             // off in the config
-            BEAST_EXPECT(!slots.baseSquelchReady());
+            BEAST_EXPECT(!createSlots(false).baseSquelchReady());
         });
     }
 
@@ -1702,9 +1703,14 @@ vp_base_squelch_max_selected_peers=2
     Network network_;
 
 public:
-    reduce_relay_test() : env_(*this), network_(env_.app())
+    reduce_relay_test()
+        : env_(*this, jtx::envconfig([](std::unique_ptr<Config> cfg) {
+            cfg->VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE = true;
+            cfg->VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS = 6;
+            return cfg;
+        }))
+        , network_(env_.app())
     {
-        env_.app().config().VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS = 6;
     }
 
     void

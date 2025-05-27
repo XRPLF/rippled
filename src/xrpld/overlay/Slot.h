@@ -580,7 +580,8 @@ public:
         : handler_(handler)
         , logs_(logs)
         , journal_(logs.journal("Slots"))
-        , config_(config)
+        , baseSquelchEnabled_(config.VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE)
+        , maxSelectedPeers_(config.VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS)
     {
     }
     ~Slots() = default;
@@ -589,8 +590,7 @@ public:
     bool
     baseSquelchReady()
     {
-        return config_.VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE &&
-            reduceRelayReady();
+        return baseSquelchEnabled_ && reduceRelayReady();
     }
 
     /** Check if reduce_relay::WAIT_ON_BOOTUP time passed since startup */
@@ -730,7 +730,8 @@ private:
     Logs& logs_;
     beast::Journal const journal_;
 
-    Config const& config_;
+    bool const baseSquelchEnabled_;
+    uint16_t const maxSelectedPeers_;
 
     // Maintain aged container of message/peers. This is required
     // to discard duplicate message from the same peer. A message
@@ -795,9 +796,7 @@ Slots<clock_type>::updateSlotAndSquelch(
                 .emplace(std::make_pair(
                     validator,
                     Slot<clock_type>(
-                        handler_,
-                        logs_.journal("Slot"),
-                        config_.VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS)))
+                        handler_, logs_.journal("Slot"), maxSelectedPeers_)))
                 .first;
         it->second.update(validator, id, type, callback);
     }
