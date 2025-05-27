@@ -11,7 +11,7 @@ concurrency:
 
 jobs:
   documentation:
-    runs-on: [self-hosted, heavy]
+    runs-on: ubuntu-latest
     permissions:
       contents: write
     container: ghcr.io/xrplf/rippled-build-ubuntu:aaf5e3e
