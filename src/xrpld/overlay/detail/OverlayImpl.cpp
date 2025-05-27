@@ -142,11 +142,7 @@ OverlayImpl::OverlayImpl(
     , m_resolver(resolver)
     , next_id_(1)
     , timer_count_(0)
-    , slots_(
-          app.logs(),
-          *this,
-          app.config(),
-          [&]() { reportInboundTraffic(TrafficCount::squelch_ignored, 0); })
+    , slots_(app.logs(), *this, app.config())
     , m_stats(
           std::bind(&OverlayImpl::collect_metrics, this),
           collector,
@@ -1432,7 +1428,9 @@ OverlayImpl::updateSlotAndSquelch(
             });
 
     for (auto id : peers)
-        slots_.updateSlotAndSquelch(key, validator, id, type);
+        slots_.updateSlotAndSquelch(key, validator, id, type, [&]() {
+            reportInboundTraffic(TrafficCount::squelch_ignored, 0);
+        });
 }
 
 void
@@ -1450,7 +1448,9 @@ OverlayImpl::updateSlotAndSquelch(
             updateSlotAndSquelch(key, validator, peer, type);
         });
 
-    slots_.updateSlotAndSquelch(key, validator, peer, type);
+    slots_.updateSlotAndSquelch(key, validator, peer, type, [&]() {
+        reportInboundTraffic(TrafficCount::squelch_ignored, 0);
+    });
 }
 
 void

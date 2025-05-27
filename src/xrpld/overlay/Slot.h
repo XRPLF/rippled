@@ -110,25 +110,24 @@ private:
     using time_point = typename clock_type::time_point;
 
     // a callback to report ignored squelches
-    using ignored_squelch_reporter = std::function<void()>;
+    using ignored_squelch_callback = std::function<void()>;
 
     /** Constructor
      * @param journal Journal for logging
      * @param handler Squelch/Unsquelch implementation
+     * @param maxSelectedPeers the maximum number of peers to be selected as
+     * validator message source
      */
     Slot(
         SquelchHandler const& handler,
         beast::Journal journal,
-        uint16_t maxSelectedPeers,
-        ignored_squelch_reporter reporter)
+        uint16_t maxSelectedPeers)
         : reachedThreshold_(0)
         , lastSelected_(clock_type::now())
         , state_(SlotState::Counting)
         , handler_(handler)
         , journal_(journal)
         , maxSelectedPeers_(maxSelectedPeers)
-        , reporter_(reporter)
-
     {
     }
 
@@ -149,9 +148,14 @@ private:
      * @param id Peer id which received the message
      * @param type  Message type (Validation and Propose Set only,
      *     others are ignored, future use)
+     * @param callback A callback to report ignored squelches
      */
     void
-    update(PublicKey const& validator, id_t id, protocol::MessageType type);
+    update(
+        PublicKey const& validator,
+        id_t id,
+        protocol::MessageType type,
+        ignored_squelch_callback callback);
 
     /** Handle peer deletion when a peer disconnects.
      * If the peer is in Selected state then
@@ -253,8 +257,6 @@ private:
     // the maximum number of peers that should be selected as a validator
     // message source
     uint16_t const maxSelectedPeers_;
-
-    ignored_squelch_reporter reporter_;
 };
 
 template <typename clock_type>
@@ -285,7 +287,8 @@ void
 Slot<clock_type>::update(
     PublicKey const& validator,
     id_t id,
-    protocol::MessageType type)
+    protocol::MessageType type,
+    ignored_squelch_callback callback)
 {
     using namespace std::chrono;
     auto now = clock_type::now();
@@ -325,7 +328,7 @@ Slot<clock_type>::update(
 
     // report if we received a message from a squelched peer
     if (peer.state == PeerState::Squelched)
-        reporter_();
+        callback();
 
     if (state_ != SlotState::Counting || peer.state == PeerState::Squelched)
         return;
@@ -572,18 +575,12 @@ public:
      * @param logs reference to the logger
      * @param handler Squelch/unsquelch implementation
      * @param config reference to the global config
-     * @param reporter a callback to report ignored squelches
      */
-    Slots(
-        Logs& logs,
-        SquelchHandler const& handler,
-        Config const& config,
-        typename Slot<clock_type>::ignored_squelch_reporter reporter = []() {})
+    Slots(Logs& logs, SquelchHandler const& handler, Config const& config)
         : handler_(handler)
         , logs_(logs)
         , journal_(logs.journal("Slots"))
         , config_(config)
-        , reporter_(reporter)
     {
     }
     ~Slots() = default;
@@ -608,7 +605,8 @@ public:
         return reduceRelayReady_;
     }
 
-    /** Calls Slot::update of Slot associated with the validator.
+    /** Calls Slot::update of Slot associated with the validator, with a noop
+     * callback.
      * @param key Message's hash
      * @param validator Validator's public key
      * @param id Peer's id which received the message
@@ -619,7 +617,25 @@ public:
         uint256 const& key,
         PublicKey const& validator,
         id_t id,
-        protocol::MessageType type);
+        protocol::MessageType type)
+    {
+        updateSlotAndSquelch(key, validator, id, type, []() {});
+    }
+
+    /** Calls Slot::update of Slot associated with the validator.
+     * @param key Message's hash
+     * @param validator Validator's public key
+     * @param id Peer's id which received the message
+     * @param type Received protocol message type
+     * @param callback A callback to report ignored validations
+     */
+    void
+    updateSlotAndSquelch(
+        uint256 const& key,
+        PublicKey const& validator,
+        id_t id,
+        protocol::MessageType type,
+        typename Slot<clock_type>::ignored_squelch_callback callback);
 
     /** Check if peers stopped relaying messages
      * and if slots stopped receiving messages from the validator.
@@ -716,7 +732,6 @@ private:
 
     Config const& config_;
 
-    typename Slot<clock_type>::ignored_squelch_reporter reporter_;
     // Maintain aged container of message/peers. This is required
     // to discard duplicate message from the same peer. A message
     // is aged after IDLED seconds. A message received IDLED seconds
@@ -764,7 +779,8 @@ Slots<clock_type>::updateSlotAndSquelch(
     uint256 const& key,
     PublicKey const& validator,
     id_t id,
-    protocol::MessageType type)
+    protocol::MessageType type,
+    typename Slot<clock_type>::ignored_squelch_callback callback)
 {
     if (!addPeerMessage(key, id))
         return;
@@ -781,13 +797,12 @@ Slots<clock_type>::updateSlotAndSquelch(
                     Slot<clock_type>(
                         handler_,
                         logs_.journal("Slot"),
-                        config_.VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS,
-                        reporter_)))
+                        config_.VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS)))
                 .first;
-        it->second.update(validator, id, type);
+        it->second.update(validator, id, type, callback);
     }
     else
-        it->second.update(validator, id, type);
+        it->second.update(validator, id, type, callback);
 }
 
 template <typename clock_type>
