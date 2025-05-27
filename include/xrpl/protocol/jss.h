@@ -268,6 +268,9 @@ JSS(expected_date_UTC);       // out: any (warnings)
 JSS(expected_ledger_size);    // out: TxQ
 JSS(expiration);              // out: AccountOffers, AccountChannels,
                               //      ValidatorList, amm_info
+JSS(extension_compute);       // out: NetworkOps
+JSS(extension_size);          // out: NetworkOps
+JSS(gas_price);               // out: NetworkOps
 JSS(fail_hard);               // in: Sign, Submit
 JSS(failed);                  // out: InboundLedger
 JSS(feature);                 // in: Feature

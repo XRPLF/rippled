@@ -185,6 +185,8 @@ enum TEFcodes : TERUnderlyingType {
     tefNO_TICKET,
     tefNFTOKEN_IS_NOT_TRANSFERABLE,
     tefINVALID_LEDGER_FIX_TYPE,
+    tefNO_WASM,
+    tefWASM_FIELD_NOT_INCLUDED,
 };
 
 //------------------------------------------------------------------------------
@@ -360,6 +362,7 @@ enum TECcodes : TERUnderlyingType {
     tecWRONG_ASSET = 194,
     tecLIMIT_EXCEEDED = 195,
     tecPSEUDO_ACCOUNT = 196,
+    tecWASM_REJECTED = 197,
 };
 
 //------------------------------------------------------------------------------

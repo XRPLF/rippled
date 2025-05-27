@@ -316,6 +316,12 @@ LEDGER_ENTRY(ltFEE_SETTINGS, 0x0073, FeeSettings, fee, ({
     {sfBaseFeeDrops,           soeOPTIONAL},
     {sfReserveBaseDrops,       soeOPTIONAL},
     {sfReserveIncrementDrops,  soeOPTIONAL},
+
+    // New fields
+    {sfExtensionComputeLimit,  soeOPTIONAL},
+    {sfExtensionSizeLimit,     soeOPTIONAL},
+    {sfGasPrice,               soeOPTIONAL},
+
     {sfPreviousTxnID,          soeOPTIONAL},
     {sfPreviousTxnLgrSeq,      soeOPTIONAL},
 }))
@@ -345,6 +351,8 @@ LEDGER_ENTRY(ltESCROW, 0x0075, Escrow, escrow, ({
     {sfCondition,            soeOPTIONAL},
     {sfCancelAfter,          soeOPTIONAL},
     {sfFinishAfter,          soeOPTIONAL},
+    {sfFinishFunction,       soeOPTIONAL},
+    {sfData,                 soeOPTIONAL},
     {sfSourceTag,            soeOPTIONAL},
     {sfDestinationTag,       soeOPTIONAL},
     {sfOwnerNode,            soeREQUIRED},

@@ -44,10 +44,12 @@ TRANSACTION(ttPAYMENT, 0, Payment, Delegation::delegatable, ({
 TRANSACTION(ttESCROW_CREATE, 1, EscrowCreate, Delegation::delegatable, ({
     {sfDestination, soeREQUIRED},
     {sfAmount, soeREQUIRED},
+    {sfDestinationTag, soeOPTIONAL},
     {sfCondition, soeOPTIONAL},
     {sfCancelAfter, soeOPTIONAL},
     {sfFinishAfter, soeOPTIONAL},
-    {sfDestinationTag, soeOPTIONAL},
+    {sfFinishFunction, soeOPTIONAL},
+    {sfData,           soeOPTIONAL},
 }))
 
 /** This transaction type completes an existing escrow. */
@@ -57,6 +59,7 @@ TRANSACTION(ttESCROW_FINISH, 2, EscrowFinish, Delegation::delegatable, ({
     {sfFulfillment, soeOPTIONAL},
     {sfCondition, soeOPTIONAL},
     {sfCredentialIDs, soeOPTIONAL},
+    {sfComputationAllowance, soeOPTIONAL},
 }))
 
 
@@ -543,6 +546,9 @@ TRANSACTION(ttFEE, 101, SetFee, Delegation::notDelegatable, ({
     {sfBaseFeeDrops, soeOPTIONAL},
     {sfReserveBaseDrops, soeOPTIONAL},
     {sfReserveIncrementDrops, soeOPTIONAL},
+    {sfExtensionComputeLimit, soeOPTIONAL},
+    {sfExtensionSizeLimit, soeOPTIONAL},
+    {sfGasPrice, soeOPTIONAL},
 }))
 
 /** This system-generated transaction type is used to update the network's negative UNL

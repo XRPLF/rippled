@@ -204,6 +204,17 @@ It fixes some source files to add missing `#include`s.
    conan export --version 2.0.8 external/nudb
    ```
 
+Export our [Conan recipe for WAMR](./external/wamr).
+It add metering and expose some internal structures.
+
+
+   ```
+   # Conan 1.x
+   conan export external/wamr wamr/2.2.0@
+   # Conan 2.x
+   conan export --version 2.2.0 external/wamr
+   ```
+
 ### Build and Test
 
 1. Create a build directory and move into it.
