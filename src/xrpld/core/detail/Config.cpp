@@ -743,7 +743,7 @@ Config::loadFromString(std::string const& fileContents)
         // This option is kept for backwards compatibility. When squelching   //
         // is the default algorithm, it must be replaced with:                //
         //  VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE =                             //
-        //  sec.value_or("vp_base_squelch_enable", false);                    //
+        //  sec.value_or("vp_base_squelch_enable", true);                     //
         if (sec.exists("vp_base_squelch_enable") && sec.exists("vp_enable"))
             Throw<std::runtime_error>(
                 "Invalid " SECTION_REDUCE_RELAY

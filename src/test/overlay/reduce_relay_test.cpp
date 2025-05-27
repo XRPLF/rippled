@@ -1398,7 +1398,6 @@ vp_base_squelch_enable=0
         doTest("Test Config - legacy and new", log, [&](bool log) {
             Config c;
 
-            // new config takes precedence over legacy
             std::string toLoad(R"rippleConfig(
 [reduce_relay]
 vp_base_squelch_enable=0
