@@ -94,7 +94,7 @@ getProfilingResults()
             << timeInTotal / (double)duration.time.size() << ","
             << compute_stddev(times) << ","
             << cpuCyclesInTotal / (double)duration.cpuCycles.size() << ","
-            << compute_stddev(duration.cpuCycles) << ","
+            << compute_stddev(duration.cpuCycles)
             << std::endl;
     }
 

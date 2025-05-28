@@ -53,8 +53,8 @@ private:
         }
     };
 
-    XXH3_state_t* state_;
-    // inline static thread_local state_wrapper wrapper{};
+    // XXH3_state_t* state_;
+    inline static thread_local state_wrapper wrapper{};
     std::size_t totalSize_ = 0;
     std::chrono::nanoseconds duration_{};
     std::uint64_t cpuCycles = 0;
@@ -82,9 +82,9 @@ public:
     {
         auto start = std::chrono::steady_clock::now();
         auto cpuCyclesStart = __rdtsc();
-        state_ = allocState();
-        XXH3_64bits_reset(state_);
-        // XXH3_64bits_reset(wrapper.state);
+        // state_ = allocState();
+        // XXH3_64bits_reset(state_);
+        XXH3_64bits_reset(wrapper.state);
         duration_ += std::chrono::steady_clock::now() - start;
         cpuCycles += (__rdtsc() - cpuCyclesStart);
     }
@@ -93,7 +93,7 @@ public:
     {
         // profiler_.functionName = "xxhasher-" + std::to_string(totalSize_);
         // auto start = std::chrono::steady_clock::now();
-        // if (0)
+        if (0)
         {
             FunctionProfiler _{"-free"};
             XXH3_freeState(state_);
@@ -107,9 +107,9 @@ public:
     {
         auto start = std::chrono::steady_clock::now();
         auto cpuCyclesStart = __rdtsc();
-        state_ = allocState();
-        XXH3_64bits_reset_withSeed(state_, seed);
-        // XXH3_64bits_reset_withSeed(wrapper.state, seed);
+        // state_ = allocState();
+        // XXH3_64bits_reset_withSeed(state_, seed);
+        XXH3_64bits_reset_withSeed(wrapper.state, seed);
         duration_ += std::chrono::steady_clock::now() - start;
         cpuCycles += (__rdtsc() - cpuCyclesStart);
     }
@@ -121,9 +121,9 @@ public:
     {
         auto start = std::chrono::steady_clock::now();
         auto cpuCyclesStart = __rdtsc();
-        state_ = allocState();
-        XXH3_64bits_reset_withSeed(state_, seed);
-        // XXH3_64bits_reset_withSeed(wrapper.state, seed);
+        // state_ = allocState();
+        // XXH3_64bits_reset_withSeed(state_, seed);
+        XXH3_64bits_reset_withSeed(wrapper.state, seed);
         duration_ += std::chrono::steady_clock::now() - start;
         cpuCycles += (__rdtsc() - cpuCyclesStart);
     }
@@ -135,8 +135,8 @@ public:
         auto cpuCyclesStart = __rdtsc();
         totalSize_ += len;
         // FunctionProfiler _{"-size-" + std::to_string(len)};
-        XXH3_64bits_update(state_, key, len);
-        // XXH3_64bits_update(wrapper.state, key, len);
+        // XXH3_64bits_update(state_, key, len);
+        XXH3_64bits_update(wrapper.state, key, len);
         duration_ += std::chrono::steady_clock::now() - start;
         cpuCycles += (__rdtsc() - cpuCyclesStart);
     }
@@ -145,8 +145,8 @@ public:
     operator std::size_t() noexcept
     {
         auto start = std::chrono::steady_clock::now();
-        auto ret =  XXH3_64bits_digest(state_);
-        // auto ret = XXH3_64bits_digest(wrapper.state);
+        // auto ret =  XXH3_64bits_digest(state_);
+        auto ret = XXH3_64bits_digest(wrapper.state);
         duration_ += std::chrono::steady_clock::now() - start;
 
         std::lock_guard<std::mutex> lock{FunctionProfiler::mutex_};
