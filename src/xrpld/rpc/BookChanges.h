@@ -55,7 +55,7 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
             STAmount,                 // low rate
             STAmount,                 // open rate
             STAmount,                 // close rate
-            std::optional<uint256>>>  // domain id
+            std::optional<uint256>>>  // optional: domain id
         tally;
 
     for (auto& tx : lpAccepted->txs)
