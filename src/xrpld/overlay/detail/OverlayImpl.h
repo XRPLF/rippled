@@ -417,6 +417,21 @@ public:
         Peer::id_t peer,
         bool isTrusted);
 
+    /** Updates the slot information for an untrusted validator. If the
+     * untrusted validator was previously squelched, sends TMSquelch message to
+     * the sender of the message. If there are no untrusted slots available
+     * sends TMSquelch message to all peers to squelch messages from the
+     * validator.
+     * @param key Unique message's key
+     * @param validator Validator's public key
+     * @param peers Peers' id to update the slots for
+     */
+    void
+    updateValidatorSlot(
+        uint256 const& key,
+        PublicKey const& validator,
+        Peer::id_t peer);
+
     /** Called when the peer is deleted. If the peer was selected to be the
      * source of messages from the validator then squelched peers have to be
      * unsquelched.
