@@ -10,8 +10,25 @@
 #include <string>
 #include <unordered_map>
 #include <x86intrin.h>
+#include <vector>
+#include <cmath>
+#include <numeric>  // std::accumulate
 
 namespace beast {
+
+template <typename T>
+double compute_stddev(const std::vector<T>& samples) {
+    if (samples.size() < 2) return 0.0;
+
+    double mean = std::accumulate(samples.begin(), samples.end(), 0.0) / samples.size();
+    double sum_sq = 0.0;
+
+    for (double x : samples) {
+        sum_sq += (x - mean) * (x - mean);
+    }
+
+    return std::sqrt(sum_sq / (samples.size() - 1));
+}
 
 void
 logProfilingResults();
@@ -26,9 +43,8 @@ public:
 
     struct StatisticData
     {
-        std::chrono::nanoseconds timeInTotal;
-        std::uint64_t cpuCyclesInTotal;
-        std::int64_t count;
+        std::vector<std::chrono::nanoseconds> time;
+        std::vector<std::uint64_t> cpuCycles;
     };
 
     inline static std::unordered_map<
@@ -53,9 +69,8 @@ public:
         {
             return;
         }
-        funcionDurations[functionName].timeInTotal += duration;
-        funcionDurations[functionName].cpuCyclesInTotal += (__rdtsc() - cpuCycleStart);
-        funcionDurations[functionName].count++;
+        funcionDurations[functionName].time.emplace_back(duration);
+        funcionDurations[functionName].cpuCycles.emplace_back((__rdtsc() - cpuCycleStart));
     }
 };
 
@@ -65,12 +80,27 @@ getProfilingResults()
     std::lock_guard<std::mutex> lock{FunctionProfiler::mutex_};
     std::stringstream ss;
     ss << "Function profiling results:" << std::endl;
-    ss << "name,time,cpu cycles,count" << std::endl;
+    ss << "name,time,cpu cycles,count,average time(ns),time standard deviation,average cpu cycles,cpu cycles standard deviation" << std::endl;
     for (auto const& [name, duration] : FunctionProfiler::funcionDurations)
     {
-        ss << name << "," << duration.timeInTotal.count() << ","
-            << duration.cpuCyclesInTotal << ","
-           << duration.count << std::endl;
+        std::vector<std::int64_t> times;
+        times.reserve(duration.time.size());
+
+        std::transform(std::begin(duration.time), std::end(duration.time), std::back_inserter(times), [](std::int64_t a, const std::chrono::nanoseconds& time) {
+            return time.count();
+        });
+
+        auto timeInTotal = std::accumulate(std::begin(times), std::end(times), std::int64_t{0});
+        auto cpuCyclesInTotal = std::accumulate(std::begin(duration.cpuCycles), std::end(duration.cpuCycles), std::int64_t{0});
+
+        ss << name << "," << timeInTotal << ","
+            << cpuCyclesInTotal << ","
+            << duration.time.size()
+            << timeInTotal / (double)duration.time.size()
+            << compute_stddev(times)
+            << cpuCyclesInTotal / (double)duration.cpuCycles.size()
+            << compute_stddev(duration.cpuCycles)
+            << std::endl;
     }
 
     return ss.str();
