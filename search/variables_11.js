@@ -48,7 +48,7 @@ var searchData=
   ['recvvalidation_45',['recvValidation',['../structripple_1_1test_1_1csf_1_1Peer_1_1ProcessingDelays.html#a9baebbef7feb4f293522a8554ecf71fe',1,'ripple::test::csf::Peer::ProcessingDelays']]],
   ['redircount_46',['redirCount',['../structripple_1_1ValidatorSite_1_1Site.html#aa4105c913e2286bf65cec69a77a9a191',1,'ripple::ValidatorSite::Site']]],
   ['redirectendpointcount_47',['redirectEndpointCount',['../namespaceripple_1_1PeerFinder_1_1Tuning.html#a34bf7d8eed42ae26737b4ad5575ca754',1,'ripple::PeerFinder::Tuning']]],
-  ['reducerelayready_5f_48',['reduceRelayReady_',['../classripple_1_1PeerImp.html#abddeb3fc608e55b39ef1a969af65b17d',1,'ripple::PeerImp']]],
+  ['reducerelayready_5f_48',['reduceRelayReady_',['../classripple_1_1reduce__relay_1_1Slots.html#aa7919f48dde4ef09caa2b11ba77c838d',1,'ripple::reduce_relay::Slots']]],
   ['refcount_49',['refcount',['../structripple_1_1Resource_1_1Entry.html#a3e780c3b19c2c14ec472886ad9290a8c',1,'ripple::Resource::Entry']]],
   ['refcount_5f_50',['refcount_',['../classripple_1_1SHAMapItem.html#ad2831484014eca794c5c9e39258b39f2',1,'ripple::SHAMapItem']]],
   ['refcounts_51',['refCounts',['../structripple_1_1IntrusiveRefCounts.html#aca9660ae7c2e3bfcefc49a3bc319b7c1',1,'ripple::IntrusiveRefCounts']]],

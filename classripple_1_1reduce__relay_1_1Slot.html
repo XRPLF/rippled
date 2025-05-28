@@ -118,15 +118,17 @@ Private Types</h2></td></tr>
 <tr class="separator:a383178fe8cb95a5ad5f2c44f5a0feb53"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a4698f19f0d6d30f83785d2ae2ccdd0bf"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1reduce__relay_1_1Slot.html#a4698f19f0d6d30f83785d2ae2ccdd0bf">time_point</a> = typename clock_type::time_point</td></tr>
 <tr class="separator:a4698f19f0d6d30f83785d2ae2ccdd0bf"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ab4333b1cc4fc1356ad05a5c09fdf8af8"><td class="memItemLeft" align="right" valign="top">using&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1reduce__relay_1_1Slot.html#ab4333b1cc4fc1356ad05a5c09fdf8af8">ignored_squelch_callback</a> = <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt; void()&gt;</td></tr>
+<tr class="separator:ab4333b1cc4fc1356ad05a5c09fdf8af8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="pri-methods" name="pri-methods"></a>
 Private Member Functions</h2></td></tr>
-<tr class="memitem:a0217c917d840cc6c8e95931238877285"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1reduce__relay_1_1Slot.html#a0217c917d840cc6c8e95931238877285">Slot</a> (<a class="el" href="classripple_1_1reduce__relay_1_1SquelchHandler.html">SquelchHandler</a> const &amp;handler, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> journal)</td></tr>
-<tr class="memdesc:a0217c917d840cc6c8e95931238877285"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor.  <a href="classripple_1_1reduce__relay_1_1Slot.html#a0217c917d840cc6c8e95931238877285">More...</a><br /></td></tr>
-<tr class="separator:a0217c917d840cc6c8e95931238877285"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a55f3a58c325544d77fb018690680dc45"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1reduce__relay_1_1Slot.html#a55f3a58c325544d77fb018690680dc45">update</a> (<a class="el" href="classripple_1_1PublicKey.html">PublicKey</a> const &amp;<a class="el" href="namespaceripple_1_1test_1_1jtx.html#a000ffa48b8512f4af030e7fd63c26cad">validator</a>, <a class="el" href="classripple_1_1reduce__relay_1_1Slot.html#a383178fe8cb95a5ad5f2c44f5a0feb53">id_t</a> id, protocol::MessageType type)</td></tr>
-<tr class="memdesc:a55f3a58c325544d77fb018690680dc45"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update peer info.  <a href="classripple_1_1reduce__relay_1_1Slot.html#a55f3a58c325544d77fb018690680dc45">More...</a><br /></td></tr>
-<tr class="separator:a55f3a58c325544d77fb018690680dc45"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a18aa97a37c2bc4018d0c96c14d98fbcc"><td class="memItemLeft" align="right" valign="top">&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1reduce__relay_1_1Slot.html#a18aa97a37c2bc4018d0c96c14d98fbcc">Slot</a> (<a class="el" href="classripple_1_1reduce__relay_1_1SquelchHandler.html">SquelchHandler</a> const &amp;handler, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> journal, uint16_t maxSelectedPeers)</td></tr>
+<tr class="memdesc:a18aa97a37c2bc4018d0c96c14d98fbcc"><td class="mdescLeft">&#160;</td><td class="mdescRight">Constructor.  <a href="classripple_1_1reduce__relay_1_1Slot.html#a18aa97a37c2bc4018d0c96c14d98fbcc">More...</a><br /></td></tr>
+<tr class="separator:a18aa97a37c2bc4018d0c96c14d98fbcc"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a73959f50e13d8633b21c884a165c8040"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1reduce__relay_1_1Slot.html#a73959f50e13d8633b21c884a165c8040">update</a> (<a class="el" href="classripple_1_1PublicKey.html">PublicKey</a> const &amp;<a class="el" href="namespaceripple_1_1test_1_1jtx.html#a000ffa48b8512f4af030e7fd63c26cad">validator</a>, <a class="el" href="classripple_1_1reduce__relay_1_1Slot.html#a383178fe8cb95a5ad5f2c44f5a0feb53">id_t</a> id, protocol::MessageType type, <a class="el" href="classripple_1_1reduce__relay_1_1Slot.html#ab4333b1cc4fc1356ad05a5c09fdf8af8">ignored_squelch_callback</a> callback)</td></tr>
+<tr class="memdesc:a73959f50e13d8633b21c884a165c8040"><td class="mdescLeft">&#160;</td><td class="mdescRight">Update peer info.  <a href="classripple_1_1reduce__relay_1_1Slot.html#a73959f50e13d8633b21c884a165c8040">More...</a><br /></td></tr>
+<tr class="separator:a73959f50e13d8633b21c884a165c8040"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a3588d6a33bbd8c51f3b3e415f90f7da7"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1reduce__relay_1_1Slot.html#a3588d6a33bbd8c51f3b3e415f90f7da7">deletePeer</a> (<a class="el" href="classripple_1_1PublicKey.html">PublicKey</a> const &amp;<a class="el" href="namespaceripple_1_1test_1_1jtx.html#a000ffa48b8512f4af030e7fd63c26cad">validator</a>, <a class="el" href="classripple_1_1reduce__relay_1_1Slot.html#a383178fe8cb95a5ad5f2c44f5a0feb53">id_t</a> id, bool <a class="el" href="namespaceripple.html#aa761b49f905eb9fd8c8ae754a0eb7504">erase</a>)</td></tr>
 <tr class="memdesc:a3588d6a33bbd8c51f3b3e415f90f7da7"><td class="mdescLeft">&#160;</td><td class="mdescRight">Handle peer deletion when a peer disconnects.  <a href="classripple_1_1reduce__relay_1_1Slot.html#a3588d6a33bbd8c51f3b3e415f90f7da7">More...</a><br /></td></tr>
 <tr class="separator:a3588d6a33bbd8c51f3b3e415f90f7da7"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -178,6 +180,8 @@ Private Attributes</h2></td></tr>
 <tr class="separator:a506656a3fb3806732252cc690c25bf2d"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:affd0e028ba910f8a694b0ae37f29051c"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1reduce__relay_1_1Slot.html#affd0e028ba910f8a694b0ae37f29051c">journal_</a></td></tr>
 <tr class="separator:affd0e028ba910f8a694b0ae37f29051c"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a3a60bc207a03bb12b1278fda89adae99"><td class="memItemLeft" align="right" valign="top">uint16_t const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1reduce__relay_1_1Slot.html#a3a60bc207a03bb12b1278fda89adae99">maxSelectedPeers_</a></td></tr>
+<tr class="separator:a3a60bc207a03bb12b1278fda89adae99"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="friends" name="friends"></a>
 Friends</h2></td></tr>
@@ -243,9 +247,35 @@ template&lt;typename clock_type &gt; </div>
 
 </div>
 </div>
+<a id="ab4333b1cc4fc1356ad05a5c09fdf8af8" name="ab4333b1cc4fc1356ad05a5c09fdf8af8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ab4333b1cc4fc1356ad05a5c09fdf8af8">&#9670;&#160;</a></span>ignored_squelch_callback</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename clock_type &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">using <a class="el" href="classripple_1_1reduce__relay_1_1Slot.html">ripple::reduce_relay::Slot</a>&lt; clock_type &gt;::ignored_squelch_callback =  <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/functional/function.html">std::function</a>&lt;void()&gt;</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="overlay_2Slot_8h_source.html#l00113">113</a> of file <a class="el" href="overlay_2Slot_8h_source.html">overlay/Slot.h</a>.</p>
+
+</div>
+</div>
 <h2 class="groupheader">Constructor &amp; Destructor Documentation</h2>
-<a id="a0217c917d840cc6c8e95931238877285" name="a0217c917d840cc6c8e95931238877285"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a0217c917d840cc6c8e95931238877285">&#9670;&#160;</a></span>Slot()</h2>
+<a id="a18aa97a37c2bc4018d0c96c14d98fbcc" name="a18aa97a37c2bc4018d0c96c14d98fbcc"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a18aa97a37c2bc4018d0c96c14d98fbcc">&#9670;&#160;</a></span>Slot()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -265,7 +295,13 @@ template&lt;typename clock_type &gt; </div>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a>&#160;</td>
-          <td class="paramname"><em>journal</em>&#160;</td>
+          <td class="paramname"><em>journal</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype">uint16_t&#160;</td>
+          <td class="paramname"><em>maxSelectedPeers</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -285,17 +321,18 @@ template&lt;typename clock_type &gt; </div>
   <table class="params">
     <tr><td class="paramname">journal</td><td>Journal for logging </td></tr>
     <tr><td class="paramname">handler</td><td>Squelch/Unsquelch implementation </td></tr>
+    <tr><td class="paramname">maxSelectedPeers</td><td>the maximum number of peers to be selected as validator message source </td></tr>
   </table>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Slot_8h_source.html#l00116">116</a> of file <a class="el" href="overlay_2Slot_8h_source.html">overlay/Slot.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Slot_8h_source.html#l00121">121</a> of file <a class="el" href="overlay_2Slot_8h_source.html">overlay/Slot.h</a>.</p>
 
 </div>
 </div>
 <h2 class="groupheader">Member Function Documentation</h2>
-<a id="a55f3a58c325544d77fb018690680dc45" name="a55f3a58c325544d77fb018690680dc45"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a55f3a58c325544d77fb018690680dc45">&#9670;&#160;</a></span>update()</h2>
+<a id="a73959f50e13d8633b21c884a165c8040" name="a73959f50e13d8633b21c884a165c8040"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a73959f50e13d8633b21c884a165c8040">&#9670;&#160;</a></span>update()</h2>
 
 <div class="memitem">
 <div class="memproto">
@@ -321,7 +358,13 @@ template&lt;typename clock_type &gt; </div>
           <td class="paramkey"></td>
           <td></td>
           <td class="paramtype">protocol::MessageType&#160;</td>
-          <td class="paramname"><em>type</em>&#160;</td>
+          <td class="paramname"><em>type</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1reduce__relay_1_1Slot.html#ab4333b1cc4fc1356ad05a5c09fdf8af8">ignored_squelch_callback</a>&#160;</td>
+          <td class="paramname"><em>callback</em>&#160;</td>
         </tr>
         <tr>
           <td></td>
@@ -337,16 +380,17 @@ template&lt;typename clock_type &gt; </div>
 </div><div class="memdoc">
 
 <p>Update peer info. </p>
-<p >If the message is from a new peer or from a previously expired squelched peer then switch the peer's and slot's state to Counting. If time of last selection round is &gt; 2 * MAX_UNSQUELCH_EXPIRE_DEFAULT then switch the slot's state to Counting. If the number of messages for the peer is &gt; MIN_MESSAGE_THRESHOLD then add peer to considered peers pool. If the number of considered peers who reached MAX_MESSAGE_THRESHOLD is MAX_SELECTED_PEERS then randomly select MAX_SELECTED_PEERS from considered peers, and call squelch handler for each peer, which is not selected and not already in Squelched state. Set the state for those peers to Squelched and reset the count of all peers. Set slot's state to Selected. <a class="el" href="classripple_1_1Message.html">Message</a> count is not updated when the slot is in Selected state. </p><dl class="params"><dt>Parameters</dt><dd>
+<p >If the message is from a new peer or from a previously expired squelched peer then switch the peer's and slot's state to Counting. If time of last selection round is &gt; 2 * MAX_UNSQUELCH_EXPIRE_DEFAULT then switch the slot's state to Counting. If the number of messages for the peer is &gt; MIN_MESSAGE_THRESHOLD then add peer to considered peers pool. If the number of considered peers who reached MAX_MESSAGE_THRESHOLD is maxSelectedPeers_ then randomly select maxSelectedPeers_ from considered peers, and call squelch handler for each peer, which is not selected and not already in Squelched state. Set the state for those peers to Squelched and reset the count of all peers. Set slot's state to Selected. <a class="el" href="classripple_1_1Message.html">Message</a> count is not updated when the slot is in Selected state. </p><dl class="params"><dt>Parameters</dt><dd>
   <table class="params">
     <tr><td class="paramname">validator</td><td>Public key of the source validator </td></tr>
     <tr><td class="paramname">id</td><td><a class="el" href="classripple_1_1Peer.html" title="Represents a peer connection in the overlay.">Peer</a> id which received the message </td></tr>
     <tr><td class="paramname">type</td><td><a class="el" href="classripple_1_1Message.html">Message</a> type (Validation and Propose Set only, others are ignored, future use) </td></tr>
+    <tr><td class="paramname">callback</td><td>A callback to report ignored squelches </td></tr>
   </table>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Slot_8h_source.html#l00264">264</a> of file <a class="el" href="overlay_2Slot_8h_source.html">overlay/Slot.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Slot_8h_source.html#l00287">287</a> of file <a class="el" href="overlay_2Slot_8h_source.html">overlay/Slot.h</a>.</p>
 
 </div>
 </div>
@@ -402,7 +446,7 @@ template&lt;typename clock_type &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Slot_8h_source.html#l00416">416</a> of file <a class="el" href="overlay_2Slot_8h_source.html">overlay/Slot.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Slot_8h_source.html#l00444">444</a> of file <a class="el" href="overlay_2Slot_8h_source.html">overlay/Slot.h</a>.</p>
 
 </div>
 </div>
@@ -433,7 +477,7 @@ template&lt;typename clock_type &gt; </div>
 
 <p>Get the time of the last peer selection round. </p>
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Slot_8h_source.html#l00161">161</a> of file <a class="el" href="overlay_2Slot_8h_source.html">overlay/Slot.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Slot_8h_source.html#l00175">175</a> of file <a class="el" href="overlay_2Slot_8h_source.html">overlay/Slot.h</a>.</p>
 
 </div>
 </div>
@@ -465,7 +509,7 @@ template&lt;typename clock_type &gt; </div>
 
 <p>Return number of peers in state. </p>
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Slot_8h_source.html#l00480">480</a> of file <a class="el" href="overlay_2Slot_8h_source.html">overlay/Slot.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Slot_8h_source.html#l00508">508</a> of file <a class="el" href="overlay_2Slot_8h_source.html">overlay/Slot.h</a>.</p>
 
 </div>
 </div>
@@ -497,7 +541,7 @@ template&lt;typename clock_type &gt; </div>
 
 <p>Return number of peers not in state. </p>
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Slot_8h_source.html#l00489">489</a> of file <a class="el" href="overlay_2Slot_8h_source.html">overlay/Slot.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Slot_8h_source.html#l00517">517</a> of file <a class="el" href="overlay_2Slot_8h_source.html">overlay/Slot.h</a>.</p>
 
 </div>
 </div>
@@ -528,7 +572,7 @@ template&lt;typename clock_type &gt; </div>
 
 <p>Return <a class="el" href="classripple_1_1reduce__relay_1_1Slot.html" title="Slot is associated with a specific validator via validator&#39;s public key.">Slot</a>'s state. </p>
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Slot_8h_source.html#l00176">176</a> of file <a class="el" href="overlay_2Slot_8h_source.html">overlay/Slot.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Slot_8h_source.html#l00190">190</a> of file <a class="el" href="overlay_2Slot_8h_source.html">overlay/Slot.h</a>.</p>
 
 </div>
 </div>
@@ -556,7 +600,7 @@ template&lt;typename clock_type &gt; </div>
 
 <p>Return selected peers. </p>
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Slot_8h_source.html#l00498">498</a> of file <a class="el" href="overlay_2Slot_8h_source.html">overlay/Slot.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Slot_8h_source.html#l00526">526</a> of file <a class="el" href="overlay_2Slot_8h_source.html">overlay/Slot.h</a>.</p>
 
 </div>
 </div>
@@ -585,7 +629,7 @@ template&lt;typename clock_type &gt; </div>
 <p>Get peers info. </p>
 <p >Return map of peer's state, count, squelch expiration milsec, and last message time milsec. </p>
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Slot_8h_source.html#l00511">511</a> of file <a class="el" href="overlay_2Slot_8h_source.html">overlay/Slot.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Slot_8h_source.html#l00539">539</a> of file <a class="el" href="overlay_2Slot_8h_source.html">overlay/Slot.h</a>.</p>
 
 </div>
 </div>
@@ -623,7 +667,7 @@ template&lt;typename clock_type &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Slot_8h_source.html#l00241">241</a> of file <a class="el" href="overlay_2Slot_8h_source.html">overlay/Slot.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Slot_8h_source.html#l00264">264</a> of file <a class="el" href="overlay_2Slot_8h_source.html">overlay/Slot.h</a>.</p>
 
 </div>
 </div>
@@ -662,7 +706,7 @@ template&lt;typename clock_type &gt; </div>
   </dd>
 </dl>
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Slot_8h_source.html#l00400">400</a> of file <a class="el" href="overlay_2Slot_8h_source.html">overlay/Slot.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Slot_8h_source.html#l00428">428</a> of file <a class="el" href="overlay_2Slot_8h_source.html">overlay/Slot.h</a>.</p>
 
 </div>
 </div>
@@ -690,7 +734,7 @@ template&lt;typename clock_type &gt; </div>
 
 <p>Reset counts of peers in Selected or Counting state. </p>
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Slot_8h_source.html#l00459">459</a> of file <a class="el" href="overlay_2Slot_8h_source.html">overlay/Slot.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Slot_8h_source.html#l00487">487</a> of file <a class="el" href="overlay_2Slot_8h_source.html">overlay/Slot.h</a>.</p>
 
 </div>
 </div>
@@ -718,7 +762,7 @@ template&lt;typename clock_type &gt; </div>
 
 <p>Initialize slot to Counting state. </p>
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Slot_8h_source.html#l00470">470</a> of file <a class="el" href="overlay_2Slot_8h_source.html">overlay/Slot.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Slot_8h_source.html#l00498">498</a> of file <a class="el" href="overlay_2Slot_8h_source.html">overlay/Slot.h</a>.</p>
 
 </div>
 </div>
@@ -772,7 +816,7 @@ template&lt;typename clock_type &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Slot_8h_source.html#l00226">226</a> of file <a class="el" href="overlay_2Slot_8h_source.html">overlay/Slot.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Slot_8h_source.html#l00241">241</a> of file <a class="el" href="overlay_2Slot_8h_source.html">overlay/Slot.h</a>.</p>
 
 </div>
 </div>
@@ -798,7 +842,7 @@ template&lt;typename clock_type &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Slot_8h_source.html#l00229">229</a> of file <a class="el" href="overlay_2Slot_8h_source.html">overlay/Slot.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Slot_8h_source.html#l00245">245</a> of file <a class="el" href="overlay_2Slot_8h_source.html">overlay/Slot.h</a>.</p>
 
 </div>
 </div>
@@ -824,7 +868,7 @@ template&lt;typename clock_type &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Slot_8h_source.html#l00231">231</a> of file <a class="el" href="overlay_2Slot_8h_source.html">overlay/Slot.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Slot_8h_source.html#l00248">248</a> of file <a class="el" href="overlay_2Slot_8h_source.html">overlay/Slot.h</a>.</p>
 
 </div>
 </div>
@@ -850,7 +894,7 @@ template&lt;typename clock_type &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Slot_8h_source.html#l00233">233</a> of file <a class="el" href="overlay_2Slot_8h_source.html">overlay/Slot.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Slot_8h_source.html#l00251">251</a> of file <a class="el" href="overlay_2Slot_8h_source.html">overlay/Slot.h</a>.</p>
 
 </div>
 </div>
@@ -876,7 +920,7 @@ template&lt;typename clock_type &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Slot_8h_source.html#l00234">234</a> of file <a class="el" href="overlay_2Slot_8h_source.html">overlay/Slot.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Slot_8h_source.html#l00253">253</a> of file <a class="el" href="overlay_2Slot_8h_source.html">overlay/Slot.h</a>.</p>
 
 </div>
 </div>
@@ -902,7 +946,7 @@ template&lt;typename clock_type &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Slot_8h_source.html#l00235">235</a> of file <a class="el" href="overlay_2Slot_8h_source.html">overlay/Slot.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Slot_8h_source.html#l00254">254</a> of file <a class="el" href="overlay_2Slot_8h_source.html">overlay/Slot.h</a>.</p>
 
 </div>
 </div>
@@ -928,7 +972,33 @@ template&lt;typename clock_type &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="overlay_2Slot_8h_source.html#l00236">236</a> of file <a class="el" href="overlay_2Slot_8h_source.html">overlay/Slot.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="overlay_2Slot_8h_source.html#l00255">255</a> of file <a class="el" href="overlay_2Slot_8h_source.html">overlay/Slot.h</a>.</p>
+
+</div>
+</div>
+<a id="a3a60bc207a03bb12b1278fda89adae99" name="a3a60bc207a03bb12b1278fda89adae99"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a3a60bc207a03bb12b1278fda89adae99">&#9670;&#160;</a></span>maxSelectedPeers_</h2>
+
+<div class="memitem">
+<div class="memproto">
+<div class="memtemplate">
+template&lt;typename clock_type &gt; </div>
+<table class="mlabels">
+  <tr>
+  <td class="mlabels-left">
+      <table class="memname">
+        <tr>
+          <td class="memname">uint16_t const <a class="el" href="classripple_1_1reduce__relay_1_1Slot.html">ripple::reduce_relay::Slot</a>&lt; clock_type &gt;::maxSelectedPeers_</td>
+        </tr>
+      </table>
+  </td>
+  <td class="mlabels-right">
+<span class="mlabels"><span class="mlabel">private</span></span>  </td>
+  </tr>
+</table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="overlay_2Slot_8h_source.html#l00259">259</a> of file <a class="el" href="overlay_2Slot_8h_source.html">overlay/Slot.h</a>.</p>
 
 </div>
 </div>
