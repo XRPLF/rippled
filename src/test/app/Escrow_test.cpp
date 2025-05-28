@@ -2234,6 +2234,7 @@ struct Escrow_test : public beast::unit_test::suite
                 env.require(balance(alice, XRP(4000) - txnFees));
                 env.require(balance(carol, XRP(5000)));
 
+                // TODO: figure out why this can't be 2412
                 auto const allowance = 3'600;
 
                 // FinishAfter time hasn't passed
