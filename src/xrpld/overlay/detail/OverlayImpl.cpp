@@ -1411,6 +1411,15 @@ OverlayImpl::squelch(
 }
 
 void
+OverlayImpl::squelchAll(PublicKey const& validator, uint32_t squelchDuration)
+{
+    for_each([&](std::shared_ptr<PeerImp>&& p) {
+        slots_.squelchValidator(validator, p->id());
+        p->send(makeSquelchMessage(validator, true, squelchDuration));
+    });
+}
+
+void
 OverlayImpl::updateSlotAndSquelch(
     uint256 const& key,
     PublicKey const& validator,

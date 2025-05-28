@@ -452,6 +452,10 @@ private:
         std::uint32_t squelchDuration) const override;
 
     void
+    squelchAll(PublicKey const& validator, std::uint32_t squelchDuration)
+        override;
+
+    void
     unsquelch(PublicKey const& validator, Peer::id_t id) const override;
 
     std::shared_ptr<Writer>
