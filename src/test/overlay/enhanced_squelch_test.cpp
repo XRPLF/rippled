@@ -715,7 +715,7 @@ private:
         return keys;
     }
 
-    std::unordered_map<id_t, reduce_relay::Slot<ManualClock>::PeerInfo>
+    std::unordered_map<Peer::id_t, reduce_relay::Slot<ManualClock>::PeerInfo>
     getUntrustedSlotPeers(
         PublicKey const& validator,
         reduce_relay::Slots<ManualClock> const& slots)
@@ -724,8 +724,10 @@ private:
         if (it == slots.untrusted_slots_.end())
             return {};
 
-        auto r = std::
-            unordered_map<id_t, reduce_relay::Slot<ManualClock>::PeerInfo>();
+        auto r = std::unordered_map<
+            Peer::id_t,
+            reduce_relay::Slot<ManualClock>::PeerInfo>();
+
         for (auto const& [id, info] : it->second.peers_)
             r.emplace(std::make_pair(id, info));
 
