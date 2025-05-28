@@ -2474,8 +2474,6 @@ class Vault_test : public beast::unit_test::suite
                      .amount = asset(2)});
                 env(tx3, ter{tecEXPIRED});
 
-                auto const cred2 =
-                    env.le(credentials::keylet(charlie, credIssuer2, credType));
                 env.close();
                 BEAST_EXPECT(env.le(credsKeylet) == nullptr);
                 BEAST_EXPECT(env.le(tokenKeylet) == nullptr);
