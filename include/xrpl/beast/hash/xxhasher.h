@@ -93,11 +93,11 @@ public:
     {
         // profiler_.functionName = "xxhasher-" + std::to_string(totalSize_);
         // auto start = std::chrono::steady_clock::now();
-        if (0)
-        {
-            FunctionProfiler _{"-free"};
-            XXH3_freeState(state_);
-        }
+        // if (0)
+        // {
+        //     FunctionProfiler _{"-free"};
+        //     XXH3_freeState(state_);
+        // }
     }
 
     template <
