@@ -37,8 +37,8 @@ namespace ripple {
 // During an EscrowFinish, the transaction must specify both
 // a condition and a fulfillment. We track whether that
 // fulfillment matches and validates the condition.
-constexpr LedgerFlags SF_CF_INVALID = LedgerFlags::PRIVATE5;
-constexpr LedgerFlags SF_CF_VALID = LedgerFlags::PRIVATE6;
+constexpr HashRouterFlags SF_CF_INVALID = HashRouterFlags::PRIVATE5;
+constexpr HashRouterFlags SF_CF_VALID = HashRouterFlags::PRIVATE6;
 
 /*
     Escrow

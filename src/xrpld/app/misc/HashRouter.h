@@ -30,7 +30,7 @@
 
 namespace ripple {
 
-enum class LedgerFlags : std::uint16_t {
+enum class HashRouterFlags : std::uint16_t {
     // Public flags
     UNDEFINED = 0x00,
     BAD = 0x02,  // Temporarily bad
@@ -48,40 +48,40 @@ enum class LedgerFlags : std::uint16_t {
     PRIVATE6 = 0x2000
 };
 
-constexpr LedgerFlags
-operator|(LedgerFlags lhs, LedgerFlags rhs)
+constexpr HashRouterFlags
+operator|(HashRouterFlags lhs, HashRouterFlags rhs)
 {
-    return static_cast<LedgerFlags>(
-        static_cast<std::underlying_type_t<LedgerFlags>>(lhs) |
-        static_cast<std::underlying_type_t<LedgerFlags>>(rhs));
+    return static_cast<HashRouterFlags>(
+        static_cast<std::underlying_type_t<HashRouterFlags>>(lhs) |
+        static_cast<std::underlying_type_t<HashRouterFlags>>(rhs));
 }
 
-constexpr LedgerFlags&
-operator|=(LedgerFlags& lhs, LedgerFlags rhs)
+constexpr HashRouterFlags&
+operator|=(HashRouterFlags& lhs, HashRouterFlags rhs)
 {
     lhs = lhs | rhs;
     return lhs;
 }
 
-constexpr LedgerFlags
-operator&(LedgerFlags lhs, LedgerFlags rhs)
+constexpr HashRouterFlags
+operator&(HashRouterFlags lhs, HashRouterFlags rhs)
 {
-    return static_cast<LedgerFlags>(
-        static_cast<std::underlying_type_t<LedgerFlags>>(lhs) &
-        static_cast<std::underlying_type_t<LedgerFlags>>(rhs));
+    return static_cast<HashRouterFlags>(
+        static_cast<std::underlying_type_t<HashRouterFlags>>(lhs) &
+        static_cast<std::underlying_type_t<HashRouterFlags>>(rhs));
 }
 
-constexpr LedgerFlags&
-operator&=(LedgerFlags& lhs, LedgerFlags rhs)
+constexpr HashRouterFlags&
+operator&=(HashRouterFlags& lhs, HashRouterFlags rhs)
 {
     lhs = lhs & rhs;
     return lhs;
 }
 
 constexpr bool
-any(LedgerFlags flags)
+any(HashRouterFlags flags)
 {
-    return static_cast<std::underlying_type_t<LedgerFlags>>(flags) != 0;
+    return static_cast<std::underlying_type_t<HashRouterFlags>>(flags) != 0;
 }
 
 class Config;
@@ -139,14 +139,14 @@ private:
                 peers_.insert(peer);
         }
 
-        LedgerFlags
+        HashRouterFlags
         getFlags(void) const
         {
             return flags_;
         }
 
         void
-        setFlags(LedgerFlags flagsToSet)
+        setFlags(HashRouterFlags flagsToSet)
         {
             flags_ |= flagsToSet;
         }
@@ -192,7 +192,7 @@ private:
         }
 
     private:
-        LedgerFlags flags_ = LedgerFlags::UNDEFINED;
+        HashRouterFlags flags_ = HashRouterFlags::UNDEFINED;
         std::set<PeerShortID> peers_;
         // This could be generalized to a map, if more
         // than one flag needs to expire independently.
@@ -231,14 +231,14 @@ public:
     addSuppressionPeer(
         uint256 const& key,
         PeerShortID peer,
-        LedgerFlags& flags);
+        HashRouterFlags& flags);
 
     // Add a peer suppression and return whether the entry should be processed
     bool
     shouldProcess(
         uint256 const& key,
         PeerShortID peer,
-        LedgerFlags& flags,
+        HashRouterFlags& flags,
         std::chrono::seconds tx_interval);
 
     /** Set the flags on a hash.
@@ -246,9 +246,9 @@ public:
         @return `true` if the flags were changed. `false` if unchanged.
     */
     bool
-    setFlags(uint256 const& key, LedgerFlags flags);
+    setFlags(uint256 const& key, HashRouterFlags flags);
 
-    LedgerFlags
+    HashRouterFlags
     getFlags(uint256 const& key);
 
     /** Determines whether the hashed item should be relayed.

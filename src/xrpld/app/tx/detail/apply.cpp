@@ -27,13 +27,16 @@
 
 namespace ripple {
 
-// These are the same flags defined as LedgerFlags::PRIVATE1-4 in HashRouter.h
-constexpr LedgerFlags SF_SIGBAD = LedgerFlags::PRIVATE1;   // Signature is bad
-constexpr LedgerFlags SF_SIGGOOD = LedgerFlags::PRIVATE2;  // Signature is good
-constexpr LedgerFlags SF_LOCALBAD =
-    LedgerFlags::PRIVATE3;  // Local checks failed
-constexpr LedgerFlags SF_LOCALGOOD =
-    LedgerFlags::PRIVATE4;  // Local checks passed
+// These are the same flags defined as HashRouterFlags::PRIVATE1-4 in
+// HashRouter.h
+constexpr HashRouterFlags SF_SIGBAD =
+    HashRouterFlags::PRIVATE1;  // Signature is bad
+constexpr HashRouterFlags SF_SIGGOOD =
+    HashRouterFlags::PRIVATE2;  // Signature is good
+constexpr HashRouterFlags SF_LOCALBAD =
+    HashRouterFlags::PRIVATE3;  // Local checks failed
+constexpr HashRouterFlags SF_LOCALGOOD =
+    HashRouterFlags::PRIVATE4;  // Local checks passed
 
 //------------------------------------------------------------------------------
 
@@ -114,7 +117,7 @@ checkValidity(
 void
 forceValidity(HashRouter& router, uint256 const& txid, Validity validity)
 {
-    LedgerFlags flags = LedgerFlags::UNDEFINED;
+    HashRouterFlags flags = HashRouterFlags::UNDEFINED;
     switch (validity)
     {
         case Validity::Valid:

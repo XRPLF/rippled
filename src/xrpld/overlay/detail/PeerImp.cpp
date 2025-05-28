@@ -1296,13 +1296,13 @@ PeerImp::handleTransaction(
         }
         // LCOV_EXCL_STOP
 
-        LedgerFlags flags;
+        HashRouterFlags flags;
         constexpr std::chrono::seconds tx_interval = 10s;
 
         if (!app_.getHashRouter().shouldProcess(txID, id_, flags, tx_interval))
         {
             // we have seen this transaction recently
-            if (any(flags & LedgerFlags::BAD))
+            if (any(flags & HashRouterFlags::BAD))
             {
                 fee_.update(Resource::feeUselessData, "known bad");
                 JLOG(p_journal_.debug()) << "Ignoring known bad tx " << txID;
@@ -1329,7 +1329,7 @@ PeerImp::handleTransaction(
             {
                 // Skip local checks if a server we trust
                 // put the transaction in its open ledger
-                flags |= LedgerFlags::TRUSTED;
+                flags |= HashRouterFlags::TRUSTED;
             }
 
             // for non-validator nodes only -- localPublicKey is set for
@@ -2841,7 +2841,7 @@ PeerImp::doTransactions(
 
 void
 PeerImp::checkTransaction(
-    LedgerFlags flags,
+    HashRouterFlags flags,
     bool checkSignature,
     std::shared_ptr<STTx const> const& stx,
     bool batch)
@@ -2867,7 +2867,7 @@ PeerImp::checkTransaction(
              app_.getLedgerMaster().getValidLedgerIndex()))
         {
             app_.getHashRouter().setFlags(
-                stx->getTransactionID(), LedgerFlags::BAD);
+                stx->getTransactionID(), HashRouterFlags::BAD);
             charge(Resource::feeUselessData, "expired tx");
             return;
         }
@@ -2926,10 +2926,10 @@ PeerImp::checkTransaction(
                         << "Exception checking transaction: " << validReason;
                 }
 
-                // Probably not necessary to set LedgerFlags::BAD, but doesn't
-                // hurt.
+                // Probably not necessary to set HashRouterFlags::BAD, but
+                // doesn't hurt.
                 app_.getHashRouter().setFlags(
-                    stx->getTransactionID(), LedgerFlags::BAD);
+                    stx->getTransactionID(), HashRouterFlags::BAD);
                 charge(
                     Resource::feeInvalidSignature,
                     "check transaction signature failure");
@@ -2953,12 +2953,12 @@ PeerImp::checkTransaction(
                     << "Exception checking transaction: " << reason;
             }
             app_.getHashRouter().setFlags(
-                stx->getTransactionID(), LedgerFlags::BAD);
+                stx->getTransactionID(), HashRouterFlags::BAD);
             charge(Resource::feeInvalidSignature, "tx (impossible)");
             return;
         }
 
-        bool const trusted = any(flags & LedgerFlags::TRUSTED);
+        bool const trusted = any(flags & HashRouterFlags::TRUSTED);
         app_.getOPs().processTransaction(
             tx, trusted, false, NetworkOPs::FailHard::no);
     }
@@ -2967,7 +2967,7 @@ PeerImp::checkTransaction(
         JLOG(p_journal_.warn())
             << "Exception in " << __func__ << ": " << ex.what();
         app_.getHashRouter().setFlags(
-            stx->getTransactionID(), LedgerFlags::BAD);
+            stx->getTransactionID(), HashRouterFlags::BAD);
         using namespace std::string_literals;
         charge(Resource::feeInvalidData, "tx "s + ex.what());
     }

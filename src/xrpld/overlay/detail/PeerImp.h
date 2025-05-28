@@ -613,7 +613,7 @@ private:
 
     void
     checkTransaction(
-        LedgerFlags flags,
+        HashRouterFlags flags,
         bool checkSignature,
         std::shared_ptr<STTx const> const& stx,
         bool batch);

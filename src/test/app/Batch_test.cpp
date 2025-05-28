@@ -3652,7 +3652,7 @@ class Batch_test : public beast::unit_test::suite
             uint256 const txBad = submitTx(tfInnerBatchTxn);
             BEAST_EXPECT(
                 env.app().getHashRouter().getFlags(txBad) ==
-                LedgerFlags::UNDEFINED);
+                HashRouterFlags::UNDEFINED);
         }
 
         // Validate: NetworkOPs::processTransaction()
@@ -3660,7 +3660,8 @@ class Batch_test : public beast::unit_test::suite
             uint256 const txid = processTxn(tfInnerBatchTxn);
             // HashRouter::getFlags() should return SF_BAD
             BEAST_EXPECT(
-                env.app().getHashRouter().getFlags(txid) == LedgerFlags::BAD);
+                env.app().getHashRouter().getFlags(txid) ==
+                HashRouterFlags::BAD);
         }
     }
 
