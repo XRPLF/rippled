@@ -20,15 +20,17 @@
 #ifndef BEAST_HASH_XXHASHER_H_INCLUDED
 #define BEAST_HASH_XXHASHER_H_INCLUDED
 
+#include <xrpl/beast/core/FunctionProfiler.h>
+
 #include <boost/endian/conversion.hpp>
 
 #include <xxhash.h>
 
 #include <cstddef>
+#include <iostream>
 #include <new>
-#include <type_traits>
-#include <xrpl/beast/core/FunctionProfiler.h>
 #include <span>
+#include <type_traits>
 
 namespace beast {
 
@@ -38,16 +40,29 @@ private:
     // requires 64-bit std::size_t
     static_assert(sizeof(std::size_t) == 8, "");
 
-    XXH3_state_t* state_;
+    struct state_wrapper
+    {
+        XXH3_state_t* state;
+        state_wrapper()
+        {
+            state = XXH3_createState();
+        }
+        ~state_wrapper()
+        {
+            XXH3_freeState(state);
+        }
+    };
 
-    std::array<std::uint8_t, 40> buffer_;
-    std::span<std::uint8_t> readSpan_;
-    std::span<std::uint8_t> writeSpan_;
-    XXH64_hash_t seed_{};
+    XXH3_state_t* state_;
+    inline static thread_local state_wrapper wrapper{};
+    std::size_t totalSize_ = 0;
+    std::chrono::nanoseconds duration_{};
+    std::uint64_t cpuCycles = 0;
 
     static XXH3_state_t*
     allocState()
     {
+        FunctionProfiler _{"-alloc"};
         auto ret = XXH3_createState();
         if (ret == nullptr)
             throw std::bad_alloc();
@@ -65,14 +80,24 @@ public:
 
     xxhasher()
     {
-        state_ = allocState();
-        XXH3_64bits_reset(state_);
-        writeSpan_ = buffer_;
+        auto start = std::chrono::steady_clock::now();
+        auto cpuCyclesStart = __rdtsc();
+        // state_ = allocState();
+        // XXH3_64bits_reset(state_);
+        duration_ += std::chrono::steady_clock::now() - start;
+        cpuCycles += (__rdtsc() - cpuCyclesStart);
+        XXH3_64bits_reset(wrapper.state);
     }
 
     ~xxhasher() noexcept
     {
-        XXH3_freeState(state_);
+        // profiler_.functionName = "xxhasher-" + std::to_string(totalSize_);
+        // auto start = std::chrono::steady_clock::now();
+        if (0)
+        {
+            FunctionProfiler _{"-free"};
+            XXH3_freeState(state_);
+        }
     }
 
     template <
@@ -80,10 +105,13 @@ public:
         std::enable_if_t<std::is_unsigned<Seed>::value>* = nullptr>
     explicit xxhasher(Seed seed)
     {
-        state_ = allocState();
-        XXH3_64bits_reset_withSeed(state_, seed);
-        seed_ = seed;
-        writeSpan_ = buffer_;
+        auto start = std::chrono::steady_clock::now();
+        auto cpuCyclesStart = __rdtsc();
+        // state_ = allocState();
+        // XXH3_64bits_reset_withSeed(state_, seed);
+        XXH3_64bits_reset_withSeed(wrapper.state, seed);
+        duration_ += std::chrono::steady_clock::now() - start;
+        cpuCycles += (__rdtsc() - cpuCyclesStart);
     }
 
     template <
@@ -91,33 +119,53 @@ public:
         std::enable_if_t<std::is_unsigned<Seed>::value>* = nullptr>
     xxhasher(Seed seed, Seed)
     {
-        state_ = allocState();
-        XXH3_64bits_reset_withSeed(state_, seed);
-        seed_ = seed;
-        writeSpan_ = buffer_;
+        auto start = std::chrono::steady_clock::now();
+        auto cpuCyclesStart = __rdtsc();
+        // state_ = allocState();
+        // XXH3_64bits_reset_withSeed(state_, seed);
+        XXH3_64bits_reset_withSeed(wrapper.state, seed);
+        duration_ += std::chrono::steady_clock::now() - start;
+        cpuCycles += (__rdtsc() - cpuCyclesStart);
     }
 
     void
     operator()(void const* key, std::size_t len) noexcept
     {
-        FunctionProfiler _{"-size-" + std::to_string(len)};
-        //XXH3_64bits_update(state_, key, len);
-        if (len >= writeSpan_.size())
-        {
-            exit(-1);
-        }
-        std::memcpy(writeSpan_.data(), key, len);
-        readSpan_ = std::span<std::uint8_t>(std::begin(buffer_), readSpan_.size() + len);
-        writeSpan_ = std::span<std::uint8_t>(std::begin(buffer_) + readSpan_.size(), buffer_.size() - readSpan_.size());
+        auto start = std::chrono::steady_clock::now();
+        auto cpuCyclesStart = __rdtsc();
+        totalSize_ += len;
+        // FunctionProfiler _{"-size-" + std::to_string(len)};
+        // XXH3_64bits_update(state_, key, len);
+        XXH3_64bits_update(wrapper.state, key, len);
+        duration_ += std::chrono::steady_clock::now() - start;
+        cpuCycles += (__rdtsc() - cpuCyclesStart);
     }
 
     explicit
     operator std::size_t() noexcept
     {
-        FunctionProfiler _{"-digest"};
-        // XXH3_64bits_update(state_, readSpan_.data(), readSpan_.size());
-        // return XXH3_64bits_digest(state_);
-        return XXH64(readSpan_.data(), readSpan_.size(), seed_);
+        auto start = std::chrono::steady_clock::now();
+        // auto ret =  XXH3_64bits_digest(state_);
+        auto ret = XXH3_64bits_digest(wrapper.state);
+        duration_ += std::chrono::steady_clock::now() - start;
+
+        if (FunctionProfiler::funcionDurations
+                ["xxhasher-" + std::to_string(totalSize_)]
+                    .count == std::numeric_limits<std::int64_t>::max())
+        {
+            return ret;
+        }
+        std::lock_guard<std::mutex> lock{FunctionProfiler::mutex_};
+        FunctionProfiler::funcionDurations
+            ["xxhasher-" + std::to_string(totalSize_)]
+                .timeInTotal += duration_;
+        FunctionProfiler::funcionDurations
+            ["xxhasher-" + std::to_string(totalSize_)]
+                .cpuCyclesInTotal += cpuCycles;
+        FunctionProfiler::funcionDurations
+            ["xxhasher-" + std::to_string(totalSize_)]
+                .count++;
+        return ret;
     }
 };
 

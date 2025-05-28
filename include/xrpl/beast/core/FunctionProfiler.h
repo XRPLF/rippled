@@ -2,48 +2,79 @@
 #ifndef RIPPLE_BASICS_FUNCTIONPROFILER_H_INCLUDED
 #define RIPPLE_BASICS_FUNCTIONPROFILER_H_INCLUDED
 
-#include <string>
 #include <chrono>
-#include <unordered_map>
-#include <sstream>
-#include <source_location>
 #include <csignal>
+#include <mutex>
+#include <source_location>
+#include <sstream>
+#include <string>
+#include <unordered_map>
+#include <x86intrin.h>
 
 namespace beast {
 
-    void logProfilingResults();
+void
+logProfilingResults();
+
 class FunctionProfiler
 {
+public:
     std::string functionName;
     std::chrono::steady_clock::time_point start;
-public:
+    std::uint64_t cpuCycleStart;
+    inline static std::mutex mutex_;
 
-    inline static std::unordered_map<std::string, std::pair<std::chrono::nanoseconds, std::int64_t>> funcionDurations;
-    FunctionProfiler(const std::string& tag, std::source_location location = std::source_location::current()): functionName(location.function_name() + tag), start(std::chrono::steady_clock::now()) 
+    struct StatisticData
+    {
+        std::chrono::nanoseconds timeInTotal;
+        std::uint64_t cpuCyclesInTotal;
+        std::int64_t count;
+    };
+
+    inline static std::unordered_map<
+        std::string,
+        StatisticData>
+        funcionDurations;
+    FunctionProfiler(
+        std::string const& tag,
+        std::source_location location = std::source_location::current())
+        : functionName(location.function_name() + tag)
+        , start(std::chrono::steady_clock::now())
+        , cpuCycleStart(__rdtsc())
     {
     }
 
     ~FunctionProfiler() noexcept
     {
         auto duration = std::chrono::steady_clock::now() - start;
-        funcionDurations[functionName].first += std::chrono::duration_cast<std::chrono::nanoseconds>(duration);
-        funcionDurations[functionName].second++;
+        std::lock_guard<std::mutex> lock{mutex_};
+        if (funcionDurations[functionName].count ==
+            std::numeric_limits<std::int64_t>::max())
+        {
+            return;
+        }
+        funcionDurations[functionName].timeInTotal += duration;
+        funcionDurations[functionName].cpuCyclesInTotal += (__rdtsc() - cpuCycleStart);
+        funcionDurations[functionName].count++;
     }
 };
 
-
-inline std::string getProfilingResults()
+inline std::string
+getProfilingResults()
 {
+    std::lock_guard<std::mutex> lock{FunctionProfiler::mutex_};
     std::stringstream ss;
     ss << "Function profiling results:" << std::endl;
-    for (const auto& [name, duration] : FunctionProfiler::funcionDurations)
+    ss << "name,time,count" << std::endl;
+    for (auto const& [name, duration] : FunctionProfiler::funcionDurations)
     {
-        ss << "  " << name << ": " << duration.first.count() << " ns" << ", counts: " << duration.second << std::endl;
+        ss << name << "," << duration.first.count() << " ns" << ","
+           << duration.second << std::endl;
     }
 
     return ss.str();
 }
 
-}
+}  // namespace beast
 
 #endif
