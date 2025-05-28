@@ -1971,6 +1971,11 @@ public:
             if (!BEAST_EXPECT(jv[jss::status] == "success"))
                 return;
             checkSubBooks(jv);
+
+            // RPC unsubscribe
+            auto unsubJv = wsc->invoke("unsubscribe", books);
+            if (wsc->version() == 2)
+                BEAST_EXPECT(unsubJv[jss::status] == "success");
         }
 
         // subscribe to open book should return hybrid offer

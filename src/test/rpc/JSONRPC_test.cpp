@@ -2059,10 +2059,10 @@ static constexpr TxnTestData txnTestArray[] = {
         "DomainID": "invalid",
     }
 })",
-     {{"Field 'tx_json.DomainID' has invalid data.",
-       "Field 'tx_json.DomainID' has invalid data.",
-       "Field 'tx_json.DomainID' has invalid data.",
-       "Field 'tx_json.DomainID' has invalid data."}}},
+     {{"Unable to parse 'DomainID'.",
+       "Unable to parse 'DomainID'.",
+       "Unable to parse 'DomainID'.",
+       "Unable to parse 'DomainID'."}}},
 
     {"Minimal delegated transaction.",
      __LINE__,
