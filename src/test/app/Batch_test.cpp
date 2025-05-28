@@ -3658,7 +3658,7 @@ class Batch_test : public beast::unit_test::suite
         // Validate: NetworkOPs::processTransaction()
         {
             uint256 const txid = processTxn(tfInnerBatchTxn);
-            // HashRouter::getFlags() should return SF_BAD
+            // HashRouter::getFlags() should return LedgerFlags::BAD
             BEAST_EXPECT(
                 env.app().getHashRouter().getFlags(txid) ==
                 HashRouterFlags::BAD);
