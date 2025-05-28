@@ -75,7 +75,7 @@ public:
     virtual ~SquelchHandler()
     {
     }
-    /** Squelch handler
+    /** Squelch handler for a single peer
      * @param validator Public key of the source validator
      * @param id Peer's id to squelch
      * @param duration Squelch duration in seconds
@@ -83,6 +83,15 @@ public:
     virtual void
     squelch(PublicKey const& validator, Peer::id_t id, std::uint32_t duration)
         const = 0;
+
+    /** Squelch for all peers, the method must call slots.squelchValidator
+     * to register that a (validator,peer) was squelched
+     * @param validator Public key of the source validator
+     * @param duration Squelch duration in seconds
+     */
+    virtual void
+    squelchAll(PublicKey const& validator, std::uint32_t duration) = 0;
+
     /** Unsquelch handler
      * @param validator Public key of the source validator
      * @param id Peer's id to unsquelch
