@@ -81,7 +81,7 @@ getProfilingResults()
         std::vector<std::int64_t> times;
         times.reserve(duration.time.size());
 
-        std::transform(std::begin(duration.time), std::end(duration.time), std::back_inserter(times), [](std::int64_t a, const std::chrono::nanoseconds& time) {
+        std::transform(std::begin(duration.time), std::end(duration.time), std::back_inserter(times), [](const std::chrono::nanoseconds& time) {
             return static_cast<std::int64_t>(time.count());
         });
 
