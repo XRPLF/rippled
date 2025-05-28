@@ -52,11 +52,41 @@ enum class PeerState : uint8_t {
     Selected,   // selected to relay, counting if Slot in Counting
     Squelched,  // squelched, doesn't relay
 };
+
+inline std::string
+to_string(PeerState state)
+{
+    switch (state)
+    {
+        case PeerState::Counting:
+            return "counting";
+        case PeerState::Selected:
+            return "selected";
+        case PeerState::Squelched:
+            return "squelched";
+        default:
+            return "unknown";
+    }
+}
 /** Slot's State */
 enum class SlotState : uint8_t {
     Counting,  // counting messages
     Selected,  // peers selected, stop counting
 };
+
+inline std::string
+to_string(SlotState state)
+{
+    switch (state)
+    {
+        case SlotState::Counting:
+            return "counting";
+        case SlotState::Selected:
+            return "selected";
+        default:
+            return "unknown";
+    }
+}
 
 template <typename Unit, typename TP>
 Unit
@@ -237,13 +267,17 @@ private:
     void
     initCounting();
 
+    void
+    onWrite(beast::PropertyStream::Map& stream) const;
+
     /** Data maintained for each peer */
     struct PeerInfo
     {
-        PeerState state;         // peer's state
-        std::size_t count;       // message count
-        time_point expire;       // squelch expiration time
-        time_point lastMessage;  // time last message received
+        PeerState state;            // peer's state
+        std::size_t count;          // message count
+        time_point expire;          // squelch expiration time
+        time_point lastMessage;     // time last message received
+        std::size_t timesSelected;  // number of times the peer was selected
     };
 
     std::unordered_map<id_t, PeerInfo> peers_;  // peer's data
@@ -308,8 +342,14 @@ Slot<clock_type>::update(
     {
         JLOG(journal_.trace())
             << "update: adding peer " << Slice(validator) << " " << id;
-        peers_.emplace(
-            std::make_pair(id, PeerInfo{PeerState::Counting, 0, now, now}));
+        peers_.emplace(std::make_pair(
+            id,
+            PeerInfo{
+                .state = PeerState::Counting,
+                .count = 0,
+                .expire = now,
+                .lastMessage = now,
+                .timesSelected = 0}));
         initCounting();
         return;
     }
@@ -412,7 +452,11 @@ Slot<clock_type>::update(
             v.count = 0;
 
             if (selected.find(k) != selected.end())
+            {
                 v.state = PeerState::Selected;
+                ++v.timesSelected;
+            }
+
             else if (v.state != PeerState::Squelched)
             {
                 if (journal_.trace())
@@ -488,6 +532,34 @@ Slot<clock_type>::deletePeer(PublicKey const& validator, id_t id, bool erase)
 
         if (erase)
             peers_.erase(it);
+    }
+}
+
+template <typename clock_type>
+void
+Slot<clock_type>::onWrite(beast::PropertyStream::Map& stream) const
+{
+    auto const now = clock_type::now();
+    stream["state"] = to_string(state_);
+    stream["reachedThreshold"] = reachedThreshold_;
+    stream["considered"] = considered_.size();
+    stream["lastSelected"] =
+        duration_cast<std::chrono::seconds>(now - lastSelected_).count();
+    stream["isTrusted"] = isTrusted_;
+
+    beast::PropertyStream::Set peers("peers", stream);
+
+    for (auto const& [id, info] : peers_)
+    {
+        beast::PropertyStream::Map item(peers);
+        item["id"] = id;
+        item["count"] = info.count;
+        item["expire"] =
+            duration_cast<std::chrono::seconds>(info.expire - now).count();
+        item["lastMessage"] =
+            duration_cast<std::chrono::seconds>(now - info.lastMessage).count();
+        item["timesSelected"] = info.timesSelected;
+        item["state"] = to_string(info.state);
     }
 }
 
@@ -785,6 +857,9 @@ public:
         else if (it->second.find(id) == it->second.end())
             it->second.insert(id);
     }
+
+    void
+    onWrite(beast::PropertyStream::Map& stream) const;
 
 private:
     /** Add message/peer if have not seen this message
@@ -1135,6 +1210,52 @@ Slots<clock_type>::deleteIdlePeers()
     // However, since these are untrusted validators we're not concerned
     for (auto const& validator : cleanConsideredValidators())
         handler_.squelchAll(validator, MAX_UNSQUELCH_EXPIRE_DEFAULT.count());
+}
+
+template <typename clock_type>
+void
+Slots<clock_type>::onWrite(beast::PropertyStream::Map& stream) const
+{
+    auto const writeSlot =
+        [](beast::PropertyStream::Set& set,
+           hash_map<PublicKey, Slot<clock_type>> const& slots) {
+            for (auto const& [validator, slot] : slots)
+            {
+                beast::PropertyStream::Map item(set);
+                item["validator"] = toBase58(TokenType::NodePublic, validator);
+                slot.onWrite(item);
+            }
+        };
+
+    beast::PropertyStream::Map slots("slots", stream);
+
+    {
+        beast::PropertyStream::Set set("trusted", slots);
+        writeSlot(set, slots_);
+    }
+
+    {
+        beast::PropertyStream::Set set("untrusted", slots);
+        writeSlot(set, untrusted_slots_);
+    }
+
+    {
+        beast::PropertyStream::Set set("considered", slots);
+
+        auto const now = clock_type::now();
+
+        for (auto const& [validator, info] : considered_validators_)
+        {
+            beast::PropertyStream::Map item(set);
+            item["validator"] = toBase58(TokenType::NodePublic, validator);
+            item["lastMessage"] =
+                std::chrono::duration_cast<std::chrono::seconds>(
+                    now - info.lastMessage)
+                    .count();
+            item["messageCount"] = info.count;
+            item["peers"] = info.peers.size();
+        }
+    }
 }
 
 }  // namespace reduce_relay

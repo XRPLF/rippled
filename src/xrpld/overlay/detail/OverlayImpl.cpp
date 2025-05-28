@@ -578,16 +578,23 @@ OverlayImpl::stop()
 void
 OverlayImpl::onWrite(beast::PropertyStream::Map& stream)
 {
-    beast::PropertyStream::Set set("traffic", stream);
-    auto const stats = m_traffic.getCounts();
-    for (auto const& pair : stats)
     {
-        beast::PropertyStream::Map item(set);
-        item["category"] = pair.second.name;
-        item["bytes_in"] = std::to_string(pair.second.bytesIn.load());
-        item["messages_in"] = std::to_string(pair.second.messagesIn.load());
-        item["bytes_out"] = std::to_string(pair.second.bytesOut.load());
-        item["messages_out"] = std::to_string(pair.second.messagesOut.load());
+        beast::PropertyStream::Set set("traffic", stream);
+        auto const stats = m_traffic.getCounts();
+        for (auto const& pair : stats)
+        {
+            beast::PropertyStream::Map item(set);
+            item["category"] = pair.second.name;
+            item["bytes_in"] = std::to_string(pair.second.bytesIn.load());
+            item["messages_in"] = std::to_string(pair.second.messagesIn.load());
+            item["bytes_out"] = std::to_string(pair.second.bytesOut.load());
+            item["messages_out"] =
+                std::to_string(pair.second.messagesOut.load());
+        }
+    }
+
+    {
+        slots_.onWrite(stream);
     }
 }
 
