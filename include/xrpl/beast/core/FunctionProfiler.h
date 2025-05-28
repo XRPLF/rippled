@@ -82,7 +82,7 @@ getProfilingResults()
         times.reserve(duration.time.size());
 
         std::transform(std::begin(duration.time), std::end(duration.time), std::back_inserter(times), [](std::int64_t a, const std::chrono::nanoseconds& time) {
-            return time.count();
+            return static_cast<std::int64_t>(time.count());
         });
 
         auto timeInTotal = std::accumulate(std::begin(times), std::end(times), std::int64_t{0});

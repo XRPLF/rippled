@@ -149,12 +149,6 @@ public:
         // auto ret = XXH3_64bits_digest(wrapper.state);
         duration_ += std::chrono::steady_clock::now() - start;
 
-        if (FunctionProfiler::funcionDurations
-                ["xxhasher-" + std::to_string(totalSize_)]
-                    .count == std::numeric_limits<std::int64_t>::max())
-        {
-            return ret;
-        }
         std::lock_guard<std::mutex> lock{FunctionProfiler::mutex_};
         FunctionProfiler::funcionDurations
             ["xxhasher-" + std::to_string(totalSize_)]
