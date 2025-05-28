@@ -791,15 +791,13 @@ Slots<clock_type>::updateSlotAndSquelch(
     {
         JLOG(journal_.trace())
             << "updateSlotAndSquelch: new slot " << Slice(validator);
-        auto it = slots_
-                      .emplace(
-                          std::make_pair(
-                              validator,
-                              Slot<clock_type>(
-                                  handler_,
-                                  logs_.journal("Slot"),
-                                  maxSelectedPeers_)))
-                      .first;
+        auto it =
+            slots_
+                .emplace(std::make_pair(
+                    validator,
+                    Slot<clock_type>(
+                        handler_, logs_.journal("Slot"), maxSelectedPeers_)))
+                .first;
         it->second.update(validator, id, type, callback);
     }
     else

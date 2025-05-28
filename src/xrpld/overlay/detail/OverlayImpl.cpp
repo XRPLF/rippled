@@ -133,13 +133,12 @@ OverlayImpl::OverlayImpl(
     , journal_(app_.journal("Overlay"))
     , serverHandler_(serverHandler)
     , m_resourceManager(resourceManager)
-    , m_peerFinder(
-          PeerFinder::make_Manager(
-              io_service,
-              stopwatch(),
-              app_.journal("PeerFinder"),
-              config,
-              collector))
+    , m_peerFinder(PeerFinder::make_Manager(
+          io_service,
+          stopwatch(),
+          app_.journal("PeerFinder"),
+          config,
+          collector))
     , m_resolver(resolver)
     , next_id_(1)
     , timer_count_(0)
