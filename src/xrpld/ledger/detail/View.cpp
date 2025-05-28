@@ -2716,10 +2716,10 @@ rippleLockEscrowMPT(
     auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
     auto sleIssuance = view.peek(mptID);
     if (!sleIssuance)
-        return tecOBJECT_NOT_FOUND;
+        return tecOBJECT_NOT_FOUND;  // LCOV_EXCL_LINE
 
     if (amount.getIssuer() == sender)
-        return tecINTERNAL;
+        return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // 1. Decrease the MPT Holder MPTAmount
     // 2. Increase the MPT Holder EscrowedAmount
@@ -2727,14 +2727,14 @@ rippleLockEscrowMPT(
         auto const mptokenID = keylet::mptoken(mptID.key, sender);
         auto sle = view.peek(mptokenID);
         if (!sle)
-            return tecOBJECT_NOT_FOUND;
+            return tecOBJECT_NOT_FOUND;  // LCOV_EXCL_LINE
 
         auto const amt = sle->getFieldU64(sfMPTAmount);
         auto const pay = amount.mpt().value();
 
         // Underflow check for subtraction
         if (!canSubtract(STAmount(mptIssue, amt), STAmount(mptIssue, pay)))
-            return tecINTERNAL;
+            return tecINTERNAL;  // LCOV_EXCL_LINE
 
         (*sle)[sfMPTAmount] = amt - pay;
 
@@ -2742,7 +2742,7 @@ rippleLockEscrowMPT(
         uint64_t const locked = (*sle)[~sfLockedAmount].value_or(0);
 
         if (!canAdd(STAmount(mptIssue, locked), STAmount(mptIssue, pay)))
-            return tecINTERNAL;
+            return tecINTERNAL;  // LCOV_EXCL_LINE
 
         if (sle->isFieldPresent(sfLockedAmount))
             (*sle)[sfLockedAmount] += pay;
@@ -2762,7 +2762,7 @@ rippleLockEscrowMPT(
         // Overflow check for addition
         if (!canAdd(
                 STAmount(mptIssue, issuanceEscrowed), STAmount(mptIssue, pay)))
-            return tecINTERNAL;
+            return tecINTERNAL;  // LCOV_EXCL_LINE
 
         if (sleIssuance->isFieldPresent(sfLockedAmount))
             (*sleIssuance)[sfLockedAmount] += pay;
@@ -2787,12 +2787,12 @@ rippleUnlockEscrowMPT(
     auto const mptID = keylet::mptIssuance(mptIssue.getMptID());
     auto sleIssuance = view.peek(mptID);
     if (!sleIssuance)
-        return tecOBJECT_NOT_FOUND;
+        return tecOBJECT_NOT_FOUND;  // LCOV_EXCL_LINE
 
     // Decrease the Issuance EscrowedAmount
     {
         if (!sleIssuance->isFieldPresent(sfLockedAmount))
-            return tecINTERNAL;
+            return tecINTERNAL;  // LCOV_EXCL_LINE
 
         auto const locked = sleIssuance->getFieldU64(sfLockedAmount);
         auto const redeem = amount.mpt().value();
@@ -2800,7 +2800,7 @@ rippleUnlockEscrowMPT(
         // Underflow check for subtraction
         if (!canSubtract(
                 STAmount(mptIssue, locked), STAmount(mptIssue, redeem)))
-            return tecINTERNAL;
+            return tecINTERNAL;  // LCOV_EXCL_LINE
 
         sleIssuance->setFieldU64(sfLockedAmount, locked - redeem);
         view.update(sleIssuance);
@@ -2812,14 +2812,14 @@ rippleUnlockEscrowMPT(
         auto const mptokenID = keylet::mptoken(mptID.key, receiver);
         auto sle = view.peek(mptokenID);
         if (!sle)
-            return tecOBJECT_NOT_FOUND;
+            return tecOBJECT_NOT_FOUND;  // LCOV_EXCL_LINE
 
         auto current = sle->getFieldU64(sfMPTAmount);
         auto delta = amount.mpt().value();
 
         // Overflow check for addition
         if (!canAdd(STAmount(mptIssue, current), STAmount(mptIssue, delta)))
-            return tecINTERNAL;
+            return tecINTERNAL;  // LCOV_EXCL_LINE
 
         (*sle)[sfMPTAmount] += delta;
         view.update(sle);
@@ -2833,7 +2833,7 @@ rippleUnlockEscrowMPT(
         // Underflow check for subtraction
         if (!canSubtract(
                 STAmount(mptIssue, outstanding), STAmount(mptIssue, redeem)))
-            return tecINTERNAL;
+            return tecINTERNAL;  // LCOV_EXCL_LINE
 
         sleIssuance->setFieldU64(sfOutstandingAmount, outstanding - redeem);
         view.update(sleIssuance);
@@ -2847,17 +2847,17 @@ rippleUnlockEscrowMPT(
         auto const mptokenID = keylet::mptoken(mptID.key, sender);
         auto sle = view.peek(mptokenID);
         if (!sle)
-            return tecOBJECT_NOT_FOUND;
+            return tecOBJECT_NOT_FOUND;  // LCOV_EXCL_LINE
 
         if (!sle->isFieldPresent(sfLockedAmount))
-            return tecINTERNAL;
+            return tecINTERNAL;  // LCOV_EXCL_LINE
 
         auto const locked = sle->getFieldU64(sfLockedAmount);
         auto const delta = amount.mpt().value();
 
         // Underflow check for subtraction
         if (!canSubtract(STAmount(mptIssue, locked), STAmount(mptIssue, delta)))
-            return tecINTERNAL;
+            return tecINTERNAL;  // LCOV_EXCL_LINE
 
         (*sle)[sfLockedAmount] -= delta;
         view.update(sle);
