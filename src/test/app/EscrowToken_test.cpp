@@ -139,6 +139,72 @@ struct EscrowToken_test : public beast::unit_test::suite
     }
 
     void
+    testIOUAllowLockingFlag(FeatureBitset features)
+    {
+        testcase("IOU Allow Locking Flag");
+
+        using namespace jtx;
+        using namespace std::chrono;
+
+        Env env{*this, features};
+        auto const baseFee = env.current()->fees().base;
+        auto const alice = Account("alice");
+        auto const bob = Account("bob");
+        auto const gw = Account{"gateway"};
+        auto const USD = gw["USD"];
+        env.fund(XRP(5000), alice, bob, gw);
+        env(fset(gw, asfAllowTokenLocking));
+        env.close();
+        env.trust(USD(10'000), alice, bob);
+        env.close();
+        env(pay(gw, alice, USD(5000)));
+        env(pay(gw, bob, USD(5000)));
+        env.close();
+
+        // Create Escrow #1 & #2
+        auto const seq1 = env.seq(alice);
+        env(escrow::create(alice, bob, USD(1'000)),
+            escrow::condition(escrow::cb1),
+            escrow::finish_time(env.now() + 1s),
+            fee(baseFee * 150),
+            ter(tesSUCCESS));
+        env.close();
+
+        auto const seq2 = env.seq(alice);
+        env(escrow::create(alice, bob, USD(1'000)),
+            escrow::finish_time(env.now() + 1s),
+            escrow::cancel_time(env.now() + 3s),
+            fee(baseFee),
+            ter(tesSUCCESS));
+        env.close();
+
+        // Clear the asfAllowTokenLocking flag
+        env(fclear(gw, asfAllowTokenLocking));
+        env.close();
+        env.require(nflags(gw, asfAllowTokenLocking));
+
+        // Cannot Create Escrow without asfAllowTokenLocking
+        env(escrow::create(alice, bob, USD(1'000)),
+            escrow::condition(escrow::cb1),
+            escrow::finish_time(env.now() + 1s),
+            fee(baseFee * 150),
+            ter(tecNO_PERMISSION));
+        env.close();
+
+        // Can finish the escrow created before the flag was cleared
+        env(escrow::finish(bob, alice, seq1),
+            escrow::condition(escrow::cb1),
+            escrow::fulfillment(escrow::fb1),
+            fee(baseFee * 150),
+            ter(tesSUCCESS));
+        env.close();
+
+        // Can cancel the escrow created before the flag was cleared
+        env(escrow::cancel(bob, alice, seq2), ter(tesSUCCESS));
+        env.close();
+    }
+
+    void
     testIOUCreatePreflight(FeatureBitset features)
     {
         testcase("IOU Create Preflight");
@@ -3432,6 +3498,7 @@ struct EscrowToken_test : public beast::unit_test::suite
     testIOUWithFeats(FeatureBitset features)
     {
         testIOUEnablement(features);
+        testIOUAllowLockingFlag(features);
         testIOUCreatePreflight(features);
         testIOUCreatePreclaim(features);
         testIOUFinishPreclaim(features);

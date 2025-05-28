@@ -213,11 +213,11 @@ escrowCreatePreclaimHelper<Issue>(
     if (issuer == account)
         return tecNO_PERMISSION;
 
-    // If the lsfAllowTokenEscrow is not enabled, return tecNO_PERMISSION
+    // If the lsfAllowTokenLocking is not enabled, return tecNO_PERMISSION
     auto const sleIssuer = ctx.view.read(keylet::account(issuer));
     if (!sleIssuer)
         return tecNO_ISSUER;
-    if (!sleIssuer->isFlag(lsfAllowTokenEscrow))
+    if (!sleIssuer->isFlag(lsfAllowTokenLocking))
         return tecNO_PERMISSION;
 
     // If the account does not have a trustline to the issuer, return tecNO_LINE
