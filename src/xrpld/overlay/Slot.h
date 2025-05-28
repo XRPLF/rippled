@@ -829,6 +829,15 @@ private:
     inline static validators peersWithValidators_{
         beast::get_abstract_clock<clock_type>()};
 
+    struct ValidatorInfo
+    {
+        size_t count;  // the number of messages sent from this validator
+        time_point lastMessage;                // timestamp of the last message
+        std::unordered_set<Peer::id_t> peers;  // a list of peer IDs that sent a
+                                               // message for this validator
+    };
+
+    hash_map<PublicKey, ValidatorInfo> considered_validators_;
 };
 
 template <typename clock_type>
@@ -862,6 +871,69 @@ Slots<clock_type>::addPeerMessage(uint256 const& key, id_t id)
     }
 
     return true;
+}
+
+template <typename clock_type>
+std::optional<PublicKey>
+Slots<clock_type>::updateConsideredValidator(
+    PublicKey const& validator,
+    Peer::id_t peer)
+{
+    auto const now = clock_type::now();
+
+    auto it = considered_validators_.find(validator);
+    if (it == considered_validators_.end())
+    {
+        considered_validators_.emplace(std::make_pair(
+            validator,
+            ValidatorInfo{
+                .count = 1,
+                .lastMessage = now,
+                .peers = {peer},
+            }));
+
+        return {};
+    }
+
+    // the validator idled. Don't update it, it will be cleaned later
+    if (now - it->second.lastMessage > IDLED)
+        return {};
+
+    it->second.peers.insert(peer);
+
+    it->second.lastMessage = now;
+    ++it->second.count;
+
+    if (it->second.count < MAX_MESSAGE_THRESHOLD ||
+        it->second.peers.size() < reduce_relay::MAX_SELECTED_PEERS)
+        return {};
+
+    auto const key = it->first;
+    considered_validators_.erase(it);
+
+    return key;
+}
+
+template <typename clock_type>
+std::vector<PublicKey>
+Slots<clock_type>::cleanConsideredValidators()
+{
+    auto const now = clock_type::now();
+
+    std::vector<PublicKey> keys;
+    for (auto it = considered_validators_.begin();
+         it != considered_validators_.end();)
+    {
+        if (now - it->second.lastMessage > IDLED)
+        {
+            keys.push_back(it->first);
+            it = considered_validators_.erase(it);
+        }
+        else
+            ++it;
+    }
+
+    return keys;
 }
 
 template <typename clock_type>
