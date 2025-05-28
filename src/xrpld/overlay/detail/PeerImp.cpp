@@ -2385,6 +2385,8 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
                 TrafficCount::category::validation_untrusted,
                 Message::messageSize(*m));
 
+            overlay_.updateValidatorSlot(key, val->getSignerPublic(), id_);
+
             // If the operator has specified that untrusted validations be
             // dropped then this happens here I.e. before further wasting CPU
             // verifying the signature of an untrusted key

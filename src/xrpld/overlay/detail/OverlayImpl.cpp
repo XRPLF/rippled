@@ -1474,6 +1474,25 @@ OverlayImpl::updateSlotAndSquelch(
 }
 
 void
+OverlayImpl::updateValidatorSlot(
+    uint256 const& key,
+    PublicKey const& validator,
+    Peer::id_t peer)
+{
+    if (!slots_.enhancedSquelchReady())
+        return;
+
+    if (!strand_.running_in_this_thread())
+        return post(strand_, [this, key, validator, peer]() {
+            updateValidatorSlot(key, validator, peer);
+        });
+
+    slots_.updateValidatorSlot(key, validator, peer, [&]() {
+        reportInboundTraffic(TrafficCount::squelch_ignored, 0);
+    });
+}
+
+void
 OverlayImpl::deletePeer(Peer::id_t id)
 {
     if (!strand_.running_in_this_thread())
