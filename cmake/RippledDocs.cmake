@@ -53,9 +53,9 @@ set(download_script "${CMAKE_BINARY_DIR}/docs/download-cppreference.cmake")
 file(WRITE
   "${download_script}"
   "file(DOWNLOAD \
-    http://upload.cppreference.com/mwiki/images/b/b2/html_book_20190607.zip \
+    https://github.com/PeterFeicht/cppreference-doc/releases/download/v20250209/html-book-20250209.zip \
     ${CMAKE_BINARY_DIR}/docs/cppreference.zip \
-    EXPECTED_HASH MD5=82b3a612d7d35a83e3cb1195a63689ab \
+    EXPECTED_HASH MD5=bda585f72fbca4b817b29a3d5746567b \
   )\n \
   execute_process( \
     COMMAND \"${CMAKE_COMMAND}\" -E tar -xf cppreference.zip \
