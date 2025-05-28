@@ -81,7 +81,7 @@ TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, STObject const& obj)
         setDeliveredAmount(obj.getFieldAmount(sfDeliveredAmount));
 
     if (obj.isFieldPresent(sfGasUsed))
-        setDeliveredAmount(obj.getFieldAmount(sfGasUsed));
+        setGasUsed(obj.getFieldU32(sfGasUsed));
 }
 
 TxMeta::TxMeta(uint256 const& txid, std::uint32_t ledger, Blob const& vec)

@@ -2076,9 +2076,12 @@ struct Escrow_test : public beast::unit_test::suite
                     comp_allowance(110),
                     fee(txnFees),
                     ter(tesSUCCESS));
-                std::cout << env.meta()->getJson(0) << std::endl;
-                env.close();
 
+                auto const txMeta = env.meta();
+                if (BEAST_EXPECT(txMeta->isFieldPresent(sfGasUsed)))
+                    BEAST_EXPECT(txMeta->getFieldU32(sfGasUsed) == 4);
+
+                env.close();
                 BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
             }
         }
