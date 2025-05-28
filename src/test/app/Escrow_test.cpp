@@ -43,7 +43,7 @@ struct Escrow_test : public beast::unit_test::suite
         using namespace jtx;
         using namespace std::chrono;
 
-        Env env(*this);
+        Env env(*this, features);
         auto const baseFee = env.current()->fees().base;
         env.fund(XRP(5000), "alice", "bob");
         env(escrow::create("alice", "bob", XRP(1000)),
@@ -81,7 +81,7 @@ struct Escrow_test : public beast::unit_test::suite
 
         {
             testcase("Timing: Finish Only");
-            Env env(*this);
+            Env env(*this, features);
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(5000), "alice", "bob");
             env.close();
@@ -105,7 +105,7 @@ struct Escrow_test : public beast::unit_test::suite
 
         {
             testcase("Timing: Cancel Only");
-            Env env(*this);
+            Env env(*this, features);
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(5000), "alice", "bob");
             env.close();
@@ -138,7 +138,7 @@ struct Escrow_test : public beast::unit_test::suite
 
         {
             testcase("Timing: Finish and Cancel -> Finish");
-            Env env(*this);
+            Env env(*this, features);
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(5000), "alice", "bob");
             env.close();
@@ -175,7 +175,7 @@ struct Escrow_test : public beast::unit_test::suite
 
         {
             testcase("Timing: Finish and Cancel -> Cancel");
-            Env env(*this);
+            Env env(*this, features);
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(5000), "alice", "bob");
             env.close();
@@ -329,7 +329,7 @@ struct Escrow_test : public beast::unit_test::suite
         {
             testcase("Implied Finish Time (with fix1571)");
 
-            Env env(*this);
+            Env env(*this, features);
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(5000), "alice", "bob", "carol");
             env.close();
@@ -364,7 +364,7 @@ struct Escrow_test : public beast::unit_test::suite
         using namespace jtx;
         using namespace std::chrono;
 
-        Env env(*this);
+        Env env(*this, features);
         auto const baseFee = env.current()->fees().base;
         env.fund(XRP(5000), "alice", "bob", "gw");
         env.close();
@@ -390,11 +390,15 @@ struct Escrow_test : public beast::unit_test::suite
         // Using non-XRP:
         bool const withTokenEscrow =
             env.current()->rules().enabled(featureTokenEscrow);
-        auto const txResult =
-            withTokenEscrow ? ter(tecNO_PERMISSION) : ter(temDISABLED);
-        env(escrow::create("alice", "carol", Account("gw")["USD"](500)),
-            escrow::finish_time(env.now() + 1s),
-            txResult);
+        {
+            // tecNO_PERMISSION: token escrow is enabled but the issuer did not
+            // set the asfAllowTokenLocking flag
+            auto const txResult =
+                withTokenEscrow ? ter(tecNO_PERMISSION) : ter(temBAD_AMOUNT);
+            env(escrow::create("alice", "carol", Account("alice")["USD"](500)),
+                escrow::finish_time(env.now() + 5s),
+                txResult);
+        }
 
         // Sending zero or no XRP:
         env(escrow::create("alice", "carol", XRP(0)),
@@ -504,7 +508,7 @@ struct Escrow_test : public beast::unit_test::suite
 
         {
             // Unconditional
-            Env env(*this);
+            Env env(*this, features);
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(5000), "alice", "bob");
             auto const seq = env.seq("alice");
@@ -529,7 +533,7 @@ struct Escrow_test : public beast::unit_test::suite
             // Unconditionally pay from Alice to Bob.  Zelda (neither source nor
             // destination) signs all cancels and finishes.  This shows that
             // Escrow will make a payment to Bob with no intervention from Bob.
-            Env env(*this);
+            Env env(*this, features);
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(5000), "alice", "bob", "zelda");
             auto const seq = env.seq("alice");
@@ -556,7 +560,7 @@ struct Escrow_test : public beast::unit_test::suite
         }
         {
             // Bob sets DepositAuth so only Bob can finish the escrow.
-            Env env(*this);
+            Env env(*this, features);
             auto const baseFee = env.current()->fees().base;
 
             env.fund(XRP(5000), "alice", "bob", "zelda");
@@ -595,7 +599,7 @@ struct Escrow_test : public beast::unit_test::suite
         {
             // Bob sets DepositAuth but preauthorizes Zelda, so Zelda can
             // finish the escrow.
-            Env env(*this);
+            Env env(*this, features);
             auto const baseFee = env.current()->fees().base;
 
             env.fund(XRP(5000), "alice", "bob", "zelda");
@@ -623,7 +627,7 @@ struct Escrow_test : public beast::unit_test::suite
         }
         {
             // Conditional
-            Env env(*this);
+            Env env(*this, features);
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(5000), "alice", "bob");
             auto const seq = env.seq("alice");
@@ -667,7 +671,7 @@ struct Escrow_test : public beast::unit_test::suite
         }
         {
             // Self-escrowed conditional with DepositAuth.
-            Env env(*this);
+            Env env(*this, features);
             auto const baseFee = env.current()->fees().base;
 
             env.fund(XRP(5000), "alice", "bob");
@@ -706,7 +710,7 @@ struct Escrow_test : public beast::unit_test::suite
         }
         {
             // Self-escrowed conditional with DepositAuth and DepositPreauth.
-            Env env(*this);
+            Env env(*this, features);
             auto const baseFee = env.current()->fees().base;
 
             env.fund(XRP(5000), "alice", "bob", "zelda");
@@ -761,7 +765,7 @@ struct Escrow_test : public beast::unit_test::suite
         using namespace std::chrono;
 
         {  // Test cryptoconditions
-            Env env(*this);
+            Env env(*this, features);
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(5000), "alice", "bob", "carol");
             auto const seq = env.seq("alice");
@@ -836,7 +840,7 @@ struct Escrow_test : public beast::unit_test::suite
             env(escrow::cancel("bob", "carol", 1), ter(tecNO_TARGET));
         }
         {  // Test cancel when condition is present
-            Env env(*this);
+            Env env(*this, features);
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(5000), "alice", "bob", "carol");
             auto const seq = env.seq("alice");
@@ -853,7 +857,7 @@ struct Escrow_test : public beast::unit_test::suite
             BEAST_EXPECT(!env.le(keylet::escrow(Account("alice").id(), seq)));
         }
         {
-            Env env(*this);
+            Env env(*this, features);
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(5000), "alice", "bob", "carol");
             env.close();
@@ -1334,7 +1338,7 @@ struct Escrow_test : public beast::unit_test::suite
 
         using namespace jtx;
         using namespace std::chrono;
-        Env env(*this);
+        Env env(*this, features);
         auto const baseFee = env.current()->fees().base;
 
         env.memoize("alice");
@@ -1402,7 +1406,7 @@ struct Escrow_test : public beast::unit_test::suite
 
         {
             // Create escrow and finish using tickets.
-            Env env(*this);
+            Env env(*this, features);
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(5000), alice, bob);
             env.close();
@@ -1463,7 +1467,7 @@ struct Escrow_test : public beast::unit_test::suite
         }
         {
             // Create escrow and cancel using tickets.
-            Env env(*this);
+            Env env(*this, features);
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(5000), alice, bob);
             env.close();
