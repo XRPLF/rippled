@@ -569,6 +569,11 @@ class Slots final
         std::unordered_set<Peer::id_t>,
         clock_type,
         hardened_hash<strong_hash>>;
+    using validators = beast::aged_unordered_map<
+        PublicKey,
+        std::unordered_set<Peer::id_t>,
+        clock_type,
+        hardened_hash<strong_hash>>;
 
 public:
     /**
@@ -718,12 +723,79 @@ public:
     void
     deletePeer(id_t id, bool erase);
 
+    /** Called to register that a given validator was squelched for a given
+     * peer. It is expected that this method is called by SquelchHandler.
+     *
+     * @param key Validator public key
+     * @param id peer ID
+     */
+    void
+    squelchValidator(PublicKey const& key, id_t id)
+    {
+        auto it = peersWithValidators_.find(key);
+        if (it == peersWithValidators_.end())
+            peersWithValidators_.emplace(key, std::unordered_set<id_t>{id});
+
+        else if (it->second.find(id) == it->second.end())
+            it->second.insert(id);
+    }
+
 private:
     /** Add message/peer if have not seen this message
      * from the peer. A message is aged after IDLED seconds.
      * Return true if added */
     bool
     addPeerMessage(uint256 const& key, id_t id);
+
+    /**
+     * Updates the last message sent from a validator.
+     * @param validator the validator public kety
+     * @return true if the validator was updated, false otherwise
+     */
+    std::optional<PublicKey>
+    updateConsideredValidator(PublicKey const& validator, Peer::id_t peer);
+
+    /** Remove all validators that have become invalid due to selection
+     * criteria
+     * @return zero or more validators that have been removed.
+     */
+    std::vector<PublicKey>
+    cleanConsideredValidators();
+
+    /** Checks whether a given validator is squelched.
+     * @param key Validator public key
+     * @return true if a given validator was squelched
+     */
+    bool
+    validatorSquelched(PublicKey const& key) const
+    {
+        beast::expire(
+            peersWithValidators_, reduce_relay::MAX_UNSQUELCH_EXPIRE_DEFAULT);
+
+        return peersWithValidators_.find(key) != peersWithValidators_.end();
+    }
+
+    /** Checks whether a given peer was recently sent a squelch message for
+     * a given validator.
+     * @param key Validator public key
+     * @param id Peer id
+     * @return true if a given validator was squelched for a given peeru
+     */
+    bool
+    peerSquelched(PublicKey const& key, id_t id) const
+    {
+        beast::expire(
+            peersWithValidators_, reduce_relay::MAX_UNSQUELCH_EXPIRE_DEFAULT);
+
+        auto const it = peersWithValidators_.find(key);
+
+        // if validator was not squelched, the peer was also not squelched
+        if (it == peersWithValidators_.end())
+            return false;
+
+        // if a peer is found the squelch for it has not expired
+        return it->second.find(id) != it->second.end();
+    }
 
     std::atomic_bool reduceRelayReady_{false};
 
@@ -741,6 +813,13 @@ private:
     // after it was relayed is ignored by PeerImp.
     inline static messages peersWithMessage_{
         beast::get_abstract_clock<clock_type>()};
+
+    // Maintain aged container of validator/peers. This is used to track
+    // which validator/peer were squelced. A peer that whose squelch
+    // has expired is removed.
+    inline static validators peersWithValidators_{
+        beast::get_abstract_clock<clock_type>()};
+
 };
 
 template <typename clock_type>
