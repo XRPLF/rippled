@@ -65,11 +65,12 @@ getProfilingResults()
     std::lock_guard<std::mutex> lock{FunctionProfiler::mutex_};
     std::stringstream ss;
     ss << "Function profiling results:" << std::endl;
-    ss << "name,time,count" << std::endl;
+    ss << "name,time,cpu cycles,count" << std::endl;
     for (auto const& [name, duration] : FunctionProfiler::funcionDurations)
     {
-        ss << name << "," << duration.first.count() << " ns" << ","
-           << duration.second << std::endl;
+        ss << name << "," << duration.timeInTotal.count() << ","
+            << duration.cpuCyclesInTotal << ","
+           << duration.count << std::endl;
     }
 
     return ss.str();
