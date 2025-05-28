@@ -158,13 +158,10 @@ public:
         std::lock_guard<std::mutex> lock{FunctionProfiler::mutex_};
         FunctionProfiler::funcionDurations
             ["xxhasher-" + std::to_string(totalSize_)]
-                .timeInTotal += duration_;
+                .time.emplace_back(duration_);
         FunctionProfiler::funcionDurations
             ["xxhasher-" + std::to_string(totalSize_)]
-                .cpuCyclesInTotal += cpuCycles;
-        FunctionProfiler::funcionDurations
-            ["xxhasher-" + std::to_string(totalSize_)]
-                .count++;
+                .cpuCycles.emplace_back(cpuCycles);
         return ret;
     }
 };

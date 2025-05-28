@@ -64,11 +64,6 @@ public:
     {
         auto duration = std::chrono::steady_clock::now() - start;
         std::lock_guard<std::mutex> lock{mutex_};
-        if (funcionDurations[functionName].count ==
-            std::numeric_limits<std::int64_t>::max())
-        {
-            return;
-        }
         funcionDurations[functionName].time.emplace_back(duration);
         funcionDurations[functionName].cpuCycles.emplace_back((__rdtsc() - cpuCycleStart));
     }
