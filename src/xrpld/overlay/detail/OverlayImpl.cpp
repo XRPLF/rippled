@@ -142,7 +142,7 @@ OverlayImpl::OverlayImpl(
     , m_resolver(resolver)
     , next_id_(1)
     , timer_count_(0)
-    , slots_(app.logs(), *this)
+    , slots_(app.logs(), *this, app.config())
     , m_stats(
           std::bind(&OverlayImpl::collect_metrics, this),
           collector,
@@ -1390,8 +1390,7 @@ makeSquelchMessage(
 void
 OverlayImpl::unsquelch(PublicKey const& validator, Peer::id_t id) const
 {
-    if (auto peer = findPeerByShortID(id);
-        peer && app_.config().VP_REDUCE_RELAY_SQUELCH)
+    if (auto peer = findPeerByShortID(id); peer)
     {
         // optimize - multiple message with different
         // validator might be sent to the same peer
@@ -1405,8 +1404,7 @@ OverlayImpl::squelch(
     Peer::id_t id,
     uint32_t squelchDuration) const
 {
-    if (auto peer = findPeerByShortID(id);
-        peer && app_.config().VP_REDUCE_RELAY_SQUELCH)
+    if (auto peer = findPeerByShortID(id); peer)
     {
         peer->send(makeSquelchMessage(validator, true, squelchDuration));
     }
@@ -1419,6 +1417,9 @@ OverlayImpl::updateSlotAndSquelch(
     std::set<Peer::id_t>&& peers,
     protocol::MessageType type)
 {
+    if (!slots_.baseSquelchReady())
+        return;
+
     if (!strand_.running_in_this_thread())
         return post(
             strand_,
@@ -1427,7 +1428,9 @@ OverlayImpl::updateSlotAndSquelch(
             });
 
     for (auto id : peers)
-        slots_.updateSlotAndSquelch(key, validator, id, type);
+        slots_.updateSlotAndSquelch(key, validator, id, type, [&]() {
+            reportInboundTraffic(TrafficCount::squelch_ignored, 0);
+        });
 }
 
 void
@@ -1437,12 +1440,17 @@ OverlayImpl::updateSlotAndSquelch(
     Peer::id_t peer,
     protocol::MessageType type)
 {
+    if (!slots_.baseSquelchReady())
+        return;
+
     if (!strand_.running_in_this_thread())
         return post(strand_, [this, key, validator, peer, type]() {
             updateSlotAndSquelch(key, validator, peer, type);
         });
 
-    slots_.updateSlotAndSquelch(key, validator, peer, type);
+    slots_.updateSlotAndSquelch(key, validator, peer, type, [&]() {
+        reportInboundTraffic(TrafficCount::squelch_ignored, 0);
+    });
 }
 
 void

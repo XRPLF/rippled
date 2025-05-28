@@ -7020,7 +7020,10 @@ private:
             // is confusing.
             Issue usd(USD.issue().currency, amm.ammAccount());
             auto amount = amountFromString(usd, "10");
-            env(claw(gw, amount), ter(tecAMM_ACCOUNT));
+            auto const err = features[featureSingleAssetVault]
+                ? tecPSEUDO_ACCOUNT
+                : tecAMM_ACCOUNT;
+            env(claw(gw, amount), ter(err));
         }
     }
 

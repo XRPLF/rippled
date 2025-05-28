@@ -37,6 +37,7 @@
 #include <xrpl/basics/base64.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/basics/safe_cast.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/digest.h>
 
 #include <boost/algorithm/string/predicate.hpp>
@@ -112,20 +113,21 @@ PeerImp::PeerImp(
           headers_,
           FEATURE_TXRR,
           app_.config().TX_REDUCE_RELAY_ENABLE))
-    , vpReduceRelayEnabled_(app_.config().VP_REDUCE_RELAY_ENABLE)
     , ledgerReplayEnabled_(peerFeatureEnabled(
           headers_,
           FEATURE_LEDGER_REPLAY,
           app_.config().LEDGER_REPLAY))
     , ledgerReplayMsgHandler_(app, app.getLedgerReplayer())
 {
-    JLOG(journal_.info()) << "compression enabled "
-                          << (compressionEnabled_ == Compressed::On)
-                          << " vp reduce-relay enabled "
-                          << vpReduceRelayEnabled_
-                          << " tx reduce-relay enabled "
-                          << txReduceRelayEnabled_ << " on " << remote_address_
-                          << " " << id_;
+    JLOG(journal_.info())
+        << "compression enabled " << (compressionEnabled_ == Compressed::On)
+        << " vp reduce-relay base squelch enabled "
+        << peerFeatureEnabled(
+               headers_,
+               FEATURE_VPRR,
+               app_.config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE)
+        << " tx reduce-relay enabled " << txReduceRelayEnabled_ << " on "
+        << remote_address_ << " " << id_;
 }
 
 PeerImp::~PeerImp()
@@ -1282,6 +1284,18 @@ PeerImp::handleTransaction(
         auto stx = std::make_shared<STTx const>(sit);
         uint256 txID = stx->getTransactionID();
 
+        // Charge strongly for attempting to relay a txn with tfInnerBatchTxn
+        // LCOV_EXCL_START
+        if (stx->isFlag(tfInnerBatchTxn) &&
+            getCurrentTransactionRules()->enabled(featureBatch))
+        {
+            JLOG(p_journal_.warn()) << "Ignoring Network relayed Tx containing "
+                                       "tfInnerBatchTxn (handleTransaction).";
+            fee_.update(Resource::feeModerateBurdenPeer, "inner batch txn");
+            return;
+        }
+        // LCOV_EXCL_STOP
+
         int flags;
         constexpr std::chrono::seconds tx_interval = 10s;
 
@@ -1720,8 +1734,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
     {
         // Count unique messages (Slots has it's own 'HashRouter'), which a peer
         // receives within IDLED seconds since the message has been relayed.
-        if (reduceRelayReady() && relayed &&
-            (stopwatch().now() - *relayed) < reduce_relay::IDLED)
+        if (relayed && (stopwatch().now() - *relayed) < reduce_relay::IDLED)
             overlay_.updateSlotAndSquelch(
                 suppression, publicKey, id_, protocol::mtPROPOSE_LEDGER);
 
@@ -2368,10 +2381,8 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
         {
             // Count unique messages (Slots has it's own 'HashRouter'), which a
             // peer receives within IDLED seconds since the message has been
-            // relayed. Wait WAIT_ON_BOOTUP time to let the server establish
-            // connections to peers.
-            if (reduceRelayReady() && relayed &&
-                (stopwatch().now() - *relayed) < reduce_relay::IDLED)
+            // relayed.
+            if (relayed && (stopwatch().now() - *relayed) < reduce_relay::IDLED)
                 overlay_.updateSlotAndSquelch(
                     key, val->getSignerPublic(), id_, protocol::mtVALIDATION);
 
@@ -2838,6 +2849,18 @@ PeerImp::checkTransaction(
     // VFALCO TODO Rewrite to not use exceptions
     try
     {
+        // charge strongly for relaying batch txns
+        // LCOV_EXCL_START
+        if (stx->isFlag(tfInnerBatchTxn) &&
+            getCurrentTransactionRules()->enabled(featureBatch))
+        {
+            JLOG(p_journal_.warn()) << "Ignoring Network relayed Tx containing "
+                                       "tfInnerBatchTxn (checkSignature).";
+            charge(Resource::feeModerateBurdenPeer, "inner batch txn");
+            return;
+        }
+        // LCOV_EXCL_STOP
+
         // Expired?
         if (stx->isFieldPresent(sfLastLedgerSequence) &&
             (stx->getFieldU32(sfLastLedgerSequence) <
@@ -2980,7 +3003,7 @@ PeerImp::checkPropose(
         // as part of the squelch logic.
         auto haveMessage = app_.overlay().relay(
             *packet, peerPos.suppressionID(), peerPos.publicKey());
-        if (reduceRelayReady() && !haveMessage.empty())
+        if (!haveMessage.empty())
             overlay_.updateSlotAndSquelch(
                 peerPos.suppressionID(),
                 peerPos.publicKey(),
@@ -3015,7 +3038,7 @@ PeerImp::checkValidation(
             // as part of the squelch logic.
             auto haveMessage =
                 overlay_.relay(*packet, key, val->getSignerPublic());
-            if (reduceRelayReady() && !haveMessage.empty())
+            if (!haveMessage.empty())
             {
                 overlay_.updateSlotAndSquelch(
                     key,
@@ -3479,16 +3502,6 @@ PeerImp::isHighLatency() const
 {
     std::lock_guard sl(recentLock_);
     return latency_ >= peerHighLatency;
-}
-
-bool
-PeerImp::reduceRelayReady()
-{
-    if (!reduceRelayReady_)
-        reduceRelayReady_ =
-            reduce_relay::epoch<std::chrono::minutes>(UptimeClock::now()) >
-            reduce_relay::WAIT_ON_BOOTUP;
-    return vpReduceRelayEnabled_ && reduceRelayReady_;
 }
 
 void
