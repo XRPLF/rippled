@@ -359,7 +359,7 @@ public:
             Account const carol("carol");
             auto const USD = gw1["USD"];
             env.fund(XRP(100000), carol, gw1);
-            env(fset(gw1, asfAllowTrustlineLocking));
+            env(fset(gw1, asfAllowTrustLineLocking));
             env.close();
             env.trust(USD(10000), carol);
             env.close();

@@ -392,7 +392,7 @@ struct Escrow_test : public beast::unit_test::suite
             env.current()->rules().enabled(featureTokenEscrow);
         {
             // tecNO_PERMISSION: token escrow is enabled but the issuer did not
-            // set the asfAllowTrustlineLocking flag
+            // set the asfAllowTrustLineLocking flag
             auto const txResult =
                 withTokenEscrow ? ter(tecNO_PERMISSION) : ter(temBAD_AMOUNT);
             env(escrow::create("alice", "carol", Account("alice")["USD"](500)),

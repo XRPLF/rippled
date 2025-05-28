@@ -98,7 +98,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const gw = Account{"gateway"};
             auto const USD = gw["USD"];
             env.fund(XRP(5000), alice, bob, gw);
-            env(fset(gw, asfAllowTrustlineLocking));
+            env(fset(gw, asfAllowTrustLineLocking));
             env.close();
             env.trust(USD(10'000), alice, bob);
             env.close();
@@ -153,7 +153,7 @@ struct EscrowToken_test : public beast::unit_test::suite
         auto const gw = Account{"gateway"};
         auto const USD = gw["USD"];
         env.fund(XRP(5000), alice, bob, gw);
-        env(fset(gw, asfAllowTrustlineLocking));
+        env(fset(gw, asfAllowTrustLineLocking));
         env.close();
         env.trust(USD(10'000), alice, bob);
         env.close();
@@ -178,12 +178,12 @@ struct EscrowToken_test : public beast::unit_test::suite
             ter(tesSUCCESS));
         env.close();
 
-        // Clear the asfAllowTrustlineLocking flag
-        env(fclear(gw, asfAllowTrustlineLocking));
+        // Clear the asfAllowTrustLineLocking flag
+        env(fclear(gw, asfAllowTrustLineLocking));
         env.close();
-        env.require(nflags(gw, asfAllowTrustlineLocking));
+        env.require(nflags(gw, asfAllowTrustLineLocking));
 
-        // Cannot Create Escrow without asfAllowTrustlineLocking
+        // Cannot Create Escrow without asfAllowTrustLineLocking
         env(escrow::create(alice, bob, USD(1'000)),
             escrow::condition(escrow::cb1),
             escrow::finish_time(env.now() + 1s),
@@ -309,7 +309,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env.close();
         }
 
-        // tecNO_PERMISSION: asfAllowTrustlineLocking is not set
+        // tecNO_PERMISSION: asfAllowTrustLineLocking is not set
         {
             Env env{*this, features};
             auto const baseFee = env.current()->fees().base;
@@ -342,7 +342,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const gw = Account{"gateway"};
             auto const USD = gw["USD"];
             env.fund(XRP(5000), alice, bob, gw);
-            env(fset(gw, asfAllowTrustlineLocking));
+            env(fset(gw, asfAllowTrustLineLocking));
             env.close();
             env(escrow::create(alice, bob, USD(1)),
                 escrow::condition(escrow::cb1),
@@ -363,7 +363,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const gw = Account{"gateway"};
             auto const USD = gw["USD"];
             env.fund(XRP(5000), alice, bob, gw);
-            env(fset(gw, asfAllowTrustlineLocking));
+            env(fset(gw, asfAllowTrustLineLocking));
             env(fset(gw, asfRequireAuth));
             env.close();
             env.trust(USD(10'000), alice, bob);
@@ -387,7 +387,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const USD = gw["USD"];
             auto const aliceUSD = alice["USD"];
             env.fund(XRP(5000), alice, bob, gw);
-            env(fset(gw, asfAllowTrustlineLocking));
+            env(fset(gw, asfAllowTrustLineLocking));
             env(fset(gw, asfRequireAuth));
             env.close();
             env(trust(gw, aliceUSD(10'000)), txflags(tfSetfAuth));
@@ -412,7 +412,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const USD = gw["USD"];
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(10'000), alice, bob, gw);
-            env(fset(gw, asfAllowTrustlineLocking));
+            env(fset(gw, asfAllowTrustLineLocking));
             env.close();
             env(trust(alice, USD(100'000)));
             env(trust(bob, USD(100'000)));
@@ -443,7 +443,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const USD = gw["USD"];
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(10'000), alice, bob, gw);
-            env(fset(gw, asfAllowTrustlineLocking));
+            env(fset(gw, asfAllowTrustLineLocking));
             env.close();
             env(trust(alice, USD(100'000)));
             env(trust(bob, USD(100'000)));
@@ -474,7 +474,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const USD = gw["USD"];
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(10'000), alice, bob, gw);
-            env(fset(gw, asfAllowTrustlineLocking));
+            env(fset(gw, asfAllowTrustLineLocking));
             env.close();
             env(trust(alice, USD(100'000)));
             env(trust(bob, USD(100'000)));
@@ -498,7 +498,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const USD = gw["USD"];
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(10'000), alice, bob, gw);
-            env(fset(gw, asfAllowTrustlineLocking));
+            env(fset(gw, asfAllowTrustLineLocking));
             env.close();
             env(trust(alice, USD(100'000)));
             env(trust(bob, USD(100'000)));
@@ -524,7 +524,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const USD = gw["USD"];
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(10'000), alice, bob, gw);
-            env(fset(gw, asfAllowTrustlineLocking));
+            env(fset(gw, asfAllowTrustLineLocking));
             env.close();
             env.trust(USD(100000000000000000), alice);
             env.trust(USD(100000000000000000), bob);
@@ -561,7 +561,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const aliceUSD = alice["USD"];
             auto const bobUSD = bob["USD"];
             env.fund(XRP(5000), alice, bob, gw);
-            env(fset(gw, asfAllowTrustlineLocking));
+            env(fset(gw, asfAllowTrustLineLocking));
             env(fset(gw, asfRequireAuth));
             env.close();
             env(trust(gw, aliceUSD(10'000)), txflags(tfSetfAuth));
@@ -606,7 +606,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const gw = Account{"gateway"};
             auto const USD = gw["USD"];
             env.fund(XRP(5000), alice, bob, gw);
-            env(fset(gw, asfAllowTrustlineLocking));
+            env(fset(gw, asfAllowTrustLineLocking));
             env.close();
             env.trust(USD(10'000), alice, bob);
             env.close();
@@ -655,7 +655,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             env.fund(XRP(5000), alice, gw);
             env.fund(acctReserve + (incReserve - 1), bob);
             env.close();
-            env(fset(gw, asfAllowTrustlineLocking));
+            env(fset(gw, asfAllowTrustLineLocking));
             env.close();
             env.trust(USD(10'000), alice);
             env.close();
@@ -689,7 +689,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const USD = gw["USD"];
             env.fund(XRP(5000), alice, bob, gw);
             env.close();
-            env(fset(gw, asfAllowTrustlineLocking));
+            env(fset(gw, asfAllowTrustLineLocking));
             env.close();
             env.trust(USD(10'000), alice);
             env.close();
@@ -723,7 +723,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const USD = gw["USD"];
             env.fund(XRP(5000), alice, bob, gw);
             env.close();
-            env(fset(gw, asfAllowTrustlineLocking));
+            env(fset(gw, asfAllowTrustLineLocking));
             env.close();
             env.trust(USD(1000), alice, bob);
             env.close();
@@ -760,7 +760,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const USD = gw["USD"];
             env.fund(XRP(5000), alice, bob, gw);
             env.close();
-            env(fset(gw, asfAllowTrustlineLocking));
+            env(fset(gw, asfAllowTrustLineLocking));
             env.close();
             env.trust(USD(1000), alice, bob);
             env.close();
@@ -811,7 +811,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const aliceUSD = alice["USD"];
             auto const bobUSD = bob["USD"];
             env.fund(XRP(5000), alice, bob, gw);
-            env(fset(gw, asfAllowTrustlineLocking));
+            env(fset(gw, asfAllowTrustLineLocking));
             env(fset(gw, asfRequireAuth));
             env.close();
             env(trust(gw, aliceUSD(10'000)), txflags(tfSetfAuth));
@@ -861,7 +861,7 @@ struct EscrowToken_test : public beast::unit_test::suite
         auto const gw = Account{"gateway"};
         auto const USD = gw["USD"];
         env.fund(XRP(5000), alice, bob, gw);
-        env(fset(gw, asfAllowTrustlineLocking));
+        env(fset(gw, asfAllowTrustLineLocking));
         env.close();
         env.trust(USD(10'000), alice, bob);
         env.close();
@@ -911,7 +911,7 @@ struct EscrowToken_test : public beast::unit_test::suite
 
             Env env{*this, features};
             env.fund(XRP(5000), alice, bob, carol, gw);
-            env(fset(gw, asfAllowTrustlineLocking));
+            env(fset(gw, asfAllowTrustLineLocking));
             env.close();
             env.trust(USD(10'000), alice, bob, carol);
             env.close();
@@ -1017,7 +1017,7 @@ struct EscrowToken_test : public beast::unit_test::suite
 
             Env env{*this, features};
             env.fund(XRP(5000), alice, bob, carol, gw);
-            env(fset(gw, asfAllowTrustlineLocking));
+            env(fset(gw, asfAllowTrustLineLocking));
             env.close();
             env.trust(USD(10'000), alice, bob, carol);
             env.close();
@@ -1138,7 +1138,7 @@ struct EscrowToken_test : public beast::unit_test::suite
 
             Env env{*this, features};
             env.fund(XRP(5000), alice, carol, gw);
-            env(fset(gw, asfAllowTrustlineLocking));
+            env(fset(gw, asfAllowTrustLineLocking));
             env.close();
             env.trust(USD(10'000), alice, carol);
             env.close();
@@ -1240,7 +1240,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const baseFee = env.current()->fees().base;
             auto const USD = t.gw["USD"];
             env.fund(XRP(5000), t.src, t.dst, t.gw);
-            env(fset(t.gw, asfAllowTrustlineLocking));
+            env(fset(t.gw, asfAllowTrustLineLocking));
             env.close();
 
             if (t.hasTrustline)
@@ -1300,7 +1300,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const baseFee = env.current()->fees().base;
             auto const USD = gw["USD"];
             env.fund(XRP(5000), alice, gw);
-            env(fset(gw, asfAllowTrustlineLocking));
+            env(fset(gw, asfAllowTrustLineLocking));
             env.close();
             env.trust(USD(100'000), alice);
             env.close();
@@ -1335,7 +1335,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             auto const baseFee = env.current()->fees().base;
             auto const USD = t.dst["USD"];
             env.fund(XRP(5000), t.dst, t.src);
-            env(fset(t.dst, asfAllowTrustlineLocking));
+            env(fset(t.dst, asfAllowTrustLineLocking));
             env.close();
 
             env.trust(USD(100'000), t.src);
@@ -1373,7 +1373,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             Env env{*this, features};
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(5000), gw);
-            env(fset(gw, asfAllowTrustlineLocking));
+            env(fset(gw, asfAllowTrustLineLocking));
             env.close();
 
             // issuer cannot receive escrow
@@ -1404,7 +1404,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             Env env{*this, features};
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(10'000), alice, bob, gw);
-            env(fset(gw, asfAllowTrustlineLocking));
+            env(fset(gw, asfAllowTrustLineLocking));
             env(rate(gw, 1.25));
             env.close();
             env.trust(USD(100'000), alice);
@@ -1442,7 +1442,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             Env env{*this, features};
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(10'000), alice, bob, gw);
-            env(fset(gw, asfAllowTrustlineLocking));
+            env(fset(gw, asfAllowTrustLineLocking));
             env(rate(gw, 1.25));
             env.close();
             env.trust(USD(100'000), alice);
@@ -1479,12 +1479,13 @@ struct EscrowToken_test : public beast::unit_test::suite
             BEAST_EXPECT(env.balance(alice, USD) == preAlice - delta);
             BEAST_EXPECT(env.balance(bob, USD) == USD(10'100));
         }
+
         // test rate change - lower
         {
             Env env{*this, features};
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(10'000), alice, bob, gw);
-            env(fset(gw, asfAllowTrustlineLocking));
+            env(fset(gw, asfAllowTrustLineLocking));
             env(rate(gw, 1.25));
             env.close();
             env.trust(USD(100'000), alice);
@@ -1521,6 +1522,46 @@ struct EscrowToken_test : public beast::unit_test::suite
             BEAST_EXPECT(env.balance(alice, USD) == preAlice - delta);
             BEAST_EXPECT(env.balance(bob, USD) == USD(10125));
         }
+
+        // test cancel doesnt charge rate
+        {
+            Env env{*this, features};
+            auto const baseFee = env.current()->fees().base;
+            env.fund(XRP(10'000), alice, bob, gw);
+            env(fset(gw, asfAllowTrustLineLocking));
+            env(rate(gw, 1.25));
+            env.close();
+            env.trust(USD(100'000), alice);
+            env.trust(USD(100'000), bob);
+            env.close();
+            env(pay(gw, alice, USD(10'000)));
+            env(pay(gw, bob, USD(10'000)));
+            env.close();
+
+            // alice can create escrow w/ xfer rate
+            auto const preAlice = env.balance(alice, USD);
+            auto const seq1 = env.seq(alice);
+            auto const delta = USD(125);
+            env(escrow::create(alice, bob, delta),
+                escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 3s),
+                fee(baseFee));
+            env.close();
+            auto transferRate = escrow::rate(env, alice, seq1);
+            BEAST_EXPECT(
+                transferRate.value == std::uint32_t(1'000'000'000 * 1.25));
+
+            // issuer changes rate lower
+            env(rate(gw, 1.00));
+            env.close();
+
+            // alice can cancel escrow - rate is not charged
+            env(escrow::cancel(alice, alice, seq1), fee(baseFee));
+            env.close();
+
+            BEAST_EXPECT(env.balance(alice, USD) == preAlice);
+            BEAST_EXPECT(env.balance(bob, USD) == USD(10000));
+        }
     }
 
     void
@@ -1540,7 +1581,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             Env env{*this, features};
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(1'000), alice, bob, gw);
-            env(fset(gw, asfAllowTrustlineLocking));
+            env(fset(gw, asfAllowTrustLineLocking));
             env.close();
             env.trust(USD(10'000), alice, bob);
             env.close();
@@ -1589,7 +1630,7 @@ struct EscrowToken_test : public beast::unit_test::suite
         Env env{*this, features};
         auto const baseFee = env.current()->fees().base;
         env.fund(XRP(1'000), alice, bob, gw);
-        env(fset(gw, asfAllowTrustlineLocking));
+        env(fset(gw, asfAllowTrustLineLocking));
         env(fset(gw, asfRequireAuth));
         env.close();
         env(trust(gw, aliceUSD(10'000)), txflags(tfSetfAuth));
@@ -1650,7 +1691,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             Env env{*this, features};
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(10'000), alice, bob, gw);
-            env(fset(gw, asfAllowTrustlineLocking));
+            env(fset(gw, asfAllowTrustLineLocking));
             env.close();
             env.trust(USD(100'000), alice);
             env.trust(USD(100'000), bob);
@@ -1723,7 +1764,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             Env env{*this, features};
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(10'000), alice, bob, gw);
-            env(fset(gw, asfAllowTrustlineLocking));
+            env(fset(gw, asfAllowTrustLineLocking));
             env.close();
             env(trust(alice, USD(100'000)));
             env(trust(bob, USD(100'000)));
@@ -1799,7 +1840,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             Env env{*this, features};
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(10'000), alice, bob, gw);
-            env(fset(gw, asfAllowTrustlineLocking));
+            env(fset(gw, asfAllowTrustLineLocking));
             env.close();
             env(trust(alice, USD(100'000)));
             env(trust(bob, USD(100'000)));
@@ -1892,7 +1933,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             Env env{*this, features};
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(10'000), alice, bob, gw);
-            env(fset(gw, asfAllowTrustlineLocking));
+            env(fset(gw, asfAllowTrustLineLocking));
             env.close();
             env.trust(USD(100'000), alice);
             env.trust(USD(100'000), bob);
@@ -1916,7 +1957,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             Env env{*this, features};
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(10'000), alice, bob, gw);
-            env(fset(gw, asfAllowTrustlineLocking));
+            env(fset(gw, asfAllowTrustLineLocking));
             env.close();
             env.trust(USD(100'000), alice);
             env.trust(USD(100'000), bob);
@@ -1958,7 +1999,7 @@ struct EscrowToken_test : public beast::unit_test::suite
             Env env(*this, features);
             auto const baseFee = env.current()->fees().base;
             env.fund(XRP(10'000), alice, bob, gw);
-            env(fset(gw, asfAllowTrustlineLocking));
+            env(fset(gw, asfAllowTrustLineLocking));
             env.close();
             env.trust(USD(100000000000000000), alice);
             env.trust(USD(100000000000000000), bob);

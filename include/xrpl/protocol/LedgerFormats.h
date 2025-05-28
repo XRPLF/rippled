@@ -145,7 +145,7 @@ enum LedgerSpecificFlags {
         0x10000000,               // True, reject new paychans
     lsfDisallowIncomingTrustline =
         0x20000000,               // True, reject new trustlines (only if no issued assets)
-    lsfAllowTrustlineLocking =
+    lsfAllowTrustLineLocking =
         0x40000000,               // True, enable trustline locking
     lsfAllowTrustLineClawback =
         0x80000000,               // True, enable clawback

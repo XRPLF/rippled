@@ -653,10 +653,10 @@ SetAccount::doApply()
     // Set or clear flags for disallowing escrow
     if (ctx_.view().rules().enabled(featureTokenEscrow))
     {
-        if (uSetFlag == asfAllowTrustlineLocking)
-            uFlagsOut |= lsfAllowTrustlineLocking;
-        else if (uClearFlag == asfAllowTrustlineLocking)
-            uFlagsOut &= ~lsfAllowTrustlineLocking;
+        if (uSetFlag == asfAllowTrustLineLocking)
+            uFlagsOut |= lsfAllowTrustLineLocking;
+        else if (uClearFlag == asfAllowTrustLineLocking)
+            uFlagsOut &= ~lsfAllowTrustLineLocking;
     }
 
     // Set flag for clawback

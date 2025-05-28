@@ -92,7 +92,7 @@ constexpr std::uint32_t asfDisallowIncomingCheck           = 13;
 constexpr std::uint32_t asfDisallowIncomingPayChan         = 14;
 constexpr std::uint32_t asfDisallowIncomingTrustline       = 15;
 constexpr std::uint32_t asfAllowTrustLineClawback          = 16;
-constexpr std::uint32_t asfAllowTrustlineLocking           = 17;
+constexpr std::uint32_t asfAllowTrustLineLocking           = 17;
 
 // OfferCreate flags:
 constexpr std::uint32_t tfPassive                          = 0x00010000;
