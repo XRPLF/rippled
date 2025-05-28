@@ -224,7 +224,7 @@ checkPayment(
             "Cannot specify both 'tx_json.Paths' and 'build_path'");
 
     std::optional<uint256> domain;
-    if (tx_json.isMember(jss::domain))
+    if (tx_json.isMember(sfDomainID.jsonName))
     {
         uint256 num;
         if (!tx_json[sfDomainID.jsonName].isString() ||
