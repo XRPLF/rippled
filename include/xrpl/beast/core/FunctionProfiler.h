@@ -90,11 +90,11 @@ getProfilingResults()
 
         ss << name << "," << timeInTotal << ","
             << cpuCyclesInTotal << ","
-            << duration.time.size()
-            << timeInTotal / (double)duration.time.size()
-            << compute_stddev(times)
-            << cpuCyclesInTotal / (double)duration.cpuCycles.size()
-            << compute_stddev(duration.cpuCycles)
+            << duration.time.size() << ","
+            << timeInTotal / (double)duration.time.size() << ","
+            << compute_stddev(times) << ","
+            << cpuCyclesInTotal / (double)duration.cpuCycles.size() << ","
+            << compute_stddev(duration.cpuCycles) << ","
             << std::endl;
     }
 
