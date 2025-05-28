@@ -331,7 +331,6 @@ NoZeroEscrow::visitEntry(
         if (auto const locked = (*after)[~sfLockedAmount])
         {
             checkAmount(*locked);
-            bad_ = mptAmount < *locked;
         }
     }
 }

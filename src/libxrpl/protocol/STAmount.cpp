@@ -527,13 +527,13 @@ getRate(STAmount const& offerOut, STAmount const& offerIn)
 bool
 canAdd(STAmount const& a, STAmount const& b)
 {
-    // special case: adding anything to zero is always fine
-    if (a == beast::zero || b == beast::zero)
-        return true;
-
     // cannot add different currencies
     if (!areComparable(a, b))
         return false;
+
+    // special case: adding anything to zero is always fine
+    if (a == beast::zero || b == beast::zero)
+        return true;
 
     // XRP case (overflow & underflow check)
     if (isXRP(a) && isXRP(b))
@@ -602,13 +602,13 @@ canAdd(STAmount const& a, STAmount const& b)
 bool
 canSubtract(STAmount const& a, STAmount const& b)
 {
-    // Special case: subtracting zero is always fine
-    if (b == beast::zero)
-        return true;
-
     // Cannot subtract different currencies
     if (!areComparable(a, b))
         return false;
+
+    // Special case: subtracting zero is always fine
+    if (b == beast::zero)
+        return true;
 
     // XRP case (underflow check)
     if (isXRP(a) && isXRP(b))

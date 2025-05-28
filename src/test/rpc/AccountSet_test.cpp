@@ -99,7 +99,7 @@ public:
                     // is tested elsewhere.
                     continue;
                 }
-                if (flag == asfAllowTokenLocking)
+                if (flag == asfAllowTrustlineLocking)
                 {
                     // These flags are part of the AllowTokenLocking amendment
                     // and are tested elsewhere

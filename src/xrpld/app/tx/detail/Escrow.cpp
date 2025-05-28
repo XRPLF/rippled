@@ -125,7 +125,7 @@ EscrowCreate::preflight(PreflightContext const& ctx)
         return temINVALID_FLAG;
 
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;  // LCOV_EXCL_LINE
+        return ret;
 
     STAmount const amount{ctx.tx[sfAmount]};
     if (!isXRP(amount))
@@ -213,11 +213,11 @@ escrowCreatePreclaimHelper<Issue>(
     if (issuer == account)
         return tecNO_PERMISSION;
 
-    // If the lsfAllowTokenLocking is not enabled, return tecNO_PERMISSION
+    // If the lsfAllowTrustlineLocking is not enabled, return tecNO_PERMISSION
     auto const sleIssuer = ctx.view.read(keylet::account(issuer));
     if (!sleIssuer)
         return tecNO_ISSUER;
-    if (!sleIssuer->isFlag(lsfAllowTokenLocking))
+    if (!sleIssuer->isFlag(lsfAllowTrustlineLocking))
         return tecNO_PERMISSION;
 
     // If the account does not have a trustline to the issuer, return tecNO_LINE
@@ -985,6 +985,11 @@ escrowUnlockApplyHelper<MPTIssue>(
     if (!view.exists(keylet::mptoken(issuanceKey.key, receiver)) &&
         !receiverIssuer)
         return tecNO_PERMISSION;
+
+    auto const xferRate = transferRate(view, amount);
+    // update if issuer rate is less than locked rate
+    if (xferRate < lockedRate)
+        lockedRate = xferRate;
 
     // Transfer Rate only applies when:
     // 1. Issuer is not involved in the transfer (senderIssuer or

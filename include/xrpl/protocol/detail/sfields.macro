@@ -144,7 +144,7 @@ TYPED_SFIELD(sfOutstandingAmount,        UINT64,    25, SField::sMD_BaseTen|SFie
 TYPED_SFIELD(sfMPTAmount,                UINT64,    26, SField::sMD_BaseTen|SField::sMD_Default)
 TYPED_SFIELD(sfIssuerNode,               UINT64,    27)
 TYPED_SFIELD(sfSubjectNode,              UINT64,    28)
-TYPED_SFIELD(sfLockedAmount,             UINT64,    28, SField::sMD_BaseTen|SField::sMD_Default)
+TYPED_SFIELD(sfLockedAmount,             UINT64,    29, SField::sMD_BaseTen|SField::sMD_Default)
 
 // 128-bit
 TYPED_SFIELD(sfEmailHash,                UINT128,    1)

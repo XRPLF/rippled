@@ -96,8 +96,8 @@ private:
             case asfDisallowIncomingTrustline:
                 mask_ |= lsfDisallowIncomingTrustline;
                 break;
-            case asfAllowTokenLocking:
-                mask_ |= lsfAllowTokenLocking;
+            case asfAllowTrustlineLocking:
+                mask_ |= lsfAllowTrustlineLocking;
                 break;
             default:
                 Throw<std::runtime_error>("unknown flag");

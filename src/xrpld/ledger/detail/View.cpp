@@ -2813,7 +2813,11 @@ rippleUnlockEscrowMPT(
                 STAmount(mptIssue, locked), STAmount(mptIssue, redeem)))
             return tecINTERNAL;  // LCOV_EXCL_LINE
 
-        sleIssuance->setFieldU64(sfLockedAmount, locked - redeem);
+        auto const newLocked = locked - redeem;
+        if (newLocked == 0)
+            sleIssuance->makeFieldAbsent(sfLockedAmount);
+        else
+            sleIssuance->setFieldU64(sfLockedAmount, newLocked);
         view.update(sleIssuance);
     }
 

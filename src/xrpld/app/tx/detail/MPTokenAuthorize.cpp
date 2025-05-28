@@ -88,7 +88,7 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
                 auto const sleMptIssuance = ctx.view.read(
                     keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
                 if (!sleMptIssuance)
-                    return tefINTERNAL;
+                    return tefINTERNAL;  // LCOV_EXCL_LINE
 
                 return tecHAS_OBLIGATIONS;
             }
@@ -162,7 +162,7 @@ MPTokenAuthorize::createMPToken(
         keylet::ownerDir(account), mptokenKey, describeOwnerDir(account));
 
     if (!ownerNode)
-        return tecDIR_FULL;
+        return tecDIR_FULL;  // LCOV_EXCL_LINE
 
     auto mptoken = std::make_shared<SLE>(mptokenKey);
     (*mptoken)[sfAccount] = account;
