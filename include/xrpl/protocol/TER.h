@@ -139,8 +139,8 @@ enum TEMcodes : TERUnderlyingType {
 
     temARRAY_EMPTY,
     temARRAY_TOO_LARGE,
-
     temBAD_TRANSFER_FEE,
+    temINVALID_INNER_BATCH,
 };
 
 //------------------------------------------------------------------------------
@@ -225,6 +225,8 @@ enum TERcodes : TERUnderlyingType {
     terQUEUED,       // Transaction is being held in TxQ until fee drops
     terPRE_TICKET,   // Ticket is not yet in ledger but might be on its way
     terNO_AMM,       // AMM doesn't exist for the asset pair
+    terADDRESS_COLLISION,  // Failed to allocate AccountID when trying to
+                           // create a pseudo-account
 };
 
 //------------------------------------------------------------------------------
@@ -265,6 +267,17 @@ enum TECcodes : TERUnderlyingType {
     // Otherwise, treated as terRETRY.
     //
     // DO NOT CHANGE THESE NUMBERS: They appear in ledger meta data.
+    //
+    // Note:
+    //   tecNO_ENTRY is often used interchangeably with tecOBJECT_NOT_FOUND.
+    //   While there does not seem to be a clear rule which to use when, the
+    //   following guidance will help to keep errors consistent with the
+    //   majority of (but not all) transaction types:
+    // - tecNO_ENTRY : cannot find the primary ledger object on which the
+    //   transaction is being attempted
+    // - tecOBJECT_NOT_FOUND : cannot find the additional object(s) needed to
+    //   complete the transaction
+
     tecCLAIM = 100,
     tecPATH_PARTIAL = 101,
     tecUNFUNDED_ADD = 102,  // Unused legacy code
@@ -344,6 +357,9 @@ enum TECcodes : TERUnderlyingType {
     tecARRAY_TOO_LARGE = 191,
     tecLOCKED = 192,
     tecBAD_CREDENTIALS = 193,
+    tecWRONG_ASSET = 194,
+    tecLIMIT_EXCEEDED = 195,
+    tecPSEUDO_ACCOUNT = 196,
 };
 
 //------------------------------------------------------------------------------
@@ -629,37 +645,37 @@ using TER = TERSubset<CanCvtToTER>;
 //------------------------------------------------------------------------------
 
 inline bool
-isTelLocal(TER x)
+isTelLocal(TER x) noexcept
 {
-    return ((x) >= telLOCAL_ERROR && (x) < temMALFORMED);
+    return (x >= telLOCAL_ERROR && x < temMALFORMED);
 }
 
 inline bool
-isTemMalformed(TER x)
+isTemMalformed(TER x) noexcept
 {
-    return ((x) >= temMALFORMED && (x) < tefFAILURE);
+    return (x >= temMALFORMED && x < tefFAILURE);
 }
 
 inline bool
-isTefFailure(TER x)
+isTefFailure(TER x) noexcept
 {
-    return ((x) >= tefFAILURE && (x) < terRETRY);
+    return (x >= tefFAILURE && x < terRETRY);
 }
 
 inline bool
-isTerRetry(TER x)
+isTerRetry(TER x) noexcept
 {
-    return ((x) >= terRETRY && (x) < tesSUCCESS);
+    return (x >= terRETRY && x < tesSUCCESS);
 }
 
 inline bool
-isTesSuccess(TER x)
+isTesSuccess(TER x) noexcept
 {
-    return ((x) == tesSUCCESS);
+    return (x == tesSUCCESS);
 }
 
 inline bool
-isTecClaim(TER x)
+isTecClaim(TER x) noexcept
 {
     return ((x) >= tecCLAIM);
 }

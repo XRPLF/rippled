@@ -464,9 +464,6 @@ transactionPreProcessImpl(
                 hasTicketSeq ? 0 : app.getTxQ().nextQueuableSeq(sle).value();
         }
 
-        if (!tx_json.isMember(jss::Flags))
-            tx_json[jss::Flags] = tfFullyCanonicalSig;
-
         if (!tx_json.isMember(jss::NetworkID))
         {
             auto const networkId = app.config().NETWORK_ID;
@@ -531,10 +528,40 @@ transactionPreProcessImpl(
         if (!signingArgs.isMultiSigning())
         {
             // Make sure the account and secret belong together.
-            auto const err = acctMatchesPubKey(sle, srcAddressID, pk);
+            if (tx_json.isMember(sfDelegate.jsonName))
+            {
+                // Delegated transaction
+                auto const delegateJson = tx_json[sfDelegate.jsonName];
+                auto const ptrDelegatedAddressID = delegateJson.isString()
+                    ? parseBase58<AccountID>(delegateJson.asString())
+                    : std::nullopt;
 
-            if (err != rpcSUCCESS)
-                return rpcError(err);
+                if (!ptrDelegatedAddressID)
+                {
+                    return RPC::make_error(
+                        rpcSRC_ACT_MALFORMED,
+                        RPC::invalid_field_message("tx_json.Delegate"));
+                }
+
+                auto delegatedAddressID = *ptrDelegatedAddressID;
+                auto delegatedSle = app.openLedger().current()->read(
+                    keylet::account(delegatedAddressID));
+                if (!delegatedSle)
+                    return rpcError(rpcDELEGATE_ACT_NOT_FOUND);
+
+                auto const err =
+                    acctMatchesPubKey(delegatedSle, delegatedAddressID, pk);
+
+                if (err != rpcSUCCESS)
+                    return rpcError(err);
+            }
+            else
+            {
+                auto const err = acctMatchesPubKey(sle, srcAddressID, pk);
+
+                if (err != rpcSUCCESS)
+                    return rpcError(err);
+            }
         }
     }
 
@@ -716,10 +743,10 @@ transactionFormatResultImpl(Transaction::pointer tpTrans, unsigned apiVersion)
 
 //------------------------------------------------------------------------------
 
-[[nodiscard]]
-static XRPAmount
+[[nodiscard]] static XRPAmount
 getTxFee(Application const& app, Config const& config, Json::Value tx)
 {
+    auto const& ledger = app.openLedger().current();
     // autofilling only needed in this function so that the `STParsedJSONObject`
     // parsing works properly it should not be modifying the actual `tx` object
     if (!tx.isMember(jss::Fee))
@@ -745,6 +772,9 @@ getTxFee(Application const& app, Config const& config, Json::Value tx)
     if (tx.isMember(jss::Signers))
     {
         if (!tx[jss::Signers].isArray())
+            return config.FEES.reference_fee;
+
+        if (tx[jss::Signers].size() > STTx::maxMultiSigners(&ledger->rules()))
             return config.FEES.reference_fee;
 
         // check multi-signed signers
@@ -775,6 +805,10 @@ getTxFee(Application const& app, Config const& config, Json::Value tx)
     try
     {
         STTx const& stTx = STTx(std::move(parsed.object.value()));
+        std::string reason;
+        if (!passesLocalChecks(stTx, reason))
+            return config.FEES.reference_fee;
+
         return calculateBaseFee(*app.openLedger().current(), stTx);
     }
     catch (std::exception& e)
@@ -915,7 +949,7 @@ transactionSign(
     if (!preprocResult.second)
         return preprocResult.first;
 
-    std::shared_ptr<const ReadView> ledger = app.openLedger().current();
+    std::shared_ptr<ReadView const> ledger = app.openLedger().current();
     // Make sure the STTx makes a legitimate Transaction.
     std::pair<Json::Value, Transaction::pointer> txn =
         transactionConstructImpl(preprocResult.second, ledger->rules(), app);
@@ -1071,7 +1105,7 @@ transactionSignFor(
     JLOG(j.debug()) << "transactionSignFor: " << jvRequest;
 
     // Verify presence of the signer's account field.
-    const char accountField[] = "account";
+    char const accountField[] = "account";
 
     if (!jvRequest.isMember(accountField))
         return RPC::missing_field_error(accountField);

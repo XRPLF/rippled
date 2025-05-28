@@ -1,12 +1,10 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2019 Ripple Labs Inc.
-
+    Copyright (c) 2024 Ripple Labs Inc.
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
     copyright notice and this permission notice appear in all copies.
-
     THE  SOFTWARE IS PROVIDED "AS IS" AND THE AUTHOR DISCLAIMS ALL WARRANTIES
     WITH  REGARD  TO  THIS  SOFTWARE  INCLUDING  ALL  IMPLIED  WARRANTIES  OF
     MERCHANTABILITY  AND  FITNESS. IN NO EVENT SHALL THE AUTHOR BE LIABLE FOR
@@ -17,52 +15,23 @@
 */
 //==============================================================================
 
-#include <test/jtx/did.h>
-
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/HashPrefix.h>
+#include <xrpl/protocol/STVector256.h>
+#include <xrpl/protocol/Serializer.h>
 
 namespace ripple {
-namespace test {
-namespace jtx {
 
-/** DID operations. */
-namespace did {
-
-Json::Value
-set(jtx::Account const& account)
+inline void
+serializeBatch(
+    Serializer& msg,
+    std::uint32_t const& flags,
+    std::vector<uint256> const& txids)
 {
-    Json::Value jv;
-    jv[jss::TransactionType] = jss::DIDSet;
-    jv[jss::Account] = to_string(account.id());
-    jv[jss::Flags] = tfUniversal;
-    return jv;
+    msg.add32(HashPrefix::batch);
+    msg.add32(flags);
+    msg.add32(std::uint32_t(txids.size()));
+    for (auto const& txid : txids)
+        msg.addBitString(txid);
 }
 
-Json::Value
-setValid(jtx::Account const& account)
-{
-    Json::Value jv;
-    jv[jss::TransactionType] = jss::DIDSet;
-    jv[jss::Account] = to_string(account.id());
-    jv[jss::Flags] = tfUniversal;
-    jv[sfURI.jsonName] = strHex(std::string{"uri"});
-    return jv;
-}
-
-Json::Value
-del(jtx::Account const& account)
-{
-    Json::Value jv;
-    jv[jss::TransactionType] = jss::DIDDelete;
-    jv[jss::Account] = to_string(account.id());
-    jv[jss::Flags] = tfUniversal;
-    return jv;
-}
-
-}  // namespace did
-
-}  // namespace jtx
-
-}  // namespace test
 }  // namespace ripple
