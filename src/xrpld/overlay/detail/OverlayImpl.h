@@ -399,14 +399,14 @@ public:
      * @param key Unique message's key
      * @param validator Validator's public key
      * @param peers Peers' id to update the slots for
-     * @param type Received protocol message type
+     * @param isTrusted Indicate if the validator is trusted
      */
     void
     updateSlotAndSquelch(
         uint256 const& key,
         PublicKey const& validator,
         std::set<Peer::id_t>&& peers,
-        protocol::MessageType type);
+        bool isTrusted);
 
     /** Overload to reduce allocation in case of single peer
      */
@@ -415,7 +415,7 @@ public:
         uint256 const& key,
         PublicKey const& validator,
         Peer::id_t peer,
-        protocol::MessageType type);
+        bool isTrusted);
 
     /** Called when the peer is deleted. If the peer was selected to be the
      * source of messages from the validator then squelched peers have to be
