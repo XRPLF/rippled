@@ -253,6 +253,10 @@ public:
     // made the default routing algorithm                                 //
     std::size_t VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS = 5;
     /////////////////    END OF TEMPORARY CODE BLOCK    /////////////////////
+    // Reduce-relay - these parameters are experimental.
+
+    // Enable enhanced squelching of unique untrusted validator messages
+    bool VP_REDUCE_RELAY_ENHANCED_SQUELCH_ENABLE = false;
 
     // Transaction reduce-relay feature
     bool TX_REDUCE_RELAY_ENABLE = false;
