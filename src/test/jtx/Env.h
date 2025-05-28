@@ -590,7 +590,7 @@ public:
 
     /** Return metadata for the last JTx.
      *
-     * NOTE: this has a side effect of closing the open ledger.
+     *  NOTE: this has a side effect of closing the open ledger.
      *
      *  Effects:
      *
