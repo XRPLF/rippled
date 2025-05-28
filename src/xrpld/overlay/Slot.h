@@ -121,13 +121,15 @@ private:
     Slot(
         SquelchHandler const& handler,
         beast::Journal journal,
-        uint16_t maxSelectedPeers)
+        uint16_t maxSelectedPeers,
+        bool isTrusted)
         : reachedThreshold_(0)
         , lastSelected_(clock_type::now())
         , state_(SlotState::Counting)
         , handler_(handler)
         , journal_(journal)
         , maxSelectedPeers_(maxSelectedPeers)
+        , isTrusted_(isTrusted)
     {
     }
 
@@ -139,22 +141,19 @@ private:
      * MIN_MESSAGE_THRESHOLD then add peer to considered peers pool. If the
      * number of considered peers who reached MAX_MESSAGE_THRESHOLD is
      * maxSelectedPeers_ then randomly select maxSelectedPeers_ from
-     * considered peers, and call squelch handler for each peer, which is not
-     * selected and not already in Squelched state. Set the state for those
-     * peers to Squelched and reset the count of all peers. Set slot's state to
-     * Selected. Message count is not updated when the slot is in Selected
-     * state.
+     * considered peers, and call squelch handler for each peer, which is
+     * not selected and not already in Squelched state. Set the state for
+     * those peers to Squelched and reset the count of all peers. Set slot's
+     * state to Selected. Message count is not updated when the slot is in
+     * Selected state.
      * @param validator Public key of the source validator
      * @param id Peer id which received the message
-     * @param type  Message type (Validation and Propose Set only,
-     *     others are ignored, future use)
      * @param callback A callback to report ignored squelches
      */
     void
     update(
         PublicKey const& validator,
         id_t id,
-        protocol::MessageType type,
         ignored_squelch_callback callback);
 
     /** Handle peer deletion when a peer disconnects.
@@ -257,6 +256,9 @@ private:
     // the maximum number of peers that should be selected as a validator
     // message source
     uint16_t const maxSelectedPeers_;
+
+    // indicate if the slot is for a trusted validator
+    bool const isTrusted_;
 };
 
 template <typename clock_type>
@@ -287,7 +289,6 @@ void
 Slot<clock_type>::update(
     PublicKey const& validator,
     id_t id,
-    protocol::MessageType type,
     ignored_squelch_callback callback)
 {
     using namespace std::chrono;
@@ -321,8 +322,7 @@ Slot<clock_type>::update(
         << " slot state " << static_cast<int>(state_) << " peer state "
         << static_cast<int>(peer.state) << " count " << peer.count << " last "
         << duration_cast<milliseconds>(now - peer.lastMessage).count()
-        << " pool " << considered_.size() << " threshold " << reachedThreshold_
-        << " " << (type == protocol::mtVALIDATION ? "validation" : "proposal");
+        << " pool " << considered_.size() << " threshold " << reachedThreshold_;
 
     peer.lastMessage = now;
 
@@ -605,37 +605,39 @@ public:
         return reduceRelayReady_;
     }
 
-    /** Calls Slot::update of Slot associated with the validator, with a noop
-     * callback.
+    /** Calls Slot::update of Slot associated with the validator, with a
+     * noop callback.
      * @param key Message's hash
      * @param validator Validator's public key
      * @param id Peer's id which received the message
-     * @param type Received protocol message type
+     * @param isTrusted Boolean to indicate if the message is from a trusted
+     * validator
      */
     void
     updateSlotAndSquelch(
         uint256 const& key,
         PublicKey const& validator,
         id_t id,
-        protocol::MessageType type)
+        bool isTrusted)
     {
-        updateSlotAndSquelch(key, validator, id, type, []() {});
+        updateSlotAndSquelch(key, validator, id, []() {}, isTrusted);
     }
 
     /** Calls Slot::update of Slot associated with the validator.
      * @param key Message's hash
      * @param validator Validator's public key
      * @param id Peer's id which received the message
-     * @param type Received protocol message type
      * @param callback A callback to report ignored validations
+     * @param isTrusted Boolean to indicate if the message is from a trusted
+     * validator
      */
     void
     updateSlotAndSquelch(
         uint256 const& key,
         PublicKey const& validator,
         id_t id,
-        protocol::MessageType type,
-        typename Slot<clock_type>::ignored_squelch_callback callback);
+        typename Slot<clock_type>::ignored_squelch_callback callback,
+        bool isTrusted);
 
     /** Check if peers stopped relaying messages
      * and if slots stopped receiving messages from the validator.
@@ -780,8 +782,8 @@ Slots<clock_type>::updateSlotAndSquelch(
     uint256 const& key,
     PublicKey const& validator,
     id_t id,
-    protocol::MessageType type,
-    typename Slot<clock_type>::ignored_squelch_callback callback)
+    typename Slot<clock_type>::ignored_squelch_callback callback,
+    bool isTrusted)
 {
     if (!addPeerMessage(key, id))
         return;

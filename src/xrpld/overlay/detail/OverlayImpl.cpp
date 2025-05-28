@@ -1415,7 +1415,7 @@ OverlayImpl::updateSlotAndSquelch(
     uint256 const& key,
     PublicKey const& validator,
     std::set<Peer::id_t>&& peers,
-    protocol::MessageType type)
+    bool isTrusted)
 {
     if (!slots_.baseSquelchReady())
         return;
@@ -1423,14 +1423,22 @@ OverlayImpl::updateSlotAndSquelch(
     if (!strand_.running_in_this_thread())
         return post(
             strand_,
-            [this, key, validator, peers = std::move(peers), type]() mutable {
-                updateSlotAndSquelch(key, validator, std::move(peers), type);
+            [this,
+             key,
+             validator,
+             peers = std::move(peers),
+             isTrusted]() mutable {
+                updateSlotAndSquelch(
+                    key, validator, std::move(peers), isTrusted);
             });
 
     for (auto id : peers)
-        slots_.updateSlotAndSquelch(key, validator, id, type, [&]() {
-            reportInboundTraffic(TrafficCount::squelch_ignored, 0);
-        });
+        slots_.updateSlotAndSquelch(
+            key,
+            validator,
+            id,
+            [&]() { reportInboundTraffic(TrafficCount::squelch_ignored, 0); },
+            isTrusted);
 }
 
 void
@@ -1438,19 +1446,22 @@ OverlayImpl::updateSlotAndSquelch(
     uint256 const& key,
     PublicKey const& validator,
     Peer::id_t peer,
-    protocol::MessageType type)
+    bool isTrusted)
 {
     if (!slots_.baseSquelchReady())
         return;
 
     if (!strand_.running_in_this_thread())
-        return post(strand_, [this, key, validator, peer, type]() {
-            updateSlotAndSquelch(key, validator, peer, type);
+        return post(strand_, [this, key, validator, peer, isTrusted]() {
+            updateSlotAndSquelch(key, validator, peer, isTrusted);
         });
 
-    slots_.updateSlotAndSquelch(key, validator, peer, type, [&]() {
-        reportInboundTraffic(TrafficCount::squelch_ignored, 0);
-    });
+    slots_.updateSlotAndSquelch(
+        key,
+        validator,
+        peer,
+        [&]() { reportInboundTraffic(TrafficCount::squelch_ignored, 0); },
+        isTrusted);
 }
 
 void
