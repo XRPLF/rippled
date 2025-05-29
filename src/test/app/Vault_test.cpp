@@ -2273,6 +2273,8 @@ class Vault_test : public beast::unit_test::suite
         env(pay(issuer, owner, asset(500)));
         env.trust(asset(1000), depositor);
         env(pay(issuer, depositor, asset(500)));
+        env.trust(asset(1000), charlie);
+        env(pay(issuer, charlie, asset(5)));
         env.close();
 
         auto [tx, keylet] = vault.create(
@@ -2362,7 +2364,7 @@ class Vault_test : public beast::unit_test::suite
             env(credentials::create(depositor, credIssuer1, credType));
             env(credentials::accept(depositor, credIssuer1, credType));
             env(credentials::create(charlie, credIssuer1, credType));
-            env(credentials::accept(charlie, credIssuer1, credType));
+            // charlie's credential not accepted
             env.close();
             auto credSle = env.le(credKeylet);
             BEAST_EXPECT(credSle != nullptr);
@@ -2376,7 +2378,7 @@ class Vault_test : public beast::unit_test::suite
 
             tx = vault.deposit(
                 {.depositor = charlie, .id = keylet.key, .amount = asset(50)});
-            env(tx, ter{tecINSUFFICIENT_FUNDS});
+            env(tx, ter{tecNO_AUTH});
             env.close();
         }
 
@@ -2384,6 +2386,8 @@ class Vault_test : public beast::unit_test::suite
             testcase("private vault depositor lost authorization");
             env(credentials::deleteCred(
                 credIssuer1, depositor, credIssuer1, credType));
+            env(credentials::deleteCred(
+                credIssuer1, charlie, credIssuer1, credType));
             env.close();
             auto credSle = env.le(credKeylet);
             BEAST_EXPECT(credSle == nullptr);
@@ -2396,18 +2400,84 @@ class Vault_test : public beast::unit_test::suite
             env.close();
         }
 
-        {
-            testcase("private vault depositor new authorization");
-            env(credentials::create(depositor, credIssuer2, credType));
-            env(credentials::accept(depositor, credIssuer2, credType));
-            env.close();
+        auto const shares = [&env, keylet = keylet, this]() -> Asset {
+            auto const vault = env.le(keylet);
+            BEAST_EXPECT(vault != nullptr);
+            return MPTIssue(vault->at(sfShareMPTID));
+        }();
 
-            auto tx = vault.deposit(
-                {.depositor = depositor,
-                 .id = keylet.key,
-                 .amount = asset(50)});
-            env(tx);
-            env.close();
+        {
+            testcase("private vault expired authorization");
+            uint32_t const closeTime = env.current()
+                                           ->info()
+                                           .parentCloseTime.time_since_epoch()
+                                           .count();
+            {
+                auto tx0 =
+                    credentials::create(depositor, credIssuer2, credType);
+                tx0[sfExpiration] = closeTime + 20;
+                env(tx0);
+                tx0 = credentials::create(charlie, credIssuer2, credType);
+                tx0[sfExpiration] = closeTime + 20;
+                env(tx0);
+                env.close();
+
+                env(credentials::accept(depositor, credIssuer2, credType));
+                env(credentials::accept(charlie, credIssuer2, credType));
+                env.close();
+            }
+
+            {
+                auto tx1 = vault.deposit(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = asset(50)});
+                env(tx1);
+                env.close();
+
+                auto const tokenKeylet = keylet::mptoken(
+                    shares.get<MPTIssue>().getMptID(), depositor.id());
+                BEAST_EXPECT(env.le(tokenKeylet) != nullptr);
+            }
+
+            {
+                // time advance
+                env.close();
+                env.close();
+                env.close();
+
+                auto const credsKeylet =
+                    credentials::keylet(depositor, credIssuer2, credType);
+                BEAST_EXPECT(env.le(credsKeylet) != nullptr);
+
+                auto tx2 = vault.deposit(
+                    {.depositor = depositor,
+                     .id = keylet.key,
+                     .amount = asset(1)});
+                env(tx2, ter{tecEXPIRED});
+                env.close();
+
+                BEAST_EXPECT(env.le(credsKeylet) == nullptr);
+            }
+
+            {
+                auto const credsKeylet =
+                    credentials::keylet(charlie, credIssuer2, credType);
+                BEAST_EXPECT(env.le(credsKeylet) != nullptr);
+                auto const tokenKeylet = keylet::mptoken(
+                    shares.get<MPTIssue>().getMptID(), charlie.id());
+                BEAST_EXPECT(env.le(tokenKeylet) == nullptr);
+
+                auto tx3 = vault.deposit(
+                    {.depositor = charlie,
+                     .id = keylet.key,
+                     .amount = asset(2)});
+                env(tx3, ter{tecEXPIRED});
+
+                env.close();
+                BEAST_EXPECT(env.le(credsKeylet) == nullptr);
+                BEAST_EXPECT(env.le(tokenKeylet) == nullptr);
+            }
         }
 
         {

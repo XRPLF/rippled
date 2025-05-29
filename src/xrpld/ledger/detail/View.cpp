@@ -2389,8 +2389,19 @@ enforceMPTokenAuthorization(
     auto const keylet = keylet::mptoken(mptIssuanceID, account);
     auto const sleToken = view.read(keylet);  //  NOTE: might be null
     auto const maybeDomainID = sleIssuance->at(~sfDomainID);
-    bool const authorizedByDomain = maybeDomainID.has_value() &&
-        verifyValidDomain(view, account, *maybeDomainID, j) == tesSUCCESS;
+    bool expired = false;
+    bool const authorizedByDomain = [&]() -> bool {
+        // NOTE: defensive here, shuld be checked in preclaim
+        if (!maybeDomainID.has_value())
+            return false;  // LCOV_EXCL_LINE
+
+        auto const ter = verifyValidDomain(view, account, *maybeDomainID, j);
+        if (isTesSuccess(ter))
+            return true;
+        if (ter == tecEXPIRED)
+            expired = true;
+        return false;
+    }();
 
     if (!authorizedByDomain && sleToken == nullptr)
     {
@@ -2401,14 +2412,14 @@ enforceMPTokenAuthorization(
         // 3. Account has all expired credentials (deleted in verifyValidDomain)
         //
         // Either way, return tecNO_AUTH and there is nothing else to do
-        return tecNO_AUTH;
+        return expired ? tecEXPIRED : tecNO_AUTH;
     }
     else if (!authorizedByDomain && maybeDomainID.has_value())
     {
         // Found an MPToken but the account is not authorized and we expect
         // it to have been authorized by the domain. This could be because the
         // credentials used to create the MPToken have expired or been deleted.
-        return tecNO_AUTH;
+        return expired ? tecEXPIRED : tecNO_AUTH;
     }
     else if (!authorizedByDomain)
     {
