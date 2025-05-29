@@ -213,7 +213,7 @@ public:
     }
 
     void
-    testSellOffer_UnautharizedSeller(FeatureBitset features)
+    testSellOffer_UnauthorizedSeller(FeatureBitset features)
     {
         testcase(
             "Authorized buyer tries to accept sell offer from unauthorized "
@@ -609,7 +609,7 @@ public:
             testBuyOffer_UnauthorizedSeller(feature);
             testCreateBuyOffer_UnauthorizedBuyer(feature);
             testAcceptBuyOffer_UnauthorizedBuyer(feature);
-            testSellOffer_UnautharizedSeller(feature);
+            testSellOffer_UnauthorizedSeller(feature);
             testSellOffer_UnautharizedBuyer(feature);
             testBrokeredAcceptOffer_UnathorizedBroker(feature);
             testBrokeredAcceptOffer_UnathorizedBuyer(feature);
