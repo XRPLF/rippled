@@ -247,7 +247,7 @@ jobs:
           mkdir -p ~/.conan
           tar -xzf conan.tar -C ~/.conan
       - name: install gcovr
-        run: pip install "gcovr>=7,<8"
+        run: pip install "gcovr>=7,<9"
       - name: check environment
         run: |
           echo ${PATH} | tr ':' '\n'

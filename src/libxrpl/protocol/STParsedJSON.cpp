@@ -27,6 +27,7 @@
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAccount.h>
 #include <xrpl/protocol/STAmount.h>
@@ -36,6 +37,7 @@
 #include <xrpl/protocol/STCurrency.h>
 #include <xrpl/protocol/STInteger.h>
 #include <xrpl/protocol/STIssue.h>
+#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/STVector256.h>
@@ -373,10 +375,35 @@ parseLeaf(
             {
                 if (value.isString())
                 {
-                    ret = detail::make_stvar<STUInt32>(
-                        field,
-                        beast::lexicalCastThrow<std::uint32_t>(
-                            value.asString()));
+                    if (field == sfPermissionValue)
+                    {
+                        std::string const strValue = value.asString();
+                        auto const granularPermission =
+                            Permission::getInstance().getGranularValue(
+                                strValue);
+                        if (granularPermission)
+                        {
+                            ret = detail::make_stvar<STUInt32>(
+                                field, *granularPermission);
+                        }
+                        else
+                        {
+                            auto const& txType =
+                                TxFormats::getInstance().findTypeByName(
+                                    strValue);
+                            ret = detail::make_stvar<STUInt32>(
+                                field,
+                                Permission::getInstance().txToPermissionType(
+                                    txType));
+                        }
+                    }
+                    else
+                    {
+                        ret = detail::make_stvar<STUInt32>(
+                            field,
+                            beast::lexicalCastThrow<std::uint32_t>(
+                                value.asString()));
+                    }
                 }
                 else if (value.isInt())
                 {
@@ -578,6 +605,20 @@ parseLeaf(
             {
                 ret =
                     detail::make_stvar<STAmount>(amountFromJson(field, value));
+            }
+            catch (std::exception const&)
+            {
+                error = invalid_data(json_name, fieldName);
+                return ret;
+            }
+
+            break;
+
+        case STI_NUMBER:
+            try
+            {
+                ret =
+                    detail::make_stvar<STNumber>(numberFromJson(field, value));
             }
             catch (std::exception const&)
             {
@@ -825,7 +866,7 @@ parseLeaf(
     return ret;
 }
 
-static const int maxDepth = 64;
+static int const maxDepth = 64;
 
 // Forward declaration since parseObject() and parseArray() call each other.
 static std::optional<detail::STVar>

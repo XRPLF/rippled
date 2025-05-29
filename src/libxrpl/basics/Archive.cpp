@@ -94,7 +94,7 @@ extractTarLz4(
 
         if (archive_entry_size(entry) > 0)
         {
-            const void* buf;
+            void const* buf;
             size_t sz;
             la_int64_t offset;
             while (true)

@@ -251,19 +251,18 @@ public:
     // size, but we allow admins to explicitly set it in the config.
     std::optional<int> SWEEP_INTERVAL;
 
-    // Reduce-relay - these parameters are experimental.
-    // Enable reduce-relay features
-    // Validation/proposal reduce-relay feature
-    bool VP_REDUCE_RELAY_ENABLE = false;
-    // Send squelch message to peers. Generally this config should
-    // have the same value as VP_REDUCE_RELAY_ENABLE. It can be
-    // used for testing the feature's function without
-    // affecting the message relaying. To use it for testing,
-    // set it to false and set VP_REDUCE_RELAY_ENABLE to true.
-    // Squelch messages will not be sent to the peers in this case.
-    // Set log level to debug so that the feature function can be
-    // analyzed.
-    bool VP_REDUCE_RELAY_SQUELCH = false;
+    // Reduce-relay - Experimental parameters to control p2p routing algorithms
+
+    // Enable base squelching of duplicate validation/proposal messages
+    bool VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE = false;
+
+    /////////////////////  !!TEMPORARY CODE BLOCK!! ////////////////////////
+    // Temporary squelching config for the peers selected as a source of  //
+    // validator messages. The config must be removed once squelching is  //
+    // made the default routing algorithm                                 //
+    std::size_t VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS = 5;
+    /////////////////    END OF TEMPORARY CODE BLOCK    /////////////////////
+
     // Transaction reduce-relay feature
     bool TX_REDUCE_RELAY_ENABLE = false;
     // If tx reduce-relay feature is disabled

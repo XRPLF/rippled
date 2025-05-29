@@ -71,9 +71,9 @@ STBlob::add(Serializer& s) const
 }
 
 bool
-STBlob::isEquivalent(const STBase& t) const
+STBlob::isEquivalent(STBase const& t) const
 {
-    const STBlob* v = dynamic_cast<const STBlob*>(&t);
+    STBlob const* v = dynamic_cast<STBlob const*>(&t);
     return v && (value_ == v->value_);
 }
 

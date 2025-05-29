@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <test/jtx.h>
 #include <test/jtx/Env.h>
 
 #include <xrpld/overlay/Message.h>
@@ -32,6 +33,8 @@
 
 #include <boost/thread.hpp>
 
+#include <chrono>
+#include <iostream>
 #include <numeric>
 #include <optional>
 
@@ -179,11 +182,11 @@ public:
     {
     }
     void
-    addTxQueue(const uint256&) override
+    addTxQueue(uint256 const&) override
     {
     }
     void
-    removeTxQueue(const uint256&) override
+    removeTxQueue(uint256 const&) override
     {
     }
 };
@@ -196,7 +199,7 @@ public:
     typedef std::milli period;
     typedef std::chrono::duration<std::uint32_t, period> duration;
     typedef std::chrono::time_point<ManualClock> time_point;
-    inline static const bool is_steady = false;
+    inline static bool const is_steady = false;
 
     static void
     advance(duration d) noexcept
@@ -517,7 +520,8 @@ class OverlaySim : public Overlay, public reduce_relay::SquelchHandler
 public:
     using id_t = Peer::id_t;
     using clock_type = ManualClock;
-    OverlaySim(Application& app) : slots_(app.logs(), *this), logs_(app.logs())
+    OverlaySim(Application& app)
+        : slots_(app.logs(), *this, app.config()), logs_(app.logs())
     {
     }
 
@@ -890,7 +894,7 @@ class reduce_relay_test : public beast::unit_test::suite
 
 protected:
     void
-    printPeers(const std::string& msg, std::uint16_t validator = 0)
+    printPeers(std::string const& msg, std::uint16_t validator = 0)
     {
         auto peers = network_.overlay().getPeers(network_.validator(validator));
         std::cout << msg << " " << "num peers "
@@ -985,7 +989,10 @@ protected:
                     network_.overlay().isCountingState(validator);
                 BEAST_EXPECT(
                     countingState == false &&
-                    selected.size() == reduce_relay::MAX_SELECTED_PEERS);
+                    selected.size() ==
+                        env_.app()
+                            .config()
+                            .VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS);
             }
 
             // Trigger Link Down or Peer Disconnect event
@@ -1125,7 +1132,7 @@ protected:
     }
 
     void
-    doTest(const std::string& msg, bool log, std::function<void(bool)> f)
+    doTest(std::string const& msg, bool log, std::function<void(bool)> f)
     {
         testcase(msg);
         f(log);
@@ -1187,7 +1194,10 @@ protected:
                 {
                     BEAST_EXPECT(
                         squelched ==
-                        MAX_PEERS - reduce_relay::MAX_SELECTED_PEERS);
+                        MAX_PEERS -
+                            env_.app()
+                                .config()
+                                .VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS);
                     n++;
                 }
             },
@@ -1196,7 +1206,9 @@ protected:
             purge,
             resetClock);
         auto selected = network_.overlay().getSelected(network_.validator(0));
-        BEAST_EXPECT(selected.size() == reduce_relay::MAX_SELECTED_PEERS);
+        BEAST_EXPECT(
+            selected.size() ==
+            env_.app().config().VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS);
         BEAST_EXPECT(n == 1);  // only one selection round
         auto res = checkCounting(network_.validator(0), false);
         BEAST_EXPECT(res);
@@ -1260,7 +1272,11 @@ protected:
                     unsquelched++;
                 });
             BEAST_EXPECT(
-                unsquelched == MAX_PEERS - reduce_relay::MAX_SELECTED_PEERS);
+                unsquelched ==
+                MAX_PEERS -
+                    env_.app()
+                        .config()
+                        .VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS);
             BEAST_EXPECT(checkCounting(network_.validator(0), true));
         });
     }
@@ -1281,7 +1297,11 @@ protected:
                 });
             auto peers = network_.overlay().getPeers(network_.validator(0));
             BEAST_EXPECT(
-                unsquelched == MAX_PEERS - reduce_relay::MAX_SELECTED_PEERS);
+                unsquelched ==
+                MAX_PEERS -
+                    env_.app()
+                        .config()
+                        .VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS);
             BEAST_EXPECT(checkCounting(network_.validator(0), true));
         });
     }
@@ -1313,42 +1333,164 @@ protected:
     void
     testConfig(bool log)
     {
-        doTest("Config Test", log, [&](bool log) {
+        doTest("Test Config - squelch enabled (legacy)", log, [&](bool log) {
             Config c;
 
             std::string toLoad(R"rippleConfig(
 [reduce_relay]
 vp_enable=1
-vp_squelch=1
 )rippleConfig");
 
             c.loadFromString(toLoad);
-            BEAST_EXPECT(c.VP_REDUCE_RELAY_ENABLE == true);
-            BEAST_EXPECT(c.VP_REDUCE_RELAY_SQUELCH == true);
+            BEAST_EXPECT(c.VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE == true);
+        });
+
+        doTest("Test Config - squelch disabled (legacy)", log, [&](bool log) {
+            Config c;
+
+            std::string toLoad(R"rippleConfig(
+[reduce_relay]
+vp_enable=0
+)rippleConfig");
+
+            c.loadFromString(toLoad);
+            BEAST_EXPECT(c.VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE == false);
 
             Config c1;
 
-            toLoad = (R"rippleConfig(
+            toLoad = R"rippleConfig(
 [reduce_relay]
-vp_enable=0
-vp_squelch=0
-)rippleConfig");
+)rippleConfig";
 
             c1.loadFromString(toLoad);
-            BEAST_EXPECT(c1.VP_REDUCE_RELAY_ENABLE == false);
-            BEAST_EXPECT(c1.VP_REDUCE_RELAY_SQUELCH == false);
+            BEAST_EXPECT(c1.VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE == false);
+        });
+
+        doTest("Test Config - squelch enabled", log, [&](bool log) {
+            Config c;
+
+            std::string toLoad(R"rippleConfig(
+[reduce_relay]
+vp_base_squelch_enable=1
+)rippleConfig");
+
+            c.loadFromString(toLoad);
+            BEAST_EXPECT(c.VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE == true);
+        });
+
+        doTest("Test Config - squelch disabled", log, [&](bool log) {
+            Config c;
+
+            std::string toLoad(R"rippleConfig(
+[reduce_relay]
+vp_base_squelch_enable=0
+)rippleConfig");
+
+            c.loadFromString(toLoad);
+            BEAST_EXPECT(c.VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE == false);
+        });
+
+        doTest("Test Config - legacy and new", log, [&](bool log) {
+            Config c;
+
+            std::string toLoad(R"rippleConfig(
+[reduce_relay]
+vp_base_squelch_enable=0
+vp_enable=0
+)rippleConfig");
+
+            std::string error;
+            auto const expectedError =
+                "Invalid reduce_relay"
+                " cannot specify both vp_base_squelch_enable and vp_enable "
+                "options. "
+                "vp_enable was deprecated and replaced by "
+                "vp_base_squelch_enable";
+
+            try
+            {
+                c.loadFromString(toLoad);
+            }
+            catch (std::runtime_error& e)
+            {
+                error = e.what();
+            }
+
+            BEAST_EXPECT(error == expectedError);
+        });
+
+        doTest("Test Config - max selected peers", log, [&](bool log) {
+            Config c;
+
+            std::string toLoad(R"rippleConfig(
+[reduce_relay]
+)rippleConfig");
+
+            c.loadFromString(toLoad);
+            BEAST_EXPECT(c.VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS == 5);
+
+            Config c1;
+
+            toLoad = R"rippleConfig(
+[reduce_relay]
+vp_base_squelch_max_selected_peers=6
+)rippleConfig";
+
+            c1.loadFromString(toLoad);
+            BEAST_EXPECT(c1.VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS == 6);
 
             Config c2;
 
             toLoad = R"rippleConfig(
 [reduce_relay]
-vp_enabled=1
-vp_squelched=1
+vp_base_squelch_max_selected_peers=2
 )rippleConfig";
 
-            c2.loadFromString(toLoad);
-            BEAST_EXPECT(c2.VP_REDUCE_RELAY_ENABLE == false);
-            BEAST_EXPECT(c2.VP_REDUCE_RELAY_SQUELCH == false);
+            std::string error;
+            auto const expectedError =
+                "Invalid reduce_relay"
+                " vp_base_squelch_max_selected_peers must be "
+                "greater than or equal to 3";
+            try
+            {
+                c2.loadFromString(toLoad);
+            }
+            catch (std::runtime_error& e)
+            {
+                error = e.what();
+            }
+
+            BEAST_EXPECT(error == expectedError);
+        });
+    }
+
+    void
+    testBaseSquelchReady(bool log)
+    {
+        doTest("BaseSquelchReady", log, [&](bool log) {
+            ManualClock::reset();
+            auto createSlots = [&](bool baseSquelchEnabled)
+                -> reduce_relay::Slots<ManualClock> {
+                env_.app().config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE =
+                    baseSquelchEnabled;
+                return reduce_relay::Slots<ManualClock>(
+                    env_.app().logs(), network_.overlay(), env_.app().config());
+            };
+            // base squelching must not be ready if squelching is disabled
+            BEAST_EXPECT(!createSlots(false).baseSquelchReady());
+
+            // base squelch must not be ready as not enough time passed from
+            // bootup
+            BEAST_EXPECT(!createSlots(true).baseSquelchReady());
+
+            ManualClock::advance(reduce_relay::WAIT_ON_BOOTUP + minutes{1});
+
+            // base squelch enabled and bootup time passed
+            BEAST_EXPECT(createSlots(true).baseSquelchReady());
+
+            // even if time passed, base squelching must not be ready if turned
+            // off in the config
+            BEAST_EXPECT(!createSlots(false).baseSquelchReady());
         });
     }
 
@@ -1424,7 +1566,7 @@ vp_squelched=1
             auto run = [&](int npeers) {
                 handler.maxDuration_ = 0;
                 reduce_relay::Slots<ManualClock> slots(
-                    env_.app().logs(), handler);
+                    env_.app().logs(), handler, env_.app().config());
                 // 1st message from a new peer switches the slot
                 // to counting state and resets the counts of all peers +
                 // MAX_MESSAGE_THRESHOLD + 1 messages to reach the threshold
@@ -1502,14 +1644,12 @@ vp_squelched=1
                 std::stringstream str;
                 str << "[reduce_relay]\n"
                     << "vp_enable=" << enable << "\n"
-                    << "vp_squelch=" << enable << "\n"
                     << "[compression]\n"
                     << "1\n";
                 c.loadFromString(str.str());
-                env_.app().config().VP_REDUCE_RELAY_ENABLE =
-                    c.VP_REDUCE_RELAY_ENABLE;
-                env_.app().config().VP_REDUCE_RELAY_SQUELCH =
-                    c.VP_REDUCE_RELAY_SQUELCH;
+                env_.app().config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE =
+                    c.VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE;
+
                 env_.app().config().COMPRESSION = c.COMPRESSION;
             };
             auto handshake = [&](int outboundEnable, int inboundEnable) {
@@ -1522,7 +1662,7 @@ vp_squelched=1
                     env_.app().config().COMPRESSION,
                     false,
                     env_.app().config().TX_REDUCE_RELAY_ENABLE,
-                    env_.app().config().VP_REDUCE_RELAY_ENABLE);
+                    env_.app().config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE);
                 http_request_type http_request;
                 http_request.version(request.version());
                 http_request.base() = request.base();
@@ -1562,7 +1702,13 @@ vp_squelched=1
     Network network_;
 
 public:
-    reduce_relay_test() : env_(*this), network_(env_.app())
+    reduce_relay_test()
+        : env_(*this, jtx::envconfig([](std::unique_ptr<Config> cfg) {
+            cfg->VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE = true;
+            cfg->VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS = 6;
+            return cfg;
+        }))
+        , network_(env_.app())
     {
     }
 
@@ -1581,6 +1727,7 @@ public:
         testInternalHashRouter(log);
         testRandomSquelch(log);
         testHandshake(log);
+        testBaseSquelchReady(log);
     }
 };
 

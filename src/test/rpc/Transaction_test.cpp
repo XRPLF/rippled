@@ -55,11 +55,11 @@ class Transaction_test : public beast::unit_test::suite
         using namespace test::jtx;
         using std::to_string;
 
-        const char* COMMAND = jss::tx.c_str();
-        const char* BINARY = jss::binary.c_str();
-        const char* NOT_FOUND = RPC::get_error_info(rpcTXN_NOT_FOUND).token;
-        const char* INVALID = RPC::get_error_info(rpcINVALID_LGR_RANGE).token;
-        const char* EXCESSIVE =
+        char const* COMMAND = jss::tx.c_str();
+        char const* BINARY = jss::binary.c_str();
+        char const* NOT_FOUND = RPC::get_error_info(rpcTXN_NOT_FOUND).token;
+        char const* INVALID = RPC::get_error_info(rpcINVALID_LGR_RANGE).token;
+        char const* EXCESSIVE =
             RPC::get_error_info(rpcEXCESSIVE_LGR_RANGE).token;
 
         Env env{*this, features};
@@ -135,7 +135,7 @@ class Transaction_test : public beast::unit_test::suite
             BEAST_EXPECT(!result[jss::result][jss::searched_all].asBool());
         }
 
-        const auto deletedLedger = (startLegSeq + endLegSeq) / 2;
+        auto const deletedLedger = (startLegSeq + endLegSeq) / 2;
         {
             // Remove one of the ledgers from the database directly
             dynamic_cast<SQLiteDatabase*>(&env.app().getRelationalDatabase())
@@ -305,11 +305,11 @@ class Transaction_test : public beast::unit_test::suite
         using namespace test::jtx;
         using std::to_string;
 
-        const char* COMMAND = jss::tx.c_str();
-        const char* BINARY = jss::binary.c_str();
-        const char* NOT_FOUND = RPC::get_error_info(rpcTXN_NOT_FOUND).token;
-        const char* INVALID = RPC::get_error_info(rpcINVALID_LGR_RANGE).token;
-        const char* EXCESSIVE =
+        char const* COMMAND = jss::tx.c_str();
+        char const* BINARY = jss::binary.c_str();
+        char const* NOT_FOUND = RPC::get_error_info(rpcTXN_NOT_FOUND).token;
+        char const* INVALID = RPC::get_error_info(rpcINVALID_LGR_RANGE).token;
+        char const* EXCESSIVE =
             RPC::get_error_info(rpcEXCESSIVE_LGR_RANGE).token;
 
         Env env{*this, makeNetworkConfig(11111)};
@@ -355,8 +355,7 @@ class Transaction_test : public beast::unit_test::suite
         }
 
         auto const tx = env.jt(noop(alice), seq(env.seq(alice))).stx;
-        auto const ctid =
-            *RPC::encodeCTID(endLegSeq, tx->getSeqProxy().value(), netID);
+        auto const ctid = *RPC::encodeCTID(endLegSeq, tx->getSeqValue(), netID);
         for (int deltaEndSeq = 0; deltaEndSeq < 2; ++deltaEndSeq)
         {
             auto const result = env.rpc(
@@ -393,7 +392,7 @@ class Transaction_test : public beast::unit_test::suite
             BEAST_EXPECT(!result[jss::result][jss::searched_all].asBool());
         }
 
-        const auto deletedLedger = (startLegSeq + endLegSeq) / 2;
+        auto const deletedLedger = (startLegSeq + endLegSeq) / 2;
         {
             // Remove one of the ledgers from the database directly
             dynamic_cast<SQLiteDatabase*>(&env.app().getRelationalDatabase())

@@ -108,7 +108,7 @@ setData(Bytes const& data)
 wasm_trap_t*
 getTxField_wrap(
     void* env,
-    const wasm_val_vec_t* params,
+    wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
     auto& vm = WasmEngine::instance();
@@ -134,7 +134,7 @@ getTxField_wrap(
 wasm_trap_t*
 getLedgerEntryField_wrap(
     void* env,
-    const wasm_val_vec_t* params,
+    wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
     auto& vm = WasmEngine::instance();
@@ -165,7 +165,7 @@ getLedgerEntryField_wrap(
 wasm_trap_t*
 getCurrentLedgerEntryField_wrap(
     void* env,
-    const wasm_val_vec_t* params,
+    wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
     auto& vm = WasmEngine::instance();
@@ -189,7 +189,7 @@ getCurrentLedgerEntryField_wrap(
 }
 
 wasm_trap_t*
-getNFT_wrap(void* env, const wasm_val_vec_t* params, wasm_val_vec_t* results)
+getNFT_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
     auto& vm = WasmEngine::instance();
     auto* hf = reinterpret_cast<HostFunctions*>(env);
@@ -217,7 +217,7 @@ getNFT_wrap(void* env, const wasm_val_vec_t* params, wasm_val_vec_t* results)
 wasm_trap_t*
 accountKeylet_wrap(
     void* env,
-    const wasm_val_vec_t* params,
+    wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
     auto& vm = WasmEngine::instance();
@@ -243,7 +243,7 @@ accountKeylet_wrap(
 wasm_trap_t*
 credentialKeylet_wrap(
     void* env,
-    const wasm_val_vec_t* params,
+    wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
     auto& vm = WasmEngine::instance();
@@ -278,7 +278,7 @@ credentialKeylet_wrap(
 wasm_trap_t*
 escrowKeylet_wrap(
     void* env,
-    const wasm_val_vec_t* params,
+    wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
     auto& vm = WasmEngine::instance();
@@ -306,7 +306,7 @@ escrowKeylet_wrap(
 wasm_trap_t*
 oracleKeylet_wrap(
     void* env,
-    const wasm_val_vec_t* params,
+    wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
     auto& vm = WasmEngine::instance();
@@ -334,7 +334,7 @@ oracleKeylet_wrap(
 wasm_trap_t*
 updateData_wrap(
     void* env,
-    const wasm_val_vec_t* params,
+    wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
     auto& vm = WasmEngine::instance();
@@ -353,7 +353,7 @@ updateData_wrap(
 wasm_trap_t*
 computeSha512HalfHash_wrap(
     void* env,
-    const wasm_val_vec_t* params,
+    wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
     auto& vm = WasmEngine::instance();
@@ -375,7 +375,7 @@ computeSha512HalfHash_wrap(
 }
 
 wasm_trap_t*
-print_wrap(void* env, const wasm_val_vec_t* params, wasm_val_vec_t* results)
+print_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
     auto& vm = WasmEngine::instance();
     // auto* hf = reinterpret_cast<HostFunctions*>(env);

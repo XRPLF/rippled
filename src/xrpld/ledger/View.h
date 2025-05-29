@@ -25,6 +25,7 @@
 #include <xrpld/ledger/ReadView.h>
 
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/MPTIssue.h>
 #include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/Rate.h>
@@ -34,6 +35,7 @@
 #include <xrpl/protocol/TER.h>
 
 #include <functional>
+#include <initializer_list>
 #include <map>
 #include <utility>
 
@@ -87,6 +89,14 @@ isGlobalFrozen(ReadView const& view, MPTIssue const& mptIssue);
 [[nodiscard]] bool
 isGlobalFrozen(ReadView const& view, Asset const& asset);
 
+// Note, depth parameter is used to limit the recursion depth
+[[nodiscard]] bool
+isVaultPseudoAccountFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    MPTIssue const& mptShare,
+    int depth);
+
 [[nodiscard]] bool
 isIndividualFrozen(
     ReadView const& view,
@@ -130,7 +140,11 @@ isFrozen(
     AccountID const& issuer);
 
 [[nodiscard]] inline bool
-isFrozen(ReadView const& view, AccountID const& account, Issue const& issue)
+isFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Issue const& issue,
+    int = 0 /*ignored*/)
 {
     return isFrozen(view, account, issue.currency, issue.account);
 }
@@ -139,13 +153,63 @@ isFrozen(ReadView const& view, AccountID const& account, Issue const& issue)
 isFrozen(
     ReadView const& view,
     AccountID const& account,
-    MPTIssue const& mptIssue);
+    MPTIssue const& mptIssue,
+    int depth = 0);
 
+/**
+ *   isFrozen check is recursive for MPT shares in a vault, descending to
+ *   assets in the vault, up to maxAssetCheckDepth recursion depth. This is
+ *   purely defensive, as we currently do not allow such vaults to be created.
+ */
 [[nodiscard]] inline bool
-isFrozen(ReadView const& view, AccountID const& account, Asset const& asset)
+isFrozen(
+    ReadView const& view,
+    AccountID const& account,
+    Asset const& asset,
+    int depth = 0)
 {
     return std::visit(
-        [&](auto const& issue) { return isFrozen(view, account, issue); },
+        [&](auto const& issue) {
+            return isFrozen(view, account, issue, depth);
+        },
+        asset.value());
+}
+
+[[nodiscard]] bool
+isAnyFrozen(
+    ReadView const& view,
+    std::initializer_list<AccountID> const& accounts,
+    MPTIssue const& mptIssue,
+    int depth = 0);
+
+[[nodiscard]] inline bool
+isAnyFrozen(
+    ReadView const& view,
+    std::initializer_list<AccountID> const& accounts,
+    Issue const& issue)
+{
+    for (auto const& account : accounts)
+    {
+        if (isFrozen(view, account, issue.currency, issue.account))
+            return true;
+    }
+    return false;
+}
+
+[[nodiscard]] inline bool
+isAnyFrozen(
+    ReadView const& view,
+    std::initializer_list<AccountID> const& accounts,
+    Asset const& asset,
+    int depth = 0)
+{
+    return std::visit(
+        [&]<ValidIssueType TIss>(TIss const& issue) {
+            if constexpr (std::is_same_v<TIss, Issue>)
+                return isAnyFrozen(view, accounts, issue);
+            else
+                return isAnyFrozen(view, accounts, issue, depth);
+        },
         asset.value());
 }
 
@@ -188,6 +252,15 @@ accountHolds(
     ReadView const& view,
     AccountID const& account,
     MPTIssue const& mptIssue,
+    FreezeHandling zeroIfFrozen,
+    AuthHandling zeroIfUnauthorized,
+    beast::Journal j);
+
+[[nodiscard]] STAmount
+accountHolds(
+    ReadView const& view,
+    AccountID const& account,
+    Asset const& asset,
     FreezeHandling zeroIfFrozen,
     AuthHandling zeroIfUnauthorized,
     beast::Journal j);
@@ -339,7 +412,7 @@ areCompatible(
     ReadView const& validLedger,
     ReadView const& testLedger,
     beast::Journal::Stream& s,
-    const char* reason);
+    char const* reason);
 
 [[nodiscard]] bool
 areCompatible(
@@ -347,7 +420,7 @@ areCompatible(
     LedgerIndex validIndex,
     ReadView const& testLedger,
     beast::Journal::Stream& s,
-    const char* reason);
+    char const* reason);
 
 //------------------------------------------------------------------------------
 //
@@ -430,6 +503,73 @@ dirNext(
 [[nodiscard]] std::function<void(SLE::ref)>
 describeOwnerDir(AccountID const& account);
 
+[[nodiscard]] TER
+dirLink(ApplyView& view, AccountID const& owner, std::shared_ptr<SLE>& object);
+
+AccountID
+pseudoAccountAddress(ReadView const& view, uint256 const& pseudoOwnerKey);
+
+/**
+ *
+ * Create pseudo-account, storing pseudoOwnerKey into ownerField.
+ *
+ * The list of valid ownerField is maintained in View.cpp and the caller to
+ * this function must perform necessary amendment check(s) before using a
+ * field. The amendment check is **not** performed in createPseudoAccount.
+ */
+[[nodiscard]] Expected<std::shared_ptr<SLE>, TER>
+createPseudoAccount(
+    ApplyView& view,
+    uint256 const& pseudoOwnerKey,
+    SField const& ownerField);
+
+// Returns true iff sleAcct is a pseudo-account.
+//
+// Returns false if sleAcct is
+// * NOT a pseudo-account OR
+// * NOT a ltACCOUNT_ROOT OR
+// * null pointer
+[[nodiscard]] bool
+isPseudoAccount(std::shared_ptr<SLE const> sleAcct);
+
+[[nodiscard]] inline bool
+isPseudoAccount(ReadView const& view, AccountID accountId)
+{
+    return isPseudoAccount(view.read(keylet::account(accountId)));
+}
+
+[[nodiscard]] TER
+addEmptyHolding(
+    ApplyView& view,
+    AccountID const& accountID,
+    XRPAmount priorBalance,
+    Issue const& issue,
+    beast::Journal journal);
+
+[[nodiscard]] TER
+addEmptyHolding(
+    ApplyView& view,
+    AccountID const& accountID,
+    XRPAmount priorBalance,
+    MPTIssue const& mptIssue,
+    beast::Journal journal);
+
+[[nodiscard]] inline TER
+addEmptyHolding(
+    ApplyView& view,
+    AccountID const& accountID,
+    XRPAmount priorBalance,
+    Asset const& asset,
+    beast::Journal journal)
+{
+    return std::visit(
+        [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
+            return addEmptyHolding(
+                view, accountID, priorBalance, issue, journal);
+        },
+        asset.value());
+}
+
 // VFALCO NOTE Both STAmount parameters should just
 //             be "Amount", a unit-less number.
 //
@@ -440,14 +580,14 @@ describeOwnerDir(AccountID const& account);
 [[nodiscard]] TER
 trustCreate(
     ApplyView& view,
-    const bool bSrcHigh,
+    bool const bSrcHigh,
     AccountID const& uSrcAccountID,
     AccountID const& uDstAccountID,
     uint256 const& uIndex,      // --> ripple state entry
     SLE::ref sleAccount,        // --> the account being set.
-    const bool bAuth,           // --> authorize account.
-    const bool bNoRipple,       // --> others cannot ripple through
-    const bool bFreeze,         // --> funds cannot leave
+    bool const bAuth,           // --> authorize account.
+    bool const bNoRipple,       // --> others cannot ripple through
+    bool const bFreeze,         // --> funds cannot leave
     bool bDeepFreeze,           // --> can neither receive nor send funds
     STAmount const& saBalance,  // --> balance of account being set.
                                 // Issuer should be noAccount()
@@ -456,6 +596,34 @@ trustCreate(
     std::uint32_t uSrcQualityIn,
     std::uint32_t uSrcQualityOut,
     beast::Journal j);
+
+[[nodiscard]] TER
+removeEmptyHolding(
+    ApplyView& view,
+    AccountID const& accountID,
+    Issue const& issue,
+    beast::Journal journal);
+
+[[nodiscard]] TER
+removeEmptyHolding(
+    ApplyView& view,
+    AccountID const& accountID,
+    MPTIssue const& mptIssue,
+    beast::Journal journal);
+
+[[nodiscard]] inline TER
+removeEmptyHolding(
+    ApplyView& view,
+    AccountID const& accountID,
+    Asset const& asset,
+    beast::Journal journal)
+{
+    return std::visit(
+        [&]<ValidIssueType TIss>(TIss const& issue) -> TER {
+            return removeEmptyHolding(view, accountID, issue, journal);
+        },
+        asset.value());
+}
 
 [[nodiscard]] TER
 trustDelete(
@@ -535,17 +703,92 @@ transferXRP(
     STAmount const& amount,
     beast::Journal j);
 
+/* Check if MPToken exists:
+ * - StrongAuth - before checking lsfMPTRequireAuth is set
+ * - WeakAuth - after checking if lsfMPTRequireAuth is set
+ */
+enum class MPTAuthType : bool { StrongAuth = true, WeakAuth = false };
+
 /** Check if the account lacks required authorization.
+ *
  *   Return tecNO_AUTH or tecNO_LINE if it does
  *   and tesSUCCESS otherwise.
  */
 [[nodiscard]] TER
 requireAuth(ReadView const& view, Issue const& issue, AccountID const& account);
+
+/** Check if the account lacks required authorization.
+ *
+ * This will also check for expired credentials. If it is called directly
+ * from preclaim, the user should convert result tecEXPIRED to tesSUCCESS and
+ * proceed to also check permissions with enforceMPTokenAuthorization inside
+ * doApply. This will ensure that any expired credentials are deleted.
+ *
+ * requireAuth check is recursive for MPT shares in a vault, descending to
+ * assets in the vault, up to maxAssetCheckDepth recursion depth. This is
+ * purely defensive, as we currently do not allow such vaults to be created.
+ *
+ * If StrongAuth then return tecNO_AUTH if MPToken doesn't exist or
+ * lsfMPTRequireAuth is set and MPToken is not authorized. If WeakAuth then
+ * return tecNO_AUTH if lsfMPTRequireAuth is set and MPToken doesn't exist or is
+ * not authorized (explicitly or via credentials, if DomainID is set in
+ * MPTokenIssuance). Consequently, if WeakAuth and lsfMPTRequireAuth is *not*
+ * set, this function will return true even if MPToken does *not* exist.
+ */
 [[nodiscard]] TER
 requireAuth(
     ReadView const& view,
     MPTIssue const& mptIssue,
-    AccountID const& account);
+    AccountID const& account,
+    MPTAuthType authType = MPTAuthType::StrongAuth,
+    int depth = 0);
+
+[[nodiscard]] TER inline requireAuth(
+    ReadView const& view,
+    Asset const& asset,
+    AccountID const& account,
+    MPTAuthType authType = MPTAuthType::StrongAuth)
+{
+    return std::visit(
+        [&]<ValidIssueType TIss>(TIss const& issue_) {
+            if constexpr (std::is_same_v<TIss, Issue>)
+                return requireAuth(view, issue_, account);
+            else
+                return requireAuth(view, issue_, account, authType);
+        },
+        asset.value());
+}
+
+/** Enforce account has MPToken to match its authorization.
+ *
+ *   Called from doApply - it will check for expired (and delete if found any)
+ *   credentials matching DomainID set in MPTokenIssuance. Must be called if
+ *   requireAuth(...MPTIssue...) returned tesSUCCESS or tecEXPIRED in preclaim,
+ *   which implies that preclaim should replace `tecEXPIRED` with `tesSUCCESS`
+ *   in order for the transactor to proceed to doApply.
+ *
+ *   This function will create MPToken (if needed) on the basis of any
+ *   non-expired credentials and will delete any expired credentials, indirectly
+ *   via verifyValidDomain, as per DomainID (if set in MPTokenIssuance).
+ *
+ *   The caller does NOT need to ensure that DomainID is actually set - this
+ *   function handles gracefully both cases when DomainID is set and when not.
+ *
+ *   The caller does NOT need to look for existing MPToken to match
+ *   mptIssue/account - this function checks lsfMPTAuthorized of an existing
+ *   MPToken iff DomainID is not set.
+ *
+ *   Do not use for accounts which hold implied permission e.g. object owners or
+ *   if MPTokenIssuance does not require authorization. In both cases use
+ *   MPTokenAuthorize::authorize if MPToken does not yet exist.
+ */
+[[nodiscard]] TER
+enforceMPTokenAuthorization(
+    ApplyView& view,
+    MPTID const& mptIssuanceID,
+    AccountID const& account,
+    XRPAmount const& priorBalance,
+    beast::Journal j);
 
 /** Check if the destination account is allowed
  *  to receive MPT. Return tecNO_AUTH if it doesn't
@@ -591,6 +834,33 @@ deleteAMMTrustLine(
     std::shared_ptr<SLE> sleState,
     std::optional<AccountID> const& ammAccountID,
     beast::Journal j);
+
+// From the perspective of a vault,
+// return the number of shares to give the depositor
+// when they deposit a fixed amount of assets.
+[[nodiscard]] STAmount
+assetsToSharesDeposit(
+    std::shared_ptr<SLE const> const& vault,
+    std::shared_ptr<SLE const> const& issuance,
+    STAmount const& assets);
+
+// From the perspective of a vault,
+// return the number of shares to demand from the depositor
+// when they ask to withdraw a fixed amount of assets.
+[[nodiscard]] STAmount
+assetsToSharesWithdraw(
+    std::shared_ptr<SLE const> const& vault,
+    std::shared_ptr<SLE const> const& issuance,
+    STAmount const& assets);
+
+// From the perspective of a vault,
+// return the number of assets to give the depositor
+// when they redeem a fixed amount of shares.
+[[nodiscard]] STAmount
+sharesToAssetsWithdraw(
+    std::shared_ptr<SLE const> const& vault,
+    std::shared_ptr<SLE const> const& issuance,
+    STAmount const& shares);
 
 /** Has the specified time passed?
 

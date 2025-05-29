@@ -115,7 +115,7 @@ ValidatorList::MessageWithHash::MessageWithHash(
 {
 }
 
-const std::string ValidatorList::filePrefix_ = "cache.";
+std::string const ValidatorList::filePrefix_ = "cache.";
 
 ValidatorList::ValidatorList(
     ManifestCache& validatorManifests,

@@ -36,15 +36,15 @@ namespace bft = boost::function_types;
 
 namespace ripple {
 
-static const std::string_view W_ENV = "env";
-static const std::string_view W_HOST_LIB = "host_lib";
-static const std::string_view W_MEM = "memory";
-static const std::string_view W_STORE = "store";
-static const std::string_view W_LOAD = "load";
-static const std::string_view W_SIZE = "size";
-static const std::string_view W_ALLOC = "allocate";
-static const std::string_view W_DEALLOC = "deallocate";
-static const std::string_view W_PROC_EXIT = "proc_exit";
+static std::string_view const W_ENV = "env";
+static std::string_view const W_HOST_LIB = "host_lib";
+static std::string_view const W_MEM = "memory";
+static std::string_view const W_STORE = "store";
+static std::string_view const W_LOAD = "load";
+static std::string_view const W_SIZE = "size";
+static std::string_view const W_ALLOC = "allocate";
+static std::string_view const W_DEALLOC = "deallocate";
+static std::string_view const W_PROC_EXIT = "proc_exit";
 
 using wbytes = std::vector<std::uint8_t>;
 struct wmem
@@ -53,7 +53,7 @@ struct wmem
     std::size_t s = 0;
 };
 
-const uint32_t MAX_PAGES = 128;  // 8MB = 64KB*128
+uint32_t const MAX_PAGES = 128;  // 8MB = 64KB*128
 
 typedef std::vector<uint8_t> Bytes;
 typedef ripple::uint256 Hash;

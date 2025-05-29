@@ -57,7 +57,7 @@ public:
     // aliases.
     using wptr = std::weak_ptr<InfoSub>;
 
-    using ref = const std::shared_ptr<InfoSub>&;
+    using ref = std::shared_ptr<InfoSub> const&;
 
     using Consumer = Resource::Consumer;
 
@@ -224,7 +224,7 @@ public:
     clearRequest();
 
     void
-    setRequest(const std::shared_ptr<InfoSubRequest>& req);
+    setRequest(std::shared_ptr<InfoSubRequest> const& req);
 
     std::shared_ptr<InfoSubRequest> const&
     getRequest();

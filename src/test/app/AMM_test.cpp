@@ -21,6 +21,7 @@
 #include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
 #include <test/jtx/CaptureLogs.h>
+#include <test/jtx/Env.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/sendmax.h>
 
@@ -31,6 +32,7 @@
 #include <xrpl/basics/Number.h>
 #include <xrpl/protocol/AMMCore.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/TER.h>
 
 #include <boost/regex.hpp>
 
@@ -54,11 +56,27 @@ private:
 
         using namespace jtx;
 
-        // XRP to IOU
-        testAMM([&](AMM& ammAlice, Env&) {
-            BEAST_EXPECT(ammAlice.expectBalances(
-                XRP(10'000), USD(10'000), IOUAmount{10'000'000, 0}));
-        });
+        // XRP to IOU, with featureSingleAssetVault
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'000), USD(10'000), IOUAmount{10'000'000, 0}));
+            },
+            {},
+            0,
+            {},
+            {supported_amendments() | featureSingleAssetVault});
+
+        // XRP to IOU, without featureSingleAssetVault
+        testAMM(
+            [&](AMM& ammAlice, Env&) {
+                BEAST_EXPECT(ammAlice.expectBalances(
+                    XRP(10'000), USD(10'000), IOUAmount{10'000'000, 0}));
+            },
+            {},
+            0,
+            {},
+            {supported_amendments() - featureSingleAssetVault});
 
         // IOU to IOU
         testAMM(
@@ -1323,14 +1341,14 @@ private:
         // equal asset deposit: unit test to exercise the rounding-down of
         // LPTokens in the AMMHelpers.cpp: adjustLPTokens calculations
         // The LPTokens need to have 16 significant digits and a fractional part
-        for (const Number deltaLPTokens :
+        for (Number const deltaLPTokens :
              {Number{UINT64_C(100000'0000000009), -10},
               Number{UINT64_C(100000'0000000001), -10}})
         {
             testAMM([&](AMM& ammAlice, Env& env) {
                 // initial LPToken balance
                 IOUAmount const initLPToken = ammAlice.getLPTokensBalance();
-                const IOUAmount newLPTokens{
+                IOUAmount const newLPTokens{
                     deltaLPTokens.mantissa(), deltaLPTokens.exponent()};
 
                 // carol performs a two-asset deposit
@@ -1349,17 +1367,17 @@ private:
 
                 // fraction of newLPTokens/(existing LPToken balance). The
                 // existing LPToken balance is 1e7
-                const Number fr = deltaLPTokens / 1e7;
+                Number const fr = deltaLPTokens / 1e7;
 
                 // The below equations are based on Equation 1, 2 from XLS-30d
                 // specification, Section: 2.3.1.2
-                const Number deltaXRP = fr * 1e10;
-                const Number deltaUSD = fr * 1e4;
+                Number const deltaXRP = fr * 1e10;
+                Number const deltaUSD = fr * 1e4;
 
-                const STAmount depositUSD =
+                STAmount const depositUSD =
                     STAmount{USD, deltaUSD.mantissa(), deltaUSD.exponent()};
 
-                const STAmount depositXRP =
+                STAmount const depositXRP =
                     STAmount{XRP, deltaXRP.mantissa(), deltaXRP.exponent()};
 
                 // initial LPTokens (1e7) + newLPTokens
@@ -6682,11 +6700,11 @@ private:
         testcase("swapRounding");
         using namespace jtx;
 
-        const STAmount xrpPool{XRP, UINT64_C(51600'000981)};
-        const STAmount iouPool{USD, UINT64_C(803040'9987141784), -10};
+        STAmount const xrpPool{XRP, UINT64_C(51600'000981)};
+        STAmount const iouPool{USD, UINT64_C(803040'9987141784), -10};
 
-        const STAmount xrpBob{XRP, UINT64_C(1092'878933)};
-        const STAmount iouBob{
+        STAmount const xrpBob{XRP, UINT64_C(1092'878933)};
+        STAmount const iouBob{
             USD, UINT64_C(3'988035892323031), -28};  // 3.9...e-13
 
         testAMM(
@@ -7138,6 +7156,50 @@ private:
     }
 
     void
+    testFailedPseudoAccount()
+    {
+        using namespace test::jtx;
+
+        auto const testCase = [&](std::string suffix, FeatureBitset features) {
+            testcase("Failed pseudo-account allocation " + suffix);
+            Env env{*this, features};
+            env.fund(XRP(30'000), gw, alice);
+            env.close();
+            env(trust(alice, gw["USD"](30'000), 0));
+            env(pay(gw, alice, USD(10'000)));
+            env.close();
+
+            STAmount amount = XRP(10'000);
+            STAmount amount2 = USD(10'000);
+            auto const keylet = keylet::amm(amount.issue(), amount2.issue());
+            for (int i = 0; i < 256; ++i)
+            {
+                AccountID const accountId =
+                    ripple::pseudoAccountAddress(*env.current(), keylet.key);
+
+                env(pay(env.master.id(), accountId, XRP(1000)),
+                    seq(autofill),
+                    fee(autofill),
+                    sig(autofill));
+            }
+
+            AMM ammAlice(
+                env,
+                alice,
+                amount,
+                amount2,
+                features[featureSingleAssetVault] ? ter{terADDRESS_COLLISION}
+                                                  : ter{tecDUPLICATE});
+        };
+
+        testCase(
+            "tecDUPLICATE", supported_amendments() - featureSingleAssetVault);
+        testCase(
+            "terADDRESS_COLLISION",
+            supported_amendments() | featureSingleAssetVault);
+    }
+
+    void
     run() override
     {
         FeatureBitset const all{jtx::supported_amendments()};
@@ -7192,6 +7254,7 @@ private:
         testAMMDepositWithFrozenAssets(all - fixAMMv1_1 - featureAMMClawback);
         testFixReserveCheckOnWithdrawal(all);
         testFixReserveCheckOnWithdrawal(all - fixAMMv1_2);
+        testFailedPseudoAccount();
     }
 };
 

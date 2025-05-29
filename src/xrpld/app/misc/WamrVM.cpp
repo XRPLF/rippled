@@ -83,15 +83,15 @@ getLogLevel(uint32_t severity)
 extern "C" void
 wamr_log_to_rippled(
     uint32_t logLevel,
-    const char* file,
+    char const* file,
     int line,
-    const char* fmt,
+    char const* fmt,
     ...)
 {
     beast::Journal j = debugLog();
 
     // Format the variadic args
-    const char* safeFile = file ? file : "<null>";
+    char const* safeFile = file ? file : "<null>";
 
     std::ostringstream oss;
     oss << "WAMR LOG (" << safeFile << ":" << line << "): ";
@@ -111,7 +111,7 @@ wamr_log_to_rippled(
 }
 
 static void
-print_wasm_error(const char* message, wasm_trap_t* trap, beast::Journal j)
+print_wasm_error(char const* message, wasm_trap_t* trap, beast::Journal j)
 {
     j.debug() << "WAMR error: " << message;
 
@@ -224,7 +224,7 @@ InstanceWrapper::getFunc(
         auto const* exp_type(export_types.data[i]);
 
         wasm_name_t const* name = wasm_exporttype_name(exp_type);
-        const wasm_externtype_t* exn_type = wasm_exporttype_type(exp_type);
+        wasm_externtype_t const* exn_type = wasm_exporttype_type(exp_type);
         if (wasm_externtype_kind(exn_type) == WASM_EXTERN_FUNC)
         {
             if (funcName == std::string_view(name->data, name->size - 1))
