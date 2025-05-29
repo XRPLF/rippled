@@ -216,7 +216,7 @@ public:
     testSellOffer_UnautharizedSeller(FeatureBitset features)
     {
         testcase(
-            "Authorized buyer tries to accept sell offer from unathorized "
+            "Authorized buyer tries to accept sell offer from unauthorized "
             "seller");
         using namespace test::jtx;
 
