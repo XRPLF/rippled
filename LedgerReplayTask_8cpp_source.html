@@ -118,13 +118,13 @@ $(function() {
 <div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span><span class="keywordtype">bool</span></div>
 <div class="line"><a id="l00041" name="l00041"></a><span class="lineno"><a class="line" href="classripple_1_1LedgerReplayTask_1_1TaskParameter.html#a3557c08b8e2f259f7be5b673e66f33c1">   41</a></span><a class="code hl_function" href="classripple_1_1LedgerReplayTask_1_1TaskParameter.html#a3557c08b8e2f259f7be5b673e66f33c1">LedgerReplayTask::TaskParameter::update</a>(</div>
 <div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>    <a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; hash,</div>
-<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>,</div>
+<div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> seq,</div>
 <div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;uint256&gt;</a> <span class="keyword">const</span>&amp; sList)</div>
 <div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>{</div>
 <div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>    <span class="keywordflow">if</span> (finishHash_ != hash || sList.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/size.html">size</a>() + 1 &lt; totalLedgers_ || full_)</div>
 <div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>        <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
 <div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span> </div>
-<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>    finishSeq_ = <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>;</div>
+<div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>    finishSeq_ = seq;</div>
 <div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>    skipList_ = sList;</div>
 <div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>    skipList_.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/emplace_back.html">emplace_back</a>(finishHash_);</div>
 <div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>    startHash_ = skipList_[skipList_.size() - totalLedgers_];</div>
@@ -309,14 +309,14 @@ $(function() {
 <div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span><span class="keywordtype">void</span></div>
 <div class="line"><a id="l00232" name="l00232"></a><span class="lineno"><a class="line" href="classripple_1_1LedgerReplayTask.html#aa65bb4cb7a4bcbf9322f909b70d2c32c">  232</a></span>LedgerReplayTask::updateSkipList(</div>
 <div class="line"><a id="l00233" name="l00233"></a><span class="lineno">  233</span>    <a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; hash,</div>
-<div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>,</div>
+<div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> seq,</div>
 <div class="line"><a id="l00235" name="l00235"></a><span class="lineno">  235</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;uint256&gt;</a> <span class="keyword">const</span>&amp; sList)</div>
 <div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span>{</div>
 <div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span>    {</div>
 <div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/thread/unique_lock.html">ScopedLockType</a> sl(mtx_);</div>
 <div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span>        <span class="keywordflow">if</span> (isDone())</div>
 <div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span>            <span class="keywordflow">return</span>;</div>
-<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span>        <span class="keywordflow">if</span> (!parameter_.update(hash, <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>, sList))</div>
+<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span>        <span class="keywordflow">if</span> (!parameter_.update(hash, seq, sList))</div>
 <div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span>        {</div>
 <div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span>            JLOG(journal_.error()) &lt;&lt; <span class="stringliteral">&quot;Parameter update failed &quot;</span> &lt;&lt; hash_;</div>
 <div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span>            failed_ = <span class="keyword">true</span>;</div>
@@ -428,7 +428,6 @@ $(function() {
 <div class="ttc" id="ashared_from_this_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/enable_shared_from_this/shared_from_this.html">std::enable_shared_from_this&lt; LedgerReplayTask &gt;::shared_from_this</a></div><div class="ttdeci">T shared_from_this(T... args)</div></div>
 <div class="ttc" id="ashared_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a></div></div>
 <div class="ttc" id="asize_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/size.html">std::vector::size</a></div><div class="ttdeci">T size(T... args)</div></div>
-<div class="ttc" id="astructripple_1_1test_1_1jtx_1_1seq_html"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1seq.html">ripple::test::jtx::seq</a></div><div class="ttdoc">Set the sequence number on a JTx.</div><div class="ttdef"><b>Definition:</b> <a href="seq_8h_source.html#l00033">seq.h:34</a></div></div>
 <div class="ttc" id="aunique_lock_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/thread/unique_lock.html">std::unique_lock&lt; std::recursive_mutex &gt;</a></div></div>
 <div class="ttc" id="avector_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a></div></div>
 <div class="ttc" id="aweak_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/weak_ptr.html">std::weak_ptr</a></div></div>

@@ -139,7 +139,7 @@ $(function() {
 <div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span> </div>
 <div class="line"><a id="l00062" name="l00062"></a><span class="lineno"><a class="line" href="classripple_1_1STPathSet.html#a3519d5e461a5e126abed55f1656ecc9e">   62</a></span><a class="code hl_function" href="classripple_1_1STPathSet.html#a650ef67d1e0c08677c0162ce450f94b8">STPathSet::STPathSet</a>(<a class="code hl_class" href="classripple_1_1SerialIter.html">SerialIter</a>&amp; sit, <a class="code hl_class" href="classripple_1_1SField.html">SField</a> <span class="keyword">const</span>&amp; name) : <a class="code hl_class" href="classripple_1_1STBase.html">STBase</a>(name)</div>
 <div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span>{</div>
-<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;STPathElement&gt;</a> <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1path.html">path</a>;</div>
+<div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;STPathElement&gt;</a> path;</div>
 <div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>    <span class="keywordflow">for</span> (;;)</div>
 <div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>    {</div>
 <div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>        <span class="keywordtype">int</span> iType = sit.<a class="code hl_function" href="classripple_1_1SerialIter.html#abd5f83aa8b3943ca9cbfa005aaa33734">get8</a>();</div>
@@ -147,14 +147,14 @@ $(function() {
 <div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>        <span class="keywordflow">if</span> (iType == <a class="code hl_enumvalue" href="classripple_1_1STPathElement.html#add7ef24fbb39a048d81cdfb65aac5ae3ab09b992a8f92f7ef057c976c353c9e6e">STPathElement::typeNone</a> ||</div>
 <div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>            iType == <a class="code hl_enumvalue" href="classripple_1_1STPathElement.html#add7ef24fbb39a048d81cdfb65aac5ae3a6f3b96d4ec60b2b948cfd8ce678bd9b7">STPathElement::typeBoundary</a>)</div>
 <div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>        {</div>
-<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>            <span class="keywordflow">if</span> (<a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1path.html">path</a>.empty())</div>
+<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>            <span class="keywordflow">if</span> (path.empty())</div>
 <div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>            {</div>
 <div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>                JLOG(<a class="code hl_function" href="namespaceripple.html#a94e13759bd026c8ac305482e17f05adb">debugLog</a>().error()) &lt;&lt; <span class="stringliteral">&quot;Empty path in pathset&quot;</span>;</div>
 <div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>                Throw&lt;std::runtime_error&gt;(<span class="stringliteral">&quot;empty path&quot;</span>);</div>
 <div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>            }</div>
 <div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span> </div>
-<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>            <a class="code hl_function" href="classripple_1_1STPathSet.html#a61721601b734d6324eb0d7c585358a63">push_back</a>(<a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1path.html">path</a>);</div>
-<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>            <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1path.html">path</a>.clear();</div>
+<div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>            <a class="code hl_function" href="classripple_1_1STPathSet.html#a61721601b734d6324eb0d7c585358a63">push_back</a>(path);</div>
+<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>            path.clear();</div>
 <div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span> </div>
 <div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>            <span class="keywordflow">if</span> (iType == <a class="code hl_enumvalue" href="classripple_1_1STPathElement.html#add7ef24fbb39a048d81cdfb65aac5ae3ab09b992a8f92f7ef057c976c353c9e6e">STPathElement::typeNone</a>)</div>
 <div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>                <span class="keywordflow">return</span>;</div>
@@ -184,7 +184,7 @@ $(function() {
 <div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>            <span class="keywordflow">if</span> (hasIssuer)</div>
 <div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>                issuer = sit.<a class="code hl_function" href="classripple_1_1SerialIter.html#a2fe5dd5ca6e8bf2f927b1ddefeb3430b">get160</a>();</div>
 <div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span> </div>
-<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span>            <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1path.html">path</a>.emplace_back(account, currency, issuer, hasCurrency);</div>
+<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span>            path.emplace_back(account, currency, issuer, hasCurrency);</div>
 <div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>        }</div>
 <div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>    }</div>
 <div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span>}</div>
@@ -373,7 +373,6 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1Serializer_html_a96daec54ca0c8ec7f6e7e683e9abbe0e"><div class="ttname"><a href="classripple_1_1Serializer.html#a96daec54ca0c8ec7f6e7e683e9abbe0e">ripple::Serializer::addBitString</a></div><div class="ttdeci">int addBitString(base_uint&lt; Bits, Tag &gt; const &amp;v)</div><div class="ttdef"><b>Definition:</b> <a href="Serializer_8h_source.html#l00132">Serializer.h:132</a></div></div>
 <div class="ttc" id="aclassripple_1_1Serializer_html_ab6de064efbc9b2efaeff2b069a02b644"><div class="ttname"><a href="classripple_1_1Serializer.html#ab6de064efbc9b2efaeff2b069a02b644">ripple::Serializer::add8</a></div><div class="ttdeci">int add8(unsigned char i)</div><div class="ttdef"><b>Definition:</b> <a href="Serializer_8cpp_source.html#l00156">Serializer.cpp:156</a></div></div>
 <div class="ttc" id="aclassripple_1_1base__uint_html"><div class="ttname"><a href="classripple_1_1base__uint.html">ripple::base_uint&lt; 160, detail::AccountIDTag &gt;</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1path_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1path.html">ripple::test::jtx::path</a></div><div class="ttdoc">Add a path.</div><div class="ttdef"><b>Definition:</b> <a href="paths_8h_source.html#l00057">paths.h:58</a></div></div>
 <div class="ttc" id="acstddef_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/header/cstddef.html">cstddef</a></div></div>
 <div class="ttc" id="anamespaceJson_html_a7d654b75c16a57007925868e38212b4eadc8f264f36b55b063c78126b335415f4"><div class="ttname"><a href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eadc8f264f36b55b063c78126b335415f4">Json::arrayValue</a></div><div class="ttdeci">@ arrayValue</div><div class="ttdoc">array value (ordered list)</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00045">json_value.h:45</a></div></div>
 <div class="ttc" id="anamespaceJson_html_a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6"><div class="ttname"><a href="namespaceJson.html#a7d654b75c16a57007925868e38212b4eae8386dcfc36d1ae897745f7b4f77a1f6">Json::objectValue</a></div><div class="ttdeci">@ objectValue</div><div class="ttdoc">object value (collection of name/value pairs).</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00047">json_value.h:46</a></div></div>

@@ -121,7 +121,7 @@ $(function() {
 <div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>    <a class="code hl_class" href="classripple_1_1Config.html">Config</a> <span class="keyword">const</span>&amp; config)</div>
 <div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>{</div>
 <div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>    <span class="keyword">auto</span> <span class="keyword">const</span> <span class="keywordtype">id</span> = tx.<a class="code hl_function" href="classripple_1_1STTx.html#ad314af66e2542db537b3b5de291d33c3">getTransactionID</a>();</div>
-<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>    <span class="keyword">auto</span> <span class="keyword">const</span> <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1flags.html">flags</a> = router.<a class="code hl_function" href="classripple_1_1HashRouter.html#a34019a21932ce1a1c6850da761d8bbb6">getFlags</a>(<span class="keywordtype">id</span>);</div>
+<div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>    <span class="keyword">auto</span> <span class="keyword">const</span> flags = router.<a class="code hl_function" href="classripple_1_1HashRouter.html#a34019a21932ce1a1c6850da761d8bbb6">getFlags</a>(<span class="keywordtype">id</span>);</div>
 <div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span> </div>
 <div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>    <span class="comment">// Ignore signature check on batch inner transactions</span></div>
 <div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>    <span class="keywordflow">if</span> (tx.<a class="code hl_function" href="classripple_1_1STObject.html#a40025a423b41e20dd78cb2627e17d678">isFlag</a>(<a class="code hl_variable" href="namespaceripple.html#afaf6a2c3fd25d8d826f03812dfbf2798">tfInnerBatchTxn</a>) &amp;&amp; rules.<a class="code hl_function" href="classripple_1_1Rules.html#a1a8388a2b9588aa9446ece92a88e0dd2">enabled</a>(featureBatch))</div>
@@ -144,11 +144,11 @@ $(function() {
 <div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>        <span class="keywordflow">return</span> {<a class="code hl_enumvalue" href="namespaceripple.html#abcad59b0151763334cc398263373bcdda3ac705f2acd51a4613f9188c05c91d0d">Validity::Valid</a>, <span class="stringliteral">&quot;&quot;</span>};</div>
 <div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>    }</div>
 <div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span> </div>
-<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>    <span class="keywordflow">if</span> (<a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1flags.html">flags</a> &amp; SF_SIGBAD)</div>
+<div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>    <span class="keywordflow">if</span> (flags &amp; SF_SIGBAD)</div>
 <div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>        <span class="comment">// Signature is known bad</span></div>
 <div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>        <span class="keywordflow">return</span> {<a class="code hl_enumvalue" href="namespaceripple.html#abcad59b0151763334cc398263373bcdda1e2ba91f36984d755d5edb5bf58ae60c">Validity::SigBad</a>, <span class="stringliteral">&quot;Transaction has bad signature.&quot;</span>};</div>
 <div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span> </div>
-<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>    <span class="keywordflow">if</span> (!(<a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1flags.html">flags</a> &amp; SF_SIGGOOD))</div>
+<div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>    <span class="keywordflow">if</span> (!(flags &amp; SF_SIGGOOD))</div>
 <div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>    {</div>
 <div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>        <span class="comment">// Don&#39;t know signature state. Check it.</span></div>
 <div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>        <span class="keyword">auto</span> <span class="keyword">const</span> requireCanonicalSig =</div>
@@ -166,12 +166,12 @@ $(function() {
 <div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>    }</div>
 <div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span> </div>
 <div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>    <span class="comment">// Signature is now known good</span></div>
-<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>    <span class="keywordflow">if</span> (<a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1flags.html">flags</a> &amp; SF_LOCALBAD)</div>
+<div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>    <span class="keywordflow">if</span> (flags &amp; SF_LOCALBAD)</div>
 <div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>        <span class="comment">// ...but the local checks</span></div>
 <div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>        <span class="comment">// are known bad.</span></div>
 <div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>        <span class="keywordflow">return</span> {<a class="code hl_enumvalue" href="namespaceripple.html#abcad59b0151763334cc398263373bcdda5ef9dd0687717427ebe8c5e3bcfb7ec1">Validity::SigGoodOnly</a>, <span class="stringliteral">&quot;Local checks failed.&quot;</span>};</div>
 <div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span> </div>
-<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>    <span class="keywordflow">if</span> (<a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1flags.html">flags</a> &amp; SF_LOCALGOOD)</div>
+<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>    <span class="keywordflow">if</span> (flags &amp; SF_LOCALGOOD)</div>
 <div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>        <span class="comment">// ...and the local checks</span></div>
 <div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>        <span class="comment">// are known good.</span></div>
 <div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span>        <span class="keywordflow">return</span> {<a class="code hl_enumvalue" href="namespaceripple.html#abcad59b0151763334cc398263373bcdda3ac705f2acd51a4613f9188c05c91d0d">Validity::Valid</a>, <span class="stringliteral">&quot;&quot;</span>};</div>
@@ -190,21 +190,21 @@ $(function() {
 <div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span><span class="keywordtype">void</span></div>
 <div class="line"><a id="l00113" name="l00113"></a><span class="lineno"><a class="line" href="namespaceripple.html#ab5fadc2b2814a10d35c00c0a8241fbe7">  113</a></span><a class="code hl_function" href="namespaceripple.html#ab5fadc2b2814a10d35c00c0a8241fbe7">forceValidity</a>(<a class="code hl_class" href="classripple_1_1HashRouter.html">HashRouter</a>&amp; router, <a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; txid, <a class="code hl_enumeration" href="namespaceripple.html#abcad59b0151763334cc398263373bcdd">Validity</a> validity)</div>
 <div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>{</div>
-<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>    <span class="keywordtype">int</span> <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1flags.html">flags</a> = 0;</div>
+<div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>    <span class="keywordtype">int</span> flags = 0;</div>
 <div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>    <span class="keywordflow">switch</span> (validity)</div>
 <div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>    {</div>
 <div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>        <span class="keywordflow">case</span> <a class="code hl_enumvalue" href="namespaceripple.html#abcad59b0151763334cc398263373bcdda3ac705f2acd51a4613f9188c05c91d0d">Validity::Valid</a>:</div>
-<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>            <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1flags.html">flags</a> |= SF_LOCALGOOD;</div>
+<div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>            flags |= SF_LOCALGOOD;</div>
 <div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>            [[fallthrough]];</div>
 <div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>        <span class="keywordflow">case</span> <a class="code hl_enumvalue" href="namespaceripple.html#abcad59b0151763334cc398263373bcdda5ef9dd0687717427ebe8c5e3bcfb7ec1">Validity::SigGoodOnly</a>:</div>
-<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>            <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1flags.html">flags</a> |= SF_SIGGOOD;</div>
+<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>            flags |= SF_SIGGOOD;</div>
 <div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>            [[fallthrough]];</div>
 <div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>        <span class="keywordflow">case</span> <a class="code hl_enumvalue" href="namespaceripple.html#abcad59b0151763334cc398263373bcdda1e2ba91f36984d755d5edb5bf58ae60c">Validity::SigBad</a>:</div>
 <div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>            <span class="comment">// would be silly to call directly</span></div>
 <div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span>            <span class="keywordflow">break</span>;</div>
 <div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>    }</div>
-<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>    <span class="keywordflow">if</span> (<a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1flags.html">flags</a>)</div>
-<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span>        router.<a class="code hl_function" href="classripple_1_1HashRouter.html#ac43309b8c10713823bdc233f39931472">setFlags</a>(txid, <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1flags.html">flags</a>);</div>
+<div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>    <span class="keywordflow">if</span> (flags)</div>
+<div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span>        router.<a class="code hl_function" href="classripple_1_1HashRouter.html#ac43309b8c10713823bdc233f39931472">setFlags</a>(txid, flags);</div>
 <div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span>}</div>
 <div class="line"><a id="l00131" name="l00131"></a><span class="lineno">  131</span> </div>
 <div class="line"><a id="l00132" name="l00132"></a><span class="lineno">  132</span><span class="keyword">template</span> &lt;<span class="keyword">typename</span> PreflightChecks&gt;</div>
@@ -222,11 +222,11 @@ $(function() {
 <div class="line"><a id="l00144" name="l00144"></a><span class="lineno">  144</span>    <a class="code hl_class" href="classripple_1_1Application.html">Application</a>&amp; app,</div>
 <div class="line"><a id="l00145" name="l00145"></a><span class="lineno">  145</span>    <a class="code hl_class" href="classripple_1_1OpenView.html">OpenView</a>&amp; view,</div>
 <div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span>    <a class="code hl_class" href="classripple_1_1STTx.html">STTx</a> <span class="keyword">const</span>&amp; tx,</div>
-<div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span>    <a class="code hl_enumeration" href="namespaceripple.html#ad2487abbcc1a5d6064b72144b461df6e">ApplyFlags</a> <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1flags.html">flags</a>,</div>
+<div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span>    <a class="code hl_enumeration" href="namespaceripple.html#ad2487abbcc1a5d6064b72144b461df6e">ApplyFlags</a> flags,</div>
 <div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span>    <a class="code hl_class" href="classbeast_1_1Journal.html">beast::Journal</a> j)</div>
 <div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span>{</div>
 <div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span>    <span class="keywordflow">return</span> <a class="code hl_function" href="namespaceripple.html#ab5570a1f8263efb3c9d80b34a92c895a">apply</a>(app, view, [&amp;]() <span class="keyword">mutable</span> {</div>
-<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span>        <span class="keywordflow">return</span> <a class="code hl_function" href="namespaceripple.html#a24280b80536d1afd09e24a75f4596922">preflight</a>(app, view.<a class="code hl_function" href="classripple_1_1OpenView.html#a9b6ad540708bc720bdd66164078e640a">rules</a>(), tx, <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1flags.html">flags</a>, j);</div>
+<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span>        <span class="keywordflow">return</span> <a class="code hl_function" href="namespaceripple.html#a24280b80536d1afd09e24a75f4596922">preflight</a>(app, view.<a class="code hl_function" href="classripple_1_1OpenView.html#a9b6ad540708bc720bdd66164078e640a">rules</a>(), tx, flags, j);</div>
 <div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span>    });</div>
 <div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span>}</div>
 <div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span> </div>
@@ -236,11 +236,11 @@ $(function() {
 <div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span>    <a class="code hl_class" href="classripple_1_1OpenView.html">OpenView</a>&amp; view,</div>
 <div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span>    <a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; parentBatchId,</div>
 <div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span>    <a class="code hl_class" href="classripple_1_1STTx.html">STTx</a> <span class="keyword">const</span>&amp; tx,</div>
-<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span>    <a class="code hl_enumeration" href="namespaceripple.html#ad2487abbcc1a5d6064b72144b461df6e">ApplyFlags</a> <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1flags.html">flags</a>,</div>
+<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span>    <a class="code hl_enumeration" href="namespaceripple.html#ad2487abbcc1a5d6064b72144b461df6e">ApplyFlags</a> flags,</div>
 <div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span>    <a class="code hl_class" href="classbeast_1_1Journal.html">beast::Journal</a> j)</div>
 <div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span>{</div>
 <div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span>    <span class="keywordflow">return</span> <a class="code hl_function" href="namespaceripple.html#ab5570a1f8263efb3c9d80b34a92c895a">apply</a>(app, view, [&amp;]() <span class="keyword">mutable</span> {</div>
-<div class="line"><a id="l00165" name="l00165"></a><span class="lineno">  165</span>        <span class="keywordflow">return</span> <a class="code hl_function" href="namespaceripple.html#a24280b80536d1afd09e24a75f4596922">preflight</a>(app, view.<a class="code hl_function" href="classripple_1_1OpenView.html#a9b6ad540708bc720bdd66164078e640a">rules</a>(), parentBatchId, tx, <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1flags.html">flags</a>, j);</div>
+<div class="line"><a id="l00165" name="l00165"></a><span class="lineno">  165</span>        <span class="keywordflow">return</span> <a class="code hl_function" href="namespaceripple.html#a24280b80536d1afd09e24a75f4596922">preflight</a>(app, view.<a class="code hl_function" href="classripple_1_1OpenView.html#a9b6ad540708bc720bdd66164078e640a">rules</a>(), parentBatchId, tx, flags, j);</div>
 <div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span>    });</div>
 <div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span>}</div>
 <div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span> </div>
@@ -316,19 +316,19 @@ $(function() {
 <div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span>    <a class="code hl_class" href="classripple_1_1OpenView.html">OpenView</a>&amp; view,</div>
 <div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span>    <a class="code hl_class" href="classripple_1_1STTx.html">STTx</a> <span class="keyword">const</span>&amp; txn,</div>
 <div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span>    <span class="keywordtype">bool</span> retryAssured,</div>
-<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span>    <a class="code hl_enumeration" href="namespaceripple.html#ad2487abbcc1a5d6064b72144b461df6e">ApplyFlags</a> <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1flags.html">flags</a>,</div>
+<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span>    <a class="code hl_enumeration" href="namespaceripple.html#ad2487abbcc1a5d6064b72144b461df6e">ApplyFlags</a> flags,</div>
 <div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span>    <a class="code hl_class" href="classbeast_1_1Journal.html">beast::Journal</a> j)</div>
 <div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span>{</div>
 <div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span>    <span class="comment">// Returns false if the transaction has need not be retried.</span></div>
 <div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span>    <span class="keywordflow">if</span> (retryAssured)</div>
-<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span>        <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1flags.html">flags</a> = <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1flags.html">flags</a> | <a class="code hl_enumvalue" href="namespaceripple.html#ad2487abbcc1a5d6064b72144b461df6ead993a03ae0b72db5c62a616b69eaccff">tapRETRY</a>;</div>
+<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span>        flags = flags | <a class="code hl_enumvalue" href="namespaceripple.html#ad2487abbcc1a5d6064b72144b461df6ead993a03ae0b72db5c62a616b69eaccff">tapRETRY</a>;</div>
 <div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span> </div>
 <div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span>    JLOG(j.<a class="code hl_function" href="classbeast_1_1Journal.html#a556228cb60bcf405c225d3f64b7b01ae">debug</a>()) &lt;&lt; <span class="stringliteral">&quot;TXN &quot;</span> &lt;&lt; txn.<a class="code hl_function" href="classripple_1_1STTx.html#ad314af66e2542db537b3b5de291d33c3">getTransactionID</a>()</div>
 <div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span>                    &lt;&lt; (retryAssured ? <span class="stringliteral">&quot;/retry&quot;</span> : <span class="stringliteral">&quot;/final&quot;</span>);</div>
 <div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span> </div>
 <div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span>    <span class="keywordflow">try</span></div>
 <div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span>    {</div>
-<div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span>        <span class="keyword">auto</span> <span class="keyword">const</span> result = <a class="code hl_function" href="namespaceripple.html#ab5570a1f8263efb3c9d80b34a92c895a">apply</a>(app, view, txn, <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1flags.html">flags</a>, j);</div>
+<div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span>        <span class="keyword">auto</span> <span class="keyword">const</span> result = <a class="code hl_function" href="namespaceripple.html#ab5570a1f8263efb3c9d80b34a92c895a">apply</a>(app, view, txn, flags, j);</div>
 <div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span> </div>
 <div class="line"><a id="l00255" name="l00255"></a><span class="lineno">  255</span>        <span class="keywordflow">if</span> (result.applied)</div>
 <div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span>        {</div>
@@ -398,7 +398,6 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1STTx_html_ac1eac05342231bce66b0924340da1ae9"><div class="ttname"><a href="classripple_1_1STTx.html#ac1eac05342231bce66b0924340da1ae9">ripple::STTx::getTxnType</a></div><div class="ttdeci">TxType getTxnType() const</div><div class="ttdef"><b>Definition:</b> <a href="STTx_8h_source.html#l00207">STTx.h:207</a></div></div>
 <div class="ttc" id="aclassripple_1_1STTx_html_ad314af66e2542db537b3b5de291d33c3"><div class="ttname"><a href="classripple_1_1STTx.html#ad314af66e2542db537b3b5de291d33c3">ripple::STTx::getTransactionID</a></div><div class="ttdeci">uint256 getTransactionID() const</div><div class="ttdef"><b>Definition:</b> <a href="STTx_8h_source.html#l00219">STTx.h:219</a></div></div>
 <div class="ttc" id="aclassripple_1_1base__uint_html"><div class="ttname"><a href="classripple_1_1base__uint.html">ripple::base_uint&lt; 256 &gt;</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1flags_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1flags.html">ripple::test::jtx::flags</a></div><div class="ttdoc">Match set account flags.</div><div class="ttdef"><b>Definition:</b> <a href="flags_8h_source.html#l00124">flags.h:125</a></div></div>
 <div class="ttc" id="aempty_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/empty.html">std::vector::empty</a></div><div class="ttdeci">T empty(T... args)</div></div>
 <div class="ttc" id="aexception_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="algorithm_8h_source.html#l00026">algorithm.h:26</a></div></div>

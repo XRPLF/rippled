@@ -146,10 +146,10 @@ $(function() {
 <div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;Ledger const&gt;</a></div>
 <div class="line"><a id="l00070" name="l00070"></a><span class="lineno"><a class="line" href="classripple_1_1InboundLedgersImp.html#a9f77846dfd400c30fbe4ab16fa7f32ca">   70</a></span>    <a class="code hl_function" href="classripple_1_1InboundLedgersImp.html#a9f77846dfd400c30fbe4ab16fa7f32ca">acquire</a>(</div>
 <div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>        <a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; hash,</div>
-<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>,</div>
+<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> seq,</div>
 <div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>        <a class="code hl_enumeration" href="classripple_1_1InboundLedger.html#a3e8d7f8b5fa089a184dcc9b00b6e0da7">InboundLedger::Reason</a> reason)<span class="keyword"> override</span></div>
 <div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span><span class="keyword">    </span>{</div>
-<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>        <span class="keyword">auto</span> doAcquire = [&amp;, <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>, reason]() -&gt; <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;Ledger const&gt;</a> {</div>
+<div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>        <span class="keyword">auto</span> doAcquire = [&amp;, seq, reason]() -&gt; <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;Ledger const&gt;</a> {</div>
 <div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>            XRPL_ASSERT(</div>
 <div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span>                hash.<a class="code hl_function" href="classripple_1_1base__uint.html#ad2bffc75e554b89befbb9388e07392c0">isNonZero</a>(),</div>
 <div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>                <span class="stringliteral">&quot;ripple::InboundLedgersImp::acquire::doAcquire : nonzero hash&quot;</span>);</div>
@@ -180,7 +180,7 @@ $(function() {
 <div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>                    inbound = std::make_shared&lt;InboundLedger&gt;(</div>
 <div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>                        <a class="code hl_variable" href="classripple_1_1InboundLedgersImp.html#a73a241a094191d41ad9b50caa4ca262e">app_</a>,</div>
 <div class="line"><a id="l00105" name="l00105"></a><span class="lineno">  105</span>                        hash,</div>
-<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>                        <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>,</div>
+<div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>                        seq,</div>
 <div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>                        reason,</div>
 <div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>                        <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/utility/functional/ref.html">std::ref</a>(<a class="code hl_variable" href="classripple_1_1InboundLedgersImp.html#a877e39917f64e0d99c30d2e287f6fba3">m_clock</a>),</div>
 <div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span>                        <a class="code hl_variable" href="classripple_1_1InboundLedgersImp.html#a9b2a42b4e516a6c185ca117fd8e91653">mPeerSetBuilder</a>-&gt;build());</div>
@@ -194,7 +194,7 @@ $(function() {
 <div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>                <span class="keywordflow">return</span> {};</div>
 <div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span> </div>
 <div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>            <span class="keywordflow">if</span> (!isNew)</div>
-<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>                inbound-&gt;update(<a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>);</div>
+<div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>                inbound-&gt;update(seq);</div>
 <div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span> </div>
 <div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>            <span class="keywordflow">if</span> (!inbound-&gt;isComplete())</div>
 <div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>                <span class="keywordflow">return</span> {};</div>
@@ -211,7 +211,7 @@ $(function() {
 <div class="line"><a id="l00134" name="l00134"></a><span class="lineno">  134</span>    <span class="keywordtype">void</span></div>
 <div class="line"><a id="l00135" name="l00135"></a><span class="lineno"><a class="line" href="classripple_1_1InboundLedgersImp.html#aa664e171b1570a5e426f1fa342b46891">  135</a></span>    <a class="code hl_function" href="classripple_1_1InboundLedgersImp.html#aa664e171b1570a5e426f1fa342b46891">acquireAsync</a>(</div>
 <div class="line"><a id="l00136" name="l00136"></a><span class="lineno">  136</span>        <a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; hash,</div>
-<div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>,</div>
+<div class="line"><a id="l00137" name="l00137"></a><span class="lineno">  137</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> seq,</div>
 <div class="line"><a id="l00138" name="l00138"></a><span class="lineno">  138</span>        <a class="code hl_enumeration" href="classripple_1_1InboundLedger.html#a3e8d7f8b5fa089a184dcc9b00b6e0da7">InboundLedger::Reason</a> reason)<span class="keyword"> override</span></div>
 <div class="line"><a id="l00139" name="l00139"></a><span class="lineno">  139</span><span class="keyword">    </span>{</div>
 <div class="line"><a id="l00140" name="l00140"></a><span class="lineno">  140</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/thread/unique_lock.html">std::unique_lock</a> lock(<a class="code hl_variable" href="classripple_1_1InboundLedgersImp.html#acb399b800e26cc250989f43f37201143">acquiresMutex_</a>);</div>
@@ -221,7 +221,7 @@ $(function() {
 <div class="line"><a id="l00144" name="l00144"></a><span class="lineno">  144</span>                <span class="keywordflow">return</span>;</div>
 <div class="line"><a id="l00145" name="l00145"></a><span class="lineno">  145</span>            <a class="code hl_variable" href="classripple_1_1InboundLedgersImp.html#a82b4fb74df1d27ff69ae6b3b191cfa12">pendingAcquires_</a>.insert(hash);</div>
 <div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span>            <a class="code hl_class" href="classripple_1_1scope__unlock.html">scope_unlock</a> unlock(lock);</div>
-<div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span>            <a class="code hl_function" href="classripple_1_1InboundLedgersImp.html#a9f77846dfd400c30fbe4ab16fa7f32ca">acquire</a>(hash, <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>, reason);</div>
+<div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span>            <a class="code hl_function" href="classripple_1_1InboundLedgersImp.html#a9f77846dfd400c30fbe4ab16fa7f32ca">acquire</a>(hash, seq, reason);</div>
 <div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span>        }</div>
 <div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span>        <span class="keywordflow">catch</span> (<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a> <span class="keyword">const</span>&amp; e)</div>
 <div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span>        {</div>
@@ -311,11 +311,11 @@ $(function() {
 <div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span>    }</div>
 <div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span> </div>
 <div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span>    <span class="keywordtype">void</span></div>
-<div class="line"><a id="l00239" name="l00239"></a><span class="lineno"><a class="line" href="classripple_1_1InboundLedgersImp.html#a6bf9e1542579f52723b136fa43dbe1e7">  239</a></span>    <a class="code hl_function" href="classripple_1_1InboundLedgersImp.html#a6bf9e1542579f52723b136fa43dbe1e7">logFailure</a>(<a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; h, <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>)<span class="keyword"> override</span></div>
+<div class="line"><a id="l00239" name="l00239"></a><span class="lineno"><a class="line" href="classripple_1_1InboundLedgersImp.html#a6bf9e1542579f52723b136fa43dbe1e7">  239</a></span>    <a class="code hl_function" href="classripple_1_1InboundLedgersImp.html#a6bf9e1542579f52723b136fa43dbe1e7">logFailure</a>(<a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; h, <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> seq)<span class="keyword"> override</span></div>
 <div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span><span class="keyword">    </span>{</div>
 <div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/thread/unique_lock.html">ScopedLockType</a> sl(<a class="code hl_variable" href="classripple_1_1InboundLedgersImp.html#a13cf3c1ee86deb837794eb5c26a72a01">mLock</a>);</div>
 <div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span> </div>
-<div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span>        <a class="code hl_variable" href="classripple_1_1InboundLedgersImp.html#a6db1d498c09f7f60dc79067b7a8ef287">mRecentFailures</a>.emplace(h, <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>);</div>
+<div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span>        <a class="code hl_variable" href="classripple_1_1InboundLedgersImp.html#a6db1d498c09f7f60dc79067b7a8ef287">mRecentFailures</a>.emplace(h, seq);</div>
 <div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span>    }</div>
 <div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span> </div>
 <div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span>    <span class="keywordtype">bool</span></div>
@@ -414,9 +414,9 @@ $(function() {
 <div class="line"><a id="l00345" name="l00345"></a><span class="lineno">  345</span>        <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; it : acqs)</div>
 <div class="line"><a id="l00346" name="l00346"></a><span class="lineno">  346</span>        {</div>
 <div class="line"><a id="l00347" name="l00347"></a><span class="lineno">  347</span>            <span class="comment">// getJson is expensive, so call without the lock</span></div>
-<div class="line"><a id="l00348" name="l00348"></a><span class="lineno">  348</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a> = it.second-&gt;getSeq();</div>
-<div class="line"><a id="l00349" name="l00349"></a><span class="lineno">  349</span>            <span class="keywordflow">if</span> (<a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a> &gt; 1)</div>
-<div class="line"><a id="l00350" name="l00350"></a><span class="lineno">  350</span>                ret[<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(<a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>)] = it.second-&gt;getJson(0);</div>
+<div class="line"><a id="l00348" name="l00348"></a><span class="lineno">  348</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> seq = it.second-&gt;getSeq();</div>
+<div class="line"><a id="l00349" name="l00349"></a><span class="lineno">  349</span>            <span class="keywordflow">if</span> (seq &gt; 1)</div>
+<div class="line"><a id="l00350" name="l00350"></a><span class="lineno">  350</span>                ret[<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(seq)] = it.second-&gt;getJson(0);</div>
 <div class="line"><a id="l00351" name="l00351"></a><span class="lineno">  351</span>            <span class="keywordflow">else</span></div>
 <div class="line"><a id="l00352" name="l00352"></a><span class="lineno">  352</span>                ret[<a class="code hl_function" href="namespaceripple.html#ac124fe6744b7fe887dec949b56b16d50">to_string</a>(it.first)] = it.second-&gt;getJson(0);</div>
 <div class="line"><a id="l00353" name="l00353"></a><span class="lineno">  353</span>        }</div>
@@ -639,7 +639,6 @@ $(function() {
 <div class="ttc" id="ashared_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt; Collector &gt;</a></div></div>
 <div class="ttc" id="asize_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/unordered_map/size.html">std::unordered_map::size</a></div><div class="ttdeci">T size(T... args)</div></div>
 <div class="ttc" id="asize_t_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a></div></div>
-<div class="ttc" id="astructripple_1_1test_1_1jtx_1_1seq_html"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1seq.html">ripple::test::jtx::seq</a></div><div class="ttdoc">Set the sequence number on a JTx.</div><div class="ttdef"><b>Definition:</b> <a href="seq_8h_source.html#l00033">seq.h:34</a></div></div>
 <div class="ttc" id="ato_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a></div><div class="ttdeci">T to_string(T... args)</div></div>
 <div class="ttc" id="aunique_lock_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/thread/unique_lock.html">std::unique_lock&lt; std::recursive_mutex &gt;</a></div></div>
 <div class="ttc" id="aunique_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/unique_ptr.html">std::unique_ptr</a></div></div>

@@ -110,73 +110,73 @@ $(function() {
 <div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>        <a class="code hl_variable" href="classbeast_1_1unit__test_1_1suite.html#aaa1237d9b85c69d35fe86645cee094b5">testcase</a>(<span class="stringliteral">&quot;Test memos&quot;</span>);</div>
 <div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span> </div>
 <div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>        <span class="keyword">using namespace </span>test::jtx;</div>
-<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>        <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> alice{<span class="stringliteral">&quot;alice&quot;</span>};</div>
+<div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>        Account alice{<span class="stringliteral">&quot;alice&quot;</span>};</div>
 <div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span> </div>
-<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>        <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env(*<span class="keyword">this</span>);</div>
-<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>        env.<a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1Env.html#ae2349266cb09d1f1c3de06606ebdf9e2">fund</a>(<a class="code hl_variable" href="namespaceripple_1_1test_1_1jtx.html#aea9cd3d4e6b5df2e62d53b34b605957e">XRP</a>(10000), alice);</div>
-<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>        env.<a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1Env.html#a69095691c9bcfab1f3d69c645f2dbe33">close</a>();</div>
+<div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>        Env env(*<span class="keyword">this</span>);</div>
+<div class="line"><a id="l00038" name="l00038"></a><span class="lineno">   38</span>        env.fund(XRP(10000), alice);</div>
+<div class="line"><a id="l00039" name="l00039"></a><span class="lineno">   39</span>        env.close();</div>
 <div class="line"><a id="l00040" name="l00040"></a><span class="lineno">   40</span> </div>
 <div class="line"><a id="l00041" name="l00041"></a><span class="lineno">   41</span>        <span class="comment">// Lambda that returns a valid JTx with a memo that we can hack up.</span></div>
 <div class="line"><a id="l00042" name="l00042"></a><span class="lineno">   42</span>        <span class="comment">// This is the basis for building tests of invalid states.</span></div>
 <div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>        <span class="keyword">auto</span> makeJtxWithMemo = [&amp;env, &amp;alice]() {</div>
-<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>            <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1JTx.html">JTx</a> example = <a class="code hl_enumvalue" href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">noop</a>(alice);</div>
-<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>            <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1memo.html">memo</a> <span class="keyword">const</span> exampleMemo{<span class="stringliteral">&quot;tic&quot;</span>, <span class="stringliteral">&quot;tac&quot;</span>, <span class="stringliteral">&quot;toe&quot;</span>};</div>
+<div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>            JTx example = <a class="code hl_enumvalue" href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">noop</a>(alice);</div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>            memo <span class="keyword">const</span> exampleMemo{<span class="stringliteral">&quot;tic&quot;</span>, <span class="stringliteral">&quot;tac&quot;</span>, <span class="stringliteral">&quot;toe&quot;</span>};</div>
 <div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>            exampleMemo(env, example);</div>
 <div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>            <span class="keywordflow">return</span> example;</div>
 <div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>        };</div>
 <div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span> </div>
 <div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>        <span class="comment">// A valid memo.</span></div>
 <div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>        env(makeJtxWithMemo());</div>
-<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>        env.<a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1Env.html#a69095691c9bcfab1f3d69c645f2dbe33">close</a>();</div>
+<div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>        env.close();</div>
 <div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span> </div>
 <div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>        {</div>
 <div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>            <span class="comment">// Make sure that too big a memo is flagged as invalid.</span></div>
-<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>            <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1JTx.html">JTx</a> memoSize = makeJtxWithMemo();</div>
-<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>            memoSize.<a class="code hl_variable" href="structripple_1_1test_1_1jtx_1_1JTx.html#a4b79d68d69b3eb4f173ff66c4d561363">jv</a>[sfMemos.jsonName][0u][sfMemo.jsonName]</div>
+<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>            JTx memoSize = makeJtxWithMemo();</div>
+<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>            memoSize.jv[sfMemos.jsonName][0u][sfMemo.jsonName]</div>
 <div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>                       [sfMemoData.jsonName] = <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(2020, <span class="charliteral">&#39;0&#39;</span>);</div>
 <div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>            env(memoSize,</div>
-<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>                <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1rpc.html">rpc</a>(<span class="stringliteral">&quot;invalidTransaction&quot;</span>,</div>
+<div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span>                rpc(<span class="stringliteral">&quot;invalidTransaction&quot;</span>,</div>
 <div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>                    <span class="stringliteral">&quot;fails local checks: The memo exceeds the maximum allowed &quot;</span></div>
 <div class="line"><a id="l00062" name="l00062"></a><span class="lineno">   62</span>                    <span class="stringliteral">&quot;size.&quot;</span>));</div>
 <div class="line"><a id="l00063" name="l00063"></a><span class="lineno">   63</span> </div>
 <div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>            <span class="comment">// This memo is just barely small enough.</span></div>
-<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>            memoSize.<a class="code hl_variable" href="structripple_1_1test_1_1jtx_1_1JTx.html#a4b79d68d69b3eb4f173ff66c4d561363">jv</a>[sfMemos.jsonName][0u][sfMemo.jsonName]</div>
+<div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>            memoSize.jv[sfMemos.jsonName][0u][sfMemo.jsonName]</div>
 <div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>                       [sfMemoData.jsonName] = <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(2018, <span class="charliteral">&#39;1&#39;</span>);</div>
 <div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>            env(memoSize);</div>
 <div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>        }</div>
 <div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>        {</div>
 <div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>            <span class="comment">// Put a non-Memo in the Memos array.</span></div>
-<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>            <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1JTx.html">JTx</a> memoNonMemo = <a class="code hl_enumvalue" href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">noop</a>(alice);</div>
-<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>            <span class="keyword">auto</span>&amp; jv = memoNonMemo.<a class="code hl_variable" href="structripple_1_1test_1_1jtx_1_1JTx.html#a4b79d68d69b3eb4f173ff66c4d561363">jv</a>;</div>
+<div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span>            JTx memoNonMemo = <a class="code hl_enumvalue" href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">noop</a>(alice);</div>
+<div class="line"><a id="l00072" name="l00072"></a><span class="lineno">   72</span>            <span class="keyword">auto</span>&amp; jv = memoNonMemo.jv;</div>
 <div class="line"><a id="l00073" name="l00073"></a><span class="lineno">   73</span>            <span class="keyword">auto</span>&amp; ma = jv[sfMemos.jsonName];</div>
 <div class="line"><a id="l00074" name="l00074"></a><span class="lineno">   74</span>            <span class="keyword">auto</span>&amp; mi = ma[ma.size()];</div>
 <div class="line"><a id="l00075" name="l00075"></a><span class="lineno">   75</span>            <span class="keyword">auto</span>&amp; m = mi[sfCreatedNode.jsonName];  <span class="comment">// CreatedNode in Memos</span></div>
 <div class="line"><a id="l00076" name="l00076"></a><span class="lineno">   76</span>            m[sfMemoData.jsonName] = <span class="stringliteral">&quot;3030303030&quot;</span>;</div>
 <div class="line"><a id="l00077" name="l00077"></a><span class="lineno">   77</span> </div>
 <div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span>            env(memoNonMemo,</div>
-<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>                <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1rpc.html">rpc</a>(<span class="stringliteral">&quot;invalidTransaction&quot;</span>,</div>
+<div class="line"><a id="l00079" name="l00079"></a><span class="lineno">   79</span>                rpc(<span class="stringliteral">&quot;invalidTransaction&quot;</span>,</div>
 <div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>                    <span class="stringliteral">&quot;fails local checks: A memo array may contain only Memo &quot;</span></div>
 <div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>                    <span class="stringliteral">&quot;objects.&quot;</span>));</div>
 <div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>        }</div>
 <div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>        {</div>
 <div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>            <span class="comment">// Put an invalid field in a Memo object.</span></div>
-<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>            <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1JTx.html">JTx</a> memoExtra = makeJtxWithMemo();</div>
+<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>            JTx memoExtra = makeJtxWithMemo();</div>
 <div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>            memoExtra</div>
-<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>                .<a class="code hl_variable" href="structripple_1_1test_1_1jtx_1_1JTx.html#a4b79d68d69b3eb4f173ff66c4d561363">jv</a>[sfMemos.jsonName][0u][sfMemo.jsonName][sfFlags.jsonName] =</div>
+<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>                .jv[sfMemos.jsonName][0u][sfMemo.jsonName][sfFlags.jsonName] =</div>
 <div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>                13;</div>
 <div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>            env(memoExtra,</div>
-<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>                <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1rpc.html">rpc</a>(<span class="stringliteral">&quot;invalidTransaction&quot;</span>,</div>
+<div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>                rpc(<span class="stringliteral">&quot;invalidTransaction&quot;</span>,</div>
 <div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>                    <span class="stringliteral">&quot;fails local checks: A memo may contain only MemoType, &quot;</span></div>
 <div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>                    <span class="stringliteral">&quot;MemoData or MemoFormat fields.&quot;</span>));</div>
 <div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>        }</div>
 <div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>        {</div>
 <div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>            <span class="comment">// Put a character that is not allowed in a URL in a MemoType field.</span></div>
-<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>            <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1JTx.html">JTx</a> memoBadChar = makeJtxWithMemo();</div>
-<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>            memoBadChar.<a class="code hl_variable" href="structripple_1_1test_1_1jtx_1_1JTx.html#a4b79d68d69b3eb4f173ff66c4d561363">jv</a>[sfMemos.jsonName][0u][sfMemo.jsonName]</div>
+<div class="line"><a id="l00096" name="l00096"></a><span class="lineno">   96</span>            JTx memoBadChar = makeJtxWithMemo();</div>
+<div class="line"><a id="l00097" name="l00097"></a><span class="lineno">   97</span>            memoBadChar.jv[sfMemos.jsonName][0u][sfMemo.jsonName]</div>
 <div class="line"><a id="l00098" name="l00098"></a><span class="lineno">   98</span>                          [sfMemoType.jsonName] =</div>
 <div class="line"><a id="l00099" name="l00099"></a><span class="lineno">   99</span>                <a class="code hl_function" href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">strHex</a>(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string_view.html">std::string_view</a>(<span class="stringliteral">&quot;ONE&lt;INFINITY&quot;</span>));</div>
 <div class="line"><a id="l00100" name="l00100"></a><span class="lineno">  100</span>            env(memoBadChar,</div>
-<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>                <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1rpc.html">rpc</a>(<span class="stringliteral">&quot;invalidTransaction&quot;</span>,</div>
+<div class="line"><a id="l00101" name="l00101"></a><span class="lineno">  101</span>                rpc(<span class="stringliteral">&quot;invalidTransaction&quot;</span>,</div>
 <div class="line"><a id="l00102" name="l00102"></a><span class="lineno">  102</span>                    <span class="stringliteral">&quot;fails local checks: The MemoType and MemoFormat fields &quot;</span></div>
 <div class="line"><a id="l00103" name="l00103"></a><span class="lineno">  103</span>                    <span class="stringliteral">&quot;may only contain characters that are allowed in URLs &quot;</span></div>
 <div class="line"><a id="l00104" name="l00104"></a><span class="lineno">  104</span>                    <span class="stringliteral">&quot;under RFC 3986.&quot;</span>));</div>
@@ -184,20 +184,20 @@ $(function() {
 <div class="line"><a id="l00106" name="l00106"></a><span class="lineno">  106</span>        {</div>
 <div class="line"><a id="l00107" name="l00107"></a><span class="lineno">  107</span>            <span class="comment">// Put a character that is not allowed in a URL in a MemoData field.</span></div>
 <div class="line"><a id="l00108" name="l00108"></a><span class="lineno">  108</span>            <span class="comment">// That&#39;s okay.</span></div>
-<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span>            <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1JTx.html">JTx</a> memoLegitChar = makeJtxWithMemo();</div>
-<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>            memoLegitChar.<a class="code hl_variable" href="structripple_1_1test_1_1jtx_1_1JTx.html#a4b79d68d69b3eb4f173ff66c4d561363">jv</a>[sfMemos.jsonName][0u][sfMemo.jsonName]</div>
+<div class="line"><a id="l00109" name="l00109"></a><span class="lineno">  109</span>            JTx memoLegitChar = makeJtxWithMemo();</div>
+<div class="line"><a id="l00110" name="l00110"></a><span class="lineno">  110</span>            memoLegitChar.jv[sfMemos.jsonName][0u][sfMemo.jsonName]</div>
 <div class="line"><a id="l00111" name="l00111"></a><span class="lineno">  111</span>                            [sfMemoData.jsonName] =</div>
 <div class="line"><a id="l00112" name="l00112"></a><span class="lineno">  112</span>                <a class="code hl_function" href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">strHex</a>(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string_view.html">std::string_view</a>(<span class="stringliteral">&quot;ONE&lt;INFINITY&quot;</span>));</div>
 <div class="line"><a id="l00113" name="l00113"></a><span class="lineno">  113</span>            env(memoLegitChar);</div>
 <div class="line"><a id="l00114" name="l00114"></a><span class="lineno">  114</span>        }</div>
 <div class="line"><a id="l00115" name="l00115"></a><span class="lineno">  115</span>        {</div>
 <div class="line"><a id="l00116" name="l00116"></a><span class="lineno">  116</span>            <span class="comment">// Put a character that is not allowed in a URL in a MemoFormat.</span></div>
-<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>            <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1JTx.html">JTx</a> memoBadChar = makeJtxWithMemo();</div>
-<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>            memoBadChar.<a class="code hl_variable" href="structripple_1_1test_1_1jtx_1_1JTx.html#a4b79d68d69b3eb4f173ff66c4d561363">jv</a>[sfMemos.jsonName][0u][sfMemo.jsonName]</div>
+<div class="line"><a id="l00117" name="l00117"></a><span class="lineno">  117</span>            JTx memoBadChar = makeJtxWithMemo();</div>
+<div class="line"><a id="l00118" name="l00118"></a><span class="lineno">  118</span>            memoBadChar.jv[sfMemos.jsonName][0u][sfMemo.jsonName]</div>
 <div class="line"><a id="l00119" name="l00119"></a><span class="lineno">  119</span>                          [sfMemoFormat.jsonName] =</div>
 <div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>                <a class="code hl_function" href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">strHex</a>(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string_view.html">std::string_view</a>(<span class="stringliteral">&quot;NoBraces{}InURL&quot;</span>));</div>
 <div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span>            env(memoBadChar,</div>
-<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>                <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1rpc.html">rpc</a>(<span class="stringliteral">&quot;invalidTransaction&quot;</span>,</div>
+<div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span>                rpc(<span class="stringliteral">&quot;invalidTransaction&quot;</span>,</div>
 <div class="line"><a id="l00123" name="l00123"></a><span class="lineno">  123</span>                    <span class="stringliteral">&quot;fails local checks: The MemoType and MemoFormat fields &quot;</span></div>
 <div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>                    <span class="stringliteral">&quot;may only contain characters that are allowed in URLs &quot;</span></div>
 <div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>                    <span class="stringliteral">&quot;under RFC 3986.&quot;</span>));</div>
@@ -223,18 +223,9 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1Memo__test_html"><div class="ttname"><a href="classripple_1_1Memo__test.html">ripple::Memo_test</a></div><div class="ttdef"><b>Definition:</b> <a href="Memo__test_8cpp_source.html#l00026">Memo_test.cpp:27</a></div></div>
 <div class="ttc" id="aclassripple_1_1Memo__test_html_aa69193538bca5dbc6ebc5cf66926f52e"><div class="ttname"><a href="classripple_1_1Memo__test.html#aa69193538bca5dbc6ebc5cf66926f52e">ripple::Memo_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdoc">Runs the suite.</div><div class="ttdef"><b>Definition:</b> <a href="Memo__test_8cpp_source.html#l00132">Memo_test.cpp:132</a></div></div>
 <div class="ttc" id="aclassripple_1_1Memo__test_html_abb242a0485de1a69979ca768512f1912"><div class="ttname"><a href="classripple_1_1Memo__test.html#abb242a0485de1a69979ca768512f1912">ripple::Memo_test::testMemos</a></div><div class="ttdeci">void testMemos()</div><div class="ttdef"><b>Definition:</b> <a href="Memo__test_8cpp_source.html#l00030">Memo_test.cpp:30</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Account_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Account.html">ripple::test::jtx::Account</a></div><div class="ttdoc">Immutable cryptographic account descriptor.</div><div class="ttdef"><b>Definition:</b> <a href="Account_8h_source.html#l00038">Account.h:39</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html">ripple::test::jtx::Env</a></div><div class="ttdoc">A transaction testing environment.</div><div class="ttdef"><b>Definition:</b> <a href="Env_8h_source.html#l00120">Env.h:121</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html_a69095691c9bcfab1f3d69c645f2dbe33"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html#a69095691c9bcfab1f3d69c645f2dbe33">ripple::test::jtx::Env::close</a></div><div class="ttdeci">bool close(NetClock::time_point closeTime, std::optional&lt; std::chrono::milliseconds &gt; consensusDelay=std::nullopt)</div><div class="ttdoc">Close and advance the ledger.</div><div class="ttdef"><b>Definition:</b> <a href="Env_8cpp_source.html#l00117">Env.cpp:117</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html_ae2349266cb09d1f1c3de06606ebdf9e2"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html#ae2349266cb09d1f1c3de06606ebdf9e2">ripple::test::jtx::Env::fund</a></div><div class="ttdeci">void fund(bool setDefaultRipple, STAmount const &amp;amount, Account const &amp;account)</div><div class="ttdef"><b>Definition:</b> <a href="Env_8cpp_source.html#l00233">Env.cpp:233</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1memo_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1memo.html">ripple::test::jtx::memo</a></div><div class="ttdoc">Add a memo to a JTx.</div><div class="ttdef"><b>Definition:</b> <a href="memo_8h_source.html#l00034">memo.h:35</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1rpc_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1rpc.html">ripple::test::jtx::rpc</a></div><div class="ttdoc">Set the expected result code for a JTx The test will fail if the code doesn't match.</div><div class="ttdef"><b>Definition:</b> <a href="rpc_8h_source.html#l00034">rpc.h:35</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1test_1_1jtx_html_aea9cd3d4e6b5df2e62d53b34b605957e"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx.html#aea9cd3d4e6b5df2e62d53b34b605957e">ripple::test::jtx::XRP</a></div><div class="ttdeci">XRP_t const XRP</div><div class="ttdoc">Converts to XRP Issue or STAmount.</div><div class="ttdef"><b>Definition:</b> <a href="amount_8cpp_source.html#l00105">amount.cpp:105</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="algorithm_8h_source.html#l00026">algorithm.h:26</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a86e358ce3f06ff049af13c2342791cf8"><div class="ttname"><a href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">ripple::strHex</a></div><div class="ttdeci">std::string strHex(FwdIt begin, FwdIt end)</div><div class="ttdef"><b>Definition:</b> <a href="strHex_8h_source.html#l00030">strHex.h:30</a></div></div>
 <div class="ttc" id="anamespaceripple_html_ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a"><div class="ttname"><a href="namespaceripple.html#ac34a69f56216ea1e430c09ba049bf0aea5483bf26dec486ec0175e2a3ca816a0a">ripple::ReleaseStrongRefAction::noop</a></div><div class="ttdeci">@ noop</div></div>
-<div class="ttc" id="astructripple_1_1test_1_1jtx_1_1JTx_html"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1JTx.html">ripple::test::jtx::JTx</a></div><div class="ttdoc">Execution context for applying a JSON transaction.</div><div class="ttdef"><b>Definition:</b> <a href="JTx_8h_source.html#l00044">JTx.h:45</a></div></div>
-<div class="ttc" id="astructripple_1_1test_1_1jtx_1_1JTx_html_a4b79d68d69b3eb4f173ff66c4d561363"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1JTx.html#a4b79d68d69b3eb4f173ff66c4d561363">ripple::test::jtx::JTx::jv</a></div><div class="ttdeci">Json::Value jv</div><div class="ttdef"><b>Definition:</b> <a href="JTx_8h_source.html#l00046">JTx.h:46</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

@@ -130,10 +130,10 @@ $(function() {
 <div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>    {</div>
 <div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>        <span class="keyword">using namespace </span>test::jtx;</div>
 <div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>        <a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span> nftokenID =</div>
-<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>            <a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#a2749ac7d2df5bd6424972b8de5cb0ad8">token::getNextID</a>(env, owner, 0, <a class="code hl_variable" href="namespaceripple.html#af6dbd01af49aa6a39b96cee44add0df1">tfTransferable</a>);</div>
-<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>        env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#ab5b8b8289e756cf37a6ad2d1adb876b5">token::mint</a>(owner, 0),</div>
-<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>            <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1token_1_1uri.html">token::uri</a>(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(<a class="code hl_variable" href="namespaceripple.html#a950b7645e0ea4e4077a611de8fe8e8dc">maxTokenURILength</a>, <span class="charliteral">&#39;u&#39;</span>)),</div>
-<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>            <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1txflags.html">txflags</a>(<a class="code hl_variable" href="namespaceripple.html#af6dbd01af49aa6a39b96cee44add0df1">tfTransferable</a>));</div>
+<div class="line"><a id="l00055" name="l00055"></a><span class="lineno">   55</span>            token::getNextID(env, owner, 0, <a class="code hl_variable" href="namespaceripple.html#af6dbd01af49aa6a39b96cee44add0df1">tfTransferable</a>);</div>
+<div class="line"><a id="l00056" name="l00056"></a><span class="lineno">   56</span>        env(token::mint(owner, 0),</div>
+<div class="line"><a id="l00057" name="l00057"></a><span class="lineno">   57</span>            token::uri(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(<a class="code hl_variable" href="namespaceripple.html#a950b7645e0ea4e4077a611de8fe8e8dc">maxTokenURILength</a>, <span class="charliteral">&#39;u&#39;</span>)),</div>
+<div class="line"><a id="l00058" name="l00058"></a><span class="lineno">   58</span>            txflags(<a class="code hl_variable" href="namespaceripple.html#af6dbd01af49aa6a39b96cee44add0df1">tfTransferable</a>));</div>
 <div class="line"><a id="l00059" name="l00059"></a><span class="lineno">   59</span>        env.<a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1Env.html#a69095691c9bcfab1f3d69c645f2dbe33">close</a>();</div>
 <div class="line"><a id="l00060" name="l00060"></a><span class="lineno">   60</span> </div>
 <div class="line"><a id="l00061" name="l00061"></a><span class="lineno">   61</span>        offerIndexes.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/reserve.html">reserve</a>(tokenCancelCount);</div>
@@ -142,8 +142,8 @@ $(function() {
 <div class="line"><a id="l00064" name="l00064"></a><span class="lineno">   64</span>        {</div>
 <div class="line"><a id="l00065" name="l00065"></a><span class="lineno">   65</span>            <span class="comment">// Create sell offer</span></div>
 <div class="line"><a id="l00066" name="l00066"></a><span class="lineno">   66</span>            offerIndexes.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/push_back.html">push_back</a>(<a class="code hl_function" href="namespaceripple_1_1keylet.html#adddc4768b4e412ab96f6fff32b8c3903">keylet::nftoffer</a>(owner, env.<a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1Env.html#a2ef09f6f41b7d8a2dc89175e3b108f87">seq</a>(owner)).<a class="code hl_variable" href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">key</a>);</div>
-<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>            env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#a40dfafd85108b010176f95d9af3b9c33">token::createOffer</a>(owner, nftokenID, <a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a47271eb5e7eb9b5aada383ccfaf9c0cf">drops</a>(1)),</div>
-<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>                <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1txflags.html">txflags</a>(<a class="code hl_variable" href="namespaceripple.html#a449cf5cfc4fd3f6c2a3577a57374bda5">tfSellNFToken</a>));</div>
+<div class="line"><a id="l00067" name="l00067"></a><span class="lineno">   67</span>            env(token::createOffer(owner, nftokenID, drops(1)),</div>
+<div class="line"><a id="l00068" name="l00068"></a><span class="lineno">   68</span>                txflags(<a class="code hl_variable" href="namespaceripple.html#a449cf5cfc4fd3f6c2a3577a57374bda5">tfSellNFToken</a>));</div>
 <div class="line"><a id="l00069" name="l00069"></a><span class="lineno">   69</span>            env.<a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1Env.html#a69095691c9bcfab1f3d69c645f2dbe33">close</a>();</div>
 <div class="line"><a id="l00070" name="l00070"></a><span class="lineno">   70</span>        }</div>
 <div class="line"><a id="l00071" name="l00071"></a><span class="lineno">   71</span> </div>
@@ -225,7 +225,7 @@ $(function() {
 <div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span> </div>
 <div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span>        <span class="keyword">using namespace </span>test::jtx;</div>
 <div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span> </div>
-<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span>        <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env{*<span class="keyword">this</span>, features};</div>
+<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span>        Env env{*<span class="keyword">this</span>, features};</div>
 <div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span> </div>
 <div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span>        <span class="comment">// Keep information associated with each account together.</span></div>
 <div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span>        <span class="keyword">struct </span>AcctStat</div>
@@ -246,11 +246,11 @@ $(function() {
 <div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span>        AcctStat becky{<span class="stringliteral">&quot;becky&quot;</span>};</div>
 <div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span>        AcctStat minter{<span class="stringliteral">&quot;minter&quot;</span>};</div>
 <div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span> </div>
-<div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span>        env.fund(<a class="code hl_variable" href="namespaceripple_1_1test_1_1jtx.html#aea9cd3d4e6b5df2e62d53b34b605957e">XRP</a>(10000), alice, becky, minter);</div>
+<div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span>        env.fund(XRP(10000), alice, becky, minter);</div>
 <div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span>        env.close();</div>
 <div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span> </div>
 <div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span>        <span class="comment">// Both alice and minter mint nfts in case that makes any difference.</span></div>
-<div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span>        env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#a3dd66f28c0c51c4ff6753f4d933eab24">token::setMinter</a>(alice, minter));</div>
+<div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span>        env(token::setMinter(alice, minter));</div>
 <div class="line"><a id="l00176" name="l00176"></a><span class="lineno">  176</span>        env.close();</div>
 <div class="line"><a id="l00177" name="l00177"></a><span class="lineno">  177</span> </div>
 <div class="line"><a id="l00178" name="l00178"></a><span class="lineno">  178</span>        <span class="comment">// Create enough NFTs that alice, becky, and minter can all have</span></div>
@@ -275,11 +275,11 @@ $(function() {
 <div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span>        <span class="keywordflow">while</span> (alice.nfts.size() &lt; 105)</div>
 <div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span>        {</div>
 <div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint16_t</a> <span class="keyword">const</span> xferFee = feeDist(engine);</div>
-<div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span>            alice.nfts.push_back(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#a2749ac7d2df5bd6424972b8de5cb0ad8">token::getNextID</a>(</div>
+<div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span>            alice.nfts.push_back(token::getNextID(</div>
 <div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span>                env, alice, 0u, <a class="code hl_variable" href="namespaceripple.html#af6dbd01af49aa6a39b96cee44add0df1">tfTransferable</a> | <a class="code hl_variable" href="namespaceripple.html#a5a8925be9e066ce9570511e5161a73bb">tfBurnable</a>, xferFee));</div>
-<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span>            env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#ab5b8b8289e756cf37a6ad2d1adb876b5">token::mint</a>(alice),</div>
-<div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span>                <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1txflags.html">txflags</a>(<a class="code hl_variable" href="namespaceripple.html#af6dbd01af49aa6a39b96cee44add0df1">tfTransferable</a> | <a class="code hl_variable" href="namespaceripple.html#a5a8925be9e066ce9570511e5161a73bb">tfBurnable</a>),</div>
-<div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span>                <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1token_1_1xferFee.html">token::xferFee</a>(xferFee));</div>
+<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span>            env(token::mint(alice),</div>
+<div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span>                txflags(<a class="code hl_variable" href="namespaceripple.html#af6dbd01af49aa6a39b96cee44add0df1">tfTransferable</a> | <a class="code hl_variable" href="namespaceripple.html#a5a8925be9e066ce9570511e5161a73bb">tfBurnable</a>),</div>
+<div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span>                token::xferFee(xferFee));</div>
 <div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span>            env.close();</div>
 <div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span>        }</div>
 <div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span> </div>
@@ -287,12 +287,12 @@ $(function() {
 <div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span>        <span class="keywordflow">while</span> (minter.nfts.size() &lt; 105)</div>
 <div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span>        {</div>
 <div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint16_t</a> <span class="keyword">const</span> xferFee = feeDist(engine);</div>
-<div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span>            minter.nfts.push_back(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#a2749ac7d2df5bd6424972b8de5cb0ad8">token::getNextID</a>(</div>
+<div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span>            minter.nfts.push_back(token::getNextID(</div>
 <div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span>                env, alice, 0u, <a class="code hl_variable" href="namespaceripple.html#af6dbd01af49aa6a39b96cee44add0df1">tfTransferable</a> | <a class="code hl_variable" href="namespaceripple.html#a5a8925be9e066ce9570511e5161a73bb">tfBurnable</a>, xferFee));</div>
-<div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span>            env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#ab5b8b8289e756cf37a6ad2d1adb876b5">token::mint</a>(minter),</div>
-<div class="line"><a id="l00215" name="l00215"></a><span class="lineno">  215</span>                <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1txflags.html">txflags</a>(<a class="code hl_variable" href="namespaceripple.html#af6dbd01af49aa6a39b96cee44add0df1">tfTransferable</a> | <a class="code hl_variable" href="namespaceripple.html#a5a8925be9e066ce9570511e5161a73bb">tfBurnable</a>),</div>
-<div class="line"><a id="l00216" name="l00216"></a><span class="lineno">  216</span>                <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1token_1_1xferFee.html">token::xferFee</a>(xferFee),</div>
-<div class="line"><a id="l00217" name="l00217"></a><span class="lineno">  217</span>                <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1token_1_1issuer.html">token::issuer</a>(alice));</div>
+<div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span>            env(token::mint(minter),</div>
+<div class="line"><a id="l00215" name="l00215"></a><span class="lineno">  215</span>                txflags(<a class="code hl_variable" href="namespaceripple.html#af6dbd01af49aa6a39b96cee44add0df1">tfTransferable</a> | <a class="code hl_variable" href="namespaceripple.html#a5a8925be9e066ce9570511e5161a73bb">tfBurnable</a>),</div>
+<div class="line"><a id="l00216" name="l00216"></a><span class="lineno">  216</span>                token::xferFee(xferFee),</div>
+<div class="line"><a id="l00217" name="l00217"></a><span class="lineno">  217</span>                token::issuer(alice));</div>
 <div class="line"><a id="l00218" name="l00218"></a><span class="lineno">  218</span>            env.close();</div>
 <div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span>        }</div>
 <div class="line"><a id="l00220" name="l00220"></a><span class="lineno">  220</span> </div>
@@ -308,10 +308,10 @@ $(function() {
 <div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span>                <span class="keyword">auto</span> xferNFT = [&amp;env, &amp;becky](AcctStat&amp; acct, <span class="keyword">auto</span>&amp; iter) {</div>
 <div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span>                    <a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> offerIndex =</div>
 <div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span>                        <a class="code hl_function" href="namespaceripple_1_1keylet.html#adddc4768b4e412ab96f6fff32b8c3903">keylet::nftoffer</a>(acct.acct, env.seq(acct.acct)).<a class="code hl_variable" href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">key</a>;</div>
-<div class="line"><a id="l00233" name="l00233"></a><span class="lineno">  233</span>                    env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#a40dfafd85108b010176f95d9af3b9c33">token::createOffer</a>(acct, *iter, <a class="code hl_variable" href="namespaceripple_1_1test_1_1jtx.html#aea9cd3d4e6b5df2e62d53b34b605957e">XRP</a>(0)),</div>
-<div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span>                        <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1txflags.html">txflags</a>(<a class="code hl_variable" href="namespaceripple.html#a449cf5cfc4fd3f6c2a3577a57374bda5">tfSellNFToken</a>));</div>
+<div class="line"><a id="l00233" name="l00233"></a><span class="lineno">  233</span>                    env(token::createOffer(acct, *iter, XRP(0)),</div>
+<div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span>                        txflags(<a class="code hl_variable" href="namespaceripple.html#a449cf5cfc4fd3f6c2a3577a57374bda5">tfSellNFToken</a>));</div>
 <div class="line"><a id="l00235" name="l00235"></a><span class="lineno">  235</span>                    env.close();</div>
-<div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span>                    env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#a91831cf96998d1ec5c992805bc2c4cde">token::acceptSellOffer</a>(becky, offerIndex));</div>
+<div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span>                    env(token::acceptSellOffer(becky, offerIndex));</div>
 <div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span>                    env.close();</div>
 <div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span>                    becky.nfts.push_back(*iter);</div>
 <div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span>                    iter = acct.nfts.erase(iter);</div>
@@ -336,34 +336,34 @@ $(function() {
 <div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span>                <span class="keywordflow">for</span> (<a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> nft : owner.nfts)</div>
 <div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span>                {</div>
 <div class="line"><a id="l00260" name="l00260"></a><span class="lineno">  260</span>                    <span class="comment">// Create sell offers for owner.</span></div>
-<div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span>                    env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#a40dfafd85108b010176f95d9af3b9c33">token::createOffer</a>(owner, nft, <a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a47271eb5e7eb9b5aada383ccfaf9c0cf">drops</a>(1)),</div>
-<div class="line"><a id="l00262" name="l00262"></a><span class="lineno">  262</span>                        <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1txflags.html">txflags</a>(<a class="code hl_variable" href="namespaceripple.html#a449cf5cfc4fd3f6c2a3577a57374bda5">tfSellNFToken</a>),</div>
-<div class="line"><a id="l00263" name="l00263"></a><span class="lineno">  263</span>                        <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1token_1_1destination.html">token::destination</a>(other1));</div>
-<div class="line"><a id="l00264" name="l00264"></a><span class="lineno">  264</span>                    env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#a40dfafd85108b010176f95d9af3b9c33">token::createOffer</a>(owner, nft, <a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a47271eb5e7eb9b5aada383ccfaf9c0cf">drops</a>(1)),</div>
-<div class="line"><a id="l00265" name="l00265"></a><span class="lineno">  265</span>                        <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1txflags.html">txflags</a>(<a class="code hl_variable" href="namespaceripple.html#a449cf5cfc4fd3f6c2a3577a57374bda5">tfSellNFToken</a>),</div>
-<div class="line"><a id="l00266" name="l00266"></a><span class="lineno">  266</span>                        <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1token_1_1destination.html">token::destination</a>(other2));</div>
+<div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span>                    env(token::createOffer(owner, nft, drops(1)),</div>
+<div class="line"><a id="l00262" name="l00262"></a><span class="lineno">  262</span>                        txflags(<a class="code hl_variable" href="namespaceripple.html#a449cf5cfc4fd3f6c2a3577a57374bda5">tfSellNFToken</a>),</div>
+<div class="line"><a id="l00263" name="l00263"></a><span class="lineno">  263</span>                        token::destination(other1));</div>
+<div class="line"><a id="l00264" name="l00264"></a><span class="lineno">  264</span>                    env(token::createOffer(owner, nft, drops(1)),</div>
+<div class="line"><a id="l00265" name="l00265"></a><span class="lineno">  265</span>                        txflags(<a class="code hl_variable" href="namespaceripple.html#a449cf5cfc4fd3f6c2a3577a57374bda5">tfSellNFToken</a>),</div>
+<div class="line"><a id="l00266" name="l00266"></a><span class="lineno">  266</span>                        token::destination(other2));</div>
 <div class="line"><a id="l00267" name="l00267"></a><span class="lineno">  267</span>                    env.close();</div>
 <div class="line"><a id="l00268" name="l00268"></a><span class="lineno">  268</span> </div>
 <div class="line"><a id="l00269" name="l00269"></a><span class="lineno">  269</span>                    <span class="comment">// Create buy offers for other1 and other2.</span></div>
-<div class="line"><a id="l00270" name="l00270"></a><span class="lineno">  270</span>                    env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#a40dfafd85108b010176f95d9af3b9c33">token::createOffer</a>(other1, nft, <a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a47271eb5e7eb9b5aada383ccfaf9c0cf">drops</a>(1)),</div>
-<div class="line"><a id="l00271" name="l00271"></a><span class="lineno">  271</span>                        <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1token_1_1owner.html">token::owner</a>(owner));</div>
-<div class="line"><a id="l00272" name="l00272"></a><span class="lineno">  272</span>                    env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#a40dfafd85108b010176f95d9af3b9c33">token::createOffer</a>(other2, nft, <a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a47271eb5e7eb9b5aada383ccfaf9c0cf">drops</a>(1)),</div>
-<div class="line"><a id="l00273" name="l00273"></a><span class="lineno">  273</span>                        <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1token_1_1owner.html">token::owner</a>(owner));</div>
+<div class="line"><a id="l00270" name="l00270"></a><span class="lineno">  270</span>                    env(token::createOffer(other1, nft, drops(1)),</div>
+<div class="line"><a id="l00271" name="l00271"></a><span class="lineno">  271</span>                        token::owner(owner));</div>
+<div class="line"><a id="l00272" name="l00272"></a><span class="lineno">  272</span>                    env(token::createOffer(other2, nft, drops(1)),</div>
+<div class="line"><a id="l00273" name="l00273"></a><span class="lineno">  273</span>                        token::owner(owner));</div>
 <div class="line"><a id="l00274" name="l00274"></a><span class="lineno">  274</span>                    env.close();</div>
 <div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span> </div>
-<div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span>                    env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#a40dfafd85108b010176f95d9af3b9c33">token::createOffer</a>(other2, nft, <a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a47271eb5e7eb9b5aada383ccfaf9c0cf">drops</a>(2)),</div>
-<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span>                        <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1token_1_1owner.html">token::owner</a>(owner));</div>
-<div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span>                    env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#a40dfafd85108b010176f95d9af3b9c33">token::createOffer</a>(other1, nft, <a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a47271eb5e7eb9b5aada383ccfaf9c0cf">drops</a>(2)),</div>
-<div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span>                        <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1token_1_1owner.html">token::owner</a>(owner));</div>
+<div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span>                    env(token::createOffer(other2, nft, drops(2)),</div>
+<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span>                        token::owner(owner));</div>
+<div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span>                    env(token::createOffer(other1, nft, drops(2)),</div>
+<div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span>                        token::owner(owner));</div>
 <div class="line"><a id="l00280" name="l00280"></a><span class="lineno">  280</span>                    env.close();</div>
 <div class="line"><a id="l00281" name="l00281"></a><span class="lineno">  281</span>                }</div>
 <div class="line"><a id="l00282" name="l00282"></a><span class="lineno">  282</span>            };</div>
 <div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span>        addOffers(alice, becky, minter);</div>
 <div class="line"><a id="l00284" name="l00284"></a><span class="lineno">  284</span>        addOffers(becky, minter, alice);</div>
 <div class="line"><a id="l00285" name="l00285"></a><span class="lineno">  285</span>        addOffers(minter, alice, becky);</div>
-<div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span>        BEAST_EXPECT(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a12abe185058a3db015909ed92c421097">ownerCount</a>(env, alice) == 424);</div>
-<div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span>        BEAST_EXPECT(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a12abe185058a3db015909ed92c421097">ownerCount</a>(env, becky) == 424);</div>
-<div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span>        BEAST_EXPECT(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a12abe185058a3db015909ed92c421097">ownerCount</a>(env, minter) == 424);</div>
+<div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span>        BEAST_EXPECT(ownerCount(env, alice) == 424);</div>
+<div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span>        BEAST_EXPECT(ownerCount(env, becky) == 424);</div>
+<div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span>        BEAST_EXPECT(ownerCount(env, minter) == 424);</div>
 <div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span> </div>
 <div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span>        <span class="comment">// Now each of the 270 NFTs has six offers associated with it.</span></div>
 <div class="line"><a id="l00291" name="l00291"></a><span class="lineno">  291</span>        <span class="comment">// Randomly select an NFT out of the pile and burn it.  Continue</span></div>
@@ -397,9 +397,9 @@ $(function() {
 <div class="line"><a id="l00319" name="l00319"></a><span class="lineno">  319</span>                                   : minter;</div>
 <div class="line"><a id="l00320" name="l00320"></a><span class="lineno">  320</span> </div>
 <div class="line"><a id="l00321" name="l00321"></a><span class="lineno">  321</span>            <span class="keywordflow">if</span> (owner.acct == burner.acct)</div>
-<div class="line"><a id="l00322" name="l00322"></a><span class="lineno">  322</span>                env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#ac8f58dedb4946a2d5681304c8bf03929">token::burn</a>(burner, nft));</div>
+<div class="line"><a id="l00322" name="l00322"></a><span class="lineno">  322</span>                env(token::burn(burner, nft));</div>
 <div class="line"><a id="l00323" name="l00323"></a><span class="lineno">  323</span>            <span class="keywordflow">else</span></div>
-<div class="line"><a id="l00324" name="l00324"></a><span class="lineno">  324</span>                env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#ac8f58dedb4946a2d5681304c8bf03929">token::burn</a>(burner, nft), <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1token_1_1owner.html">token::owner</a>(owner));</div>
+<div class="line"><a id="l00324" name="l00324"></a><span class="lineno">  324</span>                env(token::burn(burner, nft), token::owner(owner));</div>
 <div class="line"><a id="l00325" name="l00325"></a><span class="lineno">  325</span>            env.close();</div>
 <div class="line"><a id="l00326" name="l00326"></a><span class="lineno">  326</span> </div>
 <div class="line"><a id="l00327" name="l00327"></a><span class="lineno">  327</span>            <span class="comment">// Every time we burn an nft, the number of nfts they hold should</span></div>
@@ -414,9 +414,9 @@ $(function() {
 <div class="line"><a id="l00336" name="l00336"></a><span class="lineno">  336</span> </div>
 <div class="line"><a id="l00337" name="l00337"></a><span class="lineno">  337</span>        <span class="comment">// When all nfts are burned none of the accounts should have</span></div>
 <div class="line"><a id="l00338" name="l00338"></a><span class="lineno">  338</span>        <span class="comment">// an ownerCount.</span></div>
-<div class="line"><a id="l00339" name="l00339"></a><span class="lineno">  339</span>        BEAST_EXPECT(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a12abe185058a3db015909ed92c421097">ownerCount</a>(env, alice) == 0);</div>
-<div class="line"><a id="l00340" name="l00340"></a><span class="lineno">  340</span>        BEAST_EXPECT(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a12abe185058a3db015909ed92c421097">ownerCount</a>(env, becky) == 0);</div>
-<div class="line"><a id="l00341" name="l00341"></a><span class="lineno">  341</span>        BEAST_EXPECT(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a12abe185058a3db015909ed92c421097">ownerCount</a>(env, minter) == 0);</div>
+<div class="line"><a id="l00339" name="l00339"></a><span class="lineno">  339</span>        BEAST_EXPECT(ownerCount(env, alice) == 0);</div>
+<div class="line"><a id="l00340" name="l00340"></a><span class="lineno">  340</span>        BEAST_EXPECT(ownerCount(env, becky) == 0);</div>
+<div class="line"><a id="l00341" name="l00341"></a><span class="lineno">  341</span>        BEAST_EXPECT(ownerCount(env, minter) == 0);</div>
 <div class="line"><a id="l00342" name="l00342"></a><span class="lineno">  342</span>    }</div>
 <div class="line"><a id="l00343" name="l00343"></a><span class="lineno">  343</span> </div>
 <div class="line"><a id="l00344" name="l00344"></a><span class="lineno">  344</span>    <span class="keywordtype">void</span></div>
@@ -430,10 +430,10 @@ $(function() {
 <div class="line"><a id="l00352" name="l00352"></a><span class="lineno">  352</span> </div>
 <div class="line"><a id="l00353" name="l00353"></a><span class="lineno">  353</span>        <span class="keyword">using namespace </span>test::jtx;</div>
 <div class="line"><a id="l00354" name="l00354"></a><span class="lineno">  354</span> </div>
-<div class="line"><a id="l00355" name="l00355"></a><span class="lineno">  355</span>        <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span> alice{<span class="stringliteral">&quot;alice&quot;</span>};</div>
+<div class="line"><a id="l00355" name="l00355"></a><span class="lineno">  355</span>        Account <span class="keyword">const</span> alice{<span class="stringliteral">&quot;alice&quot;</span>};</div>
 <div class="line"><a id="l00356" name="l00356"></a><span class="lineno">  356</span> </div>
-<div class="line"><a id="l00357" name="l00357"></a><span class="lineno">  357</span>        <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env{*<span class="keyword">this</span>, features};</div>
-<div class="line"><a id="l00358" name="l00358"></a><span class="lineno">  358</span>        env.fund(<a class="code hl_variable" href="namespaceripple_1_1test_1_1jtx.html#aea9cd3d4e6b5df2e62d53b34b605957e">XRP</a>(1000), alice);</div>
+<div class="line"><a id="l00357" name="l00357"></a><span class="lineno">  357</span>        Env env{*<span class="keyword">this</span>, features};</div>
+<div class="line"><a id="l00358" name="l00358"></a><span class="lineno">  358</span>        env.fund(XRP(1000), alice);</div>
 <div class="line"><a id="l00359" name="l00359"></a><span class="lineno">  359</span> </div>
 <div class="line"><a id="l00360" name="l00360"></a><span class="lineno">  360</span>        <span class="comment">// A lambda that generates 96 nfts packed into three pages of 32 each.</span></div>
 <div class="line"><a id="l00361" name="l00361"></a><span class="lineno">  361</span>        <span class="comment">// Returns a sorted vector of the NFTokenIDs packed into the pages.</span></div>
@@ -450,7 +450,7 @@ $(function() {
 <div class="line"><a id="l00372" name="l00372"></a><span class="lineno">  372</span>            <span class="comment">// tells us the taxon value we should pass in in order for the</span></div>
 <div class="line"><a id="l00373" name="l00373"></a><span class="lineno">  373</span>            <span class="comment">// internal representation to match the passed in value.</span></div>
 <div class="line"><a id="l00374" name="l00374"></a><span class="lineno">  374</span>            <span class="keyword">auto</span> internalTaxon = [&amp;env](</div>
-<div class="line"><a id="l00375" name="l00375"></a><span class="lineno">  375</span>                                     <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span>&amp; acct,</div>
+<div class="line"><a id="l00375" name="l00375"></a><span class="lineno">  375</span>                                     Account <span class="keyword">const</span>&amp; acct,</div>
 <div class="line"><a id="l00376" name="l00376"></a><span class="lineno">  376</span>                                     <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> taxon) -&gt; <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> {</div>
 <div class="line"><a id="l00377" name="l00377"></a><span class="lineno">  377</span>                <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> tokenSeq =</div>
 <div class="line"><a id="l00378" name="l00378"></a><span class="lineno">  378</span>                    env.le(acct)-&gt;at(~sfMintedNFTokens).value_or(0);</div>
@@ -476,8 +476,8 @@ $(function() {
 <div class="line"><a id="l00398" name="l00398"></a><span class="lineno">  398</span>                <span class="comment">// populated.</span></div>
 <div class="line"><a id="l00399" name="l00399"></a><span class="lineno">  399</span>                <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> <span class="keyword">const</span> intTaxon = (i / 16) + (i &amp; 0b10000 ? 2 : 0);</div>
 <div class="line"><a id="l00400" name="l00400"></a><span class="lineno">  400</span>                uint32_t <span class="keyword">const</span> extTaxon = internalTaxon(alice, intTaxon);</div>
-<div class="line"><a id="l00401" name="l00401"></a><span class="lineno">  401</span>                nfts.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/push_back.html">push_back</a>(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#a2749ac7d2df5bd6424972b8de5cb0ad8">token::getNextID</a>(env, alice, extTaxon));</div>
-<div class="line"><a id="l00402" name="l00402"></a><span class="lineno">  402</span>                env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#ab5b8b8289e756cf37a6ad2d1adb876b5">token::mint</a>(alice, extTaxon));</div>
+<div class="line"><a id="l00401" name="l00401"></a><span class="lineno">  401</span>                nfts.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/push_back.html">push_back</a>(token::getNextID(env, alice, extTaxon));</div>
+<div class="line"><a id="l00402" name="l00402"></a><span class="lineno">  402</span>                env(token::mint(alice, extTaxon));</div>
 <div class="line"><a id="l00403" name="l00403"></a><span class="lineno">  403</span>                env.close();</div>
 <div class="line"><a id="l00404" name="l00404"></a><span class="lineno">  404</span>            }</div>
 <div class="line"><a id="l00405" name="l00405"></a><span class="lineno">  405</span> </div>
@@ -521,15 +521,15 @@ $(function() {
 <div class="line"><a id="l00443" name="l00443"></a><span class="lineno">  443</span>            <span class="comment">// pages is not possible.</span></div>
 <div class="line"><a id="l00444" name="l00444"></a><span class="lineno">  444</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;uint256&gt;</a> nfts = genPackedTokens();</div>
 <div class="line"><a id="l00445" name="l00445"></a><span class="lineno">  445</span>            BEAST_EXPECT(<a class="code hl_function" href="classripple_1_1NFTokenBurnBaseUtil__test.html#a27256064b7312d1ffaedcc6f03777fd5">nftCount</a>(env, alice) == 96);</div>
-<div class="line"><a id="l00446" name="l00446"></a><span class="lineno">  446</span>            BEAST_EXPECT(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a12abe185058a3db015909ed92c421097">ownerCount</a>(env, alice) == 3);</div>
+<div class="line"><a id="l00446" name="l00446"></a><span class="lineno">  446</span>            BEAST_EXPECT(ownerCount(env, alice) == 3);</div>
 <div class="line"><a id="l00447" name="l00447"></a><span class="lineno">  447</span> </div>
 <div class="line"><a id="l00448" name="l00448"></a><span class="lineno">  448</span>            <span class="keywordflow">for</span> (<a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; nft : nfts)</div>
 <div class="line"><a id="l00449" name="l00449"></a><span class="lineno">  449</span>            {</div>
-<div class="line"><a id="l00450" name="l00450"></a><span class="lineno">  450</span>                env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#ac8f58dedb4946a2d5681304c8bf03929">token::burn</a>(alice, {nft}));</div>
+<div class="line"><a id="l00450" name="l00450"></a><span class="lineno">  450</span>                env(token::burn(alice, {nft}));</div>
 <div class="line"><a id="l00451" name="l00451"></a><span class="lineno">  451</span>                env.close();</div>
 <div class="line"><a id="l00452" name="l00452"></a><span class="lineno">  452</span>            }</div>
 <div class="line"><a id="l00453" name="l00453"></a><span class="lineno">  453</span>            BEAST_EXPECT(<a class="code hl_function" href="classripple_1_1NFTokenBurnBaseUtil__test.html#a27256064b7312d1ffaedcc6f03777fd5">nftCount</a>(env, alice) == 0);</div>
-<div class="line"><a id="l00454" name="l00454"></a><span class="lineno">  454</span>            BEAST_EXPECT(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a12abe185058a3db015909ed92c421097">ownerCount</a>(env, alice) == 0);</div>
+<div class="line"><a id="l00454" name="l00454"></a><span class="lineno">  454</span>            BEAST_EXPECT(ownerCount(env, alice) == 0);</div>
 <div class="line"><a id="l00455" name="l00455"></a><span class="lineno">  455</span>        }</div>
 <div class="line"><a id="l00456" name="l00456"></a><span class="lineno">  456</span> </div>
 <div class="line"><a id="l00457" name="l00457"></a><span class="lineno">  457</span>        <span class="comment">// A lambda verifies that the ledger no longer contains any NFT pages.</span></div>
@@ -558,7 +558,7 @@ $(function() {
 <div class="line"><a id="l00480" name="l00480"></a><span class="lineno">  480</span>            <span class="comment">// coalescing pages is not possible.</span></div>
 <div class="line"><a id="l00481" name="l00481"></a><span class="lineno">  481</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;uint256&gt;</a> nfts = genPackedTokens();</div>
 <div class="line"><a id="l00482" name="l00482"></a><span class="lineno">  482</span>            BEAST_EXPECT(<a class="code hl_function" href="classripple_1_1NFTokenBurnBaseUtil__test.html#a27256064b7312d1ffaedcc6f03777fd5">nftCount</a>(env, alice) == 96);</div>
-<div class="line"><a id="l00483" name="l00483"></a><span class="lineno">  483</span>            BEAST_EXPECT(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a12abe185058a3db015909ed92c421097">ownerCount</a>(env, alice) == 3);</div>
+<div class="line"><a id="l00483" name="l00483"></a><span class="lineno">  483</span>            BEAST_EXPECT(ownerCount(env, alice) == 3);</div>
 <div class="line"><a id="l00484" name="l00484"></a><span class="lineno">  484</span> </div>
 <div class="line"><a id="l00485" name="l00485"></a><span class="lineno">  485</span>            <span class="comment">// Verify that that all three pages are present and remember the</span></div>
 <div class="line"><a id="l00486" name="l00486"></a><span class="lineno">  486</span>            <span class="comment">// indexes.</span></div>
@@ -583,7 +583,7 @@ $(function() {
 <div class="line"><a id="l00505" name="l00505"></a><span class="lineno">  505</span>            <span class="comment">// Burn almost all the tokens in the very last page.</span></div>
 <div class="line"><a id="l00506" name="l00506"></a><span class="lineno">  506</span>            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; 31; ++i)</div>
 <div class="line"><a id="l00507" name="l00507"></a><span class="lineno">  507</span>            {</div>
-<div class="line"><a id="l00508" name="l00508"></a><span class="lineno">  508</span>                env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#ac8f58dedb4946a2d5681304c8bf03929">token::burn</a>(alice, {nfts.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/back.html">back</a>()}));</div>
+<div class="line"><a id="l00508" name="l00508"></a><span class="lineno">  508</span>                env(token::burn(alice, {nfts.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/back.html">back</a>()}));</div>
 <div class="line"><a id="l00509" name="l00509"></a><span class="lineno">  509</span>                nfts.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/pop_back.html">pop_back</a>();</div>
 <div class="line"><a id="l00510" name="l00510"></a><span class="lineno">  510</span>                env.close();</div>
 <div class="line"><a id="l00511" name="l00511"></a><span class="lineno">  511</span>            }</div>
@@ -600,7 +600,7 @@ $(function() {
 <div class="line"><a id="l00522" name="l00522"></a><span class="lineno">  522</span>            BEAST_EXPECT(!lastNFTokenPage-&gt;isFieldPresent(sfNextPageMin));</div>
 <div class="line"><a id="l00523" name="l00523"></a><span class="lineno">  523</span> </div>
 <div class="line"><a id="l00524" name="l00524"></a><span class="lineno">  524</span>            <span class="comment">// Delete the last token from the last page.</span></div>
-<div class="line"><a id="l00525" name="l00525"></a><span class="lineno">  525</span>            env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#ac8f58dedb4946a2d5681304c8bf03929">token::burn</a>(alice, {nfts.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/back.html">back</a>()}));</div>
+<div class="line"><a id="l00525" name="l00525"></a><span class="lineno">  525</span>            env(token::burn(alice, {nfts.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/back.html">back</a>()}));</div>
 <div class="line"><a id="l00526" name="l00526"></a><span class="lineno">  526</span>            nfts.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/pop_back.html">pop_back</a>();</div>
 <div class="line"><a id="l00527" name="l00527"></a><span class="lineno">  527</span>            env.close();</div>
 <div class="line"><a id="l00528" name="l00528"></a><span class="lineno">  528</span> </div>
@@ -659,12 +659,12 @@ $(function() {
 <div class="line"><a id="l00581" name="l00581"></a><span class="lineno">  581</span>            <span class="comment">// Delete the rest of the NFTokens.</span></div>
 <div class="line"><a id="l00582" name="l00582"></a><span class="lineno">  582</span>            <span class="keywordflow">while</span> (!nfts.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/empty.html">empty</a>())</div>
 <div class="line"><a id="l00583" name="l00583"></a><span class="lineno">  583</span>            {</div>
-<div class="line"><a id="l00584" name="l00584"></a><span class="lineno">  584</span>                env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#ac8f58dedb4946a2d5681304c8bf03929">token::burn</a>(alice, {nfts.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/back.html">back</a>()}));</div>
+<div class="line"><a id="l00584" name="l00584"></a><span class="lineno">  584</span>                env(token::burn(alice, {nfts.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/back.html">back</a>()}));</div>
 <div class="line"><a id="l00585" name="l00585"></a><span class="lineno">  585</span>                nfts.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/pop_back.html">pop_back</a>();</div>
 <div class="line"><a id="l00586" name="l00586"></a><span class="lineno">  586</span>                env.close();</div>
 <div class="line"><a id="l00587" name="l00587"></a><span class="lineno">  587</span>            }</div>
 <div class="line"><a id="l00588" name="l00588"></a><span class="lineno">  588</span>            BEAST_EXPECT(<a class="code hl_function" href="classripple_1_1NFTokenBurnBaseUtil__test.html#a27256064b7312d1ffaedcc6f03777fd5">nftCount</a>(env, alice) == 0);</div>
-<div class="line"><a id="l00589" name="l00589"></a><span class="lineno">  589</span>            BEAST_EXPECT(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a12abe185058a3db015909ed92c421097">ownerCount</a>(env, alice) == 0);</div>
+<div class="line"><a id="l00589" name="l00589"></a><span class="lineno">  589</span>            BEAST_EXPECT(ownerCount(env, alice) == 0);</div>
 <div class="line"><a id="l00590" name="l00590"></a><span class="lineno">  590</span>        }</div>
 <div class="line"><a id="l00591" name="l00591"></a><span class="lineno">  591</span>        checkNoTokenPages();</div>
 <div class="line"><a id="l00592" name="l00592"></a><span class="lineno">  592</span>        {</div>
@@ -673,7 +673,7 @@ $(function() {
 <div class="line"><a id="l00595" name="l00595"></a><span class="lineno">  595</span>            <span class="comment">// two fully populated pages.</span></div>
 <div class="line"><a id="l00596" name="l00596"></a><span class="lineno">  596</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;uint256&gt;</a> nfts = genPackedTokens();</div>
 <div class="line"><a id="l00597" name="l00597"></a><span class="lineno">  597</span>            BEAST_EXPECT(<a class="code hl_function" href="classripple_1_1NFTokenBurnBaseUtil__test.html#a27256064b7312d1ffaedcc6f03777fd5">nftCount</a>(env, alice) == 96);</div>
-<div class="line"><a id="l00598" name="l00598"></a><span class="lineno">  598</span>            BEAST_EXPECT(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a12abe185058a3db015909ed92c421097">ownerCount</a>(env, alice) == 3);</div>
+<div class="line"><a id="l00598" name="l00598"></a><span class="lineno">  598</span>            BEAST_EXPECT(ownerCount(env, alice) == 3);</div>
 <div class="line"><a id="l00599" name="l00599"></a><span class="lineno">  599</span> </div>
 <div class="line"><a id="l00600" name="l00600"></a><span class="lineno">  600</span>            <span class="comment">// Verify that that all three pages are present and remember the</span></div>
 <div class="line"><a id="l00601" name="l00601"></a><span class="lineno">  601</span>            <span class="comment">// indexes.</span></div>
@@ -697,12 +697,12 @@ $(function() {
 <div class="line"><a id="l00619" name="l00619"></a><span class="lineno">  619</span> </div>
 <div class="line"><a id="l00620" name="l00620"></a><span class="lineno">  620</span>            <span class="keywordflow">for</span> (<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/size_t.html">std::size_t</a> i = 32; i &lt; 64; ++i)</div>
 <div class="line"><a id="l00621" name="l00621"></a><span class="lineno">  621</span>            {</div>
-<div class="line"><a id="l00622" name="l00622"></a><span class="lineno">  622</span>                env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#ac8f58dedb4946a2d5681304c8bf03929">token::burn</a>(alice, nfts[i]));</div>
+<div class="line"><a id="l00622" name="l00622"></a><span class="lineno">  622</span>                env(token::burn(alice, nfts[i]));</div>
 <div class="line"><a id="l00623" name="l00623"></a><span class="lineno">  623</span>                env.close();</div>
 <div class="line"><a id="l00624" name="l00624"></a><span class="lineno">  624</span>            }</div>
 <div class="line"><a id="l00625" name="l00625"></a><span class="lineno">  625</span>            nfts.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/erase.html">erase</a>(nfts.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/begin.html">begin</a>() + 32, nfts.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/begin.html">begin</a>() + 64);</div>
 <div class="line"><a id="l00626" name="l00626"></a><span class="lineno">  626</span>            BEAST_EXPECT(<a class="code hl_function" href="classripple_1_1NFTokenBurnBaseUtil__test.html#a27256064b7312d1ffaedcc6f03777fd5">nftCount</a>(env, alice) == 64);</div>
-<div class="line"><a id="l00627" name="l00627"></a><span class="lineno">  627</span>            BEAST_EXPECT(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a12abe185058a3db015909ed92c421097">ownerCount</a>(env, alice) == 2);</div>
+<div class="line"><a id="l00627" name="l00627"></a><span class="lineno">  627</span>            BEAST_EXPECT(ownerCount(env, alice) == 2);</div>
 <div class="line"><a id="l00628" name="l00628"></a><span class="lineno">  628</span> </div>
 <div class="line"><a id="l00629" name="l00629"></a><span class="lineno">  629</span>            <span class="comment">// Verify that middle page is gone and the links in the two</span></div>
 <div class="line"><a id="l00630" name="l00630"></a><span class="lineno">  630</span>            <span class="comment">// remaining pages are correct.</span></div>
@@ -726,11 +726,11 @@ $(function() {
 <div class="line"><a id="l00648" name="l00648"></a><span class="lineno">  648</span>            <span class="comment">// Burn the remaining nfts.</span></div>
 <div class="line"><a id="l00649" name="l00649"></a><span class="lineno">  649</span>            <span class="keywordflow">for</span> (<a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span>&amp; nft : nfts)</div>
 <div class="line"><a id="l00650" name="l00650"></a><span class="lineno">  650</span>            {</div>
-<div class="line"><a id="l00651" name="l00651"></a><span class="lineno">  651</span>                env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#ac8f58dedb4946a2d5681304c8bf03929">token::burn</a>(alice, {nft}));</div>
+<div class="line"><a id="l00651" name="l00651"></a><span class="lineno">  651</span>                env(token::burn(alice, {nft}));</div>
 <div class="line"><a id="l00652" name="l00652"></a><span class="lineno">  652</span>                env.close();</div>
 <div class="line"><a id="l00653" name="l00653"></a><span class="lineno">  653</span>            }</div>
 <div class="line"><a id="l00654" name="l00654"></a><span class="lineno">  654</span>            BEAST_EXPECT(<a class="code hl_function" href="classripple_1_1NFTokenBurnBaseUtil__test.html#a27256064b7312d1ffaedcc6f03777fd5">nftCount</a>(env, alice) == 0);</div>
-<div class="line"><a id="l00655" name="l00655"></a><span class="lineno">  655</span>            BEAST_EXPECT(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a12abe185058a3db015909ed92c421097">ownerCount</a>(env, alice) == 0);</div>
+<div class="line"><a id="l00655" name="l00655"></a><span class="lineno">  655</span>            BEAST_EXPECT(ownerCount(env, alice) == 0);</div>
 <div class="line"><a id="l00656" name="l00656"></a><span class="lineno">  656</span>        }</div>
 <div class="line"><a id="l00657" name="l00657"></a><span class="lineno">  657</span>        checkNoTokenPages();</div>
 <div class="line"><a id="l00658" name="l00658"></a><span class="lineno">  658</span>        {</div>
@@ -739,7 +739,7 @@ $(function() {
 <div class="line"><a id="l00661" name="l00661"></a><span class="lineno">  661</span>            <span class="comment">// exercises a specific case where coalescing pages is not possible.</span></div>
 <div class="line"><a id="l00662" name="l00662"></a><span class="lineno">  662</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;uint256&gt;</a> nfts = genPackedTokens();</div>
 <div class="line"><a id="l00663" name="l00663"></a><span class="lineno">  663</span>            BEAST_EXPECT(<a class="code hl_function" href="classripple_1_1NFTokenBurnBaseUtil__test.html#a27256064b7312d1ffaedcc6f03777fd5">nftCount</a>(env, alice) == 96);</div>
-<div class="line"><a id="l00664" name="l00664"></a><span class="lineno">  664</span>            BEAST_EXPECT(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a12abe185058a3db015909ed92c421097">ownerCount</a>(env, alice) == 3);</div>
+<div class="line"><a id="l00664" name="l00664"></a><span class="lineno">  664</span>            BEAST_EXPECT(ownerCount(env, alice) == 3);</div>
 <div class="line"><a id="l00665" name="l00665"></a><span class="lineno">  665</span> </div>
 <div class="line"><a id="l00666" name="l00666"></a><span class="lineno">  666</span>            <span class="comment">// Verify that that all three pages are present and remember the</span></div>
 <div class="line"><a id="l00667" name="l00667"></a><span class="lineno">  667</span>            <span class="comment">// indexes.</span></div>
@@ -765,7 +765,7 @@ $(function() {
 <div class="line"><a id="l00687" name="l00687"></a><span class="lineno">  687</span>            <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/algorithm/reverse.html">std::reverse</a>(nfts.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/begin.html">begin</a>(), nfts.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/end.html">end</a>());</div>
 <div class="line"><a id="l00688" name="l00688"></a><span class="lineno">  688</span>            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; 32; ++i)</div>
 <div class="line"><a id="l00689" name="l00689"></a><span class="lineno">  689</span>            {</div>
-<div class="line"><a id="l00690" name="l00690"></a><span class="lineno">  690</span>                env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#ac8f58dedb4946a2d5681304c8bf03929">token::burn</a>(alice, {nfts.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/back.html">back</a>()}));</div>
+<div class="line"><a id="l00690" name="l00690"></a><span class="lineno">  690</span>                env(token::burn(alice, {nfts.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/back.html">back</a>()}));</div>
 <div class="line"><a id="l00691" name="l00691"></a><span class="lineno">  691</span>                nfts.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/pop_back.html">pop_back</a>();</div>
 <div class="line"><a id="l00692" name="l00692"></a><span class="lineno">  692</span>                env.close();</div>
 <div class="line"><a id="l00693" name="l00693"></a><span class="lineno">  693</span>            }</div>
@@ -793,7 +793,7 @@ $(function() {
 <div class="line"><a id="l00715" name="l00715"></a><span class="lineno">  715</span>            <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/algorithm/reverse.html">std::reverse</a>(nfts.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/begin.html">begin</a>(), nfts.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/end.html">end</a>());</div>
 <div class="line"><a id="l00716" name="l00716"></a><span class="lineno">  716</span>            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; 32; ++i)</div>
 <div class="line"><a id="l00717" name="l00717"></a><span class="lineno">  717</span>            {</div>
-<div class="line"><a id="l00718" name="l00718"></a><span class="lineno">  718</span>                env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#ac8f58dedb4946a2d5681304c8bf03929">token::burn</a>(alice, {nfts.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/back.html">back</a>()}));</div>
+<div class="line"><a id="l00718" name="l00718"></a><span class="lineno">  718</span>                env(token::burn(alice, {nfts.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/back.html">back</a>()}));</div>
 <div class="line"><a id="l00719" name="l00719"></a><span class="lineno">  719</span>                nfts.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/pop_back.html">pop_back</a>();</div>
 <div class="line"><a id="l00720" name="l00720"></a><span class="lineno">  720</span>                env.close();</div>
 <div class="line"><a id="l00721" name="l00721"></a><span class="lineno">  721</span>            }</div>
@@ -844,12 +844,12 @@ $(function() {
 <div class="line"><a id="l00766" name="l00766"></a><span class="lineno">  766</span>            <span class="comment">// Delete the rest of the NFTokens.</span></div>
 <div class="line"><a id="l00767" name="l00767"></a><span class="lineno">  767</span>            <span class="keywordflow">while</span> (!nfts.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/empty.html">empty</a>())</div>
 <div class="line"><a id="l00768" name="l00768"></a><span class="lineno">  768</span>            {</div>
-<div class="line"><a id="l00769" name="l00769"></a><span class="lineno">  769</span>                env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#ac8f58dedb4946a2d5681304c8bf03929">token::burn</a>(alice, {nfts.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/back.html">back</a>()}));</div>
+<div class="line"><a id="l00769" name="l00769"></a><span class="lineno">  769</span>                env(token::burn(alice, {nfts.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/back.html">back</a>()}));</div>
 <div class="line"><a id="l00770" name="l00770"></a><span class="lineno">  770</span>                nfts.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/pop_back.html">pop_back</a>();</div>
 <div class="line"><a id="l00771" name="l00771"></a><span class="lineno">  771</span>                env.close();</div>
 <div class="line"><a id="l00772" name="l00772"></a><span class="lineno">  772</span>            }</div>
 <div class="line"><a id="l00773" name="l00773"></a><span class="lineno">  773</span>            BEAST_EXPECT(<a class="code hl_function" href="classripple_1_1NFTokenBurnBaseUtil__test.html#a27256064b7312d1ffaedcc6f03777fd5">nftCount</a>(env, alice) == 0);</div>
-<div class="line"><a id="l00774" name="l00774"></a><span class="lineno">  774</span>            BEAST_EXPECT(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a12abe185058a3db015909ed92c421097">ownerCount</a>(env, alice) == 0);</div>
+<div class="line"><a id="l00774" name="l00774"></a><span class="lineno">  774</span>            BEAST_EXPECT(ownerCount(env, alice) == 0);</div>
 <div class="line"><a id="l00775" name="l00775"></a><span class="lineno">  775</span>        }</div>
 <div class="line"><a id="l00776" name="l00776"></a><span class="lineno">  776</span>        checkNoTokenPages();</div>
 <div class="line"><a id="l00777" name="l00777"></a><span class="lineno">  777</span> </div>
@@ -868,12 +868,12 @@ $(function() {
 <div class="line"><a id="l00790" name="l00790"></a><span class="lineno">  790</span>            <span class="comment">// Generate three closely packed NFTokenPages.</span></div>
 <div class="line"><a id="l00791" name="l00791"></a><span class="lineno">  791</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;uint256&gt;</a> nfts = genPackedTokens();</div>
 <div class="line"><a id="l00792" name="l00792"></a><span class="lineno">  792</span>            BEAST_EXPECT(<a class="code hl_function" href="classripple_1_1NFTokenBurnBaseUtil__test.html#a27256064b7312d1ffaedcc6f03777fd5">nftCount</a>(env, alice) == 96);</div>
-<div class="line"><a id="l00793" name="l00793"></a><span class="lineno">  793</span>            BEAST_EXPECT(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a12abe185058a3db015909ed92c421097">ownerCount</a>(env, alice) == 3);</div>
+<div class="line"><a id="l00793" name="l00793"></a><span class="lineno">  793</span>            BEAST_EXPECT(ownerCount(env, alice) == 3);</div>
 <div class="line"><a id="l00794" name="l00794"></a><span class="lineno">  794</span> </div>
 <div class="line"><a id="l00795" name="l00795"></a><span class="lineno">  795</span>            <span class="comment">// Burn almost all the tokens in the very last page.</span></div>
 <div class="line"><a id="l00796" name="l00796"></a><span class="lineno">  796</span>            <span class="keywordflow">for</span> (<span class="keywordtype">int</span> i = 0; i &lt; 31; ++i)</div>
 <div class="line"><a id="l00797" name="l00797"></a><span class="lineno">  797</span>            {</div>
-<div class="line"><a id="l00798" name="l00798"></a><span class="lineno">  798</span>                env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#ac8f58dedb4946a2d5681304c8bf03929">token::burn</a>(alice, {nfts.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/back.html">back</a>()}));</div>
+<div class="line"><a id="l00798" name="l00798"></a><span class="lineno">  798</span>                env(token::burn(alice, {nfts.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/back.html">back</a>()}));</div>
 <div class="line"><a id="l00799" name="l00799"></a><span class="lineno">  799</span>                nfts.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/pop_back.html">pop_back</a>();</div>
 <div class="line"><a id="l00800" name="l00800"></a><span class="lineno">  800</span>                env.close();</div>
 <div class="line"><a id="l00801" name="l00801"></a><span class="lineno">  801</span>            }</div>
@@ -981,11 +981,11 @@ $(function() {
 <div class="line"><a id="l00903" name="l00903"></a><span class="lineno">  903</span>        <span class="comment">// more than 500 offers, before fixNonFungibleTokensV1_2 goes live</span></div>
 <div class="line"><a id="l00904" name="l00904"></a><span class="lineno">  904</span>        <span class="keywordflow">if</span> (!features[fixNonFungibleTokensV1_2])</div>
 <div class="line"><a id="l00905" name="l00905"></a><span class="lineno">  905</span>        {</div>
-<div class="line"><a id="l00906" name="l00906"></a><span class="lineno">  906</span>            <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env{*<span class="keyword">this</span>, features};</div>
+<div class="line"><a id="l00906" name="l00906"></a><span class="lineno">  906</span>            Env env{*<span class="keyword">this</span>, features};</div>
 <div class="line"><a id="l00907" name="l00907"></a><span class="lineno">  907</span> </div>
-<div class="line"><a id="l00908" name="l00908"></a><span class="lineno">  908</span>            <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span> alice(<span class="stringliteral">&quot;alice&quot;</span>);</div>
-<div class="line"><a id="l00909" name="l00909"></a><span class="lineno">  909</span>            <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span> becky(<span class="stringliteral">&quot;becky&quot;</span>);</div>
-<div class="line"><a id="l00910" name="l00910"></a><span class="lineno">  910</span>            env.fund(<a class="code hl_variable" href="namespaceripple_1_1test_1_1jtx.html#aea9cd3d4e6b5df2e62d53b34b605957e">XRP</a>(1000), alice, becky);</div>
+<div class="line"><a id="l00908" name="l00908"></a><span class="lineno">  908</span>            Account <span class="keyword">const</span> alice(<span class="stringliteral">&quot;alice&quot;</span>);</div>
+<div class="line"><a id="l00909" name="l00909"></a><span class="lineno">  909</span>            Account <span class="keyword">const</span> becky(<span class="stringliteral">&quot;becky&quot;</span>);</div>
+<div class="line"><a id="l00910" name="l00910"></a><span class="lineno">  910</span>            env.fund(XRP(1000), alice, becky);</div>
 <div class="line"><a id="l00911" name="l00911"></a><span class="lineno">  911</span>            env.close();</div>
 <div class="line"><a id="l00912" name="l00912"></a><span class="lineno">  912</span> </div>
 <div class="line"><a id="l00913" name="l00913"></a><span class="lineno">  913</span>            <span class="comment">// We structure the test to try and maximize the metadata produced.</span></div>
@@ -1000,24 +1000,24 @@ $(function() {
 <div class="line"><a id="l00922" name="l00922"></a><span class="lineno">  922</span>            <span class="comment">//    many offers.</span></div>
 <div class="line"><a id="l00923" name="l00923"></a><span class="lineno">  923</span>            <span class="comment">// 5. Cancel becky&#39;s offer and the nft should become burnable.</span></div>
 <div class="line"><a id="l00924" name="l00924"></a><span class="lineno">  924</span>            <a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span> nftokenID =</div>
-<div class="line"><a id="l00925" name="l00925"></a><span class="lineno">  925</span>                <a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#a2749ac7d2df5bd6424972b8de5cb0ad8">token::getNextID</a>(env, alice, 0, <a class="code hl_variable" href="namespaceripple.html#af6dbd01af49aa6a39b96cee44add0df1">tfTransferable</a>);</div>
-<div class="line"><a id="l00926" name="l00926"></a><span class="lineno">  926</span>            env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#ab5b8b8289e756cf37a6ad2d1adb876b5">token::mint</a>(alice, 0),</div>
-<div class="line"><a id="l00927" name="l00927"></a><span class="lineno">  927</span>                <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1token_1_1uri.html">token::uri</a>(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(<a class="code hl_variable" href="namespaceripple.html#a950b7645e0ea4e4077a611de8fe8e8dc">maxTokenURILength</a>, <span class="charliteral">&#39;u&#39;</span>)),</div>
-<div class="line"><a id="l00928" name="l00928"></a><span class="lineno">  928</span>                <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1txflags.html">txflags</a>(<a class="code hl_variable" href="namespaceripple.html#af6dbd01af49aa6a39b96cee44add0df1">tfTransferable</a>));</div>
+<div class="line"><a id="l00925" name="l00925"></a><span class="lineno">  925</span>                token::getNextID(env, alice, 0, <a class="code hl_variable" href="namespaceripple.html#af6dbd01af49aa6a39b96cee44add0df1">tfTransferable</a>);</div>
+<div class="line"><a id="l00926" name="l00926"></a><span class="lineno">  926</span>            env(token::mint(alice, 0),</div>
+<div class="line"><a id="l00927" name="l00927"></a><span class="lineno">  927</span>                token::uri(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(<a class="code hl_variable" href="namespaceripple.html#a950b7645e0ea4e4077a611de8fe8e8dc">maxTokenURILength</a>, <span class="charliteral">&#39;u&#39;</span>)),</div>
+<div class="line"><a id="l00928" name="l00928"></a><span class="lineno">  928</span>                txflags(<a class="code hl_variable" href="namespaceripple.html#af6dbd01af49aa6a39b96cee44add0df1">tfTransferable</a>));</div>
 <div class="line"><a id="l00929" name="l00929"></a><span class="lineno">  929</span>            env.close();</div>
 <div class="line"><a id="l00930" name="l00930"></a><span class="lineno">  930</span> </div>
 <div class="line"><a id="l00931" name="l00931"></a><span class="lineno">  931</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;uint256&gt;</a> offerIndexes;</div>
 <div class="line"><a id="l00932" name="l00932"></a><span class="lineno">  932</span>            offerIndexes.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/reserve.html">reserve</a>(<a class="code hl_variable" href="namespaceripple.html#a48d1e12097d25f55cf6ec8dcb03306ee">maxTokenOfferCancelCount</a>);</div>
 <div class="line"><a id="l00933" name="l00933"></a><span class="lineno">  933</span>            <span class="keywordflow">for</span> (<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> i = 0; i &lt; <a class="code hl_variable" href="namespaceripple.html#a48d1e12097d25f55cf6ec8dcb03306ee">maxTokenOfferCancelCount</a>; ++i)</div>
 <div class="line"><a id="l00934" name="l00934"></a><span class="lineno">  934</span>            {</div>
-<div class="line"><a id="l00935" name="l00935"></a><span class="lineno">  935</span>                <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span> acct(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(<span class="stringliteral">&quot;acct&quot;</span>) + <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(i));</div>
-<div class="line"><a id="l00936" name="l00936"></a><span class="lineno">  936</span>                env.fund(<a class="code hl_variable" href="namespaceripple_1_1test_1_1jtx.html#aea9cd3d4e6b5df2e62d53b34b605957e">XRP</a>(1000), acct);</div>
+<div class="line"><a id="l00935" name="l00935"></a><span class="lineno">  935</span>                Account <span class="keyword">const</span> acct(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a>(<span class="stringliteral">&quot;acct&quot;</span>) + <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(i));</div>
+<div class="line"><a id="l00936" name="l00936"></a><span class="lineno">  936</span>                env.fund(XRP(1000), acct);</div>
 <div class="line"><a id="l00937" name="l00937"></a><span class="lineno">  937</span>                env.close();</div>
 <div class="line"><a id="l00938" name="l00938"></a><span class="lineno">  938</span> </div>
 <div class="line"><a id="l00939" name="l00939"></a><span class="lineno">  939</span>                offerIndexes.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/push_back.html">push_back</a>(</div>
 <div class="line"><a id="l00940" name="l00940"></a><span class="lineno">  940</span>                    <a class="code hl_function" href="namespaceripple_1_1keylet.html#adddc4768b4e412ab96f6fff32b8c3903">keylet::nftoffer</a>(acct, env.seq(acct)).<a class="code hl_variable" href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">key</a>);</div>
-<div class="line"><a id="l00941" name="l00941"></a><span class="lineno">  941</span>                env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#a40dfafd85108b010176f95d9af3b9c33">token::createOffer</a>(acct, nftokenID, <a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a47271eb5e7eb9b5aada383ccfaf9c0cf">drops</a>(1)),</div>
-<div class="line"><a id="l00942" name="l00942"></a><span class="lineno">  942</span>                    <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1token_1_1owner.html">token::owner</a>(alice));</div>
+<div class="line"><a id="l00941" name="l00941"></a><span class="lineno">  941</span>                env(token::createOffer(acct, nftokenID, drops(1)),</div>
+<div class="line"><a id="l00942" name="l00942"></a><span class="lineno">  942</span>                    token::owner(alice));</div>
 <div class="line"><a id="l00943" name="l00943"></a><span class="lineno">  943</span>                env.close();</div>
 <div class="line"><a id="l00944" name="l00944"></a><span class="lineno">  944</span>            }</div>
 <div class="line"><a id="l00945" name="l00945"></a><span class="lineno">  945</span> </div>
@@ -1030,11 +1030,11 @@ $(function() {
 <div class="line"><a id="l00952" name="l00952"></a><span class="lineno">  952</span>            <span class="comment">// Create one too many offers.</span></div>
 <div class="line"><a id="l00953" name="l00953"></a><span class="lineno">  953</span>            <a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span> beckyOfferIndex =</div>
 <div class="line"><a id="l00954" name="l00954"></a><span class="lineno">  954</span>                <a class="code hl_function" href="namespaceripple_1_1keylet.html#adddc4768b4e412ab96f6fff32b8c3903">keylet::nftoffer</a>(becky, env.seq(becky)).<a class="code hl_variable" href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">key</a>;</div>
-<div class="line"><a id="l00955" name="l00955"></a><span class="lineno">  955</span>            env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#a40dfafd85108b010176f95d9af3b9c33">token::createOffer</a>(becky, nftokenID, <a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a47271eb5e7eb9b5aada383ccfaf9c0cf">drops</a>(1)),</div>
-<div class="line"><a id="l00956" name="l00956"></a><span class="lineno">  956</span>                <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1token_1_1owner.html">token::owner</a>(alice));</div>
+<div class="line"><a id="l00955" name="l00955"></a><span class="lineno">  955</span>            env(token::createOffer(becky, nftokenID, drops(1)),</div>
+<div class="line"><a id="l00956" name="l00956"></a><span class="lineno">  956</span>                token::owner(alice));</div>
 <div class="line"><a id="l00957" name="l00957"></a><span class="lineno">  957</span> </div>
 <div class="line"><a id="l00958" name="l00958"></a><span class="lineno">  958</span>            <span class="comment">// Attempt to burn the nft which should fail.</span></div>
-<div class="line"><a id="l00959" name="l00959"></a><span class="lineno">  959</span>            env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#ac8f58dedb4946a2d5681304c8bf03929">token::burn</a>(alice, nftokenID), <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1ter.html">ter</a>(<a class="code hl_enumvalue" href="namespaceripple.html#a75cb21d7f1df42f2fdc8efddb79b63f4ac88fc0c8fed663cca3ccde623c0f3057">tefTOO_BIG</a>));</div>
+<div class="line"><a id="l00959" name="l00959"></a><span class="lineno">  959</span>            env(token::burn(alice, nftokenID), ter(<a class="code hl_enumvalue" href="namespaceripple.html#a75cb21d7f1df42f2fdc8efddb79b63f4ac88fc0c8fed663cca3ccde623c0f3057">tefTOO_BIG</a>));</div>
 <div class="line"><a id="l00960" name="l00960"></a><span class="lineno">  960</span> </div>
 <div class="line"><a id="l00961" name="l00961"></a><span class="lineno">  961</span>            <span class="comment">// Close enough ledgers that the burn transaction is no longer</span></div>
 <div class="line"><a id="l00962" name="l00962"></a><span class="lineno">  962</span>            <span class="comment">// retried.</span></div>
@@ -1043,23 +1043,23 @@ $(function() {
 <div class="line"><a id="l00965" name="l00965"></a><span class="lineno">  965</span> </div>
 <div class="line"><a id="l00966" name="l00966"></a><span class="lineno">  966</span>            <span class="comment">// Cancel becky&#39;s offer, but alice adds a sell offer.  The token</span></div>
 <div class="line"><a id="l00967" name="l00967"></a><span class="lineno">  967</span>            <span class="comment">// should still not be burnable.</span></div>
-<div class="line"><a id="l00968" name="l00968"></a><span class="lineno">  968</span>            env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#ad39013065cc24af0df83eb5354ec937c">token::cancelOffer</a>(becky, {beckyOfferIndex}));</div>
+<div class="line"><a id="l00968" name="l00968"></a><span class="lineno">  968</span>            env(token::cancelOffer(becky, {beckyOfferIndex}));</div>
 <div class="line"><a id="l00969" name="l00969"></a><span class="lineno">  969</span>            env.close();</div>
 <div class="line"><a id="l00970" name="l00970"></a><span class="lineno">  970</span> </div>
 <div class="line"><a id="l00971" name="l00971"></a><span class="lineno">  971</span>            <a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span> aliceOfferIndex =</div>
 <div class="line"><a id="l00972" name="l00972"></a><span class="lineno">  972</span>                <a class="code hl_function" href="namespaceripple_1_1keylet.html#adddc4768b4e412ab96f6fff32b8c3903">keylet::nftoffer</a>(alice, env.seq(alice)).<a class="code hl_variable" href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">key</a>;</div>
-<div class="line"><a id="l00973" name="l00973"></a><span class="lineno">  973</span>            env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#a40dfafd85108b010176f95d9af3b9c33">token::createOffer</a>(alice, nftokenID, <a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a47271eb5e7eb9b5aada383ccfaf9c0cf">drops</a>(1)),</div>
-<div class="line"><a id="l00974" name="l00974"></a><span class="lineno">  974</span>                <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1txflags.html">txflags</a>(<a class="code hl_variable" href="namespaceripple.html#a449cf5cfc4fd3f6c2a3577a57374bda5">tfSellNFToken</a>));</div>
+<div class="line"><a id="l00973" name="l00973"></a><span class="lineno">  973</span>            env(token::createOffer(alice, nftokenID, drops(1)),</div>
+<div class="line"><a id="l00974" name="l00974"></a><span class="lineno">  974</span>                txflags(<a class="code hl_variable" href="namespaceripple.html#a449cf5cfc4fd3f6c2a3577a57374bda5">tfSellNFToken</a>));</div>
 <div class="line"><a id="l00975" name="l00975"></a><span class="lineno">  975</span>            env.close();</div>
 <div class="line"><a id="l00976" name="l00976"></a><span class="lineno">  976</span> </div>
-<div class="line"><a id="l00977" name="l00977"></a><span class="lineno">  977</span>            env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#ac8f58dedb4946a2d5681304c8bf03929">token::burn</a>(alice, nftokenID), <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1ter.html">ter</a>(<a class="code hl_enumvalue" href="namespaceripple.html#a75cb21d7f1df42f2fdc8efddb79b63f4ac88fc0c8fed663cca3ccde623c0f3057">tefTOO_BIG</a>));</div>
+<div class="line"><a id="l00977" name="l00977"></a><span class="lineno">  977</span>            env(token::burn(alice, nftokenID), ter(<a class="code hl_enumvalue" href="namespaceripple.html#a75cb21d7f1df42f2fdc8efddb79b63f4ac88fc0c8fed663cca3ccde623c0f3057">tefTOO_BIG</a>));</div>
 <div class="line"><a id="l00978" name="l00978"></a><span class="lineno">  978</span>            env.close();</div>
 <div class="line"><a id="l00979" name="l00979"></a><span class="lineno">  979</span> </div>
 <div class="line"><a id="l00980" name="l00980"></a><span class="lineno">  980</span>            <span class="comment">// Cancel alice&#39;s sell offer.  Now the token should be burnable.</span></div>
-<div class="line"><a id="l00981" name="l00981"></a><span class="lineno">  981</span>            env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#ad39013065cc24af0df83eb5354ec937c">token::cancelOffer</a>(alice, {aliceOfferIndex}));</div>
+<div class="line"><a id="l00981" name="l00981"></a><span class="lineno">  981</span>            env(token::cancelOffer(alice, {aliceOfferIndex}));</div>
 <div class="line"><a id="l00982" name="l00982"></a><span class="lineno">  982</span>            env.close();</div>
 <div class="line"><a id="l00983" name="l00983"></a><span class="lineno">  983</span> </div>
-<div class="line"><a id="l00984" name="l00984"></a><span class="lineno">  984</span>            env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#ac8f58dedb4946a2d5681304c8bf03929">token::burn</a>(alice, nftokenID));</div>
+<div class="line"><a id="l00984" name="l00984"></a><span class="lineno">  984</span>            env(token::burn(alice, nftokenID));</div>
 <div class="line"><a id="l00985" name="l00985"></a><span class="lineno">  985</span>            env.close();</div>
 <div class="line"><a id="l00986" name="l00986"></a><span class="lineno">  986</span> </div>
 <div class="line"><a id="l00987" name="l00987"></a><span class="lineno">  987</span>            <span class="comment">// Burning the token should remove all the offers from the ledger.</span></div>
@@ -1069,8 +1069,8 @@ $(function() {
 <div class="line"><a id="l00991" name="l00991"></a><span class="lineno">  991</span>            }</div>
 <div class="line"><a id="l00992" name="l00992"></a><span class="lineno">  992</span> </div>
 <div class="line"><a id="l00993" name="l00993"></a><span class="lineno">  993</span>            <span class="comment">// Both alice and becky should have ownerCounts of zero.</span></div>
-<div class="line"><a id="l00994" name="l00994"></a><span class="lineno">  994</span>            BEAST_EXPECT(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a12abe185058a3db015909ed92c421097">ownerCount</a>(env, alice) == 0);</div>
-<div class="line"><a id="l00995" name="l00995"></a><span class="lineno">  995</span>            BEAST_EXPECT(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a12abe185058a3db015909ed92c421097">ownerCount</a>(env, becky) == 0);</div>
+<div class="line"><a id="l00994" name="l00994"></a><span class="lineno">  994</span>            BEAST_EXPECT(ownerCount(env, alice) == 0);</div>
+<div class="line"><a id="l00995" name="l00995"></a><span class="lineno">  995</span>            BEAST_EXPECT(ownerCount(env, becky) == 0);</div>
 <div class="line"><a id="l00996" name="l00996"></a><span class="lineno">  996</span>        }</div>
 <div class="line"><a id="l00997" name="l00997"></a><span class="lineno">  997</span> </div>
 <div class="line"><a id="l00998" name="l00998"></a><span class="lineno">  998</span>        <span class="comment">// Test that up to 499 buy/sell offers will be removed when NFT is</span></div>
@@ -1079,11 +1079,11 @@ $(function() {
 <div class="line"><a id="l01001" name="l01001"></a><span class="lineno"> 1001</span>        <span class="comment">// less than 500.</span></div>
 <div class="line"><a id="l01002" name="l01002"></a><span class="lineno"> 1002</span>        <span class="keywordflow">if</span> (features[fixNonFungibleTokensV1_2])</div>
 <div class="line"><a id="l01003" name="l01003"></a><span class="lineno"> 1003</span>        {</div>
-<div class="line"><a id="l01004" name="l01004"></a><span class="lineno"> 1004</span>            <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env{*<span class="keyword">this</span>, features};</div>
+<div class="line"><a id="l01004" name="l01004"></a><span class="lineno"> 1004</span>            Env env{*<span class="keyword">this</span>, features};</div>
 <div class="line"><a id="l01005" name="l01005"></a><span class="lineno"> 1005</span> </div>
-<div class="line"><a id="l01006" name="l01006"></a><span class="lineno"> 1006</span>            <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span> alice(<span class="stringliteral">&quot;alice&quot;</span>);</div>
-<div class="line"><a id="l01007" name="l01007"></a><span class="lineno"> 1007</span>            <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span> becky(<span class="stringliteral">&quot;becky&quot;</span>);</div>
-<div class="line"><a id="l01008" name="l01008"></a><span class="lineno"> 1008</span>            env.fund(<a class="code hl_variable" href="namespaceripple_1_1test_1_1jtx.html#aea9cd3d4e6b5df2e62d53b34b605957e">XRP</a>(100000), alice, becky);</div>
+<div class="line"><a id="l01006" name="l01006"></a><span class="lineno"> 1006</span>            Account <span class="keyword">const</span> alice(<span class="stringliteral">&quot;alice&quot;</span>);</div>
+<div class="line"><a id="l01007" name="l01007"></a><span class="lineno"> 1007</span>            Account <span class="keyword">const</span> becky(<span class="stringliteral">&quot;becky&quot;</span>);</div>
+<div class="line"><a id="l01008" name="l01008"></a><span class="lineno"> 1008</span>            env.fund(XRP(100000), alice, becky);</div>
 <div class="line"><a id="l01009" name="l01009"></a><span class="lineno"> 1009</span>            env.close();</div>
 <div class="line"><a id="l01010" name="l01010"></a><span class="lineno"> 1010</span> </div>
 <div class="line"><a id="l01011" name="l01011"></a><span class="lineno"> 1011</span>            <span class="comment">// alice creates 498 sell offers and becky creates 1 buy offers.</span></div>
@@ -1102,12 +1102,12 @@ $(function() {
 <div class="line"><a id="l01024" name="l01024"></a><span class="lineno"> 1024</span>            <span class="comment">// Becky creates a buy offer</span></div>
 <div class="line"><a id="l01025" name="l01025"></a><span class="lineno"> 1025</span>            <a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span> beckyOfferIndex =</div>
 <div class="line"><a id="l01026" name="l01026"></a><span class="lineno"> 1026</span>                <a class="code hl_function" href="namespaceripple_1_1keylet.html#adddc4768b4e412ab96f6fff32b8c3903">keylet::nftoffer</a>(becky, env.seq(becky)).<a class="code hl_variable" href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">key</a>;</div>
-<div class="line"><a id="l01027" name="l01027"></a><span class="lineno"> 1027</span>            env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#a40dfafd85108b010176f95d9af3b9c33">token::createOffer</a>(becky, nftokenID, <a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a47271eb5e7eb9b5aada383ccfaf9c0cf">drops</a>(1)),</div>
-<div class="line"><a id="l01028" name="l01028"></a><span class="lineno"> 1028</span>                <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1token_1_1owner.html">token::owner</a>(alice));</div>
+<div class="line"><a id="l01027" name="l01027"></a><span class="lineno"> 1027</span>            env(token::createOffer(becky, nftokenID, drops(1)),</div>
+<div class="line"><a id="l01028" name="l01028"></a><span class="lineno"> 1028</span>                token::owner(alice));</div>
 <div class="line"><a id="l01029" name="l01029"></a><span class="lineno"> 1029</span>            env.close();</div>
 <div class="line"><a id="l01030" name="l01030"></a><span class="lineno"> 1030</span> </div>
 <div class="line"><a id="l01031" name="l01031"></a><span class="lineno"> 1031</span>            <span class="comment">// Burn the token</span></div>
-<div class="line"><a id="l01032" name="l01032"></a><span class="lineno"> 1032</span>            env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#ac8f58dedb4946a2d5681304c8bf03929">token::burn</a>(alice, nftokenID));</div>
+<div class="line"><a id="l01032" name="l01032"></a><span class="lineno"> 1032</span>            env(token::burn(alice, nftokenID));</div>
 <div class="line"><a id="l01033" name="l01033"></a><span class="lineno"> 1033</span>            env.close();</div>
 <div class="line"><a id="l01034" name="l01034"></a><span class="lineno"> 1034</span> </div>
 <div class="line"><a id="l01035" name="l01035"></a><span class="lineno"> 1035</span>            <span class="comment">// Burning the token should remove all 498 sell offers</span></div>
@@ -1122,19 +1122,19 @@ $(function() {
 <div class="line"><a id="l01044" name="l01044"></a><span class="lineno"> 1044</span>            BEAST_EXPECT(!env.le(<a class="code hl_function" href="namespaceripple_1_1keylet.html#adddc4768b4e412ab96f6fff32b8c3903">keylet::nftoffer</a>(beckyOfferIndex)));</div>
 <div class="line"><a id="l01045" name="l01045"></a><span class="lineno"> 1045</span> </div>
 <div class="line"><a id="l01046" name="l01046"></a><span class="lineno"> 1046</span>            <span class="comment">// alice and becky should have ownerCounts of zero</span></div>
-<div class="line"><a id="l01047" name="l01047"></a><span class="lineno"> 1047</span>            BEAST_EXPECT(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a12abe185058a3db015909ed92c421097">ownerCount</a>(env, alice) == 0);</div>
-<div class="line"><a id="l01048" name="l01048"></a><span class="lineno"> 1048</span>            BEAST_EXPECT(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a12abe185058a3db015909ed92c421097">ownerCount</a>(env, becky) == 0);</div>
+<div class="line"><a id="l01047" name="l01047"></a><span class="lineno"> 1047</span>            BEAST_EXPECT(ownerCount(env, alice) == 0);</div>
+<div class="line"><a id="l01048" name="l01048"></a><span class="lineno"> 1048</span>            BEAST_EXPECT(ownerCount(env, becky) == 0);</div>
 <div class="line"><a id="l01049" name="l01049"></a><span class="lineno"> 1049</span>        }</div>
 <div class="line"><a id="l01050" name="l01050"></a><span class="lineno"> 1050</span> </div>
 <div class="line"><a id="l01051" name="l01051"></a><span class="lineno"> 1051</span>        <span class="comment">// Test that up to 500 buy offers are removed when NFT is burned</span></div>
 <div class="line"><a id="l01052" name="l01052"></a><span class="lineno"> 1052</span>        <span class="comment">// after fixNonFungibleTokensV1_2 is enabled</span></div>
 <div class="line"><a id="l01053" name="l01053"></a><span class="lineno"> 1053</span>        <span class="keywordflow">if</span> (features[fixNonFungibleTokensV1_2])</div>
 <div class="line"><a id="l01054" name="l01054"></a><span class="lineno"> 1054</span>        {</div>
-<div class="line"><a id="l01055" name="l01055"></a><span class="lineno"> 1055</span>            <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env{*<span class="keyword">this</span>, features};</div>
+<div class="line"><a id="l01055" name="l01055"></a><span class="lineno"> 1055</span>            Env env{*<span class="keyword">this</span>, features};</div>
 <div class="line"><a id="l01056" name="l01056"></a><span class="lineno"> 1056</span> </div>
-<div class="line"><a id="l01057" name="l01057"></a><span class="lineno"> 1057</span>            <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span> alice(<span class="stringliteral">&quot;alice&quot;</span>);</div>
-<div class="line"><a id="l01058" name="l01058"></a><span class="lineno"> 1058</span>            <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span> becky(<span class="stringliteral">&quot;becky&quot;</span>);</div>
-<div class="line"><a id="l01059" name="l01059"></a><span class="lineno"> 1059</span>            env.fund(<a class="code hl_variable" href="namespaceripple_1_1test_1_1jtx.html#aea9cd3d4e6b5df2e62d53b34b605957e">XRP</a>(100000), alice, becky);</div>
+<div class="line"><a id="l01057" name="l01057"></a><span class="lineno"> 1057</span>            Account <span class="keyword">const</span> alice(<span class="stringliteral">&quot;alice&quot;</span>);</div>
+<div class="line"><a id="l01058" name="l01058"></a><span class="lineno"> 1058</span>            Account <span class="keyword">const</span> becky(<span class="stringliteral">&quot;becky&quot;</span>);</div>
+<div class="line"><a id="l01059" name="l01059"></a><span class="lineno"> 1059</span>            env.fund(XRP(100000), alice, becky);</div>
 <div class="line"><a id="l01060" name="l01060"></a><span class="lineno"> 1060</span>            env.close();</div>
 <div class="line"><a id="l01061" name="l01061"></a><span class="lineno"> 1061</span> </div>
 <div class="line"><a id="l01062" name="l01062"></a><span class="lineno"> 1062</span>            <span class="comment">// alice creates 501 sell offers for the token</span></div>
@@ -1151,7 +1151,7 @@ $(function() {
 <div class="line"><a id="l01073" name="l01073"></a><span class="lineno"> 1073</span>            }</div>
 <div class="line"><a id="l01074" name="l01074"></a><span class="lineno"> 1074</span> </div>
 <div class="line"><a id="l01075" name="l01075"></a><span class="lineno"> 1075</span>            <span class="comment">// Burn the token</span></div>
-<div class="line"><a id="l01076" name="l01076"></a><span class="lineno"> 1076</span>            env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#ac8f58dedb4946a2d5681304c8bf03929">token::burn</a>(alice, nftokenID));</div>
+<div class="line"><a id="l01076" name="l01076"></a><span class="lineno"> 1076</span>            env(token::burn(alice, nftokenID));</div>
 <div class="line"><a id="l01077" name="l01077"></a><span class="lineno"> 1077</span>            env.close();</div>
 <div class="line"><a id="l01078" name="l01078"></a><span class="lineno"> 1078</span> </div>
 <div class="line"><a id="l01079" name="l01079"></a><span class="lineno"> 1079</span>            uint32_t offerDeletedCount = 0;</div>
@@ -1168,18 +1168,18 @@ $(function() {
 <div class="line"><a id="l01090" name="l01090"></a><span class="lineno"> 1090</span>            BEAST_EXPECT(offerDeletedCount == <a class="code hl_variable" href="namespaceripple.html#a48d1e12097d25f55cf6ec8dcb03306ee">maxTokenOfferCancelCount</a>);</div>
 <div class="line"><a id="l01091" name="l01091"></a><span class="lineno"> 1091</span> </div>
 <div class="line"><a id="l01092" name="l01092"></a><span class="lineno"> 1092</span>            <span class="comment">// alice should have ownerCounts of one for the orphaned sell offer</span></div>
-<div class="line"><a id="l01093" name="l01093"></a><span class="lineno"> 1093</span>            BEAST_EXPECT(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a12abe185058a3db015909ed92c421097">ownerCount</a>(env, alice) == 1);</div>
+<div class="line"><a id="l01093" name="l01093"></a><span class="lineno"> 1093</span>            BEAST_EXPECT(ownerCount(env, alice) == 1);</div>
 <div class="line"><a id="l01094" name="l01094"></a><span class="lineno"> 1094</span>        }</div>
 <div class="line"><a id="l01095" name="l01095"></a><span class="lineno"> 1095</span> </div>
 <div class="line"><a id="l01096" name="l01096"></a><span class="lineno"> 1096</span>        <span class="comment">// Test that up to 500 buy/sell offers are removed when NFT is burned</span></div>
 <div class="line"><a id="l01097" name="l01097"></a><span class="lineno"> 1097</span>        <span class="comment">// after fixNonFungibleTokensV1_2 is enabled</span></div>
 <div class="line"><a id="l01098" name="l01098"></a><span class="lineno"> 1098</span>        <span class="keywordflow">if</span> (features[fixNonFungibleTokensV1_2])</div>
 <div class="line"><a id="l01099" name="l01099"></a><span class="lineno"> 1099</span>        {</div>
-<div class="line"><a id="l01100" name="l01100"></a><span class="lineno"> 1100</span>            <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env{*<span class="keyword">this</span>, features};</div>
+<div class="line"><a id="l01100" name="l01100"></a><span class="lineno"> 1100</span>            Env env{*<span class="keyword">this</span>, features};</div>
 <div class="line"><a id="l01101" name="l01101"></a><span class="lineno"> 1101</span> </div>
-<div class="line"><a id="l01102" name="l01102"></a><span class="lineno"> 1102</span>            <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span> alice(<span class="stringliteral">&quot;alice&quot;</span>);</div>
-<div class="line"><a id="l01103" name="l01103"></a><span class="lineno"> 1103</span>            <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span> becky(<span class="stringliteral">&quot;becky&quot;</span>);</div>
-<div class="line"><a id="l01104" name="l01104"></a><span class="lineno"> 1104</span>            env.fund(<a class="code hl_variable" href="namespaceripple_1_1test_1_1jtx.html#aea9cd3d4e6b5df2e62d53b34b605957e">XRP</a>(100000), alice, becky);</div>
+<div class="line"><a id="l01102" name="l01102"></a><span class="lineno"> 1102</span>            Account <span class="keyword">const</span> alice(<span class="stringliteral">&quot;alice&quot;</span>);</div>
+<div class="line"><a id="l01103" name="l01103"></a><span class="lineno"> 1103</span>            Account <span class="keyword">const</span> becky(<span class="stringliteral">&quot;becky&quot;</span>);</div>
+<div class="line"><a id="l01104" name="l01104"></a><span class="lineno"> 1104</span>            env.fund(XRP(100000), alice, becky);</div>
 <div class="line"><a id="l01105" name="l01105"></a><span class="lineno"> 1105</span>            env.close();</div>
 <div class="line"><a id="l01106" name="l01106"></a><span class="lineno"> 1106</span> </div>
 <div class="line"><a id="l01107" name="l01107"></a><span class="lineno"> 1107</span>            <span class="comment">// alice creates 499 sell offers and becky creates 2 buy offers.</span></div>
@@ -1197,15 +1197,15 @@ $(function() {
 <div class="line"><a id="l01119" name="l01119"></a><span class="lineno"> 1119</span>            }</div>
 <div class="line"><a id="l01120" name="l01120"></a><span class="lineno"> 1120</span> </div>
 <div class="line"><a id="l01121" name="l01121"></a><span class="lineno"> 1121</span>            <span class="comment">// becky creates 2 buy offers</span></div>
-<div class="line"><a id="l01122" name="l01122"></a><span class="lineno"> 1122</span>            env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#a40dfafd85108b010176f95d9af3b9c33">token::createOffer</a>(becky, nftokenID, <a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a47271eb5e7eb9b5aada383ccfaf9c0cf">drops</a>(1)),</div>
-<div class="line"><a id="l01123" name="l01123"></a><span class="lineno"> 1123</span>                <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1token_1_1owner.html">token::owner</a>(alice));</div>
+<div class="line"><a id="l01122" name="l01122"></a><span class="lineno"> 1122</span>            env(token::createOffer(becky, nftokenID, drops(1)),</div>
+<div class="line"><a id="l01123" name="l01123"></a><span class="lineno"> 1123</span>                token::owner(alice));</div>
 <div class="line"><a id="l01124" name="l01124"></a><span class="lineno"> 1124</span>            env.close();</div>
-<div class="line"><a id="l01125" name="l01125"></a><span class="lineno"> 1125</span>            env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#a40dfafd85108b010176f95d9af3b9c33">token::createOffer</a>(becky, nftokenID, <a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a47271eb5e7eb9b5aada383ccfaf9c0cf">drops</a>(1)),</div>
-<div class="line"><a id="l01126" name="l01126"></a><span class="lineno"> 1126</span>                <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1token_1_1owner.html">token::owner</a>(alice));</div>
+<div class="line"><a id="l01125" name="l01125"></a><span class="lineno"> 1125</span>            env(token::createOffer(becky, nftokenID, drops(1)),</div>
+<div class="line"><a id="l01126" name="l01126"></a><span class="lineno"> 1126</span>                token::owner(alice));</div>
 <div class="line"><a id="l01127" name="l01127"></a><span class="lineno"> 1127</span>            env.close();</div>
 <div class="line"><a id="l01128" name="l01128"></a><span class="lineno"> 1128</span> </div>
 <div class="line"><a id="l01129" name="l01129"></a><span class="lineno"> 1129</span>            <span class="comment">// Burn the token</span></div>
-<div class="line"><a id="l01130" name="l01130"></a><span class="lineno"> 1130</span>            env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#ac8f58dedb4946a2d5681304c8bf03929">token::burn</a>(alice, nftokenID));</div>
+<div class="line"><a id="l01130" name="l01130"></a><span class="lineno"> 1130</span>            env(token::burn(alice, nftokenID));</div>
 <div class="line"><a id="l01131" name="l01131"></a><span class="lineno"> 1131</span>            env.close();</div>
 <div class="line"><a id="l01132" name="l01132"></a><span class="lineno"> 1132</span> </div>
 <div class="line"><a id="l01133" name="l01133"></a><span class="lineno"> 1133</span>            <span class="comment">// Burning the token should remove all 499 sell offers from the</span></div>
@@ -1217,10 +1217,10 @@ $(function() {
 <div class="line"><a id="l01139" name="l01139"></a><span class="lineno"> 1139</span> </div>
 <div class="line"><a id="l01140" name="l01140"></a><span class="lineno"> 1140</span>            <span class="comment">// alice should have ownerCount of zero because all her</span></div>
 <div class="line"><a id="l01141" name="l01141"></a><span class="lineno"> 1141</span>            <span class="comment">// sell offers have been deleted</span></div>
-<div class="line"><a id="l01142" name="l01142"></a><span class="lineno"> 1142</span>            BEAST_EXPECT(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a12abe185058a3db015909ed92c421097">ownerCount</a>(env, alice) == 0);</div>
+<div class="line"><a id="l01142" name="l01142"></a><span class="lineno"> 1142</span>            BEAST_EXPECT(ownerCount(env, alice) == 0);</div>
 <div class="line"><a id="l01143" name="l01143"></a><span class="lineno"> 1143</span> </div>
 <div class="line"><a id="l01144" name="l01144"></a><span class="lineno"> 1144</span>            <span class="comment">// becky has ownerCount of one due to an orphaned buy offer</span></div>
-<div class="line"><a id="l01145" name="l01145"></a><span class="lineno"> 1145</span>            BEAST_EXPECT(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a12abe185058a3db015909ed92c421097">ownerCount</a>(env, becky) == 1);</div>
+<div class="line"><a id="l01145" name="l01145"></a><span class="lineno"> 1145</span>            BEAST_EXPECT(ownerCount(env, becky) == 1);</div>
 <div class="line"><a id="l01146" name="l01146"></a><span class="lineno"> 1146</span>        }</div>
 <div class="line"><a id="l01147" name="l01147"></a><span class="lineno"> 1147</span>    }</div>
 <div class="line"><a id="l01148" name="l01148"></a><span class="lineno"> 1148</span> </div>
@@ -1239,11 +1239,11 @@ $(function() {
 <div class="line"><a id="l01161" name="l01161"></a><span class="lineno"> 1161</span> </div>
 <div class="line"><a id="l01162" name="l01162"></a><span class="lineno"> 1162</span>        <span class="keyword">using namespace </span>test::jtx;</div>
 <div class="line"><a id="l01163" name="l01163"></a><span class="lineno"> 1163</span> </div>
-<div class="line"><a id="l01164" name="l01164"></a><span class="lineno"> 1164</span>        <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span> alice{<span class="stringliteral">&quot;alice&quot;</span>};</div>
-<div class="line"><a id="l01165" name="l01165"></a><span class="lineno"> 1165</span>        <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span> minter{<span class="stringliteral">&quot;minter&quot;</span>};</div>
+<div class="line"><a id="l01164" name="l01164"></a><span class="lineno"> 1164</span>        Account <span class="keyword">const</span> alice{<span class="stringliteral">&quot;alice&quot;</span>};</div>
+<div class="line"><a id="l01165" name="l01165"></a><span class="lineno"> 1165</span>        Account <span class="keyword">const</span> minter{<span class="stringliteral">&quot;minter&quot;</span>};</div>
 <div class="line"><a id="l01166" name="l01166"></a><span class="lineno"> 1166</span> </div>
-<div class="line"><a id="l01167" name="l01167"></a><span class="lineno"> 1167</span>        <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Env.html">Env</a> env{*<span class="keyword">this</span>, features};</div>
-<div class="line"><a id="l01168" name="l01168"></a><span class="lineno"> 1168</span>        env.fund(<a class="code hl_variable" href="namespaceripple_1_1test_1_1jtx.html#aea9cd3d4e6b5df2e62d53b34b605957e">XRP</a>(1000), alice, minter);</div>
+<div class="line"><a id="l01167" name="l01167"></a><span class="lineno"> 1167</span>        Env env{*<span class="keyword">this</span>, features};</div>
+<div class="line"><a id="l01168" name="l01168"></a><span class="lineno"> 1168</span>        env.fund(XRP(1000), alice, minter);</div>
 <div class="line"><a id="l01169" name="l01169"></a><span class="lineno"> 1169</span> </div>
 <div class="line"><a id="l01170" name="l01170"></a><span class="lineno"> 1170</span>        <span class="comment">// A lambda that generates 96 nfts packed into three pages of 32 each.</span></div>
 <div class="line"><a id="l01171" name="l01171"></a><span class="lineno"> 1171</span>        <span class="comment">// Returns a sorted vector of the NFTokenIDs packed into the pages.</span></div>
@@ -1260,7 +1260,7 @@ $(function() {
 <div class="line"><a id="l01182" name="l01182"></a><span class="lineno"> 1182</span>            <span class="comment">// tells us the taxon value we should pass in in order for the</span></div>
 <div class="line"><a id="l01183" name="l01183"></a><span class="lineno"> 1183</span>            <span class="comment">// internal representation to match the passed in value.</span></div>
 <div class="line"><a id="l01184" name="l01184"></a><span class="lineno"> 1184</span>            <span class="keyword">auto</span> internalTaxon = [&amp;env](</div>
-<div class="line"><a id="l01185" name="l01185"></a><span class="lineno"> 1185</span>                                     <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> <span class="keyword">const</span>&amp; acct,</div>
+<div class="line"><a id="l01185" name="l01185"></a><span class="lineno"> 1185</span>                                     Account <span class="keyword">const</span>&amp; acct,</div>
 <div class="line"><a id="l01186" name="l01186"></a><span class="lineno"> 1186</span>                                     <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> taxon) -&gt; <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> {</div>
 <div class="line"><a id="l01187" name="l01187"></a><span class="lineno"> 1187</span>                <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> tokenSeq =</div>
 <div class="line"><a id="l01188" name="l01188"></a><span class="lineno"> 1188</span>                    env.le(acct)-&gt;at(~sfMintedNFTokens).value_or(0);</div>
@@ -1287,19 +1287,19 @@ $(function() {
 <div class="line"><a id="l01209" name="l01209"></a><span class="lineno"> 1209</span>                <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> <span class="keyword">const</span> intTaxon = (i / 16) + (i &amp; 0b10000 ? 2 : 0);</div>
 <div class="line"><a id="l01210" name="l01210"></a><span class="lineno"> 1210</span>                uint32_t <span class="keyword">const</span> extTaxon = internalTaxon(minter, intTaxon);</div>
 <div class="line"><a id="l01211" name="l01211"></a><span class="lineno"> 1211</span>                nfts.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/push_back.html">push_back</a>(</div>
-<div class="line"><a id="l01212" name="l01212"></a><span class="lineno"> 1212</span>                    <a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#a2749ac7d2df5bd6424972b8de5cb0ad8">token::getNextID</a>(env, minter, extTaxon, <a class="code hl_variable" href="namespaceripple.html#af6dbd01af49aa6a39b96cee44add0df1">tfTransferable</a>));</div>
-<div class="line"><a id="l01213" name="l01213"></a><span class="lineno"> 1213</span>                env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#ab5b8b8289e756cf37a6ad2d1adb876b5">token::mint</a>(minter, extTaxon), <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1txflags.html">txflags</a>(<a class="code hl_variable" href="namespaceripple.html#af6dbd01af49aa6a39b96cee44add0df1">tfTransferable</a>));</div>
+<div class="line"><a id="l01212" name="l01212"></a><span class="lineno"> 1212</span>                    token::getNextID(env, minter, extTaxon, <a class="code hl_variable" href="namespaceripple.html#af6dbd01af49aa6a39b96cee44add0df1">tfTransferable</a>));</div>
+<div class="line"><a id="l01213" name="l01213"></a><span class="lineno"> 1213</span>                env(token::mint(minter, extTaxon), txflags(<a class="code hl_variable" href="namespaceripple.html#af6dbd01af49aa6a39b96cee44add0df1">tfTransferable</a>));</div>
 <div class="line"><a id="l01214" name="l01214"></a><span class="lineno"> 1214</span>                env.close();</div>
 <div class="line"><a id="l01215" name="l01215"></a><span class="lineno"> 1215</span> </div>
 <div class="line"><a id="l01216" name="l01216"></a><span class="lineno"> 1216</span>                <span class="comment">// Minter creates an offer for the NFToken.</span></div>
 <div class="line"><a id="l01217" name="l01217"></a><span class="lineno"> 1217</span>                <a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span> minterOfferIndex =</div>
 <div class="line"><a id="l01218" name="l01218"></a><span class="lineno"> 1218</span>                    <a class="code hl_function" href="namespaceripple_1_1keylet.html#adddc4768b4e412ab96f6fff32b8c3903">keylet::nftoffer</a>(minter, env.seq(minter)).<a class="code hl_variable" href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">key</a>;</div>
-<div class="line"><a id="l01219" name="l01219"></a><span class="lineno"> 1219</span>                env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#a40dfafd85108b010176f95d9af3b9c33">token::createOffer</a>(minter, nfts.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/back.html">back</a>(), <a class="code hl_variable" href="namespaceripple_1_1test_1_1jtx.html#aea9cd3d4e6b5df2e62d53b34b605957e">XRP</a>(0)),</div>
-<div class="line"><a id="l01220" name="l01220"></a><span class="lineno"> 1220</span>                    <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1txflags.html">txflags</a>(<a class="code hl_variable" href="namespaceripple.html#a449cf5cfc4fd3f6c2a3577a57374bda5">tfSellNFToken</a>));</div>
+<div class="line"><a id="l01219" name="l01219"></a><span class="lineno"> 1219</span>                env(token::createOffer(minter, nfts.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/back.html">back</a>(), XRP(0)),</div>
+<div class="line"><a id="l01220" name="l01220"></a><span class="lineno"> 1220</span>                    txflags(<a class="code hl_variable" href="namespaceripple.html#a449cf5cfc4fd3f6c2a3577a57374bda5">tfSellNFToken</a>));</div>
 <div class="line"><a id="l01221" name="l01221"></a><span class="lineno"> 1221</span>                env.close();</div>
 <div class="line"><a id="l01222" name="l01222"></a><span class="lineno"> 1222</span> </div>
 <div class="line"><a id="l01223" name="l01223"></a><span class="lineno"> 1223</span>                <span class="comment">// alice accepts the offer.</span></div>
-<div class="line"><a id="l01224" name="l01224"></a><span class="lineno"> 1224</span>                env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#a91831cf96998d1ec5c992805bc2c4cde">token::acceptSellOffer</a>(alice, minterOfferIndex));</div>
+<div class="line"><a id="l01224" name="l01224"></a><span class="lineno"> 1224</span>                env(token::acceptSellOffer(alice, minterOfferIndex));</div>
 <div class="line"><a id="l01225" name="l01225"></a><span class="lineno"> 1225</span>                env.close();</div>
 <div class="line"><a id="l01226" name="l01226"></a><span class="lineno"> 1226</span>            }</div>
 <div class="line"><a id="l01227" name="l01227"></a><span class="lineno"> 1227</span> </div>
@@ -1341,7 +1341,7 @@ $(function() {
 <div class="line"><a id="l01263" name="l01263"></a><span class="lineno"> 1263</span>        <span class="comment">// Generate three packed pages.</span></div>
 <div class="line"><a id="l01264" name="l01264"></a><span class="lineno"> 1264</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector&lt;uint256&gt;</a> nfts = genPackedTokens();</div>
 <div class="line"><a id="l01265" name="l01265"></a><span class="lineno"> 1265</span>        BEAST_EXPECT(<a class="code hl_function" href="classripple_1_1NFTokenBurnBaseUtil__test.html#a27256064b7312d1ffaedcc6f03777fd5">nftCount</a>(env, alice) == 96);</div>
-<div class="line"><a id="l01266" name="l01266"></a><span class="lineno"> 1266</span>        BEAST_EXPECT(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a12abe185058a3db015909ed92c421097">ownerCount</a>(env, alice) == 3);</div>
+<div class="line"><a id="l01266" name="l01266"></a><span class="lineno"> 1266</span>        BEAST_EXPECT(ownerCount(env, alice) == 3);</div>
 <div class="line"><a id="l01267" name="l01267"></a><span class="lineno"> 1267</span> </div>
 <div class="line"><a id="l01268" name="l01268"></a><span class="lineno"> 1268</span>        <span class="comment">// Verify that that all three pages are present and remember the</span></div>
 <div class="line"><a id="l01269" name="l01269"></a><span class="lineno"> 1269</span>        <span class="comment">// indexes.</span></div>
@@ -1373,12 +1373,12 @@ $(function() {
 <div class="line"><a id="l01295" name="l01295"></a><span class="lineno"> 1295</span>            <span class="comment">// alice creates an offer for the NFToken.</span></div>
 <div class="line"><a id="l01296" name="l01296"></a><span class="lineno"> 1296</span>            <a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span> aliceOfferIndex =</div>
 <div class="line"><a id="l01297" name="l01297"></a><span class="lineno"> 1297</span>                <a class="code hl_function" href="namespaceripple_1_1keylet.html#adddc4768b4e412ab96f6fff32b8c3903">keylet::nftoffer</a>(alice, env.seq(alice)).<a class="code hl_variable" href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">key</a>;</div>
-<div class="line"><a id="l01298" name="l01298"></a><span class="lineno"> 1298</span>            env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#a40dfafd85108b010176f95d9af3b9c33">token::createOffer</a>(alice, last32NFTs.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/back.html">back</a>(), <a class="code hl_variable" href="namespaceripple_1_1test_1_1jtx.html#aea9cd3d4e6b5df2e62d53b34b605957e">XRP</a>(0)),</div>
-<div class="line"><a id="l01299" name="l01299"></a><span class="lineno"> 1299</span>                <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1txflags.html">txflags</a>(<a class="code hl_variable" href="namespaceripple.html#a449cf5cfc4fd3f6c2a3577a57374bda5">tfSellNFToken</a>));</div>
+<div class="line"><a id="l01298" name="l01298"></a><span class="lineno"> 1298</span>            env(token::createOffer(alice, last32NFTs.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/vector/back.html">back</a>(), XRP(0)),</div>
+<div class="line"><a id="l01299" name="l01299"></a><span class="lineno"> 1299</span>                txflags(<a class="code hl_variable" href="namespaceripple.html#a449cf5cfc4fd3f6c2a3577a57374bda5">tfSellNFToken</a>));</div>
 <div class="line"><a id="l01300" name="l01300"></a><span class="lineno"> 1300</span>            env.close();</div>
 <div class="line"><a id="l01301" name="l01301"></a><span class="lineno"> 1301</span> </div>
 <div class="line"><a id="l01302" name="l01302"></a><span class="lineno"> 1302</span>            <span class="comment">// minter accepts the offer.</span></div>
-<div class="line"><a id="l01303" name="l01303"></a><span class="lineno"> 1303</span>            env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#a91831cf96998d1ec5c992805bc2c4cde">token::acceptSellOffer</a>(minter, aliceOfferIndex));</div>
+<div class="line"><a id="l01303" name="l01303"></a><span class="lineno"> 1303</span>            env(token::acceptSellOffer(minter, aliceOfferIndex));</div>
 <div class="line"><a id="l01304" name="l01304"></a><span class="lineno"> 1304</span>            env.close();</div>
 <div class="line"><a id="l01305" name="l01305"></a><span class="lineno"> 1305</span>        }</div>
 <div class="line"><a id="l01306" name="l01306"></a><span class="lineno"> 1306</span> </div>
@@ -1387,7 +1387,7 @@ $(function() {
 <div class="line"><a id="l01309" name="l01309"></a><span class="lineno"> 1309</span>        <span class="comment">// should have been moved into the last page.</span></div>
 <div class="line"><a id="l01310" name="l01310"></a><span class="lineno"> 1310</span>        lastNFTokenPage = env.le(<a class="code hl_function" href="namespaceripple_1_1keylet.html#acbbf19b6eb7d5e93f6448832d9e0288c">keylet::nftpage_max</a>(alice));</div>
 <div class="line"><a id="l01311" name="l01311"></a><span class="lineno"> 1311</span>        BEAST_EXPECT(!lastNFTokenPage);</div>
-<div class="line"><a id="l01312" name="l01312"></a><span class="lineno"> 1312</span>        BEAST_EXPECT(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a12abe185058a3db015909ed92c421097">ownerCount</a>(env, alice) == 2);</div>
+<div class="line"><a id="l01312" name="l01312"></a><span class="lineno"> 1312</span>        BEAST_EXPECT(ownerCount(env, alice) == 2);</div>
 <div class="line"><a id="l01313" name="l01313"></a><span class="lineno"> 1313</span> </div>
 <div class="line"><a id="l01314" name="l01314"></a><span class="lineno"> 1314</span>        <span class="comment">// The &quot;middle&quot; page is still present, but has lost the</span></div>
 <div class="line"><a id="l01315" name="l01315"></a><span class="lineno"> 1315</span>        <span class="comment">// NextPageMin field.</span></div>
@@ -1399,10 +1399,10 @@ $(function() {
 <div class="line"><a id="l01321" name="l01321"></a><span class="lineno"> 1321</span>        BEAST_EXPECT(!middleNFTokenPage-&gt;isFieldPresent(sfNextPageMin));</div>
 <div class="line"><a id="l01322" name="l01322"></a><span class="lineno"> 1322</span> </div>
 <div class="line"><a id="l01323" name="l01323"></a><span class="lineno"> 1323</span>        <span class="comment">// Attempt to delete alice&#39;s account, but fail because she owns NFTs.</span></div>
-<div class="line"><a id="l01324" name="l01324"></a><span class="lineno"> 1324</span>        <span class="keyword">auto</span> <span class="keyword">const</span> acctDelFee{<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a47271eb5e7eb9b5aada383ccfaf9c0cf">drops</a>(env.current()-&gt;fees().increment)};</div>
-<div class="line"><a id="l01325" name="l01325"></a><span class="lineno"> 1325</span>        env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#ada147bbc773967de4235fc8ed1c89562">acctdelete</a>(alice, minter),</div>
-<div class="line"><a id="l01326" name="l01326"></a><span class="lineno"> 1326</span>            <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1fee.html">fee</a>(acctDelFee),</div>
-<div class="line"><a id="l01327" name="l01327"></a><span class="lineno"> 1327</span>            <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1ter.html">ter</a>(<a class="code hl_enumvalue" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38caa7460a5fac26c1d8abef55b8c1129150">tecHAS_OBLIGATIONS</a>));</div>
+<div class="line"><a id="l01324" name="l01324"></a><span class="lineno"> 1324</span>        <span class="keyword">auto</span> <span class="keyword">const</span> acctDelFee{drops(env.current()-&gt;fees().increment)};</div>
+<div class="line"><a id="l01325" name="l01325"></a><span class="lineno"> 1325</span>        env(acctdelete(alice, minter),</div>
+<div class="line"><a id="l01326" name="l01326"></a><span class="lineno"> 1326</span>            fee(acctDelFee),</div>
+<div class="line"><a id="l01327" name="l01327"></a><span class="lineno"> 1327</span>            ter(<a class="code hl_enumvalue" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38caa7460a5fac26c1d8abef55b8c1129150">tecHAS_OBLIGATIONS</a>));</div>
 <div class="line"><a id="l01328" name="l01328"></a><span class="lineno"> 1328</span>        env.close();</div>
 <div class="line"><a id="l01329" name="l01329"></a><span class="lineno"> 1329</span> </div>
 <div class="line"><a id="l01330" name="l01330"></a><span class="lineno"> 1330</span>        <span class="comment">// minter sells the last 32 NFTs back to alice.</span></div>
@@ -1411,15 +1411,15 @@ $(function() {
 <div class="line"><a id="l01333" name="l01333"></a><span class="lineno"> 1333</span>            <span class="comment">// minter creates an offer for the NFToken.</span></div>
 <div class="line"><a id="l01334" name="l01334"></a><span class="lineno"> 1334</span>            <a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span> minterOfferIndex =</div>
 <div class="line"><a id="l01335" name="l01335"></a><span class="lineno"> 1335</span>                <a class="code hl_function" href="namespaceripple_1_1keylet.html#adddc4768b4e412ab96f6fff32b8c3903">keylet::nftoffer</a>(minter, env.seq(minter)).<a class="code hl_variable" href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">key</a>;</div>
-<div class="line"><a id="l01336" name="l01336"></a><span class="lineno"> 1336</span>            env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#a40dfafd85108b010176f95d9af3b9c33">token::createOffer</a>(minter, nftID, <a class="code hl_variable" href="namespaceripple_1_1test_1_1jtx.html#aea9cd3d4e6b5df2e62d53b34b605957e">XRP</a>(0)),</div>
-<div class="line"><a id="l01337" name="l01337"></a><span class="lineno"> 1337</span>                <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1txflags.html">txflags</a>(<a class="code hl_variable" href="namespaceripple.html#a449cf5cfc4fd3f6c2a3577a57374bda5">tfSellNFToken</a>));</div>
+<div class="line"><a id="l01336" name="l01336"></a><span class="lineno"> 1336</span>            env(token::createOffer(minter, nftID, XRP(0)),</div>
+<div class="line"><a id="l01337" name="l01337"></a><span class="lineno"> 1337</span>                txflags(<a class="code hl_variable" href="namespaceripple.html#a449cf5cfc4fd3f6c2a3577a57374bda5">tfSellNFToken</a>));</div>
 <div class="line"><a id="l01338" name="l01338"></a><span class="lineno"> 1338</span>            env.close();</div>
 <div class="line"><a id="l01339" name="l01339"></a><span class="lineno"> 1339</span> </div>
 <div class="line"><a id="l01340" name="l01340"></a><span class="lineno"> 1340</span>            <span class="comment">// alice accepts the offer.</span></div>
-<div class="line"><a id="l01341" name="l01341"></a><span class="lineno"> 1341</span>            env(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1token.html#a91831cf96998d1ec5c992805bc2c4cde">token::acceptSellOffer</a>(alice, minterOfferIndex));</div>
+<div class="line"><a id="l01341" name="l01341"></a><span class="lineno"> 1341</span>            env(token::acceptSellOffer(alice, minterOfferIndex));</div>
 <div class="line"><a id="l01342" name="l01342"></a><span class="lineno"> 1342</span>            env.close();</div>
 <div class="line"><a id="l01343" name="l01343"></a><span class="lineno"> 1343</span>        }</div>
-<div class="line"><a id="l01344" name="l01344"></a><span class="lineno"> 1344</span>        BEAST_EXPECT(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a12abe185058a3db015909ed92c421097">ownerCount</a>(env, alice) == 3);  <span class="comment">// Three NFTokenPages.</span></div>
+<div class="line"><a id="l01344" name="l01344"></a><span class="lineno"> 1344</span>        BEAST_EXPECT(ownerCount(env, alice) == 3);  <span class="comment">// Three NFTokenPages.</span></div>
 <div class="line"><a id="l01345" name="l01345"></a><span class="lineno"> 1345</span> </div>
 <div class="line"><a id="l01346" name="l01346"></a><span class="lineno"> 1346</span>        <span class="comment">// alice has an NFToken directory with a broken link in the middle.</span></div>
 <div class="line"><a id="l01347" name="l01347"></a><span class="lineno"> 1347</span>        {</div>
@@ -1463,7 +1463,7 @@ $(function() {
 <div class="line"><a id="l01385" name="l01385"></a><span class="lineno"><a class="line" href="classripple_1_1NFTokenBurnBaseUtil__test.html#a59bfce233498b74419225f3105f6631b"> 1385</a></span>    <a class="code hl_function" href="classripple_1_1NFTokenBurnBaseUtil__test.html#a59bfce233498b74419225f3105f6631b">run</a>(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> instance, <span class="keywordtype">bool</span> last = <span class="keyword">false</span>)</div>
 <div class="line"><a id="l01386" name="l01386"></a><span class="lineno"> 1386</span>    {</div>
 <div class="line"><a id="l01387" name="l01387"></a><span class="lineno"> 1387</span>        <span class="keyword">using namespace </span>test::jtx;</div>
-<div class="line"><a id="l01388" name="l01388"></a><span class="lineno"> 1388</span>        <span class="keyword">static</span> <a class="code hl_class" href="classripple_1_1FeatureBitset.html">FeatureBitset</a> <span class="keyword">const</span> <a class="code hl_enumvalue" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66ccaa181a603769c1f98ad927e7367c7aa51">all</a>{<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#af5441d84d5977d52246c5226313560d4">supported_amendments</a>()};</div>
+<div class="line"><a id="l01388" name="l01388"></a><span class="lineno"> 1388</span>        <span class="keyword">static</span> <a class="code hl_class" href="classripple_1_1FeatureBitset.html">FeatureBitset</a> <span class="keyword">const</span> <a class="code hl_enumvalue" href="namespaceripple.html#a7ffb3f54d739bb8f967d695f08fb66ccaa181a603769c1f98ad927e7367c7aa51">all</a>{supported_amendments()};</div>
 <div class="line"><a id="l01389" name="l01389"></a><span class="lineno"> 1389</span>        <span class="keyword">static</span> <a class="code hl_class" href="classripple_1_1FeatureBitset.html">FeatureBitset</a> <span class="keyword">const</span> fixNFTV1_2{fixNonFungibleTokensV1_2};</div>
 <div class="line"><a id="l01390" name="l01390"></a><span class="lineno"> 1390</span>        <span class="keyword">static</span> <a class="code hl_class" href="classripple_1_1FeatureBitset.html">FeatureBitset</a> <span class="keyword">const</span> fixNFTDir{fixNFTokenDirV1};</div>
 <div class="line"><a id="l01391" name="l01391"></a><span class="lineno"> 1391</span>        <span class="keyword">static</span> <a class="code hl_class" href="classripple_1_1FeatureBitset.html">FeatureBitset</a> <span class="keyword">const</span> fixNFTRemint{fixNFTokenRemint};</div>
@@ -1590,14 +1590,6 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html_a2ef09f6f41b7d8a2dc89175e3b108f87"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html#a2ef09f6f41b7d8a2dc89175e3b108f87">ripple::test::jtx::Env::seq</a></div><div class="ttdeci">std::uint32_t seq(Account const &amp;account) const</div><div class="ttdoc">Returns the next sequence number on account.</div><div class="ttdef"><b>Definition:</b> <a href="Env_8cpp_source.html#l00212">Env.cpp:212</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html_a69095691c9bcfab1f3d69c645f2dbe33"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html#a69095691c9bcfab1f3d69c645f2dbe33">ripple::test::jtx::Env::close</a></div><div class="ttdeci">bool close(NetClock::time_point closeTime, std::optional&lt; std::chrono::milliseconds &gt; consensusDelay=std::nullopt)</div><div class="ttdoc">Close and advance the ledger.</div><div class="ttdef"><b>Definition:</b> <a href="Env_8cpp_source.html#l00117">Env.cpp:117</a></div></div>
 <div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1Env_html_ad69855b4b26fc3c83922c5783487592c"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1Env.html#ad69855b4b26fc3c83922c5783487592c">ripple::test::jtx::Env::rpc</a></div><div class="ttdeci">Json::Value rpc(unsigned apiVersion, std::unordered_map&lt; std::string, std::string &gt; const &amp;headers, std::string const &amp;cmd, Args &amp;&amp;... args)</div><div class="ttdoc">Execute an RPC command.</div><div class="ttdef"><b>Definition:</b> <a href="Env_8h_source.html#l00773">Env.h:773</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1fee_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1fee.html">ripple::test::jtx::fee</a></div><div class="ttdoc">Set the fee on a JTx.</div><div class="ttdef"><b>Definition:</b> <a href="fee_8h_source.html#l00036">fee.h:37</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1ter_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1ter.html">ripple::test::jtx::ter</a></div><div class="ttdoc">Set the expected result code for a JTx The test will fail if the code doesn't match.</div><div class="ttdef"><b>Definition:</b> <a href="ter_8h_source.html#l00034">ter.h:35</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1token_1_1destination_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1token_1_1destination.html">ripple::test::jtx::token::destination</a></div><div class="ttdoc">Sets the optional Destination field on an NFTokenOffer.</div><div class="ttdef"><b>Definition:</b> <a href="token_8h_source.html#l00162">token.h:163</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1token_1_1issuer_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1token_1_1issuer.html">ripple::test::jtx::token::issuer</a></div><div class="ttdoc">Sets the optional Issuer on an NFTokenMint.</div><div class="ttdef"><b>Definition:</b> <a href="token_8h_source.html#l00057">token.h:58</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1token_1_1owner_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1token_1_1owner.html">ripple::test::jtx::token::owner</a></div><div class="ttdoc">Sets the optional Owner on an NFTokenOffer.</div><div class="ttdef"><b>Definition:</b> <a href="token_8h_source.html#l00132">token.h:133</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1token_1_1uri_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1token_1_1uri.html">ripple::test::jtx::token::uri</a></div><div class="ttdoc">Sets the optional URI on an NFTokenMint.</div><div class="ttdef"><b>Definition:</b> <a href="token_8h_source.html#l00072">token.h:73</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1token_1_1xferFee_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1token_1_1xferFee.html">ripple::test::jtx::token::xferFee</a></div><div class="ttdoc">Sets the optional TransferFee on an NFTokenMint.</div><div class="ttdef"><b>Definition:</b> <a href="token_8h_source.html#l00042">token.h:43</a></div></div>
-<div class="ttc" id="aclassripple_1_1test_1_1jtx_1_1txflags_html"><div class="ttname"><a href="classripple_1_1test_1_1jtx_1_1txflags.html">ripple::test::jtx::txflags</a></div><div class="ttdoc">Set the flags on a JTx.</div><div class="ttdef"><b>Definition:</b> <a href="txflags_8h_source.html#l00030">txflags.h:31</a></div></div>
 <div class="ttc" id="acout_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/io/cout.html">std::cout</a></div></div>
 <div class="ttc" id="aempty_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/empty.html">std::vector::empty</a></div><div class="ttdeci">T empty(T... args)</div></div>
 <div class="ttc" id="aend_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/vector/end.html">std::vector::end</a></div><div class="ttdeci">T end(T... args)</div></div>
@@ -1613,18 +1605,6 @@ $(function() {
 <div class="ttc" id="anamespaceripple_1_1keylet_html_adddc4768b4e412ab96f6fff32b8c3903"><div class="ttname"><a href="namespaceripple_1_1keylet.html#adddc4768b4e412ab96f6fff32b8c3903">ripple::keylet::nftoffer</a></div><div class="ttdeci">Keylet nftoffer(AccountID const &amp;owner, std::uint32_t seq)</div><div class="ttdoc">An offer from an account to buy or sell an NFT.</div><div class="ttdef"><b>Definition:</b> <a href="Indexes_8cpp_source.html#l00420">Indexes.cpp:420</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1nft_html_a6ff9377be53296a54dd73bff1a4ae934"><div class="ttname"><a href="namespaceripple_1_1nft.html#a6ff9377be53296a54dd73bff1a4ae934">ripple::nft::cipheredTaxon</a></div><div class="ttdeci">Taxon cipheredTaxon(std::uint32_t tokenSeq, Taxon taxon)</div><div class="ttdef"><b>Definition:</b> <a href="nft_8h_source.html#l00084">nft.h:84</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1nft_html_a8878ae3c753ff4fe6bb04e5c516ccea5"><div class="ttname"><a href="namespaceripple_1_1nft.html#a8878ae3c753ff4fe6bb04e5c516ccea5">ripple::nft::toTaxon</a></div><div class="ttdeci">Taxon toTaxon(std::uint32_t i)</div><div class="ttdef"><b>Definition:</b> <a href="nft_8h_source.html#l00042">nft.h:42</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1test_1_1jtx_1_1token_html_a2749ac7d2df5bd6424972b8de5cb0ad8"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx_1_1token.html#a2749ac7d2df5bd6424972b8de5cb0ad8">ripple::test::jtx::token::getNextID</a></div><div class="ttdeci">uint256 getNextID(jtx::Env const &amp;env, jtx::Account const &amp;issuer, std::uint32_t nfTokenTaxon, std::uint16_t flags, std::uint16_t xferFee)</div><div class="ttdoc">Get the next NFTokenID that will be issued.</div><div class="ttdef"><b>Definition:</b> <a href="token_8cpp_source.html#l00068">token.cpp:68</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1test_1_1jtx_1_1token_html_a3dd66f28c0c51c4ff6753f4d933eab24"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx_1_1token.html#a3dd66f28c0c51c4ff6753f4d933eab24">ripple::test::jtx::token::setMinter</a></div><div class="ttdeci">Json::Value setMinter(jtx::Account const &amp;account, jtx::Account const &amp;minter)</div><div class="ttdoc">Set the authorized minter on an account root.</div><div class="ttdef"><b>Definition:</b> <a href="token_8cpp_source.html#l00223">token.cpp:223</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1test_1_1jtx_1_1token_html_a40dfafd85108b010176f95d9af3b9c33"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx_1_1token.html#a40dfafd85108b010176f95d9af3b9c33">ripple::test::jtx::token::createOffer</a></div><div class="ttdeci">Json::Value createOffer(jtx::Account const &amp;account, uint256 const &amp;nftokenID, STAmount const &amp;amount)</div><div class="ttdoc">Create an NFTokenOffer.</div><div class="ttdef"><b>Definition:</b> <a href="token_8cpp_source.html#l00113">token.cpp:113</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1test_1_1jtx_1_1token_html_a91831cf96998d1ec5c992805bc2c4cde"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx_1_1token.html#a91831cf96998d1ec5c992805bc2c4cde">ripple::test::jtx::token::acceptSellOffer</a></div><div class="ttdeci">Json::Value acceptSellOffer(jtx::Account const &amp;account, uint256 const &amp;offerIndex)</div><div class="ttdoc">Accept an NFToken sell offer.</div><div class="ttdef"><b>Definition:</b> <a href="token_8cpp_source.html#l00193">token.cpp:193</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1test_1_1jtx_1_1token_html_ab5b8b8289e756cf37a6ad2d1adb876b5"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx_1_1token.html#ab5b8b8289e756cf37a6ad2d1adb876b5">ripple::test::jtx::token::mint</a></div><div class="ttdeci">Json::Value mint(jtx::Account const &amp;account, std::uint32_t nfTokenTaxon)</div><div class="ttdoc">Mint an NFToken.</div><div class="ttdef"><b>Definition:</b> <a href="token_8cpp_source.html#l00034">token.cpp:34</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1test_1_1jtx_1_1token_html_ac8f58dedb4946a2d5681304c8bf03929"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx_1_1token.html#ac8f58dedb4946a2d5681304c8bf03929">ripple::test::jtx::token::burn</a></div><div class="ttdeci">Json::Value burn(jtx::Account const &amp;account, uint256 const &amp;nftokenID)</div><div class="ttdoc">Burn an NFToken.</div><div class="ttdef"><b>Definition:</b> <a href="token_8cpp_source.html#l00103">token.cpp:103</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1test_1_1jtx_1_1token_html_ad39013065cc24af0df83eb5354ec937c"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx_1_1token.html#ad39013065cc24af0df83eb5354ec937c">ripple::test::jtx::token::cancelOffer</a></div><div class="ttdeci">Json::Value cancelOffer(jtx::Account const &amp;account, std::initializer_list&lt; uint256 &gt; const &amp;nftokenOffers)</div><div class="ttdoc">Cancel NFTokenOffers.</div><div class="ttdef"><b>Definition:</b> <a href="token_8cpp_source.html#l00161">token.cpp:161</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1test_1_1jtx_html_a12abe185058a3db015909ed92c421097"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx.html#a12abe185058a3db015909ed92c421097">ripple::test::jtx::ownerCount</a></div><div class="ttdeci">std::uint32_t ownerCount(Env const &amp;env, Account const &amp;account)</div><div class="ttdef"><b>Definition:</b> <a href="TestHelpers_8cpp_source.html#l00054">TestHelpers.cpp:54</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1test_1_1jtx_html_a47271eb5e7eb9b5aada383ccfaf9c0cf"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx.html#a47271eb5e7eb9b5aada383ccfaf9c0cf">ripple::test::jtx::drops</a></div><div class="ttdeci">PrettyAmount drops(Integer i)</div><div class="ttdoc">Returns an XRP PrettyAmount, which is trivially convertible to STAmount.</div><div class="ttdef"><b>Definition:</b> <a href="src_2test_2jtx_2amount_8h_source.html#l00297">src/test/jtx/amount.h:297</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1test_1_1jtx_html_ada147bbc773967de4235fc8ed1c89562"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx.html#ada147bbc773967de4235fc8ed1c89562">ripple::test::jtx::acctdelete</a></div><div class="ttdeci">Json::Value acctdelete(Account const &amp;account, Account const &amp;dest)</div><div class="ttdoc">Delete account.</div><div class="ttdef"><b>Definition:</b> <a href="acctdelete_8cpp_source.html#l00031">acctdelete.cpp:31</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1test_1_1jtx_html_aea9cd3d4e6b5df2e62d53b34b605957e"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx.html#aea9cd3d4e6b5df2e62d53b34b605957e">ripple::test::jtx::XRP</a></div><div class="ttdeci">XRP_t const XRP</div><div class="ttdoc">Converts to XRP Issue or STAmount.</div><div class="ttdef"><b>Definition:</b> <a href="amount_8cpp_source.html#l00105">amount.cpp:105</a></div></div>
-<div class="ttc" id="anamespaceripple_1_1test_1_1jtx_html_af5441d84d5977d52246c5226313560d4"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx.html#af5441d84d5977d52246c5226313560d4">ripple::test::jtx::supported_amendments</a></div><div class="ttdeci">FeatureBitset supported_amendments()</div><div class="ttdef"><b>Definition:</b> <a href="Env_8h_source.html#l00074">Env.h:74</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="algorithm_8h_source.html#l00026">algorithm.h:26</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a449cf5cfc4fd3f6c2a3577a57374bda5"><div class="ttname"><a href="namespaceripple.html#a449cf5cfc4fd3f6c2a3577a57374bda5">ripple::tfSellNFToken</a></div><div class="ttdeci">constexpr std::uint32_t const tfSellNFToken</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00200">TxFlags.h:200</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a48d1e12097d25f55cf6ec8dcb03306ee"><div class="ttname"><a href="namespaceripple.html#a48d1e12097d25f55cf6ec8dcb03306ee">ripple::maxTokenOfferCancelCount</a></div><div class="ttdeci">std::size_t constexpr maxTokenOfferCancelCount</div><div class="ttdoc">The maximum number of token offers that can be canceled at once.</div><div class="ttdef"><b>Definition:</b> <a href="Protocol_8h_source.html#l00069">Protocol.h:69</a></div></div>

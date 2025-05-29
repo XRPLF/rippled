@@ -120,13 +120,13 @@ $(function() {
 <div class="line"><a id="l00042" name="l00042"></a><span class="lineno"><a class="line" href="classripple_1_1RCLValidatedLedger.html#a44b160c7cb5da957acf584dfbbe38ecf">   42</a></span><a class="code hl_function" href="classripple_1_1RCLValidatedLedger.html#a6b81953ef679bbfc464def69651f6d6b">RCLValidatedLedger::RCLValidatedLedger</a>(</div>
 <div class="line"><a id="l00043" name="l00043"></a><span class="lineno">   43</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;Ledger const&gt;</a> <span class="keyword">const</span>&amp; ledger,</div>
 <div class="line"><a id="l00044" name="l00044"></a><span class="lineno">   44</span>    <a class="code hl_class" href="classbeast_1_1Journal.html">beast::Journal</a> j)</div>
-<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>    : ledgerID_{ledger-&gt;info().hash}, ledgerSeq_{ledger-&gt;<a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>()}, j_{j}</div>
+<div class="line"><a id="l00045" name="l00045"></a><span class="lineno">   45</span>    : ledgerID_{ledger-&gt;info().hash}, ledgerSeq_{ledger-&gt;seq()}, j_{j}</div>
 <div class="line"><a id="l00046" name="l00046"></a><span class="lineno">   46</span>{</div>
 <div class="line"><a id="l00047" name="l00047"></a><span class="lineno">   47</span>    <span class="keyword">auto</span> <span class="keyword">const</span> hashIndex = ledger-&gt;read(<a class="code hl_function" href="namespaceripple_1_1keylet.html#acda2d89a44551845c5be38291e5c9e8b">keylet::skip</a>());</div>
 <div class="line"><a id="l00048" name="l00048"></a><span class="lineno">   48</span>    <span class="keywordflow">if</span> (hashIndex)</div>
 <div class="line"><a id="l00049" name="l00049"></a><span class="lineno">   49</span>    {</div>
 <div class="line"><a id="l00050" name="l00050"></a><span class="lineno">   50</span>        XRPL_ASSERT(</div>
-<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>            hashIndex-&gt;getFieldU32(sfLastLedgerSequence) == (<a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>() - 1),</div>
+<div class="line"><a id="l00051" name="l00051"></a><span class="lineno">   51</span>            hashIndex-&gt;getFieldU32(sfLastLedgerSequence) == (<a class="code hl_function" href="classripple_1_1RCLValidatedLedger.html#ac390ca267febb71a61e9fcdbaca0f3c2">seq</a>() - 1),</div>
 <div class="line"><a id="l00052" name="l00052"></a><span class="lineno">   52</span>            <span class="stringliteral">&quot;ripple::RCLValidatedLedger::RCLValidatedLedger(Ledger) : valid &quot;</span></div>
 <div class="line"><a id="l00053" name="l00053"></a><span class="lineno">   53</span>            <span class="stringliteral">&quot;last ledger sequence&quot;</span>);</div>
 <div class="line"><a id="l00054" name="l00054"></a><span class="lineno">   54</span>        <a class="code hl_variable" href="classripple_1_1RCLValidatedLedger.html#ab8f38a7b4e4b9bdc90fadf79a2f5af75">ancestors_</a> = hashIndex-&gt;getFieldV256(sfHashes).value();</div>
@@ -156,18 +156,18 @@ $(function() {
 <div class="line"><a id="l00078" name="l00078"></a><span class="lineno">   78</span><span class="keyword">auto</span></div>
 <div class="line"><a id="l00079" name="l00079"></a><span class="lineno"><a class="line" href="classripple_1_1RCLValidatedLedger.html#a360dd594e7c769f0c70072be45a30788">   79</a></span><a class="code hl_function" href="classripple_1_1RCLValidatedLedger.html#a360dd594e7c769f0c70072be45a30788">RCLValidatedLedger::operator[]</a>(<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">Seq</a> <span class="keyword">const</span>&amp; s) <span class="keyword">const</span> -&gt; <a class="code hl_class" href="classripple_1_1base__uint.html">ID</a></div>
 <div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span>{</div>
-<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>    <span class="keywordflow">if</span> (s &gt;= minSeq() &amp;&amp; s &lt;= <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>())</div>
+<div class="line"><a id="l00081" name="l00081"></a><span class="lineno">   81</span>    <span class="keywordflow">if</span> (s &gt;= minSeq() &amp;&amp; s &lt;= seq())</div>
 <div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>    {</div>
-<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>        <span class="keywordflow">if</span> (s == <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>())</div>
+<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>        <span class="keywordflow">if</span> (s == seq())</div>
 <div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>            <span class="keywordflow">return</span> ledgerID_;</div>
-<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">Seq</a> <span class="keyword">const</span> diff = <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>() - s;</div>
+<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>        <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">Seq</a> <span class="keyword">const</span> diff = seq() - s;</div>
 <div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>        <span class="keywordflow">return</span> ancestors_[ancestors_.size() - diff];</div>
 <div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>    }</div>
 <div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span> </div>
 <div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span>    JLOG(j_.<a class="code hl_function" href="classbeast_1_1Journal.html#ad8fefe3e8ad583e1ed1bf02094ac3d8f">warn</a>()) &lt;&lt; <span class="stringliteral">&quot;Unable to determine hash of ancestor seq=&quot;</span> &lt;&lt; s</div>
 <div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span>                    &lt;&lt; <span class="stringliteral">&quot; from ledger hash=&quot;</span> &lt;&lt; ledgerID_</div>
 <div class="line"><a id="l00091" name="l00091"></a><span class="lineno">   91</span>                    &lt;&lt; <span class="stringliteral">&quot; seq=&quot;</span> &lt;&lt; ledgerSeq_ &lt;&lt; <span class="stringliteral">&quot; (available: &quot;</span> &lt;&lt; minSeq()</div>
-<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>                    &lt;&lt; <span class="stringliteral">&quot;-&quot;</span> &lt;&lt; <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>() &lt;&lt; <span class="stringliteral">&quot;)&quot;</span>;</div>
+<div class="line"><a id="l00092" name="l00092"></a><span class="lineno">   92</span>                    &lt;&lt; <span class="stringliteral">&quot;-&quot;</span> &lt;&lt; seq() &lt;&lt; <span class="stringliteral">&quot;)&quot;</span>;</div>
 <div class="line"><a id="l00093" name="l00093"></a><span class="lineno">   93</span>    <span class="comment">// Default ID that is less than all others</span></div>
 <div class="line"><a id="l00094" name="l00094"></a><span class="lineno">   94</span>    <span class="keywordflow">return</span> <a class="code hl_class" href="classripple_1_1base__uint.html">ID</a>{0};</div>
 <div class="line"><a id="l00095" name="l00095"></a><span class="lineno">   95</span>}</div>
@@ -249,7 +249,7 @@ $(function() {
 <div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span>{</div>
 <div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span>    <span class="keyword">auto</span> <span class="keyword">const</span>&amp; signingKey = val-&gt;getSignerPublic();</div>
 <div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span>    <span class="keyword">auto</span> <span class="keyword">const</span>&amp; hash = val-&gt;getLedgerHash();</div>
-<div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span>    <span class="keyword">auto</span> <span class="keyword">const</span> <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a> = val-&gt;getFieldU32(sfLedgerSequence);</div>
+<div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span>    <span class="keyword">auto</span> <span class="keyword">const</span> seq = val-&gt;getFieldU32(sfLedgerSequence);</div>
 <div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span> </div>
 <div class="line"><a id="l00176" name="l00176"></a><span class="lineno">  176</span>    <span class="comment">// Ensure validation is marked as trusted if signer currently trusted</span></div>
 <div class="line"><a id="l00177" name="l00177"></a><span class="lineno">  177</span>    <span class="keyword">auto</span> masterKey = app.<a class="code hl_function" href="classripple_1_1Application.html#a950b15c3fbf7f8395eddfcea9850647b">validators</a>().<a class="code hl_function" href="classripple_1_1ValidatorList.html#a0056ded6793baf9fda1c2f1fcffc535b">getTrustedKey</a>(signingKey);</div>
@@ -283,7 +283,7 @@ $(function() {
 <div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span>            }</div>
 <div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span>            <span class="keywordflow">else</span></div>
 <div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span>            {</div>
-<div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span>                app.<a class="code hl_function" href="classripple_1_1Application.html#aa303fb1c72786fc008ef52079dee4fe3">getLedgerMaster</a>().<a class="code hl_function" href="classripple_1_1LedgerMaster.html#a168ff9afab04a717a7dacbca1927566c">checkAccept</a>(hash, <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>);</div>
+<div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span>                app.<a class="code hl_function" href="classripple_1_1Application.html#aa303fb1c72786fc008ef52079dee4fe3">getLedgerMaster</a>().<a class="code hl_function" href="classripple_1_1LedgerMaster.html#a168ff9afab04a717a7dacbca1927566c">checkAccept</a>(hash, seq);</div>
 <div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span>            }</div>
 <div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span>        }</div>
 <div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span>        <span class="keywordflow">return</span>;</div>
@@ -314,13 +314,13 @@ $(function() {
 <div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span>        <span class="keywordflow">if</span> (outcome == <a class="code hl_enumvalue" href="namespaceripple.html#a6434c1a0fd22b77e2e4a228c0eca79eba5b8a0d83771a323104af923d207d8a2e">ValStatus::conflicting</a>)</div>
 <div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span>            ls &lt;&lt; <span class="stringliteral">&quot;Byzantine Behavior Detector: &quot;</span></div>
 <div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span>               &lt;&lt; (val-&gt;isTrusted() ? <span class="stringliteral">&quot;trusted &quot;</span> : <span class="stringliteral">&quot;untrusted &quot;</span>) &lt;&lt; <span class="keywordtype">id</span></div>
-<div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span>               &lt;&lt; <span class="stringliteral">&quot;: Conflicting validation for &quot;</span> &lt;&lt; <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a> &lt;&lt; <span class="stringliteral">&quot;!\n[&quot;</span></div>
+<div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span>               &lt;&lt; <span class="stringliteral">&quot;: Conflicting validation for &quot;</span> &lt;&lt; seq &lt;&lt; <span class="stringliteral">&quot;!\n[&quot;</span></div>
 <div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span>               &lt;&lt; val-&gt;getSerializer().slice() &lt;&lt; <span class="stringliteral">&quot;]&quot;</span>;</div>
 <div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span> </div>
 <div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span>        <span class="keywordflow">if</span> (outcome == <a class="code hl_enumvalue" href="namespaceripple.html#a6434c1a0fd22b77e2e4a228c0eca79ebace495ab8d79db0d37413d8e95b54e606">ValStatus::multiple</a>)</div>
 <div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span>            ls &lt;&lt; <span class="stringliteral">&quot;Byzantine Behavior Detector: &quot;</span></div>
 <div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span>               &lt;&lt; (val-&gt;isTrusted() ? <span class="stringliteral">&quot;trusted &quot;</span> : <span class="stringliteral">&quot;untrusted &quot;</span>) &lt;&lt; <span class="keywordtype">id</span></div>
-<div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span>               &lt;&lt; <span class="stringliteral">&quot;: Multiple validations for &quot;</span> &lt;&lt; <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a> &lt;&lt; <span class="stringliteral">&quot;/&quot;</span> &lt;&lt; hash &lt;&lt; <span class="stringliteral">&quot;!\n[&quot;</span></div>
+<div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span>               &lt;&lt; <span class="stringliteral">&quot;: Multiple validations for &quot;</span> &lt;&lt; seq &lt;&lt; <span class="stringliteral">&quot;/&quot;</span> &lt;&lt; hash &lt;&lt; <span class="stringliteral">&quot;!\n[&quot;</span></div>
 <div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span>               &lt;&lt; val-&gt;getSerializer().slice() &lt;&lt; <span class="stringliteral">&quot;]&quot;</span>;</div>
 <div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span>    }</div>
 <div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span>}</div>
@@ -385,7 +385,6 @@ $(function() {
 <div class="ttc" id="aoptional_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a></div></div>
 <div class="ttc" id="ashared_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a></div></div>
 <div class="ttc" id="astructripple_1_1RCLValidatedLedger_1_1MakeGenesis_html"><div class="ttname"><a href="structripple_1_1RCLValidatedLedger_1_1MakeGenesis.html">ripple::RCLValidatedLedger::MakeGenesis</a></div><div class="ttdef"><b>Definition:</b> <a href="RCLValidations_8h_source.html#l00163">RCLValidations.h:164</a></div></div>
-<div class="ttc" id="astructripple_1_1test_1_1jtx_1_1seq_html"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1seq.html">ripple::test::jtx::seq</a></div><div class="ttdoc">Set the sequence number on a JTx.</div><div class="ttdef"><b>Definition:</b> <a href="seq_8h_source.html#l00033">seq.h:34</a></div></div>
 <div class="ttc" id="atime_point_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/chrono/time_point.html">std::chrono::time_point</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->

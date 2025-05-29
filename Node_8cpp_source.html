@@ -267,11 +267,11 @@ $(function() {
 <div class="line"><a id="l00194" name="l00194"></a><span class="lineno">  194</span>    <span class="keywordtype">bool</span> <a class="code hl_enumvalue" href="namespaceripple.html#a6434c1a0fd22b77e2e4a228c0eca79eba43b5c9175984c071f30b873fdce0a000">current</a>)</div>
 <div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span>{</div>
 <div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span>    <span class="keyword">auto</span> j = app.<a class="code hl_function" href="classripple_1_1Application.html#a2897c28a5b5040e80e66f676d201d03f">journal</a>(<span class="stringliteral">&quot;Ledger&quot;</span>);</div>
-<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span>    <span class="keyword">auto</span> <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a> = ledger-&gt;info().seq;</div>
+<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span>    <span class="keyword">auto</span> seq = ledger-&gt;info().seq;</div>
 <div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span> </div>
 <div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span>    <span class="comment">// TODO(tom): Fix this hard-coded SQL!</span></div>
 <div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span>    JLOG(j.trace()) &lt;&lt; <span class="stringliteral">&quot;saveValidatedLedger &quot;</span> &lt;&lt; (<a class="code hl_enumvalue" href="namespaceripple.html#a6434c1a0fd22b77e2e4a228c0eca79eba43b5c9175984c071f30b873fdce0a000">current</a> ? <span class="stringliteral">&quot;&quot;</span> : <span class="stringliteral">&quot;fromAcquire &quot;</span>)</div>
-<div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span>                    &lt;&lt; <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>;</div>
+<div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span>                    &lt;&lt; seq;</div>
 <div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span> </div>
 <div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span>    <span class="keywordflow">if</span> (!ledger-&gt;info().accountHash.isNonZero())</div>
 <div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span>    {</div>
@@ -283,7 +283,7 @@ $(function() {
 <div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span>    {</div>
 <div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span>        JLOG(j.fatal()) &lt;&lt; <span class="stringliteral">&quot;sAL: &quot;</span> &lt;&lt; ledger-&gt;info().accountHash</div>
 <div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span>                        &lt;&lt; <span class="stringliteral">&quot; != &quot;</span> &lt;&lt; ledger-&gt;stateMap().getHash();</div>
-<div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span>        JLOG(j.fatal()) &lt;&lt; <span class="stringliteral">&quot;saveAcceptedLedger: seq=&quot;</span> &lt;&lt; <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a></div>
+<div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span>        JLOG(j.fatal()) &lt;&lt; <span class="stringliteral">&quot;saveAcceptedLedger: seq=&quot;</span> &lt;&lt; seq</div>
 <div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span>                        &lt;&lt; <span class="stringliteral">&quot;, current=&quot;</span> &lt;&lt; <a class="code hl_enumvalue" href="namespaceripple.html#a6434c1a0fd22b77e2e4a228c0eca79eba43b5c9175984c071f30b873fdce0a000">current</a>;</div>
 <div class="line"><a id="l00215" name="l00215"></a><span class="lineno">  215</span>        UNREACHABLE(</div>
 <div class="line"><a id="l00216" name="l00216"></a><span class="lineno">  216</span>            <span class="stringliteral">&quot;ripple::detail::saveValidatedLedger : mismatched account hash&quot;</span>);</div>
@@ -299,7 +299,7 @@ $(function() {
 <div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span>        s.<a class="code hl_function" href="classripple_1_1Serializer.html#a2aeeb12b01b18876187455f7009f5352">add32</a>(<a class="code hl_enumvalue" href="namespaceripple.html#ad5143ceada01141772ae4aab984f94bda7fa2267e9b1bf739a70bb1860ab2a99c">HashPrefix::ledgerMaster</a>);</div>
 <div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span>        <a class="code hl_function" href="namespaceripple.html#ad6ef4b359d5387fe20ce3ca7e3a293e7">addRaw</a>(ledger-&gt;info(), s);</div>
 <div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span>        app.<a class="code hl_function" href="classripple_1_1Application.html#a337ff00f72b3421fd50b54656456acdb">getNodeStore</a>().<a class="code hl_function" href="classripple_1_1NodeStore_1_1Database.html#a7da2336581ee3348aad97c0d885658d0">store</a>(</div>
-<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span>            <a class="code hl_enumvalue" href="namespaceripple.html#a57d7e7b27df7e719fdf5569f96be60a3ae32ab8a0b50eee52b61ca3c8e5a56da1">hotLEDGER</a>, std::move(s.<a class="code hl_function" href="classripple_1_1Serializer.html#af7dfa25960c307bb59cbbf00fb5e519d">modData</a>()), ledger-&gt;info().hash, <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>);</div>
+<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span>            <a class="code hl_enumvalue" href="namespaceripple.html#a57d7e7b27df7e719fdf5569f96be60a3ae32ab8a0b50eee52b61ca3c8e5a56da1">hotLEDGER</a>, std::move(s.<a class="code hl_function" href="classripple_1_1Serializer.html#af7dfa25960c307bb59cbbf00fb5e519d">modData</a>()), ledger-&gt;info().hash, seq);</div>
 <div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span>    }</div>
 <div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span> </div>
 <div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;AcceptedLedger&gt;</a> aLedger;</div>
@@ -316,10 +316,10 @@ $(function() {
 <div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span>    <span class="keywordflow">catch</span> (<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/error/exception.html">std::exception</a> <span class="keyword">const</span>&amp;)</div>
 <div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span>    {</div>
 <div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span>        JLOG(j.warn()) &lt;&lt; <span class="stringliteral">&quot;An accepted ledger was missing nodes&quot;</span>;</div>
-<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span>        app.<a class="code hl_function" href="classripple_1_1Application.html#aa303fb1c72786fc008ef52079dee4fe3">getLedgerMaster</a>().<a class="code hl_function" href="classripple_1_1LedgerMaster.html#a0cf075761a43b4abe322147a06dad13a">failedSave</a>(<a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>, ledger-&gt;info().hash);</div>
+<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span>        app.<a class="code hl_function" href="classripple_1_1Application.html#aa303fb1c72786fc008ef52079dee4fe3">getLedgerMaster</a>().<a class="code hl_function" href="classripple_1_1LedgerMaster.html#a0cf075761a43b4abe322147a06dad13a">failedSave</a>(seq, ledger-&gt;info().hash);</div>
 <div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span>        <span class="comment">// Clients can now trust the database for information about this</span></div>
 <div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span>        <span class="comment">// ledger sequence.</span></div>
-<div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span>        app.<a class="code hl_function" href="classripple_1_1Application.html#af759427312a7c4a0f704f275a9c87318">pendingSaves</a>().<a class="code hl_function" href="classripple_1_1PendingSaves.html#a50e49f47a9b7bbc2e7875918708b0624">finishWork</a>(<a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>);</div>
+<div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span>        app.<a class="code hl_function" href="classripple_1_1Application.html#af759427312a7c4a0f704f275a9c87318">pendingSaves</a>().<a class="code hl_function" href="classripple_1_1PendingSaves.html#a50e49f47a9b7bbc2e7875918708b0624">finishWork</a>(seq);</div>
 <div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span>        <span class="keywordflow">return</span> <span class="keyword">false</span>;</div>
 <div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span>    }</div>
 <div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span> </div>
@@ -335,7 +335,7 @@ $(function() {
 <div class="line"><a id="l00262" name="l00262"></a><span class="lineno">  262</span> </div>
 <div class="line"><a id="l00263" name="l00263"></a><span class="lineno">  263</span>        {</div>
 <div class="line"><a id="l00264" name="l00264"></a><span class="lineno">  264</span>            <span class="keyword">auto</span> db = ldgDB.<a class="code hl_function" href="classripple_1_1DatabaseCon.html#a16c6f729c6462f6200b724543f5c67bc">checkoutDb</a>();</div>
-<div class="line"><a id="l00265" name="l00265"></a><span class="lineno">  265</span>            *db &lt;&lt; boost::str(deleteLedger % <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>);</div>
+<div class="line"><a id="l00265" name="l00265"></a><span class="lineno">  265</span>            *db &lt;&lt; boost::str(deleteLedger % seq);</div>
 <div class="line"><a id="l00266" name="l00266"></a><span class="lineno">  266</span>        }</div>
 <div class="line"><a id="l00267" name="l00267"></a><span class="lineno">  267</span> </div>
 <div class="line"><a id="l00268" name="l00268"></a><span class="lineno">  268</span>        <span class="keywordflow">if</span> (app.<a class="code hl_function" href="classripple_1_1Application.html#a0c48dd5bcaef14e30e9ef5b96b0daa39">config</a>().<a class="code hl_function" href="classripple_1_1Config.html#aa09be5266eca22f68f27e60169291ec5">useTxTables</a>())</div>
@@ -344,10 +344,10 @@ $(function() {
 <div class="line"><a id="l00271" name="l00271"></a><span class="lineno">  271</span> </div>
 <div class="line"><a id="l00272" name="l00272"></a><span class="lineno">  272</span>            soci::transaction tr(*db);</div>
 <div class="line"><a id="l00273" name="l00273"></a><span class="lineno">  273</span> </div>
-<div class="line"><a id="l00274" name="l00274"></a><span class="lineno">  274</span>            *db &lt;&lt; boost::str(deleteTrans1 % <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>);</div>
-<div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span>            *db &lt;&lt; boost::str(deleteTrans2 % <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>);</div>
+<div class="line"><a id="l00274" name="l00274"></a><span class="lineno">  274</span>            *db &lt;&lt; boost::str(deleteTrans1 % seq);</div>
+<div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span>            *db &lt;&lt; boost::str(deleteTrans2 % seq);</div>
 <div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span> </div>
-<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span> ledgerSeq(<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(<a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>));</div>
+<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span> ledgerSeq(<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a>(seq));</div>
 <div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span> </div>
 <div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span>            <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; acceptedLedgerTx : *aLedger)</div>
 <div class="line"><a id="l00280" name="l00280"></a><span class="lineno">  280</span>            {</div>
@@ -401,7 +401,7 @@ $(function() {
 <div class="line"><a id="l00328" name="l00328"></a><span class="lineno">  328</span>                {</div>
 <div class="line"><a id="l00329" name="l00329"></a><span class="lineno">  329</span>                    <span class="comment">// It&#39;s okay for pseudo transactions to not affect any</span></div>
 <div class="line"><a id="l00330" name="l00330"></a><span class="lineno">  330</span>                    <span class="comment">// accounts.  But otherwise...</span></div>
-<div class="line"><a id="l00331" name="l00331"></a><span class="lineno">  331</span>                    JLOG(j.warn()) &lt;&lt; <span class="stringliteral">&quot;Transaction in ledger &quot;</span> &lt;&lt; <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a></div>
+<div class="line"><a id="l00331" name="l00331"></a><span class="lineno">  331</span>                    JLOG(j.warn()) &lt;&lt; <span class="stringliteral">&quot;Transaction in ledger &quot;</span> &lt;&lt; seq</div>
 <div class="line"><a id="l00332" name="l00332"></a><span class="lineno">  332</span>                                   &lt;&lt; <span class="stringliteral">&quot; affects no accounts&quot;</span>;</div>
 <div class="line"><a id="l00333" name="l00333"></a><span class="lineno">  333</span>                    JLOG(j.warn()) &lt;&lt; sleTxn-&gt;getJson(<a class="code hl_enumvalue" href="structripple_1_1JsonOptions.html#ab85e43ec84df987200d3355c3ba89f0aa1917451e3686dfe8d5016670eb87ab33">JsonOptions::none</a>);</div>
 <div class="line"><a id="l00334" name="l00334"></a><span class="lineno">  334</span>                }</div>
@@ -409,12 +409,12 @@ $(function() {
 <div class="line"><a id="l00336" name="l00336"></a><span class="lineno">  336</span>                *db</div>
 <div class="line"><a id="l00337" name="l00337"></a><span class="lineno">  337</span>                    &lt;&lt; (<a class="code hl_function" href="classripple_1_1STTx.html#a2ac2b7a11b5738dba3a4e03be1303da1">STTx::getMetaSQLInsertReplaceHeader</a>() +</div>
 <div class="line"><a id="l00338" name="l00338"></a><span class="lineno">  338</span>                        acceptedLedgerTx-&gt;getTxn()-&gt;getMetaSQL(</div>
-<div class="line"><a id="l00339" name="l00339"></a><span class="lineno">  339</span>                            <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>, acceptedLedgerTx-&gt;getEscMeta()) +</div>
+<div class="line"><a id="l00339" name="l00339"></a><span class="lineno">  339</span>                            seq, acceptedLedgerTx-&gt;getEscMeta()) +</div>
 <div class="line"><a id="l00340" name="l00340"></a><span class="lineno">  340</span>                        <span class="stringliteral">&quot;;&quot;</span>);</div>
 <div class="line"><a id="l00341" name="l00341"></a><span class="lineno">  341</span> </div>
 <div class="line"><a id="l00342" name="l00342"></a><span class="lineno">  342</span>                app.<a class="code hl_function" href="classripple_1_1Application.html#acb51e350f1f7ade948a4e8d995634cc9">getMasterTransaction</a>().<a class="code hl_function" href="classripple_1_1TransactionMaster.html#aa4d053d58b47db8861f5c46f9ca98c6c">inLedger</a>(</div>
 <div class="line"><a id="l00343" name="l00343"></a><span class="lineno">  343</span>                    <a class="code hl_enumvalue" href="namespaceripple.html#ad5143ceada01141772ae4aab984f94bda9ff03a73c38a945848893498e0c617a4">transactionID</a>,</div>
-<div class="line"><a id="l00344" name="l00344"></a><span class="lineno">  344</span>                    <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>,</div>
+<div class="line"><a id="l00344" name="l00344"></a><span class="lineno">  344</span>                    seq,</div>
 <div class="line"><a id="l00345" name="l00345"></a><span class="lineno">  345</span>                    acceptedLedgerTx-&gt;getTxnSeq(),</div>
 <div class="line"><a id="l00346" name="l00346"></a><span class="lineno">  346</span>                    app.<a class="code hl_function" href="classripple_1_1Application.html#a0c48dd5bcaef14e30e9ef5b96b0daa39">config</a>().<a class="code hl_variable" href="classripple_1_1Config.html#a11b953ea00abeec2a4a0428cd1efcb7e">NETWORK_ID</a>);</div>
 <div class="line"><a id="l00347" name="l00347"></a><span class="lineno">  347</span>            }</div>
@@ -437,7 +437,7 @@ $(function() {
 <div class="line"><a id="l00364" name="l00364"></a><span class="lineno">  364</span> </div>
 <div class="line"><a id="l00365" name="l00365"></a><span class="lineno">  365</span>            <span class="keyword">auto</span> <span class="keyword">const</span> hash = <a class="code hl_function" href="namespaceripple_1_1detail.html#a3410327039220be654fb0df46fc719e1">to_string</a>(ledger-&gt;info().hash);</div>
 <div class="line"><a id="l00366" name="l00366"></a><span class="lineno">  366</span>            <span class="keyword">auto</span> <span class="keyword">const</span> parentHash = <a class="code hl_function" href="namespaceripple_1_1detail.html#a3410327039220be654fb0df46fc719e1">to_string</a>(ledger-&gt;info().parentHash);</div>
-<div class="line"><a id="l00367" name="l00367"></a><span class="lineno">  367</span>            <span class="keyword">auto</span> <span class="keyword">const</span> <a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a47271eb5e7eb9b5aada383ccfaf9c0cf">drops</a> = <a class="code hl_function" href="namespaceripple_1_1detail.html#a3410327039220be654fb0df46fc719e1">to_string</a>(ledger-&gt;info().drops);</div>
+<div class="line"><a id="l00367" name="l00367"></a><span class="lineno">  367</span>            <span class="keyword">auto</span> <span class="keyword">const</span> drops = <a class="code hl_function" href="namespaceripple_1_1detail.html#a3410327039220be654fb0df46fc719e1">to_string</a>(ledger-&gt;info().drops);</div>
 <div class="line"><a id="l00368" name="l00368"></a><span class="lineno">  368</span>            <span class="keyword">auto</span> <span class="keyword">const</span> closeTime =</div>
 <div class="line"><a id="l00369" name="l00369"></a><span class="lineno">  369</span>                ledger-&gt;info().closeTime.time_since_epoch().count();</div>
 <div class="line"><a id="l00370" name="l00370"></a><span class="lineno">  370</span>            <span class="keyword">auto</span> <span class="keyword">const</span> parentCloseTime =</div>
@@ -448,8 +448,8 @@ $(function() {
 <div class="line"><a id="l00375" name="l00375"></a><span class="lineno">  375</span>            <span class="keyword">auto</span> <span class="keyword">const</span> accountHash = <a class="code hl_function" href="namespaceripple_1_1detail.html#a3410327039220be654fb0df46fc719e1">to_string</a>(ledger-&gt;info().accountHash);</div>
 <div class="line"><a id="l00376" name="l00376"></a><span class="lineno">  376</span>            <span class="keyword">auto</span> <span class="keyword">const</span> txHash = <a class="code hl_function" href="namespaceripple_1_1detail.html#a3410327039220be654fb0df46fc719e1">to_string</a>(ledger-&gt;info().txHash);</div>
 <div class="line"><a id="l00377" name="l00377"></a><span class="lineno">  377</span> </div>
-<div class="line"><a id="l00378" name="l00378"></a><span class="lineno">  378</span>            *db &lt;&lt; addLedger, soci::use(hash), soci::use(<a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>),</div>
-<div class="line"><a id="l00379" name="l00379"></a><span class="lineno">  379</span>                soci::use(parentHash), soci::use(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a47271eb5e7eb9b5aada383ccfaf9c0cf">drops</a>), soci::use(closeTime),</div>
+<div class="line"><a id="l00378" name="l00378"></a><span class="lineno">  378</span>            *db &lt;&lt; addLedger, soci::use(hash), soci::use(seq),</div>
+<div class="line"><a id="l00379" name="l00379"></a><span class="lineno">  379</span>                soci::use(parentHash), soci::use(drops), soci::use(closeTime),</div>
 <div class="line"><a id="l00380" name="l00380"></a><span class="lineno">  380</span>                soci::use(parentCloseTime), soci::use(closeTimeResolution),</div>
 <div class="line"><a id="l00381" name="l00381"></a><span class="lineno">  381</span>                soci::use(closeFlags), soci::use(accountHash),</div>
 <div class="line"><a id="l00382" name="l00382"></a><span class="lineno">  382</span>                soci::use(txHash);</div>
@@ -469,7 +469,7 @@ $(function() {
 <div class="line"><a id="l00404" name="l00404"></a><span class="lineno">  404</span>{</div>
 <div class="line"><a id="l00405" name="l00405"></a><span class="lineno">  405</span>    <span class="comment">// SOCI requires boost::optional (not std::optional) as parameters.</span></div>
 <div class="line"><a id="l00406" name="l00406"></a><span class="lineno">  406</span>    boost::optional&lt;std::string&gt; hash, parentHash, accountHash, txHash;</div>
-<div class="line"><a id="l00407" name="l00407"></a><span class="lineno">  407</span>    boost::optional&lt;std::uint64_t&gt; <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>, <a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a47271eb5e7eb9b5aada383ccfaf9c0cf">drops</a>, closeTime, parentCloseTime,</div>
+<div class="line"><a id="l00407" name="l00407"></a><span class="lineno">  407</span>    boost::optional&lt;std::uint64_t&gt; seq, drops, closeTime, parentCloseTime,</div>
 <div class="line"><a id="l00408" name="l00408"></a><span class="lineno">  408</span>        closeTimeResolution, closeFlags;</div>
 <div class="line"><a id="l00409" name="l00409"></a><span class="lineno">  409</span> </div>
 <div class="line"><a id="l00410" name="l00410"></a><span class="lineno">  410</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> <span class="keyword">const</span> sql =</div>
@@ -481,10 +481,10 @@ $(function() {
 <div class="line"><a id="l00416" name="l00416"></a><span class="lineno">  416</span>        sqlSuffix + <span class="stringliteral">&quot;;&quot;</span>;</div>
 <div class="line"><a id="l00417" name="l00417"></a><span class="lineno">  417</span> </div>
 <div class="line"><a id="l00418" name="l00418"></a><span class="lineno">  418</span>    session &lt;&lt; sql, soci::into(hash), soci::into(parentHash),</div>
-<div class="line"><a id="l00419" name="l00419"></a><span class="lineno">  419</span>        soci::into(accountHash), soci::into(txHash), soci::into(<a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#a47271eb5e7eb9b5aada383ccfaf9c0cf">drops</a>),</div>
+<div class="line"><a id="l00419" name="l00419"></a><span class="lineno">  419</span>        soci::into(accountHash), soci::into(txHash), soci::into(drops),</div>
 <div class="line"><a id="l00420" name="l00420"></a><span class="lineno">  420</span>        soci::into(closeTime), soci::into(parentCloseTime),</div>
 <div class="line"><a id="l00421" name="l00421"></a><span class="lineno">  421</span>        soci::into(closeTimeResolution), soci::into(closeFlags),</div>
-<div class="line"><a id="l00422" name="l00422"></a><span class="lineno">  422</span>        soci::into(<a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>);</div>
+<div class="line"><a id="l00422" name="l00422"></a><span class="lineno">  422</span>        soci::into(seq);</div>
 <div class="line"><a id="l00423" name="l00423"></a><span class="lineno">  423</span> </div>
 <div class="line"><a id="l00424" name="l00424"></a><span class="lineno">  424</span>    <span class="keywordflow">if</span> (!session.got_data())</div>
 <div class="line"><a id="l00425" name="l00425"></a><span class="lineno">  425</span>    {</div>
@@ -1492,7 +1492,6 @@ $(function() {
 <div class="ttc" id="astructripple_1_1RelationalDatabase_1_1CountMinMax_html_a224936dfdfdf15406398afb5d2cab573"><div class="ttname"><a href="structripple_1_1RelationalDatabase_1_1CountMinMax.html#a224936dfdfdf15406398afb5d2cab573">ripple::RelationalDatabase::CountMinMax::maxLedgerSequence</a></div><div class="ttdeci">LedgerIndex maxLedgerSequence</div><div class="ttdef"><b>Definition:</b> <a href="RelationalDatabase_8h_source.html#l00056">RelationalDatabase.h:56</a></div></div>
 <div class="ttc" id="astructripple_1_1RelationalDatabase_1_1CountMinMax_html_a70de10a1e7beafffc08aec09d707487e"><div class="ttname"><a href="structripple_1_1RelationalDatabase_1_1CountMinMax.html#a70de10a1e7beafffc08aec09d707487e">ripple::RelationalDatabase::CountMinMax::minLedgerSequence</a></div><div class="ttdeci">LedgerIndex minLedgerSequence</div><div class="ttdef"><b>Definition:</b> <a href="RelationalDatabase_8h_source.html#l00055">RelationalDatabase.h:55</a></div></div>
 <div class="ttc" id="astructripple_1_1RelationalDatabase_1_1CountMinMax_html_ab9e4303198e013125c6ea4527cca69cf"><div class="ttname"><a href="structripple_1_1RelationalDatabase_1_1CountMinMax.html#ab9e4303198e013125c6ea4527cca69cf">ripple::RelationalDatabase::CountMinMax::numberOfRows</a></div><div class="ttdeci">std::size_t numberOfRows</div><div class="ttdef"><b>Definition:</b> <a href="RelationalDatabase_8h_source.html#l00054">RelationalDatabase.h:54</a></div></div>
-<div class="ttc" id="astructripple_1_1test_1_1jtx_1_1seq_html"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1seq.html">ripple::test::jtx::seq</a></div><div class="ttdoc">Set the sequence number on a JTx.</div><div class="ttdef"><b>Definition:</b> <a href="seq_8h_source.html#l00033">seq.h:34</a></div></div>
 <div class="ttc" id="ato_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a></div><div class="ttdeci">T to_string(T... args)</div></div>
 <div class="ttc" id="avalue_or_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/optional/value_or.html">std::optional::value_or</a></div><div class="ttdeci">T value_or(T... args)</div></div>
 <div class="ttc" id="avariant_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/utility/variant.html">std::variant</a></div></div>

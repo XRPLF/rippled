@@ -109,7 +109,7 @@ $(function() {
 <div class="line"><a id="l00031" name="l00031"></a><span class="lineno">   31</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;STTx const&gt;</a> <span class="keyword">const</span>&amp; txn,</div>
 <div class="line"><a id="l00032" name="l00032"></a><span class="lineno">   32</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;STObject const&gt;</a> <span class="keyword">const</span>&amp; met)</div>
 <div class="line"><a id="l00033" name="l00033"></a><span class="lineno">   33</span>    : mTxn(txn)</div>
-<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>    , mMeta(txn-&gt;getTransactionID(), ledger-&gt;<a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>(), *met)</div>
+<div class="line"><a id="l00034" name="l00034"></a><span class="lineno">   34</span>    , mMeta(txn-&gt;getTransactionID(), ledger-&gt;seq(), *met)</div>
 <div class="line"><a id="l00035" name="l00035"></a><span class="lineno">   35</span>    , mAffected(mMeta.getAffectedAccounts())</div>
 <div class="line"><a id="l00036" name="l00036"></a><span class="lineno">   36</span>{</div>
 <div class="line"><a id="l00037" name="l00037"></a><span class="lineno">   37</span>    XRPL_ASSERT(</div>
@@ -192,7 +192,6 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html_a86e358ce3f06ff049af13c2342791cf8"><div class="ttname"><a href="namespaceripple.html#a86e358ce3f06ff049af13c2342791cf8">ripple::strHex</a></div><div class="ttdeci">std::string strHex(FwdIt begin, FwdIt end)</div><div class="ttdef"><b>Definition:</b> <a href="strHex_8h_source.html#l00030">strHex.h:30</a></div></div>
 <div class="ttc" id="ashared_ptr_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a></div></div>
 <div class="ttc" id="astructripple_1_1JsonOptions_html_ab85e43ec84df987200d3355c3ba89f0aa1917451e3686dfe8d5016670eb87ab33"><div class="ttname"><a href="structripple_1_1JsonOptions.html#ab85e43ec84df987200d3355c3ba89f0aa1917451e3686dfe8d5016670eb87ab33">ripple::JsonOptions::none</a></div><div class="ttdeci">@ none</div><div class="ttdef"><b>Definition:</b> <a href="STBase_8h_source.html#l00044">STBase.h:44</a></div></div>
-<div class="ttc" id="astructripple_1_1test_1_1jtx_1_1seq_html"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1seq.html">ripple::test::jtx::seq</a></div><div class="ttdoc">Set the sequence number on a JTx.</div><div class="ttdef"><b>Definition:</b> <a href="seq_8h_source.html#l00033">seq.h:34</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>

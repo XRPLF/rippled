@@ -158,11 +158,11 @@ $(function() {
 <div class="line"><a id="l00080" name="l00080"></a><span class="lineno">   80</span><a class="code hl_typedef" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a></div>
 <div class="line"><a id="l00081" name="l00081"></a><span class="lineno"><a class="line" href="namespaceripple.html#a0fe94e7b03d864a38651a484be4c89d3">   81</a></span><a class="code hl_function" href="namespaceripple.html#a0fe94e7b03d864a38651a484be4c89d3">getCanDelete</a>(soci::session&amp; session)</div>
 <div class="line"><a id="l00082" name="l00082"></a><span class="lineno">   82</span>{</div>
-<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">LedgerIndex</a> <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>;</div>
+<div class="line"><a id="l00083" name="l00083"></a><span class="lineno">   83</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">LedgerIndex</a> seq;</div>
 <div class="line"><a id="l00084" name="l00084"></a><span class="lineno">   84</span>    session &lt;&lt; <span class="stringliteral">&quot;SELECT CanDeleteSeq FROM CanDelete WHERE Key = 1;&quot;</span>,</div>
-<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>        soci::into(<a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>);</div>
+<div class="line"><a id="l00085" name="l00085"></a><span class="lineno">   85</span>        soci::into(seq);</div>
 <div class="line"><a id="l00086" name="l00086"></a><span class="lineno">   86</span>    ;</div>
-<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>    <span class="keywordflow">return</span> <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>;</div>
+<div class="line"><a id="l00087" name="l00087"></a><span class="lineno">   87</span>    <span class="keywordflow">return</span> seq;</div>
 <div class="line"><a id="l00088" name="l00088"></a><span class="lineno">   88</span>}</div>
 <div class="line"><a id="l00089" name="l00089"></a><span class="lineno">   89</span> </div>
 <div class="line"><a id="l00090" name="l00090"></a><span class="lineno">   90</span><a class="code hl_typedef" href="namespaceripple.html#a12af8e98b794e8ee3b4dbecaed2a4efd">LedgerIndex</a></div>
@@ -198,11 +198,11 @@ $(function() {
 <div class="line"><a id="l00120" name="l00120"></a><span class="lineno">  120</span>}</div>
 <div class="line"><a id="l00121" name="l00121"></a><span class="lineno">  121</span> </div>
 <div class="line"><a id="l00122" name="l00122"></a><span class="lineno">  122</span><span class="keywordtype">void</span></div>
-<div class="line"><a id="l00123" name="l00123"></a><span class="lineno"><a class="line" href="namespaceripple.html#aefa79f90126517a5b18ac63f899a9138">  123</a></span><a class="code hl_function" href="namespaceripple.html#aefa79f90126517a5b18ac63f899a9138">setLastRotated</a>(soci::session&amp; session, <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">LedgerIndex</a> <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>)</div>
+<div class="line"><a id="l00123" name="l00123"></a><span class="lineno"><a class="line" href="namespaceripple.html#aefa79f90126517a5b18ac63f899a9138">  123</a></span><a class="code hl_function" href="namespaceripple.html#aefa79f90126517a5b18ac63f899a9138">setLastRotated</a>(soci::session&amp; session, <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">LedgerIndex</a> seq)</div>
 <div class="line"><a id="l00124" name="l00124"></a><span class="lineno">  124</span>{</div>
 <div class="line"><a id="l00125" name="l00125"></a><span class="lineno">  125</span>    session &lt;&lt; <span class="stringliteral">&quot;UPDATE DbState SET LastRotatedLedger = :seq&quot;</span></div>
 <div class="line"><a id="l00126" name="l00126"></a><span class="lineno">  126</span>               <span class="stringliteral">&quot; WHERE Key = 1;&quot;</span>,</div>
-<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>        soci::use(<a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1seq.html">seq</a>);</div>
+<div class="line"><a id="l00127" name="l00127"></a><span class="lineno">  127</span>        soci::use(seq);</div>
 <div class="line"><a id="l00128" name="l00128"></a><span class="lineno">  128</span>}</div>
 <div class="line"><a id="l00129" name="l00129"></a><span class="lineno">  129</span> </div>
 <div class="line"><a id="l00130" name="l00130"></a><span class="lineno">  130</span>}  <span class="comment">// namespace ripple</span></div>
@@ -222,7 +222,6 @@ $(function() {
 <div class="ttc" id="astructripple_1_1SavedState_html_a8ca46a5d6d09ecd87222b337edc04729"><div class="ttname"><a href="structripple_1_1SavedState.html#a8ca46a5d6d09ecd87222b337edc04729">ripple::SavedState::lastRotated</a></div><div class="ttdeci">LedgerIndex lastRotated</div><div class="ttdef"><b>Definition:</b> <a href="State_8h_source.html#l00037">State.h:37</a></div></div>
 <div class="ttc" id="astructripple_1_1SavedState_html_a8d0a999fae5b415d6d3570ee17699920"><div class="ttname"><a href="structripple_1_1SavedState.html#a8d0a999fae5b415d6d3570ee17699920">ripple::SavedState::writableDb</a></div><div class="ttdeci">std::string writableDb</div><div class="ttdef"><b>Definition:</b> <a href="State_8h_source.html#l00035">State.h:35</a></div></div>
 <div class="ttc" id="astructripple_1_1SavedState_html_adda68d802d02c0d2aaeefc12b32727e3"><div class="ttname"><a href="structripple_1_1SavedState.html#adda68d802d02c0d2aaeefc12b32727e3">ripple::SavedState::archiveDb</a></div><div class="ttdeci">std::string archiveDb</div><div class="ttdef"><b>Definition:</b> <a href="State_8h_source.html#l00036">State.h:36</a></div></div>
-<div class="ttc" id="astructripple_1_1test_1_1jtx_1_1seq_html"><div class="ttname"><a href="structripple_1_1test_1_1jtx_1_1seq.html">ripple::test::jtx::seq</a></div><div class="ttdoc">Set the sequence number on a JTx.</div><div class="ttdef"><b>Definition:</b> <a href="seq_8h_source.html#l00033">seq.h:34</a></div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
