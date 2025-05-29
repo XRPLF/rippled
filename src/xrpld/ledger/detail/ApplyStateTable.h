@@ -73,6 +73,7 @@ public:
         TER ter,
         std::optional<STAmount> const& deliver,
         std::optional<uint256 const> const& parentBatchId,
+        std::optional<std::uint32_t> const& gasUsed,
         bool isDryRun,
         beast::Journal j);
 
