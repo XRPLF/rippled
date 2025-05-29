@@ -2,6 +2,7 @@ name: windows
 
 on:
   pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
   push:
     # If the branches list is ever changed, be sure to change it on all
     # build/test jobs (nix, macos, windows, instrumentation)
@@ -21,6 +22,7 @@ concurrency:
 jobs:
 
   test:
+    if: ${{ github.event_name == 'push' || github.event.pull_request.draft != true || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     strategy:
       fail-fast: false
       matrix:
@@ -87,7 +89,7 @@ jobs:
           generator: '${{ matrix.version.generator }}'
           configuration: ${{ matrix.configuration.type }}
           # Hard code for now. Move to the matrix if varied options are needed
-          cmake-args: '-Dassert=ON -Dreporting=OFF -Dunity=ON'
+          cmake-args: '-Dassert=TRUE -Dwerr=TRUE -Dreporting=OFF -Dunity=ON'
           cmake-target: install
       - name: test
         shell: bash

@@ -23,7 +23,6 @@
 #include <xrpld/app/tx/detail/OfferStream.h>
 #include <xrpld/app/tx/detail/Taker.h>
 #include <xrpld/app/tx/detail/Transactor.h>
-#include <utility>
 
 namespace ripple {
 

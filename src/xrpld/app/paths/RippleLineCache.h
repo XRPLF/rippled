@@ -22,11 +22,11 @@
 
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/paths/TrustLine.h>
+
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/hardened_hash.h>
 
 #include <cstddef>
-#include <memory>
 #include <mutex>
 #include <vector>
 
@@ -104,7 +104,7 @@ private:
 
         struct Hash
         {
-            explicit Hash() = default;
+            Hash() = default;
 
             std::size_t
             operator()(AccountKey const& key) const noexcept

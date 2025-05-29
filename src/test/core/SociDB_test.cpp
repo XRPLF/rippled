@@ -18,10 +18,12 @@
 //==============================================================================
 
 #include <test/jtx/TestSuite.h>
-#include <xrpld/core/ConfigSections.h>
+
 #include <xrpld/core/SociDB.h>
+
 #include <xrpl/basics/BasicConfig.h>
 #include <xrpl/basics/contract.h>
+
 #include <boost/algorithm/string.hpp>
 #include <boost/filesystem.hpp>
 
@@ -318,7 +320,7 @@ public:
         {
             soci::session s;
             sc.open(s);
-            const char* dbInit[] = {
+            char const* dbInit[] = {
                 "BEGIN TRANSACTION;",
                 "CREATE TABLE Ledgers (                     \
                 LedgerHash      CHARACTER(64) PRIMARY KEY,  \

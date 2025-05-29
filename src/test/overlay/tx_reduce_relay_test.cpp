@@ -16,11 +16,14 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
+
 #include <test/jtx.h>
 #include <test/jtx/Env.h>
+
 #include <xrpld/overlay/detail/OverlayImpl.h>
 #include <xrpld/overlay/detail/PeerImp.h>
 #include <xrpld/peerfinder/detail/SlotImp.h>
+
 #include <xrpl/basics/make_SSLContext.h>
 #include <xrpl/beast/unit_test.h>
 
@@ -38,7 +41,7 @@ public:
 
 private:
     void
-    doTest(const std::string& msg, bool log, std::function<void(bool)> f)
+    doTest(std::string const& msg, bool log, std::function<void(bool)> f)
     {
         testcase(msg);
         f(log);
@@ -128,7 +131,7 @@ private:
             sendTx_++;
         }
         void
-        addTxQueue(const uint256& hash) override
+        addTxQueue(uint256 const& hash) override
         {
             queueTx_++;
         }

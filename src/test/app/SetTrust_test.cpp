@@ -16,7 +16,9 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
+
 #include <test/jtx.h>
+
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
@@ -467,7 +469,7 @@ public:
         auto& tx1 = createQuality ? txWithQuality : txWithoutQuality;
         auto& tx2 = createQuality ? txWithoutQuality : txWithQuality;
 
-        auto check_quality = [&](const bool exists) {
+        auto check_quality = [&](bool const exists) {
             Json::Value jv;
             jv["account"] = toAcct.human();
             auto const lines = env.rpc("json", "account_lines", to_string(jv));

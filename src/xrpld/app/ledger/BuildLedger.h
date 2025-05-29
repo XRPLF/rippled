@@ -21,10 +21,9 @@
 #define RIPPLE_APP_LEDGER_BUILD_LEDGER_H_INCLUDED
 
 #include <xrpld/ledger/ApplyView.h>
+
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
-#include <chrono>
-#include <memory>
 
 namespace ripple {
 
@@ -54,7 +53,7 @@ std::shared_ptr<Ledger>
 buildLedger(
     std::shared_ptr<Ledger const> const& parent,
     NetClock::time_point closeTime,
-    const bool closeTimeCorrect,
+    bool const closeTimeCorrect,
     NetClock::duration closeResolution,
     Application& app,
     CanonicalTXSet& txns,

@@ -21,6 +21,7 @@
 #include <xrpld/app/tx/detail/PayChan.h>
 #include <xrpld/ledger/ApplyView.h>
 #include <xrpld/ledger/View.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/protocol/Feature.h>
@@ -30,7 +31,6 @@
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/XRPAmount.h>
 #include <xrpl/protocol/digest.h>
-#include <xrpl/protocol/st.h>
 
 namespace ripple {
 
@@ -237,7 +237,13 @@ PayChanCreate::preclaim(PreclaimContext const& ctx)
             (flags & lsfDisallowXRP))
             return tecNO_TARGET;
 
-        if (sled->isFieldPresent(sfAMMID))
+        // Pseudo-accounts cannot receive payment channels, other than native
+        // to their underlying ledger object - implemented in their respective
+        // transaction types. Note, this is not amendment-gated because all
+        // writes to pseudo-account discriminator fields **are** amendment
+        // gated, hence the behaviour of this check will always match the
+        // currently active amendments.
+        if (isPseudoAccount(sled))
             return tecNO_PERMISSION;
     }
 
@@ -252,6 +258,13 @@ PayChanCreate::doApply()
     if (!sle)
         return tefINTERNAL;
 
+    if (ctx_.view().rules().enabled(fixPayChanCancelAfter))
+    {
+        auto const closeTime = ctx_.view().info().parentCloseTime;
+        if (ctx_.tx[~sfCancelAfter] && after(closeTime, ctx_.tx[sfCancelAfter]))
+            return tecEXPIRED;
+    }
+
     auto const dst = ctx_.tx[sfDestination];
 
     // Create PayChan in ledger.
@@ -259,7 +272,7 @@ PayChanCreate::doApply()
     // Note that we we use the value from the sequence or ticket as the
     // payChan sequence.  For more explanation see comments in SeqProxy.h.
     Keylet const payChanKeylet =
-        keylet::payChan(account, dst, ctx_.tx.getSeqProxy().value());
+        keylet::payChan(account, dst, ctx_.tx.getSeqValue());
     auto const slep = std::make_shared<SLE>(payChanKeylet);
 
     // Funds held in this channel

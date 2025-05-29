@@ -22,7 +22,7 @@
 
 #include <xrpld/shamap/SHAMapItem.h>
 #include <xrpld/shamap/SHAMapLeafNode.h>
-#include <xrpld/shamap/SHAMapNodeID.h>
+
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/digest.h>
@@ -50,10 +50,10 @@ public:
     {
     }
 
-    std::shared_ptr<SHAMapTreeNode>
+    intr_ptr::SharedPtr<SHAMapTreeNode>
     clone(std::uint32_t cowid) const final override
     {
-        return std::make_shared<SHAMapTxLeafNode>(item_, cowid, hash_);
+        return intr_ptr::make_shared<SHAMapTxLeafNode>(item_, cowid, hash_);
     }
 
     SHAMapNodeType

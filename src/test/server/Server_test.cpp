@@ -17,17 +17,18 @@
 */
 //==============================================================================
 
+#include <test/jtx.h>
+#include <test/jtx/CaptureLogs.h>
+#include <test/jtx/envconfig.h>
+#include <test/unit_test/SuiteJournal.h>
+
 #include <xrpld/core/ConfigSections.h>
+
 #include <xrpl/basics/make_SSLContext.h>
 #include <xrpl/beast/rfc2616.h>
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/server/Server.h>
 #include <xrpl/server/Session.h>
-
-#include <test/jtx.h>
-#include <test/jtx/CaptureLogs.h>
-#include <test/jtx/envconfig.h>
-#include <test/unit_test/SuiteJournal.h>
 
 #include <boost/asio.hpp>
 #include <boost/beast/core/tcp_stream.hpp>
@@ -94,6 +95,13 @@ public:
             if (level < threshold())
                 return;
 
+            suite_.log << text << std::endl;
+        }
+
+        void
+        writeAlways(beast::severities::Severity level, std::string const& text)
+            override
+        {
             suite_.log << text << std::endl;
         }
     };

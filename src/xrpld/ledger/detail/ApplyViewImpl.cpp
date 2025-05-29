@@ -18,8 +18,6 @@
 //==============================================================================
 
 #include <xrpld/ledger/ApplyViewImpl.h>
-#include <xrpl/basics/contract.h>
-#include <xrpl/beast/utility/instrumentation.h>
 
 namespace ripple {
 
@@ -33,10 +31,11 @@ ApplyViewImpl::apply(
     OpenView& to,
     STTx const& tx,
     TER ter,
+    std::optional<uint256> parentBatchId,
     bool isDryRun,
     beast::Journal j)
 {
-    return items_.apply(to, tx, ter, deliver_, isDryRun, j);
+    return items_.apply(to, tx, ter, deliver_, parentBatchId, isDryRun, j);
 }
 
 std::size_t

@@ -22,18 +22,17 @@
 
 #include <xrpld/app/main/Application.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
+
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/BuildInfo.h>
-#include <boost/asio/ip/tcp.hpp>
-#include <boost/asio/ssl/context.hpp>
-#include <boost/asio/ssl/stream.hpp>
-#include <boost/beast/core/tcp_stream.hpp>
-#include <boost/beast/ssl/ssl_stream.hpp>
 
 #include <boost/asio/ssl.hpp>
+#include <boost/beast/core/tcp_stream.hpp>
 #include <boost/beast/http/dynamic_body.hpp>
 #include <boost/beast/http/empty_body.hpp>
 #include <boost/beast/http/fields.hpp>
+#include <boost/beast/ssl/ssl_stream.hpp>
+
 #include <optional>
 #include <utility>
 
@@ -140,7 +139,7 @@ makeResponse(
 
 // compression feature
 static constexpr char FEATURE_COMPR[] = "compr";
-// validation/proposal reduce-relay feature
+// validation/proposal reduce-relay base squelch feature
 static constexpr char FEATURE_VPRR[] = "vprr";
 // transaction reduce-relay feature
 static constexpr char FEATURE_TXRR[] = "txrr";
@@ -222,7 +221,7 @@ peerFeatureEnabled(
    @param txReduceRelayEnabled if true then transaction reduce-relay feature is
    enabled
    @param vpReduceRelayEnabled if true then validation/proposal reduce-relay
-   feature is enabled
+   base squelch feature is enabled
    @return X-Protocol-Ctl header value
  */
 std::string
@@ -242,8 +241,7 @@ makeFeaturesRequestHeader(
    @param txReduceRelayEnabled if true then transaction reduce-relay feature is
    enabled
    @param vpReduceRelayEnabled if true then validation/proposal reduce-relay
-   feature is enabled
-   @param vpReduceRelayEnabled if true then reduce-relay feature is enabled
+   base squelch feature is enabled
    @return X-Protocol-Ctl header value
  */
 std::string

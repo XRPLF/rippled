@@ -17,21 +17,24 @@
 */
 //==============================================================================
 
-#include <xrpl/protocol/STXChainBridge.h>
-
-#include <xrpl/protocol/Indexes.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Issue.h>
-#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAccount.h>
+#include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/Serializer.h>
-#include <xrpl/protocol/UintTypes.h>
-#include <xrpl/protocol/jss.h>
-#include <xrpl/protocol/tokens.h>
 
-#include <boost/format.hpp>
+#include <boost/format/free_funcs.hpp>
+
+#include <cstddef>
+#include <memory>
+#include <stdexcept>
+#include <string>
+#include <utility>
 
 namespace ripple {
 
@@ -194,9 +197,9 @@ STXChainBridge::getSType() const
 }
 
 bool
-STXChainBridge::isEquivalent(const STBase& t) const
+STXChainBridge::isEquivalent(STBase const& t) const
 {
-    const STXChainBridge* v = dynamic_cast<const STXChainBridge*>(&t);
+    STXChainBridge const* v = dynamic_cast<STXChainBridge const*>(&t);
     return v && (*v == *this);
 }
 

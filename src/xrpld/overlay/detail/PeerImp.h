@@ -24,11 +24,10 @@
 #include <xrpld/app/ledger/detail/LedgerReplayMsgHandler.h>
 #include <xrpld/overlay/Squelch.h>
 #include <xrpld/overlay/detail/OverlayImpl.h>
-#include <xrpld/overlay/detail/ProtocolMessage.h>
 #include <xrpld/overlay/detail/ProtocolVersion.h>
 #include <xrpld/peerfinder/PeerfinderManager.h>
+
 #include <xrpl/basics/Log.h>
-#include <xrpl/basics/RangeSet.h>
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/beast/utility/WrappedSink.h>
 #include <xrpl/protocol/Protocol.h>
@@ -39,6 +38,7 @@
 #include <boost/circular_buffer.hpp>
 #include <boost/endian/conversion.hpp>
 #include <boost/thread/shared_mutex.hpp>
+
 #include <cstdint>
 #include <optional>
 #include <queue>
@@ -116,7 +116,6 @@ private:
     clock_type::time_point const creationTime_;
 
     reduce_relay::Squelch<UptimeClock> squelch_;
-    inline static std::atomic_bool reduceRelayReady_{false};
 
     // Notes on thread locking:
     //
@@ -154,7 +153,8 @@ private:
         update(Resource::Charge f, std::string const& add)
         {
             XRPL_ASSERT(
-                f >= fee, "ripple::PeerImp::ChargeWithContext fee increases");
+                f >= fee,
+                "ripple::PeerImp::ChargeWithContext::update : fee increases");
             fee = f;
             if (!context.empty())
             {
@@ -189,9 +189,7 @@ private:
     hash_set<uint256> txQueue_;
     // true if tx reduce-relay feature is enabled on the peer.
     bool txReduceRelayEnabled_ = false;
-    // true if validation/proposal reduce-relay feature is enabled
-    // on the peer.
-    bool vpReduceRelayEnabled_ = false;
+
     bool ledgerReplayEnabled_ = false;
     LedgerReplayMsgHandler ledgerReplayMsgHandler_;
 
@@ -520,11 +518,6 @@ private:
     handleHaveTransactions(
         std::shared_ptr<protocol::TMHaveTransactions> const& m);
 
-    // Check if reduce-relay feature is enabled and
-    // reduce_relay::WAIT_ON_BOOTUP time passed since the start
-    bool
-    reduceRelayReady();
-
 public:
     //--------------------------------------------------------------------------
     //
@@ -601,7 +594,7 @@ private:
         std::lock_guard<std::mutex> const& lockedRecentLock);
 
     void
-    doFetchPack(const std::shared_ptr<protocol::TMGetObjectByHash>& packet);
+    doFetchPack(std::shared_ptr<protocol::TMGetObjectByHash> const& packet);
 
     void
     onValidatorListMessage(
@@ -704,10 +697,6 @@ PeerImp::PeerImp(
           headers_,
           FEATURE_TXRR,
           app_.config().TX_REDUCE_RELAY_ENABLE))
-    , vpReduceRelayEnabled_(peerFeatureEnabled(
-          headers_,
-          FEATURE_VPRR,
-          app_.config().VP_REDUCE_RELAY_ENABLE))
     , ledgerReplayEnabled_(peerFeatureEnabled(
           headers_,
           FEATURE_LEDGER_REPLAY,
@@ -716,13 +705,15 @@ PeerImp::PeerImp(
 {
     read_buffer_.commit(boost::asio::buffer_copy(
         read_buffer_.prepare(boost::asio::buffer_size(buffers)), buffers));
-    JLOG(journal_.info()) << "compression enabled "
-                          << (compressionEnabled_ == Compressed::On)
-                          << " vp reduce-relay enabled "
-                          << vpReduceRelayEnabled_
-                          << " tx reduce-relay enabled "
-                          << txReduceRelayEnabled_ << " on " << remote_address_
-                          << " " << id_;
+    JLOG(journal_.info())
+        << "compression enabled " << (compressionEnabled_ == Compressed::On)
+        << " vp reduce-relay base squelch enabled "
+        << peerFeatureEnabled(
+               headers_,
+               FEATURE_VPRR,
+               app_.config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE)
+        << " tx reduce-relay enabled " << txReduceRelayEnabled_ << " on "
+        << remote_address_ << " " << id_;
 }
 
 template <class FwdIt, class>

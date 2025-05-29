@@ -21,6 +21,7 @@
 #define RIPPLE_APP_PENDINGSAVES_H_INCLUDED
 
 #include <xrpl/protocol/Protocol.h>
+
 #include <condition_variable>
 #include <map>
 #include <mutex>

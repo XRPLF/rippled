@@ -22,6 +22,7 @@
 
 #include <test/jtx/basic_prop.h>
 #include <test/jtx/requires.h>
+
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/STTx.h>
@@ -51,6 +52,7 @@ struct JTx
     bool fill_fee = true;
     bool fill_seq = true;
     bool fill_sig = true;
+    bool fill_netid = true;
     std::shared_ptr<STTx const> stx;
     std::function<void(Env&, JTx&)> signer;
 

@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/app/tx/detail/Taker.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 

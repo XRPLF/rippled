@@ -18,15 +18,18 @@
 //==============================================================================
 
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/SOTemplate.h>
 #include <xrpl/protocol/jss.h>
-#include <utility>
+
+#include <initializer_list>
 
 namespace ripple {
 
 LedgerFormats::LedgerFormats()
 {
     // Fields shared by all ledger formats:
-    static const std::initializer_list<SOElement> commonFields{
+    static std::initializer_list<SOElement> const commonFields{
         {sfLedgerIndex, soeOPTIONAL},
         {sfLedgerEntryType, soeREQUIRED},
         {sfFlags, soeREQUIRED},

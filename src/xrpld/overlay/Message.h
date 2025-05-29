@@ -21,17 +21,13 @@
 #define RIPPLE_OVERLAY_MESSAGE_H_INCLUDED
 
 #include <xrpld/overlay/Compression.h>
+
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/messages.h>
-#include <boost/asio/buffer.hpp>
-#include <boost/asio/buffers_iterator.hpp>
+
 #include <algorithm>
-#include <array>
 #include <cstdint>
-#include <iterator>
-#include <memory>
-#include <type_traits>
 
 namespace ripple {
 
@@ -64,7 +60,7 @@ public:
      */
     Message(
         ::google::protobuf::Message const& message,
-        int type,
+        protocol::MessageType type,
         std::optional<PublicKey> const& validator = {});
 
     /** Retrieve the size of the packed but uncompressed message data. */

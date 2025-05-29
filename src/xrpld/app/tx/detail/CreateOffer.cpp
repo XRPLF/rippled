@@ -21,10 +21,10 @@
 #include <xrpld/app/paths/Flow.h>
 #include <xrpld/app/tx/detail/CreateOffer.h>
 #include <xrpld/ledger/PaymentSandbox.h>
+
 #include <xrpl/beast/utility/WrappedSink.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Quality.h>
-#include <xrpl/protocol/st.h>
 
 namespace ripple {
 
@@ -969,7 +969,7 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 
     // Note that we we use the value from the sequence or ticket as the
     // offer sequence.  For more explanation see comments in SeqProxy.h.
-    auto const offerSequence = ctx_.tx.getSeqProxy().value();
+    auto const offerSequence = ctx_.tx.getSeqValue();
 
     // This is the original rate of the offer, and is the rate at which
     // it will be placed, even if crossing offers change the amounts that

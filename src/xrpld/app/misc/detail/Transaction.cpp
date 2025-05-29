@@ -23,12 +23,10 @@
 #include <xrpld/app/misc/Transaction.h>
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/app/tx/apply.h>
-#include <xrpld/core/DatabaseCon.h>
-#include <xrpl/basics/Log.h>
+#include <xrpld/rpc/CTID.h>
+
 #include <xrpl/basics/safe_cast.h>
-#include <xrpl/json/json_reader.h>
 #include <xrpl/protocol/ErrorCodes.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
 
 namespace ripple {
@@ -57,10 +55,18 @@ Transaction::Transaction(
 //
 
 void
-Transaction::setStatus(TransStatus ts, std::uint32_t lseq)
+Transaction::setStatus(
+    TransStatus ts,
+    std::uint32_t lseq,
+    std::optional<std::uint32_t> tseq,
+    std::optional<std::uint32_t> netID)
 {
     mStatus = ts;
     mLedgerIndex = lseq;
+    if (tseq)
+        mTxnSeq = tseq;
+    if (netID)
+        mNetworkID = netID;
 }
 
 TransStatus
@@ -176,6 +182,20 @@ Transaction::getJson(JsonOptions options, bool binary) const
             auto ct = mApp.getLedgerMaster().getCloseTimeBySeq(mLedgerIndex);
             if (ct)
                 ret[jss::date] = ct->time_since_epoch().count();
+        }
+
+        // compute outgoing CTID
+        // override local network id if it's explicitly in the txn
+        std::optional netID = mNetworkID;
+        if (mTransaction->isFieldPresent(sfNetworkID))
+            netID = mTransaction->getFieldU32(sfNetworkID);
+
+        if (mTxnSeq && netID)
+        {
+            std::optional<std::string> const ctid =
+                RPC::encodeCTID(mLedgerIndex, *mTxnSeq, *netID);
+            if (ctid)
+                ret[jss::ctid] = *ctid;
         }
     }
 

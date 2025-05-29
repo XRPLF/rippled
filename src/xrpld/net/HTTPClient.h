@@ -21,7 +21,9 @@
 #define RIPPLE_NET_HTTPCLIENT_H_INCLUDED
 
 #include <xrpld/core/Config.h>
+
 #include <xrpl/basics/ByteUtilities.h>
+
 #include <boost/asio/io_service.hpp>
 #include <boost/asio/streambuf.hpp>
 
@@ -48,12 +50,12 @@ public:
     get(bool bSSL,
         boost::asio::io_service& io_service,
         std::deque<std::string> deqSites,
-        const unsigned short port,
+        unsigned short const port,
         std::string const& strPath,
         std::size_t responseMax,  // if no Content-Length header
         std::chrono::seconds timeout,
         std::function<bool(
-            const boost::system::error_code& ecResult,
+            boost::system::error_code const& ecResult,
             int iStatus,
             std::string const& strData)> complete,
         beast::Journal& j);
@@ -62,12 +64,12 @@ public:
     get(bool bSSL,
         boost::asio::io_service& io_service,
         std::string strSite,
-        const unsigned short port,
+        unsigned short const port,
         std::string const& strPath,
         std::size_t responseMax,  // if no Content-Length header
         std::chrono::seconds timeout,
         std::function<bool(
-            const boost::system::error_code& ecResult,
+            boost::system::error_code const& ecResult,
             int iStatus,
             std::string const& strData)> complete,
         beast::Journal& j);
@@ -77,13 +79,13 @@ public:
         bool bSSL,
         boost::asio::io_service& io_service,
         std::string strSite,
-        const unsigned short port,
+        unsigned short const port,
         std::function<
             void(boost::asio::streambuf& sb, std::string const& strHost)> build,
         std::size_t responseMax,  // if no Content-Length header
         std::chrono::seconds timeout,
         std::function<bool(
-            const boost::system::error_code& ecResult,
+            boost::system::error_code const& ecResult,
             int iStatus,
             std::string const& strData)> complete,
         beast::Journal& j);

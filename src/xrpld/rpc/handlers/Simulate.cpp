@@ -21,11 +21,12 @@
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/misc/HashRouter.h>
 #include <xrpld/app/misc/Transaction.h>
+#include <xrpld/app/misc/TxQ.h>
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/GRPCHandlers.h>
-#include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/TransactionSign.h>
+
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/STParsedJSON.h>
@@ -144,6 +145,13 @@ autofillTx(Json::Value& tx_json, RPC::JsonContext& context)
         tx_json[sfSequence.jsonName] = *seq;
     }
 
+    if (!tx_json.isMember(jss::NetworkID))
+    {
+        auto const networkId = context.app.config().NETWORK_ID;
+        if (networkId > 1024)
+            tx_json[jss::NetworkID] = to_string(networkId);
+    }
+
     return std::nullopt;
 }
 
@@ -225,7 +233,7 @@ simulateTxn(RPC::JsonContext& context, std::shared_ptr<Transaction> transaction)
     jvResult[jss::applied] = result.applied;
     jvResult[jss::ledger_index] = view.seq();
 
-    const bool isBinaryOutput = context.params.get(jss::binary, false).asBool();
+    bool const isBinaryOutput = context.params.get(jss::binary, false).asBool();
 
     // Convert the TER to human-readable values
     std::string token;
@@ -299,6 +307,15 @@ doSimulate(RPC::JsonContext& context)
         return RPC::invalid_field_error(jss::binary);
     }
 
+    for (auto const field :
+         {jss::secret, jss::seed, jss::seed_hex, jss::passphrase})
+    {
+        if (context.params.isMember(field))
+        {
+            return RPC::invalid_field_error(field);
+        }
+    }
+
     // get JSON equivalent of transaction
     tx_json = getTxJsonFromParams(context.params);
     if (tx_json.isMember(jss::error))
@@ -323,6 +340,11 @@ doSimulate(RPC::JsonContext& context)
         jvResult[jss::error] = "invalidTransaction";
         jvResult[jss::error_exception] = e.what();
         return jvResult;
+    }
+
+    if (stTx->getTxnType() == ttBATCH)
+    {
+        return RPC::make_error(rpcNOT_IMPL);
     }
 
     std::string reason;
