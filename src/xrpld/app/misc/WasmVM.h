@@ -252,6 +252,15 @@ WasmImpFunc(
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+struct HostFunctionsMock : public HostFunctions
+{
+    HostFunctionsMock()
+    {
+    }
+};
+
+////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
 struct WasmParam
 {
     WasmTypes type = WT_I32;
@@ -333,6 +342,13 @@ public:
     static WasmEngine&
     instance();
 
+    Expected<int32_t, NotTEC>
+    preflight(
+        wbytes const& wasmCode,
+        std::string_view funcName = {},
+        std::vector<WasmImportFunc> const& imports = {},
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
+
     Expected<int32_t, TER>
     run(wbytes const& wasmCode,
         std::string_view funcName = {},
@@ -364,6 +380,12 @@ public:
 };
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+
+NotTEC
+preflightEscrowWasm(
+    Bytes const& wasmCode,
+    std::string_view funcName,
+    HostFunctions* hfs);
 
 Expected<EscrowResult, TER>
 runEscrowWasm(

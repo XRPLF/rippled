@@ -722,6 +722,62 @@ WamrEngine::call(
     return call<NR>(func, in, p.data(), p.size(), std::forward<Types>(args)...);
 }
 
+Expected<int32_t, NotTEC>
+WamrEngine::preflight(
+    wbytes const& wasmCode,
+    std::string_view funcName,
+    std::vector<WasmImportFunc> const& imports,
+    beast::Journal j)
+{
+    try
+    {
+        wasm_runtime_set_log_level(getLogLevel(j.sink().threshold()));
+        j_ = j;
+        return preflightHlp(wasmCode, funcName, imports);
+    }
+    catch (std::exception const& e)
+    {
+        j.debug() << "WAMR: preflight exception: " << e.what() << std::endl;
+    }
+    catch (...)
+    {
+        return temUNKNOWN;
+    }
+    return Unexpected<NotTEC>(temBAD_WASM);
+}
+
+Expected<int32_t, NotTEC>
+WamrEngine::preflightHlp(
+    wbytes const& wasmCode,
+    std::string_view funcName,
+    std::vector<WasmImportFunc> const& imports)
+{
+    // Create and instantiate the module.
+    if (!wasmCode.empty())
+    {
+        int const m = addModule(wasmCode, true, imports);
+        if (m < 0)
+            return temUNKNOWN;
+    }
+
+    if (!module)
+        return temUNKNOWN;
+
+    // Call main
+    auto* f = getFunc(!funcName.empty() ? funcName : "_start");
+    // return 0;
+    auto res = call<1>(f);
+    if (!res.r.size || trap)
+    {
+        j_.debug() << "WAMR: preflightHlp trap" << std::endl;
+        return temBAD_WASM;
+    }
+
+    assert(res.r.data[0].kind == WASM_I32);
+    // printf("Result: %d\n", res.r.data[0].of.i32);
+    return res.r.data[0].of.i32;
+}
+
 Expected<int32_t, TER>
 WamrEngine::run(
     wbytes const& wasmCode,
@@ -736,11 +792,13 @@ WamrEngine::run(
         j_ = j;
         return runHlp(wasmCode, funcName, imports, params);
     }
-    catch (std::exception const&)
+    catch (std::exception const& e)
     {
+        j.debug() << "WAMR: run exception: " << e.what() << std::endl;
     }
     catch (...)
     {
+        return temUNKNOWN;
     }
     return Unexpected<TER>(tecFAILED_PROCESSING);
 }
