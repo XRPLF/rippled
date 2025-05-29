@@ -53,10 +53,11 @@
 
 namespace ripple {
 
-using namespace test::jtx;
-
 class Vault_test : public beast::unit_test::suite
 {
+    using PrettyAsset = ripple::test::jtx::PrettyAsset;
+    using PrettyAmount = ripple::test::jtx::PrettyAmount;
+
     static auto constexpr negativeAmount =
         [](PrettyAsset const& asset) -> PrettyAmount {
         return {STAmount{asset.raw(), 1ul, 0, true, STAmount::unchecked{}}, ""};
@@ -1210,6 +1211,7 @@ class Vault_test : public beast::unit_test::suite
     testCreateFailMPT()
     {
         using namespace test::jtx;
+
         Env env{*this, supported_amendments() | featureSingleAssetVault};
         Account issuer{"issuer"};
         Account owner{"owner"};
@@ -1231,6 +1233,7 @@ class Vault_test : public beast::unit_test::suite
     testNonTransferableShares()
     {
         using namespace test::jtx;
+
         Env env{*this, supported_amendments() | featureSingleAssetVault};
         Account issuer{"issuer"};
         Account owner{"owner"};
@@ -1787,6 +1790,8 @@ class Vault_test : public beast::unit_test::suite
     void
     testWithIOU()
     {
+        using namespace test::jtx;
+
         auto testCase =
             [&, this](
                 std::function<void(
@@ -2242,6 +2247,8 @@ class Vault_test : public beast::unit_test::suite
     void
     testWithDomainCheck()
     {
+        using namespace test::jtx;
+
         testcase("private vault");
 
         Env env{*this, supported_amendments() | featureSingleAssetVault};
@@ -2525,6 +2532,8 @@ class Vault_test : public beast::unit_test::suite
     void
     testWithDomainCheckXRP()
     {
+        using namespace test::jtx;
+
         testcase("private XRP vault");
 
         Env env{*this, supported_amendments() | featureSingleAssetVault};
@@ -2656,6 +2665,8 @@ class Vault_test : public beast::unit_test::suite
     void
     testRPC()
     {
+        using namespace test::jtx;
+
         testcase("RPC");
         Env env{*this, supported_amendments() | featureSingleAssetVault};
         Account const owner{"owner"};
