@@ -665,7 +665,7 @@ AMMWithdraw::withdraw(
     // Create MPToken if it doesn't exist
     auto createMPToken = [&](Asset const& asset) -> TER {
         // If mptoken is seated then must authorize
-        if (mptokenKey)
+        if (mptokenKey && account != asset.getIssuer())
         {
             auto const& mptIssue = asset.get<MPTIssue>();
             if (auto const err =
@@ -673,8 +673,8 @@ AMMWithdraw::withdraw(
                 err != tesSUCCESS)
                 return err;
 
-            if (auto const err = MPTokenAuthorize::createMPToken(
-                    view, mptIssue.getMptID(), account, 0);
+            if (auto const err = MPTokenAuthorize::checkCreateMPT(
+                    view, mptIssue, account, journal);
                 err != tesSUCCESS)
                 return err;
         }

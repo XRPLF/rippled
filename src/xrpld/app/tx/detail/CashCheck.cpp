@@ -508,12 +508,10 @@ CashCheck::doApply()
                     if (sleDst == nullptr)
                         return tecNO_LINE_INSUF_RESERVE;
 
-                    if (auto const err = MPTokenAuthorize::createMPToken(
-                            psb, mptID, account_, 0);
+                    if (auto const err = MPTokenAuthorize::checkCreateMPT(
+                            psb, mptID, account_, j_);
                         err != tesSUCCESS)
                         return err;
-
-                    adjustOwnerCount(psb, sleDst, 1, j_);
                 }
             }
             // Make sure the tweaked limits are restored when we leave
