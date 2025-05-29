@@ -1141,7 +1141,7 @@ finishLoadByIndexOrHash(
 std::tuple<std::shared_ptr<Ledger>, std::uint32_t, uint256>
 getLatestLedger(Application& app)
 {
-    const std::optional<LedgerInfo> info =
+    std::optional<LedgerInfo> const info =
         app.getRelationalDatabase().getNewestLedgerInfo();
     if (!info)
         return {std::shared_ptr<Ledger>(), {}, {}};

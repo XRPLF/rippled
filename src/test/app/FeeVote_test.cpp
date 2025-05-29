@@ -108,7 +108,7 @@ class FeeVote_test : public beast::unit_test::suite
             BEAST_EXPECT(setup.gas_price == static_cast<std::uint32_t>(-300));
         }
         {
-            const auto big64 = std::to_string(
+            auto const big64 = std::to_string(
                 static_cast<std::uint64_t>(
                     std::numeric_limits<XRPAmount::value_type>::max()) +
                 1);

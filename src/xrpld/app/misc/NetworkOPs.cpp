@@ -28,6 +28,7 @@
 #include <xrpld/app/ledger/OrderBookDB.h>
 #include <xrpld/app/ledger/TransactionMaster.h>
 #include <xrpld/app/main/LoadManager.h>
+#include <xrpld/app/main/Tuning.h>
 #include <xrpld/app/misc/AmendmentTable.h>
 #include <xrpld/app/misc/DeliverMax.h>
 #include <xrpld/app/misc/HashRouter.h>
@@ -63,6 +64,7 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/MultiApiJson.h>
 #include <xrpl/protocol/RPCErr.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
 #include <xrpl/resource/ResourceManager.h>
@@ -298,6 +300,9 @@ public:
         bool bLocal,
         FailHard failType) override;
 
+    void
+    processTransactionSet(CanonicalTXSet const& set) override;
+
     /**
      * For transactions submitted directly by a client, apply batch of
      * transactions and wait for this transaction to complete.
@@ -327,6 +332,16 @@ public:
         bool bUnlimited,
         FailHard failtype);
 
+private:
+    bool
+    preProcessTransaction(std::shared_ptr<Transaction>& transaction);
+
+    void
+    doTransactionSyncBatch(
+        std::unique_lock<std::mutex>& lock,
+        std::function<bool(std::unique_lock<std::mutex> const&)> retryCallback);
+
+public:
     /**
      * Apply transactions in batches. Continue until none are queued.
      */
@@ -359,7 +374,7 @@ public:
         std::shared_ptr<ReadView const>& lpLedger,
         Book const&,
         AccountID const& uTakerID,
-        const bool bProof,
+        bool const bProof,
         unsigned int iLimit,
         Json::Value const& jvMarker,
         Json::Value& jvResult) override;
@@ -383,7 +398,7 @@ private:
     void
     switchLastClosedLedger(std::shared_ptr<Ledger const> const& newLCL);
     bool
-    checkLastClosedLedger(const Overlay::PeerSequence&, uint256& networkClosed);
+    checkLastClosedLedger(Overlay::PeerSequence const&, uint256& networkClosed);
 
 public:
     bool
@@ -944,7 +959,7 @@ NetworkOPsImp::setStateTimer()
 void
 NetworkOPsImp::setTimer(
     boost::asio::steady_timer& timer,
-    const std::chrono::milliseconds& expiry_time,
+    std::chrono::milliseconds const& expiry_time,
     std::function<void()> onExpire,
     std::function<void()> onError)
 {
@@ -1087,7 +1102,7 @@ NetworkOPsImp::processHeartbeatTimer()
     mConsensus.timerEntry(app_.timeKeeper().closeTime(), clog.ss());
 
     CLOG(clog.ss()) << "consensus phase " << to_string(mLastConsensusPhase);
-    const ConsensusPhase currPhase = mConsensus.phase();
+    ConsensusPhase const currPhase = mConsensus.phase();
     if (mLastConsensusPhase != currPhase)
     {
         reportConsensusStateChange(currPhase);
@@ -1176,6 +1191,15 @@ NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
         return;
     }
 
+    // Enforce Network bar for batch txn
+    if (iTrans->isFlag(tfInnerBatchTxn) &&
+        m_ledgerMaster.getValidatedRules().enabled(featureBatch))
+    {
+        JLOG(m_journal.error())
+            << "Submitted transaction invalid: tfInnerBatchTxn flag present.";
+        return;
+    }
+
     // this is an asynchronous interface
     auto const trans = sterilize(*iTrans);
 
@@ -1221,14 +1245,9 @@ NetworkOPsImp::submitTransaction(std::shared_ptr<STTx const> const& iTrans)
     });
 }
 
-void
-NetworkOPsImp::processTransaction(
-    std::shared_ptr<Transaction>& transaction,
-    bool bUnlimited,
-    bool bLocal,
-    FailHard failType)
+bool
+NetworkOPsImp::preProcessTransaction(std::shared_ptr<Transaction>& transaction)
 {
-    auto ev = m_job_queue.makeLoadEvent(jtTXN_PROC, "ProcessTXN");
     auto const newFlags = app_.getHashRouter().getFlags(transaction->getID());
 
     if ((newFlags & SF_BAD) != 0)
@@ -1237,18 +1256,28 @@ NetworkOPsImp::processTransaction(
         JLOG(m_journal.warn()) << transaction->getID() << ": cached bad!\n";
         transaction->setStatus(INVALID);
         transaction->setResult(temBAD_SIGNATURE);
-        return;
+        return false;
+    }
+
+    auto const view = m_ledgerMaster.getCurrentLedger();
+
+    // This function is called by several different parts of the codebase
+    // under no circumstances will we ever accept an inner txn within a batch
+    // txn from the network.
+    auto const sttx = *transaction->getSTransaction();
+    if (sttx.isFlag(tfInnerBatchTxn) && view->rules().enabled(featureBatch))
+    {
+        transaction->setStatus(INVALID);
+        transaction->setResult(temINVALID_FLAG);
+        app_.getHashRouter().setFlags(transaction->getID(), SF_BAD);
+        return false;
     }
 
     // NOTE eahennis - I think this check is redundant,
     // but I'm not 100% sure yet.
     // If so, only cost is looking up HashRouter flags.
-    auto const view = m_ledgerMaster.getCurrentLedger();
-    auto const [validity, reason] = checkValidity(
-        app_.getHashRouter(),
-        *transaction->getSTransaction(),
-        view->rules(),
-        app_.config());
+    auto const [validity, reason] =
+        checkValidity(app_.getHashRouter(), sttx, view->rules(), app_.config());
     XRPL_ASSERT(
         validity == Validity::Valid,
         "ripple::NetworkOPsImp::processTransaction : valid validity");
@@ -1260,11 +1289,27 @@ NetworkOPsImp::processTransaction(
         transaction->setStatus(INVALID);
         transaction->setResult(temBAD_SIGNATURE);
         app_.getHashRouter().setFlags(transaction->getID(), SF_BAD);
-        return;
+        return false;
     }
 
     // canonicalize can change our pointer
     app_.getMasterTransaction().canonicalize(&transaction);
+
+    return true;
+}
+
+void
+NetworkOPsImp::processTransaction(
+    std::shared_ptr<Transaction>& transaction,
+    bool bUnlimited,
+    bool bLocal,
+    FailHard failType)
+{
+    auto ev = m_job_queue.makeLoadEvent(jtTXN_PROC, "ProcessTXN");
+
+    // preProcessTransaction can change our pointer
+    if (!preProcessTransaction(transaction))
+        return;
 
     if (bLocal)
         doTransactionSync(transaction, bUnlimited, failType);
@@ -1312,6 +1357,17 @@ NetworkOPsImp::doTransactionSync(
         transaction->setApplying();
     }
 
+    doTransactionSyncBatch(
+        lock, [&transaction](std::unique_lock<std::mutex> const&) {
+            return transaction->getApplying();
+        });
+}
+
+void
+NetworkOPsImp::doTransactionSyncBatch(
+    std::unique_lock<std::mutex>& lock,
+    std::function<bool(std::unique_lock<std::mutex> const&)> retryCallback)
+{
     do
     {
         if (mDispatchState == DispatchState::running)
@@ -1334,7 +1390,70 @@ NetworkOPsImp::doTransactionSync(
                 }
             }
         }
-    } while (transaction->getApplying());
+    } while (retryCallback(lock));
+}
+
+void
+NetworkOPsImp::processTransactionSet(CanonicalTXSet const& set)
+{
+    auto ev = m_job_queue.makeLoadEvent(jtTXN_PROC, "ProcessTXNSet");
+    std::vector<std::shared_ptr<Transaction>> candidates;
+    candidates.reserve(set.size());
+    for (auto const& [_, tx] : set)
+    {
+        std::string reason;
+        auto transaction = std::make_shared<Transaction>(tx, reason, app_);
+
+        if (transaction->getStatus() == INVALID)
+        {
+            if (!reason.empty())
+            {
+                JLOG(m_journal.trace())
+                    << "Exception checking transaction: " << reason;
+            }
+            app_.getHashRouter().setFlags(tx->getTransactionID(), SF_BAD);
+            continue;
+        }
+
+        // preProcessTransaction can change our pointer
+        if (!preProcessTransaction(transaction))
+            continue;
+
+        candidates.emplace_back(transaction);
+    }
+
+    std::vector<TransactionStatus> transactions;
+    transactions.reserve(candidates.size());
+
+    std::unique_lock lock(mMutex);
+
+    for (auto& transaction : candidates)
+    {
+        if (!transaction->getApplying())
+        {
+            transactions.emplace_back(transaction, false, false, FailHard::no);
+            transaction->setApplying();
+        }
+    }
+
+    if (mTransactions.empty())
+        mTransactions.swap(transactions);
+    else
+    {
+        mTransactions.reserve(mTransactions.size() + transactions.size());
+        for (auto& t : transactions)
+            mTransactions.push_back(std::move(t));
+    }
+
+    doTransactionSyncBatch(lock, [&](std::unique_lock<std::mutex> const&) {
+        XRPL_ASSERT(
+            lock.owns_lock(),
+            "ripple::NetworkOPsImp::processTransactionSet has lock");
+        return std::any_of(
+            mTransactions.begin(), mTransactions.end(), [](auto const& t) {
+                return t.transaction->getApplying();
+            });
+    });
 }
 
 void
@@ -1441,16 +1560,28 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                     << "Transaction is now included in open ledger";
                 e.transaction->setStatus(INCLUDED);
 
+                // Pop as many "reasonable" transactions for this account as
+                // possible. "Reasonable" means they have sequential sequence
+                // numbers, or use tickets.
                 auto const& txCur = e.transaction->getSTransaction();
-                auto const txNext = m_ledgerMaster.popAcctTransaction(txCur);
-                if (txNext)
+
+                std::size_t count = 0;
+                for (auto txNext = m_ledgerMaster.popAcctTransaction(txCur);
+                     txNext && count < maxPoppedTransactions;
+                     txNext = m_ledgerMaster.popAcctTransaction(txCur), ++count)
                 {
+                    if (!batchLock.owns_lock())
+                        batchLock.lock();
                     std::string reason;
                     auto const trans = sterilize(*txNext);
                     auto t = std::make_shared<Transaction>(trans, reason, app_);
+                    if (t->getApplying())
+                        break;
                     submit_held.emplace_back(t, false, false, FailHard::no);
                     t->setApplying();
                 }
+                if (batchLock.owns_lock())
+                    batchLock.unlock();
             }
             else if (e.result == tefPAST_SEQ)
             {
@@ -1472,16 +1603,54 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                 e.transaction->setQueued();
                 e.transaction->setKept();
             }
-            else if (isTerRetry(e.result))
+            else if (
+                isTerRetry(e.result) || isTelLocal(e.result) ||
+                isTefFailure(e.result))
             {
                 if (e.failType != FailHard::yes)
                 {
-                    // transaction should be held
-                    JLOG(m_journal.debug())
-                        << "Transaction should be held: " << e.result;
-                    e.transaction->setStatus(HELD);
-                    m_ledgerMaster.addHeldTransaction(e.transaction);
-                    e.transaction->setKept();
+                    auto const lastLedgerSeq =
+                        e.transaction->getSTransaction()->at(
+                            ~sfLastLedgerSequence);
+                    auto const ledgersLeft = lastLedgerSeq
+                        ? *lastLedgerSeq -
+                            m_ledgerMaster.getCurrentLedgerIndex()
+                        : std::optional<LedgerIndex>{};
+                    // If any of these conditions are met, the transaction can
+                    // be held:
+                    // 1. It was submitted locally. (Note that this flag is only
+                    //    true on the initial submission.)
+                    // 2. The transaction has a LastLedgerSequence, and the
+                    //    LastLedgerSequence is fewer than LocalTxs::holdLedgers
+                    //    (5) ledgers into the future. (Remember that an
+                    //    unseated optional compares as less than all seated
+                    //    values, so it has to be checked explicitly first.)
+                    // 3. The SF_HELD flag is not set on the txID. (setFlags
+                    //    checks before setting. If the flag is set, it returns
+                    //    false, which means it's been held once without one of
+                    //    the other conditions, so don't hold it again. Time's
+                    //    up!)
+                    //
+                    if (e.local ||
+                        (ledgersLeft && ledgersLeft <= LocalTxs::holdLedgers) ||
+                        app_.getHashRouter().setFlags(
+                            e.transaction->getID(), SF_HELD))
+                    {
+                        // transaction should be held
+                        JLOG(m_journal.debug())
+                            << "Transaction should be held: " << e.result;
+                        e.transaction->setStatus(HELD);
+                        m_ledgerMaster.addHeldTransaction(e.transaction);
+                        e.transaction->setKept();
+                    }
+                    else
+                        JLOG(m_journal.debug())
+                            << "Not holding transaction "
+                            << e.transaction->getID() << ": "
+                            << (e.local ? "local" : "network") << ", "
+                            << "result: " << e.result << " ledgers left: "
+                            << (ledgersLeft ? to_string(*ledgersLeft)
+                                            : "unspecified");
                 }
             }
             else
@@ -1510,13 +1679,17 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
             {
                 auto const toSkip =
                     app_.getHashRouter().shouldRelay(e.transaction->getID());
-
-                if (toSkip)
+                if (auto const sttx = *(e.transaction->getSTransaction());
+                    toSkip &&
+                    // Skip relaying if it's an inner batch txn and batch
+                    // feature is enabled
+                    !(sttx.isFlag(tfInnerBatchTxn) &&
+                      newOL->rules().enabled(featureBatch)))
                 {
                     protocol::TMTransaction tx;
                     Serializer s;
 
-                    e.transaction->getSTransaction()->add(s);
+                    sttx.add(s);
                     tx.set_rawtransaction(s.data(), s.size());
                     tx.set_status(protocol::tsCURRENT);
                     tx.set_receivetimestamp(
@@ -1528,7 +1701,7 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
                 }
             }
 
-            if (validatedLedgerIndex)
+            if (!isTemMalformed(e.result) && validatedLedgerIndex)
             {
                 auto [fee, accountSeq, availableSeq] =
                     app_.getTxQ().getTxRequiredFeeAndSeq(
@@ -1549,8 +1722,11 @@ NetworkOPsImp::apply(std::unique_lock<std::mutex>& batchLock)
         if (mTransactions.empty())
             mTransactions.swap(submit_held);
         else
+        {
+            mTransactions.reserve(mTransactions.size() + submit_held.size());
             for (auto& e : submit_held)
                 mTransactions.push_back(std::move(e));
+        }
     }
 
     mCond.notify_all();
@@ -1692,7 +1868,7 @@ NetworkOPsImp::clearUNLBlocked()
 
 bool
 NetworkOPsImp::checkLastClosedLedger(
-    const Overlay::PeerSequence& peerList,
+    Overlay::PeerSequence const& peerList,
     uint256& networkClosed)
 {
     // Returns true if there's an *abnormal* ledger issue, normal changing in
@@ -1914,7 +2090,7 @@ NetworkOPsImp::beginConsensus(
         changes.added,
         clog);
 
-    const ConsensusPhase currPhase = mConsensus.phase();
+    ConsensusPhase const currPhase = mConsensus.phase();
     if (mLastConsensusPhase != currPhase)
     {
         reportConsensusStateChange(currPhase);
@@ -2897,6 +3073,11 @@ NetworkOPsImp::pubProposedTransaction(
     std::shared_ptr<STTx const> const& transaction,
     TER result)
 {
+    // never publish an inner txn inside a batch txn
+    if (transaction->isFlag(tfInnerBatchTxn) &&
+        ledger->rules().enabled(featureBatch))
+        return;
+
     MultiApiJson jvObj =
         transJson(transaction, result, false, ledger, std::nullopt);
 
@@ -3200,7 +3381,7 @@ NetworkOPsImp::transJson(
 void
 NetworkOPsImp::pubValidatedTransaction(
     std::shared_ptr<ReadView const> const& ledger,
-    const AcceptedLedgerTx& transaction,
+    AcceptedLedgerTx const& transaction,
     bool last)
 {
     auto const& stTxn = transaction.getTxn();
@@ -3551,7 +3732,7 @@ void
 NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
 {
     enum DatabaseType { Sqlite, None };
-    static const auto databaseType = [&]() -> DatabaseType {
+    static auto const databaseType = [&]() -> DatabaseType {
         // Use a dynamic_cast to return DatabaseType::None
         // on failure.
         if (dynamic_cast<SQLiteDatabase*>(&app_.getRelationalDatabase()))
@@ -3596,7 +3777,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
                 {
                     auto stx = tx->getSTransaction();
                     if (stx->getAccountID(sfAccount) == accountId &&
-                        stx->getSeqProxy().value() == 1)
+                        stx->getSeqValue() == 1)
                         return true;
                 }
 
@@ -3607,7 +3788,7 @@ NetworkOPsImp::addAccountHistoryJob(SubAccountHistoryInfoWeak subInfo)
 
                     if (node.isFieldPresent(sfNewFields))
                     {
-                        if (auto inner = dynamic_cast<const STObject*>(
+                        if (auto inner = dynamic_cast<STObject const*>(
                                 node.peekAtPField(sfNewFields));
                             inner)
                         {
@@ -3943,7 +4124,7 @@ NetworkOPsImp::unsubAccountHistory(
 void
 NetworkOPsImp::unsubAccountHistoryInternal(
     std::uint64_t seq,
-    const AccountID& account,
+    AccountID const& account,
     bool historyOnly)
 {
     std::lock_guard sl(mSubLock);
@@ -4287,8 +4468,8 @@ NetworkOPsImp::getBookPage(
         (jvResult[jss::offers] = Json::Value(Json::arrayValue));
 
     std::unordered_map<AccountID, STAmount> umBalance;
-    const uint256 uBookBase = getBookBase(book);
-    const uint256 uBookEnd = getQualityNext(uBookBase);
+    uint256 const uBookBase = getBookBase(book);
+    uint256 const uBookEnd = getQualityNext(uBookBase);
     uint256 uTipIndex = uBookBase;
 
     if (auto stream = m_journal.trace())
@@ -4499,7 +4680,7 @@ NetworkOPsImp::getBookPage(
 
     auto const rate = transferRate(lesActive, book.out.account);
 
-    const bool bGlobalFreeze = lesActive.isGlobalFrozen(book.out.account) ||
+    bool const bGlobalFreeze = lesActive.isGlobalFrozen(book.out.account) ||
         lesActive.isGlobalFrozen(book.in.account);
 
     while (iLimit-- > 0 && obIterator.nextOffer())

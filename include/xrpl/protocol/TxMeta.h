@@ -131,6 +131,27 @@ public:
     }
 
     void
+    setParentBatchId(uint256 const& parentBatchId)
+    {
+        parentBatchId_ = parentBatchId;
+    }
+
+    uint256
+    getParentBatchId() const
+    {
+        XRPL_ASSERT(
+            hasParentBatchId(),
+            "ripple::TxMeta::getParentBatchId : non-null batch id");
+        return *parentBatchId_;
+    }
+
+    bool
+    hasParentBatchId() const
+    {
+        return static_cast<bool>(parentBatchId_);
+    }
+
+    void
     setGasUsed(std::uint32_t const& gasUsed)
     {
         gasUsed_ = gasUsed;
@@ -158,6 +179,7 @@ private:
 
     std::optional<STAmount> mDelivered;
     std::optional<std::uint32_t> gasUsed_;
+    std::optional<uint256> parentBatchId_;
 
     STArray mNodes;
 };

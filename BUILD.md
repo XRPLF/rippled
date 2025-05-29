@@ -299,7 +299,7 @@ It add metering and expose some internal structures.
    Single-config generators:
 
    ```
-   cmake --build .
+   cmake --build . -j $(nproc)
    ```
 
    Multi-config generators:

@@ -2042,6 +2042,78 @@ static constexpr TxnTestData txnTestArray[] = {
        "Cannot specify differing 'Amount' and 'DeliverMax'",
        "Cannot specify differing 'Amount' and 'DeliverMax'"}}},
 
+    {"Minimal delegated transaction.",
+     __LINE__,
+     R"({
+    "command": "doesnt_matter",
+    "secret": "a",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA",
+        "TransactionType": "Payment",
+        "Delegate": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA"
+    }
+})",
+     {{"",
+       "",
+       "Missing field 'account'.",
+       "Missing field 'tx_json.Sequence'."}}},
+
+    {"Delegate not well formed.",
+     __LINE__,
+     R"({
+    "command": "doesnt_matter",
+    "secret": "a",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi",
+        "TransactionType": "Payment",
+        "Delegate": "NotAnAccount"
+    }
+})",
+     {{"Invalid field 'tx_json.Delegate'.",
+       "Invalid field 'tx_json.Delegate'.",
+       "Missing field 'account'.",
+       "Missing field 'tx_json.Sequence'."}}},
+
+    {"Delegate not in ledger.",
+     __LINE__,
+     R"({
+    "command": "doesnt_matter",
+    "secret": "a",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi",
+        "TransactionType": "Payment",
+        "Delegate": "rDg53Haik2475DJx8bjMDSDPj4VX7htaMd"
+    }
+})",
+     {{"Delegate account not found.",
+       "Delegate account not found.",
+       "Missing field 'account'.",
+       "Missing field 'tx_json.Sequence'."}}},
+
+    {"Delegate and secret not match.",
+     __LINE__,
+     R"({
+    "command": "doesnt_matter",
+    "secret": "aa",
+    "tx_json": {
+        "Account": "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh",
+        "Amount": "1000000000",
+        "Destination": "rJrxi4Wxev4bnAGVNP9YCdKPdAoKfAmcsi",
+        "TransactionType": "Payment",
+        "Delegate": "rnUy2SHTrB9DubsPmkJZUXTf5FcNDGrYEA"
+    }
+})",
+     {{"Secret does not match account.",
+       "Secret does not match account.",
+       "Missing field 'account'.",
+       "Missing field 'tx_json.Sequence'."}}},
+
 };
 
 class JSONRPC_test : public beast::unit_test::suite
@@ -2058,6 +2130,127 @@ public:
         BEAST_EXPECT(result[jss::result][jss::error] == "unknownCmd");
         BEAST_EXPECT(
             result[jss::result][jss::request][jss::command] == "bad_command");
+    }
+
+    void
+    testAutoFillFails()
+    {
+        testcase("autofill fails");
+        using namespace test::jtx;
+
+        // test batch raw transactions max size
+        {
+            Env env(*this);
+            auto ledger = env.current();
+            auto const& feeTrack = env.app().getFeeTrack();
+            Json::Value req;
+            Account const alice("alice");
+            Account const bob("bob");
+            env.fund(XRP(100000), alice);
+            env.close();
+
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+            auto const seq = env.seq(alice);
+            auto jt = env.jtnofill(
+                batch::outer(alice, env.seq(alice), batchFee, tfAllOrNothing),
+                batch::inner(pay(alice, bob, XRP(1)), seq + 1),
+                batch::inner(pay(alice, bob, XRP(2)), seq + 2),
+                batch::inner(pay(alice, bob, XRP(3)), seq + 3),
+                batch::inner(pay(alice, bob, XRP(4)), seq + 4),
+                batch::inner(pay(alice, bob, XRP(5)), seq + 5),
+                batch::inner(pay(alice, bob, XRP(6)), seq + 6),
+                batch::inner(pay(alice, bob, XRP(7)), seq + 7),
+                batch::inner(pay(alice, bob, XRP(8)), seq + 8),
+                batch::inner(pay(alice, bob, XRP(9)), seq + 9));
+
+            jt.jv.removeMember(jss::Fee);
+            jt.jv.removeMember(jss::TxnSignature);
+            req[jss::tx_json] = jt.jv;
+            Json::Value result = checkFee(
+                req,
+                Role::ADMIN,
+                true,
+                env.app().config(),
+                feeTrack,
+                env.app().getTxQ(),
+                env.app());
+            BEAST_EXPECT(result.size() == 0);
+            BEAST_EXPECT(
+                req[jss::tx_json].isMember(jss::Fee) &&
+                req[jss::tx_json][jss::Fee] ==
+                    env.current()->fees().base.jsonClipped());
+        }
+
+        // test signers max size
+        {
+            Env env(*this);
+            auto ledger = env.current();
+            auto const& feeTrack = env.app().getFeeTrack();
+            Json::Value req;
+            Account const alice("alice");
+            Account const bob("bob");
+            env.fund(XRP(100000), alice, bob);
+            env.close();
+
+            auto jt = env.jtnofill(
+                noop(alice),
+                msig(
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice,
+                    alice));
+
+            req[jss::tx_json] = jt.jv;
+            Json::Value result = checkFee(
+                req,
+                Role::ADMIN,
+                true,
+                env.app().config(),
+                feeTrack,
+                env.app().getTxQ(),
+                env.app());
+            BEAST_EXPECT(result.size() == 0);
+            BEAST_EXPECT(
+                req[jss::tx_json].isMember(jss::Fee) &&
+                req[jss::tx_json][jss::Fee] ==
+                    env.current()->fees().base.jsonClipped());
+        }
     }
 
     void
@@ -2713,6 +2906,7 @@ public:
     run() override
     {
         testBadRpcCommand();
+        testAutoFillFails();
         testAutoFillFees();
         testAutoFillEscalatedFees();
         testAutoFillNetworkID();

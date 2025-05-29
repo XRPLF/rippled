@@ -41,7 +41,7 @@ using getTxField_proto = uint32_t*(char const*, int32_t);
 wasm_trap_t*
 getTxField_wrap(
     void* env,
-    const wasm_val_vec_t* params,
+    wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
 using getLedgerEntryField_proto =
@@ -49,25 +49,25 @@ using getLedgerEntryField_proto =
 wasm_trap_t*
 getLedgerEntryField_wrap(
     void* env,
-    const wasm_val_vec_t* params,
+    wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
 using getCurrentLedgerEntryField_proto = uint32_t*(char const*, int32_t);
 wasm_trap_t*
 getCurrentLedgerEntryField_wrap(
     void* env,
-    const wasm_val_vec_t* params,
+    wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
 using getNFT_proto = uint32_t*(char const*, int32_t, char const*, int32_t);
 wasm_trap_t*
-getNFT_wrap(void* env, const wasm_val_vec_t* params, wasm_val_vec_t* results);
+getNFT_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
 using accountKeylet_proto = uint32_t*(char const*, int32_t);
 wasm_trap_t*
 accountKeylet_wrap(
     void* env,
-    const wasm_val_vec_t* params,
+    wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
 using credentialKeylet_proto =
@@ -75,39 +75,39 @@ using credentialKeylet_proto =
 wasm_trap_t*
 credentialKeylet_wrap(
     void* env,
-    const wasm_val_vec_t* params,
+    wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
 using escrowKeylet_proto = uint32_t*(char const*, int32_t, int32_t);
 wasm_trap_t*
 escrowKeylet_wrap(
     void* env,
-    const wasm_val_vec_t* params,
+    wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
 using oracleKeylet_proto = uint32_t*(char const*, int32_t, int32_t);
 wasm_trap_t*
 oracleKeylet_wrap(
     void* env,
-    const wasm_val_vec_t* params,
+    wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
 using updateData_proto = void(uint8_t const*, int32_t);
 wasm_trap_t*
 updateData_wrap(
     void* env,
-    const wasm_val_vec_t* params,
+    wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
 using computeSha512HalfHash_proto = uint32_t*(uint8_t const*, int32_t);
 wasm_trap_t*
 computeSha512HalfHash_wrap(
     void* env,
-    const wasm_val_vec_t* params,
+    wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
 using print_proto = void(char const*, int32_t);
 wasm_trap_t*
-print_wrap(void* env, const wasm_val_vec_t* params, wasm_val_vec_t* results);
+print_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
 }  // namespace ripple

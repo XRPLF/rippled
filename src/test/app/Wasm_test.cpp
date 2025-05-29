@@ -32,7 +32,7 @@ namespace test {
 /* Host function body definition. */
 using Add_proto = int32_t(int32_t, int32_t);
 wasm_trap_t*
-Add(void* env, const wasm_val_vec_t* params, wasm_val_vec_t* results)
+Add(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
 {
     int32_t Val1 = params->data[0].of.i32;
     int32_t Val2 = params->data[1].of.i32;

@@ -39,7 +39,7 @@ WasmHostFunctionsImpl::getParentLedgerTime()
 // TODO remove json code after deciding encoding scheme
 
 std::optional<Bytes>
-WasmHostFunctionsImpl::getTxField(const std::string& fname)
+WasmHostFunctionsImpl::getTxField(std::string const& fname)
 {
     auto js = ctx.tx.getJson(JsonOptions::none);
     if (js.isMember(fname))
@@ -55,7 +55,7 @@ std::optional<Bytes>
 WasmHostFunctionsImpl::getLedgerEntryField(
     int32_t type,
     Bytes const& kdata,
-    const std::string& fname)
+    std::string const& fname)
 {
     auto kl = [&]() -> std::optional<ripple::Keylet> {
         if (type == ltACCOUNT_ROOT)
@@ -84,7 +84,7 @@ WasmHostFunctionsImpl::getLedgerEntryField(
 }
 
 std::optional<Bytes>
-WasmHostFunctionsImpl::getCurrentLedgerEntryField(const std::string& fname)
+WasmHostFunctionsImpl::getCurrentLedgerEntryField(std::string const& fname)
 {
     if (!ctx.view().exists(leKey))
         return std::nullopt;
@@ -101,8 +101,8 @@ WasmHostFunctionsImpl::getCurrentLedgerEntryField(const std::string& fname)
 
 std::optional<Bytes>
 WasmHostFunctionsImpl::getNFT(
-    const std::string& account,
-    const std::string& nftId)
+    std::string const& account,
+    std::string const& nftId)
 {
     auto const accountId = parseBase58<AccountID>(account);
     if (!accountId || accountId->isZero())
@@ -127,7 +127,7 @@ WasmHostFunctionsImpl::getNFT(
 }
 
 bool
-WasmHostFunctionsImpl::updateData(const Bytes& data)
+WasmHostFunctionsImpl::updateData(Bytes const& data)
 {
     if (!ctx.view().exists(leKey))
         return false;
@@ -138,14 +138,14 @@ WasmHostFunctionsImpl::updateData(const Bytes& data)
 }
 
 Hash
-WasmHostFunctionsImpl::computeSha512HalfHash(const Bytes& data)
+WasmHostFunctionsImpl::computeSha512HalfHash(Bytes const& data)
 {
     auto const hash = sha512Half(data);
     return uint256::fromVoid(hash.data());
 }
 
 std::optional<Bytes>
-WasmHostFunctionsImpl::accountKeylet(const std::string& account)
+WasmHostFunctionsImpl::accountKeylet(std::string const& account)
 {
     auto const accountId = parseBase58<AccountID>(account);
     if (!accountId || accountId->isZero())
@@ -164,9 +164,9 @@ WasmHostFunctionsImpl::accountKeylet(const std::string& account)
 
 std::optional<Bytes>
 WasmHostFunctionsImpl::credentialKeylet(
-    const std::string& subject,
-    const std::string& issuer,
-    const std::string& credentialType)
+    std::string const& subject,
+    std::string const& issuer,
+    std::string const& credentialType)
 {
     auto const subjectId = parseBase58<AccountID>(subject);
     if (!subjectId || subjectId->isZero())
@@ -193,8 +193,8 @@ WasmHostFunctionsImpl::credentialKeylet(
 
 std::optional<Bytes>
 WasmHostFunctionsImpl::escrowKeylet(
-    const std::string& account,
-    const std::uint32_t& seq)
+    std::string const& account,
+    std::uint32_t const& seq)
 {
     auto const accountId = parseBase58<AccountID>(account);
     if (!accountId || accountId->isZero())
@@ -213,8 +213,8 @@ WasmHostFunctionsImpl::escrowKeylet(
 
 std::optional<Bytes>
 WasmHostFunctionsImpl::oracleKeylet(
-    const std::string& account,
-    const std::uint32_t& documentId)
+    std::string const& account,
+    std::uint32_t const& documentId)
 {
     auto const accountId = parseBase58<AccountID>(account);
     if (!accountId || accountId->isZero())

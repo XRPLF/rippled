@@ -37,6 +37,7 @@ public:
     using value_type = Asset;
 
     STIssue() = default;
+    STIssue(STIssue const& rhs) = default;
 
     explicit STIssue(SerialIter& sit, SField const& name);
 
@@ -44,6 +45,9 @@ public:
     explicit STIssue(SField const& name, A const& issue);
 
     explicit STIssue(SField const& name);
+
+    STIssue&
+    operator=(STIssue const& rhs) = default;
 
     template <ValidIssueType TIss>
     TIss const&
@@ -71,7 +75,7 @@ public:
     add(Serializer& s) const override;
 
     bool
-    isEquivalent(const STBase& t) const override;
+    isEquivalent(STBase const& t) const override;
 
     bool
     isDefault() const override;
