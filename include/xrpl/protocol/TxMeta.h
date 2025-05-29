@@ -46,10 +46,7 @@ private:
         CtorHelper);
 
 public:
-    TxMeta(
-        uint256 const& transactionID,
-        std::uint32_t ledger,
-        std::optional<uint256> parentBatchId = std::nullopt);
+    TxMeta(uint256 const& transactionID, std::uint32_t ledger);
     TxMeta(uint256 const& txID, std::uint32_t ledger, Blob const&);
     TxMeta(uint256 const& txID, std::uint32_t ledger, std::string const&);
     TxMeta(uint256 const& txID, std::uint32_t ledger, STObject const&);
@@ -136,7 +133,7 @@ public:
     void
     setParentBatchId(uint256 const& parentBatchId)
     {
-        mParentBatchId = parentBatchId;
+        parentBatchId_ = parentBatchId;
     }
 
     uint256
@@ -145,13 +142,33 @@ public:
         XRPL_ASSERT(
             hasParentBatchId(),
             "ripple::TxMeta::getParentBatchId : non-null batch id");
-        return *mParentBatchId;
+        return *parentBatchId_;
     }
 
     bool
     hasParentBatchId() const
     {
-        return static_cast<bool>(mParentBatchId);
+        return static_cast<bool>(parentBatchId_);
+    }
+
+    void
+    setGasUsed(std::uint32_t const& gasUsed)
+    {
+        gasUsed_ = gasUsed;
+    }
+
+    std::uint32_t
+    getGasUsed() const
+    {
+        XRPL_ASSERT(
+            hasGasUsed(), "ripple::TxMeta::getGasUsed : non-null batch id");
+        return *gasUsed_;
+    }
+
+    bool
+    hasGasUsed() const
+    {
+        return static_cast<bool>(gasUsed_);
     }
 
 private:
@@ -161,7 +178,8 @@ private:
     int mResult;
 
     std::optional<STAmount> mDelivered;
-    std::optional<uint256> mParentBatchId;
+    std::optional<std::uint32_t> gasUsed_;
+    std::optional<uint256> parentBatchId_;
 
     STArray mNodes;
 };
