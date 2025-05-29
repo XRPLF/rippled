@@ -231,27 +231,35 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
             return tecINSUFFICIENT_FUNDS;
 
         // Check that the account accepting the buy offer (he's selling the NFT)
-        // is allowed to receive IOUs. But we need to exclude the case when the
-        // transaction is created by the broker. Only the actual seller needs to
-        // be checked.
-        if (!so && !needed.native() &&
-            ctx.view.rules().enabled(fixEnforceNFTokenTrustlineV2))
+        // is allowed to receive IOUs. Also check that this offer's creator is
+        // authorized. But we need to exclude the case when the transaction is
+        // created by the broker.
+        if (ctx.view.rules().enabled(fixEnforceNFTokenTrustlineV2) &&
+            !needed.native())
         {
             auto res = nft::checkTrustlineAuthorized(
-                ctx.view,
-                ctx.tx[sfAccount],
-                ctx.j,
-                needed.asset().get<Issue>());
+                ctx.view, bo->at(sfOwner), ctx.j, needed.asset().get<Issue>());
             if (res != tesSUCCESS)
                 return res;
 
-            res = nft::checkTrustlineDeepFrozen(
-                ctx.view,
-                ctx.tx[sfAccount],
-                ctx.j,
-                needed.asset().get<Issue>());
-            if (res != tesSUCCESS)
-                return res;
+            if (!so)
+            {
+                res = nft::checkTrustlineAuthorized(
+                    ctx.view,
+                    ctx.tx[sfAccount],
+                    ctx.j,
+                    needed.asset().get<Issue>());
+                if (res != tesSUCCESS)
+                    return res;
+
+                res = nft::checkTrustlineDeepFrozen(
+                    ctx.view,
+                    ctx.tx[sfAccount],
+                    ctx.j,
+                    needed.asset().get<Issue>());
+                if (res != tesSUCCESS)
+                    return res;
+            }
         }
     }
 
@@ -315,19 +323,28 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
         }
 
         // Make sure that we are allowed to hold what the taker will pay us.
-        if (!needed.native())
+        if (ctx.view.rules().enabled(fixEnforceNFTokenTrustlineV2) &&
+            !needed.native())
         {
-            if (ctx.view.rules().enabled(fixEnforceNFTokenTrustlineV2))
+            auto res = nft::checkTrustlineAuthorized(
+                ctx.view, (*so)[sfOwner], ctx.j, needed.asset().get<Issue>());
+            if (res != tesSUCCESS)
+                return res;
+
+            if (!bo)
             {
-                auto const res = nft::checkTrustlineAuthorized(
+                res = nft::checkTrustlineAuthorized(
                     ctx.view,
-                    (*so)[sfOwner],
+                    ctx.tx[sfAccount],
                     ctx.j,
                     needed.asset().get<Issue>());
                 if (res != tesSUCCESS)
                     return res;
             }
+        }
 
+        if (!needed.native())
+        {
             auto const res = nft::checkTrustlineDeepFrozen(
                 ctx.view, (*so)[sfOwner], ctx.j, needed.asset().get<Issue>());
             if (res != tesSUCCESS)

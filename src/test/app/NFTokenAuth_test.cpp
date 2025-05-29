@@ -103,7 +103,7 @@ public:
     }
 
     void
-    testBuyOffer_UnauthorizedBuyer(FeatureBitset features)
+    testCreateBuyOffer_UnauthorizedBuyer(FeatureBitset features)
     {
         testcase("Unauthorized buyer tries to create buy offer");
         using namespace test::jtx;
@@ -124,6 +124,92 @@ public:
         env(token::createOffer(A1, nftID, USD(10)),
             token::owner(A2),
             ter(tecUNFUNDED_OFFER));
+        env.close();
+
+        // Artificially create an unauthorized trustline with balance. Don't
+        // close ledger before running the actual tests against this trustline.
+        // After ledger is closed, the trustline will not exist.
+        auto const unauthTrustline = [&](OpenView& view,
+                                         beast::Journal) -> bool {
+            auto const sleA1 =
+                std::make_shared<SLE>(keylet::line(A1, G1, G1["USD"].currency));
+            sleA1->setFieldAmount(sfBalance, A1["USD"](-1000));
+            view.rawInsert(sleA1);
+            return true;
+        };
+        env.app().openLedger().modify(unauthTrustline);
+
+        if (features[fixEnforceNFTokenTrustlineV2])
+        {
+            // test: check that buyer can't make an offer even with balance
+            env(token::createOffer(A1, nftID, USD(10)),
+                token::owner(A2),
+                ter(tecNO_AUTH));
+        }
+        else
+        {
+            // old behavior: can create an offer if balance allows, regardless
+            // ot authorization
+            env(token::createOffer(A1, nftID, USD(10)), token::owner(A2));
+        }
+    }
+
+    void
+    testAcceptBuyOffer_UnauthorizedBuyer(FeatureBitset features)
+    {
+        testcase("Seller tries to accept buy offer from unauth buyer");
+        using namespace test::jtx;
+
+        Env env(*this, features);
+        Account G1{"G1"};
+        Account A1{"A1"};
+        Account A2{"A2"};
+        auto const USD{G1["USD"]};
+
+        env.fund(XRP(10000), G1, A1, A2);
+        env(fset(G1, asfRequireAuth));
+        env.close();
+
+        auto const limit = USD(10000);
+
+        auto const [nftID, _] = mintAndOfferNFT(env, A2, drops(1));
+
+        // First we authorize buyer and seller so that he can create buy offer
+        env(trust(A1, limit));
+        env(trust(G1, limit, A1, tfSetfAuth));
+        env(pay(G1, A1, USD(10)));
+        env(trust(A2, limit));
+        env(trust(G1, limit, A2, tfSetfAuth));
+        env(pay(G1, A2, USD(10)));
+        env.close();
+
+        auto const buyIdx = keylet::nftoffer(A1, env.seq(A1)).key;
+        env(token::createOffer(A1, nftID, USD(10)), token::owner(A2));
+        env.close();
+
+        env(pay(A1, G1, USD(10)));
+        env(trust(A1, USD(0)));
+        env(trust(G1, A1["USD"](0)));
+        env.close();
+
+        // Replace an existing authorized trustline with artificial unauthorized
+        // trustline with balance. Don't close ledger before running the actual
+        // tests against this trustline. After ledger is closed, the trustline
+        // will not exist.
+        auto const unauthTrustline = [&](OpenView& view,
+                                         beast::Journal) -> bool {
+            auto const sleA1 =
+                std::make_shared<SLE>(keylet::line(A1, G1, G1["USD"].currency));
+            sleA1->setFieldAmount(sfBalance, A1["USD"](-1000));
+            view.rawInsert(sleA1);
+            return true;
+        };
+        env.app().openLedger().modify(unauthTrustline);
+        if (features[fixEnforceNFTokenTrustlineV2])
+        {
+            // test: check that offer can't be accepted even with balance
+            env(token::acceptBuyOffer(A2, buyIdx), ter(tecNO_AUTH));
+        }
     }
 
     void
@@ -234,6 +320,21 @@ public:
         // authorized.
         env(token::acceptSellOffer(A1, sellIdx), ter(tecINSUFFICIENT_FUNDS));
         env.close();
+
+        // Creating an artificial unauth trustline
+        auto const unauthTrustline = [&](OpenView& view,
+                                         beast::Journal) -> bool {
+            auto const sleA1 =
+                std::make_shared<SLE>(keylet::line(A1, G1, G1["USD"].currency));
+            sleA1->setFieldAmount(sfBalance, A1["USD"](-1000));
+            view.rawInsert(sleA1);
+            return true;
+        };
+        env.app().openLedger().modify(unauthTrustline);
+        if (features[fixEnforceNFTokenTrustlineV2])
+        {
+            env(token::acceptSellOffer(A1, sellIdx), ter(tecNO_AUTH));
+        }
     }
 
     void
@@ -302,11 +403,73 @@ public:
     }
 
     void
-    testBrokeredAcceptOffer_UnathorizedCounterparties(FeatureBitset features)
+    testBrokeredAcceptOffer_UnathorizedBuyer(FeatureBitset features)
     {
         testcase(
-            "Authorized broker tries to bridge offers from unathrorized "
-            "counterparties.");
+            "Authorized broker tries to bridge offers from unauthorized "
+            "buyer.");
+        using namespace test::jtx;
+
+        Env env(*this, features);
+        Account G1{"G1"};
+        Account A1{"A1"};
+        Account A2{"A2"};
+        Account broker{"broker"};
+        auto const USD{G1["USD"]};
+
+        env.fund(XRP(10000), G1, A1, A2, broker);
+        env(fset(G1, asfRequireAuth));
+        env.close();
+
+        auto const limit = USD(10000);
+
+        env(trust(A1, limit));
+        env(trust(G1, USD(0), A1, tfSetfAuth));
+        env(pay(G1, A1, USD(1000)));
+        env(trust(A2, limit));
+        env(trust(G1, USD(0), A2, tfSetfAuth));
+        env(pay(G1, A2, USD(1000)));
+        env(trust(broker, limit));
+        env(trust(G1, USD(0), broker, tfSetfAuth));
+        env(pay(G1, broker, USD(1000)));
+        env.close();
+
+        auto const [nftID, sellIdx] = mintAndOfferNFT(env, A2, USD(10));
+        auto const buyIdx = keylet::nftoffer(A1, env.seq(A1)).key;
+        env(token::createOffer(A1, nftID, USD(11)), token::owner(A2));
+        env.close();
+
+        // Resetting buyer's trust line to delete it
+        env(pay(A1, G1, USD(1000)));
+        env(trust(A1, USD(0)));
+        env.close();
+
+        auto const unauthTrustline = [&](OpenView& view,
+                                         beast::Journal) -> bool {
+            auto const sleA1 =
+                std::make_shared<SLE>(keylet::line(A1, G1, G1["USD"].currency));
+            sleA1->setFieldAmount(sfBalance, A1["USD"](-1000));
+            view.rawInsert(sleA1);
+            return true;
+        };
+        env.app().openLedger().modify(unauthTrustline);
+
+        if (features[fixEnforceNFTokenTrustlineV2])
+        {
+            // test: G1 requires authorization of A2
+            env(token::brokerOffers(broker, buyIdx, sellIdx),
+                token::brokerFee(USD(1)),
+                ter(tecNO_AUTH));
+            env.close();
+        }
+    }
+
+    void
+    testBrokeredAcceptOffer_UnathorizedSeller(FeatureBitset features)
+    {
+        testcase(
+            "Authorized broker tries to bridge offers from unauthorized "
+            "seller.");
         using namespace test::jtx;
 
         Env env(*this, features);
@@ -444,11 +607,13 @@ public:
         for (auto const feature : features)
         {
             testBuyOffer_UnauthorizedSeller(feature);
-            testBuyOffer_UnauthorizedBuyer(feature);
+            testCreateBuyOffer_UnauthorizedBuyer(feature);
+            testAcceptBuyOffer_UnauthorizedBuyer(feature);
             testSellOffer_UnautharizedSeller(feature);
             testSellOffer_UnautharizedBuyer(feature);
             testBrokeredAcceptOffer_UnathorizedBroker(feature);
-            testBrokeredAcceptOffer_UnathorizedCounterparties(feature);
+            testBrokeredAcceptOffer_UnathorizedBuyer(feature);
+            testBrokeredAcceptOffer_UnathorizedSeller(feature);
             testTransferFee_UnathorizedMinter(feature);
         }
     }

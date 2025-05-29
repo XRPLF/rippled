@@ -1004,17 +1004,18 @@ tokenOfferCreatePreclaim(
         }
     }
 
-    // If this is a sell offer, check that the account is allowed to receive
-    // IOUs
-    if (view.rules().enabled(fixEnforceNFTokenTrustlineV2) &&
-        (txFlags & tfSellNFToken) && !amount.native())
+    if (view.rules().enabled(fixEnforceNFTokenTrustline) && !amount.native())
     {
-        auto res = nft::checkTrustlineAuthorized(
+        // If this is a sell offer, check that the account is allowed to
+        // receive IOUs. If this is a buy offer, we have to check that trustline
+        // is authorized, even though we previosly checked it's balance via
+        // accountHolds. This is due to a possibility of existence of
+        // unauthorized trustlines with balance
+        auto const res = nft::checkTrustlineAuthorized(
             view, acctID, j, amount.asset().get<Issue>());
         if (res != tesSUCCESS)
             return res;
     }
-
     return tesSUCCESS;
 }
 
@@ -1116,9 +1117,9 @@ checkTrustlineAuthorized(
             return tecNO_ISSUER;
         }
 
-        // An account can not create a trustline to itself, so no line can exist
-        // to be authorized. Additionally, an issuer can always accept its own
-        // issuance.
+        // An account can not create a trustline to itself, so no line can
+        // exist to be authorized. Additionally, an issuer can always accept
+        // its own issuance.
         if (issue.account == id)
         {
             return tesSUCCESS;
@@ -1135,8 +1136,8 @@ checkTrustlineAuthorized(
             }
 
             // Entries have a canonical representation, determined by a
-            // lexicographical "greater than" comparison employing strict weak
-            // ordering. Determine which entry we need to access.
+            // lexicographical "greater than" comparison employing strict
+            // weak ordering. Determine which entry we need to access.
             if (!trustLine->isFlag(
                     id > issue.account ? lsfLowAuth : lsfHighAuth))
             {
@@ -1172,9 +1173,9 @@ checkTrustlineDeepFrozen(
             return tecNO_ISSUER;
         }
 
-        // An account can not create a trustline to itself, so no line can exist
-        // to be frozen. Additionally, an issuer can always accept its own
-        // issuance.
+        // An account can not create a trustline to itself, so no line can
+        // exist to be frozen. Additionally, an issuer can always accept its
+        // own issuance.
         if (issue.account == id)
         {
             return tesSUCCESS;
