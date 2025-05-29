@@ -21,7 +21,6 @@
 
 #include <xrpl/basics/Slice.h>
 #include <xrpl/protocol/PublicKey.h>
-#include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/XChainAttestations.h>
 

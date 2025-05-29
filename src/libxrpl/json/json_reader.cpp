@@ -19,10 +19,15 @@
 
 #include <xrpl/basics/contract.h>
 #include <xrpl/json/json_reader.h>
+#include <xrpl/json/json_value.h>
 
 #include <algorithm>
 #include <cctype>
+#include <cstdint>
+#include <cstdio>
+#include <cstring>
 #include <istream>
+#include <stdexcept>
 #include <string>
 
 namespace Json {
@@ -73,8 +78,8 @@ bool
 Reader::parse(std::string const& document, Value& root)
 {
     document_ = document;
-    const char* begin = document_.c_str();
-    const char* end = begin + document_.length();
+    char const* begin = document_.c_str();
+    char const* end = begin + document_.length();
     return parse(begin, end, root);
 }
 
@@ -94,7 +99,7 @@ Reader::parse(std::istream& sin, Value& root)
 }
 
 bool
-Reader::parse(const char* beginDoc, const char* endDoc, Value& root)
+Reader::parse(char const* beginDoc, char const* endDoc, Value& root)
 {
     begin_ = beginDoc;
     end_ = endDoc;
@@ -188,7 +193,7 @@ Reader::skipCommentTokens(Token& token)
 }
 
 bool
-Reader::expectToken(TokenType type, Token& token, const char* message)
+Reader::expectToken(TokenType type, Token& token, char const* message)
 {
     readToken(token);
 
@@ -624,7 +629,7 @@ bool
 Reader::decodeDouble(Token& token)
 {
     double value = 0;
-    const int bufferSize = 32;
+    int const bufferSize = 32;
     int count;
     int length = int(token.end_ - token.start_);
     // Sanity check to avoid buffer overflow exploits.
@@ -934,7 +939,7 @@ Reader::getFormatedErrorMessages() const
          itError != errors_.end();
          ++itError)
     {
-        const ErrorInfo& error = *itError;
+        ErrorInfo const& error = *itError;
         formattedMessage +=
             "* " + getLocationLineAndColumn(error.token_.start_) + "\n";
         formattedMessage += "  " + error.message_ + "\n";

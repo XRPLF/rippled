@@ -24,6 +24,7 @@
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/core/JobQueue.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/Indexes.h>
 
@@ -251,7 +252,7 @@ OrderBookDB::getBookListeners(Book const& book)
 void
 OrderBookDB::processTxn(
     std::shared_ptr<ReadView const> const& ledger,
-    const AcceptedLedgerTx& alTx,
+    AcceptedLedgerTx const& alTx,
     MultiApiJson const& jvObj)
 {
     std::lock_guard sl(mLock);

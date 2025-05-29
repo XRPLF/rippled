@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <test/jtx/did.h>
+
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
@@ -34,7 +35,6 @@ set(jtx::Account const& account)
     Json::Value jv;
     jv[jss::TransactionType] = jss::DIDSet;
     jv[jss::Account] = to_string(account.id());
-    jv[jss::Flags] = tfUniversal;
     return jv;
 }
 
@@ -44,7 +44,6 @@ setValid(jtx::Account const& account)
     Json::Value jv;
     jv[jss::TransactionType] = jss::DIDSet;
     jv[jss::Account] = to_string(account.id());
-    jv[jss::Flags] = tfUniversal;
     jv[sfURI.jsonName] = strHex(std::string{"uri"});
     return jv;
 }
@@ -55,7 +54,6 @@ del(jtx::Account const& account)
     Json::Value jv;
     jv[jss::TransactionType] = jss::DIDDelete;
     jv[jss::Account] = to_string(account.id());
-    jv[jss::Flags] = tfUniversal;
     return jv;
 }
 

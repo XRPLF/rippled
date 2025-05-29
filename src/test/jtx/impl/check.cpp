@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <test/jtx/check.h>
+
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
@@ -36,7 +37,6 @@ cash(jtx::Account const& dest, uint256 const& checkId, STAmount const& amount)
     jv[sfAmount.jsonName] = amount.getJson(JsonOptions::none);
     jv[sfCheckID.jsonName] = to_string(checkId);
     jv[sfTransactionType.jsonName] = jss::CheckCash;
-    jv[sfFlags.jsonName] = tfUniversal;
     return jv;
 }
 
@@ -52,7 +52,6 @@ cash(
     jv[sfDeliverMin.jsonName] = atLeast.value.getJson(JsonOptions::none);
     jv[sfCheckID.jsonName] = to_string(checkId);
     jv[sfTransactionType.jsonName] = jss::CheckCash;
-    jv[sfFlags.jsonName] = tfUniversal;
     return jv;
 }
 
@@ -64,7 +63,6 @@ cancel(jtx::Account const& dest, uint256 const& checkId)
     jv[sfAccount.jsonName] = dest.human();
     jv[sfCheckID.jsonName] = to_string(checkId);
     jv[sfTransactionType.jsonName] = jss::CheckCancel;
-    jv[sfFlags.jsonName] = tfUniversal;
     return jv;
 }
 

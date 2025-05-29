@@ -21,6 +21,7 @@
 #define RIPPLE_APP_MISC_DETAIL_WORKBASE_H_INCLUDED
 
 #include <xrpld/app/misc/detail/Work.h>
+
 #include <xrpl/basics/random.h>
 #include <xrpl/protocol/BuildInfo.h>
 
@@ -29,8 +30,6 @@
 #include <boost/beast/http/empty_body.hpp>
 #include <boost/beast/http/read.hpp>
 #include <boost/beast/http/write.hpp>
-
-#include <vector>
 
 namespace ripple {
 
@@ -96,6 +95,9 @@ public:
 
     void
     onResolve(error_code const& ec, results_type results);
+
+    void
+    onConnect(error_code const& ec, endpoint_type const& endpoint);
 
     void
     onStart();
@@ -196,46 +198,26 @@ WorkBase<Impl>::onResolve(error_code const& ec, results_type results)
     if (ec)
         return fail(ec);
 
-    // Use last endpoint if it is successfully connected
-    // and is in the list, otherwise pick a random endpoint
-    // from the list (excluding last endpoint). If there is
-    // only one endpoint and it is the last endpoint then
-    // use the last endpoint.
-    lastEndpoint_ = [&]() -> endpoint_type {
-        int foundIndex = 0;
-        auto const foundIt = std::find_if(
-            results.begin(), results.end(), [&](endpoint_type const& e) {
-                if (e == lastEndpoint_)
-                    return true;
-                foundIndex++;
-                return false;
-            });
-        if (foundIt != results.end() && lastStatus_)
-            return lastEndpoint_;
-        else if (results.size() == 1)
-            return *results.begin();
-        else if (foundIt == results.end())
-            return *std::next(results.begin(), rand_int(results.size() - 1));
-
-        // lastEndpoint_ is part of the collection
-        // Pick a random number from the n-1 valid choices, if we use
-        // this as an index, note the last element will never be chosen
-        // and the `lastEndpoint_` index may be chosen. So when the
-        // `lastEndpoint_` index is chosen, that is treated as if the
-        // last element was chosen.
-        auto randIndex =
-            (results.size() > 2) ? rand_int(results.size() - 2) : 0;
-        if (randIndex == foundIndex)
-            randIndex = results.size() - 1;
-        return *std::next(results.begin(), randIndex);
-    }();
-
-    socket_.async_connect(
-        lastEndpoint_,
+    boost::asio::async_connect(
+        socket_,
+        results,
         strand_.wrap(std::bind(
-            &Impl::onConnect,
+            &WorkBase::onConnect,
             impl().shared_from_this(),
-            std::placeholders::_1)));
+            std::placeholders::_1,
+            std::placeholders::_2)));
+}
+
+template <class Impl>
+void
+WorkBase<Impl>::onConnect(error_code const& ec, endpoint_type const& endpoint)
+{
+    lastEndpoint_ = endpoint;
+
+    if (ec)
+        return fail(ec);
+
+    impl().onConnect(ec);
 }
 
 template <class Impl>

@@ -22,12 +22,10 @@
 
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/misc/NetworkOPs.h>
-#include <xrpld/core/Config.h>
 #include <xrpld/rpc/RPCHandler.h>
 #include <xrpld/rpc/Status.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/Tuning.h>
-#include <vector>
 
 namespace Json {
 class Object;
@@ -49,7 +47,7 @@ struct Handler
     template <class JsonValue>
     using Method = std::function<Status(JsonContext&, JsonValue&)>;
 
-    const char* name_;
+    char const* name_;
     Method<Json::Value> valueMethod_;
     Role role_;
     RPC::Condition condition_;

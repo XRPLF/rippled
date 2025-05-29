@@ -22,6 +22,7 @@
 
 #include <xrpld/ledger/OpenView.h>
 #include <xrpld/ledger/detail/ApplyViewBase.h>
+
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
 
@@ -57,6 +58,7 @@ public:
         OpenView& to,
         STTx const& tx,
         TER ter,
+        std::optional<uint256> parentBatchId,
         bool isDryRun,
         beast::Journal j);
 

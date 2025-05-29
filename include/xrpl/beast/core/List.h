@@ -21,7 +21,6 @@
 #define BEAST_INTRUSIVE_LIST_H_INCLUDED
 
 #include <iterator>
-#include <type_traits>
 
 namespace beast {
 

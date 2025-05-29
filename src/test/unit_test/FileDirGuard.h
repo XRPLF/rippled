@@ -21,7 +21,9 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #define TEST_UNIT_TEST_DIRGUARD_H
 
 #include <test/jtx/TestSuite.h>
+
 #include <xrpl/basics/contract.h>
+
 #include <boost/filesystem.hpp>
 
 namespace ripple {

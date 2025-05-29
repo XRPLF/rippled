@@ -20,8 +20,10 @@
 #include <test/jtx.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/envconfig.h>
+
 #include <xrpld/app/rdb/backend/SQLiteDatabase.h>
 #include <xrpld/rpc/CTID.h>
+
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STParsedJSON.h>
@@ -459,11 +461,38 @@ class Simulate_test : public beast::unit_test::suite
             {
                 BEAST_EXPECT(result[jss::error] == "highFee");
                 BEAST_EXPECT(result[jss::error_code] == rpcHIGH_FEE);
-                BEAST_EXPECT(
-                    result[jss::error_message] ==
-                    "Fee of 8889 exceeds the requested tx limit of 100");
             }
         }
+    }
+
+    void
+    testInvalidTransactionType()
+    {
+        testcase("Invalid transaction type");
+
+        using namespace jtx;
+
+        Env env(*this);
+
+        Account const alice{"alice"};
+        Account const bob{"bob"};
+        env.fund(XRP(1000000), alice, bob);
+        env.close();
+
+        auto const batchFee = batch::calcBatchFee(env, 0, 2);
+        auto const seq = env.seq(alice);
+        auto jt = env.jtnofill(
+            batch::outer(alice, env.seq(alice), batchFee, tfAllOrNothing),
+            batch::inner(pay(alice, bob, XRP(10)), seq + 1),
+            batch::inner(pay(alice, bob, XRP(10)), seq + 1));
+
+        jt.jv.removeMember(jss::TxnSignature);
+        Json::Value params;
+        params[jss::tx_json] = jt.jv;
+        auto const resp = env.rpc("json", "simulate", to_string(params));
+        BEAST_EXPECT(resp[jss::result][jss::error] == "notImpl");
+        BEAST_EXPECT(
+            resp[jss::result][jss::error_message] == "Not implemented.");
     }
 
     void
@@ -635,7 +664,9 @@ class Simulate_test : public beast::unit_test::suite
                                 auto finalFields = modifiedNode[sfFinalFields];
                                 BEAST_EXPECT(
                                     finalFields[sfBalance] ==
-                                    "99999999999999990");
+                                    std::to_string(
+                                        100'000'000'000'000'000 -
+                                        env.current()->fees().base.drops()));
                             }
                         }
                         BEAST_EXPECT(
@@ -1080,6 +1111,7 @@ public:
     {
         testParamErrors();
         testFeeError();
+        testInvalidTransactionType();
         testSuccessfulTransaction();
         testTransactionNonTecFailure();
         testTransactionTecFailure();

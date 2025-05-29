@@ -22,8 +22,9 @@
 
 #include <xrpld/shamap/SHAMapTreeNode.h>
 
+#include <xrpl/basics/IntrusivePointer.h>
+
 #include <array>
-#include <bit>
 #include <cstdint>
 #include <optional>
 
@@ -58,6 +59,7 @@ namespace ripple {
 */
 class TaggedPointer
 {
+private:
     static_assert(
         alignof(SHAMapHash) >= 4,
         "Bad alignment: Tag pointer requires low two bits to be zero.");
@@ -171,7 +173,7 @@ public:
         of each array.
     */
     [[nodiscard]] std::
-        tuple<std::uint8_t, SHAMapHash*, std::shared_ptr<SHAMapTreeNode>*>
+        tuple<std::uint8_t, SHAMapHash*, intr_ptr::SharedPtr<SHAMapTreeNode>*>
         getHashesAndChildren() const;
 
     /** Get the `hashes` array */
@@ -179,7 +181,7 @@ public:
     getHashes() const;
 
     /** Get the `children` array */
-    [[nodiscard]] std::shared_ptr<SHAMapTreeNode>*
+    [[nodiscard]] intr_ptr::SharedPtr<SHAMapTreeNode>*
     getChildren() const;
 
     /** Call the `f` callback for all 16 (branchFactor) branches - even if

@@ -18,11 +18,10 @@
 //==============================================================================
 
 #include <xrpld/app/tx/detail/MPTokenIssuanceDestroy.h>
-
 #include <xrpld/ledger/View.h>
+
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/st.h>
 
 namespace ripple {
 
@@ -56,7 +55,7 @@ MPTokenIssuanceDestroy::preclaim(PreclaimContext const& ctx)
         return tecNO_PERMISSION;
 
     // ensure it has no outstanding balances
-    if ((*sleMPT)[~sfOutstandingAmount] != 0)
+    if ((*sleMPT)[sfOutstandingAmount] != 0)
         return tecHAS_OBLIGATIONS;
 
     return tesSUCCESS;

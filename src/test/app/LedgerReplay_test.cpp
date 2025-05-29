@@ -19,6 +19,7 @@
 
 #include <test/jtx.h>
 #include <test/jtx/envconfig.h>
+
 #include <xrpld/app/ledger/BuildLedger.h>
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/ledger/LedgerReplay.h>
@@ -29,6 +30,7 @@
 #include <xrpld/app/ledger/detail/SkipListAcquire.h>
 #include <xrpld/overlay/PeerSet.h>
 #include <xrpld/overlay/detail/PeerImp.h>
+
 #include <xrpl/basics/Slice.h>
 
 #include <chrono>
@@ -310,11 +312,11 @@ public:
     {
     }
     void
-    addTxQueue(const uint256&) override
+    addTxQueue(uint256 const&) override
     {
     }
     void
-    removeTxQueue(const uint256&) override
+    removeTxQueue(uint256 const&) override
     {
     }
     bool
@@ -412,7 +414,7 @@ struct TestPeerSet : public PeerSet
         }
     }
 
-    const std::set<Peer::id_t>&
+    std::set<Peer::id_t> const&
     getPeerIds() const override
     {
         static std::set<Peer::id_t> emptyPeers;

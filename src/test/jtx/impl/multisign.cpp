@@ -19,13 +19,12 @@
 
 #include <test/jtx/multisign.h>
 #include <test/jtx/utility.h>
+
 #include <xrpl/basics/contract.h>
-#include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/Sign.h>
-#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/jss.h>
+
 #include <optional>
-#include <sstream>
 
 namespace ripple {
 namespace test {
@@ -65,17 +64,6 @@ signers(Account const& account, none_t)
 }
 
 //------------------------------------------------------------------------------
-
-msig::msig(std::vector<msig::Reg> signers_) : signers(std::move(signers_))
-{
-    // Signatures must be applied in sorted order.
-    std::sort(
-        signers.begin(),
-        signers.end(),
-        [](msig::Reg const& lhs, msig::Reg const& rhs) {
-            return lhs.acct.id() < rhs.acct.id();
-        });
-}
 
 void
 msig::operator()(Env& env, JTx& jt) const

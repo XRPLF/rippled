@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/app/rdb/Wallet.h>
+
 #include <boost/format.hpp>
 
 namespace ripple {

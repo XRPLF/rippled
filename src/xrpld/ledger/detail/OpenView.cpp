@@ -18,11 +18,10 @@
 //==============================================================================
 
 #include <xrpld/ledger/OpenView.h>
+
 #include <xrpl/basics/contract.h>
 
 namespace ripple {
-
-open_ledger_t const open_ledger{};
 
 class OpenView::txs_iter_impl : public txs_type::iter_base
 {
@@ -123,7 +122,7 @@ OpenView::OpenView(ReadView const* base, std::shared_ptr<void const> hold)
 std::size_t
 OpenView::txCount() const
 {
-    return txs_.size();
+    return baseTxCount_ + txs_.size();
 }
 
 void
@@ -268,7 +267,7 @@ OpenView::rawTxInsert(
         std::forward_as_tuple(key),
         std::forward_as_tuple(txn, metaData));
     if (!result.second)
-        LogicError("rawTxInsert: duplicate TX id" + to_string(key));
+        LogicError("rawTxInsert: duplicate TX id: " + to_string(key));
 }
 
 }  // namespace ripple
