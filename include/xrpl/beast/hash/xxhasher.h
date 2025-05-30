@@ -36,6 +36,9 @@ namespace beast {
 
 class xxhasher
 {
+public:
+    using HashType = std::size_t;
+
 private:
     // requires 64-bit std::size_t
     static_assert(sizeof(std::size_t) == 8, "");
@@ -58,6 +61,11 @@ private:
     std::size_t totalSize_ = 0;
     std::chrono::nanoseconds duration_{};
     std::uint64_t cpuCycles = 0;
+    std::uint8_t seed_ = 0;
+
+    std::array<std::uint8_t, 40> buffer_;
+    std::span<std::uint8_t> readBuffer_;
+    std::span<std::uint8_t> writeBuffer_;
 
     static XXH3_state_t*
     allocState()
@@ -67,6 +75,23 @@ private:
         if (ret == nullptr)
             throw std::bad_alloc();
         return ret;
+    }
+
+    void
+    setupBuffers()
+    {
+        writeBuffer_ = std::span{buffer_};
+    }
+
+    void
+    writeBuffer(void const* data, std::size_t len)
+    {
+        auto bytesToWrite = std::min(len, writeBuffer_.size());
+
+        std::memcpy(writeBuffer_.data(), data, bytesToWrite);
+        writeBuffer_ = writeBuffer_.subspan(bytesToWrite);
+        readBuffer_ = std::span{
+            std::begin(buffer_), buffer_.size() - writeBuffer_.size()};
     }
 
 public:
@@ -80,38 +105,43 @@ public:
 
     xxhasher()
     {
-        auto start = std::chrono::steady_clock::now();
-        auto cpuCyclesStart = __rdtsc();
-        // state_ = allocState();
-        // XXH3_64bits_reset(state_);
-        XXH3_64bits_reset(wrapper.state);
-        duration_ += std::chrono::steady_clock::now() - start;
-        cpuCycles += (__rdtsc() - cpuCyclesStart);
+        setupBuffers();
+        //     auto start = std::chrono::steady_clock::now();
+        //     auto cpuCyclesStart = __rdtsc();
+        //     // state_ = allocState();
+        //     // XXH3_64bits_reset(state_);
+        //     XXH3_64bits_reset(wrapper.state);
+        //     duration_ += std::chrono::steady_clock::now() - start;
+        //     cpuCycles += (__rdtsc() - cpuCyclesStart);
     }
 
-    ~xxhasher() noexcept
-    {
-        // profiler_.functionName = "xxhasher-" + std::to_string(totalSize_);
-        // auto start = std::chrono::steady_clock::now();
-        // if (0)
-        // {
-        //     FunctionProfiler _{"-free"};
-        //     XXH3_freeState(state_);
-        // }
-    }
+    // ~xxhasher() noexcept
+    // {
+    //     // profiler_.functionName = "xxhasher-" + std::to_string(totalSize_);
+    //     // auto start = std::chrono::steady_clock::now();
+    //     if (0)
+    //     {
+    //         FunctionProfiler _{"-free"};
+    //         XXH3_freeState(state_);
+    //     }
+    // }
 
     template <
         class Seed,
         std::enable_if_t<std::is_unsigned<Seed>::value>* = nullptr>
     explicit xxhasher(Seed seed)
     {
-        auto start = std::chrono::steady_clock::now();
-        auto cpuCyclesStart = __rdtsc();
+        seed_ = seed % std::numeric_limits<std::uint8_t>::max();
+
+        setupBuffers();
+
+        // auto start = std::chrono::steady_clock::now();
+        // auto cpuCyclesStart = __rdtsc();
         // state_ = allocState();
         // XXH3_64bits_reset_withSeed(state_, seed);
-        XXH3_64bits_reset_withSeed(wrapper.state, seed);
-        duration_ += std::chrono::steady_clock::now() - start;
-        cpuCycles += (__rdtsc() - cpuCyclesStart);
+        // XXH3_64bits_reset_withSeed(wrapper.state, seed);
+        // duration_ += std::chrono::steady_clock::now() - start;
+        // cpuCycles += (__rdtsc() - cpuCyclesStart);
     }
 
     template <
@@ -119,44 +149,79 @@ public:
         std::enable_if_t<std::is_unsigned<Seed>::value>* = nullptr>
     xxhasher(Seed seed, Seed)
     {
-        auto start = std::chrono::steady_clock::now();
-        auto cpuCyclesStart = __rdtsc();
-        // state_ = allocState();
-        // XXH3_64bits_reset_withSeed(state_, seed);
-        XXH3_64bits_reset_withSeed(wrapper.state, seed);
-        duration_ += std::chrono::steady_clock::now() - start;
-        cpuCycles += (__rdtsc() - cpuCyclesStart);
+        seed_ = seed % std::numeric_limits<std::uint8_t>::max();
+
+        setupBuffers();
+        // auto start = std::chrono::steady_clock::now();
+        // auto cpuCyclesStart = __rdtsc();
+        // // state_ = allocState();
+        // // XXH3_64bits_reset_withSeed(state_, seed);
+        // XXH3_64bits_reset_withSeed(wrapper.state, seed);
+        // duration_ += std::chrono::steady_clock::now() - start;
+        // cpuCycles += (__rdtsc() - cpuCyclesStart);
     }
 
     void
     operator()(void const* key, std::size_t len) noexcept
     {
+        totalSize_ += len;
         auto start = std::chrono::steady_clock::now();
         auto cpuCyclesStart = __rdtsc();
-        totalSize_ += len;
+
         // FunctionProfiler _{"-size-" + std::to_string(len)};
         // XXH3_64bits_update(state_, key, len);
-        XXH3_64bits_update(wrapper.state, key, len);
+        // XXH3_64bits_update(wrapper.state, key, len);
+
+        writeBuffer(key, len);
         duration_ += std::chrono::steady_clock::now() - start;
         cpuCycles += (__rdtsc() - cpuCyclesStart);
     }
 
     explicit
-    operator std::size_t() noexcept
+    operator HashType() noexcept
     {
-        auto start = std::chrono::steady_clock::now();
-        // auto ret =  XXH3_64bits_digest(state_);
-        auto ret = XXH3_64bits_digest(wrapper.state);
-        duration_ += std::chrono::steady_clock::now() - start;
+        if (readBuffer_.size() == 0) return 0;
+        
+        std::array<std::byte, 8> hash{};
+        const size_t bit_width = readBuffer_.size() * 8;
+        const size_t shift = seed_ % bit_width;
 
-        std::lock_guard<std::mutex> lock{FunctionProfiler::mutex_};
-        FunctionProfiler::funcionDurations
-            ["xxhasher-" + std::to_string(totalSize_)]
-                .time.emplace_back(duration_);
-        FunctionProfiler::funcionDurations
-            ["xxhasher-" + std::to_string(totalSize_)]
-                .cpuCycles.emplace_back(cpuCycles);
-        return ret;
+        for (size_t i = 0; i < 8; ++i) {
+            size_t out_bit_index = i * 8;
+            size_t in_bit_index = (out_bit_index + shift) % bit_width;
+
+            size_t byte_index = in_bit_index / 8;
+            size_t bit_offset = in_bit_index % 8;
+
+            // Grab two adjacent bytes to ensure we can extract 8 bits safely
+            uint8_t first = readBuffer_[byte_index % readBuffer_.size()];
+            uint8_t second = readBuffer_[(byte_index + 1) % readBuffer_.size()];
+
+            // Combine into 16-bit buffer
+            uint16_t combined = (first << 8) | second;
+
+            // Extract 8 bits starting at bit_offset
+            uint8_t extracted = (combined >> (8 - bit_offset)) & 0xFF;
+
+            hash[i] = std::byte(extracted);
+        }
+
+        std::uint64_t result;
+        std::memcpy(&result, hash.data(), hash.size());
+        return result;
+        // auto start = std::chrono::steady_clock::now();
+        // // auto ret =  XXH3_64bits_digest(state_);
+        // auto ret = XXH3_64bits_digest(wrapper.state);
+        // duration_ += std::chrono::steady_clock::now() - start;
+
+        // std::lock_guard<std::mutex> lock{FunctionProfiler::mutex_};
+        // FunctionProfiler::funcionDurations
+        //     ["xxhasher-" + std::to_string(totalSize_)]
+        //         .time.emplace_back(duration_);
+        // FunctionProfiler::funcionDurations
+        //     ["xxhasher-" + std::to_string(totalSize_)]
+        //         .cpuCycles.emplace_back(cpuCycles);
+        // return ret;
     }
 };
 

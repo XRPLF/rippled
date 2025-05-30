@@ -37,6 +37,22 @@
 #include <utility>
 #include <vector>
 
+#include <xrpl/beast/hash/xxhasher.h>
+
+#include <iostream>
+
+void testHasher()
+{
+    beast::xxhasher hasher{std::uint32_t{8}};
+
+    char a[] = "He";
+    hasher(&a, sizeof(a));
+
+    auto value = static_cast<beast::xxhasher::HashType>(hasher);
+
+    std::cout << value << std::endl;
+}
+
 namespace ripple {
 namespace test {
 
@@ -7140,6 +7156,9 @@ private:
     void
     run() override
     {
+        testHasher();
+
+        return;
         FeatureBitset const all{jtx::supported_amendments()};
         testInvalidInstance();
         testInstanceCreate();

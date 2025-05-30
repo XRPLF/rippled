@@ -9,10 +9,12 @@
 #include <sstream>
 #include <string>
 #include <unordered_map>
-#include <x86intrin.h>
+// #include <x86intrin.h>
 #include <vector>
 #include <cmath>
 #include <numeric>  // std::accumulate
+
+#define __rdtsc() 0
 
 namespace beast {
 
