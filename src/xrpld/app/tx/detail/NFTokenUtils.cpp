@@ -1004,7 +1004,7 @@ tokenOfferCreatePreclaim(
         }
     }
 
-    if (view.rules().enabled(fixEnforceNFTokenTrustline) && !amount.native())
+    if (view.rules().enabled(fixEnforceNFTokenTrustlineV2) && !amount.native())
     {
         // If this is a sell offer, check that the account is allowed to
         // receive IOUs. If this is a buy offer, we have to check that trustline
