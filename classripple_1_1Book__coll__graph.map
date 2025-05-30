@@ -1,10 +1,11 @@
 <map id="ripple::Book" name="ripple::Book">
-<area shape="rect" id="node1" title="Specifies an order book." alt="" coords="1035,42,1135,67"/>
+<area shape="rect" id="node1" title="Specifies an order book." alt="" coords="1067,70,1167,95"/>
 <area shape="rect" id="node2" href="$classripple_1_1CountedObject.html" title=" " alt="" coords="803,5,965,45"/>
 <area shape="rect" id="node3" href="$classripple_1_1Issue.html" title="A currency issued by an account." alt="" coords="833,70,935,95"/>
-<area shape="rect" id="node4" href="$classripple_1_1base__uint.html" title=" " alt="" coords="491,31,689,71"/>
-<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="261,41,349,66"/>
-<area shape="rect" id="node8" href="$classripple_1_1base__uint.html" title=" " alt="" coords="487,95,693,135"/>
-<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="221,107,389,147"/>
-<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,114,108,139"/>
+<area shape="rect" id="node4" href="$classripple_1_1base__uint.html" title=" " alt="" coords="491,33,689,73"/>
+<area shape="rect" id="node5" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/size_t.html" title=" " alt="" coords="261,43,349,69"/>
+<area shape="rect" id="node8" href="$classripple_1_1base__uint.html" title=" " alt="" coords="487,97,693,137"/>
+<area shape="rect" id="node6" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/container/array.html" title=" " alt="" coords="221,109,389,149"/>
+<area shape="rect" id="node7" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/types/integer.html" title=" " alt="" coords="5,117,108,142"/>
+<area shape="rect" id="node9" href="/__w/rippled/rippled/build/docs/cppreference-doxygen-web.tag.xml$cpp/utility/optional.html" title=" " alt="" coords="807,120,961,160"/>
 </map>

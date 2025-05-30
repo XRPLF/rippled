@@ -13,6 +13,7 @@ var searchData=
   ['xrp_5fledger_5fearliest_5ffees_10',['XRP_LEDGER_EARLIEST_FEES',['../namespaceripple.html#a6fc7a232cc9b90d4b5846057977fcf63',1,'ripple']]],
   ['xrp_5fledger_5fearliest_5fseq_11',['XRP_LEDGER_EARLIEST_SEQ',['../namespaceripple.html#a2c550f167665d94744b297523ff07de2',1,'ripple']]],
   ['xrpbooks_5f_12',['xrpBooks_',['../classripple_1_1OrderBookDB.html#ae67cc05be19080e104494e568d5a7c7d',1,'ripple::OrderBookDB']]],
-  ['xrpholders_13',['xrpHolders',['../structripple_1_1test_1_1jtx_1_1MPTInit.html#a501e288755b9cf4aa46faed6c1e8824e',1,'ripple::test::jtx::MPTInit']]],
-  ['xrptrustline_5f_14',['xrpTrustLine_',['../classripple_1_1NoXRPTrustLines.html#a47eaa36a43a5b46071870cf0e2790fa3',1,'ripple::NoXRPTrustLines']]]
+  ['xrpdomainbooks_5f_13',['xrpDomainBooks_',['../classripple_1_1OrderBookDB.html#ad6988ee147409914b441c2c3ffafb77c',1,'ripple::OrderBookDB']]],
+  ['xrpholders_14',['xrpHolders',['../structripple_1_1test_1_1jtx_1_1MPTInit.html#a501e288755b9cf4aa46faed6c1e8824e',1,'ripple::test::jtx::MPTInit']]],
+  ['xrptrustline_5f_15',['xrpTrustLine_',['../classripple_1_1NoXRPTrustLines.html#a47eaa36a43a5b46071870cf0e2790fa3',1,'ripple::NoXRPTrustLines']]]
 ];

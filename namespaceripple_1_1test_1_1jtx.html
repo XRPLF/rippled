@@ -166,6 +166,9 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1test_1_1jtx_1_1disabled__t.html">disabled_t</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1jtx_1_1domain.html">domain</a></td></tr>
+<tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the domain on a <a class="el" href="structripple_1_1test_1_1jtx_1_1JTx.html" title="Execution context for applying a JSON transaction.">JTx</a>.  <a href="classripple_1_1test_1_1jtx_1_1domain.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1test_1_1jtx_1_1dtag.html">dtag</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set the destination tag on a <a class="el" href="structripple_1_1test_1_1jtx_1_1JTx.html" title="Execution context for applying a JSON transaction.">JTx</a>.  <a href="structripple_1_1test_1_1jtx_1_1dtag.html#details">More...</a><br /></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -263,6 +266,8 @@ Classes</h2></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1jtx_1_1paths.html">paths</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Set Paths, SendMax on a <a class="el" href="structripple_1_1test_1_1jtx_1_1JTx.html" title="Execution context for applying a JSON transaction.">JTx</a>.  <a href="classripple_1_1test_1_1jtx_1_1paths.html#details">More...</a><br /></td></tr>
+<tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:"><td class="memItemLeft" align="right" valign="top">class &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="classripple_1_1test_1_1jtx_1_1PermissionedDEX.html">PermissionedDEX</a></td></tr>
 <tr class="separator:"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:"><td class="memItemLeft" align="right" valign="top">struct &#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="structripple_1_1test_1_1jtx_1_1PrettyAmount.html">PrettyAmount</a></td></tr>
 <tr class="memdesc:"><td class="mdescLeft">&#160;</td><td class="mdescRight">Represents an XRP or <a class="el" href="classripple_1_1test_1_1jtx_1_1IOU.html" title="Converts to IOU Issue or STAmount.">IOU</a> quantity This customizes the string conversion and supports XRP conversions from integer and floating point.  <a href="structripple_1_1test_1_1jtx_1_1PrettyAmount.html#details">More...</a><br /></td></tr>
@@ -467,6 +472,8 @@ Functions</h2></td></tr>
 <tr class="separator:a66b99468a4160bccaa9959a444b40d40"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ade0681a9d96704f60ac3edbbe2a54332"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#ade0681a9d96704f60ac3edbbe2a54332">pay</a> (<a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const &amp;account, <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const &amp;to, <a class="el" href="structripple_1_1test_1_1jtx_1_1AnyAmount.html">AnyAmount</a> amount)</td></tr>
 <tr class="separator:ade0681a9d96704f60ac3edbbe2a54332"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a49e6e2b6acf9fb1ffbda10dc01aea24f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#a49e6e2b6acf9fb1ffbda10dc01aea24f">setupDomain</a> (<a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html">jtx::Env</a> &amp;env, <a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> &gt; const &amp;accounts, <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> const &amp;domainOwner, <a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;credType)</td></tr>
+<tr class="separator:a49e6e2b6acf9fb1ffbda10dc01aea24f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a9e4522af358aa969650cf4012200b6da"><td class="memItemLeft" align="right" valign="top">static void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#a9e4522af358aa969650cf4012200b6da">insertQualityIntoJtx</a> (<a class="el" href="classripple_1_1SField.html">SField</a> const &amp;field, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> value, <a class="el" href="structripple_1_1test_1_1jtx_1_1JTx.html">JTx</a> &amp;jt)</td></tr>
 <tr class="separator:a9e4522af358aa969650cf4012200b6da"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a8e8d814b8820ce0b6979abde0d6a2618"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1test_1_1jtx.html#a8e8d814b8820ce0b6979abde0d6a2618">rate</a> (<a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">Account</a> const  &amp;account, double multiplier)</td></tr>
@@ -2231,6 +2238,48 @@ template&lt;typename T &gt; </div>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="pay_8cpp_source.html#l00042">42</a> of file <a class="el" href="pay_8cpp_source.html">pay.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a49e6e2b6acf9fb1ffbda10dc01aea24f" name="a49e6e2b6acf9fb1ffbda10dc01aea24f"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a49e6e2b6acf9fb1ffbda10dc01aea24f">&#9670;&#160;</a></span>setupDomain()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> ripple::test::jtx::setupDomain </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1Env.html">jtx::Env</a> &amp;&#160;</td>
+          <td class="paramname"><em>env</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/container/vector.html">std::vector</a>&lt; <a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>accounts</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1test_1_1jtx_1_1Account.html">jtx::Account</a> const &amp;&#160;</td>
+          <td class="paramname"><em>domainOwner</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a> const &amp;&#160;</td>
+          <td class="paramname"><em>credType</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="permissioned__dex_8cpp_source.html#l00032">32</a> of file <a class="el" href="permissioned__dex_8cpp_source.html">permissioned_dex.cpp</a>.</p>
 
 </div>
 </div>

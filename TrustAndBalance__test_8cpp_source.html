@@ -559,14 +559,15 @@ $(function() {
 <div class="line"><a id="l00481" name="l00481"></a><span class="lineno">  481</span> </div>
 <div class="line"><a id="l00482" name="l00482"></a><span class="lineno">  482</span>        <span class="keyword">using namespace </span>test::jtx;</div>
 <div class="line"><a id="l00483" name="l00483"></a><span class="lineno">  483</span>        <span class="keyword">auto</span> <span class="keyword">const</span> sa = supported_amendments();</div>
-<div class="line"><a id="l00484" name="l00484"></a><span class="lineno">  484</span>        testWithFeatures(sa - featureFlowCross);</div>
-<div class="line"><a id="l00485" name="l00485"></a><span class="lineno">  485</span>        testWithFeatures(sa);</div>
-<div class="line"><a id="l00486" name="l00486"></a><span class="lineno">  486</span>    }</div>
-<div class="line"><a id="l00487" name="l00487"></a><span class="lineno">  487</span>};</div>
-<div class="line"><a id="l00488" name="l00488"></a><span class="lineno">  488</span> </div>
-<div class="line"><a id="l00489" name="l00489"></a><span class="lineno"><a class="line" href="namespaceripple.html#aa7db8f922cdc3258a1b25e2887d25f77">  489</a></span>BEAST_DEFINE_TESTSUITE(TrustAndBalance, app, <a class="code hl_namespace" href="namespaceripple.html">ripple</a>);</div>
-<div class="line"><a id="l00490" name="l00490"></a><span class="lineno">  490</span> </div>
-<div class="line"><a id="l00491" name="l00491"></a><span class="lineno">  491</span>}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a id="l00484" name="l00484"></a><span class="lineno">  484</span>        testWithFeatures(sa - featureFlowCross - featurePermissionedDEX);</div>
+<div class="line"><a id="l00485" name="l00485"></a><span class="lineno">  485</span>        testWithFeatures(sa - featurePermissionedDEX);</div>
+<div class="line"><a id="l00486" name="l00486"></a><span class="lineno">  486</span>        testWithFeatures(sa);</div>
+<div class="line"><a id="l00487" name="l00487"></a><span class="lineno">  487</span>    }</div>
+<div class="line"><a id="l00488" name="l00488"></a><span class="lineno">  488</span>};</div>
+<div class="line"><a id="l00489" name="l00489"></a><span class="lineno">  489</span> </div>
+<div class="line"><a id="l00490" name="l00490"></a><span class="lineno"><a class="line" href="namespaceripple.html#aa7db8f922cdc3258a1b25e2887d25f77">  490</a></span>BEAST_DEFINE_TESTSUITE(TrustAndBalance, app, <a class="code hl_namespace" href="namespaceripple.html">ripple</a>);</div>
+<div class="line"><a id="l00491" name="l00491"></a><span class="lineno">  491</span> </div>
+<div class="line"><a id="l00492" name="l00492"></a><span class="lineno">  492</span>}  <span class="comment">// namespace ripple</span></div>
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div></div>
 <div class="ttc" id="aclassJson_1_1Value_html"><div class="ttname"><a href="classJson_1_1Value.html">Json::Value</a></div><div class="ttdoc">Represents a JSON value.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00149">json_value.h:150</a></div></div>
 <div class="ttc" id="aclassJson_1_1Value_html_a21526b61dea2a1771030473e6248621e"><div class="ttname"><a href="classJson_1_1Value.html#a21526b61dea2a1771030473e6248621e">Json::Value::append</a></div><div class="ttdeci">Value &amp; append(Value const &amp;value)</div><div class="ttdoc">Append value to array at the end.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8cpp_source.html#l00910">json_value.cpp:910</a></div></div>

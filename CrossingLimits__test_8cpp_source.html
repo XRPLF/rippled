@@ -636,15 +636,18 @@ $(function() {
 <div class="line"><a id="l00558" name="l00558"></a><span class="lineno">  558</span>        <span class="keyword">using namespace </span>jtx;</div>
 <div class="line"><a id="l00559" name="l00559"></a><span class="lineno">  559</span>        <span class="keyword">auto</span> <span class="keyword">const</span> sa = <a class="code hl_function" href="namespaceripple_1_1test_1_1jtx.html#af5441d84d5977d52246c5226313560d4">supported_amendments</a>();</div>
 <div class="line"><a id="l00560" name="l00560"></a><span class="lineno">  560</span>        testAll(sa);</div>
-<div class="line"><a id="l00561" name="l00561"></a><span class="lineno">  561</span>        testAll(sa - featureFlowSortStrands);</div>
-<div class="line"><a id="l00562" name="l00562"></a><span class="lineno">  562</span>        testAll(sa - featureFlowCross - featureFlowSortStrands);</div>
-<div class="line"><a id="l00563" name="l00563"></a><span class="lineno">  563</span>    }</div>
-<div class="line"><a id="l00564" name="l00564"></a><span class="lineno">  564</span>};</div>
-<div class="line"><a id="l00565" name="l00565"></a><span class="lineno">  565</span> </div>
-<div class="line"><a id="l00566" name="l00566"></a><span class="lineno"><a class="line" href="namespaceripple_1_1test.html#a1e21fbfd1eb95324d619bd5bd7d9a85f">  566</a></span>BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(CrossingLimits, tx, <a class="code hl_namespace" href="namespaceripple.html">ripple</a>, 10);</div>
-<div class="line"><a id="l00567" name="l00567"></a><span class="lineno">  567</span> </div>
-<div class="line"><a id="l00568" name="l00568"></a><span class="lineno">  568</span>}  <span class="comment">// namespace test</span></div>
-<div class="line"><a id="l00569" name="l00569"></a><span class="lineno">  569</span>}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a id="l00561" name="l00561"></a><span class="lineno">  561</span>        testAll(sa - featurePermissionedDEX);</div>
+<div class="line"><a id="l00562" name="l00562"></a><span class="lineno">  562</span>        testAll(sa - featureFlowSortStrands - featurePermissionedDEX);</div>
+<div class="line"><a id="l00563" name="l00563"></a><span class="lineno">  563</span>        testAll(</div>
+<div class="line"><a id="l00564" name="l00564"></a><span class="lineno">  564</span>            sa - featureFlowCross - featureFlowSortStrands -</div>
+<div class="line"><a id="l00565" name="l00565"></a><span class="lineno">  565</span>            featurePermissionedDEX);</div>
+<div class="line"><a id="l00566" name="l00566"></a><span class="lineno">  566</span>    }</div>
+<div class="line"><a id="l00567" name="l00567"></a><span class="lineno">  567</span>};</div>
+<div class="line"><a id="l00568" name="l00568"></a><span class="lineno">  568</span> </div>
+<div class="line"><a id="l00569" name="l00569"></a><span class="lineno"><a class="line" href="namespaceripple_1_1test.html#a1e21fbfd1eb95324d619bd5bd7d9a85f">  569</a></span>BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(CrossingLimits, tx, <a class="code hl_namespace" href="namespaceripple.html">ripple</a>, 10);</div>
+<div class="line"><a id="l00570" name="l00570"></a><span class="lineno">  570</span> </div>
+<div class="line"><a id="l00571" name="l00571"></a><span class="lineno">  571</span>}  <span class="comment">// namespace test</span></div>
+<div class="line"><a id="l00572" name="l00572"></a><span class="lineno">  572</span>}  <span class="comment">// namespace ripple</span></div>
 <div class="ttc" id="aclassbeast_1_1unit__test_1_1suite_html"><div class="ttname"><a href="classbeast_1_1unit__test_1_1suite.html">beast::unit_test::suite</a></div><div class="ttdoc">A testsuite class.</div><div class="ttdef"><b>Definition:</b> <a href="suite_8h_source.html#l00054">suite.h:55</a></div></div>
 <div class="ttc" id="aclassbeast_1_1unit__test_1_1suite_html_aaa1237d9b85c69d35fe86645cee094b5"><div class="ttname"><a href="classbeast_1_1unit__test_1_1suite.html#aaa1237d9b85c69d35fe86645cee094b5">beast::unit_test::suite::testcase</a></div><div class="ttdeci">testcase_t testcase</div><div class="ttdoc">Memberspace for declaring test cases.</div><div class="ttdef"><b>Definition:</b> <a href="suite_8h_source.html#l00155">suite.h:155</a></div></div>
 <div class="ttc" id="aclassripple_1_1FeatureBitset_html"><div class="ttname"><a href="classripple_1_1FeatureBitset.html">ripple::FeatureBitset</a></div><div class="ttdef"><b>Definition:</b> <a href="Feature_8h_source.html#l00146">Feature.h:147</a></div></div>
