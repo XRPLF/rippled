@@ -340,7 +340,7 @@ public:
     void
     testBrokeredAcceptOffer_UnathorizedBroker(FeatureBitset features)
     {
-        testcase("Unathorized broker bridges authorized buyer and seller.");
+        testcase("Unauthorized broker bridges authorized buyer and seller.");
         using namespace test::jtx;
 
         Env env(*this, features);
