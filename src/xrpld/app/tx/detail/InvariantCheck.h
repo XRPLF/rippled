@@ -626,7 +626,7 @@ class ValidAMM
     bool ammPoolChanged_;
 
 public:
-    enum class ZeroAllowed : bool { Yes, No };
+    enum class ZeroAllowed : bool { No = false, Yes = true };
 
     ValidAMM() : ammPoolChanged_{false}
     {
