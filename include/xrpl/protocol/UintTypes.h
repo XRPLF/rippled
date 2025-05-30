@@ -63,6 +63,9 @@ using NodeID = base_uint<160, detail::NodeIDTag>;
  * and a 160-bit account */
 using MPTID = base_uint<192>;
 
+/** Domain is a 256-bit hash representing a specific domain. */
+using Domain = base_uint<256>;
+
 /** XRP currency. */
 Currency const&
 xrpCurrency();

@@ -28,6 +28,7 @@
 
 #include <cstdint>
 #include <tuple>
+#include <unordered_set>
 
 namespace ripple {
 
@@ -618,6 +619,28 @@ public:
         beast::Journal const&);
 };
 
+class ValidPermissionedDEX
+{
+    bool regularOffers_ = false;
+    bool badHybrids_ = false;
+    hash_set<uint256> domains_;
+
+public:
+    void
+    visitEntry(
+        bool,
+        std::shared_ptr<SLE const> const&,
+        std::shared_ptr<SLE const> const&);
+
+    bool
+    finalize(
+        STTx const&,
+        TER const,
+        XRPAmount const,
+        ReadView const&,
+        beast::Journal const&);
+};
+
 // additional invariant checks can be declared above and then added to this
 // tuple
 using InvariantChecks = std::tuple<
@@ -637,7 +660,8 @@ using InvariantChecks = std::tuple<
     NFTokenCountTracking,
     ValidClawback,
     ValidMPTIssuance,
-    ValidPermissionedDomain>;
+    ValidPermissionedDomain,
+    ValidPermissionedDEX>;
 
 /**
  * @brief get a tuple of all invariant checks
