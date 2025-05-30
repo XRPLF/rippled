@@ -32,7 +32,6 @@
 #include <span>
 #include <type_traits>
 
-#define PROFILING 0
 
 namespace beast {
 
@@ -59,10 +58,12 @@ private:
     };
 
     // XXH3_state_t* state_;
+#if PROFILING
     inline static thread_local state_wrapper wrapper{};
     std::size_t totalSize_ = 0;
     std::chrono::nanoseconds duration_{};
     std::uint64_t cpuCycles = 0;
+#endif
     std::uint8_t seed_ = 0;
 
     std::array<std::uint8_t, 40> buffer_;
@@ -166,8 +167,8 @@ public:
     void
     operator()(void const* key, std::size_t len) noexcept
     {
-        totalSize_ += len;
 #if PROFILING
+        totalSize_ += len;
         auto start = std::chrono::steady_clock::now();
         auto cpuCyclesStart = __rdtsc();
 #endif
@@ -192,32 +193,24 @@ public:
         auto start = std::chrono::steady_clock::now();
         auto cpuCyclesStart = __rdtsc();
 #endif
-        std::array<std::byte, 8> hash{};
-        const size_t bit_width = readBuffer_.size() * 8;
-        const size_t shift = seed_ % bit_width;
 
-        for (size_t i = 0; i < 8; ++i) {
-            size_t out_bit_index = i * 8;
-            size_t in_bit_index = (out_bit_index + shift) % bit_width;
+    if (readBuffer_.size() == 0) return 0;
 
-            size_t byte_index = in_bit_index / 8;
-            size_t bit_offset = in_bit_index % 8;
+    const size_t bit_width = readBuffer_.size() * 8;
+    const size_t shift = seed_ % bit_width;
 
-            // Grab two adjacent bytes to ensure we can extract 8 bits safely
-            uint8_t first = readBuffer_[byte_index % readBuffer_.size()];
-            uint8_t second = readBuffer_[(byte_index + 1) % readBuffer_.size()];
+    // Copy input into a buffer long enough to safely extract 64 bits with wraparound
+    std::uint64_t buffer = 0;
 
-            // Combine into 16-bit buffer
-            uint16_t combined = (first << 8) | second;
+    // Load the first 8 bytes (or wrap if input < 8 bytes)
+    for (size_t i = 0; i < 8; ++i) {
+        size_t index = readBuffer_.size() - 1 - (i % readBuffer_.size());
+        buffer <<= 8;
+        buffer |= readBuffer_[index];
+    }
 
-            // Extract 8 bits starting at bit_offset
-            uint8_t extracted = (combined >> (8 - bit_offset)) & 0xFF;
-
-            hash[i] = std::byte(extracted);
-        }
-
-        std::uint64_t result;
-        std::memcpy(&result, hash.data(), hash.size());
+    // Rotate and return
+    auto result = (buffer << shift) | (buffer >> (64 - shift));
 
 #if PROFILING
         duration_ += std::chrono::steady_clock::now() - start;

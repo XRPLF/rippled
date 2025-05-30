@@ -9,13 +9,17 @@
 #include <sstream>
 #include <string>
 #include <unordered_map>
-#include <x86intrin.h>
 #include <vector>
 #include <cmath>
 #include <numeric>  // std::accumulate
 
-// #define __rdtsc() 0
+#define PROFILING 1
 
+#if PROFILING
+#include <x86intrin.h>
+#else
+#define __rdtsc() 0
+#endif
 namespace beast {
 
 template <typename T>
@@ -56,24 +60,29 @@ public:
     FunctionProfiler(
         std::string const& tag,
         std::source_location location = std::source_location::current())
+#if PROFILING
         : functionName(location.function_name() + tag)
         , start(std::chrono::steady_clock::now())
         , cpuCycleStart(__rdtsc())
+#endif
     {
     }
 
     ~FunctionProfiler() noexcept
     {
+#if PROFILING
         auto duration = std::chrono::steady_clock::now() - start;
         std::lock_guard<std::mutex> lock{mutex_};
         funcionDurations[functionName].time.emplace_back(duration);
         funcionDurations[functionName].cpuCycles.emplace_back((__rdtsc() - cpuCycleStart));
+#endif
     }
 };
 
 inline std::string
 getProfilingResults()
 {
+#if PROFILING
     std::lock_guard<std::mutex> lock{FunctionProfiler::mutex_};
     std::stringstream ss;
     ss << "Function profiling results:" << std::endl;
@@ -101,6 +110,9 @@ getProfilingResults()
     }
 
     return ss.str();
+#else
+    return "";
+#endif
 }
 
 }  // namespace beast
