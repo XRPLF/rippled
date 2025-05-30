@@ -1648,9 +1648,10 @@ ApplicationImp::run()
 void
 ApplicationImp::signalStop(std::string msg)
 {
+#if PROFILING
     std::cout << "signal stop!!!" << std::endl;
     JLOG(m_journal.warn()) << beast::getProfilingResults();
-
+#endif
     if (!isTimeToStop.exchange(true))
     {
         if (msg.empty())

@@ -193,24 +193,21 @@ public:
         auto start = std::chrono::steady_clock::now();
         auto cpuCyclesStart = __rdtsc();
 #endif
+        const size_t bit_width = readBuffer_.size() * 8;
+        const size_t shift = seed_ % bit_width;
 
-    if (readBuffer_.size() == 0) return 0;
+        // Copy input into a buffer long enough to safely extract 64 bits with wraparound
+        std::uint64_t buffer = 0;
 
-    const size_t bit_width = readBuffer_.size() * 8;
-    const size_t shift = seed_ % bit_width;
+        // Load the first 8 bytes (or wrap if input < 8 bytes)
+        for (size_t i = 0; i < 8; ++i) {
+            size_t index = readBuffer_.size() - 1 - (i % readBuffer_.size());
+            buffer <<= 8;
+            buffer |= readBuffer_[index];
+        }
 
-    // Copy input into a buffer long enough to safely extract 64 bits with wraparound
-    std::uint64_t buffer = 0;
-
-    // Load the first 8 bytes (or wrap if input < 8 bytes)
-    for (size_t i = 0; i < 8; ++i) {
-        size_t index = readBuffer_.size() - 1 - (i % readBuffer_.size());
-        buffer <<= 8;
-        buffer |= readBuffer_[index];
-    }
-
-    // Rotate and return
-    auto result = (buffer << shift) | (buffer >> (64 - shift));
+        // Rotate and return
+        auto result = (buffer << shift) | (buffer >> (64 - shift));
 
 #if PROFILING
         duration_ += std::chrono::steady_clock::now() - start;
