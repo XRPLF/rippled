@@ -19,20 +19,36 @@
 
 #pragma once
 
-#include <xrpld/app/misc/WasmVM.h>
+#include <xrpld/app/misc/WasmHostFunc.h>
 #include <xrpld/app/tx/detail/ApplyContext.h>
-
-#include <xrpl/basics/Expected.h>
-#include <xrpl/beast/utility/Journal.h>
-#include <xrpl/protocol/TER.h>
 
 namespace ripple {
 class WasmHostFunctionsImpl : public HostFunctions
 {
+    ApplyContext& ctx;
+    Keylet leKey;
+
+    static int constexpr MAX_CACHE = 256;
+    std::array<std::shared_ptr<SLE const>, MAX_CACHE> cache;
+
+    void const* rt_ = nullptr;
+
 public:
-    WasmHostFunctionsImpl(ApplyContext& ctx, Keylet leKey)
+    WasmHostFunctionsImpl(ApplyContext& ctx, Keylet const& leKey)
         : ctx(ctx), leKey(leKey)
     {
+    }
+
+    virtual void
+    setRT(void const* rt) override
+    {
+        rt_ = rt;
+    }
+
+    virtual void const*
+    getRT() const override
+    {
+        return rt_;
     }
 
     beast::Journal
@@ -47,46 +63,77 @@ public:
     int32_t
     getParentLedgerTime() override;
 
-    std::optional<Bytes>
-    getTxField(std::string const& fname) override;
+    Hash
+    getParentLedgerHash() override;
 
-    std::optional<Bytes>
-    getLedgerEntryField(
-        int32_t type,
-        Bytes const& kdata,
-        std::string const& fname) override;
+    int32_t
+    cacheLedgerObj(Keylet const& keylet, int32_t cacheIdx) override;
 
-    std::optional<Bytes>
-    getCurrentLedgerEntryField(std::string const& fname) override;
+    Expected<Bytes, int32_t>
+    getTxField(SField const& fname) override;
 
-    std::optional<Bytes>
-    getNFT(std::string const& account, std::string const& nftId) override;
+    Expected<Bytes, int32_t>
+    getCurrentLedgerObjField(SField const& fname) override;
 
-    bool
+    Expected<Bytes, int32_t>
+    getLedgerObjField(int32_t cacheIdx, SField const& fname) override;
+
+    Expected<Bytes, int32_t>
+    getTxNestedField(Slice const& locator) override;
+
+    Expected<Bytes, int32_t>
+    getCurrentLedgerObjNestedField(Slice const& locator) override;
+
+    Expected<Bytes, int32_t>
+    getLedgerObjNestedField(int32_t cacheIdx, Slice const& locator) override;
+
+    int32_t
+    getTxArrayLen(SField const& fname) override;
+
+    int32_t
+    getCurrentLedgerObjArrayLen(SField const& fname) override;
+
+    int32_t
+    getLedgerObjArrayLen(int32_t cacheIdx, SField const& fname) override;
+
+    int32_t
+    getTxNestedArrayLen(Slice const& locator) override;
+
+    int32_t
+    getCurrentLedgerObjNestedArrayLen(Slice const& locator) override;
+
+    int32_t
+    getLedgerObjNestedArrayLen(int32_t cacheIdx, Slice const& locator) override;
+
+    int32_t
     updateData(Bytes const& data) override;
 
     Hash
     computeSha512HalfHash(Bytes const& data) override;
 
-    std::optional<Bytes>
-    accountKeylet(std::string const& account) override;
+    Expected<Bytes, int32_t>
+    accountKeylet(AccountID const& account) override;
 
-    std::optional<Bytes>
+    Expected<Bytes, int32_t>
     credentialKeylet(
-        std::string const& subject,
-        std::string const& issuer,
-        std::string const& credentialType) override;
+        AccountID const& subject,
+        AccountID const& issuer,
+        Bytes const& credentialType) override;
 
-    std::optional<Bytes>
-    escrowKeylet(std::string const& account, std::uint32_t const& seq) override;
+    Expected<Bytes, int32_t>
+    escrowKeylet(AccountID const& account, std::uint32_t seq) override;
 
-    std::optional<Bytes>
-    oracleKeylet(std::string const& account, std::uint32_t const& documentId)
-        override;
+    Expected<Bytes, int32_t>
+    oracleKeylet(AccountID const& account, std::uint32_t documentId) override;
 
-private:
-    ApplyContext& ctx;
-    Keylet leKey;
+    Expected<Bytes, int32_t>
+    getNFT(AccountID const& account, uint256 const& nftId) override;
+
+    int32_t
+    trace(std::string const& msg, Bytes const& data, bool asHex) override;
+
+    int32_t
+    traceNum(std::string const& msg, int64_t data) override;
 };
 
 }  // namespace ripple

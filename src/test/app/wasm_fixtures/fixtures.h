@@ -51,8 +51,6 @@ extern std::string const zkProofHex;
 
 extern std::string const sp1_wasm;
 
-extern std::string const xrpl_std_example_hex;
+extern std::string const xrplStdExampleHex;
 
-
-
-
+extern std::string const hostFunctions2Hex;

@@ -23,9 +23,12 @@
 
 #include <memory>
 
-namespace ripple {
+#ifdef _DEBUG
+// #define DEBUG_OUTPUT 1
+// #define DEBUG_OUTPUT_WAMR 1
+#endif
 
-//////////////////////////////////////////////////////////////////////////////////////////
+namespace ripple {
 
 namespace {
 
@@ -45,7 +48,7 @@ getLogLevel(beast::severities::Severity severity)
         case kError:
             return WASM_LOG_LEVEL_ERROR;
         default:
-            UNREACHABLE("invalid severity");
+            UNREACHABLE("WAMR invalid severity");
             [[fallthrough]];
         case kFatal:
         case kNone:
@@ -70,7 +73,7 @@ getLogLevel(uint32_t severity)
         case WASM_LOG_LEVEL_ERROR:
             return kError;
         default:
-            UNREACHABLE("invalid severity");
+            UNREACHABLE("WAMR invalid reverse severity");
             [[fallthrough]];
         case WASM_LOG_LEVEL_FATAL:
             break;
@@ -88,18 +91,18 @@ wamr_log_to_rippled(
     char const* fmt,
     ...)
 {
-    beast::Journal j = debugLog();
+    beast::Journal j = WasmEngine::instance().getJournal();
 
     // Format the variadic args
     char const* safeFile = file ? file : "<null>";
 
     std::ostringstream oss;
-    oss << "WAMR LOG (" << safeFile << ":" << line << "): ";
+    oss << "WAMR (" << safeFile << ":" << line << "): ";
 
     va_list args;
     va_start(args, fmt);
 
-    char formatted[1024];
+    char formatted[4096];
     vsnprintf(formatted, sizeof(formatted), fmt, args);
     formatted[sizeof(formatted) - 1] = '\0';
 
@@ -108,12 +111,22 @@ wamr_log_to_rippled(
     oss << formatted;
 
     j.stream(getLogLevel(logLevel)) << oss.str();
+#ifdef DEBUG_OUTPUT_WAMR
+    std::cerr << oss.str() << std::endl;
+#endif
+    //
 }
 
-static void
-print_wasm_error(char const* message, wasm_trap_t* trap, beast::Journal j)
+void
+print_wasm_error(std::string_view msg, wasm_trap_t* trap, beast::Journal jlog)
 {
-    j.debug() << "WAMR error: " << message;
+#ifdef DEBUG_OUTPUT
+    auto& j = std::cerr;
+#else
+    auto j = jlog.debug();
+#endif
+
+    j << "WAMR error: " << msg;
 
     if (trap)
     {
@@ -121,11 +134,13 @@ print_wasm_error(char const* message, wasm_trap_t* trap, beast::Journal j)
 
         wasm_trap_message(trap, &error_message);
         if (error_message.num_elems)
-            j.debug() << "WAMR trap: " << error_message.data;
+            j << "\nWAMR " << error_message.data;
         if (error_message.size)
             wasm_byte_vec_delete(&error_message);
         wasm_trap_delete(trap);
     }
+
+    j << std::endl;
 }
 
 }  // namespace
@@ -136,7 +151,8 @@ InstanceWrapper::init(
     wasm_module_t* m,
     int32_t maxPages,
     wasm_extern_vec_t* expt,
-    wasm_extern_vec_t const& imports)
+    wasm_extern_vec_t const& imports,
+    beast::Journal j)
 {
     wasm_trap_t* trap = nullptr;
     InstantiationArgs inst_args{
@@ -150,8 +166,8 @@ InstanceWrapper::init(
 
     if (!mi || trap)
     {
-        print_wasm_error("can't create instance", trap, debugLog());
-        throw std::runtime_error("WAMR: can't create instance");
+        print_wasm_error("can't create instance", trap, j);
+        throw std::runtime_error("WAMR can't create instance");
     }
     wasm_instance_exports(mi.get(), expt);
     return mi;
@@ -170,6 +186,27 @@ InstanceWrapper::InstanceWrapper(InstanceWrapper&& o)
     *this = std::move(o);
 }
 
+InstanceWrapper::InstanceWrapper(
+    wasm_store_t* s,
+    wasm_module_t* m,
+    int32_t maxPages,
+    int64_t gas,
+    wasm_extern_vec_t const& imports,
+    beast::Journal j)
+    : exports WASM_EMPTY_VEC
+    , mod_inst(init(s, m, maxPages, &exports, imports, j))
+    , exec_env(wasm_instance_exec_env(mod_inst.get()))
+    , j_(j)
+{
+    wasm_runtime_set_instruction_count_limit(exec_env, gas);
+}
+
+InstanceWrapper::~InstanceWrapper()
+{
+    if (exports.size)
+        wasm_extern_vec_delete(&exports);
+}
+
 InstanceWrapper&
 InstanceWrapper::operator=(InstanceWrapper&& o)
 {
@@ -182,23 +219,12 @@ InstanceWrapper::operator=(InstanceWrapper&& o)
     o.exports = {0, nullptr, 0, 0, nullptr};
 
     mod_inst = std::move(o.mod_inst);
+    exec_env = o.exec_env;
+    o.exec_env = nullptr;
+
+    j_ = o.j_;
 
     return *this;
-}
-
-InstanceWrapper::InstanceWrapper(
-    wasm_store_t* s,
-    wasm_module_t* m,
-    int32_t maxPages,
-    wasm_extern_vec_t const& imports)
-    : exports WASM_EMPTY_VEC, mod_inst(init(s, m, maxPages, &exports, imports))
-{
-}
-
-InstanceWrapper::~InstanceWrapper()
-{
-    if (exports.size)
-        wasm_extern_vec_delete(&exports);
 }
 
 InstanceWrapper::operator bool() const
@@ -214,10 +240,13 @@ InstanceWrapper::getFunc(
     wasm_func_t* f = nullptr;
     wasm_functype_t* ft = nullptr;
 
+    if (!mod_inst)
+        throw std::runtime_error("WAMR no module instance");
+
     if (!export_types.num_elems)
-        throw std::runtime_error("WAMR: no export");
+        throw std::runtime_error("WAMR no export");
     if (export_types.num_elems != exports.num_elems)
-        throw std::runtime_error("WAMR: invalid export");
+        throw std::runtime_error("WAMR invalid export");
 
     for (unsigned i = 0; i < export_types.num_elems; ++i)
     {
@@ -231,7 +260,7 @@ InstanceWrapper::getFunc(
             {
                 auto* exn(exports.data[i]);
                 if (wasm_extern_kind(exn) != WASM_EXTERN_FUNC)
-                    throw std::runtime_error("WAMR: invalid export");
+                    throw std::runtime_error("WAMR invalid export");
 
                 ft = wasm_externtype_as_functype(
                     const_cast<wasm_externtype_t*>(exn_type));
@@ -243,7 +272,7 @@ InstanceWrapper::getFunc(
 
     if (!f || !ft)
         throw std::runtime_error(
-            "WAMR: can't find function " + std::string(funcName));
+            "WAMR can't find function <" + std::string(funcName) + ">");
 
     return {f, ft};
 }
@@ -251,6 +280,9 @@ InstanceWrapper::getFunc(
 wmem
 InstanceWrapper::getMem() const
 {
+    if (!mod_inst)
+        throw std::runtime_error("WAMR no module instance");
+
     wasm_memory_t* mem = nullptr;
     for (unsigned i = 0; i < exports.num_elems; ++i)
     {
@@ -263,17 +295,23 @@ InstanceWrapper::getMem() const
     }
 
     if (!mem)
-        throw std::runtime_error("WAMR: no memory exported");
+        throw std::runtime_error("WAMR no memory exported");
 
     return {
         reinterpret_cast<std::uint8_t*>(wasm_memory_data(mem)),
         wasm_memory_data_size(mem)};
 }
 
+std::int64_t
+InstanceWrapper::getGas() const
+{
+    return exec_env ? wasm_runtime_get_instruction_count_limit(exec_env) : 0;
+}
+
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ModulePtr
-ModuleWrapper::init(wasm_store_t* s, wbytes const& wasmBin)
+ModuleWrapper::init(wasm_store_t* s, Bytes const& wasmBin)
 {
     wasm_byte_vec_t const code{
         wasmBin.size(),
@@ -298,6 +336,33 @@ ModuleWrapper::ModuleWrapper(ModuleWrapper&& o)
     *this = std::move(o);
 }
 
+ModuleWrapper::ModuleWrapper(
+    wasm_store_t* s,
+    Bytes const& wasmBin,
+    bool instantiate,
+    int32_t maxPages,
+    int64_t gas,
+    std::vector<WasmImportFunc> const& imports,
+    beast::Journal j)
+    : module(init(s, wasmBin)), export_types{0, nullptr, 0, 0, nullptr}, j_(j)
+{
+    if (!module)
+        throw std::runtime_error("WAMR can't create module");
+
+    wasm_module_exports(module.get(), &export_types);
+    if (instantiate)
+    {
+        auto wimports = buildImports(s, imports);
+        addInstance(s, maxPages, gas, wimports);
+    }
+}
+
+ModuleWrapper::~ModuleWrapper()
+{
+    if (export_types.size)
+        wasm_exporttype_vec_delete(&export_types);
+}
+
 ModuleWrapper&
 ModuleWrapper::operator=(ModuleWrapper&& o)
 {
@@ -310,34 +375,9 @@ ModuleWrapper::operator=(ModuleWrapper&& o)
         wasm_exporttype_vec_delete(&export_types);
     export_types = o.export_types;
     o.export_types = {0, nullptr, 0, 0, nullptr};
-    exec_env = o.exec_env;
-    o.exec_env = nullptr;
+    j_ = o.j_;
+
     return *this;
-}
-
-ModuleWrapper::ModuleWrapper(
-    wasm_store_t* s,
-    wbytes const& wasmBin,
-    bool instantiate,
-    int32_t maxPages,
-    std::vector<WasmImportFunc> const& imports)
-    : module(init(s, wasmBin)), export_types{0, nullptr, 0, 0, nullptr}
-{
-    if (!module)
-        throw std::runtime_error("WAMR: can't create module");
-
-    wasm_module_exports(module.get(), &export_types);
-    if (instantiate)
-    {
-        auto wimports = buildImports(s, imports);
-        addInstance(s, maxPages, wimports);
-    }
-}
-
-ModuleWrapper::~ModuleWrapper()
-{
-    if (export_types.size)
-        wasm_exporttype_vec_delete(&export_types);
 }
 
 ModuleWrapper::operator bool() const
@@ -375,7 +415,7 @@ ModuleWrapper::makeImpParams(wasm_valtype_vec_t& v, WasmImportFunc const& imp)
                 v.data[i] = wasm_valtype_new_f64();
                 break;
             default:
-                throw std::runtime_error("Invalid import type");
+                throw std::runtime_error("WAMR Invalid import type");
         }
     }
 }
@@ -402,7 +442,7 @@ ModuleWrapper::makeImpReturn(wasm_valtype_vec_t& v, WasmImportFunc const& imp)
                 v.data[0] = wasm_valtype_new_f64();
                 break;
             default:
-                throw std::runtime_error("Invalid return type");
+                throw std::runtime_error("WAMR Invalid return type");
         }
     }
     else
@@ -414,6 +454,12 @@ ModuleWrapper::buildImports(
     wasm_store_t* s,
     std::vector<WasmImportFunc> const& imports)
 {
+#ifdef DEBUG_OUTPUT
+    auto& j = std::cerr;
+#else
+    auto j = j_.debug();
+#endif
+
     wasm_importtype_vec_t importTypes = WASM_EMPTY_VEC;
     wasm_module_imports(module.get(), &importTypes);
     std::
@@ -427,6 +473,7 @@ ModuleWrapper::buildImports(
     wasm_extern_vec_new(&wimports, importTypes.size, nullptr);
     wimports.num_elems = importTypes.num_elems;
 
+    unsigned impCnt = 0;
     for (unsigned i = 0; i < importTypes.num_elems; ++i)
     {
         wasm_importtype_t const* importtype = importTypes.data[i];
@@ -435,6 +482,7 @@ ModuleWrapper::buildImports(
             // create a placeholder
             wimports.data[i] = wasm_extern_new_empty(
                 s, wasm_externtype_kind(wasm_importtype_type(importtype)));
+            ++impCnt;
             continue;
         }
 
@@ -447,6 +495,7 @@ ModuleWrapper::buildImports(
         // if ((W_ENV != modName) && (W_HOST_LIB != modName))
         //     continue;
 
+        bool impSet = false;
         for (auto const& imp : imports)
         {
             if (imp.name != fieldName)
@@ -468,8 +517,22 @@ ModuleWrapper::buildImports(
                 nullptr);
 
             wimports.data[i] = wasm_func_as_extern(func);
+            ++impCnt;
+            impSet = true;
+
             break;
         }
+
+        if (!impSet)
+        {
+            j << "WAMR Import not found: " << fieldName << std::endl;
+        }
+    }
+
+    if (impCnt != importTypes.num_elems)
+    {
+        j << "WAMR Imports not finished: " << wimports.num_elems << "/"
+          << importTypes.num_elems << std::endl;
     }
 
     return wimports;
@@ -487,15 +550,20 @@ ModuleWrapper::getMem() const
     return mod_inst.getMem();
 }
 
+InstanceWrapper const&
+ModuleWrapper::getInstance(int) const
+{
+    return mod_inst;
+}
+
 int
 ModuleWrapper::addInstance(
     wasm_store_t* s,
     int32_t maxPages,
+    int64_t gas,
     wasm_extern_vec_t const& imports)
 {
-    mod_inst = {s, module.get(), maxPages, imports};
-    exec_env = wasm_instance_exec_env(mod_inst.mod_inst.get());
-
+    mod_inst = {s, module.get(), maxPages, gas, imports, j_};
     return 0;
 }
 
@@ -510,20 +578,9 @@ ModuleWrapper::addInstance(
 // }
 
 std::int64_t
-ModuleWrapper::setGas(std::int64_t gas)
-{
-    if (exec_env)
-    {
-        wasm_runtime_set_instruction_count_limit(exec_env, gas);
-        return gas;
-    }
-    return 0;
-}
-
-std::int64_t
 ModuleWrapper::getGas()
 {
-    return exec_env ? wasm_runtime_get_instruction_count_limit(exec_env) : 0;
+    return mod_inst.getGas();
 }
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -547,24 +604,25 @@ WamrEngine::WamrEngine()
 
 int
 WamrEngine::addModule(
-    wbytes const& wasmCode,
+    Bytes const& wasmCode,
     bool instantiate,
+    int64_t gas,
     std::vector<WasmImportFunc> const& imports)
 {
     module.reset();
     store.reset();  // to free the memory before creating new store
     store = {wasm_store_new(engine.get()), &wasm_store_delete};
     module = std::make_unique<ModuleWrapper>(
-        store.get(), wasmCode, instantiate, defMaxPages, imports);
-    setGas(defGas);
+        store.get(), wasmCode, instantiate, defMaxPages, gas, imports, j_);
+
     return module ? 0 : -1;
 }
 
-int
-WamrEngine::addInstance()
-{
-    return module->addInstance(store.get(), defMaxPages);
-}
+// int
+// WamrEngine::addInstance()
+// {
+//     return module->addInstance(store.get(), defMaxPages);
+// }
 
 FuncInfo
 WamrEngine::getFunc(std::string_view funcName)
@@ -726,54 +784,75 @@ WamrResult
 WamrEngine::call(
     FuncInfo const& f,
     std::vector<wasm_val_t>& in,
-    wbytes const& p,
+    Bytes const& p,
     Types&&... args)
 {
     return call<NR>(f, in, p.data(), p.size(), std::forward<Types>(args)...);
 }
 
-Expected<int32_t, TER>
+Expected<WasmResult<int32_t>, TER>
 WamrEngine::run(
-    wbytes const& wasmCode,
+    Bytes const& wasmCode,
     std::string_view funcName,
-    std::vector<WasmImportFunc> const& imports,
     std::vector<WasmParam> const& params,
-    beast::Journal j)
+    std::vector<WasmImportFunc> const& imports,
+    HostFunctions* hfs,
+    int64_t gas,
+    beast::Journal jlog)
 {
+    j_ = jlog;
+
+#ifdef DEBUG_OUTPUT
+    auto& j = std::cerr;
+#else
+    auto j = j_.debug();
+#endif
+
     try
     {
-        wasm_runtime_set_log_level(getLogLevel(j.sink().threshold()));
-        j_ = j;
-        return runHlp(wasmCode, funcName, imports, params);
+        wasm_runtime_set_log_level(std::min(
+            getLogLevel(jlog.sink().threshold()), WASM_LOG_LEVEL_ERROR));
+        return runHlp(wasmCode, funcName, params, imports, hfs, gas);
     }
     catch (std::exception const& e)
     {
-        j_.debug() << "Wasm exception: " << e.what() << std::endl;
+        j << "WAMR exception: " << e.what() << std::endl;
     }
     catch (...)
     {
-        j_.debug() << "Wasm unknown exception." << std::endl;
+        j << "WAMR unknown exception." << std::endl;
     }
     return Unexpected<TER>(tecFAILED_PROCESSING);
 }
 
-Expected<int32_t, TER>
+Expected<WasmResult<int32_t>, TER>
 WamrEngine::runHlp(
-    wbytes const& wasmCode,
+    Bytes const& wasmCode,
     std::string_view funcName,
+    std::vector<WasmParam> const& params,
     std::vector<WasmImportFunc> const& imports,
-    std::vector<WasmParam> const& params)
+    HostFunctions* hfs,
+    int64_t gas)
 {
+#ifdef DEBUG_OUTPUT
+    auto& j = std::cerr;
+#else
+    auto j = j_.debug();
+#endif
+
     // Create and instantiate the module.
     if (!wasmCode.empty())
     {
-        int const m = addModule(wasmCode, true, imports);
+        int const m = addModule(wasmCode, true, gas, imports);
         if (m < 0)
             return Unexpected<TER>(tecFAILED_PROCESSING);
     }
 
-    if (!module)
+    if (!module || !module->mod_inst)
         return Unexpected<TER>(tecFAILED_PROCESSING);
+
+    if (hfs)
+        hfs->setRT(&getRT());
 
     // Call main
     auto f = getFunc(!funcName.empty() ? funcName : "_start");
@@ -783,16 +862,11 @@ WamrEngine::runHlp(
         return Unexpected<TER>(tecFAILED_PROCESSING);
 
     assert(res.r.data[0].kind == WASM_I32);
-    // printf("Result: %d\n", results[0].of.i32);
-    // return res.r.data[0].of.i32 != 0;
-    return res.r.data[0].of.i32;
-}
 
-std::int64_t
-WamrEngine::initGas(std::int64_t def)
-{
-    defGas = def;
-    return def;
+    WasmResult<int32_t> const ret{res.r.data[0].of.i32, gas - module->getGas()};
+
+    j << "WAMR Res: " << ret.result << " cost: " << ret.cost << std::endl;
+    return ret;
 }
 
 std::int32_t
@@ -800,17 +874,6 @@ WamrEngine::initMaxPages(std::int32_t def)
 {
     defMaxPages = def;
     return def;
-}
-
-std::int64_t
-WamrEngine::setGas(std::int64_t gas)
-{
-    if (module)
-    {
-        module->setGas(gas);
-        return gas;
-    }
-    return 0;
 }
 
 std::int64_t
@@ -825,6 +888,14 @@ WamrEngine::getMem() const
     return module ? module->getMem() : wmem();
 }
 
+InstanceWrapper const&
+WamrEngine::getRT(int m, int i)
+{
+    if (!module)
+        throw std::runtime_error("WAMR no module");
+    return module->getInstance(i);
+}
+
 int32_t
 WamrEngine::allocate(int32_t sz)
 {
@@ -832,7 +903,7 @@ WamrEngine::allocate(int32_t sz)
     auto const ptr = res.r.data[0].of.i32;
     if (trap || (res.r.data[0].kind != WASM_I32) || !ptr)
         throw std::runtime_error(
-            "WAMR: can't allocate memory, " + std::to_string(sz) + " bytes");
+            "WAMR can't allocate memory, " + std::to_string(sz) + " bytes");
     return ptr;
 }
 
@@ -845,6 +916,12 @@ WamrEngine::newTrap(std::string_view txt)
         wasm_name_new(&msg, txt.size(), txt.data());
 
     return wasm_trap_new(store.get(), &msg);
+}
+
+beast::Journal
+WamrEngine::getJournal() const
+{
+    return j_;
 }
 
 }  // namespace ripple

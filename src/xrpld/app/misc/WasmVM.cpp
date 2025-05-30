@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/app/misc/WamrVM.h>
+#include <xrpld/app/misc/WasmHostFunc.h>
 #include <xrpld/app/misc/WasmHostFuncWrapper.h>
 
 #include <xrpl/basics/Log.h>
@@ -32,41 +33,88 @@ Expected<EscrowResult, TER>
 runEscrowWasm(
     Bytes const& wasmCode,
     std::string_view funcName,
+    std::vector<WasmParam> const& params,
     HostFunctions* hfs,
     int64_t gasLimit,
-    std::vector<WasmParam> const& params)
+    beast::Journal j)
 {
     //  create VM and set cost limit
     auto& vm = WasmEngine::instance();
-    vm.initGas(gasLimit);
     vm.initMaxPages(MAX_PAGES);
 
     std::vector<WasmImportFunc> imports;
 
     if (hfs)
     {
-        WASM_IMPORT_FUNC(imports, getLedgerSqn, hfs);
-        WASM_IMPORT_FUNC(imports, getParentLedgerTime, hfs);
-        WASM_IMPORT_FUNC(imports, getTxField, hfs);
-        WASM_IMPORT_FUNC(imports, getLedgerEntryField, hfs);
-        WASM_IMPORT_FUNC(imports, getCurrentLedgerEntryField, hfs);
-        WASM_IMPORT_FUNC(imports, getNFT, hfs);
-        WASM_IMPORT_FUNC(imports, accountKeylet, hfs);
-        WASM_IMPORT_FUNC(imports, credentialKeylet, hfs);
-        WASM_IMPORT_FUNC(imports, escrowKeylet, hfs);
-        WASM_IMPORT_FUNC(imports, oracleKeylet, hfs);
-        WASM_IMPORT_FUNC(imports, updateData, hfs);
-        WASM_IMPORT_FUNC(imports, computeSha512HalfHash, hfs);
-        WASM_IMPORT_FUNC(imports, print, hfs);
+        // TODO: remove after escrow_test wasm module will be updated
+        WASM_IMPORT_FUNC2(imports, getLedgerSqnOld, "getLedgerSqn", hfs);
+
+        WASM_IMPORT_FUNC2(imports, getLedgerSqn, "get_ledger_sqn", hfs);
+        WASM_IMPORT_FUNC2(
+            imports, getParentLedgerTime, "get_parent_ledger_time", hfs);
+        WASM_IMPORT_FUNC2(
+            imports, getParentLedgerHash, "get_parent_ledger_hash", hfs);
+        WASM_IMPORT_FUNC2(imports, cacheLedgerObj, "cache_ledger_obj", hfs);
+        WASM_IMPORT_FUNC2(imports, getTxField, "get_tx_field", hfs);
+        WASM_IMPORT_FUNC2(
+            imports,
+            getCurrentLedgerObjField,
+            "get_current_ledger_obj_field",
+            hfs);
+        WASM_IMPORT_FUNC2(
+            imports, getLedgerObjField, "get_ledger_obj_field", hfs);
+        WASM_IMPORT_FUNC2(
+            imports, getTxNestedField, "get_tx_nested_field", hfs);
+        WASM_IMPORT_FUNC2(
+            imports,
+            getCurrentLedgerObjNestedField,
+            "get_current_ledger_obj_nested_field",
+            hfs);
+        WASM_IMPORT_FUNC2(
+            imports,
+            getLedgerObjNestedField,
+            "get_ledger_obj_nested_field",
+            hfs);
+        WASM_IMPORT_FUNC2(imports, getTxArrayLen, "get_tx_array_len", hfs);
+        WASM_IMPORT_FUNC2(
+            imports,
+            getCurrentLedgerObjArrayLen,
+            "get_current_ledger_obj_array_len",
+            hfs);
+        WASM_IMPORT_FUNC2(
+            imports, getLedgerObjArrayLen, "get_ledger_obj_array_len", hfs);
+        WASM_IMPORT_FUNC2(
+            imports, getTxNestedArrayLen, "get_tx_nested_array_len", hfs);
+        WASM_IMPORT_FUNC2(
+            imports,
+            getCurrentLedgerObjNestedArrayLen,
+            "get_current_ledger_obj_nested_array_len",
+            hfs);
+        WASM_IMPORT_FUNC2(
+            imports,
+            getLedgerObjNestedArrayLen,
+            "get_ledger_obj_nested_array_len",
+            hfs);
+        WASM_IMPORT_FUNC2(imports, updateData, "update_data", hfs);
+        WASM_IMPORT_FUNC2(
+            imports, computeSha512HalfHash, "compute_sha512_half", hfs);
+        WASM_IMPORT_FUNC2(imports, accountKeylet, "account_keylet", hfs);
+        WASM_IMPORT_FUNC2(imports, credentialKeylet, "credential_keylet", hfs);
+        WASM_IMPORT_FUNC2(imports, escrowKeylet, "escrow_keylet", hfs);
+        WASM_IMPORT_FUNC2(imports, oracleKeylet, "oracle_keylet", hfs);
+        WASM_IMPORT_FUNC2(imports, getNFT, "get_NFT", hfs);
+        WASM_IMPORT_FUNC(imports, trace, hfs);
+        WASM_IMPORT_FUNC2(imports, traceNum, "trace_num", hfs);
     }
 
-    std::int64_t const sgas = gasLimit;  // vm.getGas();
     auto ret = vm.run(
         wasmCode,
         funcName,
-        imports,
         params,
-        hfs ? hfs->getJournal() : debugLog());
+        imports,
+        hfs,
+        gasLimit,
+        hfs ? hfs->getJournal() : j);
 
     // std::cout << "runEscrowWasm, mod size: " << wasmCode.size()
     //           << ", gasLimit: " << gasLimit << ", funcName: " << funcName;
@@ -76,12 +124,10 @@ runEscrowWasm(
         // std::cout << ", error: " << ret.error() << std::endl;
         return Unexpected<TER>(ret.error());
     }
-    std::int64_t const egas = vm.getGas();
-    std::int64_t const spent = sgas - egas;
 
-    // std::cout << ", ret: " << ret.value() << ", gas spent: " << spent
+    // std::cout << ", ret: " << ret->result << ", gas spent: " << ret->cost
     //           << std::endl;
-    return EscrowResult{static_cast<bool>(ret.value()), spent};
+    return EscrowResult{static_cast<bool>(ret->result), ret->cost};
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -97,21 +143,17 @@ WasmEngine::instance()
     return e;
 }
 
-Expected<int32_t, TER>
+Expected<WasmResult<int32_t>, TER>
 WasmEngine::run(
-    wbytes const& wasmCode,
+    Bytes const& wasmCode,
     std::string_view funcName,
-    std::vector<WasmImportFunc> const& imports,
     std::vector<WasmParam> const& params,
+    std::vector<WasmImportFunc> const& imports,
+    HostFunctions* hfs,
+    int64_t gasLimit,
     beast::Journal j)
 {
-    return impl->run(wasmCode, funcName, imports, params, j);
-}
-
-std::int64_t
-WasmEngine::initGas(std::int64_t def)
-{
-    return impl->initGas(def);
+    return impl->run(wasmCode, funcName, params, imports, hfs, gasLimit, j);
 }
 
 std::int32_t
@@ -120,35 +162,16 @@ WasmEngine::initMaxPages(std::int32_t def)
     return impl->initMaxPages(def);
 }
 
-// gas = 1'000'000'000LL
-std::int64_t
-WasmEngine::setGas(std::int64_t gas)
-{
-    return impl->setGas(gas);
-}
-
-std::int64_t
-WasmEngine::getGas()
-{
-    return impl->getGas();
-}
-
-wmem
-WasmEngine::getMem() const
-{
-    return impl->getMem();
-}
-
-int32_t
-WasmEngine::allocate(int32_t size)
-{
-    return impl->allocate(size);
-}
-
 void*
 WasmEngine::newTrap(std::string_view msg)
 {
     return impl->newTrap(msg);
+}
+
+beast::Journal
+WasmEngine::getJournal() const
+{
+    return impl->getJournal();
 }
 
 }  // namespace ripple
