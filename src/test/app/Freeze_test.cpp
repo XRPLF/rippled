@@ -1905,6 +1905,9 @@ class Freeze_test : public beast::unit_test::suite
 
             env(trust(G1, A2["USD"](0), tfClearFreeze | tfClearDeepFreeze));
             env.close();
+
+            env(token::acceptBuyOffer(A2, buyIdx));
+            env.close();
         }
 
         // Testing A2 nft offer sell when A2 frozen by currency holder
