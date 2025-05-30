@@ -2109,6 +2109,8 @@ public:
         auto const sa = supported_amendments();
         testAll(sa - featureFlowCross - featureDeepFreeze);
         testAll(sa - featureFlowCross);
+        testAll(sa - featureDeepFreeze - fixEnforceNFTokenTrustlineV2);
+        testAll(sa - fixEnforceNFTokenTrustlineV2);
         testAll(sa - featureDeepFreeze);
         testAll(sa);
     }
