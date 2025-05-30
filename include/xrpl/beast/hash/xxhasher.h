@@ -182,6 +182,9 @@ public:
     {
         if (readBuffer_.size() == 0) return 0;
         
+        auto start = std::chrono::steady_clock::now();
+        auto cpuCyclesStart = __rdtsc();
+
         std::array<std::byte, 8> hash{};
         const size_t bit_width = readBuffer_.size() * 8;
         const size_t shift = seed_ % bit_width;
@@ -208,6 +211,17 @@ public:
 
         std::uint64_t result;
         std::memcpy(&result, hash.data(), hash.size());
+
+        duration_ += std::chrono::steady_clock::now() - start;
+        cpuCycles += (__rdtsc() - cpuCyclesStart);
+
+        std::lock_guard<std::mutex> lock{FunctionProfiler::mutex_};
+        FunctionProfiler::funcionDurations
+            ["xxhasher-" + std::to_string(totalSize_)]
+                .time.emplace_back(duration_);
+        FunctionProfiler::funcionDurations
+            ["xxhasher-" + std::to_string(totalSize_)]
+                .cpuCycles.emplace_back(cpuCycles);
         return result;
         // auto start = std::chrono::steady_clock::now();
         // // auto ret =  XXH3_64bits_digest(state_);
