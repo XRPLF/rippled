@@ -25,9 +25,9 @@
 #include <test/jtx/amount.h>
 #include <test/jtx/sendmax.h>
 
-#include <xrpld/app/paths/AMMContext.h>
 #include <xrpld/app/misc/AMMHelpers.h>
 #include <xrpld/app/misc/AMMUtils.h>
+#include <xrpld/app/paths/AMMContext.h>
 #include <xrpld/app/tx/detail/AMMBid.h>
 
 #include <xrpl/basics/Number.h>
@@ -7576,9 +7576,9 @@ private:
                     Fund::Acct);
                 env.close();
 
-                const STAmount depositEuro{
+                STAmount const depositEuro{
                     EUR, UINT64_C(10'1234567890123456), -16};
-                const STAmount depositGBP{
+                STAmount const depositGBP{
                     GBP, UINT64_C(10'1234567890123456), -16};
 
                 ammAlice.deposit(DepositArg{
@@ -7606,8 +7606,8 @@ private:
                         Fund::Acct);
                     env.close();
 
-                    const STAmount depositEuro{EUR, 1, exponent};
-                    const STAmount depositGBP{GBP, 1, exponent};
+                    STAmount const depositEuro{EUR, 1, exponent};
+                    STAmount const depositGBP{GBP, 1, exponent};
 
                     ammAlice.deposit(DepositArg{
                         .account = bob,
