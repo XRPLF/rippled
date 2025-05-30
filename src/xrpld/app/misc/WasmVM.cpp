@@ -127,7 +127,7 @@ runEscrowWasm(
 
     // std::cout << ", ret: " << ret->result << ", gas spent: " << ret->cost
     //           << std::endl;
-    return EscrowResult{static_cast<bool>(ret->result), ret->cost};
+    return EscrowResult{ret->result > 0, ret->cost};
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

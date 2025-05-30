@@ -2278,7 +2278,7 @@ struct Escrow_test : public beast::unit_test::suite
 
                 auto const txMeta = env.meta();
                 if (BEAST_EXPECT(txMeta->isFieldPresent(sfGasUsed)))
-                    BEAST_EXPECT(txMeta->getFieldU32(sfGasUsed) == 2412);
+                    BEAST_EXPECT(txMeta->getFieldU32(sfGasUsed) == 487);
 
                 env.close();
                 BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
@@ -2306,7 +2306,7 @@ struct Escrow_test : public beast::unit_test::suite
         testFinishFunction();
 
         // TODO: Update module with new host functions
-        //  testAllHostFunctions();
+        testAllHostFunctions();
     }
 };
 

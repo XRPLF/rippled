@@ -20,7 +20,13 @@
 #include <xrpld/app/misc/WasmHostFuncImpl.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
 
+#include <xrpl/protocol/STBitString.h>
 #include <xrpl/protocol/digest.h>
+
+#ifdef _DEBUG
+// #define DEBUG_OUTPUT 1
+// #define DEBUG_OUTPUT_WAMR 1
+#endif
 
 namespace ripple {
 
@@ -45,19 +51,68 @@ WasmHostFunctionsImpl::getParentLedgerHash()
 int32_t
 WasmHostFunctionsImpl::cacheLedgerObj(Keylet const& keylet, int32_t cacheIdx)
 {
-    if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
+    if (cacheIdx < 0 || cacheIdx > MAX_CACHE)
         return HF_ERR_SLOT_OUT_RANGE;
 
     if (!cacheIdx)
+    {
         for (cacheIdx = 0; cacheIdx < MAX_CACHE; ++cacheIdx)
             if (!cache[cacheIdx])
                 break;
+    }
+    else
+        --cacheIdx;
 
     if (cacheIdx >= MAX_CACHE)
         return HF_ERR_SLOTS_FULL;
 
     cache[cacheIdx] = ctx.view().read(keylet);
-    return cache[cacheIdx] ? cacheIdx : HF_ERR_LEDGER_OBJ_NOT_FOUND;
+    return cache[cacheIdx] ? cacheIdx + 1 : HF_ERR_LEDGER_OBJ_NOT_FOUND;
+}
+
+Bytes
+getAnyFieldData(STBase const& obj)
+{
+    // auto const& fname = obj.getFName();
+    if (STI_ACCOUNT == obj.getSType())
+    {
+        auto const& super(static_cast<STAccount const&>(obj));
+        auto const& data = super.value();
+        return {data.begin(), data.end()};
+    }
+    else if (STI_AMOUNT == obj.getSType())
+    {
+        auto const& super(static_cast<STAmount const&>(obj));
+        int64_t const data = super.xrp().drops();
+        auto const* b = reinterpret_cast<uint8_t const*>(&data);
+        auto const* e = reinterpret_cast<uint8_t const*>(&data + 1);
+        return {b, e};
+    }
+    else if (STI_VL == obj.getSType())
+    {
+        auto const& super(static_cast<STBlob const&>(obj));
+        auto const& data = super.value();
+        return {data.begin(), data.end()};
+    }
+    else if (STI_UINT256 == obj.getSType())
+    {
+        auto const& super(static_cast<STBitString<256> const&>(obj));
+        auto const& data = super.value();
+        return {data.begin(), data.end()};
+    }
+    else if (STI_UINT32 == obj.getSType())
+    {
+        auto const& super(static_cast<STInteger<std::uint32_t> const&>(obj));
+        std::uint32_t const data = super.value();
+        auto const* b = reinterpret_cast<uint8_t const*>(&data);
+        auto const* e = reinterpret_cast<uint8_t const*>(&data + 1);
+        return {b, e};
+    }
+
+    Serializer msg;
+    obj.add(msg);
+
+    return msg.getData();
 }
 
 Expected<Bytes, int32_t>
@@ -66,10 +121,7 @@ WasmHostFunctionsImpl::getTxField(SField const& fname)
     auto const* field = ctx.tx.peekAtPField(fname);
     if (!field)
         return Unexpected(HF_ERR_FIELD_NOT_FOUND);
-    Serializer msg;
-    field->add(msg);
-
-    return msg.getData();
+    return getAnyFieldData(*field);
 }
 
 Expected<Bytes, int32_t>
@@ -83,15 +135,13 @@ WasmHostFunctionsImpl::getCurrentLedgerObjField(SField const& fname)
     if (!field)
         return Unexpected(HF_ERR_FIELD_NOT_FOUND);
 
-    Serializer msg;
-    field->add(msg);
-
-    return msg.getData();
+    return getAnyFieldData(*field);
 }
 
 Expected<Bytes, int32_t>
 WasmHostFunctionsImpl::getLedgerObjField(int32_t cacheIdx, SField const& fname)
 {
+    --cacheIdx;
     if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
         return Unexpected(HF_ERR_SLOT_OUT_RANGE);
 
@@ -102,10 +152,7 @@ WasmHostFunctionsImpl::getLedgerObjField(int32_t cacheIdx, SField const& fname)
     if (!field)
         return Unexpected(HF_ERR_FIELD_NOT_FOUND);
 
-    Serializer msg;
-    field->add(msg);
-
-    return msg.getData();
+    return getAnyFieldData(*field);
 }
 
 static Expected<STBase const*, int32_t>
@@ -171,9 +218,7 @@ WasmHostFunctionsImpl::getTxNestedField(Slice const& locator)
         return Unexpected(r.error());
 
     auto const* field = r.value();
-    Serializer msg;
-    field->add(msg);
-    return msg.getData();
+    return getAnyFieldData(*field);
 }
 
 Expected<Bytes, int32_t>
@@ -188,9 +233,7 @@ WasmHostFunctionsImpl::getCurrentLedgerObjNestedField(Slice const& locator)
         return Unexpected(r.error());
 
     auto const* field = r.value();
-    Serializer msg;
-    field->add(msg);
-    return msg.getData();
+    return getAnyFieldData(*field);
 }
 
 Expected<Bytes, int32_t>
@@ -198,6 +241,7 @@ WasmHostFunctionsImpl::getLedgerObjNestedField(
     int32_t cacheIdx,
     Slice const& locator)
 {
+    --cacheIdx;
     if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
         return Unexpected(HF_ERR_SLOT_OUT_RANGE);
 
@@ -209,9 +253,7 @@ WasmHostFunctionsImpl::getLedgerObjNestedField(
         return Unexpected(r.error());
 
     auto const* field = r.value();
-    Serializer msg;
-    field->add(msg);
-    return msg.getData();
+    return getAnyFieldData(*field);
 }
 
 int32_t
@@ -315,6 +357,7 @@ WasmHostFunctionsImpl::getLedgerObjNestedArrayLen(
     int32_t cacheIdx,
     Slice const& locator)
 {
+    --cacheIdx;
     if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
         return HF_ERR_SLOT_OUT_RANGE;
 
@@ -417,7 +460,11 @@ WasmHostFunctionsImpl::trace(
     Bytes const& data,
     bool asHex)
 {
+#ifdef DEBUG_OUTPUT
+    auto j = ctx.journal.error();
+#else
     auto j = ctx.journal.trace();
+#endif
     j << msg;
     if (!asHex)
         j << std::string_view(
@@ -435,7 +482,12 @@ WasmHostFunctionsImpl::trace(
 int32_t
 WasmHostFunctionsImpl::traceNum(std::string const& msg, int64_t data)
 {
+#ifdef DEBUG_OUTPUT
+    auto j = ctx.journal.error();
+#else
     auto j = ctx.journal.trace();
+#endif
+
     j << msg << data;
 
     return msg.size() + sizeof(data);
