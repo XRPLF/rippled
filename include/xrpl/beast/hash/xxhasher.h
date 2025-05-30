@@ -32,6 +32,8 @@
 #include <span>
 #include <type_traits>
 
+#define PROFILING 0
+
 namespace beast {
 
 class xxhasher
@@ -67,15 +69,15 @@ private:
     std::span<std::uint8_t> readBuffer_;
     std::span<std::uint8_t> writeBuffer_;
 
-    static XXH3_state_t*
-    allocState()
-    {
-        FunctionProfiler _{"-alloc"};
-        auto ret = XXH3_createState();
-        if (ret == nullptr)
-            throw std::bad_alloc();
-        return ret;
-    }
+    // static XXH3_state_t*
+    // allocState()
+    // {
+    //     FunctionProfiler _{"-alloc"};
+    //     auto ret = XXH3_createState();
+    //     if (ret == nullptr)
+    //         throw std::bad_alloc();
+    //     return ret;
+    // }
 
     void
     setupBuffers()
@@ -165,16 +167,20 @@ public:
     operator()(void const* key, std::size_t len) noexcept
     {
         totalSize_ += len;
+#if PROFILING
         auto start = std::chrono::steady_clock::now();
         auto cpuCyclesStart = __rdtsc();
-
+#endif
         // FunctionProfiler _{"-size-" + std::to_string(len)};
         // XXH3_64bits_update(state_, key, len);
         // XXH3_64bits_update(wrapper.state, key, len);
 
         writeBuffer(key, len);
+
+#if PROFILING
         duration_ += std::chrono::steady_clock::now() - start;
         cpuCycles += (__rdtsc() - cpuCyclesStart);
+#endif
     }
 
     explicit
@@ -182,9 +188,10 @@ public:
     {
         if (readBuffer_.size() == 0) return 0;
         
+#if PROFILING
         auto start = std::chrono::steady_clock::now();
         auto cpuCyclesStart = __rdtsc();
-
+#endif
         std::array<std::byte, 8> hash{};
         const size_t bit_width = readBuffer_.size() * 8;
         const size_t shift = seed_ % bit_width;
@@ -212,6 +219,7 @@ public:
         std::uint64_t result;
         std::memcpy(&result, hash.data(), hash.size());
 
+#if PROFILING
         duration_ += std::chrono::steady_clock::now() - start;
         cpuCycles += (__rdtsc() - cpuCyclesStart);
 
@@ -222,6 +230,7 @@ public:
         FunctionProfiler::funcionDurations
             ["xxhasher-" + std::to_string(totalSize_)]
                 .cpuCycles.emplace_back(cpuCycles);
+#endif
         return result;
         // auto start = std::chrono::steady_clock::now();
         // // auto ret =  XXH3_64bits_digest(state_);
