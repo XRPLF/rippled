@@ -123,7 +123,7 @@ print_wasm_error(std::string_view msg, wasm_trap_t* trap, beast::Journal jlog)
 #ifdef DEBUG_OUTPUT
     auto& j = std::cerr;
 #else
-    auto j = jlog.debug();
+    auto j = jlog.error();
 #endif
 
     j << "WAMR error: " << msg;
@@ -140,7 +140,9 @@ print_wasm_error(std::string_view msg, wasm_trap_t* trap, beast::Journal jlog)
         wasm_trap_delete(trap);
     }
 
+#ifdef DEBUG_OUTPUT
     j << std::endl;
+#endif
 }
 
 }  // namespace
@@ -311,7 +313,7 @@ InstanceWrapper::getGas() const
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
 ModulePtr
-ModuleWrapper::init(wasm_store_t* s, Bytes const& wasmBin)
+ModuleWrapper::init(wasm_store_t* s, Bytes const& wasmBin, beast::Journal j)
 {
     wasm_byte_vec_t const code{
         wasmBin.size(),
@@ -320,6 +322,11 @@ ModuleWrapper::init(wasm_store_t* s, Bytes const& wasmBin)
         sizeof(std::remove_reference_t<decltype(wasmBin)>::value_type),
         nullptr};
     ModulePtr m = ModulePtr(wasm_module_new(s, &code), &wasm_module_delete);
+    if (!m)
+    {
+        print_wasm_error("can't create module", nullptr, j);
+        throw std::runtime_error("WAMR can't create module");
+    }
     return m;
 }
 
@@ -344,11 +351,10 @@ ModuleWrapper::ModuleWrapper(
     int64_t gas,
     std::vector<WasmImportFunc> const& imports,
     beast::Journal j)
-    : module(init(s, wasmBin)), export_types{0, nullptr, 0, 0, nullptr}, j_(j)
+    : module(init(s, wasmBin, j))
+    , export_types{0, nullptr, 0, 0, nullptr}
+    , j_(j)
 {
-    if (!module)
-        throw std::runtime_error("WAMR can't create module");
-
     wasm_module_exports(module.get(), &export_types);
     if (instantiate)
     {
@@ -454,12 +460,6 @@ ModuleWrapper::buildImports(
     wasm_store_t* s,
     std::vector<WasmImportFunc> const& imports)
 {
-#ifdef DEBUG_OUTPUT
-    auto& j = std::cerr;
-#else
-    auto j = j_.debug();
-#endif
-
     wasm_importtype_vec_t importTypes = WASM_EMPTY_VEC;
     wasm_module_imports(module.get(), &importTypes);
     std::
@@ -525,14 +525,21 @@ ModuleWrapper::buildImports(
 
         if (!impSet)
         {
-            j << "WAMR Import not found: " << fieldName << std::endl;
+            print_wasm_error(
+                std::string("Import not found: ") + fieldName.data(),
+                nullptr,
+                j_);
         }
     }
 
     if (impCnt != importTypes.num_elems)
     {
-        j << "WAMR Imports not finished: " << wimports.num_elems << "/"
-          << importTypes.num_elems << std::endl;
+        print_wasm_error(
+            std::string("Imports not finished: ") +
+                std::to_string(wimports.num_elems) + "/" +
+                std::to_string(importTypes.num_elems),
+            nullptr,
+            j_);
     }
 
     return wimports;
@@ -614,6 +621,12 @@ WamrEngine::addModule(
     store = {wasm_store_new(engine.get()), &wasm_store_delete};
     module = std::make_unique<ModuleWrapper>(
         store.get(), wasmCode, instantiate, defMaxPages, gas, imports, j_);
+
+    if (!module)
+    {
+        print_wasm_error("can't create module wrapper", nullptr, j_);
+        throw std::runtime_error("WAMR can't create module wrapper");
+    }
 
     return module ? 0 : -1;
 }
@@ -798,29 +811,22 @@ WamrEngine::run(
     std::vector<WasmImportFunc> const& imports,
     HostFunctions* hfs,
     int64_t gas,
-    beast::Journal jlog)
+    beast::Journal j)
 {
-    j_ = jlog;
-
-#ifdef DEBUG_OUTPUT
-    auto& j = std::cerr;
-#else
-    auto j = j_.debug();
-#endif
-
+    j_ = j;
+    wasm_runtime_set_log_level(
+        std::min(getLogLevel(j_.sink().threshold()), WASM_LOG_LEVEL_ERROR));
     try
     {
-        wasm_runtime_set_log_level(std::min(
-            getLogLevel(jlog.sink().threshold()), WASM_LOG_LEVEL_ERROR));
         return runHlp(wasmCode, funcName, params, imports, hfs, gas);
     }
     catch (std::exception const& e)
     {
-        j << "WAMR exception: " << e.what() << std::endl;
+        print_wasm_error(std::string("exception: ") + e.what(), nullptr, j_);
     }
     catch (...)
     {
-        j << "WAMR unknown exception." << std::endl;
+        print_wasm_error(std::string("unknown exception"), nullptr, j_);
     }
     return Unexpected<TER>(tecFAILED_PROCESSING);
 }
@@ -834,22 +840,23 @@ WamrEngine::runHlp(
     HostFunctions* hfs,
     int64_t gas)
 {
-#ifdef DEBUG_OUTPUT
-    auto& j = std::cerr;
-#else
-    auto j = j_.debug();
-#endif
+    // #ifdef DEBUG_OUTPUT
+    //     auto& j = std::cerr;
+    // #else
+    //     auto j = j_.debug();
+    // #endif
 
     // Create and instantiate the module.
     if (!wasmCode.empty())
     {
-        int const m = addModule(wasmCode, true, gas, imports);
-        if (m < 0)
-            return Unexpected<TER>(tecFAILED_PROCESSING);
+        [[maybe_unused]] int const m = addModule(wasmCode, true, gas, imports);
     }
 
     if (!module || !module->mod_inst)
+    {
+        print_wasm_error("no instance to run", nullptr, j_);
         return Unexpected<TER>(tecFAILED_PROCESSING);
+    }
 
     if (hfs)
         hfs->setRT(&getRT());
@@ -858,14 +865,25 @@ WamrEngine::runHlp(
     auto f = getFunc(!funcName.empty() ? funcName : "_start");
     auto p = convertParams(params);
     auto res = call<1>(f, p);
-    if (!res.r.num_elems || trap)
+
+    if (trap)
+    {
+        print_wasm_error(
+            "<" + std::string(funcName) + "> return trap", trap, j_);
         return Unexpected<TER>(tecFAILED_PROCESSING);
+    }
+    else if (!res.r.num_elems)
+    {
+        print_wasm_error(
+            "<" + std::string(funcName) + "> return nothing", nullptr, j_);
+        return Unexpected<TER>(tecFAILED_PROCESSING);
+    }
 
     assert(res.r.data[0].kind == WASM_I32);
 
     WasmResult<int32_t> const ret{res.r.data[0].of.i32, gas - module->getGas()};
 
-    j << "WAMR Res: " << ret.result << " cost: " << ret.cost << std::endl;
+    // j << "WAMR Res: " << ret.result << " cost: " << ret.cost << std::endl;
     return ret;
 }
 

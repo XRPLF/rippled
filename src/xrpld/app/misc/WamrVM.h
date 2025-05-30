@@ -105,7 +105,7 @@ struct ModuleWrapper
 
 private:
     static ModulePtr
-    init(wasm_store_t* s, Bytes const& wasmBin);
+    init(wasm_store_t* s, Bytes const& wasmBin, beast::Journal j);
 
 public:
     ModuleWrapper();
