@@ -14,7 +14,7 @@
 #include <cmath>
 #include <numeric>  // std::accumulate
 
-#define __rdtsc() 0
+// #define __rdtsc() 0
 
 namespace beast {
 
