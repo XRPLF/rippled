@@ -123,10 +123,10 @@ print_wasm_error(std::string_view msg, wasm_trap_t* trap, beast::Journal jlog)
 #ifdef DEBUG_OUTPUT
     auto& j = std::cerr;
 #else
-    auto j = jlog.error();
+    auto j = jlog.debug();
 #endif
 
-    j << "WAMR error: " << msg;
+    j << "WAMR Error: " << msg;
 
     if (trap)
     {
@@ -134,7 +134,16 @@ print_wasm_error(std::string_view msg, wasm_trap_t* trap, beast::Journal jlog)
 
         wasm_trap_message(trap, &error_message);
         if (error_message.num_elems)
-            j << "\nWAMR " << error_message.data;
+        {
+            j <<
+#ifdef DEBUG_OUTPUT
+                "\nWAMR "
+#else
+                "WAMR "
+#endif
+              << error_message.data;
+        }
+
         if (error_message.size)
             wasm_byte_vec_delete(&error_message);
         wasm_trap_delete(trap);
@@ -740,9 +749,12 @@ WamrEngine::call(FuncInfo const& f, std::vector<wasm_val_t>& in)
               in.size(),
               sizeof(std::remove_reference_t<decltype(in)>::value_type),
               nullptr};
-    trap = wasm_func_call(f.first, &inv, &ret.r);
+    wasm_trap_t* trap = wasm_func_call(f.first, &inv, &ret.r);
     if (trap)
+    {
+        ret.f = true;
         print_wasm_error("failed to call func", trap, j_);
+    }
 
     // assert(results[0].kind == WASM_I32);
     // if (NR) printf("Result P5: %d\n", ret[0].of.i32);
@@ -866,10 +878,8 @@ WamrEngine::runHlp(
     auto p = convertParams(params);
     auto res = call<1>(f, p);
 
-    if (trap)
+    if (res.f)
     {
-        print_wasm_error(
-            "<" + std::string(funcName) + "> return trap", trap, j_);
         return Unexpected<TER>(tecFAILED_PROCESSING);
     }
     else if (!res.r.num_elems)
@@ -918,11 +928,12 @@ int32_t
 WamrEngine::allocate(int32_t sz)
 {
     auto res = call<1>(W_ALLOC, static_cast<int32_t>(sz));
-    auto const ptr = res.r.data[0].of.i32;
-    if (trap || (res.r.data[0].kind != WASM_I32) || !ptr)
+
+    if (res.f || !res.r.num_elems || (res.r.data[0].kind != WASM_I32) ||
+        !res.r.data[0].of.i32)
         throw std::runtime_error(
             "WAMR can't allocate memory, " + std::to_string(sz) + " bytes");
-    return ptr;
+    return res.r.data[0].of.i32;
 }
 
 wasm_trap_t*

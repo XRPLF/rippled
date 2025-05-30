@@ -25,27 +25,45 @@
 
 namespace ripple {
 
-// clang-format off
-
 struct WamrResult
 {
     wasm_val_vec_t r;
-    WamrResult(unsigned N = 0):r{0, nullptr, 0, 0, nullptr} {if (N) wasm_val_vec_new_uninitialized(&r, N);}
-    ~WamrResult() { if (r.size) wasm_val_vec_delete(&r); }
-    WamrResult(WamrResult const &) = delete;
-    WamrResult& operator=(WamrResult const &) = delete;
+    bool f;
+    WamrResult(unsigned N = 0) : r{0, nullptr, 0, 0, nullptr}, f(false)
+    {
+        if (N)
+            wasm_val_vec_new_uninitialized(&r, N);
+    }
+    ~WamrResult()
+    {
+        if (r.size)
+            wasm_val_vec_delete(&r);
+    }
+    WamrResult(WamrResult const&) = delete;
+    WamrResult&
+    operator=(WamrResult const&) = delete;
 
-    WamrResult(WamrResult &&o) {*this = std::move(o);}
-    WamrResult& operator=(WamrResult  &&o){r = o.r; o.r = {0, nullptr, 0, 0, nullptr}; return *this;}
-    //operator wasm_val_vec_t &() {return r;}
+    WamrResult(WamrResult&& o)
+    {
+        *this = std::move(o);
+    }
+    WamrResult&
+    operator=(WamrResult&& o)
+    {
+        r = o.r;
+        o.r = {0, nullptr, 0, 0, nullptr};
+        f = o.f;
+        o.f = false;
+        return *this;
+    }
+    // operator wasm_val_vec_t &() {return r;}
 };
 
 using ModulePtr = std::unique_ptr<wasm_module_t, decltype(&wasm_module_delete)>;
-using InstancePtr = std::unique_ptr<wasm_instance_t, decltype(&wasm_instance_delete)>;
+using InstancePtr =
+    std::unique_ptr<wasm_instance_t, decltype(&wasm_instance_delete)>;
 
 using FuncInfo = std::pair<wasm_func_t const*, wasm_functype_t const*>;
-
-// clang-format on
 
 struct InstanceWrapper
 {
@@ -156,7 +174,6 @@ class WamrEngine
     std::unique_ptr<wasm_engine_t, decltype(&wasm_engine_delete)> engine;
     std::unique_ptr<wasm_store_t, decltype(&wasm_store_delete)> store;
     std::unique_ptr<ModuleWrapper> module;
-    wasm_trap_t* trap = nullptr;
     std::int32_t defMaxPages = -1;
     beast::Journal j_ = beast::Journal(beast::Journal::getNullSink());
 
