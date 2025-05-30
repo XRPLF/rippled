@@ -629,7 +629,8 @@ EscrowFinish::doApply()
             return tecINTERNAL;
         }
         std::uint32_t allowance = ctx_.tx[sfComputationAllowance];
-        auto re = runEscrowWasm(wasm, funcName, &ledgerDataProvider, allowance);
+        auto re =
+            runEscrowWasm(wasm, funcName, {}, &ledgerDataProvider, allowance);
         JLOG(j_.trace()) << "Escrow WASM ran";
         if (re.has_value())
         {

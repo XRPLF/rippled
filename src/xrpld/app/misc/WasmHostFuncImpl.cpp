@@ -20,7 +20,13 @@
 #include <xrpld/app/misc/WasmHostFuncImpl.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
 
+#include <xrpl/protocol/STBitString.h>
 #include <xrpl/protocol/digest.h>
+
+#ifdef _DEBUG
+// #define DEBUG_OUTPUT 1
+// #define DEBUG_OUTPUT_WAMR 1
+#endif
 
 namespace ripple {
 
@@ -36,198 +42,455 @@ WasmHostFunctionsImpl::getParentLedgerTime()
     return ctx.view().parentCloseTime().time_since_epoch().count();  // TODO try
 }
 
-// TODO remove json code after deciding encoding scheme
-
-std::optional<Bytes>
-WasmHostFunctionsImpl::getTxField(std::string const& fname)
+Hash
+WasmHostFunctionsImpl::getParentLedgerHash()
 {
-    auto js = ctx.tx.getJson(JsonOptions::none);
-    if (js.isMember(fname))
-    {
-        auto s = js.get(fname, Json::Value::null).asString();
-        return Bytes{s.begin(), s.end()};
-    }
-    else
-        return std::nullopt;
+    return ctx.view().info().parentHash;
 }
 
-std::optional<Bytes>
-WasmHostFunctionsImpl::getLedgerEntryField(
-    int32_t type,
-    Bytes const& kdata,
-    std::string const& fname)
+int32_t
+WasmHostFunctionsImpl::cacheLedgerObj(Keylet const& keylet, int32_t cacheIdx)
 {
-    auto kl = [&]() -> std::optional<ripple::Keylet> {
-        if (type == ltACCOUNT_ROOT)
+    if (cacheIdx < 0 || cacheIdx > MAX_CACHE)
+        return HF_ERR_SLOT_OUT_RANGE;
+
+    if (!cacheIdx)
+    {
+        for (cacheIdx = 0; cacheIdx < MAX_CACHE; ++cacheIdx)
+            if (!cache[cacheIdx])
+                break;
+    }
+    else
+        --cacheIdx;
+
+    if (cacheIdx >= MAX_CACHE)
+        return HF_ERR_SLOTS_FULL;
+
+    cache[cacheIdx] = ctx.view().read(keylet);
+    return cache[cacheIdx] ? cacheIdx + 1 : HF_ERR_LEDGER_OBJ_NOT_FOUND;
+}
+
+Bytes
+getAnyFieldData(STBase const& obj)
+{
+    // auto const& fname = obj.getFName();
+    if (STI_ACCOUNT == obj.getSType())
+    {
+        auto const& super(static_cast<STAccount const&>(obj));
+        auto const& data = super.value();
+        return {data.begin(), data.end()};
+    }
+    else if (STI_AMOUNT == obj.getSType())
+    {
+        auto const& super(static_cast<STAmount const&>(obj));
+        int64_t const data = super.xrp().drops();
+        auto const* b = reinterpret_cast<uint8_t const*>(&data);
+        auto const* e = reinterpret_cast<uint8_t const*>(&data + 1);
+        return {b, e};
+    }
+    else if (STI_VL == obj.getSType())
+    {
+        auto const& super(static_cast<STBlob const&>(obj));
+        auto const& data = super.value();
+        return {data.begin(), data.end()};
+    }
+    else if (STI_UINT256 == obj.getSType())
+    {
+        auto const& super(static_cast<STBitString<256> const&>(obj));
+        auto const& data = super.value();
+        return {data.begin(), data.end()};
+    }
+    else if (STI_UINT32 == obj.getSType())
+    {
+        auto const& super(static_cast<STInteger<std::uint32_t> const&>(obj));
+        std::uint32_t const data = super.value();
+        auto const* b = reinterpret_cast<uint8_t const*>(&data);
+        auto const* e = reinterpret_cast<uint8_t const*>(&data + 1);
+        return {b, e};
+    }
+
+    Serializer msg;
+    obj.add(msg);
+
+    return msg.getData();
+}
+
+Expected<Bytes, int32_t>
+WasmHostFunctionsImpl::getTxField(SField const& fname)
+{
+    auto const* field = ctx.tx.peekAtPField(fname);
+    if (!field)
+        return Unexpected(HF_ERR_FIELD_NOT_FOUND);
+    return getAnyFieldData(*field);
+}
+
+Expected<Bytes, int32_t>
+WasmHostFunctionsImpl::getCurrentLedgerObjField(SField const& fname)
+{
+    auto const sle = ctx.view().read(leKey);
+    if (!sle)
+        return Unexpected(HF_ERR_LEDGER_OBJ_NOT_FOUND);
+
+    auto const* field = sle->peekAtPField(fname);
+    if (!field)
+        return Unexpected(HF_ERR_FIELD_NOT_FOUND);
+
+    return getAnyFieldData(*field);
+}
+
+Expected<Bytes, int32_t>
+WasmHostFunctionsImpl::getLedgerObjField(int32_t cacheIdx, SField const& fname)
+{
+    --cacheIdx;
+    if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
+        return Unexpected(HF_ERR_SLOT_OUT_RANGE);
+
+    if (!cache[cacheIdx])
+        return Unexpected(HF_ERR_INVALID_SLOT);
+
+    auto const* field = cache[cacheIdx]->peekAtPField(fname);
+    if (!field)
+        return Unexpected(HF_ERR_FIELD_NOT_FOUND);
+
+    return getAnyFieldData(*field);
+}
+
+static Expected<STBase const*, int32_t>
+locateField(STObject const* obj, Slice const& loc)
+{
+    if (loc.size() % 4)
+        return Unexpected(HF_ERR_LOCATOR_MALFORMED);
+
+    int32_t const* l = reinterpret_cast<int32_t const*>(loc.data());
+    int32_t const sz = loc.size() / 4;
+    STBase const* field = nullptr;
+    auto const& m = SField::getKnownCodeToField();
+
+    for (int i = 0; i < sz; ++i)
+    {
+        int32_t const c = l[i];
+
+        if (!field)
         {
-            std::string s(kdata.begin(), kdata.end());
-            auto const account = parseBase58<AccountID>(s);
-            if (account)
-            {
-                return keylet::account(account.value());
-            }
+            auto const it = m.find(c);
+            if (it == m.end())
+                return Unexpected(HF_ERR_FIELD_NOT_FOUND);
+            auto const& fname(*it->second);
+
+            field = obj->peekAtPField(fname);
+            if (!field)
+                return Unexpected(HF_ERR_FIELD_NOT_FOUND);
         }
-        return std::nullopt;
-    }();
+        else if (STI_ARRAY == field->getSType())
+        {
+            auto const* arr = static_cast<STArray const*>(field);
+            if (c >= arr->size())
+                return Unexpected(HF_ERR_LOCATOR_MALFORMED);
+            field = &(arr->operator[](c));
+        }
+        else if (STI_OBJECT == field->getSType())
+        {
+            auto const* o = static_cast<STObject const*>(field);
 
-    if (!kl || !ctx.view().exists(kl.value()))
-        return std::nullopt;
+            auto const it = m.find(c);
+            if (it == m.end())
+                return Unexpected(HF_ERR_FIELD_NOT_FOUND);
+            auto const& fname(*it->second);
 
-    auto js = ctx.view().read(kl.value())->getJson(JsonOptions::none);
-    if (js.isMember(fname))
-    {
-        auto s = js.get(fname, Json::Value::null).asString();
-        return Bytes{s.begin(), s.end()};
+            field = o->peekAtPField(fname);
+            if (!field)
+                return Unexpected(HF_ERR_FIELD_NOT_FOUND);
+        }
     }
-    else
-        return std::nullopt;
+
+    if (!field || (STI_OBJECT == field->getSType()) ||
+        (STI_ARRAY == field->getSType()))
+        return Unexpected(HF_ERR_LOCATOR_MALFORMED);
+
+    return field;
 }
 
-std::optional<Bytes>
-WasmHostFunctionsImpl::getCurrentLedgerEntryField(std::string const& fname)
+Expected<Bytes, int32_t>
+WasmHostFunctionsImpl::getTxNestedField(Slice const& locator)
 {
-    if (!ctx.view().exists(leKey))
-        return std::nullopt;
+    auto const r = locateField(&ctx.tx, locator);
+    if (!r.has_value())
+        return Unexpected(r.error());
 
-    auto js = ctx.view().read(leKey)->getJson(JsonOptions::none);
-    if (js.isMember(fname))
-    {
-        auto s = js.get(fname, Json::Value::null).asString();
-        return Bytes{s.begin(), s.end()};
-    }
-    else
-        return std::nullopt;
+    auto const* field = r.value();
+    return getAnyFieldData(*field);
 }
 
-std::optional<Bytes>
-WasmHostFunctionsImpl::getNFT(
-    std::string const& account,
-    std::string const& nftId)
+Expected<Bytes, int32_t>
+WasmHostFunctionsImpl::getCurrentLedgerObjNestedField(Slice const& locator)
 {
-    auto const accountId = parseBase58<AccountID>(account);
-    if (!accountId || accountId->isZero())
-    {
-        return std::nullopt;
-    }
+    auto const sle = ctx.view().read(leKey);
+    if (!sle)
+        return Unexpected(HF_ERR_LEDGER_OBJ_NOT_FOUND);
 
-    uint256 nftHash;
-    if (!nftHash.parseHex(nftId))
-    {
-        return std::nullopt;
-    }
+    auto const r = locateField(sle.get(), locator);
+    if (!r.has_value())
+        return Unexpected(r.error());
 
-    auto jv = nft::findToken(ctx.view(), accountId.value(), nftHash);
-    if (!jv)
-    {
-        return std::nullopt;
-    }
-
-    Slice const s = (*jv)[sfURI];
-    return Bytes{s.begin(), s.end()};
+    auto const* field = r.value();
+    return getAnyFieldData(*field);
 }
 
-bool
+Expected<Bytes, int32_t>
+WasmHostFunctionsImpl::getLedgerObjNestedField(
+    int32_t cacheIdx,
+    Slice const& locator)
+{
+    --cacheIdx;
+    if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
+        return Unexpected(HF_ERR_SLOT_OUT_RANGE);
+
+    if (!cache[cacheIdx])
+        return Unexpected(HF_ERR_INVALID_SLOT);
+
+    auto const r = locateField(cache[cacheIdx].get(), locator);
+    if (!r.has_value())
+        return Unexpected(r.error());
+
+    auto const* field = r.value();
+    return getAnyFieldData(*field);
+}
+
+int32_t
+WasmHostFunctionsImpl::getTxArrayLen(SField const& fname)
+{
+    if (fname.fieldType != STI_ARRAY)
+        return HF_ERR_NO_ARRAY;
+
+    auto const* field = ctx.tx.peekAtPField(fname);
+    if (!field)
+        return HF_ERR_FIELD_NOT_FOUND;
+
+    if (field->getSType() != STI_ARRAY)
+        return HF_ERR_NO_ARRAY;
+    int32_t const sz = static_cast<STArray const*>(field)->size();
+
+    return sz;
+}
+
+int32_t
+WasmHostFunctionsImpl::getCurrentLedgerObjArrayLen(SField const& fname)
+{
+    if (fname.fieldType != STI_ARRAY)
+        return HF_ERR_NO_ARRAY;
+
+    auto const sle = ctx.view().read(leKey);
+    if (!sle)
+        return HF_ERR_LEDGER_OBJ_NOT_FOUND;
+
+    auto const* field = sle->peekAtPField(fname);
+    if (!field)
+        return HF_ERR_FIELD_NOT_FOUND;
+
+    if (field->getSType() != STI_ARRAY)
+        return HF_ERR_NO_ARRAY;
+    int32_t const sz = static_cast<STArray const*>(field)->size();
+
+    return sz;
+}
+
+int32_t
+WasmHostFunctionsImpl::getLedgerObjArrayLen(
+    int32_t cacheIdx,
+    SField const& fname)
+{
+    if (fname.fieldType != STI_ARRAY)
+        return HF_ERR_NO_ARRAY;
+
+    if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
+        return HF_ERR_SLOT_OUT_RANGE;
+
+    if (!cache[cacheIdx])
+        return HF_ERR_INVALID_SLOT;
+
+    auto const* field = cache[cacheIdx]->peekAtPField(fname);
+    if (!field)
+        return HF_ERR_FIELD_NOT_FOUND;
+
+    if (field->getSType() != STI_ARRAY)
+        return HF_ERR_NO_ARRAY;
+    int32_t const sz = static_cast<STArray const*>(field)->size();
+
+    return sz;
+}
+
+int32_t
+WasmHostFunctionsImpl::getTxNestedArrayLen(Slice const& locator)
+{
+    auto const r = locateField(&ctx.tx, locator);
+    if (!r.has_value())
+        return r.error();
+    auto const* field = r.value();
+
+    if (field->getSType() != STI_ARRAY)
+        return HF_ERR_NO_ARRAY;
+    int32_t const sz = static_cast<STArray const*>(field)->size();
+
+    return sz;
+}
+
+int32_t
+WasmHostFunctionsImpl::getCurrentLedgerObjNestedArrayLen(Slice const& locator)
+{
+    auto const sle = ctx.view().read(leKey);
+    if (!sle)
+        return HF_ERR_LEDGER_OBJ_NOT_FOUND;
+    auto const r = locateField(sle.get(), locator);
+    if (!r.has_value())
+        return r.error();
+    auto const* field = r.value();
+
+    if (field->getSType() != STI_ARRAY)
+        return HF_ERR_NO_ARRAY;
+    int32_t const sz = static_cast<STArray const*>(field)->size();
+
+    return sz;
+}
+
+int32_t
+WasmHostFunctionsImpl::getLedgerObjNestedArrayLen(
+    int32_t cacheIdx,
+    Slice const& locator)
+{
+    --cacheIdx;
+    if (cacheIdx < 0 || cacheIdx >= MAX_CACHE)
+        return HF_ERR_SLOT_OUT_RANGE;
+
+    if (!cache[cacheIdx])
+        return HF_ERR_INVALID_SLOT;
+
+    auto const r = locateField(cache[cacheIdx].get(), locator);
+    if (!r.has_value())
+        return r.error();
+
+    auto const* field = r.value();
+
+    if (field->getSType() != STI_ARRAY)
+        return HF_ERR_NO_ARRAY;
+    int32_t const sz = static_cast<STArray const*>(field)->size();
+
+    return sz;
+}
+
+int32_t
 WasmHostFunctionsImpl::updateData(Bytes const& data)
 {
-    if (!ctx.view().exists(leKey))
-        return false;
     auto sle = ctx.view().peek(leKey);
+    if (!sle)
+        return HF_ERR_LEDGER_OBJ_NOT_FOUND;
     sle->setFieldVL(sfData, data);
     ctx.view().update(sle);
-    return true;
+    return 0;
 }
 
 Hash
 WasmHostFunctionsImpl::computeSha512HalfHash(Bytes const& data)
 {
     auto const hash = sha512Half(data);
-    return uint256::fromVoid(hash.data());
+    return hash;
 }
 
-std::optional<Bytes>
-WasmHostFunctionsImpl::accountKeylet(std::string const& account)
+Expected<Bytes, int32_t>
+WasmHostFunctionsImpl::accountKeylet(AccountID const& account)
 {
-    auto const accountId = parseBase58<AccountID>(account);
-    if (!accountId || accountId->isZero())
-    {
-        return std::nullopt;
-    }
-
-    auto keylet = keylet::account(*accountId).key;
-    if (!keylet)
-    {
-        return std::nullopt;
-    }
-
-    return Bytes{keylet.begin(), keylet.end()};
+    if (!account)
+        return Unexpected(HF_ERR_INVALID_ACCOUNT);
+    auto const keylet = keylet::account(account);
+    return Bytes{keylet.key.begin(), keylet.key.end()};
 }
 
-std::optional<Bytes>
+Expected<Bytes, int32_t>
 WasmHostFunctionsImpl::credentialKeylet(
-    std::string const& subject,
-    std::string const& issuer,
-    std::string const& credentialType)
+    AccountID const& subject,
+    AccountID const& issuer,
+    Bytes const& credentialType)
 {
-    auto const subjectId = parseBase58<AccountID>(subject);
-    if (!subjectId || subjectId->isZero())
-    {
-        return std::nullopt;
-    }
+    if (!subject || !issuer || credentialType.empty() ||
+        credentialType.size() > maxCredentialTypeLength)
+        return Unexpected(HF_ERR_INVALID_PARAMS);
 
-    auto const issuerId = parseBase58<AccountID>(issuer);
-    if (!issuerId || issuerId->isZero())
-    {
-        return std::nullopt;
-    }
+    auto const keylet =
+        keylet::credential(subject, issuer, makeSlice(credentialType));
 
-    auto keylet =
-        keylet::credential(*subjectId, *issuerId, makeSlice(credentialType))
-            .key;
-    if (!keylet)
-    {
-        return std::nullopt;
-    }
-
-    return Bytes{keylet.begin(), keylet.end()};
+    return Bytes{keylet.key.begin(), keylet.key.end()};
 }
 
-std::optional<Bytes>
-WasmHostFunctionsImpl::escrowKeylet(
-    std::string const& account,
-    std::uint32_t const& seq)
+Expected<Bytes, int32_t>
+WasmHostFunctionsImpl::escrowKeylet(AccountID const& account, std::uint32_t seq)
 {
-    auto const accountId = parseBase58<AccountID>(account);
-    if (!accountId || accountId->isZero())
-    {
-        return std::nullopt;
-    }
-
-    auto keylet = keylet::escrow(*accountId, seq).key;
-    if (!keylet)
-    {
-        return std::nullopt;
-    }
-
-    return Bytes{keylet.begin(), keylet.end()};
+    if (!account)
+        return Unexpected(HF_ERR_INVALID_ACCOUNT);
+    auto const keylet = keylet::escrow(account, seq);
+    return Bytes{keylet.key.begin(), keylet.key.end()};
 }
 
-std::optional<Bytes>
+Expected<Bytes, int32_t>
 WasmHostFunctionsImpl::oracleKeylet(
-    std::string const& account,
-    std::uint32_t const& documentId)
+    AccountID const& account,
+    std::uint32_t documentId)
 {
-    auto const accountId = parseBase58<AccountID>(account);
-    if (!accountId || accountId->isZero())
-    {
-        return std::nullopt;
-    }
-
-    auto keylet = keylet::oracle(*accountId, documentId).key;
-    if (!keylet)
-    {
-        return std::nullopt;
-    }
-
-    return Bytes{keylet.begin(), keylet.end()};
+    if (!account || account.isZero())
+        return Unexpected(HF_ERR_INVALID_ACCOUNT);
+    auto const keylet = keylet::oracle(account, documentId);
+    return Bytes{keylet.key.begin(), keylet.key.end()};
 }
+
+Expected<Bytes, int32_t>
+WasmHostFunctionsImpl::getNFT(AccountID const& account, uint256 const& nftId)
+{
+    if (!account || !nftId)
+        return Unexpected(HF_ERR_INVALID_PARAMS);
+
+    auto obj = nft::findToken(ctx.view(), account, nftId);
+    if (!obj)
+        return Unexpected(HF_ERR_LEDGER_OBJ_NOT_FOUND);
+
+    Slice const s = obj->at(sfURI);
+    return Bytes(s.begin(), s.end());
+}
+
+int32_t
+WasmHostFunctionsImpl::trace(
+    std::string const& msg,
+    Bytes const& data,
+    bool asHex)
+{
+#ifdef DEBUG_OUTPUT
+    auto j = ctx.journal.error();
+#else
+    auto j = ctx.journal.trace();
+#endif
+    j << msg;
+    if (!asHex)
+        j << std::string_view(
+            reinterpret_cast<char const*>(data.data()), data.size());
+    else
+    {
+        auto const hex =
+            boost::algorithm::hex(std::string(data.begin(), data.end()));
+        j << hex;
+    }
+
+    return msg.size() + data.size() * (asHex ? 2 : 1);
+}
+
+int32_t
+WasmHostFunctionsImpl::traceNum(std::string const& msg, int64_t data)
+{
+#ifdef DEBUG_OUTPUT
+    auto j = ctx.journal.error();
+#else
+    auto j = ctx.journal.trace();
+#endif
+
+    j << msg << data;
+
+    return msg.size() + sizeof(data);
+}
+
 }  // namespace ripple

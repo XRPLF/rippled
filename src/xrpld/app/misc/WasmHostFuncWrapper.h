@@ -23,91 +23,200 @@
 
 namespace ripple {
 
-using getLedgerSqn_proto = int32_t();
+using getLedgerSqnOld_proto = int32_t();
+wasm_trap_t*
+getLedgerSqnOld_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using getLedgerSqn_proto = int32_t(uint8_t*, int32_t);
 wasm_trap_t*
 getLedgerSqn_wrap(
     void* env,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
-using getParentLedgerTime_proto = int32_t();
+using getParentLedgerTime_proto = int32_t(uint8_t*, int32_t);
 wasm_trap_t*
 getParentLedgerTime_wrap(
     void* env,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
-using getTxField_proto = uint32_t*(char const*, int32_t);
+using getParentLedgerHash_proto = int32_t(uint8_t*, int32_t);
+wasm_trap_t*
+getParentLedgerHash_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using cacheLedgerObj_proto = int32_t(uint8_t const*, int32_t, int32_t);
+wasm_trap_t*
+cacheLedgerObj_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using getTxField_proto = int32_t(int32_t, uint8_t*, int32_t);
 wasm_trap_t*
 getTxField_wrap(
     void* env,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
-using getLedgerEntryField_proto =
-    uint32_t*(int32_t, uint8_t const*, int32_t, char const*, int32_t);
+using getCurrentLedgerObjField_proto = int32_t(int32_t, uint8_t*, int32_t);
 wasm_trap_t*
-getLedgerEntryField_wrap(
+getCurrentLedgerObjField_wrap(
     void* env,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
-using getCurrentLedgerEntryField_proto = uint32_t*(char const*, int32_t);
+using getLedgerObjField_proto = int32_t(int32_t, int32_t, uint8_t*, int32_t);
 wasm_trap_t*
-getCurrentLedgerEntryField_wrap(
+getLedgerObjField_wrap(
     void* env,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
-using getNFT_proto = uint32_t*(char const*, int32_t, char const*, int32_t);
+using getTxNestedField_proto =
+    int32_t(uint8_t const*, int32_t, uint8_t*, int32_t);
 wasm_trap_t*
-getNFT_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
-
-using accountKeylet_proto = uint32_t*(char const*, int32_t);
-wasm_trap_t*
-accountKeylet_wrap(
+getTxNestedField_wrap(
     void* env,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
-using credentialKeylet_proto =
-    uint32_t*(char const*, int32_t, char const*, int32_t, char const*, int32_t);
+using getCurrentLedgerObjNestedField_proto =
+    int32_t(uint8_t const*, int32_t, uint8_t*, int32_t);
 wasm_trap_t*
-credentialKeylet_wrap(
+getCurrentLedgerObjNestedField_wrap(
     void* env,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
-using escrowKeylet_proto = uint32_t*(char const*, int32_t, int32_t);
+using getLedgerObjNestedField_proto =
+    int32_t(int32_t, uint8_t const*, int32_t, uint8_t*, int32_t);
 wasm_trap_t*
-escrowKeylet_wrap(
+getLedgerObjNestedField_wrap(
     void* env,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
-using oracleKeylet_proto = uint32_t*(char const*, int32_t, int32_t);
+using getTxArrayLen_proto = int32_t(int32_t);
 wasm_trap_t*
-oracleKeylet_wrap(
+getTxArrayLen_wrap(
     void* env,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
-using updateData_proto = void(uint8_t const*, int32_t);
+using getCurrentLedgerObjArrayLen_proto = int32_t(int32_t);
+wasm_trap_t*
+getCurrentLedgerObjArrayLen_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using getLedgerObjArrayLen_proto = int32_t(int32_t, int32_t);
+wasm_trap_t*
+getLedgerObjArrayLen_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using getTxNestedArrayLen_proto = int32_t(uint8_t const*, int32_t);
+wasm_trap_t*
+getTxNestedArrayLen_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using getCurrentLedgerObjNestedArrayLen_proto =
+    int32_t(uint8_t const*, int32_t);
+wasm_trap_t*
+getCurrentLedgerObjNestedArrayLen_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using getLedgerObjNestedArrayLen_proto =
+    int32_t(int32_t, uint8_t const*, int32_t);
+wasm_trap_t*
+getLedgerObjNestedArrayLen_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using updateData_proto = int32_t(uint8_t const*, int32_t);
 wasm_trap_t*
 updateData_wrap(
     void* env,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
-using computeSha512HalfHash_proto = uint32_t*(uint8_t const*, int32_t);
+using computeSha512HalfHash_proto =
+    int32_t(uint8_t const*, int32_t, uint8_t*, int32_t);
 wasm_trap_t*
 computeSha512HalfHash_wrap(
     void* env,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results);
 
-using print_proto = void(char const*, int32_t);
+using accountKeylet_proto = int32_t(uint8_t const*, int32_t, uint8_t*, int32_t);
 wasm_trap_t*
-print_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
+accountKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using credentialKeylet_proto = int32_t(
+    uint8_t const*,
+    int32_t,
+    uint8_t const*,
+    int32_t,
+    uint8_t const*,
+    int32_t,
+    uint8_t*,
+    int32_t);
+wasm_trap_t*
+credentialKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using escrowKeylet_proto =
+    int32_t(uint8_t const*, int32_t, int32_t, uint8_t*, int32_t);
+wasm_trap_t*
+escrowKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using oracleKeylet_proto =
+    int32_t(uint8_t const*, int32_t, int32_t, uint8_t*, int32_t);
+wasm_trap_t*
+oracleKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results);
+
+using getNFT_proto = int32_t(
+    uint8_t const*,
+    int32_t,
+    uint8_t const*,
+    int32_t,
+    uint8_t*,
+    int32_t);
+wasm_trap_t*
+getNFT_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
+
+using trace_proto =
+    int32_t(uint8_t const*, int32_t, uint8_t const*, int32_t, int32_t);
+wasm_trap_t*
+trace_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
+
+using traceNum_proto = int32_t(uint8_t const*, int32_t, int64_t);
+wasm_trap_t*
+traceNum_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results);
 
 }  // namespace ripple

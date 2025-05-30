@@ -2196,6 +2196,7 @@ struct Escrow_test : public beast::unit_test::suite
         using namespace jtx;
         using namespace std::chrono;
 
+        // TODO: create wasm module for all host functions
         static auto wasmHex = allHostFunctionsHex;
         //        let sender = get_tx_account_id();
         //        let owner = get_current_escrow_account_id();
@@ -2277,7 +2278,7 @@ struct Escrow_test : public beast::unit_test::suite
 
                 auto const txMeta = env.meta();
                 if (BEAST_EXPECT(txMeta->isFieldPresent(sfGasUsed)))
-                    BEAST_EXPECT(txMeta->getFieldU32(sfGasUsed) == 2412);
+                    BEAST_EXPECT(txMeta->getFieldU32(sfGasUsed) == 487);
 
                 env.close();
                 BEAST_EXPECT((*env.le(alice))[sfOwnerCount] == 0);
@@ -2303,6 +2304,8 @@ struct Escrow_test : public beast::unit_test::suite
         testCreateFinishFunctionPreflight();
         testFinishWasmFailures();
         testFinishFunction();
+
+        // TODO: Update module with new host functions
         testAllHostFunctions();
     }
 };

@@ -17,12 +17,91 @@
 */
 //==============================================================================
 
+#include <xrpld/app/misc/WamrVM.h>
+#include <xrpld/app/misc/WasmHostFunc.h>
 #include <xrpld/app/misc/WasmHostFuncWrapper.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
 
 #include <xrpl/protocol/digest.h>
 
 namespace ripple {
+
+static int32_t
+setData(
+    InstanceWrapper const* rt,
+    int32_t dst,
+    int32_t dsz,
+    uint8_t const* src,
+    int32_t ssz)
+{
+    auto mem = rt ? rt->getMem() : wmem();
+
+    if (!mem.s)
+        return HF_ERR_NO_MEM_EXPORTED;
+    if (dst + dsz > mem.s)
+        return HF_ERR_OUT_OF_BOUNDS;
+    if (ssz > dsz)
+        return HF_ERR_BUFFER_TOO_SMALL;
+
+    memcpy(mem.p + dst, src, ssz);
+
+    return ssz;
+}
+
+static Expected<Bytes, int32_t>
+getData(InstanceWrapper const* rt, int32_t src, int32_t ssz)
+{
+    auto mem = rt ? rt->getMem() : wmem();
+    if (!mem.s)
+        return Unexpected(HF_ERR_NO_MEM_EXPORTED);
+
+    if (src + ssz > mem.s)
+        return Unexpected(HF_ERR_OUT_OF_BOUNDS);
+
+    Bytes data(mem.p + src, mem.p + src + ssz);
+    return data;
+}
+
+static Expected<AccountID, int32_t>
+getDataAccount(InstanceWrapper const* rt, int32_t ptr, int32_t sz)
+{
+    auto const r = getData(rt, ptr, sz);
+    if (r->size() < AccountID::bytes)
+        return Unexpected(HF_ERR_INVALID_PARAMS);
+
+    return AccountID::fromVoid(r->data());
+}
+
+static Expected<std::string, int32_t>
+getDataString(InstanceWrapper const* rt, int32_t src, int32_t ssz)
+{
+    auto mem = rt ? rt->getMem() : wmem();
+    if (!mem.s)
+        return Unexpected(HF_ERR_NO_MEM_EXPORTED);
+
+    if (src + ssz > mem.s)
+        return Unexpected(HF_ERR_OUT_OF_BOUNDS);
+
+    std::string data(mem.p + src, mem.p + src + ssz);
+    return data;
+}
+
+#define RET(x)                          \
+    results->data[0] = WASM_I32_VAL(x); \
+    results->num_elems = 1;             \
+    return nullptr;
+
+wasm_trap_t*
+getLedgerSqnOld_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    // auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    int32_t const sqn = hf->getLedgerSqn();
+    RET(sqn);
+}
 
 wasm_trap_t*
 getLedgerSqn_wrap(
@@ -31,10 +110,15 @@ getLedgerSqn_wrap(
     wasm_val_vec_t* results)
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int32_t const sqn = hf->getLedgerSqn();
-    results->data[0] = WASM_I32_VAL(sqn);
 
-    return nullptr;
+    RET(setData(
+        rt,
+        params->data[0].of.i32,
+        params->data[1].of.i32,
+        reinterpret_cast<uint8_t const*>(&sqn),
+        static_cast<int32_t>(sizeof(sqn))));
 }
 
 wasm_trap_t*
@@ -44,65 +128,57 @@ getParentLedgerTime_wrap(
     wasm_val_vec_t* results)
 {
     auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
     int32_t const ltime = hf->getParentLedgerTime();
-    results->data[0] = WASM_I32_VAL(ltime);
-    return nullptr;
+    RET(setData(
+        rt,
+        params->data[0].of.i32,
+        params->data[1].of.i32,
+        reinterpret_cast<uint8_t const*>(&ltime),
+        static_cast<int32_t>(sizeof(ltime))));
 }
 
-static Expected<Bytes, std::string>
-getParameterData(wasm_val_vec_t const* params, size_t index)
+wasm_trap_t*
+getParentLedgerHash_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
 {
-    auto& vm = WasmEngine::instance();
-    auto fnameOffset = params->data[index].of.i32;
-    auto fnameLen = params->data[index + 1].of.i32;
-    auto mem = vm.getMem();
-    if (!mem.s)
-        return Unexpected<std::string>("No memory exported");
-
-    if (mem.s <= fnameOffset + fnameLen)
-        return Unexpected<std::string>("Memory access failed");
-    Bytes fname(mem.p + fnameOffset, mem.p + fnameOffset + fnameLen);
-    return fname;
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+    Hash const hash = hf->getParentLedgerHash();
+    RET(setData(
+        rt,
+        params->data[0].of.i32,
+        params->data[1].of.i32,
+        hash.data(),
+        static_cast<int32_t>(hash.size())));
 }
 
-static Expected<std::string, wasm_trap_t*>
-getFieldName(wasm_val_vec_t const* params, size_t index)
+wasm_trap_t*
+cacheLedgerObj_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
 {
-    auto const dataRes = getParameterData(params, index);
-    if (dataRes)
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+
+    auto const r = getData(rt, params->data[0].of.i32, params->data[1].of.i32);
+    if (!r)
     {
-        return std::string(dataRes->begin(), dataRes->end());
+        RET(r.error());
     }
-    else
+
+    if (r->size() < uint256::bytes)
     {
-        auto& vm = WasmEngine::instance();
-        return Unexpected<wasm_trap_t*>(
-            reinterpret_cast<wasm_trap_t*>(vm.newTrap(dataRes.error())));
+        RET(HF_ERR_INVALID_PARAMS);
     }
-}
 
-static Expected<int32_t, std::string>
-setData(Bytes const& data)
-{
-    auto& vm = WasmEngine::instance();
-    auto mem = vm.getMem();
-    if (!mem.s)
-        return Unexpected<std::string>("No memory exported");
-
-    int32_t const dataLen = static_cast<int32_t>(data.size());
-    int32_t const dataPtr = vm.allocate(dataLen);
-    if (!dataPtr)
-        return Unexpected<std::string>("Allocation error");
-    memcpy(mem.p + dataPtr, data.data(), dataLen);
-
-    auto retPtr = vm.allocate(8);
-    if (!retPtr)
-        return Unexpected<std::string>("Allocation error");
-    int32_t* retData = reinterpret_cast<int32_t*>(mem.p + retPtr);
-    retData[0] = dataPtr;
-    retData[1] = dataLen;
-
-    return retPtr;
+    uint256 const key(uint256::fromVoid(r->data()));
+    int32_t const idx =
+        hf->cacheLedgerObj(keylet::unchecked(key), params->data[2].of.i32);
+    RET(idx);
 }
 
 wasm_trap_t*
@@ -111,224 +187,300 @@ getTxField_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto& vm = WasmEngine::instance();
     auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
-    auto fname = getFieldName(params, 0);
-    if (!fname)
-        return reinterpret_cast<wasm_trap_t*>(vm.newTrap());
+    auto const& m = SField::getKnownCodeToField();
+    auto const it = m.find(params->data[0].of.i32);
+    if (it == m.end())
+    {
+        RET(HF_ERR_FIELD_NOT_FOUND);
+    }
+    auto const& fname(*it->second);
 
-    auto fieldData = hf->getTxField(fname.value());
+    auto fieldData = hf->getTxField(fname);
     if (!fieldData)
-        return reinterpret_cast<wasm_trap_t*>(vm.newTrap("Field not found"));
+    {
+        RET(fieldData.error());
+    }
 
-    auto pointer = setData(fieldData.value());
-    if (!pointer)
-        return reinterpret_cast<wasm_trap_t*>(vm.newTrap());
-
-    results->data[0] = WASM_I32_VAL(pointer.value());
-    //    out[1] = WasmEdge_ValueGenI32((int)fieldData.value().size());
-    return nullptr;
+    RET(setData(
+        rt,
+        params->data[1].of.i32,
+        params->data[2].of.i32,
+        fieldData->data(),
+        fieldData->size()));
 }
 
 wasm_trap_t*
-getLedgerEntryField_wrap(
+getCurrentLedgerObjField_wrap(
     void* env,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto& vm = WasmEngine::instance();
     auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
-    int32_t const type = params->data[0].of.i32;
-    auto lkData = getParameterData(params, 1);
-    if (!lkData)
-        return reinterpret_cast<wasm_trap_t*>(vm.newTrap());
+    auto const& m = SField::getKnownCodeToField();
+    auto const it = m.find(params->data[0].of.i32);
+    if (it == m.end())
+    {
+        RET(HF_ERR_FIELD_NOT_FOUND);
+    }
+    auto const& fname(*it->second);
 
-    auto fname = getFieldName(params, 3);
-    if (!fname)
-        return reinterpret_cast<wasm_trap_t*>(vm.newTrap());
-
-    auto fieldData =
-        hf->getLedgerEntryField(type, lkData.value(), fname.value());
+    auto fieldData = hf->getCurrentLedgerObjField(fname);
     if (!fieldData)
-        return reinterpret_cast<wasm_trap_t*>(vm.newTrap());
-    auto pointer = setData(fieldData.value());
-    if (!pointer)
-        return reinterpret_cast<wasm_trap_t*>(vm.newTrap());
+    {
+        RET(fieldData.error());
+    }
 
-    results->data[0] = WASM_I32_VAL(pointer.value());
-    //    out[1] = WasmEdge_ValueGenI32((int)fieldData.value().size());
-    return nullptr;
+    RET(setData(
+        rt,
+        params->data[1].of.i32,
+        params->data[2].of.i32,
+        fieldData->data(),
+        fieldData->size()));
 }
 
 wasm_trap_t*
-getCurrentLedgerEntryField_wrap(
+getLedgerObjField_wrap(
     void* env,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto& vm = WasmEngine::instance();
     auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
-    auto fname = getFieldName(params, 0);
-    if (!fname)
-        return reinterpret_cast<wasm_trap_t*>(vm.newTrap());
+    auto const& m = SField::getKnownCodeToField();
+    auto const it = m.find(params->data[1].of.i32);
+    if (it == m.end())
+    {
+        RET(HF_ERR_FIELD_NOT_FOUND);
+    }
+    auto const& fname(*it->second);
 
-    auto fieldData = hf->getCurrentLedgerEntryField(fname.value());
+    auto fieldData = hf->getLedgerObjField(params->data[0].of.i32, fname);
     if (!fieldData)
-        return reinterpret_cast<wasm_trap_t*>(vm.newTrap());
+    {
+        RET(fieldData.error());
+    }
 
-    auto pointer = setData(fieldData.value());
-    if (!pointer)
-        return reinterpret_cast<wasm_trap_t*>(vm.newTrap());
-
-    results->data[0] = WASM_I32_VAL(pointer.value());
-    //    out[1] = WasmEdge_ValueGenI32((int)fieldData.value().size());
-    return nullptr;
+    RET(setData(
+        rt,
+        params->data[2].of.i32,
+        params->data[3].of.i32,
+        fieldData->data(),
+        fieldData->size()));
 }
 
 wasm_trap_t*
-getNFT_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
-{
-    auto& vm = WasmEngine::instance();
-    auto* hf = reinterpret_cast<HostFunctions*>(env);
-    auto account = getFieldName(params, 0);
-    if (!account)
-        return reinterpret_cast<wasm_trap_t*>(vm.newTrap());
-
-    auto nftId = getFieldName(params, 2);
-    if (!nftId)
-        return reinterpret_cast<wasm_trap_t*>(vm.newTrap());
-
-    auto nftURI = hf->getNFT(account.value(), nftId.value());
-    if (!nftURI)
-        return reinterpret_cast<wasm_trap_t*>(vm.newTrap());
-
-    auto pointer = setData(nftURI.value());
-    if (!pointer)
-        return reinterpret_cast<wasm_trap_t*>(vm.newTrap());
-
-    results->data[0] = WASM_I32_VAL(pointer.value());
-    //    out[1] = WasmEdge_ValueGenI32((int)nftURI.value().size());
-    return nullptr;
-}
-
-wasm_trap_t*
-accountKeylet_wrap(
+getTxNestedField_wrap(
     void* env,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto& vm = WasmEngine::instance();
     auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
-    auto account = getFieldName(params, 0);
-    if (!account)
-        return reinterpret_cast<wasm_trap_t*>(vm.newTrap());
+    auto const r = getData(rt, params->data[0].of.i32, params->data[1].of.i32);
+    if (!r)
+    {
+        RET(r.error());
+    }
 
-    auto keylet = hf->accountKeylet(account.value());
-    if (!keylet)
-        return reinterpret_cast<wasm_trap_t*>(vm.newTrap());
+    auto fieldData = hf->getTxNestedField(makeSlice(r.value()));
+    if (!fieldData)
+    {
+        RET(fieldData.error());
+    }
 
-    auto pointer = setData(keylet.value());
-    if (!pointer)
-        return reinterpret_cast<wasm_trap_t*>(vm.newTrap());
-
-    results->data[0] = WASM_I32_VAL(pointer.value());
-    //    out[1] = WasmEdge_ValueGenI32((int)nftURI.value().size());
-    return nullptr;
+    RET(setData(
+        rt,
+        params->data[2].of.i32,
+        params->data[3].of.i32,
+        fieldData->data(),
+        fieldData->size()));
 }
 
 wasm_trap_t*
-credentialKeylet_wrap(
+getCurrentLedgerObjNestedField_wrap(
     void* env,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto& vm = WasmEngine::instance();
     auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
-    auto subject = getFieldName(params, 0);
-    if (!subject)
-        return reinterpret_cast<wasm_trap_t*>(vm.newTrap());
+    auto const r = getData(rt, params->data[0].of.i32, params->data[1].of.i32);
+    if (!r)
+    {
+        RET(r.error());
+    }
 
-    auto issuer = getFieldName(params, 2);
-    if (!issuer)
-        return reinterpret_cast<wasm_trap_t*>(vm.newTrap());
+    auto fieldData = hf->getCurrentLedgerObjNestedField(makeSlice(r.value()));
+    if (!fieldData)
+    {
+        RET(fieldData.error());
+    }
 
-    auto credentialType = getFieldName(params, 4);
-    if (!credentialType)
-        return reinterpret_cast<wasm_trap_t*>(vm.newTrap());
-
-    auto keylet = hf->credentialKeylet(
-        subject.value(), issuer.value(), credentialType.value());
-    if (!keylet)
-        return reinterpret_cast<wasm_trap_t*>(vm.newTrap());
-
-    auto pointer = setData(keylet.value());
-    if (!pointer)
-        return reinterpret_cast<wasm_trap_t*>(vm.newTrap());
-
-    results->data[0] = WASM_I32_VAL(pointer.value());
-    //    out[1] = WasmEdge_ValueGenI32((int)nftURI.value().size());
-    return nullptr;
+    RET(setData(
+        rt,
+        params->data[2].of.i32,
+        params->data[3].of.i32,
+        fieldData->data(),
+        fieldData->size()));
 }
 
 wasm_trap_t*
-escrowKeylet_wrap(
+getLedgerObjNestedField_wrap(
     void* env,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto& vm = WasmEngine::instance();
     auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
-    auto account = getFieldName(params, 0);
-    if (!account)
-        return reinterpret_cast<wasm_trap_t*>(vm.newTrap());
+    auto const r = getData(rt, params->data[1].of.i32, params->data[2].of.i32);
+    if (!r)
+    {
+        RET(r.error());
+    }
 
-    int32_t const sequence = params->data[2].of.i32;
+    auto fieldData = hf->getLedgerObjNestedField(
+        params->data[0].of.i32, makeSlice(r.value()));
+    if (!fieldData)
+    {
+        RET(fieldData.error());
+    }
 
-    auto keylet = hf->escrowKeylet(account.value(), sequence);
-    if (!keylet)
-        return reinterpret_cast<wasm_trap_t*>(vm.newTrap());
-
-    auto pointer = setData(keylet.value());
-    if (!pointer)
-        return reinterpret_cast<wasm_trap_t*>(vm.newTrap());
-
-    results->data[0] = WASM_I32_VAL(pointer.value());
-    //    out[1] = WasmEdge_ValueGenI32((int)nftURI.value().size());
-    return nullptr;
+    RET(setData(
+        rt,
+        params->data[3].of.i32,
+        params->data[4].of.i32,
+        fieldData->data(),
+        fieldData->size()));
 }
 
 wasm_trap_t*
-oracleKeylet_wrap(
+getTxArrayLen_wrap(
     void* env,
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto& vm = WasmEngine::instance();
     auto* hf = reinterpret_cast<HostFunctions*>(env);
+    // auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
-    auto account = getFieldName(params, 0);
-    if (!account)
-        return reinterpret_cast<wasm_trap_t*>(vm.newTrap());
+    auto const& m = SField::getKnownCodeToField();
+    auto const it = m.find(params->data[0].of.i32);
+    if (it == m.end())
+    {
+        RET(HF_ERR_FIELD_NOT_FOUND);
+    }
+    auto const& fname(*it->second);
 
-    auto documentId = params->data[2].of.i32;
+    int32_t sz = hf->getTxArrayLen(fname);
+    RET(sz);
+}
 
-    auto keylet = hf->escrowKeylet(account.value(), documentId);
-    if (!keylet)
-        return reinterpret_cast<wasm_trap_t*>(vm.newTrap());
+wasm_trap_t*
+getCurrentLedgerObjArrayLen_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    // auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
-    auto pointer = setData(keylet.value());
-    if (!pointer)
-        return reinterpret_cast<wasm_trap_t*>(vm.newTrap());
+    auto const& m = SField::getKnownCodeToField();
+    auto const it = m.find(params->data[0].of.i32);
+    if (it == m.end())
+    {
+        RET(HF_ERR_FIELD_NOT_FOUND);
+    }
+    auto const& fname(*it->second);
 
-    results->data[0] = WASM_I32_VAL(pointer.value());
-    //    out[1] = WasmEdge_ValueGenI32((int)nftURI.value().size());
-    return nullptr;
+    int32_t sz = hf->getCurrentLedgerObjArrayLen(fname);
+    RET(sz);
+}
+
+wasm_trap_t*
+getLedgerObjArrayLen_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    // auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+
+    auto const& m = SField::getKnownCodeToField();
+    auto const it = m.find(params->data[1].of.i32);
+    if (it == m.end())
+    {
+        RET(HF_ERR_FIELD_NOT_FOUND);
+    }
+    auto const& fname(*it->second);
+
+    int32_t sz = hf->getLedgerObjArrayLen(params->data[0].of.i32, fname);
+    RET(sz);
+}
+
+wasm_trap_t*
+getTxNestedArrayLen_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+
+    auto const r = getData(rt, params->data[0].of.i32, params->data[1].of.i32);
+    if (!r)
+    {
+        RET(r.error());
+    }
+
+    int32_t sz = hf->getTxNestedArrayLen(makeSlice(r.value()));
+    RET(sz);
+}
+
+wasm_trap_t*
+getCurrentLedgerObjNestedArrayLen_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+
+    auto const r = getData(rt, params->data[0].of.i32, params->data[1].of.i32);
+    if (!r)
+    {
+        RET(r.error());
+    }
+
+    int32_t sz = hf->getCurrentLedgerObjNestedArrayLen(makeSlice(r.value()));
+    RET(sz);
+}
+
+wasm_trap_t*
+getLedgerObjNestedArrayLen_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+
+    auto const r = getData(rt, params->data[1].of.i32, params->data[2].of.i32);
+    if (!r)
+    {
+        RET(r.error());
+    }
+
+    int32_t sz = hf->getLedgerObjNestedArrayLen(
+        params->data[0].of.i32, makeSlice(r.value()));
+    RET(sz);
 }
 
 wasm_trap_t*
@@ -337,17 +489,21 @@ updateData_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto& vm = WasmEngine::instance();
     auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
-    auto fname = getParameterData(params, 0);
-    if (!fname)
-        return reinterpret_cast<wasm_trap_t*>(vm.newTrap());
+    if (params->data[1].of.i32 > maxWasmDataLength)
+    {
+        RET(HF_ERR_DATA_FIELD_TOO_LARGE)
+    }
 
-    if (!hf->updateData(fname.value()))
-        return reinterpret_cast<wasm_trap_t*>(vm.newTrap());
+    auto const r = getData(rt, params->data[0].of.i32, params->data[1].of.i32);
+    if (!r)
+    {
+        RET(r.error());
+    }
 
-    return nullptr;
+    RET(hf->updateData(r.value()));
 }
 
 wasm_trap_t*
@@ -356,37 +512,238 @@ computeSha512HalfHash_wrap(
     wasm_val_vec_t const* params,
     wasm_val_vec_t* results)
 {
-    auto& vm = WasmEngine::instance();
     auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
-    auto fname = getParameterData(params, 0);
-    if (!fname)
-        return reinterpret_cast<wasm_trap_t*>(vm.newTrap());
+    auto const r = getData(rt, params->data[0].of.i32, params->data[1].of.i32);
+    if (!r)
+    {
+        RET(r.error());
+    }
 
-    auto hres = hf->computeSha512HalfHash(fname.value());
-    Bytes digest{hres.begin(), hres.end()};
-    auto pointer = setData(digest);
-    if (!pointer)
-        return reinterpret_cast<wasm_trap_t*>(vm.newTrap());
-
-    results->data[0] = WASM_I32_VAL(pointer.value());
-    //    out[1] = WasmEdge_ValueGenI32(32);
-    return nullptr;
+    auto const hash = hf->computeSha512HalfHash(r.value());
+    RET(setData(
+        rt,
+        params->data[2].of.i32,
+        params->data[3].of.i32,
+        hash.data(),
+        hash.size()));
 }
 
 wasm_trap_t*
-print_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+accountKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
 {
-    auto& vm = WasmEngine::instance();
-    // auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
-    auto f = getParameterData(params, 0);
-    if (!f)
-        return reinterpret_cast<wasm_trap_t*>(vm.newTrap());
-    std::string s(f->begin(), f->end());
-    if (s.size() < 4096)
-        std::cout << s << std::endl;
-    return nullptr;
+    auto const acc =
+        getDataAccount(rt, params->data[0].of.i32, params->data[1].of.i32);
+    if (!acc)
+    {
+        RET(acc.error());
+    }
+
+    auto const k = hf->accountKeylet(acc.value());
+    if (!k)
+    {
+        RET(k.error());
+    }
+
+    RET(setData(
+        rt,
+        params->data[2].of.i32,
+        params->data[3].of.i32,
+        k->data(),
+        k->size()));
+}
+
+wasm_trap_t*
+credentialKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+
+    auto const subject =
+        getDataAccount(rt, params->data[0].of.i32, params->data[1].of.i32);
+    if (!subject)
+    {
+        RET(subject.error());
+    }
+
+    auto const issuer =
+        getDataAccount(rt, params->data[2].of.i32, params->data[3].of.i32);
+    if (!issuer)
+    {
+        RET(issuer.error());
+    }
+
+    auto const credType =
+        getData(rt, params->data[4].of.i32, params->data[5].of.i32);
+    if (!credType)
+    {
+        RET(credType.error());
+    }
+
+    auto const k =
+        hf->credentialKeylet(subject.value(), issuer.value(), credType.value());
+    if (!k)
+    {
+        RET(k.error());
+    }
+
+    RET(setData(
+        rt,
+        params->data[6].of.i32,
+        params->data[7].of.i32,
+        k->data(),
+        k->size()));
+}
+
+wasm_trap_t*
+escrowKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+
+    auto const acc =
+        getDataAccount(rt, params->data[0].of.i32, params->data[1].of.i32);
+    if (!acc)
+    {
+        RET(acc.error());
+    }
+
+    auto const k = hf->escrowKeylet(acc.value(), params->data[2].of.i32);
+    if (!k)
+    {
+        RET(k.error());
+    }
+
+    RET(setData(
+        rt,
+        params->data[3].of.i32,
+        params->data[4].of.i32,
+        k->data(),
+        k->size()));
+}
+
+wasm_trap_t*
+oracleKeylet_wrap(
+    void* env,
+    wasm_val_vec_t const* params,
+    wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+
+    auto const acc =
+        getDataAccount(rt, params->data[0].of.i32, params->data[1].of.i32);
+    if (!acc)
+    {
+        RET(acc.error());
+    }
+
+    auto const k = hf->oracleKeylet(acc.value(), params->data[2].of.i32);
+    if (!k)
+    {
+        RET(k.error());
+    }
+
+    RET(setData(
+        rt,
+        params->data[3].of.i32,
+        params->data[4].of.i32,
+        k->data(),
+        k->size()));
+}
+
+wasm_trap_t*
+getNFT_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+
+    auto const acc =
+        getDataAccount(rt, params->data[0].of.i32, params->data[1].of.i32);
+    if (!acc)
+    {
+        RET(acc.error());
+    }
+
+    auto const nftRaw =
+        getData(rt, params->data[2].of.i32, params->data[3].of.i32);
+    if (!nftRaw)
+    {
+        RET(nftRaw.error());
+    }
+
+    if (nftRaw->size() < uint256::bytes * 2)
+    {
+        RET(HF_ERR_INVALID_PARAMS);
+    }
+
+    uint256 const ntfId(uint256::fromVoid(nftRaw->data()));
+    auto const nftURI = hf->getNFT(acc.value(), ntfId);
+    if (!nftURI)
+    {
+        RET(nftURI.error());
+    }
+
+    RET(setData(
+        rt,
+        params->data[4].of.i32,
+        params->data[5].of.i32,
+        nftURI->data(),
+        nftURI->size()));
+}
+
+wasm_trap_t*
+trace_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+
+    auto const msg =
+        getDataString(rt, params->data[0].of.i32, params->data[1].of.i32);
+    if (!msg)
+    {
+        RET(msg.error());
+    }
+
+    auto const data =
+        getData(rt, params->data[2].of.i32, params->data[3].of.i32);
+    if (!data)
+    {
+        RET(data.error());
+    }
+
+    auto const e = hf->trace(msg.value(), data.value(), params->data[4].of.i32);
+    RET(e);
+}
+
+wasm_trap_t*
+traceNum_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
+{
+    auto* hf = reinterpret_cast<HostFunctions*>(env);
+    auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
+
+    auto const msg =
+        getDataString(rt, params->data[0].of.i32, params->data[1].of.i32);
+    if (!msg)
+    {
+        RET(msg.error());
+    }
+
+    auto const e = hf->traceNum(msg.value(), params->data[2].of.i64);
+    RET(e);
 }
 
 }  // namespace ripple
