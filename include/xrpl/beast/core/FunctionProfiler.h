@@ -13,7 +13,7 @@
 #include <cmath>
 #include <numeric>  // std::accumulate
 
-#define PROFILING 1
+#define PROFILING 0
 
 #if PROFILING
 #include <x86intrin.h>
