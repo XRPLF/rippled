@@ -294,7 +294,7 @@ public:
     }
 
     void
-    testSellOffer_UnautharizedBuyer(FeatureBitset features)
+    testSellOffer_UnauthorizedBuyer(FeatureBitset features)
     {
         testcase("Unauthorized buyer tries to accept sell offer");
         using namespace test::jtx;
@@ -338,7 +338,7 @@ public:
     }
 
     void
-    testBrokeredAcceptOffer_UnathorizedBroker(FeatureBitset features)
+    testBrokeredAcceptOffer_UnauthorizedBroker(FeatureBitset features)
     {
         testcase("Unauthorized broker bridges authorized buyer and seller.");
         using namespace test::jtx;
@@ -403,7 +403,7 @@ public:
     }
 
     void
-    testBrokeredAcceptOffer_UnathorizedBuyer(FeatureBitset features)
+    testBrokeredAcceptOffer_UnauthorizedBuyer(FeatureBitset features)
     {
         testcase(
             "Authorized broker tries to bridge offers from unauthorized "
@@ -465,7 +465,7 @@ public:
     }
 
     void
-    testBrokeredAcceptOffer_UnathorizedSeller(FeatureBitset features)
+    testBrokeredAcceptOffer_UnauthorizedSeller(FeatureBitset features)
     {
         testcase(
             "Authorized broker tries to bridge offers from unauthorized "
@@ -542,9 +542,9 @@ public:
     }
 
     void
-    testTransferFee_UnathorizedMinter(FeatureBitset features)
+    testTransferFee_UnauthorizedMinter(FeatureBitset features)
     {
-        testcase("Unathorized minter receives transfer fee.");
+        testcase("Unauthorized minter receives transfer fee.");
         using namespace test::jtx;
 
         Env env(*this, features);
@@ -610,11 +610,11 @@ public:
             testCreateBuyOffer_UnauthorizedBuyer(feature);
             testAcceptBuyOffer_UnauthorizedBuyer(feature);
             testSellOffer_UnauthorizedSeller(feature);
-            testSellOffer_UnautharizedBuyer(feature);
-            testBrokeredAcceptOffer_UnathorizedBroker(feature);
-            testBrokeredAcceptOffer_UnathorizedBuyer(feature);
-            testBrokeredAcceptOffer_UnathorizedSeller(feature);
-            testTransferFee_UnathorizedMinter(feature);
+            testSellOffer_UnauthorizedBuyer(feature);
+            testBrokeredAcceptOffer_UnauthorizedBroker(feature);
+            testBrokeredAcceptOffer_UnauthorizedBuyer(feature);
+            testBrokeredAcceptOffer_UnauthorizedSeller(feature);
+            testTransferFee_UnauthorizedMinter(feature);
         }
     }
 };
