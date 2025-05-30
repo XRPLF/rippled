@@ -494,6 +494,11 @@ updateData_wrap(
     auto* hf = reinterpret_cast<HostFunctions*>(env);
     auto const* rt = reinterpret_cast<InstanceWrapper const*>(hf->getRT());
 
+    if (params->data[1].of.i32 > maxWasmDataLength)
+    {
+        RET(HF_ERR_DATA_FIELD_TOO_LARGE)
+    }
+
     auto const r = getData(rt, params->data[0].of.i32, params->data[1].of.i32);
     if (!r)
     {

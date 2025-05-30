@@ -123,7 +123,7 @@ print_wasm_error(std::string_view msg, wasm_trap_t* trap, beast::Journal jlog)
 #ifdef DEBUG_OUTPUT
     auto& j = std::cerr;
 #else
-    auto j = jlog.debug();
+    auto j = jlog.error();
 #endif
 
     j << "WAMR Error: " << msg;
