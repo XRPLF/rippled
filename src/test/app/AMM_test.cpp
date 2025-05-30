@@ -5519,6 +5519,7 @@ private:
                     ammAlice.deposit(nataly, XRP(1'000'000));
                     ammAlice.withdrawAll(nataly, XRP(0));
                 }
+                auto const baseFee = env.current()->fees().base.drops();
                 if (!features[fixAMMv1_3])
                 {
                     // No round off with XRP in this test
@@ -5534,18 +5535,17 @@ private:
                     BEAST_EXPECT(accountBalance(env, chris) == xrpBalance);
                     BEAST_EXPECT(accountBalance(env, dan) == xrpBalance);
 
-                    auto const baseFee = env.current()->fees().base.drops();
                     // 30,000 initial - (deposit+withdraw) * 10
                     BEAST_EXPECT(
                         accountBalance(env, carol) ==
-                        std::to_string(30000000000 - 20 * baseFee));
+                        std::to_string(30'000'000'000 - 20 * baseFee));
                     BEAST_EXPECT(accountBalance(env, ed) == xrpBalance);
                     BEAST_EXPECT(accountBalance(env, paul) == xrpBalance);
                     BEAST_EXPECT(accountBalance(env, nataly) == xrpBalance);
                     // 30,000 initial - 50 ammcreate fee - 10drops withdraw fee
                     BEAST_EXPECT(
                         accountBalance(env, alice) ==
-                        std::to_string(29950000000 - baseFee));
+                        std::to_string(29'950'000'000 - baseFee));
                 }
                 else
                 {
@@ -5557,16 +5557,28 @@ private:
                         IOUAmount{10'000'000}));
                     ammAlice.withdrawAll(alice);
                     BEAST_EXPECT(!ammAlice.ammExists());
-                    BEAST_EXPECT(accountBalance(env, ben) == "1999999999790");
-                    BEAST_EXPECT(accountBalance(env, simon) == "1999999999790");
-                    BEAST_EXPECT(accountBalance(env, chris) == "1999999999790");
-                    BEAST_EXPECT(accountBalance(env, dan) == "1999999999790");
-                    BEAST_EXPECT(accountBalance(env, carol) == "29999999790");
-                    BEAST_EXPECT(accountBalance(env, ed) == "1999999999792");
-                    BEAST_EXPECT(accountBalance(env, paul) == "1999999999793");
+                    auto const xrpBalance =
+                        XRP(2'000'000) - txfee(env, 20) - drops(10);
+                    auto const xrpBalanceText = xrpBalance.getText();
+                    BEAST_EXPECT(accountBalance(env, ben) == xrpBalanceText);
+                    BEAST_EXPECT(accountBalance(env, simon) == xrpBalanceText);
+                    BEAST_EXPECT(accountBalance(env, chris) == xrpBalanceText);
+                    BEAST_EXPECT(accountBalance(env, dan) == xrpBalanceText);
                     BEAST_EXPECT(
-                        accountBalance(env, nataly) == "1999999999795");
-                    BEAST_EXPECT(accountBalance(env, alice) == "29950000070");
+                        accountBalance(env, carol) ==
+                        std::to_string(30'000'000'000 - 20 * baseFee - 10));
+                    BEAST_EXPECT(
+                        accountBalance(env, ed) ==
+                        (xrpBalance + drops(2)).getText());
+                    BEAST_EXPECT(
+                        accountBalance(env, paul) ==
+                        (xrpBalance + drops(3)).getText());
+                    BEAST_EXPECT(
+                        accountBalance(env, nataly) ==
+                        (xrpBalance + drops(5)).getText());
+                    BEAST_EXPECT(
+                        accountBalance(env, alice) ==
+                        std::to_string(29'950'000'000 - baseFee + 80));
                 }
             },
             std::nullopt,

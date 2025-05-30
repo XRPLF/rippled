@@ -85,6 +85,7 @@ AMMBid::preflight(PreflightContext const& ctx)
             for (auto const& obj : authAccounts)
             {
                 auto authAccount = obj[sfAccount];
+                if (authAccount == account || unique.contains(authAccount))
                 {
                     JLOG(ctx.j.debug()) << "AMM Bid: Invalid auth.account.";
                     return temMALFORMED;
