@@ -18,7 +18,7 @@
 #if PROFILING
 #include <x86intrin.h>
 #else
-#define __rdtsc() 0
+// #define __rdtsc() 0
 #endif
 namespace beast {
 
