@@ -360,6 +360,7 @@ UNTYPED_SFIELD(sfPriceData,              OBJECT,    32)
 UNTYPED_SFIELD(sfCredential,             OBJECT,    33)
 UNTYPED_SFIELD(sfRawTransaction,         OBJECT,    34)
 UNTYPED_SFIELD(sfBatchSigner,            OBJECT,    35)
+UNTYPED_SFIELD(sfBook,                   OBJECT,    36)
 
 // array of objects (common)
 // ARRAY/1 is reserved for end of array
@@ -375,6 +376,7 @@ UNTYPED_SFIELD(sfMemos,                  ARRAY,      9)
 UNTYPED_SFIELD(sfNFTokens,               ARRAY,     10)
 UNTYPED_SFIELD(sfHooks,                  ARRAY,     11)
 UNTYPED_SFIELD(sfVoteSlots,              ARRAY,     12)
+UNTYPED_SFIELD(sfAdditionalBooks,        ARRAY,     13)
 
 // array of objects (uncommon)
 UNTYPED_SFIELD(sfMajorities,             ARRAY,     16)

@@ -33,6 +33,7 @@
 // in include/xrpl/protocol/Feature.h.
 
 XRPL_FIX    (AMMv1_3,                    Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FEATURE(PermissionedDEX,            Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(Batch,                      Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(SingleAssetVault,           Supported::no, VoteBehavior::DefaultNo)
 XRPL_FEATURE(PermissionDelegation,       Supported::yes, VoteBehavior::DefaultNo)
