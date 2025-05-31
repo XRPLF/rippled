@@ -2169,10 +2169,7 @@ private:
                     std::nullopt,
                     err);
             },
-            std::nullopt,
-            0,
-            std::nullopt,
-            {all, all - fixAMMv1_3});
+            {.features = {all, all - fixAMMv1_3}, .noLog = true});
 
         // Tiny withdraw
         testAMM([&](AMM& ammAlice, Env&) {
@@ -2428,10 +2425,8 @@ private:
                 ammAlice.withdrawAll(carol);
                 BEAST_EXPECT(ammAlice.expectLPTokens(carol, IOUAmount{0}));
             },
-            std::nullopt,
-            0,
-            std::nullopt,
-            {all, all - fixAMMv1_3, all - fixAMMv1_1 - fixAMMv1_3});
+            {.features = {all, all - fixAMMv1_3, all - fixAMMv1_1 - fixAMMv1_3},
+             .noLog = true});
 
         // Withdraw with EPrice limit. AssetOut is 0.
         testAMM(
@@ -7129,7 +7124,8 @@ private:
 
         // Last Liquidity Provider is the issuer of one token
         {
-            Env env(*this, features);
+            std::string logs;
+            Env env(*this, features, std::make_unique<CaptureLogs>(&logs));
             fund(
                 env,
                 gw,
@@ -7427,7 +7423,8 @@ private:
 
         auto const testCase = [&](std::string suffix, FeatureBitset features) {
             testcase("Failed pseudo-account allocation " + suffix);
-            Env env{*this, features};
+            std::string logs;
+            Env env{*this, features, std::make_unique<CaptureLogs>(&logs)};
             env.fund(XRP(30'000), gw, alice);
             env.close();
             env(trust(alice, gw["USD"](30'000), 0));
@@ -7524,11 +7521,11 @@ private:
         bool shouldFail)
     {
         auto const [amount, amount2, lptBalance] = amm.balances(GBP, EUR);
-        auto const res = [&] {
-            NumberRoundModeGuard g(
-                env.enabled(fixAMMv1_3) ? Number::upward : Number::getround());
-            return root2(amount * amount2);
-        }();
+
+        NumberRoundModeGuard g(
+            env.enabled(fixAMMv1_3) ? Number::upward : Number::getround());
+        auto const res = root2(amount * amount2);
+
         if (shouldFail)
             BEAST_EXPECT(res < lptBalance);
         else
