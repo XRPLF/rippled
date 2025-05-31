@@ -1330,6 +1330,53 @@ private:
                 std::nullopt,
                 ter(tecAMM_FAILED));
         });
+
+        // Equal deposit, tokens rounded to 0
+        testAMM([&](AMM& amm, Env& env) {
+            amm.deposit(DepositArg{
+                .tokens = IOUAmount{1, -12},
+                .err = ter(tecAMM_INVALID_TOKENS)});
+        });
+
+        // Equal deposit limit, tokens rounded to 0
+        testAMM(
+            [&](AMM& amm, Env& env) {
+                amm.deposit(DepositArg{
+                    .asset1In = STAmount{USD, 1, -15},
+                    .asset2In = XRPAmount{1},
+                    .err = ter(tecAMM_INVALID_TOKENS)});
+            },
+            {.pool = {{USD(1'000'000), XRP(1'000'000)}},
+             .features = {features - fixAMMv1_3}});
+        testAMM([&](AMM& amm, Env& env) {
+            amm.deposit(DepositArg{
+                .asset1In = STAmount{USD, 1, -15},
+                .asset2In = XRPAmount{1},
+                .err = ter(tecAMM_INVALID_TOKENS)});
+        });
+
+        // Single deposit by asset, tokens rounded to 0
+        testAMM([&](AMM& amm, Env& env) {
+            amm.deposit(DepositArg{
+                .asset1In = STAmount{USD, 1, -15},
+                .err = ter(tecAMM_INVALID_TOKENS)});
+        });
+
+        // Single deposit by tokens, tokens rounded to 0
+        testAMM([&](AMM& amm, Env& env) {
+            amm.deposit(DepositArg{
+                .tokens = IOUAmount{1, -10},
+                .asset1In = STAmount{USD, 1, -15},
+                .err = ter(tecAMM_INVALID_TOKENS)});
+        });
+
+        // Single deposit with eprice, tokens rounded to 0
+        testAMM([&](AMM& amm, Env& env) {
+            amm.deposit(DepositArg{
+                .asset1In = STAmount{USD, 1, -15},
+                .maxEP = STAmount{USD, 1, -1},
+                .err = ter(tecAMM_INVALID_TOKENS)});
+        });
     }
 
     void
@@ -2200,6 +2247,17 @@ private:
                 XRPAmount{1},
                 std::nullopt,
                 ter(tecAMM_INVALID_TOKENS));
+            ammAlice.withdraw(WithdrawArg{
+                .tokens = IOUAmount{1, -10},
+                .err = ter(tecAMM_INVALID_TOKENS)});
+            ammAlice.withdraw(WithdrawArg{
+                .asset1Out = STAmount{USD, 1, -15},
+                .asset2Out = XRPAmount{1},
+                .err = ter(tecAMM_INVALID_TOKENS)});
+            ammAlice.withdraw(WithdrawArg{
+                .tokens = IOUAmount{1, -10},
+                .asset1Out = STAmount{USD, 1, -15},
+                .err = ter(tecAMM_INVALID_TOKENS)});
         });
     }
 

@@ -733,7 +733,7 @@ AMMDeposit::equalDepositLimit(
     if (tokensAdj == beast::zero)
     {
         if (!view.rules().enabled(fixAMMv1_3))
-            return {tecAMM_FAILED, STAmount{}};
+            return {tecAMM_FAILED, STAmount{}};  // LCOV_EXCL_LINE
         else
             return {tecAMM_INVALID_TOKENS, STAmount{}};
     }
@@ -760,9 +760,9 @@ AMMDeposit::equalDepositLimit(
     if (tokensAdj == beast::zero)
     {
         if (!view.rules().enabled(fixAMMv1_3))
-            return {tecAMM_FAILED, STAmount{}};
+            return {tecAMM_FAILED, STAmount{}};  // LCOV_EXCL_LINE
         else
-            return {tecAMM_INVALID_TOKENS, STAmount{}};
+            return {tecAMM_INVALID_TOKENS, STAmount{}};  // LCOV_EXCL_LINE
     }
     // factor in the adjusted tokens
     frac = adjustFracByTokens(view.rules(), lptAMMBalance, tokensAdj, frac);
@@ -809,7 +809,7 @@ AMMDeposit::singleDeposit(
     if (tokens == beast::zero)
     {
         if (!view.rules().enabled(fixAMMv1_3))
-            return {tecAMM_FAILED, STAmount{}};
+            return {tecAMM_FAILED, STAmount{}};  // LCOV_EXCL_LINE
         else
             return {tecAMM_INVALID_TOKENS, STAmount{}};
     }
@@ -817,7 +817,7 @@ AMMDeposit::singleDeposit(
     auto const [tokensAdj, amountDepositAdj] = adjustAssetInByTokens(
         view.rules(), amountBalance, amount, lptAMMBalance, tokens, tfee);
     if (view.rules().enabled(fixAMMv1_3) && tokensAdj == beast::zero)
-        return {tecAMM_INVALID_TOKENS, STAmount{}};
+        return {tecAMM_INVALID_TOKENS, STAmount{}};  // LCOV_EXCL_LINE
     return deposit(
         view,
         ammAccount,
@@ -916,7 +916,7 @@ AMMDeposit::singleDepositEPrice(
         if (tokens <= beast::zero)
         {
             if (!view.rules().enabled(fixAMMv1_3))
-                return {tecAMM_FAILED, STAmount{}};
+                return {tecAMM_FAILED, STAmount{}};  // LCOV_EXCL_LINE
             else
                 return {tecAMM_INVALID_TOKENS, STAmount{}};
         }
@@ -924,7 +924,7 @@ AMMDeposit::singleDepositEPrice(
         auto const [tokensAdj, amountDepositAdj] = adjustAssetInByTokens(
             view.rules(), amountBalance, amount, lptAMMBalance, tokens, tfee);
         if (view.rules().enabled(fixAMMv1_3) && tokensAdj == beast::zero)
-            return {tecAMM_INVALID_TOKENS, STAmount{}};
+            return {tecAMM_INVALID_TOKENS, STAmount{}};  // LCOV_EXCL_LINE
         auto const ep = Number{amountDepositAdj} / tokensAdj;
         if (ep <= ePrice)
             return deposit(
@@ -986,7 +986,7 @@ AMMDeposit::singleDepositEPrice(
         tokens,
         tfee);
     if (view.rules().enabled(fixAMMv1_3) && tokensAdj == beast::zero)
-        return {tecAMM_INVALID_TOKENS, STAmount{}};
+        return {tecAMM_INVALID_TOKENS, STAmount{}};  // LCOV_EXCL_LINE
 
     return deposit(
         view,

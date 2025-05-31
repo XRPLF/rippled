@@ -912,19 +912,21 @@ AMMWithdraw::equalWithdrawLimit(
     tokensAdj =
         getRoundedLPTokens(view.rules(), lptAMMBalance, frac, IsDeposit::No);
     if (view.rules().enabled(fixAMMv1_3) && tokensAdj == beast::zero)
-        return {tecAMM_INVALID_TOKENS, STAmount{}};
+        return {tecAMM_INVALID_TOKENS, STAmount{}};  // LCOV_EXCL_LINE
     // factor in the adjusted tokens
     frac = adjustFracByTokens(view.rules(), lptAMMBalance, tokensAdj, frac);
     amountWithdraw =
         getRoundedAsset(view.rules(), amountBalance, frac, IsDeposit::No);
     if (!view.rules().enabled(fixAMMv1_3))
     {
+        // LCOV_EXCL_START
         XRPL_ASSERT(
             amountWithdraw <= amount,
             "ripple::AMMWithdraw::equalWithdrawLimit : maximum amountWithdraw");
+        // LCOV_EXCL_STOP
     }
     else if (amountWithdraw > amount)
-        return {tecAMM_FAILED, STAmount{}};
+        return {tecAMM_FAILED, STAmount{}};  // LCOV_EXCL_LINE
     return withdraw(
         view,
         ammSle,
@@ -960,7 +962,7 @@ AMMWithdraw::singleWithdraw(
     if (tokens == beast::zero)
     {
         if (!view.rules().enabled(fixAMMv1_3))
-            return {tecAMM_FAILED, STAmount{}};
+            return {tecAMM_FAILED, STAmount{}};  // LCOV_EXCL_LINE
         else
             return {tecAMM_INVALID_TOKENS, STAmount{}};
     }
@@ -968,7 +970,7 @@ AMMWithdraw::singleWithdraw(
     auto const [tokensAdj, amountWithdrawAdj] = adjustAssetOutByTokens(
         view.rules(), amountBalance, amount, lptAMMBalance, tokens, tfee);
     if (view.rules().enabled(fixAMMv1_3) && tokensAdj == beast::zero)
-        return {tecAMM_INVALID_TOKENS, STAmount{}};
+        return {tecAMM_INVALID_TOKENS, STAmount{}};  // LCOV_EXCL_LINE
     return withdraw(
         view,
         ammSle,
