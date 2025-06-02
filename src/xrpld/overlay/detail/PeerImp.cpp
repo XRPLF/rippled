@@ -2414,21 +2414,20 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
                 return ret;
             }();
 
-            JLOG(p_journal_.debug()) << [this, &val]() -> auto {
-                std::stringstream ss;
-                ss << "PEER_IMP_VALIDATION: " << val->render() << " master_key: ";
-                auto master =
-                    app_.validators().getTrustedKey(val->getSignerPublic());
-                if (master)
-                {
-                    ss << toBase58(TokenType::NodePublic, *master);
-                }
-                else
-                {
-                    ss << "none";
-                }
-                return ss.str();
-            }();
+            std::stringstream ss;
+            ss << "PEER_IMP_VALIDATION: " << val->render() << " master_key: ";
+            auto master =
+                app_.validators().getTrustedKey(val->getSignerPublic());
+            if (master)
+            {
+                ss << toBase58(TokenType::NodePublic, *master);
+            }
+            else
+            {
+                ss << "none";
+            }
+
+            JLOG(p_journal_.debug()) << ss.str();
             std::weak_ptr<PeerImp> weak = shared_from_this();
             app_.getJobQueue().addJob(
                 isTrusted ? jtVALIDATION_t : jtVALIDATION_ut,
