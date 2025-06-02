@@ -13,12 +13,12 @@
 #include <cmath>
 #include <numeric>  // std::accumulate
 
-#define PROFILING 0
+#define PROFILING 1
 
-#if PROFILING
+#if PROFILING && (defined(__x86_64__) || defined(_M_X64))
 #include <x86intrin.h>
 #else
-// #define __rdtsc() 0
+#define __rdtsc() 0
 #endif
 namespace beast {
 
