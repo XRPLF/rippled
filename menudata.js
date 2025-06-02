@@ -304,7 +304,8 @@ var menudata={children:[
 {text:"s",url:"functions_enum.html#index_s"},
 {text:"t",url:"functions_enum.html#index_t"},
 {text:"v",url:"functions_enum.html#index_v"},
-{text:"w",url:"functions_enum.html#index_w"}]},
+{text:"w",url:"functions_enum.html#index_w"},
+{text:"z",url:"functions_enum.html#index_z"}]},
 {text:"Enumerator",url:"functions_eval.html",children:[
 {text:"_",url:"functions_eval.html#index__5F"},
 {text:"a",url:"functions_eval_a.html#index_a"},
