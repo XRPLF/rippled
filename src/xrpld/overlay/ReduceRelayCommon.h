@@ -40,7 +40,7 @@ static constexpr auto MAX_UNSQUELCH_EXPIRE_DEFAULT = std::chrono::seconds{600};
 static constexpr auto SQUELCH_PER_PEER = std::chrono::seconds(10);
 static constexpr auto MAX_UNSQUELCH_EXPIRE_PEERS = std::chrono::seconds{3600};
 // No message received threshold before identifying a peer as idled
-static constexpr auto IDLED = std::chrono::seconds{8};
+static constexpr auto IDLED = std::chrono::seconds{5};
 // Message count threshold to start selecting peers as the source
 // of messages from the validator. We add peers who reach
 // MIN_MESSAGE_THRESHOLD to considered pool once MAX_SELECTED_PEERS

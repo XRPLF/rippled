@@ -1700,7 +1700,7 @@ public:
     void
     run() override
     {
-        bool log = false;
+        bool log = true;
         testConfig(log);
         testInitialRound(log);
         testPeerUnsquelchedTooSoon(log);

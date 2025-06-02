@@ -35,6 +35,8 @@
 
 #include <algorithm>
 #include <chrono>
+#include <cstddef>
+#include <iostream>
 #include <optional>
 #include <unordered_map>
 #include <unordered_set>
@@ -259,6 +261,7 @@ class Slot final
         time_point expire;          // squelch expiration time
         time_point lastMessage;     // time last message received
         std::size_t timesSelected;  // number of times the peer was selected
+        std::size_t timesCloseToThreshold;
     };
 
     std::unordered_map<id_t, PeerInfo> peers_;  // peer's data
@@ -330,7 +333,8 @@ Slot<clock_type>::update(
                 .count = 0,
                 .expire = now,
                 .lastMessage = now,
-                .timesSelected = 0}));
+                .timesSelected = 0,
+                .timesCloseToThreshold = 0}));
         initCounting();
         return;
     }
@@ -353,6 +357,9 @@ Slot<clock_type>::update(
         << static_cast<int>(peer.state) << " count " << peer.count << " last "
         << duration_cast<milliseconds>(now - peer.lastMessage).count()
         << " pool " << considered_.size() << " threshold " << reachedThreshold_;
+
+    if (now - peer.lastMessage - IDLED <= milliseconds{500})
+        ++peer.timesCloseToThreshold;
 
     peer.lastMessage = now;
 
@@ -379,6 +386,16 @@ Slot<clock_type>::update(
 
     if (reachedThreshold_ == maxSelectedPeers_)
     {
+        for (auto const& [id, info] : peers_)
+        {
+            if (info.state == PeerState::Selected &&
+                info.count < MIN_MESSAGE_THRESHOLD)
+            {
+                JLOG(journal_.debug())
+                    << "update: previously selected peer " << id
+                    << " failed to reach a threshold with: " << info.count;
+            }
+        }
         // Randomly select maxSelectedPeers_ peers from considered.
         // Exclude peers that have been idling > IDLED -
         // it's possible that deleteIdlePeer() has not been called yet.
@@ -440,6 +457,11 @@ Slot<clock_type>::update(
 
             else if (v.state != PeerState::Squelched)
             {
+                if (v.state == PeerState::Selected)
+                {
+                    JLOG(journal_.debug())
+                        << "squelching previously selected peer";
+                }
                 if (journal_.trace())
                     str << k << " ";
                 v.state = PeerState::Squelched;
@@ -540,6 +562,7 @@ Slot<clock_type>::onWrite(beast::PropertyStream::Map& stream) const
         item["lastMessage"] =
             duration_cast<std::chrono::seconds>(now - info.lastMessage).count();
         item["timesSelected"] = info.timesSelected;
+        item["timesCloseToThreshold"] = info.timesCloseToThreshold;
         item["state"] = to_string(info.state);
     }
 }
