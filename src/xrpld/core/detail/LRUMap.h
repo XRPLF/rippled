@@ -44,12 +44,18 @@ public:
             bump_to_front(key);
             return it->second;
         }
+
         if (data_.size() >= capacity_)
         {
-            Key const& lru = usage_list_.back();
-            usage_list_.pop_back();
-            data_.erase(lru);
+            std::size_t excess = (data_.size() + 1) - capacity_;
+            for (std::size_t i = 0; i < excess; ++i)
+            {
+                Key const& lru = usage_list_.back();
+                usage_list_.pop_back();
+                data_.erase(lru);
+            }
         }
+
         usage_list_.push_front(key);
         return data_[key];
     }
