@@ -382,19 +382,7 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
             auto res = nft::checkTrustlineAuthorized(
                 ctx.view, nftMinter, ctx.j, amount.asset().get<Issue>());
             if (res != tesSUCCESS)
-            {
-                if (nft::getFlags(tokenID) & nft::flagCreateTrustLines)
-                {
-                    // In case trustline will be created, it will still be not
-                    // authorized. tecNO_AUTH is returned to reduce the
-                    // confusion it might make.
-                    return (res == tecNO_LINE ? tecNO_AUTH : res);
-                }
-                else
-                {
-                    return res;
-                }
-            }
+                return res;
 
             res = nft::checkTrustlineDeepFrozen(
                 ctx.view, nftMinter, ctx.j, amount.asset().get<Issue>());
