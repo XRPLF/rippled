@@ -32,6 +32,7 @@
 #include <span>
 #include <type_traits>
 
+#define ORIGINAL_HASH 1
 #define BIT_SHIFT_HASH 0
 
 namespace beast {
@@ -45,7 +46,10 @@ private:
     // requires 64-bit std::size_t
     static_assert(sizeof(std::size_t) == 8, "");
 
-    // XXH3_state_t* state_;
+#if ORIGINAL_HASH
+    XXH3_state_t* state_;
+#endif
+
 #if PROFILING
     std::size_t totalSize_ = 0;
     std::chrono::nanoseconds duration_{};
@@ -57,15 +61,16 @@ private:
     std::span<std::uint8_t> readBuffer_;
     std::span<std::uint8_t> writeBuffer_;
 
-    // static XXH3_state_t*
-    // allocState()
-    // {
-    //     FunctionProfiler _{"-alloc"};
-    //     auto ret = XXH3_createState();
-    //     if (ret == nullptr)
-    //         throw std::bad_alloc();
-    //     return ret;
-    // }
+#if ORIGINAL_HASH
+    static XXH3_state_t*
+    allocState()
+    {
+        auto ret = XXH3_createState();
+        if (ret == nullptr)
+            throw std::bad_alloc();
+        return ret;
+    }
+#endif
 
     void
     setupBuffers()
@@ -95,27 +100,24 @@ public:
 
     xxhasher()
     {
+#if ORIGINAL_HASH
+        auto start = std::chrono::steady_clock::now();
+        auto cpuCyclesStart = __rdtsc();
+        state_ = allocState();
+        XXH3_64bits_reset(state_);
+        duration_ += std::chrono::steady_clock::now() - start;
+        cpuCycles += (__rdtsc() - cpuCyclesStart);
+#else
         setupBuffers();
-        //     auto start = std::chrono::steady_clock::now();
-        //     auto cpuCyclesStart = __rdtsc();
-        //     // state_ = allocState();
-        //     // XXH3_64bits_reset(state_);
-        //     XXH3_64bits_reset(wrapper.state);
-        //     duration_ += std::chrono::steady_clock::now() - start;
-        //     cpuCycles += (__rdtsc() - cpuCyclesStart);
+#endif
     }
 
-    // ~xxhasher() noexcept
-    // {
-    //     // profiler_.functionName = "xxhasher-" + std::to_string(totalSize_);
-    //     // auto start = std::chrono::steady_clock::now();
-    //     if (0)
-    //     {
-    //         FunctionProfiler _{"-free"};
-    //         XXH3_freeState(state_);
-    //     }
-    // }
-
+#if ORIGINAL_HASH
+    ~xxhasher() noexcept
+    {
+        XXH3_freeState(state_);
+    }
+#endif
     template <
         class Seed,
         std::enable_if_t<std::is_unsigned<Seed>::value>* = nullptr>
@@ -123,15 +125,17 @@ public:
     {
         seed_ = seed;
 
-        setupBuffers();
 
-        // auto start = std::chrono::steady_clock::now();
-        // auto cpuCyclesStart = __rdtsc();
-        // state_ = allocState();
-        // XXH3_64bits_reset_withSeed(state_, seed);
-        // XXH3_64bits_reset_withSeed(wrapper.state, seed);
-        // duration_ += std::chrono::steady_clock::now() - start;
-        // cpuCycles += (__rdtsc() - cpuCyclesStart);
+#if ORIGINAL_HASH
+        auto start = std::chrono::steady_clock::now();
+        auto cpuCyclesStart = __rdtsc();
+        state_ = allocState();
+        XXH3_64bits_reset_withSeed(state_, seed);
+        duration_ += std::chrono::steady_clock::now() - start;
+        cpuCycles += (__rdtsc() - cpuCyclesStart);
+#else
+        setupBuffers();
+#endif
     }
 
     template <
@@ -141,14 +145,16 @@ public:
     {
         seed_ = seed;
 
+#if ORIGINAL_HASH
+        auto start = std::chrono::steady_clock::now();
+        auto cpuCyclesStart = __rdtsc();
+        state_ = allocState();
+        XXH3_64bits_reset_withSeed(state_, seed);
+        duration_ += std::chrono::steady_clock::now() - start;
+        cpuCycles += (__rdtsc() - cpuCyclesStart);
+#else
         setupBuffers();
-        // auto start = std::chrono::steady_clock::now();
-        // auto cpuCyclesStart = __rdtsc();
-        // // state_ = allocState();
-        // // XXH3_64bits_reset_withSeed(state_, seed);
-        // XXH3_64bits_reset_withSeed(wrapper.state, seed);
-        // duration_ += std::chrono::steady_clock::now() - start;
-        // cpuCycles += (__rdtsc() - cpuCyclesStart);
+#endif
     }
 
     void
@@ -159,11 +165,11 @@ public:
         auto start = std::chrono::steady_clock::now();
         auto cpuCyclesStart = __rdtsc();
 #endif
-        // FunctionProfiler _{"-size-" + std::to_string(len)};
-        // XXH3_64bits_update(state_, key, len);
-        // XXH3_64bits_update(wrapper.state, key, len);
-
+#if ORIGINAL_HASH
+        XXH3_64bits_update(state_, key, len);
+#else
         writeBuffer(key, len);
+#endif
 
 #if PROFILING
         duration_ += std::chrono::steady_clock::now() - start;
