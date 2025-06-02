@@ -466,14 +466,14 @@ WasmHostFunctionsImpl::trace(
     auto j = ctx.journal.trace();
 #endif
     if (!asHex)
-        j << "WASM TRACE: " << msg << " - "
+        j << "WASM TRACE (" << leKey.key << "): " << msg << " - "
           << std::string_view(
                  reinterpret_cast<char const*>(data.data()), data.size());
     else
     {
         auto const hex =
             boost::algorithm::hex(std::string(data.begin(), data.end()));
-        j << "WASM TRACE: " << msg << " - " << hex;
+        j << "WASM TRACE (" << leKey.key << "): " << msg << " - " << hex;
     }
 
     return msg.size() + data.size() * (asHex ? 2 : 1);
@@ -488,7 +488,7 @@ WasmHostFunctionsImpl::traceNum(std::string const& msg, int64_t data)
     auto j = ctx.journal.trace();
 #endif
 
-    j << "WASM TRACE: " << msg << " - " << data;
+    j << "WASM TRACE (" << leKey.key << "): " << msg << " - " << data;
 
     return msg.size() + sizeof(data);
 }
