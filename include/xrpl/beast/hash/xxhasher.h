@@ -65,6 +65,7 @@ private:
     static XXH3_state_t*
     allocState()
     {
+        FunctionProfiler _{"-alloc"};
         auto ret = XXH3_createState();
         if (ret == nullptr)
             throw std::bad_alloc();
@@ -100,21 +101,28 @@ public:
 
     xxhasher()
     {
-#if ORIGINAL_HASH
+#if PROFILING
         auto start = std::chrono::steady_clock::now();
         auto cpuCyclesStart = __rdtsc();
+#endif
+
+#if ORIGINAL_HASH
         state_ = allocState();
         XXH3_64bits_reset(state_);
-        duration_ += std::chrono::steady_clock::now() - start;
-        cpuCycles += (__rdtsc() - cpuCyclesStart);
 #else
         setupBuffers();
+#endif
+
+#if PROFILING
+        duration_ += std::chrono::steady_clock::now() - start;
+        cpuCycles += (__rdtsc() - cpuCyclesStart);
 #endif
     }
 
 #if ORIGINAL_HASH
     ~xxhasher() noexcept
     {
+        FunctionProfiler _{"-free"};
         XXH3_freeState(state_);
     }
 #endif
@@ -131,7 +139,7 @@ public:
         auto cpuCyclesStart = __rdtsc();
         state_ = allocState();
         XXH3_64bits_reset_withSeed(state_, seed);
-        duration_ += std::chrono::steady_clock::now() - start;
+        duration_ += (std::chrono::steady_clock::now() - start);
         cpuCycles += (__rdtsc() - cpuCyclesStart);
 #else
         setupBuffers();
@@ -143,17 +151,21 @@ public:
         std::enable_if_t<std::is_unsigned<Seed>::value>* = nullptr>
     xxhasher(Seed seed, Seed)
     {
+#if PROFILING
+        auto start = std::chrono::steady_clock::now();
+        auto cpuCyclesStart = __rdtsc();
+#endif
         seed_ = seed;
 
 #if ORIGINAL_HASH
-        auto start = std::chrono::steady_clock::now();
-        auto cpuCyclesStart = __rdtsc();
         state_ = allocState();
         XXH3_64bits_reset_withSeed(state_, seed);
-        duration_ += std::chrono::steady_clock::now() - start;
-        cpuCycles += (__rdtsc() - cpuCyclesStart);
-#else
+        #else
         setupBuffers();
+        #endif
+#if PROFILING
+        duration_ += (std::chrono::steady_clock::now() - start);
+        cpuCycles += (__rdtsc() - cpuCyclesStart);
 #endif
     }
 
@@ -172,7 +184,7 @@ public:
 #endif
 
 #if PROFILING
-        duration_ += std::chrono::steady_clock::now() - start;
+        duration_ += (std::chrono::steady_clock::now() - start);
         cpuCycles += (__rdtsc() - cpuCyclesStart);
 #endif
     }
@@ -213,7 +225,7 @@ public:
             XXH3_64bits_withSeed(readBuffer_.data(), readBuffer_.size(), seed_);
 #endif
 #if PROFILING
-        duration_ += std::chrono::steady_clock::now() - start;
+        duration_ += (std::chrono::steady_clock::now() - start);
         cpuCycles += (__rdtsc() - cpuCyclesStart);
 
         std::lock_guard<std::mutex> lock{FunctionProfiler::mutex_};
