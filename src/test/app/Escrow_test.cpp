@@ -1888,6 +1888,33 @@ struct Escrow_test : public beast::unit_test::suite
                 ter(temBAD_LIMIT));
         }
 
+        {
+            uint32_t const allowance = 10'000;
+            Env env(*this);
+            env.fund(XRP(5000), alice, carol);
+            auto const seq = env.seq(alice);
+            XRPAmount const createFee = env.current()->fees().base + 1000;
+
+            // Escrow with FinishFunction + Condition
+            auto escrowCreate = escrow(alice, carol, XRP(1000));
+            env(escrowCreate,
+                finish_function(reqNonexistentField),
+                condition(cb1),
+                cancel_time(env.now() + 100s),
+                fee(createFee));
+            env.close();
+            env.close();
+
+            // Rejected as wasm code request nonexistent memo field
+            XRPAmount const txnFees = env.current()->fees().base * 34 + 1000;
+            env(finish(alice, alice, seq),
+                condition(cb1),
+                fulfillment(fb1),
+                comp_allowance(allowance),
+                fee(txnFees),
+                ter(tecWASM_REJECTED));
+        }
+
         Env env(*this);
 
         // Run past the flag ledger so that a Fee change vote occurs and
