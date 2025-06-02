@@ -180,6 +180,9 @@ public:
     explicit
     operator HashType() noexcept
     {
+#if ORIGINAL_HASH
+        return XXH3_64bits_digest(_state);
+#endif
         if (readBuffer_.size() == 0) return 0;
         
 #if PROFILING
