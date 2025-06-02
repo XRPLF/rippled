@@ -28,7 +28,7 @@ namespace jtx {
 void
 txflags::operator()(Env&, JTx& jt) const
 {
-    jt[jss::Flags] = v_ /*| tfUniversal*/;
+    jt[jss::Flags] = v_ /*| tfFullyCanonicalSig*/;
 }
 
 }  // namespace jtx

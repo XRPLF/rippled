@@ -342,6 +342,11 @@ doSimulate(RPC::JsonContext& context)
         return jvResult;
     }
 
+    if (stTx->getTxnType() == ttBATCH)
+    {
+        return RPC::make_error(rpcNOT_IMPL);
+    }
+
     std::string reason;
     auto transaction = std::make_shared<Transaction>(stTx, reason, context.app);
     // Actually run the transaction through the transaction processor
