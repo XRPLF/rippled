@@ -180,10 +180,9 @@ public:
     explicit
     operator HashType() noexcept
     {
-#if ORIGINAL_HASH
-        return XXH3_64bits_digest(state_);
-#endif
+#if ORIGINAL_HASH == 0
         if (readBuffer_.size() == 0) return 0;
+#endif
         
 #if PROFILING
         auto start = std::chrono::steady_clock::now();
@@ -206,6 +205,8 @@ public:
 
         // Rotate and return
         auto result = (buffer << shift) | (buffer >> (64 - shift));
+#else if ORIGINAL_HASH
+        auto result = XXH3_64bits_digest(state_);
 #else
         auto result = seed_ == 0 ? 
             XXH3_64bits(readBuffer_.data(), readBuffer_.size()) : 
