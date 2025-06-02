@@ -32,6 +32,7 @@
 #include <span>
 #include <type_traits>
 
+#define BIT_SHIFT_HASH 0
 
 namespace beast {
 
@@ -64,7 +65,7 @@ private:
     std::chrono::nanoseconds duration_{};
     std::uint64_t cpuCycles = 0;
 #endif
-    std::uint8_t seed_ = 0;
+    XXH64_hash_t seed_ = 0;
 
     std::array<std::uint8_t, 40> buffer_;
     std::span<std::uint8_t> readBuffer_;
@@ -134,7 +135,7 @@ public:
         std::enable_if_t<std::is_unsigned<Seed>::value>* = nullptr>
     explicit xxhasher(Seed seed)
     {
-        seed_ = seed % std::numeric_limits<std::uint8_t>::max();
+        seed_ = seed;
 
         setupBuffers();
 
@@ -152,7 +153,7 @@ public:
         std::enable_if_t<std::is_unsigned<Seed>::value>* = nullptr>
     xxhasher(Seed seed, Seed)
     {
-        seed_ = seed % std::numeric_limits<std::uint8_t>::max();
+        seed_ = seed;
 
         setupBuffers();
         // auto start = std::chrono::steady_clock::now();
@@ -193,6 +194,8 @@ public:
         auto start = std::chrono::steady_clock::now();
         auto cpuCyclesStart = __rdtsc();
 #endif
+
+#if BIT_SHIFT_HASH
         const size_t bit_width = readBuffer_.size() * 8;
         const size_t shift = seed_ % bit_width;
 
@@ -208,7 +211,11 @@ public:
 
         // Rotate and return
         auto result = (buffer << shift) | (buffer >> (64 - shift));
-
+#else
+        auto result = seed_ == 0 ? 
+            XXH3_64bits(readBuffer_.data(), readBuffer_.size()) : 
+            XXH3_64bits_withSeed(readBuffer_.data(), readBuffer_.size(), seed_);
+#endif
 #if PROFILING
         duration_ += std::chrono::steady_clock::now() - start;
         cpuCycles += (__rdtsc() - cpuCyclesStart);
@@ -222,19 +229,6 @@ public:
                 .cpuCycles.emplace_back(cpuCycles);
 #endif
         return result;
-        // auto start = std::chrono::steady_clock::now();
-        // // auto ret =  XXH3_64bits_digest(state_);
-        // auto ret = XXH3_64bits_digest(wrapper.state);
-        // duration_ += std::chrono::steady_clock::now() - start;
-
-        // std::lock_guard<std::mutex> lock{FunctionProfiler::mutex_};
-        // FunctionProfiler::funcionDurations
-        //     ["xxhasher-" + std::to_string(totalSize_)]
-        //         .time.emplace_back(duration_);
-        // FunctionProfiler::funcionDurations
-        //     ["xxhasher-" + std::to_string(totalSize_)]
-        //         .cpuCycles.emplace_back(cpuCycles);
-        // return ret;
     }
 };
 
