@@ -205,7 +205,7 @@ public:
 
         // Rotate and return
         auto result = (buffer << shift) | (buffer >> (64 - shift));
-#else if ORIGINAL_HASH
+#elif ORIGINAL_HASH
         auto result = XXH3_64bits_digest(state_);
 #else
         auto result = seed_ == 0 ? 
