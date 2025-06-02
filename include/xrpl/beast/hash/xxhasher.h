@@ -181,7 +181,7 @@ public:
     operator HashType() noexcept
     {
 #if ORIGINAL_HASH
-        return XXH3_64bits_digest(_state);
+        return XXH3_64bits_digest(state_);
 #endif
         if (readBuffer_.size() == 0) return 0;
         
