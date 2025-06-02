@@ -45,22 +45,8 @@ private:
     // requires 64-bit std::size_t
     static_assert(sizeof(std::size_t) == 8, "");
 
-    struct state_wrapper
-    {
-        XXH3_state_t* state;
-        state_wrapper()
-        {
-            state = XXH3_createState();
-        }
-        ~state_wrapper()
-        {
-            XXH3_freeState(state);
-        }
-    };
-
     // XXH3_state_t* state_;
 #if PROFILING
-    inline static thread_local state_wrapper wrapper{};
     std::size_t totalSize_ = 0;
     std::chrono::nanoseconds duration_{};
     std::uint64_t cpuCycles = 0;
