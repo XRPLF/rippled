@@ -2107,11 +2107,16 @@ public:
         };
         using namespace test::jtx;
         auto const sa = supported_amendments();
+        testAll(
+            sa - featureFlowCross - featureDeepFreeze - featurePermissionedDEX);
         testAll(sa - featureFlowCross - featureDeepFreeze);
         testAll(sa - featureFlowCross);
         testAll(sa - featureDeepFreeze - fixEnforceNFTokenTrustlineV2);
         testAll(sa - fixEnforceNFTokenTrustlineV2);
         testAll(sa - featureDeepFreeze);
+        testAll(sa - featureFlowCross - featurePermissionedDEX);
+        testAll(sa - featureDeepFreeze - featurePermissionedDEX);
+        testAll(sa - featurePermissionedDEX);
         testAll(sa);
     }
 };
