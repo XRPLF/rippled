@@ -65,7 +65,6 @@ private:
     static XXH3_state_t*
     allocState()
     {
-        FunctionProfiler _{"-alloc"};
         auto ret = XXH3_createState();
         if (ret == nullptr)
             throw std::bad_alloc();
@@ -122,7 +121,6 @@ public:
 #if ORIGINAL_HASH
     ~xxhasher() noexcept
     {
-        FunctionProfiler _{"-free"};
         XXH3_freeState(state_);
     }
 #endif
