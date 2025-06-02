@@ -1963,152 +1963,245 @@ $(function() {
 <div class="line"><a id="l01885" name="l01885"></a><span class="lineno"> 1885</span>            env.close();</div>
 <div class="line"><a id="l01886" name="l01886"></a><span class="lineno"> 1886</span>        }</div>
 <div class="line"><a id="l01887" name="l01887"></a><span class="lineno"> 1887</span> </div>
-<div class="line"><a id="l01888" name="l01888"></a><span class="lineno"> 1888</span>        <span class="comment">// Testing A2 nft offer sell when A2 frozen by currency holder</span></div>
-<div class="line"><a id="l01889" name="l01889"></a><span class="lineno"> 1889</span>        {</div>
-<div class="line"><a id="l01890" name="l01890"></a><span class="lineno"> 1890</span>            <span class="keyword">auto</span> <span class="keyword">const</span> sellOfferIndex = <a class="code hl_function" href="classripple_1_1Freeze__test.html#a4a4ef081182bfc99a4aefe4e32359591">createNFTSellOffer</a>(env, A2, USD(10));</div>
-<div class="line"><a id="l01891" name="l01891"></a><span class="lineno"> 1891</span>            env(trust(A2, limit, <a class="code hl_variable" href="namespaceripple.html#ae34d881cd8926ab3505340a51f91fd8b">tfSetFreeze</a>));</div>
-<div class="line"><a id="l01892" name="l01892"></a><span class="lineno"> 1892</span>            env.close();</div>
-<div class="line"><a id="l01893" name="l01893"></a><span class="lineno"> 1893</span> </div>
-<div class="line"><a id="l01894" name="l01894"></a><span class="lineno"> 1894</span>            <span class="comment">// test: offer can still be accepted.</span></div>
-<div class="line"><a id="l01895" name="l01895"></a><span class="lineno"> 1895</span>            env(token::acceptSellOffer(A1, sellOfferIndex));</div>
-<div class="line"><a id="l01896" name="l01896"></a><span class="lineno"> 1896</span>            env.close();</div>
-<div class="line"><a id="l01897" name="l01897"></a><span class="lineno"> 1897</span> </div>
-<div class="line"><a id="l01898" name="l01898"></a><span class="lineno"> 1898</span>            env(trust(A2, limit, <a class="code hl_variable" href="namespaceripple.html#a98f09aa7b518e640710f4362145dd444">tfClearFreeze</a>));</div>
-<div class="line"><a id="l01899" name="l01899"></a><span class="lineno"> 1899</span>            env.close();</div>
-<div class="line"><a id="l01900" name="l01900"></a><span class="lineno"> 1900</span>        }</div>
-<div class="line"><a id="l01901" name="l01901"></a><span class="lineno"> 1901</span> </div>
-<div class="line"><a id="l01902" name="l01902"></a><span class="lineno"> 1902</span>        <span class="comment">// Testing A2 nft offer sell when A2 deep frozen by currency holder</span></div>
-<div class="line"><a id="l01903" name="l01903"></a><span class="lineno"> 1903</span>        <span class="keywordflow">if</span> (features[featureDeepFreeze])</div>
-<div class="line"><a id="l01904" name="l01904"></a><span class="lineno"> 1904</span>        {</div>
-<div class="line"><a id="l01905" name="l01905"></a><span class="lineno"> 1905</span>            <span class="keyword">auto</span> <span class="keyword">const</span> sellOfferIndex = <a class="code hl_function" href="classripple_1_1Freeze__test.html#a4a4ef081182bfc99a4aefe4e32359591">createNFTSellOffer</a>(env, A2, USD(10));</div>
-<div class="line"><a id="l01906" name="l01906"></a><span class="lineno"> 1906</span> </div>
-<div class="line"><a id="l01907" name="l01907"></a><span class="lineno"> 1907</span>            env(trust(A2, limit, <a class="code hl_variable" href="namespaceripple.html#ae34d881cd8926ab3505340a51f91fd8b">tfSetFreeze</a> | <a class="code hl_variable" href="namespaceripple.html#a2064883c5298050aff66754857955885">tfSetDeepFreeze</a>));</div>
-<div class="line"><a id="l01908" name="l01908"></a><span class="lineno"> 1908</span>            env.close();</div>
-<div class="line"><a id="l01909" name="l01909"></a><span class="lineno"> 1909</span> </div>
-<div class="line"><a id="l01910" name="l01910"></a><span class="lineno"> 1910</span>            <span class="comment">// test: A2 cannot receive USD for his NFT</span></div>
-<div class="line"><a id="l01911" name="l01911"></a><span class="lineno"> 1911</span>            env(token::acceptSellOffer(A1, sellOfferIndex), ter(<a class="code hl_enumvalue" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38ca608da193a4a22ae1c78d76b6e843b7e6">tecFROZEN</a>));</div>
-<div class="line"><a id="l01912" name="l01912"></a><span class="lineno"> 1912</span>            env.close();</div>
-<div class="line"><a id="l01913" name="l01913"></a><span class="lineno"> 1913</span> </div>
-<div class="line"><a id="l01914" name="l01914"></a><span class="lineno"> 1914</span>            env(trust(A2, limit, <a class="code hl_variable" href="namespaceripple.html#a98f09aa7b518e640710f4362145dd444">tfClearFreeze</a> | <a class="code hl_variable" href="namespaceripple.html#aaf66864d0b900743719164e43f53c934">tfClearDeepFreeze</a>));</div>
-<div class="line"><a id="l01915" name="l01915"></a><span class="lineno"> 1915</span>            env.close();</div>
-<div class="line"><a id="l01916" name="l01916"></a><span class="lineno"> 1916</span>        }</div>
-<div class="line"><a id="l01917" name="l01917"></a><span class="lineno"> 1917</span> </div>
-<div class="line"><a id="l01918" name="l01918"></a><span class="lineno"> 1918</span>        <span class="comment">// Testing A1 nft offer sell when A2 frozen by currency holder</span></div>
-<div class="line"><a id="l01919" name="l01919"></a><span class="lineno"> 1919</span>        {</div>
-<div class="line"><a id="l01920" name="l01920"></a><span class="lineno"> 1920</span>            <span class="keyword">auto</span> <span class="keyword">const</span> sellOfferIndex = <a class="code hl_function" href="classripple_1_1Freeze__test.html#a4a4ef081182bfc99a4aefe4e32359591">createNFTSellOffer</a>(env, A1, USD(10));</div>
-<div class="line"><a id="l01921" name="l01921"></a><span class="lineno"> 1921</span>            env(trust(A2, limit, <a class="code hl_variable" href="namespaceripple.html#ae34d881cd8926ab3505340a51f91fd8b">tfSetFreeze</a>));</div>
-<div class="line"><a id="l01922" name="l01922"></a><span class="lineno"> 1922</span>            env.close();</div>
-<div class="line"><a id="l01923" name="l01923"></a><span class="lineno"> 1923</span> </div>
-<div class="line"><a id="l01924" name="l01924"></a><span class="lineno"> 1924</span>            <span class="comment">// test: A2 cannot send USD for NFT</span></div>
-<div class="line"><a id="l01925" name="l01925"></a><span class="lineno"> 1925</span>            env(token::acceptSellOffer(A2, sellOfferIndex));</div>
-<div class="line"><a id="l01926" name="l01926"></a><span class="lineno"> 1926</span>            env.close();</div>
-<div class="line"><a id="l01927" name="l01927"></a><span class="lineno"> 1927</span> </div>
-<div class="line"><a id="l01928" name="l01928"></a><span class="lineno"> 1928</span>            env(trust(A2, limit, <a class="code hl_variable" href="namespaceripple.html#a98f09aa7b518e640710f4362145dd444">tfClearFreeze</a>));</div>
-<div class="line"><a id="l01929" name="l01929"></a><span class="lineno"> 1929</span>            env.close();</div>
-<div class="line"><a id="l01930" name="l01930"></a><span class="lineno"> 1930</span>        }</div>
+<div class="line"><a id="l01888" name="l01888"></a><span class="lineno"> 1888</span>        <span class="comment">// Testing A1 nft buy offer when A2 deep frozen by issuer</span></div>
+<div class="line"><a id="l01889" name="l01889"></a><span class="lineno"> 1889</span>        <span class="keywordflow">if</span> (features[featureDeepFreeze] &amp;&amp;</div>
+<div class="line"><a id="l01890" name="l01890"></a><span class="lineno"> 1890</span>            features[fixEnforceNFTokenTrustlineV2])</div>
+<div class="line"><a id="l01891" name="l01891"></a><span class="lineno"> 1891</span>        {</div>
+<div class="line"><a id="l01892" name="l01892"></a><span class="lineno"> 1892</span>            env(trust(G1, A2[<span class="stringliteral">&quot;USD&quot;</span>](0), <a class="code hl_variable" href="namespaceripple.html#ae34d881cd8926ab3505340a51f91fd8b">tfSetFreeze</a> | <a class="code hl_variable" href="namespaceripple.html#a2064883c5298050aff66754857955885">tfSetDeepFreeze</a>));</div>
+<div class="line"><a id="l01893" name="l01893"></a><span class="lineno"> 1893</span>            env.close();</div>
+<div class="line"><a id="l01894" name="l01894"></a><span class="lineno"> 1894</span> </div>
+<div class="line"><a id="l01895" name="l01895"></a><span class="lineno"> 1895</span>            <a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span> nftID{token::getNextID(env, A2, 0u, <a class="code hl_variable" href="namespaceripple.html#af6dbd01af49aa6a39b96cee44add0df1">tfTransferable</a>)};</div>
+<div class="line"><a id="l01896" name="l01896"></a><span class="lineno"> 1896</span>            env(token::mint(A2, 0), txflags(<a class="code hl_variable" href="namespaceripple.html#af6dbd01af49aa6a39b96cee44add0df1">tfTransferable</a>));</div>
+<div class="line"><a id="l01897" name="l01897"></a><span class="lineno"> 1897</span>            env.close();</div>
+<div class="line"><a id="l01898" name="l01898"></a><span class="lineno"> 1898</span> </div>
+<div class="line"><a id="l01899" name="l01899"></a><span class="lineno"> 1899</span>            <span class="keyword">auto</span> <span class="keyword">const</span> buyIdx = <a class="code hl_function" href="namespaceripple_1_1keylet.html#adddc4768b4e412ab96f6fff32b8c3903">keylet::nftoffer</a>(A1, env.seq(A1)).<a class="code hl_variable" href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">key</a>;</div>
+<div class="line"><a id="l01900" name="l01900"></a><span class="lineno"> 1900</span>            env(token::createOffer(A1, nftID, USD(10)), token::owner(A2));</div>
+<div class="line"><a id="l01901" name="l01901"></a><span class="lineno"> 1901</span>            env.close();</div>
+<div class="line"><a id="l01902" name="l01902"></a><span class="lineno"> 1902</span> </div>
+<div class="line"><a id="l01903" name="l01903"></a><span class="lineno"> 1903</span>            env(token::acceptBuyOffer(A2, buyIdx), ter(<a class="code hl_enumvalue" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38ca608da193a4a22ae1c78d76b6e843b7e6">tecFROZEN</a>));</div>
+<div class="line"><a id="l01904" name="l01904"></a><span class="lineno"> 1904</span>            env.close();</div>
+<div class="line"><a id="l01905" name="l01905"></a><span class="lineno"> 1905</span> </div>
+<div class="line"><a id="l01906" name="l01906"></a><span class="lineno"> 1906</span>            env(trust(G1, A2[<span class="stringliteral">&quot;USD&quot;</span>](0), <a class="code hl_variable" href="namespaceripple.html#a98f09aa7b518e640710f4362145dd444">tfClearFreeze</a> | <a class="code hl_variable" href="namespaceripple.html#aaf66864d0b900743719164e43f53c934">tfClearDeepFreeze</a>));</div>
+<div class="line"><a id="l01907" name="l01907"></a><span class="lineno"> 1907</span>            env.close();</div>
+<div class="line"><a id="l01908" name="l01908"></a><span class="lineno"> 1908</span> </div>
+<div class="line"><a id="l01909" name="l01909"></a><span class="lineno"> 1909</span>            env(token::acceptBuyOffer(A2, buyIdx));</div>
+<div class="line"><a id="l01910" name="l01910"></a><span class="lineno"> 1910</span>            env.close();</div>
+<div class="line"><a id="l01911" name="l01911"></a><span class="lineno"> 1911</span>        }</div>
+<div class="line"><a id="l01912" name="l01912"></a><span class="lineno"> 1912</span> </div>
+<div class="line"><a id="l01913" name="l01913"></a><span class="lineno"> 1913</span>        <span class="comment">// Testing A2 nft offer sell when A2 frozen by currency holder</span></div>
+<div class="line"><a id="l01914" name="l01914"></a><span class="lineno"> 1914</span>        {</div>
+<div class="line"><a id="l01915" name="l01915"></a><span class="lineno"> 1915</span>            <span class="keyword">auto</span> <span class="keyword">const</span> sellOfferIndex = <a class="code hl_function" href="classripple_1_1Freeze__test.html#a4a4ef081182bfc99a4aefe4e32359591">createNFTSellOffer</a>(env, A2, USD(10));</div>
+<div class="line"><a id="l01916" name="l01916"></a><span class="lineno"> 1916</span>            env(trust(A2, limit, <a class="code hl_variable" href="namespaceripple.html#ae34d881cd8926ab3505340a51f91fd8b">tfSetFreeze</a>));</div>
+<div class="line"><a id="l01917" name="l01917"></a><span class="lineno"> 1917</span>            env.close();</div>
+<div class="line"><a id="l01918" name="l01918"></a><span class="lineno"> 1918</span> </div>
+<div class="line"><a id="l01919" name="l01919"></a><span class="lineno"> 1919</span>            <span class="comment">// test: offer can still be accepted.</span></div>
+<div class="line"><a id="l01920" name="l01920"></a><span class="lineno"> 1920</span>            env(token::acceptSellOffer(A1, sellOfferIndex));</div>
+<div class="line"><a id="l01921" name="l01921"></a><span class="lineno"> 1921</span>            env.close();</div>
+<div class="line"><a id="l01922" name="l01922"></a><span class="lineno"> 1922</span> </div>
+<div class="line"><a id="l01923" name="l01923"></a><span class="lineno"> 1923</span>            env(trust(A2, limit, <a class="code hl_variable" href="namespaceripple.html#a98f09aa7b518e640710f4362145dd444">tfClearFreeze</a>));</div>
+<div class="line"><a id="l01924" name="l01924"></a><span class="lineno"> 1924</span>            env.close();</div>
+<div class="line"><a id="l01925" name="l01925"></a><span class="lineno"> 1925</span>        }</div>
+<div class="line"><a id="l01926" name="l01926"></a><span class="lineno"> 1926</span> </div>
+<div class="line"><a id="l01927" name="l01927"></a><span class="lineno"> 1927</span>        <span class="comment">// Testing A2 nft offer sell when A2 deep frozen by currency holder</span></div>
+<div class="line"><a id="l01928" name="l01928"></a><span class="lineno"> 1928</span>        <span class="keywordflow">if</span> (features[featureDeepFreeze])</div>
+<div class="line"><a id="l01929" name="l01929"></a><span class="lineno"> 1929</span>        {</div>
+<div class="line"><a id="l01930" name="l01930"></a><span class="lineno"> 1930</span>            <span class="keyword">auto</span> <span class="keyword">const</span> sellOfferIndex = <a class="code hl_function" href="classripple_1_1Freeze__test.html#a4a4ef081182bfc99a4aefe4e32359591">createNFTSellOffer</a>(env, A2, USD(10));</div>
 <div class="line"><a id="l01931" name="l01931"></a><span class="lineno"> 1931</span> </div>
-<div class="line"><a id="l01932" name="l01932"></a><span class="lineno"> 1932</span>        <span class="comment">// Testing A1 nft offer sell when A2 deep frozen by currency holder</span></div>
-<div class="line"><a id="l01933" name="l01933"></a><span class="lineno"> 1933</span>        <span class="keywordflow">if</span> (features[featureDeepFreeze])</div>
-<div class="line"><a id="l01934" name="l01934"></a><span class="lineno"> 1934</span>        {</div>
-<div class="line"><a id="l01935" name="l01935"></a><span class="lineno"> 1935</span>            <span class="keyword">auto</span> <span class="keyword">const</span> sellOfferIndex = <a class="code hl_function" href="classripple_1_1Freeze__test.html#a4a4ef081182bfc99a4aefe4e32359591">createNFTSellOffer</a>(env, A1, USD(10));</div>
-<div class="line"><a id="l01936" name="l01936"></a><span class="lineno"> 1936</span>            env(trust(A2, limit, <a class="code hl_variable" href="namespaceripple.html#ae34d881cd8926ab3505340a51f91fd8b">tfSetFreeze</a> | <a class="code hl_variable" href="namespaceripple.html#a2064883c5298050aff66754857955885">tfSetDeepFreeze</a>));</div>
+<div class="line"><a id="l01932" name="l01932"></a><span class="lineno"> 1932</span>            env(trust(A2, limit, <a class="code hl_variable" href="namespaceripple.html#ae34d881cd8926ab3505340a51f91fd8b">tfSetFreeze</a> | <a class="code hl_variable" href="namespaceripple.html#a2064883c5298050aff66754857955885">tfSetDeepFreeze</a>));</div>
+<div class="line"><a id="l01933" name="l01933"></a><span class="lineno"> 1933</span>            env.close();</div>
+<div class="line"><a id="l01934" name="l01934"></a><span class="lineno"> 1934</span> </div>
+<div class="line"><a id="l01935" name="l01935"></a><span class="lineno"> 1935</span>            <span class="comment">// test: A2 cannot receive USD for his NFT</span></div>
+<div class="line"><a id="l01936" name="l01936"></a><span class="lineno"> 1936</span>            env(token::acceptSellOffer(A1, sellOfferIndex), ter(<a class="code hl_enumvalue" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38ca608da193a4a22ae1c78d76b6e843b7e6">tecFROZEN</a>));</div>
 <div class="line"><a id="l01937" name="l01937"></a><span class="lineno"> 1937</span>            env.close();</div>
 <div class="line"><a id="l01938" name="l01938"></a><span class="lineno"> 1938</span> </div>
-<div class="line"><a id="l01939" name="l01939"></a><span class="lineno"> 1939</span>            <span class="comment">// test: A2 cannot send USD for NFT</span></div>
-<div class="line"><a id="l01940" name="l01940"></a><span class="lineno"> 1940</span>            env(token::acceptSellOffer(A2, sellOfferIndex),</div>
-<div class="line"><a id="l01941" name="l01941"></a><span class="lineno"> 1941</span>                ter(<a class="code hl_enumvalue" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38ca89957bfc4da8257ff0b1c914c10a41ec">tecINSUFFICIENT_FUNDS</a>));</div>
-<div class="line"><a id="l01942" name="l01942"></a><span class="lineno"> 1942</span>            env.close();</div>
-<div class="line"><a id="l01943" name="l01943"></a><span class="lineno"> 1943</span> </div>
-<div class="line"><a id="l01944" name="l01944"></a><span class="lineno"> 1944</span>            env(trust(A2, limit, <a class="code hl_variable" href="namespaceripple.html#a98f09aa7b518e640710f4362145dd444">tfClearFreeze</a> | <a class="code hl_variable" href="namespaceripple.html#aaf66864d0b900743719164e43f53c934">tfClearDeepFreeze</a>));</div>
-<div class="line"><a id="l01945" name="l01945"></a><span class="lineno"> 1945</span>            env.close();</div>
-<div class="line"><a id="l01946" name="l01946"></a><span class="lineno"> 1946</span>        }</div>
-<div class="line"><a id="l01947" name="l01947"></a><span class="lineno"> 1947</span>    }</div>
+<div class="line"><a id="l01939" name="l01939"></a><span class="lineno"> 1939</span>            env(trust(A2, limit, <a class="code hl_variable" href="namespaceripple.html#a98f09aa7b518e640710f4362145dd444">tfClearFreeze</a> | <a class="code hl_variable" href="namespaceripple.html#aaf66864d0b900743719164e43f53c934">tfClearDeepFreeze</a>));</div>
+<div class="line"><a id="l01940" name="l01940"></a><span class="lineno"> 1940</span>            env.close();</div>
+<div class="line"><a id="l01941" name="l01941"></a><span class="lineno"> 1941</span>        }</div>
+<div class="line"><a id="l01942" name="l01942"></a><span class="lineno"> 1942</span> </div>
+<div class="line"><a id="l01943" name="l01943"></a><span class="lineno"> 1943</span>        <span class="comment">// Testing A1 nft offer sell when A2 frozen by currency holder</span></div>
+<div class="line"><a id="l01944" name="l01944"></a><span class="lineno"> 1944</span>        {</div>
+<div class="line"><a id="l01945" name="l01945"></a><span class="lineno"> 1945</span>            <span class="keyword">auto</span> <span class="keyword">const</span> sellOfferIndex = <a class="code hl_function" href="classripple_1_1Freeze__test.html#a4a4ef081182bfc99a4aefe4e32359591">createNFTSellOffer</a>(env, A1, USD(10));</div>
+<div class="line"><a id="l01946" name="l01946"></a><span class="lineno"> 1946</span>            env(trust(A2, limit, <a class="code hl_variable" href="namespaceripple.html#ae34d881cd8926ab3505340a51f91fd8b">tfSetFreeze</a>));</div>
+<div class="line"><a id="l01947" name="l01947"></a><span class="lineno"> 1947</span>            env.close();</div>
 <div class="line"><a id="l01948" name="l01948"></a><span class="lineno"> 1948</span> </div>
-<div class="line"><a id="l01949" name="l01949"></a><span class="lineno"> 1949</span>    <span class="comment">// Helper function to extract trustline flags from open ledger</span></div>
-<div class="line"><a id="l01950" name="l01950"></a><span class="lineno"> 1950</span>    uint32_t</div>
-<div class="line"><a id="l01951" name="l01951"></a><span class="lineno"><a class="line" href="classripple_1_1Freeze__test.html#a4e85b04c275d0e5842cc09e81a03514c"> 1951</a></span>    <a class="code hl_function" href="classripple_1_1Freeze__test.html#a4e85b04c275d0e5842cc09e81a03514c">getTrustlineFlags</a>(</div>
-<div class="line"><a id="l01952" name="l01952"></a><span class="lineno"> 1952</span>        <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Env.html">test::jtx::Env</a>&amp; env,</div>
-<div class="line"><a id="l01953" name="l01953"></a><span class="lineno"> 1953</span>        <span class="keywordtype">size_t</span> expectedArraySize,</div>
-<div class="line"><a id="l01954" name="l01954"></a><span class="lineno"> 1954</span>        <span class="keywordtype">size_t</span> expectedArrayIndex,</div>
-<div class="line"><a id="l01955" name="l01955"></a><span class="lineno"> 1955</span>        <span class="keywordtype">bool</span> modified = <span class="keyword">true</span>)</div>
-<div class="line"><a id="l01956" name="l01956"></a><span class="lineno"> 1956</span>    {</div>
-<div class="line"><a id="l01957" name="l01957"></a><span class="lineno"> 1957</span>        <span class="keyword">using namespace </span>test::jtx;</div>
-<div class="line"><a id="l01958" name="l01958"></a><span class="lineno"> 1958</span>        <span class="keyword">auto</span> <span class="keyword">const</span> affected =</div>
-<div class="line"><a id="l01959" name="l01959"></a><span class="lineno"> 1959</span>            env.<a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1Env.html#aeb88ee7af1fd9262cd4bd0738c5748d3">meta</a>()-&gt;getJson(<a class="code hl_enumvalue" href="structripple_1_1JsonOptions.html#ab85e43ec84df987200d3355c3ba89f0aa1917451e3686dfe8d5016670eb87ab33">JsonOptions::none</a>)[sfAffectedNodes.fieldName];</div>
-<div class="line"><a id="l01960" name="l01960"></a><span class="lineno"> 1960</span>        <span class="keywordflow">if</span> (!BEAST_EXPECT(checkArraySize(affected, expectedArraySize)))</div>
-<div class="line"><a id="l01961" name="l01961"></a><span class="lineno"> 1961</span>            <span class="keywordflow">return</span> 0;</div>
-<div class="line"><a id="l01962" name="l01962"></a><span class="lineno"> 1962</span> </div>
-<div class="line"><a id="l01963" name="l01963"></a><span class="lineno"> 1963</span>        <span class="keywordflow">if</span> (modified)</div>
-<div class="line"><a id="l01964" name="l01964"></a><span class="lineno"> 1964</span>        {</div>
-<div class="line"><a id="l01965" name="l01965"></a><span class="lineno"> 1965</span>            <span class="keywordflow">return</span> affected[expectedArrayIndex][sfModifiedNode.fieldName]</div>
-<div class="line"><a id="l01966" name="l01966"></a><span class="lineno"> 1966</span>                           [sfFinalFields.fieldName][jss::Flags]</div>
-<div class="line"><a id="l01967" name="l01967"></a><span class="lineno"> 1967</span>                               .asUInt();</div>
-<div class="line"><a id="l01968" name="l01968"></a><span class="lineno"> 1968</span>        }</div>
-<div class="line"><a id="l01969" name="l01969"></a><span class="lineno"> 1969</span> </div>
-<div class="line"><a id="l01970" name="l01970"></a><span class="lineno"> 1970</span>        <span class="keywordflow">return</span> affected[expectedArrayIndex][sfCreatedNode.fieldName]</div>
-<div class="line"><a id="l01971" name="l01971"></a><span class="lineno"> 1971</span>                       [sfNewFields.fieldName][jss::Flags]</div>
-<div class="line"><a id="l01972" name="l01972"></a><span class="lineno"> 1972</span>                           .asUInt();</div>
-<div class="line"><a id="l01973" name="l01973"></a><span class="lineno"> 1973</span>    }</div>
-<div class="line"><a id="l01974" name="l01974"></a><span class="lineno"> 1974</span> </div>
-<div class="line"><a id="l01975" name="l01975"></a><span class="lineno"> 1975</span>    <span class="comment">// Helper function that returns the index of the next check on account</span></div>
-<div class="line"><a id="l01976" name="l01976"></a><span class="lineno"> 1976</span>    <a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a></div>
-<div class="line"><a id="l01977" name="l01977"></a><span class="lineno"><a class="line" href="classripple_1_1Freeze__test.html#ae0ed39c5e932b3c2f3708c1f5a751a94"> 1977</a></span>    <a class="code hl_function" href="classripple_1_1Freeze__test.html#ae0ed39c5e932b3c2f3708c1f5a751a94">getCheckIndex</a>(<a class="code hl_class" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; account, <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> uSequence)</div>
-<div class="line"><a id="l01978" name="l01978"></a><span class="lineno"> 1978</span>    {</div>
-<div class="line"><a id="l01979" name="l01979"></a><span class="lineno"> 1979</span>        <span class="keywordflow">return</span> <a class="code hl_function" href="namespaceripple_1_1keylet.html#aefa210f097f27f0e9e67fe65c6271508">keylet::check</a>(account, uSequence).<a class="code hl_variable" href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">key</a>;</div>
-<div class="line"><a id="l01980" name="l01980"></a><span class="lineno"> 1980</span>    }</div>
-<div class="line"><a id="l01981" name="l01981"></a><span class="lineno"> 1981</span> </div>
-<div class="line"><a id="l01982" name="l01982"></a><span class="lineno"> 1982</span>    <a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a></div>
-<div class="line"><a id="l01983" name="l01983"></a><span class="lineno"><a class="line" href="classripple_1_1Freeze__test.html#a4a4ef081182bfc99a4aefe4e32359591"> 1983</a></span>    <a class="code hl_function" href="classripple_1_1Freeze__test.html#a4a4ef081182bfc99a4aefe4e32359591">createNFTSellOffer</a>(</div>
-<div class="line"><a id="l01984" name="l01984"></a><span class="lineno"> 1984</span>        <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Env.html">test::jtx::Env</a>&amp; env,</div>
-<div class="line"><a id="l01985" name="l01985"></a><span class="lineno"> 1985</span>        <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Account.html">test::jtx::Account</a> <span class="keyword">const</span>&amp; account,</div>
-<div class="line"><a id="l01986" name="l01986"></a><span class="lineno"> 1986</span>        <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1PrettyAmount.html">test::jtx::PrettyAmount</a> <span class="keyword">const</span>&amp; currency)</div>
-<div class="line"><a id="l01987" name="l01987"></a><span class="lineno"> 1987</span>    {</div>
-<div class="line"><a id="l01988" name="l01988"></a><span class="lineno"> 1988</span>        <span class="keyword">using namespace </span>test::jtx;</div>
-<div class="line"><a id="l01989" name="l01989"></a><span class="lineno"> 1989</span>        <a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span> nftID{token::getNextID(env, account, 0u, <a class="code hl_variable" href="namespaceripple.html#af6dbd01af49aa6a39b96cee44add0df1">tfTransferable</a>)};</div>
-<div class="line"><a id="l01990" name="l01990"></a><span class="lineno"> 1990</span>        env(token::mint(account, 0), txflags(<a class="code hl_variable" href="namespaceripple.html#af6dbd01af49aa6a39b96cee44add0df1">tfTransferable</a>));</div>
-<div class="line"><a id="l01991" name="l01991"></a><span class="lineno"> 1991</span>        env.<a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1Env.html#a69095691c9bcfab1f3d69c645f2dbe33">close</a>();</div>
-<div class="line"><a id="l01992" name="l01992"></a><span class="lineno"> 1992</span> </div>
-<div class="line"><a id="l01993" name="l01993"></a><span class="lineno"> 1993</span>        <a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span> sellOfferIndex =</div>
-<div class="line"><a id="l01994" name="l01994"></a><span class="lineno"> 1994</span>            <a class="code hl_function" href="namespaceripple_1_1keylet.html#adddc4768b4e412ab96f6fff32b8c3903">keylet::nftoffer</a>(account, env.<a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1Env.html#a2ef09f6f41b7d8a2dc89175e3b108f87">seq</a>(account)).<a class="code hl_variable" href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">key</a>;</div>
-<div class="line"><a id="l01995" name="l01995"></a><span class="lineno"> 1995</span>        env(token::createOffer(account, nftID, currency),</div>
-<div class="line"><a id="l01996" name="l01996"></a><span class="lineno"> 1996</span>            txflags(<a class="code hl_variable" href="namespaceripple.html#a449cf5cfc4fd3f6c2a3577a57374bda5">tfSellNFToken</a>));</div>
-<div class="line"><a id="l01997" name="l01997"></a><span class="lineno"> 1997</span>        env.<a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1Env.html#a69095691c9bcfab1f3d69c645f2dbe33">close</a>();</div>
-<div class="line"><a id="l01998" name="l01998"></a><span class="lineno"> 1998</span> </div>
-<div class="line"><a id="l01999" name="l01999"></a><span class="lineno"> 1999</span>        <span class="keywordflow">return</span> sellOfferIndex;</div>
-<div class="line"><a id="l02000" name="l02000"></a><span class="lineno"> 2000</span>    }</div>
-<div class="line"><a id="l02001" name="l02001"></a><span class="lineno"> 2001</span> </div>
-<div class="line"><a id="l02002" name="l02002"></a><span class="lineno"> 2002</span><span class="keyword">public</span>:</div>
-<div class="line"><a id="l02003" name="l02003"></a><span class="lineno"> 2003</span>    <span class="keywordtype">void</span></div>
-<div class="line"><a id="l02004" name="l02004"></a><span class="lineno"><a class="line" href="classripple_1_1Freeze__test.html#acae03d4044d6cc33d128962edfcdbe77"> 2004</a></span>    <a class="code hl_function" href="classripple_1_1Freeze__test.html#acae03d4044d6cc33d128962edfcdbe77">run</a>()<span class="keyword"> override</span></div>
-<div class="line"><a id="l02005" name="l02005"></a><span class="lineno"> 2005</span><span class="keyword">    </span>{</div>
-<div class="line"><a id="l02006" name="l02006"></a><span class="lineno"> 2006</span>        <span class="keyword">auto</span> testAll = [<span class="keyword">this</span>](<a class="code hl_class" href="classripple_1_1FeatureBitset.html">FeatureBitset</a> features) {</div>
-<div class="line"><a id="l02007" name="l02007"></a><span class="lineno"> 2007</span>            <a class="code hl_function" href="classripple_1_1Freeze__test.html#aeaa4735a7a8992eeb1772bc66ad23f18">testRippleState</a>(features);</div>
-<div class="line"><a id="l02008" name="l02008"></a><span class="lineno"> 2008</span>            <a class="code hl_function" href="classripple_1_1Freeze__test.html#a5549ca5d9dc3ace67ae9e0c69be88444">testDeepFreeze</a>(features);</div>
-<div class="line"><a id="l02009" name="l02009"></a><span class="lineno"> 2009</span>            <a class="code hl_function" href="classripple_1_1Freeze__test.html#ae3745ea52ae02cea46c7509866ccf56e">testCreateFrozenTrustline</a>(features);</div>
-<div class="line"><a id="l02010" name="l02010"></a><span class="lineno"> 2010</span>            <a class="code hl_function" href="classripple_1_1Freeze__test.html#aecd7bb8af04b6c328291de553e9564b1">testSetAndClear</a>(features);</div>
-<div class="line"><a id="l02011" name="l02011"></a><span class="lineno"> 2011</span>            <a class="code hl_function" href="classripple_1_1Freeze__test.html#a5118951358e809a784d2eacd0daf69f1">testGlobalFreeze</a>(features);</div>
-<div class="line"><a id="l02012" name="l02012"></a><span class="lineno"> 2012</span>            <a class="code hl_function" href="classripple_1_1Freeze__test.html#a8f2eb001407da2bb043163747c0c3bb3">testNoFreeze</a>(features);</div>
-<div class="line"><a id="l02013" name="l02013"></a><span class="lineno"> 2013</span>            <a class="code hl_function" href="classripple_1_1Freeze__test.html#af1fb0f43eca5efe37137694ca307ff62">testOffersWhenFrozen</a>(features);</div>
-<div class="line"><a id="l02014" name="l02014"></a><span class="lineno"> 2014</span>            <a class="code hl_function" href="classripple_1_1Freeze__test.html#a245935030a965e96f55565f0105a3bb3">testOffersWhenDeepFrozen</a>(features);</div>
-<div class="line"><a id="l02015" name="l02015"></a><span class="lineno"> 2015</span>            <a class="code hl_function" href="classripple_1_1Freeze__test.html#a89d53a2e3328df18fbbdcdefb8f65ad1">testPaymentsWhenDeepFrozen</a>(features);</div>
-<div class="line"><a id="l02016" name="l02016"></a><span class="lineno"> 2016</span>            <a class="code hl_function" href="classripple_1_1Freeze__test.html#af3f9fe99040f23e03bfdf4ea38fb33bf">testChecksWhenFrozen</a>(features);</div>
-<div class="line"><a id="l02017" name="l02017"></a><span class="lineno"> 2017</span>            <a class="code hl_function" href="classripple_1_1Freeze__test.html#abec30b04e161264739de32e222557c22">testAMMWhenFreeze</a>(features);</div>
-<div class="line"><a id="l02018" name="l02018"></a><span class="lineno"> 2018</span>            <a class="code hl_function" href="classripple_1_1Freeze__test.html#aca5246c194368a295268b4eae948f7e1">testPathsWhenFrozen</a>(features);</div>
-<div class="line"><a id="l02019" name="l02019"></a><span class="lineno"> 2019</span>            <a class="code hl_function" href="classripple_1_1Freeze__test.html#a98dd2c67061e8a55afa0888499ccbce7">testNFTOffersWhenFreeze</a>(features);</div>
-<div class="line"><a id="l02020" name="l02020"></a><span class="lineno"> 2020</span>        };</div>
-<div class="line"><a id="l02021" name="l02021"></a><span class="lineno"> 2021</span>        <span class="keyword">using namespace </span>test::jtx;</div>
-<div class="line"><a id="l02022" name="l02022"></a><span class="lineno"> 2022</span>        <span class="keyword">auto</span> <span class="keyword">const</span> sa = supported_amendments();</div>
-<div class="line"><a id="l02023" name="l02023"></a><span class="lineno"> 2023</span>        testAll(</div>
-<div class="line"><a id="l02024" name="l02024"></a><span class="lineno"> 2024</span>            sa - featureFlowCross - featureDeepFreeze - featurePermissionedDEX);</div>
-<div class="line"><a id="l02025" name="l02025"></a><span class="lineno"> 2025</span>        testAll(sa - featureFlowCross - featurePermissionedDEX);</div>
-<div class="line"><a id="l02026" name="l02026"></a><span class="lineno"> 2026</span>        testAll(sa - featureDeepFreeze - featurePermissionedDEX);</div>
-<div class="line"><a id="l02027" name="l02027"></a><span class="lineno"> 2027</span>        testAll(sa - featurePermissionedDEX);</div>
-<div class="line"><a id="l02028" name="l02028"></a><span class="lineno"> 2028</span>        testAll(sa);</div>
-<div class="line"><a id="l02029" name="l02029"></a><span class="lineno"> 2029</span>    }</div>
-<div class="line"><a id="l02030" name="l02030"></a><span class="lineno"> 2030</span>};</div>
-<div class="line"><a id="l02031" name="l02031"></a><span class="lineno"> 2031</span> </div>
-<div class="line"><a id="l02032" name="l02032"></a><span class="lineno"><a class="line" href="namespaceripple.html#a9f05967f9926212c8708151fd74d4a2c"> 2032</a></span>BEAST_DEFINE_TESTSUITE(Freeze, app, <a class="code hl_namespace" href="namespaceripple.html">ripple</a>);</div>
-<div class="line"><a id="l02033" name="l02033"></a><span class="lineno"> 2033</span>}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a id="l01949" name="l01949"></a><span class="lineno"> 1949</span>            <span class="comment">// test: A2 cannot send USD for NFT</span></div>
+<div class="line"><a id="l01950" name="l01950"></a><span class="lineno"> 1950</span>            env(token::acceptSellOffer(A2, sellOfferIndex));</div>
+<div class="line"><a id="l01951" name="l01951"></a><span class="lineno"> 1951</span>            env.close();</div>
+<div class="line"><a id="l01952" name="l01952"></a><span class="lineno"> 1952</span> </div>
+<div class="line"><a id="l01953" name="l01953"></a><span class="lineno"> 1953</span>            env(trust(A2, limit, <a class="code hl_variable" href="namespaceripple.html#a98f09aa7b518e640710f4362145dd444">tfClearFreeze</a>));</div>
+<div class="line"><a id="l01954" name="l01954"></a><span class="lineno"> 1954</span>            env.close();</div>
+<div class="line"><a id="l01955" name="l01955"></a><span class="lineno"> 1955</span>        }</div>
+<div class="line"><a id="l01956" name="l01956"></a><span class="lineno"> 1956</span> </div>
+<div class="line"><a id="l01957" name="l01957"></a><span class="lineno"> 1957</span>        <span class="comment">// Testing A1 nft offer sell when A2 deep frozen by currency holder</span></div>
+<div class="line"><a id="l01958" name="l01958"></a><span class="lineno"> 1958</span>        <span class="keywordflow">if</span> (features[featureDeepFreeze])</div>
+<div class="line"><a id="l01959" name="l01959"></a><span class="lineno"> 1959</span>        {</div>
+<div class="line"><a id="l01960" name="l01960"></a><span class="lineno"> 1960</span>            <span class="keyword">auto</span> <span class="keyword">const</span> sellOfferIndex = <a class="code hl_function" href="classripple_1_1Freeze__test.html#a4a4ef081182bfc99a4aefe4e32359591">createNFTSellOffer</a>(env, A1, USD(10));</div>
+<div class="line"><a id="l01961" name="l01961"></a><span class="lineno"> 1961</span>            env(trust(A2, limit, <a class="code hl_variable" href="namespaceripple.html#ae34d881cd8926ab3505340a51f91fd8b">tfSetFreeze</a> | <a class="code hl_variable" href="namespaceripple.html#a2064883c5298050aff66754857955885">tfSetDeepFreeze</a>));</div>
+<div class="line"><a id="l01962" name="l01962"></a><span class="lineno"> 1962</span>            env.close();</div>
+<div class="line"><a id="l01963" name="l01963"></a><span class="lineno"> 1963</span> </div>
+<div class="line"><a id="l01964" name="l01964"></a><span class="lineno"> 1964</span>            <span class="comment">// test: A2 cannot send USD for NFT</span></div>
+<div class="line"><a id="l01965" name="l01965"></a><span class="lineno"> 1965</span>            env(token::acceptSellOffer(A2, sellOfferIndex),</div>
+<div class="line"><a id="l01966" name="l01966"></a><span class="lineno"> 1966</span>                ter(<a class="code hl_enumvalue" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38ca89957bfc4da8257ff0b1c914c10a41ec">tecINSUFFICIENT_FUNDS</a>));</div>
+<div class="line"><a id="l01967" name="l01967"></a><span class="lineno"> 1967</span>            env.close();</div>
+<div class="line"><a id="l01968" name="l01968"></a><span class="lineno"> 1968</span> </div>
+<div class="line"><a id="l01969" name="l01969"></a><span class="lineno"> 1969</span>            env(trust(A2, limit, <a class="code hl_variable" href="namespaceripple.html#a98f09aa7b518e640710f4362145dd444">tfClearFreeze</a> | <a class="code hl_variable" href="namespaceripple.html#aaf66864d0b900743719164e43f53c934">tfClearDeepFreeze</a>));</div>
+<div class="line"><a id="l01970" name="l01970"></a><span class="lineno"> 1970</span>            env.close();</div>
+<div class="line"><a id="l01971" name="l01971"></a><span class="lineno"> 1971</span>        }</div>
+<div class="line"><a id="l01972" name="l01972"></a><span class="lineno"> 1972</span> </div>
+<div class="line"><a id="l01973" name="l01973"></a><span class="lineno"> 1973</span>        <span class="comment">// Testing brokered offer acceptance</span></div>
+<div class="line"><a id="l01974" name="l01974"></a><span class="lineno"> 1974</span>        <span class="keywordflow">if</span> (features[featureDeepFreeze] &amp;&amp;</div>
+<div class="line"><a id="l01975" name="l01975"></a><span class="lineno"> 1975</span>            features[fixEnforceNFTokenTrustlineV2])</div>
+<div class="line"><a id="l01976" name="l01976"></a><span class="lineno"> 1976</span>        {</div>
+<div class="line"><a id="l01977" name="l01977"></a><span class="lineno"> 1977</span>            Account broker{<span class="stringliteral">&quot;broker&quot;</span>};</div>
+<div class="line"><a id="l01978" name="l01978"></a><span class="lineno"> 1978</span>            env.fund(XRP(10000), broker);</div>
+<div class="line"><a id="l01979" name="l01979"></a><span class="lineno"> 1979</span>            env.close();</div>
+<div class="line"><a id="l01980" name="l01980"></a><span class="lineno"> 1980</span>            env(trust(G1, broker[<span class="stringliteral">&quot;USD&quot;</span>](1000), <a class="code hl_variable" href="namespaceripple.html#ae34d881cd8926ab3505340a51f91fd8b">tfSetFreeze</a> | <a class="code hl_variable" href="namespaceripple.html#a2064883c5298050aff66754857955885">tfSetDeepFreeze</a>));</div>
+<div class="line"><a id="l01981" name="l01981"></a><span class="lineno"> 1981</span>            env.close();</div>
+<div class="line"><a id="l01982" name="l01982"></a><span class="lineno"> 1982</span> </div>
+<div class="line"><a id="l01983" name="l01983"></a><span class="lineno"> 1983</span>            <a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span> nftID{token::getNextID(env, A2, 0u, <a class="code hl_variable" href="namespaceripple.html#af6dbd01af49aa6a39b96cee44add0df1">tfTransferable</a>)};</div>
+<div class="line"><a id="l01984" name="l01984"></a><span class="lineno"> 1984</span>            env(token::mint(A2, 0), txflags(<a class="code hl_variable" href="namespaceripple.html#af6dbd01af49aa6a39b96cee44add0df1">tfTransferable</a>));</div>
+<div class="line"><a id="l01985" name="l01985"></a><span class="lineno"> 1985</span>            env.close();</div>
+<div class="line"><a id="l01986" name="l01986"></a><span class="lineno"> 1986</span> </div>
+<div class="line"><a id="l01987" name="l01987"></a><span class="lineno"> 1987</span>            <a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span> sellIdx = <a class="code hl_function" href="namespaceripple_1_1keylet.html#adddc4768b4e412ab96f6fff32b8c3903">keylet::nftoffer</a>(A2, env.seq(A2)).<a class="code hl_variable" href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">key</a>;</div>
+<div class="line"><a id="l01988" name="l01988"></a><span class="lineno"> 1988</span>            env(token::createOffer(A2, nftID, USD(10)), txflags(<a class="code hl_variable" href="namespaceripple.html#a449cf5cfc4fd3f6c2a3577a57374bda5">tfSellNFToken</a>));</div>
+<div class="line"><a id="l01989" name="l01989"></a><span class="lineno"> 1989</span>            env.close();</div>
+<div class="line"><a id="l01990" name="l01990"></a><span class="lineno"> 1990</span>            <span class="keyword">auto</span> <span class="keyword">const</span> buyIdx = <a class="code hl_function" href="namespaceripple_1_1keylet.html#adddc4768b4e412ab96f6fff32b8c3903">keylet::nftoffer</a>(A1, env.seq(A1)).<a class="code hl_variable" href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">key</a>;</div>
+<div class="line"><a id="l01991" name="l01991"></a><span class="lineno"> 1991</span>            env(token::createOffer(A1, nftID, USD(11)), token::owner(A2));</div>
+<div class="line"><a id="l01992" name="l01992"></a><span class="lineno"> 1992</span>            env.close();</div>
+<div class="line"><a id="l01993" name="l01993"></a><span class="lineno"> 1993</span> </div>
+<div class="line"><a id="l01994" name="l01994"></a><span class="lineno"> 1994</span>            env(token::brokerOffers(broker, buyIdx, sellIdx),</div>
+<div class="line"><a id="l01995" name="l01995"></a><span class="lineno"> 1995</span>                token::brokerFee(USD(1)),</div>
+<div class="line"><a id="l01996" name="l01996"></a><span class="lineno"> 1996</span>                ter(<a class="code hl_enumvalue" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38ca608da193a4a22ae1c78d76b6e843b7e6">tecFROZEN</a>));</div>
+<div class="line"><a id="l01997" name="l01997"></a><span class="lineno"> 1997</span>            env.close();</div>
+<div class="line"><a id="l01998" name="l01998"></a><span class="lineno"> 1998</span>        }</div>
+<div class="line"><a id="l01999" name="l01999"></a><span class="lineno"> 1999</span> </div>
+<div class="line"><a id="l02000" name="l02000"></a><span class="lineno"> 2000</span>        <span class="comment">// Testing transfer fee</span></div>
+<div class="line"><a id="l02001" name="l02001"></a><span class="lineno"> 2001</span>        <span class="keywordflow">if</span> (features[featureDeepFreeze] &amp;&amp;</div>
+<div class="line"><a id="l02002" name="l02002"></a><span class="lineno"> 2002</span>            features[fixEnforceNFTokenTrustlineV2])</div>
+<div class="line"><a id="l02003" name="l02003"></a><span class="lineno"> 2003</span>        {</div>
+<div class="line"><a id="l02004" name="l02004"></a><span class="lineno"> 2004</span>            Account minter{<span class="stringliteral">&quot;minter&quot;</span>};</div>
+<div class="line"><a id="l02005" name="l02005"></a><span class="lineno"> 2005</span>            env.fund(XRP(10000), minter);</div>
+<div class="line"><a id="l02006" name="l02006"></a><span class="lineno"> 2006</span>            env.close();</div>
+<div class="line"><a id="l02007" name="l02007"></a><span class="lineno"> 2007</span>            env(trust(G1, minter[<span class="stringliteral">&quot;USD&quot;</span>](1000)));</div>
+<div class="line"><a id="l02008" name="l02008"></a><span class="lineno"> 2008</span>            env.close();</div>
+<div class="line"><a id="l02009" name="l02009"></a><span class="lineno"> 2009</span> </div>
+<div class="line"><a id="l02010" name="l02010"></a><span class="lineno"> 2010</span>            <a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span> nftID{</div>
+<div class="line"><a id="l02011" name="l02011"></a><span class="lineno"> 2011</span>                token::getNextID(env, minter, 0u, <a class="code hl_variable" href="namespaceripple.html#af6dbd01af49aa6a39b96cee44add0df1">tfTransferable</a>, 1u)};</div>
+<div class="line"><a id="l02012" name="l02012"></a><span class="lineno"> 2012</span>            env(token::mint(minter, 0),</div>
+<div class="line"><a id="l02013" name="l02013"></a><span class="lineno"> 2013</span>                token::xferFee(1u),</div>
+<div class="line"><a id="l02014" name="l02014"></a><span class="lineno"> 2014</span>                txflags(<a class="code hl_variable" href="namespaceripple.html#af6dbd01af49aa6a39b96cee44add0df1">tfTransferable</a>));</div>
+<div class="line"><a id="l02015" name="l02015"></a><span class="lineno"> 2015</span>            env.close();</div>
+<div class="line"><a id="l02016" name="l02016"></a><span class="lineno"> 2016</span> </div>
+<div class="line"><a id="l02017" name="l02017"></a><span class="lineno"> 2017</span>            <a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span> minterSellIdx =</div>
+<div class="line"><a id="l02018" name="l02018"></a><span class="lineno"> 2018</span>                <a class="code hl_function" href="namespaceripple_1_1keylet.html#adddc4768b4e412ab96f6fff32b8c3903">keylet::nftoffer</a>(minter, env.seq(minter)).<a class="code hl_variable" href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">key</a>;</div>
+<div class="line"><a id="l02019" name="l02019"></a><span class="lineno"> 2019</span>            env(token::createOffer(minter, nftID, drops(1)),</div>
+<div class="line"><a id="l02020" name="l02020"></a><span class="lineno"> 2020</span>                txflags(<a class="code hl_variable" href="namespaceripple.html#a449cf5cfc4fd3f6c2a3577a57374bda5">tfSellNFToken</a>));</div>
+<div class="line"><a id="l02021" name="l02021"></a><span class="lineno"> 2021</span>            env.close();</div>
+<div class="line"><a id="l02022" name="l02022"></a><span class="lineno"> 2022</span>            env(token::acceptSellOffer(A2, minterSellIdx));</div>
+<div class="line"><a id="l02023" name="l02023"></a><span class="lineno"> 2023</span>            env.close();</div>
+<div class="line"><a id="l02024" name="l02024"></a><span class="lineno"> 2024</span> </div>
+<div class="line"><a id="l02025" name="l02025"></a><span class="lineno"> 2025</span>            <a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span> sellIdx = <a class="code hl_function" href="namespaceripple_1_1keylet.html#adddc4768b4e412ab96f6fff32b8c3903">keylet::nftoffer</a>(A2, env.seq(A2)).<a class="code hl_variable" href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">key</a>;</div>
+<div class="line"><a id="l02026" name="l02026"></a><span class="lineno"> 2026</span>            env(token::createOffer(A2, nftID, USD(100)),</div>
+<div class="line"><a id="l02027" name="l02027"></a><span class="lineno"> 2027</span>                txflags(<a class="code hl_variable" href="namespaceripple.html#a449cf5cfc4fd3f6c2a3577a57374bda5">tfSellNFToken</a>));</div>
+<div class="line"><a id="l02028" name="l02028"></a><span class="lineno"> 2028</span>            env.close();</div>
+<div class="line"><a id="l02029" name="l02029"></a><span class="lineno"> 2029</span>            env(trust(G1, minter[<span class="stringliteral">&quot;USD&quot;</span>](1000), <a class="code hl_variable" href="namespaceripple.html#ae34d881cd8926ab3505340a51f91fd8b">tfSetFreeze</a> | <a class="code hl_variable" href="namespaceripple.html#a2064883c5298050aff66754857955885">tfSetDeepFreeze</a>));</div>
+<div class="line"><a id="l02030" name="l02030"></a><span class="lineno"> 2030</span>            env.close();</div>
+<div class="line"><a id="l02031" name="l02031"></a><span class="lineno"> 2031</span>            env(token::acceptSellOffer(A1, sellIdx), ter(<a class="code hl_enumvalue" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38ca608da193a4a22ae1c78d76b6e843b7e6">tecFROZEN</a>));</div>
+<div class="line"><a id="l02032" name="l02032"></a><span class="lineno"> 2032</span>            env.close();</div>
+<div class="line"><a id="l02033" name="l02033"></a><span class="lineno"> 2033</span>        }</div>
+<div class="line"><a id="l02034" name="l02034"></a><span class="lineno"> 2034</span>    }</div>
+<div class="line"><a id="l02035" name="l02035"></a><span class="lineno"> 2035</span> </div>
+<div class="line"><a id="l02036" name="l02036"></a><span class="lineno"> 2036</span>    <span class="comment">// Helper function to extract trustline flags from open ledger</span></div>
+<div class="line"><a id="l02037" name="l02037"></a><span class="lineno"> 2037</span>    uint32_t</div>
+<div class="line"><a id="l02038" name="l02038"></a><span class="lineno"><a class="line" href="classripple_1_1Freeze__test.html#a4e85b04c275d0e5842cc09e81a03514c"> 2038</a></span>    <a class="code hl_function" href="classripple_1_1Freeze__test.html#a4e85b04c275d0e5842cc09e81a03514c">getTrustlineFlags</a>(</div>
+<div class="line"><a id="l02039" name="l02039"></a><span class="lineno"> 2039</span>        <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Env.html">test::jtx::Env</a>&amp; env,</div>
+<div class="line"><a id="l02040" name="l02040"></a><span class="lineno"> 2040</span>        <span class="keywordtype">size_t</span> expectedArraySize,</div>
+<div class="line"><a id="l02041" name="l02041"></a><span class="lineno"> 2041</span>        <span class="keywordtype">size_t</span> expectedArrayIndex,</div>
+<div class="line"><a id="l02042" name="l02042"></a><span class="lineno"> 2042</span>        <span class="keywordtype">bool</span> modified = <span class="keyword">true</span>)</div>
+<div class="line"><a id="l02043" name="l02043"></a><span class="lineno"> 2043</span>    {</div>
+<div class="line"><a id="l02044" name="l02044"></a><span class="lineno"> 2044</span>        <span class="keyword">using namespace </span>test::jtx;</div>
+<div class="line"><a id="l02045" name="l02045"></a><span class="lineno"> 2045</span>        <span class="keyword">auto</span> <span class="keyword">const</span> affected =</div>
+<div class="line"><a id="l02046" name="l02046"></a><span class="lineno"> 2046</span>            env.<a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1Env.html#aeb88ee7af1fd9262cd4bd0738c5748d3">meta</a>()-&gt;getJson(<a class="code hl_enumvalue" href="structripple_1_1JsonOptions.html#ab85e43ec84df987200d3355c3ba89f0aa1917451e3686dfe8d5016670eb87ab33">JsonOptions::none</a>)[sfAffectedNodes.fieldName];</div>
+<div class="line"><a id="l02047" name="l02047"></a><span class="lineno"> 2047</span>        <span class="keywordflow">if</span> (!BEAST_EXPECT(checkArraySize(affected, expectedArraySize)))</div>
+<div class="line"><a id="l02048" name="l02048"></a><span class="lineno"> 2048</span>            <span class="keywordflow">return</span> 0;</div>
+<div class="line"><a id="l02049" name="l02049"></a><span class="lineno"> 2049</span> </div>
+<div class="line"><a id="l02050" name="l02050"></a><span class="lineno"> 2050</span>        <span class="keywordflow">if</span> (modified)</div>
+<div class="line"><a id="l02051" name="l02051"></a><span class="lineno"> 2051</span>        {</div>
+<div class="line"><a id="l02052" name="l02052"></a><span class="lineno"> 2052</span>            <span class="keywordflow">return</span> affected[expectedArrayIndex][sfModifiedNode.fieldName]</div>
+<div class="line"><a id="l02053" name="l02053"></a><span class="lineno"> 2053</span>                           [sfFinalFields.fieldName][jss::Flags]</div>
+<div class="line"><a id="l02054" name="l02054"></a><span class="lineno"> 2054</span>                               .asUInt();</div>
+<div class="line"><a id="l02055" name="l02055"></a><span class="lineno"> 2055</span>        }</div>
+<div class="line"><a id="l02056" name="l02056"></a><span class="lineno"> 2056</span> </div>
+<div class="line"><a id="l02057" name="l02057"></a><span class="lineno"> 2057</span>        <span class="keywordflow">return</span> affected[expectedArrayIndex][sfCreatedNode.fieldName]</div>
+<div class="line"><a id="l02058" name="l02058"></a><span class="lineno"> 2058</span>                       [sfNewFields.fieldName][jss::Flags]</div>
+<div class="line"><a id="l02059" name="l02059"></a><span class="lineno"> 2059</span>                           .asUInt();</div>
+<div class="line"><a id="l02060" name="l02060"></a><span class="lineno"> 2060</span>    }</div>
+<div class="line"><a id="l02061" name="l02061"></a><span class="lineno"> 2061</span> </div>
+<div class="line"><a id="l02062" name="l02062"></a><span class="lineno"> 2062</span>    <span class="comment">// Helper function that returns the index of the next check on account</span></div>
+<div class="line"><a id="l02063" name="l02063"></a><span class="lineno"> 2063</span>    <a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a></div>
+<div class="line"><a id="l02064" name="l02064"></a><span class="lineno"><a class="line" href="classripple_1_1Freeze__test.html#ae0ed39c5e932b3c2f3708c1f5a751a94"> 2064</a></span>    <a class="code hl_function" href="classripple_1_1Freeze__test.html#ae0ed39c5e932b3c2f3708c1f5a751a94">getCheckIndex</a>(<a class="code hl_class" href="classripple_1_1base__uint.html">AccountID</a> <span class="keyword">const</span>&amp; account, <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> uSequence)</div>
+<div class="line"><a id="l02065" name="l02065"></a><span class="lineno"> 2065</span>    {</div>
+<div class="line"><a id="l02066" name="l02066"></a><span class="lineno"> 2066</span>        <span class="keywordflow">return</span> <a class="code hl_function" href="namespaceripple_1_1keylet.html#aefa210f097f27f0e9e67fe65c6271508">keylet::check</a>(account, uSequence).<a class="code hl_variable" href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">key</a>;</div>
+<div class="line"><a id="l02067" name="l02067"></a><span class="lineno"> 2067</span>    }</div>
+<div class="line"><a id="l02068" name="l02068"></a><span class="lineno"> 2068</span> </div>
+<div class="line"><a id="l02069" name="l02069"></a><span class="lineno"> 2069</span>    <a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a></div>
+<div class="line"><a id="l02070" name="l02070"></a><span class="lineno"><a class="line" href="classripple_1_1Freeze__test.html#a4a4ef081182bfc99a4aefe4e32359591"> 2070</a></span>    <a class="code hl_function" href="classripple_1_1Freeze__test.html#a4a4ef081182bfc99a4aefe4e32359591">createNFTSellOffer</a>(</div>
+<div class="line"><a id="l02071" name="l02071"></a><span class="lineno"> 2071</span>        <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Env.html">test::jtx::Env</a>&amp; env,</div>
+<div class="line"><a id="l02072" name="l02072"></a><span class="lineno"> 2072</span>        <a class="code hl_class" href="classripple_1_1test_1_1jtx_1_1Account.html">test::jtx::Account</a> <span class="keyword">const</span>&amp; account,</div>
+<div class="line"><a id="l02073" name="l02073"></a><span class="lineno"> 2073</span>        <a class="code hl_struct" href="structripple_1_1test_1_1jtx_1_1PrettyAmount.html">test::jtx::PrettyAmount</a> <span class="keyword">const</span>&amp; currency)</div>
+<div class="line"><a id="l02074" name="l02074"></a><span class="lineno"> 2074</span>    {</div>
+<div class="line"><a id="l02075" name="l02075"></a><span class="lineno"> 2075</span>        <span class="keyword">using namespace </span>test::jtx;</div>
+<div class="line"><a id="l02076" name="l02076"></a><span class="lineno"> 2076</span>        <a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span> nftID{token::getNextID(env, account, 0u, <a class="code hl_variable" href="namespaceripple.html#af6dbd01af49aa6a39b96cee44add0df1">tfTransferable</a>)};</div>
+<div class="line"><a id="l02077" name="l02077"></a><span class="lineno"> 2077</span>        env(token::mint(account, 0), txflags(<a class="code hl_variable" href="namespaceripple.html#af6dbd01af49aa6a39b96cee44add0df1">tfTransferable</a>));</div>
+<div class="line"><a id="l02078" name="l02078"></a><span class="lineno"> 2078</span>        env.<a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1Env.html#a69095691c9bcfab1f3d69c645f2dbe33">close</a>();</div>
+<div class="line"><a id="l02079" name="l02079"></a><span class="lineno"> 2079</span> </div>
+<div class="line"><a id="l02080" name="l02080"></a><span class="lineno"> 2080</span>        <a class="code hl_class" href="classripple_1_1base__uint.html">uint256</a> <span class="keyword">const</span> sellOfferIndex =</div>
+<div class="line"><a id="l02081" name="l02081"></a><span class="lineno"> 2081</span>            <a class="code hl_function" href="namespaceripple_1_1keylet.html#adddc4768b4e412ab96f6fff32b8c3903">keylet::nftoffer</a>(account, env.<a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1Env.html#a2ef09f6f41b7d8a2dc89175e3b108f87">seq</a>(account)).<a class="code hl_variable" href="structripple_1_1Keylet.html#a482983062843a8682fcea76a309c73db">key</a>;</div>
+<div class="line"><a id="l02082" name="l02082"></a><span class="lineno"> 2082</span>        env(token::createOffer(account, nftID, currency),</div>
+<div class="line"><a id="l02083" name="l02083"></a><span class="lineno"> 2083</span>            txflags(<a class="code hl_variable" href="namespaceripple.html#a449cf5cfc4fd3f6c2a3577a57374bda5">tfSellNFToken</a>));</div>
+<div class="line"><a id="l02084" name="l02084"></a><span class="lineno"> 2084</span>        env.<a class="code hl_function" href="classripple_1_1test_1_1jtx_1_1Env.html#a69095691c9bcfab1f3d69c645f2dbe33">close</a>();</div>
+<div class="line"><a id="l02085" name="l02085"></a><span class="lineno"> 2085</span> </div>
+<div class="line"><a id="l02086" name="l02086"></a><span class="lineno"> 2086</span>        <span class="keywordflow">return</span> sellOfferIndex;</div>
+<div class="line"><a id="l02087" name="l02087"></a><span class="lineno"> 2087</span>    }</div>
+<div class="line"><a id="l02088" name="l02088"></a><span class="lineno"> 2088</span> </div>
+<div class="line"><a id="l02089" name="l02089"></a><span class="lineno"> 2089</span><span class="keyword">public</span>:</div>
+<div class="line"><a id="l02090" name="l02090"></a><span class="lineno"> 2090</span>    <span class="keywordtype">void</span></div>
+<div class="line"><a id="l02091" name="l02091"></a><span class="lineno"><a class="line" href="classripple_1_1Freeze__test.html#acae03d4044d6cc33d128962edfcdbe77"> 2091</a></span>    <a class="code hl_function" href="classripple_1_1Freeze__test.html#acae03d4044d6cc33d128962edfcdbe77">run</a>()<span class="keyword"> override</span></div>
+<div class="line"><a id="l02092" name="l02092"></a><span class="lineno"> 2092</span><span class="keyword">    </span>{</div>
+<div class="line"><a id="l02093" name="l02093"></a><span class="lineno"> 2093</span>        <span class="keyword">auto</span> testAll = [<span class="keyword">this</span>](<a class="code hl_class" href="classripple_1_1FeatureBitset.html">FeatureBitset</a> features) {</div>
+<div class="line"><a id="l02094" name="l02094"></a><span class="lineno"> 2094</span>            <a class="code hl_function" href="classripple_1_1Freeze__test.html#aeaa4735a7a8992eeb1772bc66ad23f18">testRippleState</a>(features);</div>
+<div class="line"><a id="l02095" name="l02095"></a><span class="lineno"> 2095</span>            <a class="code hl_function" href="classripple_1_1Freeze__test.html#a5549ca5d9dc3ace67ae9e0c69be88444">testDeepFreeze</a>(features);</div>
+<div class="line"><a id="l02096" name="l02096"></a><span class="lineno"> 2096</span>            <a class="code hl_function" href="classripple_1_1Freeze__test.html#ae3745ea52ae02cea46c7509866ccf56e">testCreateFrozenTrustline</a>(features);</div>
+<div class="line"><a id="l02097" name="l02097"></a><span class="lineno"> 2097</span>            <a class="code hl_function" href="classripple_1_1Freeze__test.html#aecd7bb8af04b6c328291de553e9564b1">testSetAndClear</a>(features);</div>
+<div class="line"><a id="l02098" name="l02098"></a><span class="lineno"> 2098</span>            <a class="code hl_function" href="classripple_1_1Freeze__test.html#a5118951358e809a784d2eacd0daf69f1">testGlobalFreeze</a>(features);</div>
+<div class="line"><a id="l02099" name="l02099"></a><span class="lineno"> 2099</span>            <a class="code hl_function" href="classripple_1_1Freeze__test.html#a8f2eb001407da2bb043163747c0c3bb3">testNoFreeze</a>(features);</div>
+<div class="line"><a id="l02100" name="l02100"></a><span class="lineno"> 2100</span>            <a class="code hl_function" href="classripple_1_1Freeze__test.html#af1fb0f43eca5efe37137694ca307ff62">testOffersWhenFrozen</a>(features);</div>
+<div class="line"><a id="l02101" name="l02101"></a><span class="lineno"> 2101</span>            <a class="code hl_function" href="classripple_1_1Freeze__test.html#a245935030a965e96f55565f0105a3bb3">testOffersWhenDeepFrozen</a>(features);</div>
+<div class="line"><a id="l02102" name="l02102"></a><span class="lineno"> 2102</span>            <a class="code hl_function" href="classripple_1_1Freeze__test.html#a89d53a2e3328df18fbbdcdefb8f65ad1">testPaymentsWhenDeepFrozen</a>(features);</div>
+<div class="line"><a id="l02103" name="l02103"></a><span class="lineno"> 2103</span>            <a class="code hl_function" href="classripple_1_1Freeze__test.html#af3f9fe99040f23e03bfdf4ea38fb33bf">testChecksWhenFrozen</a>(features);</div>
+<div class="line"><a id="l02104" name="l02104"></a><span class="lineno"> 2104</span>            <a class="code hl_function" href="classripple_1_1Freeze__test.html#abec30b04e161264739de32e222557c22">testAMMWhenFreeze</a>(features);</div>
+<div class="line"><a id="l02105" name="l02105"></a><span class="lineno"> 2105</span>            <a class="code hl_function" href="classripple_1_1Freeze__test.html#aca5246c194368a295268b4eae948f7e1">testPathsWhenFrozen</a>(features);</div>
+<div class="line"><a id="l02106" name="l02106"></a><span class="lineno"> 2106</span>            <a class="code hl_function" href="classripple_1_1Freeze__test.html#a98dd2c67061e8a55afa0888499ccbce7">testNFTOffersWhenFreeze</a>(features);</div>
+<div class="line"><a id="l02107" name="l02107"></a><span class="lineno"> 2107</span>        };</div>
+<div class="line"><a id="l02108" name="l02108"></a><span class="lineno"> 2108</span>        <span class="keyword">using namespace </span>test::jtx;</div>
+<div class="line"><a id="l02109" name="l02109"></a><span class="lineno"> 2109</span>        <span class="keyword">auto</span> <span class="keyword">const</span> sa = supported_amendments();</div>
+<div class="line"><a id="l02110" name="l02110"></a><span class="lineno"> 2110</span>        testAll(</div>
+<div class="line"><a id="l02111" name="l02111"></a><span class="lineno"> 2111</span>            sa - featureFlowCross - featureDeepFreeze - featurePermissionedDEX -</div>
+<div class="line"><a id="l02112" name="l02112"></a><span class="lineno"> 2112</span>            fixEnforceNFTokenTrustlineV2);</div>
+<div class="line"><a id="l02113" name="l02113"></a><span class="lineno"> 2113</span>        testAll(</div>
+<div class="line"><a id="l02114" name="l02114"></a><span class="lineno"> 2114</span>            sa - featureFlowCross - featurePermissionedDEX -</div>
+<div class="line"><a id="l02115" name="l02115"></a><span class="lineno"> 2115</span>            fixEnforceNFTokenTrustlineV2);</div>
+<div class="line"><a id="l02116" name="l02116"></a><span class="lineno"> 2116</span>        testAll(</div>
+<div class="line"><a id="l02117" name="l02117"></a><span class="lineno"> 2117</span>            sa - featureDeepFreeze - featurePermissionedDEX -</div>
+<div class="line"><a id="l02118" name="l02118"></a><span class="lineno"> 2118</span>            fixEnforceNFTokenTrustlineV2);</div>
+<div class="line"><a id="l02119" name="l02119"></a><span class="lineno"> 2119</span>        testAll(sa - featurePermissionedDEX - fixEnforceNFTokenTrustlineV2);</div>
+<div class="line"><a id="l02120" name="l02120"></a><span class="lineno"> 2120</span>        testAll(sa - fixEnforceNFTokenTrustlineV2);</div>
+<div class="line"><a id="l02121" name="l02121"></a><span class="lineno"> 2121</span>        testAll(sa);</div>
+<div class="line"><a id="l02122" name="l02122"></a><span class="lineno"> 2122</span>    }</div>
+<div class="line"><a id="l02123" name="l02123"></a><span class="lineno"> 2123</span>};</div>
+<div class="line"><a id="l02124" name="l02124"></a><span class="lineno"> 2124</span> </div>
+<div class="line"><a id="l02125" name="l02125"></a><span class="lineno"><a class="line" href="namespaceripple.html#a9f05967f9926212c8708151fd74d4a2c"> 2125</a></span>BEAST_DEFINE_TESTSUITE(Freeze, app, <a class="code hl_namespace" href="namespaceripple.html">ripple</a>);</div>
+<div class="line"><a id="l02126" name="l02126"></a><span class="lineno"> 2126</span>}  <span class="comment">// namespace ripple</span></div>
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div></div>
 <div class="ttc" id="aclassJson_1_1Value_html"><div class="ttname"><a href="classJson_1_1Value.html">Json::Value</a></div><div class="ttdoc">Represents a JSON value.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00149">json_value.h:150</a></div></div>
 <div class="ttc" id="aclassbeast_1_1unit__test_1_1suite_html"><div class="ttname"><a href="classbeast_1_1unit__test_1_1suite.html">beast::unit_test::suite</a></div><div class="ttdoc">A testsuite class.</div><div class="ttdef"><b>Definition:</b> <a href="suite_8h_source.html#l00054">suite.h:55</a></div></div>
@@ -2116,8 +2209,8 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1FeatureBitset_html"><div class="ttname"><a href="classripple_1_1FeatureBitset.html">ripple::FeatureBitset</a></div><div class="ttdef"><b>Definition:</b> <a href="Feature_8h_source.html#l00146">Feature.h:147</a></div></div>
 <div class="ttc" id="aclassripple_1_1Freeze__test_html"><div class="ttname"><a href="classripple_1_1Freeze__test.html">ripple::Freeze_test</a></div><div class="ttdef"><b>Definition:</b> <a href="Freeze__test_8cpp_source.html#l00031">Freeze_test.cpp:32</a></div></div>
 <div class="ttc" id="aclassripple_1_1Freeze__test_html_a245935030a965e96f55565f0105a3bb3"><div class="ttname"><a href="classripple_1_1Freeze__test.html#a245935030a965e96f55565f0105a3bb3">ripple::Freeze_test::testOffersWhenDeepFrozen</a></div><div class="ttdeci">void testOffersWhenDeepFrozen(FeatureBitset features)</div><div class="ttdef"><b>Definition:</b> <a href="Freeze__test_8cpp_source.html#l00760">Freeze_test.cpp:760</a></div></div>
-<div class="ttc" id="aclassripple_1_1Freeze__test_html_a4a4ef081182bfc99a4aefe4e32359591"><div class="ttname"><a href="classripple_1_1Freeze__test.html#a4a4ef081182bfc99a4aefe4e32359591">ripple::Freeze_test::createNFTSellOffer</a></div><div class="ttdeci">uint256 createNFTSellOffer(test::jtx::Env &amp;env, test::jtx::Account const &amp;account, test::jtx::PrettyAmount const &amp;currency)</div><div class="ttdef"><b>Definition:</b> <a href="Freeze__test_8cpp_source.html#l01983">Freeze_test.cpp:1983</a></div></div>
-<div class="ttc" id="aclassripple_1_1Freeze__test_html_a4e85b04c275d0e5842cc09e81a03514c"><div class="ttname"><a href="classripple_1_1Freeze__test.html#a4e85b04c275d0e5842cc09e81a03514c">ripple::Freeze_test::getTrustlineFlags</a></div><div class="ttdeci">uint32_t getTrustlineFlags(test::jtx::Env &amp;env, size_t expectedArraySize, size_t expectedArrayIndex, bool modified=true)</div><div class="ttdef"><b>Definition:</b> <a href="Freeze__test_8cpp_source.html#l01951">Freeze_test.cpp:1951</a></div></div>
+<div class="ttc" id="aclassripple_1_1Freeze__test_html_a4a4ef081182bfc99a4aefe4e32359591"><div class="ttname"><a href="classripple_1_1Freeze__test.html#a4a4ef081182bfc99a4aefe4e32359591">ripple::Freeze_test::createNFTSellOffer</a></div><div class="ttdeci">uint256 createNFTSellOffer(test::jtx::Env &amp;env, test::jtx::Account const &amp;account, test::jtx::PrettyAmount const &amp;currency)</div><div class="ttdef"><b>Definition:</b> <a href="Freeze__test_8cpp_source.html#l02070">Freeze_test.cpp:2070</a></div></div>
+<div class="ttc" id="aclassripple_1_1Freeze__test_html_a4e85b04c275d0e5842cc09e81a03514c"><div class="ttname"><a href="classripple_1_1Freeze__test.html#a4e85b04c275d0e5842cc09e81a03514c">ripple::Freeze_test::getTrustlineFlags</a></div><div class="ttdeci">uint32_t getTrustlineFlags(test::jtx::Env &amp;env, size_t expectedArraySize, size_t expectedArrayIndex, bool modified=true)</div><div class="ttdef"><b>Definition:</b> <a href="Freeze__test_8cpp_source.html#l02038">Freeze_test.cpp:2038</a></div></div>
 <div class="ttc" id="aclassripple_1_1Freeze__test_html_a5118951358e809a784d2eacd0daf69f1"><div class="ttname"><a href="classripple_1_1Freeze__test.html#a5118951358e809a784d2eacd0daf69f1">ripple::Freeze_test::testGlobalFreeze</a></div><div class="ttdeci">void testGlobalFreeze(FeatureBitset features)</div><div class="ttdef"><b>Definition:</b> <a href="Freeze__test_8cpp_source.html#l00380">Freeze_test.cpp:380</a></div></div>
 <div class="ttc" id="aclassripple_1_1Freeze__test_html_a5549ca5d9dc3ace67ae9e0c69be88444"><div class="ttname"><a href="classripple_1_1Freeze__test.html#a5549ca5d9dc3ace67ae9e0c69be88444">ripple::Freeze_test::testDeepFreeze</a></div><div class="ttdeci">void testDeepFreeze(FeatureBitset features)</div><div class="ttdef"><b>Definition:</b> <a href="Freeze__test_8cpp_source.html#l00193">Freeze_test.cpp:193</a></div></div>
 <div class="ttc" id="aclassripple_1_1Freeze__test_html_a89d53a2e3328df18fbbdcdefb8f65ad1"><div class="ttname"><a href="classripple_1_1Freeze__test.html#a89d53a2e3328df18fbbdcdefb8f65ad1">ripple::Freeze_test::testPaymentsWhenDeepFrozen</a></div><div class="ttdeci">void testPaymentsWhenDeepFrozen(FeatureBitset features)</div><div class="ttdef"><b>Definition:</b> <a href="Freeze__test_8cpp_source.html#l01282">Freeze_test.cpp:1282</a></div></div>
@@ -2125,8 +2218,8 @@ $(function() {
 <div class="ttc" id="aclassripple_1_1Freeze__test_html_a98dd2c67061e8a55afa0888499ccbce7"><div class="ttname"><a href="classripple_1_1Freeze__test.html#a98dd2c67061e8a55afa0888499ccbce7">ripple::Freeze_test::testNFTOffersWhenFreeze</a></div><div class="ttdeci">void testNFTOffersWhenFreeze(FeatureBitset features)</div><div class="ttdef"><b>Definition:</b> <a href="Freeze__test_8cpp_source.html#l01805">Freeze_test.cpp:1805</a></div></div>
 <div class="ttc" id="aclassripple_1_1Freeze__test_html_abec30b04e161264739de32e222557c22"><div class="ttname"><a href="classripple_1_1Freeze__test.html#abec30b04e161264739de32e222557c22">ripple::Freeze_test::testAMMWhenFreeze</a></div><div class="ttdeci">void testAMMWhenFreeze(FeatureBitset features)</div><div class="ttdef"><b>Definition:</b> <a href="Freeze__test_8cpp_source.html#l01699">Freeze_test.cpp:1699</a></div></div>
 <div class="ttc" id="aclassripple_1_1Freeze__test_html_aca5246c194368a295268b4eae948f7e1"><div class="ttname"><a href="classripple_1_1Freeze__test.html#aca5246c194368a295268b4eae948f7e1">ripple::Freeze_test::testPathsWhenFrozen</a></div><div class="ttdeci">void testPathsWhenFrozen(FeatureBitset features)</div><div class="ttdef"><b>Definition:</b> <a href="Freeze__test_8cpp_source.html#l01038">Freeze_test.cpp:1038</a></div></div>
-<div class="ttc" id="aclassripple_1_1Freeze__test_html_acae03d4044d6cc33d128962edfcdbe77"><div class="ttname"><a href="classripple_1_1Freeze__test.html#acae03d4044d6cc33d128962edfcdbe77">ripple::Freeze_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdoc">Runs the suite.</div><div class="ttdef"><b>Definition:</b> <a href="Freeze__test_8cpp_source.html#l02004">Freeze_test.cpp:2004</a></div></div>
-<div class="ttc" id="aclassripple_1_1Freeze__test_html_ae0ed39c5e932b3c2f3708c1f5a751a94"><div class="ttname"><a href="classripple_1_1Freeze__test.html#ae0ed39c5e932b3c2f3708c1f5a751a94">ripple::Freeze_test::getCheckIndex</a></div><div class="ttdeci">uint256 getCheckIndex(AccountID const &amp;account, std::uint32_t uSequence)</div><div class="ttdef"><b>Definition:</b> <a href="Freeze__test_8cpp_source.html#l01977">Freeze_test.cpp:1977</a></div></div>
+<div class="ttc" id="aclassripple_1_1Freeze__test_html_acae03d4044d6cc33d128962edfcdbe77"><div class="ttname"><a href="classripple_1_1Freeze__test.html#acae03d4044d6cc33d128962edfcdbe77">ripple::Freeze_test::run</a></div><div class="ttdeci">void run() override</div><div class="ttdoc">Runs the suite.</div><div class="ttdef"><b>Definition:</b> <a href="Freeze__test_8cpp_source.html#l02091">Freeze_test.cpp:2091</a></div></div>
+<div class="ttc" id="aclassripple_1_1Freeze__test_html_ae0ed39c5e932b3c2f3708c1f5a751a94"><div class="ttname"><a href="classripple_1_1Freeze__test.html#ae0ed39c5e932b3c2f3708c1f5a751a94">ripple::Freeze_test::getCheckIndex</a></div><div class="ttdeci">uint256 getCheckIndex(AccountID const &amp;account, std::uint32_t uSequence)</div><div class="ttdef"><b>Definition:</b> <a href="Freeze__test_8cpp_source.html#l02064">Freeze_test.cpp:2064</a></div></div>
 <div class="ttc" id="aclassripple_1_1Freeze__test_html_ae3745ea52ae02cea46c7509866ccf56e"><div class="ttname"><a href="classripple_1_1Freeze__test.html#ae3745ea52ae02cea46c7509866ccf56e">ripple::Freeze_test::testCreateFrozenTrustline</a></div><div class="ttdeci">void testCreateFrozenTrustline(FeatureBitset features)</div><div class="ttdef"><b>Definition:</b> <a href="Freeze__test_8cpp_source.html#l00286">Freeze_test.cpp:286</a></div></div>
 <div class="ttc" id="aclassripple_1_1Freeze__test_html_aeaa4735a7a8992eeb1772bc66ad23f18"><div class="ttname"><a href="classripple_1_1Freeze__test.html#aeaa4735a7a8992eeb1772bc66ad23f18">ripple::Freeze_test::testRippleState</a></div><div class="ttdeci">void testRippleState(FeatureBitset features)</div><div class="ttdef"><b>Definition:</b> <a href="Freeze__test_8cpp_source.html#l00034">Freeze_test.cpp:34</a></div></div>
 <div class="ttc" id="aclassripple_1_1Freeze__test_html_aecd7bb8af04b6c328291de553e9564b1"><div class="ttname"><a href="classripple_1_1Freeze__test.html#aecd7bb8af04b6c328291de553e9564b1">ripple::Freeze_test::testSetAndClear</a></div><div class="ttdeci">void testSetAndClear(FeatureBitset features)</div><div class="ttdef"><b>Definition:</b> <a href="Freeze__test_8cpp_source.html#l00336">Freeze_test.cpp:336</a></div></div>

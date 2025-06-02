@@ -165,6 +165,10 @@ Functions</h2></td></tr>
 <tr class="memitem:a494adc2da71fa028357e04fe4912a2ce"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1nft.html#a494adc2da71fa028357e04fe4912a2ce">tokenOfferCreateApply</a> (<a class="el" href="classripple_1_1ApplyView.html">ApplyView</a> &amp;view, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const  &amp;acctID, <a class="el" href="classripple_1_1STAmount.html">STAmount</a> const  &amp;amount, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> &gt; const  &amp;dest, <a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> &gt; const  &amp;expiration, <a class="el" href="classripple_1_1SeqProxy.html">SeqProxy</a> seqProxy, <a class="el" href="namespaceripple.html#a356c68147333a9a48a344718038576d9">uint256</a> const  &amp;nftokenID, <a class="el" href="classripple_1_1XRPAmount.html">XRPAmount</a> const  &amp;priorBalance, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> j, <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> txFlags=<a class="el" href="namespaceripple.html#a4a9c7b33fef9015d6406302ef80b63c5af09cb8ad3ecf501d7149dad344aada65">lsfSellNFToken</a>)</td></tr>
 <tr class="memdesc:a494adc2da71fa028357e04fe4912a2ce"><td class="mdescLeft">&#160;</td><td class="mdescRight">doApply implementation shared by <a class="el" href="classripple_1_1NFTokenCreateOffer.html">NFTokenCreateOffer</a> and <a class="el" href="classripple_1_1NFTokenMint.html">NFTokenMint</a>  <a href="namespaceripple_1_1nft.html#a494adc2da71fa028357e04fe4912a2ce">More...</a><br /></td></tr>
 <tr class="separator:a494adc2da71fa028357e04fe4912a2ce"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:ad643ebde066a4f36c062ee8b31df4cb4"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1nft.html#ad643ebde066a4f36c062ee8b31df4cb4">checkTrustlineAuthorized</a> (<a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &amp;view, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const id, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> const j, <a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;issue)</td></tr>
+<tr class="separator:ad643ebde066a4f36c062ee8b31df4cb4"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr class="memitem:a6ea5cfec88b2915d85d3a4432eda57f8"><td class="memItemLeft" align="right" valign="top"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1nft.html#a6ea5cfec88b2915d85d3a4432eda57f8">checkTrustlineDeepFrozen</a> (<a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &amp;view, <a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const id, <a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> const j, <a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;issue)</td></tr>
+<tr class="separator:a6ea5cfec88b2915d85d3a4432eda57f8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 </table><table class="memberdecls">
 <tr class="heading"><td colspan="2"><h2 class="groupheader"><a id="var-members" name="var-members"></a>
 Variables</h2></td></tr>
@@ -1228,7 +1232,91 @@ Variables</h2></td></tr>
 
 <p>doApply implementation shared by <a class="el" href="classripple_1_1NFTokenCreateOffer.html">NFTokenCreateOffer</a> and <a class="el" href="classripple_1_1NFTokenMint.html">NFTokenMint</a> </p>
 
-<p class="definition">Definition at line <a class="el" href="NFTokenUtils_8cpp_source.html#l01011">1011</a> of file <a class="el" href="NFTokenUtils_8cpp_source.html">NFTokenUtils.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NFTokenUtils_8cpp_source.html#l01023">1023</a> of file <a class="el" href="NFTokenUtils_8cpp_source.html">NFTokenUtils.cpp</a>.</p>
+
+</div>
+</div>
+<a id="ad643ebde066a4f36c062ee8b31df4cb4" name="ad643ebde066a4f36c062ee8b31df4cb4"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#ad643ebde066a4f36c062ee8b31df4cb4">&#9670;&#160;</a></span>checkTrustlineAuthorized()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a> ripple::nft::checkTrustlineAuthorized </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &amp;&#160;</td>
+          <td class="paramname"><em>view</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const&#160;</td>
+          <td class="paramname"><em>id</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> const&#160;</td>
+          <td class="paramname"><em>j</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;&#160;</td>
+          <td class="paramname"><em>issue</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="NFTokenUtils_8cpp_source.html#l01097">1097</a> of file <a class="el" href="NFTokenUtils_8cpp_source.html">NFTokenUtils.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a6ea5cfec88b2915d85d3a4432eda57f8" name="a6ea5cfec88b2915d85d3a4432eda57f8"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a6ea5cfec88b2915d85d3a4432eda57f8">&#9670;&#160;</a></span>checkTrustlineDeepFrozen()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname"><a class="el" href="namespaceripple.html#adfb760bc3e4ccb79d5d4f6ecff2f1817">TER</a> ripple::nft::checkTrustlineDeepFrozen </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classripple_1_1ReadView.html">ReadView</a> const &amp;&#160;</td>
+          <td class="paramname"><em>view</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="namespaceripple.html#a00ae0d729cb3e35b6bcac9a27ebb5284">AccountID</a> const&#160;</td>
+          <td class="paramname"><em>id</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classbeast_1_1Journal.html">beast::Journal</a> const&#160;</td>
+          <td class="paramname"><em>j</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1Issue.html">Issue</a> const &amp;&#160;</td>
+          <td class="paramname"><em>issue</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p class="definition">Definition at line <a class="el" href="NFTokenUtils_8cpp_source.html#l01153">1153</a> of file <a class="el" href="NFTokenUtils_8cpp_source.html">NFTokenUtils.cpp</a>.</p>
 
 </div>
 </div>
