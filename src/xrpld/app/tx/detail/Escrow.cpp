@@ -356,10 +356,6 @@ escrowCreatePreclaimHelper<MPTIssue>(
     if (spendableAmount < amount)
         return tecINSUFFICIENT_FUNDS;
 
-    // If the amount is not addable to the balance, return tecPRECISION_LOSS
-    if (!canAdd(spendableAmount, amount))
-        return tecPRECISION_LOSS;  // LCOV_EXCL_LINE
-
     return tesSUCCESS;
 }
 

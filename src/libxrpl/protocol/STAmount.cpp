@@ -567,12 +567,14 @@ canAdd(STAmount const& a, STAmount const& b)
     // MPT (overflow & underflow check)
     if (a.holds<MPTIssue>() && b.holds<MPTIssue>())
     {
-        MPTAmount A = (a.signum() == -1 ? -(a.mpt()) : a.mpt());
-        MPTAmount B = (b.signum() == -1 ? -(b.mpt()) : b.mpt());
-        constexpr auto maxMPT = (std::int64_t{1} << 62) - 1;  // 63 bits signed
-        constexpr auto minMPT = -(std::int64_t{1} << 62);
-        if ((B > MPTAmount{0} && A > MPTAmount{maxMPT} - B) ||
-            (B < MPTAmount{0} && A < MPTAmount{minMPT} - B))
+        MPTAmount A = a.mpt();
+        MPTAmount B = b.mpt();
+        if ((B > MPTAmount{0} &&
+             A > MPTAmount{std::numeric_limits<MPTAmount::value_type>::max()} -
+                     B) ||
+            (B < MPTAmount{0} &&
+             A < MPTAmount{std::numeric_limits<MPTAmount::value_type>::min()} -
+                     B))
         {
             return false;
         }
@@ -591,9 +593,9 @@ canAdd(STAmount const& a, STAmount const& b)
  *
  * - Subtracting zero is always allowed.
  * - Subtraction is only allowed between comparable currencies.
- * - For XRP amounts, ensures no underflow occurs.
+ * - For XRP amounts, ensures no underflow or overflow occurs.
  * - For IOU amounts, subtraction is always allowed (no underflow).
- * - For MPT amounts, ensures no underflow occurs.
+ * - For MPT amounts, ensures no underflow or overflow occurs.
  *
  * @param a The minuend (amount to subtract from).
  * @param b The subtrahend (amount to subtract).
@@ -610,12 +612,19 @@ canSubtract(STAmount const& a, STAmount const& b)
     if (b == beast::zero)
         return true;
 
-    // XRP case (underflow check)
+    // XRP case (underflow & overflow check)
     if (isXRP(a) && isXRP(b))
     {
         XRPAmount A = a.xrp();
         XRPAmount B = b.xrp();
+        // Check for underflow
         if (B > XRPAmount{0} && A < B)
+            return false;
+
+        // Check for overflow
+        if (B < XRPAmount{0} &&
+            A > XRPAmount{std::numeric_limits<XRPAmount::value_type>::max()} +
+                    B)
             return false;
 
         return true;
@@ -627,12 +636,20 @@ canSubtract(STAmount const& a, STAmount const& b)
         return true;
     }
 
-    // MPT case (underflow check)
+    // MPT case (underflow & overflow check)
     if (a.holds<MPTIssue>() && b.holds<MPTIssue>())
     {
-        MPTAmount A = (a.signum() == -1 ? -(a.mpt()) : a.mpt());
-        MPTAmount B = (b.signum() == -1 ? -(b.mpt()) : b.mpt());
+        MPTAmount A = a.mpt();
+        MPTAmount B = b.mpt();
+
+        // Underflow check
         if (B > MPTAmount{0} && A < B)
+            return false;
+
+        // Overflow check
+        if (B < MPTAmount{0} &&
+            A > MPTAmount{std::numeric_limits<MPTAmount::value_type>::max()} +
+                    B)
             return false;
         return true;
     }

@@ -712,14 +712,14 @@ public:
 
         // Overflow check for max XRP amounts
         {
-            STAmount amt1(std::numeric_limits<std::int64_t>::max());
+            STAmount amt1(std::numeric_limits<XRPAmount::value_type>::max());
             STAmount amt2(XRPAmount(1));
             BEAST_EXPECT(canAdd(amt1, amt2) == false);
         }
 
         // Overflow check for min XRP amounts
         {
-            STAmount amt1(std::numeric_limits<std::int64_t>::max());
+            STAmount amt1(std::numeric_limits<XRPAmount::value_type>::max());
             amt1 += XRPAmount(1);
             STAmount amt2(XRPAmount(-1));
             BEAST_EXPECT(canAdd(amt1, amt2) == false);
@@ -732,6 +732,7 @@ public:
         testcase("can add iou");
 
         Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
+        Issue const eur{Currency(0x4555520000000000), AccountID(0x4985601)};
 
         // Adding two IOU amounts
         {
@@ -761,10 +762,24 @@ public:
             BEAST_EXPECT(canAdd(amt1, amt2) == false);
         }
 
-        // Adding XRP and IOU amounts
+        // Adding XRP and IOU
         {
             STAmount amt1(XRPAmount(1));
             STAmount amt2(usd, 1);
+            BEAST_EXPECT(canAdd(amt1, amt2) == false);
+        }
+
+        // Adding different IOU issues (non zero)
+        {
+            STAmount amt1(usd, 1000);
+            STAmount amt2(eur, 500);
+            BEAST_EXPECT(canAdd(amt1, amt2) == false);
+        }
+
+        // Adding different IOU issues (zero)
+        {
+            STAmount amt1(usd, 0);
+            STAmount amt2(eur, 500);
             BEAST_EXPECT(canAdd(amt1, amt2) == false);
         }
     }
@@ -775,6 +790,7 @@ public:
         testcase("can add mpt");
 
         MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
+        MPTIssue const mpt2{MPTIssue{makeMptID(2, AccountID(0x4985601))}};
 
         // Adding zero
         {
@@ -813,30 +829,34 @@ public:
 
         // Overflow check for max MPT amounts
         {
-            STAmount amt1(mpt, (std::int64_t{1} << 62) - 1);
+            STAmount amt1(
+                mpt, std::numeric_limits<MPTAmount::value_type>::max());
             STAmount amt2(mpt, 1);
             BEAST_EXPECT(canAdd(amt1, amt2) == false);
         }
 
         // Overflow check for min MPT amounts
-        {
-            STAmount amt1(mpt, -(std::int64_t{1} << 62));
-            STAmount amt2(XRPAmount(-1));
-            BEAST_EXPECT(canAdd(amt1, amt2) == false);
-        }
+        // Note: Cannot check min MPT overflow because you cannot initialize the
+        // STAmount with a negative MPT amount.
 
-        // Adding different MPT issues
-        {
-            MPTIssue const mpt2{MPTIssue{makeMptID(2, AccountID(0x4985601))}};
-            STAmount amt1(mpt, 1000);
-            STAmount amt2(mpt2, 1000);
-            BEAST_EXPECT(canAdd(amt1, amt2) == false);
-        }
-
-        // Adding MPT and XRP amounts
+        // Adding MPT and XRP
         {
             STAmount amt1(XRPAmount(1000));
             STAmount amt2(mpt, 1000);
+            BEAST_EXPECT(canAdd(amt1, amt2) == false);
+        }
+
+        // Adding different MPT issues (non zero)
+        {
+            STAmount amt1(mpt2, 500);
+            STAmount amt2(mpt, 500);
+            BEAST_EXPECT(canAdd(amt1, amt2) == false);
+        }
+
+        // Adding different MPT issues (non zero)
+        {
+            STAmount amt1(mpt2, 0);
+            STAmount amt2(mpt, 500);
             BEAST_EXPECT(canAdd(amt1, amt2) == false);
         }
     }
@@ -883,9 +903,16 @@ public:
 
         // Underflow check for min XRP amounts
         {
-            STAmount amt1(std::numeric_limits<std::int64_t>::max());
+            STAmount amt1(std::numeric_limits<XRPAmount::value_type>::max());
             amt1 += XRPAmount(1);
             STAmount amt2(XRPAmount(1));
+            BEAST_EXPECT(canSubtract(amt1, amt2) == false);
+        }
+
+        // Overflow check for max XRP amounts
+        {
+            STAmount amt1(std::numeric_limits<XRPAmount::value_type>::max());
+            STAmount amt2(XRPAmount(-1));
             BEAST_EXPECT(canSubtract(amt1, amt2) == false);
         }
     }
@@ -895,6 +922,8 @@ public:
     {
         testcase("can subtract iou");
         Issue const usd{Currency(0x5553440000000000), AccountID(0x4985601)};
+        Issue const eur{Currency(0x4555520000000000), AccountID(0x4985601)};
+
         // Subtracting two IOU amounts
         {
             STAmount amt1(usd, 1500);
@@ -902,17 +931,24 @@ public:
             BEAST_EXPECT(canSubtract(amt1, amt2) == true);
         }
 
-        // Subtracting different currencies
-        {
-            STAmount amt1(usd, 1000);
-            STAmount amt2(xrpIssue(), 1000);
-            BEAST_EXPECT(canSubtract(amt1, amt2) == false);
-        }
-
-        // Subtracting XRP and IOU amounts
+        // Subtracting XRP and IOU
         {
             STAmount amt1(XRPAmount(1000));
             STAmount amt2(usd, 1000);
+            BEAST_EXPECT(canSubtract(amt1, amt2) == false);
+        }
+
+        // Subtracting different IOU issues (non zero)
+        {
+            STAmount amt1(usd, 1000);
+            STAmount amt2(eur, 500);
+            BEAST_EXPECT(canSubtract(amt1, amt2) == false);
+        }
+
+        // Subtracting different IOU issues (zero)
+        {
+            STAmount amt1(usd, 0);
+            STAmount amt2(eur, 500);
             BEAST_EXPECT(canSubtract(amt1, amt2) == false);
         }
     }
@@ -923,6 +959,8 @@ public:
         testcase("can subtract mpt");
 
         MPTIssue const mpt{MPTIssue{makeMptID(1, AccountID(0x4985601))}};
+        MPTIssue const mpt2{MPTIssue{makeMptID(2, AccountID(0x4985601))}};
+
         // Subtracting zero
         {
             STAmount amt1(mpt, 1000);
@@ -959,31 +997,35 @@ public:
         }
 
         // Underflow check for min MPT amounts
+        // Note: Cannot check min MPT underflow because you cannot initialize
+        // the STAmount with a negative MPT amount.
+
+        // Overflow check for max positive MPT amounts (should fail)
         {
-            STAmount amt1(mpt, -(std::int64_t{1} << 62));
-            STAmount amt2(XRPAmount(-1));
+            STAmount amt1(
+                mpt, std::numeric_limits<MPTAmount::value_type>::max());
+            STAmount amt2(mpt, -2);
             BEAST_EXPECT(canSubtract(amt1, amt2) == false);
         }
 
-        // Overflow check for max MPT amounts
-        {
-            STAmount amt1(mpt, (std::int64_t{1} << 62) - 1);
-            STAmount amt2(mpt, 1);
-            BEAST_EXPECT(canSubtract(amt1, amt2) == true);
-        }
-
-        // Subtracting different MPT issues
-        {
-            MPTIssue const mpt2{MPTIssue{makeMptID(2, AccountID(0x4985601))}};
-            STAmount amt1(mpt, 1000);
-            STAmount amt2(mpt2, 1000);
-            BEAST_EXPECT(canSubtract(amt1, amt2) == false);
-        }
-
-        // Subtracting MPT and XRP amounts
+        // Subtracting MPT and XRP
         {
             STAmount amt1(XRPAmount(1000));
             STAmount amt2(mpt, 1000);
+            BEAST_EXPECT(canSubtract(amt1, amt2) == false);
+        }
+
+        // Subtracting different MPT issues (non zero)
+        {
+            STAmount amt1(mpt, 1000);
+            STAmount amt2(mpt2, 500);
+            BEAST_EXPECT(canSubtract(amt1, amt2) == false);
+        }
+
+        // Subtracting different MPT issues (zero)
+        {
+            STAmount amt1(mpt, 0);
+            STAmount amt2(mpt2, 500);
             BEAST_EXPECT(canSubtract(amt1, amt2) == false);
         }
     }

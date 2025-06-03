@@ -2912,6 +2912,133 @@ struct EscrowToken_test : public beast::unit_test::suite
             BEAST_EXPECT(env.balance(gw, MPT) == outstandingMPT);
             BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == 2'000);
         }
+
+        // Max MPT Amount Issued (Escrow 1 MPT)
+        {
+            Env env{*this, features};
+            auto const baseFee = env.current()->fees().base;
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const gw = Account("gw");
+
+            MPTTester mptGw(env, gw, {.holders = {alice, bob}});
+            mptGw.create(
+                {.ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanEscrow | tfMPTCanTransfer});
+            mptGw.authorize({.account = alice});
+            mptGw.authorize({.account = bob});
+            auto const MPT = mptGw["MPT"];
+            env(pay(gw, alice, MPT(maxMPTokenAmount)));
+            env.close();
+
+            auto const preAliceMPT = env.balance(alice, MPT);
+            auto const preBobMPT = env.balance(bob, MPT);
+            auto const outstandingMPT = env.balance(gw, MPT);
+
+            auto const seq1 = env.seq(alice);
+            env(escrow::create(alice, bob, MPT(1)),
+                escrow::condition(escrow::cb1),
+                escrow::finish_time(env.now() + 1s),
+                fee(baseFee * 150));
+            env.close();
+
+            BEAST_EXPECT(env.balance(alice, MPT) == preAliceMPT - MPT(1));
+            BEAST_EXPECT(mptEscrowed(env, alice, MPT) == 1);
+            BEAST_EXPECT(env.balance(bob, MPT) == preBobMPT);
+            BEAST_EXPECT(mptEscrowed(env, bob, MPT) == 0);
+            BEAST_EXPECT(env.balance(gw, MPT) == outstandingMPT);
+            BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == 1);
+
+            env(escrow::finish(bob, alice, seq1),
+                escrow::condition(escrow::cb1),
+                escrow::fulfillment(escrow::fb1),
+                fee(baseFee * 150),
+                ter(tesSUCCESS));
+            env.close();
+
+            BEAST_EXPECT(env.balance(alice, MPT) == preAliceMPT - MPT(1));
+            BEAST_EXPECT(mptEscrowed(env, alice, MPT) == 0);
+            BEAST_EXPECT(!env.le(keylet::mptoken(MPT.mpt(), alice))
+                              ->isFieldPresent(sfLockedAmount));
+            BEAST_EXPECT(env.balance(bob, MPT) == preBobMPT + MPT(1));
+            BEAST_EXPECT(mptEscrowed(env, bob, MPT) == 0);
+            BEAST_EXPECT(env.balance(gw, MPT) == outstandingMPT);
+            BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == 0);
+            BEAST_EXPECT(!env.le(keylet::mptIssuance(MPT.mpt()))
+                              ->isFieldPresent(sfLockedAmount));
+        }
+
+        // Max MPT Amount Issued (Escrow Max MPT)
+        {
+            Env env{*this, features};
+            auto const baseFee = env.current()->fees().base;
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const gw = Account("gw");
+
+            MPTTester mptGw(env, gw, {.holders = {alice, bob}});
+            mptGw.create(
+                {.ownerCount = 1,
+                 .holderCount = 0,
+                 .flags = tfMPTCanEscrow | tfMPTCanTransfer});
+            mptGw.authorize({.account = alice});
+            mptGw.authorize({.account = bob});
+            auto const MPT = mptGw["MPT"];
+            env(pay(gw, alice, MPT(maxMPTokenAmount)));
+            env.close();
+
+            auto const preAliceMPT = env.balance(alice, MPT);
+            auto const preBobMPT = env.balance(bob, MPT);
+            auto const outstandingMPT = env.balance(gw, MPT);
+
+            // Escrow Max MPT - 10
+            auto const seq1 = env.seq(alice);
+            env(escrow::create(alice, bob, MPT(maxMPTokenAmount - 10)),
+                escrow::condition(escrow::cb1),
+                escrow::finish_time(env.now() + 1s),
+                fee(baseFee * 150));
+            env.close();
+
+            // Escrow 10 MPT
+            auto const seq2 = env.seq(alice);
+            env(escrow::create(alice, bob, MPT(10)),
+                escrow::condition(escrow::cb1),
+                escrow::finish_time(env.now() + 1s),
+                fee(baseFee * 150));
+            env.close();
+
+            BEAST_EXPECT(
+                env.balance(alice, MPT) == preAliceMPT - MPT(maxMPTokenAmount));
+            BEAST_EXPECT(mptEscrowed(env, alice, MPT) == maxMPTokenAmount);
+            BEAST_EXPECT(env.balance(bob, MPT) == preBobMPT);
+            BEAST_EXPECT(mptEscrowed(env, bob, MPT) == 0);
+            BEAST_EXPECT(env.balance(gw, MPT) == outstandingMPT);
+            BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == maxMPTokenAmount);
+
+            env(escrow::finish(bob, alice, seq1),
+                escrow::condition(escrow::cb1),
+                escrow::fulfillment(escrow::fb1),
+                fee(baseFee * 150),
+                ter(tesSUCCESS));
+            env.close();
+
+            env(escrow::finish(bob, alice, seq2),
+                escrow::condition(escrow::cb1),
+                escrow::fulfillment(escrow::fb1),
+                fee(baseFee * 150),
+                ter(tesSUCCESS));
+            env.close();
+
+            BEAST_EXPECT(
+                env.balance(alice, MPT) == preAliceMPT - MPT(maxMPTokenAmount));
+            BEAST_EXPECT(mptEscrowed(env, alice, MPT) == 0);
+            BEAST_EXPECT(
+                env.balance(bob, MPT) == preBobMPT + MPT(maxMPTokenAmount));
+            BEAST_EXPECT(mptEscrowed(env, bob, MPT) == 0);
+            BEAST_EXPECT(env.balance(gw, MPT) == outstandingMPT);
+            BEAST_EXPECT(issuerMPTEscrowed(env, MPT) == 0);
+        }
     }
 
     void
