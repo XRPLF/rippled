@@ -53,6 +53,14 @@ public:
     virtual std::string
     getName() = 0;
 
+    /** Get the block size for backends that support it
+     */
+    virtual std::optional<std::size_t>
+    getBlockSize() const
+    {
+        return std::nullopt;
+    }
+
     /** Open the backend.
         @param createIfMissing Create the database files if necessary.
         This allows the caller to catch exceptions.
