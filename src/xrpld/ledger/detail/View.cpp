@@ -37,7 +37,6 @@
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/st.h>
 
-#include <optional>
 #include <type_traits>
 #include <variant>
 
@@ -1482,6 +1481,27 @@ offerDelete(ApplyView& view, std::shared_ptr<SLE> const& sle, beast::Journal j)
             false))
     {
         return tefBAD_LEDGER;
+    }
+
+    if (sle->isFieldPresent(sfAdditionalBooks))
+    {
+        XRPL_ASSERT(
+            sle->isFlag(lsfHybrid) && sle->isFieldPresent(sfDomainID),
+            "ripple::offerDelete : should be a hybrid domain offer");
+
+        auto const& additionalBookDirs = sle->getFieldArray(sfAdditionalBooks);
+
+        for (auto const& bookDir : additionalBookDirs)
+        {
+            auto const& dirIndex = bookDir.getFieldH256(sfBookDirectory);
+            auto const& dirNode = bookDir.getFieldU64(sfBookNode);
+
+            if (!view.dirRemove(
+                    keylet::page(dirIndex), dirNode, offerIndex, false))
+            {
+                return tefBAD_LEDGER;  // LCOV_EXCL_LINE
+            }
+        }
     }
 
     adjustOwnerCount(view, view.peek(keylet::account(owner)), -1, j);

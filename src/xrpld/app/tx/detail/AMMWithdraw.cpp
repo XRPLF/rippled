@@ -522,7 +522,7 @@ AMMWithdraw::withdraw(
                 lpTokensAMMBalance,
                 lpTokensWithdraw,
                 tfee,
-                false);
+                IsDeposit::No);
         return std::make_tuple(
             amountWithdraw, amount2Withdraw, lpTokensWithdraw);
     }();
@@ -683,6 +683,20 @@ AMMWithdraw::withdraw(
         amount2WithdrawActual);
 }
 
+static STAmount
+adjustLPTokensIn(
+    Rules const& rules,
+    STAmount const& lptAMMBalance,
+    STAmount const& lpTokensWithdraw,
+    WithdrawAll withdrawAll)
+{
+    if (!rules.enabled(fixAMMv1_3) || withdrawAll == WithdrawAll::Yes)
+        return lpTokensWithdraw;
+    return adjustLPTokens(lptAMMBalance, lpTokensWithdraw, IsDeposit::No);
+}
+
+/** Proportional withdrawal of pool assets for the amount of LPTokens.
+ */
 std::pair<TER, STAmount>
 AMMWithdraw::equalWithdrawTokens(
     Sandbox& view,
@@ -786,16 +800,22 @@ AMMWithdraw::equalWithdrawTokens(
                 journal);
         }
 
-        auto const frac = divide(lpTokensWithdraw, lptAMMBalance, noIssue());
-        auto const withdrawAmount =
-            multiply(amountBalance, frac, amountBalance.issue());
-        auto const withdraw2Amount =
-            multiply(amount2Balance, frac, amount2Balance.issue());
+        auto const tokensAdj = adjustLPTokensIn(
+            view.rules(), lptAMMBalance, lpTokensWithdraw, withdrawAll);
+        if (view.rules().enabled(fixAMMv1_3) && tokensAdj == beast::zero)
+            return {
+                tecAMM_INVALID_TOKENS, STAmount{}, STAmount{}, std::nullopt};
+        // the adjusted tokens are factored in
+        auto const frac = divide(tokensAdj, lptAMMBalance, noIssue());
+        auto const amountWithdraw =
+            getRoundedAsset(view.rules(), amountBalance, frac, IsDeposit::No);
+        auto const amount2Withdraw =
+            getRoundedAsset(view.rules(), amount2Balance, frac, IsDeposit::No);
         // LP is making equal withdrawal by tokens but the requested amount
         // of LP tokens is likely too small and results in one-sided pool
         // withdrawal due to round off. Fail so the user withdraws
         // more tokens.
-        if (withdrawAmount == beast::zero || withdraw2Amount == beast::zero)
+        if (amountWithdraw == beast::zero || amount2Withdraw == beast::zero)
             return {tecAMM_FAILED, STAmount{}, STAmount{}, STAmount{}};
 
         return withdraw(
@@ -804,10 +824,10 @@ AMMWithdraw::equalWithdrawTokens(
             ammAccount,
             account,
             amountBalance,
-            withdrawAmount,
-            withdraw2Amount,
+            amountWithdraw,
+            amount2Withdraw,
             lptAMMBalance,
-            lpTokensWithdraw,
+            tokensAdj,
             tfee,
             freezeHanding,
             withdrawAll,
@@ -862,7 +882,16 @@ AMMWithdraw::equalWithdrawLimit(
     std::uint16_t tfee)
 {
     auto frac = Number{amount} / amountBalance;
-    auto const amount2Withdraw = amount2Balance * frac;
+    auto amount2Withdraw =
+        getRoundedAsset(view.rules(), amount2Balance, frac, IsDeposit::No);
+    auto tokensAdj =
+        getRoundedLPTokens(view.rules(), lptAMMBalance, frac, IsDeposit::No);
+    if (view.rules().enabled(fixAMMv1_3) && tokensAdj == beast::zero)
+        return {tecAMM_INVALID_TOKENS, STAmount{}};
+    // factor in the adjusted tokens
+    frac = adjustFracByTokens(view.rules(), lptAMMBalance, tokensAdj, frac);
+    amount2Withdraw =
+        getRoundedAsset(view.rules(), amount2Balance, frac, IsDeposit::No);
     if (amount2Withdraw <= amount2)
     {
         return withdraw(
@@ -871,26 +900,42 @@ AMMWithdraw::equalWithdrawLimit(
             ammAccount,
             amountBalance,
             amount,
-            toSTAmount(amount2.issue(), amount2Withdraw),
+            amount2Withdraw,
             lptAMMBalance,
-            toSTAmount(lptAMMBalance.issue(), lptAMMBalance * frac),
+            tokensAdj,
             tfee);
     }
 
     frac = Number{amount2} / amount2Balance;
-    auto const amountWithdraw = amountBalance * frac;
-    XRPL_ASSERT(
-        amountWithdraw <= amount,
-        "ripple::AMMWithdraw::equalWithdrawLimit : maximum amountWithdraw");
+    auto amountWithdraw =
+        getRoundedAsset(view.rules(), amountBalance, frac, IsDeposit::No);
+    tokensAdj =
+        getRoundedLPTokens(view.rules(), lptAMMBalance, frac, IsDeposit::No);
+    if (view.rules().enabled(fixAMMv1_3) && tokensAdj == beast::zero)
+        return {tecAMM_INVALID_TOKENS, STAmount{}};  // LCOV_EXCL_LINE
+    // factor in the adjusted tokens
+    frac = adjustFracByTokens(view.rules(), lptAMMBalance, tokensAdj, frac);
+    amountWithdraw =
+        getRoundedAsset(view.rules(), amountBalance, frac, IsDeposit::No);
+    if (!view.rules().enabled(fixAMMv1_3))
+    {
+        // LCOV_EXCL_START
+        XRPL_ASSERT(
+            amountWithdraw <= amount,
+            "ripple::AMMWithdraw::equalWithdrawLimit : maximum amountWithdraw");
+        // LCOV_EXCL_STOP
+    }
+    else if (amountWithdraw > amount)
+        return {tecAMM_FAILED, STAmount{}};  // LCOV_EXCL_LINE
     return withdraw(
         view,
         ammSle,
         ammAccount,
         amountBalance,
-        toSTAmount(amount.issue(), amountWithdraw),
+        amountWithdraw,
         amount2,
         lptAMMBalance,
-        toSTAmount(lptAMMBalance.issue(), lptAMMBalance * frac),
+        tokensAdj,
         tfee);
 }
 
@@ -909,19 +954,32 @@ AMMWithdraw::singleWithdraw(
     STAmount const& amount,
     std::uint16_t tfee)
 {
-    auto const tokens = lpTokensOut(amountBalance, amount, lptAMMBalance, tfee);
+    auto const tokens = adjustLPTokensIn(
+        view.rules(),
+        lptAMMBalance,
+        lpTokensIn(amountBalance, amount, lptAMMBalance, tfee),
+        isWithdrawAll(ctx_.tx));
     if (tokens == beast::zero)
-        return {tecAMM_FAILED, STAmount{}};
-
+    {
+        if (!view.rules().enabled(fixAMMv1_3))
+            return {tecAMM_FAILED, STAmount{}};  // LCOV_EXCL_LINE
+        else
+            return {tecAMM_INVALID_TOKENS, STAmount{}};
+    }
+    // factor in the adjusted tokens
+    auto const [tokensAdj, amountWithdrawAdj] = adjustAssetOutByTokens(
+        view.rules(), amountBalance, amount, lptAMMBalance, tokens, tfee);
+    if (view.rules().enabled(fixAMMv1_3) && tokensAdj == beast::zero)
+        return {tecAMM_INVALID_TOKENS, STAmount{}};  // LCOV_EXCL_LINE
     return withdraw(
         view,
         ammSle,
         ammAccount,
         amountBalance,
-        amount,
+        amountWithdrawAdj,
         std::nullopt,
         lptAMMBalance,
-        tokens,
+        tokensAdj,
         tfee);
 }
 
@@ -946,8 +1004,13 @@ AMMWithdraw::singleWithdrawTokens(
     STAmount const& lpTokensWithdraw,
     std::uint16_t tfee)
 {
+    auto const tokensAdj = adjustLPTokensIn(
+        view.rules(), lptAMMBalance, lpTokensWithdraw, isWithdrawAll(ctx_.tx));
+    if (view.rules().enabled(fixAMMv1_3) && tokensAdj == beast::zero)
+        return {tecAMM_INVALID_TOKENS, STAmount{}};
+    // the adjusted tokens are factored in
     auto const amountWithdraw =
-        withdrawByTokens(amountBalance, lptAMMBalance, lpTokensWithdraw, tfee);
+        ammAssetOut(amountBalance, lptAMMBalance, tokensAdj, tfee);
     if (amount == beast::zero || amountWithdraw >= amount)
     {
         return withdraw(
@@ -958,7 +1021,7 @@ AMMWithdraw::singleWithdrawTokens(
             amountWithdraw,
             std::nullopt,
             lptAMMBalance,
-            lpTokensWithdraw,
+            tokensAdj,
             tfee);
     }
 
@@ -1007,11 +1070,27 @@ AMMWithdraw::singleWithdrawEPrice(
     // t = T*(T + A*E*(f - 2))/(T*f - A*E)
     Number const ae = amountBalance * ePrice;
     auto const f = getFee(tfee);
-    auto const tokens = lptAMMBalance * (lptAMMBalance + ae * (f - 2)) /
-        (lptAMMBalance * f - ae);
-    if (tokens <= 0)
-        return {tecAMM_FAILED, STAmount{}};
-    auto const amountWithdraw = toSTAmount(amount.issue(), tokens / ePrice);
+    auto tokNoRoundCb = [&] {
+        return lptAMMBalance * (lptAMMBalance + ae * (f - 2)) /
+            (lptAMMBalance * f - ae);
+    };
+    auto tokProdCb = [&] {
+        return (lptAMMBalance + ae * (f - 2)) / (lptAMMBalance * f - ae);
+    };
+    auto const tokensAdj = getRoundedLPTokens(
+        view.rules(), tokNoRoundCb, lptAMMBalance, tokProdCb, IsDeposit::No);
+    if (tokensAdj <= beast::zero)
+    {
+        if (!view.rules().enabled(fixAMMv1_3))
+            return {tecAMM_FAILED, STAmount{}};
+        else
+            return {tecAMM_INVALID_TOKENS, STAmount{}};
+    }
+    auto amtNoRoundCb = [&] { return tokensAdj / ePrice; };
+    auto amtProdCb = [&] { return tokensAdj / ePrice; };
+    // the adjusted tokens are factored in
+    auto const amountWithdraw = getRoundedAsset(
+        view.rules(), amtNoRoundCb, amount, amtProdCb, IsDeposit::No);
     if (amount == beast::zero || amountWithdraw >= amount)
     {
         return withdraw(
@@ -1022,7 +1101,7 @@ AMMWithdraw::singleWithdrawEPrice(
             amountWithdraw,
             std::nullopt,
             lptAMMBalance,
-            toSTAmount(lptAMMBalance.issue(), tokens),
+            tokensAdj,
             tfee);
     }
 
