@@ -2351,6 +2351,7 @@ Enumerations</h2></td></tr>
 &#160;&#160;<a class="el" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38ca26964a6e52a8dcd0eff9d9b4a40f0583">tecLIMIT_EXCEEDED</a> = 195
 , <a class="el" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38ca0fe3bd45be8124c893550bd10117eb77">tecPSEUDO_ACCOUNT</a> = 196
 , <a class="el" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38caa5864b5c8b3bcced7aed0b3a794cb14e">tecPRECISION_LOSS</a> = 197
+, <a class="el" href="namespaceripple.html#aa298e929e02f59c2b05a30ee8805b38ca028111a9e4ac11d836b0af7d2cab163c">tecNO_DELEGATE_PERMISSION</a> = 198
 <br />
  }</td></tr>
 <tr class="separator:aa298e929e02f59c2b05a30ee8805b38c"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -5821,9 +5822,7 @@ Variables</h2></td></tr>
 <tr class="separator:aaf66864d0b900743719164e43f53c934"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:ac03bb75481389855987ced4578108011"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#ac03bb75481389855987ced4578108011">tfTrustSetMask</a></td></tr>
 <tr class="separator:ac03bb75481389855987ced4578108011"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:aca91cc4944c2c807870d79595ccc4aab"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#aca91cc4944c2c807870d79595ccc4aab">tfTrustSetGranularMask</a> = <a class="el" href="namespaceripple.html#a918f885752320e5f242f6cf75d895444">tfSetfAuth</a> | <a class="el" href="namespaceripple.html#ae34d881cd8926ab3505340a51f91fd8b">tfSetFreeze</a> | <a class="el" href="namespaceripple.html#a98f09aa7b518e640710f4362145dd444">tfClearFreeze</a></td></tr>
-<tr class="separator:aca91cc4944c2c807870d79595ccc4aab"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a754d9c1ce4ca401f773722157a5259ec"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a754d9c1ce4ca401f773722157a5259ec">tfTrustSetPermissionMask</a> = (~<a class="el" href="namespaceripple.html#ac03bb75481389855987ced4578108011">tfTrustSetMask</a>) &amp; (~<a class="el" href="namespaceripple.html#aca91cc4944c2c807870d79595ccc4aab">tfTrustSetGranularMask</a>)</td></tr>
+<tr class="memitem:a754d9c1ce4ca401f773722157a5259ec"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a754d9c1ce4ca401f773722157a5259ec">tfTrustSetPermissionMask</a> = ~(<a class="el" href="namespaceripple.html#aa52329c755ab0ee46e285c09a32b02ec">tfUniversal</a> | <a class="el" href="namespaceripple.html#a918f885752320e5f242f6cf75d895444">tfSetfAuth</a> | <a class="el" href="namespaceripple.html#ae34d881cd8926ab3505340a51f91fd8b">tfSetFreeze</a> | <a class="el" href="namespaceripple.html#a98f09aa7b518e640710f4362145dd444">tfClearFreeze</a>)</td></tr>
 <tr class="separator:a754d9c1ce4ca401f773722157a5259ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a40c2727503e88fa49ffc050386b918fe"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a40c2727503e88fa49ffc050386b918fe">tfGotMajority</a> = 0x00010000</td></tr>
 <tr class="separator:a40c2727503e88fa49ffc050386b918fe"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -5869,9 +5868,7 @@ Variables</h2></td></tr>
 <tr class="separator:a421521e70103cd22aad879633cc92ecd"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:a038ff05525ff9886aa2a38ee41c65028"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a038ff05525ff9886aa2a38ee41c65028">tfMPTokenIssuanceSetMask</a> = ~(<a class="el" href="namespaceripple.html#aa52329c755ab0ee46e285c09a32b02ec">tfUniversal</a> | <a class="el" href="namespaceripple.html#aa361223d1f07f3e0838be875704f25c2">tfMPTLock</a> | <a class="el" href="namespaceripple.html#a421521e70103cd22aad879633cc92ecd">tfMPTUnlock</a>)</td></tr>
 <tr class="separator:a038ff05525ff9886aa2a38ee41c65028"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a2ba4739768fe68dfe98fa481390d8b4e"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a2ba4739768fe68dfe98fa481390d8b4e">tfMPTokenIssuanceSetGranularMask</a> = <a class="el" href="namespaceripple.html#aa361223d1f07f3e0838be875704f25c2">tfMPTLock</a> | <a class="el" href="namespaceripple.html#a421521e70103cd22aad879633cc92ecd">tfMPTUnlock</a></td></tr>
-<tr class="separator:a2ba4739768fe68dfe98fa481390d8b4e"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr class="memitem:a12b6820cfa4e831196498f11f10982b8"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a12b6820cfa4e831196498f11f10982b8">tfMPTokenIssuanceSetPermissionMask</a> = (~<a class="el" href="namespaceripple.html#a038ff05525ff9886aa2a38ee41c65028">tfMPTokenIssuanceSetMask</a>) &amp; (~<a class="el" href="namespaceripple.html#a2ba4739768fe68dfe98fa481390d8b4e">tfMPTokenIssuanceSetGranularMask</a>)</td></tr>
+<tr class="memitem:a12b6820cfa4e831196498f11f10982b8"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a12b6820cfa4e831196498f11f10982b8">tfMPTokenIssuanceSetPermissionMask</a> = ~(<a class="el" href="namespaceripple.html#aa52329c755ab0ee46e285c09a32b02ec">tfUniversal</a> | <a class="el" href="namespaceripple.html#aa361223d1f07f3e0838be875704f25c2">tfMPTLock</a> | <a class="el" href="namespaceripple.html#a421521e70103cd22aad879633cc92ecd">tfMPTUnlock</a>)</td></tr>
 <tr class="separator:a12b6820cfa4e831196498f11f10982b8"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr class="memitem:afc96fabc7c508df54955759791f31067"><td class="memItemLeft" align="right" valign="top">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#afc96fabc7c508df54955759791f31067">tfMPTokenIssuanceDestroyMask</a> = ~<a class="el" href="namespaceripple.html#aa52329c755ab0ee46e285c09a32b02ec">tfUniversal</a></td></tr>
 <tr class="separator:afc96fabc7c508df54955759791f31067"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -7236,7 +7233,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00604">604</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00605">605</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -7252,7 +7249,7 @@ template&lt;class T &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00644">644</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00645">645</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -9144,6 +9141,7 @@ ledger.
 <tr><td class="fieldname"><a id="aa298e929e02f59c2b05a30ee8805b38ca26964a6e52a8dcd0eff9d9b4a40f0583" name="aa298e929e02f59c2b05a30ee8805b38ca26964a6e52a8dcd0eff9d9b4a40f0583"></a>tecLIMIT_EXCEEDED&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="aa298e929e02f59c2b05a30ee8805b38ca0fe3bd45be8124c893550bd10117eb77" name="aa298e929e02f59c2b05a30ee8805b38ca0fe3bd45be8124c893550bd10117eb77"></a>tecPSEUDO_ACCOUNT&#160;</td><td class="fielddoc"></td></tr>
 <tr><td class="fieldname"><a id="aa298e929e02f59c2b05a30ee8805b38caa5864b5c8b3bcced7aed0b3a794cb14e" name="aa298e929e02f59c2b05a30ee8805b38caa5864b5c8b3bcced7aed0b3a794cb14e"></a>tecPRECISION_LOSS&#160;</td><td class="fielddoc"></td></tr>
+<tr><td class="fieldname"><a id="aa298e929e02f59c2b05a30ee8805b38ca028111a9e4ac11d836b0af7d2cab163c" name="aa298e929e02f59c2b05a30ee8805b38ca028111a9e4ac11d836b0af7d2cab163c"></a>tecNO_DELEGATE_PERMISSION&#160;</td><td class="fielddoc"></td></tr>
 </table>
 
 <p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00249">249</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
@@ -20993,7 +20991,7 @@ template&lt;class U &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00370">370</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00371">371</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -21021,7 +21019,7 @@ template&lt;class U &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00376">376</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00377">377</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -21049,7 +21047,7 @@ template&lt;class U &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00382">382</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00383">383</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -21077,7 +21075,7 @@ template&lt;class U &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00388">388</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00389">389</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -21105,7 +21103,7 @@ template&lt;class U &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00394">394</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00395">395</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -21133,7 +21131,7 @@ template&lt;class U &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00400">400</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00401">401</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -21177,7 +21175,7 @@ template&lt;typename L , typename R &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00505">505</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00506">506</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -21221,7 +21219,7 @@ template&lt;typename L , typename R &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00516">516</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00517">517</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -21265,7 +21263,7 @@ template&lt;typename L , typename R &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00526">526</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00527">527</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -21309,7 +21307,7 @@ template&lt;typename L , typename R &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00537">537</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00538">538</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -21353,7 +21351,7 @@ template&lt;typename L , typename R &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00549">549</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00550">550</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -21397,7 +21395,7 @@ template&lt;typename L , typename R &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00560">560</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00561">561</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -21425,7 +21423,7 @@ template&lt;typename L , typename R &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00649">649</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00650">650</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -21453,7 +21451,7 @@ template&lt;typename L , typename R &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00655">655</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00656">656</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -21481,7 +21479,7 @@ template&lt;typename L , typename R &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00661">661</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00662">662</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -21509,7 +21507,7 @@ template&lt;typename L , typename R &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00667">667</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00668">668</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -21537,7 +21535,7 @@ template&lt;typename L , typename R &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00673">673</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00674">674</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -21565,7 +21563,7 @@ template&lt;typename L , typename R &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00679">679</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8h_source.html#l00680">680</a> of file <a class="el" href="TER_8h_source.html">TER.h</a>.</p>
 
 </div>
 </div>
@@ -21620,7 +21618,7 @@ template&lt;typename L , typename R &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8cpp_source.html#l00248">248</a> of file <a class="el" href="TER_8cpp_source.html">TER.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8cpp_source.html#l00249">249</a> of file <a class="el" href="TER_8cpp_source.html">TER.cpp</a>.</p>
 
 </div>
 </div>
@@ -21640,7 +21638,7 @@ template&lt;typename L , typename R &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8cpp_source.html#l00263">263</a> of file <a class="el" href="TER_8cpp_source.html">TER.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8cpp_source.html#l00264">264</a> of file <a class="el" href="TER_8cpp_source.html">TER.cpp</a>.</p>
 
 </div>
 </div>
@@ -21660,7 +21658,7 @@ template&lt;typename L , typename R &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8cpp_source.html#l00272">272</a> of file <a class="el" href="TER_8cpp_source.html">TER.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8cpp_source.html#l00273">273</a> of file <a class="el" href="TER_8cpp_source.html">TER.cpp</a>.</p>
 
 </div>
 </div>
@@ -21680,7 +21678,7 @@ template&lt;typename L , typename R &gt; </div>
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TER_8cpp_source.html#l00281">281</a> of file <a class="el" href="TER_8cpp_source.html">TER.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TER_8cpp_source.html#l00282">282</a> of file <a class="el" href="TER_8cpp_source.html">TER.cpp</a>.</p>
 
 </div>
 </div>
@@ -30477,7 +30475,7 @@ template&lt;typename A &gt; </div>
   </table>
   </dd>
 </dl>
-<dl class="section return"><dt>Returns</dt><dd>tesSUCCESS if the transaction is allowed, tecNO_PERMISSION if not. </dd></dl>
+<dl class="section return"><dt>Returns</dt><dd>tesSUCCESS if the transaction is allowed, tecNO_DELEGATE_PERMISSION if not. </dd></dl>
 
 <p class="definition">Definition at line <a class="el" href="DelegateUtils_8cpp_source.html#l00026">26</a> of file <a class="el" href="DelegateUtils_8cpp_source.html">DelegateUtils.cpp</a>.</p>
 
@@ -52521,30 +52519,6 @@ template&lt;class Dest , class Src &gt; </div>
 
 </div>
 </div>
-<a id="aca91cc4944c2c807870d79595ccc4aab" name="aca91cc4944c2c807870d79595ccc4aab"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#aca91cc4944c2c807870d79595ccc4aab">&#9670;&#160;</a></span>tfTrustSetGranularMask</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ripple::tfTrustSetGranularMask = <a class="el" href="namespaceripple.html#a918f885752320e5f242f6cf75d895444">tfSetfAuth</a> | <a class="el" href="namespaceripple.html#ae34d881cd8926ab3505340a51f91fd8b">tfSetFreeze</a> | <a class="el" href="namespaceripple.html#a98f09aa7b518e640710f4362145dd444">tfClearFreeze</a></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00127">127</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
-
-</div>
-</div>
 <a id="a754d9c1ce4ca401f773722157a5259ec" name="a754d9c1ce4ca401f773722157a5259ec"></a>
 <h2 class="memtitle"><span class="permalink"><a href="#a754d9c1ce4ca401f773722157a5259ec">&#9670;&#160;</a></span>tfTrustSetPermissionMask</h2>
 
@@ -52555,7 +52529,7 @@ template&lt;class Dest , class Src &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ripple::tfTrustSetPermissionMask = (~<a class="el" href="namespaceripple.html#ac03bb75481389855987ced4578108011">tfTrustSetMask</a>) &amp; (~<a class="el" href="namespaceripple.html#aca91cc4944c2c807870d79595ccc4aab">tfTrustSetGranularMask</a>)</td>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> ripple::tfTrustSetPermissionMask = ~(<a class="el" href="namespaceripple.html#aa52329c755ab0ee46e285c09a32b02ec">tfUniversal</a> | <a class="el" href="namespaceripple.html#a918f885752320e5f242f6cf75d895444">tfSetfAuth</a> | <a class="el" href="namespaceripple.html#ae34d881cd8926ab3505340a51f91fd8b">tfSetFreeze</a> | <a class="el" href="namespaceripple.html#a98f09aa7b518e640710f4362145dd444">tfClearFreeze</a>)</td>
         </tr>
       </table>
   </td>
@@ -52565,7 +52539,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00131">131</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00125">125</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -52589,7 +52563,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00134">134</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00128">128</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -52613,7 +52587,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00135">135</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00129">129</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -52637,7 +52611,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00138">138</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00132">132</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -52661,7 +52635,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00139">139</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00133">133</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -52685,7 +52659,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00140">140</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00134">134</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -52709,7 +52683,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00143">143</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00137">137</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -52733,7 +52707,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00144">144</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00138">138</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -52757,7 +52731,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00145">145</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00139">139</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -52781,7 +52755,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00146">146</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00140">140</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -52805,7 +52779,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00147">147</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00141">141</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -52829,7 +52803,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00151">151</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00145">145</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -52853,7 +52827,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00152">152</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00146">146</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -52877,7 +52851,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00153">153</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00147">147</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -52901,7 +52875,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00154">154</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00148">148</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -52925,7 +52899,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00155">155</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00149">149</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -52949,7 +52923,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00156">156</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00150">150</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -52974,14 +52948,14 @@ template&lt;class Dest , class Src &gt; </div>
 </div><div class="memdoc">
 <b>Initial value:</b><div class="fragment"><div class="line">=</div>
 <div class="line">  ~(<a class="code hl_variable" href="namespaceripple.html#aa52329c755ab0ee46e285c09a32b02ec">tfUniversal</a> | <a class="code hl_variable" href="namespaceripple.html#ae9c5556c775f5086df7a1be0c7353971">tfMPTCanLock</a> | <a class="code hl_variable" href="namespaceripple.html#ae04eebbb7e9cffb009d2f2251c0263a2">tfMPTRequireAuth</a> | <a class="code hl_variable" href="namespaceripple.html#adefad79450b2fe23454118b7b2b60c14">tfMPTCanEscrow</a> | <a class="code hl_variable" href="namespaceripple.html#a415aac4d51f2f5336c1f588042fff833">tfMPTCanTrade</a> | <a class="code hl_variable" href="namespaceripple.html#a2aae110929b0612004babdac451377f3">tfMPTCanTransfer</a> | <a class="code hl_variable" href="namespaceripple.html#af034d4499b815c6e3ae25cf6d03ae2f9">tfMPTCanClawback</a>)</div>
-<div class="ttc" id="anamespaceripple_html_a2aae110929b0612004babdac451377f3"><div class="ttname"><a href="namespaceripple.html#a2aae110929b0612004babdac451377f3">ripple::tfMPTCanTransfer</a></div><div class="ttdeci">constexpr std::uint32_t const tfMPTCanTransfer</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00155">TxFlags.h:155</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a415aac4d51f2f5336c1f588042fff833"><div class="ttname"><a href="namespaceripple.html#a415aac4d51f2f5336c1f588042fff833">ripple::tfMPTCanTrade</a></div><div class="ttdeci">constexpr std::uint32_t const tfMPTCanTrade</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00154">TxFlags.h:154</a></div></div>
-<div class="ttc" id="anamespaceripple_html_adefad79450b2fe23454118b7b2b60c14"><div class="ttname"><a href="namespaceripple.html#adefad79450b2fe23454118b7b2b60c14">ripple::tfMPTCanEscrow</a></div><div class="ttdeci">constexpr std::uint32_t const tfMPTCanEscrow</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00153">TxFlags.h:153</a></div></div>
-<div class="ttc" id="anamespaceripple_html_ae04eebbb7e9cffb009d2f2251c0263a2"><div class="ttname"><a href="namespaceripple.html#ae04eebbb7e9cffb009d2f2251c0263a2">ripple::tfMPTRequireAuth</a></div><div class="ttdeci">constexpr std::uint32_t const tfMPTRequireAuth</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00152">TxFlags.h:152</a></div></div>
-<div class="ttc" id="anamespaceripple_html_ae9c5556c775f5086df7a1be0c7353971"><div class="ttname"><a href="namespaceripple.html#ae9c5556c775f5086df7a1be0c7353971">ripple::tfMPTCanLock</a></div><div class="ttdeci">constexpr std::uint32_t const tfMPTCanLock</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00151">TxFlags.h:151</a></div></div>
-<div class="ttc" id="anamespaceripple_html_af034d4499b815c6e3ae25cf6d03ae2f9"><div class="ttname"><a href="namespaceripple.html#af034d4499b815c6e3ae25cf6d03ae2f9">ripple::tfMPTCanClawback</a></div><div class="ttdeci">constexpr std::uint32_t const tfMPTCanClawback</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00156">TxFlags.h:156</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a2aae110929b0612004babdac451377f3"><div class="ttname"><a href="namespaceripple.html#a2aae110929b0612004babdac451377f3">ripple::tfMPTCanTransfer</a></div><div class="ttdeci">constexpr std::uint32_t const tfMPTCanTransfer</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00149">TxFlags.h:149</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a415aac4d51f2f5336c1f588042fff833"><div class="ttname"><a href="namespaceripple.html#a415aac4d51f2f5336c1f588042fff833">ripple::tfMPTCanTrade</a></div><div class="ttdeci">constexpr std::uint32_t const tfMPTCanTrade</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00148">TxFlags.h:148</a></div></div>
+<div class="ttc" id="anamespaceripple_html_adefad79450b2fe23454118b7b2b60c14"><div class="ttname"><a href="namespaceripple.html#adefad79450b2fe23454118b7b2b60c14">ripple::tfMPTCanEscrow</a></div><div class="ttdeci">constexpr std::uint32_t const tfMPTCanEscrow</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00147">TxFlags.h:147</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ae04eebbb7e9cffb009d2f2251c0263a2"><div class="ttname"><a href="namespaceripple.html#ae04eebbb7e9cffb009d2f2251c0263a2">ripple::tfMPTRequireAuth</a></div><div class="ttdeci">constexpr std::uint32_t const tfMPTRequireAuth</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00146">TxFlags.h:146</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ae9c5556c775f5086df7a1be0c7353971"><div class="ttname"><a href="namespaceripple.html#ae9c5556c775f5086df7a1be0c7353971">ripple::tfMPTCanLock</a></div><div class="ttdeci">constexpr std::uint32_t const tfMPTCanLock</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00145">TxFlags.h:145</a></div></div>
+<div class="ttc" id="anamespaceripple_html_af034d4499b815c6e3ae25cf6d03ae2f9"><div class="ttname"><a href="namespaceripple.html#af034d4499b815c6e3ae25cf6d03ae2f9">ripple::tfMPTCanClawback</a></div><div class="ttdeci">constexpr std::uint32_t const tfMPTCanClawback</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00150">TxFlags.h:150</a></div></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00157">157</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00151">151</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53005,7 +52979,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00161">161</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00155">155</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53029,7 +53003,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00162">162</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00156">156</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53053,7 +53027,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00165">165</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00159">159</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53077,7 +53051,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00166">166</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00160">160</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53101,31 +53075,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00167">167</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
-
-</div>
-</div>
-<a id="a2ba4739768fe68dfe98fa481390d8b4e" name="a2ba4739768fe68dfe98fa481390d8b4e"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a2ba4739768fe68dfe98fa481390d8b4e">&#9670;&#160;</a></span>tfMPTokenIssuanceSetGranularMask</h2>
-
-<div class="memitem">
-<div class="memproto">
-<table class="mlabels">
-  <tr>
-  <td class="mlabels-left">
-      <table class="memname">
-        <tr>
-          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const ripple::tfMPTokenIssuanceSetGranularMask = <a class="el" href="namespaceripple.html#aa361223d1f07f3e0838be875704f25c2">tfMPTLock</a> | <a class="el" href="namespaceripple.html#a421521e70103cd22aad879633cc92ecd">tfMPTUnlock</a></td>
-        </tr>
-      </table>
-  </td>
-  <td class="mlabels-right">
-<span class="mlabels"><span class="mlabel">constexpr</span></span>  </td>
-  </tr>
-</table>
-</div><div class="memdoc">
-
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00168">168</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00161">161</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53139,7 +53089,7 @@ template&lt;class Dest , class Src &gt; </div>
   <td class="mlabels-left">
       <table class="memname">
         <tr>
-          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const ripple::tfMPTokenIssuanceSetPermissionMask = (~<a class="el" href="namespaceripple.html#a038ff05525ff9886aa2a38ee41c65028">tfMPTokenIssuanceSetMask</a>) &amp; (~<a class="el" href="namespaceripple.html#a2ba4739768fe68dfe98fa481390d8b4e">tfMPTokenIssuanceSetGranularMask</a>)</td>
+          <td class="memname">constexpr <a class="elRef" href="http://en.cppreference.com/w/cpp/types/integer.html">std::uint32_t</a> const ripple::tfMPTokenIssuanceSetPermissionMask = ~(<a class="el" href="namespaceripple.html#aa52329c755ab0ee46e285c09a32b02ec">tfUniversal</a> | <a class="el" href="namespaceripple.html#aa361223d1f07f3e0838be875704f25c2">tfMPTLock</a> | <a class="el" href="namespaceripple.html#a421521e70103cd22aad879633cc92ecd">tfMPTUnlock</a>)</td>
         </tr>
       </table>
   </td>
@@ -53149,7 +53099,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00169">169</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00162">162</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53173,7 +53123,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00172">172</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00165">165</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53198,11 +53148,11 @@ template&lt;class Dest , class Src &gt; </div>
 </div><div class="memdoc">
 <b>Initial value:</b><div class="fragment"><div class="line">=</div>
 <div class="line">    ~(<a class="code hl_variable" href="namespaceripple.html#aa52329c755ab0ee46e285c09a32b02ec">tfUniversal</a> | <a class="code hl_variable" href="namespaceripple.html#a5a8925be9e066ce9570511e5161a73bb">tfBurnable</a> | <a class="code hl_variable" href="namespaceripple.html#a1dbfe47b89ea11bf811eaebf0093f052">tfOnlyXRP</a> | <a class="code hl_variable" href="namespaceripple.html#af6dbd01af49aa6a39b96cee44add0df1">tfTransferable</a>)</div>
-<div class="ttc" id="anamespaceripple_html_a1dbfe47b89ea11bf811eaebf0093f052"><div class="ttname"><a href="namespaceripple.html#a1dbfe47b89ea11bf811eaebf0093f052">ripple::tfOnlyXRP</a></div><div class="ttdeci">constexpr std::uint32_t const tfOnlyXRP</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00144">TxFlags.h:144</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a5a8925be9e066ce9570511e5161a73bb"><div class="ttname"><a href="namespaceripple.html#a5a8925be9e066ce9570511e5161a73bb">ripple::tfBurnable</a></div><div class="ttdeci">constexpr std::uint32_t const tfBurnable</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00143">TxFlags.h:143</a></div></div>
-<div class="ttc" id="anamespaceripple_html_af6dbd01af49aa6a39b96cee44add0df1"><div class="ttname"><a href="namespaceripple.html#af6dbd01af49aa6a39b96cee44add0df1">ripple::tfTransferable</a></div><div class="ttdeci">constexpr std::uint32_t const tfTransferable</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00146">TxFlags.h:146</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a1dbfe47b89ea11bf811eaebf0093f052"><div class="ttname"><a href="namespaceripple.html#a1dbfe47b89ea11bf811eaebf0093f052">ripple::tfOnlyXRP</a></div><div class="ttdeci">constexpr std::uint32_t const tfOnlyXRP</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00138">TxFlags.h:138</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a5a8925be9e066ce9570511e5161a73bb"><div class="ttname"><a href="namespaceripple.html#a5a8925be9e066ce9570511e5161a73bb">ripple::tfBurnable</a></div><div class="ttdeci">constexpr std::uint32_t const tfBurnable</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00137">TxFlags.h:137</a></div></div>
+<div class="ttc" id="anamespaceripple_html_af6dbd01af49aa6a39b96cee44add0df1"><div class="ttname"><a href="namespaceripple.html#af6dbd01af49aa6a39b96cee44add0df1">ripple::tfTransferable</a></div><div class="ttdeci">constexpr std::uint32_t const tfTransferable</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00140">TxFlags.h:140</a></div></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00187">187</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00180">180</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53227,9 +53177,9 @@ template&lt;class Dest , class Src &gt; </div>
 </div><div class="memdoc">
 <b>Initial value:</b><div class="fragment"><div class="line">=</div>
 <div class="line">    ~( ~tfNFTokenMintMask | <a class="code hl_variable" href="namespaceripple.html#a7f38e8fe552f095e70c098197324f6f9">tfTrustLine</a>)</div>
-<div class="ttc" id="anamespaceripple_html_a7f38e8fe552f095e70c098197324f6f9"><div class="ttname"><a href="namespaceripple.html#a7f38e8fe552f095e70c098197324f6f9">ripple::tfTrustLine</a></div><div class="ttdeci">constexpr std::uint32_t const tfTrustLine</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00145">TxFlags.h:145</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a7f38e8fe552f095e70c098197324f6f9"><div class="ttname"><a href="namespaceripple.html#a7f38e8fe552f095e70c098197324f6f9">ripple::tfTrustLine</a></div><div class="ttdeci">constexpr std::uint32_t const tfTrustLine</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00139">TxFlags.h:139</a></div></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00190">190</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00183">183</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53254,9 +53204,9 @@ template&lt;class Dest , class Src &gt; </div>
 </div><div class="memdoc">
 <b>Initial value:</b><div class="fragment"><div class="line">=</div>
 <div class="line">    ~( ~tfNFTokenMintOldMask | <a class="code hl_variable" href="namespaceripple.html#ae7b2566d88d4ab6fbad390bc3a890395">tfMutable</a>)</div>
-<div class="ttc" id="anamespaceripple_html_ae7b2566d88d4ab6fbad390bc3a890395"><div class="ttname"><a href="namespaceripple.html#ae7b2566d88d4ab6fbad390bc3a890395">ripple::tfMutable</a></div><div class="ttdeci">constexpr std::uint32_t const tfMutable</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00147">TxFlags.h:147</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ae7b2566d88d4ab6fbad390bc3a890395"><div class="ttname"><a href="namespaceripple.html#ae7b2566d88d4ab6fbad390bc3a890395">ripple::tfMutable</a></div><div class="ttdeci">constexpr std::uint32_t const tfMutable</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00141">TxFlags.h:141</a></div></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00194">194</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00187">187</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53282,7 +53232,7 @@ template&lt;class Dest , class Src &gt; </div>
 <b>Initial value:</b><div class="fragment"><div class="line">=</div>
 <div class="line">    ~( ~tfNFTokenMintMask | <a class="code hl_variable" href="namespaceripple.html#ae7b2566d88d4ab6fbad390bc3a890395">tfMutable</a>)</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00197">197</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00190">190</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53306,7 +53256,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00201">201</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00194">194</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53331,9 +53281,9 @@ template&lt;class Dest , class Src &gt; </div>
 </div><div class="memdoc">
 <b>Initial value:</b><div class="fragment"><div class="line">=</div>
 <div class="line">    ~(<a class="code hl_variable" href="namespaceripple.html#aa52329c755ab0ee46e285c09a32b02ec">tfUniversal</a> | <a class="code hl_variable" href="namespaceripple.html#a449cf5cfc4fd3f6c2a3577a57374bda5">tfSellNFToken</a>)</div>
-<div class="ttc" id="anamespaceripple_html_a449cf5cfc4fd3f6c2a3577a57374bda5"><div class="ttname"><a href="namespaceripple.html#a449cf5cfc4fd3f6c2a3577a57374bda5">ripple::tfSellNFToken</a></div><div class="ttdeci">constexpr std::uint32_t const tfSellNFToken</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00201">TxFlags.h:201</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a449cf5cfc4fd3f6c2a3577a57374bda5"><div class="ttname"><a href="namespaceripple.html#a449cf5cfc4fd3f6c2a3577a57374bda5">ripple::tfSellNFToken</a></div><div class="ttdeci">constexpr std::uint32_t const tfSellNFToken</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00194">TxFlags.h:194</a></div></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00202">202</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00195">195</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53357,7 +53307,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00206">206</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00199">199</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53381,7 +53331,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00209">209</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00202">202</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53405,7 +53355,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00212">212</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00205">205</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53429,7 +53379,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00215">215</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00208">208</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53453,7 +53403,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00216">216</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00209">209</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53477,7 +53427,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00217">217</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00210">210</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53501,7 +53451,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00218">218</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00211">211</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53525,7 +53475,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00219">219</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00212">212</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53549,7 +53499,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00220">220</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00213">213</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53573,7 +53523,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00221">221</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00214">214</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53597,7 +53547,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00222">222</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00215">215</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53623,15 +53573,15 @@ template&lt;class Dest , class Src &gt; </div>
 <b>Initial value:</b><div class="fragment"><div class="line">=</div>
 <div class="line">    <a class="code hl_variable" href="namespaceripple.html#aa3f065b75d23f712be19a1a953fe5b4a">tfLPToken</a> | <a class="code hl_variable" href="namespaceripple.html#a098e0eaa259f9927096b3b4edd77c71a">tfSingleAsset</a> | <a class="code hl_variable" href="namespaceripple.html#a7ac113783ec3f596fe69ab6d1daabbac">tfTwoAsset</a> | <a class="code hl_variable" href="namespaceripple.html#a620f1516447f54ef50ac790f5f0720a3">tfOneAssetLPToken</a> |</div>
 <div class="line">    <a class="code hl_variable" href="namespaceripple.html#a5401fd4c42f637dc456a79af094a960d">tfLimitLPToken</a> | <a class="code hl_variable" href="namespaceripple.html#a8383eb169324b23c0b4b49d6c2d2c877">tfWithdrawAll</a> | <a class="code hl_variable" href="namespaceripple.html#a0cebcc733182bb6794d2d4067a29fb2a">tfOneAssetWithdrawAll</a></div>
-<div class="ttc" id="anamespaceripple_html_a098e0eaa259f9927096b3b4edd77c71a"><div class="ttname"><a href="namespaceripple.html#a098e0eaa259f9927096b3b4edd77c71a">ripple::tfSingleAsset</a></div><div class="ttdeci">constexpr std::uint32_t tfSingleAsset</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00218">TxFlags.h:218</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a0cebcc733182bb6794d2d4067a29fb2a"><div class="ttname"><a href="namespaceripple.html#a0cebcc733182bb6794d2d4067a29fb2a">ripple::tfOneAssetWithdrawAll</a></div><div class="ttdeci">constexpr std::uint32_t tfOneAssetWithdrawAll</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00217">TxFlags.h:217</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a5401fd4c42f637dc456a79af094a960d"><div class="ttname"><a href="namespaceripple.html#a5401fd4c42f637dc456a79af094a960d">ripple::tfLimitLPToken</a></div><div class="ttdeci">constexpr std::uint32_t tfLimitLPToken</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00221">TxFlags.h:221</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a620f1516447f54ef50ac790f5f0720a3"><div class="ttname"><a href="namespaceripple.html#a620f1516447f54ef50ac790f5f0720a3">ripple::tfOneAssetLPToken</a></div><div class="ttdeci">constexpr std::uint32_t tfOneAssetLPToken</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00220">TxFlags.h:220</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a7ac113783ec3f596fe69ab6d1daabbac"><div class="ttname"><a href="namespaceripple.html#a7ac113783ec3f596fe69ab6d1daabbac">ripple::tfTwoAsset</a></div><div class="ttdeci">constexpr std::uint32_t tfTwoAsset</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00219">TxFlags.h:219</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a8383eb169324b23c0b4b49d6c2d2c877"><div class="ttname"><a href="namespaceripple.html#a8383eb169324b23c0b4b49d6c2d2c877">ripple::tfWithdrawAll</a></div><div class="ttdeci">constexpr std::uint32_t tfWithdrawAll</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00216">TxFlags.h:216</a></div></div>
-<div class="ttc" id="anamespaceripple_html_aa3f065b75d23f712be19a1a953fe5b4a"><div class="ttname"><a href="namespaceripple.html#aa3f065b75d23f712be19a1a953fe5b4a">ripple::tfLPToken</a></div><div class="ttdeci">constexpr std::uint32_t tfLPToken</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00215">TxFlags.h:215</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a098e0eaa259f9927096b3b4edd77c71a"><div class="ttname"><a href="namespaceripple.html#a098e0eaa259f9927096b3b4edd77c71a">ripple::tfSingleAsset</a></div><div class="ttdeci">constexpr std::uint32_t tfSingleAsset</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00211">TxFlags.h:211</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a0cebcc733182bb6794d2d4067a29fb2a"><div class="ttname"><a href="namespaceripple.html#a0cebcc733182bb6794d2d4067a29fb2a">ripple::tfOneAssetWithdrawAll</a></div><div class="ttdeci">constexpr std::uint32_t tfOneAssetWithdrawAll</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00210">TxFlags.h:210</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a5401fd4c42f637dc456a79af094a960d"><div class="ttname"><a href="namespaceripple.html#a5401fd4c42f637dc456a79af094a960d">ripple::tfLimitLPToken</a></div><div class="ttdeci">constexpr std::uint32_t tfLimitLPToken</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00214">TxFlags.h:214</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a620f1516447f54ef50ac790f5f0720a3"><div class="ttname"><a href="namespaceripple.html#a620f1516447f54ef50ac790f5f0720a3">ripple::tfOneAssetLPToken</a></div><div class="ttdeci">constexpr std::uint32_t tfOneAssetLPToken</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00213">TxFlags.h:213</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a7ac113783ec3f596fe69ab6d1daabbac"><div class="ttname"><a href="namespaceripple.html#a7ac113783ec3f596fe69ab6d1daabbac">ripple::tfTwoAsset</a></div><div class="ttdeci">constexpr std::uint32_t tfTwoAsset</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00212">TxFlags.h:212</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a8383eb169324b23c0b4b49d6c2d2c877"><div class="ttname"><a href="namespaceripple.html#a8383eb169324b23c0b4b49d6c2d2c877">ripple::tfWithdrawAll</a></div><div class="ttdeci">constexpr std::uint32_t tfWithdrawAll</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00209">TxFlags.h:209</a></div></div>
+<div class="ttc" id="anamespaceripple_html_aa3f065b75d23f712be19a1a953fe5b4a"><div class="ttname"><a href="namespaceripple.html#aa3f065b75d23f712be19a1a953fe5b4a">ripple::tfLPToken</a></div><div class="ttdeci">constexpr std::uint32_t tfLPToken</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00208">TxFlags.h:208</a></div></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00223">223</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00216">216</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53657,9 +53607,9 @@ template&lt;class Dest , class Src &gt; </div>
 <b>Initial value:</b><div class="fragment"><div class="line">=</div>
 <div class="line">    <a class="code hl_variable" href="namespaceripple.html#aa3f065b75d23f712be19a1a953fe5b4a">tfLPToken</a> | <a class="code hl_variable" href="namespaceripple.html#a098e0eaa259f9927096b3b4edd77c71a">tfSingleAsset</a> | <a class="code hl_variable" href="namespaceripple.html#a7ac113783ec3f596fe69ab6d1daabbac">tfTwoAsset</a> | <a class="code hl_variable" href="namespaceripple.html#a620f1516447f54ef50ac790f5f0720a3">tfOneAssetLPToken</a> |</div>
 <div class="line">    <a class="code hl_variable" href="namespaceripple.html#a5401fd4c42f637dc456a79af094a960d">tfLimitLPToken</a> | <a class="code hl_variable" href="namespaceripple.html#ac709d6b754ddb5505dcd8494a5dce959">tfTwoAssetIfEmpty</a></div>
-<div class="ttc" id="anamespaceripple_html_ac709d6b754ddb5505dcd8494a5dce959"><div class="ttname"><a href="namespaceripple.html#ac709d6b754ddb5505dcd8494a5dce959">ripple::tfTwoAssetIfEmpty</a></div><div class="ttdeci">constexpr std::uint32_t tfTwoAssetIfEmpty</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00222">TxFlags.h:222</a></div></div>
+<div class="ttc" id="anamespaceripple_html_ac709d6b754ddb5505dcd8494a5dce959"><div class="ttname"><a href="namespaceripple.html#ac709d6b754ddb5505dcd8494a5dce959">ripple::tfTwoAssetIfEmpty</a></div><div class="ttdeci">constexpr std::uint32_t tfTwoAssetIfEmpty</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00215">TxFlags.h:215</a></div></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00226">226</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00219">219</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53683,7 +53633,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00229">229</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00222">222</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53707,7 +53657,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00230">230</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00223">223</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53731,7 +53681,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00233">233</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00226">226</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53755,7 +53705,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00234">234</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00227">227</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53779,7 +53729,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00237">237</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00230">230</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53803,7 +53753,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00238">238</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00231">231</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53827,7 +53777,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00241">241</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00234">234</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53851,7 +53801,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00243">243</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00236">236</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53875,7 +53825,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00244">244</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00237">237</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53899,7 +53849,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00247">247</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00240">240</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53923,7 +53873,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00248">248</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00241">241</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53947,7 +53897,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00249">249</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00242">242</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53971,7 +53921,7 @@ template&lt;class Dest , class Src &gt; </div>
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00250">250</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00243">243</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
@@ -53996,13 +53946,13 @@ template&lt;class Dest , class Src &gt; </div>
 </div><div class="memdoc">
 <b>Initial value:</b><div class="fragment"><div class="line">=</div>
 <div class="line">    ~(<a class="code hl_variable" href="namespaceripple.html#aa52329c755ab0ee46e285c09a32b02ec">tfUniversal</a> | <a class="code hl_variable" href="namespaceripple.html#a072775d6c8c5af1783ca0153457a9db7">tfAllOrNothing</a> | <a class="code hl_variable" href="namespaceripple.html#a2c495b41d0b7daa3c2121bf583062265">tfOnlyOne</a> | <a class="code hl_variable" href="namespaceripple.html#a7ca20421c3a0f4d9962ec95f53c83b31">tfUntilFailure</a> | <a class="code hl_variable" href="namespaceripple.html#a3ad81b34ed8f81399fcc087a7f0f41aa">tfIndependent</a>) | tfInnerBatchTxn</div>
-<div class="ttc" id="anamespaceripple_html_a072775d6c8c5af1783ca0153457a9db7"><div class="ttname"><a href="namespaceripple.html#a072775d6c8c5af1783ca0153457a9db7">ripple::tfAllOrNothing</a></div><div class="ttdeci">constexpr std::uint32_t tfAllOrNothing</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00247">TxFlags.h:247</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a2c495b41d0b7daa3c2121bf583062265"><div class="ttname"><a href="namespaceripple.html#a2c495b41d0b7daa3c2121bf583062265">ripple::tfOnlyOne</a></div><div class="ttdeci">constexpr std::uint32_t tfOnlyOne</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00248">TxFlags.h:248</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a3ad81b34ed8f81399fcc087a7f0f41aa"><div class="ttname"><a href="namespaceripple.html#a3ad81b34ed8f81399fcc087a7f0f41aa">ripple::tfIndependent</a></div><div class="ttdeci">constexpr std::uint32_t tfIndependent</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00250">TxFlags.h:250</a></div></div>
-<div class="ttc" id="anamespaceripple_html_a7ca20421c3a0f4d9962ec95f53c83b31"><div class="ttname"><a href="namespaceripple.html#a7ca20421c3a0f4d9962ec95f53c83b31">ripple::tfUntilFailure</a></div><div class="ttdeci">constexpr std::uint32_t tfUntilFailure</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00249">TxFlags.h:249</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a072775d6c8c5af1783ca0153457a9db7"><div class="ttname"><a href="namespaceripple.html#a072775d6c8c5af1783ca0153457a9db7">ripple::tfAllOrNothing</a></div><div class="ttdeci">constexpr std::uint32_t tfAllOrNothing</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00240">TxFlags.h:240</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a2c495b41d0b7daa3c2121bf583062265"><div class="ttname"><a href="namespaceripple.html#a2c495b41d0b7daa3c2121bf583062265">ripple::tfOnlyOne</a></div><div class="ttdeci">constexpr std::uint32_t tfOnlyOne</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00241">TxFlags.h:241</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a3ad81b34ed8f81399fcc087a7f0f41aa"><div class="ttname"><a href="namespaceripple.html#a3ad81b34ed8f81399fcc087a7f0f41aa">ripple::tfIndependent</a></div><div class="ttdeci">constexpr std::uint32_t tfIndependent</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00243">TxFlags.h:243</a></div></div>
+<div class="ttc" id="anamespaceripple_html_a7ca20421c3a0f4d9962ec95f53c83b31"><div class="ttname"><a href="namespaceripple.html#a7ca20421c3a0f4d9962ec95f53c83b31">ripple::tfUntilFailure</a></div><div class="ttdeci">constexpr std::uint32_t tfUntilFailure</div><div class="ttdef"><b>Definition:</b> <a href="TxFlags_8h_source.html#l00242">TxFlags.h:242</a></div></div>
 </div><!-- fragment --><dl class="section note"><dt>Note</dt><dd>If nested <a class="el" href="classripple_1_1Batch.html">Batch</a> transactions are supported in the future, the tfInnerBatchTxn flag will need to be removed from this mask to allow <a class="el" href="classripple_1_1Batch.html">Batch</a> transaction to be inside the sfRawTransactions array. </dd></dl>
 
-<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00256">256</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
+<p class="definition">Definition at line <a class="el" href="TxFlags_8h_source.html#l00249">249</a> of file <a class="el" href="TxFlags_8h_source.html">TxFlags.h</a>.</p>
 
 </div>
 </div>
