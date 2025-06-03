@@ -220,114 +220,155 @@ $(function() {
 <div class="line"><a id="l00142" name="l00142"></a><span class="lineno">  142</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map&lt;AccountID, std::vector&lt;STAmount&gt;</a>&gt; hotBalances;</div>
 <div class="line"><a id="l00143" name="l00143"></a><span class="lineno">  143</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map&lt;AccountID, std::vector&lt;STAmount&gt;</a>&gt; assets;</div>
 <div class="line"><a id="l00144" name="l00144"></a><span class="lineno">  144</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map&lt;AccountID, std::vector&lt;STAmount&gt;</a>&gt; frozenBalances;</div>
-<div class="line"><a id="l00145" name="l00145"></a><span class="lineno">  145</span> </div>
-<div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span>    <span class="comment">// Traverse the cold wallet&#39;s trust lines</span></div>
-<div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span>    {</div>
-<div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span>        <a class="code hl_function" href="namespaceripple.html#accc8ce88b24f653a30e40f7d22e428c5">forEachItem</a>(</div>
-<div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span>            *ledger, accountID, [&amp;](<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;SLE const&gt;</a> <span class="keyword">const</span>&amp; sle) {</div>
-<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span>                <span class="keyword">auto</span> rs = <a class="code hl_function" href="classripple_1_1PathFindTrustLine.html#a636785ce7e1dc47be3bf6c7fa4d8e670">PathFindTrustLine::makeItem</a>(accountID, sle);</div>
-<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span> </div>
-<div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span>                <span class="keywordflow">if</span> (!rs)</div>
-<div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span>                    <span class="keywordflow">return</span>;</div>
-<div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span> </div>
-<div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span>                <span class="keywordtype">int</span> balSign = rs-&gt;getBalance().signum();</div>
-<div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span>                <span class="keywordflow">if</span> (balSign == 0)</div>
-<div class="line"><a id="l00157" name="l00157"></a><span class="lineno">  157</span>                    <span class="keywordflow">return</span>;</div>
-<div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span> </div>
-<div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span>                <span class="keyword">auto</span> <span class="keyword">const</span>&amp; peer = rs-&gt;getAccountIDPeer();</div>
-<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span> </div>
-<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span>                <span class="comment">// Here, a negative balance means the cold wallet owes (normal)</span></div>
-<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span>                <span class="comment">// A positive balance means the cold wallet has an asset</span></div>
-<div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span>                <span class="comment">// (unusual)</span></div>
-<div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span> </div>
-<div class="line"><a id="l00165" name="l00165"></a><span class="lineno">  165</span>                <span class="keywordflow">if</span> (hotWallets.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/set/count.html">count</a>(peer) &gt; 0)</div>
-<div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span>                {</div>
-<div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span>                    <span class="comment">// This is a specified hot wallet</span></div>
-<div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span>                    hotBalances[peer].push_back(-rs-&gt;getBalance());</div>
-<div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span>                }</div>
-<div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span>                <span class="keywordflow">else</span> <span class="keywordflow">if</span> (balSign &gt; 0)</div>
-<div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span>                {</div>
-<div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span>                    <span class="comment">// This is a gateway asset</span></div>
-<div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span>                    assets[peer].push_back(rs-&gt;getBalance());</div>
-<div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span>                }</div>
-<div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span>                <span class="keywordflow">else</span> <span class="keywordflow">if</span> (rs-&gt;getFreeze())</div>
-<div class="line"><a id="l00176" name="l00176"></a><span class="lineno">  176</span>                {</div>
-<div class="line"><a id="l00177" name="l00177"></a><span class="lineno">  177</span>                    <span class="comment">// An obligation the gateway has frozen</span></div>
-<div class="line"><a id="l00178" name="l00178"></a><span class="lineno">  178</span>                    frozenBalances[peer].push_back(-rs-&gt;getBalance());</div>
-<div class="line"><a id="l00179" name="l00179"></a><span class="lineno">  179</span>                }</div>
-<div class="line"><a id="l00180" name="l00180"></a><span class="lineno">  180</span>                <span class="keywordflow">else</span></div>
-<div class="line"><a id="l00181" name="l00181"></a><span class="lineno">  181</span>                {</div>
-<div class="line"><a id="l00182" name="l00182"></a><span class="lineno">  182</span>                    <span class="comment">// normal negative balance, obligation to customer</span></div>
-<div class="line"><a id="l00183" name="l00183"></a><span class="lineno">  183</span>                    <span class="keyword">auto</span>&amp; bal = sums[rs-&gt;getBalance().getCurrency()];</div>
-<div class="line"><a id="l00184" name="l00184"></a><span class="lineno">  184</span>                    <span class="keywordflow">if</span> (bal == beast::zero)</div>
-<div class="line"><a id="l00185" name="l00185"></a><span class="lineno">  185</span>                    {</div>
-<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span>                        <span class="comment">// This is needed to set the currency code correctly</span></div>
-<div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span>                        bal = -rs-&gt;getBalance();</div>
-<div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span>                    }</div>
-<div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span>                    <span class="keywordflow">else</span></div>
-<div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span>                    {</div>
-<div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span>                        <span class="keywordflow">try</span></div>
-<div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span>                        {</div>
-<div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span>                            bal -= rs-&gt;getBalance();</div>
-<div class="line"><a id="l00194" name="l00194"></a><span class="lineno">  194</span>                        }</div>
-<div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span>                        <span class="keywordflow">catch</span> (<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/error/runtime_error.html">std::runtime_error</a> <span class="keyword">const</span>&amp;)</div>
-<div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span>                        {</div>
-<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span>                            <span class="comment">// Presumably the exception was caused by overflow.</span></div>
-<div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span>                            <span class="comment">// On overflow return the largest valid STAmount.</span></div>
-<div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span>                            <span class="comment">// Very large sums of STAmount are approximations</span></div>
-<div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span>                            <span class="comment">// anyway.</span></div>
-<div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span>                            bal = <a class="code hl_class" href="classripple_1_1STAmount.html">STAmount</a>(</div>
-<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span>                                bal.issue(),</div>
-<div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span>                                <a class="code hl_variable" href="classripple_1_1STAmount.html#aa0f01e6eacfb24a14b792ab8bd288de3">STAmount::cMaxValue</a>,</div>
-<div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span>                                <a class="code hl_variable" href="classripple_1_1STAmount.html#a5392e4fd5eef1038f40b1d260b7ad1ae">STAmount::cMaxOffset</a>);</div>
-<div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span>                        }</div>
-<div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span>                    }</div>
-<div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span>                }</div>
-<div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span>            });</div>
-<div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span>    }</div>
-<div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span> </div>
-<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span>    <span class="keywordflow">if</span> (!sums.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/map/empty.html">empty</a>())</div>
-<div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span>    {</div>
-<div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span>        <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> j;</div>
-<div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span>        <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; [k, v] : sums)</div>
-<div class="line"><a id="l00215" name="l00215"></a><span class="lineno">  215</span>        {</div>
-<div class="line"><a id="l00216" name="l00216"></a><span class="lineno">  216</span>            j[<a class="code hl_function" href="namespaceripple.html#ac124fe6744b7fe887dec949b56b16d50">to_string</a>(k)] = v.getText();</div>
-<div class="line"><a id="l00217" name="l00217"></a><span class="lineno">  217</span>        }</div>
-<div class="line"><a id="l00218" name="l00218"></a><span class="lineno">  218</span>        result[jss::obligations] = std::move(j);</div>
-<div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span>    }</div>
-<div class="line"><a id="l00220" name="l00220"></a><span class="lineno">  220</span> </div>
-<div class="line"><a id="l00221" name="l00221"></a><span class="lineno">  221</span>    <span class="keyword">auto</span> populateResult =</div>
-<div class="line"><a id="l00222" name="l00222"></a><span class="lineno">  222</span>        [&amp;result](</div>
-<div class="line"><a id="l00223" name="l00223"></a><span class="lineno">  223</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map&lt;AccountID, std::vector&lt;STAmount&gt;</a>&gt; <span class="keyword">const</span>&amp; array,</div>
-<div class="line"><a id="l00224" name="l00224"></a><span class="lineno">  224</span>            <a class="code hl_class" href="classJson_1_1StaticString.html">Json::StaticString</a> <span class="keyword">const</span>&amp; name) {</div>
-<div class="line"><a id="l00225" name="l00225"></a><span class="lineno">  225</span>            <span class="keywordflow">if</span> (!array.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/map/empty.html">empty</a>())</div>
-<div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span>            {</div>
-<div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span>                <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> j;</div>
-<div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span>                <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; [accId, accBalances] : array)</div>
-<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span>                {</div>
-<div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span>                    <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> balanceArray;</div>
-<div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span>                    <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; balance : accBalances)</div>
-<div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span>                    {</div>
-<div class="line"><a id="l00233" name="l00233"></a><span class="lineno">  233</span>                        <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> entry;</div>
-<div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span>                        entry[jss::currency] =</div>
-<div class="line"><a id="l00235" name="l00235"></a><span class="lineno">  235</span>                            <a class="code hl_function" href="namespaceripple.html#ac124fe6744b7fe887dec949b56b16d50">to_string</a>(balance.issue().currency);</div>
-<div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span>                        entry[jss::value] = balance.getText();</div>
-<div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span>                        balanceArray.<a class="code hl_function" href="classJson_1_1Value.html#a21526b61dea2a1771030473e6248621e">append</a>(std::move(entry));</div>
-<div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span>                    }</div>
-<div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span>                    j[<a class="code hl_function" href="namespaceripple.html#ac124fe6744b7fe887dec949b56b16d50">to_string</a>(accId)] = std::move(balanceArray);</div>
-<div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span>                }</div>
-<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span>                result[name] = std::move(j);</div>
-<div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span>            }</div>
-<div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span>        };</div>
-<div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span> </div>
-<div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span>    populateResult(hotBalances, jss::balances);</div>
-<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span>    populateResult(frozenBalances, jss::frozen_balances);</div>
-<div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span>    populateResult(assets, jss::assets);</div>
-<div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span> </div>
-<div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span>    <span class="keywordflow">return</span> result;</div>
-<div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span>}</div>
-<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span> </div>
-<div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span>}  <span class="comment">// namespace ripple</span></div>
+<div class="line"><a id="l00145" name="l00145"></a><span class="lineno">  145</span>    <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map&lt;Currency, STAmount&gt;</a> locked;</div>
+<div class="line"><a id="l00146" name="l00146"></a><span class="lineno">  146</span> </div>
+<div class="line"><a id="l00147" name="l00147"></a><span class="lineno">  147</span>    <span class="comment">// Traverse the cold wallet&#39;s trust lines</span></div>
+<div class="line"><a id="l00148" name="l00148"></a><span class="lineno">  148</span>    {</div>
+<div class="line"><a id="l00149" name="l00149"></a><span class="lineno">  149</span>        <a class="code hl_function" href="namespaceripple.html#accc8ce88b24f653a30e40f7d22e428c5">forEachItem</a>(</div>
+<div class="line"><a id="l00150" name="l00150"></a><span class="lineno">  150</span>            *ledger, accountID, [&amp;](<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr&lt;SLE const&gt;</a> <span class="keyword">const</span>&amp; sle) {</div>
+<div class="line"><a id="l00151" name="l00151"></a><span class="lineno">  151</span>                <span class="keywordflow">if</span> (sle-&gt;getType() == ltESCROW)</div>
+<div class="line"><a id="l00152" name="l00152"></a><span class="lineno">  152</span>                {</div>
+<div class="line"><a id="l00153" name="l00153"></a><span class="lineno">  153</span>                    auto const&amp; escrow = sle-&gt;getFieldAmount(sfAmount);</div>
+<div class="line"><a id="l00154" name="l00154"></a><span class="lineno">  154</span>                    auto&amp; bal = locked[escrow.getCurrency()];</div>
+<div class="line"><a id="l00155" name="l00155"></a><span class="lineno">  155</span>                    if (bal == beast::zero)</div>
+<div class="line"><a id="l00156" name="l00156"></a><span class="lineno">  156</span>                    {</div>
+<div class="line"><a id="l00157" name="l00157"></a><span class="lineno">  157</span>                        <span class="comment">// This is needed to set the currency code correctly</span></div>
+<div class="line"><a id="l00158" name="l00158"></a><span class="lineno">  158</span>                        bal = escrow;</div>
+<div class="line"><a id="l00159" name="l00159"></a><span class="lineno">  159</span>                    }</div>
+<div class="line"><a id="l00160" name="l00160"></a><span class="lineno">  160</span>                    <span class="keywordflow">else</span></div>
+<div class="line"><a id="l00161" name="l00161"></a><span class="lineno">  161</span>                    {</div>
+<div class="line"><a id="l00162" name="l00162"></a><span class="lineno">  162</span>                        try</div>
+<div class="line"><a id="l00163" name="l00163"></a><span class="lineno">  163</span>                        {</div>
+<div class="line"><a id="l00164" name="l00164"></a><span class="lineno">  164</span>                            bal += escrow;</div>
+<div class="line"><a id="l00165" name="l00165"></a><span class="lineno">  165</span>                        }</div>
+<div class="line"><a id="l00166" name="l00166"></a><span class="lineno">  166</span>                        catch (<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/error/runtime_error.html">std::runtime_error</a> <span class="keyword">const</span>&amp;)</div>
+<div class="line"><a id="l00167" name="l00167"></a><span class="lineno">  167</span>                        {</div>
+<div class="line"><a id="l00168" name="l00168"></a><span class="lineno">  168</span>                            <span class="comment">// Presumably the exception was caused by overflow.</span></div>
+<div class="line"><a id="l00169" name="l00169"></a><span class="lineno">  169</span>                            <span class="comment">// On overflow return the largest valid STAmount.</span></div>
+<div class="line"><a id="l00170" name="l00170"></a><span class="lineno">  170</span>                            <span class="comment">// Very large sums of STAmount are approximations</span></div>
+<div class="line"><a id="l00171" name="l00171"></a><span class="lineno">  171</span>                            <span class="comment">// anyway.</span></div>
+<div class="line"><a id="l00172" name="l00172"></a><span class="lineno">  172</span>                            bal = <a class="code hl_class" href="classripple_1_1STAmount.html">STAmount</a>(</div>
+<div class="line"><a id="l00173" name="l00173"></a><span class="lineno">  173</span>                                bal.issue(),</div>
+<div class="line"><a id="l00174" name="l00174"></a><span class="lineno">  174</span>                                <a class="code hl_variable" href="classripple_1_1STAmount.html#aa0f01e6eacfb24a14b792ab8bd288de3">STAmount::cMaxValue</a>,</div>
+<div class="line"><a id="l00175" name="l00175"></a><span class="lineno">  175</span>                                <a class="code hl_variable" href="classripple_1_1STAmount.html#a5392e4fd5eef1038f40b1d260b7ad1ae">STAmount::cMaxOffset</a>);</div>
+<div class="line"><a id="l00176" name="l00176"></a><span class="lineno">  176</span>                        }</div>
+<div class="line"><a id="l00177" name="l00177"></a><span class="lineno">  177</span>                    }</div>
+<div class="line"><a id="l00178" name="l00178"></a><span class="lineno">  178</span>                }</div>
+<div class="line"><a id="l00179" name="l00179"></a><span class="lineno">  179</span> </div>
+<div class="line"><a id="l00180" name="l00180"></a><span class="lineno">  180</span>                <span class="keyword">auto</span> rs = <a class="code hl_function" href="classripple_1_1PathFindTrustLine.html#a636785ce7e1dc47be3bf6c7fa4d8e670">PathFindTrustLine::makeItem</a>(accountID, sle);</div>
+<div class="line"><a id="l00181" name="l00181"></a><span class="lineno">  181</span> </div>
+<div class="line"><a id="l00182" name="l00182"></a><span class="lineno">  182</span>                <span class="keywordflow">if</span> (!rs)</div>
+<div class="line"><a id="l00183" name="l00183"></a><span class="lineno">  183</span>                    <span class="keywordflow">return</span>;</div>
+<div class="line"><a id="l00184" name="l00184"></a><span class="lineno">  184</span> </div>
+<div class="line"><a id="l00185" name="l00185"></a><span class="lineno">  185</span>                <span class="keywordtype">int</span> balSign = rs-&gt;getBalance().signum();</div>
+<div class="line"><a id="l00186" name="l00186"></a><span class="lineno">  186</span>                <span class="keywordflow">if</span> (balSign == 0)</div>
+<div class="line"><a id="l00187" name="l00187"></a><span class="lineno">  187</span>                    <span class="keywordflow">return</span>;</div>
+<div class="line"><a id="l00188" name="l00188"></a><span class="lineno">  188</span> </div>
+<div class="line"><a id="l00189" name="l00189"></a><span class="lineno">  189</span>                <span class="keyword">auto</span> <span class="keyword">const</span>&amp; peer = rs-&gt;getAccountIDPeer();</div>
+<div class="line"><a id="l00190" name="l00190"></a><span class="lineno">  190</span> </div>
+<div class="line"><a id="l00191" name="l00191"></a><span class="lineno">  191</span>                <span class="comment">// Here, a negative balance means the cold wallet owes (normal)</span></div>
+<div class="line"><a id="l00192" name="l00192"></a><span class="lineno">  192</span>                <span class="comment">// A positive balance means the cold wallet has an asset</span></div>
+<div class="line"><a id="l00193" name="l00193"></a><span class="lineno">  193</span>                <span class="comment">// (unusual)</span></div>
+<div class="line"><a id="l00194" name="l00194"></a><span class="lineno">  194</span> </div>
+<div class="line"><a id="l00195" name="l00195"></a><span class="lineno">  195</span>                <span class="keywordflow">if</span> (hotWallets.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/set/count.html">count</a>(peer) &gt; 0)</div>
+<div class="line"><a id="l00196" name="l00196"></a><span class="lineno">  196</span>                {</div>
+<div class="line"><a id="l00197" name="l00197"></a><span class="lineno">  197</span>                    <span class="comment">// This is a specified hot wallet</span></div>
+<div class="line"><a id="l00198" name="l00198"></a><span class="lineno">  198</span>                    hotBalances[peer].push_back(-rs-&gt;getBalance());</div>
+<div class="line"><a id="l00199" name="l00199"></a><span class="lineno">  199</span>                }</div>
+<div class="line"><a id="l00200" name="l00200"></a><span class="lineno">  200</span>                <span class="keywordflow">else</span> <span class="keywordflow">if</span> (balSign &gt; 0)</div>
+<div class="line"><a id="l00201" name="l00201"></a><span class="lineno">  201</span>                {</div>
+<div class="line"><a id="l00202" name="l00202"></a><span class="lineno">  202</span>                    <span class="comment">// This is a gateway asset</span></div>
+<div class="line"><a id="l00203" name="l00203"></a><span class="lineno">  203</span>                    assets[peer].push_back(rs-&gt;getBalance());</div>
+<div class="line"><a id="l00204" name="l00204"></a><span class="lineno">  204</span>                }</div>
+<div class="line"><a id="l00205" name="l00205"></a><span class="lineno">  205</span>                <span class="keywordflow">else</span> <span class="keywordflow">if</span> (rs-&gt;getFreeze())</div>
+<div class="line"><a id="l00206" name="l00206"></a><span class="lineno">  206</span>                {</div>
+<div class="line"><a id="l00207" name="l00207"></a><span class="lineno">  207</span>                    <span class="comment">// An obligation the gateway has frozen</span></div>
+<div class="line"><a id="l00208" name="l00208"></a><span class="lineno">  208</span>                    frozenBalances[peer].push_back(-rs-&gt;getBalance());</div>
+<div class="line"><a id="l00209" name="l00209"></a><span class="lineno">  209</span>                }</div>
+<div class="line"><a id="l00210" name="l00210"></a><span class="lineno">  210</span>                <span class="keywordflow">else</span></div>
+<div class="line"><a id="l00211" name="l00211"></a><span class="lineno">  211</span>                {</div>
+<div class="line"><a id="l00212" name="l00212"></a><span class="lineno">  212</span>                    <span class="comment">// normal negative balance, obligation to customer</span></div>
+<div class="line"><a id="l00213" name="l00213"></a><span class="lineno">  213</span>                    <span class="keyword">auto</span>&amp; bal = sums[rs-&gt;getBalance().getCurrency()];</div>
+<div class="line"><a id="l00214" name="l00214"></a><span class="lineno">  214</span>                    <span class="keywordflow">if</span> (bal == beast::zero)</div>
+<div class="line"><a id="l00215" name="l00215"></a><span class="lineno">  215</span>                    {</div>
+<div class="line"><a id="l00216" name="l00216"></a><span class="lineno">  216</span>                        <span class="comment">// This is needed to set the currency code correctly</span></div>
+<div class="line"><a id="l00217" name="l00217"></a><span class="lineno">  217</span>                        bal = -rs-&gt;getBalance();</div>
+<div class="line"><a id="l00218" name="l00218"></a><span class="lineno">  218</span>                    }</div>
+<div class="line"><a id="l00219" name="l00219"></a><span class="lineno">  219</span>                    <span class="keywordflow">else</span></div>
+<div class="line"><a id="l00220" name="l00220"></a><span class="lineno">  220</span>                    {</div>
+<div class="line"><a id="l00221" name="l00221"></a><span class="lineno">  221</span>                        <span class="keywordflow">try</span></div>
+<div class="line"><a id="l00222" name="l00222"></a><span class="lineno">  222</span>                        {</div>
+<div class="line"><a id="l00223" name="l00223"></a><span class="lineno">  223</span>                            bal -= rs-&gt;getBalance();</div>
+<div class="line"><a id="l00224" name="l00224"></a><span class="lineno">  224</span>                        }</div>
+<div class="line"><a id="l00225" name="l00225"></a><span class="lineno">  225</span>                        <span class="keywordflow">catch</span> (<a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/error/runtime_error.html">std::runtime_error</a> <span class="keyword">const</span>&amp;)</div>
+<div class="line"><a id="l00226" name="l00226"></a><span class="lineno">  226</span>                        {</div>
+<div class="line"><a id="l00227" name="l00227"></a><span class="lineno">  227</span>                            <span class="comment">// Presumably the exception was caused by overflow.</span></div>
+<div class="line"><a id="l00228" name="l00228"></a><span class="lineno">  228</span>                            <span class="comment">// On overflow return the largest valid STAmount.</span></div>
+<div class="line"><a id="l00229" name="l00229"></a><span class="lineno">  229</span>                            <span class="comment">// Very large sums of STAmount are approximations</span></div>
+<div class="line"><a id="l00230" name="l00230"></a><span class="lineno">  230</span>                            <span class="comment">// anyway.</span></div>
+<div class="line"><a id="l00231" name="l00231"></a><span class="lineno">  231</span>                            bal = <a class="code hl_class" href="classripple_1_1STAmount.html">STAmount</a>(</div>
+<div class="line"><a id="l00232" name="l00232"></a><span class="lineno">  232</span>                                bal.issue(),</div>
+<div class="line"><a id="l00233" name="l00233"></a><span class="lineno">  233</span>                                <a class="code hl_variable" href="classripple_1_1STAmount.html#aa0f01e6eacfb24a14b792ab8bd288de3">STAmount::cMaxValue</a>,</div>
+<div class="line"><a id="l00234" name="l00234"></a><span class="lineno">  234</span>                                <a class="code hl_variable" href="classripple_1_1STAmount.html#a5392e4fd5eef1038f40b1d260b7ad1ae">STAmount::cMaxOffset</a>);</div>
+<div class="line"><a id="l00235" name="l00235"></a><span class="lineno">  235</span>                        }</div>
+<div class="line"><a id="l00236" name="l00236"></a><span class="lineno">  236</span>                    }</div>
+<div class="line"><a id="l00237" name="l00237"></a><span class="lineno">  237</span>                }</div>
+<div class="line"><a id="l00238" name="l00238"></a><span class="lineno">  238</span>            });</div>
+<div class="line"><a id="l00239" name="l00239"></a><span class="lineno">  239</span>    }</div>
+<div class="line"><a id="l00240" name="l00240"></a><span class="lineno">  240</span> </div>
+<div class="line"><a id="l00241" name="l00241"></a><span class="lineno">  241</span>    <span class="keywordflow">if</span> (!sums.empty())</div>
+<div class="line"><a id="l00242" name="l00242"></a><span class="lineno">  242</span>    {</div>
+<div class="line"><a id="l00243" name="l00243"></a><span class="lineno">  243</span>        <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> j;</div>
+<div class="line"><a id="l00244" name="l00244"></a><span class="lineno">  244</span>        <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; [k, v] : sums)</div>
+<div class="line"><a id="l00245" name="l00245"></a><span class="lineno">  245</span>        {</div>
+<div class="line"><a id="l00246" name="l00246"></a><span class="lineno">  246</span>            j[<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">to_string</a>(k)] = v.getText();</div>
+<div class="line"><a id="l00247" name="l00247"></a><span class="lineno">  247</span>        }</div>
+<div class="line"><a id="l00248" name="l00248"></a><span class="lineno">  248</span>        result[jss::obligations] = std::move(j);</div>
+<div class="line"><a id="l00249" name="l00249"></a><span class="lineno">  249</span>    }</div>
+<div class="line"><a id="l00250" name="l00250"></a><span class="lineno">  250</span> </div>
+<div class="line"><a id="l00251" name="l00251"></a><span class="lineno">  251</span>    <span class="keyword">auto</span> populateResult =</div>
+<div class="line"><a id="l00252" name="l00252"></a><span class="lineno">  252</span>        [&amp;result](</div>
+<div class="line"><a id="l00253" name="l00253"></a><span class="lineno">  253</span>            <a class="code hl_classRef" href="http://en.cppreference.com/w/cpp/container/map.html">std::map&lt;AccountID, std::vector&lt;STAmount&gt;</a>&gt; <span class="keyword">const</span>&amp; array,</div>
+<div class="line"><a id="l00254" name="l00254"></a><span class="lineno">  254</span>            <a class="code hl_class" href="classJson_1_1StaticString.html">Json::StaticString</a> <span class="keyword">const</span>&amp; name) {</div>
+<div class="line"><a id="l00255" name="l00255"></a><span class="lineno">  255</span>            <span class="keywordflow">if</span> (!array.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/container/map/empty.html">empty</a>())</div>
+<div class="line"><a id="l00256" name="l00256"></a><span class="lineno">  256</span>            {</div>
+<div class="line"><a id="l00257" name="l00257"></a><span class="lineno">  257</span>                <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> j;</div>
+<div class="line"><a id="l00258" name="l00258"></a><span class="lineno">  258</span>                <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; [accId, accBalances] : array)</div>
+<div class="line"><a id="l00259" name="l00259"></a><span class="lineno">  259</span>                {</div>
+<div class="line"><a id="l00260" name="l00260"></a><span class="lineno">  260</span>                    <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> balanceArray;</div>
+<div class="line"><a id="l00261" name="l00261"></a><span class="lineno">  261</span>                    <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; balance : accBalances)</div>
+<div class="line"><a id="l00262" name="l00262"></a><span class="lineno">  262</span>                    {</div>
+<div class="line"><a id="l00263" name="l00263"></a><span class="lineno">  263</span>                        <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> <a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1delegate.html#a709f300dec58074240338d43fbade25f">entry</a>;</div>
+<div class="line"><a id="l00264" name="l00264"></a><span class="lineno">  264</span>                        <a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1delegate.html#a709f300dec58074240338d43fbade25f">entry</a>[jss::currency] =</div>
+<div class="line"><a id="l00265" name="l00265"></a><span class="lineno">  265</span>                            <a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">to_string</a>(balance.issue().currency);</div>
+<div class="line"><a id="l00266" name="l00266"></a><span class="lineno">  266</span>                        <a class="code hl_function" href="namespaceripple_1_1test_1_1jtx_1_1delegate.html#a709f300dec58074240338d43fbade25f">entry</a>[jss::value] = balance.getText();</div>
+<div class="line"><a id="l00267" name="l00267"></a><span class="lineno">  267</span>                        balanceArray.<a class="code hl_function" href="classJson_1_1Value.html#a21526b61dea2a1771030473e6248621e">append</a>(std::move(entry));</div>
+<div class="line"><a id="l00268" name="l00268"></a><span class="lineno">  268</span>                    }</div>
+<div class="line"><a id="l00269" name="l00269"></a><span class="lineno">  269</span>                    j[<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">to_string</a>(accId)] = std::move(balanceArray);</div>
+<div class="line"><a id="l00270" name="l00270"></a><span class="lineno">  270</span>                }</div>
+<div class="line"><a id="l00271" name="l00271"></a><span class="lineno">  271</span>                result[name] = std::move(j);</div>
+<div class="line"><a id="l00272" name="l00272"></a><span class="lineno">  272</span>            }</div>
+<div class="line"><a id="l00273" name="l00273"></a><span class="lineno">  273</span>        };</div>
+<div class="line"><a id="l00274" name="l00274"></a><span class="lineno">  274</span> </div>
+<div class="line"><a id="l00275" name="l00275"></a><span class="lineno">  275</span>    populateResult(hotBalances, jss::balances);</div>
+<div class="line"><a id="l00276" name="l00276"></a><span class="lineno">  276</span>    populateResult(frozenBalances, jss::frozen_balances);</div>
+<div class="line"><a id="l00277" name="l00277"></a><span class="lineno">  277</span>    populateResult(assets, jss::assets);</div>
+<div class="line"><a id="l00278" name="l00278"></a><span class="lineno">  278</span> </div>
+<div class="line"><a id="l00279" name="l00279"></a><span class="lineno">  279</span>    <span class="comment">// Add total escrow to the result</span></div>
+<div class="line"><a id="l00280" name="l00280"></a><span class="lineno">  280</span>    <span class="keywordflow">if</span> (!locked.empty())</div>
+<div class="line"><a id="l00281" name="l00281"></a><span class="lineno">  281</span>    {</div>
+<div class="line"><a id="l00282" name="l00282"></a><span class="lineno">  282</span>        <a class="code hl_class" href="classJson_1_1Value.html">Json::Value</a> j;</div>
+<div class="line"><a id="l00283" name="l00283"></a><span class="lineno">  283</span>        <span class="keywordflow">for</span> (<span class="keyword">auto</span> <span class="keyword">const</span>&amp; [k, v] : locked)</div>
+<div class="line"><a id="l00284" name="l00284"></a><span class="lineno">  284</span>        {</div>
+<div class="line"><a id="l00285" name="l00285"></a><span class="lineno">  285</span>            j[<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">to_string</a>(k)] = v.getText();</div>
+<div class="line"><a id="l00286" name="l00286"></a><span class="lineno">  286</span>        }</div>
+<div class="line"><a id="l00287" name="l00287"></a><span class="lineno">  287</span>        result[jss::locked] = std::move(j);</div>
+<div class="line"><a id="l00288" name="l00288"></a><span class="lineno">  288</span>    }</div>
+<div class="line"><a id="l00289" name="l00289"></a><span class="lineno">  289</span> </div>
+<div class="line"><a id="l00290" name="l00290"></a><span class="lineno">  290</span>    <span class="keywordflow">return</span> result;</div>
+<div class="line"><a id="l00291" name="l00291"></a><span class="lineno">  291</span>}</div>
+<div class="line"><a id="l00292" name="l00292"></a><span class="lineno">  292</span> </div>
+<div class="line"><a id="l00293" name="l00293"></a><span class="lineno">  293</span>}  <span class="comment">// namespace ripple</span></div>
 <div class="ttc" id="abasic_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string.html">std::string</a></div></div>
 <div class="ttc" id="aclassJson_1_1StaticString_html"><div class="ttname"><a href="classJson_1_1StaticString.html">Json::StaticString</a></div><div class="ttdoc">Lightweight wrapper to tag static string.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00063">json_value.h:64</a></div></div>
 <div class="ttc" id="aclassJson_1_1Value_html"><div class="ttname"><a href="classJson_1_1Value.html">Json::Value</a></div><div class="ttdoc">Represents a JSON value.</div><div class="ttdef"><b>Definition:</b> <a href="json__value_8h_source.html#l00149">json_value.h:150</a></div></div>
@@ -349,6 +390,7 @@ $(function() {
 <div class="ttc" id="anamespaceripple_1_1Resource_html_ad74523edd5d732d9b4320240f4d42b2a"><div class="ttname"><a href="namespaceripple_1_1Resource.html#ad74523edd5d732d9b4320240f4d42b2a">ripple::Resource::feeHeavyBurdenRPC</a></div><div class="ttdeci">Charge const feeHeavyBurdenRPC</div></div>
 <div class="ttc" id="anamespaceripple_1_1credentials_html_abd2ed437891b9bd542d2afc3f5f4bc58"><div class="ttname"><a href="namespaceripple_1_1credentials.html#abd2ed437891b9bd542d2afc3f5f4bc58">ripple::credentials::valid</a></div><div class="ttdeci">TER valid(PreclaimContext const &amp;ctx, AccountID const &amp;src)</div><div class="ttdef"><b>Definition:</b> <a href="CredentialHelpers_8cpp_source.html#l00153">CredentialHelpers.cpp:153</a></div></div>
 <div class="ttc" id="anamespaceripple_1_1keylet_html_aa756e0f59b26042ed00a4d0ba6e96951"><div class="ttname"><a href="namespaceripple_1_1keylet.html#aa756e0f59b26042ed00a4d0ba6e96951">ripple::keylet::account</a></div><div class="ttdeci">Keylet account(AccountID const &amp;id) noexcept</div><div class="ttdoc">AccountID root.</div><div class="ttdef"><b>Definition:</b> <a href="Indexes_8cpp_source.html#l00184">Indexes.cpp:184</a></div></div>
+<div class="ttc" id="anamespaceripple_1_1test_1_1jtx_1_1delegate_html_a709f300dec58074240338d43fbade25f"><div class="ttname"><a href="namespaceripple_1_1test_1_1jtx_1_1delegate.html#a709f300dec58074240338d43fbade25f">ripple::test::jtx::delegate::entry</a></div><div class="ttdeci">Json::Value entry(jtx::Env &amp;env, jtx::Account const &amp;account, jtx::Account const &amp;authorize)</div><div class="ttdef"><b>Definition:</b> <a href="delegate_8cpp_source.html#l00055">delegate.cpp:55</a></div></div>
 <div class="ttc" id="anamespaceripple_html"><div class="ttname"><a href="namespaceripple.html">ripple</a></div><div class="ttdoc">Use hash_* containers for keys that do not need a cryptographically secure hashing algorithm.</div><div class="ttdef"><b>Definition:</b> <a href="algorithm_8h_source.html#l00026">algorithm.h:26</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a08a13b62b18272366f788632359e8793"><div class="ttname"><a href="namespaceripple.html#a08a13b62b18272366f788632359e8793">ripple::toBase58</a></div><div class="ttdeci">std::string toBase58(AccountID const &amp;v)</div><div class="ttdoc">Convert AccountID to base58 checked string.</div><div class="ttdef"><b>Definition:</b> <a href="AccountID_8cpp_source.html#l00114">AccountID.cpp:114</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a32d6d3ce1a48272b677d2c88b1d30932a044301ed3c32624aade5888d1c60566f"><div class="ttname"><a href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932a044301ed3c32624aade5888d1c60566f">ripple::rpcACT_NOT_FOUND</a></div><div class="ttdeci">@ rpcACT_NOT_FOUND</div><div class="ttdef"><b>Definition:</b> <a href="ErrorCodes_8h_source.html#l00070">ErrorCodes.h:70</a></div></div>
@@ -357,7 +399,6 @@ $(function() {
 <div class="ttc" id="anamespaceripple_html_a32d6d3ce1a48272b677d2c88b1d30932ad2a733704a1bd3f6f03e451baf23fc53"><div class="ttname"><a href="namespaceripple.html#a32d6d3ce1a48272b677d2c88b1d30932ad2a733704a1bd3f6f03e451baf23fc53">ripple::rpcINVALID_HOTWALLET</a></div><div class="ttdeci">@ rpcINVALID_HOTWALLET</div><div class="ttdef"><b>Definition:</b> <a href="ErrorCodes_8h_source.html#l00081">ErrorCodes.h:81</a></div></div>
 <div class="ttc" id="anamespaceripple_html_a67869382f83fd55cf3096d2591a57b07"><div class="ttname"><a href="namespaceripple.html#a67869382f83fd55cf3096d2591a57b07">ripple::rpcError</a></div><div class="ttdeci">Json::Value rpcError(int iError)</div><div class="ttdef"><b>Definition:</b> <a href="RPCErr_8cpp_source.html#l00031">RPCErr.cpp:31</a></div></div>
 <div class="ttc" id="anamespaceripple_html_abfbe6dbaf9dea5c06f30ed321ba119b5"><div class="ttname"><a href="namespaceripple.html#abfbe6dbaf9dea5c06f30ed321ba119b5">ripple::doGatewayBalances</a></div><div class="ttdeci">Json::Value doGatewayBalances(RPC::JsonContext &amp;context)</div><div class="ttdef"><b>Definition:</b> <a href="GatewayBalances_8cpp_source.html#l00054">GatewayBalances.cpp:54</a></div></div>
-<div class="ttc" id="anamespaceripple_html_ac124fe6744b7fe887dec949b56b16d50"><div class="ttname"><a href="namespaceripple.html#ac124fe6744b7fe887dec949b56b16d50">ripple::to_string</a></div><div class="ttdeci">std::string to_string(base_uint&lt; Bits, Tag &gt; const &amp;a)</div><div class="ttdef"><b>Definition:</b> <a href="base__uint_8h_source.html#l00630">base_uint.h:630</a></div></div>
 <div class="ttc" id="anamespaceripple_html_accc8ce88b24f653a30e40f7d22e428c5"><div class="ttname"><a href="namespaceripple.html#accc8ce88b24f653a30e40f7d22e428c5">ripple::forEachItem</a></div><div class="ttdeci">void forEachItem(ReadView const &amp;view, Keylet const &amp;root, std::function&lt; void(std::shared_ptr&lt; SLE const &gt; const &amp;)&gt; const &amp;f)</div><div class="ttdoc">Iterate all items in the given directory.</div><div class="ttdef"><b>Definition:</b> <a href="View_8cpp_source.html#l00655">View.cpp:655</a></div></div>
 <div class="ttc" id="aruntime_error_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/error/runtime_error.html">std::runtime_error</a></div></div>
 <div class="ttc" id="aset_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/container/set.html">std::set</a></div></div>
@@ -366,6 +407,7 @@ $(function() {
 <div class="ttc" id="astructripple_1_1RPC_1_1Context_html_a53cf66700be4d73f6249db71ed263bc4"><div class="ttname"><a href="structripple_1_1RPC_1_1Context.html#a53cf66700be4d73f6249db71ed263bc4">ripple::RPC::Context::loadType</a></div><div class="ttdeci">Resource::Charge &amp; loadType</div><div class="ttdef"><b>Definition:</b> <a href="Context_8h_source.html#l00042">Context.h:42</a></div></div>
 <div class="ttc" id="astructripple_1_1RPC_1_1JsonContext_html"><div class="ttname"><a href="structripple_1_1RPC_1_1JsonContext.html">ripple::RPC::JsonContext</a></div><div class="ttdef"><b>Definition:</b> <a href="Context_8h_source.html#l00052">Context.h:53</a></div></div>
 <div class="ttc" id="astructripple_1_1RPC_1_1JsonContext_html_a036b2c14552fbca49011c3d0e78017fa"><div class="ttname"><a href="structripple_1_1RPC_1_1JsonContext.html#a036b2c14552fbca49011c3d0e78017fa">ripple::RPC::JsonContext::params</a></div><div class="ttdeci">Json::Value params</div><div class="ttdef"><b>Definition:</b> <a href="Context_8h_source.html#l00063">Context.h:63</a></div></div>
+<div class="ttc" id="ato_string_html"><div class="ttname"><a href="http://en.cppreference.com/w/cpp/string/basic_string/to_string.html">std::to_string</a></div><div class="ttdeci">T to_string(T... args)</div></div>
 </div><!-- fragment --></div><!-- contents -->
 <!-- start footer part -->
 <hr class="footer"/><address class="footer"><small>
