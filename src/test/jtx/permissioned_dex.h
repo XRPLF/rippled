@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2025 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,38 +17,35 @@
 */
 //==============================================================================
 
-#include <xrpl/protocol/Book.h>
-#include <xrpl/protocol/Issue.h>
+#pragma once
 
-#include <ostream>
-#include <string>
-
+#include <test/jtx.h>
 namespace ripple {
+namespace test {
+namespace jtx {
 
-bool
-isConsistent(Book const& book)
+uint256
+setupDomain(
+    jtx::Env& env,
+    std::vector<jtx::Account> const& accounts,
+    jtx::Account const& domainOwner = jtx::Account("domainOwner"),
+    std::string const& credType = "Cred");
+
+class PermissionedDEX
 {
-    return isConsistent(book.in) && isConsistent(book.out) &&
-        book.in != book.out;
-}
+public:
+    Account gw;
+    Account domainOwner;
+    Account alice;
+    Account bob;
+    Account carol;
+    IOU USD;
+    uint256 domainID;
+    std::string credType;
 
-std::string
-to_string(Book const& book)
-{
-    return to_string(book.in) + "->" + to_string(book.out);
-}
+    PermissionedDEX(Env& env);
+};
 
-std::ostream&
-operator<<(std::ostream& os, Book const& x)
-{
-    os << to_string(x);
-    return os;
-}
-
-Book
-reversed(Book const& book)
-{
-    return Book(book.out, book.in, book.domain);
-}
-
+}  // namespace jtx
+}  // namespace test
 }  // namespace ripple
