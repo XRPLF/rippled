@@ -21,6 +21,7 @@
 #define RIPPLE_TEST_JTX_MULTISIGN_H_INCLUDED
 
 #include <test/jtx/Account.h>
+#include <test/jtx/SignerUtils.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/owners.h>
 #include <test/jtx/tags.h>
@@ -65,42 +66,15 @@ signers(Account const& account, none_t);
 class msig
 {
 public:
-    struct Reg
-    {
-        Account acct;
-        Account sig;
-
-        Reg(Account const& masterSig) : acct(masterSig), sig(masterSig)
-        {
-        }
-
-        Reg(Account const& acct_, Account const& regularSig)
-            : acct(acct_), sig(regularSig)
-        {
-        }
-
-        Reg(char const* masterSig) : acct(masterSig), sig(masterSig)
-        {
-        }
-
-        Reg(char const* acct_, char const* regularSig)
-            : acct(acct_), sig(regularSig)
-        {
-        }
-
-        bool
-        operator<(Reg const& rhs) const
-        {
-            return acct < rhs.acct;
-        }
-    };
-
     std::vector<Reg> signers;
     SField const* const subField = nullptr;
     static constexpr SField* const topLevel = nullptr;
 
-public:
-    msig(SField const* subField_, std::vector<Reg> signers_);
+    msig(SField const* subField_, std::vector<Reg> signers_)
+        : signers(std::move(signers_)), subField(subField_)
+    {
+        sortSigners(signers);
+    }
 
     msig(SField const& subField_, std::vector<Reg> signers_)
         : msig{&subField_, signers_}

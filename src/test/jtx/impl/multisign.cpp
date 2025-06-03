@@ -65,18 +65,6 @@ signers(Account const& account, none_t)
 
 //------------------------------------------------------------------------------
 
-msig::msig(SField const* subField_, std::vector<msig::Reg> signers_)
-    : signers(std::move(signers_)), subField(subField_)
-{
-    // Signatures must be applied in sorted order.
-    std::sort(
-        signers.begin(),
-        signers.end(),
-        [](msig::Reg const& lhs, msig::Reg const& rhs) {
-            return lhs.acct.id() < rhs.acct.id();
-        });
-}
-
 void
 msig::operator()(Env& env, JTx& jt) const
 {

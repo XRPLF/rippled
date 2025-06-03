@@ -189,6 +189,7 @@ LEDGER_ENTRY(ltDIR_NODE, 0x0064, DirectoryNode, directory, ({
     {sfNFTokenID,            soeOPTIONAL},
     {sfPreviousTxnID,        soeOPTIONAL},
     {sfPreviousTxnLgrSeq,    soeOPTIONAL},
+    {sfDomainID,             soeOPTIONAL}
 }))
 
 /** The ledger object which lists details about amendments on the network.
@@ -250,6 +251,8 @@ LEDGER_ENTRY(ltOFFER, 0x006f, Offer, offer, ({
     {sfPreviousTxnID,        soeREQUIRED},
     {sfPreviousTxnLgrSeq,    soeREQUIRED},
     {sfExpiration,           soeOPTIONAL},
+    {sfDomainID,             soeOPTIONAL},
+    {sfAdditionalBooks,      soeOPTIONAL},
 }))
 
 /** A ledger object which describes a deposit preauthorization.

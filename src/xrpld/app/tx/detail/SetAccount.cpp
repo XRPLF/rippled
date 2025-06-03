@@ -211,7 +211,7 @@ SetAccount::checkPermission(ReadView const& view, STTx const& tx)
     // AccountSet transaction. If any delegated account is trying to
     // update the flag on behalf of another account, it is not
     // authorized.
-    if (uSetFlag != 0 || uClearFlag != 0 || uTxFlags != tfFullyCanonicalSig)
+    if (uSetFlag != 0 || uClearFlag != 0 || uTxFlags & tfUniversalMask)
         return tecNO_PERMISSION;
 
     if (tx.isFieldPresent(sfEmailHash) &&

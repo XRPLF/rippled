@@ -44,6 +44,9 @@ public:
     static TxConsequences
     makeTxConsequences(PreflightContext const& ctx);
 
+    static bool
+    isEnabled(PreflightContext const& ctx);
+
     static std::uint32_t
     getFlagsMask(PreflightContext const& ctx);
 
@@ -124,17 +127,31 @@ private:
     flowCross(
         PaymentSandbox& psb,
         PaymentSandbox& psbCancel,
-        Amounts const& takerAmount);
+        Amounts const& takerAmount,
+        std::optional<uint256> const& domainID);
 
     // Temporary
     // This is a central location that invokes both versions of cross
     // so the results can be compared.  Eventually this layer will be
     // removed once flowCross is determined to be stable.
     std::pair<TER, Amounts>
-    cross(Sandbox& sb, Sandbox& sbCancel, Amounts const& takerAmount);
+    cross(
+        Sandbox& sb,
+        Sandbox& sbCancel,
+        Amounts const& takerAmount,
+        std::optional<uint256> const& domainID);
 
     static std::string
     format_amount(STAmount const& amount);
+
+    TER
+    applyHybrid(
+        Sandbox& sb,
+        std::shared_ptr<STLedgerEntry> sleOffer,
+        Keylet const& offer_index,
+        STAmount const& saTakerPays,
+        STAmount const& saTakerGets,
+        std::function<void(SLE::ref, std::optional<uint256>)> const& setDir);
 
 private:
     // What kind of offer we are placing

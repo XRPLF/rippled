@@ -595,13 +595,16 @@ public:
     }
 
     /** Return metadata for the last JTx.
-
-        Effects:
-
-            The open ledger is closed as if by a call
-            to close(). The metadata for the last
-            transaction ID, if any, is returned.
-    */
+     *
+     *  NOTE: this has a side effect of closing the open ledger.
+     *  The ledger will only be closed if it includes transactions.
+     *
+     *  Effects:
+     *
+     *      The open ledger is closed as if by a call
+     *      to close(). The metadata for the last
+     *      transaction ID, if any, is returned.
+     */
     std::shared_ptr<STObject const>
     meta();
 

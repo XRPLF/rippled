@@ -104,7 +104,7 @@ private:
 
         struct Hash
         {
-            explicit Hash() = default;
+            Hash() = default;
 
             std::size_t
             operator()(AccountKey const& key) const noexcept

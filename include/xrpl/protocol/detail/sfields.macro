@@ -193,7 +193,7 @@ TYPED_SFIELD(sfEmitParentTxnID,          UINT256,   11)
 TYPED_SFIELD(sfEmitNonce,                UINT256,   12)
 TYPED_SFIELD(sfEmitHookHash,             UINT256,   13)
 TYPED_SFIELD(sfAMMID,                    UINT256,   14,
-    SField::sMD_PseudoAccount |SField::sMD_Default)
+    SField::sMD_PseudoAccount | SField::sMD_Default)
 
 // 256-bit (uncommon)
 TYPED_SFIELD(sfBookDirectory,            UINT256,   16)
@@ -217,9 +217,10 @@ TYPED_SFIELD(sfHookSetTxnID,             UINT256,   33)
 TYPED_SFIELD(sfDomainID,                 UINT256,   34)
 TYPED_SFIELD(sfVaultID,                  UINT256,   35,
     SField::sMD_PseudoAccount | SField::sMD_Default)
-TYPED_SFIELD(sfLoanBrokerID,             UINT256,   36,
+TYPED_SFIELD(sfParentBatchID,            UINT256,   36)
+TYPED_SFIELD(sfLoanBrokerID,             UINT256,   37,
     SField::sMD_PseudoAccount | SField::sMD_Default)
-TYPED_SFIELD(sfLoanID,                   UINT256,   37)
+TYPED_SFIELD(sfLoanID,                   UINT256,   38)
 
 // number (common)
 TYPED_SFIELD(sfNumber,                   NUMBER,     1)
@@ -393,7 +394,10 @@ UNTYPED_SFIELD(sfXChainClaimAttestationCollectionElement, OBJECT, 30)
 UNTYPED_SFIELD(sfXChainCreateAccountAttestationCollectionElement, OBJECT, 31)
 UNTYPED_SFIELD(sfPriceData,              OBJECT,    32)
 UNTYPED_SFIELD(sfCredential,             OBJECT,    33)
-UNTYPED_SFIELD(sfCounterpartySignature,  OBJECT,    34, SField::sMD_Default, SField::notSigning)
+UNTYPED_SFIELD(sfRawTransaction,         OBJECT,    34)
+UNTYPED_SFIELD(sfBatchSigner,            OBJECT,    35)
+UNTYPED_SFIELD(sfBook,                   OBJECT,    36)
+UNTYPED_SFIELD(sfCounterpartySignature,  OBJECT,    37, SField::sMD_Default, SField::notSigning)
 
 // array of objects (common)
 // ARRAY/1 is reserved for end of array
@@ -409,6 +413,7 @@ UNTYPED_SFIELD(sfMemos,                  ARRAY,      9)
 UNTYPED_SFIELD(sfNFTokens,               ARRAY,     10)
 UNTYPED_SFIELD(sfHooks,                  ARRAY,     11)
 UNTYPED_SFIELD(sfVoteSlots,              ARRAY,     12)
+UNTYPED_SFIELD(sfAdditionalBooks,        ARRAY,     13)
 
 // array of objects (uncommon)
 UNTYPED_SFIELD(sfMajorities,             ARRAY,     16)
@@ -425,5 +430,7 @@ UNTYPED_SFIELD(sfAuthorizeCredentials,   ARRAY,     26)
 UNTYPED_SFIELD(sfUnauthorizeCredentials, ARRAY,     27)
 UNTYPED_SFIELD(sfAcceptedCredentials,    ARRAY,     28)
 UNTYPED_SFIELD(sfPermissions,            ARRAY,     29)
+UNTYPED_SFIELD(sfRawTransactions,        ARRAY,     30)
+UNTYPED_SFIELD(sfBatchSigners,           ARRAY,     31, SField::sMD_Default, SField::notSigning)
 
 // clang-format on

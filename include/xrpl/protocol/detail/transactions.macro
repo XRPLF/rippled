@@ -71,6 +71,7 @@ TRANSACTION(ttPAYMENT, 0, Payment,
     {sfDestinationTag, soeOPTIONAL},
     {sfDeliverMin, soeOPTIONAL, soeMPTSupported},
     {sfCredentialIDs, soeOPTIONAL},
+    {sfDomainID, soeOPTIONAL},
 }))
 
 /** This transaction type creates an escrow object. */
@@ -153,6 +154,7 @@ TRANSACTION(ttOFFER_CREATE, 7, OfferCreate,
     {sfTakerGets, soeREQUIRED},
     {sfExpiration, soeOPTIONAL},
     {sfOfferSequence, soeOPTIONAL},
+    {sfDomainID, soeOPTIONAL},
 }))
 
 /** This transaction type cancels existing offers to trade one asset for another. */
@@ -814,7 +816,18 @@ TRANSACTION(ttVAULT_CLAWBACK, 70, VaultClawback,
     {sfAmount, soeOPTIONAL, soeMPTSupported},
 }))
 
-/** Reserve 71-73 for future Vault-related transactions */
+/** This transaction type batches together transactions. */
+#if TRANSACTION_INCLUDE
+#   include <xrpld/app/tx/detail/Batch.h>
+#endif
+TRANSACTION(ttBATCH, 71, Batch,
+    Delegation::notDelegatable,
+    noPriv, ({
+    {sfRawTransactions, soeREQUIRED},
+    {sfBatchSigners, soeOPTIONAL},
+}))
+
+/** Reserve 72-73 for future Vault-related transactions */
 
 /** This transaction creates and updates a Loan Broker */
 #if TRANSACTION_INCLUDE
@@ -976,4 +989,3 @@ TRANSACTION(ttUNL_MODIFY, 102, UNLModify,
     {sfLedgerSequence, soeREQUIRED},
     {sfUNLModifyValidator, soeREQUIRED},
 }))
-

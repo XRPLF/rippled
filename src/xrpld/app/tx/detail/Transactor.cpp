@@ -43,6 +43,13 @@ namespace ripple {
 NotTEC
 preflight0(PreflightContext const& ctx, std::uint32_t flagMask)
 {
+    if (isPseudoTx(ctx.tx) && ctx.tx.isFlag(tfInnerBatchTxn))
+    {
+        JLOG(ctx.j.warn()) << "Pseudo transactions cannot contain the "
+                              "tfInnerBatchTxn flag.";
+        return temINVALID_FLAG;
+    }
+
     if (!isPseudoTx(ctx.tx) || ctx.tx.isFieldPresent(sfNetworkID))
     {
         uint32_t nodeNID = ctx.app.config().NETWORK_ID;
@@ -157,6 +164,14 @@ preflight1(PreflightContext const& ctx, std::uint32_t flagMask)
         ctx.tx.isFieldPresent(sfAccountTxnID))
         return temINVALID;
 
+    if (ctx.tx.isFlag(tfInnerBatchTxn) && !ctx.rules.enabled(featureBatch))
+        return temINVALID_FLAG;
+
+    XRPL_ASSERT(
+        ctx.tx.isFlag(tfInnerBatchTxn) == ctx.parentBatchId.has_value() ||
+            !ctx.rules.enabled(featureBatch),
+        "Inner batch transaction must have a parent batch ID.");
+
     return tesSUCCESS;
 }
 
@@ -210,24 +225,12 @@ preflight2(PreflightContext const& ctx)
     if (sigValid.first == Validity::SigBad)
     {
         JLOG(ctx.j.debug()) << "preflight2: bad signature. " << sigValid.second;
-        return temINVALID;
+        return temINVALID;  // LCOV_EXCL_LINE
     }
     return tesSUCCESS;
 }
 
 }  // namespace detail
-
-//------------------------------------------------------------------------------
-
-PreflightContext::PreflightContext(
-    Application& app_,
-    STTx const& tx_,
-    Rules const& rules_,
-    ApplyFlags flags_,
-    beast::Journal j_)
-    : app(app_), tx(tx_), rules(rules_), flags(flags_), j(j_)
-{
-}
 
 //------------------------------------------------------------------------------
 
@@ -318,6 +321,16 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
         return temBAD_FEE;
 
     auto const feePaid = ctx.tx[sfFee].xrp();
+
+    if (ctx.flags & tapBATCH)
+    {
+        if (feePaid == beast::zero)
+            return tesSUCCESS;
+
+        JLOG(ctx.j.trace()) << "Batch: Fee must be zero.";
+        return temBAD_FEE;  // LCOV_EXCL_LINE
+    }
+
     if (!isLegalAmount(feePaid) || feePaid < beast::zero)
         return temBAD_FEE;
 
@@ -624,11 +637,11 @@ Transactor::apply()
 NotTEC
 Transactor::checkSign(
     PreclaimContext const& ctx,
-    AccountID const& id,
+    AccountID const& idAccount,
     STObject const& sigObject)
 {
     {
-        auto const sle = ctx.view.read(keylet::account(id));
+        auto const sle = ctx.view.read(keylet::account(idAccount));
 
         if (ctx.view.rules().enabled(featureLendingProtocol) &&
             isPseudoAccount(sle))
@@ -637,19 +650,53 @@ Transactor::checkSign(
             // added under, and it doesn't justify another amendment
             return tefBAD_AUTH;
     }
-    if (ctx.flags & tapDRY_RUN)
-    {
-        // This code must be different for `simulate`
-        // Since the public key may be empty even for single signing
-        if (sigObject.isFieldPresent(sfSigners))
-            return checkMultiSign(ctx, id, sigObject);
-        return checkSingleSign(ctx, id, sigObject);
-    }
-    // If the pk is empty, then we must be multi-signing.
-    if (sigObject.getFieldVL(sfSigningPubKey).empty())
-        return checkMultiSign(ctx, id, sigObject);
 
-    return checkSingleSign(ctx, id, sigObject);
+    // Ignore signature check on batch inner transactions
+    if (sigObject.isFlag(tfInnerBatchTxn) &&
+        ctx.view.rules().enabled(featureBatch))
+    {
+        // Defensive Check: These values are also checked in Batch::preflight
+        if (sigObject.isFieldPresent(sfTxnSignature) ||
+            !sigObject.getFieldVL(sfSigningPubKey).empty() ||
+            sigObject.isFieldPresent(sfSigners))
+        {
+            return temINVALID_FLAG;  // LCOV_EXCL_LINE
+        }
+        return tesSUCCESS;
+    }
+
+    // If the pk is empty and not simulate or simulate and signers,
+    // then we must be multi-signing.
+    if ((ctx.flags & tapDRY_RUN && sigObject.isFieldPresent(sfSigners)) ||
+        (!(ctx.flags & tapDRY_RUN) &&
+         sigObject.getFieldVL(sfSigningPubKey).empty()))
+    {
+        return checkMultiSign(ctx, idAccount, sigObject);
+    }
+
+    // Check Single Sign
+    auto const pkSigner = sigObject.getFieldVL(sfSigningPubKey);
+    // This ternary is only needed to handle `simulate`
+    XRPL_ASSERT(
+        (ctx.flags & tapDRY_RUN) || !pkSigner.empty(),
+        "ripple::Transactor::checkSingleSign : non-empty signer or simulation");
+
+    if (!(ctx.flags & tapDRY_RUN) && !publicKeyType(makeSlice(pkSigner)))
+    {
+        JLOG(ctx.j.trace())
+            << "checkSingleSign: signing public key type is unknown";
+        return tefBAD_AUTH;  // FIXME: should be better error!
+    }
+
+    // Look up the account.
+    auto const idSigner = pkSigner.empty()
+        ? idAccount
+        : calcAccountID(PublicKey(makeSlice(pkSigner)));
+    auto const sleAccount = ctx.view.read(keylet::account(idAccount));
+    if (!sleAccount)
+        return terNO_ACCOUNT;
+
+    return checkSingleSign(ctx, idSigner, idAccount, sleAccount);
 }
 
 NotTEC
@@ -661,34 +708,57 @@ Transactor::checkSign(PreclaimContext const& ctx)
     return checkSign(ctx, idAccount, ctx.tx);
 }
 
-// TODO generalize
+NotTEC
+Transactor::checkBatchSign(PreclaimContext const& ctx)
+{
+    NotTEC ret = tesSUCCESS;
+    STArray const& signers{ctx.tx.getFieldArray(sfBatchSigners)};
+    for (auto const& signer : signers)
+    {
+        auto const idAccount = signer.getAccountID(sfAccount);
+
+        Blob const& pkSigner = signer.getFieldVL(sfSigningPubKey);
+        if (pkSigner.empty())
+        {
+            if (ret = checkMultiSign(ctx, idAccount, signer);
+                !isTesSuccess(ret))
+                return ret;
+        }
+        else
+        {
+            // LCOV_EXCL_START
+            if (!publicKeyType(makeSlice(pkSigner)))
+                return tefBAD_AUTH;
+            // LCOV_EXCL_STOP
+
+            auto const idSigner = calcAccountID(PublicKey(makeSlice(pkSigner)));
+            auto const sleAccount = ctx.view.read(keylet::account(idAccount));
+
+            // A batch can include transactions from an un-created account ONLY
+            // when the account master key is the signer
+            if (!sleAccount)
+            {
+                if (idAccount != idSigner)
+                    return tefBAD_AUTH;
+
+                return tesSUCCESS;
+            }
+
+            if (ret = checkSingleSign(ctx, idSigner, idAccount, sleAccount);
+                !isTesSuccess(ret))
+                return ret;
+        }
+    }
+    return ret;
+}
+
 NotTEC
 Transactor::checkSingleSign(
     PreclaimContext const& ctx,
+    AccountID const& idSigner,
     AccountID const& idAccount,
-    STObject const& sigObject)
+    std::shared_ptr<SLE const> sleAccount)
 {
-    // Check that the value in the signing key slot is a public key.
-    auto const pkSigner = sigObject.getFieldVL(sfSigningPubKey);
-    if (!(ctx.flags & tapDRY_RUN) && !publicKeyType(makeSlice(pkSigner)))
-    {
-        JLOG(ctx.j.trace())
-            << "checkSingleSign: signing public key type is unknown";
-        return tefBAD_AUTH;  // FIXME: should be better error!
-    }
-
-    // Look up the account.
-    auto const sleAccount = ctx.view.read(keylet::account(idAccount));
-    if (!sleAccount)
-        return terNO_ACCOUNT;
-
-    // This ternary is only needed to handle `simulate`
-    XRPL_ASSERT(
-        (ctx.flags & tapDRY_RUN) || !pkSigner.empty(),
-        "ripple::Transactor::checkSingleSign : non-empty signer or simulation");
-    auto const idSigner = pkSigner.empty()
-        ? idAccount
-        : calcAccountID(PublicKey(makeSlice(pkSigner)));
     bool const isMasterDisabled = sleAccount->isFlag(lsfDisableMaster);
 
     if (ctx.view.rules().enabled(fixMasterKeyAsRegularKey))
@@ -855,7 +925,8 @@ Transactor::checkMultiSign(
 
         // In any of these cases we need to know whether the account is in
         // the ledger.  Determine that now.
-        auto sleTxSignerRoot = ctx.view.read(keylet::account(txSignerAcctID));
+        auto const sleTxSignerRoot =
+            ctx.view.read(keylet::account(txSignerAcctID));
 
         if (signingAcctIDFromPubKey == txSignerAcctID)
         {
@@ -995,7 +1066,11 @@ removeDeletedTrustLines(
     }
 }
 
-/** Reset the context, discarding any changes made and adjust the fee */
+/** Reset the context, discarding any changes made and adjust the fee.
+
+    @param fee The transaction fee to be charged.
+    @return A pair containing the transaction result and the actual fee charged.
+ */
 std::pair<TER, XRPAmount>
 Transactor::reset(XRPAmount fee)
 {
@@ -1003,9 +1078,10 @@ Transactor::reset(XRPAmount fee)
 
     auto const txnAcct =
         view().peek(keylet::account(ctx_.tx.getAccountID(sfAccount)));
+
+    // The account should never be missing from the ledger.  But if it
+    // is missing then we can't very well charge it a fee, can we?
     if (!txnAcct)
-        // The account should never be missing from the ledger.  But if it
-        // is missing then we can't very well charge it a fee, can we?
         return {tefINTERNAL, beast::zero};
 
     auto const payerSle = ctx_.tx.isFieldPresent(sfDelegate)
@@ -1115,7 +1191,6 @@ Transactor::operator()()
     {
         // If the tapFAIL_HARD flag is set, a tec result
         // must not do anything
-
         ctx_.discard();
         applied = false;
     }

@@ -28,6 +28,7 @@
 
 #include <cstdint>
 #include <tuple>
+#include <unordered_set>
 
 namespace ripple {
 
@@ -625,6 +626,28 @@ public:
         beast::Journal const&);
 };
 
+class ValidPermissionedDEX
+{
+    bool regularOffers_ = false;
+    bool badHybrids_ = false;
+    hash_set<uint256> domains_;
+
+public:
+    void
+    visitEntry(
+        bool,
+        std::shared_ptr<SLE const> const&,
+        std::shared_ptr<SLE const> const&);
+
+    bool
+    finalize(
+        STTx const&,
+        TER const,
+        XRPAmount const,
+        ReadView const&,
+        beast::Journal const&);
+};
+
 /**
  * @brief Invariants: Some fields are unmodifiable
  *
@@ -765,6 +788,7 @@ using InvariantChecks = std::tuple<
     ValidClawback,
     ValidMPTIssuance,
     ValidPermissionedDomain,
+    ValidPermissionedDEX,
     NoModifiedUnmodifiableFields,
     ValidPseudoAccounts,
     ValidLoanBroker,
