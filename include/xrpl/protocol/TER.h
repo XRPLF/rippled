@@ -360,7 +360,8 @@ enum TECcodes : TERUnderlyingType {
     tecWRONG_ASSET = 194,
     tecLIMIT_EXCEEDED = 195,
     tecPSEUDO_ACCOUNT = 196,
-    tecNO_DELEGATE_PERMISSION = 197,
+    tecPRECISION_LOSS = 197,
+    tecNO_DELEGATE_PERMISSION = 198,
 };
 
 //------------------------------------------------------------------------------
