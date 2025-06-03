@@ -444,11 +444,17 @@ Expected<Bytes, int32_t>
 WasmHostFunctionsImpl::getNFT(AccountID const& account, uint256 const& nftId)
 {
     if (!account || !nftId)
+    {
+        getJournal().trace() << "getNFT: Invalid account or NFT ID";
         return Unexpected(HF_ERR_INVALID_PARAMS);
+    }
 
     auto obj = nft::findToken(ctx.view(), account, nftId);
     if (!obj)
+    {
+        getJournal().trace() << "NFT not found";
         return Unexpected(HF_ERR_LEDGER_OBJ_NOT_FOUND);
+    }
 
     Slice const s = obj->at(sfURI);
     return Bytes(s.begin(), s.end());
