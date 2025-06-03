@@ -1694,15 +1694,6 @@ class MPToken_test : public beast::unit_test::suite
                 jv[jss::SendMax] = mpt.getJson(JsonOptions::none);
                 test(jv, jss::SendMax.c_str());
             }
-            // EscrowCreate
-            {
-                Json::Value jv;
-                jv[jss::TransactionType] = jss::EscrowCreate;
-                jv[jss::Account] = alice.human();
-                jv[jss::Destination] = carol.human();
-                jv[jss::Amount] = mpt.getJson(JsonOptions::none);
-                test(jv, jss::Amount.c_str());
-            }
             // OfferCreate
             {
                 Json::Value jv = offer(alice, USD(100), mpt);
