@@ -488,7 +488,12 @@ Env::postconditions(
 std::shared_ptr<STObject const>
 Env::meta()
 {
-    close();
+    if (current()->txCount() != 0)
+    {
+        // close the ledger if it has not already been closed
+        // (metadata is not finalized until the ledger is closed)
+        close();
+    }
     auto const item = closed()->txRead(txid_);
     return item.second;
 }

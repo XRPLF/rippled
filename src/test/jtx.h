@@ -39,6 +39,7 @@
 #include <test/jtx/deposit.h>
 #include <test/jtx/did.h>
 #include <test/jtx/escrow.h>
+#include <test/jtx/domain.h>
 #include <test/jtx/fee.h>
 #include <test/jtx/flags.h>
 #include <test/jtx/invoice_id.h>
@@ -53,6 +54,7 @@
 #include <test/jtx/owners.h>
 #include <test/jtx/paths.h>
 #include <test/jtx/pay.h>
+#include <test/jtx/permissioned_dex.h>
 #include <test/jtx/permissioned_domains.h>
 #include <test/jtx/prop.h>
 #include <test/jtx/quality.h>

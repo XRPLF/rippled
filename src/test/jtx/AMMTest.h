@@ -35,6 +35,15 @@ class AMM;
 
 enum class Fund { All, Acct, Gw, IOUOnly };
 
+struct TestAMMArg
+{
+    std::optional<std::pair<STAmount, STAmount>> pool = std::nullopt;
+    std::uint16_t tfee = 0;
+    std::optional<jtx::ter> ter = std::nullopt;
+    std::vector<FeatureBitset> features = {supported_amendments()};
+    bool noLog = false;
+};
+
 void
 fund(
     jtx::Env& env,
@@ -87,6 +96,11 @@ protected:
         std::uint16_t tfee = 0,
         std::optional<jtx::ter> const& ter = std::nullopt,
         std::vector<FeatureBitset> const& features = {supported_amendments()});
+
+    void
+    testAMM(
+        std::function<void(jtx::AMM&, jtx::Env&)>&& cb,
+        TestAMMArg const& arg);
 };
 
 class AMMTest : public jtx::AMMTestBase

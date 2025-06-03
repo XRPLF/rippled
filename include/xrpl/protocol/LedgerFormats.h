@@ -153,6 +153,7 @@ enum LedgerSpecificFlags {
     // ltOFFER
     lsfPassive = 0x00010000,
     lsfSell = 0x00020000,  // True, offer was placed as a sell.
+    lsfHybrid = 0x00040000,  // True, offer is hybrid.
 
     // ltRIPPLE_STATE
     lsfLowReserve = 0x00010000,  // True, if entry counts toward reserve.
