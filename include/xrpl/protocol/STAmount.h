@@ -703,6 +703,12 @@ isXRP(STAmount const& amount)
     return amount.native();
 }
 
+bool
+canAdd(STAmount const& amt1, STAmount const& amt2);
+
+bool
+canSubtract(STAmount const& amt1, STAmount const& amt2);
+
 // Since `canonicalize` does not have access to a ledger, this is needed to put
 // the low-level routine stAmountCanonicalize on an amendment switch. Only
 // transactions need to use this switchover. Outside of a transaction it's safe
