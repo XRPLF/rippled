@@ -2415,7 +2415,10 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
             }();
 
             std::stringstream ss;
-            ss << "PEER_IMP_VALIDATION: " << val->render() << " master_key: ";
+            ss << "PEER_IMP_VALIDATION: "
+                  "ledger_hash: "
+               << val->getLedgerHash() << " is_trusted: " << isTrusted
+               << " master_key: ";
             auto master =
                 app_.validators().getTrustedKey(val->getSignerPublic());
             if (master)
