@@ -37,36 +37,62 @@ class FeeVote_test : public beast::unit_test::suite
             BEAST_EXPECT(setup.reference_fee == defaultSetup.reference_fee);
             BEAST_EXPECT(setup.account_reserve == defaultSetup.account_reserve);
             BEAST_EXPECT(setup.owner_reserve == defaultSetup.owner_reserve);
+            BEAST_EXPECT(
+                setup.extension_compute_limit ==
+                defaultSetup.extension_compute_limit);
+            BEAST_EXPECT(
+                setup.extension_size_limit ==
+                defaultSetup.extension_size_limit);
+            BEAST_EXPECT(setup.gas_price == defaultSetup.gas_price);
         }
         {
             Section config;
             config.append(
                 {"reference_fee = 50",
                  "account_reserve = 1234567",
-                 "owner_reserve = 1234"});
+                 "owner_reserve = 1234",
+                 "extension_compute_limit = 100",
+                 "extension_size_limit = 200",
+                 " gas_price = 300"});
             auto setup = setup_FeeVote(config);
             BEAST_EXPECT(setup.reference_fee == 50);
             BEAST_EXPECT(setup.account_reserve == 1234567);
             BEAST_EXPECT(setup.owner_reserve == 1234);
+            BEAST_EXPECT(setup.extension_compute_limit == 100);
+            BEAST_EXPECT(setup.extension_size_limit == 200);
+            BEAST_EXPECT(setup.gas_price == 300);
         }
         {
             Section config;
             config.append(
                 {"reference_fee = blah",
                  "account_reserve = yada",
-                 "owner_reserve = foo"});
+                 "owner_reserve = foo",
+                 "extension_compute_limit = bar",
+                 "extension_size_limit = baz",
+                 "gas_price = qux"});
             // Illegal values are ignored, and the defaults left unchanged
             auto setup = setup_FeeVote(config);
             BEAST_EXPECT(setup.reference_fee == defaultSetup.reference_fee);
             BEAST_EXPECT(setup.account_reserve == defaultSetup.account_reserve);
             BEAST_EXPECT(setup.owner_reserve == defaultSetup.owner_reserve);
+            BEAST_EXPECT(
+                setup.extension_compute_limit ==
+                defaultSetup.extension_compute_limit);
+            BEAST_EXPECT(
+                setup.extension_size_limit ==
+                defaultSetup.extension_size_limit);
+            BEAST_EXPECT(setup.gas_price == defaultSetup.gas_price);
         }
         {
             Section config;
             config.append(
                 {"reference_fee = -50",
                  "account_reserve = -1234567",
-                 "owner_reserve = -1234"});
+                 "owner_reserve = -1234",
+                 "extension_compute_limit = -100",
+                 "extension_size_limit = -200",
+                 "gas_price = -300"});
             // Illegal values are ignored, and the defaults left unchanged
             auto setup = setup_FeeVote(config);
             BEAST_EXPECT(setup.reference_fee == defaultSetup.reference_fee);
@@ -74,6 +100,12 @@ class FeeVote_test : public beast::unit_test::suite
                 setup.account_reserve == static_cast<std::uint32_t>(-1234567));
             BEAST_EXPECT(
                 setup.owner_reserve == static_cast<std::uint32_t>(-1234));
+            BEAST_EXPECT(
+                setup.extension_compute_limit ==
+                static_cast<std::uint32_t>(-100));
+            BEAST_EXPECT(
+                setup.extension_size_limit == static_cast<std::uint32_t>(-200));
+            BEAST_EXPECT(setup.gas_price == static_cast<std::uint32_t>(-300));
         }
         {
             auto const big64 = std::to_string(
@@ -84,12 +116,22 @@ class FeeVote_test : public beast::unit_test::suite
             config.append(
                 {"reference_fee = " + big64,
                  "account_reserve = " + big64,
-                 "owner_reserve = " + big64});
+                 "owner_reserve = " + big64,
+                 "extension_compute_limit = " + big64,
+                 "extension_size_limit = " + big64,
+                 "gas_price = " + big64});
             // Illegal values are ignored, and the defaults left unchanged
             auto setup = setup_FeeVote(config);
             BEAST_EXPECT(setup.reference_fee == defaultSetup.reference_fee);
             BEAST_EXPECT(setup.account_reserve == defaultSetup.account_reserve);
             BEAST_EXPECT(setup.owner_reserve == defaultSetup.owner_reserve);
+            BEAST_EXPECT(
+                setup.extension_compute_limit ==
+                defaultSetup.extension_compute_limit);
+            BEAST_EXPECT(
+                setup.extension_size_limit ==
+                defaultSetup.extension_size_limit);
+            BEAST_EXPECT(setup.gas_price == defaultSetup.gas_price);
         }
     }
 

@@ -458,8 +458,7 @@ accountHolds(
         amount.clear(Issue{currency, issuer});
     }
 
-    JLOG(j.trace()) << "accountHolds:"
-                    << " account=" << to_string(account)
+    JLOG(j.trace()) << "accountHolds:" << " account=" << to_string(account)
                     << " amount=" << amount.getFullText();
 
     return view.balanceHook(account, issuer, amount);
@@ -640,8 +639,7 @@ xrpLiquid(
     STAmount const amount =
         (balance < reserve) ? STAmount{0} : balance - reserve;
 
-    JLOG(j.trace()) << "accountHolds:"
-                    << " account=" << to_string(id)
+    JLOG(j.trace()) << "accountHolds:" << " account=" << to_string(id)
                     << " amount=" << amount.getFullText()
                     << " fullBalance=" << fullBalance.getFullText()
                     << " balance=" << balance.getFullText()

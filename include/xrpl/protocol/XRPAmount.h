@@ -286,11 +286,12 @@ mulRatio(
     bool roundUp)
 {
     using namespace boost::multiprecision;
+    using int128 = boost::multiprecision::int128_t;
 
     if (!den)
         Throw<std::runtime_error>("division by zero");
 
-    int128_t const amt128(amt.drops());
+    int128 const amt128(amt.drops());
     auto const neg = amt.drops() < 0;
     auto const m = amt128 * num;
     auto r = m / den;
