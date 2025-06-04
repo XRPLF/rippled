@@ -379,6 +379,9 @@ EscrowCreate::preclaim(PreclaimContext const& ctx)
 
     if (!isXRP(amount))
     {
+        if (!ctx.view.rules().enabled(featureTokenEscrow))
+            return temDISABLED;  // LCOV_EXCL_LINE
+
         if (auto const ret = std::visit(
                 [&]<typename T>(T const&) {
                     return escrowCreatePreclaimHelper<T>(
@@ -1139,6 +1142,9 @@ EscrowFinish::doApply()
         (*sled)[sfBalance] = (*sled)[sfBalance] + amount;
     else
     {
+        if (!ctx_.view().rules().enabled(featureTokenEscrow))
+            return temDISABLED;  // LCOV_EXCL_LINE
+
         Rate lockedRate = slep->isFieldPresent(sfTransferRate)
             ? ripple::Rate(slep->getFieldU32(sfTransferRate))
             : parityRate;
@@ -1354,6 +1360,9 @@ EscrowCancel::doApply()
         (*sle)[sfBalance] = (*sle)[sfBalance] + amount;
     else
     {
+        if (!ctx_.view().rules().enabled(featureTokenEscrow))
+            return temDISABLED;  // LCOV_EXCL_LINE
+
         auto const issuer = amount.getIssuer();
         bool const createAsset = account == account_;
         if (auto const ret = std::visit(
