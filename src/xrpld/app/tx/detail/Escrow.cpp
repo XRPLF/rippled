@@ -1012,8 +1012,12 @@ EscrowFinish::doApply()
     auto const k = keylet::escrow(ctx_.tx[sfOwner], ctx_.tx[sfOfferSequence]);
     auto const slep = ctx_.view().peek(k);
     if (!slep)
-        return ctx_.view().rules().enabled(featureTokenEscrow) ? tecINTERNAL
-                                                               : tecNO_TARGET;
+    {
+        if (ctx_.view().rules().enabled(featureTokenEscrow))
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+
+        return tecNO_TARGET;
+    }
 
     // If a cancel time is present, a finish operation should only succeed prior
     // to that time. fix1571 corrects a logic error in the check that would make
@@ -1287,8 +1291,12 @@ EscrowCancel::doApply()
     auto const k = keylet::escrow(ctx_.tx[sfOwner], ctx_.tx[sfOfferSequence]);
     auto const slep = ctx_.view().peek(k);
     if (!slep)
-        return ctx_.view().rules().enabled(featureTokenEscrow) ? tecINTERNAL
-                                                               : tecNO_TARGET;
+    {
+        if (ctx_.view().rules().enabled(featureTokenEscrow))
+            return tecINTERNAL;  // LCOV_EXCL_LINE
+
+        return tecNO_TARGET;
+    }
 
     if (ctx_.view().rules().enabled(fix1571))
     {
