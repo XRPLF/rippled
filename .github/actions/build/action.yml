@@ -27,6 +27,7 @@ runs:
     - name: build
       shell: bash
       run: |
+        echo Running $(nproc) processes
         cmake \
           --build ${build_dir} \
           --config ${{ inputs.configuration }} \
