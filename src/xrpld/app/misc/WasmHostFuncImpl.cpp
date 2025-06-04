@@ -74,39 +74,50 @@ Bytes
 getAnyFieldData(STBase const& obj)
 {
     // auto const& fname = obj.getFName();
-    if (STI_ACCOUNT == obj.getSType())
+    auto const stype = obj.getSType();
+    switch (stype)
     {
-        auto const& super(static_cast<STAccount const&>(obj));
-        auto const& data = super.value();
-        return {data.begin(), data.end()};
-    }
-    else if (STI_AMOUNT == obj.getSType())
-    {
-        auto const& super(static_cast<STAmount const&>(obj));
-        int64_t const data = super.xrp().drops();
-        auto const* b = reinterpret_cast<uint8_t const*>(&data);
-        auto const* e = reinterpret_cast<uint8_t const*>(&data + 1);
-        return {b, e};
-    }
-    else if (STI_VL == obj.getSType())
-    {
-        auto const& super(static_cast<STBlob const&>(obj));
-        auto const& data = super.value();
-        return {data.begin(), data.end()};
-    }
-    else if (STI_UINT256 == obj.getSType())
-    {
-        auto const& super(static_cast<STBitString<256> const&>(obj));
-        auto const& data = super.value();
-        return {data.begin(), data.end()};
-    }
-    else if (STI_UINT32 == obj.getSType())
-    {
-        auto const& super(static_cast<STInteger<std::uint32_t> const&>(obj));
-        std::uint32_t const data = super.value();
-        auto const* b = reinterpret_cast<uint8_t const*>(&data);
-        auto const* e = reinterpret_cast<uint8_t const*>(&data + 1);
-        return {b, e};
+        case STI_UNKNOWN:
+        case STI_NOTPRESENT:
+            return {};
+            break;
+        case STI_ACCOUNT: {
+            auto const& super(static_cast<STAccount const&>(obj));
+            auto const& data = super.value();
+            return {data.begin(), data.end()};
+        }
+        break;
+        case STI_AMOUNT: {
+            auto const& super(static_cast<STAmount const&>(obj));
+            int64_t const data = super.xrp().drops();
+            auto const* b = reinterpret_cast<uint8_t const*>(&data);
+            auto const* e = reinterpret_cast<uint8_t const*>(&data + 1);
+            return {b, e};
+        }
+        break;
+        case STI_VL: {
+            auto const& super(static_cast<STBlob const&>(obj));
+            auto const& data = super.value();
+            return {data.begin(), data.end()};
+        }
+        break;
+        case STI_UINT256: {
+            auto const& super(static_cast<STBitString<256> const&>(obj));
+            auto const& data = super.value();
+            return {data.begin(), data.end()};
+        }
+        break;
+        case STI_UINT32: {
+            auto const& super(
+                static_cast<STInteger<std::uint32_t> const&>(obj));
+            std::uint32_t const data = super.value();
+            auto const* b = reinterpret_cast<uint8_t const*>(&data);
+            auto const* e = reinterpret_cast<uint8_t const*>(&data + 1);
+            return {b, e};
+        }
+        break;
+        default:
+            break;
     }
 
     Serializer msg;

@@ -54,3 +54,5 @@ extern std::string const sp1_wasm;
 extern std::string const xrplStdExampleHex;
 
 extern std::string const hostFunctions2Hex;
+
+extern std::string const reqNonexistentField;
