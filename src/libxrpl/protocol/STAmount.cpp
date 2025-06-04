@@ -581,7 +581,7 @@ canAdd(STAmount const& a, STAmount const& b)
 
         return true;
     }
-    return false;
+    return false;  // LCOV_EXCL_LINE
 }
 
 /**
@@ -653,8 +653,7 @@ canSubtract(STAmount const& a, STAmount const& b)
             return false;
         return true;
     }
-
-    return false;
+    return false;  // LCOV_EXCL_LINE
 }
 
 void
