@@ -379,9 +379,6 @@ EscrowCreate::preclaim(PreclaimContext const& ctx)
 
     if (!isXRP(amount))
     {
-        if (!ctx.view.rules().enabled(featureTokenEscrow))
-            return temDISABLED;  // LCOV_EXCL_LINE
-
         if (auto const ret = std::visit(
                 [&]<typename T>(T const&) {
                     return escrowCreatePreclaimHelper<T>(
@@ -766,26 +763,26 @@ EscrowFinish::preclaim(PreclaimContext const& ctx)
             return err;
     }
 
-    auto const k = keylet::escrow(ctx.tx[sfOwner], ctx.tx[sfOfferSequence]);
-    auto const slep = ctx.view.read(k);
-    if (!slep)
-        return tecNO_TARGET;
-
-    AccountID const dest = (*slep)[sfDestination];
-    STAmount const amount = (*slep)[sfAmount];
-
-    if (!isXRP(amount))
+    if (ctx.view.rules().enabled(featureTokenEscrow))
     {
-        if (!ctx.view.rules().enabled(featureTokenEscrow))
-            return temDISABLED;  // LCOV_EXCL_LINE
+        auto const k = keylet::escrow(ctx.tx[sfOwner], ctx.tx[sfOfferSequence]);
+        auto const slep = ctx.view.read(k);
+        if (!slep)
+            return tecNO_TARGET;
 
-        if (auto const ret = std::visit(
-                [&]<typename T>(T const&) {
-                    return escrowFinishPreclaimHelper<T>(ctx, dest, amount);
-                },
-                amount.asset().value());
-            !isTesSuccess(ret))
-            return ret;
+        AccountID const dest = (*slep)[sfDestination];
+        STAmount const amount = (*slep)[sfAmount];
+
+        if (!isXRP(amount))
+        {
+            if (auto const ret = std::visit(
+                    [&]<typename T>(T const&) {
+                        return escrowFinishPreclaimHelper<T>(ctx, dest, amount);
+                    },
+                    amount.asset().value());
+                !isTesSuccess(ret))
+                return ret;
+        }
     }
     return tesSUCCESS;
 }
@@ -1015,7 +1012,8 @@ EscrowFinish::doApply()
     auto const k = keylet::escrow(ctx_.tx[sfOwner], ctx_.tx[sfOfferSequence]);
     auto const slep = ctx_.view().peek(k);
     if (!slep)
-        return tecNO_TARGET;
+        return ctx_.view().rules().enabled(featureTokenEscrow) ? tecINTERNAL
+                                                               : tecNO_TARGET;
 
     // If a cancel time is present, a finish operation should only succeed prior
     // to that time. fix1571 corrects a logic error in the check that would make
@@ -1137,9 +1135,6 @@ EscrowFinish::doApply()
         (*sled)[sfBalance] = (*sled)[sfBalance] + amount;
     else
     {
-        if (!ctx_.view().rules().enabled(featureTokenEscrow))
-            return temDISABLED;  // LCOV_EXCL_LINE
-
         Rate lockedRate = slep->isFieldPresent(sfTransferRate)
             ? ripple::Rate(slep->getFieldU32(sfTransferRate))
             : parityRate;
@@ -1261,26 +1256,27 @@ escrowCancelPreclaimHelper<MPTIssue>(
 TER
 EscrowCancel::preclaim(PreclaimContext const& ctx)
 {
-    auto const k = keylet::escrow(ctx.tx[sfOwner], ctx.tx[sfOfferSequence]);
-    auto const slep = ctx.view.read(k);
-    if (!slep)
-        return tecNO_TARGET;
-
-    AccountID const account = (*slep)[sfAccount];
-    STAmount const amount = (*slep)[sfAmount];
-
-    if (!isXRP(amount))
+    if (ctx.view.rules().enabled(featureTokenEscrow))
     {
-        if (!ctx.view.rules().enabled(featureTokenEscrow))
-            return temDISABLED;  // LCOV_EXCL_LINE
+        auto const k = keylet::escrow(ctx.tx[sfOwner], ctx.tx[sfOfferSequence]);
+        auto const slep = ctx.view.read(k);
+        if (!slep)
+            return tecNO_TARGET;
 
-        if (auto const ret = std::visit(
-                [&]<typename T>(T const&) {
-                    return escrowCancelPreclaimHelper<T>(ctx, account, amount);
-                },
-                amount.asset().value());
-            !isTesSuccess(ret))
-            return ret;
+        AccountID const account = (*slep)[sfAccount];
+        STAmount const amount = (*slep)[sfAmount];
+
+        if (!isXRP(amount))
+        {
+            if (auto const ret = std::visit(
+                    [&]<typename T>(T const&) {
+                        return escrowCancelPreclaimHelper<T>(
+                            ctx, account, amount);
+                    },
+                    amount.asset().value());
+                !isTesSuccess(ret))
+                return ret;
+        }
     }
     return tesSUCCESS;
 }
@@ -1291,7 +1287,8 @@ EscrowCancel::doApply()
     auto const k = keylet::escrow(ctx_.tx[sfOwner], ctx_.tx[sfOfferSequence]);
     auto const slep = ctx_.view().peek(k);
     if (!slep)
-        return tecNO_TARGET;
+        return ctx_.view().rules().enabled(featureTokenEscrow) ? tecINTERNAL
+                                                               : tecNO_TARGET;
 
     if (ctx_.view().rules().enabled(fix1571))
     {
@@ -1349,9 +1346,6 @@ EscrowCancel::doApply()
         (*sle)[sfBalance] = (*sle)[sfBalance] + amount;
     else
     {
-        if (!ctx_.view().rules().enabled(featureTokenEscrow))
-            return temDISABLED;  // LCOV_EXCL_LINE
-
         auto const issuer = amount.getIssuer();
         bool const createAsset = account == account_;
         if (auto const ret = std::visit(
