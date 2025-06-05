@@ -472,6 +472,15 @@ public:
     PrettyAmount
     balance(Account const& account, Issue const& issue) const;
 
+    PrettyAmount
+    balance(Account const& account, MPTIssue const& mptIssue) const;
+
+    /** Returns the IOU limit on an account.
+        Returns 0 if the trust line does not exist.
+    */
+    PrettyAmount
+    limit(Account const& account, Issue const& issue) const;
+
     /** Return the number of objects owned by an account.
      * Returns 0 if the account does not exist.
      */
@@ -621,6 +630,12 @@ public:
 
     void
     disableFeature(uint256 const feature);
+
+    bool
+    enabled(uint256 feature) const
+    {
+        return current()->rules().enabled(feature);
+    }
 
 private:
     void
