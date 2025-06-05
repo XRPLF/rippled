@@ -688,7 +688,7 @@ getNFT_wrap(void* env, wasm_val_vec_t const* params, wasm_val_vec_t* results)
     if (nftRaw->size() != uint256::bytes)
     {
         hf->getJournal().trace()
-            << "getNFT: Invalid NFT data size: " << nftRaw->size()
+            << "WAMR getNFT: Invalid NFT data size: " << nftRaw->size()
             << ", expected " << (uint256::bytes);
         RET(HF_ERR_INVALID_PARAMS);
     }
