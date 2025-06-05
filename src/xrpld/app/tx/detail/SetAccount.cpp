@@ -199,7 +199,7 @@ SetAccount::checkPermission(ReadView const& view, STTx const& tx)
     auto const sle = view.read(delegateKey);
 
     if (!sle)
-        return tecNO_PERMISSION;
+        return tecNO_DELEGATE_PERMISSION;
 
     std::unordered_set<GranularPermissionType> granularPermissions;
     loadGranularPermission(sle, ttACCOUNT_SET, granularPermissions);
@@ -212,31 +212,31 @@ SetAccount::checkPermission(ReadView const& view, STTx const& tx)
     // update the flag on behalf of another account, it is not
     // authorized.
     if (uSetFlag != 0 || uClearFlag != 0 || uTxFlags & tfUniversalMask)
-        return tecNO_PERMISSION;
+        return tecNO_DELEGATE_PERMISSION;
 
     if (tx.isFieldPresent(sfEmailHash) &&
         !granularPermissions.contains(AccountEmailHashSet))
-        return tecNO_PERMISSION;
+        return tecNO_DELEGATE_PERMISSION;
 
     if (tx.isFieldPresent(sfWalletLocator) ||
         tx.isFieldPresent(sfNFTokenMinter))
-        return tecNO_PERMISSION;
+        return tecNO_DELEGATE_PERMISSION;
 
     if (tx.isFieldPresent(sfMessageKey) &&
         !granularPermissions.contains(AccountMessageKeySet))
-        return tecNO_PERMISSION;
+        return tecNO_DELEGATE_PERMISSION;
 
     if (tx.isFieldPresent(sfDomain) &&
         !granularPermissions.contains(AccountDomainSet))
-        return tecNO_PERMISSION;
+        return tecNO_DELEGATE_PERMISSION;
 
     if (tx.isFieldPresent(sfTransferRate) &&
         !granularPermissions.contains(AccountTransferRateSet))
-        return tecNO_PERMISSION;
+        return tecNO_DELEGATE_PERMISSION;
 
     if (tx.isFieldPresent(sfTickSize) &&
         !granularPermissions.contains(AccountTickSizeSet))
-        return tecNO_PERMISSION;
+        return tecNO_DELEGATE_PERMISSION;
 
     return tesSUCCESS;
 }
@@ -645,6 +645,15 @@ SetAccount::doApply()
             uFlagsOut |= lsfDisallowIncomingTrustline;
         else if (uClearFlag == asfDisallowIncomingTrustline)
             uFlagsOut &= ~lsfDisallowIncomingTrustline;
+    }
+
+    // Set or clear flags for disallowing escrow
+    if (ctx_.view().rules().enabled(featureTokenEscrow))
+    {
+        if (uSetFlag == asfAllowTrustLineLocking)
+            uFlagsOut |= lsfAllowTrustLineLocking;
+        else if (uClearFlag == asfAllowTrustLineLocking)
+            uFlagsOut &= ~lsfAllowTrustLineLocking;
     }
 
     // Set flag for clawback

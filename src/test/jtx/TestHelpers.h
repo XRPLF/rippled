@@ -500,55 +500,6 @@ expectLedgerEntryRoot(
     Account const& acct,
     STAmount const& expectedValue);
 
-/* Escrow */
-/******************************************************************************/
-
-Json::Value
-escrow(AccountID const& account, AccountID const& to, STAmount const& amount);
-
-inline Json::Value
-escrow(Account const& account, Account const& to, STAmount const& amount)
-{
-    return escrow(account.id(), to.id(), amount);
-}
-
-Json::Value
-finish(AccountID const& account, AccountID const& from, std::uint32_t seq);
-
-inline Json::Value
-finish(Account const& account, Account const& from, std::uint32_t seq)
-{
-    return finish(account.id(), from.id(), seq);
-}
-
-Json::Value
-cancel(AccountID const& account, Account const& from, std::uint32_t seq);
-
-inline Json::Value
-cancel(Account const& account, Account const& from, std::uint32_t seq)
-{
-    return cancel(account.id(), from, seq);
-}
-
-std::array<std::uint8_t, 39> constexpr cb1 = {
-    {0xA0, 0x25, 0x80, 0x20, 0xE3, 0xB0, 0xC4, 0x42, 0x98, 0xFC,
-     0x1C, 0x14, 0x9A, 0xFB, 0xF4, 0xC8, 0x99, 0x6F, 0xB9, 0x24,
-     0x27, 0xAE, 0x41, 0xE4, 0x64, 0x9B, 0x93, 0x4C, 0xA4, 0x95,
-     0x99, 0x1B, 0x78, 0x52, 0xB8, 0x55, 0x81, 0x01, 0x00}};
-
-// A PreimageSha256 fulfillments and its associated condition.
-std::array<std::uint8_t, 4> const fb1 = {{0xA0, 0x02, 0x80, 0x00}};
-
-/** Set the "FinishAfter" time tag on a JTx */
-auto const finish_time = JTxFieldWrapper<timePointField>(sfFinishAfter);
-
-/** Set the "CancelAfter" time tag on a JTx */
-auto const cancel_time = JTxFieldWrapper<timePointField>(sfCancelAfter);
-
-auto const condition = JTxFieldWrapper<blobField>(sfCondition);
-
-auto const fulfillment = JTxFieldWrapper<blobField>(sfFulfillment);
-
 /* Payment Channel */
 /******************************************************************************/
 

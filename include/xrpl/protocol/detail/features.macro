@@ -33,6 +33,9 @@
 // Keep it sorted in reverse chronological order.
 
 XRPL_FEATURE(LendingProtocol,            Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FEATURE(TokenEscrow,                Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FIX    (EnforceNFTokenTrustlineV2,  Supported::yes, VoteBehavior::DefaultNo)
+XRPL_FIX    (AMMv1_3,                    Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(PermissionedDEX,            Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(Batch,                      Supported::yes, VoteBehavior::DefaultNo)
 XRPL_FEATURE(SingleAssetVault,           Supported::no, VoteBehavior::DefaultNo)

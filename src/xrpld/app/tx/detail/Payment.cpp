@@ -260,7 +260,7 @@ Payment::checkPermission(ReadView const& view, STTx const& tx)
     auto const sle = view.read(delegateKey);
 
     if (!sle)
-        return tecNO_PERMISSION;
+        return tecNO_DELEGATE_PERMISSION;
 
     if (checkTxPermission(sle, tx) == tesSUCCESS)
         return tesSUCCESS;
@@ -279,7 +279,7 @@ Payment::checkPermission(ReadView const& view, STTx const& tx)
         amountIssue.account == tx[sfDestination])
         return tesSUCCESS;
 
-    return tecNO_PERMISSION;
+    return tecNO_DELEGATE_PERMISSION;
 }
 
 TER

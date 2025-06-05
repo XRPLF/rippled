@@ -307,7 +307,7 @@ private:
         std::uint16_t tfee);
 
     /** Check from the flags if it's withdraw all */
-    WithdrawAll
+    static WithdrawAll
     isWithdrawAll(STTx const& tx);
 };
 

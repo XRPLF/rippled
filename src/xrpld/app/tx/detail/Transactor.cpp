@@ -269,7 +269,7 @@ Transactor::checkPermission(ReadView const& view, STTx const& tx)
     auto const sle = view.read(delegateKey);
 
     if (!sle)
-        return tecNO_PERMISSION;
+        return tecNO_DELEGATE_PERMISSION;
 
     return checkTxPermission(sle, tx);
 }

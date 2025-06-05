@@ -86,6 +86,15 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
                 return tecHAS_OBLIGATIONS;
             }
 
+            if ((*sleMpt)[~sfLockedAmount].value_or(0) != 0)
+            {
+                auto const sleMptIssuance = ctx.view.read(
+                    keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
+                if (!sleMptIssuance)
+                    return tefINTERNAL;  // LCOV_EXCL_LINE
+
+                return tecHAS_OBLIGATIONS;
+            }
             if (ctx.view.rules().enabled(featureSingleAssetVault) &&
                 sleMpt->isFlag(lsfMPTLocked))
                 return tecNO_PERMISSION;
@@ -139,6 +148,32 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
     if (!ctx.view.exists(
             keylet::mptoken(ctx.tx[sfMPTokenIssuanceID], *holderID)))
         return tecOBJECT_NOT_FOUND;
+
+    return tesSUCCESS;
+}
+
+TER
+MPTokenAuthorize::createMPToken(
+    ApplyView& view,
+    MPTID const& mptIssuanceID,
+    AccountID const& account,
+    std::uint32_t const flags)
+{
+    auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
+
+    auto const ownerNode = view.dirInsert(
+        keylet::ownerDir(account), mptokenKey, describeOwnerDir(account));
+
+    if (!ownerNode)
+        return tecDIR_FULL;  // LCOV_EXCL_LINE
+
+    auto mptoken = std::make_shared<SLE>(mptokenKey);
+    (*mptoken)[sfAccount] = account;
+    (*mptoken)[sfMPTokenIssuanceID] = mptIssuanceID;
+    (*mptoken)[sfFlags] = flags;
+    (*mptoken)[sfOwnerNode] = *ownerNode;
+
+    view.insert(mptoken);
 
     return tesSUCCESS;
 }

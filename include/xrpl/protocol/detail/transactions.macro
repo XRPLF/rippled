@@ -82,7 +82,7 @@ TRANSACTION(ttESCROW_CREATE, 1, EscrowCreate,
     Delegation::delegatable,
     noPriv, ({
     {sfDestination, soeREQUIRED},
-    {sfAmount, soeREQUIRED},
+    {sfAmount, soeREQUIRED, soeMPTSupported},
     {sfCondition, soeOPTIONAL},
     {sfCancelAfter, soeOPTIONAL},
     {sfFinishAfter, soeOPTIONAL},
