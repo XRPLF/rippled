@@ -455,11 +455,17 @@ Expected<Bytes, int32_t>
 WasmHostFunctionsImpl::getNFT(AccountID const& account, uint256 const& nftId)
 {
     if (!account || !nftId)
+    {
+        getJournal().trace() << "WAMR getNFT: Invalid account or NFT ID";
         return Unexpected(HF_ERR_INVALID_PARAMS);
+    }
 
     auto obj = nft::findToken(ctx.view(), account, nftId);
     if (!obj)
+    {
+        getJournal().trace() << "WAMR getNFT: NFT not found";
         return Unexpected(HF_ERR_LEDGER_OBJ_NOT_FOUND);
+    }
 
     Slice const s = obj->at(sfURI);
     return Bytes(s.begin(), s.end());
@@ -476,15 +482,15 @@ WasmHostFunctionsImpl::trace(
 #else
     auto j = ctx.journal.trace();
 #endif
-    j << msg;
     if (!asHex)
-        j << std::string_view(
-            reinterpret_cast<char const*>(data.data()), data.size());
+        j << "WAMR TRACE (" << leKey.key << "): " << msg << " - "
+          << std::string_view(
+                 reinterpret_cast<char const*>(data.data()), data.size());
     else
     {
         auto const hex =
             boost::algorithm::hex(std::string(data.begin(), data.end()));
-        j << hex;
+        j << "WAMR DEV TRACE (" << leKey.key << "): " << msg << " - " << hex;
     }
 
     return msg.size() + data.size() * (asHex ? 2 : 1);
@@ -499,7 +505,7 @@ WasmHostFunctionsImpl::traceNum(std::string const& msg, int64_t data)
     auto j = ctx.journal.trace();
 #endif
 
-    j << msg << data;
+    j << "WAMR DEV TRACE (" << leKey.key << "): " << msg << " - " << data;
 
     return msg.size() + sizeof(data);
 }

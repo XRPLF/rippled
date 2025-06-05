@@ -93,11 +93,17 @@ wamr_log_to_rippled(
 {
     beast::Journal j = WasmEngine::instance().getJournal();
 
-    // Format the variadic args
-    char const* safeFile = file ? file : "<null>";
-
     std::ostringstream oss;
-    oss << "WAMR (" << safeFile << ":" << line << "): ";
+
+    // Format the variadic args
+    if (file)
+    {
+        oss << "WAMR (" << file << ":" << line << "): ";
+    }
+    else
+    {
+        oss << "WAMR: ";
+    }
 
     va_list args;
     va_start(args, fmt);
@@ -114,7 +120,6 @@ wamr_log_to_rippled(
 #ifdef DEBUG_OUTPUT_WAMR
     std::cerr << oss.str() << std::endl;
 #endif
-    //
 }
 
 void
@@ -544,9 +549,8 @@ ModuleWrapper::buildImports(
     if (impCnt != importTypes.num_elems)
     {
         print_wasm_error(
-            std::string("Imports not finished: ") +
-                std::to_string(wimports.num_elems) + "/" +
-                std::to_string(importTypes.num_elems),
+            std::string("Imports not finished: ") + std::to_string(impCnt) +
+                "/" + std::to_string(importTypes.num_elems),
             nullptr,
             j_);
     }
