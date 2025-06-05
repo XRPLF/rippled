@@ -21,6 +21,7 @@
 
 #include <xrpld/app/tx/applySteps.h>
 #include <xrpld/ledger/Dir.h>
+#include <xrpld/ledger/Sandbox.h>
 
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -2606,6 +2607,39 @@ struct EscrowToken_test : public beast::unit_test::suite
             env.close();
         }
 
+        // tecOBJECT_NOT_FOUND: MPT issuance does not exist
+        {
+            Env env{*this, features};
+            auto const baseFee = env.current()->fees().base;
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            env.fund(XRP(10'000), alice, bob);
+            env.close();
+
+            auto const seq1 = env.seq(alice);
+            env.app().openLedger().modify(
+                [&](OpenView& view, beast::Journal j) {
+                    Sandbox sb(&view, tapNONE);
+                    auto sleNew =
+                        std::make_shared<SLE>(keylet::escrow(alice, seq1));
+                    MPTIssue const mpt{
+                        MPTIssue{makeMptID(1, AccountID(0x4985601))}};
+                    STAmount amt(mpt, 10);
+                    sleNew->setAccountID(sfDestination, bob);
+                    sleNew->setFieldAmount(sfAmount, amt);
+                    sb.insert(sleNew);
+                    sb.apply(view);
+                    return true;
+                });
+
+            env(escrow::finish(bob, alice, seq1),
+                escrow::condition(escrow::cb1),
+                escrow::fulfillment(escrow::fb1),
+                fee(baseFee * 150),
+                ter(tecOBJECT_NOT_FOUND));
+            env.close();
+        }
+
         // tecLOCKED: issuer has locked the dest
         {
             Env env{*this, features};
@@ -2809,6 +2843,36 @@ struct EscrowToken_test : public beast::unit_test::suite
                 {.account = gw, .holder = alice, .flags = tfMPTUnauthorize});
 
             env(escrow::cancel(bob, alice, seq1), ter(tecNO_AUTH));
+            env.close();
+        }
+
+        // tecOBJECT_NOT_FOUND: MPT issuance does not exist
+        {
+            Env env{*this, features};
+            auto const baseFee = env.current()->fees().base;
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            env.fund(XRP(10'000), alice, bob);
+
+            auto const seq1 = env.seq(alice);
+            env.app().openLedger().modify(
+                [&](OpenView& view, beast::Journal j) {
+                    Sandbox sb(&view, tapNONE);
+                    auto sleNew =
+                        std::make_shared<SLE>(keylet::escrow(alice, seq1));
+                    MPTIssue const mpt{
+                        MPTIssue{makeMptID(1, AccountID(0x4985601))}};
+                    STAmount amt(mpt, 10);
+                    sleNew->setAccountID(sfDestination, bob);
+                    sleNew->setFieldAmount(sfAmount, amt);
+                    sb.insert(sleNew);
+                    sb.apply(view);
+                    return true;
+                });
+
+            env(escrow::cancel(bob, alice, seq1),
+                fee(baseFee),
+                ter(tecOBJECT_NOT_FOUND));
             env.close();
         }
     }

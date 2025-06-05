@@ -739,7 +739,7 @@ escrowFinishPreclaimHelper<MPTIssue>(
         keylet::mptIssuance(amount.get<MPTIssue>().getMptID());
     auto const sleIssuance = ctx.view.read(issuanceKey);
     if (!sleIssuance)
-        return tecOBJECT_NOT_FOUND;  // LCOV_EXCL_LINE
+        return tecOBJECT_NOT_FOUND;
 
     // If the issuer has requireAuth set, check if the destination is
     // authorized
@@ -1250,7 +1250,7 @@ escrowCancelPreclaimHelper<MPTIssue>(
         keylet::mptIssuance(amount.get<MPTIssue>().getMptID());
     auto const sleIssuance = ctx.view.read(issuanceKey);
     if (!sleIssuance)
-        return tecOBJECT_NOT_FOUND;  // LCOV_EXCL_LINE
+        return tecOBJECT_NOT_FOUND;
 
     // If the issuer has requireAuth set, check if the account is
     // authorized
