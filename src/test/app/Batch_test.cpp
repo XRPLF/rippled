@@ -3765,6 +3765,8 @@ class Batch_test : public beast::unit_test::suite
         }
 
         // delegated non atomic inner (AccountSet)
+        // this also makes sure tfInnerBatchTxn won't block delegated AccountSet
+        // with granular permission
         {
             test::jtx::Env env{*this, envconfig()};
 
@@ -3811,7 +3813,9 @@ class Batch_test : public beast::unit_test::suite
             BEAST_EXPECT(env.balance(bob) == preBob + XRP(2));
         }
 
-        // delegated non atomic inner (MPTokenIssuance)
+        // delegated non atomic inner (MPTokenIssuanceSet)
+        // this also makes sure tfInnerBatchTxn won't block delegated
+        // MPTokenIssuanceSet with granular permission
         {
             test::jtx::Env env{*this, envconfig()};
             Account alice{"alice"};
@@ -3866,6 +3870,8 @@ class Batch_test : public beast::unit_test::suite
         }
 
         // delegated non atomic inner (TrustSet)
+        // this also makes sure tfInnerBatchTxn won't block delegated TrustSet
+        // with granular permission
         {
             test::jtx::Env env{*this, envconfig()};
             Account gw{"gw"};
