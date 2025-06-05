@@ -550,7 +550,7 @@ ModuleWrapper::buildImports(
     {
         print_wasm_error(
             std::string("Imports not finished: ") +
-                std::to_string(wimports.num_elems) + "/" +
+                std::to_string(impCnt) + "/" +
                 std::to_string(importTypes.num_elems),
             nullptr,
             j_);
