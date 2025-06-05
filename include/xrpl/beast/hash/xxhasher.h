@@ -32,7 +32,7 @@
 #include <span>
 #include <type_traits>
 
-#define ORIGINAL_HASH 1
+#define ORIGINAL_HASH 0
 #define BIT_SHIFT_HASH 0
 
 namespace beast {
