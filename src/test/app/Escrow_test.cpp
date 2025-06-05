@@ -372,6 +372,12 @@ struct Escrow_test : public beast::unit_test::suite
         env.fund(XRP(5000), "alice", "bob", "gw");
         env.close();
 
+        // temINVALID_FLAG
+        env(escrow::create("alice", "bob", XRP(1000)),
+            escrow::finish_time(env.now() + 5s),
+            txflags(tfPassive),
+            ter(temINVALID_FLAG));
+
         // Finish time is in the past
         env(escrow::create("alice", "bob", XRP(1000)),
             escrow::finish_time(env.now() - 5s),
