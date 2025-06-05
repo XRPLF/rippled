@@ -17,7 +17,7 @@
 */
 //==============================================================================
 
-#include <xrpld/net/InfoSub.h>
+#include <xrpld/rpc/InfoSub.h>
 
 namespace ripple {
 
