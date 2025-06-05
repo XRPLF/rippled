@@ -1904,21 +1904,21 @@ struct Escrow_test : public beast::unit_test::suite
             XRPAmount const createFee = env.current()->fees().base + 1000;
 
             // Escrow with FinishFunction + Condition
-            auto escrowCreate = escrow(alice, carol, XRP(1000));
+            auto escrowCreate = escrow::create(alice, carol, XRP(1000));
             env(escrowCreate,
-                finish_function(reqNonexistentField),
-                condition(cb1),
-                cancel_time(env.now() + 100s),
+                escrow::finish_function(reqNonexistentField),
+                escrow::condition(escrow::cb1),
+                escrow::cancel_time(env.now() + 100s),
                 fee(createFee));
             env.close();
             env.close();
 
             // Rejected as wasm code request nonexistent memo field
             XRPAmount const txnFees = env.current()->fees().base * 34 + 1000;
-            env(finish(alice, alice, seq),
-                condition(cb1),
-                fulfillment(fb1),
-                comp_allowance(allowance),
+            env(escrow::finish(alice, alice, seq),
+                escrow::condition(escrow::cb1),
+                escrow::fulfillment(escrow::fb1),
+                escrow::comp_allowance(allowance),
                 fee(txnFees),
                 ter(tecWASM_REJECTED));
         }
