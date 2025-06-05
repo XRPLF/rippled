@@ -581,7 +581,10 @@ canAdd(STAmount const& a, STAmount const& b)
 
         return true;
     }
-    return false;  // LCOV_EXCL_LINE
+    // LCOV_EXCL_START
+    UNREACHABLE("STAmount::canAdd : unexpected STAmount type");
+    return false;
+    // LCOV_EXCL_STOP
 }
 
 /**
@@ -653,7 +656,10 @@ canSubtract(STAmount const& a, STAmount const& b)
             return false;
         return true;
     }
-    return false;  // LCOV_EXCL_LINE
+    // LCOV_EXCL_START
+    UNREACHABLE("STAmount::canSubtract : unexpected STAmount type");
+    return false;
+    // LCOV_EXCL_STOP
 }
 
 void

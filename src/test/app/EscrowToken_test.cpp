@@ -2516,7 +2516,6 @@ struct EscrowToken_test : public beast::unit_test::suite
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
             auto const MPT = mptGw["MPT"];
-            env(pay(gw, alice, MPT(10)));
             env(pay(gw, bob, MPT(10)));
             env.close();
 

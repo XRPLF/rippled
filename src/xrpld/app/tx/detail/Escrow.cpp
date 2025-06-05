@@ -595,7 +595,7 @@ EscrowCreate::doApply()
                 },
                 amount.asset().value());
             !isTesSuccess(ret))
-            return ret;
+            return ret;  // LCOV_EXCL_LINE
     }
 
     // increment owner count
@@ -739,7 +739,7 @@ escrowFinishPreclaimHelper<MPTIssue>(
         keylet::mptIssuance(amount.get<MPTIssue>().getMptID());
     auto const sleIssuance = ctx.view.read(issuanceKey);
     if (!sleIssuance)
-        return tecOBJECT_NOT_FOUND;
+        return tecOBJECT_NOT_FOUND;  // LCOV_EXCL_LINE
 
     // If the issuer has requireAuth set, check if the destination is
     // authorized
