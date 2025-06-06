@@ -720,7 +720,11 @@ class Simulate_test : public beast::unit_test::suite
                                       Json::Value const& tx) {
                 auto result = resp[jss::result];
                 checkBasicReturnValidity(
-                    result, tx, env.seq(alice), env.current()->fees().base * 2);
+                    result,
+                    tx,
+                    env.seq(alice),
+                    tx.isMember(jss::Signers) ? env.current()->fees().base * 2
+                                              : env.current()->fees().base);
 
                 BEAST_EXPECT(result[jss::engine_result] == "tesSUCCESS");
                 BEAST_EXPECT(result[jss::engine_result_code] == 0);
@@ -762,6 +766,10 @@ class Simulate_test : public beast::unit_test::suite
             tx[jss::Account] = alice.human();
             tx[jss::TransactionType] = jss::AccountSet;
             tx[sfDomain] = newDomain;
+
+            // test with autofill
+            testTx(env, tx, validateOutput, false);
+
             tx[sfSigners] = Json::arrayValue;
             {
                 Json::Value signer;
@@ -771,7 +779,7 @@ class Simulate_test : public beast::unit_test::suite
                 tx[sfSigners].append(signerOuter);
             }
 
-            // test with autofill
+            // test with just signer accounts
             testTx(env, tx, validateOutput, false);
 
             tx[sfSigningPubKey] = "";

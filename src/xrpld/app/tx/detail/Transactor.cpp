@@ -297,9 +297,9 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
 
     if (balance < feePaid)
     {
-        JLOG(ctx.j.trace()) << "Insufficient balance:"
-                            << " balance=" << to_string(balance)
-                            << " paid=" << to_string(feePaid);
+        JLOG(ctx.j.trace())
+            << "Insufficient balance:" << " balance=" << to_string(balance)
+            << " paid=" << to_string(feePaid);
 
         if ((balance > beast::zero) && !ctx.view.open())
         {
@@ -615,6 +615,12 @@ Transactor::checkSign(PreclaimContext const& ctx)
     auto const sleAccount = ctx.view.read(keylet::account(idAccount));
     if (!sleAccount)
         return terNO_ACCOUNT;
+
+    if ((ctx.flags & tapDRY_RUN) && !ctx.tx.isFieldPresent(sfSigningPubKey))
+    {
+        // simulate, no SigningPubKey/signature situation to check
+        return tesSUCCESS;
+    }
 
     return checkSingleSign(
         idSigner, idAccount, sleAccount, ctx.view.rules(), ctx.j);
