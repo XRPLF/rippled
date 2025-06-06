@@ -12,6 +12,8 @@ on:
       - master
       # Branches that opt-in to running
       - 'ci/**'
+  workflow_dispatch:
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -20,6 +22,7 @@ jobs:
 
   test:
     if: ${{ github.event_name == 'push' || github.event.pull_request.draft != true || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
+    name: macOS ${{ matrix.configuration }} ${{ matrix.generator }}
     strategy:
       matrix:
         platform:
@@ -34,33 +37,51 @@ jobs:
       build_dir: .build
       NUM_PROCESSORS: 12
     steps:
+      - name: clean workspace
+        run: |
+          rm -rf ${{ env.build_dir }}
+          rm -rf $(conan config home)
+
       - name: checkout
         uses: actions/checkout@v4
+
       - name: install Conan
         run: |
-          brew install conan@1
-          echo '/opt/homebrew/opt/conan@1/bin' >> $GITHUB_PATH
+          brew install conan
+          echo '/opt/homebrew/opt/conan/bin' >> $GITHUB_PATH
+
       - name: install Ninja
         if: matrix.generator == 'Ninja'
         run: brew install ninja
+
       - name: install python
-        run: | 
-          if which python > /dev/null 2>&1; then
-              echo "Python executable exists"
+        run: |
+
+          if command -v python3 >/dev/null 2>&1; then
+              echo "python3 executable exists"
+              if ! command -v python >/dev/null 2>&1; then
+                echo "python symlink does not exist"
+                ln -s /opt/homebrew/bin/python3 /opt/homebrew/bin/python
+              fi
           else
+              echo "No Python!!!"
               brew install python@3.13
               ln -s /opt/homebrew/bin/python3 /opt/homebrew/bin/python
           fi
+          python --version
+
       - name: install cmake
         run: |
-          if which cmake > /dev/null 2>&1; then
-              echo "cmake executable exists"
+          if command -v cmake > /dev/null 2>&1; then
+              echo "CMake executable exists"
           else
               brew install cmake
           fi
+
       - name: install nproc
         run: |
           brew install coreutils
+
       - name: check environment
         run: |
           env | sort
@@ -74,24 +95,27 @@ jobs:
           system_profiler SPHardwareDataType
           sysctl -n hw.logicalcpu
           clang --version
-      - name: configure Conan
-        run : |
-          conan profile new default --detect || true
-          conan profile update settings.compiler.cppstd=20 default
+
+      - name: Configure Conan
+        uses: ./.github/actions/conan_configure
+        env:
+          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
+        with:
+          profile: Macos-clang-17-Release
+
       - name: build dependencies
         uses: ./.github/actions/dependencies
         env:
-          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
-          CONAN_LOGIN_USERNAME_RIPPLE: ${{ secrets.CONAN_USERNAME }}
-          CONAN_PASSWORD_RIPPLE: ${{ secrets.CONAN_TOKEN }}
+          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
         with:
-          configuration: ${{ matrix.configuration }}
+          profile: Macos-clang-17-Release
       - name: build
         uses: ./.github/actions/build
         with:
           generator: ${{ matrix.generator }}
           configuration: ${{ matrix.configuration }}
-          cmake-args: "-Dassert=TRUE -Dwerr=TRUE ${{ matrix.cmake-args }}"
+          cmake-args: "-Dxrpld=TRUE -Dtests=TRUE -Dassert=TRUE -Dwerr=TRUE ${{ matrix.cmake-args }}"
+
       - name: test
         run: |
           n=$(nproc)
