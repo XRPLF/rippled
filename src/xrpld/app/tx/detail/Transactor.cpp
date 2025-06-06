@@ -185,8 +185,7 @@ preflight2(PreflightContext const& ctx)
             }
         }
 
-        if (!ctx.tx.getSigningPubKey().empty() &&
-            ctx.tx.isFieldPresent(sfSigners))
+        if (!ctx.tx.getSigningPubKey().empty())
         {
             // trying to single-sign _and_ multi-sign a transaction
             return temINVALID;
@@ -578,13 +577,13 @@ Transactor::apply()
 NotTEC
 Transactor::checkSign(PreclaimContext const& ctx)
 {
+    auto const pkSigner = ctx.tx.getSigningPubKey();
     // Ignore signature check on batch inner transactions
     if (ctx.tx.isFlag(tfInnerBatchTxn) &&
         ctx.view.rules().enabled(featureBatch))
     {
         // Defensive Check: These values are also checked in Batch::preflight
-        if (ctx.tx.isFieldPresent(sfTxnSignature) ||
-            !ctx.tx.getSigningPubKey().empty() ||
+        if (ctx.tx.isFieldPresent(sfTxnSignature) || !pkSigner.empty() ||
             ctx.tx.isFieldPresent(sfSigners))
         {
             return temINVALID_FLAG;  // LCOV_EXCL_LINE
@@ -592,7 +591,7 @@ Transactor::checkSign(PreclaimContext const& ctx)
         return tesSUCCESS;
     }
 
-    if ((ctx.flags & tapDRY_RUN) && ctx.tx.getSigningPubKey().empty() &&
+    if ((ctx.flags & tapDRY_RUN) && pkSigner.empty() &&
         !ctx.tx.isFieldPresent(sfSigners))
     {
         // simulate, no SigningPubKey/signature situation to check
@@ -603,15 +602,13 @@ Transactor::checkSign(PreclaimContext const& ctx)
 
     // If the pk is empty and not simulate or simulate and signers,
     // then we must be multi-signing.
-    if (ctx.tx.getSigningPubKey().empty())
+    if (ctx.tx.isFieldPresent(sfSigners))
     {
         STArray const& txSigners(ctx.tx.getFieldArray(sfSigners));
         return checkMultiSign(ctx.view, idAccount, txSigners, ctx.flags, ctx.j);
     }
 
     // Check Single Sign
-    auto const pkSigner = ctx.tx.getSigningPubKey();
-    // This ternary is only needed to handle `simulate`
     XRPL_ASSERT(
         !pkSigner.empty(),
         "ripple::Transactor::checkSingleSign : non-empty signer or simulation");
@@ -818,7 +815,6 @@ Transactor::checkMultiSign(
             return tefBAD_SIGNATURE;
         }
 
-        // This ternary is only needed to handle `simulate`
         XRPL_ASSERT(
             (flags & tapDRY_RUN) || !spk.empty(),
             "ripple::Transactor::checkMultiSign : non-empty signer or "
