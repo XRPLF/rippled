@@ -237,6 +237,13 @@ Value::Value(char const* value) : type_(stringValue), allocated_(true)
     value_.string_ = valueAllocator()->duplicateStringValue(value);
 }
 
+Value::Value(ripple::Number const& value) : type_(stringValue), allocated_(true)
+{
+    auto const tmp = to_string(value);
+    value_.string_ =
+        valueAllocator()->duplicateStringValue(tmp.c_str(), tmp.length());
+}
+
 Value::Value(std::string const& value) : type_(stringValue), allocated_(true)
 {
     value_.string_ = valueAllocator()->duplicateStringValue(
@@ -891,6 +898,12 @@ Value&
 Value::operator[](StaticString const& key)
 {
     return resolveReference(key, true);
+}
+
+Value const&
+Value::operator[](StaticString const& key) const
+{
+    return (*this)[key.c_str()];
 }
 
 Value&

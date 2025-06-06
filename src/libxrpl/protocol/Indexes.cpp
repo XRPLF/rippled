@@ -95,6 +95,7 @@ enum class LedgerNameSpace : std::uint16_t {
     CREDENTIAL = 'D',
     PERMISSIONED_DOMAIN = 'm',
     DELEGATE = 'E',
+    VAULT = 'V',
 
     // No longer used or supported. Left here to reserve the space
     // to avoid accidental reuse.
@@ -116,12 +117,19 @@ getBookBase(Book const& book)
     XRPL_ASSERT(
         isConsistent(book), "ripple::getBookBase : input is consistent");
 
-    auto const index = indexHash(
-        LedgerNameSpace::BOOK_DIR,
-        book.in.currency,
-        book.out.currency,
-        book.in.account,
-        book.out.account);
+    auto const index = book.domain ? indexHash(
+                                         LedgerNameSpace::BOOK_DIR,
+                                         book.in.currency,
+                                         book.out.currency,
+                                         book.in.account,
+                                         book.out.account,
+                                         *(book.domain))
+                                   : indexHash(
+                                         LedgerNameSpace::BOOK_DIR,
+                                         book.in.currency,
+                                         book.out.currency,
+                                         book.in.account,
+                                         book.out.account);
 
     // Return with quality 0.
     auto k = keylet::quality({ltDIR_NODE, index}, 0);
@@ -550,6 +558,12 @@ credential(
     return {
         ltCREDENTIAL,
         indexHash(LedgerNameSpace::CREDENTIAL, subject, issuer, credType)};
+}
+
+Keylet
+vault(AccountID const& owner, std::uint32_t seq) noexcept
+{
+    return vault(indexHash(LedgerNameSpace::VAULT, owner, seq));
 }
 
 Keylet

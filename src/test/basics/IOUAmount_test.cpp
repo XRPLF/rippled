@@ -44,6 +44,11 @@ public:
 
         IOUAmount const zz(beast::zero);
         BEAST_EXPECT(z == zz);
+
+        // https://github.com/XRPLF/rippled/issues/5170
+        IOUAmount const zzz{};
+        BEAST_EXPECT(zzz == beast::zero);
+        // BEAST_EXPECT(zzz == zz);
     }
 
     void
