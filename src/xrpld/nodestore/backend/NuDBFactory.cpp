@@ -370,38 +370,40 @@ private:
     {
         std::size_t blockSize = 4096;  // Default 4K
         std::string blockSizeStr;
-        
-        if (get_if_exists(keyValues, "nudb_block_size", blockSizeStr))
+
+        if (!get_if_exists(keyValues, "nudb_block_size", blockSizeStr))
         {
-            try 
-            {
-                blockSize = beast::lexicalCastThrow<std::size_t>(blockSizeStr);
-                
-                // Validate: must be power of 2 between 4K and 64K
-                if (blockSize < 4096 || blockSize > 65536 || 
-                    (blockSize & (blockSize - 1)) != 0)
-                {
-                    JLOG(journal.warn()) 
-                        << "Invalid nudb_block_size: " << blockSize 
-                        << ". Must be power of 2 between 4096 and 65536. Using default 4096.";
-                    blockSize = 4096;
-                }
-                else
-                {
-                    JLOG(journal.info()) 
-                        << "Using custom NuDB block size: " << blockSize << " bytes";
-                }
-            }
-            catch (std::exception const& e)
-            {
-                JLOG(journal.warn()) 
-                    << "Invalid nudb_block_size value: " << blockSizeStr 
-                    << ". Using default 4096. Error: " << e.what();
-                blockSize = 4096;
-            }
+            return blockSize;  // Early return with default
         }
-        
-        return blockSize;
+
+        try
+        {
+            std::size_t const parsedBlockSize =
+                beast::lexicalCastThrow<std::size_t>(blockSizeStr);
+
+            // Validate: must be power of 2 between 4K and 32K
+            if (parsedBlockSize < 4096 || parsedBlockSize > 32768 ||
+                (parsedBlockSize & (parsedBlockSize - 1)) != 0)
+            {
+                JLOG(journal.warn())
+                    << "Invalid nudb_block_size: " << parsedBlockSize
+                    << ". Must be power of 2 between 4096 and 32768. Using "
+                       "default 4096.";
+                return 4096;
+            }
+
+            JLOG(journal.info())
+                << "Using custom NuDB block size: " << parsedBlockSize
+                << " bytes";
+            return parsedBlockSize;
+        }
+        catch (std::exception const& e)
+        {
+            JLOG(journal.warn())
+                << "Invalid nudb_block_size value: " << blockSizeStr
+                << ". Using default 4096. Error: " << e.what();
+            return 4096;
+        }
     }
 };
 
