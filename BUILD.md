@@ -140,15 +140,18 @@ as a default compiler:
    conan profile detect
    ```
 
-You may also explicitly set the path to the compiler in the profile file, for example:
+You should also explicitly set the path to the compiler in the profile file. This
+avoids errors when `CC` and/or `CXX` are set and disagree with the selected Conan
+profile. For example:
 
 ```text
 [conf]
-tools.build:compiler_executables={"c": "/usr/bin/gcc", "cpp": "/usr/bin/g++"}
+tools.build:compiler_executables={'c':'/usr/bin/gcc','cpp':'/usr/bin/g++'}
 ```
 
-You can also rename (or remove) the `default` profile, simply by manipulating
-the files in `~/.conan2/profiles` directory, and/or using symlinks.
+You can manage Conan profile files in the directory `~/.conan2/profiles`, for
+example renaming `default` to a different name and then creating a new
+`default` profile for a different compiler.
 
 ### CMake 4 workaround
 
@@ -401,24 +404,25 @@ and can be helpful for detecting `#include` omissions.
 After any updates or changes to dependencies, you may need to do the following:
 
 1. Remove your build directory.
-2. Remove individual library from the Conan cache, e.g.
+2. Remove individual library from Conan cache, e.g.
 
    ```bash
    conan remove 'grpc/*'
    ```
 
-   **or:**
+   **or**
 
-3. Remove the Conan cache entirely:
+   Remove all libraries from Conan cache:
 
    ```bash
-   rm -rf ~/.conan2/data
+   conan remove '*'
    ```
+
+3. Re-run [conan export](#export-updated-recipes)
 
 4. Re-run [conan install](#build-and-test).
 
-
-### 'protobuf/port_def.inc' file not found
+### `protobuf/port_def.inc` file not found
 
 If `cmake --build .` results in an error due to a missing a protobuf file, then you might have generated CMake files for a different `build_type` than the `CMAKE_BUILD_TYPE` you passed to conan.
 
@@ -434,7 +438,7 @@ For example, if you want to build Debug:
 1. For conan install, pass `--settings build_type=Debug`
 2. For cmake, pass `-DCMAKE_BUILD_TYPE=Debug`
 
-### recompile with -fPIC
+### recompile with `-fPIC`
 
 If you get a linker error suggesting that you recompile Boost with
 position-independent code, such as:
