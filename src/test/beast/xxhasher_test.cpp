@@ -20,8 +20,6 @@ OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 #include <xrpl/beast/hash/xxhasher.h>
 #include <xrpl/beast/unit_test.h>
 
-#include <ranges>
-
 namespace beast {
 
 class XXHasher_test : public unit_test::suite
@@ -76,7 +74,7 @@ public:
         xxhasher hasher{};
 
         std::string objectToHash{"Hello, xxHash!"};
-        for (int _ : std::views::iota(0, 100))
+        for (int i = 0; i < 100; i++)
         {
             hasher(objectToHash.data(), objectToHash.size());
         }
@@ -92,7 +90,7 @@ public:
         xxhasher hasher{static_cast<std::uint32_t>(103)};
 
         std::string objectToHash{"Hello, xxHash!"};
-        for (int _ : std::views::iota(0, 100))
+        for (int i = 0; i < 100; i++)
         {
             hasher(objectToHash.data(), objectToHash.size());
         }
@@ -109,7 +107,7 @@ public:
 
         std::string objectToHash{"Hello, xxHash!"};
         std::string bigObject;
-        for (int _ : std::views::iota(0, 20))
+        for (int i = 0; i < 20; i++)
         {
             bigObject += "Hello, xxHash!";
         }
@@ -129,7 +127,7 @@ public:
 
         std::string objectToHash{"Hello, xxHash!"};
         std::string bigObject;
-        for (int _ : std::views::iota(0, 20))
+        for (int i = 0; i < 20; i++)
         {
             bigObject += "Hello, xxHash!";
         }
@@ -148,7 +146,7 @@ public:
         xxhasher hasher{};
 
         std::string objectToHash;
-        for (int _ : std::views::iota(0, 100))
+        for (int i = 0; i < 100; i++)
         {
             objectToHash += "Hello, xxHash!";
         }
@@ -165,7 +163,7 @@ public:
         xxhasher hasher{static_cast<std::uint32_t>(103)};
 
         std::string objectToHash;
-        for (int _ : std::views::iota(0, 100))
+        for (int i = 0; i < 100; i++)
         {
             objectToHash += "Hello, xxHash!";
         }
