@@ -603,7 +603,7 @@ Transactor::checkSign(PreclaimContext const& ctx)
 
     // If the pk is empty and not simulate or simulate and signers,
     // then we must be multi-signing.
-    if (ctx.tx.isFieldPresent(sfSigners))
+    if (ctx.tx.getSigningPubKey().empty())
     {
         STArray const& txSigners(ctx.tx.getFieldArray(sfSigners));
         return checkMultiSign(ctx.view, idAccount, txSigners, ctx.flags, ctx.j);
