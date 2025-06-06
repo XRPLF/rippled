@@ -1,0 +1,80 @@
+name: conan_configure
+description: Set Conan up with some sane defaults
+inputs:
+  profile:
+    required: false
+  set_default:
+    required: false
+  conf:
+    required: false
+  platform:
+    required: true
+  configuration:
+    required: true
+  compiler:
+    required: false
+  compiler_version:
+    required: false
+runs:
+  using: composite
+  steps:
+    - name: Configure global settings
+      shell: bash
+      env:
+        ACTION_PATH: ${{ github.action_path }}
+      run: |
+        python ${ACTION_PATH}/conan_configure.py 2>/dev/null || python3 ${ACTION_PATH}/conan_configure.py
+        if [ -n ${{ inputs.profile }} ]; then
+          profile=${ACTION_PATH}/profiles/${{ inputs.profile }}
+        else
+          profile=${{ inputs.platform }}-${{inputs.compiler}}-${{inputs.compiler_version}}-${{inputs.configuration}}
+        fi
+        conan config install "${profile}" --target-folder profiles
+        conan profile show --profile:all ${profile} >> $GITHUB_STEP_SUMMARY
+
+    - name: Export custom recipes
+      shell: bash
+      run: |
+        conan export --version 1.1.10 external/snappy
+        conan export --version 9.7.3 external/rocksdb
+        conan export --version 4.0.3 external/soci
+        conan export --version 2.0.8 external/nudb
+
+    - name: Add Ripple Conan remote
+      shell: bash
+      run: |
+        conan remote add ripple --index 0 ${{ env.CONAN_URL }} --force
+        conan remote list
+
+    - name: List missing packages
+      shell: bash
+      run: |
+        profile=${{ inputs.profile }}
+        conan graph info . --format json --profile:a ${profile} | python3 -c "import sys, json; print(json.dumps([{'ref': v['ref'], 'package_id': v['package_id']} for v in json.load(sys.stdin)['graph']['nodes'].values() if v.get('binary') == 'Missing'], indent=2))"
+
+    - name: Archive Conan home dir
+      # Create this archive before dependencies are added to the local cache.
+      shell: bash
+      id: set_artifact_name
+      run: |
+        if [ -n ${{ inputs.profile }} ]; then
+          artifact_name=${{ inputs.profile }}
+        else
+          if [[ "${{ inputs.platform }}" == "macos" ]]; then
+            artifact_name="${platform}-${configuration}"
+          elif [[ "${{ inputs.platform }}" == "windows" ]]; then
+            artifact_name="${{ inputs.platform }}-${{ inputs.compiler }}-${{ inputs.configuration }}"
+          else
+            artifact_name="${{ inputs.platform }}-${{ inputs.compiler }}-${{ inputs.compiler_version }}-${{ inputs.configuration }}"
+          fi
+        fi
+        echo "artifact_name=${artifact_name}" >> $GITHUB_OUTPUT
+
+        tar -czf conan.tgz -C $(conan config home) .
+
+    - name: Upload Conan home
+      uses: actions/upload-artifact@v4
+      with:
+        name: ${{ steps.set_artifact_name.outputs.artifact_name }}
+        path: conan.tgz
+        if-no-files-found: error

@@ -1,4 +1,7 @@
 name: nix
+env:
+  CONAN_VERSION: "2.17"
+  CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/dev
 on:
   pull_request:
     types: [opened, reopened, synchronize, ready_for_review]
@@ -12,6 +15,8 @@ on:
       - master
       # Branches that opt-in to running
       - "ci/**"
+  workflow_dispatch:
+
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -41,11 +46,12 @@ concurrency:
 jobs:
   dependencies:
     if: ${{ github.event_name == 'push' || github.event.pull_request.draft != true || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
+    name: Linux deps ${{ matrix.compiler }}-${{ matrix.compiler_version }} ${{ matrix.configuration }}
     strategy:
       fail-fast: false
       matrix:
         platform:
-          - linux
+          - Linux
         compiler:
           - gcc
           - clang
@@ -54,93 +60,76 @@ jobs:
           - Release
         include:
           - compiler: gcc
-            profile:
-              version: 11
-              cc: /usr/bin/gcc
-              cxx: /usr/bin/g++
+            compiler_version: 11
           - compiler: clang
-            profile:
-              version: 14
-              cc: /usr/bin/clang-14
-              cxx: /usr/bin/clang++-14
+            compiler_version: 14
     runs-on: [self-hosted, heavy]
     container: ghcr.io/xrplf/rippled-build-ubuntu:aaf5e3e
     env:
-      build_dir: .build
+      build_dir: build
+      profile: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.compiler_version }}-${{ matrix.configuration }}
     steps:
-      - name: upgrade conan
-        run: |
-          pip install --upgrade "conan<2"
       - name: checkout
         uses: actions/checkout@v4
+
+      - name: Configure Conan
+        uses: ./.github/actions/conan_configure
+        with:
+          profile: ${{ env.profile }}
+
       - name: check environment
         run: |
           echo ${PATH} | tr ':' '\n'
           lsb_release -a || true
-          ${{ matrix.profile.cc }} --version
           conan --version
           cmake --version
           env | sort
-      - name: configure Conan
-        run: |
-          conan profile new default --detect
-          conan profile update settings.compiler.cppstd=20 default
-          conan profile update settings.compiler=${{ matrix.compiler }} default
-          conan profile update settings.compiler.version=${{ matrix.profile.version }} default
-          conan profile update settings.compiler.libcxx=libstdc++11 default
-          conan profile update env.CC=${{ matrix.profile.cc }} default
-          conan profile update env.CXX=${{ matrix.profile.cxx }} default
-          conan profile update conf.tools.build:compiler_executables='{"c": "${{ matrix.profile.cc }}", "cpp": "${{ matrix.profile.cxx }}"}' default
       - name: archive profile
         # Create this archive before dependencies are added to the local cache.
-        run: tar -czf conan.tar -C ~/.conan .
+        run: tar -czf conan.tgz -C $(conan config home) .
       - name: build dependencies
         uses: ./.github/actions/dependencies
-        env:
-          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
-          CONAN_LOGIN_USERNAME_RIPPLE: ${{ secrets.CONAN_USERNAME }}
-          CONAN_PASSWORD_RIPPLE: ${{ secrets.CONAN_TOKEN }}
         with:
-          configuration: ${{ matrix.configuration }}
-      - name: upload archive
-        uses: actions/upload-artifact@v4
-        with:
-          name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
-          path: conan.tar
-          if-no-files-found: error
+          profile: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.compiler_version }}-${{ matrix.configuration }}
 
   test:
+    name: Build ${{ matrix.compiler }}-${{ matrix.configuration }} unity=${{ matrix.unity }}
     strategy:
       fail-fast: false
       matrix:
         platform:
-          - linux
+          - Linux
         compiler:
           - gcc
           - clang
         configuration:
           - Debug
           - Release
-        cmake-args:
-          -
-          - "-Dunity=ON"
+        unity: [ON, OFF]
+        cmake_args: [""]
+        include:
+          - compiler: gcc
+            compiler_version: 11
+          - compiler: clang
+            compiler_version: 14
     needs: dependencies
     runs-on: [self-hosted, heavy]
     container: ghcr.io/xrplf/rippled-build-ubuntu:aaf5e3e
     env:
-      build_dir: .build
+      build_dir: build
     steps:
       - name: upgrade conan
+        id: conan_info
         run: |
-          pip install --upgrade "conan<2"
+          pip install conan~=${{ env.CONAN_VERSION }}
       - name: download cache
         uses: actions/download-artifact@v4
         with:
-          name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
+          name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.compiler_version }}-${{ matrix.configuration }}
       - name: extract cache
         run: |
-          mkdir -p ~/.conan
-          tar -xzf conan.tar -C ~/.conan
+          conan version >> "$GITHUB_STEP_SUMMARY"
+          tar -xzf conan.tgz -C $(conan config home) .
       - name: check environment
         run: |
           env | sort
@@ -151,128 +140,140 @@ jobs:
         uses: actions/checkout@v4
       - name: dependencies
         uses: ./.github/actions/dependencies
-        env:
-          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
         with:
-          configuration: ${{ matrix.configuration }}
+          profile: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.compiler_version }}-${{ matrix.configuration }}
+          conf: |
+            tools.build:verbosity=verbose
+            tools.compilation:verbosity=verbose
+          cmake-args: ${{ matrix.cmake_args }}
       - name: build
         uses: ./.github/actions/build
         with:
           generator: Ninja
           configuration: ${{ matrix.configuration }}
-          cmake-args: "-Dassert=TRUE -Dwerr=TRUE ${{ matrix.cmake-args }}"
-      - name: test
+          compiler: ${{ matrix.compiler }}
+          cmake-args: >
+            -Dxrpld=True
+            -Dtests=True
+            -Dassert=TRUE
+            -Dwerr=TRUE
+            ${{ matrix.cmake-args }}
+      - name: Run unit tests
+        working-directory: ${{ env.build_dir }}
         run: |
-          cd ${build_dir}
           ./rippled --unittest --unittest-jobs $(nproc)
           ctest -j $(nproc) --output-on-failure
 
   reference-fee-test:
+    name: "Fee test ${{ matrix.cmake-args }}"
     strategy:
       fail-fast: false
       matrix:
-        platform:
-          - linux
-        compiler:
-          - gcc
-        configuration:
-          - Debug
         cmake-args:
-          - "-DUNIT_TEST_REFERENCE_FEE=200"
-          - "-DUNIT_TEST_REFERENCE_FEE=1000"
+          - "200"
+          - "1000"
     needs: dependencies
     runs-on: [self-hosted, heavy]
     container: ghcr.io/xrplf/rippled-build-ubuntu:aaf5e3e
     env:
       build_dir: .build
+      platform: Linux
+      compiler: gcc
+      compiler_version: 11
+      configuration: Debug
     steps:
+      - name: checkout
+        uses: actions/checkout@v4
       - name: upgrade conan
         run: |
-          pip install --upgrade "conan<2"
+          pip install --upgrade conan~=${{ env.CONAN_VERSION }}
       - name: download cache
         uses: actions/download-artifact@v4
         with:
-          name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
+          name: ${{ env.platform }}-${{ env.compiler }}-${{ env.compiler_version }}-${{ env.configuration }}
       - name: extract cache
         run: |
-          mkdir -p ~/.conan
-          tar -xzf conan.tar -C ~/.conan
+          conan version >> "$GITHUB_STEP_SUMMARY"
+          tar -xzf conan.tgz -C $(conan config home) .
       - name: check environment
         run: |
           env | sort
           echo ${PATH} | tr ':' '\n'
           conan --version
           cmake --version
-      - name: checkout
-        uses: actions/checkout@v4
       - name: dependencies
         uses: ./.github/actions/dependencies
-        env:
-          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
         with:
-          configuration: ${{ matrix.configuration }}
+          profile: ${{ env.platform }}-${{ env.compiler }}-${{ env.compiler_version }}-${{ env.configuration }}
+          conf: |
+            tools.build:verbosity=verbose
+            tools.compilation:verbosity=verbose
       - name: build
         uses: ./.github/actions/build
         with:
           generator: Ninja
-          configuration: ${{ matrix.configuration }}
-          cmake-args: "-Dassert=TRUE -Dwerr=TRUE ${{ matrix.cmake-args }}"
+          configuration: Debug
+          cmake-args: >-
+            -Dxrpld=TRUE
+            -Dtests=TRUE
+            -Dassert=TRUE
+            -Dwerr=TRUE
+            -DUNIT_TEST_REFERENCE_FEE=${{ matrix.cmake-args }}
       - name: test
         run: |
           cd ${build_dir}
           ./rippled --unittest --unittest-jobs $(nproc)
           ctest -j $(nproc) --output-on-failure
   coverage:
-    strategy:
-      fail-fast: false
-      matrix:
-        platform:
-          - linux
-        compiler:
-          - gcc
-        configuration:
-          - Debug
+    env:
+      PLATFORM: Linux
+      COMPILER: gcc
+      COMPILER_VERSION: 11
+      CONFIGURATION: Debug
+      GCOVR_VERSION: "8.0"
+      build_dir: .build
     needs: dependencies
     runs-on: [self-hosted, heavy]
     container: ghcr.io/xrplf/rippled-build-ubuntu:aaf5e3e
-    env:
-      build_dir: .build
     steps:
+      - name: checkout
+        uses: actions/checkout@v4
       - name: upgrade conan
         run: |
-          pip install --upgrade "conan<2"
+          pip install conan~=${{ env.CONAN_VERSION }}
       - name: download cache
         uses: actions/download-artifact@v4
         with:
-          name: ${{ matrix.platform }}-${{ matrix.compiler }}-${{ matrix.configuration }}
+          name: ${{ env.PLATFORM }}-${{ env.COMPILER }}-${{ env.COMPILER_VERSION }}-${{ env.CONFIGURATION }}
       - name: extract cache
         run: |
-          mkdir -p ~/.conan
-          tar -xzf conan.tar -C ~/.conan
+          conan version >> "$GITHUB_STEP_SUMMARY"
+          tar -xzf conan.tgz -C $(conan config home) .
+          conan remote list
+      - name: dependencies
+        uses: ./.github/actions/dependencies
+        with:
+          profile: ${{ env.PLATFORM }}-${{ env.COMPILER }}-${{ env.COMPILER_VERSION }}-${{ env.CONFIGURATION }}
+          conf: |
+            tools.build:verbosity=verbose
+            tools.compilation:verbosity=verbose
       - name: install gcovr
-        run: pip install "gcovr>=7,<9"
+        run: pip install gcovr~=${{ env.GCOVR_VERSION }}
       - name: check environment
         run: |
-          echo ${PATH} | tr ':' '\n'
+          echo "${PATH}" | tr ':' '\n'
           conan --version
           cmake --version
           gcovr --version
           env | sort
-          ls ~/.conan
-      - name: checkout
-        uses: actions/checkout@v4
-      - name: dependencies
-        uses: ./.github/actions/dependencies
-        env:
-          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
-        with:
-          configuration: ${{ matrix.configuration }}
       - name: build
         uses: ./.github/actions/build
         with:
           generator: Ninja
-          configuration: ${{ matrix.configuration }}
+          configuration: ${{ env.CONFIGURATION }}
           cmake-args: >-
+            -Dxrpld=TRUE
+            -Dtests=TRUE
             -Dassert=TRUE
             -Dwerr=TRUE
             -Dcoverage=ON
@@ -284,7 +285,10 @@ jobs:
       - name: move coverage report
         shell: bash
         run: |
-          mv "${build_dir}/coverage.xml" ./
+          coverage_file=$(find ../../.. -name coverage.xml -type f)
+          echo "Coverage file at ${coverage_file}"
+          mv "${coverage_file}" ./
+          echo "${coverage_file}" >> $GITHUB_STEP_SUMMARY
       - name: archive coverage report
         uses: actions/upload-artifact@v4
         with:
@@ -314,16 +318,18 @@ jobs:
       configuration: Release
     steps:
       - name: upgrade conan
+        id: conan_info
         run: |
-          pip install --upgrade "conan<2"
+          pip install conan~=${{ env.CONAN_VERSION }}
+
       - name: download cache
         uses: actions/download-artifact@v4
         with:
-          name: linux-gcc-${{ env.configuration }}
+          name: Linux-gcc-11-${{ env.configuration }}
       - name: extract cache
         run: |
-          mkdir -p ~/.conan
-          tar -xzf conan.tar -C ~/.conan
+          conan version
+          tar -xzf conan.tgz -C $(conan config home)
       - name: check environment
         run: |
           env | sort
@@ -334,24 +340,19 @@ jobs:
         uses: actions/checkout@v4
       - name: dependencies
         uses: ./.github/actions/dependencies
-        env:
-          CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
         with:
-          configuration: ${{ env.configuration }}
+          profile: Linux-gcc-11-${{ env.configuration }}
       - name: export
         run: |
-          version=$(conan inspect --raw version .)
-          reference="xrpl/${version}@local/test"
-          conan remove -f ${reference} || true
-          conan export . local/test
-          echo "reference=${reference}" >> "${GITHUB_ENV}"
+          conan export . --version head
       - name: build
         run: |
           cd tests/conan
-          mkdir ${build_dir}
-          cd ${build_dir}
-          conan install .. --output-folder . \
-            --require-override ${reference} --build missing
+          mkdir ${build_dir} && cd ${build_dir}
+          conan install .. \
+            --profile:all Linux-gcc-11-${{ env.configuration }} \
+            --output-folder . \
+            --build missing
           cmake .. \
             -DCMAKE_TOOLCHAIN_FILE:FILEPATH=./build/${configuration}/generators/conan_toolchain.cmake \
             -DCMAKE_BUILD_TYPE=${configuration}
@@ -363,11 +364,10 @@ jobs:
   # later
 
   instrumentation-build:
+    name: Antithesis build
     if: ${{ github.event_name == 'push' || github.event.pull_request.draft != true || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     env:
-      CLANG_RELEASE: 16
-    strategy:
-      fail-fast: false
+      CLANG_VERSION: 16
     runs-on: [self-hosted, heavy]
     container: debian:bookworm
     steps:
@@ -375,52 +375,54 @@ jobs:
           env:
             DEBIAN_FRONTEND: noninteractive
           run: |
+            profile="Linux-clang-${CLANG_VERSION}-Debug" >> $GITHUB_ENV
             apt-get update
-            apt-get install --yes --no-install-recommends \
-              clang-${CLANG_RELEASE} clang++-${CLANG_RELEASE} \
+            apt-get install --yes --no-install-recommends curl \
+              clang-${CLANG_VERSION} \
+              clang++-${CLANG_VERSION} \
               python3-pip python-is-python3 make cmake git wget
+            curl -fsSL https://deb.nodesource.com/setup_20.x -o nodesource_setup.sh
+            chmod +x nodesource_setup.sh
+            ./nodesource_setup.sh
+            apt-get install -y nodejs
+            node --version
             apt-get clean
             update-alternatives --install \
-              /usr/bin/clang clang /usr/bin/clang-${CLANG_RELEASE} 100 \
-              --slave /usr/bin/clang++ clang++ /usr/bin/clang++-${CLANG_RELEASE}
+              /usr/bin/clang clang /usr/bin/clang-${CLANG_VERSION} 100 \
+              --slave /usr/bin/clang++ clang++ /usr/bin/clang++-${CLANG_VERSION}
             update-alternatives --auto clang
-            pip install --no-cache --break-system-packages "conan<2"
-
+            pip install --no-cache --break-system-packages conan~=${CONAN_VERSION}
         - name: checkout
           uses: actions/checkout@v4
-
+        - name: Configure Conan
+          uses: ./.github/actions/conan_configure
+          with:
+            profile: Linux-clang-${{ env.CLANG_VERSION }}-Debug
+        - name: download cache
+          uses: actions/download-artifact@v4
+          with:
+            name: Linux-clang-${{ env.CLANG_VERSION }}-Debug
+        - name: extract cache
+          run: |
+            conan version >> "$GITHUB_STEP_SUMMARY"
+            tar -xzf conan.tgz -C $(conan config home) .
         - name: prepare environment
           run: |
-            mkdir ${GITHUB_WORKSPACE}/.build
-            echo "SOURCE_DIR=$GITHUB_WORKSPACE" >> $GITHUB_ENV
-            echo "BUILD_DIR=$GITHUB_WORKSPACE/.build" >> $GITHUB_ENV
-            echo "CC=/usr/bin/clang" >> $GITHUB_ENV
-            echo "CXX=/usr/bin/clang++" >> $GITHUB_ENV
-
-        - name: configure Conan
-          run: |
-            conan profile new --detect default
-            conan profile update settings.compiler=clang default
-            conan profile update settings.compiler.version=${CLANG_RELEASE} default
-            conan profile update settings.compiler.libcxx=libstdc++11 default
-            conan profile update settings.compiler.cppstd=20 default
-            conan profile update options.rocksdb=False default
-            conan profile update \
-              'conf.tools.build:compiler_executables={"c": "/usr/bin/clang", "cpp": "/usr/bin/clang++"}' default
-            conan profile update 'env.CXXFLAGS="-DBOOST_ASIO_DISABLE_CONCEPTS"' default
-            conan profile update 'conf.tools.build:cxxflags+=["-DBOOST_ASIO_DISABLE_CONCEPTS"]' default
-            conan export external/snappy snappy/1.1.10@
-            conan export external/soci soci/4.0.3@
-
+            build_dir="${GITHUB_WORKSPACE}/.build"
+            source_dir="${GITHUB_WORKSPACE}"
+            mkdir -p "${build_dir}"
+            echo "SOURCE_DIR=${source_dir}" >> $GITHUB_ENV
+            echo "BUILD_DIR=${build_dir}" >> $GITHUB_ENV
+            echo "COMPILER=$COMPILER" >> $GITHUB_ENV
+            echo "CLANG_VERSION=$CLANG_VERSION" >> $GITHUB_ENV
         - name: build dependencies
           run: |
             cd ${BUILD_DIR}
-            conan install ${SOURCE_DIR} \
-              --output-folder ${BUILD_DIR} \
-              --install-folder ${BUILD_DIR} \
-              --build missing \
-              --settings build_type=Debug
-
+            conan install "${SOURCE_DIR}" -of "${BUILD_DIR}" \
+              --profile:a Linux-clang-${{ env.CLANG_VERSION }}-Debug \
+              --options xrpld=True \
+              --options tests=True \
+              --build missing
         - name: build with instrumentation
           run: |
             cd ${BUILD_DIR}
@@ -433,13 +435,11 @@ jobs:
               -DSECP256K1_BUILD_TESTS=OFF \
               -DSECP256K1_BUILD_EXHAUSTIVE_TESTS=OFF \
               -DCMAKE_TOOLCHAIN_FILE=${BUILD_DIR}/build/generators/conan_toolchain.cmake
-            cmake --build .  --parallel $(nproc)
-
+            cmake --build "${BUILD_DIR}"  --parallel $(nproc)
         - name: verify instrumentation enabled
           run: |
             cd ${BUILD_DIR}
             ./rippled --version | grep libvoidstar
-
         - name: run unit tests
           run: |
             cd ${BUILD_DIR}

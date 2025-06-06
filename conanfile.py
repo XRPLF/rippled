@@ -1,6 +1,9 @@
-from conan import ConanFile, __version__ as conan_version
-from conan.tools.cmake import CMake, CMakeToolchain, cmake_layout
 import re
+
+from conan import ConanFile, __version__ as conan_version
+from conan.errors import ConanInvalidConfiguration
+from conan.tools.build import check_min_cppstd
+from conan.tools.cmake import CMake, CMakeToolchain, cmake_layout
 
 class Xrpl(ConanFile):
     name = 'xrpl'
@@ -29,12 +32,11 @@ class Xrpl(ConanFile):
         'libarchive/3.7.6',
         'nudb/2.0.8',
         'openssl/1.1.1v',
-        'soci/4.0.3',
         'zlib/1.3.1',
     ]
 
     tool_requires = [
-        'protobuf/3.21.9',
+        'protobuf/3.21.12',
     ]
 
     default_options = {
@@ -85,15 +87,29 @@ class Xrpl(ConanFile):
         'xxhash/*:shared': False,
     }
 
+    def validate(self):
+        if self.settings.get_safe("compiler.cppstd"):
+            check_min_cppstd(self, 20)
+        if self.options.shared and self.options.static:
+            raise ConanInvalidConfiguration("Cannot set both shared and static libraries.")
+        if self.settings.os == "Windows" and self.settings.arch == "armv8":
+            raise ConanInvalidConfiguration("Windows on ARM64 not supported")
+
     def set_version(self):
-        path = f'{self.recipe_folder}/src/libxrpl/protocol/BuildInfo.cpp'
-        regex = r'versionString\s?=\s?\"(.*)\"'
-        with open(path, 'r') as file:
-            matches = (re.search(regex, line) for line in file)
-            match = next(m for m in matches if m)
-            self.version = match.group(1)
+        if self.version is None:
+            path = f'{self.recipe_folder}/src/libxrpl/protocol/BuildInfo.cpp'
+            regex = r'versionString\s?=\s?\"(.*)\"'
+            with open(path, encoding='utf-8') as file:
+                matches = (re.search(regex, line) for line in file)
+                match = next(m for m in matches if m)
+                self.version = match.group(1)
 
     def configure(self):
+        if self.options.shared:
+            self.options.static = False
+        elif self.options.static:
+            self.options.shared = False
+
         if self.settings.compiler == 'apple-clang':
             self.options['boost'].visibility = 'global'
 
@@ -103,7 +119,8 @@ class Xrpl(ConanFile):
         self.requires('boost/1.83.0', force=True, **transitive_headers_opt)
         self.requires('date/3.0.3', **transitive_headers_opt)
         self.requires('lz4/1.10.0', force=True)
-        self.requires('protobuf/3.21.9', force=True)
+        self.requires('protobuf/3.21.12')
+        self.requires('soci/4.0.3')
         self.requires('sqlite3/3.47.0', force=True)
         if self.options.jemalloc:
             self.requires('jemalloc/5.3.0')
@@ -125,9 +142,11 @@ class Xrpl(ConanFile):
         cmake_layout(self)
         # Fix this setting to follow the default introduced in Conan 1.48
         # to align with our build instructions.
+        # Comment this out to use the default so the build dirs are build_type specific
         self.folders.generators = 'build/generators'
 
     generators = 'CMakeDeps'
+
     def generate(self):
         tc = CMakeToolchain(self)
         tc.variables['tests'] = self.options.tests
@@ -139,6 +158,8 @@ class Xrpl(ConanFile):
         tc.variables['static'] = self.options.static
         tc.variables['unity'] = self.options.unity
         tc.variables['xrpld'] = self.options.xrpld
+        if self.settings.compiler == 'clang' and self.settings.compiler.version == 16:
+            tc.extra_cxxflags = ["-DBOOST_ASIO_DISABLE_CONCEPTS"]
         tc.generate()
 
     def build(self):
@@ -153,7 +174,10 @@ class Xrpl(ConanFile):
         cmake.install()
 
     def package_info(self):
+        self.cpp_info.set_property("cmake_target_name", "xrpl::xrpl")
         libxrpl = self.cpp_info.components['libxrpl']
+        libxrpl.set_property("cmake_target_name", "xrpl::libxrpl")
+
         libxrpl.libs = [
             'xrpl',
             'xrpl.libpb',
@@ -177,5 +201,8 @@ class Xrpl(ConanFile):
             'xxhash::xxhash',
             'zlib::zlib',
         ]
+
         if self.options.rocksdb:
             libxrpl.requires.append('rocksdb::librocksdb')
+
+    test_package_folder = "tests/conan"
