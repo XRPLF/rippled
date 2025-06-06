@@ -3910,6 +3910,46 @@ class Batch_test : public beast::unit_test::suite
             };
             validateClosedLedger(env, testCases);
         }
+
+        // inner transaction not authorized by the delegating account.
+        {
+            test::jtx::Env env{*this, envconfig()};
+            Account gw{"gw"};
+            Account alice{"alice"};
+            Account bob{"bob"};
+            env.fund(XRP(10000), gw, alice, bob);
+            env(fset(gw, asfRequireAuth));
+            env.close();
+            env(trust(alice, gw["USD"](50)));
+            env.close();
+
+            env(delegate::set(
+                gw, bob, {"TrustlineAuthorize", "TrustlineFreeze"}));
+            env.close();
+
+            auto const seq = env.seq(gw);
+            auto const batchFee = batch::calcBatchFee(env, 0, 2);
+
+            auto jv1 = trust(gw, gw["USD"](0), alice, tfSetFreeze);
+            jv1[sfDelegate] = bob.human();
+            auto jv2 = trust(gw, gw["USD"](0), alice, tfClearFreeze);
+            jv2[sfDelegate] = bob.human();
+
+            auto const [txIDs, batchID] = submitBatch(
+                env,
+                tesSUCCESS,
+                batch::outer(gw, seq, batchFee, tfAllOrNothing),
+                batch::inner(jv1, seq + 1),
+                // tecNO_DELEGATE_PERMISSION: not authorized by the delegating
+                // account.
+                batch::inner(jv2, seq + 2));
+            env.close();
+
+            std::vector<TestLedgerData> testCases = {
+                {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
+            };
+            validateClosedLedger(env, testCases);
+        }
     }
 
     void
