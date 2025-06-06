@@ -616,7 +616,7 @@ Transactor::checkSign(PreclaimContext const& ctx)
     if (!sleAccount)
         return terNO_ACCOUNT;
 
-    if ((ctx.flags & tapDRY_RUN) && !ctx.tx.isFieldPresent(sfSigningPubKey))
+    if ((ctx.flags & tapDRY_RUN) && ctx.tx[sfSigningPubKey].empty())
     {
         // simulate, no SigningPubKey/signature situation to check
         return tesSUCCESS;

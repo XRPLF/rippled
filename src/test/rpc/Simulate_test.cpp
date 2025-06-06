@@ -838,11 +838,12 @@ class Simulate_test : public beast::unit_test::suite
             tx[jss::Account] = env.master.human();
             tx[jss::TransactionType] = jss::AccountSet;
             tx[sfDomain] = newDomain;
+            // master key is disabled, so this is invalid
+            tx[jss::SigningPubKey] = strHex(env.master.pk().slice());
 
             // test with autofill
             testTx(env, tx, testSimulation);
 
-            tx[sfSigningPubKey] = "";
             tx[sfTxnSignature] = "";
             tx[sfSequence] = env.seq(env.master);
             tx[sfFee] = env.current()->fees().base.jsonClipped().asString();
