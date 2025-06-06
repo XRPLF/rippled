@@ -854,6 +854,79 @@ class Simulate_test : public beast::unit_test::suite
     }
 
     void
+    testTransactionSingleAndMultiSigning()
+    {
+        testcase(
+            "Transaction with both single-signing SigningPubKey and "
+            "multi-signing Signers");
+
+        using namespace jtx;
+        Env env(*this);
+        static auto const newDomain = "123ABC";
+        Account const alice("alice");
+        Account const becky("becky");
+        Account const carol("carol");
+        env.fund(XRP(10000), alice);
+        env.close();
+
+        // set up valid multisign
+        env(signers(alice, 1, {{becky, 1}, {carol, 1}}));
+        env.close();
+
+        {
+            std::function<void(Json::Value const&, Json::Value const&)> const&
+                testSimulation = [&](Json::Value const& resp,
+                                     Json::Value const& tx) {
+                    auto result = resp[jss::result];
+                    checkBasicReturnValidity(
+                        result,
+                        tx,
+                        env.seq(env.master),
+                        env.current()->fees().base * 2);
+
+                    BEAST_EXPECT(result[jss::engine_result] == "temINVALID");
+                    BEAST_EXPECT(result[jss::engine_result_code] == -277);
+                    BEAST_EXPECT(
+                        result[jss::engine_result_message] ==
+                        "The transaction is ill-formed.");
+
+                    BEAST_EXPECT(
+                        !result.isMember(jss::meta) &&
+                        !result.isMember(jss::meta_blob));
+                };
+
+            Json::Value tx;
+
+            tx[jss::Account] = env.master.human();
+            tx[jss::TransactionType] = jss::AccountSet;
+            tx[sfDomain] = newDomain;
+            // master key is disabled, so this is invalid
+            tx[jss::SigningPubKey] = strHex(env.master.pk().slice());
+            tx[sfSigners] = Json::arrayValue;
+            {
+                Json::Value signer;
+                signer[jss::Account] = becky.human();
+                Json::Value signerOuter;
+                signerOuter[sfSigner] = signer;
+                tx[sfSigners].append(signerOuter);
+            }
+
+            // test with autofill
+            testTx(env, tx, testSimulation, false);
+
+            tx[sfTxnSignature] = "";
+            tx[sfSequence] = env.seq(env.master);
+            tx[sfFee] = env.current()->fees().base.jsonClipped().asString();
+            tx[sfSigners][0u][sfSigner][jss::SigningPubKey] =
+                strHex(becky.pk().slice());
+            tx[sfSigners][0u][sfSigner][jss::TxnSignature] = "";
+
+            // test without autofill
+            testTx(env, tx, testSimulation);
+        }
+    }
+
+    void
     testMultisignedBadPubKey()
     {
         testcase("Multi-signed transaction with a bad public key");
@@ -1126,6 +1199,7 @@ public:
         testTransactionTecFailure();
         testSuccessfulTransactionMultisigned();
         testTransactionSigningFailure();
+        testTransactionSingleAndMultiSigning();
         testMultisignedBadPubKey();
         testDeleteExpiredCredentials();
         testSuccessfulTransactionNetworkID();

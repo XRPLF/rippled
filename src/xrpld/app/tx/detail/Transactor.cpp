@@ -184,6 +184,13 @@ preflight2(PreflightContext const& ctx)
                 return temINVALID;  // LCOV_EXCL_LINE
             }
         }
+
+        if (!ctx.tx.getSigningPubKey().empty() &&
+            ctx.tx.isFieldPresent(sfSigners))
+        {
+            // trying to single-sign _and_ multi-sign a transaction
+            return temINVALID;
+        }
         return tesSUCCESS;
     }
 
@@ -585,6 +592,13 @@ Transactor::checkSign(PreclaimContext const& ctx)
         return tesSUCCESS;
     }
 
+    if ((ctx.flags & tapDRY_RUN) && ctx.tx.getSigningPubKey().empty() &&
+        !ctx.tx.isFieldPresent(sfSigners))
+    {
+        // simulate, no SigningPubKey/signature situation to check
+        return tesSUCCESS;
+    }
+
     auto const idAccount = ctx.tx[~sfDelegate].value_or(ctx.tx[sfAccount]);
 
     // If the pk is empty and not simulate or simulate and signers,
@@ -600,10 +614,10 @@ Transactor::checkSign(PreclaimContext const& ctx)
     auto const pkSigner = ctx.tx.getSigningPubKey();
     // This ternary is only needed to handle `simulate`
     XRPL_ASSERT(
-        (ctx.flags & tapDRY_RUN) || !pkSigner.empty(),
+        !pkSigner.empty(),
         "ripple::Transactor::checkSingleSign : non-empty signer or simulation");
 
-    if (!(ctx.flags & tapDRY_RUN) && !publicKeyType(makeSlice(pkSigner)))
+    if (!publicKeyType(makeSlice(pkSigner)))
     {
         JLOG(ctx.j.trace())
             << "checkSingleSign: signing public key type is unknown";
@@ -615,12 +629,6 @@ Transactor::checkSign(PreclaimContext const& ctx)
     auto const sleAccount = ctx.view.read(keylet::account(idAccount));
     if (!sleAccount)
         return terNO_ACCOUNT;
-
-    if ((ctx.flags & tapDRY_RUN) && ctx.tx[sfSigningPubKey].empty())
-    {
-        // simulate, no SigningPubKey/signature situation to check
-        return tesSUCCESS;
-    }
 
     return checkSingleSign(
         idSigner, idAccount, sleAccount, ctx.view.rules(), ctx.j);
