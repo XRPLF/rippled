@@ -89,6 +89,8 @@ OrderBookDB::update(std::shared_ptr<ReadView const> const& ledger)
 
     decltype(allBooks_) allBooks;
     decltype(xrpBooks_) xrpBooks;
+    decltype(domainBooks_) domainBooks;
+    decltype(xrpDomainBooks_) xrpDomainBooks;
 
     allBooks.reserve(allBooks_.size());
     xrpBooks.reserve(xrpBooks_.size());
@@ -120,10 +122,16 @@ OrderBookDB::update(std::shared_ptr<ReadView const> const& ledger)
                 book.in.account = sle->getFieldH160(sfTakerPaysIssuer);
                 book.out.currency = sle->getFieldH160(sfTakerGetsCurrency);
                 book.out.account = sle->getFieldH160(sfTakerGetsIssuer);
+                book.domain = (*sle)[~sfDomainID];
 
-                allBooks[book.in].insert(book.out);
+                if (book.domain)
+                    domainBooks_[{book.in, *book.domain}].insert(book.out);
+                else
+                    allBooks[book.in].insert(book.out);
 
-                if (isXRP(book.out))
+                if (book.domain && isXRP(book.out))
+                    xrpDomainBooks.insert({book.in, *book.domain});
+                else if (isXRP(book.out))
                     xrpBooks.insert(book.in);
 
                 ++cnt;
@@ -160,6 +168,8 @@ OrderBookDB::update(std::shared_ptr<ReadView const> const& ledger)
         std::lock_guard sl(mLock);
         allBooks_.swap(allBooks);
         xrpBooks_.swap(xrpBooks);
+        domainBooks_.swap(domainBooks);
+        xrpDomainBooks_.swap(xrpDomainBooks);
     }
 
     app_.getLedgerMaster().newOrderBookDB();
@@ -172,47 +182,77 @@ OrderBookDB::addOrderBook(Book const& book)
 
     std::lock_guard sl(mLock);
 
-    allBooks_[book.in].insert(book.out);
+    if (book.domain)
+        domainBooks_[{book.in, *book.domain}].insert(book.out);
+    else
+        allBooks_[book.in].insert(book.out);
 
-    if (toXRP)
+    if (book.domain && toXRP)
+        xrpDomainBooks_.insert({book.in, *book.domain});
+    else if (toXRP)
         xrpBooks_.insert(book.in);
 }
 
 // return list of all orderbooks that want this issuerID and currencyID
 std::vector<Book>
-OrderBookDB::getBooksByTakerPays(Issue const& issue)
+OrderBookDB::getBooksByTakerPays(
+    Issue const& issue,
+    std::optional<uint256> const& domain)
 {
     std::vector<Book> ret;
 
     {
         std::lock_guard sl(mLock);
 
-        if (auto it = allBooks_.find(issue); it != allBooks_.end())
-        {
-            ret.reserve(it->second.size());
+        auto getBooks = [&](auto const& container, auto const& key) {
+            if (auto it = container.find(key); it != container.end())
+            {
+                auto const& books = it->second;
+                ret.reserve(books.size());
 
-            for (auto const& gets : it->second)
-                ret.push_back(Book(issue, gets));
-        }
+                for (auto const& gets : books)
+                    ret.emplace_back(issue, gets, domain);
+            }
+        };
+
+        if (!domain)
+            getBooks(allBooks_, issue);
+        else
+            getBooks(domainBooks_, std::make_pair(issue, *domain));
     }
 
     return ret;
 }
 
 int
-OrderBookDB::getBookSize(Issue const& issue)
+OrderBookDB::getBookSize(
+    Issue const& issue,
+    std::optional<uint256> const& domain)
 {
     std::lock_guard sl(mLock);
-    if (auto it = allBooks_.find(issue); it != allBooks_.end())
-        return static_cast<int>(it->second.size());
+
+    if (!domain)
+    {
+        if (auto it = allBooks_.find(issue); it != allBooks_.end())
+            return static_cast<int>(it->second.size());
+    }
+    else
+    {
+        if (auto it = domainBooks_.find({issue, *domain});
+            it != domainBooks_.end())
+            return static_cast<int>(it->second.size());
+    }
+
     return 0;
 }
 
 bool
-OrderBookDB::isBookToXRP(Issue const& issue)
+OrderBookDB::isBookToXRP(Issue const& issue, std::optional<Domain> domain)
 {
     std::lock_guard sl(mLock);
-    return xrpBooks_.count(issue) > 0;
+    if (domain)
+        return xrpDomainBooks_.contains({issue, *domain});
+    return xrpBooks_.contains(issue);
 }
 
 BookListeners::pointer
@@ -228,7 +268,8 @@ OrderBookDB::makeBookListeners(Book const& book)
         mListeners[book] = ret;
         XRPL_ASSERT(
             getBookListeners(book) == ret,
-            "ripple::OrderBookDB::makeBookListeners : result roundtrip lookup");
+            "ripple::OrderBookDB::makeBookListeners : result roundtrip "
+            "lookup");
     }
 
     return ret;
@@ -252,7 +293,7 @@ OrderBookDB::getBookListeners(Book const& book)
 void
 OrderBookDB::processTxn(
     std::shared_ptr<ReadView const> const& ledger,
-    const AcceptedLedgerTx& alTx,
+    AcceptedLedgerTx const& alTx,
     MultiApiJson const& jvObj)
 {
     std::lock_guard sl(mLock);
@@ -278,7 +319,8 @@ OrderBookDB::processTxn(
                     {
                         auto listeners = getBookListeners(
                             {data->getFieldAmount(sfTakerGets).issue(),
-                             data->getFieldAmount(sfTakerPays).issue()});
+                             data->getFieldAmount(sfTakerPays).issue(),
+                             (*data)[~sfDomainID]});
                         if (listeners)
                             listeners->publish(jvObj, havePublished);
                     }

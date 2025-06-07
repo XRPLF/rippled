@@ -30,6 +30,16 @@ namespace jtx {
 
 namespace credentials {
 
+inline Keylet
+keylet(
+    test::jtx::Account const& subject,
+    test::jtx::Account const& issuer,
+    std::string_view credType)
+{
+    return keylet::credential(
+        subject.id(), issuer.id(), Slice(credType.data(), credType.size()));
+}
+
 // Sets the optional URI.
 class uri
 {

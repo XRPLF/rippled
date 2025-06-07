@@ -23,6 +23,7 @@
 #include <test/jtx/Env.h>
 
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Quality.h>
@@ -30,6 +31,14 @@
 #include <xrpl/protocol/jss.h>
 
 #include <vector>
+
+#if (defined(__clang_major__) && __clang_major__ < 15)
+#include <experimental/source_location>
+using source_location = std::experimental::source_location;
+#else
+#include <source_location>
+using std::source_location;
+#endif
 
 namespace ripple {
 namespace test {
@@ -224,127 +233,6 @@ expectLedgerEntryRoot(
     Account const& acct,
     STAmount const& expectedValue);
 
-/* Escrow */
-/******************************************************************************/
-
-Json::Value
-escrow(AccountID const& account, AccountID const& to, STAmount const& amount);
-
-inline Json::Value
-escrow(Account const& account, Account const& to, STAmount const& amount)
-{
-    return escrow(account.id(), to.id(), amount);
-}
-
-Json::Value
-finish(AccountID const& account, AccountID const& from, std::uint32_t seq);
-
-inline Json::Value
-finish(Account const& account, Account const& from, std::uint32_t seq)
-{
-    return finish(account.id(), from.id(), seq);
-}
-
-Json::Value
-cancel(AccountID const& account, Account const& from, std::uint32_t seq);
-
-inline Json::Value
-cancel(Account const& account, Account const& from, std::uint32_t seq)
-{
-    return cancel(account.id(), from, seq);
-}
-
-std::array<std::uint8_t, 39> constexpr cb1 = {
-    {0xA0, 0x25, 0x80, 0x20, 0xE3, 0xB0, 0xC4, 0x42, 0x98, 0xFC,
-     0x1C, 0x14, 0x9A, 0xFB, 0xF4, 0xC8, 0x99, 0x6F, 0xB9, 0x24,
-     0x27, 0xAE, 0x41, 0xE4, 0x64, 0x9B, 0x93, 0x4C, 0xA4, 0x95,
-     0x99, 0x1B, 0x78, 0x52, 0xB8, 0x55, 0x81, 0x01, 0x00}};
-
-// A PreimageSha256 fulfillments and its associated condition.
-std::array<std::uint8_t, 4> const fb1 = {{0xA0, 0x02, 0x80, 0x00}};
-
-/** Set the "FinishAfter" time tag on a JTx */
-struct finish_time
-{
-private:
-    NetClock::time_point value_;
-
-public:
-    explicit finish_time(NetClock::time_point const& value) : value_(value)
-    {
-    }
-
-    void
-    operator()(Env&, JTx& jt) const
-    {
-        jt.jv[sfFinishAfter.jsonName] = value_.time_since_epoch().count();
-    }
-};
-
-/** Set the "CancelAfter" time tag on a JTx */
-struct cancel_time
-{
-private:
-    NetClock::time_point value_;
-
-public:
-    explicit cancel_time(NetClock::time_point const& value) : value_(value)
-    {
-    }
-
-    void
-    operator()(jtx::Env&, jtx::JTx& jt) const
-    {
-        jt.jv[sfCancelAfter.jsonName] = value_.time_since_epoch().count();
-    }
-};
-
-struct condition
-{
-private:
-    std::string value_;
-
-public:
-    explicit condition(Slice const& cond) : value_(strHex(cond))
-    {
-    }
-
-    template <size_t N>
-    explicit condition(std::array<std::uint8_t, N> const& c)
-        : condition(makeSlice(c))
-    {
-    }
-
-    void
-    operator()(Env&, JTx& jt) const
-    {
-        jt.jv[sfCondition.jsonName] = value_;
-    }
-};
-
-struct fulfillment
-{
-private:
-    std::string value_;
-
-public:
-    explicit fulfillment(Slice condition) : value_(strHex(condition))
-    {
-    }
-
-    template <size_t N>
-    explicit fulfillment(std::array<std::uint8_t, N> f)
-        : fulfillment(makeSlice(f))
-    {
-    }
-
-    void
-    operator()(Env&, JTx& jt) const
-    {
-        jt.jv[sfFulfillment.jsonName] = value_;
-    }
-};
-
 /* Payment Channel */
 /******************************************************************************/
 
@@ -445,7 +333,6 @@ create(A const& account, A const& dest, STAmount const& sendMax)
     jv[sfSendMax.jsonName] = sendMax.getJson(JsonOptions::none);
     jv[sfDestination.jsonName] = to_string(dest);
     jv[sfTransactionType.jsonName] = jss::CheckCreate;
-    jv[sfFlags.jsonName] = tfUniversal;
     return jv;
 }
 // clang-format on
@@ -460,6 +347,102 @@ create(
 }
 
 }  // namespace check
+
+static constexpr FeeLevel64 baseFeeLevel{256};
+static constexpr FeeLevel64 minEscalationFeeLevel = baseFeeLevel * 500;
+
+template <class Suite>
+void
+checkMetrics(
+    Suite& test,
+    jtx::Env& env,
+    std::size_t expectedCount,
+    std::optional<std::size_t> expectedMaxCount,
+    std::size_t expectedInLedger,
+    std::size_t expectedPerLedger,
+    std::uint64_t expectedMinFeeLevel = baseFeeLevel.fee(),
+    std::uint64_t expectedMedFeeLevel = minEscalationFeeLevel.fee(),
+    source_location const location = source_location::current())
+{
+    int line = location.line();
+    char const* file = location.file_name();
+    FeeLevel64 const expectedMin{expectedMinFeeLevel};
+    FeeLevel64 const expectedMed{expectedMedFeeLevel};
+    auto const metrics = env.app().getTxQ().getMetrics(*env.current());
+    using namespace std::string_literals;
+
+    metrics.referenceFeeLevel == baseFeeLevel
+        ? test.pass()
+        : test.fail(
+              "reference: "s +
+                  std::to_string(metrics.referenceFeeLevel.value()) + "/" +
+                  std::to_string(baseFeeLevel.value()),
+              file,
+              line);
+
+    metrics.txCount == expectedCount
+        ? test.pass()
+        : test.fail(
+              "txCount: "s + std::to_string(metrics.txCount) + "/" +
+                  std::to_string(expectedCount),
+              file,
+              line);
+
+    metrics.txQMaxSize == expectedMaxCount
+        ? test.pass()
+        : test.fail(
+              "txQMaxSize: "s + std::to_string(metrics.txQMaxSize.value_or(0)) +
+                  "/" + std::to_string(expectedMaxCount.value_or(0)),
+              file,
+              line);
+
+    metrics.txInLedger == expectedInLedger
+        ? test.pass()
+        : test.fail(
+              "txInLedger: "s + std::to_string(metrics.txInLedger) + "/" +
+                  std::to_string(expectedInLedger),
+              file,
+              line);
+
+    metrics.txPerLedger == expectedPerLedger
+        ? test.pass()
+        : test.fail(
+              "txPerLedger: "s + std::to_string(metrics.txPerLedger) + "/" +
+                  std::to_string(expectedPerLedger),
+              file,
+              line);
+
+    metrics.minProcessingFeeLevel == expectedMin
+        ? test.pass()
+        : test.fail(
+              "minProcessingFeeLevel: "s +
+                  std::to_string(metrics.minProcessingFeeLevel.value()) + "/" +
+                  std::to_string(expectedMin.value()),
+              file,
+              line);
+
+    metrics.medFeeLevel == expectedMed
+        ? test.pass()
+        : test.fail(
+              "medFeeLevel: "s + std::to_string(metrics.medFeeLevel.value()) +
+                  "/" + std::to_string(expectedMed.value()),
+              file,
+              line);
+
+    auto const expectedCurFeeLevel = expectedInLedger > expectedPerLedger
+        ? expectedMed * expectedInLedger * expectedInLedger /
+            (expectedPerLedger * expectedPerLedger)
+        : metrics.referenceFeeLevel;
+
+    metrics.openLedgerFeeLevel == expectedCurFeeLevel
+        ? test.pass()
+        : test.fail(
+              "openLedgerFeeLevel: "s +
+                  std::to_string(metrics.openLedgerFeeLevel.value()) + "/" +
+                  std::to_string(expectedCurFeeLevel.value()),
+              file,
+              line);
+}
 
 }  // namespace jtx
 }  // namespace test

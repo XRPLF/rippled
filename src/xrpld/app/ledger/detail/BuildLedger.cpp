@@ -39,7 +39,7 @@ std::shared_ptr<Ledger>
 buildLedgerImpl(
     std::shared_ptr<Ledger const> const& parent,
     NetClock::time_point closeTime,
-    const bool closeTimeCorrect,
+    bool const closeTimeCorrect,
     NetClock::duration closeResolution,
     Application& app,
     beast::Journal j,
@@ -182,7 +182,7 @@ std::shared_ptr<Ledger>
 buildLedger(
     std::shared_ptr<Ledger const> const& parent,
     NetClock::time_point closeTime,
-    const bool closeTimeCorrect,
+    bool const closeTimeCorrect,
     NetClock::duration closeResolution,
     Application& app,
     CanonicalTXSet& txns,
@@ -208,11 +208,17 @@ buildLedger(
                 applyTransactions(app, built, txns, failedTxns, accum, j);
 
             if (!txns.empty() || !failedTxns.empty())
-                JLOG(j.debug()) << "Applied " << applied << " transactions; "
-                                << failedTxns.size() << " failed and "
-                                << txns.size() << " will be retried.";
+                JLOG(j.debug())
+                    << "Applied " << applied << " transactions; "
+                    << failedTxns.size() << " failed and " << txns.size()
+                    << " will be retried. "
+                    << "Total transactions in ledger (including Inner Batch): "
+                    << accum.txCount();
             else
-                JLOG(j.debug()) << "Applied " << applied << " transactions.";
+                JLOG(j.debug())
+                    << "Applied " << applied << " transactions. "
+                    << "Total transactions in ledger (including Inner Batch): "
+                    << accum.txCount();
         });
 }
 

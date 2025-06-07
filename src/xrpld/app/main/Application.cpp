@@ -256,8 +256,8 @@ public:
         if ((cores == 1) || ((config.NODE_SIZE == 0) && (cores == 2)))
             return 1;
 
-        // Otherwise, prefer two threads.
-        return 2;
+        // Otherwise, prefer six threads.
+        return 6;
 #endif
     }
 
@@ -442,8 +442,8 @@ public:
               std::make_unique<LoadFeeTrack>(logs_->journal("LoadManager")))
 
         , hashRouter_(std::make_unique<HashRouter>(
-              stopwatch(),
-              HashRouter::getDefaultHoldTime()))
+              setup_HashRouter(*config_),
+              stopwatch()))
 
         , mValidations(
               ValidationParms(),
@@ -1137,7 +1137,7 @@ public:
         return maxDisallowedLedger_;
     }
 
-    virtual const std::optional<uint256>&
+    virtual std::optional<uint256> const&
     trapTxID() const override
     {
         return trapTxID_;

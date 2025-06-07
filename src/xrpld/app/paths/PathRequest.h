@@ -25,6 +25,7 @@
 #include <xrpld/app/paths/RippleLineCache.h>
 #include <xrpld/net/InfoSub.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/UintTypes.h>
 
@@ -52,8 +53,8 @@ class PathRequest final : public InfoSubRequest,
 public:
     using wptr = std::weak_ptr<PathRequest>;
     using pointer = std::shared_ptr<PathRequest>;
-    using ref = const pointer&;
-    using wref = const wptr&;
+    using ref = pointer const&;
+    using wref = wptr const&;
 
 public:
     // path_find semantics
@@ -155,6 +156,8 @@ private:
 
     std::set<Issue> sciSourceCurrencies;
     std::map<Issue, STPathSet> mContext;
+
+    std::optional<uint256> domain;
 
     bool convert_all_;
 

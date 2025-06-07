@@ -84,6 +84,21 @@ private:
             case asfAllowTrustLineClawback:
                 mask_ |= lsfAllowTrustLineClawback;
                 break;
+            case asfDisallowIncomingCheck:
+                mask_ |= lsfDisallowIncomingCheck;
+                break;
+            case asfDisallowIncomingNFTokenOffer:
+                mask_ |= lsfDisallowIncomingNFTokenOffer;
+                break;
+            case asfDisallowIncomingPayChan:
+                mask_ |= lsfDisallowIncomingPayChan;
+                break;
+            case asfDisallowIncomingTrustline:
+                mask_ |= lsfDisallowIncomingTrustline;
+                break;
+            case asfAllowTrustLineLocking:
+                mask_ |= lsfAllowTrustLineLocking;
+                break;
             default:
                 Throw<std::runtime_error>("unknown flag");
         }

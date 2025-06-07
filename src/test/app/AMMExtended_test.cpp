@@ -1451,7 +1451,7 @@ private:
         using namespace jtx;
         FeatureBitset const all{supported_amendments()};
         testRmFundedOffer(all);
-        testRmFundedOffer(all - fixAMMv1_1);
+        testRmFundedOffer(all - fixAMMv1_1 - fixAMMv1_3);
         testEnforceNoRipple(all);
         testFillModes(all);
         testOfferCrossWithXRP(all);
@@ -1465,7 +1465,7 @@ private:
         testOfferCreateThenCross(all);
         testSellFlagExceedLimit(all);
         testGatewayCrossCurrency(all);
-        testGatewayCrossCurrency(all - fixAMMv1_1);
+        testGatewayCrossCurrency(all - fixAMMv1_1 - fixAMMv1_3);
         testBridgedCross(all);
         testSellWithFillOrKill(all);
         testTransferRateOffer(all);
@@ -1473,7 +1473,7 @@ private:
         testBadPathAssert(all);
         testSellFlagBasic(all);
         testDirectToDirectPath(all);
-        testDirectToDirectPath(all - fixAMMv1_1);
+        testDirectToDirectPath(all - fixAMMv1_1 - fixAMMv1_3);
         testRequireAuth(all);
         testMissingAuth(all);
     }
@@ -2156,6 +2156,7 @@ private:
                     OfferCrossing::no,
                     std::nullopt,
                     smax,
+                    std::nullopt,
                     flowJournal);
             }();
 
@@ -3845,7 +3846,7 @@ private:
         int const signerListOwners{features[featureMultiSignReserve] ? 2 : 5};
         env.require(owners(alice, signerListOwners + 0));
 
-        const msig ms{becky, bogie};
+        msig const ms{becky, bogie};
 
         // Multisign all AMM transactions
         AMM ammAlice(
@@ -4062,9 +4063,9 @@ private:
         testBookStep(all);
         testBookStep(all | ownerPaysFee);
         testTransferRate(all | ownerPaysFee);
-        testTransferRate((all - fixAMMv1_1) | ownerPaysFee);
+        testTransferRate((all - fixAMMv1_1 - fixAMMv1_3) | ownerPaysFee);
         testTransferRateNoOwnerFee(all);
-        testTransferRateNoOwnerFee(all - fixAMMv1_1);
+        testTransferRateNoOwnerFee(all - fixAMMv1_1 - fixAMMv1_3);
         testLimitQuality();
         testXRPPathLoop();
     }
@@ -4075,7 +4076,7 @@ private:
         using namespace jtx;
         FeatureBitset const all{supported_amendments()};
         testStepLimit(all);
-        testStepLimit(all - fixAMMv1_1);
+        testStepLimit(all - fixAMMv1_1 - fixAMMv1_3);
     }
 
     void
@@ -4084,7 +4085,7 @@ private:
         using namespace jtx;
         FeatureBitset const all{supported_amendments()};
         test_convert_all_of_an_asset(all);
-        test_convert_all_of_an_asset(all - fixAMMv1_1);
+        test_convert_all_of_an_asset(all - fixAMMv1_1 - fixAMMv1_3);
     }
 
     void

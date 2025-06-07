@@ -93,7 +93,7 @@ protected:
 public:
     BookStep(StrandContext const& ctx, Issue const& in, Issue const& out)
         : maxOffersToConsume_(getMaxOffersToConsume(ctx))
-        , book_(in, out)
+        , book_(in, out, ctx.domainID)
         , strandSrc_(ctx.strandSrc)
         , strandDst_(ctx.strandDst)
         , prevStep_(ctx.prevStep)
@@ -190,7 +190,8 @@ protected:
     logStringImpl(char const* name) const
     {
         std::ostringstream ostr;
-        ostr << name << ": " << "\ninIss: " << book_.in.account
+        ostr << name << ": "
+             << "\ninIss: " << book_.in.account
              << "\noutIss: " << book_.out.account
              << "\ninCur: " << book_.in.currency
              << "\noutCur: " << book_.out.currency;
@@ -836,6 +837,10 @@ BookStep<TIn, TOut, TDerived>::forEachOffer(
 
     // At any payment engine iteration, AMM offer can only be consumed once.
     auto tryAMM = [&](std::optional<Quality> const& lobQuality) -> bool {
+        // amm doesn't support domain yet
+        if (book_.domain)
+            return true;
+
         // If offer crossing then use either LOB quality or nullopt
         // to prevent AMM being blocked by a lower quality LOB.
         auto const qualityThreshold = [&]() -> std::optional<Quality> {
