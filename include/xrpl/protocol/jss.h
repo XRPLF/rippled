@@ -528,6 +528,7 @@ JSS(remaining);               // out: ValidatorList
 JSS(remote);                  // out: Logic.h
 JSS(request);                 // RPC
 JSS(requested);               // out: Manifest
+JSS(required);
 JSS(reservations);            // out: Reservations
 JSS(reserve_base);            // out: NetworkOPs
 JSS(reserve_base_xrp);        // out: NetworkOPs
@@ -625,6 +626,8 @@ JSS(transactions);            // out: LedgerToJson,
 JSS(TRANSACTION_RESULTS);     // out: RPC server_definitions
                               // matches definitions.json format
 JSS(TRANSACTION_TYPES);       // out: RPC server_definitions
+                              // matches definitions.json format
+JSS(TRANSACTION_FORMATS);     // out: RPC server_definitions
                               // matches definitions.json format
 JSS(TYPES);                   // out: RPC server_definitions
                               // matches definitions.json format
