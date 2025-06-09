@@ -119,6 +119,7 @@ PeerImp::PeerImp(
           app_.config().LEDGER_REPLAY))
     , ledgerReplayMsgHandler_(app, app.getLedgerReplayer())
 {
+    ++app_.getPerfLog().getPeerCounters().connection.totalInboundConnects;
     JLOG(journal_.info())
         << "compression enabled " << (compressionEnabled_ == Compressed::On)
         << " vp reduce-relay base squelch enabled "
@@ -241,29 +242,37 @@ PeerImp::send(std::shared_ptr<Message> const& m)
 {
     if (!strand_.running_in_this_thread())
         return post(strand_, std::bind(&PeerImp::send, shared_from_this(), m));
+    auto& peerCounters = app_.getPerfLog().getPeerCounters();
     if (gracefulClose_)
+    {
+        ++peerCounters.send.sendQueueFailedGracefulClose;
         return;
+    }
     if (detaching_)
+    {
+        ++peerCounters.send.sendQueueFailedDetaching;
         return;
+    }
 
+    std::size_t const msgSize = m->getBuffer(compressionEnabled_).size();
     auto validator = m->getValidatorKey();
     if (validator && !squelch_.expireSquelch(*validator))
     {
+        ++peerCounters.send.sendQueueFailedSquelch;
         overlay_.reportOutboundTraffic(
             TrafficCount::category::squelch_suppressed,
-            static_cast<int>(m->getBuffer(compressionEnabled_).size()));
+            static_cast<int>(msgSize));
         return;
     }
 
     // report categorized outgoing traffic
     overlay_.reportOutboundTraffic(
         safe_cast<TrafficCount::category>(m->getCategory()),
-        static_cast<int>(m->getBuffer(compressionEnabled_).size()));
+        static_cast<int>(msgSize));
 
     // report total outgoing traffic
     overlay_.reportOutboundTraffic(
-        TrafficCount::category::total,
-        static_cast<int>(m->getBuffer(compressionEnabled_).size()));
+        TrafficCount::category::total, static_cast<int>(msgSize));
 
     auto sendq_size = send_queue_.size();
 
@@ -283,6 +292,10 @@ PeerImp::send(std::shared_ptr<Message> const& m)
     }
 
     send_queue_.push(m);
+    peerCounters.queuedPeerMessage(
+        m->getType(m->getBuffer(compressionEnabled_).data()),
+        msgSize,
+        journal_);
 
     if (sendq_size != 0)
         return;
@@ -356,6 +369,14 @@ PeerImp::charge(Resource::Charge const& fee, std::string const& context)
     {
         // Sever the connection
         overlay_.incPeerDisconnectCharges();
+        if (inbound_)
+            ++app_.getPerfLog()
+                  .getPeerCounters()
+                  .connection.disconnectInboundResources;
+        else
+            ++app_.getPerfLog()
+                  .getPeerCounters()
+                  .connection.disconnectOutboundResources;
         fail("charge: Resources");
     }
 }
@@ -588,10 +609,16 @@ PeerImp::close()
         if (inbound_)
         {
             JLOG(journal_.debug()) << "Closed";
+            ++app_.getPerfLog()
+                  .getPeerCounters()
+                  .connection.totalInboundDisconnects;
         }
         else
         {
             JLOG(journal_.info()) << "Closed";
+            ++app_.getPerfLog()
+                  .getPeerCounters()
+                  .connection.totalOutboundDisconnects;
         }
     }
 }
@@ -889,6 +916,8 @@ PeerImp::doProtocolStart()
 void
 PeerImp::onReadMessage(error_code ec, std::size_t bytes_transferred)
 {
+    auto& peerCounters = app_.getPerfLog().getPeerCounters();
+    ++peerCounters.receive.receivePackets;
     if (!socket_.is_open())
         return;
     if (ec == boost::asio::error::operation_aborted)
@@ -921,7 +950,8 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytes_transferred)
         using namespace std::chrono_literals;
         std::tie(bytes_consumed, ec) = perf::measureDurationAndLog(
             [&]() {
-                return invokeProtocolMessage(read_buffer_.data(), *this, hint);
+                return invokeProtocolMessage(
+                    read_buffer_.data(), *this, hint, peerCounters, journal_);
             },
             "invokeProtocolMessage",
             350ms,
@@ -953,12 +983,24 @@ PeerImp::onReadMessage(error_code ec, std::size_t bytes_transferred)
 void
 PeerImp::onWriteMessage(error_code ec, std::size_t bytes_transferred)
 {
+    auto& peerCounters = app_.getPerfLog().getPeerCounters();
     if (!socket_.is_open())
+    {
+        ++peerCounters.send.sendFailedClosed;
         return;
+    }
     if (ec == boost::asio::error::operation_aborted)
+    {
+        ++peerCounters.send.sendFailedAborted;
         return;
+    }
     if (ec)
+    {
+        ++peerCounters.send.sendFailedOther;
         return fail("onWriteMessage", ec);
+    }
+    ++peerCounters.send.sent;
+    peerCounters.send.sentBytes += bytes_transferred;
     if (auto stream = journal_.trace())
     {
         if (bytes_transferred > 0)
