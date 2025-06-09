@@ -594,7 +594,8 @@ Transactor::checkSign(PreclaimContext const& ctx)
     if ((ctx.flags & tapDRY_RUN) && pkSigner.empty() &&
         !ctx.tx.isFieldPresent(sfSigners))
     {
-        // simulate, no SigningPubKey/signature situation to check
+        // simulate: skip signature validation when neither SigningPubKey nor
+        // Signers are provided
         return tesSUCCESS;
     }
 

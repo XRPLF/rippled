@@ -854,7 +854,7 @@ class Simulate_test : public beast::unit_test::suite
     }
 
     void
-    testTransactionSingleAndMultiSigning()
+    testInvalidSingleAndMultiSigningTransaction()
     {
         testcase(
             "Transaction with both single-signing SigningPubKey and "
@@ -1199,7 +1199,7 @@ public:
         testTransactionTecFailure();
         testSuccessfulTransactionMultisigned();
         testTransactionSigningFailure();
-        testTransactionSingleAndMultiSigning();
+        testInvalidSingleAndMultiSigningTransaction();
         testMultisignedBadPubKey();
         testDeleteExpiredCredentials();
         testSuccessfulTransactionNetworkID();
