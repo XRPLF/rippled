@@ -314,7 +314,7 @@ Keylet
 mptIssuance(std::uint32_t seq, AccountID const& issuer) noexcept;
 
 Keylet
-mptIssuance(MPTIssue const& mptIssue) noexcept;
+mptIssuance(MPTID const& issuanceID) noexcept;
 
 inline Keylet
 mptIssuance(uint256 const& issuanceKey)

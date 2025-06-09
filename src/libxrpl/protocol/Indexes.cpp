@@ -117,10 +117,10 @@ getBookBase(Book const& book)
     XRPL_ASSERT(
         isConsistent(book), "ripple::getBookBase : input is consistent");
 
-    auto getIndexHash = [&book]<typename ... Args>(Args ... args) {
+    auto getIndexHash = [&book]<typename... Args>(Args... args) {
         if (book.domain)
-            return indexHash(std::forward<Args>(args) ..., *book.domain);
-        return indexHash(std::forward<Args>(args) ...);
+            return indexHash(std::forward<Args>(args)..., *book.domain);
+        return indexHash(std::forward<Args>(args)...);
     };
 
     auto const index = std::visit(
@@ -581,11 +581,11 @@ mptIssuance(std::uint32_t seq, AccountID const& issuer) noexcept
 }
 
 Keylet
-mptIssuance(MPTIssue const& mptIssue) noexcept
+mptIssuance(MPTID const& issuanceID) noexcept
 {
     return {
         ltMPTOKEN_ISSUANCE,
-        indexHash(LedgerNameSpace::MPTOKEN_ISSUANCE, mptIssue.getMptID())};
+        indexHash(LedgerNameSpace::MPTOKEN_ISSUANCE, issuanceID)};
 }
 
 Keylet

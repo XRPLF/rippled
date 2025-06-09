@@ -203,10 +203,10 @@ template <>
 struct hash<ripple::Book>
 {
 private:
-    using hasher = std::hash<ripple::Asset>;
+    using asset_hasher = std::hash<ripple::Asset>;
     using uint256_hasher = ripple::uint256::hasher;
 
-    issue_hasher m_issue_hasher;
+    asset_hasher m_asset_hasher;
     uint256_hasher m_uint256_hasher;
 
 public:
@@ -218,8 +218,8 @@ public:
     value_type
     operator()(argument_type const& value) const
     {
-        value_type result(m_issue_hasher(value.in));
-        boost::hash_combine(result, m_issue_hasher(value.out));
+        value_type result(m_asset_hasher(value.in));
+        boost::hash_combine(result, m_asset_hasher(value.out));
 
         if (value.domain)
             boost::hash_combine(result, m_uint256_hasher(*value.domain));

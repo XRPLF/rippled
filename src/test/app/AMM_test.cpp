@@ -7491,7 +7491,7 @@ private:
 
             STAmount amount = XRP(10'000);
             STAmount amount2 = USD(10'000);
-            auto const keylet = keylet::amm(amount.issue(), amount2.issue());
+            auto const keylet = keylet::amm(amount.asset(), amount2.asset());
             for (int i = 0; i < 256; ++i)
             {
                 AccountID const accountId =
@@ -7819,7 +7819,7 @@ private:
         // tfSingleAsset withdraw mode
         // Note: This test fails with 0 trading fees, but doesn't fail if
         // trading fees is set to 1'000 -- I suspect the compound operations
-        // in AMMHelpers.cpp:withdrawByTokens compensate for the rounding
+        // in AMMHelpers.cpp:ammAssetOut compensate for the rounding
         // errors
         testAMM(
             [&](AMM& ammAlice, Env& env) {

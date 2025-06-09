@@ -261,7 +261,7 @@ doBookOffers(RPC::JsonContext& context)
 
     context.netOps.getBookPage(
         lpLedger,
-        {book, domain},
+        {book.in, book.out, domain},
         takerID ? *takerID : beast::zero,
         bProof,
         limit,

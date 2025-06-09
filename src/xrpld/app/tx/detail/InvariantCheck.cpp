@@ -288,7 +288,7 @@ NoZeroEscrow::visitEntry(
                 if (amount <= beast::zero)
                     return true;
 
-                if (badCurrency() == amount.getCurrency())
+                if (badCurrency() == amount.get<Issue>().currency)
                     return true;
             }
 
@@ -1412,8 +1412,7 @@ ValidMPTIssuance::finalize(
     if (result == tesSUCCESS)
     {
         auto const txnType = tx.getTxnType();
-        if (txnType == ttMPTOKEN_ISSUANCE_CREATE ||
-            txnType == ttVAULT_CREATE)
+        if (txnType == ttMPTOKEN_ISSUANCE_CREATE || txnType == ttVAULT_CREATE)
         {
             if (mptIssuancesCreated_ == 0)
             {
@@ -1434,8 +1433,7 @@ ValidMPTIssuance::finalize(
             return mptIssuancesCreated_ == 1 && mptIssuancesDeleted_ == 0;
         }
 
-        if (txnType() == ttMPTOKEN_ISSUANCE_DESTROY ||
-            txnType() == ttVAULT_DELETE)
+        if (txnType == ttMPTOKEN_ISSUANCE_DESTROY || txnType == ttVAULT_DELETE)
         {
             if (mptIssuancesDeleted_ == 0)
             {
@@ -1456,8 +1454,7 @@ ValidMPTIssuance::finalize(
             return mptIssuancesCreated_ == 0 && mptIssuancesDeleted_ == 1;
         }
 
-        if (txnType == ttMPTOKEN_AUTHORIZE ||
-            txnType == ttVAULT_DEPOSIT)
+        if (txnType == ttMPTOKEN_AUTHORIZE || txnType == ttVAULT_DEPOSIT)
         {
             bool const submittedByIssuer = tx.isFieldPresent(sfHolder);
 
@@ -1927,16 +1924,17 @@ ValidAMM::finalizeCreate(
         auto const [amount, amount2] = ammPoolHolds(
             view,
             *ammAccount_,
-            tx[sfAmount].get<Issue>(),
-            tx[sfAmount2].get<Issue>(),
+            tx[sfAmount].asset(),
+            tx[sfAmount2].asset(),
             fhIGNORE_FREEZE,
+            ahIGNORE_AUTH,
             j);
         // Create invariant:
         // sqrt(amount * amount2) == LPTokens
         // all balances are greater than zero
         if (!validBalances(
                 amount, amount2, *lptAMMBalanceAfter_, ZeroAllowed::No) ||
-            ammLPTokens(amount, amount2, lptAMMBalanceAfter_->issue()) !=
+            ammLPTokens(amount, amount2, lptAMMBalanceAfter_->get<Issue>()) !=
                 *lptAMMBalanceAfter_)
         {
             JLOG(j.error()) << "AMMCreate invariant failed: " << amount << " "
@@ -1992,9 +1990,10 @@ ValidAMM::generalInvariant(
     auto const [amount, amount2] = ammPoolHolds(
         view,
         *ammAccount_,
-        tx[sfAsset].get<Issue>(),
-        tx[sfAsset2].get<Issue>(),
+        tx[sfAsset],
+        tx[sfAsset2],
         fhIGNORE_FREEZE,
+        ahIGNORE_AUTH,
         j);
     // Deposit and Withdrawal invariant:
     // sqrt(amount * amount2) >= LPTokens

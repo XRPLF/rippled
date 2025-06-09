@@ -80,7 +80,9 @@ fund(
                 }
                 return amt;
             }();
-            amtsOut.push_back(amt_);
+            // only add unique amounts
+            if (account == accounts[0])
+                amtsOut.push_back(amt_);
             env(pay(amt_.getIssuer(), account, amt_));
         }
     }
@@ -198,7 +200,7 @@ AMMTestBase::testAMM(
             alice,
             pool1,
             pool2,
-            CreateArg{.log = false, .tfee = tfee, .err = ter});
+            CreateArg{.log = false, .tfee = arg.tfee, .err = arg.ter});
         if (BEAST_EXPECT(
                 ammAlice.expectBalances(pool1, pool2, ammAlice.tokens())))
             cb(ammAlice, env);

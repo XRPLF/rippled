@@ -439,6 +439,18 @@ MPTEndpointPaymentStep::check(
             return ter;
     }
 
+    // Can't check for creditBalance/Limit unless it's the first step.
+    // Otherwise, even if OutstandingAmount is equal to MaximumAmount
+    // a payment can still be successful. For instance, when a balance
+    // is shifted from one holder to another.
+
+    if (!prevStep_)
+    {
+        auto const owed = creditBalance(ctx.view, src_, mptIssue_);
+        if (owed <= beast::zero)
+            return tecPATH_DRY;
+    }
+
     return tesSUCCESS;
 }
 

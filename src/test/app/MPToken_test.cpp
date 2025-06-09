@@ -670,6 +670,7 @@ class MPToken_test : public beast::unit_test::suite
         Account const alice("alice");  // issuer
         Account const bob("bob");      // holder
         Account const carol("carol");  // holder
+        auto const MPTokensV2 = features[featureMPTokensV2];
 
         // preflight validation
 
@@ -742,7 +743,6 @@ class MPToken_test : public beast::unit_test::suite
             // sendMax and DeliverMin are valid XRP amount,
             // but is invalid combination with MPT amount
             auto const MPT = mptAlice["MPT"];
-            auto const MPTokensV2 = features[featureMPTokensV2];
             auto err = !MPTokensV2 ? ter(temMALFORMED) : ter(tecPATH_PARTIAL);
             env(pay(alice, carol, MPT(100)), sendmax(XRP(100)), err);
             env(pay(alice, carol, MPT(100)),
@@ -1141,7 +1141,8 @@ class MPToken_test : public beast::unit_test::suite
             mptAlice.pay(alice, bob, 100);
 
             // issuer tries to exceed max amount
-            mptAlice.pay(alice, bob, 1, tecPATH_PARTIAL);
+            auto const err = MPTokensV2 ? tecPATH_DRY : tecPATH_PARTIAL;
+            mptAlice.pay(alice, bob, 1, err);
         }
 
         // Issuer fails trying to send more than the default maximum
@@ -1159,7 +1160,8 @@ class MPToken_test : public beast::unit_test::suite
             mptAlice.pay(alice, bob, maxMPTokenAmount);
 
             // issuer tries to exceed max amount
-            mptAlice.pay(alice, bob, 1, tecPATH_PARTIAL);
+            auto const err = MPTokensV2 ? tecPATH_DRY : tecPATH_PARTIAL;
+            mptAlice.pay(alice, bob, 1, err);
         }
 
         // Pay more than max amount fails in the json parser before
@@ -1224,9 +1226,8 @@ class MPToken_test : public beast::unit_test::suite
 
             // payment between the holders fails without
             // partial payment
-            env(pay(bob, carol, MPT(10'000)),
-                sendmax(MPT(10'000)),
-                ter(tecPATH_PARTIAL));
+            auto const err = MPTokensV2 ? tecPATH_DRY : tecPATH_PARTIAL;
+            env(pay(bob, carol, MPT(10'000)), sendmax(MPT(10'000)), ter(err));
         }
 
         // Pay maximum allowed amount
@@ -1620,15 +1621,6 @@ class MPToken_test : public beast::unit_test::suite
             };
             ammBid(sfBidMin);
             ammBid(sfBidMax);
-            // EscrowCreate
-            {
-                Json::Value jv;
-                jv[jss::TransactionType] = jss::EscrowCreate;
-                jv[jss::Account] = alice.human();
-                jv[jss::Destination] = carol.human();
-                jv[jss::Amount] = mpt.getJson(JsonOptions::none);
-                test(jv, jss::Amount.c_str());
-            }
             // PaymentChannelCreate
             {
                 Json::Value jv;
@@ -2239,17 +2231,18 @@ class MPToken_test : public beast::unit_test::suite
 
             MPTTester mpt(env, gw, {.holders = {alice}});
 
-            auto const lockMPToken =
+            bool const lockMPToken =
                 (flags & (tfMPTCanLock | tfMPTCanTransfer)) == tfMPTCanLock;
-            auto const lockMPTIssue =
+            bool const lockMPTIssue =
                 (flags & (tfMPTCanLock | tfMPTCanTransfer)) ==
                 (tfMPTCanLock | tfMPTCanTransfer);
+            bool const requireAuth = flags & tfMPTRequireAuth;
             flags = lockMPToken ? (flags | tfMPTCanTransfer) : flags;
 
             mpt.create({.ownerCount = 1, .holderCount = 0, .flags = flags});
             auto const MPT = mpt["MPT"];
 
-            if ((flags & tfMPTRequireAuth) == 0)
+            if (!requireAuth)
             {
                 mpt.authorize({.account = alice});
                 mpt.pay(gw, alice, 200);
@@ -2259,8 +2252,15 @@ class MPToken_test : public beast::unit_test::suite
             else if (lockMPTIssue)
                 mpt.set({.flags = tfMPTLock});
 
-            auto const err =
-                flags & tfMPTRequireAuth ? tecUNFUNDED_OFFER : tecNO_PERMISSION;
+            auto const err = [&]() {
+                // Global lock
+                if (lockMPTIssue)
+                    return tecFROZEN;
+                // MPToken doesn't exist
+                else if (requireAuth)
+                    return tecUNFUNDED_OFFER;
+                return tecNO_PERMISSION;
+            }();
 
             env(offer(alice, XRP(100), MPT(101)), ter(err));
             env.close();
@@ -2414,46 +2414,6 @@ class MPToken_test : public beast::unit_test::suite
         Account const carol = Account("carol");
         Account const bob = Account("bob");
         auto const USD = gw["USD"];
-
-        // Blocking flags
-        for (auto flags :
-             {tfMPTCanLock |
-                  tfMPTCanTransfer,  // locked, issuer and holder fails
-              tfMPTRequireAuth |
-                  tfMPTCanTransfer,  // not authorized, holder fails
-              tfMPTCanTrade,         // can't transfer, holder fails
-              tfMPTCanLock})         // lock mptoken, holder fails
-        {
-            Env env{*this, features};
-
-            MPTTester mpt(env, gw, {.holders = {alice}});
-
-            auto const lockMPToken =
-                (flags & (tfMPTCanLock | tfMPTCanTransfer)) == tfMPTCanLock;
-            auto const lockMPTIssue =
-                (flags & (tfMPTCanLock | tfMPTCanTransfer)) ==
-                (tfMPTCanLock | tfMPTCanTransfer);
-            flags = lockMPToken ? (flags | tfMPTCanTransfer) : flags;
-
-            mpt.create({.ownerCount = 1, .holderCount = 0, .flags = flags});
-            auto const MPT = mpt["MPT"];
-
-            if ((flags & tfMPTRequireAuth) == 0)
-            {
-                mpt.authorize({.account = alice});
-                mpt.pay(gw, alice, 200);
-            }
-            if (lockMPToken)
-                mpt.set({.holder = alice, .flags = tfMPTLock});
-            else if (lockMPTIssue)
-                mpt.set({.flags = tfMPTLock});
-
-            auto const err =
-                flags & tfMPTRequireAuth ? tecUNFUNDED_OFFER : tecNO_PERMISSION;
-
-            env(offer(alice, XRP(100), MPT(101)), ter(err));
-            env.close();
-        }
 
         // Loop
         {
@@ -3308,7 +3268,7 @@ class MPToken_test : public beast::unit_test::suite
             BEAST_EXPECT(MUSD.checkMPTokenOutstandingAmount(1'000));
             // initial + offer - fees
             BEAST_EXPECT(
-                env.balance(gw) == (XRP(1'000) + XRP(200) - txfee(env, 3)));
+                env.balance(gw) == (XRP(1'000) + XRP(200) - txfee(env, 4)));
             BEAST_EXPECT(env.balance(bob, EUR) == EUR(200));
         }
 #endif
@@ -4231,8 +4191,10 @@ public:
         testDestroyValidation(all - featureSingleAssetVault);
         testDestroyValidation(all | featureSingleAssetVault);
         testDestroyValidation(all - featureMPTokensV2);
-        testDestroyValidation(all - featureSingleAssetVault - featureMPTokensV2);
-        testDestroyValidation(all | featureSingleAssetVault - featureMPTokensV2);
+        testDestroyValidation(
+            all - featureSingleAssetVault - featureMPTokensV2);
+        testDestroyValidation(
+            (all | featureSingleAssetVault) - featureMPTokensV2);
         testDestroyEnabled(all - featureSingleAssetVault);
         testDestroyEnabled(all | featureSingleAssetVault);
 
@@ -4240,8 +4202,10 @@ public:
         testAuthorizeValidation(all - featureSingleAssetVault);
         testAuthorizeValidation(all | featureSingleAssetVault);
         testAuthorizeValidation(all - featureMPTokensV2);
-        testAuthorizeValidation(all - featureSingleAssetVault - featureMPTokensV2);
-        testAuthorizeValidation(all | featureSingleAssetVault - featureMPTokensV2);
+        testAuthorizeValidation(
+            all - featureSingleAssetVault - featureMPTokensV2);
+        testAuthorizeValidation(
+            (all | featureSingleAssetVault) - featureMPTokensV2);
         testAuthorizeEnabled(all - featureSingleAssetVault);
         testAuthorizeEnabled(all | featureSingleAssetVault);
 

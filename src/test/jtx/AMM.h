@@ -199,7 +199,7 @@ public:
     std::tuple<STAmount, STAmount, STAmount>
     balances(std::optional<AccountID> const& account = std::nullopt) const
     {
-        return balances(asset1_.get<Issue>(), asset2_.get<Issue>(), account);
+        return balances(asset1_.asset(), asset2_.asset(), account);
     }
 
     [[nodiscard]] bool

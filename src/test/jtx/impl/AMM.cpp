@@ -70,7 +70,6 @@ AMM::AMM(
     , asset1_(asset1)
     , asset2_(asset2)
     , ammID_(keylet::amm(asset1_.asset(), asset2_.asset()).key)
-    , initialLPTokens_(initialTokens(asset1, asset2))
     , log_(log)
     , doClose_(close)
     , lastPurchasePrice_(0)
@@ -81,6 +80,7 @@ AMM::AMM(
     , ammAccount_(create(tfee, flags, seq, ter))
     , lptIssue_(
           ripple::ammLPTIssue(asset1_.asset(), asset2_.asset(), ammAccount_))
+    , initialLPTokens_(initialTokens())
 {
 }
 

@@ -80,14 +80,14 @@ private:
     // Maps order books by "issue in" to "issue out":
     hardened_hash_map<Asset, hardened_hash_set<Asset>> allBooks_;
 
-    hardened_hash_map<std::pair<Issue, Domain>, hardened_hash_set<Issue>>
+    hardened_hash_map<std::pair<Asset, Domain>, hardened_hash_set<Asset>>
         domainBooks_;
 
     // does an order book to XRP exist
     hash_set<Asset> xrpBooks_;
 
     // does an order book to XRP exist
-    hash_set<std::pair<Issue, Domain>> xrpDomainBooks_;
+    hash_set<std::pair<Asset, Domain>> xrpDomainBooks_;
 
     std::recursive_mutex mLock;
 

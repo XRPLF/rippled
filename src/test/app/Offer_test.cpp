@@ -5375,7 +5375,7 @@ public:
         FeatureBitset const fillOrKill{fixFillOrKill};
         FeatureBitset const permDEX{featurePermissionedDEX};
 
-        static std::array<FeatureBitset, 7> const feats{
+        static std::array<FeatureBitset, 6> const feats{
             all - takerDryOffer - immediateOfferKilled - permDEX,
             all - immediateOfferKilled - permDEX,
             all - rmSmallIncreasedQOffers - immediateOfferKilled - fillOrKill -

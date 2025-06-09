@@ -151,7 +151,7 @@ doGatewayBalances(RPC::JsonContext& context)
                 if (sle->getType() == ltESCROW)
                 {
                     auto const& escrow = sle->getFieldAmount(sfAmount);
-                    auto& bal = locked[escrow.getCurrency()];
+                    auto& bal = locked[escrow.get<Issue>().currency];
                     if (bal == beast::zero)
                     {
                         // This is needed to set the currency code correctly
@@ -170,7 +170,7 @@ doGatewayBalances(RPC::JsonContext& context)
                             // Very large sums of STAmount are approximations
                             // anyway.
                             bal = STAmount(
-                                bal.issue(),
+                                bal.get<Issue>(),
                                 STAmount::cMaxValue,
                                 STAmount::cMaxOffset);
                         }

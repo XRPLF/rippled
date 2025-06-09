@@ -65,6 +65,19 @@ creditBalance(
     Currency const& currency);
 /** @} */
 
+/** Returns the amount of MPTs issued by issuer that are held by an account
+    @param ledger the ledger to check against.
+    @param account the account of interest.
+    @param MPTIssue the MPT to check.
+*/
+/** @{ */
+STAmount
+creditBalance(
+    ReadView const& view,
+    AccountID const& account,
+    MPTIssue const& issue);
+/** @} */
+
 }  // namespace ripple
 
 #endif

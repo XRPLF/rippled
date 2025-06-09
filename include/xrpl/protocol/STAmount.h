@@ -383,12 +383,6 @@ STAmount::STAmount(A const& asset, int mantissa, int exponent)
 {
 }
 
-template <AssetType A>
-STAmount::STAmount(A const& asset, Number const& n)
-    : STAmount(asset, n.mantissa(), n.exponent())
-{
-}
-
 // Legacy support for new-style amounts
 inline STAmount::STAmount(IOUAmount const& amount, Issue const& issue)
     : mAsset(issue)

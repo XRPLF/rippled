@@ -286,7 +286,7 @@ multiply(STAmount const& amount, Number const& frac, Number::rounding_mode rm)
 {
     NumberRoundModeGuard g(rm);
     auto const t = amount * frac;
-    return toSTAmount(amount.issue(), t, rm);
+    return toSTAmount(amount.asset(), t, rm);
 }
 
 STAmount
@@ -298,13 +298,13 @@ getRoundedAsset(
     IsDeposit isDeposit)
 {
     if (!rules.enabled(fixAMMv1_3))
-        return toSTAmount(balance.issue(), noRoundCb());
+        return toSTAmount(balance.asset(), noRoundCb());
 
     auto const rm = detail::getAssetRounding(isDeposit);
     if (isDeposit == IsDeposit::Yes)
         return multiply(balance, productCb(), rm);
     NumberRoundModeGuard g(rm);
-    return toSTAmount(balance.issue(), productCb(), rm);
+    return toSTAmount(balance.asset(), productCb(), rm);
 }
 
 STAmount
@@ -315,7 +315,7 @@ getRoundedLPTokens(
     IsDeposit isDeposit)
 {
     if (!rules.enabled(fixAMMv1_3))
-        return toSTAmount(balance.issue(), balance * frac);
+        return toSTAmount(balance.asset(), balance * frac);
 
     auto const rm = detail::getLPTokenRounding(isDeposit);
     auto const tokens = multiply(balance, frac, rm);
@@ -331,14 +331,14 @@ getRoundedLPTokens(
     IsDeposit isDeposit)
 {
     if (!rules.enabled(fixAMMv1_3))
-        return toSTAmount(lptAMMBalance.issue(), noRoundCb());
+        return toSTAmount(lptAMMBalance.asset(), noRoundCb());
 
     auto const tokens = [&] {
         auto const rm = detail::getLPTokenRounding(isDeposit);
         if (isDeposit == IsDeposit::Yes)
         {
             NumberRoundModeGuard g(rm);
-            return toSTAmount(lptAMMBalance.issue(), productCb(), rm);
+            return toSTAmount(lptAMMBalance.asset(), productCb(), rm);
         }
         return multiply(lptAMMBalance, productCb(), rm);
     }();

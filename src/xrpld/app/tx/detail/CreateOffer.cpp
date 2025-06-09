@@ -52,12 +52,6 @@ CreateOffer::preflight(PreflightContext const& ctx)
         !ctx.rules.enabled(featurePermissionedDEX))
         return temDISABLED;
 
-    // Permissioned offers should use the PE (which must be enabled by
-    // featureFlowCross amendment)
-    if (ctx.rules.enabled(featurePermissionedDEX) &&
-        !ctx.rules.enabled(featureFlowCross))
-        return temDISABLED;
-
     if (!ctx.rules.enabled(featureMPTokensV2) &&
         (ctx.tx[sfTakerPays].holds<MPTIssue>() ||
          ctx.tx[sfTakerGets].holds<MPTIssue>()))
@@ -160,10 +154,7 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
     auto saTakerPays = ctx.tx[sfTakerPays];
     auto saTakerGets = ctx.tx[sfTakerGets];
 
-    auto const& uPaysIssuerID = saTakerPays.getIssuer();
     auto const& uPaysAsset = saTakerPays.asset();
-
-    auto const& uGetsIssuerID = saTakerGets.getIssuer();
 
     auto const cancelSequence = ctx.tx[~sfOfferSequence];
 
@@ -175,8 +166,8 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
 
     auto viewJ = ctx.app.journal("View");
 
-    if (isGlobalFrozen(ctx.view, uPaysIssuerID) ||
-        isGlobalFrozen(ctx.view, uGetsIssuerID))
+    if (isGlobalFrozen(ctx.view, saTakerPays.asset()) ||
+        isGlobalFrozen(ctx.view, saTakerGets.asset()))
     {
         JLOG(ctx.j.debug()) << "Offer involves frozen asset";
         return tecFROZEN;
@@ -605,7 +596,7 @@ CreateOffer::applyHybrid(
     sleOffer->setFlag(lsfHybrid);
 
     // if offer is hybrid, need to also place into open offer dir
-    Book const book{saTakerPays.issue(), saTakerGets.issue(), std::nullopt};
+    Book const book{saTakerPays.asset(), saTakerGets.asset(), std::nullopt};
 
     auto dir =
         keylet::quality(keylet::book(book), getRate(saTakerGets, saTakerPays));
@@ -931,7 +922,8 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     auto dir = keylet::quality(keylet::book(book), uRate);
     bool const bookExisted = static_cast<bool>(sb.peek(dir));
 
-    auto const bookNode = sb.dirAppend(dir, offer_index, [&](SLE::ref sle) {
+    auto setBookDir = [&](SLE::ref sle,
+                          std::optional<uint256> const& maybeDomain) {
         if (saTakerPays.holds<Issue>())
         {
             sle->setFieldH160(
