@@ -36,15 +36,15 @@ See [System Requirements](https://xrpl.org/system-requirements.html).
 Building rippled generally requires git, Python, Conan, CMake, and a C++ compiler. Some guidance on setting up such a [C++ development environment can be found here](./docs/build/environment.md).
 
 - [Python 3.9](https://www.python.org/downloads/), or higher
-- [Conan 2.7.1](https://conan.io/downloads.html)[^1], or higher
+- [Conan 2.17](https://conan.io/downloads.html)[^1], or higher
 - [CMake 3.22](https://cmake.org/download/)[^2], or higher
 
 [^1]: It is possible to build with Conan 1.60+,
 but the instructions are significantly different,
 which is why we are not recommending it.
 
-[^2]: CMake 4 is not be supported by all dependencies required by this project.
-If you are effected by this issue, follow [conan workaround for cmake 4](#cmake-4-workaround)
+[^2]: CMake 4 is not yet supported by all dependencies required by this project.
+If you are affected by this issue, follow [conan workaround for cmake 4](#cmake-4-workaround)
 
 `rippled` is written in the C++20 dialect and includes the `<concepts>` header.
 The [minimum compiler versions][2] required are:
@@ -123,7 +123,7 @@ Default profile created by Conan will typically select different C++ dialect tha
 used by this project. You should set `20` in the profile line starting with `compiler.cppstd=`, for example:
 
 ```bash
-sed -i=bak -e 's|^compiler\.cppstd=.*$|compiler.cppstd=20|' ~/.conan2/profiles/default
+sed -i.bak -e 's|^compiler\.cppstd=.*$|compiler.cppstd=20|' ~/.conan2/profiles/default
 ```
 
 ### Multiple compilers

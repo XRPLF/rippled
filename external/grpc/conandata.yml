@@ -1,20 +1,8 @@
 sources:
-  "1.54.3":
-    url: "https://github.com/grpc/grpc/archive/v1.54.3.tar.gz"
-    sha256: "17e4e1b100657b88027721220cbfb694d86c4b807e9257eaf2fb2d273b41b1b1"
   "1.50.1":
     url: "https://github.com/grpc/grpc/archive/v1.50.1.tar.gz"
     sha256: "fb1ed98eb3555877d55eb2b948caca44bc8601c6704896594de81558639709ef"
-  "1.50.0":
-    url: "https://github.com/grpc/grpc/archive/v1.50.0.tar.gz"
-    sha256: "76900ab068da86378395a8e125b5cc43dfae671e09ff6462ddfef18676e2165a"
 patches:
-  "1.54.3":
-    - patch_file: "patches/v1.50.x/002-CMake-Add-gRPC_USE_SYSTEMD-option-34384.patch"
-      patch_type: "backport"
-      patch_source: "https://github.com/grpc/grpc/commit/5c3400e8dc08d0810e3301d7e8cd8a718c82eeed"
   "1.50.1":
     - patch_file: "patches/v1.50.x/001-disable-cppstd-override.patch"
-    - patch_file: "patches/v1.50.x/003-fix-clang-template-error.patch"
-  "1.50.0":
-    - patch_file: "patches/v1.50.x/001-disable-cppstd-override.patch"
+    - patch_file: "patches/v1.50.x/002-fix-clang-template-error.patch"
