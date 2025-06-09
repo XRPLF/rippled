@@ -809,7 +809,9 @@ Transactor::checkMultiSign(
         // public key.
         auto const spk = txSigner.getFieldVL(sfSigningPubKey);
 
-        if (!(flags & tapDRY_RUN) && !publicKeyType(makeSlice(spk)))
+        // spk being non-empty in non-simulate is checked in
+        // STTx::checkMultiSign
+        if (!spk.empty() && !publicKeyType(makeSlice(spk)))
         {
             JLOG(j.trace())
                 << "checkMultiSign: signing public key type is unknown";

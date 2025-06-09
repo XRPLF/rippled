@@ -788,8 +788,7 @@ class Simulate_test : public beast::unit_test::suite
             // transaction requires a non-base fee
             tx[sfFee] =
                 (env.current()->fees().base * 2).jsonClipped().asString();
-            tx[sfSigners][0u][sfSigner][jss::SigningPubKey] =
-                strHex(becky.pk().slice());
+            tx[sfSigners][0u][sfSigner][jss::SigningPubKey] = "";
             tx[sfSigners][0u][sfSigner][jss::TxnSignature] = "";
 
             // test without autofill
