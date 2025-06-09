@@ -132,8 +132,8 @@ struct Directory_test : public beast::unit_test::suite
 
         // Now check the orderbook: it should be in the order we placed
         // the offers.
-        auto book = BookDirs(
-            *env.current(), Book({xrpIssue(), USD, std::nullopt}));
+        auto book =
+            BookDirs(*env.current(), Book({xrpIssue(), USD, std::nullopt}));
         int count = 1;
 
         for (auto const& offer : book)

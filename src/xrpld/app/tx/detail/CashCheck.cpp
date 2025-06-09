@@ -216,14 +216,14 @@ CashCheck::preclaim(PreclaimContext const& ctx)
                     return tecNO_ISSUER;
                 }
 
-            if (sleIssuer->at(sfFlags) & lsfRequireAuth)
-            {
-                if (!sleTrustLine)
+                if (sleIssuer->at(sfFlags) & lsfRequireAuth)
                 {
-                    // We can only create a trust line if the issuer does not
-                    // have lsfRequireAuth set.
-                    return tecNO_AUTH;
-                }
+                    if (!sleTrustLine)
+                    {
+                        // We can only create a trust line if the issuer does
+                        // not have lsfRequireAuth set.
+                        return tecNO_AUTH;
+                    }
 
                     // Entries have a canonical representation, determined by a
                     // lexicographical "greater than" comparison employing

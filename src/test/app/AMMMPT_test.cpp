@@ -7141,8 +7141,8 @@ private:
     void
     run() override
     {
-        FeatureBitset const all{jtx::supported_amendments()};
 #if 0
+        FeatureBitset const all{jtx::supported_amendments()};
         testInvalidInstance();
 #endif
         testInstanceCreate();
