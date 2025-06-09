@@ -304,20 +304,21 @@ It fixes some source files to add missing `#include`s.
    Single-config generators:
 
    ```
-   ./rippled --unittest
+   ./rippled --unittest --unittest-jobs N
    ```
 
    Multi-config generators:
 
    ```
-   ./Release/rippled --unittest
-   ./Debug/rippled --unittest
+   ./Release/rippled --unittest --unittest-jobs N
+   ./Debug/rippled --unittest --unittest-jobs N
    ```
 
-   The location of `rippled` in your build directory depends on your CMake
-   generator. Pass `--help` to see the rest of the command line options.
+   Replace the `--unittest-jobs` parameter N with the desired unit tests concurrency. Recommended
+   setting is half of the number of available CPU cores.
 
-   If your computer has multiple cores, you might want to also set the `--unittest-jobs` parameter to the number of desired unit tests concurrency.
+   The location of `rippled` binary in your build directory depends on your CMake
+   generator. Pass `--help` to see the rest of the command line options.
 
 
 ## Coverage report
