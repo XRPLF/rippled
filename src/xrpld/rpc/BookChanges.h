@@ -49,13 +49,13 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
     std::map<
         std::string,
         std::tuple<
-            STAmount,  // side A volume
-            STAmount,  // side B volume
-            STAmount,  // high rate
-            STAmount,  // low rate
-            STAmount,  // open rate
-            STAmount   // close rate
-            >>
+            STAmount,                 // side A volume
+            STAmount,                 // side B volume
+            STAmount,                 // high rate
+            STAmount,                 // low rate
+            STAmount,                 // open rate
+            STAmount,                 // close rate
+            std::optional<uint256>>>  // optional: domain id
         tally;
 
     for (auto& tx : lpAccepted->txs)
@@ -148,6 +148,8 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
             else
                 ss << p << "|" << g;
 
+            std::optional<uint256> domain = finalFields[~sfDomainID];
+
             std::string key{ss.str()};
 
             if (tally.find(key) == tally.end())
@@ -157,8 +159,8 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
                     rate,    // high
                     rate,    // low
                     rate,    // open
-                    rate     // close
-                };
+                    rate,    // close
+                    domain};
             else
             {
                 // increment volume
@@ -173,7 +175,8 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
                 if (std::get<3>(entry) > rate)  // low
                     std::get<3>(entry) = rate;
 
-                std::get<5>(entry) = rate;  // close
+                std::get<5>(entry) = rate;    // close
+                std::get<6>(entry) = domain;  // domain
             }
         }
     }
@@ -227,6 +230,10 @@ computeBookChanges(std::shared_ptr<L const> const& lpAccepted)
         inner[jss::low] = to_string(std::get<3>(entry.second).iou());
         inner[jss::open] = to_string(std::get<4>(entry.second).iou());
         inner[jss::close] = to_string(std::get<5>(entry.second).iou());
+
+        std::optional<uint256> const domain = std::get<6>(entry.second);
+        if (domain)
+            inner[jss::domain] = to_string(*domain);
     }
 
     return jvObj;

@@ -25,6 +25,7 @@
 #include <xrpld/app/paths/Pathfinder.h>
 #include <xrpld/net/InfoSub.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/PathAsset.h>
 #include <xrpl/protocol/UintTypes.h>
@@ -156,6 +157,8 @@ private:
 
     std::set<Asset> sciSourceAssets;
     std::map<Asset, STPathSet> mContext;
+
+    std::optional<uint256> domain;
 
     bool convert_all_;
 

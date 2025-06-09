@@ -27,6 +27,9 @@
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/jss.h>
+
+#include <optional>
 
 namespace ripple {
 namespace test {
@@ -656,6 +659,7 @@ struct PayStrand_test : public beast::unit_test::suite
                 true,
                 OfferCrossing::no,
                 ammContext,
+                std::nullopt,
                 env.app().logs().journal("Flow"));
             BEAST_EXPECT(ter == expTer);
             if (sizeof...(expSteps) != 0)
@@ -684,6 +688,7 @@ struct PayStrand_test : public beast::unit_test::suite
                     true,
                     OfferCrossing::no,
                     ammContext,
+                    std::nullopt,
                     env.app().logs().journal("Flow"));
                 (void)_;
                 BEAST_EXPECT(ter == tesSUCCESS);
@@ -701,6 +706,7 @@ struct PayStrand_test : public beast::unit_test::suite
                     true,
                     OfferCrossing::no,
                     ammContext,
+                    std::nullopt,
                     env.app().logs().journal("Flow"));
                 (void)_;
                 BEAST_EXPECT(ter == tesSUCCESS);
@@ -738,7 +744,7 @@ struct PayStrand_test : public beast::unit_test::suite
                 STPath(),
                 tesSUCCESS,
                 D{alice, gw, usdC},
-                B{USD, EUR},
+                B{USD, EUR, std::nullopt},
                 D{gw, bob, eurC});
 
             // Path with explicit offer
@@ -749,7 +755,7 @@ struct PayStrand_test : public beast::unit_test::suite
                 STPath({ipe(EUR)}),
                 tesSUCCESS,
                 D{alice, gw, usdC},
-                B{USD, EUR},
+                B{USD, EUR, std::nullopt},
                 D{gw, bob, eurC});
 
             // Path with offer that changes issuer only
@@ -761,7 +767,7 @@ struct PayStrand_test : public beast::unit_test::suite
                 STPath({iape(carol)}),
                 tesSUCCESS,
                 D{alice, gw, usdC},
-                B{USD, carol["USD"]},
+                B{USD, carol["USD"], std::nullopt},
                 D{carol, bob, usdC});
 
             // Path with XRP src currency
@@ -772,7 +778,7 @@ struct PayStrand_test : public beast::unit_test::suite
                 STPath({ipe(USD)}),
                 tesSUCCESS,
                 XRPS{alice},
-                B{XRP, USD},
+                B{XRP, USD, std::nullopt},
                 D{gw, bob, usdC});
 
             // Path with XRP dst currency.
@@ -787,7 +793,7 @@ struct PayStrand_test : public beast::unit_test::suite
                     xrpAccount()}}),
                 tesSUCCESS,
                 D{alice, gw, usdC},
-                B{USD, XRP},
+                B{USD, XRP, std::nullopt},
                 XRPS{bob});
 
             // Path with XRP cross currency bridged payment
@@ -798,8 +804,8 @@ struct PayStrand_test : public beast::unit_test::suite
                 STPath({cpe(xrpCurrency())}),
                 tesSUCCESS,
                 D{alice, gw, usdC},
-                B{USD, XRP},
-                B{XRP, EUR},
+                B{USD, XRP, std::nullopt},
+                B{XRP, EUR, std::nullopt},
                 D{gw, bob, eurC});
 
             // XRP -> XRP transaction can't include a path
@@ -821,6 +827,7 @@ struct PayStrand_test : public beast::unit_test::suite
                         true,
                         OfferCrossing::no,
                         ammContext,
+                        std::nullopt,
                         flowJournal);
                     BEAST_EXPECT(r.first == temBAD_PATH);
                 }
@@ -837,6 +844,7 @@ struct PayStrand_test : public beast::unit_test::suite
                         true,
                         OfferCrossing::no,
                         ammContext,
+                        std::nullopt,
                         flowJournal);
                     BEAST_EXPECT(r.first == temBAD_PATH);
                 }
@@ -853,6 +861,7 @@ struct PayStrand_test : public beast::unit_test::suite
                         true,
                         OfferCrossing::no,
                         ammContext,
+                        std::nullopt,
                         flowJournal);
                     BEAST_EXPECT(r.first == temBAD_PATH);
                 }
@@ -985,6 +994,7 @@ struct PayStrand_test : public beast::unit_test::suite
                 true,
                 OfferCrossing::no,
                 ammContext,
+                std::nullopt,
                 env.app().logs().journal("Flow"));
             BEAST_EXPECT(ter == tesSUCCESS);
             BEAST_EXPECT(equal(strand, D{alice, gw, usdC}));
@@ -1012,10 +1022,14 @@ struct PayStrand_test : public beast::unit_test::suite
                 false,
                 OfferCrossing::no,
                 ammContext,
+                std::nullopt,
                 env.app().logs().journal("Flow"));
             BEAST_EXPECT(ter == tesSUCCESS);
             BEAST_EXPECT(equal(
-                strand, D{alice, gw, usdC}, B{USD, xrpIssue()}, XRPS{bob}));
+                strand,
+                D{alice, gw, usdC},
+                B{USD, xrpIssue(), std::nullopt},
+                XRPS{bob}));
         }
     }
 
@@ -1193,6 +1207,7 @@ struct PayStrand_test : public beast::unit_test::suite
                     dstAcc,
                     noAccount(),
                     pathSet,
+                    std::nullopt,
                     env.app().logs(),
                     &inputs);
                 BEAST_EXPECT(r.result() == temBAD_PATH);
@@ -1205,6 +1220,7 @@ struct PayStrand_test : public beast::unit_test::suite
                     noAccount(),
                     srcAcc,
                     pathSet,
+                    std::nullopt,
                     env.app().logs(),
                     &inputs);
                 BEAST_EXPECT(r.result() == temBAD_PATH);
@@ -1217,6 +1233,7 @@ struct PayStrand_test : public beast::unit_test::suite
                     dstAcc,
                     srcAcc,
                     pathSet,
+                    std::nullopt,
                     env.app().logs(),
                     &inputs);
                 BEAST_EXPECT(r.result() == temBAD_PATH);
@@ -1229,6 +1246,7 @@ struct PayStrand_test : public beast::unit_test::suite
                     dstAcc,
                     srcAcc,
                     pathSet,
+                    std::nullopt,
                     env.app().logs(),
                     &inputs);
                 BEAST_EXPECT(r.result() == temBAD_PATH);
@@ -1245,10 +1263,13 @@ struct PayStrand_test : public beast::unit_test::suite
     {
         using namespace jtx;
         auto const sa = supported_amendments();
+        testToStrand(sa - featurePermissionedDEX);
         testToStrand(sa);
 
+        testRIPD1373(sa - featurePermissionedDEX);
         testRIPD1373(sa);
 
+        testLoop(sa - featurePermissionedDEX);
         testLoop(sa);
 
         testNoAccount(sa);

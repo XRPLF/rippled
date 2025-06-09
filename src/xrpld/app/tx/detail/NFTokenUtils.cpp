@@ -1009,6 +1009,18 @@ tokenOfferCreatePreclaim(
         }
     }
 
+    if (view.rules().enabled(fixEnforceNFTokenTrustlineV2) && !amount.native())
+    {
+        // If this is a sell offer, check that the account is allowed to
+        // receive IOUs. If this is a buy offer, we have to check that trustline
+        // is authorized, even though we previosly checked it's balance via
+        // accountHolds. This is due to a possibility of existence of
+        // unauthorized trustlines with balance
+        auto const res = nft::checkTrustlineAuthorized(
+            view, acctID, j, amount.asset().get<Issue>());
+        if (res != tesSUCCESS)
+            return res;
+    }
     return tesSUCCESS;
 }
 
@@ -1082,6 +1094,116 @@ tokenOfferCreateApply(
 
     // Update owner count.
     adjustOwnerCount(view, view.peek(acctKeylet), 1, j);
+
+    return tesSUCCESS;
+}
+
+TER
+checkTrustlineAuthorized(
+    ReadView const& view,
+    AccountID const id,
+    beast::Journal const j,
+    Issue const& issue)
+{
+    // Only valid for custom currencies
+    XRPL_ASSERT(
+        !isXRP(issue.currency),
+        "ripple::nft::checkTrustlineAuthorized : valid to check.");
+
+    if (view.rules().enabled(fixEnforceNFTokenTrustlineV2))
+    {
+        auto const issuerAccount = view.read(keylet::account(issue.account));
+        if (!issuerAccount)
+        {
+            JLOG(j.debug()) << "ripple::nft::checkTrustlineAuthorized: can't "
+                               "receive IOUs from non-existent issuer: "
+                            << to_string(issue.account);
+
+            return tecNO_ISSUER;
+        }
+
+        // An account can not create a trustline to itself, so no line can
+        // exist to be authorized. Additionally, an issuer can always accept
+        // its own issuance.
+        if (issue.account == id)
+        {
+            return tesSUCCESS;
+        }
+
+        if (issuerAccount->isFlag(lsfRequireAuth))
+        {
+            auto const trustLine =
+                view.read(keylet::line(id, issue.account, issue.currency));
+
+            if (!trustLine)
+            {
+                return tecNO_LINE;
+            }
+
+            // Entries have a canonical representation, determined by a
+            // lexicographical "greater than" comparison employing strict
+            // weak ordering. Determine which entry we need to access.
+            if (!trustLine->isFlag(
+                    id > issue.account ? lsfLowAuth : lsfHighAuth))
+            {
+                return tecNO_AUTH;
+            }
+        }
+    }
+
+    return tesSUCCESS;
+}
+
+TER
+checkTrustlineDeepFrozen(
+    ReadView const& view,
+    AccountID const id,
+    beast::Journal const j,
+    Issue const& issue)
+{
+    // Only valid for custom currencies
+    XRPL_ASSERT(
+        !isXRP(issue.currency),
+        "ripple::nft::checkTrustlineDeepFrozen : valid to check.");
+
+    if (view.rules().enabled(featureDeepFreeze))
+    {
+        auto const issuerAccount = view.read(keylet::account(issue.account));
+        if (!issuerAccount)
+        {
+            JLOG(j.debug()) << "ripple::nft::checkTrustlineDeepFrozen: can't "
+                               "receive IOUs from non-existent issuer: "
+                            << to_string(issue.account);
+
+            return tecNO_ISSUER;
+        }
+
+        // An account can not create a trustline to itself, so no line can
+        // exist to be frozen. Additionally, an issuer can always accept its
+        // own issuance.
+        if (issue.account == id)
+        {
+            return tesSUCCESS;
+        }
+
+        auto const trustLine =
+            view.read(keylet::line(id, issue.account, issue.currency));
+
+        if (!trustLine)
+        {
+            return tesSUCCESS;
+        }
+
+        // There's no difference which side enacted deep freeze, accepting
+        // tokens shouldn't be possible.
+        bool const deepFrozen =
+            (*trustLine)[sfFlags] & (lsfLowDeepFreeze | lsfHighDeepFreeze);
+
+        if (deepFrozen)
+        {
+            return tecFROZEN;
+        }
+    }
 
     return tesSUCCESS;
 }

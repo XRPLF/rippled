@@ -111,13 +111,14 @@ struct MPTCreate
 struct MPTInit
 {
     std::vector<Account> holders = {};
-    PrettyAmount const& xrp = XRP(10'000);
-    PrettyAmount const& xrpHolders = XRP(10'000);
+    PrettyAmount const xrp = XRP(10'000);
+    PrettyAmount const xrpHolders = XRP(10'000);
     bool fund = true;
     bool close = true;
     // create MPTIssuanceID if seated and follow rules for MPTCreate args
     std::optional<MPTCreate> create = std::nullopt;
 };
+static MPTInit const mptInitNoFund{.fund = false};
 
 struct MPTInitDef
 {

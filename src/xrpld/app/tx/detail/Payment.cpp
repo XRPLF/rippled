@@ -19,6 +19,7 @@
 
 #include <xrpld/app/misc/CredentialHelpers.h>
 #include <xrpld/app/misc/DelegateUtils.h>
+#include <xrpld/app/misc/PermissionedDEXHelpers.h>
 #include <xrpld/app/paths/RippleCalc.h>
 #include <xrpld/app/tx/detail/Payment.h>
 #include <xrpld/ledger/View.h>
@@ -69,6 +70,10 @@ Payment::preflight(PreflightContext const& ctx)
 {
     if (ctx.tx.isFieldPresent(sfCredentialIDs) &&
         !ctx.rules.enabled(featureCredentials))
+        return temDISABLED;
+
+    if (ctx.tx.isFieldPresent(sfDomainID) &&
+        !ctx.rules.enabled(featurePermissionedDEX))
         return temDISABLED;
 
     if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
@@ -258,7 +263,7 @@ Payment::checkPermission(ReadView const& view, STTx const& tx)
     auto const sle = view.read(delegateKey);
 
     if (!sle)
-        return tecNO_PERMISSION;
+        return tecNO_DELEGATE_PERMISSION;
 
     if (checkTxPermission(sle, tx) == tesSUCCESS)
         return tesSUCCESS;
@@ -277,7 +282,7 @@ Payment::checkPermission(ReadView const& view, STTx const& tx)
         amountAsset.getIssuer() == tx[sfDestination])
         return tesSUCCESS;
 
-    return tecNO_PERMISSION;
+    return tecNO_DELEGATE_PERMISSION;
 }
 
 TER
@@ -364,6 +369,17 @@ Payment::preclaim(PreclaimContext const& ctx)
     if (auto const err = credentials::valid(ctx, ctx.tx[sfAccount]);
         !isTesSuccess(err))
         return err;
+
+    if (ctx.tx.isFieldPresent(sfDomainID))
+    {
+        if (!permissioned_dex::accountInDomain(
+                ctx.view, ctx.tx[sfAccount], ctx.tx[sfDomainID]))
+            return tecNO_PERMISSION;
+
+        if (!permissioned_dex::accountInDomain(
+                ctx.view, ctx.tx[sfDestination], ctx.tx[sfDomainID]))
+            return tecNO_PERMISSION;
+    }
 
     return tesSUCCESS;
 }
@@ -468,6 +484,7 @@ Payment::doApply()
                 dstAccountID,
                 account_,
                 ctx_.tx.getFieldPathSet(sfPaths),
+                ctx_.tx[~sfDomainID],
                 ctx_.app.logs(),
                 &rcInput);
             // VFALCO NOTE We might not need to apply, depending
@@ -530,8 +547,7 @@ Payment::doApply()
             //   - can't send between holders
             //   - holder can send back to issuer
             //   - issuer can send to holder
-            if (isFrozen(view(), account_, mptIssue) ||
-                isFrozen(view(), dstAccountID, mptIssue))
+            if (isAnyFrozen(view(), {account_, dstAccountID}, mptIssue))
                 return tecLOCKED;
 
             // Get the rate for a payment between the holders.
@@ -601,9 +617,12 @@ Payment::doApply()
         return tecUNFUNDED_PAYMENT;
     }
 
-    // AMMs can never receive an XRP payment.
-    // Must use AMMDeposit transaction instead.
-    if (sleDst->isFieldPresent(sfAMMID))
+    // Pseudo-accounts cannot receive payments, other than these native to
+    // their underlying ledger object - implemented in their respective
+    // transaction types. Note, this is not amendment-gated because all writes
+    // to pseudo-account discriminator fields **are** amendment gated, hence the
+    // behaviour of this check will always match the active amendments.
+    if (isPseudoAccount(sleDst))
         return tecNO_PERMISSION;
 
     // The source account does have enough money.  Make sure the

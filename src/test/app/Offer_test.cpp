@@ -5373,12 +5373,15 @@ public:
         static FeatureBitset const immediateOfferKilled{
             featureImmediateOfferKilled};
         FeatureBitset const fillOrKill{fixFillOrKill};
+        FeatureBitset const permDEX{featurePermissionedDEX};
 
-        static std::array<FeatureBitset, 5> const feats{
-            all - takerDryOffer - immediateOfferKilled,
-            all - immediateOfferKilled,
-            all - rmSmallIncreasedQOffers - immediateOfferKilled - fillOrKill,
-            all - fillOrKill,
+        static std::array<FeatureBitset, 7> const feats{
+            all - takerDryOffer - immediateOfferKilled - permDEX,
+            all - immediateOfferKilled - permDEX,
+            all - rmSmallIncreasedQOffers - immediateOfferKilled - fillOrKill -
+                permDEX,
+            all - fillOrKill - permDEX,
+            all - permDEX,
             all};
 
         if (BEAST_EXPECT(instance < feats.size()))
@@ -5423,12 +5426,21 @@ class OfferWOFillOrKill_test : public OfferBaseUtil_test
     }
 };
 
+class OfferWOPermDEX_test : public OfferBaseUtil_test
+{
+    void
+    run() override
+    {
+        OfferBaseUtil_test::run(4);
+    }
+};
+
 class OfferAllFeatures_test : public OfferBaseUtil_test
 {
     void
     run() override
     {
-        OfferBaseUtil_test::run(4, true);
+        OfferBaseUtil_test::run(5, true);
     }
 };
 
@@ -5443,14 +5455,16 @@ class Offer_manual_test : public OfferBaseUtil_test
         FeatureBitset const immediateOfferKilled{featureImmediateOfferKilled};
         FeatureBitset const takerDryOffer{fixTakerDryOfferRemoval};
         FeatureBitset const fillOrKill{fixFillOrKill};
+        FeatureBitset const permDEX{featurePermissionedDEX};
 
-        testAll(all - f1513 - immediateOfferKilled);
-        testAll(all - immediateOfferKilled);
-        testAll(all - immediateOfferKilled - fillOrKill);
-        testAll(all - fillOrKill);
+        testAll(all - f1513 - immediateOfferKilled - permDEX);
+        testAll(all - immediateOfferKilled - permDEX);
+        testAll(all - immediateOfferKilled - fillOrKill - permDEX);
+        testAll(all - fillOrKill - permDEX);
+        testAll(all - permDEX);
         testAll(all);
 
-        testAll(all - takerDryOffer);
+        testAll(all - takerDryOffer - permDEX);
     }
 };
 
@@ -5458,6 +5472,7 @@ BEAST_DEFINE_TESTSUITE_PRIO(OfferBaseUtil, tx, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(OfferWTakerDryOffer, tx, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(OfferWOSmallQOffers, tx, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(OfferWOFillOrKill, tx, ripple, 2);
+BEAST_DEFINE_TESTSUITE_PRIO(OfferWOPermDEX, tx, ripple, 2);
 BEAST_DEFINE_TESTSUITE_PRIO(OfferAllFeatures, tx, ripple, 2);
 BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(Offer_manual, tx, ripple, 20);
 

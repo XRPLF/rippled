@@ -227,6 +227,22 @@ doBookOffers(RPC::JsonContext& context)
             return RPC::invalid_field_error(jss::taker);
     }
 
+    std::optional<uint256> domain;
+    if (context.params.isMember(jss::domain))
+    {
+        uint256 num;
+        if (!context.params[jss::domain].isString() ||
+            !num.parseHex(context.params[jss::domain].asString()))
+        {
+            return RPC::make_error(
+                rpcDOMAIN_MALFORMED, "Unable to parse domain.");
+        }
+        else
+        {
+            domain = num;
+        }
+    }
+
     if (book.in == book.out)
     {
         JLOG(context.j.info()) << "taker_gets same as taker_pays.";
@@ -245,7 +261,7 @@ doBookOffers(RPC::JsonContext& context)
 
     context.netOps.getBookPage(
         lpLedger,
-        book,
+        {book, domain},
         takerID ? *takerID : beast::zero,
         bProof,
         limit,

@@ -95,6 +95,7 @@ enum class LedgerNameSpace : std::uint16_t {
     CREDENTIAL = 'D',
     PERMISSIONED_DOMAIN = 'm',
     DELEGATE = 'E',
+    VAULT = 'V',
 
     // No longer used or supported. Left here to reserve the space
     // to avoid accidental reuse.
@@ -116,12 +117,18 @@ getBookBase(Book const& book)
     XRPL_ASSERT(
         isConsistent(book), "ripple::getBookBase : input is consistent");
 
+    auto getIndexHash = [&book]<typename ... Args>(Args ... args) {
+        if (book.domain)
+            return indexHash(std::forward<Args>(args) ..., *book.domain);
+        return indexHash(std::forward<Args>(args) ...);
+    };
+
     auto const index = std::visit(
         [&]<ValidIssueType TIn, ValidIssueType TOut>(
             TIn const& in, TOut const& out) {
             if constexpr (
                 std::is_same_v<TIn, Issue> && std::is_same_v<TOut, Issue>)
-                return indexHash(
+                return getIndexHash(
                     LedgerNameSpace::BOOK_DIR,
                     in.currency,
                     out.currency,
@@ -129,20 +136,20 @@ getBookBase(Book const& book)
                     out.account);
             else if constexpr (
                 std::is_same_v<TIn, Issue> && std::is_same_v<TOut, MPTIssue>)
-                return indexHash(
+                return getIndexHash(
                     LedgerNameSpace::BOOK_DIR,
                     in.currency,
                     out.getMptID(),
                     in.account);
             else if constexpr (
                 std::is_same_v<TIn, MPTIssue> && std::is_same_v<TOut, Issue>)
-                return indexHash(
+                return getIndexHash(
                     LedgerNameSpace::BOOK_DIR,
                     in.getMptID(),
                     out.currency,
                     out.account);
             else
-                return indexHash(
+                return getIndexHash(
                     LedgerNameSpace::BOOK_DIR, in.getMptID(), out.getMptID());
         },
         book.in.value(),
@@ -603,6 +610,12 @@ credential(
     return {
         ltCREDENTIAL,
         indexHash(LedgerNameSpace::CREDENTIAL, subject, issuer, credType)};
+}
+
+Keylet
+vault(AccountID const& owner, std::uint32_t seq) noexcept
+{
+    return vault(indexHash(LedgerNameSpace::VAULT, owner, seq));
 }
 
 Keylet

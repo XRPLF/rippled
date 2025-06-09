@@ -421,6 +421,7 @@ public:
         };
         using namespace jtx;
         auto const sa = supported_amendments();
+        testAll(sa - featurePermissionedDEX);
         testAll(sa);
     }
 };

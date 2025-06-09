@@ -19,18 +19,21 @@
 
 #include <xrpld/app/ledger/OrderBookDB.h>
 #include <xrpld/app/misc/MPTUtils.h>
+#include <xrpld/app/misc/PermissionedDEXHelpers.h>
 #include <xrpld/app/paths/Flow.h>
 #include <xrpld/app/tx/detail/CreateOffer.h>
 #include <xrpld/ledger/PaymentSandbox.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/WrappedSink.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Quality.h>
+#include <xrpl/protocol/STAmount.h>
+#include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/st.h>
 
 namespace ripple {
-
 TxConsequences
 CreateOffer::makeTxConsequences(PreflightContext const& ctx)
 {
@@ -45,6 +48,16 @@ CreateOffer::makeTxConsequences(PreflightContext const& ctx)
 NotTEC
 CreateOffer::preflight(PreflightContext const& ctx)
 {
+    if (ctx.tx.isFieldPresent(sfDomainID) &&
+        !ctx.rules.enabled(featurePermissionedDEX))
+        return temDISABLED;
+
+    // Permissioned offers should use the PE (which must be enabled by
+    // featureFlowCross amendment)
+    if (ctx.rules.enabled(featurePermissionedDEX) &&
+        !ctx.rules.enabled(featureFlowCross))
+        return temDISABLED;
+
     if (!ctx.rules.enabled(featureMPTokensV2) &&
         (ctx.tx[sfTakerPays].holds<MPTIssue>() ||
          ctx.tx[sfTakerGets].holds<MPTIssue>()))
@@ -63,6 +76,12 @@ CreateOffer::preflight(PreflightContext const& ctx)
         JLOG(j.debug()) << "Malformed transaction: Invalid flags set.";
         return temINVALID_FLAG;
     }
+
+    if (!ctx.rules.enabled(featurePermissionedDEX) && tx.isFlag(tfHybrid))
+        return temINVALID_FLAG;
+
+    if (tx.isFlag(tfHybrid) && !tx.isFieldPresent(sfDomainID))
+        return temINVALID_FLAG;
 
     bool const bImmediateOrCancel(uTxFlags & tfImmediateOrCancel);
     bool const bFillOrKill(uTxFlags & tfFillOrKill);
@@ -216,6 +235,15 @@ CreateOffer::preclaim(PreclaimContext const& ctx)
             return result;
     }
 
+    // if domain is specified, make sure that domain exists and the offer create
+    // is part of the domain
+    if (ctx.tx.isFieldPresent(sfDomainID))
+    {
+        if (!permissioned_dex::accountInDomain(
+                ctx.view, id, ctx.tx[sfDomainID]))
+            return tecNO_PERMISSION;
+    }
+
     return tesSUCCESS;
 }
 
@@ -321,7 +349,8 @@ std::pair<TER, Amounts>
 CreateOffer::flowCross(
     PaymentSandbox& psb,
     PaymentSandbox& psbCancel,
-    Amounts const& takerAmount)
+    Amounts const& takerAmount,
+    std::optional<uint256> const& domainID)
 {
     try
     {
@@ -426,6 +455,7 @@ CreateOffer::flowCross(
             offerCrossing,
             threshold,
             sendMax,
+            domainID,
             j_);
 
         // If stale offers were found remove them.
@@ -533,11 +563,15 @@ CreateOffer::flowCross(
 }
 
 std::pair<TER, Amounts>
-CreateOffer::cross(Sandbox& sb, Sandbox& sbCancel, Amounts const& takerAmount)
+CreateOffer::cross(
+    Sandbox& sb,
+    Sandbox& sbCancel,
+    Amounts const& takerAmount,
+    std::optional<uint256> const& domainID)
 {
     PaymentSandbox psbFlow{&sb};
     PaymentSandbox psbCancelFlow{&sbCancel};
-    auto const ret = flowCross(psbFlow, psbCancelFlow, takerAmount);
+    auto const ret = flowCross(psbFlow, psbCancelFlow, takerAmount, domainID);
     psbFlow.apply(sb);
     psbCancelFlow.apply(sbCancel);
     return ret;
@@ -555,6 +589,54 @@ CreateOffer::format_amount(STAmount const& amount)
     return txt;
 }
 
+TER
+CreateOffer::applyHybrid(
+    Sandbox& sb,
+    std::shared_ptr<STLedgerEntry> sleOffer,
+    Keylet const& offerKey,
+    STAmount const& saTakerPays,
+    STAmount const& saTakerGets,
+    std::function<void(SLE::ref, std::optional<uint256>)> const& setDir)
+{
+    if (!sleOffer->isFieldPresent(sfDomainID))
+        return tecINTERNAL;  // LCOV_EXCL_LINE
+
+    // set hybrid flag
+    sleOffer->setFlag(lsfHybrid);
+
+    // if offer is hybrid, need to also place into open offer dir
+    Book const book{saTakerPays.issue(), saTakerGets.issue(), std::nullopt};
+
+    auto dir =
+        keylet::quality(keylet::book(book), getRate(saTakerGets, saTakerPays));
+    bool const bookExists = sb.exists(dir);
+
+    auto const bookNode = sb.dirAppend(dir, offerKey, [&](SLE::ref sle) {
+        // don't set domainID on the directory object since this directory is
+        // for open book
+        setDir(sle, std::nullopt);
+    });
+
+    if (!bookNode)
+    {
+        JLOG(j_.debug())
+            << "final result: failed to add hybrid offer to open book";
+        return tecDIR_FULL;  // LCOV_EXCL_LINE
+    }
+
+    STArray bookArr(sfAdditionalBooks, 1);
+    auto bookInfo = STObject::makeInnerObject(sfBook);
+    bookInfo.setFieldH256(sfBookDirectory, dir.key);
+    bookInfo.setFieldU64(sfBookNode, *bookNode);
+    bookArr.push_back(std::move(bookInfo));
+
+    if (!bookExists)
+        ctx_.app.getOrderBookDB().addOrderBook(book);
+
+    sleOffer->setFieldArray(sfAdditionalBooks, bookArr);
+    return tesSUCCESS;
+}
+
 std::pair<TER, bool>
 CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
 {
@@ -566,15 +648,17 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     bool const bImmediateOrCancel(uTxFlags & tfImmediateOrCancel);
     bool const bFillOrKill(uTxFlags & tfFillOrKill);
     bool const bSell(uTxFlags & tfSell);
+    bool const bHybrid(uTxFlags & tfHybrid);
 
     auto saTakerPays = ctx_.tx[sfTakerPays];
     auto saTakerGets = ctx_.tx[sfTakerGets];
+    auto const domainID = ctx_.tx[~sfDomainID];
 
     auto const cancelSequence = ctx_.tx[~sfOfferSequence];
 
     // Note that we we use the value from the sequence or ticket as the
     // offer sequence.  For more explanation see comments in SeqProxy.h.
-    auto const offerSequence = ctx_.tx.getSeqProxy().value();
+    auto const offerSequence = ctx_.tx.getSeqValue();
 
     // This is the original rate of the offer, and is the rate at which
     // it will be placed, even if crossing offers change the amounts that
@@ -685,7 +769,8 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
             stream << "    out: " << format_amount(takerAmount.out);
         }
 
-        std::tie(result, place_offer) = cross(sb, sbCancel, takerAmount);
+        std::tie(result, place_offer) =
+            cross(sb, sbCancel, takerAmount, domainID);
 
         // We expect the implementation of cross to succeed
         // or give a tec.
@@ -827,12 +912,22 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
     adjustOwnerCount(sb, sleCreator, 1, viewJ);
 
     JLOG(j_.trace()) << "adding to book: " << to_string(saTakerPays.asset())
-                     << " : " << to_string(saTakerGets.asset());
+                     << " : " << to_string(saTakerGets.asset())
+                     << (domainID ? (" : " + to_string(*domainID)) : "");
 
-    Book const book{saTakerPays.asset(), saTakerGets.asset()};
+    Book const book{saTakerPays.asset(), saTakerGets.asset(), domainID};
 
     // Add offer to order book, using the original rate
     // before any crossing occured.
+    //
+    // Regular offer - BookDirectory points to open directory
+    //
+    // Domain offer (w/o hyrbid) - BookDirectory points to domain
+    // directory
+    //
+    // Hybrid domain offer - BookDirectory points to domain directory,
+    // and AdditionalBooks field stores one entry that points to the open
+    // directory
     auto dir = keylet::quality(keylet::book(book), uRate);
     bool const bookExisted = static_cast<bool>(sb.peek(dir));
 
@@ -862,6 +957,13 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
                 sfTakerGetsMPT, saTakerGets.get<MPTIssue>().getMptID());
         }
         sle->setFieldU64(sfExchangeRate, uRate);
+        if (maybeDomain)
+            sle->setFieldH256(sfDomainID, *maybeDomain);
+    };
+
+    auto const bookNode = sb.dirAppend(dir, offer_index, [&](SLE::ref sle) {
+        // sets domainID on book directory if it's a domain offer
+        setBookDir(sle, domainID);
     });
 
     if (!bookNode)
@@ -884,6 +986,18 @@ CreateOffer::applyGuts(Sandbox& sb, Sandbox& sbCancel)
         sleOffer->setFlag(lsfPassive);
     if (bSell)
         sleOffer->setFlag(lsfSell);
+    if (domainID)
+        sleOffer->setFieldH256(sfDomainID, *domainID);
+
+    // if it's a hybrid offer, set hybrid flag, and create an open dir
+    if (bHybrid)
+    {
+        auto const res = applyHybrid(
+            sb, sleOffer, offer_index, saTakerPays, saTakerGets, setBookDir);
+        if (res != tesSUCCESS)
+            return {res, true};  // LCOV_EXCL_LINE
+    }
+
     sb.insert(sleOffer);
 
     if (!bookExisted)

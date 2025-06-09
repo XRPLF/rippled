@@ -20,6 +20,7 @@
 #ifndef RIPPLE_PROTOCOL_ASSET_H_INCLUDED
 #define RIPPLE_PROTOCOL_ASSET_H_INCLUDED
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Issue.h>
@@ -27,6 +28,8 @@
 #include <xrpl/protocol/Rules.h>
 
 namespace ripple {
+
+class STAmount;
 
 template <typename T>
     requires(
@@ -114,6 +117,9 @@ public:
     void
     setJson(Json::Value& jv) const;
 
+    STAmount
+    operator()(Number const&) const;
+
     constexpr bool
     native() const
     {
@@ -142,6 +148,14 @@ public:
     friend constexpr bool
     equalTokens(Asset const& lhs, Asset const& rhs);
 };
+
+inline Json::Value
+to_json(Asset const& asset)
+{
+    Json::Value jv;
+    asset.setJson(jv);
+    return jv;
+}
 
 template <ValidIssueType TIss>
 constexpr bool

@@ -527,7 +527,8 @@ public:
         using namespace jtx;
         auto const sa = supported_amendments();
         testAll(sa);
-        testAll(sa - featureFlowSortStrands);
+        testAll(sa - featurePermissionedDEX);
+        testAll(sa - featureFlowSortStrands - featurePermissionedDEX);
     }
 };
 

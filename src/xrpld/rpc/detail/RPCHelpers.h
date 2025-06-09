@@ -280,6 +280,7 @@ parseSubUnsubJson(
     beast::Journal j);
 
 }  // namespace RPC
+
 }  // namespace ripple
 
 #endif

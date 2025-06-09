@@ -23,6 +23,7 @@
 #include <xrpl/protocol/Asset.h>
 #include <xrpl/protocol/Issue.h>
 #include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/jss.h>
 
 #include <stdexcept>
@@ -49,6 +50,12 @@ void
 Asset::setJson(Json::Value& jv) const
 {
     std::visit([&](auto&& issue) { issue.setJson(jv); }, issue_);
+}
+
+STAmount
+Asset::operator()(Number const& number) const
+{
+    return STAmount{*this, number};
 }
 
 std::string

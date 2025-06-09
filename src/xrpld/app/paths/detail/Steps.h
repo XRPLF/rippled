@@ -23,6 +23,7 @@
 #include <xrpld/app/paths/detail/AmountSpec.h>
 
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/QualityFunction.h>
@@ -390,6 +391,7 @@ normalizePath(
    owner
    @param offerCrossing false -> payment; true -> offer crossing
    @param ammContext counts iterations with AMM offers
+   @param domainID the domain that order books will use
    @param j Journal for logging messages
    @return Error code and constructed Strand
 */
@@ -405,6 +407,7 @@ toStrand(
     bool ownerPaysTransferFee,
     OfferCrossing offerCrossing,
     AMMContext& ammContext,
+    std::optional<uint256> const& domainID,
     beast::Journal j);
 
 /**
@@ -429,6 +432,7 @@ toStrand(
    owner
    @param offerCrossing false -> payment; true -> offer crossing
    @param ammContext counts iterations with AMM offers
+   @param domainID the domain that order books will use
    @param j Journal for logging messages
    @return error code and collection of strands
 */
@@ -445,6 +449,7 @@ toStrands(
     bool ownerPaysTransferFee,
     OfferCrossing offerCrossing,
     AMMContext& ammContext,
+    std::optional<uint256> const& domainID,
     beast::Journal j);
 
 /// @cond INTERNAL
@@ -560,6 +565,7 @@ struct StrandContext
     */
     boost::container::flat_set<Asset>& seenBookOuts;
     AMMContext& ammContext;
+    std::optional<uint256> domainID;  // the domain the order book will use
     beast::Journal const j;
 
     /** StrandContext constructor. */
@@ -581,6 +587,7 @@ struct StrandContext
         boost::container::flat_set<Asset>&
             seenBookOuts_,  ///< For detecting book loops
         AMMContext& ammContext_,
+        std::optional<uint256> const& domainID,
         beast::Journal j_);  ///< Journal for logging
 };
 

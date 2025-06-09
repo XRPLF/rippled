@@ -147,6 +147,7 @@ public:
     {
         using namespace test::jtx;
         auto const sa = supported_amendments();
+        testXRPDiscrepancy(sa - featurePermissionedDEX);
         testXRPDiscrepancy(sa);
     }
 };

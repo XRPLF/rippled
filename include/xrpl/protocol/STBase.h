@@ -92,6 +92,16 @@ struct JsonOptions
     }
 };
 
+template <typename T>
+    requires requires(T const& t) {
+        { t.getJson(JsonOptions::none) } -> std::convertible_to<Json::Value>;
+    }
+Json::Value
+to_json(T const& t)
+{
+    return t.getJson(JsonOptions::none);
+}
+
 namespace detail {
 class STVar;
 }
@@ -157,7 +167,7 @@ public:
     virtual std::string
     getText() const;
 
-    virtual Json::Value getJson(JsonOptions /*options*/) const;
+    virtual Json::Value getJson(JsonOptions = JsonOptions::none) const;
 
     virtual void
     add(Serializer& s) const;

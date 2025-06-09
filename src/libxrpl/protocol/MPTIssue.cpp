@@ -52,12 +52,6 @@ MPTIssue::getIssuer() const
     return *account;
 }
 
-MPTID const&
-MPTIssue::getMptID() const
-{
-    return mptID_;
-}
-
 std::string
 MPTIssue::getText() const
 {

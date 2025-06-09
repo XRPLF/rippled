@@ -49,8 +49,11 @@ public:
     AccountID const&
     getIssuer() const;
 
-    MPTID const&
-    getMptID() const;
+    constexpr MPTID const&
+    getMptID() const
+    {
+        return mptID_;
+    }
 
     std::string
     getText() const;

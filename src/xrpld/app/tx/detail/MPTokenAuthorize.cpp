@@ -83,6 +83,19 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
                 return tecHAS_OBLIGATIONS;
             }
 
+            if ((*sleMpt)[~sfLockedAmount].value_or(0) != 0)
+            {
+                auto const sleMptIssuance = ctx.view.read(
+                    keylet::mptIssuance(ctx.tx[sfMPTokenIssuanceID]));
+                if (!sleMptIssuance)
+                    return tefINTERNAL;  // LCOV_EXCL_LINE
+
+                return tecHAS_OBLIGATIONS;
+            }
+            if (ctx.view.rules().enabled(featureSingleAssetVault) &&
+                sleMpt->isFlag(lsfMPTLocked))
+                return tecNO_PERMISSION;
+
             return tesSUCCESS;
         }
 
@@ -132,6 +145,32 @@ MPTokenAuthorize::preclaim(PreclaimContext const& ctx)
     if (!ctx.view.exists(
             keylet::mptoken(ctx.tx[sfMPTokenIssuanceID], *holderID)))
         return tecOBJECT_NOT_FOUND;
+
+    return tesSUCCESS;
+}
+
+TER
+MPTokenAuthorize::createMPToken(
+    ApplyView& view,
+    MPTID const& mptIssuanceID,
+    AccountID const& account,
+    std::uint32_t const flags)
+{
+    auto const mptokenKey = keylet::mptoken(mptIssuanceID, account);
+
+    auto const ownerNode = view.dirInsert(
+        keylet::ownerDir(account), mptokenKey, describeOwnerDir(account));
+
+    if (!ownerNode)
+        return tecDIR_FULL;  // LCOV_EXCL_LINE
+
+    auto mptoken = std::make_shared<SLE>(mptokenKey);
+    (*mptoken)[sfAccount] = account;
+    (*mptoken)[sfMPTokenIssuanceID] = mptIssuanceID;
+    (*mptoken)[sfFlags] = flags;
+    (*mptoken)[sfOwnerNode] = *ownerNode;
+
+    view.insert(mptoken);
 
     return tesSUCCESS;
 }
@@ -215,14 +254,14 @@ MPTokenAuthorize::authorize(
                 keylet::mptoken(args.mptIssuanceID, args.account);
             auto const sleMpt = view.peek(mptokenKey);
             if (!sleMpt || (*sleMpt)[sfMPTAmount] != 0)
-                return tecINTERNAL;
+                return tecINTERNAL;  // LCOV_EXCL_LINE
 
             if (!view.dirRemove(
                     keylet::ownerDir(args.account),
                     (*sleMpt)[sfOwnerNode],
                     sleMpt->key(),
                     false))
-                return tecINTERNAL;
+                return tecINTERNAL;  // LCOV_EXCL_LINE
 
             adjustOwnerCount(view, sleAcct, -1, journal);
 
@@ -247,10 +286,16 @@ MPTokenAuthorize::authorize(
         if (args.priorBalance < reserveCreate)
             return tecINSUFFICIENT_RESERVE;
 
-        if (auto const ter =
-                createMPToken(view, args.mptIssuanceID, args.account, 0);
-            ter != tesSUCCESS)
-            return ter;
+        auto const mptokenKey =
+            keylet::mptoken(args.mptIssuanceID, args.account);
+        auto mptoken = std::make_shared<SLE>(mptokenKey);
+        if (auto ter = dirLink(view, args.account, mptoken))
+            return ter;  // LCOV_EXCL_LINE
+
+        (*mptoken)[sfAccount] = args.account;
+        (*mptoken)[sfMPTokenIssuanceID] = args.mptIssuanceID;
+        (*mptoken)[sfFlags] = 0;
+        view.insert(mptoken);
 
         // Update owner count.
         adjustOwnerCount(view, sleAcct, 1, journal);

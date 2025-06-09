@@ -216,14 +216,14 @@ CashCheck::preclaim(PreclaimContext const& ctx)
                     return tecNO_ISSUER;
                 }
 
-                if (sleIssuer->at(sfFlags) & lsfRequireAuth)
+            if (sleIssuer->at(sfFlags) & lsfRequireAuth)
+            {
+                if (!sleTrustLine)
                 {
-                    if (!sleTrustLine)
-                    {
-                        // We can only create a trust line if the issuer does
-                        // not have requireAuth set.
-                        return tecNO_AUTH;
-                    }
+                    // We can only create a trust line if the issuer does not
+                    // have lsfRequireAuth set.
+                    return tecNO_AUTH;
+                }
 
                     // Entries have a canonical representation, determined by a
                     // lexicographical "greater than" comparison employing
@@ -539,6 +539,7 @@ CashCheck::doApply()
                 OfferCrossing::no,
                 std::nullopt,
                 sleCheck->getFieldAmount(sfSendMax),
+                std::nullopt,  // check does not support domain
                 viewJ);
 
             if (result.result() != tesSUCCESS)

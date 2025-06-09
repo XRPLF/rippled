@@ -19,6 +19,7 @@
 
 #include <test/jtx/AMM.h>
 #include <test/jtx/AMMTest.h>
+#include <test/jtx/CaptureLogs.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/mpt.h>
 #include <test/jtx/pay.h>
@@ -123,14 +124,30 @@ AMMTestBase::testAMM(
     std::optional<jtx::ter> const& ter,
     std::vector<FeatureBitset> const& vfeatures)
 {
+    testAMM(
+        std::move(cb),
+        TestAMMArg{
+            .pool = pool, .tfee = tfee, .ter = ter, .features = vfeatures});
+}
+
+void
+AMMTestBase::testAMM(
+    std::function<void(jtx::AMM&, jtx::Env&)>&& cb,
+    TestAMMArg const& arg)
+{
     using namespace jtx;
 
-    for (auto const& features : vfeatures)
+    std::string logs;
+
+    for (auto const& features : arg.features)
     {
-        Env env{*this, features};
+        Env env{
+            *this,
+            features,
+            arg.noLog ? std::make_unique<CaptureLogs>(&logs) : nullptr};
 
         auto const [asset1, asset2] =
-            pool ? *pool : std::make_pair(XRP(10000), USD(10000));
+            arg.pool ? *arg.pool : std::make_pair(XRP(10000), USD(10000));
         auto tofund = [&](STAmount const& a) -> STAmount {
             if (a.native())
             {

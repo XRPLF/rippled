@@ -200,24 +200,45 @@ Env::balance(Account const& account, Issue const& issue) const
 }
 
 PrettyAmount
-Env::balance(Account const& account, MPTIssue const& issue) const
+Env::balance(Account const& account, MPTIssue const& mptIssue) const
 {
-    auto const issuanceKey = keylet::mptIssuance(issue.getMptID());
-    if (account.id() == issue.getIssuer())
-    {
-        auto const sle = le(issuanceKey);
-        if (!sle)
-            return {STAmount(issue, 0), account.name()};
-        auto const amount = sle->getFieldU64(sfOutstandingAmount);
-        return {STAmount{issue, amount}, account.name()};
-    }
+    MPTID const id = mptIssue.getMptID();
+    if (!id)
+        return {STAmount(mptIssue, 0), account.name()};
 
-    auto const mptokenKey = keylet::mptoken(issuanceKey.key, account);
-    auto const sle = le(mptokenKey);
+    AccountID const issuer = mptIssue.getIssuer();
+    if (account.id() == issuer)
+    {
+        // Issuer balance
+        auto const sle = le(keylet::mptIssuance(id));
+        if (!sle)
+            return {STAmount(mptIssue, 0), account.name()};
+
+        STAmount const amount{mptIssue, sle->getFieldU64(sfOutstandingAmount)};
+        return {amount, lookup(issuer).name()};
+    }
+    else
+    {
+        // Holder balance
+        auto const sle = le(keylet::mptoken(id, account));
+        if (!sle)
+            return {STAmount(mptIssue, 0), account.name()};
+
+        STAmount const amount{mptIssue, sle->getFieldU64(sfMPTAmount)};
+        return {amount, lookup(issuer).name()};
+    }
+}
+
+PrettyAmount
+Env::limit(Account const& account, Issue const& issue) const
+{
+    auto const sle = le(keylet::line(account.id(), issue));
     if (!sle)
         return {STAmount(issue, 0), account.name()};
-    auto amount = sle->getFieldU64(sfMPTAmount);
-    return {STAmount{issue, amount}, lookup(issue.getIssuer()).name()};
+    auto const aHigh = account.id() > issue.account;
+    if (sle && sle->isFieldPresent(aHigh ? sfLowLimit : sfHighLimit))
+        return {(*sle)[aHigh ? sfLowLimit : sfHighLimit], account.name()};
+    return {STAmount(issue, 0), account.name()};
 }
 
 std::uint32_t
@@ -467,7 +488,12 @@ Env::postconditions(
 std::shared_ptr<STObject const>
 Env::meta()
 {
-    close();
+    if (current()->txCount() != 0)
+    {
+        // close the ledger if it has not already been closed
+        // (metadata is not finalized until the ledger is closed)
+        close();
+    }
     auto const item = closed()->txRead(txid_);
     return item.second;
 }
@@ -624,6 +650,5 @@ Env::disableFeature(uint256 const feature)
 }
 
 }  // namespace jtx
-
 }  // namespace test
 }  // namespace ripple

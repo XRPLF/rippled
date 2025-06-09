@@ -192,6 +192,20 @@ doUnsubscribe(RPC::JsonContext& context)
                 return rpcError(rpcBAD_MARKET);
             }
 
+            if (jv.isMember(jss::domain))
+            {
+                uint256 domain;
+                if (!jv[jss::domain].isString() ||
+                    !domain.parseHex(jv[jss::domain].asString()))
+                {
+                    return rpcError(rpcDOMAIN_MALFORMED);
+                }
+                else
+                {
+                    book.domain = domain;
+                }
+            }
+
             context.netOps.unsubBook(ispSub->getSeq(), book);
 
             // both_sides is deprecated.

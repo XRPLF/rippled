@@ -29,8 +29,8 @@ struct MPTAuthorizeArgs
     XRPAmount const& priorBalance;
     MPTID const& mptIssuanceID;
     AccountID const& account;
-    std::uint32_t flags;
-    std::optional<AccountID> holderID;
+    std::uint32_t flags{};
+    std::optional<AccountID> holderID{};
 };
 
 class MPTokenAuthorize : public Transactor
@@ -59,14 +59,7 @@ public:
         ApplyView& view,
         MPTID const& mptIssuanceID,
         AccountID const& account,
-        std::uint32_t flags);
-
-    static TER
-    checkCreateMPT(
-        ripple::ApplyView& view,
-        ripple::MPTIssue const& mptIssue,
-        ripple::AccountID const& holder,
-        beast::Journal j);
+        std::uint32_t const flags);
 
     TER
     doApply() override;

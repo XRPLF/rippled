@@ -481,6 +481,7 @@ public:
 
         using namespace test::jtx;
         auto const sa = supported_amendments();
+        testWithFeatures(sa - featurePermissionedDEX);
         testWithFeatures(sa);
     }
 };
