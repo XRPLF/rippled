@@ -3938,15 +3938,16 @@ class Batch_test : public beast::unit_test::suite
             auto const [txIDs, batchID] = submitBatch(
                 env,
                 tesSUCCESS,
-                batch::outer(gw, seq, batchFee, tfAllOrNothing),
+                batch::outer(gw, seq, batchFee, tfIndependent),
                 batch::inner(jv1, seq + 1),
-                // tecNO_DELEGATE_PERMISSION: not authorized by the delegating
-                // account.
+                // tecNO_DELEGATE_PERMISSION: not authorized to clear freeze
                 batch::inner(jv2, seq + 2));
             env.close();
 
             std::vector<TestLedgerData> testCases = {
                 {0, "Batch", "tesSUCCESS", batchID, std::nullopt},
+                {1, "TrustSet", "tesSUCCESS", txIDs[0], batchID},
+                {2, "TrustSet", "tecNO_DELEGATE_PERMISSION", txIDs[1], batchID},
             };
             validateClosedLedger(env, testCases);
         }
