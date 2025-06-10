@@ -87,6 +87,8 @@ public:
     operator()(Env& env) const;
 };
 
+using Holders = std::vector<Account>;
+
 struct MPTCreate
 {
     static inline std::vector<Account> AllHolders = {};
@@ -110,7 +112,7 @@ struct MPTCreate
 
 struct MPTInit
 {
-    std::vector<Account> holders = {};
+    Holders holders = {};
     PrettyAmount const xrp = XRP(10'000);
     PrettyAmount const xrpHolders = XRP(10'000);
     bool fund = true;
@@ -124,7 +126,7 @@ struct MPTInitDef
 {
     Env& env;
     Account issuer;
-    std::vector<Account> holders = {};
+    Holders holders = {};
     std::uint16_t transferFee = 0;
     std::optional<std::uint64_t> pay = std::nullopt;
     std::uint32_t flags = MPTDEXFlags;
@@ -189,6 +191,9 @@ public:
 
     void
     authorize(MPTAuthorize const& arg = MPTAuthorize{});
+
+    void
+    authorize(Holders const& holders);
 
     void
     set(MPTSet const& set = {});

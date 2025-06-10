@@ -162,7 +162,7 @@ MPTokenAuthorize::createMPToken(
         keylet::ownerDir(account), mptokenKey, describeOwnerDir(account));
 
     if (!ownerNode)
-        return tecDIR_FULL;
+        return tecDIR_FULL;  // LCOV_EXCL_LINE
 
     auto mptoken = std::make_shared<SLE>(mptokenKey);
     (*mptoken)[sfAccount] = account;

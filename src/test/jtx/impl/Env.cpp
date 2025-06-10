@@ -305,6 +305,8 @@ Env::fund(bool setDefaultRipple, STAmount const& amount, Account const& account)
 void
 Env::trust(STAmount const& amount, Account const& account)
 {
+    if (!amount.holds<Issue>())
+        Throw<std::runtime_error>("Env::trust: amount doesn't hold Issue");
     auto const start = balance(account);
     apply(
         jtx::trust(account, amount),

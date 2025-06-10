@@ -693,12 +693,8 @@ public:
         // place the offer on the books.  But also clean up expired offers
         // that are discovered along the way.
         //
-        // fix1578 changes the return code.  Verify expected behavior
-        // without and with fix1578.
-        for (auto const& tweakedFeatures :
-             {features - fix1578, features | fix1578})
         {
-            Env env{*this, tweakedFeatures};
+            Env env{*this, features};
 
             auto const f = env.current()->fees().base;
 
@@ -725,14 +721,9 @@ public:
             env(pay(gw, alice, USD(1'000)), ter(tesSUCCESS));
 
             // Order that can't be filled but will remove bob's expired offer:
-            {
-                TER const killedCode{
-                    tweakedFeatures[fix1578] ? TER{tecKILLED}
-                                             : TER{tesSUCCESS}};
-                env(offer(alice, XRP(1'000), USD(1'000)),
-                    txflags(tfFillOrKill),
-                    ter(killedCode));
-            }
+            env(offer(alice, XRP(1'000), USD(1'000)),
+                txflags(tfFillOrKill),
+                ter(tecKILLED));
 
             env.require(
                 balance(alice, startBalance - (f * 2)),
@@ -2688,10 +2679,6 @@ public:
 
         env.fund(XRP(10'000'000), gw, alice, bob);
 
-        // Code returned if an offer is killed.
-        TER const killedCode{
-            features[fix1578] ? TER{tecKILLED} : TER{tesSUCCESS}};
-
         MPT const USD = MPTTester({.env = env, .issuer = gw, .holders = {bob}});
 
         // bob offers XRP for USD.
@@ -2702,7 +2689,7 @@ public:
         {
             // alice submits a tfSell | tfFillOrKill offer that does not cross.
             env(offer(alice, USD(21), XRP(2'100), tfSell | tfFillOrKill),
-                ter(killedCode));
+                ter(tecKILLED));
             env.close();
             env.require(balance(alice, USD(none)));
             env.require(offers(alice, 0));
@@ -2736,7 +2723,7 @@ public:
 
             // We're using bob's left-over offer for XRP(500), USD(5)
             env(offer(alice, USD(1), XRP(501), tfSell | tfFillOrKill),
-                ter(killedCode));
+                ter(tecKILLED));
             env.close();
             env.require(balance(alice, USD(35)));
             env.require(offers(alice, 0));
@@ -2763,28 +2750,28 @@ public:
         using namespace jtx;
 
         auto const gw1 = Account("gateway1");
-        auto const USD = gw1["USD"];
 
         Env env{*this, features};
 
         // The fee that's charged for transactions.
         auto const fee = env.current()->fees().base;
 
-        env.fund(XRP(100000), gw1);
+        env.fund(XRP(100'000), gw1);
         env.close();
 
-        env(rate(gw1, 1.25));
+        auto MUSD =
+            MPTTester({.env = env, .issuer = gw1, .transferFee = 25'000});
+        MPT const USD = MUSD;
         {
             auto const ann = Account("ann");
             auto const bob = Account("bob");
             env.fund(XRP(100) + reserve(env, 2) + (fee * 2), ann, bob);
             env.close();
 
-            env(trust(ann, USD(200)));
-            env(trust(bob, USD(200)));
-            env.close();
+            MUSD.authorize({.account = ann});
+            MUSD.authorize({.account = bob});
 
-            env(pay(gw1, bob, USD(125)));
+            env(pay(gw1, bob, USD(12'500)));
             env.close();
 
             // bob offers to sell USD(100) for XRP.  alice takes bob's offer.
@@ -2793,13 +2780,13 @@ public:
             //
             // A comparable payment would look like this:
             //   env (pay (bob, alice, USD(100)), sendmax(USD(125)))
-            env(offer(bob, XRP(1), USD(100)));
+            env(offer(bob, XRP(1), USD(10'000)));
             env.close();
 
-            env(offer(ann, USD(100), XRP(1)));
+            env(offer(ann, USD(10'000), XRP(1)));
             env.close();
 
-            env.require(balance(ann, USD(100)));
+            env.require(balance(ann, USD(10'000)));
             env.require(balance(ann, XRP(99) + reserve(env, 2)));
             env.require(offers(ann, 0));
 
@@ -2815,20 +2802,19 @@ public:
             env.fund(XRP(100) + reserve(env, 2) + (fee * 2), che, deb);
             env.close();
 
-            env(trust(che, USD(200)));
-            env(trust(deb, USD(200)));
+            MUSD.authorize({.account = che});
+            MUSD.authorize({.account = deb});
+
+            env(pay(gw1, deb, USD(12'500)));
             env.close();
 
-            env(pay(gw1, deb, USD(125)));
+            env(offer(che, USD(10'000), XRP(1)));
             env.close();
 
-            env(offer(che, USD(100), XRP(1)));
+            env(offer(deb, XRP(1), USD(10'000)));
             env.close();
 
-            env(offer(deb, XRP(1), USD(100)));
-            env.close();
-
-            env.require(balance(che, USD(100)));
+            env.require(balance(che, USD(10'000)));
             env.require(balance(che, XRP(99) + reserve(env, 2)));
             env.require(offers(che, 0));
 
@@ -2840,52 +2826,53 @@ public:
             auto const eve = Account("eve");
             auto const fyn = Account("fyn");
 
-            env.fund(XRP(20000) + (fee * 2), eve, fyn);
+            env.fund(XRP(20'000) + (fee * 2), eve, fyn);
             env.close();
 
-            env(trust(eve, USD(1000)));
-            env(trust(fyn, USD(1000)));
-            env.close();
+            MUSD.authorize({.account = eve});
+            MUSD.authorize({.account = fyn});
 
-            env(pay(gw1, eve, USD(100)));
-            env(pay(gw1, fyn, USD(100)));
+            env(pay(gw1, eve, USD(10'000)));
+            env(pay(gw1, fyn, USD(10'000)));
             env.close();
 
             // This test verifies that the amount removed from an offer
             // accounts for the transfer fee that is removed from the
             // account but not from the remaining offer.
-            env(offer(eve, USD(10), XRP(4000)));
+            env(offer(eve, USD(1'000), XRP(4'000)));
             env.close();
             std::uint32_t const eveOfferSeq = env.seq(eve) - 1;
 
-            env(offer(fyn, XRP(2000), USD(5)));
+            env(offer(fyn, XRP(2'000), USD(500)));
             env.close();
 
-            env.require(balance(eve, USD(105)));
-            env.require(balance(eve, XRP(18000)));
+            env.require(balance(eve, USD(10'500)));
+            env.require(balance(eve, XRP(18'000)));
             auto const evesOffers = offersOnAccount(env, eve);
             BEAST_EXPECT(evesOffers.size() == 1);
             if (evesOffers.size() != 0)
             {
                 auto const& evesOffer = *(evesOffers.front());
                 BEAST_EXPECT(evesOffer[sfLedgerEntryType] == ltOFFER);
-                BEAST_EXPECT(evesOffer[sfTakerGets] == XRP(2000));
-                BEAST_EXPECT(evesOffer[sfTakerPays] == USD(5));
+                BEAST_EXPECT(evesOffer[sfTakerGets] == XRP(2'000));
+                BEAST_EXPECT(evesOffer[sfTakerPays] == USD(500));
             }
             env(offer_cancel(eve, eveOfferSeq));  // For later tests
 
-            env.require(balance(fyn, USD(93.75)));
-            env.require(balance(fyn, XRP(22000)));
+            env.require(balance(fyn, USD(9'375)));
+            env.require(balance(fyn, XRP(22'000)));
             env.require(offers(fyn, 0));
         }
         // Start messing with two non-native currencies.
         auto const gw2 = Account("gateway2");
-        auto const EUR = gw2["EUR"];
 
-        env.fund(XRP(100000), gw2);
+        env.fund(XRP(100'000), gw2);
         env.close();
 
-        env(rate(gw2, 1.5));
+        auto MEUR =
+            MPTTester({.env = env, .issuer = gw2, .transferFee = 50'000});
+        MPT const EUR = MEUR;
+
         {
             // Remove XRP from the equation.  Give the two currencies two
             // different transfer rates so we can see both transfer rates
@@ -2895,20 +2882,19 @@ public:
             env.fund(reserve(env, 3) + (fee * 3), gay, hal);
             env.close();
 
-            env(trust(gay, USD(200)));
-            env(trust(gay, EUR(200)));
-            env(trust(hal, USD(200)));
-            env(trust(hal, EUR(200)));
-            env.close();
+            MUSD.authorize({.account = gay});
+            MEUR.authorize({.account = gay});
+            MUSD.authorize({.account = hal});
+            MEUR.authorize({.account = hal});
 
-            env(pay(gw1, gay, USD(125)));
+            env(pay(gw1, gay, USD(12'500)));
             env(pay(gw2, hal, EUR(150)));
             env.close();
 
-            env(offer(gay, EUR(100), USD(100)));
+            env(offer(gay, EUR(100), USD(10'000)));
             env.close();
 
-            env(offer(hal, USD(100), EUR(100)));
+            env(offer(hal, USD(10'000), EUR(100)));
             env.close();
 
             env.require(balance(gay, USD(0)));
@@ -2916,95 +2902,12 @@ public:
             env.require(balance(gay, reserve(env, 3)));
             env.require(offers(gay, 0));
 
-            env.require(balance(hal, USD(100)));
+            env.require(balance(hal, USD(10'000)));
             env.require(balance(hal, EUR(0)));
             env.require(balance(hal, reserve(env, 3)));
             env.require(offers(hal, 0));
         }
-        {
-            // A trust line's QualityIn should not affect offer crossing.
-            auto const ivy = Account("ivy");
-            auto const joe = Account("joe");
-            env.fund(reserve(env, 3) + (fee * 3), ivy, joe);
-            env.close();
 
-            env(trust(ivy, USD(400)), qualityInPercent(90));
-            env(trust(ivy, EUR(400)), qualityInPercent(80));
-            env(trust(joe, USD(400)), qualityInPercent(70));
-            env(trust(joe, EUR(400)), qualityInPercent(60));
-            env.close();
-
-            env(pay(gw1, ivy, USD(270)), sendmax(USD(500)));
-            env(pay(gw2, joe, EUR(150)), sendmax(EUR(300)));
-            env.close();
-            env.require(balance(ivy, USD(300)));
-            env.require(balance(joe, EUR(250)));
-
-            env(offer(ivy, EUR(100), USD(200)));
-            env.close();
-
-            env(offer(joe, USD(200), EUR(100)));
-            env.close();
-
-            env.require(balance(ivy, USD(50)));
-            env.require(balance(ivy, EUR(100)));
-            env.require(balance(ivy, reserve(env, 3)));
-            env.require(offers(ivy, 0));
-
-            env.require(balance(joe, USD(200)));
-            env.require(balance(joe, EUR(100)));
-            env.require(balance(joe, reserve(env, 3)));
-            env.require(offers(joe, 0));
-        }
-        {
-            // A trust line's QualityOut should not affect offer crossing.
-            auto const kim = Account("kim");
-            auto const K_BUX = kim["BUX"];
-            auto const lex = Account("lex");
-            auto const meg = Account("meg");
-            auto const ned = Account("ned");
-            auto const N_BUX = ned["BUX"];
-
-            // Verify trust line QualityOut affects payments.
-            env.fund(reserve(env, 4) + (fee * 4), kim, lex, meg, ned);
-            env.close();
-
-            env(trust(lex, K_BUX(400)));
-            env(trust(lex, N_BUX(200)), qualityOutPercent(120));
-            env(trust(meg, N_BUX(100)));
-            env.close();
-            env(pay(ned, lex, N_BUX(100)));
-            env.close();
-            env.require(balance(lex, N_BUX(100)));
-
-            env(pay(kim, meg, N_BUX(60)), path(lex, ned), sendmax(K_BUX(200)));
-            env.close();
-
-            env.require(balance(kim, K_BUX(none)));
-            env.require(balance(kim, N_BUX(none)));
-            env.require(balance(lex, K_BUX(72)));
-            env.require(balance(lex, N_BUX(40)));
-            env.require(balance(meg, K_BUX(none)));
-            env.require(balance(meg, N_BUX(60)));
-            env.require(balance(ned, K_BUX(none)));
-            env.require(balance(ned, N_BUX(none)));
-
-            // Now verify that offer crossing is unaffected by QualityOut.
-            env(offer(lex, K_BUX(30), N_BUX(30)));
-            env.close();
-
-            env(offer(kim, N_BUX(30), K_BUX(30)));
-            env.close();
-
-            env.require(balance(kim, K_BUX(none)));
-            env.require(balance(kim, N_BUX(30)));
-            env.require(balance(lex, K_BUX(102)));
-            env.require(balance(lex, N_BUX(10)));
-            env.require(balance(meg, K_BUX(none)));
-            env.require(balance(meg, N_BUX(60)));
-            env.require(balance(ned, K_BUX(-30)));
-            env.require(balance(ned, N_BUX(none)));
-        }
         {
             // Make sure things work right when we're auto-bridging as well.
             auto const ova = Account("ova");
@@ -3016,23 +2919,22 @@ public:
             //   o ova has USD but wants XRP.
             //   o pat has XRP but wants EUR.
             //   o qae has EUR but wants USD.
-            env(trust(ova, USD(200)));
-            env(trust(ova, EUR(200)));
-            env(trust(pat, USD(200)));
-            env(trust(pat, EUR(200)));
-            env(trust(qae, USD(200)));
-            env(trust(qae, EUR(200)));
-            env.close();
+            MUSD.authorize({.account = ova});
+            MEUR.authorize({.account = ova});
+            MUSD.authorize({.account = pat});
+            MEUR.authorize({.account = pat});
+            MUSD.authorize({.account = qae});
+            MEUR.authorize({.account = qae});
 
-            env(pay(gw1, ova, USD(125)));
+            env(pay(gw1, ova, USD(12'500)));
             env(pay(gw2, qae, EUR(150)));
             env.close();
 
-            env(offer(ova, XRP(2), USD(100)));
+            env(offer(ova, XRP(2), USD(10'000)));
             env(offer(pat, EUR(100), XRP(2)));
             env.close();
 
-            env(offer(qae, USD(100), EUR(100)));
+            env(offer(qae, USD(10'000), EUR(100)));
             env.close();
 
             env.require(balance(ova, USD(0)));
@@ -3056,7 +2958,7 @@ public:
             env.require(balance(pat, XRP(0) + reserve(env, 3)));
             env.require(offers(pat, 0));
 
-            env.require(balance(qae, USD(100)));
+            env.require(balance(qae, USD(10'000)));
             env.require(balance(qae, EUR(0)));
             env.require(balance(qae, XRP(2) + reserve(env, 3)));
             env.require(offers(qae, 0));
@@ -3682,11 +3584,11 @@ public:
         env.fund(startXrpBalance, gw);
         env.close();
 
-        auto MBTC =
-            MPTTester({.env = env, .issuer = gw, .transferFee = 25'000});
+        auto MBTC = MPTTester(
+            {.env = env, .issuer = gw, .transferFee = 25'000, .maxAmt = 40});
         MPT const BTC = MBTC;
-        auto MUSD =
-            MPTTester({.env = env, .issuer = gw, .transferFee = 25'000});
+        auto MUSD = MPTTester(
+            {.env = env, .issuer = gw, .transferFee = 25'000, .maxAmt = 8'000});
         MPT const USD = MUSD;
 
         // Test cases

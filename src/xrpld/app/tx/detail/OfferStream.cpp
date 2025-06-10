@@ -388,7 +388,6 @@ FlowOfferStream<TIn, TOut>::permRmOffer(uint256 const& offerIndex)
     permToRemove_.insert(offerIndex);
 }
 
-template class FlowOfferStream<STAmount, STAmount>;
 template class FlowOfferStream<IOUAmount, IOUAmount>;
 template class FlowOfferStream<XRPAmount, IOUAmount>;
 template class FlowOfferStream<IOUAmount, XRPAmount>;
@@ -398,7 +397,6 @@ template class FlowOfferStream<MPTAmount, XRPAmount>;
 template class FlowOfferStream<IOUAmount, MPTAmount>;
 template class FlowOfferStream<MPTAmount, IOUAmount>;
 
-template class TOfferStreamBase<STAmount, STAmount>;
 template class TOfferStreamBase<IOUAmount, IOUAmount>;
 template class TOfferStreamBase<XRPAmount, IOUAmount>;
 template class TOfferStreamBase<IOUAmount, XRPAmount>;

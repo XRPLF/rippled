@@ -24,6 +24,7 @@
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
+#include <xrpl/protocol/Concepts.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/Rules.h>
 #include <xrpl/protocol/SField.h>
@@ -33,28 +34,15 @@
 
 namespace ripple {
 
-template <class TIn, class TOut>
-class TOfferBase
-{
-protected:
-    Asset assetIn_;
-    Asset assetOut_;
-};
-
-template <>
-class TOfferBase<STAmount, STAmount>
-{
-public:
-    explicit TOfferBase() = default;
-};
-
-template <class TIn = STAmount, class TOut = STAmount>
-class TOffer : private TOfferBase<TIn, TOut>
+template <StepAmount TIn, StepAmount TOut>
+class TOffer
 {
 private:
     SLE::pointer m_entry;
     Quality m_quality;
     AccountID m_account;
+    Asset assetIn_;
+    Asset assetOut_;
 
     TAmounts<TIn, TOut> m_amounts;
     void
@@ -156,6 +144,7 @@ public:
     bool
     isFunded() const
     {
+        // TODO is this true for MPT?
         // Offer owner is issuer; they have unlimited funds
         return m_account == assetOut().getIssuer();
     }
@@ -193,9 +182,7 @@ public:
     }
 };
 
-using Offer = TOffer<>;
-
-template <class TIn, class TOut>
+template <StepAmount TIn, StepAmount TOut>
 TOffer<TIn, TOut>::TOffer(SLE::pointer const& entry, Quality quality)
     : m_entry(entry)
     , m_quality(quality)
@@ -205,45 +192,28 @@ TOffer<TIn, TOut>::TOffer(SLE::pointer const& entry, Quality quality)
     auto const tg = m_entry->getFieldAmount(sfTakerGets);
     m_amounts.in = toAmount<TIn>(tp);
     m_amounts.out = toAmount<TOut>(tg);
-    this->assetIn_ = tp.asset();
-    this->assetOut_ = tg.asset();
+    assetIn_ = tp.asset();
+    assetOut_ = tg.asset();
 }
 
-template <>
-inline TOffer<STAmount, STAmount>::TOffer(
-    SLE::pointer const& entry,
-    Quality quality)
-    : m_entry(entry)
-    , m_quality(quality)
-    , m_account(m_entry->getAccountID(sfAccount))
-    , m_amounts(
-          m_entry->getFieldAmount(sfTakerPays),
-          m_entry->getFieldAmount(sfTakerGets))
-{
-}
-
-template <class TIn, class TOut>
+template <StepAmount TIn, StepAmount TOut>
 void
 TOffer<TIn, TOut>::setFieldAmounts()
 {
     if constexpr (std::is_same_v<TIn, XRPAmount>)
         m_entry->setFieldAmount(sfTakerPays, toSTAmount(m_amounts.in));
-    else if constexpr (std::is_same_v<TIn, STAmount>)
-        m_entry->setFieldAmount(sfTakerPays, m_amounts.in);
     else
         m_entry->setFieldAmount(
             sfTakerPays, toSTAmount(m_amounts.in, assetIn()));
 
     if constexpr (std::is_same_v<TOut, XRPAmount>)
         m_entry->setFieldAmount(sfTakerGets, toSTAmount(m_amounts.out));
-    else if constexpr (std::is_same_v<TOut, STAmount>)
-        m_entry->setFieldAmount(sfTakerGets, m_amounts.out);
     else
         m_entry->setFieldAmount(
             sfTakerGets, toSTAmount(m_amounts.out, assetOut()));
 }
 
-template <class TIn, class TOut>
+template <StepAmount TIn, StepAmount TOut>
 TAmounts<TIn, TOut>
 TOffer<TIn, TOut>::limitOut(
     TAmounts<TIn, TOut> const& offrAmt,
@@ -260,7 +230,7 @@ TOffer<TIn, TOut>::limitOut(
     return m_quality.ceil_out(offrAmt, limit);
 }
 
-template <class TIn, class TOut>
+template <StepAmount TIn, StepAmount TOut>
 TAmounts<TIn, TOut>
 TOffer<TIn, TOut>::limitIn(
     TAmounts<TIn, TOut> const& offrAmt,
@@ -277,7 +247,7 @@ TOffer<TIn, TOut>::limitIn(
     return m_quality.ceil_in(offrAmt, limit);
 }
 
-template <class TIn, class TOut>
+template <StepAmount TIn, StepAmount TOut>
 template <typename... Args>
 TER
 TOffer<TIn, TOut>::send(Args&&... args)
@@ -285,35 +255,21 @@ TOffer<TIn, TOut>::send(Args&&... args)
     return accountSend(std::forward<Args>(args)...);
 }
 
-template <class TIn, class TOut>
+template <StepAmount TIn, StepAmount TOut>
 Asset const&
 TOffer<TIn, TOut>::assetIn() const
 {
-    return this->assetIn_;
+    return assetIn_;
 }
 
-template <>
-inline Asset const&
-TOffer<STAmount, STAmount>::assetIn() const
-{
-    return m_amounts.in.asset();
-}
-
-template <class TIn, class TOut>
+template <StepAmount TIn, StepAmount TOut>
 Asset const&
 TOffer<TIn, TOut>::assetOut() const
 {
-    return this->assetOut_;
+    return assetOut_;
 }
 
-template <>
-inline Asset const&
-TOffer<STAmount, STAmount>::assetOut() const
-{
-    return m_amounts.out.asset();
-}
-
-template <class TIn, class TOut>
+template <StepAmount TIn, StepAmount TOut>
 inline std::ostream&
 operator<<(std::ostream& os, TOffer<TIn, TOut> const& offer)
 {

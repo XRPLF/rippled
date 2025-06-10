@@ -1593,7 +1593,7 @@ ValidMPTIssuance::finalize(
                 mptokensDeleted_ <= 2;
         }
 
-        if (tx.getTxnType() == ttESCROW_FINISH)
+        if (txnType == ttESCROW_FINISH)
             return true;
     }
 

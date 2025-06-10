@@ -87,9 +87,7 @@ protected:
     static uint32_t
     getMaxOffersToConsume(StrandContext const& ctx)
     {
-        if (ctx.view.rules().enabled(fix1515))
-            return 1000;
-        return 2000;
+        return 1000;
     }
 
 public:
@@ -1088,14 +1086,6 @@ BookStep<TIn, TOut, TDerived>::revImp(
 
         if (offersConsumed >= maxOffersToConsume_)
         {
-            // Too many iterations, mark this strand as inactive
-            if (!afView.rules().enabled(fix1515))
-            {
-                // Don't use the liquidity
-                cache_.emplace(beast::zero, beast::zero);
-                return {beast::zero, beast::zero};
-            }
-
             // Use the liquidity, but use this to mark the strand as inactive so
             // it's not used further
             inactive_ = true;
@@ -1259,14 +1249,6 @@ BookStep<TIn, TOut, TDerived>::fwdImp(
 
         if (offersConsumed >= maxOffersToConsume_)
         {
-            // Too many iterations, mark this strand as inactive (dry)
-            if (!afView.rules().enabled(fix1515))
-            {
-                // Don't use the liquidity
-                cache_.emplace(beast::zero, beast::zero);
-                return {beast::zero, beast::zero};
-            }
-
             // Use the liquidity, but use this to mark the strand as inactive so
             // it's not used further
             inactive_ = true;

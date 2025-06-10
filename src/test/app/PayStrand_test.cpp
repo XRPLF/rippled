@@ -34,18 +34,6 @@
 namespace ripple {
 namespace test {
 
-struct DirectStepInfo
-{
-    AccountID src;
-    AccountID dst;
-    Currency currency;
-};
-
-struct XRPEndpointStepInfo
-{
-    AccountID acc;
-};
-
 enum class TrustFlag { freeze, auth, noripple };
 
 /*constexpr*/ std::uint32_t
@@ -85,84 +73,6 @@ getTrustFlag(
     Throw<std::runtime_error>("No line in getTrustFlag");
     return false;  // silence warning
 }
-
-bool
-equal(std::unique_ptr<Step> const& s1, DirectStepInfo const& dsi)
-{
-    if (!s1)
-        return false;
-    return test::directStepEqual(*s1, dsi.src, dsi.dst, dsi.currency);
-}
-
-bool
-equal(std::unique_ptr<Step> const& s1, XRPEndpointStepInfo const& xrpsi)
-{
-    if (!s1)
-        return false;
-    return test::xrpEndpointStepEqual(*s1, xrpsi.acc);
-}
-
-bool
-equal(std::unique_ptr<Step> const& s1, ripple::Book const& bsi)
-{
-    if (!s1)
-        return false;
-    return bookStepEqual(*s1, bsi);
-}
-
-template <class Iter>
-bool
-strandEqualHelper(Iter i)
-{
-    // base case. all args processed and found equal.
-    return true;
-}
-
-template <class Iter, class StepInfo, class... Args>
-bool
-strandEqualHelper(Iter i, StepInfo&& si, Args&&... args)
-{
-    if (!equal(*i, std::forward<StepInfo>(si)))
-        return false;
-    return strandEqualHelper(++i, std::forward<Args>(args)...);
-}
-
-template <class... Args>
-bool
-equal(Strand const& strand, Args&&... args)
-{
-    if (strand.size() != sizeof...(Args))
-        return false;
-    if (strand.empty())
-        return true;
-    return strandEqualHelper(strand.begin(), std::forward<Args>(args)...);
-}
-
-STPathElement
-ape(AccountID const& a)
-{
-    return STPathElement(
-        STPathElement::typeAccount, a, xrpCurrency(), xrpAccount());
-};
-
-// Issue path element
-STPathElement
-ipe(Issue const& iss)
-{
-    return STPathElement(
-        STPathElement::typeCurrency | STPathElement::typeIssuer,
-        xrpAccount(),
-        iss.currency,
-        iss.account);
-};
-
-// Issuer path element
-STPathElement
-iape(AccountID const& account)
-{
-    return STPathElement(
-        STPathElement::typeIssuer, xrpAccount(), xrpCurrency(), account);
-};
 
 class ElementComboIter
 {

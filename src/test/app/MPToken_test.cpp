@@ -4189,24 +4189,31 @@ public:
 
         // MPTokenIssuanceDestroy
         testDestroyValidation(all - featureSingleAssetVault);
-        testDestroyValidation(all | featureSingleAssetVault);
-        testDestroyValidation(all - featureMPTokensV2);
         testDestroyValidation(
             all - featureSingleAssetVault - featureMPTokensV2);
         testDestroyValidation(
             (all | featureSingleAssetVault) - featureMPTokensV2);
+        testDestroyValidation(all - featureMPTokensV2);
+        testDestroyValidation(all | featureSingleAssetVault);
         testDestroyEnabled(all - featureSingleAssetVault);
+        testDestroyEnabled(all - featureSingleAssetVault - featureMPTokensV2);
+        testDestroyEnabled((all | featureSingleAssetVault) - featureMPTokensV2);
+        testDestroyEnabled(all - featureMPTokensV2);
         testDestroyEnabled(all | featureSingleAssetVault);
 
         // MPTokenAuthorize
         testAuthorizeValidation(all - featureSingleAssetVault);
-        testAuthorizeValidation(all | featureSingleAssetVault);
-        testAuthorizeValidation(all - featureMPTokensV2);
         testAuthorizeValidation(
             all - featureSingleAssetVault - featureMPTokensV2);
         testAuthorizeValidation(
             (all | featureSingleAssetVault) - featureMPTokensV2);
+        testAuthorizeValidation(all - featureMPTokensV2);
+        testAuthorizeValidation(all | featureSingleAssetVault);
         testAuthorizeEnabled(all - featureSingleAssetVault);
+        testAuthorizeEnabled(all - featureSingleAssetVault - featureMPTokensV2);
+        testAuthorizeEnabled(
+            (all | featureSingleAssetVault) - featureMPTokensV2);
+        testAuthorizeEnabled(all - featureMPTokensV2);
         testAuthorizeEnabled(all | featureSingleAssetVault);
 
         // MPTokenIssuanceSet

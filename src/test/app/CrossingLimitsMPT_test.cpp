@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2025 Ripple Labs Inc.
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
     copyright notice and this permission notice appear in all copies.
@@ -23,7 +23,7 @@
 namespace ripple {
 namespace test {
 
-class CrossingLimits_test : public beast::unit_test::suite
+class CrossingLimitsMPT_test : public beast::unit_test::suite
 {
 public:
     void
@@ -35,29 +35,28 @@ public:
         Env env(*this, features);
 
         auto const gw = Account("gateway");
-        auto const USD = gw["USD"];
 
-        env.fund(XRP(100000000), gw, "alice", "bob", "carol", "dan");
-        env.trust(USD(1), "bob");
+        env.fund(XRP(100'000'000), gw, "alice", "bob", "carol", "dan");
+        MPT const USD = MPTTester(
+            {.env = env, .issuer = gw, .holders = {"bob", "dan"}, .maxAmt = 2});
         env(pay(gw, "bob", USD(1)));
-        env.trust(USD(1), "dan");
         env(pay(gw, "dan", USD(1)));
-        n_offers(env, 2000, "bob", XRP(1), USD(1));
+        n_offers(env, 2'000, "bob", XRP(1), USD(1));
         n_offers(env, 1, "dan", XRP(1), USD(1));
 
         // Alice offers to buy 1000 XRP for 1000 USD. She takes Bob's first
         // offer, removes 999 more as unfunded, then hits the step limit.
-        env(offer("alice", USD(1000), XRP(1000)));
+        env(offer("alice", USD(1'000), XRP(1'000)));
         env.require(balance("alice", USD(1)));
         env.require(owners("alice", 2));
         env.require(balance("bob", USD(0)));
-        env.require(owners("bob", 1001));
+        env.require(owners("bob", 1'001));
         env.require(balance("dan", USD(1)));
         env.require(owners("dan", 2));
 
         // Carol offers to buy 1000 XRP for 1000 USD. She removes Bob's next
         // 1000 offers as unfunded and hits the step limit.
-        env(offer("carol", USD(1000), XRP(1000)));
+        env(offer("carol", USD(1'000), XRP(1'000)));
         env.require(balance("carol", USD(none)));
         env.require(owners("carol", 1));
         env.require(balance("bob", USD(0)));
@@ -75,18 +74,21 @@ public:
         Env env(*this, features);
 
         auto const gw = Account("gateway");
-        auto const USD = gw["USD"];
 
-        int const maxConsumed = 1000;
+        int const maxConsumed = 1'000;
 
-        env.fund(XRP(100000000), gw, "alice", "bob", "carol");
+        env.fund(XRP(100'000'000), gw, "alice", "bob", "carol");
         int const bobsOfferCount = maxConsumed + 150;
-        env.trust(USD(bobsOfferCount), "bob");
+        MPT const USD = MPTTester(
+            {.env = env,
+             .issuer = gw,
+             .holders = {"bob"},
+             .maxAmt = bobsOfferCount});
         env(pay(gw, "bob", USD(bobsOfferCount)));
         env.close();
         n_offers(env, bobsOfferCount, "bob", XRP(1), USD(1));
 
-        // Alice offers to buy Bob's offers. However she hits the offer
+        // Alice offers to buy Bob's offers. However, she hits the offer
         // crossing limit, so she can't buy them all at once.
         env(offer("alice", USD(bobsOfferCount), XRP(bobsOfferCount)));
         env.close();
@@ -96,7 +98,7 @@ public:
 
         // Carol offers to buy 1000 XRP for 1000 USD. She takes Bob's
         // remaining 150 offers without hitting a limit.
-        env(offer("carol", USD(1000), XRP(1000)));
+        env(offer("carol", USD(1'000), XRP(1'000)));
         env.close();
         env.require(balance("carol", USD(150)));
         env.require(balance("bob", USD(0)));
@@ -112,18 +114,20 @@ public:
         Env env(*this, features);
 
         auto const gw = Account("gateway");
-        auto const USD = gw["USD"];
 
-        env.fund(XRP(100000000), gw, "alice", "bob", "carol", "dan", "evita");
+        env.fund(XRP(100'000'000), gw, "alice", "bob", "carol", "dan", "evita");
 
-        int const maxConsumed = 1000;
-
+        int const maxConsumed = 1'000;
         int const evitasOfferCount{maxConsumed + 49};
-        env.trust(USD(1000), "alice");
+
+        MPT const USD = MPTTester(
+            {.env = env,
+             .issuer = gw,
+             .holders = {"bob", "alice", "carol", "evita"},
+             .maxAmt = 2'000 + evitasOfferCount + 1});
+
         env(pay(gw, "alice", USD(1000)));
-        env.trust(USD(1000), "carol");
         env(pay(gw, "carol", USD(1)));
-        env.trust(USD(evitasOfferCount + 1), "evita");
         env(pay(gw, "evita", USD(evitasOfferCount + 1)));
 
         // Give carol an extra 150 (unfunded) offers when we're using Taker
@@ -275,8 +279,8 @@ public:
         auto const bob = Account("bob");
         auto const carol = Account("carol");
 
-        auto const USD = gw["USD"];
-        auto const EUR = gw["EUR"];
+        // auto const USD = gw["USD"];
+        // auto const EUR = gw["EUR"];
 
         // There are two almost identical tests. There is a strand with a large
         // number of unfunded offers that will cause the strand to be marked dry
@@ -293,20 +297,23 @@ public:
         {
             Env env(*this, features);
 
-            env.fund(XRP(100000000), gw, alice, bob, carol);
+            env.fund(XRP(100'000'000), gw, alice, bob, carol);
 
-            env.trust(USD(4000), alice);
-            env(pay(gw, alice, USD(4000)));
-            env.trust(USD(1000), carol);
+            MPT const USD = MPTTester(
+                {.env = env, .issuer = gw, .holders = {alice, carol}});
+            MPT const EUR =
+                MPTTester({.env = env, .issuer = gw, .holders = {bob}});
+
+            env(pay(gw, alice, USD(4'000)));
             env(pay(gw, carol, USD(3)));
 
             // Notice the strand with the 800 unfunded offers has the initial
             // best quality
-            n_offers(env, 2000, alice, EUR(2), XRP(1));
+            n_offers(env, 2'000, alice, EUR(2), XRP(1));
             n_offers(env, 100, alice, XRP(1), USD(4));
             n_offers(
                 env, 801, carol, XRP(1), USD(3));  // only one offer is funded
-            n_offers(env, 1000, alice, XRP(1), USD(3));
+            n_offers(env, 1'000, alice, XRP(1), USD(3));
 
             n_offers(env, 1, alice, EUR(500), USD(500));
 
@@ -348,22 +355,20 @@ public:
             //           Alice spent 1497 USD (100*4 + 199*3 + 500)
             //           Alice has 2503 remaining (4000 - 1497)
             //           Alice received 1100 EUR (200 + 400 + 500)
-            env.trust(EUR(10000), bob);
+            env(pay(gw, bob, EUR(2'000)));
             env.close();
-            env(pay(gw, bob, EUR(2000)));
-            env.close();
-            env(offer(bob, USD(4000), EUR(4000)));
+            env(offer(bob, USD(4'000), EUR(4'000)));
             env.close();
 
-            env.require(balance(bob, USD(1500)));
+            env.require(balance(bob, USD(1'500)));
             env.require(balance(bob, EUR(900)));
             env.require(offers(bob, 1));
             env.require(owners(bob, 3));
 
-            env.require(balance(alice, USD(2503)));
-            env.require(balance(alice, EUR(1100)));
+            env.require(balance(alice, USD(2'503)));
+            env.require(balance(alice, EUR(1'100)));
             auto const numAOffers =
-                2000 + 100 + 1000 + 1 - (2 * 100 + 2 * 199 + 1 + 1);
+                2'000 + 100 + 1'000 + 1 - (2 * 100 + 2 * 199 + 1 + 1);
             env.require(offers(alice, numAOffers));
             env.require(owners(alice, numAOffers + 2));
 
@@ -372,21 +377,24 @@ public:
         {
             Env env(*this, features);
 
-            env.fund(XRP(100000000), gw, alice, bob, carol);
+            env.fund(XRP(100'000'000), gw, alice, bob, carol);
 
-            env.trust(USD(4000), alice);
-            env(pay(gw, alice, USD(4000)));
-            env.trust(USD(1000), carol);
+            MPT const USD = MPTTester(
+                {.env = env, .issuer = gw, .holders = {alice, carol}});
+            MPT const EUR =
+                MPTTester({.env = env, .issuer = gw, .holders = {bob}});
+
+            env(pay(gw, alice, USD(4'000)));
             env(pay(gw, carol, USD(3)));
 
             // Notice the strand with the 800 unfunded offers does not have the
             // initial best quality
             n_offers(env, 1, alice, EUR(1), USD(10));
-            n_offers(env, 2000, alice, EUR(2), XRP(1));
+            n_offers(env, 2'000, alice, EUR(2), XRP(1));
             n_offers(env, 100, alice, XRP(1), USD(4));
             n_offers(
                 env, 801, carol, XRP(1), USD(3));  // only one offer is funded
-            n_offers(env, 1000, alice, XRP(1), USD(3));
+            n_offers(env, 1'000, alice, XRP(1), USD(3));
 
             n_offers(env, 1, alice, EUR(499), USD(499));
 
@@ -421,22 +429,21 @@ public:
             //           Alice spent 10 + 100*4 + 199*3 + 499 = 1506 USD. She
             //           started with 4000 so has 2494 USD remaining. Alice
             //           received 200 + 400 + 500 = 1100 EUR
-            env.trust(EUR(10000), bob);
             env.close();
-            env(pay(gw, bob, EUR(2000)));
+            env(pay(gw, bob, EUR(2'000)));
             env.close();
-            env(offer(bob, USD(4000), EUR(4000)));
+            env(offer(bob, USD(4'000), EUR(4'000)));
             env.close();
 
-            env.require(balance(bob, USD(1509)));
+            env.require(balance(bob, USD(1'509)));
             env.require(balance(bob, EUR(900)));
             env.require(offers(bob, 1));
             env.require(owners(bob, 3));
 
-            env.require(balance(alice, USD(2494)));
-            env.require(balance(alice, EUR(1100)));
+            env.require(balance(alice, USD(2'494)));
+            env.require(balance(alice, EUR(1'100)));
             auto const numAOffers =
-                1 + 2000 + 100 + 1000 + 1 - (1 + 2 * 100 + 2 * 199 + 1 + 1);
+                1 + 2'000 + 100 + 1'000 + 1 - (1 + 2 * 100 + 2 * 199 + 1 + 1);
             env.require(offers(alice, numAOffers));
             env.require(owners(alice, numAOffers + 2));
 
@@ -455,17 +462,14 @@ public:
         auto const alice = Account("alice");
         auto const bob = Account("bob");
 
-        auto const USD = gw["USD"];
-
         Env env(*this, features);
 
-        env.fund(XRP(100000000), gw, alice, bob);
+        env.fund(XRP(100'000'000), gw, alice, bob);
 
-        env.trust(USD(8000), alice);
-        env.trust(USD(8000), bob);
-        env.close();
+        MPT const USD =
+            MPTTester({.env = env, .issuer = gw, .holders = {alice, bob}});
 
-        env(pay(gw, alice, USD(8000)));
+        env(pay(gw, alice, USD(8'000)));
         env.close();
 
         // The new flow cross handles consuming excessive offers differently
@@ -496,10 +500,10 @@ public:
 
         auto const expectedTER = tesSUCCESS;
 
-        env(offer(bob, USD(8000), XRP(8000)), ter(expectedTER));
+        env(offer(bob, USD(8'000), XRP(8'000)), ter(expectedTER));
         env.close();
 
-        auto const expectedUSD = USD(1996);
+        auto const expectedUSD = USD(1'996);
 
         env.require(balance(bob, expectedUSD));
     }
@@ -507,21 +511,17 @@ public:
     void
     run() override
     {
-        auto testAll = [this](FeatureBitset features) {
-            testStepLimit(features);
-            testCrossingLimit(features);
-            testStepAndCrossingLimit(features);
-            testAutoBridgedLimits(features);
-            testOfferOverflow(features);
-        };
         using namespace jtx;
-        auto const sa = supported_amendments();
-        testAll(sa);
-        testAll(sa - featurePermissionedDEX);
+        auto const features = supported_amendments();
+        testStepLimit(features);
+        testCrossingLimit(features);
+        testStepAndCrossingLimit(features);
+        testAutoBridgedLimits(features);
+        testOfferOverflow(features);
     }
 };
 
-BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(CrossingLimits, tx, ripple, 10);
+BEAST_DEFINE_TESTSUITE_MANUAL_PRIO(CrossingLimitsMPT, tx, ripple, 10);
 
 }  // namespace test
 }  // namespace ripple

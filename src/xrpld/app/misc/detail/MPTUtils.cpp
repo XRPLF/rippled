@@ -38,13 +38,12 @@ isMPTAllowed(
 
     auto const& issuanceID = asset.get<MPTIssue>().getMptID();
     auto const isDEX = txType == ttPAYMENT && destAccount;
-    auto const validTxType = txType == ttAMM_CREATE ||
-        txType == ttAMM_DEPOSIT || txType == ttAMM_WITHDRAW ||
-        txType == ttOFFER_CREATE || txType == ttCHECK_CREATE ||
-        txType == ttCHECK_CASH || txType == ttPAYMENT || isDEX;
-    XRPL_ASSERT(validTxType, "ripple::isMPTAllowed : all MPT tx or DEX");
-    if (!validTxType)
-        return tefINTERNAL;
+    XRPL_ASSERT(
+        txType == ttAMM_CREATE || txType == ttAMM_DEPOSIT ||
+            txType == ttAMM_WITHDRAW || txType == ttOFFER_CREATE ||
+            txType == ttCHECK_CREATE || txType == ttCHECK_CASH ||
+            txType == ttPAYMENT || isDEX,
+        "ripple::isMPTAllowed : all MPT tx or DEX");
 
     auto const& issuer = asset.getIssuer();
     if (!view.exists(keylet::account(issuer)))

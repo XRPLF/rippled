@@ -602,6 +602,13 @@ directStepEqual(
     Currency const& currency);
 
 bool
+mptEndpointStepEqual(
+    Step const& step,
+    AccountID const& src,
+    AccountID const& dst,
+    MPTID const& mptid);
+
+bool
 xrpEndpointStepEqual(Step const& step, AccountID const& acc);
 
 bool

@@ -556,23 +556,95 @@ n_offers(
 
 // Currency path element
 STPathElement
-cpe(Currency const& c)
+cpe(PathAsset const& pa)
+{
+    return std::visit(
+        []<ValidPathAsset Tpa>(Tpa const& a) {
+            if constexpr (std::is_same_v<Tpa, Currency>)
+                return STPathElement(
+                    STPathElement::typeCurrency, xrpAccount(), a, xrpAccount());
+            else
+                return STPathElement(
+                    STPathElement::typeMPT, xrpAccount(), a, xrpAccount());
+        },
+        pa.value());
+};
+
+STPathElement
+ipe(Asset const& asset)
+{
+    return std::visit(
+        []<ValidIssueType TIss>(TIss const& issue) {
+            if constexpr (std::is_same_v<TIss, Issue>)
+                return STPathElement(
+                    STPathElement::typeCurrency | STPathElement::typeIssuer,
+                    xrpAccount(),
+                    issue.currency,
+                    issue.account);
+            else
+                return STPathElement(
+                    STPathElement::typeMPT | STPathElement::typeIssuer,
+                    xrpAccount(),
+                    issue.getMptID(),
+                    issue.getIssuer());
+        },
+        asset.value());
+};
+
+// Issuer path element
+STPathElement
+iape(AccountID const& account)
 {
     return STPathElement(
-        STPathElement::typeCurrency, xrpAccount(), c, xrpAccount());
+        STPathElement::typeIssuer, xrpAccount(), xrpCurrency(), account);
+};
+
+// Account path element
+STPathElement
+ape(AccountID const& a)
+{
+    return STPathElement(
+        STPathElement::typeAccount, a, xrpCurrency(), xrpAccount());
 };
 
 // All path element
 STPathElement
-allpe(AccountID const& a, Issue const& iss)
+allpe(AccountID const& a, Asset const& asset)
 {
-    return STPathElement(
-        STPathElement::typeAccount | STPathElement::typeCurrency |
-            STPathElement::typeIssuer,
-        a,
-        iss.currency,
-        iss.account);
+    return STPathElement(a, asset, asset.getIssuer());
 };
+
+bool
+equal(std::unique_ptr<ripple::Step> const& s1, DirectStepInfo const& dsi)
+{
+    if (!s1)
+        return false;
+    return test::directStepEqual(*s1, dsi.src, dsi.dst, dsi.currency);
+}
+
+bool
+equal(std::unique_ptr<ripple::Step> const& s1, MPTEndpointStepInfo const& dsi)
+{
+    if (!s1)
+        return false;
+    return test::mptEndpointStepEqual(*s1, dsi.src, dsi.dst, dsi.mptid);
+}
+
+bool
+equal(std::unique_ptr<ripple::Step> const& s1, XRPEndpointStepInfo const& xrpsi)
+{
+    if (!s1)
+        return false;
+    return test::xrpEndpointStepEqual(*s1, xrpsi.acc);
+}
+
+bool
+equal(std::unique_ptr<ripple::Step> const& s1, ripple::Book const& bsi)
+{
+    if (!s1)
+        return false;
+    return bookStepEqual(*s1, bsi);
+}
 
 }  // namespace jtx
 }  // namespace test

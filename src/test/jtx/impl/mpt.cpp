@@ -285,6 +285,15 @@ MPTTester::authorize(MPTAuthorize const& arg)
 }
 
 void
+MPTTester::authorize(std::vector<Account> const& holders)
+{
+    for (auto const& holder : holders)
+    {
+        authorize(MPTAuthorize{.account = holder});
+    }
+}
+
+void
 MPTTester::set(MPTSet const& arg)
 {
     Json::Value jv;

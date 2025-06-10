@@ -2402,8 +2402,9 @@ requireAuth(
     auto const mptokenID = keylet::mptoken(mptID.key, account);
     auto const sleToken = view.read(mptokenID);
 
+    bool const mptokensV2 = view.rules().enabled(featureMPTokensV2);
     // if account has no MPToken, fail
-    if (!sleToken && authType == MPTAuthType::StrongAuth)
+    if (!sleToken && (!mptokensV2 || authType == MPTAuthType::StrongAuth))
         return tecNO_AUTH;
 
     // Note, this check is not amendment-gated because DomainID will be always
@@ -2427,7 +2428,8 @@ requireAuth(
 
     // mptoken must be authorized if issuance enabled requireAuth
     if (sleIssuance->isFlag(lsfMPTRequireAuth) &&
-        (!sleToken || !sleToken->isFlag(lsfMPTAuthorized)))
+        ((!sleToken && mptokensV2) ||
+         (!(sleToken->getFlags() & lsfMPTAuthorized))))
         return tecNO_AUTH;
 
     return tesSUCCESS;  // Note: sleToken might be null

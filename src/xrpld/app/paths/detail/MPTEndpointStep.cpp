@@ -927,24 +927,6 @@ MPTEndpointStep<TDerived>::qualityUpperBound(
 {
     auto const dir = this->debtDirection(v, StrandDirection::forward);
 
-    if (!v.rules().enabled(fixQualityUpperBound))
-    {
-        std::uint32_t const srcQOut = [&]() -> std::uint32_t {
-            if (redeems(prevStepDir) && issues(dir))
-                return transferRate(v, mptIssue_.getMptID()).value;
-            return QUALITY_ONE;
-        }();
-        auto dstQIn = static_cast<TDerived const*>(this)->quality(
-            v, QualityDirection::in);
-
-        if (isLast_ && dstQIn > QUALITY_ONE)
-            dstQIn = QUALITY_ONE;
-        MPTIssue const iss{mptIssue_};
-        return {
-            Quality(getRate(STAmount(iss, srcQOut), STAmount(iss, dstQIn))),
-            dir};
-    }
-
     auto const [srcQOut, dstQIn] = redeems(dir)
         ? qualitiesSrcRedeems(v)
         : qualitiesSrcIssues(v, prevStepDir);
@@ -1064,5 +1046,23 @@ make_MPTEndpointStep(
 
     return {tesSUCCESS, std::move(r)};
 }
+
+namespace test {
+// Needed for testing
+bool
+mptEndpointStepEqual(
+    Step const& step,
+    AccountID const& src,
+    AccountID const& dst,
+    MPTID const& mptid)
+{
+    if (auto ds =
+            dynamic_cast<MPTEndpointStep<MPTEndpointPaymentStep> const*>(&step))
+    {
+        return ds->src() == src && ds->dst() == dst && ds->mptID() == mptid;
+    }
+    return false;
+}
+}  // namespace test
 
 }  // namespace ripple
