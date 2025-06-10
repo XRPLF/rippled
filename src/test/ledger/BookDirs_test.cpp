@@ -69,8 +69,7 @@ struct BookDirs_test : public beast::unit_test::suite
             env(pay("bob", "alice", Account("bob")["CNY"](10)));
             env(offer("alice", USD(50), Account("bob")["CNY"](10)));
             auto d = BookDirs(
-                *env.current(),
-                Book(USD, Account("bob")["CNY"], std::nullopt));
+                *env.current(), Book(USD, Account("bob")["CNY"], std::nullopt));
             BEAST_EXPECT(std::distance(d.begin(), d.end()) == 1);
         }
 
