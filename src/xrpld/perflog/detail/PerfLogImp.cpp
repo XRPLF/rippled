@@ -25,6 +25,7 @@
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/json_writer.h>
+#include <xrpl/protocol/BuildInfo.h>
 
 #include <atomic>
 #include <cstdint>
@@ -310,6 +311,7 @@ PerfLogImp::report()
     app_.getNodeStore().getCountsJson(report[jss::nodestore]);
     report[jss::current_activities] = counters_.currentJson();
     app_.getOPs().stateAccounting(report);
+    report[jss::build_version] = BuildInfo::getVersionString();
 
     logFile_ << Json::Compact{std::move(report)} << std::endl;
 }
