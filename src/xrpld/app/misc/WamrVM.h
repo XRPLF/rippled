@@ -20,8 +20,8 @@
 
 #include <xrpld/app/misc/WasmVM.h>
 
-#include <iwasm/wasm_c_api.h>
-#include <iwasm/wasm_export.h>
+#include <wasm_c_api.h>
+#include <wasm_export.h>
 
 namespace ripple {
 

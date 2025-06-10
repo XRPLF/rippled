@@ -23,7 +23,7 @@
 #include <xrpld/app/misc/WasmHostFunc.h>
 #include <xrpld/app/misc/WasmVM.h>
 
-#include <iwasm/wasm_c_api.h>
+#include <wasm_c_api.h>
 
 #ifdef _DEBUG
 // #define DEBUG_OUTPUT 1
