@@ -366,7 +366,7 @@ class CheckMPT_test : public beast::unit_test::suite
         {
             // Frozen trust line.  Check creation should be similar to payment
             // behavior in the face of locked MPT.
-            USDM.authorize(Holders{alice, bob});
+            USDM.authorizeHolders({alice, bob});
             env(pay(gw1, alice, USD(25)));
             env(pay(gw1, bob, USD(25)));
             env.close();

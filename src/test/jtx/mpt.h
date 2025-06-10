@@ -193,7 +193,7 @@ public:
     authorize(MPTAuthorize const& arg = MPTAuthorize{});
 
     void
-    authorize(Holders const& holders);
+    authorizeHolders(Holders const& holders);
 
     void
     set(MPTSet const& set = {});

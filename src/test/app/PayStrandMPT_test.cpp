@@ -162,7 +162,7 @@ struct PayStrandMPT_test : public beast::unit_test::suite
 
             test(env, USD, std::nullopt, STPath(), tecNO_AUTH);
 
-            USDM.authorize(Holders{alice, bob, carol});
+            USDM.authorizeHolders({alice, bob, carol});
 
             test(env, USD, std::nullopt, STPath(), tecPATH_DRY);
 
@@ -178,7 +178,7 @@ struct PayStrandMPT_test : public beast::unit_test::suite
                 tesSUCCESS,
                 M{alice, gw, USD},
                 M{gw, bob, USD});
-            EURM.authorize(Holders{alice, bob});
+            EURM.authorizeHolders({alice, bob});
 
             // Insert implied offer
             test(

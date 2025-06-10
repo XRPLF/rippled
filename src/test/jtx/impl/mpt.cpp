@@ -285,11 +285,11 @@ MPTTester::authorize(MPTAuthorize const& arg)
 }
 
 void
-MPTTester::authorize(std::vector<Account> const& holders)
+MPTTester::authorizeHolders(Holders const& holders)
 {
     for (auto const& holder : holders)
     {
-        authorize(MPTAuthorize{.account = holder});
+        authorize({.account = holder});
     }
 }
 
