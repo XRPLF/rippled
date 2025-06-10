@@ -678,6 +678,58 @@ private:
             oracle.set(
                 UpdateArg{.series = {{"XRP", "USD", 742, 2}}, .fee = baseFee});
         }
+
+        for (bool const withFixOrder : {false, true})
+        {
+            // Should be same order as creation
+            Env env(
+                *this,
+                withFixOrder ? supported_amendments()
+                             : supported_amendments() - fixPriceOracleOrder);
+
+            auto test = [&](Env& env, DataSeries const& series) {
+                env.fund(XRP(1'000), owner);
+                Oracle oracle(env, {.owner = owner, .series = series});
+                BEAST_EXPECT(oracle.exists());
+                auto sle = env.le(keylet::oracle(owner, oracle.documentID()));
+                BEAST_EXPECT(
+                    sle->getFieldArray(sfPriceDataSeries).size() ==
+                    series.size());
+
+                auto const beforeQuoteAssetName1 =
+                    sle->getFieldArray(sfPriceDataSeries)[0]
+                        .getFieldCurrency(sfQuoteAsset)
+                        .getText();
+                auto const beforeQuoteAssetName2 =
+                    sle->getFieldArray(sfPriceDataSeries)[1]
+                        .getFieldCurrency(sfQuoteAsset)
+                        .getText();
+
+                oracle.set(UpdateArg{.series = series});
+                sle = env.le(keylet::oracle(owner, oracle.documentID()));
+
+                auto const afterQuoteAssetName1 =
+                    sle->getFieldArray(sfPriceDataSeries)[0]
+                        .getFieldCurrency(sfQuoteAsset)
+                        .getText();
+                auto const afterQuoteAssetName2 =
+                    sle->getFieldArray(sfPriceDataSeries)[1]
+                        .getFieldCurrency(sfQuoteAsset)
+                        .getText();
+
+                if (env.current()->rules().enabled(fixPriceOracleOrder))
+                {
+                    BEAST_EXPECT(afterQuoteAssetName1 == beforeQuoteAssetName1);
+                    BEAST_EXPECT(afterQuoteAssetName2 == beforeQuoteAssetName2);
+                }
+                else
+                {
+                    BEAST_EXPECT(afterQuoteAssetName1 != beforeQuoteAssetName1);
+                    BEAST_EXPECT(afterQuoteAssetName2 != beforeQuoteAssetName2);
+                }
+            };
+            test(env, {{"XRP", "USD", 742, 2}, {"XRP", "EUR", 711, 2}});
+        }
     }
 
     void
