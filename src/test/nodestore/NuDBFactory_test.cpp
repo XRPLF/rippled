@@ -38,9 +38,7 @@ class NuDBFactory_test : public TestBase
 private:
     // Helper function to create a Section with specified parameters
     Section
-    createSection(
-        std::string const& path,
-        std::string const& blockSize = "")
+    createSection(std::string const& path, std::string const& blockSize = "")
     {
         Section params;
         params.set("type", "nudb");
@@ -61,12 +59,12 @@ private:
 
             auto backend = Manager::instance().make_Backend(
                 params, megabytes(4), scheduler, journal);
-            
+
             if (!backend)
                 return false;
 
             backend->open();
-            
+
             if (!backend->isOpen())
                 return false;
 
@@ -76,9 +74,9 @@ private:
 
             Batch copy;
             fetchCopyOfBatch(*backend, &copy, batch);
-            
+
             backend->close();
-            
+
             return areBatchesEqual(batch, copy);
         }
         catch (...)
@@ -92,10 +90,10 @@ public:
     testDefaultBlockSize()
     {
         testcase("Default block size (no nudb_block_size specified)");
-        
+
         beast::temp_dir tempDir;
         auto params = createSection(tempDir.path());
-        
+
         // Should work with default 4096 block size
         BEAST_EXPECT(testBackendFunctionality(params));
     }
@@ -104,14 +102,15 @@ public:
     testValidBlockSizes()
     {
         testcase("Valid block sizes");
-        
-        std::vector<std::string> validSizes = {"4096", "8192", "16384", "32768"};
-        
+
+        std::vector<std::string> validSizes = {
+            "4096", "8192", "16384", "32768"};
+
         for (auto const& size : validSizes)
         {
             beast::temp_dir tempDir;
             auto params = createSection(tempDir.path(), size);
-            
+
             BEAST_EXPECT(testBackendFunctionality(params));
         }
     }
@@ -120,7 +119,7 @@ public:
     testInvalidBlockSizes()
     {
         testcase("Invalid block sizes with fallback to default");
-        
+
         std::vector<std::string> invalidSizes = {
             "2048",    // Too small
             "1024",    // Too small
@@ -136,28 +135,29 @@ public:
             "",        // Empty string
             "4096.5"   // Decimal
         };
-        
+
         for (auto const& size : invalidSizes)
         {
             beast::temp_dir tempDir;
             auto params = createSection(tempDir.path(), size);
-            
+
             // Should still work by falling back to default 4096
             BEAST_EXPECT(testBackendFunctionality(params));
         }
-        
+
         // Test whitespace cases separately since lexical_cast may handle them
         std::vector<std::string> whitespaceInvalidSizes = {
-            "4096 ",   // Trailing space - might be handled by lexical_cast
-            " 4096"    // Leading space - might be handled by lexical_cast
+            "4096 ",  // Trailing space - might be handled by lexical_cast
+            " 4096"   // Leading space - might be handled by lexical_cast
         };
-        
+
         for (auto const& size : whitespaceInvalidSizes)
         {
             beast::temp_dir tempDir;
             auto params = createSection(tempDir.path(), size);
-            
-            // Should work regardless (either parsed correctly or fallback to default)
+
+            // Should work regardless (either parsed correctly or fallback to
+            // default)
             BEAST_EXPECT(testBackendFunctionality(params));
         }
     }
@@ -166,55 +166,64 @@ public:
     testLogMessages()
     {
         testcase("Log message verification");
-        
+
         // Test valid custom block size logging
         {
             beast::temp_dir tempDir;
             auto params = createSection(tempDir.path(), "8192");
-            
+
             test::StreamSink sink(beast::severities::kInfo);
             beast::Journal journal(sink);
-            
+
             DummyScheduler scheduler;
             auto backend = Manager::instance().make_Backend(
                 params, megabytes(4), scheduler, journal);
-            
+
             std::string logOutput = sink.messages().str();
-            BEAST_EXPECT(logOutput.find("Using custom NuDB block size: 8192") != std::string::npos);
+            BEAST_EXPECT(
+                logOutput.find("Using custom NuDB block size: 8192") !=
+                std::string::npos);
         }
-        
+
         // Test invalid block size warning
         {
             beast::temp_dir tempDir;
             auto params = createSection(tempDir.path(), "5000");
-            
+
             test::StreamSink sink(beast::severities::kWarning);
             beast::Journal journal(sink);
-            
+
             DummyScheduler scheduler;
             auto backend = Manager::instance().make_Backend(
                 params, megabytes(4), scheduler, journal);
-            
+
             std::string logOutput = sink.messages().str();
-            BEAST_EXPECT(logOutput.find("Invalid nudb_block_size: 5000") != std::string::npos);
-            BEAST_EXPECT(logOutput.find("Must be power of 2 between 4096 and 32768") != std::string::npos);
+            BEAST_EXPECT(
+                logOutput.find("Invalid nudb_block_size: 5000") !=
+                std::string::npos);
+            BEAST_EXPECT(
+                logOutput.find("Must be power of 2 between 4096 and 32768") !=
+                std::string::npos);
         }
-        
+
         // Test non-numeric value warning
         {
             beast::temp_dir tempDir;
             auto params = createSection(tempDir.path(), "invalid");
-            
+
             test::StreamSink sink(beast::severities::kWarning);
             beast::Journal journal(sink);
-            
+
             DummyScheduler scheduler;
             auto backend = Manager::instance().make_Backend(
                 params, megabytes(4), scheduler, journal);
-            
+
             std::string logOutput = sink.messages().str();
-            BEAST_EXPECT(logOutput.find("Invalid nudb_block_size value: invalid") != std::string::npos);
-            BEAST_EXPECT(logOutput.find("Using default 4096") != std::string::npos);
+            BEAST_EXPECT(
+                logOutput.find("Invalid nudb_block_size value: invalid") !=
+                std::string::npos);
+            BEAST_EXPECT(
+                logOutput.find("Using default 4096") != std::string::npos);
         }
     }
 
@@ -222,7 +231,7 @@ public:
     testPowerOfTwoValidation()
     {
         testcase("Power of 2 validation logic");
-        
+
         // Test edge cases around valid range
         std::vector<std::pair<std::string, bool>> testCases = {
             {"4095", false},   // Just below minimum
@@ -235,25 +244,28 @@ public:
             {"32769", false},  // Just above maximum
             {"65536", false}   // Power of 2 but too large
         };
-        
+
         for (auto const& [size, shouldWork] : testCases)
         {
             beast::temp_dir tempDir;
             auto params = createSection(tempDir.path(), size);
-            
+
             // All should work due to fallback, but we test the validation logic
             // by checking if warnings are logged for invalid values
             test::StreamSink sink(beast::severities::kWarning);
             beast::Journal journal(sink);
-            
+
             DummyScheduler scheduler;
             auto backend = Manager::instance().make_Backend(
                 params, megabytes(4), scheduler, journal);
-            
+
             std::string logOutput = sink.messages().str();
-            bool hasWarning = logOutput.find("Invalid nudb_block_size") != std::string::npos;
-            
-            BEAST_EXPECT(hasWarning == !shouldWork);  // Warning should appear for invalid values
+            bool hasWarning =
+                logOutput.find("Invalid nudb_block_size") != std::string::npos;
+
+            BEAST_EXPECT(
+                hasWarning ==
+                !shouldWork);  // Warning should appear for invalid values
         }
     }
 
@@ -261,13 +273,13 @@ public:
     testBothConstructorVariants()
     {
         testcase("Both constructor variants work with custom block size");
-        
+
         beast::temp_dir tempDir;
         auto params = createSection(tempDir.path(), "16384");
-        
+
         DummyScheduler scheduler;
         test::SuiteJournal journal("NuDBFactory_test", *this);
-        
+
         // Test first constructor (without nudb::context)
         {
             auto backend1 = Manager::instance().make_Backend(
@@ -275,7 +287,7 @@ public:
             BEAST_EXPECT(backend1 != nullptr);
             BEAST_EXPECT(testBackendFunctionality(params));
         }
-        
+
         // Test second constructor (with nudb::context)
         // Note: This would require access to nudb::context, which might not be
         // easily testable without more complex setup. For now, we test that
@@ -286,51 +298,57 @@ public:
     testConfigurationParsing()
     {
         testcase("Configuration parsing edge cases");
-        
+
         // Test that whitespace is handled correctly
         std::vector<std::string> validFormats = {
-            "8192"       // Basic valid format
+            "8192"  // Basic valid format
         };
-        
-        // Test whitespace handling separately since lexical_cast behavior may vary
+
+        // Test whitespace handling separately since lexical_cast behavior may
+        // vary
         std::vector<std::string> whitespaceFormats = {
-            " 8192",     // Leading space - may or may not be handled by lexical_cast
-            "8192 "      // Trailing space - may or may not be handled by lexical_cast
+            " 8192",  // Leading space - may or may not be handled by
+                      // lexical_cast
+            "8192 "   // Trailing space - may or may not be handled by
+                      // lexical_cast
         };
-        
+
         // Test basic valid format
         for (auto const& format : validFormats)
         {
             beast::temp_dir tempDir;
             auto params = createSection(tempDir.path(), format);
-            
+
             test::StreamSink sink(beast::severities::kInfo);
             beast::Journal journal(sink);
-            
+
             DummyScheduler scheduler;
             auto backend = Manager::instance().make_Backend(
                 params, megabytes(4), scheduler, journal);
-            
+
             // Should log success message for valid values
             std::string logOutput = sink.messages().str();
-            bool hasSuccessMessage = logOutput.find("Using custom NuDB block size") != std::string::npos;
+            bool hasSuccessMessage =
+                logOutput.find("Using custom NuDB block size") !=
+                std::string::npos;
             BEAST_EXPECT(hasSuccessMessage);
         }
-        
-        // Test whitespace formats - these should work if lexical_cast handles them
+
+        // Test whitespace formats - these should work if lexical_cast handles
+        // them
         for (auto const& format : whitespaceFormats)
         {
             beast::temp_dir tempDir;
             auto params = createSection(tempDir.path(), format);
-            
+
             // Use a lower threshold to capture both info and warning messages
             test::StreamSink sink(beast::severities::kDebug);
             beast::Journal journal(sink);
-            
+
             DummyScheduler scheduler;
             auto backend = Manager::instance().make_Backend(
                 params, megabytes(4), scheduler, journal);
-            
+
             // Should work with either success or fallback to default
             BEAST_EXPECT(testBackendFunctionality(params));
         }
@@ -340,20 +358,21 @@ public:
     testDataPersistence()
     {
         testcase("Data persistence with different block sizes");
-        
-        std::vector<std::string> blockSizes = {"4096", "8192", "16384", "32768"};
-        
+
+        std::vector<std::string> blockSizes = {
+            "4096", "8192", "16384", "32768"};
+
         for (auto const& size : blockSizes)
         {
             beast::temp_dir tempDir;
             auto params = createSection(tempDir.path(), size);
-            
+
             DummyScheduler scheduler;
             test::SuiteJournal journal("NuDBFactory_test", *this);
-            
+
             // Create test data
             auto batch = createPredictableBatch(50, 54321);
-            
+
             // Store data
             {
                 auto backend = Manager::instance().make_Backend(
@@ -362,16 +381,16 @@ public:
                 storeBatch(*backend, batch);
                 backend->close();
             }
-            
+
             // Retrieve data in new backend instance
             {
                 auto backend = Manager::instance().make_Backend(
                     params, megabytes(4), scheduler, journal);
                 backend->open();
-                
+
                 Batch copy;
                 fetchCopyOfBatch(*backend, &copy, batch);
-                
+
                 BEAST_EXPECT(areBatchesEqual(batch, copy));
                 backend->close();
             }
