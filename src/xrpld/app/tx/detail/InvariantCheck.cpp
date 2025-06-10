@@ -324,26 +324,6 @@ NoZeroEscrow::visitEntry(
     std::shared_ptr<SLE const> const& after)
 {
     auto isBad = [](STAmount const& amount) {
-        // IOU case
-        if (amount.holds<Issue>())
-        {
-            if (amount <= beast::zero)
-                return true;
-
-            if (badCurrency() == amount.getCurrency())
-                return true;
-        }
-
-        // MPT case
-        if (amount.holds<MPTIssue>())
-        {
-            if (amount <= beast::zero)
-                return true;
-
-            if (amount.mpt() > MPTAmount{maxMPTokenAmount})
-                return true;
-        }
-
         // XRP case
         if (amount.native())
         {
@@ -353,7 +333,28 @@ NoZeroEscrow::visitEntry(
             if (amount.xrp() >= INITIAL_XRP)
                 return true;
         }
+        else
+        {
+            // IOU case
+            if (amount.holds<Issue>())
+            {
+                if (amount <= beast::zero)
+                    return true;
 
+                if (badCurrency() == amount.getCurrency())
+                    return true;
+            }
+
+            // MPT case
+            if (amount.holds<MPTIssue>())
+            {
+                if (amount <= beast::zero)
+                    return true;
+
+                if (amount.mpt() > MPTAmount{maxMPTokenAmount})
+                    return true;  // LCOV_EXCL_LINE
+            }
+        }
         return false;
     };
 
