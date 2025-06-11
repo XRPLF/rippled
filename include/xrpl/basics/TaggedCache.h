@@ -325,13 +325,10 @@ private:
     clock_type::duration const m_target_age;
 
     // Number of items cached
-    int m_cache_count;   // TODO: 1) make atomic, 2) think about mem ordering
-                         // access
+    std::atomic<int> m_cache_count;
     cache_type m_cache;  // Hold strong reference to recent objects
-    std::uint64_t
-        m_hits;  // TODO: 1) make atomic, 2) think about mem ordering access
-    std::uint64_t
-        m_misses;  // TODO: 1) make atomic, 2) think about mem ordering access
+    std::atomic<std::uint64_t> m_hits;
+    std::atomic<std::uint64_t> m_misses;
 };
 
 }  // namespace ripple

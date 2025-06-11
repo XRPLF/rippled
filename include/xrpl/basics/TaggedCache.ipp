@@ -128,7 +128,7 @@ TaggedCache<
     KeyEqual,
     Mutex>::getCacheSize() const
 {
-    return m_cache_count;
+    return m_cache_count.load(std::memory_order_relaxed);
 }
 
 template <
@@ -174,8 +174,10 @@ TaggedCache<
     KeyEqual,
     Mutex>::getHitRate()
 {
-    auto const total = static_cast<float>(m_hits + m_misses);
-    return m_hits * (100.0f / std::max(1.0f, total));
+    auto hits = m_hits.load(std::memory_order_relaxed);
+    auto misses = m_misses.load(std::memory_order_relaxed);
+    float total = float(hits + misses);
+    return hits * (100.0f / std::max(1.0f, total));
 }
 
 template <
@@ -199,7 +201,7 @@ TaggedCache<
     Mutex>::clear()
 {
     m_cache.clear();
-    m_cache_count = 0;
+    m_cache_count.store(0, std::memory_order_relaxed);
 }
 
 template <
@@ -223,9 +225,9 @@ TaggedCache<
     Mutex>::reset()
 {
     m_cache.clear();
-    m_cache_count = 0;
-    m_hits = 0;
-    m_misses = 0;
+    m_cache_count.store(0, std::memory_order_relaxed);
+    m_hits.store(0, std::memory_order_relaxed);
+    m_misses.store(0, std::memory_order_relaxed);
 }
 
 template <
@@ -329,7 +331,8 @@ TaggedCache<
         for (std::thread& worker : workers)
             worker.join();
 
-        m_cache_count -= allRemovals;
+        int removals = allRemovals.load(std::memory_order_relaxed);
+        m_cache_count.fetch_sub(removals, std::memory_order_relaxed);
     }
     // At this point allStuffToSweep will go out of scope outside the lock
     // and decrement the reference count on each strong pointer.
@@ -375,7 +378,7 @@ TaggedCache<
 
     if (entry.isCached())
     {
-        --m_cache_count;
+        m_cache_count.fetch_sub(1, std::memory_order_relaxed);
         entry.ptr.convertToWeak();
         ret = true;
     }
@@ -423,7 +426,7 @@ TaggedCache<
             std::piecewise_construct,
             std::forward_as_tuple(key),
             std::forward_as_tuple(m_clock.now(), data));
-        ++m_cache_count;
+        m_cache_count.fetch_add(1, std::memory_order_relaxed);
         return false;
     }
 
@@ -472,12 +475,12 @@ TaggedCache<
             data = cachedData;
         }
 
-        ++m_cache_count;
+        m_cache_count.fetch_add(1, std::memory_order_relaxed);
         return true;
     }
 
     entry.ptr = data;
-    ++m_cache_count;
+    m_cache_count.fetch_add(1, std::memory_order_relaxed);
 
     return false;
 }
@@ -556,7 +559,7 @@ TaggedCache<
     // TODO: do we need any lock here, since we are returing a shared pointer?
     auto ret = initialFetch(key);
     if (!ret)
-        ++m_misses;
+        m_misses.fetch_add(1, std::memory_order_relaxed);
     return ret;
 }
 
@@ -711,10 +714,12 @@ TaggedCache<
     KeyEqual,
     Mutex>::rate() const
 {
-    auto const tot = m_hits + m_misses;
+    auto hits = m_hits.load(std::memory_order_relaxed);
+    auto misses = m_misses.load(std::memory_order_relaxed);
+    auto const tot = hits + misses;
     if (tot == 0)
-        return 0;
-    return double(m_hits) / tot;
+        return 0.0;
+    return double(hits) / tot;
 }
 
 template <
@@ -748,7 +753,7 @@ TaggedCache<
     if (!sle)
         return {};
 
-    ++m_misses;
+    m_misses.fetch_add(1, std::memory_order_relaxed);
     auto const [it, inserted] =
         m_cache.emplace(digest, Entry(m_clock.now(), std::move(sle)));
     if (!inserted)
@@ -784,7 +789,7 @@ TaggedCache<
     Entry& entry = cit->second;
     if (entry.isCached())
     {
-        ++m_hits;
+        m_hits.fetch_add(1, std::memory_order_relaxed);
         entry.touch(m_clock.now());
         return entry.ptr.getStrong();
     }
@@ -792,7 +797,7 @@ TaggedCache<
     if (entry.isCached())
     {
         // independent of cache size, so not counted as a hit
-        ++m_cache_count;
+        m_cache_count.fetch_add(1, std::memory_order_relaxed);
         entry.touch(m_clock.now());
         return entry.ptr.getStrong();
     }
@@ -827,10 +832,11 @@ TaggedCache<
     {
         beast::insight::Gauge::value_type hit_rate(0);
         {
-            std::lock_guard lock(m_mutex);
-            auto const total(m_hits + m_misses);
+            auto const hits = m_hits.load(std::memory_order_relaxed);
+            auto const misses = m_misses.load(std::memory_order_relaxed);
+            auto const total = hits + misses;
             if (total != 0)
-                hit_rate = (m_hits * 100) / total;
+                hit_rate = (hits * 100) / total;
         }
         m_stats.hit_rate.set(hit_rate);
     }
