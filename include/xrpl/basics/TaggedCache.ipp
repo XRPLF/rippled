@@ -624,10 +624,11 @@ TaggedCache<
     -> std::enable_if_t<IsKeyCache, ReturnType>
 {
     clock_type::time_point const now(m_clock.now());
-    auto [it, inserted] = m_cache.emplace( // TODO: make sure partition is locked
-        std::piecewise_construct,
-        std::forward_as_tuple(key),
-        std::forward_as_tuple(now));
+    auto [it, inserted] =
+        m_cache.emplace(  // TODO: make sure partition is locked
+            std::piecewise_construct,
+            std::forward_as_tuple(key),
+            std::forward_as_tuple(now));
     if (!inserted)
         it->second.last_access = now;
     return inserted;
