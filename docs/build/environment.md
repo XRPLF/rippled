@@ -14,14 +14,14 @@ The instructions below are written for Debian 12 (Bookworm).
 
 ```
 export GCC_RELEASE=12
-apt update
-apt install --yes gcc-${GCC_RELEASE} g++-${GCC_RELEASE} python3-pip \
+sudo apt update
+sudo apt install --yes gcc-${GCC_RELEASE} g++-${GCC_RELEASE} python3-pip \
   python-is-python3 python3-venv python3-dev curl wget ca-certificates \
   git build-essential cmake ninja-build libc6-dev
-pip install conan
+sudo pip install --break-system-packages conan
 
-update-alternatives --install /usr/bin/cc cc /usr/bin/gcc-${GCC_RELEASE} 999
-update-alternatives --install \
+sudo update-alternatives --install /usr/bin/cc cc /usr/bin/gcc-${GCC_RELEASE} 999
+sudo update-alternatives --install \
   /usr/bin/gcc gcc /usr/bin/gcc-${GCC_RELEASE} 100 \
   --slave /usr/bin/g++ g++ /usr/bin/g++-${GCC_RELEASE} \
   --slave /usr/bin/gcc-ar gcc-ar /usr/bin/gcc-ar-${GCC_RELEASE} \
@@ -31,8 +31,8 @@ update-alternatives --install \
   --slave /usr/bin/gcov-tool gcov-tool /usr/bin/gcov-tool-${GCC_RELEASE} \
   --slave /usr/bin/gcov-dump gcov-dump /usr/bin/gcov-dump-${GCC_RELEASE} \
   --slave /usr/bin/lto-dump lto-dump /usr/bin/lto-dump-${GCC_RELEASE}
-update-alternatives --auto cc
-update-alternatives --auto gcc
+sudo update-alternatives --auto cc
+sudo update-alternatives --auto gcc
 ```
 
 If you use different Linux distribution, hope the instruction above can guide
@@ -70,8 +70,8 @@ and use it to install Conan:
 brew update
 brew install xz
 brew install pyenv
-pyenv install 3.12-dev
-pyenv global 3.12-dev
+pyenv install 3.11
+pyenv global 3.11
 eval "$(pyenv init -)"
 pip install 'conan'
 ```

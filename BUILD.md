@@ -35,7 +35,7 @@ See [System Requirements](https://xrpl.org/system-requirements.html).
 
 Building rippled generally requires git, Python, Conan, CMake, and a C++ compiler. Some guidance on setting up such a [C++ development environment can be found here](./docs/build/environment.md).
 
-- [Python 3.9](https://www.python.org/downloads/), or higher
+- [Python 3.11](https://www.python.org/downloads/), or higher
 - [Conan 2.17](https://conan.io/downloads.html)[^1], or higher
 - [CMake 3.22](https://cmake.org/download/)[^2], or higher
 
@@ -54,12 +54,12 @@ The [minimum compiler versions][2] required are:
 | GCC         | 12      |
 | Clang       | 16      |
 | Apple Clang | 16.0.0  |
-| MSVC        | 19.44   |
+| MSVC        | 19.44[^3]   |
 
 ### Linux
 
-The Ubuntu operating system has received the highest level of
-quality assurance, testing, and support.
+The Ubuntu Linux distribution has received the highest level of
+quality assurance, testing, and support. We also support Red Hat and use internally Debian.
 
 Here are [sample instructions for setting up a C++ development environment on Linux](./docs/build/environment.md#linux).
 
@@ -71,11 +71,9 @@ Here are [sample instructions for setting up a C++ development environment on ma
 
 ### Windows
 
-Windows is not recommended for production use at this time.
+Windows is used by some engineers for rippled development only.
 
-- Additionally, 32-bit Windows development is not supported.
-
-[Boost]: https://www.boost.org/
+[^3]: Windows is not recommended for production use.
 
 ## Steps
 
@@ -141,7 +139,7 @@ as a default compiler:
    ```
 
 You should also explicitly set the path to the compiler in the profile file. This
-avoids errors when `CC` and/or `CXX` are set and disagree with the selected Conan
+helps to avoid errors when `CC` and/or `CXX` are set and disagree with the selected Conan
 profile. For example:
 
 ```text
