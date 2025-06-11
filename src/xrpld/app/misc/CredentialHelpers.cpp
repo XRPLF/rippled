@@ -150,7 +150,11 @@ checkFields(STTx const& tx, beast::Journal j)
 }
 
 TER
-valid(STTx const& tx, ReadView const& view, AccountID const& src, beast::Journal j)
+valid(
+    STTx const& tx,
+    ReadView const& view,
+    AccountID const& src,
+    beast::Journal j)
 {
     if (!tx.isFieldPresent(sfCredentialIDs))
         return tesSUCCESS;
@@ -368,8 +372,7 @@ verifyDepositPreauth(
     bool const credentialsPresent = tx.isFieldPresent(sfCredentialIDs);
 
     if (credentialsPresent &&
-        credentials::removeExpired(
-            view, tx.getFieldV256(sfCredentialIDs), j))
+        credentials::removeExpired(view, tx.getFieldV256(sfCredentialIDs), j))
         return tecEXPIRED;
 
     if (sleDst && (sleDst->getFlags() & lsfDepositAuth))
@@ -380,9 +383,7 @@ verifyDepositPreauth(
                 return !credentialsPresent
                     ? tecNO_PERMISSION
                     : credentials::authorizedDepositPreauth(
-                          view,
-                          tx.getFieldV256(sfCredentialIDs),
-                          dst);
+                          view, tx.getFieldV256(sfCredentialIDs), dst);
         }
     }
 

@@ -20,16 +20,16 @@
 #ifndef RIPPLE_APP_MISC_CREDENTIALHELPERS_H_INCLUDED
 #define RIPPLE_APP_MISC_CREDENTIALHELPERS_H_INCLUDED
 
-#include <xrpld/ledger/ReadView.h>
 #include <xrpld/ledger/ApplyView.h>
+#include <xrpld/ledger/ReadView.h>
 
-#include <xrpl/protocol/AccountID.h>
-#include <xrpl/protocol/STTx.h>
-#include <xrpl/protocol/STArray.h>
-#include <xrpl/protocol/TER.h>
-#include <xrpl/beast/utility/Journal.h>
-#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/Log.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/AccountID.h>
+#include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STTx.h>
+#include <xrpl/protocol/TER.h>
 
 namespace ripple {
 namespace credentials {
@@ -63,7 +63,11 @@ checkFields(STTx const& tx, beast::Journal j);
 // in doApply (only in preclaim) since it does not remove expired credentials.
 // If you call it in prelaim, you also must call verifyDepositPreauth in doApply
 TER
-valid(STTx const& tx, ReadView const& view, AccountID const& src, beast::Journal j);
+valid(
+    STTx const& tx,
+    ReadView const& view,
+    AccountID const& src,
+    beast::Journal j);
 
 // Check if subject has any credential maching the given domain. If you call it
 // in preclaim and it returns tecEXPIRED, you should call verifyValidDomain in
