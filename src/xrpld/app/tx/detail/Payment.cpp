@@ -238,7 +238,7 @@ Payment::preflight(PreflightContext const& ctx)
         }
     }
 
-    if (auto const err = credentials::checkFields(ctx); !isTesSuccess(err))
+    if (auto const err = credentials::checkFields(ctx.tx, ctx.j); !isTesSuccess(err))
         return err;
 
     return preflight2(ctx);
@@ -358,7 +358,7 @@ Payment::preclaim(PreclaimContext const& ctx)
         }
     }
 
-    if (auto const err = credentials::valid(ctx, ctx.tx[sfAccount]);
+    if (auto const err = credentials::valid(ctx.tx, ctx.view, ctx.tx[sfAccount], ctx.j);
         !isTesSuccess(err))
         return err;
 
@@ -451,7 +451,7 @@ Payment::doApply()
             //  2. If Account is deposit preauthorized by destination.
 
             if (auto err =
-                    verifyDepositPreauth(ctx_, account_, dstAccountID, sleDst);
+                    verifyDepositPreauth(ctx_.tx, ctx_.view(), account_, dstAccountID, sleDst, ctx_.journal);
                 !isTesSuccess(err))
                 return err;
         }
@@ -522,7 +522,7 @@ Payment::doApply()
             return ter;
 
         if (auto err =
-                verifyDepositPreauth(ctx_, account_, dstAccountID, sleDst);
+                verifyDepositPreauth(ctx_.tx, ctx_.view(), account_, dstAccountID, sleDst, ctx_.journal);
             !isTesSuccess(err))
             return err;
 
@@ -645,7 +645,7 @@ Payment::doApply()
             sleDst->getFieldAmount(sfBalance) > dstReserve)
         {
             if (auto err =
-                    verifyDepositPreauth(ctx_, account_, dstAccountID, sleDst);
+                    verifyDepositPreauth(ctx_.tx, ctx_.view(), account_, dstAccountID, sleDst, ctx_.journal);
                 !isTesSuccess(err))
                 return err;
         }
