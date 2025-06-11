@@ -336,7 +336,7 @@ index 1e98b0fa..ae24ff8b 100644
  
  #if WASM_ENABLE_LABELS_AS_VALUES == 0
 diff --git a/core/iwasm/interpreter/wasm_interp_fast.c b/core/iwasm/interpreter/wasm_interp_fast.c
-index 4e5edf41..83cc103b 100644
+index 4e5edf41..04c39e1f 100644
 --- a/core/iwasm/interpreter/wasm_interp_fast.c
 +++ b/core/iwasm/interpreter/wasm_interp_fast.c
 @@ -106,14 +106,14 @@ typedef float64 CellType_F64;
@@ -400,16 +400,33 @@ index 4e5edf41..83cc103b 100644
  
  #endif /* end of WASM_ENABLE_LABELS_AS_VALUES */
  
-@@ -1508,6 +1507,8 @@ get_global_addr(uint8 *global_data, WASMGlobalInstance *global)
+@@ -1508,6 +1507,25 @@ get_global_addr(uint8 *global_data, WASMGlobalInstance *global)
  #endif
  }
  
-+static int64 def_instructions_schedule[256] = {[0 ... 255] = 1};
++static int64 const def_instructions_schedule[256] = {
++    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
++    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
++    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
++    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
++    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
++    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
++    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
++    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
++    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
++    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
++    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
++    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
++    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
++    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
++    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,
++    1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1
++};
 +
  static void
  wasm_interp_call_func_bytecode(WASMModuleInstance *module,
                                 WASMExecEnv *exec_env,
-@@ -1556,9 +1557,11 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
+@@ -1556,9 +1574,11 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
      uint8 opcode = 0, local_type, *global_addr;
  
  #if WASM_ENABLE_INSTRUCTION_METERING != 0
@@ -422,7 +439,7 @@ index 4e5edf41..83cc103b 100644
      }
  #endif
  #if !defined(OS_ENABLE_HW_BOUND_CHECK) \
-@@ -7694,6 +7697,7 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
+@@ -7694,6 +7714,7 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
              {
                  wasm_interp_call_func_native(module, exec_env, cur_func,
                                               prev_frame);
@@ -430,7 +447,7 @@ index 4e5edf41..83cc103b 100644
              }
  
  #if WASM_ENABLE_TAIL_CALL != 0 || WASM_ENABLE_GC != 0
-@@ -7806,6 +7810,11 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
+@@ -7806,6 +7827,11 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
          FREE_FRAME(exec_env, frame);
          wasm_exec_env_set_cur_frame(exec_env, (WASMRuntimeFrame *)prev_frame);
  
@@ -442,7 +459,7 @@ index 4e5edf41..83cc103b 100644
          if (!prev_frame->ip)
              /* Called from native. */
              return;
-@@ -7834,6 +7843,10 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
+@@ -7834,6 +7860,10 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
  
      got_exception:
          SYNC_ALL_TO_FRAME();

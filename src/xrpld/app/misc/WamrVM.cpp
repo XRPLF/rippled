@@ -531,11 +531,13 @@ ModuleWrapper::buildImports(
                 nullptr);
             if (!func)
                 throw std::runtime_error(
-                    "can't create import function " + imp.name);
+                    "can't create import function " +
+                    imp.name);  // LCOV_EXCL_LINE
 
             if (imp.gas && !wasm_func_set_gas(func, imp.gas))
                 throw std::runtime_error(
-                    "can't set gas for import function " + imp.name);
+                    "can't set gas for import function " +
+                    imp.name);  // LCOV_EXCL_LINE
 
             wimports.data[i] = wasm_func_as_extern(func);
             ++impCnt;
