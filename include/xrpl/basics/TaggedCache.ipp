@@ -105,7 +105,6 @@ TaggedCache<
     KeyEqual,
     Mutex>::size() const
 {
-    std::lock_guard lock(m_mutex);
     return m_cache.size();
 }
 
@@ -129,7 +128,6 @@ TaggedCache<
     KeyEqual,
     Mutex>::getCacheSize() const
 {
-    std::lock_guard lock(m_mutex);
     return m_cache_count;
 }
 
@@ -153,7 +151,6 @@ TaggedCache<
     KeyEqual,
     Mutex>::getTrackSize() const
 {
-    std::lock_guard lock(m_mutex);
     return m_cache.size();
 }
 
@@ -177,7 +174,6 @@ TaggedCache<
     KeyEqual,
     Mutex>::getHitRate()
 {
-    std::lock_guard lock(m_mutex);
     auto const total = static_cast<float>(m_hits + m_misses);
     return m_hits * (100.0f / std::max(1.0f, total));
 }
@@ -202,7 +198,6 @@ TaggedCache<
     KeyEqual,
     Mutex>::clear()
 {
-    std::lock_guard lock(m_mutex);
     m_cache.clear();
     m_cache_count = 0;
 }
@@ -227,7 +222,6 @@ TaggedCache<
     KeyEqual,
     Mutex>::reset()
 {
-    std::lock_guard lock(m_mutex);
     m_cache.clear();
     m_cache_count = 0;
     m_hits = 0;
@@ -255,7 +249,7 @@ TaggedCache<
     KeyEqual,
     Mutex>::touch_if_exists(KeyComparable const& key)
 {
-    std::lock_guard lock(m_mutex);
+    // TOOD: acuiqring iterator should lock the partition
     auto const iter(m_cache.find(key));
     if (iter == m_cache.end())
     {
@@ -369,8 +363,7 @@ TaggedCache<
 {
     // Remove from cache, if !valid, remove from map too. Returns true if
     // removed from cache
-    std::lock_guard lock(m_mutex);
-
+    // TODO: acuiqring iterator should lock the partition
     auto cit = m_cache.find(key);
 
     if (cit == m_cache.end())
@@ -420,8 +413,8 @@ TaggedCache<
 {
     // Return canonical value, store if needed, refresh in cache
     // Return values: true=we had the data already
-    std::lock_guard lock(m_mutex);
 
+    // TODO: acuiqring iterator should lock the partition
     auto cit = m_cache.find(key);
 
     if (cit == m_cache.end())
@@ -560,8 +553,8 @@ TaggedCache<
     KeyEqual,
     Mutex>::fetch(key_type const& key)
 {
-    std::lock_guard<mutex_type> l(m_mutex);
-    auto ret = initialFetch(key, l);
+    // TODO: do we need any lock here, since we are returing a shared pointer?
+    auto ret = initialFetch(key);
     if (!ret)
         ++m_misses;
     return ret;
@@ -627,9 +620,8 @@ TaggedCache<
     Mutex>::insert(key_type const& key)
     -> std::enable_if_t<IsKeyCache, ReturnType>
 {
-    std::lock_guard lock(m_mutex);
     clock_type::time_point const now(m_clock.now());
-    auto [it, inserted] = m_cache.emplace(
+    auto [it, inserted] = m_cache.emplace( // TODO: make sure partition is locked
         std::piecewise_construct,
         std::forward_as_tuple(key),
         std::forward_as_tuple(now));
@@ -686,37 +678,13 @@ TaggedCache<
     SharedPointerType,
     Hash,
     KeyEqual,
-    Mutex>::peekMutex() -> mutex_type&
-{
-    return m_mutex;
-}
-
-template <
-    class Key,
-    class T,
-    bool IsKeyCache,
-    class SharedWeakUnionPointer,
-    class SharedPointerType,
-    class Hash,
-    class KeyEqual,
-    class Mutex>
-inline auto
-TaggedCache<
-    Key,
-    T,
-    IsKeyCache,
-    SharedWeakUnionPointer,
-    SharedPointerType,
-    Hash,
-    KeyEqual,
     Mutex>::getKeys() const -> std::vector<key_type>
 {
     std::vector<key_type> v;
 
     {
-        std::lock_guard lock(m_mutex);
         v.reserve(m_cache.size());
-        for (auto const& _ : m_cache)
+        for (auto const& _ : m_cache)  // TODO: make sure partition is locked
             v.push_back(_.first);
     }
 
@@ -743,7 +711,6 @@ TaggedCache<
     KeyEqual,
     Mutex>::rate() const
 {
-    std::lock_guard lock(m_mutex);
     auto const tot = m_hits + m_misses;
     if (tot == 0)
         return 0;
@@ -771,9 +738,9 @@ TaggedCache<
     KeyEqual,
     Mutex>::fetch(key_type const& digest, Handler const& h)
 {
-    {
-        std::lock_guard l(m_mutex);
-        if (auto ret = initialFetch(digest, l))
+    // TODO: do we need any lock here, since we are returing a shared pointer?
+    {  // TODO: potenially remove this scope
+        if (auto ret = initialFetch(digest))
             return ret;
     }
 
@@ -781,7 +748,6 @@ TaggedCache<
     if (!sle)
         return {};
 
-    std::lock_guard l(m_mutex);
     ++m_misses;
     auto const [it, inserted] =
         m_cache.emplace(digest, Entry(m_clock.now(), std::move(sle)));
@@ -809,8 +775,7 @@ TaggedCache<
     SharedPointerType,
     Hash,
     KeyEqual,
-    Mutex>::
-    initialFetch(key_type const& key, std::lock_guard<mutex_type> const& l)
+    Mutex>::initialFetch(key_type const& key)
 {
     auto cit = m_cache.find(key);
     if (cit == m_cache.end())
@@ -823,7 +788,7 @@ TaggedCache<
         entry.touch(m_clock.now());
         return entry.ptr.getStrong();
     }
-    entry.ptr = entry.lock();
+    entry.ptr = entry.lock();  // TODO what is this?
     if (entry.isCached())
     {
         // independent of cache size, so not counted as a hit
@@ -832,7 +797,8 @@ TaggedCache<
         return entry.ptr.getStrong();
     }
 
-    m_cache.erase(cit);
+    m_cache.erase(cit);  // TODO: if this erase happens on fetch, what is left
+                         // for a sweep?
     return {};
 }
 
