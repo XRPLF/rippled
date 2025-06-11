@@ -12,10 +12,59 @@ index 88a1642b..aeb29912 100644
  option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
  
 diff --git a/core/iwasm/common/wasm_c_api.c b/core/iwasm/common/wasm_c_api.c
-index 269ec577..d3758c0d 100644
+index 269ec577..34eb7c34 100644
 --- a/core/iwasm/common/wasm_c_api.c
 +++ b/core/iwasm/common/wasm_c_api.c
-@@ -5389,3 +5389,8 @@ wasm_instance_get_wasm_func_exec_time(const wasm_instance_t *instance,
+@@ -3242,10 +3242,20 @@ wasm_func_copy(const wasm_func_t *func)
+ 
+     cloned->func_idx_rt = func->func_idx_rt;
+     cloned->inst_comm_rt = func->inst_comm_rt;
++    cloned->gas = func->gas;
+ 
+     RETURN_OBJ(cloned, wasm_func_delete)
+ }
+ 
++uint32_t
++wasm_func_set_gas(wasm_func_t *func, uint32_t gas)
++{
++    if(!func) return 0;
++
++    func->gas = gas;
++    return gas;
++}
++
+ own wasm_functype_t *
+ wasm_func_type(const wasm_func_t *func)
+ {
+@@ -4998,11 +5008,11 @@ wasm_instance_new_with_args_ex(wasm_store_t *store, const wasm_module_t *module,
+         goto failed;
+     }
+ 
++    WASMModuleInstance *wasm_module_inst = NULL;
+     /* create the c-api func import list */
+ #if WASM_ENABLE_INTERP != 0
+     if (instance->inst_comm_rt->module_type == Wasm_Module_Bytecode) {
+-        WASMModuleInstance *wasm_module_inst =
+-            (WASMModuleInstance *)instance->inst_comm_rt;
++        wasm_module_inst = (WASMModuleInstance *)instance->inst_comm_rt;
+         p_func_imports = &(wasm_module_inst->c_api_func_imports);
+         import_func_count = MODULE_INTERP(module)->import_function_count;
+     }
+@@ -5052,6 +5062,13 @@ wasm_instance_new_with_args_ex(wasm_store_t *store, const wasm_module_t *module,
+         }
+         bh_assert(func_import->func_ptr_linked);
+ 
++        // fill gas
++        if(wasm_module_inst) {
++            WASMFunctionInstance *fi = wasm_module_inst->e->functions + func_host->func_idx_rt;
++            if(fi) fi->gas = func_host->gas;
++        }
++
++
+         func_import++;
+     }
+ 
+@@ -5389,3 +5406,8 @@ wasm_instance_get_wasm_func_exec_time(const wasm_instance_t *instance,
      return -1.0;
  #endif
  }
@@ -24,6 +73,21 @@ index 269ec577..d3758c0d 100644
 +{
 +    return wasm_runtime_get_exec_env_singleton(instance->inst_comm_rt);
 +}
+diff --git a/core/iwasm/common/wasm_c_api_internal.h b/core/iwasm/common/wasm_c_api_internal.h
+index 49a17a96..19a85980 100644
+--- a/core/iwasm/common/wasm_c_api_internal.h
++++ b/core/iwasm/common/wasm_c_api_internal.h
+@@ -142,6 +142,10 @@ struct wasm_func_t {
+             void (*finalizer)(void *);
+         } cb_env;
+     } u;
++
++    // gas cost for import func
++    uint32 gas;
++
+     /*
+      * an index in both functions runtime instance lists
+      * of interpreter mode and aot mode
 diff --git a/core/iwasm/common/wasm_exec_env.c b/core/iwasm/common/wasm_exec_env.c
 index 47752950..d5821c4f 100644
 --- a/core/iwasm/common/wasm_exec_env.c
@@ -139,7 +203,7 @@ index 64a6cd79..f4c55e2f 100644
  
  #if WASM_CONFIGURABLE_BOUNDS_CHECKS != 0
 diff --git a/core/iwasm/include/wasm_c_api.h b/core/iwasm/include/wasm_c_api.h
-index 241a0eec..9eb0dde1 100644
+index 241a0eec..1141744c 100644
 --- a/core/iwasm/include/wasm_c_api.h
 +++ b/core/iwasm/include/wasm_c_api.h
 @@ -19,8 +19,10 @@
@@ -154,7 +218,16 @@ index 241a0eec..9eb0dde1 100644
  #endif
  #else
  #define WASM_API_EXTERN
-@@ -701,6 +703,11 @@ WASM_API_EXTERN double wasm_instance_sum_wasm_exec_time(const wasm_instance_t*);
+@@ -592,6 +594,8 @@ WASM_API_EXTERN size_t wasm_func_result_arity(const wasm_func_t*);
+ WASM_API_EXTERN own wasm_trap_t* wasm_func_call(
+   const wasm_func_t*, const wasm_val_vec_t* args, wasm_val_vec_t* results);
+ 
++WASM_API_EXTERN own uint32_t wasm_func_set_gas(wasm_func_t*, uint32_t);
++
+ 
+ // Global Instances
+ 
+@@ -701,6 +705,11 @@ WASM_API_EXTERN double wasm_instance_sum_wasm_exec_time(const wasm_instance_t*);
  // func_name. If the function is not found, return 0.
  WASM_API_EXTERN double wasm_instance_get_wasm_func_exec_time(const wasm_instance_t*, const char *);
  
@@ -263,7 +336,7 @@ index 1e98b0fa..ae24ff8b 100644
  
  #if WASM_ENABLE_LABELS_AS_VALUES == 0
 diff --git a/core/iwasm/interpreter/wasm_interp_fast.c b/core/iwasm/interpreter/wasm_interp_fast.c
-index 4e5edf41..ab8fa9cc 100644
+index 4e5edf41..83cc103b 100644
 --- a/core/iwasm/interpreter/wasm_interp_fast.c
 +++ b/core/iwasm/interpreter/wasm_interp_fast.c
 @@ -106,14 +106,14 @@ typedef float64 CellType_F64;
@@ -349,7 +422,15 @@ index 4e5edf41..ab8fa9cc 100644
      }
  #endif
  #if !defined(OS_ENABLE_HW_BOUND_CHECK) \
-@@ -7806,6 +7809,11 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
+@@ -7694,6 +7697,7 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
+             {
+                 wasm_interp_call_func_native(module, exec_env, cur_func,
+                                              prev_frame);
++                instructions_left -= cur_func->gas;
+             }
+ 
+ #if WASM_ENABLE_TAIL_CALL != 0 || WASM_ENABLE_GC != 0
+@@ -7806,6 +7810,11 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
          FREE_FRAME(exec_env, frame);
          wasm_exec_env_set_cur_frame(exec_env, (WASMRuntimeFrame *)prev_frame);
  
@@ -361,7 +442,7 @@ index 4e5edf41..ab8fa9cc 100644
          if (!prev_frame->ip)
              /* Called from native. */
              return;
-@@ -7834,6 +7842,10 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
+@@ -7834,6 +7843,10 @@ wasm_interp_call_func_bytecode(WASMModuleInstance *module,
  
      got_exception:
          SYNC_ALL_TO_FRAME();
@@ -372,6 +453,21 @@ index 4e5edf41..ab8fa9cc 100644
          return;
  
  #if WASM_ENABLE_LABELS_AS_VALUES == 0
+diff --git a/core/iwasm/interpreter/wasm_runtime.h b/core/iwasm/interpreter/wasm_runtime.h
+index 8d38c883..a687ab89 100644
+--- a/core/iwasm/interpreter/wasm_runtime.h
++++ b/core/iwasm/interpreter/wasm_runtime.h
+@@ -228,6 +228,10 @@ struct WASMFunctionInstance {
+         WASMFunctionImport *func_import;
+         WASMFunction *func;
+     } u;
++
++    // gas cost for import func
++    uint32 gas;
++
+ #if WASM_ENABLE_MULTI_MODULE != 0
+     WASMModuleInstance *import_module_inst;
+     WASMFunctionInstance *import_func_inst;
 diff --git a/core/shared/platform/include/platform_wasi_types.h b/core/shared/platform/include/platform_wasi_types.h
 index ac1a95ea..e23b500e 100644
 --- a/core/shared/platform/include/platform_wasi_types.h
