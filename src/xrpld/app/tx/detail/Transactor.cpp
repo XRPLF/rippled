@@ -184,6 +184,12 @@ preflight2(PreflightContext const& ctx)
                 return temINVALID;  // LCOV_EXCL_LINE
             }
         }
+
+        if (!ctx.tx.getSigningPubKey().empty())
+        {
+            // trying to single-sign _and_ multi-sign a transaction
+            return temINVALID;
+        }
         return tesSUCCESS;
     }
 
@@ -297,9 +303,9 @@ Transactor::checkFee(PreclaimContext const& ctx, XRPAmount baseFee)
 
     if (balance < feePaid)
     {
-        JLOG(ctx.j.trace()) << "Insufficient balance:"
-                            << " balance=" << to_string(balance)
-                            << " paid=" << to_string(feePaid);
+        JLOG(ctx.j.trace())
+            << "Insufficient balance:" << " balance=" << to_string(balance)
+            << " paid=" << to_string(feePaid);
 
         if ((balance > beast::zero) && !ctx.view.open())
         {
@@ -571,13 +577,13 @@ Transactor::apply()
 NotTEC
 Transactor::checkSign(PreclaimContext const& ctx)
 {
+    auto const pkSigner = ctx.tx.getSigningPubKey();
     // Ignore signature check on batch inner transactions
     if (ctx.tx.isFlag(tfInnerBatchTxn) &&
         ctx.view.rules().enabled(featureBatch))
     {
         // Defensive Check: These values are also checked in Batch::preflight
-        if (ctx.tx.isFieldPresent(sfTxnSignature) ||
-            !ctx.tx.getSigningPubKey().empty() ||
+        if (ctx.tx.isFieldPresent(sfTxnSignature) || !pkSigner.empty() ||
             ctx.tx.isFieldPresent(sfSigners))
         {
             return temINVALID_FLAG;  // LCOV_EXCL_LINE
@@ -585,25 +591,30 @@ Transactor::checkSign(PreclaimContext const& ctx)
         return tesSUCCESS;
     }
 
+    if ((ctx.flags & tapDRY_RUN) && pkSigner.empty() &&
+        !ctx.tx.isFieldPresent(sfSigners))
+    {
+        // simulate: skip signature validation when neither SigningPubKey nor
+        // Signers are provided
+        return tesSUCCESS;
+    }
+
     auto const idAccount = ctx.tx[~sfDelegate].value_or(ctx.tx[sfAccount]);
 
     // If the pk is empty and not simulate or simulate and signers,
     // then we must be multi-signing.
-    if ((ctx.flags & tapDRY_RUN && ctx.tx.isFieldPresent(sfSigners)) ||
-        (!(ctx.flags & tapDRY_RUN) && ctx.tx.getSigningPubKey().empty()))
+    if (ctx.tx.isFieldPresent(sfSigners))
     {
         STArray const& txSigners(ctx.tx.getFieldArray(sfSigners));
         return checkMultiSign(ctx.view, idAccount, txSigners, ctx.flags, ctx.j);
     }
 
     // Check Single Sign
-    auto const pkSigner = ctx.tx.getSigningPubKey();
-    // This ternary is only needed to handle `simulate`
     XRPL_ASSERT(
-        (ctx.flags & tapDRY_RUN) || !pkSigner.empty(),
+        !pkSigner.empty(),
         "ripple::Transactor::checkSingleSign : non-empty signer or simulation");
 
-    if (!(ctx.flags & tapDRY_RUN) && !publicKeyType(makeSlice(pkSigner)))
+    if (!publicKeyType(makeSlice(pkSigner)))
     {
         JLOG(ctx.j.trace())
             << "checkSingleSign: signing public key type is unknown";
@@ -798,14 +809,15 @@ Transactor::checkMultiSign(
         // public key.
         auto const spk = txSigner.getFieldVL(sfSigningPubKey);
 
-        if (!(flags & tapDRY_RUN) && !publicKeyType(makeSlice(spk)))
+        // spk being non-empty in non-simulate is checked in
+        // STTx::checkMultiSign
+        if (!spk.empty() && !publicKeyType(makeSlice(spk)))
         {
             JLOG(j.trace())
                 << "checkMultiSign: signing public key type is unknown";
             return tefBAD_SIGNATURE;
         }
 
-        // This ternary is only needed to handle `simulate`
         XRPL_ASSERT(
             (flags & tapDRY_RUN) || !spk.empty(),
             "ripple::Transactor::checkMultiSign : non-empty signer or "
