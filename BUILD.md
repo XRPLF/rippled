@@ -287,7 +287,7 @@ It fixes some source files to add missing `#include`s.
    Single-config generators:
 
    ```
-   cmake --build . -j $(nproc)
+   cmake --build .
    ```
 
    Multi-config generators:
