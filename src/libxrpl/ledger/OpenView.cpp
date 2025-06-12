@@ -17,9 +17,8 @@
 */
 //==============================================================================
 
-#include <xrpld/ledger/OpenView.h>
-
 #include <xrpl/basics/contract.h>
+#include <xrpl/ledger/OpenView.h>
 
 namespace ripple {
 

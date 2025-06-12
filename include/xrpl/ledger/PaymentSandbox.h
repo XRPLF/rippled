@@ -20,10 +20,9 @@
 #ifndef RIPPLE_LEDGER_PAYMENTSANDBOX_H_INCLUDED
 #define RIPPLE_LEDGER_PAYMENTSANDBOX_H_INCLUDED
 
-#include <xrpld/ledger/RawView.h>
-#include <xrpld/ledger/Sandbox.h>
-#include <xrpld/ledger/detail/ApplyViewBase.h>
-
+#include <xrpl/ledger/RawView.h>
+#include <xrpl/ledger/Sandbox.h>
+#include <xrpl/ledger/detail/ApplyViewBase.h>
 #include <xrpl/protocol/AccountID.h>
 
 #include <map>
