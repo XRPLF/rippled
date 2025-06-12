@@ -208,7 +208,7 @@ jobs:
           configuration: Release
           cmake-args: >-
             -Dxrpld=TRUE
-            -Dtests=FALSE
+            -Dtests=TRUE
             -Drocksdb=FALSE
       - name: Strip symbols
         run: |
