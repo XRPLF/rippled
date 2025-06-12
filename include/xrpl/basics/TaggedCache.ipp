@@ -299,24 +299,30 @@ TaggedCache<
     {
         std::lock_guard lock(m_mutex);
 
-        if (m_target_size == 0 ||
-            (static_cast<int>(m_cache.size()) <= m_target_size))
-        {
-            when_expire = now - m_target_age;
-        }
-        else
-        {
-            when_expire = now - m_target_age * m_target_size / m_cache.size();
+        // if (m_target_size == 0 ||
+        //     (static_cast<int>(m_cache.size()) <= m_target_size))
+        // {
+        //     when_expire = now - m_target_age;
+        // }
+        // else
+        // {
+        //     when_expire = now - m_target_age * m_target_size /
+        //     m_cache.size();
 
-            clock_type::duration const minimumAge(std::chrono::seconds(1));
-            if (when_expire > (now - minimumAge))
-                when_expire = now - minimumAge;
+        //     clock_type::duration const minimumAge(std::chrono::seconds(1));
+        //     if (when_expire > (now - minimumAge))
+        //         when_expire = now - minimumAge;
 
-            JLOG(m_journal.trace())
-                << m_name << " is growing fast " << m_cache.size() << " of "
-                << m_target_size << " aging at " << (now - when_expire).count()
-                << " of " << m_target_age.count();
-        }
+        //     JLOG(m_journal.trace())
+        //         << m_name << " is growing fast " << m_cache.size() << " of "
+        //         << m_target_size << " aging at " << (now -
+        //         when_expire).count()
+        //         << " of " << m_target_age.count();
+        // }
+
+        when_expire =
+            now + std::chrono::hours(1);  // any future time works too to make
+                                          // sure that nothing survives
 
         std::vector<std::thread> workers;
         workers.reserve(m_cache.partitions());
