@@ -62,6 +62,7 @@ struct WasmImportFunc
     void* udata = nullptr;
     // wasm_func_callback_with_env_t
     void* wrap = nullptr;
+    uint32_t gas = 0;
 };
 
 #define WASM_IMPORT_FUNC(v, f, ...) \
@@ -139,12 +140,14 @@ WasmImpFunc(
     std::vector<WasmImportFunc>& v,
     std::string_view imp_name,
     void* f_wrap,
-    void* data = nullptr)
+    void* data = nullptr,
+    uint32_t gas = 0)
 {
     WasmImportFunc e;
     e.name = imp_name;
     e.udata = data;
     e.wrap = f_wrap;
+    e.gas = gas;
     WasmImpFuncHelper<F>(e);
     v.push_back(std::move(e));
 }

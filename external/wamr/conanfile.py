@@ -13,7 +13,7 @@ required_conan_version = ">=1.55.0"
 
 class WamrConan(ConanFile):
     name = "wamr"
-    version = "2.2.0"
+    version = "2.3.1"
     license = "Apache License v2.0"
     url = "https://github.com/bytecodealliance/wasm-micro-runtime.git"
     description = "Webassembly micro runtime"
@@ -42,7 +42,7 @@ class WamrConan(ConanFile):
         git = tools.Git()
         git.clone(
             "https://github.com/bytecodealliance/wasm-micro-runtime.git",
-            "c883fafead005e87ad3122b05409886f507c1cb0",
+            "2a303861cc916dc182b7fecaa0aacc1b797e7ac6",
             shallow=True,
         )
         # get(self, **self.conan_data["sources"][self.version], strip_root=True)
@@ -89,3 +89,4 @@ class WamrConan(ConanFile):
         self.cpp_info.libs = ["iwasm"]
         self.cpp_info.names["cmake_find_package"] = "wamr"
         self.cpp_info.names["cmake_find_package_multi"] = "wamr"
+

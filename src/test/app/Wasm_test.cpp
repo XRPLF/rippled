@@ -23,7 +23,7 @@
 #include <xrpld/app/misc/WasmHostFunc.h>
 #include <xrpld/app/misc/WasmVM.h>
 
-#include <iwasm/wasm_c_api.h>
+#include <wasm_c_api.h>
 
 #ifdef _DEBUG
 // #define DEBUG_OUTPUT 1
@@ -71,97 +71,6 @@ getLedgerSqn_wrap(void* env, wasm_val_vec_t const*, wasm_val_vec_t* results)
     return nullptr;
 }
 
-struct TestHostFunctionsOld : public HostFunctions
-{
-    test::jtx::Env* env_;
-    Bytes accountID_;
-    Bytes data_;
-    int clock_drift_ = 0;
-    test::StreamSink sink_;
-    beast::Journal jlog_;
-    void const* rt_ = nullptr;
-
-public:
-    explicit TestHostFunctionsOld(test::jtx::Env* env, int cd = 0)
-        : env_(env)
-        , clock_drift_(cd)
-        , sink_(beast::severities::kDebug)
-        , jlog_(sink_)
-    {
-        std::string s = "rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh";
-        accountID_ = Bytes{s.begin(), s.end()};
-        std::string t = "10000";
-        data_ = Bytes{t.begin(), t.end()};
-    }
-
-    virtual void
-    setRT(void const* rt) override
-    {
-        rt_ = rt;
-    }
-
-    virtual void const*
-    getRT() const override
-    {
-        return rt_;
-    }
-
-    test::StreamSink&
-    getSink()
-    {
-        return sink_;
-    }
-
-    beast::Journal
-    getJournal() override
-    {
-        return jlog_;
-    }
-
-    int32_t
-    getLedgerSqn() override
-    {
-        return (int32_t)env_->current()->seq();
-    }
-
-    int32_t
-    getParentLedgerTime() override
-    {
-        return env_->current()->parentCloseTime().time_since_epoch().count() +
-            clock_drift_;
-    }
-
-    Expected<Bytes, int32_t>
-    getTxField(SField const& fname) override
-    {
-        return accountID_;
-    }
-
-    Expected<Bytes, int32_t>
-    getLedgerObjField(int32_t cacheIdx, SField const& fname) override
-    {
-        return data_;
-    }
-
-    Expected<Bytes, int32_t>
-    getCurrentLedgerObjField(SField const& fname) override
-    {
-        if (fname.getName() == "Destination" || fname.getName() == "Account")
-            return accountID_;
-        else if (fname.getName() == "Data")
-            return data_;
-        else if (fname.getName() == "FinishAfter")
-        {
-            auto t =
-                env_->current()->parentCloseTime().time_since_epoch().count();
-            std::string s = std::to_string(t);
-            return Bytes{s.begin(), s.end()};
-        }
-
-        return Unexpected(-1);
-    }
-};
-
 struct TestHostFunctions : public HostFunctions
 {
     test::jtx::Env& env_;
@@ -171,7 +80,7 @@ struct TestHostFunctions : public HostFunctions
     void const* rt_ = nullptr;
 
 public:
-    explicit TestHostFunctions(test::jtx::Env& env, int cd = 0)
+    TestHostFunctions(test::jtx::Env& env, int cd = 0)
         : env_(env), clock_drift_(cd)
     {
         auto opt = parseBase58<AccountID>("rHb9CJAWyB4rj91VRWn96DkukG4bwdtyTh");
@@ -212,6 +121,12 @@ public:
             clock_drift_;
     }
 
+    Hash
+    getParentLedgerHash() override
+    {
+        return env_.current()->info().parentHash;
+    }
+
     virtual int32_t
     cacheLedgerObj(Keylet const& keylet, int32_t cacheIdx) override
     {
@@ -239,29 +154,6 @@ public:
     }
 
     Expected<Bytes, int32_t>
-    getTxNestedField(Slice const& locator) override
-    {
-        uint8_t const a[] = {0x2b, 0x6a, 0x23, 0x2a, 0xa4, 0xc4, 0xbe, 0x41,
-                             0xbf, 0x49, 0xd2, 0x45, 0x9f, 0xa4, 0xa0, 0x34,
-                             0x7e, 0x1b, 0x54, 0x3a, 0x4c, 0x92, 0xfc, 0xee,
-                             0x08, 0x21, 0xc0, 0x20, 0x1e, 0x2e, 0x9a, 0x00};
-        return Bytes(&a[0], &a[sizeof(a)]);
-    }
-
-    Expected<Bytes, int32_t>
-    getLedgerObjField(int32_t cacheIdx, SField const& fname) override
-    {
-        // auto const& sn = fname.getName();
-        if (fname == sfBalance)
-        {
-            int64_t x = 10'000;
-            uint8_t const* p = reinterpret_cast<uint8_t const*>(&x);
-            return Bytes{p, p + sizeof(x)};
-        }
-        return data_;
-    }
-
-    Expected<Bytes, int32_t>
     getCurrentLedgerObjField(SField const& fname) override
     {
         auto const& sn = fname.getName();
@@ -280,8 +172,63 @@ public:
         return Unexpected(-1);
     }
 
+    Expected<Bytes, int32_t>
+    getLedgerObjField(int32_t cacheIdx, SField const& fname) override
+    {
+        // auto const& sn = fname.getName();
+        if (fname == sfBalance)
+        {
+            int64_t x = 10'000;
+            uint8_t const* p = reinterpret_cast<uint8_t const*>(&x);
+            return Bytes{p, p + sizeof(x)};
+        }
+        return data_;
+    }
+
+    Expected<Bytes, int32_t>
+    getTxNestedField(Slice const& locator) override
+    {
+        uint8_t const a[] = {0x2b, 0x6a, 0x23, 0x2a, 0xa4, 0xc4, 0xbe, 0x41,
+                             0xbf, 0x49, 0xd2, 0x45, 0x9f, 0xa4, 0xa0, 0x34,
+                             0x7e, 0x1b, 0x54, 0x3a, 0x4c, 0x92, 0xfc, 0xee,
+                             0x08, 0x21, 0xc0, 0x20, 0x1e, 0x2e, 0x9a, 0x00};
+        return Bytes(&a[0], &a[sizeof(a)]);
+    }
+
+    Expected<Bytes, int32_t>
+    getCurrentLedgerObjNestedField(Slice const& locator) override
+    {
+        uint8_t const a[] = {0x2b, 0x6a, 0x23, 0x2a, 0xa4, 0xc4, 0xbe, 0x41,
+                             0xbf, 0x49, 0xd2, 0x45, 0x9f, 0xa4, 0xa0, 0x34,
+                             0x7e, 0x1b, 0x54, 0x3a, 0x4c, 0x92, 0xfc, 0xee,
+                             0x08, 0x21, 0xc0, 0x20, 0x1e, 0x2e, 0x9a, 0x00};
+        return Bytes(&a[0], &a[sizeof(a)]);
+    }
+
+    Expected<Bytes, int32_t>
+    getLedgerObjNestedField(int32_t cacheIdx, Slice const& locator) override
+    {
+        uint8_t const a[] = {0x2b, 0x6a, 0x23, 0x2a, 0xa4, 0xc4, 0xbe, 0x41,
+                             0xbf, 0x49, 0xd2, 0x45, 0x9f, 0xa4, 0xa0, 0x34,
+                             0x7e, 0x1b, 0x54, 0x3a, 0x4c, 0x92, 0xfc, 0xee,
+                             0x08, 0x21, 0xc0, 0x20, 0x1e, 0x2e, 0x9a, 0x00};
+        return Bytes(&a[0], &a[sizeof(a)]);
+    }
+
     int32_t
     getTxArrayLen(SField const& fname) override
+    {
+        return 32;
+    }
+
+    int32_t
+    getCurrentLedgerObjArrayLen(SField const& fname) override
+    {
+        return 32;
+    }
+
+    int32_t
+    getLedgerObjArrayLen(int32_t cacheIdx, SField const& fname) override
     {
         return 32;
     }
@@ -293,9 +240,27 @@ public:
     }
 
     int32_t
+    getCurrentLedgerObjNestedArrayLen(Slice const& locator) override
+    {
+        return 32;
+    }
+
+    int32_t
+    getLedgerObjNestedArrayLen(int32_t cacheIdx, Slice const& locator) override
+    {
+        return 32;
+    }
+
+    int32_t
     updateData(Bytes const& data) override
     {
         return 0;
+    }
+
+    Hash
+    computeSha512HalfHash(Bytes const& data) override
+    {
+        return env_.current()->info().parentHash;
     }
 
     Expected<Bytes, int32_t>
@@ -305,6 +270,49 @@ public:
             return Unexpected(HF_ERR_INVALID_ACCOUNT);
         auto const keylet = keylet::account(account);
         return Bytes{keylet.key.begin(), keylet.key.end()};
+    }
+
+    Expected<Bytes, int32_t>
+    credentialKeylet(
+        AccountID const& subject,
+        AccountID const& issuer,
+        Bytes const& credentialType) override
+    {
+        if (!subject || !issuer || credentialType.empty())
+            return Unexpected(HF_ERR_INVALID_ACCOUNT);
+        auto const keylet =
+            keylet::credential(subject, issuer, makeSlice(credentialType));
+        return Bytes{keylet.key.begin(), keylet.key.end()};
+    }
+
+    Expected<Bytes, int32_t>
+    escrowKeylet(AccountID const& account, std::uint32_t seq) override
+    {
+        if (!account)
+            return Unexpected(HF_ERR_INVALID_ACCOUNT);
+        auto const keylet = keylet::escrow(account, seq);
+        return Bytes{keylet.key.begin(), keylet.key.end()};
+    }
+
+    Expected<Bytes, int32_t>
+    oracleKeylet(AccountID const& account, std::uint32_t documentId) override
+    {
+        if (!account)
+            return Unexpected(HF_ERR_INVALID_ACCOUNT);
+        auto const keylet = keylet::oracle(account, documentId);
+        return Bytes{keylet.key.begin(), keylet.key.end()};
+    }
+
+    Expected<Bytes, int32_t>
+    getNFT(AccountID const& account, uint256 const& nftId) override
+    {
+        if (!account || !nftId)
+        {
+            return Unexpected(HF_ERR_INVALID_PARAMS);
+        }
+
+        std::string s = "https://ripple.com";
+        return Bytes(s.begin(), s.end());
     }
 
     int32_t
@@ -350,6 +358,33 @@ public:
     }
 };
 
+struct TestHostFunctionsSink : public TestHostFunctions
+{
+    test::StreamSink sink_;
+    beast::Journal jlog_;
+    void const* rt_ = nullptr;
+
+public:
+    explicit TestHostFunctionsSink(test::jtx::Env& env, int cd = 0)
+        : TestHostFunctions(env, cd)
+        , sink_(beast::severities::kDebug)
+        , jlog_(sink_)
+    {
+    }
+
+    test::StreamSink&
+    getSink()
+    {
+        return sink_;
+    }
+
+    beast::Journal
+    getJournal() override
+    {
+        return jlog_;
+    }
+};
+
 struct Wasm_test : public beast::unit_test::suite
 {
     void
@@ -361,9 +396,9 @@ struct Wasm_test : public beast::unit_test::suite
         Bytes const wasm(ws.begin(), ws.end());
         auto& engine = WasmEngine::instance();
 
-        auto const r = engine.run(wasm, "fib", wasmParams(10));
+        auto const re = engine.run(wasm, "fib", wasmParams(10));
 
-        BEAST_EXPECT(r.has_value() && (r->result == 55));
+        BEAST_EXPECT(re.has_value() && (re->result == 55) && (re->cost == 755));
     }
 
     void
@@ -375,10 +410,11 @@ struct Wasm_test : public beast::unit_test::suite
         Bytes const wasm(ws.begin(), ws.end());
         auto& engine = WasmEngine::instance();
 
-        auto const r =
+        auto const re =
             engine.run(wasm, "sha512_process", wasmParams(sha512PureHex));
 
-        BEAST_EXPECT(r.has_value() && (r->result == 34432));
+        BEAST_EXPECT(
+            re.has_value() && (re->result == 34432) && (re->cost == 157'452));
     }
 
     void
@@ -396,9 +432,9 @@ struct Wasm_test : public beast::unit_test::suite
             static_cast<std::uint32_t>(512),
             static_cast<std::uint32_t>(b58Hex.size()));
         auto const s = std::string_view(b58Hex.c_str(), minsz);
-        auto const r = engine.run(wasm, "b58enco", wasmParams(outb, s));
+        auto const re = engine.run(wasm, "b58enco", wasmParams(outb, s));
 
-        BEAST_EXPECT(r.has_value() && r->result);
+        BEAST_EXPECT(re.has_value() && re->result && (re->cost == 3'066'129));
     }
 
     void
@@ -409,9 +445,10 @@ struct Wasm_test : public beast::unit_test::suite
         Bytes const wasm(ws.begin(), ws.end());
         auto& engine = WasmEngine::instance();
 
-        auto const r = engine.run(wasm, "sp1_groth16_verifier");
+        auto const re = engine.run(wasm, "sp1_groth16_verifier");
 
-        BEAST_EXPECT(r.has_value() && r->result);
+        BEAST_EXPECT(
+            re.has_value() && re->result && (re->cost == 4'191'711'969ll));
     }
 
     void
@@ -422,9 +459,9 @@ struct Wasm_test : public beast::unit_test::suite
         Bytes const wasm(ws.begin(), ws.end());
         auto& engine = WasmEngine::instance();
 
-        auto const r = engine.run(wasm, "bellman_groth16_test");
+        auto const re = engine.run(wasm, "bellman_groth16_test");
 
-        BEAST_EXPECT(r.has_value() && r->result);
+        BEAST_EXPECT(re.has_value() && re->result && (re->cost == 332'205'984));
     }
 
     void
@@ -442,24 +479,29 @@ struct Wasm_test : public beast::unit_test::suite
         std::string const funcName("finish");
 
         std::vector<WasmImportFunc> imports;
-        WASM_IMPORT_FUNC(imports, getLedgerSqn, &ledgerDataProvider);
+        WASM_IMPORT_FUNC(imports, getLedgerSqn, &ledgerDataProvider, 33);
 
         auto& engine = WasmEngine::instance();
 
-        auto r = engine.run(
+        auto re = engine.run(
             wasm, funcName, {}, imports, nullptr, 1'000'000, env.journal);
-        if (BEAST_EXPECT(r.has_value()))
-            BEAST_EXPECT(!r->result);
+
+        // code takes 4 gas + 1 getLedgerSqn call
+        if (BEAST_EXPECT(re.has_value()))
+            BEAST_EXPECT(!re->result && (re->cost == 37));
+
         env.close();
         env.close();
         env.close();
         env.close();
 
-        // empty module - run the same module
-        r = engine.run(
+        // empty module - run the same instance
+        re = engine.run(
             {}, funcName, {}, imports, nullptr, 1'000'000, env.journal);
-        if (BEAST_EXPECT(r.has_value()))
-            BEAST_EXPECT(r->result);
+
+        // code takes 8 gas + 2 getLedgerSqn calls
+        if (BEAST_EXPECT(re.has_value()))
+            BEAST_EXPECT(re->result && (re->cost == 74));
     }
 
     void
@@ -479,7 +521,7 @@ struct Wasm_test : public beast::unit_test::suite
             auto re = runEscrowWasm(
                 wasm, funcName, wasmParams(data), nullptr, -1, env.journal);
             if (BEAST_EXPECT(re.has_value()))
-                BEAST_EXPECT(re.value().result);
+                BEAST_EXPECT(re.value().result && (re->cost == 838));
         }
         {
             std::string str = "rHb9CJAWyB4rj91VRWn96DkukG4bwdty00";
@@ -487,7 +529,7 @@ struct Wasm_test : public beast::unit_test::suite
             auto re = runEscrowWasm(
                 wasm, funcName, wasmParams(data), nullptr, -1, env.journal);
             if (BEAST_EXPECT(re.has_value()))
-                BEAST_EXPECT(!re.value().result);
+                BEAST_EXPECT(!re.value().result && (re->cost == 822));
         }
     }
 
@@ -513,7 +555,7 @@ struct Wasm_test : public beast::unit_test::suite
             -1,
             env.journal);
         if (BEAST_EXPECT(re.has_value()))
-            BEAST_EXPECT(re.value().result);
+            BEAST_EXPECT(re.value().result && (re->cost == 42'212));
 
         std::vector<uint8_t> const lo_data2(lo_js2.begin(), lo_js2.end());
         re = runEscrowWasm(
@@ -524,7 +566,7 @@ struct Wasm_test : public beast::unit_test::suite
             -1,
             env.journal);
         if (BEAST_EXPECT(re.has_value()))
-            BEAST_EXPECT(!re.value().result);
+            BEAST_EXPECT(!re.value().result && (re->cost == 41'496));
     }
 
     void
@@ -566,11 +608,11 @@ struct Wasm_test : public beast::unit_test::suite
         WasmImpFunc<Add_proto>(
             imports, "func-add", reinterpret_cast<void*>(&Add));
 
-        auto res = vm.run(wasm, "addTwo", wasmParams(1234, 5678), imports);
+        auto re = vm.run(wasm, "addTwo", wasmParams(1234, 5678), imports);
 
         // if (res) printf("invokeAdd get the result: %d\n", res.value());
 
-        BEAST_EXPECT(res.has_value() && res->result == 6912);
+        BEAST_EXPECT(re.has_value() && re->result == 6912 && (re->cost == 2));
     }
 
     void
@@ -587,7 +629,7 @@ struct Wasm_test : public beast::unit_test::suite
         std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
         std::string funcName("mock_escrow");
         auto re = runEscrowWasm(wasm, funcName, {}, &hfs, 15, env.journal);
-        BEAST_EXPECT(re.error());
+        BEAST_EXPECT(!re && re.error());
     }
 
     void
@@ -616,10 +658,10 @@ struct Wasm_test : public beast::unit_test::suite
         {
             TestHostFunctions nfs(env, 0);
             std::string funcName("finish");
-            auto re = runEscrowWasm(wasm, funcName, {}, &nfs, 100000);
+            auto re = runEscrowWasm(wasm, funcName, {}, &nfs, 100'000);
             if (BEAST_EXPECT(re.has_value()))
             {
-                BEAST_EXPECT(re.value().result);
+                BEAST_EXPECT(!re->result && (re->cost == 487));
                 // std::cout << "good case result " << re.value().result
                 //           << " cost: " << re.value().cost << std::endl;
             }
@@ -636,7 +678,7 @@ struct Wasm_test : public beast::unit_test::suite
             auto re = runEscrowWasm(wasm, funcName, {}, &nfs, 100000);
             if (BEAST_EXPECT(re.has_value()))
             {
-                BEAST_EXPECT(!re.value().result);
+                BEAST_EXPECT(!re->result && (re->cost == 487));
                 // std::cout << "bad case (current time < escrow_finish_after "
                 //              "time) result "
                 //           << re.value().result << " cost: " <<
@@ -654,13 +696,13 @@ struct Wasm_test : public beast::unit_test::suite
                 Expected<Bytes, int32_t>
                 getTxField(SField const& fname) override
                 {
-                    return Unexpected(-1);
+                    return Unexpected(HF_ERR_FIELD_NOT_FOUND);
                 }
             };
             BadTestHostFunctions nfs(env);
             std::string funcName("finish");
             auto re = runEscrowWasm(wasm, funcName, {}, &nfs, 100000);
-            BEAST_EXPECT(re.error());
+            BEAST_EXPECT(re.has_value() && !re->result && (re->cost == 23));
             // std::cout << "bad case (access nonexistent field) result "
             //           << re.error() << std::endl;
         }
@@ -680,7 +722,7 @@ struct Wasm_test : public beast::unit_test::suite
             BadTestHostFunctions nfs(env);
             std::string funcName("finish");
             auto re = runEscrowWasm(wasm, funcName, {}, &nfs, 100000);
-            BEAST_EXPECT(!re);
+            BEAST_EXPECT(re.has_value() && !re->result && (re->cost == 23));
             // std::cout << "bad case (more than MAX_PAGES) result "
             //           << re.error() << std::endl;
         }
@@ -690,10 +732,10 @@ struct Wasm_test : public beast::unit_test::suite
             auto wasmStr = boost::algorithm::unhex(std::string(wasmHex));
             std::vector<uint8_t> wasm(wasmStr.begin(), wasmStr.end());
 
-            TestHostFunctionsOld nfs(&env);
+            TestHostFunctionsSink nfs(env);
             std::string funcName("recursive");
             auto re = runEscrowWasm(wasm, funcName, {}, &nfs, 1000'000'000);
-            BEAST_EXPECT(re.error());
+            BEAST_EXPECT(!re && re.error());
             // std::cout << "bad case (deep recursion) result " << re.error()
             //             << std::endl;
 
@@ -712,12 +754,31 @@ struct Wasm_test : public beast::unit_test::suite
 
             BEAST_EXPECT(
                 countSubstr(
-                    sink.messages().str(), "WAMR error: failed to call func") ==
+                    sink.messages().str(), "WAMR Error: failed to call func") ==
                 1);
             BEAST_EXPECT(
                 countSubstr(
                     sink.messages().str(),
                     "WAMR Exception: wasm operand stack overflow") == 1);
+        }
+
+        {
+            auto wasmStr = boost::algorithm::unhex(ledgerSqnHex);
+            Bytes wasm(wasmStr.begin(), wasmStr.end());
+            std::string const funcName("finish");
+            TestLedgerDataProvider ledgerDataProvider(&env);
+
+            std::vector<WasmImportFunc> imports;
+            WASM_IMPORT_FUNC2(
+                imports, getLedgerSqn, "get_ledger_sqn2", &ledgerDataProvider);
+
+            auto& engine = WasmEngine::instance();
+
+            auto re = engine.run(
+                wasm, funcName, {}, imports, nullptr, 1'000'000, env.journal);
+
+            // expected import not provided
+            BEAST_EXPECT(!re);
         }
     }
 
@@ -741,7 +802,7 @@ struct Wasm_test : public beast::unit_test::suite
             auto re = runEscrowWasm(wasm, funcName, {}, &nfs, 100'000);
             if (BEAST_EXPECT(re.has_value()))
             {
-                BEAST_EXPECT(re->result);
+                BEAST_EXPECT(re->result && (re->cost == 80));
                 // std::cout << "good case result " << re.value().result
                 //           << " cost: " << re.value().cost << std::endl;
             }
@@ -763,7 +824,7 @@ struct Wasm_test : public beast::unit_test::suite
             auto re = runEscrowWasm(wasm, funcName, {}, &nfs, 100'000);
             if (BEAST_EXPECT(re.has_value()))
             {
-                BEAST_EXPECT(re->result);
+                BEAST_EXPECT(re->result && (re->cost == 138));
                 // std::cout << "good case result " << re.value().result
                 //           << " cost: " << re.value().cost << std::endl;
             }
@@ -787,10 +848,10 @@ struct Wasm_test : public beast::unit_test::suite
 
         // runing too long
         // testWasmSP1Verifier();
-        // testWasmBG16Verifier();
+        testWasmBG16Verifier();
 
-        // TODO: needs fix for new host functions interface
-        // testEscrowWasmDN1();
+        // TODO: fix result
+        testEscrowWasmDN1();
         testEscrowWasmDN2();
     }
 };

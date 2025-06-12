@@ -529,6 +529,15 @@ ModuleWrapper::buildImports(
                 reinterpret_cast<wasm_func_callback_with_env_t>(imp.wrap),
                 imp.udata,
                 nullptr);
+            if (!func)
+                throw std::runtime_error(
+                    "can't create import function " +
+                    imp.name);  // LCOV_EXCL_LINE
+
+            if (imp.gas && !wasm_func_set_gas(func, imp.gas))
+                throw std::runtime_error(
+                    "can't set gas for import function " +
+                    imp.name);  // LCOV_EXCL_LINE
 
             wimports.data[i] = wasm_func_as_extern(func);
             ++impCnt;
@@ -862,6 +871,10 @@ WamrEngine::runHlp(
     //     auto j = j_.debug();
     // #endif
 
+    // currently only 1 module support, possible parallel UT run
+    static std::mutex m;
+    std::lock_guard<decltype(m)> lg(m);
+
     // Create and instantiate the module.
     if (!wasmCode.empty())
     {
@@ -894,7 +907,8 @@ WamrEngine::runHlp(
     }
 
     assert(res.r.data[0].kind == WASM_I32);
-
+    if (gas == -1)
+        gas = std::numeric_limits<decltype(gas)>::max();
     WasmResult<int32_t> const ret{res.r.data[0].of.i32, gas - module->getGas()};
 
     // j << "WAMR Res: " << ret.result << " cost: " << ret.cost << std::endl;
