@@ -20,8 +20,7 @@
 #ifndef RIPPLE_LEDGER_DIR_H_INCLUDED
 #define RIPPLE_LEDGER_DIR_H_INCLUDED
 
-#include <xrpld/ledger/ReadView.h>
-
+#include <xrpl/ledger/ReadView.h>
 #include <xrpl/protocol/Indexes.h>
 
 namespace ripple {
