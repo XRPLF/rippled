@@ -21,7 +21,8 @@
 #define RIPPLE_TX_AMMWITHDRAW_H_INCLUDED
 
 #include <xrpld/app/tx/detail/Transactor.h>
-#include <xrpld/ledger/View.h>
+
+#include <xrpl/ledger/View.h>
 
 namespace ripple {
 
