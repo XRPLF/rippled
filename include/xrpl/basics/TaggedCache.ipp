@@ -293,7 +293,7 @@ TaggedCache<
 
     auto const start = std::chrono::steady_clock::now();
     {
-        std::lock_guard lock(m_mutex);
+        // TODO: lock the cache partition
 
         if (m_target_size == 0 ||
             (static_cast<int>(m_cache.size()) <= m_target_size))
@@ -325,8 +325,7 @@ TaggedCache<
                 now,
                 m_cache.map()[p],
                 allStuffToSweep[p],
-                allRemovals,
-                lock));
+                allRemovals));
         }
         for (std::thread& worker : workers)
             worker.join();
@@ -867,8 +866,7 @@ TaggedCache<
         [[maybe_unused]] clock_type::time_point const& now,
         typename KeyValueCacheType::map_type& partition,
         SweptPointersVector& stuffToSweep,
-        std::atomic<int>& allRemovals,
-        std::lock_guard<std::recursive_mutex> const&)
+        std::atomic<int>& allRemovals)
 {
     return std::thread([&, this]() {
         int cacheRemovals = 0;
@@ -956,8 +954,7 @@ TaggedCache<
         clock_type::time_point const& now,
         typename KeyOnlyCacheType::map_type& partition,
         SweptPointersVector&,
-        std::atomic<int>& allRemovals,
-        std::lock_guard<std::recursive_mutex> const&)
+        std::atomic<int>& allRemovals)
 {
     return std::thread([&, this]() {
         int cacheRemovals = 0;

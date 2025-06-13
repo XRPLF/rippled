@@ -297,8 +297,7 @@ private:
         [[maybe_unused]] clock_type::time_point const& now,
         typename KeyValueCacheType::map_type& partition,
         SweptPointersVector& stuffToSweep,
-        std::atomic<int>& allRemovals,
-        std::lock_guard<std::recursive_mutex> const&);
+        std::atomic<int>& allRemoval);
 
     [[nodiscard]] std::thread
     sweepHelper(
@@ -306,14 +305,11 @@ private:
         clock_type::time_point const& now,
         typename KeyOnlyCacheType::map_type& partition,
         SweptPointersVector&,
-        std::atomic<int>& allRemovals,
-        std::lock_guard<std::recursive_mutex> const&);
+        std::atomic<int>& allRemovals);
 
     beast::Journal m_journal;
     clock_type& m_clock;
     Stats m_stats;
-
-    mutex_type mutable m_mutex;
 
     // Used for logging
     std::string m_name;
