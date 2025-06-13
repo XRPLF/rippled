@@ -195,6 +195,9 @@ private:
     void
     collect_metrics();
 
+    Mutex&
+    lockPartition(key_type const& key) const;
+
 private:
     struct Stats
     {
@@ -297,7 +300,8 @@ private:
         [[maybe_unused]] clock_type::time_point const& now,
         typename KeyValueCacheType::map_type& partition,
         SweptPointersVector& stuffToSweep,
-        std::atomic<int>& allRemoval);
+        std::atomic<int>& allRemoval,
+        Mutex& partitionLock);
 
     [[nodiscard]] std::thread
     sweepHelper(
@@ -305,7 +309,8 @@ private:
         clock_type::time_point const& now,
         typename KeyOnlyCacheType::map_type& partition,
         SweptPointersVector&,
-        std::atomic<int>& allRemovals);
+        std::atomic<int>& allRemovals,
+        Mutex& partitionLock);
 
     beast::Journal m_journal;
     clock_type& m_clock;
@@ -325,6 +330,7 @@ private:
     cache_type m_cache;  // Hold strong reference to recent objects
     std::atomic<std::uint64_t> m_hits;
     std::atomic<std::uint64_t> m_misses;
+    mutable std::vector<mutex_type> partitionLocks_;
 };
 
 }  // namespace ripple
