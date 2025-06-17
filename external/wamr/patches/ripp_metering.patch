@@ -11,6 +11,19 @@ index 88a1642b..aeb29912 100644
  
  option(BUILD_SHARED_LIBS "Build using shared libraries" OFF)
  
+diff --git a/core/iwasm/aot/aot_runtime.c b/core/iwasm/aot/aot_runtime.c
+index b2c9ed62..87947a18 100644
+--- a/core/iwasm/aot/aot_runtime.c
++++ b/core/iwasm/aot/aot_runtime.c
+@@ -5484,7 +5484,7 @@ aot_resolve_import_func(AOTModule *module, AOTImportFunc *import_func)
+     import_func->func_ptr_linked = wasm_native_resolve_symbol(
+         import_func->module_name, import_func->func_name,
+         import_func->func_type, &import_func->signature,
+-        &import_func->attachment, &import_func->call_conv_raw);
++        &import_func->attachment, NULL, &import_func->call_conv_raw);
+ #if WASM_ENABLE_MULTI_MODULE != 0
+     if (!import_func->func_ptr_linked) {
+         if (!wasm_runtime_is_built_in_module(import_func->module_name)) {
 diff --git a/core/iwasm/common/wasm_c_api.c b/core/iwasm/common/wasm_c_api.c
 index 269ec577..34eb7c34 100644
 --- a/core/iwasm/common/wasm_c_api.c
@@ -117,8 +130,91 @@ index 5d80312f..2713a092 100644
  #endif
  
  #if WASM_ENABLE_FAST_JIT != 0
+diff --git a/core/iwasm/common/wasm_native.c b/core/iwasm/common/wasm_native.c
+index 060bb2c3..9221c36a 100644
+--- a/core/iwasm/common/wasm_native.c
++++ b/core/iwasm/common/wasm_native.c
+@@ -180,9 +180,9 @@ native_symbol_cmp(const void *native_symbol1, const void *native_symbol2)
+                   ((const NativeSymbol *)native_symbol2)->symbol);
+ }
+ 
+-static void *
++static NativeSymbol *
+ lookup_symbol(NativeSymbol *native_symbols, uint32 n_native_symbols,
+-              const char *symbol, const char **p_signature, void **p_attachment)
++              const char *symbol)
+ {
+     NativeSymbol *native_symbol, key = { 0 };
+ 
+@@ -190,9 +190,7 @@ lookup_symbol(NativeSymbol *native_symbols, uint32 n_native_symbols,
+ 
+     if ((native_symbol = bsearch(&key, native_symbols, n_native_symbols,
+                                  sizeof(NativeSymbol), native_symbol_cmp))) {
+-        *p_signature = native_symbol->signature;
+-        *p_attachment = native_symbol->attachment;
+-        return native_symbol->func_ptr;
++        return native_symbol;
+     }
+ 
+     return NULL;
+@@ -205,25 +203,36 @@ lookup_symbol(NativeSymbol *native_symbols, uint32 n_native_symbols,
+ void *
+ wasm_native_resolve_symbol(const char *module_name, const char *field_name,
+                            const WASMFuncType *func_type,
+-                           const char **p_signature, void **p_attachment,
++                           const char **p_signature, void **p_attachment, uint32_t *gas,
+                            bool *p_call_conv_raw)
+ {
+     NativeSymbolsNode *node, *node_next;
+     const char *signature = NULL;
+     void *func_ptr = NULL, *attachment = NULL;
++    NativeSymbol *native_symbol = NULL;
+ 
+     node = g_native_symbols_list;
+     while (node) {
+         node_next = node->next;
+         if (!strcmp(node->module_name, module_name)) {
+-            if ((func_ptr =
++            if ((native_symbol =
+                      lookup_symbol(node->native_symbols, node->n_native_symbols,
+-                                   field_name, &signature, &attachment))
++                                   field_name))
+                 || (field_name[0] == '_'
+-                    && (func_ptr = lookup_symbol(
++                    && (native_symbol = lookup_symbol(
+                             node->native_symbols, node->n_native_symbols,
+-                            field_name + 1, &signature, &attachment))))
+-                break;
++                            field_name + 1))))
++            {
++                func_ptr = native_symbol->func_ptr;
++                if(func_ptr)
++                {
++                    if(gas)
++                        *gas = native_symbol->gas;
++                    signature = native_symbol->signature;
++                    attachment = native_symbol->attachment;
++                    break;
++                }
++            }
+         }
+         node = node_next;
+     }
+diff --git a/core/iwasm/common/wasm_native.h b/core/iwasm/common/wasm_native.h
+index 9a6afee1..0fe4739f 100644
+--- a/core/iwasm/common/wasm_native.h
++++ b/core/iwasm/common/wasm_native.h
+@@ -52,7 +52,7 @@ wasm_native_lookup_libc_builtin_global(const char *module_name,
+ void *
+ wasm_native_resolve_symbol(const char *module_name, const char *field_name,
+                            const WASMFuncType *func_type,
+-                           const char **p_signature, void **p_attachment,
++                           const char **p_signature, void **p_attachment, uint32_t *gas,
+                            bool *p_call_conv_raw);
+ 
+ bool
 diff --git a/core/iwasm/common/wasm_runtime_common.c b/core/iwasm/common/wasm_runtime_common.c
-index dcee0aea..2559be21 100644
+index dcee0aea..10c516d6 100644
 --- a/core/iwasm/common/wasm_runtime_common.c
 +++ b/core/iwasm/common/wasm_runtime_common.c
 @@ -2288,10 +2288,26 @@ wasm_runtime_access_exce_check_guard_page()
@@ -149,6 +245,15 @@ index dcee0aea..2559be21 100644
  #endif
  
  WASMFuncType *
+@@ -7348,7 +7364,7 @@ wasm_runtime_is_import_func_linked(const char *module_name,
+                                    const char *func_name)
+ {
+     return wasm_native_resolve_symbol(module_name, func_name, NULL, NULL, NULL,
+-                                      NULL);
++                                      NULL, NULL);
+ }
+ 
+ bool
 @@ -7805,13 +7821,14 @@ wasm_runtime_get_module_name(wasm_module_t module)
  bool
  wasm_runtime_detect_native_stack_overflow(WASMExecEnv *exec_env)
@@ -202,6 +307,19 @@ index 64a6cd79..f4c55e2f 100644
  #endif
  
  #if WASM_CONFIGURABLE_BOUNDS_CHECKS != 0
+diff --git a/core/iwasm/include/lib_export.h b/core/iwasm/include/lib_export.h
+index 0ca668f5..93bcf807 100644
+--- a/core/iwasm/include/lib_export.h
++++ b/core/iwasm/include/lib_export.h
+@@ -24,6 +24,8 @@ typedef struct NativeSymbol {
+     /* attachment which can be retrieved in native API by
+        calling wasm_runtime_get_function_attachment(exec_env) */
+     void *attachment;
++    // gas cost for import func
++    uint32_t gas;
+ } NativeSymbol;
+ 
+ /* clang-format off */
 diff --git a/core/iwasm/include/wasm_c_api.h b/core/iwasm/include/wasm_c_api.h
 index 241a0eec..1141744c 100644
 --- a/core/iwasm/include/wasm_c_api.h
@@ -271,6 +389,20 @@ index b4ab34be..3fd0949f 100644
  
  /**
   * Dump runtime memory consumption, including:
+diff --git a/core/iwasm/interpreter/wasm.h b/core/iwasm/interpreter/wasm.h
+index ddc0b15b..3a707878 100644
+--- a/core/iwasm/interpreter/wasm.h
++++ b/core/iwasm/interpreter/wasm.h
+@@ -579,6 +579,9 @@ typedef struct WASMFunctionImport {
+     WASMModule *import_module;
+     WASMFunction *import_func_linked;
+ #endif
++    // gas cost for import func
++    uint32 gas;
++
+ } WASMFunctionImport;
+ 
+ #if WASM_ENABLE_TAGS != 0
 diff --git a/core/iwasm/interpreter/wasm_interp_classic.c b/core/iwasm/interpreter/wasm_interp_classic.c
 index 1e98b0fa..ae24ff8b 100644
 --- a/core/iwasm/interpreter/wasm_interp_classic.c
@@ -470,6 +602,56 @@ index 4e5edf41..04c39e1f 100644
          return;
  
  #if WASM_ENABLE_LABELS_AS_VALUES == 0
+diff --git a/core/iwasm/interpreter/wasm_mini_loader.c b/core/iwasm/interpreter/wasm_mini_loader.c
+index e66c08ba..d52e677e 100644
+--- a/core/iwasm/interpreter/wasm_mini_loader.c
++++ b/core/iwasm/interpreter/wasm_mini_loader.c
+@@ -636,6 +636,7 @@ load_function_import(const uint8 **p_buf, const uint8 *buf_end,
+     const char *linked_signature = NULL;
+     void *linked_attachment = NULL;
+     bool linked_call_conv_raw = false;
++    uint32_t gas = 0;
+ 
+     read_leb_uint32(p, p_end, declare_type_index);
+     *p_buf = p;
+@@ -647,7 +648,7 @@ load_function_import(const uint8 **p_buf, const uint8 *buf_end,
+     /* check built-in modules */
+     linked_func = wasm_native_resolve_symbol(
+         sub_module_name, function_name, declare_func_type, &linked_signature,
+-        &linked_attachment, &linked_call_conv_raw);
++        &linked_attachment, &gas, &linked_call_conv_raw);
+ 
+     function->module_name = (char *)sub_module_name;
+     function->field_name = (char *)function_name;
+@@ -656,6 +657,7 @@ load_function_import(const uint8 **p_buf, const uint8 *buf_end,
+     function->signature = linked_signature;
+     function->attachment = linked_attachment;
+     function->call_conv_raw = linked_call_conv_raw;
++    function->gas = gas;
+     return true;
+ }
+ 
+diff --git a/core/iwasm/interpreter/wasm_runtime.c b/core/iwasm/interpreter/wasm_runtime.c
+index 3cc2afe0..55859d35 100644
+--- a/core/iwasm/interpreter/wasm_runtime.c
++++ b/core/iwasm/interpreter/wasm_runtime.c
+@@ -168,7 +168,7 @@ wasm_resolve_import_func(const WASMModule *module, WASMFunctionImport *function)
+ #endif
+     function->func_ptr_linked = wasm_native_resolve_symbol(
+         function->module_name, function->field_name, function->func_type,
+-        &function->signature, &function->attachment, &function->call_conv_raw);
++        &function->signature, &function->attachment, &function->gas, &function->call_conv_raw);
+ 
+     if (function->func_ptr_linked) {
+         return true;
+@@ -820,6 +820,7 @@ functions_instantiate(const WASMModule *module, WASMModuleInstance *module_inst,
+         function->param_count =
+             (uint16)function->u.func_import->func_type->param_count;
+         function->param_types = function->u.func_import->func_type->types;
++        function->gas = import->u.function.gas;
+         function->local_cell_num = 0;
+         function->local_count = 0;
+         function->local_types = NULL;
 diff --git a/core/iwasm/interpreter/wasm_runtime.h b/core/iwasm/interpreter/wasm_runtime.h
 index 8d38c883..a687ab89 100644
 --- a/core/iwasm/interpreter/wasm_runtime.h
@@ -485,6 +667,44 @@ index 8d38c883..a687ab89 100644
  #if WASM_ENABLE_MULTI_MODULE != 0
      WASMModuleInstance *import_module_inst;
      WASMFunctionInstance *import_func_inst;
+diff --git a/core/iwasm/libraries/libc-builtin/libc_builtin_wrapper.c b/core/iwasm/libraries/libc-builtin/libc_builtin_wrapper.c
+index a68c0749..cafb6915 100644
+--- a/core/iwasm/libraries/libc-builtin/libc_builtin_wrapper.c
++++ b/core/iwasm/libraries/libc-builtin/libc_builtin_wrapper.c
+@@ -1038,16 +1038,16 @@ print_f64_wrapper(wasm_exec_env_t exec_env, double f64)
+ 
+ /* clang-format off */
+ #define REG_NATIVE_FUNC(func_name, signature) \
+-    { #func_name, func_name##_wrapper, signature, NULL }
++    { #func_name, func_name##_wrapper, signature, NULL, 0 }
+ /* clang-format on */
+ 
+ static NativeSymbol native_symbols_libc_builtin[] = {
+     REG_NATIVE_FUNC(printf, "($*)i"),
+     REG_NATIVE_FUNC(sprintf, "($$*)i"),
+     REG_NATIVE_FUNC(snprintf, "(*~$*)i"),
+-    { "vprintf", printf_wrapper, "($*)i", NULL },
+-    { "vsprintf", sprintf_wrapper, "($$*)i", NULL },
+-    { "vsnprintf", snprintf_wrapper, "(*~$*)i", NULL },
++    { "vprintf", printf_wrapper, "($*)i", NULL, 0 },
++    { "vsprintf", sprintf_wrapper, "($$*)i", NULL, 0 },
++    { "vsnprintf", snprintf_wrapper, "(*~$*)i", NULL, 0 },
+     REG_NATIVE_FUNC(puts, "($)i"),
+     REG_NATIVE_FUNC(putchar, "(i)i"),
+     REG_NATIVE_FUNC(memcmp, "(**~)i"),
+diff --git a/core/iwasm/libraries/libc-wasi/libc_wasi_wrapper.c b/core/iwasm/libraries/libc-wasi/libc_wasi_wrapper.c
+index 6d057a6a..25879f33 100644
+--- a/core/iwasm/libraries/libc-wasi/libc_wasi_wrapper.c
++++ b/core/iwasm/libraries/libc-wasi/libc_wasi_wrapper.c
+@@ -2257,7 +2257,7 @@ wasi_sched_yield(wasm_exec_env_t exec_env)
+ 
+ /* clang-format off */
+ #define REG_NATIVE_FUNC(func_name, signature) \
+-    { #func_name, wasi_##func_name, signature, NULL }
++    { #func_name, wasi_##func_name, signature, NULL, 0 }
+ /* clang-format on */
+ 
+ static NativeSymbol native_symbols_libc_wasi[] = {
 diff --git a/core/shared/platform/include/platform_wasi_types.h b/core/shared/platform/include/platform_wasi_types.h
 index ac1a95ea..e23b500e 100644
 --- a/core/shared/platform/include/platform_wasi_types.h
