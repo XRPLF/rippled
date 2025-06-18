@@ -317,7 +317,8 @@ class Batch_test : public beast::unit_test::suite
             env.close();
         }
 
-        // temINVALID: Batch: batch cannot have inner batch txn.
+        // DEFENSIVE: temINVALID: Batch: batch cannot have inner batch txn.
+        // ACTUAL: telENV_RPC_FAILED: isRawTransactionOkay()
         {
             auto const seq = env.seq(alice);
             auto const batchFee = batch::calcBatchFee(env, 0, 2);
@@ -325,7 +326,7 @@ class Batch_test : public beast::unit_test::suite
                 batch::inner(
                     batch::outer(alice, seq, batchFee, tfAllOrNothing), seq),
                 batch::inner(pay(alice, bob, XRP(1)), seq + 2),
-                ter(temINVALID));
+                ter(telENV_RPC_FAILED));
             env.close();
         }
 
@@ -3954,6 +3955,88 @@ class Batch_test : public beast::unit_test::suite
     }
 
     void
+    testValidateRPCResponse()
+    {
+        // Verifying that the RPC response from submit includes
+        // the account_sequence_available, account_sequence_next,
+        // open_ledger_cost and validated_ledger_index fields.
+        testcase("Validate RPC response");
+
+        using namespace jtx;
+        Env env(*this);
+        Account const alice("alice");
+        Account const bob("bob");
+        env.fund(XRP(10000), alice, bob);
+        env.close();
+
+        // tes
+        {
+            auto const baseFee = env.current()->fees().base;
+            auto const aliceSeq = env.seq(alice);
+            auto jtx = env.jt(pay(alice, bob, XRP(1)));
+
+            Serializer s;
+            jtx.stx->add(s);
+            auto const jr = env.rpc("submit", strHex(s.slice()))[jss::result];
+            env.close();
+
+            BEAST_EXPECT(jr.isMember(jss::account_sequence_available));
+            BEAST_EXPECT(
+                jr[jss::account_sequence_available].asUInt() == aliceSeq + 1);
+            BEAST_EXPECT(jr.isMember(jss::account_sequence_next));
+            BEAST_EXPECT(
+                jr[jss::account_sequence_next].asUInt() == aliceSeq + 1);
+            BEAST_EXPECT(jr.isMember(jss::open_ledger_cost));
+            BEAST_EXPECT(jr[jss::open_ledger_cost] == to_string(baseFee));
+            BEAST_EXPECT(jr.isMember(jss::validated_ledger_index));
+        }
+
+        // tec failure
+        {
+            auto const baseFee = env.current()->fees().base;
+            auto const aliceSeq = env.seq(alice);
+            env(fset(bob, asfRequireDest));
+            auto jtx = env.jt(pay(alice, bob, XRP(1)), seq(aliceSeq));
+
+            Serializer s;
+            jtx.stx->add(s);
+            auto const jr = env.rpc("submit", strHex(s.slice()))[jss::result];
+            env.close();
+
+            BEAST_EXPECT(jr.isMember(jss::account_sequence_available));
+            BEAST_EXPECT(
+                jr[jss::account_sequence_available].asUInt() == aliceSeq + 1);
+            BEAST_EXPECT(jr.isMember(jss::account_sequence_next));
+            BEAST_EXPECT(
+                jr[jss::account_sequence_next].asUInt() == aliceSeq + 1);
+            BEAST_EXPECT(jr.isMember(jss::open_ledger_cost));
+            BEAST_EXPECT(jr[jss::open_ledger_cost] == to_string(baseFee));
+            BEAST_EXPECT(jr.isMember(jss::validated_ledger_index));
+        }
+
+        // tem failure
+        {
+            auto const baseFee = env.current()->fees().base;
+            auto const aliceSeq = env.seq(alice);
+            auto jtx = env.jt(pay(alice, bob, XRP(1)), seq(aliceSeq + 1));
+
+            Serializer s;
+            jtx.stx->add(s);
+            auto const jr = env.rpc("submit", strHex(s.slice()))[jss::result];
+            env.close();
+
+            BEAST_EXPECT(jr.isMember(jss::account_sequence_available));
+            BEAST_EXPECT(
+                jr[jss::account_sequence_available].asUInt() == aliceSeq);
+            BEAST_EXPECT(jr.isMember(jss::account_sequence_next));
+            BEAST_EXPECT(jr[jss::account_sequence_next].asUInt() == aliceSeq);
+            BEAST_EXPECT(jr.isMember(jss::open_ledger_cost));
+            BEAST_EXPECT(jr[jss::open_ledger_cost] == to_string(baseFee));
+            BEAST_EXPECT(jr.isMember(jss::validated_ledger_index));
+        }
+    }
+
+    void
     testWithFeats(FeatureBitset features)
     {
         testEnable(features);
@@ -3983,6 +4066,7 @@ class Batch_test : public beast::unit_test::suite
         testBatchTxQueue(features);
         testBatchNetworkOps(features);
         testBatchDelegate(features);
+        testValidateRPCResponse();
     }
 
 public:
