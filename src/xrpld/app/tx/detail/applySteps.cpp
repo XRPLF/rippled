@@ -258,12 +258,6 @@ invoke_calculateBaseFee(ReadView const& view, STTx const& tx)
             "ripple::invoke_calculateBaseFee : unknown transaction type");
         return XRPAmount{0};
     }
-    catch (std::exception const& e)
-    {  // LCOV_EXCL_START
-        JLOG(debugLog().error()) << "apply (calculateBaseFee): " << e.what();
-        UNREACHABLE("ripple::invoke_calculateBaseFee : exception");
-        return XRPAmount{0};
-    }  // LCOV_EXCL_STOP
 }
 
 TxConsequences::TxConsequences(NotTEC pfresult)
