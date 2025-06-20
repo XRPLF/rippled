@@ -145,13 +145,15 @@ enum LedgerSpecificFlags {
         0x10000000,               // True, reject new paychans
     lsfDisallowIncomingTrustline =
         0x20000000,               // True, reject new trustlines (only if no issued assets)
-    // 0x40000000 is available
+    lsfAllowTrustLineLocking =
+        0x40000000,               // True, enable trustline locking
     lsfAllowTrustLineClawback =
         0x80000000,               // True, enable clawback
 
     // ltOFFER
     lsfPassive = 0x00010000,
     lsfSell = 0x00020000,  // True, offer was placed as a sell.
+    lsfHybrid = 0x00040000,  // True, offer is hybrid.
 
     // ltRIPPLE_STATE
     lsfLowReserve = 0x00010000,  // True, if entry counts toward reserve.
@@ -191,6 +193,9 @@ enum LedgerSpecificFlags {
 
     // ltCREDENTIAL
     lsfAccepted = 0x00010000,
+
+    // ltVAULT
+    lsfVaultPrivate = 0x00010000,
 };
 
 //------------------------------------------------------------------------------
