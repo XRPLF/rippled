@@ -22,6 +22,7 @@
 
 #include <xrpl/basics/IntrusivePointer.ipp>
 #include <xrpl/basics/TaggedCache.h>
+#include <xrpl/beast/core/CurrentThreadName.h>
 
 namespace ripple {
 
@@ -898,6 +899,8 @@ TaggedCache<
         std::lock_guard<std::recursive_mutex> const&)
 {
     return std::thread([&, this]() {
+        beast::setCurrentThreadName("sweep-1");
+
         int cacheRemovals = 0;
         int mapRemovals = 0;
 
@@ -987,6 +990,8 @@ TaggedCache<
         std::lock_guard<std::recursive_mutex> const&)
 {
     return std::thread([&, this]() {
+        beast::setCurrentThreadName("sweep-2");
+
         int cacheRemovals = 0;
         int mapRemovals = 0;
 
