@@ -3516,7 +3516,7 @@ $(function() {
 <div class="line"><a id="l03440" name="l03440"></a><span class="lineno"> 3440</span>                <span class="keywordflow">if</span> (!m-&gt;has_ledgerhash())</div>
 <div class="line"><a id="l03441" name="l03441"></a><span class="lineno"> 3441</span>                    info += <span class="stringliteral">&quot;, no hash specified&quot;</span>;</div>
 <div class="line"><a id="l03442" name="l03442"></a><span class="lineno"> 3442</span> </div>
-<div class="line"><a id="l03443" name="l03443"></a><span class="lineno"> 3443</span>                JLOG(p_journal_.error())</div>
+<div class="line"><a id="l03443" name="l03443"></a><span class="lineno"> 3443</span>                JLOG(p_journal_.warn())</div>
 <div class="line"><a id="l03444" name="l03444"></a><span class="lineno"> 3444</span>                    &lt;&lt; <span class="stringliteral">&quot;processLedgerRequest: getNodeFat with nodeId &quot;</span></div>
 <div class="line"><a id="l03445" name="l03445"></a><span class="lineno"> 3445</span>                    &lt;&lt; *shaMapNodeId &lt;&lt; <span class="stringliteral">&quot; and ledger info type &quot;</span> &lt;&lt; info</div>
 <div class="line"><a id="l03446" name="l03446"></a><span class="lineno"> 3446</span>                    &lt;&lt; <span class="stringliteral">&quot; throws exception: &quot;</span> &lt;&lt; e.<a class="code hl_functionRef" href="http://en.cppreference.com/w/cpp/error/exception/what.html">what</a>();</div>
