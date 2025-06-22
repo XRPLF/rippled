@@ -1353,16 +1353,18 @@ public:
                 jrOffer[jss::volume_b].asString() == "5";
         }));
     }
-    
+
     void
     testNFToken(FeatureBitset features)
     {
-        // `nftoken_id` is added for `transaction` stream in the `subscribe` response for NFTokenMint and
-        // NFTokenAcceptOffer.
+        // `nftoken_id` is added for `transaction` stream in the `subscribe`
+        // response for NFTokenMint and NFTokenAcceptOffer.
         //
-        // `nftoken_ids` is added for `transaction` stream in the `subscribe` response for NFTokenCancelOffer
+        // `nftoken_ids` is added for `transaction` stream in the `subscribe`
+        // response for NFTokenCancelOffer
         //
-        // `offer_id` is added for `transaction` stream in the `subscribe` response for NFTokenCreateOffer
+        // `offer_id` is added for `transaction` stream in the `subscribe`
+        // response for NFTokenCreateOffer
         //
         // The values of these fields are dependent on the NFTokenID/OfferID
         // changed in its corresponding transaction. We want to validate each
