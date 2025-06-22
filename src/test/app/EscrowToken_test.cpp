@@ -21,9 +21,11 @@
 
 #include <xrpld/app/tx/applySteps.h>
 #include <xrpld/ledger/Dir.h>
+#include <xrpld/ledger/Sandbox.h>
 
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
+#include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
@@ -56,27 +58,39 @@ struct EscrowToken_test : public beast::unit_test::suite
         return 0;
     }
 
-    void
-    issuerIOUEscrowed(
+    jtx::PrettyAmount
+    issuerBalance(
         jtx::Env& env,
         jtx::Account const& account,
-        Currency const& currency,
-        int const& outstanding,
-        int const& locked)
+        Issue const& issue)
     {
         Json::Value params;
         params[jss::account] = account.human();
         auto jrr = env.rpc("json", "gateway_balances", to_string(params));
         auto const result = jrr[jss::result];
-        auto const actualOutstanding =
-            result[jss::obligations][to_string(currency)];
-        BEAST_EXPECT(actualOutstanding == to_string(outstanding));
-        if (locked != 0)
-        {
-            auto const actualEscrowed =
-                result[jss::locked][to_string(currency)];
-            BEAST_EXPECT(actualEscrowed == to_string(locked));
-        }
+        auto const obligations =
+            result[jss::obligations][to_string(issue.currency)];
+        if (obligations.isNull())
+            return {STAmount(issue, 0), account.name()};
+        STAmount const amount = amountFromString(issue, obligations.asString());
+        return {amount, account.name()};
+    }
+
+    jtx::PrettyAmount
+    issuerEscrowed(
+        jtx::Env& env,
+        jtx::Account const& account,
+        Issue const& issue)
+    {
+        Json::Value params;
+        params[jss::account] = account.human();
+        auto jrr = env.rpc("json", "gateway_balances", to_string(params));
+        auto const result = jrr[jss::result];
+        auto const locked = result[jss::locked][to_string(issue.currency)];
+        if (locked.isNull())
+            return {STAmount(issue, 0), account.name()};
+        STAmount const amount = amountFromString(issue, locked.asString());
+        return {amount, account.name()};
     }
 
     void
@@ -134,6 +148,37 @@ struct EscrowToken_test : public beast::unit_test::suite
                 createResult);
             env.close();
             env(escrow::cancel(bob, alice, seq2), finishResult);
+            env.close();
+        }
+
+        for (bool const withTokenEscrow : {false, true})
+        {
+            auto const amend =
+                withTokenEscrow ? features : features - featureTokenEscrow;
+            Env env{*this, amend};
+            auto const baseFee = env.current()->fees().base;
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            auto const gw = Account{"gateway"};
+            auto const USD = gw["USD"];
+            env.fund(XRP(5000), alice, bob, gw);
+            env(fset(gw, asfAllowTrustLineLocking));
+            env.close();
+            env.trust(USD(10'000), alice, bob);
+            env.close();
+            env(pay(gw, alice, USD(5000)));
+            env(pay(gw, bob, USD(5000)));
+            env.close();
+
+            auto const seq1 = env.seq(alice);
+            env(escrow::finish(bob, alice, seq1),
+                escrow::condition(escrow::cb1),
+                escrow::fulfillment(escrow::fb1),
+                fee(baseFee * 150),
+                ter(tecNO_TARGET));
+            env.close();
+
+            env(escrow::cancel(bob, alice, seq1), ter(tecNO_TARGET));
             env.close();
         }
     }
@@ -865,34 +910,76 @@ struct EscrowToken_test : public beast::unit_test::suite
         env.close();
         env.trust(USD(10'000), alice, bob);
         env.close();
-        env(pay(gw, alice, USD(5000)));
-        env(pay(gw, bob, USD(5000)));
+        env(pay(gw, alice, USD(5'000)));
+        env(pay(gw, bob, USD(5'000)));
         env.close();
 
+        auto const outstandingUSD = USD(10'000);
+
+        // Create & Finish Escrow
         auto const seq1 = env.seq(alice);
-        env(escrow::create(alice, bob, USD(1'000)),
-            escrow::condition(escrow::cb1),
-            escrow::finish_time(env.now() + 1s),
-            fee(baseFee * 150),
-            ter(tesSUCCESS));
-        env.close();
-        env(escrow::finish(bob, alice, seq1),
-            escrow::condition(escrow::cb1),
-            escrow::fulfillment(escrow::fb1),
-            fee(baseFee * 150),
-            ter(tesSUCCESS));
-        env.close();
+        {
+            auto const preAliceUSD = env.balance(alice, USD);
+            auto const preBobUSD = env.balance(bob, USD);
+            env(escrow::create(alice, bob, USD(1'000)),
+                escrow::condition(escrow::cb1),
+                escrow::finish_time(env.now() + 1s),
+                fee(baseFee * 150),
+                ter(tesSUCCESS));
+            env.close();
 
+            BEAST_EXPECT(env.balance(alice, USD) == preAliceUSD - USD(1'000));
+            BEAST_EXPECT(env.balance(bob, USD) == preBobUSD);
+            BEAST_EXPECT(
+                issuerBalance(env, gw, USD) == outstandingUSD - USD(1'000));
+            BEAST_EXPECT(issuerEscrowed(env, gw, USD) == USD(1'000));
+        }
+        {
+            auto const preAliceUSD = env.balance(alice, USD);
+            auto const preBobUSD = env.balance(bob, USD);
+            env(escrow::finish(bob, alice, seq1),
+                escrow::condition(escrow::cb1),
+                escrow::fulfillment(escrow::fb1),
+                fee(baseFee * 150),
+                ter(tesSUCCESS));
+            env.close();
+
+            BEAST_EXPECT(env.balance(alice, USD) == preAliceUSD);
+            BEAST_EXPECT(env.balance(bob, USD) == preBobUSD + USD(1'000));
+            BEAST_EXPECT(issuerBalance(env, gw, USD) == outstandingUSD);
+            BEAST_EXPECT(issuerEscrowed(env, gw, USD) == USD(0));
+        }
+
+        // Create & Cancel Escrow
         auto const seq2 = env.seq(alice);
-        env(escrow::create(alice, bob, USD(1'000)),
-            escrow::condition(escrow::cb2),
-            escrow::finish_time(env.now() + 1s),
-            escrow::cancel_time(env.now() + 2s),
-            fee(baseFee * 150),
-            ter(tesSUCCESS));
-        env.close();
-        env(escrow::cancel(bob, alice, seq2), ter(tesSUCCESS));
-        env.close();
+        {
+            auto const preAliceUSD = env.balance(alice, USD);
+            auto const preBobUSD = env.balance(bob, USD);
+            env(escrow::create(alice, bob, USD(1'000)),
+                escrow::condition(escrow::cb2),
+                escrow::finish_time(env.now() + 1s),
+                escrow::cancel_time(env.now() + 2s),
+                fee(baseFee * 150),
+                ter(tesSUCCESS));
+            env.close();
+
+            BEAST_EXPECT(env.balance(alice, USD) == preAliceUSD - USD(1'000));
+            BEAST_EXPECT(env.balance(bob, USD) == preBobUSD);
+            BEAST_EXPECT(
+                issuerBalance(env, gw, USD) == outstandingUSD - USD(1'000));
+            BEAST_EXPECT(issuerEscrowed(env, gw, USD) == USD(1'000));
+        }
+        {
+            auto const preAliceUSD = env.balance(alice, USD);
+            auto const preBobUSD = env.balance(bob, USD);
+            env(escrow::cancel(bob, alice, seq2), ter(tesSUCCESS));
+            env.close();
+
+            BEAST_EXPECT(env.balance(alice, USD) == preAliceUSD + USD(1'000));
+            BEAST_EXPECT(env.balance(bob, USD) == preBobUSD);
+            BEAST_EXPECT(issuerBalance(env, gw, USD) == outstandingUSD);
+            BEAST_EXPECT(issuerEscrowed(env, gw, USD) == USD(0));
+        }
     }
 
     void
@@ -2430,7 +2517,6 @@ struct EscrowToken_test : public beast::unit_test::suite
             mptGw.authorize({.account = alice});
             mptGw.authorize({.account = bob});
             auto const MPT = mptGw["MPT"];
-            env(pay(gw, alice, MPT(10)));
             env(pay(gw, bob, MPT(10)));
             env.close();
 
@@ -2518,6 +2604,39 @@ struct EscrowToken_test : public beast::unit_test::suite
                 escrow::fulfillment(escrow::fb1),
                 fee(baseFee * 150),
                 ter(tecNO_AUTH));
+            env.close();
+        }
+
+        // tecOBJECT_NOT_FOUND: MPT issuance does not exist
+        {
+            Env env{*this, features};
+            auto const baseFee = env.current()->fees().base;
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            env.fund(XRP(10'000), alice, bob);
+            env.close();
+
+            auto const seq1 = env.seq(alice);
+            env.app().openLedger().modify(
+                [&](OpenView& view, beast::Journal j) {
+                    Sandbox sb(&view, tapNONE);
+                    auto sleNew =
+                        std::make_shared<SLE>(keylet::escrow(alice, seq1));
+                    MPTIssue const mpt{
+                        MPTIssue{makeMptID(1, AccountID(0x4985601))}};
+                    STAmount amt(mpt, 10);
+                    sleNew->setAccountID(sfDestination, bob);
+                    sleNew->setFieldAmount(sfAmount, amt);
+                    sb.insert(sleNew);
+                    sb.apply(view);
+                    return true;
+                });
+
+            env(escrow::finish(bob, alice, seq1),
+                escrow::condition(escrow::cb1),
+                escrow::fulfillment(escrow::fb1),
+                fee(baseFee * 150),
+                ter(tecOBJECT_NOT_FOUND));
             env.close();
         }
 
@@ -2724,6 +2843,36 @@ struct EscrowToken_test : public beast::unit_test::suite
                 {.account = gw, .holder = alice, .flags = tfMPTUnauthorize});
 
             env(escrow::cancel(bob, alice, seq1), ter(tecNO_AUTH));
+            env.close();
+        }
+
+        // tecOBJECT_NOT_FOUND: MPT issuance does not exist
+        {
+            Env env{*this, features};
+            auto const baseFee = env.current()->fees().base;
+            auto const alice = Account("alice");
+            auto const bob = Account("bob");
+            env.fund(XRP(10'000), alice, bob);
+
+            auto const seq1 = env.seq(alice);
+            env.app().openLedger().modify(
+                [&](OpenView& view, beast::Journal j) {
+                    Sandbox sb(&view, tapNONE);
+                    auto sleNew =
+                        std::make_shared<SLE>(keylet::escrow(alice, seq1));
+                    MPTIssue const mpt{
+                        MPTIssue{makeMptID(1, AccountID(0x4985601))}};
+                    STAmount amt(mpt, 10);
+                    sleNew->setAccountID(sfDestination, bob);
+                    sleNew->setFieldAmount(sfAmount, amt);
+                    sb.insert(sleNew);
+                    sb.apply(view);
+                    return true;
+                });
+
+            env(escrow::cancel(bob, alice, seq1),
+                fee(baseFee),
+                ter(tecOBJECT_NOT_FOUND));
             env.close();
         }
     }
@@ -3603,12 +3752,14 @@ struct EscrowToken_test : public beast::unit_test::suite
                 fee(baseFee * 150));
             env.close();
 
+            env(pay(alice, gw, MPT(10'000)), ter(tecPATH_PARTIAL));
             env(pay(alice, gw, MPT(9'990)));
             env(pay(bob, gw, MPT(10'000)));
             BEAST_EXPECT(env.balance(alice, MPT) == MPT(0));
             BEAST_EXPECT(mptEscrowed(env, alice, MPT) == 10);
             BEAST_EXPECT(env.balance(bob, MPT) == MPT(0));
             BEAST_EXPECT(mptEscrowed(env, bob, MPT) == 0);
+            BEAST_EXPECT(env.balance(gw, MPT) == MPT(10));
             mptGw.authorize({.account = bob, .flags = tfMPTUnauthorize});
             mptGw.destroy(
                 {.id = mptGw.issuanceID(),
