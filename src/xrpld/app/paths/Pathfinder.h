@@ -23,6 +23,7 @@
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/paths/RippleLineCache.h>
 #include <xrpld/core/LoadEvent.h>
+
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STPathSet.h>
@@ -47,6 +48,7 @@ public:
         std::optional<AccountID> const& uSrcIssuer,
         STAmount const& dstAmount,
         std::optional<STAmount> const& srcAmount,
+        std::optional<uint256> const& domain,
         Application& app);
     Pathfinder(Pathfinder const&) = delete;
     Pathfinder&
@@ -204,6 +206,7 @@ private:
         been removed. */
     STAmount mRemainingAmount;
     bool convert_all_;
+    std::optional<uint256> mDomain;
 
     std::shared_ptr<ReadView const> mLedger;
     std::unique_ptr<LoadEvent> m_loadEvent;

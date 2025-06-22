@@ -17,9 +17,11 @@
 */
 //==============================================================================
 
+#include <xrpld/app/misc/DelegateUtils.h>
 #include <xrpld/app/tx/detail/SetAccount.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/ledger/View.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Indexes.h>
@@ -185,6 +187,61 @@ SetAccount::preflight(PreflightContext const& ctx)
     }
 
     return preflight2(ctx);
+}
+
+TER
+SetAccount::checkPermission(ReadView const& view, STTx const& tx)
+{
+    // SetAccount is prohibited to be granted on a transaction level,
+    // but some granular permissions are allowed.
+    auto const delegate = tx[~sfDelegate];
+    if (!delegate)
+        return tesSUCCESS;
+
+    auto const delegateKey = keylet::delegate(tx[sfAccount], *delegate);
+    auto const sle = view.read(delegateKey);
+
+    if (!sle)
+        return tecNO_DELEGATE_PERMISSION;
+
+    std::unordered_set<GranularPermissionType> granularPermissions;
+    loadGranularPermission(sle, ttACCOUNT_SET, granularPermissions);
+
+    auto const uSetFlag = tx.getFieldU32(sfSetFlag);
+    auto const uClearFlag = tx.getFieldU32(sfClearFlag);
+    auto const uTxFlags = tx.getFlags();
+    // We don't support any flag based granular permission under
+    // AccountSet transaction. If any delegated account is trying to
+    // update the flag on behalf of another account, it is not
+    // authorized.
+    if (uSetFlag != 0 || uClearFlag != 0 || uTxFlags & tfUniversalMask)
+        return tecNO_DELEGATE_PERMISSION;
+
+    if (tx.isFieldPresent(sfEmailHash) &&
+        !granularPermissions.contains(AccountEmailHashSet))
+        return tecNO_DELEGATE_PERMISSION;
+
+    if (tx.isFieldPresent(sfWalletLocator) ||
+        tx.isFieldPresent(sfNFTokenMinter))
+        return tecNO_DELEGATE_PERMISSION;
+
+    if (tx.isFieldPresent(sfMessageKey) &&
+        !granularPermissions.contains(AccountMessageKeySet))
+        return tecNO_DELEGATE_PERMISSION;
+
+    if (tx.isFieldPresent(sfDomain) &&
+        !granularPermissions.contains(AccountDomainSet))
+        return tecNO_DELEGATE_PERMISSION;
+
+    if (tx.isFieldPresent(sfTransferRate) &&
+        !granularPermissions.contains(AccountTransferRateSet))
+        return tecNO_DELEGATE_PERMISSION;
+
+    if (tx.isFieldPresent(sfTickSize) &&
+        !granularPermissions.contains(AccountTickSizeSet))
+        return tecNO_DELEGATE_PERMISSION;
+
+    return tesSUCCESS;
 }
 
 TER
@@ -591,6 +648,15 @@ SetAccount::doApply()
             uFlagsOut |= lsfDisallowIncomingTrustline;
         else if (uClearFlag == asfDisallowIncomingTrustline)
             uFlagsOut &= ~lsfDisallowIncomingTrustline;
+    }
+
+    // Set or clear flags for disallowing escrow
+    if (ctx_.view().rules().enabled(featureTokenEscrow))
+    {
+        if (uSetFlag == asfAllowTrustLineLocking)
+            uFlagsOut |= lsfAllowTrustLineLocking;
+        else if (uClearFlag == asfAllowTrustLineLocking)
+            uFlagsOut &= ~lsfAllowTrustLineLocking;
     }
 
     // Set flag for clawback

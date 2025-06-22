@@ -16,6 +16,7 @@
 //==============================================================================
 
 #include <test/jtx.h>
+
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/Feature.h>
 
@@ -557,8 +558,11 @@ public:
         using namespace jtx;
         auto const sa = supported_amendments();
         testAll(sa);
-        testAll(sa - featureFlowSortStrands);
-        testAll(sa - featureFlowCross - featureFlowSortStrands);
+        testAll(sa - featurePermissionedDEX);
+        testAll(sa - featureFlowSortStrands - featurePermissionedDEX);
+        testAll(
+            sa - featureFlowCross - featureFlowSortStrands -
+            featurePermissionedDEX);
     }
 };
 

@@ -63,6 +63,13 @@ public:
     void
     setValue(Number const& v);
 
+    STNumber&
+    operator=(Number const& rhs)
+    {
+        setValue(rhs);
+        return *this;
+    }
+
     bool
     isEquivalent(STBase const& t) const override;
     bool
@@ -82,6 +89,19 @@ private:
 
 std::ostream&
 operator<<(std::ostream& out, STNumber const& rhs);
+
+struct NumberParts
+{
+    std::uint64_t mantissa = 0;
+    int exponent = 0;
+    bool negative = false;
+};
+
+NumberParts
+partsFromString(std::string const& number);
+
+STNumber
+numberFromJson(SField const& field, Json::Value const& value);
 
 }  // namespace ripple
 

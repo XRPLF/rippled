@@ -17,17 +17,32 @@
 */
 //==============================================================================
 
+#include <xrpl/basics/Slice.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/Asset.h>
+#include <xrpl/protocol/Book.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Protocol.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STXChainBridge.h>
 #include <xrpl/protocol/SeqProxy.h>
+#include <xrpl/protocol/UintTypes.h>
 #include <xrpl/protocol/digest.h>
 #include <xrpl/protocol/nftPageMask.h>
 
+#include <boost/endian/conversion.hpp>
+
 #include <algorithm>
+#include <array>
+#include <cstdint>
+#include <cstring>
+#include <set>
+#include <utility>
+#include <vector>
 
 namespace ripple {
 
@@ -78,6 +93,9 @@ enum class LedgerNameSpace : std::uint16_t {
     MPTOKEN_ISSUANCE = '~',
     MPTOKEN = 't',
     CREDENTIAL = 'D',
+    PERMISSIONED_DOMAIN = 'm',
+    DELEGATE = 'E',
+    VAULT = 'V',
 
     // No longer used or supported. Left here to reserve the space
     // to avoid accidental reuse.
@@ -99,12 +117,19 @@ getBookBase(Book const& book)
     XRPL_ASSERT(
         isConsistent(book), "ripple::getBookBase : input is consistent");
 
-    auto const index = indexHash(
-        LedgerNameSpace::BOOK_DIR,
-        book.in.currency,
-        book.out.currency,
-        book.in.account,
-        book.out.account);
+    auto const index = book.domain ? indexHash(
+                                         LedgerNameSpace::BOOK_DIR,
+                                         book.in.currency,
+                                         book.out.currency,
+                                         book.in.account,
+                                         book.out.account,
+                                         *(book.domain))
+                                   : indexHash(
+                                         LedgerNameSpace::BOOK_DIR,
+                                         book.in.currency,
+                                         book.out.currency,
+                                         book.in.account,
+                                         book.out.account);
 
     // Return with quality 0.
     auto k = keylet::quality({ltDIR_NODE, index}, 0);
@@ -437,6 +462,14 @@ amm(uint256 const& id) noexcept
 }
 
 Keylet
+delegate(AccountID const& account, AccountID const& authorizedAccount) noexcept
+{
+    return {
+        ltDELEGATE,
+        indexHash(LedgerNameSpace::DELEGATE, account, authorizedAccount)};
+}
+
+Keylet
 bridge(STXChainBridge const& bridge, STXChainBridge::ChainType chainType)
 {
     // A door account can support multiple bridges. On the locking chain
@@ -525,6 +558,26 @@ credential(
     return {
         ltCREDENTIAL,
         indexHash(LedgerNameSpace::CREDENTIAL, subject, issuer, credType)};
+}
+
+Keylet
+vault(AccountID const& owner, std::uint32_t seq) noexcept
+{
+    return vault(indexHash(LedgerNameSpace::VAULT, owner, seq));
+}
+
+Keylet
+permissionedDomain(AccountID const& account, std::uint32_t seq) noexcept
+{
+    return {
+        ltPERMISSIONED_DOMAIN,
+        indexHash(LedgerNameSpace::PERMISSIONED_DOMAIN, account, seq)};
+}
+
+Keylet
+permissionedDomain(uint256 const& domainID) noexcept
+{
+    return {ltPERMISSIONED_DOMAIN, domainID};
 }
 
 }  // namespace keylet

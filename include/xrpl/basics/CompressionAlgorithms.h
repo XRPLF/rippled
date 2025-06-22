@@ -21,9 +21,11 @@
 #define RIPPLED_COMPRESSIONALGORITHMS_H_INCLUDED
 
 #include <xrpl/basics/contract.h>
+
+#include <lz4.h>
+
 #include <algorithm>
 #include <cstdint>
-#include <lz4.h>
 #include <stdexcept>
 #include <vector>
 
@@ -53,7 +55,7 @@ lz4Compress(void const* in, std::size_t inSize, BufferFactory&& bf)
     auto compressed = bf(outCapacity);
 
     auto compressedSize = LZ4_compress_default(
-        reinterpret_cast<const char*>(in),
+        reinterpret_cast<char const*>(in),
         reinterpret_cast<char*>(compressed),
         inSize,
         outCapacity);
@@ -87,7 +89,7 @@ lz4Decompress(
         Throw<std::runtime_error>("lz4Decompress: integer overflow (output)");
 
     if (LZ4_decompress_safe(
-            reinterpret_cast<const char*>(in),
+            reinterpret_cast<char const*>(in),
             reinterpret_cast<char*>(decompressed),
             inSize,
             decompressedSize) != decompressedSize)

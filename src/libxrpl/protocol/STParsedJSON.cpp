@@ -18,20 +18,26 @@
 //==============================================================================
 
 #include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/core/LexicalCast.h>
-#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_forwards.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/Permissions.h>
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STAccount.h>
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/STBitString.h>
 #include <xrpl/protocol/STBlob.h>
+#include <xrpl/protocol/STCurrency.h>
 #include <xrpl/protocol/STInteger.h>
 #include <xrpl/protocol/STIssue.h>
+#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/STParsedJSON.h>
 #include <xrpl/protocol/STPathSet.h>
 #include <xrpl/protocol/STVector256.h>
@@ -39,11 +45,20 @@
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/UintTypes.h>
-#include <xrpl/protocol/XChainAttestations.h>
 #include <xrpl/protocol/detail/STVar.h>
 
 #include <charconv>
-#include <memory>
+#include <cstdint>
+#include <exception>
+#include <iostream>
+#include <limits>
+#include <optional>
+#include <sstream>
+#include <stdexcept>
+#include <string>
+#include <system_error>
+#include <type_traits>
+#include <utility>
 
 namespace ripple {
 
@@ -360,10 +375,35 @@ parseLeaf(
             {
                 if (value.isString())
                 {
-                    ret = detail::make_stvar<STUInt32>(
-                        field,
-                        beast::lexicalCastThrow<std::uint32_t>(
-                            value.asString()));
+                    if (field == sfPermissionValue)
+                    {
+                        std::string const strValue = value.asString();
+                        auto const granularPermission =
+                            Permission::getInstance().getGranularValue(
+                                strValue);
+                        if (granularPermission)
+                        {
+                            ret = detail::make_stvar<STUInt32>(
+                                field, *granularPermission);
+                        }
+                        else
+                        {
+                            auto const& txType =
+                                TxFormats::getInstance().findTypeByName(
+                                    strValue);
+                            ret = detail::make_stvar<STUInt32>(
+                                field,
+                                Permission::getInstance().txToPermissionType(
+                                    txType));
+                        }
+                    }
+                    else
+                    {
+                        ret = detail::make_stvar<STUInt32>(
+                            field,
+                            beast::lexicalCastThrow<std::uint32_t>(
+                                value.asString()));
+                    }
                 }
                 else if (value.isInt())
                 {
@@ -565,6 +605,20 @@ parseLeaf(
             {
                 ret =
                     detail::make_stvar<STAmount>(amountFromJson(field, value));
+            }
+            catch (std::exception const&)
+            {
+                error = invalid_data(json_name, fieldName);
+                return ret;
+            }
+
+            break;
+
+        case STI_NUMBER:
+            try
+            {
+                ret =
+                    detail::make_stvar<STNumber>(numberFromJson(field, value));
             }
             catch (std::exception const&)
             {
@@ -812,7 +866,7 @@ parseLeaf(
     return ret;
 }
 
-static const int maxDepth = 64;
+static int const maxDepth = 64;
 
 // Forward declaration since parseObject() and parseArray() call each other.
 static std::optional<detail::STVar>
@@ -998,7 +1052,8 @@ parseArray(
             Json::Value const objectFields(json[i][objectName]);
 
             std::stringstream ss;
-            ss << json_name << "." << "[" << i << "]." << objectName;
+            ss << json_name << "."
+               << "[" << i << "]." << objectName;
 
             auto ret = parseObject(
                 ss.str(), objectFields, nameField, depth + 1, error);

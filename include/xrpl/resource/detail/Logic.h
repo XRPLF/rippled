@@ -32,6 +32,7 @@
 #include <xrpl/resource/Fees.h>
 #include <xrpl/resource/Gossip.h>
 #include <xrpl/resource/detail/Import.h>
+
 #include <mutex>
 
 namespace ripple {
@@ -446,12 +447,34 @@ public:
     }
 
     Disposition
-    charge(Entry& entry, Charge const& fee)
+    charge(Entry& entry, Charge const& fee, std::string context = {})
     {
+        static constexpr Charge::value_type feeLogAsWarn = 3000;
+        static constexpr Charge::value_type feeLogAsInfo = 1000;
+        static constexpr Charge::value_type feeLogAsDebug = 100;
+        static_assert(
+            feeLogAsWarn > feeLogAsInfo && feeLogAsInfo > feeLogAsDebug &&
+            feeLogAsDebug > 10);
+
+        static auto getStream = [](Resource::Charge::value_type cost,
+                                   beast::Journal& journal) {
+            if (cost >= feeLogAsWarn)
+                return journal.warn();
+            if (cost >= feeLogAsInfo)
+                return journal.info();
+            if (cost >= feeLogAsDebug)
+                return journal.debug();
+            return journal.trace();
+        };
+
+        if (!context.empty())
+            context = " (" + context + ")";
+
         std::lock_guard _(lock_);
         clock_type::time_point const now(m_clock.now());
         int const balance(entry.add(fee.cost(), now));
-        JLOG(m_journal.trace()) << "Charging " << entry << " for " << fee;
+        JLOG(getStream(fee.cost(), m_journal))
+            << "Charging " << entry << " for " << fee << context;
         return disposition(balance);
     }
 

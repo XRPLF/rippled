@@ -23,6 +23,7 @@
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/basics/partitioned_unordered_map.h>
+
 #include <cstdint>
 
 namespace ripple {
@@ -105,11 +106,25 @@ std::size_t constexpr maxCredentialTypeLength = 64;
 /** The maximum number of credentials can be passed in array */
 std::size_t constexpr maxCredentialsArraySize = 8;
 
+/** The maximum number of credentials can be passed in array for permissioned
+ * domain */
+std::size_t constexpr maxPermissionedDomainCredentialsArraySize = 10;
+
 /** The maximum length of MPTokenMetadata */
 std::size_t constexpr maxMPTokenMetadataLength = 1024;
 
 /** The maximum amount of MPTokenIssuance */
 std::uint64_t constexpr maxMPTokenAmount = 0x7FFF'FFFF'FFFF'FFFFull;
+
+/** The maximum length of Data payload */
+std::size_t constexpr maxDataPayloadLength = 256;
+
+/** Vault withdrawal policies */
+std::uint8_t constexpr vaultStrategyFirstComeFirstServe = 1;
+
+/** Maximum recursion depth for vault shares being put as an asset inside
+ * another vault; counted from 0 */
+std::uint8_t constexpr maxAssetCheckDepth = 5;
 
 /** A ledger index. */
 using LedgerIndex = std::uint32_t;
@@ -149,6 +164,13 @@ std::size_t constexpr maxPriceScale = 20;
 /** The maximum percentage of outliers to trim
  */
 std::size_t constexpr maxTrim = 25;
+
+/** The maximum number of delegate permissions an account can grant
+ */
+std::size_t constexpr permissionMaxSize = 10;
+
+/** The maximum number of transactions that can be in a batch. */
+std::size_t constexpr maxBatchTxCount = 8;
 
 }  // namespace ripple
 

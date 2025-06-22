@@ -19,20 +19,18 @@
 
 #include <test/jtx.h>
 #include <test/jtx/WSClient.h>
+
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/to_string.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/server/Port.h>
+
 #include <boost/beast/core/multi_buffer.hpp>
 #include <boost/beast/websocket.hpp>
 
-#include <condition_variable>
+#include <iostream>
 #include <string>
 #include <unordered_map>
-
-#include <iostream>
-
-#include <xrpl/beast/unit_test.h>
 
 namespace ripple {
 namespace test {
@@ -69,6 +67,10 @@ class WSClientImpl : public WSClient
             if (pp.ip && pp.ip->is_unspecified())
                 *pp.ip = pp.ip->is_v6() ? address{address_v6::loopback()}
                                         : address{address_v4::loopback()};
+
+            if (!pp.port)
+                Throw<std::runtime_error>("Use fixConfigPorts with auto ports");
+
             return {*pp.ip, *pp.port};
         }
         Throw<std::runtime_error>("Missing WebSocket port");

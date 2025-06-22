@@ -20,7 +20,9 @@
 #include <test/jtx.h>
 #include <test/jtx/AMM.h>
 #include <test/jtx/xchain_bridge.h>
+
 #include <xrpld/app/tx/detail/NFTokenMint.h>
+
 #include <xrpl/json/json_reader.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/json/to_string.h>
@@ -575,8 +577,8 @@ public:
         Account const gw{"gateway"};
         auto const USD = gw["USD"];
 
-        auto const features =
-            supported_amendments() | FeatureBitset{featureXChainBridge};
+        auto const features = supported_amendments() | featureXChainBridge |
+            featurePermissionedDomains;
         Env env(*this, features);
 
         // Make a lambda we can use to get "account_objects" easily.
@@ -627,6 +629,7 @@ public:
         BEAST_EXPECT(acctObjsIsSize(acctObjs(gw, jss::ticket), 0));
         BEAST_EXPECT(acctObjsIsSize(acctObjs(gw, jss::amm), 0));
         BEAST_EXPECT(acctObjsIsSize(acctObjs(gw, jss::did), 0));
+        BEAST_EXPECT(acctObjsIsSize(acctObjs(gw, jss::permissioned_domain), 0));
 
         // we expect invalid field type reported for the following types
         BEAST_EXPECT(acctObjsTypeIsInvalid(acctObjs(gw, jss::amendments)));
@@ -695,7 +698,6 @@ public:
             // gw creates an escrow that we can look for in the ledger.
             Json::Value jvEscrow;
             jvEscrow[jss::TransactionType] = jss::EscrowCreate;
-            jvEscrow[jss::Flags] = tfUniversal;
             jvEscrow[jss::Account] = gw.human();
             jvEscrow[jss::Destination] = gw.human();
             jvEscrow[jss::Amount] = XRP(100).value().getJson(JsonOptions::none);
@@ -714,10 +716,51 @@ public:
             BEAST_EXPECT(escrow[sfDestination.jsonName] == gw.human());
             BEAST_EXPECT(escrow[sfAmount.jsonName].asUInt() == 100'000'000);
         }
+
+        {
+            std::string const credentialType1 = "credential1";
+            Account issuer("issuer");
+            env.fund(XRP(5000), issuer);
+
+            // gw creates an PermissionedDomain.
+            env(pdomain::setTx(gw, {{issuer, credentialType1}}));
+            env.close();
+
+            // Find the PermissionedDomain.
+            Json::Value const resp = acctObjs(gw, jss::permissioned_domain);
+            BEAST_EXPECT(acctObjsIsSize(resp, 1));
+
+            auto const& permissionedDomain =
+                resp[jss::result][jss::account_objects][0u];
+            BEAST_EXPECT(
+                permissionedDomain.isMember(jss::Owner) &&
+                (permissionedDomain[jss::Owner] == gw.human()));
+            bool const check1 = BEAST_EXPECT(
+                permissionedDomain.isMember(jss::AcceptedCredentials) &&
+                permissionedDomain[jss::AcceptedCredentials].isArray() &&
+                (permissionedDomain[jss::AcceptedCredentials].size() == 1) &&
+                (permissionedDomain[jss::AcceptedCredentials][0u].isMember(
+                    jss::Credential)));
+
+            if (check1)
+            {
+                auto const& credential =
+                    permissionedDomain[jss::AcceptedCredentials][0u]
+                                      [jss::Credential];
+                BEAST_EXPECT(
+                    credential.isMember(sfIssuer.jsonName) &&
+                    (credential[sfIssuer.jsonName] == issuer.human()));
+                BEAST_EXPECT(
+                    credential.isMember(sfCredentialType.jsonName) &&
+                    (credential[sfCredentialType.jsonName] ==
+                     strHex(credentialType1)));
+            }
+        }
+
         {
             // Create a bridge
             test::jtx::XChainBridgeObjects x;
-            Env scEnv(*this, envconfig(port_increment, 3), features);
+            Env scEnv(*this, envconfig(), features);
             x.createScBridgeObjects(scEnv);
 
             auto scEnvAcctObjs = [&](Account const& acct, char const* type) {
@@ -758,7 +801,7 @@ public:
             // Alice and Bob create a xchain sequence number that we can look
             // for in the ledger.
             test::jtx::XChainBridgeObjects x;
-            Env scEnv(*this, envconfig(port_increment, 3), features);
+            Env scEnv(*this, envconfig(), features);
             x.createScBridgeObjects(scEnv);
 
             scEnv(
@@ -803,7 +846,7 @@ public:
         }
         {
             test::jtx::XChainBridgeObjects x;
-            Env scEnv(*this, envconfig(port_increment, 3), features);
+            Env scEnv(*this, envconfig(), features);
             x.createScBridgeObjects(scEnv);
             auto const amt = XRP(1000);
 
@@ -868,7 +911,6 @@ public:
             // for.
             Json::Value jvPayChan;
             jvPayChan[jss::TransactionType] = jss::PaymentChannelCreate;
-            jvPayChan[jss::Flags] = tfUniversal;
             jvPayChan[jss::Account] = gw.human();
             jvPayChan[jss::Destination] = alice.human();
             jvPayChan[jss::Amount] =
@@ -894,7 +936,6 @@ public:
             // gw creates a DID that we can look for in the ledger.
             Json::Value jvDID;
             jvDID[jss::TransactionType] = jss::DIDSet;
-            jvDID[jss::Flags] = tfUniversal;
             jvDID[jss::Account] = gw.human();
             jvDID[sfURI.jsonName] = strHex(std::string{"uri"});
             env(jvDID);
@@ -925,10 +966,13 @@ public:
             BEAST_EXPECT(entry[sfAccount.jsonName] == alice.human());
             BEAST_EXPECT(entry[sfSignerWeight.jsonName].asUInt() == 7);
         }
-        // Create a Ticket for gw.
-        env(ticket::create(gw, 1));
-        env.close();
+
         {
+            auto const seq = env.seq(gw);
+            // Create a Ticket for gw.
+            env(ticket::create(gw, 1));
+            env.close();
+
             // Find the ticket.
             Json::Value const resp = acctObjs(gw, jss::ticket);
             BEAST_EXPECT(acctObjsIsSize(resp, 1));
@@ -936,8 +980,9 @@ public:
             auto const& ticket = resp[jss::result][jss::account_objects][0u];
             BEAST_EXPECT(ticket[sfAccount.jsonName] == gw.human());
             BEAST_EXPECT(ticket[sfLedgerEntryType.jsonName] == jss::Ticket);
-            BEAST_EXPECT(ticket[sfTicketSequence.jsonName].asUInt() == 14);
+            BEAST_EXPECT(ticket[sfTicketSequence.jsonName].asUInt() == seq + 1);
         }
+
         {
             // See how "deletion_blockers_only" handles gw's directory.
             Json::Value params;
@@ -951,7 +996,8 @@ public:
                     jss::Check.c_str(),
                     jss::NFTokenPage.c_str(),
                     jss::RippleState.c_str(),
-                    jss::PayChannel.c_str()};
+                    jss::PayChannel.c_str(),
+                    jss::PermissionedDomain.c_str()};
                 std::sort(v.begin(), v.end());
                 return v;
             }();

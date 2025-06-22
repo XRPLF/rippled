@@ -23,14 +23,10 @@
 #include <xrpld/app/paths/detail/AmountSpec.h>
 #include <xrpld/app/paths/detail/Steps.h>
 #include <xrpld/app/paths/detail/StrandFlow.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/IOUAmount.h>
 #include <xrpl/protocol/XRPAmount.h>
-
-#include <boost/container/flat_set.hpp>
-
-#include <numeric>
-#include <sstream>
 
 namespace ripple {
 
@@ -68,6 +64,7 @@ flow(
     OfferCrossing offerCrossing,
     std::optional<Quality> const& limitQuality,
     std::optional<STAmount> const& sendMax,
+    std::optional<uint256> const& domainID,
     beast::Journal j,
     path::detail::FlowDebugInfo* flowDebugInfo)
 {
@@ -102,6 +99,7 @@ flow(
         ownerPaysTransferFee,
         offerCrossing,
         ammContext,
+        domainID,
         j);
 
     if (toStrandsTer != tesSUCCESS)
@@ -128,8 +126,8 @@ flow(
         }
     }
 
-    const bool srcIsXRP = isXRP(srcIssue.currency);
-    const bool dstIsXRP = isXRP(dstIssue.currency);
+    bool const srcIsXRP = isXRP(srcIssue.currency);
+    bool const dstIsXRP = isXRP(dstIssue.currency);
 
     auto const asDeliver = toAmountSpec(deliver);
 

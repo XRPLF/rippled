@@ -178,9 +178,9 @@ It does not override paths to dependencies when building with Visual Studio.
 
    ```
    # Conan 1.x
-   conan export external/rocksdb rocksdb/6.29.5@
+   conan export external/rocksdb rocksdb/9.7.3@
    # Conan 2.x
-   conan export --version 6.29.5 external/rocksdb
+   conan export --version 9.7.3 external/rocksdb
    ```
 
 Export our [Conan recipe for SOCI](./external/soci).
@@ -222,12 +222,14 @@ It fixes some source files to add missing `#include`s.
    the `install-folder` or `-if` option to every `conan install` command
    in the next step.
 
-2. Generate CMake files for every configuration you want to build. 
+2. Use conan to generate CMake files for every configuration you want to build:
 
     ```
     conan install .. --output-folder . --build missing --settings build_type=Release
     conan install .. --output-folder . --build missing --settings build_type=Debug
     ```
+
+    To build Debug, in the next step, be sure to set `-DCMAKE_BUILD_TYPE=Debug`
 
     For a single-configuration generator, e.g. `Unix Makefiles` or `Ninja`,
     you only need to run this command once.
@@ -258,13 +260,16 @@ It fixes some source files to add missing `#include`s.
 
     Single-config generators:
 
+    Pass the CMake variable [`CMAKE_BUILD_TYPE`][build_type]
+    and make sure it matches the one of the `build_type` settings
+    you chose in the previous step.
+
+    For example, to build Debug, in the next command, replace "Release" with "Debug"
+
     ```
     cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Release -Dxrpld=ON -Dtests=ON ..
     ```
 
-    Pass the CMake variable [`CMAKE_BUILD_TYPE`][build_type]
-    and make sure it matches the `build_type` setting you chose in the previous
-    step.
 
     Multi-config generators:
 
@@ -274,7 +279,7 @@ It fixes some source files to add missing `#include`s.
 
     **Note:** You can pass build options for `rippled` in this step.
 
-4. Build `rippled`.
+5. Build `rippled`.
 
    For a single-configuration generator, it will build whatever configuration
    you passed for `CMAKE_BUILD_TYPE`. For a multi-configuration generator,
@@ -283,7 +288,7 @@ It fixes some source files to add missing `#include`s.
    Single-config generators:
 
    ```
-   cmake --build .
+   cmake --build . -j $(nproc)
    ```
 
    Multi-config generators:
@@ -293,7 +298,7 @@ It fixes some source files to add missing `#include`s.
    cmake --build . --config Debug
    ```
 
-5. Test rippled.
+6. Test rippled.
 
    Single-config generators:
 
@@ -401,6 +406,23 @@ After any updates or changes to dependencies, you may need to do the following:
    rm -rf ~/.conan/data
    ```
 4. Re-run [conan install](#build-and-test).
+
+
+### 'protobuf/port_def.inc' file not found
+
+If `cmake --build .` results in an error due to a missing a protobuf file, then you might have generated CMake files for a different `build_type` than the `CMAKE_BUILD_TYPE` you passed to conan.
+
+```
+/rippled/.build/pb-xrpl.libpb/xrpl/proto/ripple.pb.h:10:10: fatal error: 'google/protobuf/port_def.inc' file not found
+   10 | #include <google/protobuf/port_def.inc>
+      |          ^~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+1 error generated.
+```
+
+For example, if you want to build Debug:
+
+1. For conan install, pass `--settings build_type=Debug`
+2. For cmake, pass `-DCMAKE_BUILD_TYPE=Debug`
 
 
 ### no std::result_of

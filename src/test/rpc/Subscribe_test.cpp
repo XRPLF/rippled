@@ -18,14 +18,17 @@
 #include <test/jtx.h>
 #include <test/jtx/WSClient.h>
 #include <test/jtx/envconfig.h>
+
 #include <xrpld/app/main/LoadManager.h>
 #include <xrpld/app/misc/LoadFeeTrack.h>
 #include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/core/ConfigSections.h>
+
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
+
 #include <tuple>
 
 namespace ripple {
@@ -169,6 +172,7 @@ public:
         using namespace std::chrono_literals;
         using namespace jtx;
         Env env(*this);
+        auto baseFee = env.current()->fees().base.drops();
         auto wsc = makeWSClient(env.app().config());
         Json::Value stream;
 
@@ -200,9 +204,9 @@ public:
                     jv[jss::transaction][jss::TransactionType]  //
                     == jss::Payment &&
                     jv[jss::transaction][jss::DeliverMax]  //
-                    == "10000000010" &&
+                    == std::to_string(10000000000 + baseFee) &&
                     jv[jss::transaction][jss::Fee]  //
-                    == "10" &&
+                    == std::to_string(baseFee) &&
                     jv[jss::transaction][jss::Sequence]  //
                     == 1;
             }));
@@ -225,9 +229,9 @@ public:
                     jv[jss::transaction][jss::TransactionType]  //
                     == jss::Payment &&
                     jv[jss::transaction][jss::DeliverMax]  //
-                    == "10000000010" &&
+                    == std::to_string(10000000000 + baseFee) &&
                     jv[jss::transaction][jss::Fee]  //
-                    == "10" &&
+                    == std::to_string(baseFee) &&
                     jv[jss::transaction][jss::Sequence]  //
                     == 2;
             }));
@@ -315,7 +319,10 @@ public:
 
         using namespace std::chrono_literals;
         using namespace jtx;
-        Env env(*this);
+        Env env(*this, envconfig([](std::unique_ptr<Config> cfg) {
+            cfg->FEES.reference_fee = 10;
+            return cfg;
+        }));
         auto wsc = makeWSClient(env.app().config());
         Json::Value stream{Json::objectValue};
 
@@ -614,7 +621,7 @@ public:
         }
 
         {
-            Env env_nonadmin{*this, no_admin(envconfig(port_increment, 3))};
+            Env env_nonadmin{*this, no_admin(envconfig())};
             Json::Value jv;
             jv[jss::url] = "no-url";
             auto jr =
@@ -1294,6 +1301,60 @@ public:
     }
 
     void
+    testSubBookChanges()
+    {
+        testcase("SubBookChanges");
+        using namespace jtx;
+        using namespace std::chrono_literals;
+        FeatureBitset const all{
+            jtx::supported_amendments() | featurePermissionedDomains |
+            featureCredentials | featurePermissionedDEX};
+
+        Env env(*this, all);
+        PermissionedDEX permDex(env);
+        auto const alice = permDex.alice;
+        auto const bob = permDex.bob;
+        auto const carol = permDex.carol;
+        auto const domainID = permDex.domainID;
+        auto const gw = permDex.gw;
+        auto const USD = permDex.USD;
+
+        auto wsc = makeWSClient(env.app().config());
+
+        Json::Value streams;
+        streams[jss::streams] = Json::arrayValue;
+        streams[jss::streams][0u] = "book_changes";
+
+        auto jv = wsc->invoke("subscribe", streams);
+        if (!BEAST_EXPECT(jv[jss::status] == "success"))
+            return;
+        env(offer(alice, XRP(10), USD(10)),
+            domain(domainID),
+            txflags(tfHybrid));
+        env.close();
+
+        env(pay(bob, carol, USD(5)),
+            path(~USD),
+            sendmax(XRP(5)),
+            domain(domainID));
+        env.close();
+
+        BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
+            if (jv[jss::changes].size() != 1)
+                return false;
+
+            auto const jrOffer = jv[jss::changes][0u];
+            return (jv[jss::changes][0u][jss::domain]).asString() ==
+                strHex(domainID) &&
+                jrOffer[jss::currency_a].asString() == "XRP_drops" &&
+                jrOffer[jss::volume_a].asString() == "5000000" &&
+                jrOffer[jss::currency_b].asString() ==
+                "rHUKYAZyUFn8PCZWbPfwHfbVQXTYrYKkHb/USD" &&
+                jrOffer[jss::volume_b].asString() == "5";
+        }));
+    }
+
+    void
     run() override
     {
         using namespace test::jtx;
@@ -1311,6 +1372,7 @@ public:
         testSubErrors(false);
         testSubByUrl();
         testHistoryTxStream();
+        testSubBookChanges();
     }
 };
 

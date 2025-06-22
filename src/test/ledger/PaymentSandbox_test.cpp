@@ -18,9 +18,11 @@
 //==============================================================================
 
 #include <test/jtx/PathSet.h>
+
 #include <xrpld/ledger/ApplyViewImpl.h>
 #include <xrpld/ledger/PaymentSandbox.h>
 #include <xrpld/ledger/View.h>
+
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Feature.h>
 
@@ -419,7 +421,8 @@ public:
         };
         using namespace jtx;
         auto const sa = supported_amendments();
-        testAll(sa - featureFlowCross);
+        testAll(sa - featureFlowCross - featurePermissionedDEX);
+        testAll(sa - featurePermissionedDEX);
         testAll(sa);
     }
 };

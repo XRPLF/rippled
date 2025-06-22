@@ -83,25 +83,49 @@ The [commandline](https://xrpl.org/docs/references/http-websocket-apis/api-conve
 
 The `network_id` field was added in the `server_info` response in version 1.5.0 (2019), but it is not returned in [reporting mode](https://xrpl.org/rippled-server-modes.html#reporting-mode). However, use of reporting mode is now discouraged, in favor of using [Clio](https://github.com/XRPLF/clio) instead.
 
+## XRP Ledger server version 2.5.0
+
+As of 2025-04-04, version 2.5.0 is in development. You can use a pre-release version by building from source or [using the `nightly` package](https://xrpl.org/docs/infrastructure/installation/install-rippled-on-ubuntu).
+
+### Additions and bugfixes in 2.5.0
+
+- `channel_authorize`: If `signing_support` is not enabled in the config, the RPC is disabled.
+
 ## XRP Ledger server version 2.4.0
 
-### Addition in 2.4
+[Version 2.4.0](https://github.com/XRPLF/rippled/releases/tag/2.4.0) was released on March 4, 2025.
+
+### Additions and bugfixes in 2.4.0
 
 - `ledger_entry`: `state` is added an alias for `ripple_state`.
+- `ledger_entry`: Enables case-insensitive filtering by canonical name in addition to case-sensitive filtering by RPC name.
+- `validators`: Added new field `validator_list_threshold` in response.
+- `simulate`: A new RPC that executes a [dry run of a transaction submission](https://github.com/XRPLF/XRPL-Standards/tree/master/XLS-0069d-simulate#2-rpc-simulate)
+- Signing methods autofill fees better and properly handle transactions that don't have a base fee, and will also autofill the `NetworkID` field.
 
 ## XRP Ledger server version 2.3.0
 
-### Breaking change in 2.3
+[Version 2.3.0](https://github.com/XRPLF/rippled/releases/tag/2.3.0) was released on Nov 25, 2024.
+
+### Breaking changes in 2.3.0
 
 - `book_changes`: If the requested ledger version is not available on this node, a `ledgerNotFound` error is returned and the node does not attempt to acquire the ledger from the p2p network (as with other non-admin RPCs).
 
 Admins can still attempt to retrieve old ledgers with the `ledger_request` RPC.
 
-### Addition in 2.3
+### Additions and bugfixes in 2.3.0
 
 - `book_changes`: Returns a `validated` field in its response, which was missing in prior versions.
 
-The following additions are non-breaking (because they are purely additive).
+## XRP Ledger server version 2.2.0
+
+[Version 2.2.0](https://github.com/XRPLF/rippled/releases/tag/2.2.0) was released on Jun 5, 2024. The following additions are non-breaking (because they are purely additive):
+
+- The `feature` method now has a non-admin mode for users. (It was previously only available to admin connections.) The method returns an updated list of amendments, including their names and other information. ([#4781](https://github.com/XRPLF/rippled/pull/4781))
+
+## XRP Ledger server version 2.0.0
+
+[Version 2.0.0](https://github.com/XRPLF/rippled/releases/tag/2.0.0) was released on Jan 9, 2024. The following additions are non-breaking (because they are purely additive):
 
 - `server_definitions`: A new RPC that generates a `definitions.json`-like output that can be used in XRPL libraries.
 - In `Payment` transactions, `DeliverMax` has been added. This is a replacement for the `Amount` field, which should not be used. Typically, the `delivered_amount` (in transaction metadata) should be used. To ease the transition, `DeliverMax` is present regardless of API version, since adding a field is non-breaking.

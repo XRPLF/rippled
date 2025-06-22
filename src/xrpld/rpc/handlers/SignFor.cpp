@@ -20,8 +20,8 @@
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/TransactionSign.h>
+
 #include <xrpl/protocol/ErrorCodes.h>
-#include <xrpl/protocol/Feature.h>
 #include <xrpl/resource/Fees.h>
 
 namespace ripple {
@@ -40,7 +40,7 @@ doSignFor(RPC::JsonContext& context)
             rpcNOT_SUPPORTED, "Signing is not supported by this server.");
     }
 
-    context.loadType = Resource::feeHighBurdenRPC;
+    context.loadType = Resource::feeHeavyBurdenRPC;
     auto const failHard = context.params[jss::fail_hard].asBool();
     auto const failType = NetworkOPs::doFailHard(failHard);
 

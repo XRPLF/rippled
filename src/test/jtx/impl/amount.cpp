@@ -19,8 +19,9 @@
 
 #include <test/jtx/Account.h>
 #include <test/jtx/amount.h>
+
 #include <xrpl/basics/safe_cast.h>
-#include <cmath>
+
 #include <iomanip>
 
 namespace ripple {
@@ -53,7 +54,7 @@ PrettyAmount::operator AnyAmount() const
 
 template <typename T>
 static std::string
-to_places(const T d, std::uint8_t places)
+to_places(T const d, std::uint8_t places)
 {
     assert(places <= std::numeric_limits<T>::digits10);
 

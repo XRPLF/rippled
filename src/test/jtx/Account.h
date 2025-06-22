@@ -24,6 +24,7 @@
 #include <xrpl/protocol/KeyType.h>
 #include <xrpl/protocol/SecretKey.h>
 #include <xrpl/protocol/UintTypes.h>
+
 #include <string>
 #include <unordered_map>
 
@@ -158,10 +159,10 @@ hash_append(Hasher& h, Account const& v) noexcept
     hash_append(h, v.id());
 }
 
-inline bool
-operator<(Account const& lhs, Account const& rhs) noexcept
+inline auto
+operator<=>(Account const& lhs, Account const& rhs) noexcept
 {
-    return lhs.id() < rhs.id();
+    return lhs.id() <=> rhs.id();
 }
 
 }  // namespace jtx

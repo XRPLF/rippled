@@ -279,6 +279,10 @@ amm(Asset const& issue1, Asset const& issue2) noexcept;
 Keylet
 amm(uint256 const& amm) noexcept;
 
+/** A keylet for Delegate object */
+Keylet
+delegate(AccountID const& account, AccountID const& authorizedAccount) noexcept;
+
 Keylet
 bridge(STXChainBridge const& bridge, STXChainBridge::ChainType chainType);
 
@@ -330,6 +334,20 @@ mptoken(uint256 const& mptokenKey)
 Keylet
 mptoken(uint256 const& issuanceKey, AccountID const& holder) noexcept;
 
+Keylet
+vault(AccountID const& owner, std::uint32_t seq) noexcept;
+
+inline Keylet
+vault(uint256 const& vaultKey)
+{
+    return {ltVAULT, vaultKey};
+}
+
+Keylet
+permissionedDomain(AccountID const& account, std::uint32_t seq) noexcept;
+
+Keylet
+permissionedDomain(uint256 const& domainID) noexcept;
 }  // namespace keylet
 
 // Everything below is deprecated and should be removed in favor of keylets:

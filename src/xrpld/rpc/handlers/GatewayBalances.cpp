@@ -22,9 +22,9 @@
 #include <xrpld/ledger/ReadView.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
+
 #include <xrpl/protocol/AccountID.h>
 #include <xrpl/protocol/ErrorCodes.h>
-#include <xrpl/protocol/PublicKey.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
 #include <xrpl/resource/Fees.h>
@@ -74,7 +74,7 @@ doGatewayBalances(RPC::JsonContext& context)
     if (!id)
         return rpcError(rpcACT_MALFORMED);
     auto const accountID{std::move(id.value())};
-    context.loadType = Resource::feeHighBurdenRPC;
+    context.loadType = Resource::feeHeavyBurdenRPC;
 
     result[jss::account] = toBase58(accountID);
 
@@ -142,11 +142,41 @@ doGatewayBalances(RPC::JsonContext& context)
     std::map<AccountID, std::vector<STAmount>> hotBalances;
     std::map<AccountID, std::vector<STAmount>> assets;
     std::map<AccountID, std::vector<STAmount>> frozenBalances;
+    std::map<Currency, STAmount> locked;
 
     // Traverse the cold wallet's trust lines
     {
         forEachItem(
             *ledger, accountID, [&](std::shared_ptr<SLE const> const& sle) {
+                if (sle->getType() == ltESCROW)
+                {
+                    auto const& escrow = sle->getFieldAmount(sfAmount);
+                    auto& bal = locked[escrow.getCurrency()];
+                    if (bal == beast::zero)
+                    {
+                        // This is needed to set the currency code correctly
+                        bal = escrow;
+                    }
+                    else
+                    {
+                        try
+                        {
+                            bal += escrow;
+                        }
+                        catch (std::runtime_error const&)
+                        {
+                            // Presumably the exception was caused by overflow.
+                            // On overflow return the largest valid STAmount.
+                            // Very large sums of STAmount are approximations
+                            // anyway.
+                            bal = STAmount(
+                                bal.issue(),
+                                STAmount::cMaxValue,
+                                STAmount::cMaxOffset);
+                        }
+                    }
+                }
+
                 auto rs = PathFindTrustLine::makeItem(accountID, sle);
 
                 if (!rs)
@@ -245,6 +275,17 @@ doGatewayBalances(RPC::JsonContext& context)
     populateResult(hotBalances, jss::balances);
     populateResult(frozenBalances, jss::frozen_balances);
     populateResult(assets, jss::assets);
+
+    // Add total escrow to the result
+    if (!locked.empty())
+    {
+        Json::Value j;
+        for (auto const& [k, v] : locked)
+        {
+            j[to_string(k)] = v.getText();
+        }
+        result[jss::locked] = std::move(j);
+    }
 
     return result;
 }

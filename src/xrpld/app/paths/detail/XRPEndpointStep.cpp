@@ -22,6 +22,7 @@
 #include <xrpld/app/paths/detail/StepChecks.h>
 #include <xrpld/app/paths/detail/Steps.h>
 #include <xrpld/ledger/PaymentSandbox.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/IOUAmount.h>
@@ -30,7 +31,6 @@
 
 #include <boost/container/flat_set.hpp>
 
-#include <numeric>
 #include <sstream>
 
 namespace ripple {
@@ -132,7 +132,8 @@ protected:
     logStringImpl(char const* name) const
     {
         std::ostringstream ostr;
-        ostr << name << ": " << "\nAcc: " << acc_;
+        ostr << name << ": "
+             << "\nAcc: " << acc_;
         return ostr.str();
     }
 

@@ -21,17 +21,13 @@
 #define RIPPLE_CONDITIONS_UTILS_H
 
 #include <xrpld/conditions/detail/error.h>
+
 #include <xrpl/basics/Buffer.h>
 #include <xrpl/basics/Slice.h>
-#include <xrpl/basics/strHex.h>
+
 #include <boost/dynamic_bitset.hpp>
-#include <iomanip>
+
 #include <limits>
-#include <sstream>
-#include <stdexcept>
-#include <string>
-#include <utility>
-#include <vector>
 
 namespace ripple {
 namespace cryptoconditions {
@@ -192,9 +188,9 @@ parseInteger(Slice& s, std::size_t count, std::error_code& ec)
         return v;
     }
 
-    const bool isSigned = std::numeric_limits<Integer>::is_signed;
+    bool const isSigned = std::numeric_limits<Integer>::is_signed;
     // unsigned types may have a leading zero octet
-    const size_t maxLength = isSigned ? sizeof(Integer) : sizeof(Integer) + 1;
+    size_t const maxLength = isSigned ? sizeof(Integer) : sizeof(Integer) + 1;
     if (count > maxLength)
     {
         ec = error::large_size;

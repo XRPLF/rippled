@@ -16,11 +16,12 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
+
 #include <xrpld/app/misc/AMMUtils.h>
 #include <xrpld/ledger/Sandbox.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/AMMCore.h>
-#include <xrpl/protocol/STAccount.h>
 #include <xrpl/protocol/STObject.h>
 
 namespace ripple {
@@ -72,7 +73,7 @@ ammHolds(
         auto const singleIssue =
             [&issue1, &issue2, &j](
                 Issue checkIssue,
-                const char* label) -> std::optional<std::pair<Issue, Issue>> {
+                char const* label) -> std::optional<std::pair<Issue, Issue>> {
             if (checkIssue == issue1)
                 return std::make_optional(std::make_pair(issue1, issue2));
             else if (checkIssue == issue2)
@@ -116,13 +117,45 @@ ammLPHolds(
     AccountID const& lpAccount,
     beast::Journal const j)
 {
-    return accountHolds(
-        view,
-        lpAccount,
-        ammLPTCurrency(cur1, cur2),
-        ammAccount,
-        FreezeHandling::fhZERO_IF_FROZEN,
-        j);
+    // This function looks similar to `accountHolds`. However, it only checks if
+    // a LPToken holder has enough balance. On the other hand, `accountHolds`
+    // checks if the underlying assets of LPToken are frozen with the
+    // fixFrozenLPTokenTransfer amendment
+
+    auto const currency = ammLPTCurrency(cur1, cur2);
+    STAmount amount;
+
+    auto const sle = view.read(keylet::line(lpAccount, ammAccount, currency));
+    if (!sle)
+    {
+        amount.clear(Issue{currency, ammAccount});
+        JLOG(j.trace()) << "ammLPHolds: no SLE "
+                        << " lpAccount=" << to_string(lpAccount)
+                        << " amount=" << amount.getFullText();
+    }
+    else if (isFrozen(view, lpAccount, currency, ammAccount))
+    {
+        amount.clear(Issue{currency, ammAccount});
+        JLOG(j.trace()) << "ammLPHolds: frozen currency "
+                        << " lpAccount=" << to_string(lpAccount)
+                        << " amount=" << amount.getFullText();
+    }
+    else
+    {
+        amount = sle->getFieldAmount(sfBalance);
+        if (lpAccount > ammAccount)
+        {
+            // Put balance in account terms.
+            amount.negate();
+        }
+        amount.setIssuer(ammAccount);
+
+        JLOG(j.trace()) << "ammLPHolds:"
+                        << " lpAccount=" << to_string(lpAccount)
+                        << " amount=" << amount.getFullText();
+    }
+
+    return view.balanceHook(lpAccount, ammAccount, amount);
 }
 
 STAmount

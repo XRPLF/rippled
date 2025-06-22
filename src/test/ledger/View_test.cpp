@@ -18,14 +18,16 @@
 //==============================================================================
 
 #include <test/jtx.h>
+
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/core/ConfigSections.h>
 #include <xrpld/ledger/ApplyViewImpl.h>
 #include <xrpld/ledger/OpenView.h>
 #include <xrpld/ledger/PaymentSandbox.h>
 #include <xrpld/ledger/Sandbox.h>
+
 #include <xrpl/protocol/Feature.h>
-#include <xrpl/protocol/Protocol.h>
+
 #include <type_traits>
 
 namespace ripple {
@@ -813,6 +815,7 @@ class View_test : public beast::unit_test::suite
         auto const EUR = gw["EUR"];
 
         env.fund(XRP(10000), alice, bob, carol, gw);
+        env.close();
         env.trust(USD(100), alice, bob, carol);
         {
             // Global freezing.
@@ -1012,11 +1015,7 @@ class View_test : public beast::unit_test::suite
 
         // The two Env's can't share the same ports, so modify the config
         // of the second Env to use higher port numbers
-        Env eB{
-            *this,
-            envconfig(port_increment, 3),
-            nullptr,
-            beast::severities::kDisabled};
+        Env eB{*this, envconfig(), nullptr, beast::severities::kDisabled};
 
         // Make ledgers that are incompatible with the first ledgers.  Note
         // that bob is funded before alice.

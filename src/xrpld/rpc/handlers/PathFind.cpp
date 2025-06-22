@@ -19,9 +19,9 @@
 
 #include <xrpld/app/ledger/LedgerMaster.h>
 #include <xrpld/app/main/Application.h>
-#include <xrpld/app/misc/NetworkOPs.h>
 #include <xrpld/app/paths/PathRequests.h>
 #include <xrpld/rpc/Context.h>
+
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/jss.h>
@@ -52,7 +52,7 @@ doPathFind(RPC::JsonContext& context)
 
     if (sSubCommand == "create")
     {
-        context.loadType = Resource::feeHighBurdenRPC;
+        context.loadType = Resource::feeHeavyBurdenRPC;
         context.infoSub->clearRequest();
         return context.app.getPathRequests().makePathRequest(
             context.infoSub, lpLedger, context.params);

@@ -28,13 +28,16 @@
 #include <test/jtx/envconfig.h>
 #include <test/jtx/require.h>
 #include <test/jtx/tags.h>
+#include <test/jtx/vault.h>
 #include <test/unit_test/SuiteJournal.h>
+
 #include <xrpld/app/ledger/Ledger.h>
 #include <xrpld/app/ledger/OpenLedger.h>
 #include <xrpld/app/main/Application.h>
 #include <xrpld/app/paths/Pathfinder.h>
 #include <xrpld/core/Config.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
@@ -46,6 +49,7 @@
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/STObject.h>
 #include <xrpl/protocol/STTx.h>
+
 #include <functional>
 #include <string>
 #include <tuple>
@@ -69,7 +73,7 @@ noripple(Account const& account, Args const&... args)
 inline FeatureBitset
 supported_amendments()
 {
-    static const FeatureBitset ids = [] {
+    static FeatureBitset const ids = [] {
         auto const& sa = ripple::detail::supportedAmendments();
         std::vector<uint256> feats;
         feats.reserve(sa.size());
@@ -207,8 +211,10 @@ public:
      * @param args collection of features
      *
      */
-    Env(beast::unit_test::suite& suite_, FeatureBitset features)
-        : Env(suite_, envconfig(), features)
+    Env(beast::unit_test::suite& suite_,
+        FeatureBitset features,
+        std::unique_ptr<Logs> logs = nullptr)
+        : Env(suite_, envconfig(), features, std::move(logs))
     {
     }
 
@@ -406,11 +412,31 @@ public:
         trace_ = 0;
     }
 
+    void
+    set_parse_failure_expected(bool b)
+    {
+        parseFailureExpected_ = b;
+    }
+
     /** Turn off signature checks. */
     void
     disable_sigs()
     {
         app().checkSigs(false);
+    }
+
+    // set rpc retries
+    void
+    set_retries(unsigned r = 5)
+    {
+        retries_ = r;
+    }
+
+    // get rpc retries
+    unsigned
+    retries() const
+    {
+        return retries_;
     }
 
     /** Associate AccountID with account. */
@@ -445,6 +471,15 @@ public:
     // VFALCO NOTE This should return a unit-less amount
     PrettyAmount
     balance(Account const& account, Issue const& issue) const;
+
+    PrettyAmount
+    balance(Account const& account, MPTIssue const& mptIssue) const;
+
+    /** Returns the IOU limit on an account.
+        Returns 0 if the trust line does not exist.
+    */
+    PrettyAmount
+    limit(Account const& account, Issue const& issue) const;
 
     /** Return the number of objects owned by an account.
      * Returns 0 if the account does not exist.
@@ -563,13 +598,16 @@ public:
     }
 
     /** Return metadata for the last JTx.
-
-        Effects:
-
-            The open ledger is closed as if by a call
-            to close(). The metadata for the last
-            transaction ID, if any, is returned.
-    */
+     *
+     *  NOTE: this has a side effect of closing the open ledger.
+     *  The ledger will only be closed if it includes transactions.
+     *
+     *  Effects:
+     *
+     *      The open ledger is closed as if by a call
+     *      to close(). The metadata for the last
+     *      transaction ID, if any, is returned.
+     */
     std::shared_ptr<STObject const>
     meta();
 
@@ -592,6 +630,12 @@ public:
 
     void
     disableFeature(uint256 const feature);
+
+    bool
+    enabled(uint256 feature) const
+    {
+        return current()->rules().enabled(feature);
+    }
 
 private:
     void
@@ -693,6 +737,8 @@ protected:
     TestStopwatch stopwatch_;
     uint256 txid_;
     TER ter_ = tesSUCCESS;
+    bool parseFailureExpected_ = false;
+    unsigned retries_ = 5;
 
     Json::Value
     do_rpc(

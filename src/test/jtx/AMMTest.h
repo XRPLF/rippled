@@ -16,12 +16,14 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
+
 #ifndef RIPPLE_TEST_JTX_AMMTEST_H_INCLUDED
 #define RIPPLE_TEST_JTX_AMMTEST_H_INCLUDED
 
 #include <test/jtx/Account.h>
 #include <test/jtx/amount.h>
 #include <test/jtx/ter.h>
+
 #include <xrpl/beast/unit_test/suite.h>
 #include <xrpl/protocol/Feature.h>
 
@@ -32,6 +34,15 @@ namespace jtx {
 class AMM;
 
 enum class Fund { All, Acct, Gw, IOUOnly };
+
+struct TestAMMArg
+{
+    std::optional<std::pair<STAmount, STAmount>> pool = std::nullopt;
+    std::uint16_t tfee = 0;
+    std::optional<jtx::ter> ter = std::nullopt;
+    std::vector<FeatureBitset> features = {supported_amendments()};
+    bool noLog = false;
+};
 
 void
 fund(
@@ -85,6 +96,11 @@ protected:
         std::uint16_t tfee = 0,
         std::optional<jtx::ter> const& ter = std::nullopt,
         std::vector<FeatureBitset> const& features = {supported_amendments()});
+
+    void
+    testAMM(
+        std::function<void(jtx::AMM&, jtx::Env&)>&& cb,
+        TestAMMArg const& arg);
 };
 
 class AMMTest : public jtx::AMMTestBase

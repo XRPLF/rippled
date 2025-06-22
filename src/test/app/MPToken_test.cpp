@@ -20,6 +20,7 @@
 #include <test/jtx.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/xchain_bridge.h>
+
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/jss.h>
 
@@ -411,6 +412,9 @@ class MPToken_test : public beast::unit_test::suite
             // bob creates a mptoken
             mptAlice.authorize({.account = bob, .holderCount = 1});
 
+            mptAlice.authorize(
+                {.account = bob, .holderCount = 1, .err = tecDUPLICATE});
+
             // bob deletes his mptoken
             mptAlice.authorize(
                 {.account = bob, .holderCount = 0, .flags = tfMPTUnauthorize});
@@ -620,6 +624,25 @@ class MPToken_test : public beast::unit_test::suite
 
         // locks up bob's mptoken again
         mptAlice.set({.account = alice, .holder = bob, .flags = tfMPTLock});
+        if (!features[featureSingleAssetVault])
+        {
+            // Delete bobs' mptoken even though it is locked
+            mptAlice.authorize({.account = bob, .flags = tfMPTUnauthorize});
+
+            mptAlice.set(
+                {.account = alice,
+                 .holder = bob,
+                 .flags = tfMPTUnlock,
+                 .err = tecOBJECT_NOT_FOUND});
+
+            return;
+        }
+
+        // Cannot delete locked MPToken
+        mptAlice.authorize(
+            {.account = bob,
+             .flags = tfMPTUnauthorize,
+             .err = tecNO_PERMISSION});
 
         // alice unlocks mptissuance
         mptAlice.set({.account = alice, .flags = tfMPTUnlock});
@@ -1327,7 +1350,7 @@ class MPToken_test : public beast::unit_test::suite
         Account const diana("diana");
         Account const dpIssuer("dpIssuer");  // holder
 
-        const char credType[] = "abcde";
+        char const credType[] = "abcde";
 
         {
             Env env(*this);
@@ -1671,15 +1694,6 @@ class MPToken_test : public beast::unit_test::suite
                 jv[jss::SendMax] = mpt.getJson(JsonOptions::none);
                 test(jv, jss::SendMax.c_str());
             }
-            // EscrowCreate
-            {
-                Json::Value jv;
-                jv[jss::TransactionType] = jss::EscrowCreate;
-                jv[jss::Account] = alice.human();
-                jv[jss::Destination] = carol.human();
-                jv[jss::Amount] = mpt.getJson(JsonOptions::none);
-                test(jv, jss::Amount.c_str());
-            }
             // OfferCreate
             {
                 Json::Value jv = offer(alice, USD(100), mpt);
@@ -1863,7 +1877,9 @@ class MPToken_test : public beast::unit_test::suite
 
         Account const alice{"alice"};
 
-        Env env{*this, features};
+        auto cfg = envconfig();
+        cfg->FEES.reference_fee = 10;
+        Env env{*this, std::move(cfg), features};
         MPTTester mptAlice(env, alice);
 
         mptAlice.create();
@@ -2280,20 +2296,27 @@ public:
         FeatureBitset const all{supported_amendments()};
 
         // MPTokenIssuanceCreate
-        testCreateValidation(all);
-        testCreateEnabled(all);
+        testCreateValidation(all - featureSingleAssetVault);
+        testCreateValidation(all | featureSingleAssetVault);
+        testCreateEnabled(all - featureSingleAssetVault);
+        testCreateEnabled(all | featureSingleAssetVault);
 
         // MPTokenIssuanceDestroy
-        testDestroyValidation(all);
-        testDestroyEnabled(all);
+        testDestroyValidation(all - featureSingleAssetVault);
+        testDestroyValidation(all | featureSingleAssetVault);
+        testDestroyEnabled(all - featureSingleAssetVault);
+        testDestroyEnabled(all | featureSingleAssetVault);
 
         // MPTokenAuthorize
-        testAuthorizeValidation(all);
-        testAuthorizeEnabled(all);
+        testAuthorizeValidation(all - featureSingleAssetVault);
+        testAuthorizeValidation(all | featureSingleAssetVault);
+        testAuthorizeEnabled(all - featureSingleAssetVault);
+        testAuthorizeEnabled(all | featureSingleAssetVault);
 
         // MPTokenIssuanceSet
         testSetValidation(all);
-        testSetEnabled(all);
+        testSetEnabled(all - featureSingleAssetVault);
+        testSetEnabled(all | featureSingleAssetVault);
 
         // MPT clawback
         testClawbackValidation(all);

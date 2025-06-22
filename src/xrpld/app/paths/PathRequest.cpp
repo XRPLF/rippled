@@ -26,22 +26,22 @@
 #include <xrpld/app/paths/RippleCalc.h>
 #include <xrpld/app/paths/detail/PathfinderUtils.h>
 #include <xrpld/core/Config.h>
+#include <xrpld/rpc/detail/Tuning.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/RPCErr.h>
 #include <xrpl/protocol/UintTypes.h>
 
-#include <xrpld/rpc/detail/Tuning.h>
 #include <optional>
-
 #include <tuple>
 
 namespace ripple {
 
 PathRequest::PathRequest(
     Application& app,
-    const std::shared_ptr<InfoSub>& subscriber,
+    std::shared_ptr<InfoSub> const& subscriber,
     int id,
     PathRequests& owner,
     beast::Journal journal)
@@ -438,6 +438,21 @@ PathRequest::parseJson(Json::Value const& jvParams)
     if (jvParams.isMember(jss::id))
         jvId = jvParams[jss::id];
 
+    if (jvParams.isMember(jss::domain))
+    {
+        uint256 num;
+        if (!jvParams[jss::domain].isString() ||
+            !num.parseHex(jvParams[jss::domain].asString()))
+        {
+            jvStatus = rpcError(rpcDOMAIN_MALFORMED);
+            return PFR_PJ_INVALID;
+        }
+        else
+        {
+            domain = num;
+        }
+    }
+
     return PFR_PJ_NOCHANGE;
 }
 
@@ -484,6 +499,7 @@ PathRequest::getPathFinder(
         std::nullopt,
         dst_amount,
         saSendMax,
+        domain,
         app_);
     if (pathfinder->findPaths(level, continueCallback))
         pathfinder->computePathRanks(max_paths_, continueCallback);
@@ -581,6 +597,7 @@ PathRequest::findPaths(
             *raDstAccount,  // --> Account to deliver to.
             *raSrcAccount,  // --> Account sending from.
             ps,             // --> Path set.
+            domain,         // --> Domain.
             app_.logs(),
             &rcInput);
 
@@ -601,6 +618,7 @@ PathRequest::findPaths(
                 *raDstAccount,  // --> Account to deliver to.
                 *raSrcAccount,  // --> Account sending from.
                 ps,             // --> Path set.
+                domain,         // --> Domain.
                 app_.logs());
 
             if (rc.result() != tesSUCCESS)

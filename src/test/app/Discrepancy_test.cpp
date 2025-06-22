@@ -20,6 +20,7 @@
 #include <test/jtx.h>
 #include <test/jtx/Env.h>
 #include <test/jtx/PathSet.h>
+
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/Feature.h>
@@ -146,7 +147,8 @@ public:
     {
         using namespace test::jtx;
         auto const sa = supported_amendments();
-        testXRPDiscrepancy(sa - featureFlowCross);
+        testXRPDiscrepancy(sa - featureFlowCross - featurePermissionedDEX);
+        testXRPDiscrepancy(sa - featurePermissionedDEX);
         testXRPDiscrepancy(sa);
     }
 };

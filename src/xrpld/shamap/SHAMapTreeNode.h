@@ -22,15 +22,13 @@
 
 #include <xrpld/shamap/SHAMapItem.h>
 #include <xrpld/shamap/SHAMapNodeID.h>
-#include <xrpl/basics/CountedObject.h>
+
+#include <xrpl/basics/IntrusivePointer.h>
+#include <xrpl/basics/IntrusiveRefCounts.h>
 #include <xrpl/basics/SHAMapHash.h>
-#include <xrpl/basics/TaggedCache.h>
-#include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/Serializer.h>
 
 #include <cstdint>
-#include <memory>
-#include <mutex>
 #include <string>
 
 namespace ripple {
@@ -50,7 +48,7 @@ enum class SHAMapNodeType {
     tnACCOUNT_STATE = 4
 };
 
-class SHAMapTreeNode
+class SHAMapTreeNode : public IntrusiveRefCounts
 {
 protected:
     SHAMapHash hash_;
@@ -89,15 +87,19 @@ protected:
 public:
     virtual ~SHAMapTreeNode() noexcept = default;
 
+    // Needed to support weak intrusive pointers
+    virtual void
+    partialDestructor() {};
+
     /** \defgroup SHAMap Copy-on-Write Support
 
-        By nature, a node may appear in multiple SHAMap instances. Rather than
-        actually duplicating these nodes, SHAMap opts to be memory efficient
-        and uses copy-on-write semantics for nodes.
+        By nature, a node may appear in multiple SHAMap instances. Rather
+       than actually duplicating these nodes, SHAMap opts to be memory
+       efficient and uses copy-on-write semantics for nodes.
 
-        Only nodes that are not modified and don't need to be flushed back can
-        be shared. Once a node needs to be changed, it must first be copied and
-        the copy must marked as not shareable.
+        Only nodes that are not modified and don't need to be flushed back
+       can be shared. Once a node needs to be changed, it must first be
+       copied and the copy must marked as not shareable.
 
         Note that just because a node may not be *owned* by a given SHAMap
         instance does not mean that the node is NOT a part of any SHAMap. It
@@ -109,8 +111,8 @@ public:
     /** @{ */
     /** Returns the SHAMap that owns this node.
 
-        @return the ID of the SHAMap that owns this node, or 0 if the node
-                is not owned by any SHAMap and is a candidate for sharing.
+        @return the ID of the SHAMap that owns this node, or 0 if the
+       node is not owned by any SHAMap and is a candidate for sharing.
      */
     std::uint32_t
     cowid() const
@@ -130,7 +132,7 @@ public:
     }
 
     /** Make a copy of this node, setting the owner. */
-    virtual std::shared_ptr<SHAMapTreeNode>
+    virtual intr_ptr::SharedPtr<SHAMapTreeNode>
     clone(std::uint32_t cowid) const = 0;
     /** @} */
 
@@ -171,20 +173,20 @@ public:
     virtual void
     invariants(bool is_root = false) const = 0;
 
-    static std::shared_ptr<SHAMapTreeNode>
+    static intr_ptr::SharedPtr<SHAMapTreeNode>
     makeFromPrefix(Slice rawNode, SHAMapHash const& hash);
 
-    static std::shared_ptr<SHAMapTreeNode>
+    static intr_ptr::SharedPtr<SHAMapTreeNode>
     makeFromWire(Slice rawNode);
 
 private:
-    static std::shared_ptr<SHAMapTreeNode>
+    static intr_ptr::SharedPtr<SHAMapTreeNode>
     makeTransaction(Slice data, SHAMapHash const& hash, bool hashValid);
 
-    static std::shared_ptr<SHAMapTreeNode>
+    static intr_ptr::SharedPtr<SHAMapTreeNode>
     makeAccountState(Slice data, SHAMapHash const& hash, bool hashValid);
 
-    static std::shared_ptr<SHAMapTreeNode>
+    static intr_ptr::SharedPtr<SHAMapTreeNode>
     makeTransactionWithMeta(Slice data, SHAMapHash const& hash, bool hashValid);
 };
 

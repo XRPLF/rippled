@@ -18,6 +18,10 @@
 //==============================================================================
 
 #include <xrpl/protocol/Book.h>
+#include <xrpl/protocol/Issue.h>
+
+#include <ostream>
+#include <string>
 
 namespace ripple {
 
@@ -44,7 +48,7 @@ operator<<(std::ostream& os, Book const& x)
 Book
 reversed(Book const& book)
 {
-    return Book(book.out, book.in);
+    return Book(book.out, book.in, book.domain);
 }
 
 }  // namespace ripple

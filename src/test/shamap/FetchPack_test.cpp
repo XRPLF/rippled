@@ -19,15 +19,17 @@
 
 #include <test/shamap/common.h>
 #include <test/unit_test/SuiteJournal.h>
+
 #include <xrpld/shamap/SHAMap.h>
 #include <xrpld/shamap/SHAMapSyncFilter.h>
-#include <xrpl/basics/StringUtilities.h>
+
 #include <xrpl/basics/UnorderedContainers.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/beast/xor_shift_engine.h>
 #include <xrpl/protocol/digest.h>
+
 #include <functional>
 #include <stdexcept>
 

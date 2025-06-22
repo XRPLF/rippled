@@ -17,13 +17,27 @@
 */
 //==============================================================================
 
+#include <xrpl/basics/BasicConfig.h>
+#include <xrpl/basics/contract.h>
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/core/LexicalCast.h>
+#include <xrpl/beast/net/IPEndpoint.h>
 #include <xrpl/beast/rfc2616.h>
 #include <xrpl/server/Port.h>
+
 #include <boost/algorithm/string/predicate.hpp>
 #include <boost/algorithm/string/trim.hpp>
+#include <boost/asio/ip/address.hpp>
+#include <boost/asio/ip/impl/network_v4.ipp>
+#include <boost/asio/ip/impl/network_v6.ipp>
+#include <boost/system/system_error.hpp>
+
+#include <cstdint>
+#include <exception>
+#include <ostream>
 #include <sstream>
+#include <string>
+#include <vector>
 
 namespace ripple {
 
@@ -198,6 +212,7 @@ populate(
 void
 parse_Port(ParsedPort& port, Section const& section, std::ostream& log)
 {
+    port.name = section.name();
     {
         auto const optResult = section.get("ip");
         if (optResult)
@@ -223,8 +238,8 @@ parse_Port(ParsedPort& port, Section const& section, std::ostream& log)
             {
                 port.port = beast::lexicalCastThrow<std::uint16_t>(*optResult);
 
-                // Port 0 is not supported
-                if (*port.port == 0)
+                // Port 0 is not supported for [server]
+                if ((*port.port == 0) && (port.name == "server"))
                     Throw<std::exception>();
             }
             catch (std::exception const&)

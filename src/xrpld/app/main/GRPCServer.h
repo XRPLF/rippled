@@ -28,11 +28,10 @@
 #include <xrpld/rpc/Role.h>
 #include <xrpld/rpc/detail/Handler.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
-#include <xrpld/rpc/detail/Tuning.h>
-#include <xrpl/protocol/ErrorCodes.h>
-#include <xrpl/resource/Charge.h>
 
 #include <xrpl/proto/org/xrpl/rpc/v1/xrp_ledger.grpc.pb.h>
+#include <xrpl/resource/Charge.h>
+
 #include <grpcpp/grpcpp.h>
 
 namespace ripple {
@@ -45,10 +44,10 @@ public:
 
     Processor() = default;
 
-    Processor(const Processor&) = delete;
+    Processor(Processor const&) = delete;
 
     Processor&
-    operator=(const Processor&) = delete;
+    operator=(Processor const&) = delete;
 
     // process a request that has arrived. Can only be called once per instance
     virtual void
@@ -84,6 +83,7 @@ private:
     Application& app_;
 
     std::string serverAddress_;
+    std::uint16_t serverPort_ = 0;
 
     std::vector<boost::asio::ip::address> secureGatewayIPs_;
 
@@ -120,10 +120,10 @@ private:
 public:
     explicit GRPCServerImpl(Application& app);
 
-    GRPCServerImpl(const GRPCServerImpl&) = delete;
+    GRPCServerImpl(GRPCServerImpl const&) = delete;
 
     GRPCServerImpl&
-    operator=(const GRPCServerImpl&) = delete;
+    operator=(GRPCServerImpl const&) = delete;
 
     void
     shutdown();
@@ -140,6 +140,10 @@ public:
     // Create a CallData object for each RPC. Return created objects in vector
     std::vector<std::shared_ptr<Processor>>
     setupListeners();
+
+    // Obtaining actually binded endpoint (if port 0 was used for server setup).
+    boost::asio::ip::tcp::endpoint
+    getEndpoint() const;
 
 private:
     // Class encompasing the state and logic needed to serve a request.
@@ -210,10 +214,10 @@ private:
             Resource::Charge loadType,
             std::vector<boost::asio::ip::address> const& secureGatewayIPs);
 
-        CallData(const CallData&) = delete;
+        CallData(CallData const&) = delete;
 
         CallData&
-        operator=(const CallData&) = delete;
+        operator=(CallData const&) = delete;
 
         virtual void
         process() override;
@@ -300,18 +304,21 @@ public:
     {
     }
 
-    GRPCServer(const GRPCServer&) = delete;
+    GRPCServer(GRPCServer const&) = delete;
 
     GRPCServer&
-    operator=(const GRPCServer&) = delete;
+    operator=(GRPCServer const&) = delete;
 
-    void
+    bool
     start();
 
     void
     stop();
 
     ~GRPCServer();
+
+    boost::asio::ip::tcp::endpoint
+    getEndpoint() const;
 
 private:
     GRPCServerImpl impl_;

@@ -17,12 +17,12 @@
 */
 //==============================================================================
 
-#include <xrpld/app/main/Application.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
 #include <xrpld/ledger/ReadView.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/rpc/detail/Tuning.h>
+
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/Indexes.h>
 #include <xrpl/protocol/LedgerFormats.h>
@@ -31,7 +31,6 @@
 #include <xrpl/protocol/nftPageMask.h>
 #include <xrpl/resource/Fees.h>
 
-#include <sstream>
 #include <string>
 
 namespace ripple {
@@ -224,7 +223,10 @@ doAccountObjects(RPC::JsonContext& context)
              ltXCHAIN_OWNED_CREATE_ACCOUNT_CLAIM_ID},
             {jss::bridge, ltBRIDGE},
             {jss::mpt_issuance, ltMPTOKEN_ISSUANCE},
-            {jss::mptoken, ltMPTOKEN}};
+            {jss::mptoken, ltMPTOKEN},
+            {jss::permissioned_domain, ltPERMISSIONED_DOMAIN},
+            {jss::vault, ltVAULT},
+        };
 
         typeFilter.emplace();
         typeFilter->reserve(std::size(deletionBlockers));

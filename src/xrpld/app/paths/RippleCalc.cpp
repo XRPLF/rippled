@@ -21,6 +21,7 @@
 #include <xrpld/app/paths/RippleCalc.h>
 #include <xrpld/app/paths/detail/FlowDebugInfo.h>
 #include <xrpld/ledger/View.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/Feature.h>
 
@@ -52,6 +53,8 @@ RippleCalc::rippleCalculate(
     // A set of paths that are included in the transaction that we'll
     // explore for liquidity.
     STPathSet const& spsPaths,
+
+    std::optional<uint256> const& domainID,
     Logs& l,
     Input const* const pInputs)
 {
@@ -109,6 +112,7 @@ RippleCalc::rippleCalculate(
                 OfferCrossing::no,
                 limitQuality,
                 sendMax,
+                domainID,
                 j,
                 nullptr);
         }

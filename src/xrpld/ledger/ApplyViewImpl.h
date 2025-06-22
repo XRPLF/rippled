@@ -22,6 +22,7 @@
 
 #include <xrpld/ledger/OpenView.h>
 #include <xrpld/ledger/detail/ApplyViewBase.h>
+
 #include <xrpl/protocol/STAmount.h>
 #include <xrpl/protocol/TER.h>
 
@@ -52,8 +53,14 @@ public:
         operation on this object is to call the
         destructor.
     */
-    void
-    apply(OpenView& to, STTx const& tx, TER ter, beast::Journal j);
+    std::optional<TxMeta>
+    apply(
+        OpenView& to,
+        STTx const& tx,
+        TER ter,
+        std::optional<uint256> parentBatchId,
+        bool isDryRun,
+        beast::Journal j);
 
     /** Set the amount of currency delivered.
 

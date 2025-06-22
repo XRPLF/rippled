@@ -17,7 +17,8 @@
 */
 //==============================================================================
 
-#pragma once
+#ifndef RIPPLE_TEST_JTX_CREDENTIALS_H_INCLUDED
+#define RIPPLE_TEST_JTX_CREDENTIALS_H_INCLUDED
 
 #include <test/jtx/Account.h>
 #include <test/jtx/Env.h>
@@ -28,6 +29,16 @@ namespace test {
 namespace jtx {
 
 namespace credentials {
+
+inline Keylet
+keylet(
+    test::jtx::Account const& subject,
+    test::jtx::Account const& issuer,
+    std::string_view credType)
+{
+    return keylet::credential(
+        subject.id(), issuer.id(), Slice(credType.data(), credType.size()));
+}
 
 // Sets the optional URI.
 class uri
@@ -97,8 +108,8 @@ Json::Value
 ledgerEntry(jtx::Env& env, std::string const& credIdx);
 
 }  // namespace credentials
-
 }  // namespace jtx
-
 }  // namespace test
 }  // namespace ripple
+
+#endif

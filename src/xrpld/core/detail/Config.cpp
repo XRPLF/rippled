@@ -20,6 +20,7 @@
 #include <xrpld/core/Config.h>
 #include <xrpld/core/ConfigSections.h>
 #include <xrpld/net/HTTPClient.h>
+
 #include <xrpl/basics/FileUtilities.h>
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/StringUtilities.h>
@@ -28,11 +29,12 @@
 #include <xrpl/json/json_reader.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/SystemParameters.h>
+
 #include <boost/algorithm/string.hpp>
 #include <boost/format.hpp>
 #include <boost/predef.h>
 #include <boost/regex.hpp>
-#include <boost/system/error_code.hpp>
+
 #include <algorithm>
 #include <cstdlib>
 #include <iostream>
@@ -156,7 +158,7 @@ static_assert(
 #define SECTION_DEFAULT_NAME ""
 
 IniFileSections
-parseIniFile(std::string const& strInput, const bool bTrim)
+parseIniFile(std::string const& strInput, bool const bTrim)
 {
     std::string strData(strInput);
     std::vector<std::string> vLines;
@@ -420,6 +422,35 @@ Config::setup(
     get_if_exists(nodeDbSection, "fast_load", FAST_LOAD);
 }
 
+// 0 ports are allowed for unit tests, but still not allowed to be present in
+// config file
+static void
+checkZeroPorts(Config const& config)
+{
+    if (!config.exists("server"))
+        return;
+
+    for (auto const& name : config.section("server").values())
+    {
+        if (!config.exists(name))
+            return;
+
+        auto const& section = config[name];
+        auto const optResult = section.get("port");
+        if (optResult)
+        {
+            auto const port = beast::lexicalCast<std::uint16_t>(*optResult);
+            if (!port)
+            {
+                std::stringstream ss;
+                ss << "Invalid value '" << *optResult << "' for key 'port' in ["
+                   << name << "]";
+                Throw<std::runtime_error>(ss.str());
+            }
+        }
+    }
+}
+
 void
 Config::load()
 {
@@ -440,6 +471,7 @@ Config::load()
     }
 
     loadFromString(fileContents);
+    checkZeroPorts(*this);
 }
 
 void
@@ -458,7 +490,7 @@ Config::loadFromString(std::string const& fileContents)
     // if the user has specified ip:port then replace : with a space.
     {
         auto replaceColons = [](std::vector<std::string>& strVec) {
-            const static std::regex e(":([0-9]+)$");
+            static std::regex const e(":([0-9]+)$");
             for (auto& line : strVec)
             {
                 // skip anything that might be an ipv6 address
@@ -705,8 +737,44 @@ Config::loadFromString(std::string const& fileContents)
     if (exists(SECTION_REDUCE_RELAY))
     {
         auto sec = section(SECTION_REDUCE_RELAY);
-        VP_REDUCE_RELAY_ENABLE = sec.value_or("vp_enable", false);
-        VP_REDUCE_RELAY_SQUELCH = sec.value_or("vp_squelch", false);
+
+        /////////////////////  !!TEMPORARY CODE BLOCK!! ////////////////////////
+        // vp_enable config option is deprecated by vp_base_squelch_enable    //
+        // This option is kept for backwards compatibility. When squelching   //
+        // is the default algorithm, it must be replaced with:                //
+        //  VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE =                             //
+        //  sec.value_or("vp_base_squelch_enable", true);                     //
+        if (sec.exists("vp_base_squelch_enable") && sec.exists("vp_enable"))
+            Throw<std::runtime_error>(
+                "Invalid " SECTION_REDUCE_RELAY
+                " cannot specify both vp_base_squelch_enable and vp_enable "
+                "options. "
+                "vp_enable was deprecated and replaced by "
+                "vp_base_squelch_enable");
+
+        if (sec.exists("vp_base_squelch_enable"))
+            VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE =
+                sec.value_or("vp_base_squelch_enable", false);
+        else if (sec.exists("vp_enable"))
+            VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE =
+                sec.value_or("vp_enable", false);
+        else
+            VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE = false;
+        /////////////////  !!END OF TEMPORARY CODE BLOCK!! /////////////////////
+
+        /////////////////////  !!TEMPORARY CODE BLOCK!! ///////////////////////
+        // Temporary squelching config for the peers selected as a source of //
+        // validator messages. The config must be removed once squelching is //
+        // made the default routing algorithm.                               //
+        VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS =
+            sec.value_or("vp_base_squelch_max_selected_peers", 5);
+        if (VP_REDUCE_RELAY_SQUELCH_MAX_SELECTED_PEERS < 3)
+            Throw<std::runtime_error>(
+                "Invalid " SECTION_REDUCE_RELAY
+                " vp_base_squelch_max_selected_peers must be "
+                "greater than or equal to 3");
+        /////////////////  !!END OF TEMPORARY CODE BLOCK!! /////////////////////
+
         TX_REDUCE_RELAY_ENABLE = sec.value_or("tx_enable", false);
         TX_REDUCE_RELAY_METRICS = sec.value_or("tx_metrics", false);
         TX_REDUCE_RELAY_MIN_PEERS = sec.value_or("tx_min_peers", 20);
@@ -715,9 +783,9 @@ Config::loadFromString(std::string const& fileContents)
             TX_REDUCE_RELAY_MIN_PEERS < 10)
             Throw<std::runtime_error>(
                 "Invalid " SECTION_REDUCE_RELAY
-                ", tx_min_peers must be greater or equal to 10"
-                ", tx_relay_percentage must be greater or equal to 10 "
-                "and less or equal to 100");
+                ", tx_min_peers must be greater than or equal to 10"
+                ", tx_relay_percentage must be greater than or equal to 10 "
+                "and less than or equal to 100");
     }
 
     if (getSingleSection(secConfig, SECTION_MAX_TRANSACTIONS, strTemp, j_))
@@ -912,6 +980,13 @@ Config::loadFromString(std::string const& fileContents)
             if (valListKeys)
                 section(SECTION_VALIDATOR_LIST_KEYS).append(*valListKeys);
 
+            auto valListThreshold =
+                getIniFileSection(iniFile, SECTION_VALIDATOR_LIST_THRESHOLD);
+
+            if (valListThreshold)
+                section(SECTION_VALIDATOR_LIST_THRESHOLD)
+                    .append(*valListThreshold);
+
             if (!entries && !valKeyEntries && !valListKeys)
                 Throw<std::runtime_error>(
                     "The file specified in [" SECTION_VALIDATORS_FILE
@@ -925,6 +1000,38 @@ Config::loadFromString(std::string const& fileContents)
                     " section: " +
                     validatorsFile.string());
         }
+
+        VALIDATOR_LIST_THRESHOLD = [&]() -> std::optional<std::size_t> {
+            auto const& listThreshold =
+                section(SECTION_VALIDATOR_LIST_THRESHOLD);
+            if (listThreshold.lines().empty())
+                return std::nullopt;
+            else if (listThreshold.values().size() == 1)
+            {
+                auto strTemp = listThreshold.values()[0];
+                auto const listThreshold =
+                    beast::lexicalCastThrow<std::size_t>(strTemp);
+                if (listThreshold == 0)
+                    return std::nullopt;  // NOTE: Explicitly ask for computed
+                else if (
+                    listThreshold >
+                    section(SECTION_VALIDATOR_LIST_KEYS).values().size())
+                {
+                    Throw<std::runtime_error>(
+                        "Value in config section "
+                        "[" SECTION_VALIDATOR_LIST_THRESHOLD
+                        "] exceeds the number of configured list keys");
+                }
+                return listThreshold;
+            }
+            else
+            {
+                Throw<std::runtime_error>(
+                    "Config section "
+                    "[" SECTION_VALIDATOR_LIST_THRESHOLD
+                    "] should contain single value only");
+            }
+        }();
 
         // Consolidate [validator_keys] and [validators]
         section(SECTION_VALIDATORS)

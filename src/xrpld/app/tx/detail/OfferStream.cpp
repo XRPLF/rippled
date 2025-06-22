@@ -17,9 +17,13 @@
 */
 //==============================================================================
 
+#include <xrpld/app/misc/PermissionedDEXHelpers.h>
 #include <xrpld/app/tx/detail/OfferStream.h>
+#include <xrpld/ledger/View.h>
+
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/LedgerFormats.h>
 
 namespace ripple {
 
@@ -268,6 +272,31 @@ TOfferStreamBase<TIn, TOut>::step()
         if (amount.empty())
         {
             JLOG(j_.warn()) << "Removing bad offer " << entry->key();
+            permRmOffer(entry->key());
+            offer_ = TOffer<TIn, TOut>{};
+            continue;
+        }
+
+        bool const deepFrozen = isDeepFrozen(
+            view_,
+            offer_.owner(),
+            offer_.issueIn().currency,
+            offer_.issueIn().account);
+        if (deepFrozen)
+        {
+            JLOG(j_.trace())
+                << "Removing deep frozen unfunded offer " << entry->key();
+            permRmOffer(entry->key());
+            offer_ = TOffer<TIn, TOut>{};
+            continue;
+        }
+
+        if (entry->isFieldPresent(sfDomainID) &&
+            !permissioned_dex::offerInDomain(
+                view_, entry->key(), entry->getFieldH256(sfDomainID), j_))
+        {
+            JLOG(j_.trace())
+                << "Removing offer no longer in domain " << entry->key();
             permRmOffer(entry->key());
             offer_ = TOffer<TIn, TOut>{};
             continue;

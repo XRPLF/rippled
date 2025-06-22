@@ -21,6 +21,7 @@
 #define RIPPLE_TX_APPLYSTEPS_H_INCLUDED
 
 #include <xrpld/ledger/ApplyViewImpl.h>
+
 #include <xrpl/beast/utility/Journal.h>
 
 namespace ripple {
@@ -28,6 +29,18 @@ namespace ripple {
 class Application;
 class STTx;
 class TxQ;
+
+struct ApplyResult
+{
+    TER ter;
+    bool applied;
+    std::optional<TxMeta> metadata;
+
+    ApplyResult(TER t, bool a, std::optional<TxMeta> m = std::nullopt)
+        : ter(t), applied(a), metadata(std::move(m))
+    {
+    }
+};
 
 /** Return true if the transaction can claim a fee (tec),
     and the `ApplyFlags` do not allow soft failures.
@@ -152,6 +165,8 @@ struct PreflightResult
 public:
     /// From the input - the transaction
     STTx const& tx;
+    /// From the input - the batch identifier, if part of a batch
+    std::optional<uint256 const> const parentBatchId;
     /// From the input - the rules
     Rules const rules;
     /// Consequences of the transaction
@@ -170,6 +185,7 @@ public:
         Context const& ctx_,
         std::pair<NotTEC, TxConsequences> const& result)
         : tx(ctx_.tx)
+        , parentBatchId(ctx_.parentBatchId)
         , rules(ctx_.rules)
         , consequences(result.second)
         , flags(ctx_.flags)
@@ -197,6 +213,8 @@ public:
     ReadView const& view;
     /// From the input - the transaction
     STTx const& tx;
+    /// From the input - the batch identifier, if part of a batch
+    std::optional<uint256 const> const parentBatchId;
     /// From the input - the flags
     ApplyFlags const flags;
     /// From the input - the journal
@@ -204,6 +222,7 @@ public:
 
     /// Intermediate transaction result
     TER const ter;
+
     /// Success flag - whether the transaction is likely to
     /// claim a fee
     bool const likelyToClaimFee;
@@ -213,6 +232,7 @@ public:
     PreclaimResult(Context const& ctx_, TER ter_)
         : view(ctx_.view)
         , tx(ctx_.tx)
+        , parentBatchId(ctx_.parentBatchId)
         , flags(ctx_.flags)
         , j(ctx_.j)
         , ter(ter_)
@@ -242,6 +262,7 @@ public:
     @return A `PreflightResult` object containing, among
     other things, the `TER` code.
 */
+/** @{ */
 PreflightResult
 preflight(
     Application& app,
@@ -249,6 +270,16 @@ preflight(
     STTx const& tx,
     ApplyFlags flags,
     beast::Journal j);
+
+PreflightResult
+preflight(
+    Application& app,
+    Rules const& rules,
+    uint256 const& parentBatchId,
+    STTx const& tx,
+    ApplyFlags flags,
+    beast::Journal j);
+/** @} */
 
 /** Gate a transaction based on static ledger information.
 
@@ -333,7 +364,7 @@ calculateDefaultBaseFee(ReadView const& view, STTx const& tx);
     @return A pair with the `TER` and a `bool` indicating
     whether or not the transaction was applied.
 */
-std::pair<TER, bool>
+ApplyResult
 doApply(PreclaimResult const& preclaimResult, Application& app, OpenView& view);
 
 }  // namespace ripple

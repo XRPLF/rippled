@@ -20,6 +20,7 @@
 
 #include <xrpl/basics/tagged_integer.h>
 #include <xrpl/beast/unit_test.h>
+
 #include <type_traits>
 
 namespace ripple {

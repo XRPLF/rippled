@@ -27,9 +27,8 @@
 #include <xrpl/protocol/TER.h>
 
 #include <cstdint>
-#include <map>
 #include <tuple>
-#include <utility>
+#include <unordered_set>
 
 namespace ripple {
 
@@ -273,6 +272,114 @@ public:
 };
 
 /**
+ * @brief Invariant: Trust lines with deep freeze flag are not allowed if normal
+ * freeze flag is not set.
+ *
+ * We iterate all the trust lines created by this transaction and ensure
+ * that they don't have deep freeze flag set without normal freeze flag set.
+ */
+class NoDeepFreezeTrustLinesWithoutFreeze
+{
+    bool deepFreezeWithoutFreeze_ = false;
+
+public:
+    void
+    visitEntry(
+        bool,
+        std::shared_ptr<SLE const> const&,
+        std::shared_ptr<SLE const> const&);
+
+    bool
+    finalize(
+        STTx const&,
+        TER const,
+        XRPAmount const,
+        ReadView const&,
+        beast::Journal const&);
+};
+
+/**
+ * @brief Invariant: frozen trust line balance change is not allowed.
+ *
+ * We iterate all affected trust lines and ensure that they don't have
+ * unexpected change of balance if they're frozen.
+ */
+class TransfersNotFrozen
+{
+    struct BalanceChange
+    {
+        std::shared_ptr<SLE const> const line;
+        int const balanceChangeSign;
+    };
+
+    struct IssuerChanges
+    {
+        std::vector<BalanceChange> senders;
+        std::vector<BalanceChange> receivers;
+    };
+
+    using ByIssuer = std::map<Issue, IssuerChanges>;
+    ByIssuer balanceChanges_;
+
+    std::map<AccountID, std::shared_ptr<SLE const> const> possibleIssuers_;
+
+public:
+    void
+    visitEntry(
+        bool,
+        std::shared_ptr<SLE const> const&,
+        std::shared_ptr<SLE const> const&);
+
+    bool
+    finalize(
+        STTx const&,
+        TER const,
+        XRPAmount const,
+        ReadView const&,
+        beast::Journal const&);
+
+private:
+    bool
+    isValidEntry(
+        std::shared_ptr<SLE const> const& before,
+        std::shared_ptr<SLE const> const& after);
+
+    STAmount
+    calculateBalanceChange(
+        std::shared_ptr<SLE const> const& before,
+        std::shared_ptr<SLE const> const& after,
+        bool isDelete);
+
+    void
+    recordBalance(Issue const& issue, BalanceChange change);
+
+    void
+    recordBalanceChanges(
+        std::shared_ptr<SLE const> const& after,
+        STAmount const& balanceChange);
+
+    std::shared_ptr<SLE const>
+    findIssuer(AccountID const& issuerID, ReadView const& view);
+
+    bool
+    validateIssuerChanges(
+        std::shared_ptr<SLE const> const& issuer,
+        IssuerChanges const& changes,
+        STTx const& tx,
+        beast::Journal const& j,
+        bool enforce);
+
+    bool
+    validateFrozenState(
+        BalanceChange const& change,
+        bool high,
+        STTx const& tx,
+        beast::Journal const& j,
+        bool enforce,
+        bool globalFreeze);
+};
+
+/**
  * @brief Invariant: offers should be for non-negative amounts and must not
  *                   be XRP to XRP.
  *
@@ -332,6 +439,8 @@ class ValidNewAccountRoot
 {
     std::uint32_t accountsCreated_ = 0;
     std::uint32_t accountSeq_ = 0;
+    bool pseudoAccount_ = false;
+    std::uint32_t flags_ = 0;
 
 public:
     void
@@ -475,6 +584,126 @@ public:
         beast::Journal const&);
 };
 
+/**
+ * @brief Invariants: Permissioned Domains must have some rules and
+ * AcceptedCredentials must have length between 1 and 10 inclusive.
+ *
+ * Since only permissions constitute rules, an empty credentials list
+ * means that there are no rules and the invariant is violated.
+ *
+ * Credentials must be sorted and no duplicates allowed
+ *
+ */
+class ValidPermissionedDomain
+{
+    struct SleStatus
+    {
+        std::size_t credentialsSize_{0};
+        bool isSorted_ = false, isUnique_ = false;
+    };
+    std::optional<SleStatus> sleStatus_[2];
+
+public:
+    void
+    visitEntry(
+        bool,
+        std::shared_ptr<SLE const> const&,
+        std::shared_ptr<SLE const> const&);
+
+    bool
+    finalize(
+        STTx const&,
+        TER const,
+        XRPAmount const,
+        ReadView const&,
+        beast::Journal const&);
+};
+
+class ValidPermissionedDEX
+{
+    bool regularOffers_ = false;
+    bool badHybrids_ = false;
+    hash_set<uint256> domains_;
+
+public:
+    void
+    visitEntry(
+        bool,
+        std::shared_ptr<SLE const> const&,
+        std::shared_ptr<SLE const> const&);
+
+    bool
+    finalize(
+        STTx const&,
+        TER const,
+        XRPAmount const,
+        ReadView const&,
+        beast::Journal const&);
+};
+
+class ValidAMM
+{
+    std::optional<AccountID> ammAccount_;
+    std::optional<STAmount> lptAMMBalanceAfter_;
+    std::optional<STAmount> lptAMMBalanceBefore_;
+    bool ammPoolChanged_;
+
+public:
+    enum class ZeroAllowed : bool { No = false, Yes = true };
+
+    ValidAMM() : ammPoolChanged_{false}
+    {
+    }
+    void
+    visitEntry(
+        bool,
+        std::shared_ptr<SLE const> const&,
+        std::shared_ptr<SLE const> const&);
+
+    bool
+    finalize(
+        STTx const&,
+        TER const,
+        XRPAmount const,
+        ReadView const&,
+        beast::Journal const&);
+
+private:
+    bool
+    finalizeBid(bool enforce, beast::Journal const&) const;
+    bool
+    finalizeVote(bool enforce, beast::Journal const&) const;
+    bool
+    finalizeCreate(
+        STTx const&,
+        ReadView const&,
+        bool enforce,
+        beast::Journal const&) const;
+    bool
+    finalizeDelete(bool enforce, TER res, beast::Journal const&) const;
+    bool
+    finalizeDeposit(
+        STTx const&,
+        ReadView const&,
+        bool enforce,
+        beast::Journal const&) const;
+    // Includes clawback
+    bool
+    finalizeWithdraw(
+        STTx const&,
+        ReadView const&,
+        bool enforce,
+        beast::Journal const&) const;
+    bool
+    finalizeDEX(bool enforce, beast::Journal const&) const;
+    bool
+    generalInvariant(
+        STTx const&,
+        ReadView const&,
+        ZeroAllowed zeroAllowed,
+        beast::Journal const&) const;
+};
+
 // additional invariant checks can be declared above and then added to this
 // tuple
 using InvariantChecks = std::tuple<
@@ -485,13 +714,18 @@ using InvariantChecks = std::tuple<
     XRPBalanceChecks,
     XRPNotCreated,
     NoXRPTrustLines,
+    NoDeepFreezeTrustLinesWithoutFreeze,
+    TransfersNotFrozen,
     NoBadOffers,
     NoZeroEscrow,
     ValidNewAccountRoot,
     ValidNFTokenPage,
     NFTokenCountTracking,
     ValidClawback,
-    ValidMPTIssuance>;
+    ValidMPTIssuance,
+    ValidPermissionedDomain,
+    ValidPermissionedDEX,
+    ValidAMM>;
 
 /**
  * @brief get a tuple of all invariant checks

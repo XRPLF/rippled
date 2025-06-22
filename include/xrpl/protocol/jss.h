@@ -44,6 +44,7 @@ namespace jss {
 // clang-format off
 JSS(AL_size);              // out: GetCounts
 JSS(AL_hit_rate);          // out: GetCounts
+JSS(AcceptedCredentials);  // out: AccountObjects
 JSS(Account);              // in: TransactionSign; field.
 JSS(AMMID);                // field
 JSS(Amount);               // in: TransactionSign; field.
@@ -82,20 +83,24 @@ JSS(PriceDataSeries);                    // field.
 JSS(PriceData);                          // field.
 JSS(Provider);                           // field.
 JSS(QuoteAsset);                         // in: Oracle.
+JSS(RawTransaction);                     // in: Batch
+JSS(RawTransactions);                    // in: Batch
 JSS(SLE_hit_rate);                       // out: GetCounts.
 JSS(Scale);                              // field.
 JSS(SettleDelay);                        // in: TransactionSign
 JSS(SendMax);                            // in: TransactionSign
 JSS(Sequence);                           // in/out: TransactionSign; field.
 JSS(SetFlag);                            // field.
+JSS(Signer);                             // field.
+JSS(Signers);                            // field.
 JSS(SigningPubKey);                      // field.
 JSS(Subject);                            // in: Credential transactions
 JSS(TakerGets);                          // field.
 JSS(TakerPays);                          // field.
-JSS(TxnSignature);                       // field.
 JSS(TradingFee);                         // in/out: AMM trading fee
 JSS(TransactionType);                    // in: TransactionSign.
 JSS(TransferRate);                       // in: TransferRate.
+JSS(TxnSignature);                       // field.
 JSS(URI);                                // field.
 JSS(VoteSlots);                          // out: AMM Vote
 JSS(aborted);                            // out: InboundLedger
@@ -142,6 +147,7 @@ JSS(attestations);
 JSS(attestation_reward_account);
 JSS(auction_slot);            // out: amm_info
 JSS(authorized);              // out: AccountLines
+JSS(authorize);               // out: delegate
 JSS(authorized_credentials);   // in: ledger_entry DepositPreauth
 JSS(auth_accounts);           // out: amm_info
 JSS(auth_change);             // out: AccountInfo
@@ -164,6 +170,7 @@ JSS(blobs_v2);                // out: ValidatorList
 JSS(books);                   // in: Subscribe, Unsubscribe
 JSS(both);                    // in: Subscribe, Unsubscribe
 JSS(both_sides);              // in: Subscribe, Unsubscribe
+JSS(branch);                  // out: server_info
 JSS(broadcast);               // out: SubmitTransaction
 JSS(bridge_account);          // in: LedgerEntry
 JSS(build_path);              // in: TransactionSign
@@ -281,10 +288,13 @@ JSS(flags);                   // out: AccountOffers,
 JSS(forward);                 // in: AccountTx
 JSS(freeze);                  // out: AccountLines
 JSS(freeze_peer);             // out: AccountLines
+JSS(deep_freeze);                  // out: AccountLines
+JSS(deep_freeze_peer);             // out: AccountLines
 JSS(frozen_balances);         // out: GatewayBalances
 JSS(full);                    // in: LedgerClearer, handlers/Ledger
 JSS(full_reply);              // out: PathFind
 JSS(fullbelow_size);          // out: GetCounts
+JSS(git);                     // out: server_info
 JSS(good);                    // out: RPCVersion
 JSS(hash);                    // out: NetworkOPs, InboundLedger,
                               //      LedgerToJson, STTx; field
@@ -381,6 +391,7 @@ JSS(load_fee);                // out: LoadFeeTrackImp, NetworkOPs
 JSS(local);                   // out: resource/Logic.h
 JSS(local_txs);               // out: GetCounts
 JSS(local_static_keys);       // out: ValidatorList
+JSS(locked);                  // out: GatewayBalances
 JSS(low);                     // out: BookChanges
 JSS(lowest_sequence);         // out: AccountInfo
 JSS(lowest_ticket);           // out: AccountInfo
@@ -441,6 +452,7 @@ JSS(node_reads_hit);          // out: GetCounts
 JSS(node_reads_total);        // out: GetCounts
 JSS(node_reads_duration_us);  // out: GetCounts
 JSS(node_size);               // out: server_info
+JSS(nodes);                   // out: VaultInfo
 JSS(nodestore);               // out: GetCounts
 JSS(node_writes);             // out: GetCounts
 JSS(node_written_bytes);      // out: GetCounts
@@ -551,6 +563,7 @@ JSS(server_status);           // out: NetworkOPs
 JSS(server_version);          // out: NetworkOPs
 JSS(settle_delay);            // out: AccountChannels
 JSS(severity);                // in: LogLevel
+JSS(shares);                  // out: VaultInfo
 JSS(signature);               // out: NetworkOPs, ChannelAuthorize
 JSS(signature_verified);      // out: ChannelVerify
 JSS(signing_key);             // out: NetworkOPs
@@ -663,27 +676,29 @@ JSS(validated);               // out: NetworkOPs, RPCHelpers, AccountTx*
 JSS(validator_list_expires);  // out: NetworkOps, ValidatorList
 JSS(validator_list);          // out: NetworkOps, ValidatorList
 JSS(validators);
-JSS(validated_hash);          // out: NetworkOPs
-JSS(validated_ledger);        // out: NetworkOPs
-JSS(validated_ledger_index);  // out: SubmitTransaction
-JSS(validated_ledgers);       // out: NetworkOPs
-JSS(validation_key);          // out: ValidationCreate, ValidationSeed
-JSS(validation_private_key);  // out: ValidationCreate
-JSS(validation_public_key);   // out: ValidationCreate, ValidationSeed
-JSS(validation_quorum);       // out: NetworkOPs
-JSS(validation_seed);         // out: ValidationCreate, ValidationSeed
-JSS(validations);             // out: AmendmentTableImpl
-JSS(validator_sites);         // out: ValidatorSites
-JSS(value);                   // out: STAmount
-JSS(version);                 // out: RPCVersion
-JSS(vetoed);                  // out: AmendmentTableImpl
-JSS(volume_a);                // out: BookChanges
-JSS(volume_b);                // out: BookChanges
-JSS(vote);                    // in: Feature
-JSS(vote_slots);              // out: amm_info
-JSS(vote_weight);             // out: amm_info
-JSS(warning);                 // rpc:
-JSS(warnings);                // out: server_info, server_state
+JSS(validated_hash);            // out: NetworkOPs
+JSS(validated_ledger);          // out: NetworkOPs
+JSS(validated_ledger_index);    // out: SubmitTransaction
+JSS(validated_ledgers);         // out: NetworkOPs
+JSS(validation_key);            // out: ValidationCreate, ValidationSeed
+JSS(validation_private_key);    // out: ValidationCreate
+JSS(validation_public_key);     // out: ValidationCreate, ValidationSeed
+JSS(validation_quorum);         // out: NetworkOPs
+JSS(validation_seed);           // out: ValidationCreate, ValidationSeed
+JSS(validations);               // out: AmendmentTableImpl
+JSS(validator_list_threshold);  // out: ValidatorList
+JSS(validator_sites);           // out: ValidatorSites
+JSS(value);                     // out: STAmount
+JSS(vault_id);                  // in: VaultInfo
+JSS(version);                   // out: RPCVersion
+JSS(vetoed);                    // out: AmendmentTableImpl
+JSS(volume_a);                  // out: BookChanges
+JSS(volume_b);                  // out: BookChanges
+JSS(vote);                      // in: Feature
+JSS(vote_slots);                // out: amm_info
+JSS(vote_weight);               // out: amm_info
+JSS(warning);                   // rpc:
+JSS(warnings);                  // out: server_info, server_state
 JSS(workers);
 JSS(write_load);              // out: GetCounts
 // clang-format on
@@ -691,7 +706,7 @@ JSS(write_load);              // out: GetCounts
 #pragma push_macro("TRANSACTION")
 #undef TRANSACTION
 
-#define TRANSACTION(tag, value, name, fields) JSS(name);
+#define TRANSACTION(tag, value, name, delegatable, fields) JSS(name);
 
 #include <xrpl/protocol/detail/transactions.macro>
 

@@ -20,10 +20,10 @@
 #include <xrpld/app/tx/detail/NFTokenAcceptOffer.h>
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
 #include <xrpld/ledger/View.h>
+
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Rate.h>
 #include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/st.h>
 
 namespace ripple {
 
@@ -160,6 +160,27 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
 
             if ((*so)[sfAmount] > (*bo)[sfAmount] - *brokerFee)
                 return tecINSUFFICIENT_PAYMENT;
+
+            // Check if broker is allowed to receive the fee with these IOUs.
+            if (!brokerFee->native() &&
+                ctx.view.rules().enabled(fixEnforceNFTokenTrustlineV2))
+            {
+                auto res = nft::checkTrustlineAuthorized(
+                    ctx.view,
+                    ctx.tx[sfAccount],
+                    ctx.j,
+                    brokerFee->asset().get<Issue>());
+                if (res != tesSUCCESS)
+                    return res;
+
+                res = nft::checkTrustlineDeepFrozen(
+                    ctx.view,
+                    ctx.tx[sfAccount],
+                    ctx.j,
+                    brokerFee->asset().get<Issue>());
+                if (res != tesSUCCESS)
+                    return res;
+            }
         }
     }
 
@@ -208,6 +229,38 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
                 fhZERO_IF_FROZEN,
                 ctx.j) < needed)
             return tecINSUFFICIENT_FUNDS;
+
+        // Check that the account accepting the buy offer (he's selling the NFT)
+        // is allowed to receive IOUs. Also check that this offer's creator is
+        // authorized. But we need to exclude the case when the transaction is
+        // created by the broker.
+        if (ctx.view.rules().enabled(fixEnforceNFTokenTrustlineV2) &&
+            !needed.native())
+        {
+            auto res = nft::checkTrustlineAuthorized(
+                ctx.view, bo->at(sfOwner), ctx.j, needed.asset().get<Issue>());
+            if (res != tesSUCCESS)
+                return res;
+
+            if (!so)
+            {
+                res = nft::checkTrustlineAuthorized(
+                    ctx.view,
+                    ctx.tx[sfAccount],
+                    ctx.j,
+                    needed.asset().get<Issue>());
+                if (res != tesSUCCESS)
+                    return res;
+
+                res = nft::checkTrustlineDeepFrozen(
+                    ctx.view,
+                    ctx.tx[sfAccount],
+                    ctx.j,
+                    needed.asset().get<Issue>());
+                if (res != tesSUCCESS)
+                    return res;
+            }
+        }
     }
 
     if (so)
@@ -268,30 +321,76 @@ NFTokenAcceptOffer::preclaim(PreclaimContext const& ctx)
                     ctx.j) < needed)
                 return tecINSUFFICIENT_FUNDS;
         }
-    }
 
-    // Fix a bug where the transfer of an NFToken with a transfer fee could
-    // give the NFToken issuer an undesired trust line.
-    if (ctx.view.rules().enabled(fixEnforceNFTokenTrustline))
-    {
-        std::shared_ptr<SLE const> const& offer = bo ? bo : so;
-        if (!offer)
-            // Should be caught in preflight.
-            return tecINTERNAL;
-
-        uint256 const& tokenID = offer->at(sfNFTokenID);
-        STAmount const& amount = offer->at(sfAmount);
-        if (nft::getTransferFee(tokenID) != 0 &&
-            (nft::getFlags(tokenID) & nft::flagCreateTrustLines) == 0 &&
-            !amount.native())
+        // Make sure that we are allowed to hold what the taker will pay us.
+        if (!needed.native())
         {
-            auto const issuer = nft::getIssuer(tokenID);
-            // Issuer doesn't need a trust line to accept their own currency.
-            if (issuer != amount.getIssuer() &&
-                !ctx.view.read(keylet::line(issuer, amount.issue())))
-                return tecNO_LINE;
+            if (ctx.view.rules().enabled(fixEnforceNFTokenTrustlineV2))
+            {
+                auto res = nft::checkTrustlineAuthorized(
+                    ctx.view,
+                    (*so)[sfOwner],
+                    ctx.j,
+                    needed.asset().get<Issue>());
+                if (res != tesSUCCESS)
+                    return res;
+
+                if (!bo)
+                {
+                    res = nft::checkTrustlineAuthorized(
+                        ctx.view,
+                        ctx.tx[sfAccount],
+                        ctx.j,
+                        needed.asset().get<Issue>());
+                    if (res != tesSUCCESS)
+                        return res;
+                }
+            }
+
+            auto const res = nft::checkTrustlineDeepFrozen(
+                ctx.view, (*so)[sfOwner], ctx.j, needed.asset().get<Issue>());
+            if (res != tesSUCCESS)
+                return res;
         }
     }
+
+    // Additional checks are required in case a minter set a transfer fee for
+    // this nftoken
+    auto const& offer = bo ? bo : so;
+    if (!offer)
+        // Purely defensive, should be caught in preflight.
+        return tecINTERNAL;
+
+    auto const& tokenID = offer->at(sfNFTokenID);
+    auto const& amount = offer->at(sfAmount);
+    auto const nftMinter = nft::getIssuer(tokenID);
+
+    if (nft::getTransferFee(tokenID) != 0 && !amount.native())
+    {
+        // Fix a bug where the transfer of an NFToken with a transfer fee could
+        // give the NFToken issuer an undesired trust line.
+        // Issuer doesn't need a trust line to accept their own currency.
+        if (ctx.view.rules().enabled(fixEnforceNFTokenTrustline) &&
+            (nft::getFlags(tokenID) & nft::flagCreateTrustLines) == 0 &&
+            nftMinter != amount.getIssuer() &&
+            !ctx.view.read(keylet::line(nftMinter, amount.issue())))
+            return tecNO_LINE;
+
+        // Check that the issuer is allowed to receive IOUs.
+        if (ctx.view.rules().enabled(fixEnforceNFTokenTrustlineV2))
+        {
+            auto res = nft::checkTrustlineAuthorized(
+                ctx.view, nftMinter, ctx.j, amount.asset().get<Issue>());
+            if (res != tesSUCCESS)
+                return res;
+
+            res = nft::checkTrustlineDeepFrozen(
+                ctx.view, nftMinter, ctx.j, amount.asset().get<Issue>());
+            if (res != tesSUCCESS)
+                return res;
+        }
+    }
+
     return tesSUCCESS;
 }
 

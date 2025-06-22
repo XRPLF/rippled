@@ -35,7 +35,6 @@
 #include <xrpld/app/main/LoadManager.h>
 #include <xrpld/app/main/NodeIdentity.h>
 #include <xrpld/app/main/NodeStoreScheduler.h>
-#include <xrpld/app/main/Tuning.h>
 #include <xrpld/app/misc/AmendmentTable.h>
 #include <xrpld/app/misc/HashRouter.h>
 #include <xrpld/app/misc/LoadFeeTrack.h>
@@ -57,10 +56,10 @@
 #include <xrpld/perflog/PerfLog.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
 #include <xrpld/shamap/NodeFamily.h>
+
 #include <xrpl/basics/ByteUtilities.h>
 #include <xrpl/basics/ResolverAsio.h>
 #include <xrpl/basics/random.h>
-#include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/asio/io_latency_probe.h>
 #include <xrpl/beast/core/LexicalCast.h>
 #include <xrpl/crypto/csprng.h>
@@ -86,9 +85,11 @@
 #include <optional>
 #include <sstream>
 #include <utility>
-#include <variant>
 
 namespace ripple {
+
+static void
+fixConfigPorts(Config& config, Endpoints const& endpoints);
 
 // VFALCO TODO Move the function definitions into the class declaration
 class ApplicationImp : public Application, public BasicApp
@@ -255,8 +256,8 @@ public:
         if ((cores == 1) || ((config.NODE_SIZE == 0) && (cores == 2)))
             return 1;
 
-        // Otherwise, prefer two threads.
-        return 2;
+        // Otherwise, prefer six threads.
+        return 6;
 #endif
     }
 
@@ -284,7 +285,7 @@ public:
                   config_->CONFIG_DIR),
               *this,
               logs_->journal("PerfLog"),
-              [this] { signalStop(); }))
+              [this] { signalStop("PerfLog"); }))
 
         , m_txMaster(*this)
 
@@ -441,8 +442,8 @@ public:
               std::make_unique<LoadFeeTrack>(logs_->journal("LoadManager")))
 
         , hashRouter_(std::make_unique<HashRouter>(
-              stopwatch(),
-              HashRouter::getDefaultHoldTime()))
+              setup_HashRouter(*config_),
+              stopwatch()))
 
         , mValidations(
               ValidationParms(),
@@ -504,7 +505,7 @@ public:
     void
     run() override;
     void
-    signalStop(std::string msg = "") override;
+    signalStop(std::string msg) override;
     bool
     checkSigs() const override;
     void
@@ -976,7 +977,7 @@ public:
         if (!config_->standalone() &&
             !getRelationalDatabase().transactionDbHasSpace(*config_))
         {
-            signalStop();
+            signalStop("Out of transaction DB space");
         }
 
         // VFALCO NOTE Does the order of calls matter?
@@ -1136,7 +1137,7 @@ public:
         return maxDisallowedLedger_;
     }
 
-    virtual const std::optional<uint256>&
+    virtual std::optional<uint256> const&
     trapTxID() const override
     {
         return trapTxID_;
@@ -1192,7 +1193,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
             JLOG(m_journal.info()) << "Received signal " << signum;
 
             if (signum == SIGTERM || signum == SIGINT)
-                signalStop();
+                signalStop("Signal: " + to_string(signum));
         });
 
     auto debug_log = config_->getDebugLogFile();
@@ -1360,7 +1361,8 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
         if (!validators_->load(
                 localSigningKey,
                 config().section(SECTION_VALIDATORS).values(),
-                config().section(SECTION_VALIDATOR_LIST_KEYS).values()))
+                config().section(SECTION_VALIDATOR_LIST_KEYS).values(),
+                config().VALIDATOR_LIST_THRESHOLD))
         {
             JLOG(m_journal.fatal())
                 << "Invalid entry in validator configuration.";
@@ -1403,7 +1405,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
 
     // start first consensus round
     if (!m_networkOPs->beginConsensus(
-            m_ledgerMaster->getClosedLedger()->info().hash))
+            m_ledgerMaster->getClosedLedger()->info().hash, {}))
     {
         JLOG(m_journal.fatal()) << "Unable to start consensus";
         return false;
@@ -1416,6 +1418,7 @@ ApplicationImp::setup(boost::program_options::variables_map const& cmdline)
                 *config_, beast::logstream{m_journal.error()});
             setup.makeContexts();
             serverHandler_->setup(setup, m_journal);
+            fixConfigPorts(*config_, serverHandler_->endpoints());
         }
         catch (std::exception const& e)
         {
@@ -1537,7 +1540,11 @@ ApplicationImp::start(bool withTimers)
     m_shaMapStore->start();
     if (overlay_)
         overlay_->start();
-    grpcServer_->start();
+
+    if (grpcServer_->start())
+        fixConfigPorts(
+            *config_, {{SECTION_PORT_GRPC, grpcServer_->getEndpoint()}});
+
     ledgerCleaner_->start();
     perfLog_->start();
 }
@@ -1548,10 +1555,10 @@ ApplicationImp::run()
     if (!config_->standalone())
     {
         // VFALCO NOTE This seems unnecessary. If we properly refactor the load
-        //             manager then the deadlock detector can just always be
+        //             manager then the stall detector can just always be
         //             "armed"
         //
-        getLoadManager().activateDeadlockDetector();
+        getLoadManager().activateStallDetector();
     }
 
     {
@@ -2186,6 +2193,26 @@ make_Application(
 {
     return std::make_unique<ApplicationImp>(
         std::move(config), std::move(logs), std::move(timeKeeper));
+}
+
+void
+fixConfigPorts(Config& config, Endpoints const& endpoints)
+{
+    for (auto const& [name, ep] : endpoints)
+    {
+        if (!config.exists(name))
+            continue;
+
+        auto& section = config[name];
+        auto const optPort = section.get("port");
+        if (optPort)
+        {
+            std::uint16_t const port =
+                beast::lexicalCast<std::uint16_t>(*optPort);
+            if (!port)
+                section.set("port", std::to_string(ep.port()));
+        }
+    }
 }
 
 }  // namespace ripple

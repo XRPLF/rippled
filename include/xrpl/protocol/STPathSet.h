@@ -26,6 +26,7 @@
 #include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/UintTypes.h>
+
 #include <cstddef>
 #include <optional>
 
@@ -105,10 +106,10 @@ public:
     getIssuerID() const;
 
     bool
-    operator==(const STPathElement& t) const;
+    operator==(STPathElement const& t) const;
 
     bool
-    operator!=(const STPathElement& t) const;
+    operator!=(STPathElement const& t) const;
 
 private:
     static std::size_t
@@ -163,7 +164,7 @@ public:
     STPathElement&
     operator[](int i);
 
-    const STPathElement&
+    STPathElement const&
     operator[](int i) const;
 
     void
@@ -195,7 +196,7 @@ public:
     assembleAdd(STPath const& base, STPathElement const& tail);
 
     bool
-    isEquivalent(const STBase& t) const override;
+    isEquivalent(STBase const& t) const override;
 
     bool
     isDefault() const override;
@@ -374,7 +375,7 @@ STPathElement::getIssuerID() const
 }
 
 inline bool
-STPathElement::operator==(const STPathElement& t) const
+STPathElement::operator==(STPathElement const& t) const
 {
     return (mType & typeAccount) == (t.mType & typeAccount) &&
         hash_value_ == t.hash_value_ && mAccountID == t.mAccountID &&
@@ -382,7 +383,7 @@ STPathElement::operator==(const STPathElement& t) const
 }
 
 inline bool
-STPathElement::operator!=(const STPathElement& t) const
+STPathElement::operator!=(STPathElement const& t) const
 {
     return !operator==(t);
 }
@@ -454,7 +455,7 @@ STPath::operator[](int i)
     return mPath[i];
 }
 
-inline const STPathElement&
+inline STPathElement const&
 STPath::operator[](int i) const
 {
     return mPath[i];

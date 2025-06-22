@@ -22,6 +22,7 @@
 #include <xrpld/ledger/ReadView.h>
 #include <xrpld/rpc/Context.h>
 #include <xrpld/rpc/detail/RPCHelpers.h>
+
 #include <xrpl/json/json_value.h>
 #include <xrpl/protocol/ErrorCodes.h>
 #include <xrpl/protocol/jss.h>
@@ -107,8 +108,8 @@ iteratePriceData(
                 return;
 
             oracle = isNew
-                ? &static_cast<const STObject&>(node.peekAtField(sfNewFields))
-                : &static_cast<const STObject&>(
+                ? &static_cast<STObject const&>(node.peekAtField(sfNewFields))
+                : &static_cast<STObject const&>(
                       node.peekAtField(sfFinalFields));
             break;
         }

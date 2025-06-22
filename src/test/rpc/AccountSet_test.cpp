@@ -18,7 +18,7 @@
 //==============================================================================
 
 #include <test/jtx.h>
-#include <xrpl/basics/StringUtilities.h>
+
 #include <xrpl/protocol/AmountConversions.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/Quality.h>
@@ -97,6 +97,12 @@ public:
                 {
                     // The asfAllowTrustLineClawback flag can't be cleared.  It
                     // is tested elsewhere.
+                    continue;
+                }
+                if (flag == asfAllowTrustLineLocking)
+                {
+                    // These flags are part of the AllowTokenLocking amendment
+                    // and are tested elsewhere
                     continue;
                 }
 

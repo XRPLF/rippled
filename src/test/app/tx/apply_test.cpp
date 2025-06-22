@@ -18,7 +18,9 @@
 //==============================================================================
 
 #include <test/jtx/Env.h>
+
 #include <xrpld/app/tx/apply.h>
+
 #include <xrpl/basics/StringUtilities.h>
 #include <xrpl/protocol/Feature.h>
 
@@ -38,7 +40,7 @@ public:
     testFullyCanonicalSigs()
     {
         // Construct a payments w/out a fully-canonical tx
-        const std::string non_fully_canonical_tx =
+        std::string const non_fully_canonical_tx =
             "12000022000000002400000001201B00497D9C6140000000000F6950684000000"
             "00000000C732103767C7B2C13AD90050A4263745E4BAB2B975417FA22E87780E1"
             "506DDAF21139BE74483046022100E95670988A34C4DB0FA73A8BFD6383872AF43"

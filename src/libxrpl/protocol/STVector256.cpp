@@ -17,10 +17,19 @@
 */
 //==============================================================================
 
-#include <xrpl/basics/Log.h>
-#include <xrpl/basics/StringUtilities.h>
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/basics/contract.h>
+#include <xrpl/beast/utility/instrumentation.h>
+#include <xrpl/json/json_value.h>
+#include <xrpl/protocol/SField.h>
+#include <xrpl/protocol/STBase.h>
 #include <xrpl/protocol/STVector256.h>
-#include <xrpl/protocol/jss.h>
+#include <xrpl/protocol/Serializer.h>
+
+#include <cstddef>
+#include <stdexcept>
+#include <string>
+#include <utility>
 
 namespace ripple {
 
@@ -77,9 +86,9 @@ STVector256::add(Serializer& s) const
 }
 
 bool
-STVector256::isEquivalent(const STBase& t) const
+STVector256::isEquivalent(STBase const& t) const
 {
-    const STVector256* v = dynamic_cast<const STVector256*>(&t);
+    STVector256 const* v = dynamic_cast<STVector256 const*>(&t);
     return v && (mValue == v->mValue);
 }
 

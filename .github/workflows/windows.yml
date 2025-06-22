@@ -2,6 +2,7 @@ name: windows
 
 on:
   pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
   push:
     # If the branches list is ever changed, be sure to change it on all
     # build/test jobs (nix, macos, windows, instrumentation)
@@ -21,19 +22,22 @@ concurrency:
 jobs:
 
   test:
+    if: ${{ github.event_name == 'push' || github.event.pull_request.draft != true || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     strategy:
       fail-fast: false
       matrix:
-        generator:
-          - Visual Studio 16 2019
+        version:
+          - generator: Visual Studio 17 2022
+            runs-on: windows-2022
         configuration:
-          - Release
-          # Github hosted runners tend to hang when running Debug unit tests.
-          # Instead of trying to work around it, disable the Debug job until
-          # something beefier (i.e. a heavy self-hosted runner) becomes
-          # available.
-          # - Debug
-    runs-on: windows-2019
+          - type: Release
+            tests: true
+          - type: Debug
+            # Skip running unit tests on debug builds, because they
+            # take an unreasonable amount of time
+            tests: false
+            runtime: d
+    runs-on: ${{ matrix.version.runs-on }}
     env:
       build_dir: .build
     steps:
@@ -68,7 +72,9 @@ jobs:
         run: |
           conan profile new default --detect
           conan profile update settings.compiler.cppstd=20 default
-          conan profile update settings.compiler.runtime=MT${{ matrix.configuration == 'Debug' && 'd' || '' }} default
+          conan profile update \
+            settings.compiler.runtime=MT${{ matrix.configuration.runtime }} \
+            default
       - name: build dependencies
         uses: ./.github/actions/dependencies
         env:
@@ -76,16 +82,18 @@ jobs:
           CONAN_LOGIN_USERNAME_RIPPLE: ${{ secrets.CONAN_USERNAME }}
           CONAN_PASSWORD_RIPPLE: ${{ secrets.CONAN_TOKEN }}
         with:
-          configuration: ${{ matrix.configuration }}
+          configuration: ${{ matrix.configuration.type }}
       - name: build
         uses: ./.github/actions/build
         with:
-          generator: '${{ matrix.generator }}'
-          configuration: ${{ matrix.configuration }}
+          generator: '${{ matrix.version.generator }}'
+          configuration: ${{ matrix.configuration.type }}
           # Hard code for now. Move to the matrix if varied options are needed
-          cmake-args: '-Dassert=ON -Dreporting=OFF -Dunity=ON'
+          cmake-args: '-Dassert=TRUE -Dwerr=TRUE -Dreporting=OFF -Dunity=ON'
           cmake-target: install
       - name: test
         shell: bash
+        if: ${{ matrix.configuration.tests }}
         run: |
-          ${build_dir}/${{ matrix.configuration }}/rippled --unittest --unittest-jobs $(nproc)
+          ${build_dir}/${{ matrix.configuration.type }}/rippled --unittest \
+              --unittest-jobs $(nproc)

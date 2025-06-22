@@ -17,11 +17,10 @@
 */
 //==============================================================================
 
-#include <xrpl/beast/utility/instrumentation.h>
 #include <xrpl/protocol/SField.h>
+
+#include <map>
 #include <string>
-#include <string_view>
-#include <utility>
 
 namespace ripple {
 
@@ -88,7 +87,7 @@ SField::SField(
     private_access_tag_t,
     SerializedTypeID tid,
     int fv,
-    const char* fn,
+    char const* fn,
     int meta,
     IsSigning signing)
     : fieldCode(field_code(tid, fv))

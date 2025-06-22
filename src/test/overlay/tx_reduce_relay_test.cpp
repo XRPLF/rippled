@@ -16,10 +16,14 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 //==============================================================================
+
+#include <test/jtx.h>
 #include <test/jtx/Env.h>
+
 #include <xrpld/overlay/detail/OverlayImpl.h>
 #include <xrpld/overlay/detail/PeerImp.h>
 #include <xrpld/peerfinder/detail/SlotImp.h>
+
 #include <xrpl/basics/make_SSLContext.h>
 #include <xrpl/beast/unit_test.h>
 
@@ -37,7 +41,7 @@ public:
 
 private:
     void
-    doTest(const std::string& msg, bool log, std::function<void(bool)> f)
+    doTest(std::string const& msg, bool log, std::function<void(bool)> f)
     {
         testcase(msg);
         f(log);
@@ -127,7 +131,7 @@ private:
             sendTx_++;
         }
         void
-        addTxQueue(const uint256& hash) override
+        addTxQueue(uint256 const& hash) override
         {
             queueTx_++;
         }
@@ -222,14 +226,21 @@ private:
         rid_ = 0;
         for (int i = 0; i < nPeers; i++)
             addPeer(env, peers, nDisabled);
-        protocol::TMTransaction m;
-        m.set_rawtransaction("transaction");
-        m.set_deferred(false);
-        m.set_status(protocol::TransactionStatus::tsNEW);
-        env.app().overlay().relay(uint256{0}, m, toSkip);
-        BEAST_EXPECT(
-            PeerTest::sendTx_ == expectRelay &&
-            PeerTest::queueTx_ == expectQueue);
+
+        auto const jtx = env.jt(noop(env.master));
+        if (BEAST_EXPECT(jtx.stx))
+        {
+            protocol::TMTransaction m;
+            Serializer s;
+            jtx.stx->add(s);
+            m.set_rawtransaction(s.data(), s.size());
+            m.set_deferred(false);
+            m.set_status(protocol::TransactionStatus::tsNEW);
+            env.app().overlay().relay(uint256{0}, m, toSkip);
+            BEAST_EXPECT(
+                PeerTest::sendTx_ == expectRelay &&
+                PeerTest::queueTx_ == expectQueue);
+        }
     }
 
     void
