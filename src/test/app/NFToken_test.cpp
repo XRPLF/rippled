@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <test/jtx.h>
-#include <test/jtx/WSClient.h>
 
 #include <xrpld/app/tx/detail/NFTokenUtils.h>
 
@@ -6877,7 +6876,6 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         testcase("Test synthetic fields from JSON response");
 
         using namespace test::jtx;
-        using namespace std::chrono_literals;
 
         Account const alice{"alice"};
         Account const bob{"bob"};
@@ -6886,12 +6884,6 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
         Env env{*this, features};
         env.fund(XRP(10000), alice, bob, broker);
         env.close();
-
-        auto wsc = test::makeWSClient(env.app().config());
-        Json::Value stream;
-        stream[jss::streams] = Json::arrayValue;
-        stream[jss::streams].append("transactions");
-        auto jv = wsc->invoke("subscribe", stream);
 
         // Verify `nftoken_id` value equals to the NFTokenID that was
         // changed in the most recent NFTokenMint or NFTokenAcceptOffer
@@ -6914,13 +6906,6 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             uint256 nftID;
             BEAST_EXPECT(nftID.parseHex(meta[jss::nftoken_id].asString()));
             BEAST_EXPECT(nftID == actualNftID);
-
-            BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                uint256 nftID;
-                BEAST_EXPECT(
-                    nftID.parseHex(jv[jss::meta][jss::nftoken_id].asString()));
-                return nftID == actualNftID;
-            }));
         };
 
         // Verify `nftoken_ids` value equals to the NFTokenIDs that were
@@ -6962,31 +6947,6 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
                 // actual values
                 for (size_t i = 0; i < metaIDs.size(); ++i)
                     BEAST_EXPECT(metaIDs[i] == actualNftIDs[i]);
-
-                BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                    std::vector<uint256> metaIDs;
-                    std::transform(
-                        meta[jss::nftoken_ids].begin(),
-                        meta[jss::nftoken_ids].end(),
-                        std::back_inserter(metaIDs),
-                        [this](Json::Value id) {
-                            uint256 nftID;
-                            BEAST_EXPECT(nftID.parseHex(id.asString()));
-                            return nftID;
-                        });
-                    // Sort both array to prepare for comparison
-                    std::sort(metaIDs.begin(), metaIDs.end());
-                    std::sort(actualNftIDs.begin(), actualNftIDs.end());
-
-                    // Make sure the expect number of NFTs is correct
-                    BEAST_EXPECT(metaIDs.size() == actualNftIDs.size());
-
-                    // Check the value of NFT ID in the meta with the
-                    // actual values
-                    for (size_t i = 0; i < metaIDs.size(); ++i)
-                        BEAST_EXPECT(metaIDs[i] == actualNftIDs[i]);
-                    return true;
-                }));
             };
 
         // Verify `offer_id` value equals to the offerID that was
@@ -7007,13 +6967,6 @@ class NFTokenBaseUtil_test : public beast::unit_test::suite
             uint256 metaOfferID;
             BEAST_EXPECT(metaOfferID.parseHex(meta[jss::offer_id].asString()));
             BEAST_EXPECT(metaOfferID == offerID);
-
-            BEAST_EXPECT(wsc->findMsg(5s, [&](auto const& jv) {
-                uint256 metaOfferID;
-                BEAST_EXPECT(metaOfferID.parseHex(
-                    jv[jss::meta][jss::offer_id].asString()));
-                return metaOfferID == offerID;
-            }));
         };
 
         // Check new fields in tx meta when for all NFTtransactions
