@@ -713,18 +713,19 @@ public:
     /** Called to register that a given validator was squelched for a given
      * peer. It is expected that this method is called by SquelchHandler.
      *
-     * @param key Validator public key
-     * @param id peer ID
+     * @param validatorKey Validator public key
+     * @param peerID peer ID
      */
     void
-    squelchValidator(PublicKey const& key, id_t id)
+    squelchValidator(PublicKey const& validatorKey, id_t peerID)
     {
-        auto it = peersWithValidators_.find(key);
+        auto it = peersWithValidators_.find(validatorKey);
         if (it == peersWithValidators_.end())
-            peersWithValidators_.emplace(key, std::unordered_set<id_t>{id});
+            peersWithValidators_.emplace(
+                validatorKey, std::unordered_set<id_t>{peerID});
 
-        else if (it->second.find(id) == it->second.end())
-            it->second.insert(id);
+        else if (it->second.find(peerID) == it->second.end())
+            it->second.insert(peerID);
     }
 
     void
@@ -754,38 +755,39 @@ private:
     cleanConsideredValidators();
 
     /** Checks whether a given validator is squelched.
-     * @param key Validator public key
+     * @param validatorKey Validator public key
      * @return true if a given validator was squelched
      */
     bool
-    validatorSquelched(PublicKey const& key) const
+    validatorSquelched(PublicKey const& validatorKey) const
     {
         beast::expire(
             peersWithValidators_, reduce_relay::MAX_UNSQUELCH_EXPIRE_DEFAULT);
 
-        return peersWithValidators_.find(key) != peersWithValidators_.end();
+        return peersWithValidators_.find(validatorKey) !=
+            peersWithValidators_.end();
     }
 
     /** Checks whether a given peer was recently sent a squelch message for
      * a given validator.
-     * @param key Validator public key
-     * @param id Peer id
-     * @return true if a given validator was squelched for a given peeru
+     * @param validatorKey Validator public key
+     * @param peerID Peer id
+     * @return true if a given validator was squelched for a given peer
      */
     bool
-    peerSquelched(PublicKey const& key, id_t id) const
+    peerSquelched(PublicKey const& validatorKey, id_t peerID) const
     {
         beast::expire(
             peersWithValidators_, reduce_relay::MAX_UNSQUELCH_EXPIRE_DEFAULT);
 
-        auto const it = peersWithValidators_.find(key);
+        auto const it = peersWithValidators_.find(validatorKey);
 
         // if validator was not squelched, the peer was also not squelched
         if (it == peersWithValidators_.end())
             return false;
 
         // if a peer is found the squelch for it has not expired
-        return it->second.find(id) != it->second.end();
+        return it->second.find(peerID) != it->second.end();
     }
 
     std::atomic_bool reduceRelayReady_{false};
@@ -994,14 +996,6 @@ Slots<clock_type>::updateValidatorSlot(
             handler_.squelch(
                 validator, id, MAX_UNSQUELCH_EXPIRE_DEFAULT.count());
         }
-        return;
-    }
-
-    // update a slot if the message is from a selected untrusted validator
-    if (auto const& it = untrusted_slots_.find(validator);
-        it != untrusted_slots_.end())
-    {
-        it->second.update(validator, id, callback);
         return;
     }
 
