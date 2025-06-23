@@ -161,4 +161,12 @@ Rules::operator!=(Rules const& other) const
 {
     return !(*this == other);
 }
+
+bool
+isFeatureEnabled(uint256 const& feature)
+{
+    auto const& rules = getCurrentTransactionRules();
+    return rules && rules->enabled(feature);
+}
+
 }  // namespace ripple

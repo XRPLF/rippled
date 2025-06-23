@@ -511,6 +511,7 @@ transferHelper(
         /*offer crossing*/ OfferCrossing::no,
         /*limit quality*/ std::nullopt,
         /*sendmax*/ std::nullopt,
+        /*domain id*/ std::nullopt,
         j);
 
     if (auto const r = result.result();

@@ -451,6 +451,7 @@ CashCheck::doApply()
                 OfferCrossing::no,
                 std::nullopt,
                 sleCheck->getFieldAmount(sfSendMax),
+                std::nullopt,  // check does not support domain
                 viewJ);
 
             if (result.result() != tesSUCCESS)

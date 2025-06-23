@@ -111,6 +111,8 @@ public:
         // A set of paths that are included in the transaction that we'll
         // explore for liquidity.
         STPathSet const& spsPaths,
+
+        std::optional<uint256> const& domainID,
         Logs& l,
         Input const* const pInputs = nullptr);
 

@@ -166,6 +166,7 @@ Pathfinder::Pathfinder(
     std::optional<AccountID> const& uSrcIssuer,
     STAmount const& saDstAmount,
     std::optional<STAmount> const& srcAmount,
+    std::optional<uint256> const& domain,
     Application& app)
     : mSrcAccount(uSrcAccount)
     , mDstAccount(uDstAccount)
@@ -184,6 +185,7 @@ Pathfinder::Pathfinder(
           0,
           true)))
     , convert_all_(convertAllCheck(mDstAmount))
+    , mDomain(domain)
     , mLedger(cache->getLedger())
     , mRLCache(cache)
     , app_(app)
@@ -372,6 +374,7 @@ Pathfinder::getPathLiquidity(
             mDstAccount,
             mSrcAccount,
             pathSet,
+            mDomain,
             app_.logs(),
             &rcInput);
         // If we can't get even the minimum liquidity requested, we're done.
@@ -392,6 +395,7 @@ Pathfinder::getPathLiquidity(
                 mDstAccount,
                 mSrcAccount,
                 pathSet,
+                mDomain,
                 app_.logs(),
                 &rcInput);
 
@@ -431,6 +435,7 @@ Pathfinder::computePathRanks(
             mDstAccount,
             mSrcAccount,
             STPathSet(),
+            mDomain,
             app_.logs(),
             &rcInput);
 
@@ -741,7 +746,7 @@ Pathfinder::getPathsOut(
 
     if (!bFrozen)
     {
-        count = app_.getOrderBookDB().getBookSize(issue);
+        count = app_.getOrderBookDB().getBookSize(issue, mDomain);
 
         if (auto const lines = mRLCache->getRippleLines(account, direction))
         {
@@ -1128,7 +1133,8 @@ Pathfinder::addLink(
         {
             // to XRP only
             if (!bOnXRP &&
-                app_.getOrderBookDB().isBookToXRP({uEndCurrency, uEndIssuer}))
+                app_.getOrderBookDB().isBookToXRP(
+                    {uEndCurrency, uEndIssuer}, mDomain))
             {
                 STPathElement pathElement(
                     STPathElement::typeCurrency,
@@ -1142,7 +1148,7 @@ Pathfinder::addLink(
         {
             bool bDestOnly = (addFlags & afOB_LAST) != 0;
             auto books = app_.getOrderBookDB().getBooksByTakerPays(
-                {uEndCurrency, uEndIssuer});
+                {uEndCurrency, uEndIssuer}, mDomain);
             JLOG(j_.trace())
                 << books.size() << " books found from this currency/issuer";
 

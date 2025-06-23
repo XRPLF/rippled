@@ -2,16 +2,6 @@
    convenience variables and sanity checks
 #]===================================================================]
 
-include(ProcessorCount)
-
-if (NOT ep_procs)
-  ProcessorCount(ep_procs)
-  if (ep_procs GREATER 1)
-    # never use more than half of cores for EP builds
-    math (EXPR ep_procs "${ep_procs} / 2")
-    message (STATUS "Using ${ep_procs} cores for ExternalProject builds.")
-  endif ()
-endif ()
 get_property(is_multiconfig GLOBAL PROPERTY GENERATOR_IS_MULTI_CONFIG)
 
 set (CMAKE_CONFIGURATION_TYPES "Debug;Release" CACHE STRING "" FORCE)

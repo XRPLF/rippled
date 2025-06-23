@@ -22,6 +22,7 @@
 
 #include <xrpld/ledger/View.h>
 
+#include <xrpl/basics/Log.h>
 #include <xrpl/basics/contract.h>
 #include <xrpl/protocol/Quality.h>
 #include <xrpl/protocol/Rules.h>
@@ -170,8 +171,24 @@ public:
      * always returns true.
      */
     bool
-    checkInvariant(TAmounts<TIn, TOut> const&, beast::Journal j) const
+    checkInvariant(TAmounts<TIn, TOut> const& consumed, beast::Journal j) const
     {
+        if (!isFeatureEnabled(fixAMMv1_3))
+            return true;
+
+        if (consumed.in > m_amounts.in || consumed.out > m_amounts.out)
+        {
+            // LCOV_EXCL_START
+            JLOG(j.error())
+                << "AMMOffer::checkInvariant failed: consumed "
+                << to_string(consumed.in) << " " << to_string(consumed.out)
+                << " amounts " << to_string(m_amounts.in) << " "
+                << to_string(m_amounts.out);
+
+            return false;
+            // LCOV_EXCL_STOP
+        }
+
         return true;
     }
 };

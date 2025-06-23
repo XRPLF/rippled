@@ -558,8 +558,11 @@ public:
         using namespace jtx;
         auto const sa = supported_amendments();
         testAll(sa);
-        testAll(sa - featureFlowSortStrands);
-        testAll(sa - featureFlowCross - featureFlowSortStrands);
+        testAll(sa - featurePermissionedDEX);
+        testAll(sa - featureFlowSortStrands - featurePermissionedDEX);
+        testAll(
+            sa - featureFlowCross - featureFlowSortStrands -
+            featurePermissionedDEX);
     }
 };
 

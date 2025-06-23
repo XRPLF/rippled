@@ -38,12 +38,13 @@ TRANSACTION(ttPAYMENT, 0, Payment, Delegation::delegatable, ({
     {sfDestinationTag, soeOPTIONAL},
     {sfDeliverMin, soeOPTIONAL, soeMPTSupported},
     {sfCredentialIDs, soeOPTIONAL},
+    {sfDomainID, soeOPTIONAL},
 }))
 
 /** This transaction type creates an escrow object. */
 TRANSACTION(ttESCROW_CREATE, 1, EscrowCreate, Delegation::delegatable, ({
     {sfDestination, soeREQUIRED},
-    {sfAmount, soeREQUIRED},
+    {sfAmount, soeREQUIRED, soeMPTSupported},
     {sfCondition, soeOPTIONAL},
     {sfCancelAfter, soeOPTIONAL},
     {sfFinishAfter, soeOPTIONAL},
@@ -93,6 +94,7 @@ TRANSACTION(ttOFFER_CREATE, 7, OfferCreate, Delegation::delegatable, ({
     {sfTakerGets, soeREQUIRED},
     {sfExpiration, soeOPTIONAL},
     {sfOfferSequence, soeOPTIONAL},
+    {sfDomainID, soeOPTIONAL},
 }))
 
 /** This transaction type cancels existing offers to trade one asset for another. */

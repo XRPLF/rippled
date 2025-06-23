@@ -142,11 +142,41 @@ doGatewayBalances(RPC::JsonContext& context)
     std::map<AccountID, std::vector<STAmount>> hotBalances;
     std::map<AccountID, std::vector<STAmount>> assets;
     std::map<AccountID, std::vector<STAmount>> frozenBalances;
+    std::map<Currency, STAmount> locked;
 
     // Traverse the cold wallet's trust lines
     {
         forEachItem(
             *ledger, accountID, [&](std::shared_ptr<SLE const> const& sle) {
+                if (sle->getType() == ltESCROW)
+                {
+                    auto const& escrow = sle->getFieldAmount(sfAmount);
+                    auto& bal = locked[escrow.getCurrency()];
+                    if (bal == beast::zero)
+                    {
+                        // This is needed to set the currency code correctly
+                        bal = escrow;
+                    }
+                    else
+                    {
+                        try
+                        {
+                            bal += escrow;
+                        }
+                        catch (std::runtime_error const&)
+                        {
+                            // Presumably the exception was caused by overflow.
+                            // On overflow return the largest valid STAmount.
+                            // Very large sums of STAmount are approximations
+                            // anyway.
+                            bal = STAmount(
+                                bal.issue(),
+                                STAmount::cMaxValue,
+                                STAmount::cMaxOffset);
+                        }
+                    }
+                }
+
                 auto rs = PathFindTrustLine::makeItem(accountID, sle);
 
                 if (!rs)
@@ -245,6 +275,17 @@ doGatewayBalances(RPC::JsonContext& context)
     populateResult(hotBalances, jss::balances);
     populateResult(frozenBalances, jss::frozen_balances);
     populateResult(assets, jss::assets);
+
+    // Add total escrow to the result
+    if (!locked.empty())
+    {
+        Json::Value j;
+        for (auto const& [k, v] : locked)
+        {
+            j[to_string(k)] = v.getText();
+        }
+        result[jss::locked] = std::move(j);
+    }
 
     return result;
 }

@@ -92,15 +92,16 @@ constexpr std::uint32_t asfDisallowIncomingCheck           = 13;
 constexpr std::uint32_t asfDisallowIncomingPayChan         = 14;
 constexpr std::uint32_t asfDisallowIncomingTrustline       = 15;
 constexpr std::uint32_t asfAllowTrustLineClawback          = 16;
+constexpr std::uint32_t asfAllowTrustLineLocking           = 17;
 
 // OfferCreate flags:
 constexpr std::uint32_t tfPassive                          = 0x00010000;
 constexpr std::uint32_t tfImmediateOrCancel                = 0x00020000;
 constexpr std::uint32_t tfFillOrKill                       = 0x00040000;
 constexpr std::uint32_t tfSell                             = 0x00080000;
-
+constexpr std::uint32_t tfHybrid                           = 0x00100000;
 constexpr std::uint32_t tfOfferCreateMask =
-    ~(tfUniversal | tfPassive | tfImmediateOrCancel | tfFillOrKill | tfSell);
+    ~(tfUniversal | tfPassive | tfImmediateOrCancel | tfFillOrKill | tfSell | tfHybrid);
 
 // Payment flags:
 constexpr std::uint32_t tfNoRippleDirect                   = 0x00010000;
@@ -121,13 +122,7 @@ constexpr std::uint32_t tfClearDeepFreeze                  = 0x00800000;
 constexpr std::uint32_t tfTrustSetMask =
     ~(tfUniversal | tfSetfAuth | tfSetNoRipple | tfClearNoRipple | tfSetFreeze |
       tfClearFreeze | tfSetDeepFreeze | tfClearDeepFreeze);
-
-// valid flags for granular permission
-constexpr std::uint32_t tfTrustSetGranularMask = tfSetfAuth | tfSetFreeze | tfClearFreeze;
-
-// bits representing supportedGranularMask are set to 0 and the bits
-// representing other flags are set to 1 in tfPermissionMask.
-constexpr std::uint32_t tfTrustSetPermissionMask = (~tfTrustSetMask) & (~tfTrustSetGranularMask);
+constexpr std::uint32_t tfTrustSetPermissionMask = ~(tfUniversal | tfSetfAuth | tfSetFreeze | tfClearFreeze);
 
 // EnableAmendment flags:
 constexpr std::uint32_t tfGotMajority                      = 0x00010000;
@@ -164,8 +159,7 @@ constexpr std::uint32_t const tfMPTokenAuthorizeMask  = ~(tfUniversal | tfMPTUna
 constexpr std::uint32_t const tfMPTLock                   = 0x00000001;
 constexpr std::uint32_t const tfMPTUnlock                 = 0x00000002;
 constexpr std::uint32_t const tfMPTokenIssuanceSetMask  = ~(tfUniversal | tfMPTLock | tfMPTUnlock);
-constexpr std::uint32_t const tfMPTokenIssuanceSetGranularMask = tfMPTLock | tfMPTUnlock;
-constexpr std::uint32_t const tfMPTokenIssuanceSetPermissionMask = (~tfMPTokenIssuanceSetMask) & (~tfMPTokenIssuanceSetGranularMask);
+constexpr std::uint32_t const tfMPTokenIssuanceSetPermissionMask = ~(tfUniversal | tfMPTLock | tfMPTUnlock);
 
 // MPTokenIssuanceDestroy flags:
 constexpr std::uint32_t const tfMPTokenIssuanceDestroyMask  = ~tfUniversal;

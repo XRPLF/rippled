@@ -63,7 +63,7 @@ DelegateSet::preclaim(PreclaimContext const& ctx)
         return terNO_ACCOUNT;  // LCOV_EXCL_LINE
 
     if (!ctx.view.exists(keylet::account(ctx.tx[sfAuthorize])))
-        return terNO_ACCOUNT;
+        return tecNO_TARGET;
 
     auto const& permissions = ctx.tx.getFieldArray(sfPermissions);
     for (auto const& permission : permissions)

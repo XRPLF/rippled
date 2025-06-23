@@ -142,6 +142,7 @@ toStrand(
     bool ownerPaysTransferFee,
     OfferCrossing offerCrossing,
     AMMContext& ammContext,
+    std::optional<uint256> const& domainID,
     beast::Journal j)
 {
     if (isXRP(src) || isXRP(dst) || !isConsistent(deliver) ||
@@ -279,6 +280,7 @@ toStrand(
             seenDirectIssues,
             seenBookOuts,
             ammContext,
+            domainID,
             j};
     };
 
@@ -476,6 +478,7 @@ toStrands(
     bool ownerPaysTransferFee,
     OfferCrossing offerCrossing,
     AMMContext& ammContext,
+    std::optional<uint256> const& domainID,
     beast::Journal j)
 {
     std::vector<Strand> result;
@@ -502,6 +505,7 @@ toStrands(
             ownerPaysTransferFee,
             offerCrossing,
             ammContext,
+            domainID,
             j);
         auto const ter = sp.first;
         auto& strand = sp.second;
@@ -546,6 +550,7 @@ toStrands(
             ownerPaysTransferFee,
             offerCrossing,
             ammContext,
+            domainID,
             j);
         auto ter = sp.first;
         auto& strand = sp.second;
@@ -592,6 +597,7 @@ StrandContext::StrandContext(
     std::array<boost::container::flat_set<Issue>, 2>& seenDirectIssues_,
     boost::container::flat_set<Issue>& seenBookOuts_,
     AMMContext& ammContext_,
+    std::optional<uint256> const& domainID_,
     beast::Journal j_)
     : view(view_)
     , strandSrc(strandSrc_)
@@ -608,6 +614,7 @@ StrandContext::StrandContext(
     , seenDirectIssues(seenDirectIssues_)
     , seenBookOuts(seenBookOuts_)
     , ammContext(ammContext_)
+    , domainID(domainID_)
     , j(j_)
 {
 }

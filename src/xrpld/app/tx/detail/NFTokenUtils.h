@@ -152,6 +152,20 @@ tokenOfferCreateApply(
     beast::Journal j,
     std::uint32_t txFlags = lsfSellNFToken);
 
+TER
+checkTrustlineAuthorized(
+    ReadView const& view,
+    AccountID const id,
+    beast::Journal const j,
+    Issue const& issue);
+
+TER
+checkTrustlineDeepFrozen(
+    ReadView const& view,
+    AccountID const id,
+    beast::Journal const j,
+    Issue const& issue);
+
 }  // namespace nft
 
 }  // namespace ripple
