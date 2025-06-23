@@ -117,7 +117,6 @@ class Xrpl(ConanFile):
         'external/*',
         'include/*',
         'src/*',
-        'tests/*',
     )
 
     def layout(self):
