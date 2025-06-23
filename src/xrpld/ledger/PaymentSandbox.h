@@ -37,10 +37,55 @@ namespace detail {
 //        into the PaymentSandbox class itself
 class DeferredCredits
 {
-public:
-    struct Adjustment
+private:
+    using KeyIOU = std::tuple<AccountID, AccountID, Currency>;
+    struct ValueIOU
     {
-        Adjustment(STAmount const& d, STAmount const& c, STAmount const& b)
+        explicit ValueIOU() = default;
+
+        STAmount lowAcctCredits;
+        STAmount highAcctCredits;
+        STAmount lowAcctOrigBalance;
+    };
+
+    struct HolderValueMPT
+    {
+        HolderValueMPT() = default;
+        // Debit to issuer
+        std::uint64_t debit = 0;
+        std::uint64_t origBalance = 0;
+    };
+
+    struct IssuerValueMPT
+    {
+        IssuerValueMPT() = default;
+        std::map<AccountID, HolderValueMPT> holders;
+        // Credit to holder
+        std::uint64_t credit = 0;
+        // OutstandingAmount might overflow when MPTs are credited to a holder.
+        // Consider A1 paying 100MPT to A2 and A1 already having maximum MPTs.
+        // Since the payment engine executes a payment in revers, A2 is
+        // credited first and OutstandingAmount is going to be equal
+        // to MaximumAmount + 100MPT. In the next step A1 redeems 100MPT
+        // to the issuer and OutstandingAmount balances out.
+        std::int64_t origBalance = 0;
+        // Self debit on offer selling MPT. Since the payment engine executes
+        // a payment in revers, a crediting/buying step may overflow
+        // OutstandingAmount. A sell MPT offer owned by a holder can redeem any
+        // amount up to the offer's amount and holder's available funds,
+        // balancing out OutstandingAmount. But if the offer's owner is issuer
+        // then it issues more MPT. In this case the available amount to issue
+        // is the initial issuer's available amount less all offer sell amounts
+        // by the issuer. This is self-debit, where the offer's owner,
+        // issuer in this case, debits to self.
+        std::uint64_t selfDebit = 0;
+    };
+    using AdjustmentMPT = IssuerValueMPT;
+
+public:
+    struct AdjustmentIOU
+    {
+        AdjustmentIOU(STAmount const& d, STAmount const& c, STAmount const& b)
             : debits(d), credits(c), origBalance(b)
         {
         }
@@ -51,18 +96,35 @@ public:
 
     // Get the adjustments for the balance between main and other.
     // Returns the debits, credits and the original balance
-    std::optional<Adjustment>
-    adjustments(
+    std::optional<AdjustmentIOU>
+    adjustmentsIOU(
         AccountID const& main,
         AccountID const& other,
-        Asset const& asset) const;
+        Currency const& currency) const;
+
+    std::optional<AdjustmentMPT>
+    adjustmentsMPT(MPTID const& mptID) const;
 
     void
-    credit(
+    creditIOU(
         AccountID const& sender,
         AccountID const& receiver,
         STAmount const& amount,
         STAmount const& preCreditSenderBalance);
+
+    void
+    creditMPT(
+        AccountID const& sender,
+        AccountID const& receiver,
+        STAmount const& amount,
+        std::uint64_t preCreditBalanceHolder,
+        std::int64_t preCreditBalanceIssuer);
+
+    void
+    issuerSelfDebitMPT(
+        MPTIssue const& issue,
+        std::uint64_t amount,
+        std::int64_t origBalance);
 
     void
     ownerCount(AccountID const& id, std::uint32_t cur, std::uint32_t next);
@@ -77,24 +139,14 @@ public:
     apply(DeferredCredits& to);
 
 private:
-    // if IOU then lowAccount, highAccount
-    // if MPT then lowAccount is holder, highAccount is issuer
-    using Key = std::tuple<AccountID, AccountID, Asset::token_type>;
-    struct Value
-    {
-        explicit Value() = default;
+    static KeyIOU
+    makeKeyIOU(
+        AccountID const& a1,
+        AccountID const& a2,
+        Currency const& currency);
 
-        // if MPT then holder credits
-        STAmount lowAcctCredits;
-        // if MPT then issuer credits
-        STAmount highAcctCredits;
-        STAmount lowAcctOrigBalance;
-    };
-
-    static Key
-    makeKey(AccountID const& a1, AccountID const& a2, Asset const& a);
-
-    std::map<Key, Value> credits_;
+    std::map<KeyIOU, ValueIOU> creditsIOU_;
+    std::map<MPTID, IssuerValueMPT> creditsMPT_;
     std::map<AccountID, std::uint32_t> ownerCounts_;
 };
 
@@ -161,17 +213,41 @@ public:
     /** @} */
 
     STAmount
-    balanceHook(
+    balanceHookIOU(
         AccountID const& account,
         AccountID const& issuer,
         STAmount const& amount) const override;
 
+    STAmount
+    balanceHookMPT(
+        AccountID const& account,
+        MPTIssue const& issue,
+        std::int64_t amount) const override;
+
+    STAmount
+    balanceHookSelfIssueMPT(MPTIssue const& issue, std::int64_t amount)
+        const override;
+
     void
-    creditHook(
+    creditHookIOU(
         AccountID const& from,
         AccountID const& to,
         STAmount const& amount,
         STAmount const& preCreditBalance) override;
+
+    void
+    creditHookMPT(
+        AccountID const& from,
+        AccountID const& to,
+        STAmount const& amount,
+        std::uint64_t preCreditBalanceHolder,
+        std::int64_t preCreditBalanceIssuer) override;
+
+    void
+    issuerSelfDebitHookMPT(
+        MPTIssue const& issue,
+        std::uint64_t amount,
+        std::int64_t origBalance) override;
 
     void
     adjustOwnerCountHook(

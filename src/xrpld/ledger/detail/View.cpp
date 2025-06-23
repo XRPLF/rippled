@@ -18,6 +18,7 @@
 //==============================================================================
 
 #include <xrpld/app/misc/CredentialHelpers.h>
+#include <xrpld/app/misc/MPTUtils.h>
 #include <xrpld/app/tx/detail/MPTokenAuthorize.h>
 #include <xrpld/ledger/ReadView.h>
 #include <xrpld/ledger/View.h>
@@ -461,19 +462,7 @@ accountHolds(
                     << " account=" << to_string(account)
                     << " amount=" << amount.getFullText();
 
-    return view.balanceHook(account, issuer, amount);
-}
-
-STAmount
-accountHolds(
-    ReadView const& view,
-    AccountID const& account,
-    Issue const& issue,
-    FreezeHandling zeroIfFrozen,
-    beast::Journal j)
-{
-    return accountHolds(
-        view, account, issue.currency, issue.account, zeroIfFrozen, j);
+    return view.balanceHookIOU(account, issuer, amount);
 }
 
 STAmount
@@ -485,7 +474,19 @@ accountHolds(
     AuthHandling zeroIfUnauthorized,
     beast::Journal j)
 {
-    STAmount amount;
+    STAmount amount{mptIssue};
+    auto const& issuer = mptIssue.getIssuer();
+
+    bool const mptokensV2 = view.rules().enabled(featureMPTokensV2);
+
+    if (mptokensV2 && account == issuer)
+    {
+        auto const sle = view.read(keylet::mptIssuance(mptIssue));
+        if (!sle)
+            return amount;
+        auto const available = availableMPTAmount(*sle);
+        return view.balanceHookMPT(issuer, mptIssue, available);
+    }
 
     auto const sleMpt =
         view.read(keylet::mptoken(mptIssue.getMptID(), account));
@@ -522,32 +523,9 @@ accountHolds(
         }
     }
 
-    if (view.rules().enabled(featureMPTokensV2))
-        return view.balanceHook(account, mptIssue.getIssuer(), amount);
+    if (mptokensV2)
+        return view.balanceHookMPT(account, mptIssue, amount.mpt().value());
     return amount;
-}
-
-[[nodiscard]] STAmount
-accountHolds(
-    ReadView const& view,
-    AccountID const& account,
-    Asset const& asset,
-    FreezeHandling zeroIfFrozen,
-    AuthHandling zeroIfUnauthorized,
-    beast::Journal j)
-{
-    return std::visit(
-        [&](auto const& value) {
-            if constexpr (std::is_same_v<
-                              std::remove_cvref_t<decltype(value)>,
-                              Issue>)
-            {
-                return accountHolds(view, account, value, zeroIfFrozen, j);
-            }
-            return accountHolds(
-                view, account, value, zeroIfFrozen, zeroIfUnauthorized, j);
-        },
-        asset.value());
 }
 
 STAmount
@@ -584,6 +562,28 @@ accountFunds(
 
     return accountHolds(
         view, id, saDefault.asset(), freezeHandling, authHandling, j);
+}
+
+STAmount
+issuerFundsToSelfIssue(ReadView const& view, MPTIssue const& issue)
+{
+    STAmount amount{issue};
+
+    auto const sle = view.read(keylet::mptIssuance(issue));
+    if (!sle)
+        return amount;
+    auto const available = availableMPTAmount(*sle);
+    return view.balanceHookSelfIssueMPT(issue, available);
+}
+
+void
+issuerSelfDebitHookMPT(
+    ApplyView& view,
+    MPTIssue const& issue,
+    std::uint64_t amount)
+{
+    auto const available = availableMPTAmount(view, issue);
+    view.issuerSelfDebitHookMPT(issue, amount, available);
 }
 
 // Prevent ownerCount from wrapping under error conditions.
@@ -652,7 +652,7 @@ xrpLiquid(
 
     auto const fullBalance = sle->getFieldAmount(sfBalance);
 
-    auto const balance = view.balanceHook(id, xrpAccount(), fullBalance);
+    auto const balance = view.balanceHookIOU(id, xrpAccount(), fullBalance);
 
     STAmount const amount =
         (balance < reserve) ? STAmount{0} : balance - reserve;
@@ -1354,7 +1354,7 @@ trustCreate(
     sleRippleState->setFieldAmount(
         sfBalance, bSetHigh ? -saBalance : saBalance);
 
-    view.creditHook(
+    view.creditHookIOU(
         uSrcAccountID, uDstAccountID, saBalance, saBalance.zeroed());
 
     return tesSUCCESS;
@@ -1587,7 +1587,7 @@ rippleCreditIOU(
         if (bSenderHigh)
             saBalance.negate();  // Put balance in sender terms.
 
-        view.creditHook(uSenderID, uReceiverID, saAmount, saBalance);
+        view.creditHookIOU(uSenderID, uReceiverID, saAmount, saBalance);
 
         STAmount const saBefore = saBalance;
 
@@ -1835,7 +1835,7 @@ accountSendIOU(
         else
         {
             auto const sndBal = sender->getFieldAmount(sfBalance);
-            view.creditHook(uSenderID, xrpAccount(), saAmount, sndBal);
+            view.creditHookIOU(uSenderID, xrpAccount(), saAmount, sndBal);
 
             // Decrement XRP balance.
             sender->setFieldAmount(sfBalance, sndBal - saAmount);
@@ -1848,7 +1848,7 @@ accountSendIOU(
         // Increment XRP balance.
         auto const rcvBal = receiver->getFieldAmount(sfBalance);
         receiver->setFieldAmount(sfBalance, rcvBal + saAmount);
-        view.creditHook(xrpAccount(), uReceiverID, saAmount, -rcvBal);
+        view.creditHookIOU(xrpAccount(), uReceiverID, saAmount, -rcvBal);
 
         view.update(receiver);
     }
@@ -1887,17 +1887,20 @@ rippleCreditMPT(
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    auto credit = [&](std::uint64_t balance) {
-        if (view.rules().enabled(featureMPTokensV2))
-        {
-            STAmount const saBalance = STAmount(saAmount.asset(), balance);
-            view.creditHook(uSenderID, uReceiverID, saAmount, saBalance);
-        }
-    };
+    auto const maxAmount = maxMPTAmount(*sleIssuance);
+    auto const outstanding = sleIssuance->getFieldU64(sfOutstandingAmount);
+    auto const available = availableMPTAmount(*sleIssuance);
 
     if (uSenderID == issuer)
     {
-        (*sleIssuance)[sfOutstandingAmount] += saAmount.mpt().value();
+        auto const amt = saAmount.mpt().value();
+        if (view.rules().enabled(featureMPTokensV2))
+        {
+            // Don't overflow uint64
+            if (amt > maxAmount || outstanding > (2 * maxAmount - amt))
+                return tecPATH_DRY;
+        }
+        (*sleIssuance)[sfOutstandingAmount] += amt;
         view.update(sleIssuance);
     }
     else
@@ -1905,12 +1908,17 @@ rippleCreditMPT(
         auto const mptokenID = keylet::mptoken(mptID.key, uSenderID);
         if (auto sle = view.peek(mptokenID))
         {
-            auto const amt = sle->getFieldU64(sfMPTAmount);
-            auto const pay = saAmount.mpt().value();
-            if (amt < pay)
+            auto const holderBalance = sle->getFieldU64(sfMPTAmount);
+            auto const amt = saAmount.mpt().value();
+            if (holderBalance < amt)
                 return tecINSUFFICIENT_FUNDS;
-            credit(amt);
-            (*sle)[sfMPTAmount] = amt - pay;
+            view.creditHookMPT(
+                uSenderID,
+                uReceiverID,
+                saAmount,
+                (*sle)[sfMPTAmount],
+                available);
+            (*sle)[sfMPTAmount] = holderBalance - amt;
             view.update(sle);
         }
         else
@@ -1919,7 +1927,6 @@ rippleCreditMPT(
 
     if (uReceiverID == issuer)
     {
-        auto const outstanding = sleIssuance->getFieldU64(sfOutstandingAmount);
         auto const redeem = saAmount.mpt().value();
         if (outstanding >= redeem)
         {
@@ -1934,7 +1941,12 @@ rippleCreditMPT(
         auto const mptokenID = keylet::mptoken(mptID.key, uReceiverID);
         if (auto sle = view.peek(mptokenID))
         {
-            credit((*sle)[sfMPTAmount]);
+            view.creditHookMPT(
+                uSenderID,
+                uReceiverID,
+                saAmount,
+                (*sle)[sfMPTAmount],
+                available);
             (*sle)[sfMPTAmount] += saAmount.mpt().value();
             view.update(sle);
         }
@@ -1974,12 +1986,21 @@ rippleSendMPT(
         if (uSenderID == issuer)
         {
             auto const sendAmount = saAmount.mpt().value();
-            auto const maximumAmount =
-                sle->at(~sfMaximumAmount).value_or(maxMPTokenAmount);
-            if (sendAmount > maximumAmount ||
-                sle->getFieldU64(sfOutstandingAmount) >
-                    maximumAmount - sendAmount)
-                return tecPATH_DRY;
+            auto const maxAmount = maxMPTAmount(*sle);
+            auto const outstanding = sle->getFieldU64(sfOutstandingAmount);
+            if (view.rules().enabled(featureMPTokensV2))
+            {
+                // Don't overflow uint64
+                if (sendAmount > maxAmount ||
+                    outstanding > (2 * maxAmount - sendAmount))
+                    return tecPATH_DRY;
+            }
+            else
+            {
+                if (sendAmount > maxAmount ||
+                    outstanding > (maxAmount - sendAmount))
+                    return tecPATH_DRY;
+            }
         }
 
         // Direct send: redeeming MPTs and/or sending own MPTs.
@@ -2157,7 +2178,7 @@ issueIOU(
             final_balance,
             j);
 
-        view.creditHook(issue.account, account, amount, start_balance);
+        view.creditHookIOU(issue.account, account, amount, start_balance);
 
         if (bSenderHigh)
             final_balance.negate();
@@ -2251,7 +2272,7 @@ redeemIOU(
         auto const must_delete = updateTrustLine(
             view, state, bSenderHigh, account, start_balance, final_balance, j);
 
-        view.creditHook(account, issue.account, amount, start_balance);
+        view.creditHookIOU(account, issue.account, amount, start_balance);
 
         if (bSenderHigh)
             final_balance.negate();

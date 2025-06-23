@@ -27,12 +27,13 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/chrono.h>
 #include <xrpl/beast/utility/Journal.h>
+#include <xrpl/protocol/Concepts.h>
 
 #include <boost/container/flat_set.hpp>
 
 namespace ripple {
 
-template <class TIn, class TOut>
+template <StepAmount TIn, StepAmount TOut>
 class TOfferStreamBase
 {
 public:
@@ -145,7 +146,7 @@ public:
     and the caller has not modified the balance. This is accomplished
     by also looking up the balance in the cancel view.
 */
-template <class TIn, class TOut>
+template <StepAmount TIn, StepAmount TOut>
 class FlowOfferStream : public TOfferStreamBase<TIn, TOut>
 {
 private:

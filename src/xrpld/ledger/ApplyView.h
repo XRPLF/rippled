@@ -241,11 +241,65 @@ public:
     // Called when a credit is made to an account
     // This is required to support PaymentSandbox
     virtual void
-    creditHook(
+    creditHookIOU(
         AccountID const& from,
         AccountID const& to,
         STAmount const& amount,
         STAmount const& preCreditBalance)
+    {
+        XRPL_ASSERT(
+            amount.holds<Issue>(), "creditHookIOU: amount is for Issue");
+    }
+
+    virtual void
+    creditHookMPT(
+        AccountID const& from,
+        AccountID const& to,
+        STAmount const& amount,
+        std::uint64_t preCreditBalanceHolder,
+        std::int64_t preCreditBalanceIssuer)
+    {
+        XRPL_ASSERT(
+            amount.holds<MPTIssue>(), "creditHookMPT: amount is for MPTIssue");
+    }
+
+    /** Facilitate tracking of MPT sold by an issuer owning MPT sell offer.
+     * Unlike IOU, MPT doesn't have bi-directional relationship with an issuer,
+     * where a trustline limits an amount the can be issued to a holder.
+     * Consequently, the credit step (last MPTEndpointStep or
+     * BookStep buying MPT) might temporarily overflow OutstandingAmount.
+     * Limiting of a step's output amount in this case is delegated to
+     * the next step (in rev order). The next step always redeems when a holder
+     * account sells MPT (first MPTEndpointStep or BookStep selling MPT).
+     * In this case the holder account is only limited by the step's output
+     * and it's available funds since it's transferring the funds from one
+     * account to another account and doesn't change OutstandingAmount.
+     * This doesn't apply to an offer owned by an issuer.
+     * In this case the issuer sells or self debits and is increasing
+     * OutstandingAmount. Ability to issue is limited by the issuer
+     * originally available funds less already self sold MPT amounts (MPT sell
+     * offer).
+     * Consider an example:
+     * - GW creates MPT(USD) with 1,000USD MaximumAmount.
+     * - GW pays 950USD to A1.
+     * - A1 creates an offer 100XRP(buy)/100USD(sell).
+     * - GW creates an offer 100XRP(buy)/100USD(sell).
+     * - A2 pays 200USD to A3 with sendMax of 200XRP.
+     * Since the payment engine executes payments in reverse,
+     * OutstandingAmount overflows in MPTEndpointStep: 950 + 200 = 1,150USD.
+     * BookStep first consumes A1 offer. This reduces OutstandingAmount
+     * by 100USD: 1,150 - 100 = 1,050USD. GW offer can only be partially
+     * consumed because the initial available amount is 50USD = 1,000 - 950.
+     * BookStep limits it's output to 150USD. This in turn limits A3's send
+     * amount to 150XRP: A1 buys 100XRP and sells 100USD to A3. This doesn't
+     * change OutstandingAmount. GW buys 50XRP and sells 50USD to A3. This
+     * changes OutstandingAmount 10 1,000USD.
+     */
+    virtual void
+    issuerSelfDebitHookMPT(
+        MPTIssue const& issue,
+        std::uint64_t amount,
+        std::int64_t origBalance)
     {
     }
 

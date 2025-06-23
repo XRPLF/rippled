@@ -446,7 +446,9 @@ MPTEndpointPaymentStep::check(
 
     if (!prevStep_)
     {
-        auto const owed = creditBalance(ctx.view, src_, mptIssue_);
+        auto const owed = accountHolds(
+            ctx.view, src_, mptIssue_, fhIGNORE_FREEZE, ahIGNORE_AUTH, j_);
+        // Already at MaximumAmount
         if (owed <= beast::zero)
             return tecPATH_DRY;
     }
@@ -502,42 +504,28 @@ template <class TDerived>
 std::pair<MPTAmount, DebtDirection>
 MPTEndpointStep<TDerived>::maxPaymentFlow(ReadView const& sb) const
 {
+    auto const maxFlow =
+        accountHolds(sb, src_, mptIssue_, fhIGNORE_FREEZE, ahIGNORE_AUTH, j_);
+
     // From a holder to an issuer
     if (src_ != mptIssue_.getIssuer())
-        return {
-            toAmount<MPTAmount>(accountHolds(
-                sb, src_, mptIssue_, fhIGNORE_FREEZE, ahIGNORE_AUTH, j_)),
-            DebtDirection::redeems};
+        return {toAmount<MPTAmount>(maxFlow), DebtDirection::redeems};
 
     // From an issuer to a holder
     if (auto const sle = sb.read(keylet::mptIssuance(mptIssue_)))
     {
-        std::uint64_t const maximumAmount = [&] {
-            auto const max = sle->getFieldU64(sfMaximumAmount);
-            return max > 0 ? max : maxMPTokenAmount;
-        }();
-        std::int64_t const maxFlow =
-            maximumAmount - sle->getFieldU64(sfOutstandingAmount);
-
-        // Direct issue, an issuer pays to a holder
+        // If issuer is the source account, and it is direct payment then
+        // MPTEndpointStep is the only step. Provide available maxFlow.
         if (!prevStep_)
-            return {MPTAmount{maxFlow}, DebtDirection::issues};
+            return {toAmount<MPTAmount>(maxFlow), DebtDirection::issues};
 
-        // Direct payment between holders or a cross currency payment.
-        // If maxFlow returned in this case then a valid payment will fail.
-        // Consider MaximumAmount is 100, alice is issuer. Then the last
-        // payment fails: pay(alice, bob, 100), pay(bob, carol, 100).
-        // Payment starts in reverse with the issuer paying to carol 100,
-        // therefore exceeding MaximumAmount. In the previous step, bob pays
-        // to the issuer 100, offsetting 100 paid by the issuer to carol.
-        // Another use case with a cross-currency payment, which would
-        // also fail has maxFlow been returned. Last payment fails.
-        // MPT MaximumAmount is 1000, gw is issuer. pay(gw, alice, MPT(1000)),
-        // pay(gw, carol, MPT(100)), offer(alice, MPT1(10), MPT(10)),
-        // pay(carol, bob, MPT(10), sendmax(MPT1(10)), path(~MPT)).
-        // In case of a cross-currency payment, the previous step limits
-        // the output amount.
-        return {MPTAmount(maximumAmount), DebtDirection::issues};
+        // MPTEndpointStep is the last step. It's always issuing in
+        // this case. Can't infer at this point what the maxFlow is, because
+        // the previous step may issue or redeem. Allow OutstandingAmount
+        // to temporarily overflow. Let the previous step figure out how
+        // to limit the flow.
+        std::int64_t const maxAmount = maxMPTAmount(*sle);
+        return {MPTAmount{maxAmount}, DebtDirection::issues};
     }
 
     return {MPTAmount{0}, DebtDirection::issues};

@@ -144,9 +144,8 @@ public:
     bool
     isFunded() const
     {
-        // TODO is this true for MPT?
-        // Offer owner is issuer; they have unlimited funds
-        return m_account == assetOut().getIssuer();
+        // Offer owner is issuer; they have unlimited funds if IOU
+        return m_account == assetOut_.getIssuer() && assetOut_.holds<Issue>();
     }
 
     static std::pair<std::uint32_t, std::uint32_t>
@@ -204,13 +203,13 @@ TOffer<TIn, TOut>::setFieldAmounts()
         m_entry->setFieldAmount(sfTakerPays, toSTAmount(m_amounts.in));
     else
         m_entry->setFieldAmount(
-            sfTakerPays, toSTAmount(m_amounts.in, assetIn()));
+            sfTakerPays, toSTAmount(m_amounts.in, assetIn_));
 
     if constexpr (std::is_same_v<TOut, XRPAmount>)
         m_entry->setFieldAmount(sfTakerGets, toSTAmount(m_amounts.out));
     else
         m_entry->setFieldAmount(
-            sfTakerGets, toSTAmount(m_amounts.out, assetOut()));
+            sfTakerGets, toSTAmount(m_amounts.out, assetOut_));
 }
 
 template <StepAmount TIn, StepAmount TOut>

@@ -17,6 +17,7 @@
 */
 //==============================================================================
 
+#include <xrpld/app/misc/MPTUtils.h>
 #include <xrpld/app/paths/AssetCache.h>
 #include <xrpld/app/paths/TrustLine.h>
 
@@ -142,9 +143,8 @@ AssetCache::getMPTs(ripple::AccountID const& account)
         if (sle->getType() == ltMPTOKEN_ISSUANCE)
         {
             auto const mptID = makeMptID(sle->getFieldU32(sfSequence), account);
-            auto const maxAmount =
-                (*sle)[~sfMaximumAmount].value_or(maxMPTokenAmount);
-            bool const maxedOut = sle->at(sfOutstandingAmount) == maxAmount;
+            bool const maxedOut =
+                sle->at(sfOutstandingAmount) == maxMPTAmount(*sle);
             mpts.emplace_back(mptID, false, maxedOut);
         }
         else if (sle->getType() == ltMPTOKEN)
@@ -155,10 +155,8 @@ AssetCache::getMPTs(ripple::AccountID const& account)
                 if (auto const sleIssuance =
                         ledger_->read(keylet::mptIssuance(mptID)))
                 {
-                    auto const maxAmount =
-                        (*sleIssuance)[~sfMaximumAmount].value_or(
-                            maxMPTokenAmount);
-                    return sleIssuance->at(sfOutstandingAmount) == maxAmount;
+                    return sleIssuance->at(sfOutstandingAmount) ==
+                        maxMPTAmount(*sleIssuance);
                 }
                 return true;
             }();
