@@ -106,7 +106,7 @@ STAccount::add(Serializer& s) const
 }
 
 bool
-STAccount::isEquivalent(const STBase& t) const
+STAccount::isEquivalent(STBase const& t) const
 {
     auto const* const tPtr = dynamic_cast<STAccount const*>(&t);
     return tPtr && (default_ == tPtr->default_) && (value_ == tPtr->value_);

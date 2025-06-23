@@ -109,6 +109,8 @@ public:
 
         squelch,
         squelch_suppressed,  // egress traffic amount suppressed by squelching
+        squelch_ignored,     // the traffic amount that came from peers ignoring
+                             // squelch messages
 
         // TMHaveSet message:
         get_set,    // transaction sets we try to get
@@ -246,7 +248,7 @@ public:
     static std::string
     to_string(category cat)
     {
-        static const std::unordered_map<category, std::string> category_map = {
+        static std::unordered_map<category, std::string> const category_map = {
             {base, "overhead"},
             {cluster, "overhead_cluster"},
             {overlay, "overhead_overlay"},
@@ -262,6 +264,7 @@ public:
             {validatorlist, "validator_lists"},
             {squelch, "squelch"},
             {squelch_suppressed, "squelch_suppressed"},
+            {squelch_ignored, "squelch_ignored"},
             {get_set, "set_get"},
             {share_set, "set_share"},
             {ld_tsc_get, "ledger_data_Transaction_Set_candidate_get"},
@@ -326,6 +329,7 @@ protected:
         {validatorlist, {validatorlist}},
         {squelch, {squelch}},
         {squelch_suppressed, {squelch_suppressed}},
+        {squelch_ignored, {squelch_ignored}},
         {get_set, {get_set}},
         {share_set, {share_set}},
         {ld_tsc_get, {ld_tsc_get}},

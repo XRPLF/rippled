@@ -1,6 +1,7 @@
 name: nix
 on:
   pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
   push:
     # If the branches list is ever changed, be sure to change it on all
     # build/test jobs (nix, macos, windows)
@@ -39,6 +40,7 @@ concurrency:
 
 jobs:
   dependencies:
+    if: ${{ github.event_name == 'push' || github.event.pull_request.draft != true || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     strategy:
       fail-fast: false
       matrix:
@@ -248,7 +250,7 @@ jobs:
           mkdir -p ~/.conan
           tar -xzf conan.tar -C ~/.conan
       - name: install gcovr
-        run: pip install "gcovr>=7,<8"
+        run: pip install "gcovr>=7,<9"
       - name: check environment
         run: |
           echo ${PATH} | tr ':' '\n'
@@ -361,6 +363,7 @@ jobs:
   # later
 
   instrumentation-build:
+    if: ${{ github.event_name == 'push' || github.event.pull_request.draft != true || contains(github.event.pull_request.labels.*.name, 'DraftRunCI') }}
     env:
       CLANG_RELEASE: 16
     strategy:

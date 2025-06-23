@@ -7,13 +7,13 @@ comment:
   show_carryforward_flags: false
 
 coverage:
-  range: "60..80"
+  range: "70..85"
   precision: 1
   round: nearest
   status:
     project:
       default:
-        target: 60%
+        target: 75%
         threshold: 2%
     patch:
       default:

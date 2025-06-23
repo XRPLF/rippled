@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2024 Ripple Labs Inc.
+    Copyright (c) 2025 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -17,34 +17,27 @@
 */
 //==============================================================================
 
-#include <test/jtx/ledgerStateFix.h>
-
-#include <xrpld/app/tx/detail/LedgerStateFix.h>
-
-#include <xrpl/protocol/TxFlags.h>
-#include <xrpl/protocol/jss.h>
+#pragma once
+#include <xrpld/ledger/View.h>
 
 namespace ripple {
-namespace test {
-namespace jtx {
+namespace permissioned_dex {
 
-namespace ledgerStateFix {
+// Check if an account is in a permissioned domain
+[[nodiscard]] bool
+accountInDomain(
+    ReadView const& view,
+    AccountID const& account,
+    Domain const& domainID);
 
-// Fix NFTokenPage links on owner's account.  acct pays fee.
-Json::Value
-nftPageLinks(jtx::Account const& acct, jtx::Account const& owner)
-{
-    Json::Value jv;
-    jv[sfAccount.jsonName] = acct.human();
-    jv[sfLedgerFixType.jsonName] = LedgerStateFix::nfTokenPageLink;
-    jv[sfOwner.jsonName] = owner.human();
-    jv[sfTransactionType.jsonName] = jss::LedgerStateFix;
-    jv[sfFlags.jsonName] = tfUniversal;
-    return jv;
-}
+// Check if an offer is in the permissioned domain
+[[nodiscard]] bool
+offerInDomain(
+    ReadView const& view,
+    uint256 const& offerID,
+    Domain const& domainID,
+    beast::Journal j);
 
-}  // namespace ledgerStateFix
+}  // namespace permissioned_dex
 
-}  // namespace jtx
-}  // namespace test
 }  // namespace ripple

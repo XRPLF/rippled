@@ -141,7 +141,7 @@ public:
     virtual void
     run() = 0;
     virtual void
-    signalStop(std::string msg = "") = 0;
+    signalStop(std::string msg) = 0;
     virtual bool
     checkSigs() const = 0;
     virtual void
@@ -273,7 +273,7 @@ public:
     virtual LedgerIndex
     getMaxDisallowedLedger() = 0;
 
-    virtual const std::optional<uint256>&
+    virtual std::optional<uint256> const&
     trapTxID() const = 0;
 };
 

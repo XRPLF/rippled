@@ -233,7 +233,7 @@ simulateTxn(RPC::JsonContext& context, std::shared_ptr<Transaction> transaction)
     jvResult[jss::applied] = result.applied;
     jvResult[jss::ledger_index] = view.seq();
 
-    const bool isBinaryOutput = context.params.get(jss::binary, false).asBool();
+    bool const isBinaryOutput = context.params.get(jss::binary, false).asBool();
 
     // Convert the TER to human-readable values
     std::string token;
@@ -340,6 +340,11 @@ doSimulate(RPC::JsonContext& context)
         jvResult[jss::error] = "invalidTransaction";
         jvResult[jss::error_exception] = e.what();
         return jvResult;
+    }
+
+    if (stTx->getTxnType() == ttBATCH)
+    {
+        return RPC::make_error(rpcNOT_IMPL);
     }
 
     std::string reason;

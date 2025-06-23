@@ -42,7 +42,7 @@ public:
         protocol::MessageType type,
         std::shared_ptr<Peer> const& peer) override;
 
-    const std::set<Peer::id_t>&
+    std::set<Peer::id_t> const&
     getPeerIds() const override;
 
 private:
@@ -117,7 +117,7 @@ PeerSetImpl::sendRequest(
     }
 }
 
-const std::set<Peer::id_t>&
+std::set<Peer::id_t> const&
 PeerSetImpl::getPeerIds() const
 {
     return peers_;
@@ -171,7 +171,7 @@ public:
         JLOG(j_.error()) << "DummyPeerSet sendRequest should not be called";
     }
 
-    const std::set<Peer::id_t>&
+    std::set<Peer::id_t> const&
     getPeerIds() const override
     {
         static std::set<Peer::id_t> emptyPeers;
