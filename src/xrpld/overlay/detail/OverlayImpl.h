@@ -424,7 +424,7 @@ public:
      * validator.
      * @param key Unique message's key
      * @param validator Validator's public key
-     * @param peers Peers' id to update the slots for
+     * @param peer Peer's id to update the slot for
      */
     void
     updateValidatorSlot(
