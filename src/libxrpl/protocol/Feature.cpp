@@ -129,7 +129,6 @@ class FeatureCollections
     std::map<std::string, VoteBehavior> supported;
     std::size_t upVotes = 0;
     std::size_t downVotes = 0;
-    std::size_t obsoleteUnsupportedAmendments = 0;
     mutable std::atomic<bool> readOnly = false;
 
     // These helper functions provide access to the features collection by name,
@@ -219,12 +218,6 @@ public:
     {
         return upVotes;
     }
-
-    std::size_t
-    numObsoleteUnsupportedAmendments() const
-    {
-        return obsoleteUnsupportedAmendments;
-    }
 };
 
 //------------------------------------------------------------------------------
@@ -276,7 +269,7 @@ FeatureCollections::registerFeature(
         features.emplace_back(name, f);
 
         auto const getAmendmentSupport = [=]() {
-            if (vote == VoteBehavior::Obsolete)
+            if (vote == VoteBehavior::Obsolete && support == Supported::yes)
                 return AmendmentSupport::Retired;
             return support == Supported::yes ? AmendmentSupport::Supported
                                              : AmendmentSupport::Unsupported;
@@ -291,10 +284,6 @@ FeatureCollections::registerFeature(
                 ++upVotes;
             else
                 ++downVotes;
-        }
-        else if (support == Supported::no && vote == VoteBehavior::Obsolete)
-        {
-            ++obsoleteUnsupportedAmendments;
         }
         check(
             upVotes + downVotes == supported.size(),
@@ -386,13 +375,6 @@ std::size_t
 detail::numUpVotedAmendments()
 {
     return featureCollections.numUpVotedAmendments();
-}
-
-/** Amendments that this server doesn't support and are obsolete. */
-std::size_t
-detail::numObsoleteUnsupportedAmendments()
-{
-    return featureCollections.numObsoleteUnsupportedAmendments();
 }
 
 //------------------------------------------------------------------------------

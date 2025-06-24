@@ -55,6 +55,10 @@
  *    `VoteBehavior::DefaultYes`. The communication process is beyond
  *    the scope of these instructions.
  *
+ * 5) A feature marked as Obsolete can mean either:
+ *    1) It is in the ledger (marked as Supported::yes) and it is Retired now
+ *    2) The feature is not in the ledger (has always been makred as Supported::no)
+ *       and the code to support it has been removed
  *
  * When a feature has been enabled for several years, the conditional code
  * may be removed, and the feature "retired". To retire a feature:
@@ -129,12 +133,6 @@ numDownVotedAmendments();
 std::size_t
 numUpVotedAmendments();
 
-/** Amendments that this server doesn't support and are obsolete.
-
-    This function is only used in unit tests.
-*/
-std::size_t
-numObsoleteUnsupportedAmendments();
 }  // namespace detail
 
 std::optional<uint256>
