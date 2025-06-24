@@ -24,6 +24,7 @@
 #include <xrpld/ledger/ReadView.h>
 #include <xrpld/ledger/detail/RawStateTable.h>
 
+#include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/XRPAmount.h>
 
 #include <boost/container/pmr/monotonic_buffer_resource.hpp>
@@ -39,13 +40,21 @@ namespace ripple {
     Views constructed with this tag will have the
     rules of open ledgers applied during transaction
     processing.
-*/
-struct open_ledger_t
+ */
+inline constexpr struct open_ledger_t
 {
-    explicit open_ledger_t() = default;
-};
+    explicit constexpr open_ledger_t() = default;
+} open_ledger{};
 
-extern open_ledger_t const open_ledger;
+/** Batch view construction tag.
+
+    Views constructed with this tag are part of a stack of views
+    used during batch transaction applied.
+ */
+inline constexpr struct batch_view_t
+{
+    explicit constexpr batch_view_t() = default;
+} batch_view{};
 
 //------------------------------------------------------------------------------
 
@@ -97,6 +106,10 @@ private:
     ReadView const* base_;
     detail::RawStateTable items_;
     std::shared_ptr<void const> hold_;
+
+    /// In batch mode, the number of transactions already executed.
+    std::size_t baseTxCount_ = 0;
+
     bool open_ = true;
 
 public:
@@ -142,7 +155,6 @@ public:
         The tx list starts empty and will contain
         all newly inserted tx.
     */
-    /** @{ */
     OpenView(
         open_ledger_t,
         ReadView const* base,
@@ -156,7 +168,11 @@ public:
         : OpenView(open_ledger, &*base, rules, base)
     {
     }
-    /** @} */
+
+    OpenView(batch_view_t, OpenView& base) : OpenView(std::addressof(base))
+    {
+        baseTxCount_ = base.txCount();
+    }
 
     /** Construct a new last closed ledger.
 

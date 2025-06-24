@@ -20,11 +20,13 @@
 #ifndef RIPPLE_JSON_JSON_VALUE_H_INCLUDED
 #define RIPPLE_JSON_JSON_VALUE_H_INCLUDED
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/json/json_forwards.h>
 
 #include <cstring>
 #include <map>
 #include <string>
+#include <utility>
 #include <vector>
 
 /** \brief JSON (JavaScript Object Notation).
@@ -216,6 +218,7 @@ public:
     Value(UInt value);
     Value(double value);
     Value(char const* value);
+    Value(ripple::Number const& value);
     /** \brief Constructs a value from a static string.
 
      * Like other value string constructor but do not duplicate the string for
@@ -365,6 +368,8 @@ public:
      */
     Value&
     operator[](StaticString const& key);
+    Value const&
+    operator[](StaticString const& key) const;
 
     /// Return the member named key if it exist, defaultValue otherwise.
     Value
@@ -435,6 +440,12 @@ private:
     ValueType type_ : 8;
     int allocated_ : 1;  // Notes: if declared as bool, bitfield is useless.
 };
+
+inline Value
+to_json(ripple::Number const& number)
+{
+    return to_string(number);
+}
 
 bool
 operator==(Value const&, Value const&);

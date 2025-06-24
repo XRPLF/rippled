@@ -267,6 +267,7 @@ class TheoreticalQuality_test : public beast::unit_test::suite
             false,
             OfferCrossing::no,
             ammContext,
+            std::nullopt,
             dummyJ);
 
         BEAST_EXPECT(sr.first == tesSUCCESS);
