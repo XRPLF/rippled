@@ -29,9 +29,6 @@
 #include <xrpl/basics/random.h>
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/SecretKey.h>
-#include <xrpl/protocol/messages.h>
-
-#include <boost/thread.hpp>
 
 #include <algorithm>
 #include <chrono>
@@ -51,12 +48,6 @@ class extended_manual_clock : public beast::manual_clock<Clock>
 public:
     using typename beast::manual_clock<Clock>::duration;
     using typename beast::manual_clock<Clock>::time_point;
-
-    void
-    reset()
-    {
-        this->set(time_point(duration(0)));
-    }
 
     void
     randAdvance(std::chrono::milliseconds min, std::chrono::milliseconds max)
@@ -236,12 +227,6 @@ public:
     clock()
     {
         return clock_;
-    }
-
-    void
-    resetClock()
-    {
-        clock_ = TestStopwatch{};
     }
 
 protected:
@@ -845,12 +830,8 @@ public:
         LinkIterCB link,
         std::uint16_t nValidators = MAX_VALIDATORS,
         std::uint32_t nMessages = MAX_MESSAGES,
-        bool purge = true,
-        bool resetClock = true)
+        bool purge = true)
     {
-        if (resetClock)
-            overlay_.resetClock();
-
         if (purge)
         {
             purgePeers();
@@ -1185,7 +1166,7 @@ protected:
     testPeerUnsquelchedTooSoon(bool log)
     {
         doTest("Peer Unsquelched Too Soon", log, [this](bool log) {
-            BEAST_EXPECT(propagateNoSquelch(log, 1, false, false, false));
+            BEAST_EXPECT(propagateNoSquelch(log, 1, false, false));
         });
     }
 
@@ -1197,13 +1178,13 @@ protected:
     {
         network_.overlay().clock().advance(seconds(601));
         doTest("Peer Unsquelched", log, [this](bool log) {
-            BEAST_EXPECT(propagateNoSquelch(log, 2, true, true, false));
+            BEAST_EXPECT(propagateNoSquelch(log, 2, true, true));
         });
     }
 
     /** Propagate enough messages to generate one squelch event */
     bool
-    propagateAndSquelch(bool log, bool purge = true, bool resetClock = true)
+    propagateAndSquelch(bool log, bool purge = true)
     {
         int n = 0;
         network_.propagate(
@@ -1230,8 +1211,7 @@ protected:
             },
             1,
             reduce_relay::MAX_MESSAGE_THRESHOLD + 2,
-            purge,
-            resetClock);
+            purge);
         auto selected = network_.overlay().getSelected(network_.validator(0));
         BEAST_EXPECT(
             selected.size() ==
@@ -1248,8 +1228,7 @@ protected:
         bool log,
         std::uint16_t nMessages,
         bool countingState,
-        bool purge = true,
-        bool resetClock = true)
+        bool purge = true)
     {
         bool squelched = false;
         network_.propagate(
@@ -1265,8 +1244,7 @@ protected:
             },
             1,
             nMessages,
-            purge,
-            resetClock);
+            purge);
         auto res = checkCounting(network_.validator(0), countingState);
         return !squelched && res;
     }
@@ -1278,9 +1256,9 @@ protected:
     testNewPeer(bool log)
     {
         doTest("New Peer", log, [this](bool log) {
-            BEAST_EXPECT(propagateAndSquelch(log, true, false));
+            BEAST_EXPECT(propagateAndSquelch(log, true));
             network_.addPeer();
-            BEAST_EXPECT(propagateNoSquelch(log, 1, true, false, false));
+            BEAST_EXPECT(propagateNoSquelch(log, 1, true, false));
         });
     }
 
@@ -1291,7 +1269,7 @@ protected:
     {
         doTest("Selected Peer Disconnects", log, [this](bool log) {
             network_.overlay().clock().advance(seconds(601));
-            BEAST_EXPECT(propagateAndSquelch(log, true, false));
+            BEAST_EXPECT(propagateAndSquelch(log, true));
             auto id = network_.overlay().getSelectedPeer(network_.validator(0));
             std::uint16_t unsquelched = 0;
             network_.overlay().deletePeer(
@@ -1315,7 +1293,7 @@ protected:
     {
         doTest("Selected Peer Stops Relaying", log, [this](bool log) {
             network_.overlay().clock().advance(seconds(601));
-            BEAST_EXPECT(propagateAndSquelch(log, true, false));
+            BEAST_EXPECT(propagateAndSquelch(log, true));
             network_.overlay().clock().advance(
                 reduce_relay::IDLED + seconds(1));
             std::uint16_t unsquelched = 0;
@@ -1341,7 +1319,7 @@ protected:
     {
         doTest("Squelched Peer Disconnects", log, [this](bool log) {
             network_.overlay().clock().advance(seconds(601));
-            BEAST_EXPECT(propagateAndSquelch(log, true, false));
+            BEAST_EXPECT(propagateAndSquelch(log, true));
             auto peers = network_.overlay().getPeers(network_.validator(0));
             auto it = std::find_if(peers.begin(), peers.end(), [&](auto it) {
                 return it.second.state == reduce_relay::PeerState::Squelched;
@@ -1495,33 +1473,34 @@ vp_base_squelch_max_selected_peers=2
     testBaseSquelchReady(bool log)
     {
         doTest("BaseSquelchReady", log, [&](bool log) {
-            network_.overlay().resetClock();
             auto createSlots =
-                [&](bool baseSquelchEnabled) -> reduce_relay::Slots {
+                [&](bool baseSquelchEnabled,
+                    TestStopwatch stopwatch) -> reduce_relay::Slots {
                 env_.app().config().VP_REDUCE_RELAY_BASE_SQUELCH_ENABLE =
                     baseSquelchEnabled;
                 return reduce_relay::Slots(
                     env_.app().logs(),
                     network_.overlay(),
                     env_.app().config(),
-                    network_.overlay().clock());
+                    stopwatch);
             };
+
+            TestStopwatch stopwatch;
             // base squelching must not be ready if squelching is disabled
-            BEAST_EXPECT(!createSlots(false).baseSquelchReady());
+            BEAST_EXPECT(!createSlots(false, stopwatch).baseSquelchReady());
 
             // base squelch must not be ready as not enough time passed from
             // bootup
-            BEAST_EXPECT(!createSlots(true).baseSquelchReady());
+            BEAST_EXPECT(!createSlots(true, stopwatch).baseSquelchReady());
 
-            network_.overlay().clock().advance(
-                reduce_relay::WAIT_ON_BOOTUP + minutes{1});
+            stopwatch.advance(reduce_relay::WAIT_ON_BOOTUP + minutes{1});
 
             // base squelch enabled and bootup time passed
-            BEAST_EXPECT(createSlots(true).baseSquelchReady());
+            BEAST_EXPECT(createSlots(true, stopwatch).baseSquelchReady());
 
             // even if time passed, base squelching must not be ready if turned
             // off in the config
-            BEAST_EXPECT(!createSlots(false).baseSquelchReady());
+            BEAST_EXPECT(!createSlots(false, stopwatch).baseSquelchReady());
         });
     }
 
