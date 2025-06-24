@@ -35,6 +35,7 @@
 #include <boost/thread.hpp>
 
 #include <algorithm>
+#include <chrono>
 #include <iterator>
 #include <numeric>
 #include <optional>
@@ -999,7 +1000,8 @@ protected:
                     str << s << " ";
                 if (log)
                     std::cout
-                        << (double)reduce_relay::epoch<milliseconds>(now)
+                        << (double)std::chrono::duration_cast<milliseconds>(
+                               now.time_since_epoch())
                                 .count() /
                             1000.
                         << " random, squelched, validator: " << validator.id()
@@ -1091,9 +1093,13 @@ protected:
                     event.isSelected_ =
                         network_.overlay().isSelected(*event.key_, event.peer_);
                     auto peers = network_.overlay().getPeers(*event.key_);
-                    auto d = reduce_relay::epoch<milliseconds>(now).count() -
-                        reduce_relay::epoch<milliseconds>(
-                            peers[event.peer_].lastMessage)
+
+                    auto d =
+                        std::chrono::duration_cast<std::chrono::milliseconds>(
+                            now.time_since_epoch())
+                            .count() -
+                        std::chrono::duration_cast<std::chrono::milliseconds>(
+                            peers[event.peer_].lastMessage.time_since_epoch())
                             .count();
 
                     mustHandle = event.isSelected_ &&

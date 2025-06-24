@@ -315,8 +315,9 @@ bool
 Slots::reduceRelayReady()
 {
     if (!reduceRelayReady_)
-        reduceRelayReady_ = reduce_relay::epoch<std::chrono::minutes>(
-                                clock_.now()) > reduce_relay::WAIT_ON_BOOTUP;
+        reduceRelayReady_ =
+            std::chrono::duration_cast<std::chrono::minutes>(
+                clock_.now().time_since_epoch()) > reduce_relay::WAIT_ON_BOOTUP;
 
     return reduceRelayReady_;
 }
