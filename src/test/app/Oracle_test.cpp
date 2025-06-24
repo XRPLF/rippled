@@ -686,10 +686,13 @@ private:
                 *this,
                 withFixOrder ? supported_amendments()
                              : supported_amendments() - fixPriceOracleOrder);
+            auto const baseFee =
+                static_cast<int>(env.current()->fees().base.drops());
 
             auto test = [&](Env& env, DataSeries const& series) {
                 env.fund(XRP(1'000), owner);
-                Oracle oracle(env, {.owner = owner, .series = series});
+                Oracle oracle(
+                    env, {.owner = owner, .series = series, .fee = baseFee});
                 BEAST_EXPECT(oracle.exists());
                 auto sle = env.le(keylet::oracle(owner, oracle.documentID()));
                 BEAST_EXPECT(
@@ -705,7 +708,7 @@ private:
                         .getFieldCurrency(sfQuoteAsset)
                         .getText();
 
-                oracle.set(UpdateArg{.series = series});
+                oracle.set(UpdateArg{.series = series, .fee = baseFee});
                 sle = env.le(keylet::oracle(owner, oracle.documentID()));
 
                 auto const afterQuoteAssetName1 =
