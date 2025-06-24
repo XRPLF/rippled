@@ -90,13 +90,6 @@ to_string(SlotState state)
     }
 }
 
-template <typename Unit, typename TP>
-Unit
-epoch(TP const& t)
-{
-    return std::chrono::duration_cast<Unit>(t.time_since_epoch());
-}
-
 /** Abstract class. Declares squelch and unsquelch handlers.
  * OverlayImpl inherits from this class. Motivation is
  * for easier unit tests to facilitate on the fly
