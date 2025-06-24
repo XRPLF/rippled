@@ -93,10 +93,13 @@ namespace detail {
 #undef XRPL_FIX
 #pragma push_macro("XRPL_RETIRE")
 #undef XRPL_RETIRE
+#pragma push_macro("XRPL_ABANDON")
+#undef XRPL_ABANDON
 
 #define XRPL_FEATURE(name, supported, vote) +1
 #define XRPL_FIX(name, supported, vote) +1
 #define XRPL_RETIRE(name) +1
+#define XRPL_ABANDON(name) +1
 
 // This value SHOULD be equal to the number of amendments registered in
 // Feature.cpp. Because it's only used to reserve storage, and determine how
@@ -113,6 +116,8 @@ static constexpr std::size_t numFeatures =
 #pragma pop_macro("XRPL_FIX")
 #undef XRPL_FEATURE
 #pragma pop_macro("XRPL_FEATURE")
+#undef XRPL_ABANDON
+#pragma pop_macro("XRPL_ABANDON")
 
 /** Amendments that this server supports and the default voting behavior.
    Whether they are enabled depends on the Rules defined in the validated
@@ -354,10 +359,13 @@ foreachFeature(FeatureBitset bs, F&& f)
 #undef XRPL_FIX
 #pragma push_macro("XRPL_RETIRE")
 #undef XRPL_RETIRE
+#pragma push_macro("XRPL_ABANDON")
+#undef XRPL_ABANDON
 
 #define XRPL_FEATURE(name, supported, vote) extern uint256 const feature##name;
 #define XRPL_FIX(name, supported, vote) extern uint256 const fix##name;
 #define XRPL_RETIRE(name)
+#define XRPL_ABANDON(name)
 
 #include <xrpl/protocol/detail/features.macro>
 
@@ -367,6 +375,8 @@ foreachFeature(FeatureBitset bs, F&& f)
 #pragma pop_macro("XRPL_FIX")
 #undef XRPL_FEATURE
 #pragma pop_macro("XRPL_FEATURE")
+#undef XRPL_ABANDON
+#pragma pop_macro("XRPL_ABANDON")
 
 }  // namespace ripple
 
