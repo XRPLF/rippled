@@ -18,7 +18,6 @@
 //==============================================================================
 
 #include <test/jtx/Env.h>
-#include <test/overlay/clock.h>
 
 #include <xrpld/overlay/Message.h>
 #include <xrpld/overlay/Peer.h>
