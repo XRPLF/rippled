@@ -142,7 +142,7 @@ OverlayImpl::OverlayImpl(
     , m_resolver(resolver)
     , next_id_(1)
     , timer_count_(0)
-    , slots_(app.logs(), *this, app.config())
+    , slots_(app.logs(), *this, app.config(), stopwatch())
     , m_stats(
           std::bind(&OverlayImpl::collect_metrics, this),
           collector,
@@ -1421,8 +1421,8 @@ void
 OverlayImpl::squelchAll(PublicKey const& validator, uint32_t squelchDuration)
 {
     for_each([&](std::shared_ptr<PeerImp>&& p) {
-        slots_.squelchValidator(validator, p->id());
         p->send(makeSquelchMessage(validator, true, squelchDuration));
+        slots_.squelchValidator(validator, p->id());
     });
 }
 

@@ -20,8 +20,6 @@
 #ifndef RIPPLE_OVERLAY_SQUELCH_H_INCLUDED
 #define RIPPLE_OVERLAY_SQUELCH_H_INCLUDED
 
-#include <xrpld/overlay/ReduceRelayCommon.h>
-
 #include <xrpl/basics/Log.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/PublicKey.h>
@@ -33,13 +31,14 @@ namespace ripple {
 namespace reduce_relay {
 
 /** Maintains squelching of relaying messages from validators */
-template <typename clock_type>
 class Squelch
 {
+    using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
     using time_point = typename clock_type::time_point;
 
 public:
-    explicit Squelch(beast::Journal journal) : journal_(journal)
+    explicit Squelch(beast::Journal journal, clock_type& clock)
+        : journal_(journal), clock_(clock)
     {
     }
     virtual ~Squelch() = default;
@@ -72,54 +71,8 @@ private:
      * Expiration time is included in the TMSquelch message. */
     hash_map<PublicKey, time_point> squelched_;
     beast::Journal const journal_;
+    clock_type& clock_;
 };
-
-template <typename clock_type>
-bool
-Squelch<clock_type>::addSquelch(
-    PublicKey const& validator,
-    std::chrono::seconds const& squelchDuration)
-{
-    if (squelchDuration >= MIN_UNSQUELCH_EXPIRE &&
-        squelchDuration <= MAX_UNSQUELCH_EXPIRE_PEERS)
-    {
-        squelched_[validator] = clock_type::now() + squelchDuration;
-        return true;
-    }
-
-    JLOG(journal_.error()) << "squelch: invalid squelch duration "
-                           << squelchDuration.count();
-
-    // unsquelch if invalid duration
-    removeSquelch(validator);
-
-    return false;
-}
-
-template <typename clock_type>
-void
-Squelch<clock_type>::removeSquelch(PublicKey const& validator)
-{
-    squelched_.erase(validator);
-}
-
-template <typename clock_type>
-bool
-Squelch<clock_type>::expireSquelch(PublicKey const& validator)
-{
-    auto const now = clock_type::now();
-
-    auto const& it = squelched_.find(validator);
-    if (it == squelched_.end())
-        return true;
-    else if (it->second > now)
-        return false;
-
-    // squelch expired
-    squelched_.erase(it);
-
-    return true;
-}
 
 }  // namespace reduce_relay
 

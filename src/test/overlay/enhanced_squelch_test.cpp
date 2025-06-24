@@ -19,14 +19,13 @@
 
 #include <test/jtx/Env.h>
 
+#include <xrpld/overlay/ReduceRelayCommon.h>
 #include <xrpld/overlay/Slot.h>
 
 #include <xrpl/beast/unit_test.h>
 #include <xrpl/protocol/SecretKey.h>
 
-#include "test/overlay/clock.h"
 #include "xrpld/overlay/Peer.h"
-#include "xrpld/overlay/ReduceRelayCommon.h"
 
 #include <chrono>
 #include <cstdint>
@@ -156,8 +155,9 @@ vp_enhanced_squelch_enable=0
         testcase("squelchTracking");
         Peer::id_t squelchedPeerID = 0;
         Peer::id_t newPeerID = 1;
-        reduce_relay::Slots<ManualClock> slots(
-            env_.app().logs(), noop_handler, env_.app().config());
+        TestStopwatch stopwatch;
+        reduce_relay::Slots slots(
+            env_.app().logs(), noop_handler, env_.app().config(), stopwatch);
         auto const publicKey = randomKeyPair(KeyType::ed25519).first;
 
         // a new key should not be squelched
@@ -180,7 +180,7 @@ vp_enhanced_squelch_enable=0
             !slots.peerSquelched(publicKey, newPeerID), "new peer squelched");
 
         // advance the manual clock to after expiration
-        ManualClock::advance(
+        stopwatch.advance(
             reduce_relay::MAX_UNSQUELCH_EXPIRE_DEFAULT +
             std::chrono::seconds{11});
 
@@ -199,9 +199,9 @@ vp_enhanced_squelch_enable=0
     testUpdateValidatorSlot_newValidator()
     {
         testcase("updateValidatorSlot_newValidator");
-
-        reduce_relay::Slots<ManualClock> slots(
-            env_.app().logs(), noop_handler, env_.app().config());
+        TestStopwatch stopwatch;
+        reduce_relay::Slots slots(
+            env_.app().logs(), noop_handler, env_.app().config(), stopwatch);
 
         Peer::id_t const peerID = 1;
         auto const validator = randomKeyPair(KeyType::ed25519).first;
@@ -243,8 +243,9 @@ vp_enhanced_squelch_enable=0
 
         TestHandler handler{squelch_f, noop_squelchAll, noop_unsquelch};
 
-        reduce_relay::Slots<ManualClock> slots(
-            env_.app().logs(), handler, env_.app().config());
+        TestStopwatch stopwatch;
+        reduce_relay::Slots slots(
+            env_.app().logs(), handler, env_.app().config(), stopwatch);
 
         slots.squelchValidator(validator, squelchedPeerID);
 
@@ -279,8 +280,10 @@ vp_enhanced_squelch_enable=0
         // while there are open untrusted slots, no calls should be made to
         // squelch any validators
         TestHandler handler{noop_handler};
-        reduce_relay::Slots<ManualClock> slots(
-            env_.app().logs(), handler, env_.app().config());
+
+        TestStopwatch stopwatch;
+        reduce_relay::Slots slots(
+            env_.app().logs(), handler, env_.app().config(), stopwatch);
 
         // saturate validator slots
         auto const validators = fillUntrustedSlots(slots);
@@ -333,9 +336,10 @@ vp_enhanced_squelch_enable=0
     {
         testcase("deleteIdlePeers");
         TestHandler handler{noop_handler};
+        TestStopwatch stopwatch;
 
-        reduce_relay::Slots<ManualClock> slots(
-            env_.app().logs(), handler, env_.app().config());
+        reduce_relay::Slots slots(
+            env_.app().logs(), handler, env_.app().config(), stopwatch);
         auto keys = fillUntrustedSlots(slots);
 
         //  verify that squelchAll is called for each idled slot validator
@@ -358,7 +362,7 @@ vp_enhanced_squelch_enable=0
             "unexpected number of untrusted slots");
 
         // advance the manual clock to after slot expiration
-        ManualClock::advance(
+        stopwatch.advance(
             reduce_relay::MAX_UNSQUELCH_EXPIRE_DEFAULT +
             std::chrono::seconds{1});
 
@@ -377,9 +381,10 @@ vp_enhanced_squelch_enable=0
         testcase("deleteIdleUntrustedPeer");
         Peer::id_t const peerID = 1;
         Peer::id_t const peerID2 = 2;
+        TestStopwatch stopwatch;
 
-        reduce_relay::Slots<ManualClock> slots(
-            env_.app().logs(), noop_handler, env_.app().config());
+        reduce_relay::Slots slots(
+            env_.app().logs(), noop_handler, env_.app().config(), stopwatch);
 
         // fill one untrustd validator slot
         auto const validator = fillUntrustedSlots(slots, 1)[0];
@@ -425,8 +430,10 @@ vp_enhanced_squelch_enable=0
         TestHandler handler{noop_handler};
 
         handler.squelch_f_ = [](PublicKey const&, Peer::id_t, std::uint32_t) {};
-        reduce_relay::Slots<ManualClock> slots(
-            env_.app().logs(), handler, env_.app().config());
+
+        TestStopwatch stopwatch;
+        reduce_relay::Slots slots(
+            env_.app().logs(), handler, env_.app().config(), stopwatch);
 
         // peers that will be source of validator messages
         std::vector<Peer::id_t> peers = {};
@@ -444,7 +451,7 @@ vp_enhanced_squelch_enable=0
         // new messages
         for (auto const& peer : peers)
         {
-            auto const now = ManualClock::now();
+            auto const now = stopwatch.now();
             slots.updateSlotAndSquelch(
                 sha512Half(validator) +
                     static_cast<uint256>(now.time_since_epoch().count()),
@@ -452,14 +459,14 @@ vp_enhanced_squelch_enable=0
                 peer,
                 false);
 
-            ManualClock::advance(std::chrono::milliseconds{10});
+            stopwatch.advance(std::chrono::milliseconds{10});
         }
 
         // simulate new, unique validator messages sent by peers
         for (auto const& peer : peers)
             for (int i = 0; i < reduce_relay::MAX_MESSAGE_THRESHOLD + 1; ++i)
             {
-                auto const now = ManualClock::now();
+                auto const now = stopwatch.now();
                 slots.updateSlotAndSquelch(
                     sha512Half(validator) +
                         static_cast<uint256>(now.time_since_epoch().count()),
@@ -467,7 +474,7 @@ vp_enhanced_squelch_enable=0
                     peer,
                     false);
 
-                ManualClock::advance(std::chrono::milliseconds{10});
+                stopwatch.advance(std::chrono::milliseconds{10});
             }
 
         auto const slotPeers = getUntrustedSlotPeers(validator, slots);
@@ -506,8 +513,9 @@ vp_enhanced_squelch_enable=0
     testUpdateConsideredValidator_newValidator()
     {
         testcase("testUpdateConsideredValidator_newValidator");
-        reduce_relay::Slots<ManualClock> slots(
-            env_.app().logs(), noop_handler, env_.app().config());
+        TestStopwatch stopwatch;
+        reduce_relay::Slots slots(
+            env_.app().logs(), noop_handler, env_.app().config(), stopwatch);
 
         // insert some random validator key
         auto const validator = randomKeyPair(KeyType::ed25519).first;
@@ -545,8 +553,9 @@ vp_enhanced_squelch_enable=0
     testUpdateConsideredValidator_idleValidator()
     {
         testcase("testUpdateConsideredValidator_idleValidator");
-        reduce_relay::Slots<ManualClock> slots(
-            env_.app().logs(), noop_handler, env_.app().config());
+        TestStopwatch stopwatch;
+        reduce_relay::Slots slots(
+            env_.app().logs(), noop_handler, env_.app().config(), stopwatch);
 
         // insert some random validator key
         auto const validator = randomKeyPair(KeyType::ed25519).first;
@@ -563,7 +572,7 @@ vp_enhanced_squelch_enable=0
         auto const state = slots.considered_validators_.at(validator);
 
         // simulate a validator sending a new message before the idle timer
-        ManualClock::advance(reduce_relay::IDLED - std::chrono::seconds(1));
+        stopwatch.advance(reduce_relay::IDLED - std::chrono::seconds(1));
 
         BEAST_EXPECTS(
             !slots.updateConsideredValidator(validator, peerID),
@@ -575,7 +584,7 @@ vp_enhanced_squelch_enable=0
             "non-idling validator was updated");
 
         // simulate a validator idling
-        ManualClock::advance(reduce_relay::IDLED + std::chrono::seconds(1));
+        stopwatch.advance(reduce_relay::IDLED + std::chrono::seconds(1));
 
         BEAST_EXPECTS(
             !slots.updateConsideredValidator(validator, peerID),
@@ -591,8 +600,10 @@ vp_enhanced_squelch_enable=0
     testUpdateConsideredValidator_selectQualifyingValidator()
     {
         testcase("testUpdateConsideredValidator_selectQualifyingValidator");
-        reduce_relay::Slots<ManualClock> slots(
-            env_.app().logs(), noop_handler, env_.app().config());
+
+        TestStopwatch stopwatch;
+        reduce_relay::Slots slots(
+            env_.app().logs(), noop_handler, env_.app().config(), stopwatch);
 
         // insert some random validator key
         auto const validator = randomKeyPair(KeyType::ed25519).first;
@@ -612,7 +623,7 @@ vp_enhanced_squelch_enable=0
                 !slots.updateConsideredValidator(validator2, peerID),
                 "validator was selected before reaching message threshold");
 
-            ManualClock::advance(reduce_relay::IDLED - std::chrono::seconds(1));
+            stopwatch.advance(reduce_relay::IDLED - std::chrono::seconds(1));
         }
         // as long as the peer criteria is not met, the validator most not be
         // selected
@@ -627,7 +638,7 @@ vp_enhanced_squelch_enable=0
                 !slots.updateConsideredValidator(validator2, i),
                 "validator was selected before reaching enough peers");
 
-            ManualClock::advance(reduce_relay::IDLED - std::chrono::seconds(1));
+            stopwatch.advance(reduce_relay::IDLED - std::chrono::seconds(1));
         }
 
         auto const consideredValidator =
@@ -651,8 +662,9 @@ vp_enhanced_squelch_enable=0
     {
         testcase("cleanConsideredValidators_deleteIdleValidator");
 
-        reduce_relay::Slots<ManualClock> slots(
-            env_.app().logs(), noop_handler, env_.app().config());
+        TestStopwatch stopwatch;
+        reduce_relay::Slots slots(
+            env_.app().logs(), noop_handler, env_.app().config(), stopwatch);
 
         // insert some random validator key
         auto const lateValidator = randomKeyPair(KeyType::ed25519).first;
@@ -668,7 +680,7 @@ vp_enhanced_squelch_enable=0
             "new validator was not added for consideration");
 
         // simulate a validator idling
-        ManualClock::advance(reduce_relay::IDLED + std::chrono::seconds(1));
+        stopwatch.advance(reduce_relay::IDLED + std::chrono::seconds(1));
         BEAST_EXPECTS(
             !slots.updateConsideredValidator(validator, peerID),
             "validator was selected with insufficient number of peers");
@@ -693,7 +705,7 @@ private:
      * with random validator messages*/
     std::vector<PublicKey>
     fillUntrustedSlots(
-        reduce_relay::Slots<ManualClock>& slots,
+        reduce_relay::Slots& slots,
         int64_t maxSlots = reduce_relay::MAX_UNTRUSTED_SLOTS)
     {
         std::vector<PublicKey> keys;
@@ -715,18 +727,16 @@ private:
         return keys;
     }
 
-    std::unordered_map<Peer::id_t, reduce_relay::Slot<ManualClock>::PeerInfo>
+    std::unordered_map<Peer::id_t, reduce_relay::Slot::PeerInfo>
     getUntrustedSlotPeers(
         PublicKey const& validator,
-        reduce_relay::Slots<ManualClock> const& slots)
+        reduce_relay::Slots const& slots)
     {
         auto const& it = slots.untrusted_slots_.find(validator);
         if (it == slots.untrusted_slots_.end())
             return {};
 
-        auto r = std::unordered_map<
-            Peer::id_t,
-            reduce_relay::Slot<ManualClock>::PeerInfo>();
+        auto r = std::unordered_map<Peer::id_t, reduce_relay::Slot::PeerInfo>();
 
         for (auto const& [id, info] : it->second.peers_)
             r.emplace(std::make_pair(id, info));
