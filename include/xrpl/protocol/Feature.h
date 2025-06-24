@@ -57,9 +57,9 @@
  *
  * 5) A feature marked as Obsolete can mean either:
  *    1) It is in the ledger (marked as Supported::yes) and it is on its way to
- * become Retired
+ *      become Retired
  *    2) The feature is not in the ledger (has always been marked as
- * Supported::no) and the code to support it has been removed
+ *      Supported::no) and the code to support it has been removed
  *
  * When a feature has been enabled for several years, the conditional code
  * may be removed, and the feature "retired". To retire a feature:
