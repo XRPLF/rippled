@@ -254,7 +254,7 @@ FeatureCollections::registerFeature(
 {
     check(!readOnly, "Attempting to register a feature after startup.");
     check(
-        support == Supported::yes || vote == VoteBehavior::DefaultNo,
+        support == Supported::yes || vote != VoteBehavior::DefaultYes,
         "Invalid feature parameters. Must be supported to be up-voted.");
     Feature const* i = getByName(name);
     if (!i)
@@ -268,7 +268,7 @@ FeatureCollections::registerFeature(
         features.emplace_back(name, f);
 
         auto const getAmendmentSupport = [=]() {
-            if (vote == VoteBehavior::Obsolete)
+            if (vote == VoteBehavior::Obsolete && support == Supported::yes)
                 return AmendmentSupport::Retired;
             return support == Supported::yes ? AmendmentSupport::Supported
                                              : AmendmentSupport::Unsupported;
