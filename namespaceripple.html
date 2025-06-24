@@ -5484,10 +5484,6 @@ requires (T::ConsequencesFactory == <a class="el" href="classripple_1_1Transacto
 <tr class="memitem:abe13b230c8e49e3dc65f75709923abdb"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#abe13b230c8e49e3dc65f75709923abdb">insertNFTokenOfferID</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> &amp;response, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STTx.html">STTx</a> const &gt; const &amp;transaction, <a class="el" href="classripple_1_1TxMeta.html">TxMeta</a> const &amp;transactionMeta)</td></tr>
 <tr class="separator:abe13b230c8e49e3dc65f75709923abdb"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr><td colspan="2"><div class="groupHeader"></div></td></tr>
-<tr class="memitem:a3fb584dcba11355912308712da101d7d"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a3fb584dcba11355912308712da101d7d">insertNFTSyntheticInJson</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> &amp;, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STTx.html">STTx</a> const &gt; const &amp;, <a class="el" href="classripple_1_1TxMeta.html">TxMeta</a> const &amp;)</td></tr>
-<tr class="memdesc:a3fb584dcba11355912308712da101d7d"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds common synthetic fields to transaction-related JSON responses.  <a href="namespaceripple.html#a3fb584dcba11355912308712da101d7d">More...</a><br /></td></tr>
-<tr class="separator:a3fb584dcba11355912308712da101d7d"><td class="memSeparator" colspan="2">&#160;</td></tr>
-<tr><td colspan="2"><div class="groupHeader"></div></td></tr>
 <tr class="memitem:a798e187ba7443d8f951b810a12d50976"><td class="memItemLeft" align="right" valign="top"><a class="elRef" href="http://en.cppreference.com/w/cpp/utility/optional.html">std::optional</a>&lt; <a class="el" href="namespaceripple.html#a9de744cfdefe1132969eb982e57e4dde">KeyType</a> &gt;&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple.html#a798e187ba7443d8f951b810a12d50976">publicKeyType</a> (<a class="el" href="classripple_1_1Slice.html">Slice</a> const &amp;slice)</td></tr>
 <tr class="memdesc:a798e187ba7443d8f951b810a12d50976"><td class="mdescLeft">&#160;</td><td class="mdescRight">Returns the type of public key.  <a href="namespaceripple.html#a798e187ba7443d8f951b810a12d50976">More...</a><br /></td></tr>
 <tr class="separator:a798e187ba7443d8f951b810a12d50976"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -17189,44 +17185,6 @@ template&lt;class Stream &gt; </div>
 </div><div class="memdoc">
 
 <p class="definition">Definition at line <a class="el" href="NFTokenOfferID_8cpp_source.html#l00072">72</a> of file <a class="el" href="NFTokenOfferID_8cpp_source.html">NFTokenOfferID.cpp</a>.</p>
-
-</div>
-</div>
-<a id="a3fb584dcba11355912308712da101d7d" name="a3fb584dcba11355912308712da101d7d"></a>
-<h2 class="memtitle"><span class="permalink"><a href="#a3fb584dcba11355912308712da101d7d">&#9670;&#160;</a></span>insertNFTSyntheticInJson()</h2>
-
-<div class="memitem">
-<div class="memproto">
-      <table class="memname">
-        <tr>
-          <td class="memname">void ripple::insertNFTSyntheticInJson </td>
-          <td>(</td>
-          <td class="paramtype"><a class="el" href="classJson_1_1Value.html">Json::Value</a> &amp;&#160;</td>
-          <td class="paramname"><em>response</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STTx.html">STTx</a> const &gt; const &amp;&#160;</td>
-          <td class="paramname"><em>transaction</em>, </td>
-        </tr>
-        <tr>
-          <td class="paramkey"></td>
-          <td></td>
-          <td class="paramtype"><a class="el" href="classripple_1_1TxMeta.html">TxMeta</a> const &amp;&#160;</td>
-          <td class="paramname"><em>transactionMeta</em>&#160;</td>
-        </tr>
-        <tr>
-          <td></td>
-          <td>)</td>
-          <td></td><td></td>
-        </tr>
-      </table>
-</div><div class="memdoc">
-
-<p>Adds common synthetic fields to transaction-related JSON responses. </p>
-
-<p class="definition">Definition at line <a class="el" href="NFTSyntheticSerializer_8cpp_source.html#l00033">33</a> of file <a class="el" href="NFTSyntheticSerializer_8cpp_source.html">NFTSyntheticSerializer.cpp</a>.</p>
 
 </div>
 </div>
@@ -31486,7 +31444,7 @@ template&lt;class T , class  = std::enable_if_t&lt;        std::is_same&lt;T, ch
 </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l02289">2289</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l02290">2290</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
 
 </div>
 </div>
@@ -31570,7 +31528,7 @@ template&lt;class T , class  = std::enable_if_t&lt;        std::is_same&lt;T, ch
       </table>
 </div><div class="memdoc">
 
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l04838">4838</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l04840">4840</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
 
 </div>
 </div>
@@ -55035,7 +54993,7 @@ template&lt;class Dest , class Src &gt; </div>
 <b>Initial value:</b><div class="fragment"><div class="line">{</div>
 <div class="line">    {<span class="stringliteral">&quot;disconnected&quot;</span>, <span class="stringliteral">&quot;connected&quot;</span>, <span class="stringliteral">&quot;syncing&quot;</span>, <span class="stringliteral">&quot;tracking&quot;</span>, <span class="stringliteral">&quot;full&quot;</span>}}</div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l00870">870</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l00871">871</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
 
 </div>
 </div>
@@ -55065,7 +55023,7 @@ template&lt;class Dest , class Src &gt; </div>
 <div class="ttc" id="anamespaceripple_html_a614d8681c8dff84ac2257939751987c5"><div class="ttname"><a href="namespaceripple.html#a614d8681c8dff84ac2257939751987c5">ripple::calcAccountID</a></div><div class="ttdeci">AccountID calcAccountID(PublicKey const &amp;pk)</div><div class="ttdef"><b>Definition:</b> <a href="AccountID_8cpp_source.html#l00168">AccountID.cpp:168</a></div></div>
 <div class="ttc" id="anamespaceripple_html_adb9531b2a54f33b8227d9b029be9439b"><div class="ttname"><a href="namespaceripple.html#adb9531b2a54f33b8227d9b029be9439b">ripple::generateSeed</a></div><div class="ttdeci">Seed generateSeed(std::string const &amp;passPhrase)</div><div class="ttdoc">Generate a seed deterministically.</div><div class="ttdef"><b>Definition:</b> <a href="Seed_8cpp_source.html#l00076">Seed.cpp:76</a></div></div>
 </div><!-- fragment -->
-<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l00883">883</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
+<p class="definition">Definition at line <a class="el" href="NetworkOPs_8cpp_source.html#l00884">884</a> of file <a class="el" href="NetworkOPs_8cpp_source.html">NetworkOPs.cpp</a>.</p>
 
 </div>
 </div>

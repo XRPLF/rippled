@@ -379,6 +379,10 @@ Functions</h2></td></tr>
 <tr class="memitem:a711d9d7325b0ccd758453fcbea4c524f"><td class="memItemLeft" align="right" valign="top"><a class="el" href="classJson_1_1Value.html">Json::Value</a>&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a711d9d7325b0ccd758453fcbea4c524f">not_validator_error</a> ()</td></tr>
 <tr class="separator:a711d9d7325b0ccd758453fcbea4c524f"><td class="memSeparator" colspan="2">&#160;</td></tr>
 <tr><td colspan="2"><div class="groupHeader"></div></td></tr>
+<tr class="memitem:a474e0d26afe286dfc2bddf76f95e1591"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#a474e0d26afe286dfc2bddf76f95e1591">insertNFTSyntheticInJson</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> &amp;, <a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STTx.html">STTx</a> const &gt; const &amp;, <a class="el" href="classripple_1_1TxMeta.html">TxMeta</a> const &amp;)</td></tr>
+<tr class="memdesc:a474e0d26afe286dfc2bddf76f95e1591"><td class="mdescLeft">&#160;</td><td class="mdescRight">Adds common synthetic fields to transaction-related JSON responses.  <a href="namespaceripple_1_1RPC.html#a474e0d26afe286dfc2bddf76f95e1591">More...</a><br /></td></tr>
+<tr class="separator:a474e0d26afe286dfc2bddf76f95e1591"><td class="memSeparator" colspan="2">&#160;</td></tr>
+<tr><td colspan="2"><div class="groupHeader"></div></td></tr>
 <tr class="memitem:abf346555d1927183974ae3feef4a25ec"><td class="memItemLeft" align="right" valign="top">void&#160;</td><td class="memItemRight" valign="bottom"><a class="el" href="namespaceripple_1_1RPC.html#abf346555d1927183974ae3feef4a25ec">insertDeliverMax</a> (<a class="el" href="classJson_1_1Value.html">Json::Value</a> &amp;tx_json, <a class="el" href="namespaceripple.html#a2ce3074a39ea65126b82fc59baf43126">TxType</a> txnType, unsigned int <a class="el" href="namespaceripple_1_1RPC.html#a47dbdaa21d9c40b369424e671ccd7e20">apiVersion</a>)</td></tr>
 <tr class="memdesc:abf346555d1927183974ae3feef4a25ec"><td class="mdescLeft">&#160;</td><td class="mdescRight">Copy <code>Amount</code> field to <code>DeliverMax</code> field in transaction output JSON.  <a href="namespaceripple_1_1RPC.html#abf346555d1927183974ae3feef4a25ec">More...</a><br /></td></tr>
 <tr class="separator:abf346555d1927183974ae3feef4a25ec"><td class="memSeparator" colspan="2">&#160;</td></tr>
@@ -1100,6 +1104,44 @@ template&lt;class JsonValue &gt; </div>
 <p>Returns http status that corresponds to the error code. </p>
 
 <p class="definition">Definition at line <a class="el" href="ErrorCodes_8cpp_source.html#l00212">212</a> of file <a class="el" href="ErrorCodes_8cpp_source.html">ErrorCodes.cpp</a>.</p>
+
+</div>
+</div>
+<a id="a474e0d26afe286dfc2bddf76f95e1591" name="a474e0d26afe286dfc2bddf76f95e1591"></a>
+<h2 class="memtitle"><span class="permalink"><a href="#a474e0d26afe286dfc2bddf76f95e1591">&#9670;&#160;</a></span>insertNFTSyntheticInJson()</h2>
+
+<div class="memitem">
+<div class="memproto">
+      <table class="memname">
+        <tr>
+          <td class="memname">void ripple::RPC::insertNFTSyntheticInJson </td>
+          <td>(</td>
+          <td class="paramtype"><a class="el" href="classJson_1_1Value.html">Json::Value</a> &amp;&#160;</td>
+          <td class="paramname"><em>response</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="elRef" href="http://en.cppreference.com/w/cpp/memory/shared_ptr.html">std::shared_ptr</a>&lt; <a class="el" href="classripple_1_1STTx.html">STTx</a> const &gt; const &amp;&#160;</td>
+          <td class="paramname"><em>transaction</em>, </td>
+        </tr>
+        <tr>
+          <td class="paramkey"></td>
+          <td></td>
+          <td class="paramtype"><a class="el" href="classripple_1_1TxMeta.html">TxMeta</a> const &amp;&#160;</td>
+          <td class="paramname"><em>transactionMeta</em>&#160;</td>
+        </tr>
+        <tr>
+          <td></td>
+          <td>)</td>
+          <td></td><td></td>
+        </tr>
+      </table>
+</div><div class="memdoc">
+
+<p>Adds common synthetic fields to transaction-related JSON responses. </p>
+
+<p class="definition">Definition at line <a class="el" href="NFTSyntheticSerializer_8cpp_source.html#l00034">34</a> of file <a class="el" href="NFTSyntheticSerializer_8cpp_source.html">NFTSyntheticSerializer.cpp</a>.</p>
 
 </div>
 </div>

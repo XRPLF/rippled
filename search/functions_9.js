@@ -103,7 +103,7 @@ var searchData=
   ['insertmptokenissuanceid_100',['insertMPTokenIssuanceID',['../namespaceripple_1_1RPC.html#a6f5aad140d4277d0bd3fa96630f802a1',1,'ripple::RPC']]],
   ['insertnftokenid_101',['insertNFTokenID',['../namespaceripple.html#adfc42b7f77f900567360bde5facaf6af',1,'ripple']]],
   ['insertnftokenofferid_102',['insertNFTokenOfferID',['../namespaceripple.html#abe13b230c8e49e3dc65f75709923abdb',1,'ripple']]],
-  ['insertnftsyntheticinjson_103',['insertNFTSyntheticInJson',['../namespaceripple.html#a3fb584dcba11355912308712da101d7d',1,'ripple']]],
+  ['insertnftsyntheticinjson_103',['insertNFTSyntheticInJson',['../namespaceripple_1_1RPC.html#a474e0d26afe286dfc2bddf76f95e1591',1,'ripple::RPC']]],
   ['insertpathrequest_104',['insertPathRequest',['../classripple_1_1PathRequests.html#a24fd90cae36b8e167747c784fe1edee1',1,'ripple::PathRequests']]],
   ['insertpeerreservation_105',['insertPeerReservation',['../namespaceripple.html#a503791d27b38d9bdb823b58781ef168b',1,'ripple']]],
   ['insertqualityintojtx_106',['insertQualityIntoJtx',['../namespaceripple_1_1test_1_1jtx.html#a9e4522af358aa969650cf4012200b6da',1,'ripple::test::jtx']]],
