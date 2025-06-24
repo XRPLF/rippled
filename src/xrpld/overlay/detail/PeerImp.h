@@ -116,7 +116,7 @@ private:
     clock_type::time_point lastPingTime_;
     clock_type::time_point const creationTime_;
 
-    reduce_relay::Squelch<UptimeClock> squelch_;
+    reduce_relay::Squelch squelch_;
 
     // Notes on thread locking:
     //
@@ -680,7 +680,7 @@ PeerImp::PeerImp(
     , publicKey_(publicKey)
     , lastPingTime_(clock_type::now())
     , creationTime_(clock_type::now())
-    , squelch_(app_.journal("Squelch"))
+    , squelch_(app_.journal("Squelch"), stopwatch())
     , usage_(usage)
     , fee_{Resource::feeTrivialPeer}
     , slot_(std::move(slot))

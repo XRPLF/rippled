@@ -29,6 +29,7 @@
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/overlay/Cluster.h>
+#include <xrpld/overlay/ReduceRelayCommon.h>
 #include <xrpld/overlay/detail/PeerImp.h>
 #include <xrpld/overlay/detail/Tuning.h>
 #include <xrpld/perflog/PerfLog.h>
@@ -95,7 +96,7 @@ PeerImp::PeerImp(
     , publicKey_(publicKey)
     , lastPingTime_(clock_type::now())
     , creationTime_(clock_type::now())
-    , squelch_(app_.journal("Squelch"))
+    , squelch_(app_.journal("Squelch"), stopwatch())
     , usage_(consumer)
     , fee_{Resource::feeTrivialPeer, ""}
     , slot_(slot)
