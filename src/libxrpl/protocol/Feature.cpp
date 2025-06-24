@@ -254,8 +254,7 @@ FeatureCollections::registerFeature(
 {
     check(!readOnly, "Attempting to register a feature after startup.");
     check(
-        support == Supported::yes || vote == VoteBehavior::DefaultNo ||
-            vote == VoteBehavior::Obsolete,
+        support == Supported::yes || vote != VoteBehavior::DefaultYes,
         "Invalid feature parameters. Must be supported to be up-voted.");
     Feature const* i = getByName(name);
     if (!i)
