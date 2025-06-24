@@ -21,7 +21,10 @@
 #include <test/jtx/trust.h>
 #include <test/jtx/xchain_bridge.h>
 
+#include <xrpl/basics/base_uint.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
 namespace ripple {
@@ -60,6 +63,51 @@ class MPToken_test : public beast::unit_test::suite
                  .transferFee = 1,
                  .metadata = "test",
                  .err = temMALFORMED});
+
+            if (!features[featureSingleAssetVault])
+            {
+                // tries to set DomainID when SAV is disabled
+                mptAlice.create(
+                    {.maxAmt = 100,
+                     .assetScale = 0,
+                     .metadata = "test",
+                     .flags = tfMPTRequireAuth,
+                     .domainID = uint256(42),
+                     .err = temDISABLED});
+            }
+            else
+            {
+                if (!features[featurePermissionedDomains])
+                {
+                    // tries to set DomainID when PD is disabled
+                    mptAlice.create(
+                        {.maxAmt = 100,
+                         .assetScale = 0,
+                         .metadata = "test",
+                         .flags = tfMPTRequireAuth,
+                         .domainID = uint256(42),
+                         .err = temDISABLED});
+                }
+                else
+                {
+                    // tries to set DomainID when RequireAuth is not set
+                    mptAlice.create(
+                        {.maxAmt = 100,
+                         .assetScale = 0,
+                         .metadata = "test",
+                         .domainID = uint256(42),
+                         .err = temMALFORMED});
+
+                    // tries to set zero DomainID
+                    mptAlice.create(
+                        {.maxAmt = 100,
+                         .assetScale = 0,
+                         .metadata = "test",
+                         .flags = tfMPTRequireAuth,
+                         .domainID = beast::zero,
+                         .err = temMALFORMED});
+                }
+            }
 
             // tries to set a txfee greater than max
             mptAlice.create(
@@ -498,6 +546,59 @@ class MPToken_test : public beast::unit_test::suite
                 {.account = alice,
                  .flags = 0x00000008,
                  .err = temINVALID_FLAG});
+
+            if (!features[featureSingleAssetVault])
+            {
+                // test invalid flags - nothing is being changed
+                mptAlice.set(
+                    {.account = alice,
+                     .flags = 0x00000000,
+                     .err = tecNO_PERMISSION});
+
+                mptAlice.set(
+                    {.account = alice,
+                     .holder = bob,
+                     .flags = 0x00000000,
+                     .err = tecNO_PERMISSION});
+
+                // cannot set DomainID since SAV is not enabled
+                mptAlice.set(
+                    {.account = alice,
+                     .domainID = uint256(42),
+                     .err = temDISABLED});
+            }
+            else
+            {
+                // test invalid flags - nothing is being changed
+                mptAlice.set(
+                    {.account = alice,
+                     .flags = 0x00000000,
+                     .err = temMALFORMED});
+
+                mptAlice.set(
+                    {.account = alice,
+                     .holder = bob,
+                     .flags = 0x00000000,
+                     .err = temMALFORMED});
+
+                if (!features[featurePermissionedDomains])
+                {
+                    // cannot set DomainID since PD is not enabled
+                    mptAlice.set(
+                        {.account = alice,
+                         .domainID = uint256(42),
+                         .err = temDISABLED});
+                }
+                else
+                {
+                    // cannot set DomainID since Holder is set
+                    mptAlice.set(
+                        {.account = alice,
+                         .holder = bob,
+                         .domainID = uint256(42),
+                         .err = temMALFORMED});
+                }
+            }
 
             // set both lock and unlock flags at the same time will fail
             mptAlice.set(
@@ -2297,6 +2398,8 @@ public:
 
         // MPTokenIssuanceCreate
         testCreateValidation(all - featureSingleAssetVault);
+        testCreateValidation(
+            (all | featureSingleAssetVault) - featurePermissionedDomains);
         testCreateValidation(all | featureSingleAssetVault);
         testCreateEnabled(all - featureSingleAssetVault);
         testCreateEnabled(all | featureSingleAssetVault);
@@ -2314,7 +2417,11 @@ public:
         testAuthorizeEnabled(all | featureSingleAssetVault);
 
         // MPTokenIssuanceSet
-        testSetValidation(all);
+        testSetValidation(all - featureSingleAssetVault);
+        testSetValidation(
+            (all | featureSingleAssetVault) - featurePermissionedDomains);
+        testSetValidation(all | featureSingleAssetVault);
+
         testSetEnabled(all - featureSingleAssetVault);
         testSetEnabled(all | featureSingleAssetVault);
 

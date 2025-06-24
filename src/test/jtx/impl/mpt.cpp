@@ -99,6 +99,8 @@ MPTTester::create(MPTCreate const& arg)
         jv[sfMPTokenMetadata] = strHex(*arg.metadata);
     if (arg.maxAmt)
         jv[sfMaximumAmount] = std::to_string(*arg.maxAmt);
+    if (arg.domainID)
+        jv[sfDomainID] = to_string(*arg.domainID);
     if (submit(arg, jv) != tesSUCCESS)
     {
         // Verify issuance doesn't exist
@@ -235,6 +237,8 @@ MPTTester::set(MPTSet const& arg)
         jv[sfHolder] = arg.holder->human();
     if (arg.delegate)
         jv[sfDelegate] = arg.delegate->human();
+    if (arg.domainID)
+        jv[sfDomainID] = to_string(*arg.domainID);
     if (submit(arg, jv) == tesSUCCESS && arg.flags.value_or(0))
     {
         auto require = [&](std::optional<Account> const& holder,
