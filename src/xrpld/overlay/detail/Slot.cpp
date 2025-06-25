@@ -1,7 +1,7 @@
 //------------------------------------------------------------------------------
 /*
     This file is part of rippled: https://github.com/ripple/rippled
-    Copyright (c) 2012, 2013 Ripple Labs Inc.
+    Copyright (c) 2025 Ripple Labs Inc.
 
     Permission to use, copy, modify, and/or distribute this software for any
     purpose  with  or without fee is hereby granted, provided that the above
@@ -134,7 +134,7 @@ Slot::update(
         // If number of remaining peers != maxSelectedPeers_
         // then reset the Counting state and let deleteIdlePeer() handle
         // idled peers.
-        std::unordered_set<id_t> selected;
+        std::unordered_set<Peer::id_t> selected;
         auto const consideredPoolSize = considered_.size();
         while (selected.size() != maxSelectedPeers_ && considered_.size() != 0)
         {
@@ -207,7 +207,7 @@ Slot::update(
 }
 
 std::chrono::seconds
-Slot::getSquelchDuration(std::size_t npeers)
+Slot::getSquelchDuration(std::size_t npeers) const
 {
     using namespace std::chrono;
     auto m = std::max(
@@ -328,14 +328,14 @@ Slots::squelchValidator(PublicKey const& validatorKey, Peer::id_t peerID)
     auto it = peersWithValidators_.find(validatorKey);
     if (it == peersWithValidators_.end())
         peersWithValidators_.emplace(
-            validatorKey, std::unordered_set<id_t>{peerID});
+            validatorKey, std::unordered_set<Peer::id_t>{peerID});
 
     else if (it->second.find(peerID) == it->second.end())
         it->second.insert(peerID);
 }
 
 bool
-Slots::validatorSquelched(PublicKey const& validatorKey)
+Slots::expireAndIsValidatorSquelched(PublicKey const& validatorKey)
 {
     beast::expire(
         peersWithValidators_, reduce_relay::MAX_UNSQUELCH_EXPIRE_DEFAULT);
@@ -345,7 +345,9 @@ Slots::validatorSquelched(PublicKey const& validatorKey)
 }
 
 bool
-Slots::peerSquelched(PublicKey const& validatorKey, Peer::id_t peerID)
+Slots::expireAndIsPeerSquelched(
+    PublicKey const& validatorKey,
+    Peer::id_t peerID)
 {
     beast::expire(
         peersWithValidators_, reduce_relay::MAX_UNSQUELCH_EXPIRE_DEFAULT);
@@ -372,7 +374,7 @@ Slots::addPeerMessage(uint256 const& key, Peer::id_t id)
         {
             JLOG(journal_.trace())
                 << "addPeerMessage: new " << to_string(key) << " " << id;
-            peersWithMessage_.emplace(key, std::unordered_set<id_t>{id});
+            peersWithMessage_.emplace(key, std::unordered_set<Peer::id_t>{id});
             return true;
         }
 
@@ -483,11 +485,11 @@ Slots::updateSlotAndSquelch(
     }
     else
     {
-        auto it = untrusted_slots_.find(validator);
+        auto it = untrustedSlots_.find(validator);
         // If we received a message from a validator that is not
         // selected, and is not squelched, there is nothing to do. It
         // will be squelched later when `updateValidatorSlot` is called.
-        if (it == untrusted_slots_.end())
+        if (it == untrustedSlots_.end())
             return;
 
         it->second.update(validator, id, callback);
@@ -503,7 +505,7 @@ Slots::updateValidatorSlot(
 {
     // We received a message from an already selected validator
     // we can ignore this message
-    if (untrusted_slots_.find(validator) != untrusted_slots_.end())
+    if (untrustedSlots_.find(validator) != untrustedSlots_.end())
         return;
 
     // We received a message from an already squelched validator.
@@ -515,9 +517,9 @@ Slots::updateValidatorSlot(
     //      3. The peer is ignoring our squelch request and we have not sent
     //      the controll message in a while.
     // In all of these cases we can only send them a squelch request again.
-    if (validatorSquelched(validator))
+    if (expireAndIsValidatorSquelched(validator))
     {
-        if (!peerSquelched(validator, id))
+        if (!expireAndIsPeerSquelched(validator, id))
         {
             squelchValidator(validator, id);
             handler_.squelch(
@@ -534,14 +536,14 @@ Slots::updateValidatorSlot(
     // In all of these cases we send a squelch message to all peers.
     // The validator may still  be considered by the selector. However, it
     // will be eventually cleaned and squelched
-    if (untrusted_slots_.size() == MAX_UNTRUSTED_SLOTS)
+    if (untrustedSlots_.size() == MAX_UNTRUSTED_SLOTS)
     {
         handler_.squelchAll(validator, MAX_UNSQUELCH_EXPIRE_DEFAULT.count());
         return;
     }
 
     if (auto const v = updateConsideredValidator(validator, id))
-        untrusted_slots_.emplace(std::make_pair(
+        untrustedSlots_.emplace(std::make_pair(
             *v,
             Slot(
                 handler_,
@@ -563,7 +565,7 @@ Slots::deletePeer(id_t id, bool erase)
     };
 
     deletePeer(slots_);
-    deletePeer(untrusted_slots_);
+    deletePeer(untrustedSlots_);
 }
 
 void
@@ -595,7 +597,7 @@ Slots::deleteIdlePeers()
     };
 
     deleteSlots(slots_);
-    deleteSlots(untrusted_slots_);
+    deleteSlots(untrustedSlots_);
 
     // remove and squelch all validators that the selector deemed unsuitable
     // there might be some good validators in this set that "lapsed".
@@ -626,7 +628,7 @@ Slots::onWrite(beast::PropertyStream::Map& stream) const
 
     {
         beast::PropertyStream::Set set("untrusted", slots);
-        writeSlot(set, untrusted_slots_);
+        writeSlot(set, untrustedSlots_);
     }
 
     {
@@ -634,7 +636,7 @@ Slots::onWrite(beast::PropertyStream::Map& stream) const
 
         auto const now = clock_.now();
 
-        for (auto const& [validator, info] : considered_validators_)
+        for (auto const& [validator, info] : consideredValidators_)
         {
             beast::PropertyStream::Map item(set);
             item["validator"] = toBase58(TokenType::NodePublic, validator);
