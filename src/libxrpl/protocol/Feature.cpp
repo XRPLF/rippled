@@ -453,9 +453,7 @@ featureToName(uint256 const& f)
     [[deprecated("The referenced amendment has been retired")]] \
     [[maybe_unused]]                                            \
     uint256 const retired##name = retireFeature(#name);
-// clang-format on
 
-// clang-format off
 #define XRPL_ABANDON(name)                                        \
     [[deprecated("The referenced amendment has been abandoned")]] \
     [[maybe_unused]]                                              \
