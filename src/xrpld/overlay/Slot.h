@@ -34,19 +34,7 @@
 #include <optional>
 
 namespace ripple {
-// used to make private members of Slots class accessible for testing
-namespace test {
-class enhanced_squelch_test;
-class base_squelch_test;
-class OverlaySim;
-}  // namespace test
-
 namespace reduce_relay {
-
-using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
-using time_point = clock_type::time_point;
-
-class Slots;
 
 /** Peer's State */
 enum class PeerState : uint8_t {
@@ -138,12 +126,40 @@ public:
 class Slot final
 {
     friend class Slots;
-    friend class test::enhanced_squelch_test;
-    friend class test::OverlaySim;
 
     // a callback to report ignored squelches
     using ignored_squelch_callback = std::function<void()>;
+    using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
+    using time_point = clock_type::time_point;
 
+public:
+    /** Data maintained for each peer */
+    struct PeerInfo
+    {
+        PeerState state;            // peer's state
+        std::size_t count;          // message count
+        time_point expire;          // squelch expiration time
+        time_point lastMessage;     // time last message received
+        std::size_t timesSelected;  // number of times the peer was selected
+    };
+
+    /** Get all peers of the slot. This methos is only to be used in
+     * unit-tests.
+     */
+    std::unordered_map<Peer::id_t, PeerInfo> const&
+    getPeers() const
+    {
+        return peers_;
+    }
+
+    /** Get the slots state. */
+    SlotState
+    getState() const
+    {
+        return state_;
+    }
+
+private:
     /** Constructor
      * @param journal Journal for logging
      * @param handler Squelch/Unsquelch implementation
@@ -240,16 +256,6 @@ class Slot final
     void
     onWrite(beast::PropertyStream::Map& stream) const;
 
-    /** Data maintained for each peer */
-    struct PeerInfo
-    {
-        PeerState state;            // peer's state
-        std::size_t count;          // message count
-        time_point expire;          // squelch expiration time
-        time_point lastMessage;     // time last message received
-        std::size_t timesSelected;  // number of times the peer was selected
-    };
-
     std::unordered_map<Peer::id_t, PeerInfo> peers_;  // peer's data
 
     // pool of peers considered as the source of messages
@@ -281,11 +287,11 @@ class Slot final
  * and checks for peers which are disconnected or stopped relaying the
  * messages.
  */
-class Slots final
+class Slots
 {
-    friend test::enhanced_squelch_test;
-    friend class test::base_squelch_test;
-    friend class test::OverlaySim;
+public:
+    using clock_type = beast::abstract_clock<std::chrono::steady_clock>;
+    using time_point = clock_type::time_point;
 
     using messages = beast::aged_unordered_map<
         uint256,
@@ -299,7 +305,6 @@ class Slots final
         hardened_hash<strong_hash>>;
     using slots_map = hash_map<PublicKey, Slot>;
 
-public:
     /**
      * @param logs reference to the logger
      * @param handler Squelch/unsquelch implementation
@@ -433,7 +438,7 @@ public:
     void
     onWrite(beast::PropertyStream::Map& stream) const;
 
-private:
+protected:
     /** Add message/peer if have not seen this message
      * from the peer. A message is aged after IDLED seconds.
      * Return true if added */
