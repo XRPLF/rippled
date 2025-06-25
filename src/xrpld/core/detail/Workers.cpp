@@ -104,7 +104,7 @@ Workers::setNumberOfThreads(int numberOfThreads)
             ++m_pauseCount;
 
             // Pausing a thread counts as one "internal task"
-            m_semaphore.notify();
+            m_semaphore.release();
         }
     }
 
@@ -128,7 +128,7 @@ Workers::stop()
 void
 Workers::addTask()
 {
-    m_semaphore.notify();
+    m_semaphore.release();
 }
 
 int
@@ -213,7 +213,7 @@ Workers::Worker::run()
 
             // Acquire a task or "internal task."
             //
-            m_workers.m_semaphore.wait();
+            m_workers.m_semaphore.acquire();
 
             // See if there's a pause request. This
             // counts as an "internal task."
