@@ -61,6 +61,13 @@
  *    2) The feature is not in the ledger (has always been marked as
  *      Supported::no) and the code to support it has been removed
  *
+ * If we want to discontinue a feature that we've never fully supported and
+ * the feature has never been enabled, we should remove all the related
+ * code, and mark the feature as "abandoned". To do this:
+ *
+ * 1) Open features.macro, move the feature to the abandoned section and
+ *    change the macro to XRPL_ABANDON
+ *
  * When a feature has been enabled for several years, the conditional code
  * may be removed, and the feature "retired". To retire a feature:
  *

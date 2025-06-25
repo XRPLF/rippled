@@ -399,7 +399,7 @@ retireFeature(std::string const& name)
 }
 
 // Abandoned features are not in the ledger and have no code controlled by the
-// feature. They are never supported, and do not need to be voted on.
+// feature. They were never supported, and cannot be voted on.
 uint256
 abandonFeature(std::string const& name)
 {
