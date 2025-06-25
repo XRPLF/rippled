@@ -151,6 +151,18 @@ AMMClawback::applyGuts(Sandbox& sb)
     if (!accountSle)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
+    auto const holdLPtokens = ammLPHolds(sb, *ammSle, holder, j_);
+    if (holdLPtokens == beast::zero)
+        return tecAMM_BALANCE;
+
+    if (sb.rules().enabled(fixAMMClawback))
+    {
+        if (auto const res =
+                VerifyAndAdjustLPTokenBalance(sb, holdLPtokens, ammSle, holder);
+            !res)
+            return res.error();
+    }
+
     auto const expected = ammHolds(
         sb,
         *ammSle,
@@ -167,10 +179,6 @@ AMMClawback::applyGuts(Sandbox& sb)
     STAmount newLPTokenBalance;
     STAmount amountWithdraw;
     std::optional<STAmount> amount2Withdraw;
-
-    auto const holdLPtokens = ammLPHolds(sb, *ammSle, holder, j_);
-    if (holdLPtokens == beast::zero)
-        return tecAMM_BALANCE;
 
     if (!clawAmount)
         // Because we are doing a two-asset withdrawal,
@@ -248,10 +256,11 @@ AMMClawback::equalWithdrawMatchingOneAmount(
     STAmount const& amount)
 {
     auto frac = Number{amount} / amountBalance;
-    auto const amount2Withdraw = amount2Balance * frac;
+    auto amount2Withdraw = amount2Balance * frac;
 
     auto const lpTokensWithdraw =
         toSTAmount(lptAMMBalance.issue(), lptAMMBalance * frac);
+
     if (lpTokensWithdraw > holdLPtokens)
         // if lptoken balance less than what the issuer intended to clawback,
         // clawback all the tokens. Because we are doing a two-asset withdrawal,
@@ -271,6 +280,39 @@ AMMClawback::equalWithdrawMatchingOneAmount(
             WithdrawAll::Yes,
             mPriorBalance,
             ctx_.journal);
+
+    auto const& rules = sb.rules();
+    if (rules.enabled(fixAMMClawback))
+    {
+        auto tokensAdj =
+            getRoundedLPTokens(rules, lptAMMBalance, frac, IsDeposit::No);
+        if (tokensAdj == beast::zero)
+            return {
+                tecAMM_INVALID_TOKENS,
+                STAmount{},
+                STAmount{},
+                std::nullopt};  // LCOV_EXCL_LINE
+
+        frac = adjustFracByTokens(rules, lptAMMBalance, tokensAdj, frac);
+        amount2Withdraw =
+            getRoundedAsset(rules, amount2Balance, frac, IsDeposit::No);
+
+        return AMMWithdraw::withdraw(
+            sb,
+            ammSle,
+            ammAccount,
+            holder,
+            amountBalance,
+            amount,
+            toSTAmount(amount2Balance.issue(), amount2Withdraw),
+            lptAMMBalance,
+            tokensAdj,
+            0,
+            FreezeHandling::fhIGNORE_FREEZE,
+            WithdrawAll::No,
+            mPriorBalance,
+            ctx_.journal);
+    }
 
     // Because we are doing a two-asset withdrawal,
     // tfee is actually not used, so pass tfee as 0.
