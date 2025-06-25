@@ -394,65 +394,6 @@ Slots::addPeerMessage(uint256 const& key, Peer::id_t id)
     return true;
 }
 
-std::optional<PublicKey>
-Slots::updateConsideredValidator(PublicKey const& validator, Peer::id_t peer)
-{
-    auto const now = clock_.now();
-
-    auto it = considered_validators_.find(validator);
-    if (it == considered_validators_.end())
-    {
-        considered_validators_.emplace(std::make_pair(
-            validator,
-            ValidatorInfo{
-                .count = 1,
-                .lastMessage = now,
-                .peers = {peer},
-            }));
-
-        return {};
-    }
-
-    // the validator idled. Don't update it, it will be cleaned later
-    if (now - it->second.lastMessage > IDLED)
-        return {};
-
-    it->second.peers.insert(peer);
-
-    it->second.lastMessage = now;
-    ++it->second.count;
-
-    if (it->second.count < MAX_MESSAGE_THRESHOLD ||
-        it->second.peers.size() < reduce_relay::MAX_SELECTED_PEERS)
-        return {};
-
-    auto const key = it->first;
-    considered_validators_.erase(it);
-
-    return key;
-}
-
-std::vector<PublicKey>
-Slots::cleanConsideredValidators()
-{
-    auto const now = clock_.now();
-
-    std::vector<PublicKey> keys;
-    for (auto it = considered_validators_.begin();
-         it != considered_validators_.end();)
-    {
-        if (now - it->second.lastMessage > IDLED)
-        {
-            keys.push_back(it->first);
-            it = considered_validators_.erase(it);
-        }
-        else
-            ++it;
-    }
-
-    return keys;
-}
-
 void
 Slots::updateSlotAndSquelch(
     uint256 const& key,
@@ -556,6 +497,44 @@ Slots::updateValidatorSlot(
     // removed and squelched.
 }
 
+std::optional<PublicKey>
+Slots::updateConsideredValidator(PublicKey const& validator, Peer::id_t peer)
+{
+    auto const now = clock_.now();
+
+    auto it = consideredValidators_.find(validator);
+    if (it == consideredValidators_.end())
+    {
+        consideredValidators_.emplace(std::make_pair(
+            validator,
+            ValidatorInfo{
+                .count = 1,
+                .lastMessage = now,
+                .peers = {peer},
+            }));
+
+        return {};
+    }
+
+    // the validator idled. Don't update it, it will be cleaned later
+    if (now - it->second.lastMessage > IDLED)
+        return {};
+
+    it->second.peers.insert(peer);
+
+    it->second.lastMessage = now;
+    ++it->second.count;
+
+    if (it->second.count < MAX_MESSAGE_THRESHOLD ||
+        it->second.peers.size() < reduce_relay::MAX_SELECTED_PEERS)
+        return {};
+
+    auto const key = it->first;
+    consideredValidators_.erase(it);
+
+    return key;
+}
+
 void
 Slots::deletePeer(id_t id, bool erase)
 {
@@ -604,6 +583,27 @@ Slots::deleteIdlePeers()
     // However, since these are untrusted validators we're not concerned
     for (auto const& validator : cleanConsideredValidators())
         handler_.squelchAll(validator, MAX_UNSQUELCH_EXPIRE_DEFAULT.count());
+}
+
+std::vector<PublicKey>
+Slots::cleanConsideredValidators()
+{
+    auto const now = clock_.now();
+
+    std::vector<PublicKey> keys;
+    for (auto it = consideredValidators_.begin();
+         it != consideredValidators_.end();)
+    {
+        if (now - it->second.lastMessage > IDLED)
+        {
+            keys.push_back(it->first);
+            it = consideredValidators_.erase(it);
+        }
+        else
+            ++it;
+    }
+
+    return keys;
 }
 
 void

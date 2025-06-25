@@ -433,6 +433,27 @@ private:
     std::uint16_t id_ = 0;
 };
 
+class BaseSquelchingTestSlots : public reduce_relay::Slots
+{
+    using Slots = reduce_relay::Slots;
+
+public:
+    BaseSquelchingTestSlots(
+        Logs& logs,
+        reduce_relay::SquelchHandler& handler,
+        Config const& config,
+        reduce_relay::Slots::clock_type& clock)
+        : Slots(logs, handler, config, clock)
+    {
+    }
+
+    Slots::slots_map const&
+    getSlots() const
+    {
+        return slots_;
+    }
+};
+
 class PeerSim : public PeerPartial, public std::enable_shared_from_this<PeerSim>
 {
 public:
@@ -514,11 +535,11 @@ public:
     std::uint16_t
     inState(PublicKey const& validator, reduce_relay::PeerState state)
     {
-        auto const& it = slots_.slots_.find(validator);
-        if (it != slots_.slots_.end())
+        auto const& it = slots_.getSlots().find(validator);
+        if (it != slots_.getSlots().end())
             return std::count_if(
-                it->second.peers_.begin(),
-                it->second.peers_.end(),
+                it->second.getPeers().begin(),
+                it->second.getPeers().end(),
                 [&](auto const& it) { return (it.second.state == state); });
 
         return 0;
@@ -613,9 +634,9 @@ public:
     bool
     isCountingState(PublicKey const& validator)
     {
-        auto const& it = slots_.slots_.find(validator);
-        if (it != slots_.slots_.end())
-            return it->second.state_ == reduce_relay::SlotState::Counting;
+        auto const& it = slots_.getSlots().find(validator);
+        if (it != slots_.getSlots().end())
+            return it->second.getState() == reduce_relay::SlotState::Counting;
 
         return false;
     }
@@ -623,12 +644,12 @@ public:
     std::set<id_t>
     getSelected(PublicKey const& validator)
     {
-        auto const& it = slots_.slots_.find(validator);
-        if (it == slots_.slots_.end())
+        auto const& it = slots_.getSlots().find(validator);
+        if (it == slots_.getSlots().end())
             return {};
 
         std::set<id_t> r;
-        for (auto const& [id, info] : it->second.peers_)
+        for (auto const& [id, info] : it->second.getPeers())
             if (info.state == reduce_relay::PeerState::Selected)
                 r.insert(id);
 
@@ -653,12 +674,12 @@ public:
     std::unordered_map<id_t, reduce_relay::Slot::PeerInfo>
     getPeers(PublicKey const& validator)
     {
-        auto const& it = slots_.slots_.find(validator);
-        if (it == slots_.slots_.end())
+        auto const& it = slots_.getSlots().find(validator);
+        if (it == slots_.getSlots().end())
             return {};
 
         auto r = std::unordered_map<id_t, reduce_relay::Slot::PeerInfo>();
-        for (auto const& [id, info] : it->second.peers_)
+        for (auto const& [id, info] : it->second.getPeers())
             r.emplace(std::make_pair(id, info));
 
         return r;
@@ -698,7 +719,7 @@ private:
     UnsquelchCB unsquelch_;
     Peers peers_;
     Peers peersCache_;
-    reduce_relay::Slots slots_;
+    BaseSquelchingTestSlots slots_;
     Logs& logs_;
 };
 
