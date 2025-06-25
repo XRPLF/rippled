@@ -24,6 +24,7 @@
 #include <test/jtx/xchain_bridge.h>
 
 #include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/TER.h>
 #include <xrpl/protocol/TxFlags.h>
@@ -904,7 +905,7 @@ class MPToken_test : public beast::unit_test::suite
             mptAlice.set({.domainID = domainId1});
             BEAST_EXPECT(mptAlice.checkDomainID(domainId1));
 
-            // reset "domain not set" to domain2
+            // reset domain1 to domain2
             mptAlice.set({.domainID = domainId2});
             BEAST_EXPECT(mptAlice.checkDomainID(domainId2));
 
@@ -1144,6 +1145,109 @@ class MPToken_test : public beast::unit_test::suite
             // bob fails to send back to alice because he is no longer
             // authorize to move his funds!
             mptAlice.pay(bob, alice, 100, tecNO_AUTH);
+        }
+
+        if (features[featureSingleAssetVault] &&
+            features[featurePermissionedDomains])
+        {
+            // If RequireAuth is enabled and domain is a match, payment succeeds
+            {
+                Env env{*this, features};
+                std::string const credType = "credential";
+                Account const credIssuer1{"credIssuer1"};
+                env.fund(XRP(1000), credIssuer1, bob);
+
+                auto const domainId1 = [&]() {
+                    pdomain::Credentials const credentials1{
+                        {.issuer = credIssuer1, .credType = credType}};
+
+                    env(pdomain::setTx(credIssuer1, credentials1));
+                    return [&]() {
+                        auto tx = env.tx()->getJson(JsonOptions::none);
+                        return pdomain::getNewDomain(env.meta());
+                    }();
+                }();
+                // bob is authorized via domain
+                env(credentials::create(bob, credIssuer1, credType));
+                env(credentials::accept(bob, credIssuer1, credType));
+                env.close();
+
+                MPTTester mptAlice(env, alice, {});
+                env.close();
+
+                mptAlice.create({
+                    .ownerCount = 1,
+                    .holderCount = 0,
+                    .flags = tfMPTRequireAuth | tfMPTCanTransfer,
+                    .domainID = domainId1,
+                });
+
+                mptAlice.authorize({.account = bob});
+                env.close();
+
+                // bob is authorized via domain
+                mptAlice.pay(alice, bob, 100);
+                mptAlice.set({.domainID = beast::zero});
+
+                // bob is no longer authorized
+                mptAlice.pay(alice, bob, 100, tecNO_AUTH);
+            }
+
+            {
+                Env env{*this, features};
+                std::string const credType = "credential";
+                Account const credIssuer1{"credIssuer1"};
+                env.fund(XRP(1000), credIssuer1, bob);
+
+                auto const domainId1 = [&]() {
+                    pdomain::Credentials const credentials1{
+                        {.issuer = credIssuer1, .credType = credType}};
+
+                    env(pdomain::setTx(credIssuer1, credentials1));
+                    return [&]() {
+                        auto tx = env.tx()->getJson(JsonOptions::none);
+                        return pdomain::getNewDomain(env.meta());
+                    }();
+                }();
+                // bob is authorized via domain
+                env(credentials::create(bob, credIssuer1, credType));
+                env(credentials::accept(bob, credIssuer1, credType));
+                env.close();
+
+                MPTTester mptAlice(env, alice, {});
+                env.close();
+
+                mptAlice.create({
+                    .ownerCount = 1,
+                    .holderCount = 0,
+                    .flags = tfMPTRequireAuth | tfMPTCanTransfer,
+                    .domainID = domainId1,
+                });
+
+                // bob creates an empty MPToken
+                mptAlice.authorize({.account = bob});
+
+                // alice authorizes bob to hold funds
+                mptAlice.authorize({.account = alice, .holder = bob});
+
+                // alice sends 100 MPT to bob
+                mptAlice.pay(alice, bob, 100);
+
+                // alice UNAUTHORIZES bob
+                mptAlice.authorize(
+                    {.account = alice,
+                     .holder = bob,
+                     .flags = tfMPTUnauthorize});
+
+                // bob is still authorized, via domain
+                mptAlice.pay(bob, alice, 10);
+
+                mptAlice.set({.domainID = beast::zero});
+
+                // bob fails to send back to alice because he is no longer
+                // authorize to move his funds!
+                mptAlice.pay(bob, alice, 10, tecNO_AUTH);
+            }
         }
 
         // Non-issuer cannot send to each other if MPTCanTransfer isn't set
@@ -1597,10 +1701,8 @@ class MPToken_test : public beast::unit_test::suite
     }
 
     void
-    testDepositPreauth()
+    testDepositPreauth(FeatureBitset features)
     {
-        testcase("DepositPreauth");
-
         using namespace test::jtx;
         Account const alice("alice");  // issuer
         Account const bob("bob");      // holder
@@ -1609,8 +1711,11 @@ class MPToken_test : public beast::unit_test::suite
 
         char const credType[] = "abcde";
 
+        if (features[featureCredentials])
         {
-            Env env(*this);
+            testcase("DepositPreauth");
+
+            Env env(*this, features);
 
             env.fund(XRP(50000), diana, dpIssuer);
             env.close();
@@ -1683,9 +1788,11 @@ class MPToken_test : public beast::unit_test::suite
             env.close();
         }
 
-        testcase("DepositPreauth disabled featureCredentials");
+        if (!features[featureCredentials])
         {
-            Env env(*this, supported_amendments() - featureCredentials);
+            testcase("DepositPreauth disabled featureCredentials");
+
+            Env env(*this, features);
 
             std::string const credIdx =
                 "D007AE4B6E1274B4AF872588267B810C2F82716726351D1C7D38D3E5499FC6"
@@ -2586,8 +2693,9 @@ public:
         testClawback(all);
 
         // Test Direct Payment
-        testPayment(all);
-        testDepositPreauth();
+        testPayment(all | featureSingleAssetVault);
+        testDepositPreauth(all);
+        testDepositPreauth(all - featureCredentials);
 
         // Test MPT Amount is invalid in Tx, which don't support MPT
         testMPTInvalidInTx(all);
