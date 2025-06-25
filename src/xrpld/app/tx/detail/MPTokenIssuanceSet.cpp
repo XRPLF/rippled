@@ -21,6 +21,7 @@
 #include <xrpld/app/tx/detail/MPTokenIssuanceSet.h>
 
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/TxFlags.h>
 
 namespace ripple {
@@ -112,8 +113,13 @@ MPTokenIssuanceSet::preclaim(PreclaimContext const& ctx)
     if (!sleMptIssuance)
         return tecOBJECT_NOT_FOUND;
 
-    // if the mpt has disabled locking
-    if (!((*sleMptIssuance)[sfFlags] & lsfMPTCanLock))
+    bool const lockingEnabled = sleMptIssuance->isFlag(lsfMPTCanLock);
+    if (!ctx.view.rules().enabled(featureSingleAssetVault))
+    {
+        if (!lockingEnabled)
+            return tecNO_PERMISSION;
+    }
+    else if (ctx.tx.getFlags() != 0 && !lockingEnabled)
         return tecNO_PERMISSION;
 
     // ensure it is issued by the tx submitter

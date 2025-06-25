@@ -167,6 +167,9 @@ public:
     set(MPTSet const& set = {});
 
     [[nodiscard]] bool
+    checkDomainID(std::optional<uint256> expected) const;
+
+    [[nodiscard]] bool
     checkMPTokenAmount(Account const& holder, std::int64_t expectedAmount)
         const;
 

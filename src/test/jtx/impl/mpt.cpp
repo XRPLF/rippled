@@ -19,7 +19,10 @@
 
 #include <test/jtx/mpt.h>
 
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/jss.h>
+
+#include <optional>
 
 namespace ripple {
 namespace test {
@@ -274,6 +277,16 @@ MPTTester::forObject(
     if (auto const sle = env_.le(key))
         return cb(sle);
     return false;
+}
+
+[[nodiscard]] bool
+MPTTester::checkDomainID(std::optional<uint256> expected) const
+{
+    return forObject([&](SLEP const& sle) -> bool {
+        if (sle->isFieldPresent(sfDomainID))
+            return expected == sle->getFieldH256(sfDomainID);
+        return (!expected.has_value());
+    });
 }
 
 [[nodiscard]] bool
