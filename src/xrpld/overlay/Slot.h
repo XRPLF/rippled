@@ -149,6 +149,8 @@ class Slot final
      * @param handler Squelch/Unsquelch implementation
      * @param maxSelectedPeers the maximum number of peers to be selected as
      * validator message source
+     * @param istrusted indicate if the slot is for a trusted validator
+     * @param clock a reference to a steady clock
      */
     Slot(
         SquelchHandler const& handler,
@@ -225,7 +227,7 @@ class Slot final
      * @param npeers number of peers that can be squelched in the Slot
      */
     std::chrono::seconds
-    getSquelchDuration(std::size_t npeers);
+    getSquelchDuration(std::size_t npeers) const;
 
     /** Reset counts of peers in Selected or Counting state */
     void
@@ -302,6 +304,7 @@ public:
      * @param logs reference to the logger
      * @param handler Squelch/unsquelch implementation
      * @param config reference to the global config
+     * @param clock a reference to a steady clock
      */
     Slots(
         Logs& logs,
@@ -453,26 +456,27 @@ private:
     std::vector<PublicKey>
     cleanConsideredValidators();
 
-    /** Checks whether a given validator is squelched.
+    /** Expires old validators and checks whether a given validator is
+     * squelched.
      * @param validatorKey Validator public key
      * @return true if a given validator was squelched
      */
     bool
-    validatorSquelched(PublicKey const& validatorKey);
+    expireAndIsValidatorSquelched(PublicKey const& validatorKey);
 
-    /** Checks whether a given peer was recently sent a squelch message for
-     * a given validator.
+    /** Expires old validators and checks whether a given peer was recently
+     * squelched for a given validator.
      * @param validatorKey Validator public key
      * @param peerID Peer id
      * @return true if a given validator was squelched for a given peer
      */
     bool
-    peerSquelched(PublicKey const& validatorKey, Peer::id_t peerID);
+    expireAndIsPeerSquelched(PublicKey const& validatorKey, Peer::id_t peerID);
 
     std::atomic_bool reduceRelayReady_{false};
 
     slots_map slots_;
-    slots_map untrusted_slots_;
+    slots_map untrustedSlots_;
 
     SquelchHandler& handler_;  // squelch/unsquelch handler
     Logs& logs_;
@@ -503,7 +507,7 @@ private:
                                                // message for this validator
     };
 
-    hash_map<PublicKey, ValidatorInfo> considered_validators_;
+    hash_map<PublicKey, ValidatorInfo> consideredValidators_;
 };
 
 }  // namespace reduce_relay
