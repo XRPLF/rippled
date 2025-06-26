@@ -22,7 +22,7 @@ jobs:
           printenv
           gcc --version
           set -x
-          source /etc/os-release
+          . /etc/os-release
           echo "nproc: $(cat /proc/cpuinfo | grep processor | tail -n1)" | tee -a $GITHUB_STEP_SUMMARY
           echo "mem: $(free -m)" | tee -a $GITHUB_STEP_SUMMARY
           echo "Arch: $(uname -m)" | tee -a $GITHUB_STEP_SUMMARY
