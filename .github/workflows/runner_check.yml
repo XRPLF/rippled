@@ -19,6 +19,8 @@ jobs:
         uses: actions/checkout@v4
       - name: check environment
         run: |
+          printenv
+          gcc --version
           set -x
           source /etc/os-release
           echo "nproc: $(cat /proc/cpuinfo | grep processor | tail -n1)" | tee -a $GITHUB_STEP_SUMMARY
