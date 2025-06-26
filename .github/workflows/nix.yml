@@ -7,10 +7,11 @@ jobs:
     strategy:
       matrix:
         ro: [heavy, x-heavy, heavy-arm64, x-heavy-arm64]
-        num: [1, 2, 3, 4, 5]
+        # num: [1, 2, 3, 4, 5]
     runs-on: ${{ matrix.ro }}
-    name: ${{ matrix.ro }} check ${{ matrix.num }}
-    # container: ghcr.io/xrplf/rippled-build-ubuntu:aaf5e3e
+    name: ${{ matrix.ro }} check
+    # name: ${{ matrix.ro }} check ${{ matrix.num }}
+    container: ghcr.io/xrplf/ci/ubuntu-jammy:gcc12
 
     steps:
       - name: checkout
@@ -19,6 +20,8 @@ jobs:
         run: |
           set -x
           source /etc/os-release
+          echo "nproc: $(cat /proc/cpuinfo | grep processor | tail -n1)" | tee -a $GITHUB_STEP_SUMMARY
+          echo "mem: $(free -m)" | tee -a $GITHUB_STEP_SUMMARY
           echo "Arch: $(uname -m)" | tee -a $GITHUB_STEP_SUMMARY
           echo "Version: $VERSION" | tee -a $GITHUB_STEP_SUMMARY
           echo "Docker engine: $(docker --version)" | tee -a $GITHUB_STEP_SUMMARY
