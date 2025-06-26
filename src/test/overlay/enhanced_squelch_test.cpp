@@ -789,7 +789,9 @@ private:
     }
 
     std::unordered_map<Peer::id_t, reduce_relay::Slot::PeerInfo>
-    getUntrustedSlotPeers(PublicKey const& validator, EnhancedSquelchingTestSlots const& slots)
+    getUntrustedSlotPeers(
+        PublicKey const& validator,
+        EnhancedSquelchingTestSlots const& slots)
     {
         auto const& it = slots.getSlots(false).find(validator);
         if (it == slots.getSlots(false).end())
