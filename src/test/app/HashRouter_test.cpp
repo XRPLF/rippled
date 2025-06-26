@@ -375,6 +375,39 @@ class HashRouter_test : public beast::unit_test::suite
         }
     }
 
+    void
+    testFlagsOps()
+    {
+        testcase("Bitwise Operations");
+
+        using HF = HashRouterFlags;
+        using UHF = std::underlying_type_t<HF>;
+
+        HF f1 = HF::BAD;
+        HF f2 = HF::SAVED;
+        HF combined = f1 | f2;
+
+        BEAST_EXPECT(
+            static_cast<UHF>(combined) ==
+            (static_cast<UHF>(f1) | static_cast<UHF>(f2)));
+
+        HF temp = f1;
+        temp |= f2;
+        BEAST_EXPECT(temp == combined);
+
+        HF intersect = combined & f1;
+        BEAST_EXPECT(intersect == f1);
+
+        HF temp2 = combined;
+        temp2 &= f1;
+        BEAST_EXPECT(temp2 == f1);
+
+        BEAST_EXPECT(any(f1));
+        BEAST_EXPECT(any(f2));
+        BEAST_EXPECT(any(combined));
+        BEAST_EXPECT(!any(HF::UNDEFINED));
+    }
+
 public:
     void
     run() override
@@ -386,6 +419,7 @@ public:
         testRelay();
         testProcess();
         testSetup();
+        testFlagsOps();
     }
 };
 
