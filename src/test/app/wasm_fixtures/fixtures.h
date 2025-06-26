@@ -56,3 +56,7 @@ extern std::string const xrplStdExampleHex;
 extern std::string const hostFunctions2Hex;
 
 extern std::string const reqNonexistentField;
+
+extern std::string const hfPerfTest;
+
+extern std::string const opcCallPerfTest;

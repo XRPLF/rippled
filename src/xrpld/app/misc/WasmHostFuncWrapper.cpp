@@ -34,6 +34,9 @@ setData(
     uint8_t const* src,
     int32_t ssz)
 {
+    if (!ssz)
+        return 0;
+
     auto mem = rt ? rt->getMem() : wmem();
 
     if (!mem.s)
@@ -51,6 +54,9 @@ setData(
 static Expected<Bytes, int32_t>
 getData(InstanceWrapper const* rt, int32_t src, int32_t ssz)
 {
+    if (!ssz)
+        return Unexpected(HF_ERR_INVALID_PARAMS);
+
     auto mem = rt ? rt->getMem() : wmem();
     if (!mem.s)
         return Unexpected(HF_ERR_NO_MEM_EXPORTED);
@@ -66,7 +72,7 @@ static Expected<AccountID, int32_t>
 getDataAccount(InstanceWrapper const* rt, int32_t ptr, int32_t sz)
 {
     auto const r = getData(rt, ptr, sz);
-    if (r->size() < AccountID::bytes)
+    if (!r || (r->size() < AccountID::bytes))
         return Unexpected(HF_ERR_INVALID_PARAMS);
 
     return AccountID::fromVoid(r->data());
@@ -75,6 +81,9 @@ getDataAccount(InstanceWrapper const* rt, int32_t ptr, int32_t sz)
 static Expected<std::string, int32_t>
 getDataString(InstanceWrapper const* rt, int32_t src, int32_t ssz)
 {
+    if (!ssz)
+        return Unexpected(HF_ERR_INVALID_PARAMS);
+
     auto mem = rt ? rt->getMem() : wmem();
     if (!mem.s)
         return Unexpected(HF_ERR_NO_MEM_EXPORTED);

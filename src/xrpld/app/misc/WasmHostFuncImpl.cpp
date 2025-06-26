@@ -39,7 +39,7 @@ WasmHostFunctionsImpl::getLedgerSqn()
 int32_t
 WasmHostFunctionsImpl::getParentLedgerTime()
 {
-    return ctx.view().parentCloseTime().time_since_epoch().count();  // TODO try
+    return ctx.view().parentCloseTime().time_since_epoch().count();
 }
 
 Hash
@@ -70,7 +70,7 @@ WasmHostFunctionsImpl::cacheLedgerObj(Keylet const& keylet, int32_t cacheIdx)
     return cache[cacheIdx] ? cacheIdx + 1 : HF_ERR_LEDGER_OBJ_NOT_FOUND;
 }
 
-Bytes
+static Bytes
 getAnyFieldData(STBase const& obj)
 {
     // auto const& fname = obj.getFName();
@@ -132,6 +132,9 @@ WasmHostFunctionsImpl::getTxField(SField const& fname)
     auto const* field = ctx.tx.peekAtPField(fname);
     if (!field)
         return Unexpected(HF_ERR_FIELD_NOT_FOUND);
+    if ((STI_OBJECT == field->getSType()) || (STI_ARRAY == field->getSType()))
+        return Unexpected(HF_ERR_NOT_LEAF_FIELD);
+
     return getAnyFieldData(*field);
 }
 
@@ -145,6 +148,8 @@ WasmHostFunctionsImpl::getCurrentLedgerObjField(SField const& fname)
     auto const* field = sle->peekAtPField(fname);
     if (!field)
         return Unexpected(HF_ERR_FIELD_NOT_FOUND);
+    if ((STI_OBJECT == field->getSType()) || (STI_ARRAY == field->getSType()))
+        return Unexpected(HF_ERR_NOT_LEAF_FIELD);
 
     return getAnyFieldData(*field);
 }
@@ -162,14 +167,16 @@ WasmHostFunctionsImpl::getLedgerObjField(int32_t cacheIdx, SField const& fname)
     auto const* field = cache[cacheIdx]->peekAtPField(fname);
     if (!field)
         return Unexpected(HF_ERR_FIELD_NOT_FOUND);
+    if ((STI_OBJECT == field->getSType()) || (STI_ARRAY == field->getSType()))
+        return Unexpected(HF_ERR_NOT_LEAF_FIELD);
 
     return getAnyFieldData(*field);
 }
 
 static Expected<STBase const*, int32_t>
-locateField(STObject const* obj, Slice const& loc)
+locateField(STObject const& obj, Slice const& loc)
 {
-    if (loc.size() % 4)
+    if (loc.empty() || (loc.size() & 3))  // must be multiple of 4
         return Unexpected(HF_ERR_LOCATOR_MALFORMED);
 
     int32_t const* l = reinterpret_cast<int32_t const*>(loc.data());
@@ -177,22 +184,23 @@ locateField(STObject const* obj, Slice const& loc)
     STBase const* field = nullptr;
     auto const& m = SField::getKnownCodeToField();
 
-    for (int i = 0; i < sz; ++i)
+    {
+        int32_t const c = l[0];
+        auto const it = m.find(c);
+        if (it == m.end())
+            return Unexpected(HF_ERR_LOCATOR_MALFORMED);
+        auto const& fname(*it->second);
+
+        field = obj.peekAtPField(fname);
+        if (!field || (STI_NOTPRESENT == field->getSType()))
+            return Unexpected(HF_ERR_FIELD_NOT_FOUND);
+    }
+
+    for (int i = 1; i < sz; ++i)
     {
         int32_t const c = l[i];
 
-        if (!field)
-        {
-            auto const it = m.find(c);
-            if (it == m.end())
-                return Unexpected(HF_ERR_FIELD_NOT_FOUND);
-            auto const& fname(*it->second);
-
-            field = obj->peekAtPField(fname);
-            if (!field)
-                return Unexpected(HF_ERR_FIELD_NOT_FOUND);
-        }
-        else if (STI_ARRAY == field->getSType())
+        if (STI_ARRAY == field->getSType())
         {
             auto const* arr = static_cast<STArray const*>(field);
             if (c >= arr->size())
@@ -205,18 +213,19 @@ locateField(STObject const* obj, Slice const& loc)
 
             auto const it = m.find(c);
             if (it == m.end())
-                return Unexpected(HF_ERR_FIELD_NOT_FOUND);
+                return Unexpected(HF_ERR_LOCATOR_MALFORMED);
             auto const& fname(*it->second);
 
             field = o->peekAtPField(fname);
-            if (!field)
-                return Unexpected(HF_ERR_FIELD_NOT_FOUND);
         }
-    }
+        else  // simple field must be the last one
+        {
+            return Unexpected(HF_ERR_LOCATOR_MALFORMED);
+        }
 
-    if (!field || (STI_OBJECT == field->getSType()) ||
-        (STI_ARRAY == field->getSType()))
-        return Unexpected(HF_ERR_LOCATOR_MALFORMED);
+        if (!field || (STI_NOTPRESENT == field->getSType()))
+            return Unexpected(HF_ERR_FIELD_NOT_FOUND);
+    }
 
     return field;
 }
@@ -224,11 +233,14 @@ locateField(STObject const* obj, Slice const& loc)
 Expected<Bytes, int32_t>
 WasmHostFunctionsImpl::getTxNestedField(Slice const& locator)
 {
-    auto const r = locateField(&ctx.tx, locator);
-    if (!r.has_value())
+    auto const r = locateField(ctx.tx, locator);
+    if (!r)
         return Unexpected(r.error());
 
     auto const* field = r.value();
+    if ((STI_OBJECT == field->getSType()) || (STI_ARRAY == field->getSType()))
+        return Unexpected(HF_ERR_NOT_LEAF_FIELD);
+
     return getAnyFieldData(*field);
 }
 
@@ -239,11 +251,14 @@ WasmHostFunctionsImpl::getCurrentLedgerObjNestedField(Slice const& locator)
     if (!sle)
         return Unexpected(HF_ERR_LEDGER_OBJ_NOT_FOUND);
 
-    auto const r = locateField(sle.get(), locator);
-    if (!r.has_value())
+    auto const r = locateField(*sle, locator);
+    if (!r)
         return Unexpected(r.error());
 
     auto const* field = r.value();
+    if ((STI_OBJECT == field->getSType()) || (STI_ARRAY == field->getSType()))
+        return Unexpected(HF_ERR_NOT_LEAF_FIELD);
+
     return getAnyFieldData(*field);
 }
 
@@ -259,11 +274,14 @@ WasmHostFunctionsImpl::getLedgerObjNestedField(
     if (!cache[cacheIdx])
         return Unexpected(HF_ERR_INVALID_SLOT);
 
-    auto const r = locateField(cache[cacheIdx].get(), locator);
-    if (!r.has_value())
+    auto const r = locateField(*cache[cacheIdx], locator);
+    if (!r)
         return Unexpected(r.error());
 
     auto const* field = r.value();
+    if ((STI_OBJECT == field->getSType()) || (STI_ARRAY == field->getSType()))
+        return Unexpected(HF_ERR_NOT_LEAF_FIELD);
+
     return getAnyFieldData(*field);
 }
 
@@ -333,8 +351,8 @@ WasmHostFunctionsImpl::getLedgerObjArrayLen(
 int32_t
 WasmHostFunctionsImpl::getTxNestedArrayLen(Slice const& locator)
 {
-    auto const r = locateField(&ctx.tx, locator);
-    if (!r.has_value())
+    auto const r = locateField(ctx.tx, locator);
+    if (!r)
         return r.error();
     auto const* field = r.value();
 
@@ -351,8 +369,8 @@ WasmHostFunctionsImpl::getCurrentLedgerObjNestedArrayLen(Slice const& locator)
     auto const sle = ctx.view().read(leKey);
     if (!sle)
         return HF_ERR_LEDGER_OBJ_NOT_FOUND;
-    auto const r = locateField(sle.get(), locator);
-    if (!r.has_value())
+    auto const r = locateField(*sle, locator);
+    if (!r)
         return r.error();
     auto const* field = r.value();
 
@@ -375,8 +393,8 @@ WasmHostFunctionsImpl::getLedgerObjNestedArrayLen(
     if (!cache[cacheIdx])
         return HF_ERR_INVALID_SLOT;
 
-    auto const r = locateField(cache[cacheIdx].get(), locator);
-    if (!r.has_value())
+    auto const r = locateField(*cache[cacheIdx], locator);
+    if (!r)
         return r.error();
 
     auto const* field = r.value();
@@ -445,7 +463,7 @@ WasmHostFunctionsImpl::oracleKeylet(
     AccountID const& account,
     std::uint32_t documentId)
 {
-    if (!account || account.isZero())
+    if (!account)
         return Unexpected(HF_ERR_INVALID_ACCOUNT);
     auto const keylet = keylet::oracle(account, documentId);
     return Bytes{keylet.key.begin(), keylet.key.end()};
@@ -467,7 +485,11 @@ WasmHostFunctionsImpl::getNFT(AccountID const& account, uint256 const& nftId)
         return Unexpected(HF_ERR_LEDGER_OBJ_NOT_FOUND);
     }
 
-    Slice const s = obj->at(sfURI);
+    auto ouri = obj->at(~sfURI);
+    if (!ouri)
+        return Bytes();
+
+    Slice const s = ouri->value();
     return Bytes(s.begin(), s.end());
 }
 
