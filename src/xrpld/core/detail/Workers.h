@@ -20,13 +20,12 @@
 #ifndef RIPPLE_CORE_WORKERS_H_INCLUDED
 #define RIPPLE_CORE_WORKERS_H_INCLUDED
 
-#include <xrpld/core/detail/semaphore.h>
-
 #include <xrpl/beast/core/LockFreeStack.h>
 
 #include <atomic>
 #include <condition_variable>
 #include <mutex>
+#include <semaphore>
 #include <string>
 #include <thread>
 
@@ -223,10 +222,10 @@ private:
     std::condition_variable m_cv;  // signaled when all threads paused
     std::mutex m_mut;
     bool m_allPaused;
-    semaphore m_semaphore;           // each pending task is 1 resource
-    int m_numberOfThreads;           // how many we want active now
-    std::atomic<int> m_activeCount;  // to know when all are paused
-    std::atomic<int> m_pauseCount;   // how many threads need to pause now
+    std::counting_semaphore<> m_semaphore;  // each pending task is 1 resource
+    int m_numberOfThreads;                  // how many we want active now
+    std::atomic<int> m_activeCount;         // to know when all are paused
+    std::atomic<int> m_pauseCount;  // how many threads need to pause now
     std::atomic<int>
         m_runningTaskCount;  // how many calls to processTask() active
     beast::LockFreeStack<Worker> m_everyone;  // holds all created workers
