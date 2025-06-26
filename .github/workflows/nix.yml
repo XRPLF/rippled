@@ -24,3 +24,4 @@ jobs:
           echo "Docker engine: $(docker --version)" | tee -a $GITHUB_STEP_SUMMARY
           for plugin in compose buildx; do
             echo "${plugin} version: $(docker ${plugin} version)" || echo "Docker ${plugin} not installed" | tee -a $GITHUB_STEP_SUMMARY
+          done
