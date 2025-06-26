@@ -28,7 +28,6 @@
 #include <xrpl/protocol/HashPrefix.h>
 #include <xrpl/protocol/digest.h>
 
-#include "blake3.h"
 
 namespace ripple {
 
@@ -200,53 +199,6 @@ SHAMapInnerNode::makeCompressedInner(Slice data)
     return ret;
 }
 
-template <bool Secure = false>
-struct blake3_256_hasher
-{
-private:
-    blake3_hasher h_;
-
-public:
-    static constexpr auto const endian = boost::endian::order::big;
-
-    blake3_256_hasher()
-    {
-        blake3_hasher_init(&h_);
-    }
-
-    using result_type = uint256;
-
-    ~blake3_256_hasher()
-    {
-        erase(std::integral_constant<bool, Secure>{});
-    }
-
-    void
-    operator()(void const* data, std::size_t size) noexcept
-    {
-        blake3_hasher_update(&h_, data, size);
-    }
-
-    explicit
-    operator result_type() noexcept
-    {
-        uint8_t output[BLAKE3_OUT_LEN];
-        blake3_hasher_finalize(&h_, output, BLAKE3_OUT_LEN);
-        return result_type::fromVoid(output);
-    }
-
-private:
-    inline void
-    erase(std::false_type)
-    {
-    }
-
-    inline void
-    erase(std::true_type)
-    {
-        secure_erase(&h_, sizeof(h_));
-    }
-};
 
 void
 SHAMapInnerNode::updateHash()
@@ -254,11 +206,11 @@ SHAMapInnerNode::updateHash()
     uint256 nh;
     if (isBranch_ != 0)
     {
-        blake3_256_hasher<> h;
+        blake3_256_hasher h;
         using beast::hash_append;
         hash_append(h, HashPrefix::innerNode);
         iterChildren([&](SHAMapHash const& hh) { hash_append(h, hh); });
-        nh = static_cast<typename blake3_256_hasher<>::result_type>(h);
+        nh = static_cast<typename blake3_256_hasher::result_type>(h);
     }
     hash_ = SHAMapHash{nh};
 }

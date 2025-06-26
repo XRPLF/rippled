@@ -64,6 +64,7 @@ target_link_libraries(xrpl.imports.main
     secp256k1::secp256k1
     xrpl.libpb
     xxHash::xxhash
+    blake3
     $<$<BOOL:${voidstar}>:antithesis-sdk-cpp>
 )
 

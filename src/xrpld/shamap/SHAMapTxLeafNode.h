@@ -66,7 +66,7 @@ public:
     updateHash() final override
     {
         hash_ =
-            SHAMapHash{sha512Half(HashPrefix::transactionID, item_->slice())};
+            SHAMapHash{blake3_256(HashPrefix::transactionID, item_->slice())};
     }
 
     void

@@ -68,7 +68,7 @@ public:
     updateHash() final override
     {
         hash_ = SHAMapHash{
-            sha512Half(HashPrefix::txNode, item_->slice(), item_->key())};
+            blake3_256(HashPrefix::txNode, item_->slice(), item_->key())};
     }
 
     void

@@ -27,6 +27,7 @@
 
 #include <algorithm>
 #include <array>
+#include "blake3.h"
 
 namespace ripple {
 
@@ -210,12 +211,66 @@ private:
     }
 };
 
+
+template <bool Secure = false>
+struct basic_blake3_256_hasher
+{
+private:
+    blake3_hasher h_;
+
+public:
+    static constexpr auto const endian = boost::endian::order::big;
+
+    basic_blake3_256_hasher()
+    {
+        blake3_hasher_init(&h_);
+    }
+
+    using result_type = uint256;
+
+    ~basic_blake3_256_hasher()
+    {
+        erase(std::integral_constant<bool, Secure>{});
+    }
+
+    void
+    operator()(void const* data, std::size_t size) noexcept
+    {
+        blake3_hasher_update(&h_, data, size);
+    }
+
+    explicit
+    operator result_type() noexcept
+    {
+        uint8_t output[BLAKE3_OUT_LEN];
+        blake3_hasher_finalize(&h_, output, BLAKE3_OUT_LEN);
+        return result_type::fromVoid(output);
+    }
+
+private:
+    inline void
+    erase(std::false_type)
+    {
+    }
+
+    inline void
+    erase(std::true_type)
+    {
+        secure_erase(&h_, sizeof(h_));
+    }
+};
+
 }  // namespace detail
 
 using sha512_half_hasher = detail::basic_sha512_half_hasher<false>;
 
 // secure version
 using sha512_half_hasher_s = detail::basic_sha512_half_hasher<true>;
+
+using blake3_256_hasher = detail::basic_blake3_256_hasher<false>;
+
+// secure version
+using blake3_256_hasher_s = detail::basic_blake3_256_hasher<true>;
 
 //------------------------------------------------------------------------------
 
@@ -246,6 +301,32 @@ sha512Half_s(Args const&... args)
     return static_cast<typename sha512_half_hasher_s::result_type>(h);
 }
 
+/** Returns the blake3-256 of a series of objects. */
+template <class... Args>
+blake3_256_hasher::result_type
+blake3_256(Args const&... args)
+{
+    blake3_256_hasher h;
+    using beast::hash_append;
+    hash_append(h, args...);
+    return static_cast<typename blake3_256_hasher::result_type>(h);
+}
+
+/** Returns the blake3-256 of a series of objects.
+
+    Postconditions:
+        Temporary memory storing copies of
+        input messages will be cleared.
+*/
+template <class... Args>
+blake3_256_hasher_s::result_type
+blake3_256_s(Args const&... args)
+{
+    blake3_256_hasher_s h;
+    using beast::hash_append;
+    hash_append(h, args...);
+    return static_cast<typename blake3_256_hasher_s::result_type>(h);
+}
 }  // namespace ripple
 
 #endif

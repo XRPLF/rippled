@@ -39,7 +39,7 @@ SHAMapTreeNode::makeTransaction(
     bool hashValid)
 {
     auto item =
-        make_shamapitem(sha512Half(HashPrefix::transactionID, data), data);
+        make_shamapitem(blake3_256(HashPrefix::transactionID, data), data);
 
     if (hashValid)
         return intr_ptr::make_shared<SHAMapTxLeafNode>(
