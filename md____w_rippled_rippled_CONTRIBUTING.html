@@ -220,7 +220,7 @@ Contracts and instrumentation</h2>
 <li>Contract description for <code>UNREACHABLE</code> should describe the <em>unexpected</em> situation which caused the line to have been reached.</li>
 <li>Example good name for an <code>UNREACHABLE</code> macro <code>"Json::operator==(Value, Value) : invalid type"</code>; example good name for an <code>XRPL_ASSERT</code> macro <code>"Json::Value::asCString : valid type"</code>.</li>
 <li>Example <b>bad</b> name <code>"RFC1751::insert(char* s, int x, int start, int length) : length is greater than or equal zero"</code> (missing namespace, unnecessary full function signature, description too verbose). Good name: <code>"ripple::RFC1751::insert : minimum length"</code>.</li>
-<li>In <b>few</b> well-justified cases a non-standard name can be used, in which case a comment should be placed to explain the rationale (example in <code><a class="el" href="contract_8cpp_source.html">contract.cpp</a></code>)</li>
+<li>In <b>few</b> well-justified cases a non-standard name can be used, in which case a comment should be placed to explain the rationale (example in <code>contract.cpp</code>)</li>
 <li>Do <b>not</b> rename a contract without a good reason (e.g. the name no longer reflects the location or the condition being checked)</li>
 <li>Do not use <code>std::unreachable</code></li>
 <li>Do not put contracts where they can be violated by an external condition (e.g. timing, data payload before mandatory validation etc.) as this creates bogus bug reports (and causes crashes of Debug builds)</li>
