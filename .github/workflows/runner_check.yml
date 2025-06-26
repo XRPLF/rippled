@@ -13,7 +13,7 @@ jobs:
     name: ${{ matrix.ro }} check
     # name: ${{ matrix.ro }} check ${{ matrix.num }}
     # container: ghcr.io/xrplf/ci/ubuntu-jammy:gcc12
-    container: ubuntu:jammy
+    container: gcc:12
 
     steps:
       - name: checkout
@@ -21,7 +21,6 @@ jobs:
       - name: check environment
         run: |
           printenv
-          gcc --version
           set -x
           . /etc/os-release
           echo "nproc: $(cat /proc/cpuinfo | grep processor | tail -n1)" | tee -a $GITHUB_STEP_SUMMARY
