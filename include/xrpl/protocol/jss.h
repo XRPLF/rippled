@@ -391,6 +391,7 @@ JSS(load_fee);                // out: LoadFeeTrackImp, NetworkOPs
 JSS(local);                   // out: resource/Logic.h
 JSS(local_txs);               // out: GetCounts
 JSS(local_static_keys);       // out: ValidatorList
+JSS(locked);                  // out: GatewayBalances
 JSS(low);                     // out: BookChanges
 JSS(lowest_sequence);         // out: AccountInfo
 JSS(lowest_ticket);           // out: AccountInfo

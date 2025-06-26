@@ -506,6 +506,162 @@ getRate(STAmount const& offerOut, STAmount const& offerIn)
     return 0;
 }
 
+/**
+ * @brief Safely checks if two STAmount values can be added without overflow,
+ * underflow, or precision loss.
+ *
+ * This function determines whether the addition of two STAmount objects is
+ * safe, depending on their type:
+ * - For XRP amounts, it checks for integer overflow and underflow.
+ * - For IOU amounts, it checks for acceptable precision loss.
+ * - For MPT amounts, it checks for overflow and underflow within 63-bit signed
+ * integer limits.
+ * - If either amount is zero, addition is always considered safe.
+ * - If the amounts are of different currencies or types, addition is not
+ * allowed.
+ *
+ * @param a The first STAmount to add.
+ * @param b The second STAmount to add.
+ * @return true if the addition is safe; false otherwise.
+ */
+bool
+canAdd(STAmount const& a, STAmount const& b)
+{
+    // cannot add different currencies
+    if (!areComparable(a, b))
+        return false;
+
+    // special case: adding anything to zero is always fine
+    if (a == beast::zero || b == beast::zero)
+        return true;
+
+    // XRP case (overflow & underflow check)
+    if (isXRP(a) && isXRP(b))
+    {
+        XRPAmount A = a.xrp();
+        XRPAmount B = b.xrp();
+
+        if ((B > XRPAmount{0} &&
+             A > XRPAmount{std::numeric_limits<XRPAmount::value_type>::max()} -
+                     B) ||
+            (B < XRPAmount{0} &&
+             A < XRPAmount{std::numeric_limits<XRPAmount::value_type>::min()} -
+                     B))
+        {
+            return false;
+        }
+        return true;
+    }
+
+    // IOU case (precision check)
+    if (a.holds<Issue>() && b.holds<Issue>())
+    {
+        static STAmount const one{IOUAmount{1, 0}, noIssue()};
+        static STAmount const maxLoss{IOUAmount{1, -4}, noIssue()};
+        STAmount lhs = divide((a - b) + b, a, noIssue()) - one;
+        STAmount rhs = divide((b - a) + a, b, noIssue()) - one;
+        return ((rhs.negative() ? -rhs : rhs) +
+                (lhs.negative() ? -lhs : lhs)) <= maxLoss;
+    }
+
+    // MPT (overflow & underflow check)
+    if (a.holds<MPTIssue>() && b.holds<MPTIssue>())
+    {
+        MPTAmount A = a.mpt();
+        MPTAmount B = b.mpt();
+        if ((B > MPTAmount{0} &&
+             A > MPTAmount{std::numeric_limits<MPTAmount::value_type>::max()} -
+                     B) ||
+            (B < MPTAmount{0} &&
+             A < MPTAmount{std::numeric_limits<MPTAmount::value_type>::min()} -
+                     B))
+        {
+            return false;
+        }
+
+        return true;
+    }
+    // LCOV_EXCL_START
+    UNREACHABLE("STAmount::canAdd : unexpected STAmount type");
+    return false;
+    // LCOV_EXCL_STOP
+}
+
+/**
+ * @brief Determines if it is safe to subtract one STAmount from another.
+ *
+ * This function checks whether subtracting amount `b` from amount `a` is valid,
+ * considering currency compatibility and underflow conditions for specific
+ * types.
+ *
+ * - Subtracting zero is always allowed.
+ * - Subtraction is only allowed between comparable currencies.
+ * - For XRP amounts, ensures no underflow or overflow occurs.
+ * - For IOU amounts, subtraction is always allowed (no underflow).
+ * - For MPT amounts, ensures no underflow or overflow occurs.
+ *
+ * @param a The minuend (amount to subtract from).
+ * @param b The subtrahend (amount to subtract).
+ * @return true if subtraction is allowed, false otherwise.
+ */
+bool
+canSubtract(STAmount const& a, STAmount const& b)
+{
+    // Cannot subtract different currencies
+    if (!areComparable(a, b))
+        return false;
+
+    // Special case: subtracting zero is always fine
+    if (b == beast::zero)
+        return true;
+
+    // XRP case (underflow & overflow check)
+    if (isXRP(a) && isXRP(b))
+    {
+        XRPAmount A = a.xrp();
+        XRPAmount B = b.xrp();
+        // Check for underflow
+        if (B > XRPAmount{0} && A < B)
+            return false;
+
+        // Check for overflow
+        if (B < XRPAmount{0} &&
+            A > XRPAmount{std::numeric_limits<XRPAmount::value_type>::max()} +
+                    B)
+            return false;
+
+        return true;
+    }
+
+    // IOU case (no underflow)
+    if (a.holds<Issue>() && b.holds<Issue>())
+    {
+        return true;
+    }
+
+    // MPT case (underflow & overflow check)
+    if (a.holds<MPTIssue>() && b.holds<MPTIssue>())
+    {
+        MPTAmount A = a.mpt();
+        MPTAmount B = b.mpt();
+
+        // Underflow check
+        if (B > MPTAmount{0} && A < B)
+            return false;
+
+        // Overflow check
+        if (B < MPTAmount{0} &&
+            A > MPTAmount{std::numeric_limits<MPTAmount::value_type>::max()} +
+                    B)
+            return false;
+        return true;
+    }
+    // LCOV_EXCL_START
+    UNREACHABLE("STAmount::canSubtract : unexpected STAmount type");
+    return false;
+    // LCOV_EXCL_STOP
+}
+
 void
 STAmount::setJson(Json::Value& elem) const
 {

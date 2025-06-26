@@ -3445,7 +3445,7 @@ PeerImp::processLedgerRequest(std::shared_ptr<protocol::TMGetLedger> const& m)
                 if (!m->has_ledgerhash())
                     info += ", no hash specified";
 
-                JLOG(p_journal_.error())
+                JLOG(p_journal_.warn())
                     << "processLedgerRequest: getNodeFat with nodeId "
                     << *shaMapNodeId << " and ledger info type " << info
                     << " throws exception: " << e.what();
