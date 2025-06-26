@@ -23,5 +23,9 @@ jobs:
           echo "Version: $VERSION" | tee -a $GITHUB_STEP_SUMMARY
           echo "Docker engine: $(docker --version)" | tee -a $GITHUB_STEP_SUMMARY
           for plugin in compose buildx; do
-            echo "${plugin} version: $(docker ${plugin} version)" || echo "Docker ${plugin} not installed" | tee -a $GITHUB_STEP_SUMMARY
+            if output=$(docker ${plugin} version 2>&1); then
+              echo "${plugin} version: $output" | tee -a "$GITHUB_STEP_SUMMARY"
+            else
+              echo "Docker ${plugin} not installed: $output" | tee -a "$GITHUB_STEP_SUMMARY"
+            fi
           done
