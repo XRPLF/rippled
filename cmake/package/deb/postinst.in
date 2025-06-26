@@ -1,0 +1,33 @@
+#!/bin/sh
+set -e
+
+USER_NAME=rippled
+GROUP_NAME=rippled
+case "$1" in
+    configure)
+        id -u $USER_NAME >/dev/null 2>&1 || \
+        adduser --system --quiet \
+            --home /nonexistent --no-create-home \
+            --disabled-password \
+            --group "$GROUP_NAME"
+        chown -R $USER_NAME:$GROUP_NAME @CPACK_PACKAGE_INSTALL_DIRECTORY@
+        mkdir -p /var/log/rippled
+
+        chown -R $USER_NAME:$GROUP_NAME /var/log/rippled/
+        chmod 755 /var/log/rippled/
+
+        mkdir -p /etc/opt/rippled/
+        ln -s /opt/rippled/etc/ /etc/opt/rippled/
+        ln -s /opt/rippled/bin/rippled /usr/local/bin/rippled
+    ;;
+
+    abort-upgrade|abort-remove|abort-deconfigure)
+    ;;
+
+    *)
+        echo "postinst called with unknown argument \`$1'" >&2
+        exit 1
+    ;;
+esac
+
+exit 0

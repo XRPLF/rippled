@@ -30,5 +30,5 @@ runs:
         cmake \
           --build ${build_dir} \
           --config ${{ inputs.configuration }} \
-          --parallel ${NUM_PROCESSORS:-$(nproc)} \
+          --parallel 30 \
           --target ${{ inputs.cmake-target }}
