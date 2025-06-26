@@ -3,12 +3,13 @@ on:
   push:
 
 jobs:
-  dependencies:
+  check:
     strategy:
       matrix:
         ro: [heavy, x-heavy, heavy-arm64, x-heavy-arm64]
-        num: [1, 2]
+        num: [1, 2, 3, 4, 5]
     runs-on: ${{ matrix.ro }}
+    name: ${{ matrix.ro }} check ${{ matrix.num }}
     # container: ghcr.io/xrplf/rippled-build-ubuntu:aaf5e3e
 
     steps:
@@ -17,8 +18,9 @@ jobs:
       - name: check environment
         run: |
           set -x
-          uname -m | tee -a $GITHUB_STEP_SUMMARY
-          cat /etc/os-release | tee -a $GITHUB_STEP_SUMMARY
-          docker --version | tee -a $GITHUB_STEP_SUMMARY
-          docker compose version || true | tee -a $GITHUB_STEP_SUMMARY
-          docker buildx version || true | tee -a $GITHUB_STEP_SUMMARY
+          source /etc/os-release
+          echo "Arch: $(uname -m) | tee -a $GITHUB_STEP_SUMMARY
+          echo "Version: $VERSION" | tee -a $GITHUB_STEP_SUMMARY
+          echo "Docker engine: $(docker --version)" | tee -a $GITHUB_STEP_SUMMARY
+          for plugin in compose buildx; do
+            echo "${plugin} version: $(docker ${plugin} version)" || echo "Docker ${plugin} not installed" | tee -a $GITHUB_STEP_SUMMARY
