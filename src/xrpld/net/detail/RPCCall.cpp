@@ -1384,7 +1384,7 @@ struct RPCCallImp
             if (strData.empty())
                 Throw<std::runtime_error>(
                     "no response from server. Please "
-                    "ensure that the rippled server is running in another "
+                    "ensure that the postfiatd server is running in another "
                     "process.");
 
             // Parse reply

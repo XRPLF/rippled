@@ -31,8 +31,8 @@ list(APPEND GCOVR_ADDITIONAL_ARGS
 setup_target_for_coverage_gcovr(
   NAME coverage
   FORMAT ${coverage_format}
-  EXECUTABLE rippled
+  EXECUTABLE postfiatd
   EXECUTABLE_ARGS --unittest$<$<BOOL:${coverage_test}>:=${coverage_test}> --unittest-jobs ${coverage_test_parallelism} --quiet --unittest-log
   EXCLUDE "src/test" "include/xrpl/beast/test" "include/xrpl/beast/unit_test" "${CMAKE_BINARY_DIR}/pb-xrpl.libpb"
-  DEPENDENCIES rippled
+  DEPENDENCIES postfiatd
 )

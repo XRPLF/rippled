@@ -1,7 +1,7 @@
 #
 # Default validators.txt
 #
-# This file is located in the same folder as your rippled.cfg file
+# This file is located in the same folder as your postfiatd.cfg file
 # and defines which validators your server trusts not to collude.
 #
 # This file is UTF-8 with DOS, UNIX, or Mac style line endings.

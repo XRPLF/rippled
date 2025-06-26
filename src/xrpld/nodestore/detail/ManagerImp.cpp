@@ -38,7 +38,7 @@ ManagerImp::missing_backend()
 {
     Throw<std::runtime_error>(
         "Your rippled.cfg is missing a [node_db] entry, "
-        "please see the rippled-example.cfg file!");
+        "please see the postfiatd-example.cfg file!");
 }
 
 std::unique_ptr<Backend>

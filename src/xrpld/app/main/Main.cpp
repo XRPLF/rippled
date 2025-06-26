@@ -345,7 +345,7 @@ run(int argc, char** argv)
     using namespace std;
 
     beast::setCurrentThreadName(
-        "rippled: main " + BuildInfo::getVersionString());
+        "postfiatd: main " + BuildInfo::getVersionString());
 
     po::variables_map vm;
 
@@ -498,8 +498,8 @@ run(int argc, char** argv)
     }
     catch (std::exception const& ex)
     {
-        std::cerr << "rippled: " << ex.what() << std::endl;
-        std::cerr << "Try 'rippled --help' for a list of options." << std::endl;
+        std::cerr << "postfiatd: " << ex.what() << std::endl;
+        std::cerr << "Try 'postfiatd --help' for a list of options." << std::endl;
         return 1;
     }
 
@@ -511,7 +511,7 @@ run(int argc, char** argv)
 
     if (vm.count("version"))
     {
-        std::cout << "rippled version " << BuildInfo::getVersionString()
+        std::cout << "postfiatd version " << BuildInfo::getVersionString()
                   << std::endl;
 #ifdef GIT_COMMIT_HASH
         std::cout << "Git commit hash: " << GIT_COMMIT_HASH << std::endl;
@@ -525,8 +525,8 @@ run(int argc, char** argv)
 #ifndef ENABLE_TESTS
     if (vm.count("unittest") || vm.count("unittest-child"))
     {
-        std::cerr << "rippled: Tests disabled in this build." << std::endl;
-        std::cerr << "Try 'rippled --help' for a list of options." << std::endl;
+        std::cerr << "postfiatd: Tests disabled in this build." << std::endl;
+        std::cerr << "Try 'postfiatd --help' for a list of options." << std::endl;
         return 1;
     }
 #else
@@ -563,7 +563,7 @@ run(int argc, char** argv)
         if (vm.count("unittest-jobs"))
         {
             // unittest jobs only makes sense with `unittest`
-            std::cerr << "rippled: '--unittest-jobs' specified without "
+            std::cerr << "postfiatd: '--unittest-jobs' specified without "
                          "'--unittest'.\n";
             std::cerr << "To run the unit tests the '--unittest' option must "
                          "be present.\n";
@@ -836,7 +836,7 @@ run(int argc, char** argv)
     }
 
     // We have an RPC command to process:
-    beast::setCurrentThreadName("rippled: rpc");
+    beast::setCurrentThreadName("postfiatd: rpc");
     return RPCCall::fromCommandLine(
         *config, vm["parameters"].as<std::vector<std::string>>(), *logs);
     // LCOV_EXCL_STOP

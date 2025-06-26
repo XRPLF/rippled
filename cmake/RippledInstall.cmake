@@ -49,9 +49,9 @@ write_basic_package_version_file (
   VERSION ${rippled_version}
   COMPATIBILITY SameMajorVersion)
 
-if (is_root_project AND TARGET rippled)
-  install (TARGETS rippled RUNTIME DESTINATION bin)
-  set_target_properties(rippled PROPERTIES INSTALL_RPATH_USE_LINK_PATH ON)
+if (is_root_project AND TARGET postfiatd)
+  install (TARGETS postfiatd RUNTIME DESTINATION bin)
+  set_target_properties(postfiatd PROPERTIES INSTALL_RPATH_USE_LINK_PATH ON)
   # sample configs should not overwrite existing files
   # install if-not-exists workaround as suggested by
   # https://cmake.org/Bug/view.php?id=12646
@@ -63,13 +63,13 @@ if (is_root_project AND TARGET rippled)
         message (\"-- Skipping : \$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/\${DEST}/\${NEWNAME}\")
       endif ()
     endmacro()
-    copy_if_not_exists(\"${CMAKE_CURRENT_SOURCE_DIR}/cfg/rippled-example.cfg\" etc rippled.cfg)
+    copy_if_not_exists(\"${CMAKE_CURRENT_SOURCE_DIR}/cfg/postfiatd-example.cfg\" etc postfiatd.cfg)
     copy_if_not_exists(\"${CMAKE_CURRENT_SOURCE_DIR}/cfg/validators-example.txt\" etc validators.txt)
   ")
   install(CODE "
     set(CMAKE_MODULE_PATH \"${CMAKE_MODULE_PATH}\")
     include(create_symbolic_link)
-    create_symbolic_link(rippled${suffix} \
+    create_symbolic_link(postfiatd${suffix} \
       \${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}/xrpld${suffix})
   ")
 endif ()

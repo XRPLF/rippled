@@ -133,14 +133,14 @@ target_link_modules(xrpl PUBLIC
 #     $<INSTALL_INTERFACE:include>)
 
 if(xrpld)
-  add_executable(rippled)
+  add_executable(postfiatd)
   if(tests)
-    target_compile_definitions(rippled PUBLIC ENABLE_TESTS)
-    target_compile_definitions(rippled PRIVATE
+    target_compile_definitions(postfiatd PUBLIC ENABLE_TESTS)
+    target_compile_definitions(postfiatd PRIVATE
                                        UNIT_TEST_REFERENCE_FEE=${UNIT_TEST_REFERENCE_FEE}
     )
   endif()
-  target_include_directories(rippled
+  target_include_directories(postfiatd
     PRIVATE
       $<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}/src>
   )
@@ -148,36 +148,36 @@ if(xrpld)
   file(GLOB_RECURSE sources CONFIGURE_DEPENDS
     "${CMAKE_CURRENT_SOURCE_DIR}/src/xrpld/*.cpp"
   )
-  target_sources(rippled PRIVATE ${sources})
+  target_sources(postfiatd PRIVATE ${sources})
 
   if(tests)
     file(GLOB_RECURSE sources CONFIGURE_DEPENDS
       "${CMAKE_CURRENT_SOURCE_DIR}/src/test/*.cpp"
     )
-    target_sources(rippled PRIVATE ${sources})
+    target_sources(postfiatd PRIVATE ${sources})
   endif()
 
-  target_link_libraries(rippled
+  target_link_libraries(postfiatd
     Ripple::boost
     Ripple::opts
     Ripple::libs
     xrpl.libxrpl
   )
-  exclude_if_included(rippled)
+  exclude_if_included(postfiatd)
   # define a macro for tests that might need to
   # be exluded or run differently in CI environment
   if(is_ci)
-    target_compile_definitions(rippled PRIVATE RIPPLED_RUNNING_IN_CI)
+    target_compile_definitions(postfiatd PRIVATE RIPPLED_RUNNING_IN_CI)
   endif ()
 
   if(voidstar)
-    target_compile_options(rippled
+    target_compile_options(postfiatd
       PRIVATE
         -fsanitize-coverage=trace-pc-guard
     )
-    # rippled requires access to antithesis-sdk-cpp implementation file
+    # postfiatd requires access to antithesis-sdk-cpp implementation file
     # antithesis_instrumentation.h, which is not exported as INTERFACE
-    target_include_directories(rippled
+    target_include_directories(postfiatd
       PRIVATE
         ${CMAKE_SOURCE_DIR}/external/antithesis-sdk
     )

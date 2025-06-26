@@ -80,7 +80,7 @@ getVersionString()
 std::string const&
 getFullVersionString()
 {
-    static std::string const value = "rippled-" + getVersionString();
+    static std::string const value = "postfiatd-" + getVersionString();
     return value;
 }
 
