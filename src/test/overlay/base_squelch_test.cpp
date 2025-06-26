@@ -457,7 +457,6 @@ public:
 class PeerSim : public PeerPartial, public std::enable_shared_from_this<PeerSim>
 {
 public:
-    using id_t = Peer::id_t;
     PeerSim(Overlay& overlay, beast::Journal journal)
         : overlay_(overlay), squelch_(journal, overlay_.clock())
     {
@@ -466,7 +465,7 @@ public:
 
     ~PeerSim() = default;
 
-    id_t
+    Peer::id_t
     id() const override
     {
         return id_;
@@ -504,8 +503,8 @@ public:
     }
 
 private:
-    inline static id_t sid_ = 0;
-    id_t id_;
+    inline static Peer::id_t sid_ = 0;
+    Peer::id_t id_;
     Overlay& overlay_;
     reduce_relay::Squelch squelch_;
 };
@@ -515,7 +514,6 @@ class OverlaySim : public Overlay, public reduce_relay::SquelchHandler
     using Peers = std::unordered_map<Peer::id_t, PeerSPtr>;
 
 public:
-    using id_t = Peer::id_t;
     using clock_type = TestStopwatch;
     OverlaySim(Application& app)
         : slots_(app.logs(), *this, app.config(), clock_), logs_(app.logs())
@@ -557,7 +555,7 @@ public:
     }
 
     void
-    deletePeer(id_t id, UnsquelchCB f) override
+    deletePeer(Peer::id_t id, UnsquelchCB f) override
     {
         unsquelch_ = f;
         slots_.deletePeer(id, true);
@@ -641,14 +639,14 @@ public:
         return false;
     }
 
-    std::set<id_t>
+    std::set<Peer::id_t>
     getSelected(PublicKey const& validator)
     {
         auto const& it = slots_.getSlots().find(validator);
         if (it == slots_.getSlots().end())
             return {};
 
-        std::set<id_t> r;
+        std::set<Peer::id_t> r;
         for (auto const& [id, info] : it->second.getPeers())
             if (info.state == reduce_relay::PeerState::Selected)
                 r.insert(id);
@@ -663,7 +661,7 @@ public:
         return selected.find(peer) != selected.end();
     }
 
-    id_t
+    Peer::id_t
     getSelectedPeer(PublicKey const& validator)
     {
         auto selected = getSelected(validator);
@@ -671,14 +669,14 @@ public:
         return *selected.begin();
     }
 
-    std::unordered_map<id_t, reduce_relay::Slot::PeerInfo>
+    std::unordered_map<Peer::id_t, reduce_relay::Slot::PeerInfo>
     getPeers(PublicKey const& validator)
     {
         auto const& it = slots_.getSlots().find(validator);
         if (it == slots_.getSlots().end())
             return {};
 
-        auto r = std::unordered_map<id_t, reduce_relay::Slot::PeerInfo>();
+        auto r = std::unordered_map<Peer::id_t, reduce_relay::Slot::PeerInfo>();
         for (auto const& [id, info] : it->second.getPeers())
             r.emplace(std::make_pair(id, info));
 
@@ -911,7 +909,6 @@ private:
 class base_squelch_test : public beast::unit_test::suite
 {
     using Slot = reduce_relay::Slot;
-    using id_t = Peer::id_t;
 
 protected:
     void

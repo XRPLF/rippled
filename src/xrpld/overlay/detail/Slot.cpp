@@ -536,21 +536,21 @@ Slots::updateConsideredValidator(PublicKey const& validator, Peer::id_t peer)
 }
 
 void
-Slots::deletePeer(id_t id, bool erase)
+Slots::deletePeer(Peer::id_t id, bool erase)
 {
-    auto deletePeer = [&](slots_map& slots) {
+    auto const f = [&](slots_map& slots) {
         for (auto& [validator, slot] : slots)
             slot.deletePeer(validator, id, erase);
     };
 
-    deletePeer(slots_);
-    deletePeer(untrustedSlots_);
+    f(slots_);
+    f(untrustedSlots_);
 }
 
 void
 Slots::deleteIdlePeers()
 {
-    auto deleteSlots = [&](slots_map& slots) {
+    auto const f = [&](slots_map& slots) {
         auto const now = clock_.now();
 
         for (auto it = slots.begin(); it != slots.end();)
@@ -575,8 +575,8 @@ Slots::deleteIdlePeers()
         }
     };
 
-    deleteSlots(slots_);
-    deleteSlots(untrustedSlots_);
+    f(slots_);
+    f(untrustedSlots_);
 
     // remove and squelch all validators that the selector deemed unsuitable
     // there might be some good validators in this set that "lapsed".
