@@ -5,6 +5,7 @@ on:
 jobs:
   check:
     strategy:
+      fail-fast: false
       matrix:
         ro: [heavy, x-heavy, heavy-arm64, x-heavy-arm64]
         # num: [1, 2, 3, 4, 5]
