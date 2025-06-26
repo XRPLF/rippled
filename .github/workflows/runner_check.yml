@@ -12,7 +12,8 @@ jobs:
     runs-on: ${{ matrix.ro }}
     name: ${{ matrix.ro }} check
     # name: ${{ matrix.ro }} check ${{ matrix.num }}
-    container: ghcr.io/xrplf/ci/ubuntu-jammy:gcc12
+    # container: ghcr.io/xrplf/ci/ubuntu-jammy:gcc12
+    container: ubunu:jammy
 
     steps:
       - name: checkout
