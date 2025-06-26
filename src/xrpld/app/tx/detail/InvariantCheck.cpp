@@ -29,6 +29,7 @@
 #include <xrpl/basics/Log.h>
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/FeeUnits.h>
+#include <xrpl/protocol/LedgerFormats.h>
 #include <xrpl/protocol/STArray.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TxFormats.h>
@@ -2019,6 +2020,55 @@ ValidAMM::finalize(
             break;
     }
 
+    return true;
+}
+
+//------------------------------------------------------------------------------
+
+void
+ValidVault::visitEntry(
+    bool isDelete,
+    std::shared_ptr<SLE const> const& before,
+    std::shared_ptr<SLE const> const& after)
+{
+    if (isDelete && before)
+    {
+        switch (before->getType())
+        {
+            case ltVAULT:
+                vaultDeleted = before;
+                break;
+            case ltMPTOKEN_ISSUANCE:
+                issuanceDeleted = before;
+                break;
+            default:;
+        }
+    }
+
+    if (!isDelete && after)
+    {
+        switch (after->getType())
+        {
+            case ltVAULT:
+                vault = after;
+                break;
+            case ltMPTOKEN_ISSUANCE:
+                issuance = after;
+                break;
+            default:;
+        }
+    }
+}
+
+bool
+ValidVault::finalize(
+    STTx const& tx,
+    TER const result,
+    XRPAmount const,
+    ReadView const& view,
+    beast::Journal const& j)
+{
+    // TODO
     return true;
 }
 

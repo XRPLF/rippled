@@ -704,6 +704,32 @@ private:
         beast::Journal const&) const;
 };
 
+class ValidVault
+{
+    // These are all "after", obviously not populated on delete
+    std::optional<std::shared_ptr<SLE const>> vault;
+    std::optional<std::shared_ptr<SLE const>> issuance;
+
+    // These are only populated on delete
+    std::optional<std::shared_ptr<SLE const>> vaultDeleted;
+    std::optional<std::shared_ptr<SLE const>> issuanceDeleted;
+
+public:
+    void
+    visitEntry(
+        bool,
+        std::shared_ptr<SLE const> const&,
+        std::shared_ptr<SLE const> const&);
+
+    bool
+    finalize(
+        STTx const&,
+        TER const,
+        XRPAmount const,
+        ReadView const&,
+        beast::Journal const&);
+};
+
 // additional invariant checks can be declared above and then added to this
 // tuple
 using InvariantChecks = std::tuple<
@@ -725,7 +751,8 @@ using InvariantChecks = std::tuple<
     ValidMPTIssuance,
     ValidPermissionedDomain,
     ValidPermissionedDEX,
-    ValidAMM>;
+    ValidAMM,
+    ValidVault>;
 
 /**
  * @brief get a tuple of all invariant checks
