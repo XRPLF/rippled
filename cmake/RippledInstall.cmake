@@ -4,8 +4,7 @@
 
 include(create_symbolic_link)
 
-install (
-  TARGETS
+set(xrpl_install_targets
     common
     opts
     ripple_syslibs
@@ -21,11 +20,27 @@ install (
     xrpl.libxrpl.server
     xrpl.libxrpl
     antithesis-sdk-cpp
+)
+
+
+foreach(tgt IN LISTS xrpl_install_targets)
+  if(TARGET ${tgt})
+    set_target_properties(${tgt} PROPERTIES
+      INSTALL_RPATH "$ORIGIN"
+      BUILD_RPATH "$ORIGIN"
+      INSTALL_RPATH_USE_LINK_PATH TRUE
+    )
+  endif()
+endforeach()
+
+install(
+  TARGETS ${xrpl_install_targets}
   EXPORT RippleExports
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
   RUNTIME DESTINATION bin
-  INCLUDES DESTINATION include)
+  INCLUDES DESTINATION include
+)
 
 install(
   DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/include/xrpl"

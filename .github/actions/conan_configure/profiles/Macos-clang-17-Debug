@@ -1,0 +1,12 @@
+{% set compiler, version, compiler_exe = detect_api.detect_default_compiler() %}
+{% set os, compiler, compiler_version, build_type = profile_name.split('-') %}
+[settings]
+os={{ os }}
+arch={{ detect_api.detect_arch() }}
+compiler={{ compiler }}
+compiler.version={{ compiler_version }}
+compiler.libcxx={{detect_api.detect_libcxx(compiler, version, compiler_exe)}}
+compiler.cppstd=20
+
+build_type = {{ build_type }}
+
