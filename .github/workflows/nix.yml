@@ -163,7 +163,64 @@ jobs:
           cmake-args: "-Dassert=TRUE -Dwerr=TRUE ${{ matrix.cmake-args }}"
       - name: test
         run: |
-          ${build_dir}/rippled --unittest --unittest-jobs $(nproc)
+          cp ${{ env.build_dir }}/rippled .
+          ./rippled --unittest --unittest-jobs $(nproc)
+
+  upload_rippled:
+    name: Save rippled binary
+    needs: dependencies
+    runs-on: [self-hosted, heavy]
+    container: ghcr.io/xrplf/rippled-build-ubuntu:aaf5e3e
+    env:
+      build_dir: .build
+      CONAN_URL: http://18.143.149.228:8081/artifactory/api/conan/conan-non-prod
+    steps:
+      - name: upgrade conan
+        run: |
+          pip install --upgrade "conan<2"
+          rm -rf $GITHUB_WORKSPACE/.build
+      - name: download cache
+        uses: actions/download-artifact@v4
+        with:
+          name: linux-gcc-Release
+      - name: extract cache
+        run: |
+          mkdir -p ~/.conan
+          tar -xzf conan.tar -C ~/.conan
+      - name: check environment
+        run: |
+          env | sort
+          echo ${PATH} | tr ':' '\n'
+          conan --version
+          cmake --version
+      - name: checkout
+        uses: actions/checkout@v4
+      - name: dependencies
+        uses: ./.github/actions/dependencies
+        env:
+          CONAN_URL: ${{ env.CONAN_URL }}
+        with:
+          configuration: Release
+      - name: build
+        uses: ./.github/actions/build
+        with:
+          generator: Ninja
+          configuration: Release
+          cmake-args: >-
+            -Dxrpld=TRUE
+            -Dtests=TRUE
+            -Drocksdb=FALSE
+      - name: Strip symbols
+        run: |
+          mv ${{ env.build_dir }}/rippled .
+          strip --strip-unneeded rippled
+          ./rippled --version
+      - name: Archive rippled binary
+        uses: actions/upload-artifact@v4
+        with:
+          name: rippled
+          path: rippled
+          retention-days: 30
 
   reference-fee-test:
     strategy:
