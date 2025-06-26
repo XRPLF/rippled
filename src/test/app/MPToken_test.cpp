@@ -18,10 +18,16 @@
 //==============================================================================
 
 #include <test/jtx.h>
+#include <test/jtx/credentials.h>
+#include <test/jtx/permissioned_domains.h>
 #include <test/jtx/trust.h>
 #include <test/jtx/xchain_bridge.h>
 
+#include <xrpl/basics/base_uint.h>
+#include <xrpl/beast/utility/Zero.h>
 #include <xrpl/protocol/Feature.h>
+#include <xrpl/protocol/TER.h>
+#include <xrpl/protocol/TxFlags.h>
 #include <xrpl/protocol/jss.h>
 
 namespace ripple {
@@ -60,6 +66,51 @@ class MPToken_test : public beast::unit_test::suite
                  .transferFee = 1,
                  .metadata = "test",
                  .err = temMALFORMED});
+
+            if (!features[featureSingleAssetVault])
+            {
+                // tries to set DomainID when SAV is disabled
+                mptAlice.create(
+                    {.maxAmt = 100,
+                     .assetScale = 0,
+                     .metadata = "test",
+                     .flags = tfMPTRequireAuth,
+                     .domainID = uint256(42),
+                     .err = temDISABLED});
+            }
+            else
+            {
+                if (!features[featurePermissionedDomains])
+                {
+                    // tries to set DomainID when PD is disabled
+                    mptAlice.create(
+                        {.maxAmt = 100,
+                         .assetScale = 0,
+                         .metadata = "test",
+                         .flags = tfMPTRequireAuth,
+                         .domainID = uint256(42),
+                         .err = temDISABLED});
+                }
+                else
+                {
+                    // tries to set DomainID when RequireAuth is not set
+                    mptAlice.create(
+                        {.maxAmt = 100,
+                         .assetScale = 0,
+                         .metadata = "test",
+                         .domainID = uint256(42),
+                         .err = temMALFORMED});
+
+                    // tries to set zero DomainID
+                    mptAlice.create(
+                        {.maxAmt = 100,
+                         .assetScale = 0,
+                         .metadata = "test",
+                         .flags = tfMPTRequireAuth,
+                         .domainID = beast::zero,
+                         .err = temMALFORMED});
+                }
+            }
 
             // tries to set a txfee greater than max
             mptAlice.create(
@@ -139,6 +190,48 @@ class MPToken_test : public beast::unit_test::suite
             Json::Value const result = env.rpc("tx", txHash)[jss::result];
             BEAST_EXPECT(
                 result[sfMaximumAmount.getJsonName()] == "9223372036854775807");
+        }
+
+        if (features[featureSingleAssetVault])
+        {
+            // Add permissioned domain
+            Account const credIssuer1{"credIssuer1"};
+            std::string const credType = "credential";
+
+            pdomain::Credentials const credentials1{
+                {.issuer = credIssuer1, .credType = credType}};
+
+            {
+                Env env{*this, features};
+                env.fund(XRP(1000), credIssuer1);
+
+                env(pdomain::setTx(credIssuer1, credentials1));
+                auto const domainId1 = [&]() {
+                    auto tx = env.tx()->getJson(JsonOptions::none);
+                    return pdomain::getNewDomain(env.meta());
+                }();
+
+                MPTTester mptAlice(env, alice);
+                mptAlice.create({
+                    .maxAmt = maxMPTokenAmount,  // 9'223'372'036'854'775'807
+                    .assetScale = 1,
+                    .transferFee = 10,
+                    .metadata = "123",
+                    .ownerCount = 1,
+                    .flags = tfMPTCanLock | tfMPTRequireAuth | tfMPTCanEscrow |
+                        tfMPTCanTrade | tfMPTCanTransfer | tfMPTCanClawback,
+                    .domainID = domainId1,
+                });
+
+                // Get the hash for the most recent transaction.
+                std::string const txHash{
+                    env.tx()->getJson(JsonOptions::none)[jss::hash].asString()};
+
+                Json::Value const result = env.rpc("tx", txHash)[jss::result];
+                BEAST_EXPECT(
+                    result[sfMaximumAmount.getJsonName()] ==
+                    "9223372036854775807");
+            }
         }
     }
 
@@ -499,6 +592,59 @@ class MPToken_test : public beast::unit_test::suite
                  .flags = 0x00000008,
                  .err = temINVALID_FLAG});
 
+            if (!features[featureSingleAssetVault])
+            {
+                // test invalid flags - nothing is being changed
+                mptAlice.set(
+                    {.account = alice,
+                     .flags = 0x00000000,
+                     .err = tecNO_PERMISSION});
+
+                mptAlice.set(
+                    {.account = alice,
+                     .holder = bob,
+                     .flags = 0x00000000,
+                     .err = tecNO_PERMISSION});
+
+                // cannot set DomainID since SAV is not enabled
+                mptAlice.set(
+                    {.account = alice,
+                     .domainID = uint256(42),
+                     .err = temDISABLED});
+            }
+            else
+            {
+                // test invalid flags - nothing is being changed
+                mptAlice.set(
+                    {.account = alice,
+                     .flags = 0x00000000,
+                     .err = temMALFORMED});
+
+                mptAlice.set(
+                    {.account = alice,
+                     .holder = bob,
+                     .flags = 0x00000000,
+                     .err = temMALFORMED});
+
+                if (!features[featurePermissionedDomains])
+                {
+                    // cannot set DomainID since PD is not enabled
+                    mptAlice.set(
+                        {.account = alice,
+                         .domainID = uint256(42),
+                         .err = temDISABLED});
+                }
+                else
+                {
+                    // cannot set DomainID since Holder is set
+                    mptAlice.set(
+                        {.account = alice,
+                         .holder = bob,
+                         .domainID = uint256(42),
+                         .err = temMALFORMED});
+                }
+            }
+
             // set both lock and unlock flags at the same time will fail
             mptAlice.set(
                 {.account = alice,
@@ -582,6 +728,53 @@ class MPToken_test : public beast::unit_test::suite
             mptAlice.set(
                 {.holder = cindy, .flags = tfMPTLock, .err = tecNO_DST});
         }
+
+        if (features[featureSingleAssetVault] &&
+            features[featurePermissionedDomains])
+        {
+            // Add permissioned domain
+            Account const credIssuer1{"credIssuer1"};
+            std::string const credType = "credential";
+
+            pdomain::Credentials const credentials1{
+                {.issuer = credIssuer1, .credType = credType}};
+
+            {
+                Env env{*this, features};
+
+                MPTTester mptAlice(env, alice);
+                mptAlice.create({});
+
+                // Trying to set DomainID on a public MPTokenIssuance
+                mptAlice.set(
+                    {.domainID = uint256(42), .err = tecNO_PERMISSION});
+
+                mptAlice.set(
+                    {.domainID = beast::zero, .err = tecNO_PERMISSION});
+            }
+
+            {
+                Env env{*this, features};
+
+                MPTTester mptAlice(env, alice);
+                mptAlice.create({.flags = tfMPTRequireAuth});
+
+                // Trying to set non-existing DomainID
+                mptAlice.set(
+                    {.domainID = uint256(42), .err = tecOBJECT_NOT_FOUND});
+
+                // Trying to lock but locking is disabled
+                mptAlice.set(
+                    {.flags = tfMPTUnlock,
+                     .domainID = uint256(42),
+                     .err = tecNO_PERMISSION});
+
+                mptAlice.set(
+                    {.flags = tfMPTUnlock,
+                     .domainID = beast::zero,
+                     .err = tecNO_PERMISSION});
+            }
+        }
     }
 
     void
@@ -590,71 +783,136 @@ class MPToken_test : public beast::unit_test::suite
         testcase("Enabled set transaction");
 
         using namespace test::jtx;
-
-        // Test locking and unlocking
-        Env env{*this, features};
         Account const alice("alice");  // issuer
         Account const bob("bob");      // holder
 
-        MPTTester mptAlice(env, alice, {.holders = {bob}});
-
-        // create a mptokenissuance with locking
-        mptAlice.create(
-            {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanLock});
-
-        mptAlice.authorize({.account = bob, .holderCount = 1});
-
-        // locks bob's mptoken
-        mptAlice.set({.account = alice, .holder = bob, .flags = tfMPTLock});
-
-        // trying to lock bob's mptoken again will still succeed
-        // but no changes to the objects
-        mptAlice.set({.account = alice, .holder = bob, .flags = tfMPTLock});
-
-        // alice locks the mptissuance
-        mptAlice.set({.account = alice, .flags = tfMPTLock});
-
-        // alice tries to lock up both mptissuance and mptoken again
-        // it will not change the flags and both will remain locked.
-        mptAlice.set({.account = alice, .flags = tfMPTLock});
-        mptAlice.set({.account = alice, .holder = bob, .flags = tfMPTLock});
-
-        // alice unlocks bob's mptoken
-        mptAlice.set({.account = alice, .holder = bob, .flags = tfMPTUnlock});
-
-        // locks up bob's mptoken again
-        mptAlice.set({.account = alice, .holder = bob, .flags = tfMPTLock});
-        if (!features[featureSingleAssetVault])
         {
-            // Delete bobs' mptoken even though it is locked
-            mptAlice.authorize({.account = bob, .flags = tfMPTUnauthorize});
+            // Test locking and unlocking
+            Env env{*this, features};
 
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            // create a mptokenissuance with locking
+            mptAlice.create(
+                {.ownerCount = 1, .holderCount = 0, .flags = tfMPTCanLock});
+
+            mptAlice.authorize({.account = bob, .holderCount = 1});
+
+            // locks bob's mptoken
+            mptAlice.set({.account = alice, .holder = bob, .flags = tfMPTLock});
+
+            // trying to lock bob's mptoken again will still succeed
+            // but no changes to the objects
+            mptAlice.set({.account = alice, .holder = bob, .flags = tfMPTLock});
+
+            // alice locks the mptissuance
+            mptAlice.set({.account = alice, .flags = tfMPTLock});
+
+            // alice tries to lock up both mptissuance and mptoken again
+            // it will not change the flags and both will remain locked.
+            mptAlice.set({.account = alice, .flags = tfMPTLock});
+            mptAlice.set({.account = alice, .holder = bob, .flags = tfMPTLock});
+
+            // alice unlocks bob's mptoken
             mptAlice.set(
-                {.account = alice,
-                 .holder = bob,
-                 .flags = tfMPTUnlock,
-                 .err = tecOBJECT_NOT_FOUND});
+                {.account = alice, .holder = bob, .flags = tfMPTUnlock});
 
-            return;
+            // locks up bob's mptoken again
+            mptAlice.set({.account = alice, .holder = bob, .flags = tfMPTLock});
+            if (!features[featureSingleAssetVault])
+            {
+                // Delete bobs' mptoken even though it is locked
+                mptAlice.authorize({.account = bob, .flags = tfMPTUnauthorize});
+
+                mptAlice.set(
+                    {.account = alice,
+                     .holder = bob,
+                     .flags = tfMPTUnlock,
+                     .err = tecOBJECT_NOT_FOUND});
+
+                return;
+            }
+
+            // Cannot delete locked MPToken
+            mptAlice.authorize(
+                {.account = bob,
+                 .flags = tfMPTUnauthorize,
+                 .err = tecNO_PERMISSION});
+
+            // alice unlocks mptissuance
+            mptAlice.set({.account = alice, .flags = tfMPTUnlock});
+
+            // alice unlocks bob's mptoken
+            mptAlice.set(
+                {.account = alice, .holder = bob, .flags = tfMPTUnlock});
+
+            // alice unlocks mptissuance and bob's mptoken again despite that
+            // they are already unlocked. Make sure this will not change the
+            // flags
+            mptAlice.set(
+                {.account = alice, .holder = bob, .flags = tfMPTUnlock});
+            mptAlice.set({.account = alice, .flags = tfMPTUnlock});
         }
 
-        // Cannot delete locked MPToken
-        mptAlice.authorize(
-            {.account = bob,
-             .flags = tfMPTUnauthorize,
-             .err = tecNO_PERMISSION});
+        if (features[featureSingleAssetVault])
+        {
+            // Add permissioned domain
+            std::string const credType = "credential";
 
-        // alice unlocks mptissuance
-        mptAlice.set({.account = alice, .flags = tfMPTUnlock});
+            // Test setting and resetting domain ID
+            Env env{*this, features};
 
-        // alice unlocks bob's mptoken
-        mptAlice.set({.account = alice, .holder = bob, .flags = tfMPTUnlock});
+            auto const domainId1 = [&]() {
+                Account const credIssuer1{"credIssuer1"};
+                env.fund(XRP(1000), credIssuer1);
 
-        // alice unlocks mptissuance and bob's mptoken again despite that
-        // they are already unlocked. Make sure this will not change the
-        // flags
-        mptAlice.set({.account = alice, .holder = bob, .flags = tfMPTUnlock});
-        mptAlice.set({.account = alice, .flags = tfMPTUnlock});
+                pdomain::Credentials const credentials1{
+                    {.issuer = credIssuer1, .credType = credType}};
+
+                env(pdomain::setTx(credIssuer1, credentials1));
+                return [&]() {
+                    auto tx = env.tx()->getJson(JsonOptions::none);
+                    return pdomain::getNewDomain(env.meta());
+                }();
+            }();
+
+            auto const domainId2 = [&]() {
+                Account const credIssuer2{"credIssuer2"};
+                env.fund(XRP(1000), credIssuer2);
+
+                pdomain::Credentials const credentials2{
+                    {.issuer = credIssuer2, .credType = credType}};
+
+                env(pdomain::setTx(credIssuer2, credentials2));
+                return [&]() {
+                    auto tx = env.tx()->getJson(JsonOptions::none);
+                    return pdomain::getNewDomain(env.meta());
+                }();
+            }();
+
+            MPTTester mptAlice(env, alice, {.holders = {bob}});
+
+            // create a mptokenissuance with auth.
+            mptAlice.create(
+                {.ownerCount = 1, .holderCount = 0, .flags = tfMPTRequireAuth});
+            BEAST_EXPECT(mptAlice.checkDomainID(std::nullopt));
+
+            // reset "domain not set" to "domain not set", i.e. no change
+            mptAlice.set({.domainID = beast::zero});
+            BEAST_EXPECT(mptAlice.checkDomainID(std::nullopt));
+
+            // reset "domain not set" to domain1
+            mptAlice.set({.domainID = domainId1});
+            BEAST_EXPECT(mptAlice.checkDomainID(domainId1));
+
+            // reset domain1 to domain2
+            mptAlice.set({.domainID = domainId2});
+            BEAST_EXPECT(mptAlice.checkDomainID(domainId2));
+
+            // reset domain to "domain not set"
+            mptAlice.set({.domainID = beast::zero});
+            BEAST_EXPECT(mptAlice.checkDomainID(std::nullopt));
+        }
     }
 
     void
@@ -887,6 +1145,109 @@ class MPToken_test : public beast::unit_test::suite
             // bob fails to send back to alice because he is no longer
             // authorize to move his funds!
             mptAlice.pay(bob, alice, 100, tecNO_AUTH);
+        }
+
+        if (features[featureSingleAssetVault] &&
+            features[featurePermissionedDomains])
+        {
+            // If RequireAuth is enabled and domain is a match, payment succeeds
+            {
+                Env env{*this, features};
+                std::string const credType = "credential";
+                Account const credIssuer1{"credIssuer1"};
+                env.fund(XRP(1000), credIssuer1, bob);
+
+                auto const domainId1 = [&]() {
+                    pdomain::Credentials const credentials1{
+                        {.issuer = credIssuer1, .credType = credType}};
+
+                    env(pdomain::setTx(credIssuer1, credentials1));
+                    return [&]() {
+                        auto tx = env.tx()->getJson(JsonOptions::none);
+                        return pdomain::getNewDomain(env.meta());
+                    }();
+                }();
+                // bob is authorized via domain
+                env(credentials::create(bob, credIssuer1, credType));
+                env(credentials::accept(bob, credIssuer1, credType));
+                env.close();
+
+                MPTTester mptAlice(env, alice, {});
+                env.close();
+
+                mptAlice.create({
+                    .ownerCount = 1,
+                    .holderCount = 0,
+                    .flags = tfMPTRequireAuth | tfMPTCanTransfer,
+                    .domainID = domainId1,
+                });
+
+                mptAlice.authorize({.account = bob});
+                env.close();
+
+                // bob is authorized via domain
+                mptAlice.pay(alice, bob, 100);
+                mptAlice.set({.domainID = beast::zero});
+
+                // bob is no longer authorized
+                mptAlice.pay(alice, bob, 100, tecNO_AUTH);
+            }
+
+            {
+                Env env{*this, features};
+                std::string const credType = "credential";
+                Account const credIssuer1{"credIssuer1"};
+                env.fund(XRP(1000), credIssuer1, bob);
+
+                auto const domainId1 = [&]() {
+                    pdomain::Credentials const credentials1{
+                        {.issuer = credIssuer1, .credType = credType}};
+
+                    env(pdomain::setTx(credIssuer1, credentials1));
+                    return [&]() {
+                        auto tx = env.tx()->getJson(JsonOptions::none);
+                        return pdomain::getNewDomain(env.meta());
+                    }();
+                }();
+                // bob is authorized via domain
+                env(credentials::create(bob, credIssuer1, credType));
+                env(credentials::accept(bob, credIssuer1, credType));
+                env.close();
+
+                MPTTester mptAlice(env, alice, {});
+                env.close();
+
+                mptAlice.create({
+                    .ownerCount = 1,
+                    .holderCount = 0,
+                    .flags = tfMPTRequireAuth | tfMPTCanTransfer,
+                    .domainID = domainId1,
+                });
+
+                // bob creates an empty MPToken
+                mptAlice.authorize({.account = bob});
+
+                // alice authorizes bob to hold funds
+                mptAlice.authorize({.account = alice, .holder = bob});
+
+                // alice sends 100 MPT to bob
+                mptAlice.pay(alice, bob, 100);
+
+                // alice UNAUTHORIZES bob
+                mptAlice.authorize(
+                    {.account = alice,
+                     .holder = bob,
+                     .flags = tfMPTUnauthorize});
+
+                // bob is still authorized, via domain
+                mptAlice.pay(bob, alice, 10);
+
+                mptAlice.set({.domainID = beast::zero});
+
+                // bob fails to send back to alice because he is no longer
+                // authorize to move his funds!
+                mptAlice.pay(bob, alice, 10, tecNO_AUTH);
+            }
         }
 
         // Non-issuer cannot send to each other if MPTCanTransfer isn't set
@@ -1340,10 +1701,8 @@ class MPToken_test : public beast::unit_test::suite
     }
 
     void
-    testDepositPreauth()
+    testDepositPreauth(FeatureBitset features)
     {
-        testcase("DepositPreauth");
-
         using namespace test::jtx;
         Account const alice("alice");  // issuer
         Account const bob("bob");      // holder
@@ -1352,8 +1711,11 @@ class MPToken_test : public beast::unit_test::suite
 
         char const credType[] = "abcde";
 
+        if (features[featureCredentials])
         {
-            Env env(*this);
+            testcase("DepositPreauth");
+
+            Env env(*this, features);
 
             env.fund(XRP(50000), diana, dpIssuer);
             env.close();
@@ -1426,9 +1788,11 @@ class MPToken_test : public beast::unit_test::suite
             env.close();
         }
 
-        testcase("DepositPreauth disabled featureCredentials");
+        if (!features[featureCredentials])
         {
-            Env env(*this, supported_amendments() - featureCredentials);
+            testcase("DepositPreauth disabled featureCredentials");
+
+            Env env(*this, features);
 
             std::string const credIdx =
                 "D007AE4B6E1274B4AF872588267B810C2F82716726351D1C7D38D3E5499FC6"
@@ -2297,6 +2661,8 @@ public:
 
         // MPTokenIssuanceCreate
         testCreateValidation(all - featureSingleAssetVault);
+        testCreateValidation(
+            (all | featureSingleAssetVault) - featurePermissionedDomains);
         testCreateValidation(all | featureSingleAssetVault);
         testCreateEnabled(all - featureSingleAssetVault);
         testCreateEnabled(all | featureSingleAssetVault);
@@ -2314,7 +2680,11 @@ public:
         testAuthorizeEnabled(all | featureSingleAssetVault);
 
         // MPTokenIssuanceSet
-        testSetValidation(all);
+        testSetValidation(all - featureSingleAssetVault);
+        testSetValidation(
+            (all | featureSingleAssetVault) - featurePermissionedDomains);
+        testSetValidation(all | featureSingleAssetVault);
+
         testSetEnabled(all - featureSingleAssetVault);
         testSetEnabled(all | featureSingleAssetVault);
 
@@ -2323,8 +2693,9 @@ public:
         testClawback(all);
 
         // Test Direct Payment
-        testPayment(all);
-        testDepositPreauth();
+        testPayment(all | featureSingleAssetVault);
+        testDepositPreauth(all);
+        testDepositPreauth(all - featureCredentials);
 
         // Test MPT Amount is invalid in Tx, which don't support MPT
         testMPTInvalidInTx(all);
