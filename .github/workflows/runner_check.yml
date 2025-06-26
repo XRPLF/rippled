@@ -1,12 +1,17 @@
-name: Check runner's Docker version
+name: Check runners
 on:
   push:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   dependencies:
     strategy:
       matrix:
-        ro: [heavy, x-heavy, heavy-arm64, x-heavy-arm64]
+        ro: [heavy, x-heavy]
+        arch: ["x86_64", "ARM64"]
         num: [1, 2]
     runs-on: ${{ matrix.ro }}
     # container: ghcr.io/xrplf/rippled-build-ubuntu:aaf5e3e
@@ -17,8 +22,6 @@ jobs:
       - name: check environment
         run: |
           set -x
-          uname -m | tee -a $GITHUB_STEP_SUMMARY
-          cat /etc/os-release | tee -a $GITHUB_STEP_SUMMARY
           docker --version | tee -a $GITHUB_STEP_SUMMARY
           docker compose version || true | tee -a $GITHUB_STEP_SUMMARY
           docker buildx version || true | tee -a $GITHUB_STEP_SUMMARY
