@@ -160,7 +160,7 @@ AMMClawback::applyGuts(Sandbox& sb)
         if (auto const res =
                 VerifyAndAdjustLPTokenBalance(sb, holdLPtokens, ammSle, holder);
             !res)
-            return res.error();
+            return res.error();  // LCOV_EXCL_LINE
     }
 
     auto const expected = ammHolds(
@@ -286,12 +286,12 @@ AMMClawback::equalWithdrawMatchingOneAmount(
     {
         auto tokensAdj =
             getRoundedLPTokens(rules, lptAMMBalance, frac, IsDeposit::No);
+
+        // LCOV_EXCL_START
         if (tokensAdj == beast::zero)
             return {
-                tecAMM_INVALID_TOKENS,
-                STAmount{},
-                STAmount{},
-                std::nullopt};  // LCOV_EXCL_LINE
+                tecAMM_INVALID_TOKENS, STAmount{}, STAmount{}, std::nullopt};
+        // LCOV_EXCL_STOP
 
         frac = adjustFracByTokens(rules, lptAMMBalance, tokensAdj, frac);
         amount2Withdraw =
