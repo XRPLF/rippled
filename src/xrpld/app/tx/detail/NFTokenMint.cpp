@@ -38,22 +38,26 @@ extractNFTokenFlagsFromTxFlags(std::uint32_t txFlags)
     return static_cast<std::uint16_t>(txFlags & 0x0000FFFF);
 }
 
-NotTEC
-NFTokenMint::preflight(PreflightContext const& ctx)
+static bool
+hasOfferFields(PreflightContext const& ctx)
 {
-    if (!ctx.rules.enabled(featureNonFungibleTokensV1))
-        return temDISABLED;
-
-    bool const hasOfferFields = ctx.tx.isFieldPresent(sfAmount) ||
+    return ctx.tx.isFieldPresent(sfAmount) ||
         ctx.tx.isFieldPresent(sfDestination) ||
         ctx.tx.isFieldPresent(sfExpiration);
+}
 
-    if (!ctx.rules.enabled(featureNFTokenMintOffer) && hasOfferFields)
-        return temDISABLED;
+bool
+NFTokenMint::isEnabled(PreflightContext const& ctx)
+{
+    if (!ctx.rules.enabled(featureNonFungibleTokensV1))
+        return false;
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
+    return ctx.rules.enabled(featureNFTokenMintOffer) || !hasOfferFields(ctx);
+}
 
+std::uint32_t
+NFTokenMint::getFlagsMask(PreflightContext const& ctx)
+{
     // Prior to fixRemoveNFTokenAutoTrustLine, transfer of an NFToken between
     // accounts allowed a TrustLine to be added to the issuer of that token
     // without explicit permission from that issuer.  This was enabled by
@@ -67,7 +71,7 @@ NFTokenMint::preflight(PreflightContext const& ctx)
     // The fixRemoveNFTokenAutoTrustLine amendment disables minting with the
     // tfTrustLine flag as a way to prevent the attack.  But until the
     // amendment passes we still need to keep the old behavior available.
-    std::uint32_t const NFTokenMintMask =
+    std::uint32_t const nfTokenMintMask =
         ctx.rules.enabled(fixRemoveNFTokenAutoTrustLine)
         // if featureDynamicNFT enabled then new flag allowing mutable URI
         // available
@@ -76,9 +80,12 @@ NFTokenMint::preflight(PreflightContext const& ctx)
         : ctx.rules.enabled(featureDynamicNFT) ? tfNFTokenMintOldMaskWithMutable
                                                : tfNFTokenMintOldMask;
 
-    if (ctx.tx.getFlags() & NFTokenMintMask)
-        return temINVALID_FLAG;
+    return nfTokenMintMask;
+}
 
+NotTEC
+NFTokenMint::doPreflight(PreflightContext const& ctx)
+{
     if (auto const f = ctx.tx[~sfTransferFee])
     {
         if (f > maxTransferFee)
@@ -100,7 +107,7 @@ NFTokenMint::preflight(PreflightContext const& ctx)
             return temMALFORMED;
     }
 
-    if (hasOfferFields)
+    if (hasOfferFields(ctx))
     {
         // The Amount field must be present if either the Destination or
         // Expiration fields are present.
@@ -123,7 +130,7 @@ NFTokenMint::preflight(PreflightContext const& ctx)
         }
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 uint256

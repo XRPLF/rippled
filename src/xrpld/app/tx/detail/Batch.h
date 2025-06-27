@@ -40,8 +40,14 @@ public:
     static XRPAmount
     calculateBaseFee(ReadView const& view, STTx const& tx);
 
+    static bool
+    isEnabled(PreflightContext const& ctx);
+
+    static std::uint32_t
+    getFlagsMask(PreflightContext const& ctx);
+
     static NotTEC
-    preflight(PreflightContext const& ctx);
+    doPreflight(PreflightContext const& ctx);
 
     static NotTEC
     checkSign(PreclaimContext const& ctx);

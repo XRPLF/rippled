@@ -31,21 +31,15 @@
 
 namespace ripple {
 
-NotTEC
-AMMCreate::preflight(PreflightContext const& ctx)
+bool
+AMMCreate::isEnabled(PreflightContext const& ctx)
 {
-    if (!ammEnabled(ctx.rules))
-        return temDISABLED;
+    return ammEnabled(ctx.rules);
+}
 
-    if (auto const ret = preflight1(ctx); !isTesSuccess(ret))
-        return ret;
-
-    if (ctx.tx.getFlags() & tfUniversalMask)
-    {
-        JLOG(ctx.j.debug()) << "AMM Instance: invalid flags.";
-        return temINVALID_FLAG;
-    }
-
+NotTEC
+AMMCreate::doPreflight(PreflightContext const& ctx)
+{
     auto const amount = ctx.tx[sfAmount];
     auto const amount2 = ctx.tx[sfAmount2];
 
@@ -74,14 +68,14 @@ AMMCreate::preflight(PreflightContext const& ctx)
         return temBAD_FEE;
     }
 
-    return preflight2(ctx);
+    return tesSUCCESS;
 }
 
 XRPAmount
 AMMCreate::calculateBaseFee(ReadView const& view, STTx const& tx)
 {
     // The fee required for AMMCreate is one owner reserve.
-    return view.fees().increment;
+    return calculateOwnerReserveFee(view, tx);
 }
 
 TER

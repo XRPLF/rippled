@@ -16,8 +16,8 @@
     OR IN CONNECTION WITH THE USE OR PERFORMANCE OF THIS SOFTWARE.
 */
 
-#ifndef BASICS_FEES_H_INCLUDED
-#define BASICS_FEES_H_INCLUDED
+#ifndef PROTOCOL_UNITS_H_INCLUDED
+#define PROTOCOL_UNITS_H_INCLUDED
 
 #include <xrpl/basics/safe_cast.h>
 #include <xrpl/beast/utility/Zero.h>
@@ -38,22 +38,22 @@
 
 namespace ripple {
 
-namespace feeunit {
+namespace unit {
 
 /** "drops" are the smallest divisible amount of XRP. This is what most
     of the code uses. */
 struct dropTag;
-/** "fee units" calculations are a not-really-unitless value that is used
-    to express the cost of a given transaction vs. a reference transaction.
-    They are primarily used by the Transactor classes. */
-struct feeunitTag;
 /** "fee levels" are used by the transaction queue to compare the relative
     cost of transactions that require different levels of effort to process.
     See also: src/ripple/app/misc/FeeEscalation.md#fee-level */
 struct feelevelTag;
-/** unitless values are plain scalars wrapped in a TaggedFee. They are
+/** unitless values are plain scalars wrapped in a ValueUnit. They are
     used for calculations in this header. */
 struct unitlessTag;
+
+/** Units to represent basis points (bips) and 1/10 basis points */
+class BipsTag;
+class TenthBipsTag;
 
 template <class T>
 using enable_if_unit_t = typename std::enable_if_t<
@@ -62,32 +62,33 @@ using enable_if_unit_t = typename std::enable_if_t<
 
 /** `is_usable_unit_v` is checked to ensure that only values with
     known valid type tags can be used (sometimes transparently) in
-    non-fee contexts. At the time of implementation, this includes
+    non-unit contexts. At the time of implementation, this includes
     all known tags, but more may be added in the future, and they
     should not be added automatically unless determined to be
     appropriate.
 */
 template <class T, class = enable_if_unit_t<T>>
 constexpr bool is_usable_unit_v =
-    std::is_same_v<typename T::unit_type, feeunitTag> ||
     std::is_same_v<typename T::unit_type, feelevelTag> ||
     std::is_same_v<typename T::unit_type, unitlessTag> ||
-    std::is_same_v<typename T::unit_type, dropTag>;
+    std::is_same_v<typename T::unit_type, dropTag> ||
+    std::is_same_v<typename T::unit_type, BipsTag> ||
+    std::is_same_v<typename T::unit_type, TenthBipsTag>;
 
 template <class UnitTag, class T>
-class TaggedFee : private boost::totally_ordered<TaggedFee<UnitTag, T>>,
-                  private boost::additive<TaggedFee<UnitTag, T>>,
-                  private boost::equality_comparable<TaggedFee<UnitTag, T>, T>,
-                  private boost::dividable<TaggedFee<UnitTag, T>, T>,
-                  private boost::modable<TaggedFee<UnitTag, T>, T>,
-                  private boost::unit_steppable<TaggedFee<UnitTag, T>>
+class ValueUnit : private boost::totally_ordered<ValueUnit<UnitTag, T>>,
+                  private boost::additive<ValueUnit<UnitTag, T>>,
+                  private boost::equality_comparable<ValueUnit<UnitTag, T>, T>,
+                  private boost::dividable<ValueUnit<UnitTag, T>, T>,
+                  private boost::modable<ValueUnit<UnitTag, T>, T>,
+                  private boost::unit_steppable<ValueUnit<UnitTag, T>>
 {
 public:
     using unit_type = UnitTag;
     using value_type = T;
 
 private:
-    value_type fee_;
+    value_type value_;
 
 protected:
     template <class Other>
@@ -95,44 +96,44 @@ protected:
         std::is_arithmetic_v<Other> && std::is_arithmetic_v<value_type> &&
         std::is_convertible_v<Other, value_type>;
 
-    template <class OtherFee, class = enable_if_unit_t<OtherFee>>
-    static constexpr bool is_compatiblefee_v =
-        is_compatible_v<typename OtherFee::value_type> &&
-        std::is_same_v<UnitTag, typename OtherFee::unit_type>;
+    template <class OtherValue, class = enable_if_unit_t<OtherValue>>
+    static constexpr bool is_compatiblevalue_v =
+        is_compatible_v<typename OtherValue::value_type> &&
+        std::is_same_v<UnitTag, typename OtherValue::unit_type>;
 
     template <class Other>
     using enable_if_compatible_t =
         typename std::enable_if_t<is_compatible_v<Other>>;
 
-    template <class OtherFee>
-    using enable_if_compatiblefee_t =
-        typename std::enable_if_t<is_compatiblefee_v<OtherFee>>;
+    template <class OtherValue>
+    using enable_if_compatiblevalue_t =
+        typename std::enable_if_t<is_compatiblevalue_v<OtherValue>>;
 
 public:
-    TaggedFee() = default;
-    constexpr TaggedFee(TaggedFee const& other) = default;
-    constexpr TaggedFee&
-    operator=(TaggedFee const& other) = default;
+    ValueUnit() = default;
+    constexpr ValueUnit(ValueUnit const& other) = default;
+    constexpr ValueUnit&
+    operator=(ValueUnit const& other) = default;
 
-    constexpr explicit TaggedFee(beast::Zero) : fee_(0)
+    constexpr explicit ValueUnit(beast::Zero) : value_(0)
     {
     }
 
-    constexpr TaggedFee&
+    constexpr ValueUnit&
     operator=(beast::Zero)
     {
-        fee_ = 0;
+        value_ = 0;
         return *this;
     }
 
-    constexpr explicit TaggedFee(value_type fee) : fee_(fee)
+    constexpr explicit ValueUnit(value_type value) : value_(value)
     {
     }
 
-    TaggedFee&
-    operator=(value_type fee)
+    constexpr ValueUnit&
+    operator=(value_type value)
     {
-        fee_ = fee;
+        value_ = value;
         return *this;
     }
 
@@ -144,153 +145,181 @@ public:
         class = std::enable_if_t<
             is_compatible_v<Other> &&
             is_safetocasttovalue_v<value_type, Other>>>
-    constexpr TaggedFee(TaggedFee<unit_type, Other> const& fee)
-        : TaggedFee(safe_cast<value_type>(fee.fee()))
+    constexpr ValueUnit(ValueUnit<unit_type, Other> const& value)
+        : ValueUnit(safe_cast<value_type>(value.value()))
     {
     }
 
-    constexpr TaggedFee
+    constexpr ValueUnit
+    operator+(value_type const& rhs) const
+    {
+        return ValueUnit{value_ + rhs};
+    }
+
+    friend constexpr ValueUnit
+    operator+(value_type lhs, ValueUnit const& rhs)
+    {
+        // addition is commutative
+        return rhs + lhs;
+    }
+
+    constexpr ValueUnit
+    operator-(value_type const& rhs) const
+    {
+        return ValueUnit{value_ - rhs};
+    }
+
+    friend constexpr ValueUnit
+    operator-(value_type lhs, ValueUnit const& rhs)
+    {
+        // subtraction is NOT commutative, but (lhs + (-rhs)) is addition, which
+        // is
+        return -rhs + lhs;
+    }
+
+    constexpr ValueUnit
     operator*(value_type const& rhs) const
     {
-        return TaggedFee{fee_ * rhs};
+        return ValueUnit{value_ * rhs};
     }
 
-    friend constexpr TaggedFee
-    operator*(value_type lhs, TaggedFee const& rhs)
+    friend constexpr ValueUnit
+    operator*(value_type lhs, ValueUnit const& rhs)
     {
         // multiplication is commutative
         return rhs * lhs;
     }
 
     constexpr value_type
-    operator/(TaggedFee const& rhs) const
+    operator/(ValueUnit const& rhs) const
     {
-        return fee_ / rhs.fee_;
+        return value_ / rhs.value_;
     }
 
-    TaggedFee&
-    operator+=(TaggedFee const& other)
+    ValueUnit&
+    operator+=(ValueUnit const& other)
     {
-        fee_ += other.fee();
+        value_ += other.value();
         return *this;
     }
 
-    TaggedFee&
-    operator-=(TaggedFee const& other)
+    ValueUnit&
+    operator-=(ValueUnit const& other)
     {
-        fee_ -= other.fee();
+        value_ -= other.value();
         return *this;
     }
 
-    TaggedFee&
+    ValueUnit&
     operator++()
     {
-        ++fee_;
+        ++value_;
         return *this;
     }
 
-    TaggedFee&
+    ValueUnit&
     operator--()
     {
-        --fee_;
+        --value_;
         return *this;
     }
 
-    TaggedFee&
+    ValueUnit&
     operator*=(value_type const& rhs)
     {
-        fee_ *= rhs;
+        value_ *= rhs;
         return *this;
     }
 
-    TaggedFee&
+    ValueUnit&
     operator/=(value_type const& rhs)
     {
-        fee_ /= rhs;
+        value_ /= rhs;
         return *this;
     }
 
     template <class transparent = value_type>
-    std::enable_if_t<std::is_integral_v<transparent>, TaggedFee&>
+    std::enable_if_t<std::is_integral_v<transparent>, ValueUnit&>
     operator%=(value_type const& rhs)
     {
-        fee_ %= rhs;
+        value_ %= rhs;
         return *this;
     }
 
-    TaggedFee
+    ValueUnit
     operator-() const
     {
         static_assert(
-            std::is_signed_v<T>, "- operator illegal on unsigned fee types");
-        return TaggedFee{-fee_};
+            std::is_signed_v<T>, "- operator illegal on unsigned value types");
+        return ValueUnit{-value_};
     }
 
-    bool
-    operator==(TaggedFee const& other) const
+    constexpr bool
+    operator==(ValueUnit const& other) const
     {
-        return fee_ == other.fee_;
+        return value_ == other.value_;
     }
 
     template <class Other, class = enable_if_compatible_t<Other>>
-    bool
-    operator==(TaggedFee<unit_type, Other> const& other) const
+    constexpr bool
+    operator==(ValueUnit<unit_type, Other> const& other) const
     {
-        return fee_ == other.fee();
+        return value_ == other.value();
     }
 
-    bool
+    constexpr bool
     operator==(value_type other) const
     {
-        return fee_ == other;
+        return value_ == other;
     }
 
     template <class Other, class = enable_if_compatible_t<Other>>
-    bool
-    operator!=(TaggedFee<unit_type, Other> const& other) const
+    constexpr bool
+    operator!=(ValueUnit<unit_type, Other> const& other) const
     {
         return !operator==(other);
     }
 
-    bool
-    operator<(TaggedFee const& other) const
+    constexpr bool
+    operator<(ValueUnit const& other) const
     {
-        return fee_ < other.fee_;
+        return value_ < other.value_;
     }
 
     /** Returns true if the amount is not zero */
     explicit constexpr
     operator bool() const noexcept
     {
-        return fee_ != 0;
+        return value_ != 0;
     }
 
     /** Return the sign of the amount */
     constexpr int
     signum() const noexcept
     {
-        return (fee_ < 0) ? -1 : (fee_ ? 1 : 0);
+        return (value_ < 0) ? -1 : (value_ ? 1 : 0);
     }
 
     /** Returns the number of drops */
+    // TODO: Move this to a new class, maybe with the old "TaggedFee" name
     constexpr value_type
     fee() const
     {
-        return fee_;
+        return value_;
     }
 
     template <class Other>
     constexpr double
-    decimalFromReference(TaggedFee<unit_type, Other> reference) const
+    decimalFromReference(ValueUnit<unit_type, Other> reference) const
     {
-        return static_cast<double>(fee_) / reference.fee();
+        return static_cast<double>(value_) / reference.value();
     }
 
     // `is_usable_unit_v` is checked to ensure that only values with
     // known valid type tags can be converted to JSON. At the time
     // of implementation, that includes all known tags, but more may
     // be added in the future.
-    std::enable_if_t<is_usable_unit_v<TaggedFee>, Json::Value>
+    std::enable_if_t<is_usable_unit_v<ValueUnit>, Json::Value>
     jsonClipped() const
     {
         if constexpr (std::is_integral_v<value_type>)
@@ -303,15 +332,15 @@ public:
             constexpr auto min = std::numeric_limits<jsontype>::min();
             constexpr auto max = std::numeric_limits<jsontype>::max();
 
-            if (fee_ < min)
+            if (value_ < min)
                 return min;
-            if (fee_ > max)
+            if (value_ > max)
                 return max;
-            return static_cast<jsontype>(fee_);
+            return static_cast<jsontype>(value_);
         }
         else
         {
-            return fee_;
+            return value_;
         }
     }
 
@@ -322,30 +351,30 @@ public:
     constexpr value_type
     value() const
     {
-        return fee_;
+        return value_;
     }
 
     friend std::istream&
-    operator>>(std::istream& s, TaggedFee& val)
+    operator>>(std::istream& s, ValueUnit& val)
     {
-        s >> val.fee_;
+        s >> val.value_;
         return s;
     }
 };
 
-// Output Fees as just their numeric value.
+// Output Values as just their numeric value.
 template <class Char, class Traits, class UnitTag, class T>
 std::basic_ostream<Char, Traits>&
-operator<<(std::basic_ostream<Char, Traits>& os, TaggedFee<UnitTag, T> const& q)
+operator<<(std::basic_ostream<Char, Traits>& os, ValueUnit<UnitTag, T> const& q)
 {
     return os << q.value();
 }
 
 template <class UnitTag, class T>
 std::string
-to_string(TaggedFee<UnitTag, T> const& amount)
+to_string(ValueUnit<UnitTag, T> const& amount)
 {
-    return std::to_string(amount.fee());
+    return std::to_string(amount.value());
 }
 
 template <class Source, class = enable_if_unit_t<Source>>
@@ -408,10 +437,10 @@ using enable_muldiv_commute_t =
     typename std::enable_if_t<can_muldiv_commute_v<Source1, Source2, Dest>>;
 
 template <class T>
-TaggedFee<unitlessTag, T>
+ValueUnit<unitlessTag, T>
 scalar(T value)
 {
-    return TaggedFee<unitlessTag, T>{value};
+    return ValueUnit<unitlessTag, T>{value};
 }
 
 template <
@@ -422,18 +451,17 @@ template <
 std::optional<Dest>
 mulDivU(Source1 value, Dest mul, Source2 div)
 {
-    // Fees can never be negative in any context.
+    // values can never be negative in any context.
     if (value.value() < 0 || mul.value() < 0 || div.value() < 0)
     {
         // split the asserts so if one hits, the user can tell which
         // without a debugger.
         XRPL_ASSERT(
-            value.value() >= 0,
-            "ripple::feeunit::mulDivU : minimum value input");
+            value.value() >= 0, "ripple::unit::mulDivU : minimum value input");
         XRPL_ASSERT(
-            mul.value() >= 0, "ripple::feeunit::mulDivU : minimum mul input");
+            mul.value() >= 0, "ripple::unit::mulDivU : minimum mul input");
         XRPL_ASSERT(
-            div.value() >= 0, "ripple::feeunit::mulDivU : minimum div input");
+            div.value() >= 0, "ripple::unit::mulDivU : minimum div input");
         return std::nullopt;
     }
 
@@ -466,46 +494,57 @@ mulDivU(Source1 value, Dest mul, Source2 div)
     return Dest{static_cast<desttype>(quotient)};
 }
 
-}  // namespace feeunit
+}  // namespace unit
 
+// Fee Levels
 template <class T>
-using FeeLevel = feeunit::TaggedFee<feeunit::feelevelTag, T>;
+using FeeLevel = unit::ValueUnit<unit::feelevelTag, T>;
 using FeeLevel64 = FeeLevel<std::uint64_t>;
 using FeeLevelDouble = FeeLevel<double>;
+
+// Basis points (Bips)
+template <class T>
+using Bips = unit::ValueUnit<unit::BipsTag, T>;
+using Bips16 = Bips<std::uint16_t>;
+using Bips32 = Bips<std::uint32_t>;
+template <class T>
+using TenthBips = unit::ValueUnit<unit::TenthBipsTag, T>;
+using TenthBips16 = TenthBips<std::uint16_t>;
+using TenthBips32 = TenthBips<std::uint32_t>;
 
 template <
     class Source1,
     class Source2,
     class Dest,
-    class = feeunit::enable_muldiv_t<Source1, Source2, Dest>>
+    class = unit::enable_muldiv_t<Source1, Source2, Dest>>
 std::optional<Dest>
 mulDiv(Source1 value, Dest mul, Source2 div)
 {
-    return feeunit::mulDivU(value, mul, div);
+    return unit::mulDivU(value, mul, div);
 }
 
 template <
     class Source1,
     class Source2,
     class Dest,
-    class = feeunit::enable_muldiv_commute_t<Source1, Source2, Dest>>
+    class = unit::enable_muldiv_commute_t<Source1, Source2, Dest>>
 std::optional<Dest>
 mulDiv(Dest value, Source1 mul, Source2 div)
 {
     // Multiplication is commutative
-    return feeunit::mulDivU(mul, value, div);
+    return unit::mulDivU(mul, value, div);
 }
 
-template <class Dest, class = feeunit::enable_muldiv_dest_t<Dest>>
+template <class Dest, class = unit::enable_muldiv_dest_t<Dest>>
 std::optional<Dest>
 mulDiv(std::uint64_t value, Dest mul, std::uint64_t div)
 {
     // Give the scalars a non-tag so the
     // unit-handling version gets called.
-    return feeunit::mulDivU(feeunit::scalar(value), mul, feeunit::scalar(div));
+    return unit::mulDivU(unit::scalar(value), mul, unit::scalar(div));
 }
 
-template <class Dest, class = feeunit::enable_muldiv_dest_t<Dest>>
+template <class Dest, class = unit::enable_muldiv_dest_t<Dest>>
 std::optional<Dest>
 mulDiv(Dest value, std::uint64_t mul, std::uint64_t div)
 {
@@ -516,13 +555,13 @@ mulDiv(Dest value, std::uint64_t mul, std::uint64_t div)
 template <
     class Source1,
     class Source2,
-    class = feeunit::enable_muldiv_sources_t<Source1, Source2>>
+    class = unit::enable_muldiv_sources_t<Source1, Source2>>
 std::optional<std::uint64_t>
 mulDiv(Source1 value, std::uint64_t mul, Source2 div)
 {
     // Give the scalars a dimensionless unit so the
     // unit-handling version gets called.
-    auto unitresult = feeunit::mulDivU(value, feeunit::scalar(mul), div);
+    auto unitresult = unit::mulDivU(value, unit::scalar(mul), div);
 
     if (!unitresult)
         return std::nullopt;
@@ -533,7 +572,7 @@ mulDiv(Source1 value, std::uint64_t mul, Source2 div)
 template <
     class Source1,
     class Source2,
-    class = feeunit::enable_muldiv_sources_t<Source1, Source2>>
+    class = unit::enable_muldiv_sources_t<Source1, Source2>>
 std::optional<std::uint64_t>
 mulDiv(std::uint64_t value, Source1 mul, Source2 div)
 {
@@ -555,6 +594,16 @@ safe_cast(Src s) noexcept
 
 template <class Dest, class Src>
 constexpr std::enable_if_t<
+    std::is_integral_v<typename Dest::value_type> && std::is_integral_v<Src>,
+    Dest>
+safe_cast(Src s) noexcept
+{
+    // Dest may not have an explicit value constructor
+    return Dest{safe_cast<typename Dest::value_type>(s)};
+}
+
+template <class Dest, class Src>
+constexpr std::enable_if_t<
     std::is_same_v<typename Dest::unit_type, typename Src::unit_type> &&
         std::is_integral_v<typename Dest::value_type> &&
         std::is_integral_v<typename Src::value_type>,
@@ -565,6 +614,16 @@ unsafe_cast(Src s) noexcept
     return Dest{unsafe_cast<typename Dest::value_type>(s.value())};
 }
 
+template <class Dest, class Src>
+constexpr std::enable_if_t<
+    std::is_integral_v<typename Dest::value_type> && std::is_integral_v<Src>,
+    Dest>
+unsafe_cast(Src s) noexcept
+{
+    // Dest may not have an explicit value constructor
+    return Dest{unsafe_cast<typename Dest::value_type>(s)};
+}
+
 }  // namespace ripple
 
-#endif  // BASICS_FEES_H_INCLUDED
+#endif  // PROTOCOL_UNITS_H_INCLUDED

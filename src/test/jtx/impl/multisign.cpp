@@ -69,8 +69,15 @@ void
 msig::operator()(Env& env, JTx& jt) const
 {
     auto const mySigners = signers;
-    jt.signer = [mySigners, &env](Env&, JTx& jtx) {
-        jtx[sfSigningPubKey.getJsonName()] = "";
+    auto callback = [subField = subField, mySigners, &env](Env&, JTx& jtx) {
+        // Where to put the signature. Supports sfCounterPartySignature.
+        auto& sigObject = subField ? jtx[*subField] : jtx.jv;
+
+        // The signing pub key is only required at the top level.
+        if (!subField)
+            sigObject[sfSigningPubKey] = "";
+        else if (sigObject.isNull())
+            sigObject = Json::Value(Json::objectValue);
         std::optional<STObject> st;
         try
         {
@@ -81,7 +88,7 @@ msig::operator()(Env& env, JTx& jt) const
             env.test.log << pretty(jtx.jv) << std::endl;
             Rethrow();
         }
-        auto& js = jtx[sfSigners.getJsonName()];
+        auto& js = sigObject[sfSigners];
         for (std::size_t i = 0; i < mySigners.size(); ++i)
         {
             auto const& e = mySigners[i];
@@ -96,6 +103,10 @@ msig::operator()(Env& env, JTx& jt) const
                 strHex(Slice{sig.data(), sig.size()});
         }
     };
+    if (!subField)
+        jt.mainSigners.emplace_back(callback);
+    else
+        jt.postSigners.emplace_back(callback);
 }
 
 }  // namespace jtx
