@@ -148,7 +148,7 @@ VaultWithdraw::preclaim(PreclaimContext const& ctx)
     if (isFrozen(ctx.view, dstAcct, vaultAsset))
         return vaultAsset.holds<Issue>() ? tecFROZEN : tecLOCKED;
 
-    if (isFrozen(ctx.view, account, vaultShare))
+    if (isFrozen(ctx.view, account, Asset{vaultShare}))
         return tecLOCKED;
 
     return tesSUCCESS;

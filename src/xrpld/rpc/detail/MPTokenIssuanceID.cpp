@@ -42,7 +42,7 @@ canHaveMPTokenIssuanceID(
     return true;
 }
 
-std::optional<uint192>
+std::optional<MPTID>
 getIDFromCreatedIssuance(TxMeta const& transactionMeta)
 {
     for (STObject const& node : transactionMeta.getNodes())
@@ -69,7 +69,7 @@ insertMPTokenIssuanceID(
     if (!canHaveMPTokenIssuanceID(transaction, transactionMeta))
         return;
 
-    std::optional<uint192> result = getIDFromCreatedIssuance(transactionMeta);
+    std::optional<MPTID> result = getIDFromCreatedIssuance(transactionMeta);
     if (result)
         response[jss::mpt_issuance_id] = to_string(result.value());
 }

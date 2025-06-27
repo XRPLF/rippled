@@ -22,7 +22,7 @@
 
 #include <xrpl/basics/CountedObject.h>
 #include <xrpl/basics/base_uint.h>
-#include <xrpl/protocol/Issue.h>
+#include <xrpl/protocol/Asset.h>
 
 #include <boost/utility/base_from_member.hpp>
 
@@ -35,8 +35,8 @@ namespace ripple {
 class Book final : public CountedObject<Book>
 {
 public:
-    Issue in;
-    Issue out;
+    Asset in;
+    Asset out;
     std::optional<uint256> domain;
 
     Book()
@@ -44,8 +44,8 @@ public:
     }
 
     Book(
-        Issue const& in_,
-        Issue const& out_,
+        Asset const& in_,
+        Asset const& out_,
         std::optional<uint256> const& domain_)
         : in(in_), out(out_), domain(domain_)
     {
@@ -140,16 +140,73 @@ public:
     }
 };
 
+template <>
+struct hash<ripple::MPTIssue>
+    : private boost::base_from_member<std::hash<ripple::MPTID>, 0>
+{
+private:
+    using id_hash_type = boost::base_from_member<std::hash<ripple::MPTID>, 0>;
+
+public:
+    explicit hash() = default;
+
+    using value_type = std::size_t;
+    using argument_type = ripple::MPTIssue;
+
+    value_type
+    operator()(argument_type const& value) const
+    {
+        value_type result(id_hash_type::member(value.getMptID()));
+        return result;
+    }
+};
+
+template <>
+struct hash<ripple::Asset>
+{
+private:
+    using value_type = std::size_t;
+    using argument_type = ripple::Asset;
+
+    using issue_hasher = std::hash<ripple::Issue>;
+    using mptissue_hasher = std::hash<ripple::MPTIssue>;
+
+    issue_hasher m_issue_hasher;
+    mptissue_hasher m_mptissue_hasher;
+
+public:
+    explicit hash() = default;
+
+    value_type
+    operator()(argument_type const& asset) const
+    {
+        return std::visit(
+            [&]<ripple::ValidIssueType TIss>(TIss const& issue) {
+                if constexpr (std::is_same_v<TIss, ripple::Issue>)
+                {
+                    value_type result(m_issue_hasher(issue));
+                    return result;
+                }
+                else if constexpr (std::is_same_v<TIss, ripple::MPTIssue>)
+                {
+                    value_type result(m_mptissue_hasher(issue));
+                    return result;
+                }
+            },
+            asset.value());
+    }
+};
+
 //------------------------------------------------------------------------------
 
 template <>
 struct hash<ripple::Book>
 {
 private:
-    using issue_hasher = std::hash<ripple::Issue>;
+    using asset_hasher = std::hash<ripple::Asset>;
     using uint256_hasher = ripple::uint256::hasher;
 
-    issue_hasher m_issue_hasher;
+    asset_hasher m_asset_hasher;
     uint256_hasher m_uint256_hasher;
 
 public:
@@ -161,8 +218,8 @@ public:
     value_type
     operator()(argument_type const& value) const
     {
-        value_type result(m_issue_hasher(value.in));
-        boost::hash_combine(result, m_issue_hasher(value.out));
+        value_type result(m_asset_hasher(value.in));
+        boost::hash_combine(result, m_asset_hasher(value.out));
 
         if (value.domain)
             boost::hash_combine(result, m_uint256_hasher(*value.domain));
@@ -185,6 +242,22 @@ struct hash<ripple::Issue> : std::hash<ripple::Issue>
     using Base = std::hash<ripple::Issue>;
     // VFALCO NOTE broken in vs2012
     // using Base::Base; // inherit ctors
+};
+
+template <>
+struct hash<ripple::MPTIssue> : std::hash<ripple::MPTIssue>
+{
+    explicit hash() = default;
+
+    using Base = std::hash<ripple::MPTIssue>;
+};
+
+template <>
+struct hash<ripple::Asset> : std::hash<ripple::Asset>
+{
+    explicit hash() = default;
+
+    using Base = std::hash<ripple::Asset>;
 };
 
 template <>

@@ -77,10 +77,7 @@ public:
         auto const gw = Account("gateway");
         auto const USD = gw["USD"];
 
-        // The number of allowed offers to cross is different between
-        // Taker and FlowCross.  Taker allows 850 and FlowCross allows 1000.
-        // Accommodate that difference in the test.
-        int const maxConsumed = features[featureFlowCross] ? 1000 : 850;
+        int const maxConsumed = 1000;
 
         env.fund(XRP(100000000), gw, "alice", "bob", "carol");
         int const bobsOfferCount = maxConsumed + 150;
@@ -119,11 +116,7 @@ public:
 
         env.fund(XRP(100000000), gw, "alice", "bob", "carol", "dan", "evita");
 
-        // The number of offers allowed to cross is different between
-        // Taker and FlowCross.  Taker allows 850 and FlowCross allows 1000.
-        // Accommodate that difference in the test.
-        bool const isFlowCross{features[featureFlowCross]};
-        int const maxConsumed = isFlowCross ? 1000 : 850;
+        int const maxConsumed = 1000;
 
         int const evitasOfferCount{maxConsumed + 49};
         env.trust(USD(1000), "alice");
@@ -133,14 +126,9 @@ public:
         env.trust(USD(evitasOfferCount + 1), "evita");
         env(pay(gw, "evita", USD(evitasOfferCount + 1)));
 
-        // Taker and FlowCross have another difference we must accommodate.
-        // Taker allows a total of 1000 unfunded offers to be consumed
-        // beyond the 850 offers it can take.  FlowCross draws no such
-        // distinction; its limit is 1000 funded or unfunded.
-        //
         // Give carol an extra 150 (unfunded) offers when we're using Taker
         // to accommodate that difference.
-        int const carolsOfferCount{isFlowCross ? 700 : 850};
+        int const carolsOfferCount{700};
         n_offers(env, 400, "alice", XRP(1), USD(1));
         n_offers(env, carolsOfferCount, "carol", XRP(1), USD(1));
         n_offers(env, evitasOfferCount, "evita", XRP(1), USD(1));
@@ -268,9 +256,13 @@ public:
     }
 
     void
-    testAutoBridgedLimitsFlowCross(FeatureBitset features)
+    testAutoBridgedLimits(FeatureBitset features)
     {
-        testcase("Auto Bridged Limits FlowCross");
+        testcase("Auto Bridged Limits");
+
+        // Extracts as much as possible in one book at one Quality
+        // before proceeding to the other book.  This reduces the number of
+        // times we change books.
 
         // If any book step in a payment strand consumes 1000 offers, the
         // liquidity from the offers is used, but that strand will be marked as
@@ -453,26 +445,6 @@ public:
     }
 
     void
-    testAutoBridgedLimits(FeatureBitset features)
-    {
-        // Taker and FlowCross are too different in the way they handle
-        // autobridging to make one test suit both approaches.
-        //
-        //  o Taker alternates between books, completing one full increment
-        //    before returning to make another pass.
-        //
-        //  o FlowCross extracts as much as possible in one book at one Quality
-        //    before proceeding to the other book.  This reduces the number of
-        //    times we change books.
-        //
-        // So the tests for the two forms of autobridging are separate.
-        if (features[featureFlowCross])
-            testAutoBridgedLimitsFlowCross(features);
-        else
-            testAutoBridgedLimitsTaker(features);
-    }
-
-    void
     testOfferOverflow(FeatureBitset features)
     {
         testcase("Offer Overflow");
@@ -522,25 +494,12 @@ public:
         n_offers(env, 998, alice, XRP(0.96), USD(1));
         n_offers(env, 998, alice, XRP(0.95), USD(1));
 
-        bool const withFlowCross = features[featureFlowCross];
-        bool const withSortStrands = features[featureFlowSortStrands];
-
-        auto const expectedTER = [&]() -> TER {
-            if (withFlowCross && !withSortStrands)
-                return TER{tecOVERSIZE};
-            return tesSUCCESS;
-        }();
+        auto const expectedTER = tesSUCCESS;
 
         env(offer(bob, USD(8000), XRP(8000)), ter(expectedTER));
         env.close();
 
-        auto const expectedUSD = [&] {
-            if (!withFlowCross)
-                return USD(850);
-            if (!withSortStrands)
-                return USD(0);
-            return USD(1996);
-        }();
+        auto const expectedUSD = USD(1996);
 
         env.require(balance(bob, expectedUSD));
     }
@@ -559,10 +518,6 @@ public:
         auto const sa = supported_amendments();
         testAll(sa);
         testAll(sa - featurePermissionedDEX);
-        testAll(sa - featureFlowSortStrands - featurePermissionedDEX);
-        testAll(
-            sa - featureFlowCross - featureFlowSortStrands -
-            featurePermissionedDEX);
     }
 };
 

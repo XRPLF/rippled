@@ -97,7 +97,7 @@ escrowCreatePreflightHelper<Issue>(PreflightContext const& ctx)
     if (amount.native() || amount <= beast::zero)
         return temBAD_AMOUNT;
 
-    if (badCurrency() == amount.getCurrency())
+    if (badCurrency() == amount.get<Issue>().currency)
         return temBAD_CURRENCY;
 
     return tesSUCCESS;
@@ -208,7 +208,8 @@ escrowCreatePreclaimHelper<Issue>(
     AccountID const& dest,
     STAmount const& amount)
 {
-    AccountID issuer = amount.getIssuer();
+    auto const& issue = amount.get<Issue>();
+    AccountID const& issuer = amount.getIssuer();
     // If the issuer is the same as the account, return tecNO_PERMISSION
     if (issuer == account)
         return tecNO_PERMISSION;
@@ -222,7 +223,7 @@ escrowCreatePreclaimHelper<Issue>(
 
     // If the account does not have a trustline to the issuer, return tecNO_LINE
     auto const sleRippleState =
-        ctx.view.read(keylet::line(account, issuer, amount.getCurrency()));
+        ctx.view.read(keylet::line(account, issuer, issue.currency));
     if (!sleRippleState)
         return tecNO_LINE;
 
@@ -237,30 +238,24 @@ escrowCreatePreclaimHelper<Issue>(
         return tecNO_PERMISSION;  // LCOV_EXCL_LINE
 
     // If the issuer has requireAuth set, check if the account is authorized
-    if (auto const ter = requireAuth(ctx.view, amount.issue(), account);
+    if (auto const ter = requireAuth(ctx.view, issue, account);
         ter != tesSUCCESS)
         return ter;
 
     // If the issuer has requireAuth set, check if the destination is authorized
-    if (auto const ter = requireAuth(ctx.view, amount.issue(), dest);
-        ter != tesSUCCESS)
+    if (auto const ter = requireAuth(ctx.view, issue, dest); ter != tesSUCCESS)
         return ter;
 
     // If the issuer has frozen the account, return tecFROZEN
-    if (isFrozen(ctx.view, account, amount.issue()))
+    if (isFrozen(ctx.view, account, issue))
         return tecFROZEN;
 
     // If the issuer has frozen the destination, return tecFROZEN
-    if (isFrozen(ctx.view, dest, amount.issue()))
+    if (isFrozen(ctx.view, dest, issue))
         return tecFROZEN;
 
     STAmount const spendableAmount = accountHolds(
-        ctx.view,
-        account,
-        amount.getCurrency(),
-        issuer,
-        fhIGNORE_FREEZE,
-        ctx.j);
+        ctx.view, account, issue.currency, issuer, fhIGNORE_FREEZE, ctx.j);
 
     // If the balance is less than or equal to 0, return tecINSUFFICIENT_FUNDS
     if (spendableAmount <= beast::zero)
@@ -705,18 +700,18 @@ escrowFinishPreclaimHelper<Issue>(
     AccountID const& dest,
     STAmount const& amount)
 {
-    AccountID issuer = amount.getIssuer();
+    auto const& issue = amount.get<Issue>();
+    AccountID const& issuer = amount.getIssuer();
     // If the issuer is the same as the account, return tesSUCCESS
     if (issuer == dest)
         return tesSUCCESS;
 
     // If the issuer has requireAuth set, check if the destination is authorized
-    if (auto const ter = requireAuth(ctx.view, amount.issue(), dest);
-        ter != tesSUCCESS)
+    if (auto const ter = requireAuth(ctx.view, issue, dest); ter != tesSUCCESS)
         return ter;
 
     // If the issuer has deep frozen the destination, return tecFROZEN
-    if (isDeepFrozen(ctx.view, dest, amount.getCurrency(), amount.getIssuer()))
+    if (isDeepFrozen(ctx.view, dest, issue.currency, amount.getIssuer()))
         return tecFROZEN;
 
     return tesSUCCESS;
@@ -818,7 +813,8 @@ escrowUnlockApplyHelper<Issue>(
     bool createAsset,
     beast::Journal journal)
 {
-    Keylet const trustLineKey = keylet::line(receiver, amount.issue());
+    auto const& issue = amount.get<Issue>();
+    Keylet const trustLineKey = keylet::line(receiver, issue);
     bool const recvLow = issuer > receiver;
     bool const senderIssuer = issuer == sender;
     bool const receiverIssuer = issuer == receiver;
@@ -844,8 +840,8 @@ escrowUnlockApplyHelper<Issue>(
             return tecNO_LINE_INSUF_RESERVE;
         }
 
-        Currency const currency = amount.getCurrency();
-        STAmount initialBalance(amount.issue());
+        Currency const& currency = issue.currency;
+        STAmount initialBalance(issue);
         initialBalance.setIssuer(noAccount());
 
         // clang-format off
@@ -895,8 +891,8 @@ escrowUnlockApplyHelper<Issue>(
     if ((!senderIssuer && !receiverIssuer) && lockedRate != parityRate)
     {
         // compute transfer fee, if any
-        auto const xferFee = amount.value() -
-            divideRound(amount, lockedRate, amount.issue(), true);
+        auto const xferFee =
+            amount.value() - divideRound(amount, lockedRate, issue, true);
         // compute balance to transfer
         finalAmt = amount.value() - xferFee;
     }
@@ -1220,13 +1216,13 @@ escrowCancelPreclaimHelper<Issue>(
     AccountID const& account,
     STAmount const& amount)
 {
-    AccountID issuer = amount.getIssuer();
+    AccountID const& issuer = amount.getIssuer();
     // If the issuer is the same as the account, return tecINTERNAL
     if (issuer == account)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // If the issuer has requireAuth set, check if the account is authorized
-    if (auto const ter = requireAuth(ctx.view, amount.issue(), account);
+    if (auto const ter = requireAuth(ctx.view, amount.get<Issue>(), account);
         ter != tesSUCCESS)
         return ter;
 
@@ -1240,21 +1236,20 @@ escrowCancelPreclaimHelper<MPTIssue>(
     AccountID const& account,
     STAmount const& amount)
 {
-    AccountID issuer = amount.getIssuer();
+    auto const& mptIssue = amount.get<MPTIssue>();
+    AccountID const& issuer = amount.getIssuer();
     // If the issuer is the same as the account, return tecINTERNAL
     if (issuer == account)
         return tecINTERNAL;  // LCOV_EXCL_LINE
 
     // If the mpt does not exist, return tecOBJECT_NOT_FOUND
-    auto const issuanceKey =
-        keylet::mptIssuance(amount.get<MPTIssue>().getMptID());
+    auto const issuanceKey = keylet::mptIssuance(mptIssue.getMptID());
     auto const sleIssuance = ctx.view.read(issuanceKey);
     if (!sleIssuance)
         return tecOBJECT_NOT_FOUND;
 
     // If the issuer has requireAuth set, check if the account is
     // authorized
-    auto const& mptIssue = amount.get<MPTIssue>();
     if (auto const ter =
             requireAuth(ctx.view, mptIssue, account, MPTAuthType::WeakAuth);
         ter != tesSUCCESS)

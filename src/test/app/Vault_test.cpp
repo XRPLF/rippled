@@ -1177,10 +1177,10 @@ class Vault_test : public beast::unit_test::suite
                         return defXRP;
                     return a + XRP(1000);
                 }
-                auto const defIOU = STAmount{a.issue(), 30000};
+                auto const defIOU = STAmount{a.asset(), 30000};
                 if (a <= defIOU)
                     return defIOU;
-                return a + STAmount{a.issue(), 1000};
+                return a + STAmount{a.asset(), 1000};
             };
             auto const toFund1 = tofund(asset1);
             auto const toFund2 = tofund(asset2);
