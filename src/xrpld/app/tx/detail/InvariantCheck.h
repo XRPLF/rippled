@@ -20,6 +20,7 @@
 #ifndef RIPPLE_APP_TX_INVARIANTCHECK_H_INCLUDED
 #define RIPPLE_APP_TX_INVARIANTCHECK_H_INCLUDED
 
+#include <xrpl/basics/Number.h>
 #include <xrpl/basics/base_uint.h>
 #include <xrpl/beast/utility/Journal.h>
 #include <xrpl/protocol/STLedgerEntry.h>
@@ -706,13 +707,20 @@ private:
 
 class ValidVault
 {
-    // These are all "after", obviously not populated on delete
-    std::optional<std::shared_ptr<SLE const>> vault;
-    std::optional<std::shared_ptr<SLE const>> issuance;
+    struct Vault final
+    {
+        Asset asset = {};
+        Asset share = {};
+        AccountID pseudoId = {};
+        Number assetsTotal = 0;
+        Number assetsAvailable = 0;
+        Number assetsMaximum = 0;
+        Number lossUnrealized = 0;
+        Number sharesTotal = 0;
+    };
 
-    // These are only populated on delete
-    std::optional<std::shared_ptr<SLE const>> vaultDeleted;
-    std::optional<std::shared_ptr<SLE const>> issuanceDeleted;
+    std::optional<Vault> updated = {};
+    std::optional<Vault> deleted = {};
 
 public:
     void

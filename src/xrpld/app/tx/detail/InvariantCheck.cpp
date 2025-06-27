@@ -30,7 +30,10 @@
 #include <xrpl/protocol/Feature.h>
 #include <xrpl/protocol/FeeUnits.h>
 #include <xrpl/protocol/LedgerFormats.h>
+#include <xrpl/protocol/MPTIssue.h>
+#include <xrpl/protocol/SField.h>
 #include <xrpl/protocol/STArray.h>
+#include <xrpl/protocol/STNumber.h>
 #include <xrpl/protocol/SystemParameters.h>
 #include <xrpl/protocol/TxFormats.h>
 #include <xrpl/protocol/nftPageMask.h>
@@ -2036,10 +2039,24 @@ ValidVault::visitEntry(
         switch (before->getType())
         {
             case ltVAULT:
-                vaultDeleted = before;
+                if (!deleted)
+                    deleted = Vault{};
+
+                deleted->asset = before->at(sfAsset);
+                deleted->pseudoId = before->getAccountID(sfAccount);
+                deleted->assetsTotal = before->at(sfAssetsTotal);
+                deleted->assetsAvailable = before->at(sfAssetsAvailable);
+                deleted->assetsMaximum = before->at(sfAssetsMaximum);
+                deleted->lossUnrealized = before->at(sfLossUnrealized);
                 break;
             case ltMPTOKEN_ISSUANCE:
-                issuanceDeleted = before;
+                if (!deleted)
+                    deleted = Vault{};
+
+                deleted->share = MPTIssue(makeMptID(
+                    before->getFieldU32(sfSequence),
+                    before->getAccountID(sfIssuer)));
+                deleted->sharesTotal = before->at(sfOutstandingAmount);
                 break;
             default:;
         }
@@ -2050,10 +2067,24 @@ ValidVault::visitEntry(
         switch (after->getType())
         {
             case ltVAULT:
-                vault = after;
+                if (!updated)
+                    updated = Vault{};
+
+                updated->asset = after->at(sfAsset);
+                updated->pseudoId = after->getAccountID(sfAccount);
+                updated->assetsTotal = after->at(sfAssetsTotal);
+                updated->assetsAvailable = after->at(sfAssetsAvailable);
+                updated->assetsMaximum = after->at(sfAssetsMaximum);
+                updated->lossUnrealized = after->at(sfLossUnrealized);
                 break;
             case ltMPTOKEN_ISSUANCE:
-                issuance = after;
+                if (!updated)
+                    updated = Vault{};
+
+                updated->share = MPTIssue(makeMptID(
+                    after->getFieldU32(sfSequence),
+                    after->getAccountID(sfIssuer)));
+                updated->sharesTotal = after->at(sfOutstandingAmount);
                 break;
             default:;
         }
@@ -2068,7 +2099,132 @@ ValidVault::finalize(
     ReadView const& view,
     beast::Journal const& j)
 {
-    // TODO
+    if (!view.rules().enabled(featureSingleAssetVault))
+        return true;
+
+    auto static const zero = Number(0);
+    if (deleted && tx.getTxnType() == ttVAULT_DELETE)
+    {
+        bool result = true;
+
+        if (deleted->sharesTotal != zero)
+        {
+            JLOG(j.fatal()) << "Invariant failed: deleted vault must have no "
+                               "shares outstanding";
+            result = false;
+        }
+        if (deleted->assetsTotal != zero)
+        {
+            JLOG(j.fatal()) << "Invariant failed: deleted vault must have no "
+                               "assets outstanding";
+            result = false;
+        }
+        if (deleted->assetsAvailable != zero)
+        {
+            JLOG(j.fatal()) << "Invariant failed: deleted vault must have no "
+                               "assets available";
+            result = false;
+        }
+
+        return result;
+    }
+    else if (
+        updated &&
+        (tx.getTxnType() == ttVAULT_CREATE ||
+         tx.getTxnType() == ttVAULT_DEPOSIT ||
+         tx.getTxnType() == ttVAULT_WITHDRAW ||
+         tx.getTxnType() == ttVAULT_CLAWBACK ||  //
+         tx.getTxnType() == ttVAULT_SET))
+    {
+        bool result = true;
+
+        if (updated->assetsTotal == zero)
+        {
+            if (updated->sharesTotal != zero)
+            {
+                JLOG(j.fatal()) << "Invariant failed: updated zero sized "
+                                   "vault must have no shares outstanding";
+                result = false;
+            }
+            if (updated->assetsAvailable != zero)
+            {
+                JLOG(j.fatal()) << "Invariant failed: updated zero sized "
+                                   "vault must have no assets available";
+                result = false;
+            }
+        }
+        else if (updated->assetsTotal < zero)
+        {
+            JLOG(j.fatal()) << "Invariant failed: vault size must be positive";
+            result = false;
+        }
+        else
+        {
+            if (updated->sharesTotal <= zero)
+            {
+                JLOG(j.fatal()) << "Invariant failed: shares outstanding must "
+                                   "be greater than zero";
+                result = false;
+            }
+            if (updated->sharesTotal > updated->assetsTotal)
+            {
+                JLOG(j.fatal()) << "Invariant failed: shares outstanding must "
+                                   "not be greater than assets outstanding";
+                result = false;
+            }
+            if (updated->assetsAvailable <= zero)
+            {
+                JLOG(j.fatal()) << "Invariant failed: assets available must "
+                                   "be greater than zero";
+                result = false;
+            }
+            if (updated->assetsAvailable > updated->assetsTotal)
+            {
+                JLOG(j.fatal()) << "Invariant failed: assets available must "
+                                   "not be greater than assets outstanding";
+                result = false;
+            }
+        }
+
+        if (updated->sharesTotal == zero)
+        {
+            if (updated->assetsTotal != zero)
+            {
+                JLOG(j.fatal()) << "Invariant failed: updated zero sized "
+                                   "vault must have no assets outstanding";
+                result = false;
+            }
+            if (updated->assetsAvailable != zero)
+            {
+                JLOG(j.fatal()) << "Invariant failed: updated zero sized "
+                                   "vault must have no assets available";
+                result = false;
+            }
+        }
+        else if (updated->sharesTotal < zero)
+        {
+            JLOG(j.fatal()) << "Invariant failed: vault size must be positive";
+            result = false;
+        }
+        else
+        {
+            if (updated->assetsTotal < zero)
+            {
+                JLOG(j.fatal()) << "Invariant failed: assets outstanding must "
+                                   "be positive";
+                result = false;
+            }
+            if (updated->assetsAvailable < zero)
+            {
+                JLOG(j.fatal()) << "Invariant failed: assets available must "
+                                   "be positive";
+                result = false;
+            }
+        }
+
+        return result;
+    }
+
     return true;
 }
 
