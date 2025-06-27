@@ -96,4 +96,7 @@ jobs:
         run: |
           n=$(nproc)
           echo "Using $n test jobs"
-          ${build_dir}/rippled --unittest --unittest-jobs $n
+
+          cd ${build_dir}
+          ./rippled --unittest --unittest-jobs $n
+          ctest -j $n --output-on-failure
