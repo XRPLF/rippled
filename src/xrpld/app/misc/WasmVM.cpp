@@ -29,19 +29,9 @@
 
 namespace ripple {
 
-Expected<EscrowResult, TER>
-runEscrowWasm(
-    Bytes const& wasmCode,
-    std::string_view funcName,
-    std::vector<WasmParam> const& params,
-    HostFunctions* hfs,
-    int64_t gasLimit,
-    beast::Journal j)
+static std::vector<WasmImportFunc>
+createImports(HostFunctions* hfs)
 {
-    //  create VM and set cost limit
-    auto& vm = WasmEngine::instance();
-    vm.initMaxPages(MAX_PAGES);
-
     std::vector<WasmImportFunc> imports;
 
     if (hfs)
@@ -107,11 +97,27 @@ runEscrowWasm(
         WASM_IMPORT_FUNC2(imports, traceNum, "trace_num", hfs);
     }
 
-    auto ret = vm.run(
+    return imports;
+}
+
+Expected<EscrowResult, TER>
+runEscrowWasm(
+    Bytes const& wasmCode,
+    std::string_view funcName,
+    std::vector<WasmParam> const& params,
+    HostFunctions* hfs,
+    int64_t gasLimit,
+    beast::Journal j)
+{
+    //  create VM and set cost limit
+    auto& vm = WasmEngine::instance();
+    vm.initMaxPages(MAX_PAGES);
+
+    auto const ret = vm.run(
         wasmCode,
         funcName,
         params,
-        imports,
+        createImports(hfs),
         hfs,
         gasLimit,
         hfs ? hfs->getJournal() : j);
@@ -128,6 +134,28 @@ runEscrowWasm(
     // std::cout << ", ret: " << ret->result << ", gas spent: " << ret->cost
     //           << std::endl;
     return EscrowResult{ret->result > 0, ret->cost};
+}
+
+NotTEC
+preflightEscrowWasm(
+    Bytes const& wasmCode,
+    std::string_view funcName,
+    std::vector<WasmParam> const& params,
+    HostFunctions* hfs,
+    beast::Journal j)
+{
+    //  create VM and set cost limit
+    auto& vm = WasmEngine::instance();
+    vm.initMaxPages(MAX_PAGES);
+
+    auto const ret = vm.check(
+        wasmCode,
+        funcName,
+        params,
+        createImports(hfs),
+        hfs ? hfs->getJournal() : j);
+
+    return ret;
 }
 
 ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
@@ -154,6 +182,17 @@ WasmEngine::run(
     beast::Journal j)
 {
     return impl->run(wasmCode, funcName, params, imports, hfs, gasLimit, j);
+}
+
+NotTEC
+WasmEngine::check(
+    Bytes const& wasmCode,
+    std::string_view funcName,
+    std::vector<WasmParam> const& params,
+    std::vector<WasmImportFunc> const& imports,
+    beast::Journal j)
+{
+    return impl->check(wasmCode, funcName, params, imports, j);
 }
 
 std::int32_t

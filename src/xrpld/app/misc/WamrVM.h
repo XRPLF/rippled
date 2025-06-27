@@ -28,17 +28,20 @@ namespace ripple {
 struct WamrResult
 {
     wasm_val_vec_t r;
-    bool f;
+    bool f;  // failure flag
+
     WamrResult(unsigned N = 0) : r{0, nullptr, 0, 0, nullptr}, f(false)
     {
         if (N)
             wasm_val_vec_new_uninitialized(&r, N);
     }
+
     ~WamrResult()
     {
         if (r.size)
             wasm_val_vec_delete(&r);
     }
+
     WamrResult(WamrResult const&) = delete;
     WamrResult&
     operator=(WamrResult const&) = delete;
@@ -47,6 +50,7 @@ struct WamrResult
     {
         *this = std::move(o);
     }
+
     WamrResult&
     operator=(WamrResult&& o)
     {
@@ -67,9 +71,9 @@ using FuncInfo = std::pair<wasm_func_t const*, wasm_functype_t const*>;
 
 struct InstanceWrapper
 {
-    wasm_extern_vec_t exports;
-    InstancePtr mod_inst;
-    wasm_exec_env_t exec_env = nullptr;
+    wasm_extern_vec_t exports_;
+    InstancePtr instance_;
+    wasm_exec_env_t execEnv_ = nullptr;
     beast::Journal j_ = beast::Journal(beast::Journal::getNullSink());
 
 private:
@@ -116,9 +120,9 @@ public:
 
 struct ModuleWrapper
 {
-    ModulePtr module;
-    InstanceWrapper mod_inst;
-    wasm_exporttype_vec_t export_types;
+    ModulePtr module_;
+    InstanceWrapper instanceWrap_;
+    wasm_exporttype_vec_t exportTypes_;
     beast::Journal j_ = beast::Journal(beast::Journal::getNullSink());
 
 private:
@@ -171,11 +175,13 @@ private:
 
 class WamrEngine
 {
-    std::unique_ptr<wasm_engine_t, decltype(&wasm_engine_delete)> engine;
-    std::unique_ptr<wasm_store_t, decltype(&wasm_store_delete)> store;
-    std::unique_ptr<ModuleWrapper> module;
-    std::int32_t defMaxPages = -1;
+    std::unique_ptr<wasm_engine_t, decltype(&wasm_engine_delete)> engine_;
+    std::unique_ptr<wasm_store_t, decltype(&wasm_store_delete)> store_;
+    std::unique_ptr<ModuleWrapper> moduleWrap_;
+    std::int32_t defMaxPages_ = -1;
     beast::Journal j_ = beast::Journal(beast::Journal::getNullSink());
+
+    std::mutex m_;  // 1 instance mutex
 
 public:
     WamrEngine();
@@ -188,6 +194,14 @@ public:
         std::vector<WasmImportFunc> const& imports,
         HostFunctions* hfs,
         int64_t gas,
+        beast::Journal j);
+
+    NotTEC
+    check(
+        Bytes const& wasmCode,
+        std::string_view funcName,
+        std::vector<WasmParam> const& params,
+        std::vector<WasmImportFunc> const& imports,
         beast::Journal j);
 
     std::int32_t
@@ -222,6 +236,13 @@ private:
         HostFunctions* hfs,
         int64_t gas);
 
+    NotTEC
+    checkHlp(
+        Bytes const& wasmCode,
+        std::string_view funcName,
+        std::vector<WasmParam> const& params,
+        std::vector<WasmImportFunc> const& imports);
+
     int
     addModule(
         Bytes const& wasmCode,
@@ -247,9 +268,14 @@ private:
     std::vector<wasm_val_t>
     convertParams(std::vector<WasmParam> const& params);
 
-    void
+    static int
+    compareParamTypes(
+        wasm_valtype_vec_t const* ftp,
+        std::vector<wasm_val_t> const& p);
+
+    static void
     add_param(std::vector<wasm_val_t>& in, int32_t p);
-    void
+    static void
     add_param(std::vector<wasm_val_t>& in, int64_t p);
 
     template <int NR, class... Types>
