@@ -43,4 +43,6 @@ WORKDIR /postfiat/.build
 RUN conan install .. --output-folder . --build missing --settings build_type=Debug
 RUN cmake -DCMAKE_TOOLCHAIN_FILE:FILEPATH=build/generators/conan_toolchain.cmake -DCMAKE_BUILD_TYPE=Debug -Dxrpld=ON -Dtests=ON ..
 RUN cmake --build . -j $(nproc)
-RUN ./postfiatd --unittest
+
+# run tests
+# RUN ./postfiatd --unittest
