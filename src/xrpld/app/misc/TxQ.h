@@ -21,9 +21,9 @@
 #define RIPPLE_TXQ_H_INCLUDED
 
 #include <xrpld/app/tx/applySteps.h>
-#include <xrpld/ledger/ApplyView.h>
-#include <xrpld/ledger/OpenView.h>
 
+#include <xrpl/ledger/ApplyView.h>
+#include <xrpl/ledger/OpenView.h>
 #include <xrpl/protocol/RippleLedgerHash.h>
 #include <xrpl/protocol/STTx.h>
 #include <xrpl/protocol/SeqProxy.h>
