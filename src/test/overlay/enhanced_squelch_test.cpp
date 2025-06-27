@@ -124,7 +124,7 @@ public:
     void
     squelchValidator(PublicKey const& validatorKey, Peer::id_t peerID)
     {
-        Slots::squelchValidator(validatorKey, peerID);
+        Slots::registerSquelchedValidator(validatorKey, peerID);
     }
 
     bool
@@ -261,7 +261,7 @@ vp_enhanced_squelch_enable=0
         auto const validator = randomKeyPair(KeyType::ed25519).first;
         uint256 message{0};
 
-        slots.updateValidatorSlot(message, validator, peerID);
+        slots.updateUntrustedValidatorSlot(message, validator, peerID);
 
         // adding untrusted slot does not effect trusted slots
         BEAST_EXPECTS(
@@ -305,10 +305,11 @@ vp_enhanced_squelch_enable=0
         slots.squelchValidator(validator, squelchedPeerID);
 
         // this should not trigger squelch assertions, the peer is squelched
-        slots.updateValidatorSlot(
+        slots.updateUntrustedValidatorSlot(
             sha512Half(validator), validator, squelchedPeerID);
 
-        slots.updateValidatorSlot(sha512Half(validator), validator, newPeerID);
+        slots.updateUntrustedValidatorSlot(
+            sha512Half(validator), validator, newPeerID);
 
         // the squelched peer remained squelched
         BEAST_EXPECTS(
@@ -350,7 +351,7 @@ vp_enhanced_squelch_enable=0
         // simulate additional messages from already selected validators
         for (auto const& validator : validators)
             for (int i = 0; i < reduce_relay::MAX_MESSAGE_THRESHOLD; ++i)
-                slots.updateValidatorSlot(
+                slots.updateUntrustedValidatorSlot(
                     sha512Half(validator) + static_cast<uint256>(i),
                     validator,
                     peerID);
@@ -374,7 +375,7 @@ vp_enhanced_squelch_enable=0
             slots.squelchValidator(key, peerID);
         };
 
-        slots.updateValidatorSlot(
+        slots.updateUntrustedValidatorSlot(
             sha512Half(newValidator), newValidator, peerID);
 
         // Once the slots are saturated every other validator is squelched
@@ -779,7 +780,7 @@ private:
                  ++j)
                 // send enough messages so that a validator slot is selected
                 for (int k = 0; k < reduce_relay::MAX_MESSAGE_THRESHOLD; ++k)
-                    slots.updateValidatorSlot(
+                    slots.updateUntrustedValidatorSlot(
                         sha512Half(validator) + static_cast<uint256>(k),
                         validator,
                         j);

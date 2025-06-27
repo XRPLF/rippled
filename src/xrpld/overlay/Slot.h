@@ -325,7 +325,7 @@ public:
               config.VP_REDUCE_RELAY_ENHANCED_SQUELCH_ENABLE)
         , clock_(clock)
         , peersWithMessage_(clock)
-        , peersWithValidators_(clock)
+        , peersWithSquelchedValidators_(clock)
     {
     }
 
@@ -356,12 +356,12 @@ public:
      * @param id The ID of the peer that sent the message
      */
     void
-    updateValidatorSlot(
+    updateUntrustedValidatorSlot(
         uint256 const& key,
         PublicKey const& validator,
         Peer::id_t id)
     {
-        updateValidatorSlot(key, validator, id, []() {});
+        updateUntrustedValidatorSlot(key, validator, id, []() {});
     }
 
     /** Updates untrusted validator slot. Do not call for trusted
@@ -372,7 +372,7 @@ public:
      * @param callback A callback to report ignored validations
      */
     void
-    updateValidatorSlot(
+    updateUntrustedValidatorSlot(
         uint256 const& key,
         PublicKey const& validator,
         Peer::id_t id,
@@ -433,7 +433,9 @@ public:
      * @param peerID peer ID
      */
     void
-    squelchValidator(PublicKey const& validatorKey, Peer::id_t peerID);
+    registerSquelchedValidator(
+        PublicKey const& validatorKey,
+        Peer::id_t peerID);
 
     void
     onWrite(beast::PropertyStream::Map& stream) const;
@@ -502,7 +504,7 @@ protected:
     // Maintain aged container of validator/peers. This is used to track
     // which validator/peer were squelced. A peer that whose squelch
     // has expired is removed.
-    validators peersWithValidators_;
+    validators peersWithSquelchedValidators_;
 
     struct ValidatorInfo
     {
@@ -512,6 +514,7 @@ protected:
                                                // message for this validator
     };
 
+    // Untrusted validators considered for open untrusted slots
     hash_map<PublicKey, ValidatorInfo> consideredValidators_;
 };
 
