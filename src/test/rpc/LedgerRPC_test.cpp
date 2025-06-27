@@ -711,6 +711,7 @@ class LedgerRPC_test : public beast::unit_test::suite
         env.close();
 
         std::string index;
+        int hashes_ledger_entry_index = -1;
         {
             Json::Value jvParams;
             jvParams[jss::ledger_index] = 3u;
@@ -721,11 +722,24 @@ class LedgerRPC_test : public beast::unit_test::suite
                 env.rpc("json", "ledger", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr[jss::ledger].isMember(jss::accountState));
             BEAST_EXPECT(jrr[jss::ledger][jss::accountState].isArray());
-            BEAST_EXPECT(jrr[jss::ledger][jss::accountState].size() == 1u);
-            BEAST_EXPECT(
-                jrr[jss::ledger][jss::accountState][0u]["LedgerEntryType"] ==
-                jss::LedgerHashes);
-            index = jrr[jss::ledger][jss::accountState][0u]["index"].asString();
+
+            for (auto i = 0; i < jrr[jss::ledger][jss::accountState].size(); i++)
+                if (jrr[jss::ledger][jss::accountState][i]["LedgerEntryType"] == jss::LedgerHashes)
+                {
+                    index = jrr[jss::ledger][jss::accountState][i]["index"].asString();
+                    hashes_ledger_entry_index = i;
+                }
+
+            for (auto const& object: jrr[jss::ledger][jss::accountState])
+                if (object["LedgerEntryType"] == jss::LedgerHashes)
+                    index = object["index"].asString();
+
+            // jss::type is a deprecated field
+            BEAST_EXPECT(jrr.isMember(jss::warnings) &&
+            jrr[jss::warnings].isArray() &&
+            jrr[jss::warnings].size() == 1 &&
+            jrr[jss::warnings][0u][jss::id].asInt() ==
+                warnRPC_FIELDS_DEPRECATED);
         }
         {
             Json::Value jvParams;
@@ -737,8 +751,14 @@ class LedgerRPC_test : public beast::unit_test::suite
                 env.rpc("json", "ledger", to_string(jvParams))[jss::result];
             BEAST_EXPECT(jrr[jss::ledger].isMember(jss::accountState));
             BEAST_EXPECT(jrr[jss::ledger][jss::accountState].isArray());
-            BEAST_EXPECT(jrr[jss::ledger][jss::accountState].size() == 1u);
-            BEAST_EXPECT(jrr[jss::ledger][jss::accountState][0u] == index);
+            BEAST_EXPECT(hashes_ledger_entry_index > 0 && jrr[jss::ledger][jss::accountState][hashes_ledger_entry_index] == index);
+
+            // jss::type is a deprecated field
+            BEAST_EXPECT(jrr.isMember(jss::warnings) &&
+            jrr[jss::warnings].isArray() &&
+            jrr[jss::warnings].size() == 1 &&
+            jrr[jss::warnings][0u][jss::id].asInt() ==
+                warnRPC_FIELDS_DEPRECATED);
         }
     }
 
