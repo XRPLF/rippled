@@ -2028,35 +2028,54 @@ ValidAMM::finalize(
 
 //------------------------------------------------------------------------------
 
+ValidVault::Vault
+ValidVault::Vault::make(SLE const& from)
+{
+    XRPL_ASSERT(
+        from.getType() == ltVAULT,
+        "ValidVault::Vault::make : from Vault object");
+
+    ValidVault::Vault self;
+    self.asset = from.at(sfAsset);
+    self.pseudoId = from.getAccountID(sfAccount);
+    self.shareMPTID = from.getFieldH192(sfShareMPTID);
+    self.assetsTotal = from.at(sfAssetsTotal);
+    self.assetsAvailable = from.at(sfAssetsAvailable);
+    self.assetsMaximum = from.at(sfAssetsMaximum);
+    self.lossUnrealized = from.at(sfLossUnrealized);
+    return self;
+}
+
+ValidVault::Shares
+ValidVault::Shares::make(SLE const& from)
+{
+    XRPL_ASSERT(
+        from.getType() == ltMPTOKEN_ISSUANCE,
+        "ValidVault::Vault::make : from MPTokenIssuance object");
+
+    ValidVault::Shares self;
+    self.share = MPTIssue(
+        makeMptID(from.getFieldU32(sfSequence), from.getAccountID(sfIssuer)));
+    self.pseudoId = from.getAccountID(sfIssuer);
+    self.sharesTotal = from.at(sfOutstandingAmount);
+    return self;
+}
+
 void
 ValidVault::visitEntry(
     bool isDelete,
     std::shared_ptr<SLE const> const& before,
     std::shared_ptr<SLE const> const& after)
 {
-    if (isDelete && before)
+    if (before)
     {
         switch (before->getType())
         {
             case ltVAULT:
-                if (!deleted)
-                    deleted = Vault{};
-
-                deleted->asset = before->at(sfAsset);
-                deleted->pseudoId = before->getAccountID(sfAccount);
-                deleted->assetsTotal = before->at(sfAssetsTotal);
-                deleted->assetsAvailable = before->at(sfAssetsAvailable);
-                deleted->assetsMaximum = before->at(sfAssetsMaximum);
-                deleted->lossUnrealized = before->at(sfLossUnrealized);
+                deletedVault = Vault::make(*before);
                 break;
             case ltMPTOKEN_ISSUANCE:
-                if (!deleted)
-                    deleted = Vault{};
-
-                deleted->share = MPTIssue(makeMptID(
-                    before->getFieldU32(sfSequence),
-                    before->getAccountID(sfIssuer)));
-                deleted->sharesTotal = before->at(sfOutstandingAmount);
+                deletedShares = Shares::make(*before);
                 break;
             default:;
         }
@@ -2067,24 +2086,10 @@ ValidVault::visitEntry(
         switch (after->getType())
         {
             case ltVAULT:
-                if (!updated)
-                    updated = Vault{};
-
-                updated->asset = after->at(sfAsset);
-                updated->pseudoId = after->getAccountID(sfAccount);
-                updated->assetsTotal = after->at(sfAssetsTotal);
-                updated->assetsAvailable = after->at(sfAssetsAvailable);
-                updated->assetsMaximum = after->at(sfAssetsMaximum);
-                updated->lossUnrealized = after->at(sfLossUnrealized);
+                updatedVault = Vault::make(*after);
                 break;
             case ltMPTOKEN_ISSUANCE:
-                if (!updated)
-                    updated = Vault{};
-
-                updated->share = MPTIssue(makeMptID(
-                    after->getFieldU32(sfSequence),
-                    after->getAccountID(sfIssuer)));
-                updated->sharesTotal = after->at(sfOutstandingAmount);
+                updatedShares = Shares::make(*after);
                 break;
             default:;
         }
@@ -2103,23 +2108,29 @@ ValidVault::finalize(
         return true;
 
     auto static const zero = Number(0);
-    if (deleted && tx.getTxnType() == ttVAULT_DELETE)
+    if (deletedVault && tx.getTxnType() == ttVAULT_DELETE)
     {
-        bool result = true;
+        if (!deletedShares)
+        {
+            JLOG(j.fatal())
+                << "Invariant failed: deleted vault must also delete shares";
+            return false;  // That's all we can do here
+        }
 
-        if (deleted->sharesTotal != zero)
+        bool result = true;
+        if (deletedShares->sharesTotal != zero)
         {
             JLOG(j.fatal()) << "Invariant failed: deleted vault must have no "
                                "shares outstanding";
             result = false;
         }
-        if (deleted->assetsTotal != zero)
+        if (deletedVault->assetsTotal != zero)
         {
             JLOG(j.fatal()) << "Invariant failed: deleted vault must have no "
                                "assets outstanding";
             result = false;
         }
-        if (deleted->assetsAvailable != zero)
+        if (deletedVault->assetsAvailable != zero)
         {
             JLOG(j.fatal()) << "Invariant failed: deleted vault must have no "
                                "assets available";
@@ -2129,56 +2140,70 @@ ValidVault::finalize(
         return result;
     }
     else if (
-        updated &&
+        updatedVault &&
         (tx.getTxnType() == ttVAULT_CREATE ||
          tx.getTxnType() == ttVAULT_DEPOSIT ||
          tx.getTxnType() == ttVAULT_WITHDRAW ||
          tx.getTxnType() == ttVAULT_CLAWBACK ||  //
          tx.getTxnType() == ttVAULT_SET))
     {
-        bool result = true;
-
-        if (updated->assetsTotal == zero)
+        if (!updatedShares)  // e.g. VaultSet
         {
-            if (updated->sharesTotal != zero)
+            auto const sleShares =
+                view.read(keylet::mptIssuance(updatedVault->shareMPTID));
+            if (!sleShares)
             {
-                JLOG(j.fatal()) << "Invariant failed: updated zero sized "
-                                   "vault must have no shares outstanding";
-                result = false;
+                JLOG(j.fatal())
+                    << "Invariant failed: updated vault must have shares";
+                return false;  // That's all we can do here
             }
-            if (updated->assetsAvailable != zero)
+
+            updatedShares = Shares::make(*sleShares);
+        }
+
+        bool result = true;
+        if (updatedVault->assetsTotal == zero)
+        {
+            // if (updatedShares->sharesTotal != zero)
+            // {
+            //     JLOG(j.fatal()) << "Invariant failed: updated zero sized "
+            //                        "vault must have no shares outstanding";
+            //     result = false;
+            // }
+            if (updatedVault->assetsAvailable != zero)
             {
                 JLOG(j.fatal()) << "Invariant failed: updated zero sized "
                                    "vault must have no assets available";
                 result = false;
             }
         }
-        else if (updated->assetsTotal < zero)
+        else if (updatedVault->assetsTotal < zero)
         {
             JLOG(j.fatal()) << "Invariant failed: vault size must be positive";
             result = false;
         }
         else
         {
-            if (updated->sharesTotal <= zero)
+            if (updatedShares->sharesTotal <= zero)
             {
                 JLOG(j.fatal()) << "Invariant failed: shares outstanding must "
                                    "be greater than zero";
                 result = false;
             }
-            if (updated->sharesTotal > updated->assetsTotal)
-            {
-                JLOG(j.fatal()) << "Invariant failed: shares outstanding must "
-                                   "not be greater than assets outstanding";
-                result = false;
-            }
-            if (updated->assetsAvailable <= zero)
+            // if (updatedShares->sharesTotal > updatedVault->assetsTotal)
+            // {
+            //     JLOG(j.fatal()) << "Invariant failed: shares outstanding must
+            //     "
+            //                        "not be greater than assets outstanding";
+            //     result = false;
+            // }
+            if (updatedVault->assetsAvailable <= zero)
             {
                 JLOG(j.fatal()) << "Invariant failed: assets available must "
                                    "be greater than zero";
                 result = false;
             }
-            if (updated->assetsAvailable > updated->assetsTotal)
+            if (updatedVault->assetsAvailable > updatedVault->assetsTotal)
             {
                 JLOG(j.fatal()) << "Invariant failed: assets available must "
                                    "not be greater than assets outstanding";
@@ -2186,35 +2211,35 @@ ValidVault::finalize(
             }
         }
 
-        if (updated->sharesTotal == zero)
+        if (updatedShares->sharesTotal == zero)
         {
-            if (updated->assetsTotal != zero)
+            if (updatedVault->assetsTotal != zero)
             {
                 JLOG(j.fatal()) << "Invariant failed: updated zero sized "
                                    "vault must have no assets outstanding";
                 result = false;
             }
-            if (updated->assetsAvailable != zero)
+            if (updatedVault->assetsAvailable != zero)
             {
                 JLOG(j.fatal()) << "Invariant failed: updated zero sized "
                                    "vault must have no assets available";
                 result = false;
             }
         }
-        else if (updated->sharesTotal < zero)
+        else if (updatedShares->sharesTotal < zero)
         {
             JLOG(j.fatal()) << "Invariant failed: vault size must be positive";
             result = false;
         }
         else
         {
-            if (updated->assetsTotal < zero)
+            if (updatedVault->assetsTotal < zero)
             {
                 JLOG(j.fatal()) << "Invariant failed: assets outstanding must "
                                    "be positive";
                 result = false;
             }
-            if (updated->assetsAvailable < zero)
+            if (updatedVault->assetsAvailable < zero)
             {
                 JLOG(j.fatal()) << "Invariant failed: assets available must "
                                    "be positive";

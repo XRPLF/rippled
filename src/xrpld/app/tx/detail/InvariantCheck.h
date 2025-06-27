@@ -710,17 +710,30 @@ class ValidVault
     struct Vault final
     {
         Asset asset = {};
-        Asset share = {};
         AccountID pseudoId = {};
+        uint192 shareMPTID = beast::zero;
         Number assetsTotal = 0;
         Number assetsAvailable = 0;
         Number assetsMaximum = 0;
         Number lossUnrealized = 0;
-        Number sharesTotal = 0;
+
+        Vault static make(SLE const&);
     };
 
-    std::optional<Vault> updated = {};
-    std::optional<Vault> deleted = {};
+    struct Shares final
+    {
+        Asset asset = {};
+        Asset share = {};
+        AccountID pseudoId = {};
+        Number sharesTotal = 0;
+
+        Shares static make(SLE const&);
+    };
+
+    std::optional<Vault> updatedVault = {};
+    std::optional<Shares> updatedShares = {};
+    std::optional<Vault> deletedVault = {};
+    std::optional<Shares> deletedShares = {};
 
 public:
     void
