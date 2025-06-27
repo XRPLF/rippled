@@ -323,25 +323,22 @@ Slots::reduceRelayReady()
 }
 
 void
-Slots::squelchValidator(PublicKey const& validatorKey, Peer::id_t peerID)
+Slots::registerSquelchedValidator(
+    PublicKey const& validatorKey,
+    Peer::id_t peerID)
 {
-    auto it = peersWithValidators_.find(validatorKey);
-    if (it == peersWithValidators_.end())
-        peersWithValidators_.emplace(
-            validatorKey, std::unordered_set<Peer::id_t>{peerID});
-
-    else if (it->second.find(peerID) == it->second.end())
-        it->second.insert(peerID);
+    peersWithSquelchedValidators_[validatorKey].insert(peerID);
 }
 
 bool
 Slots::expireAndIsValidatorSquelched(PublicKey const& validatorKey)
 {
     beast::expire(
-        peersWithValidators_, reduce_relay::MAX_UNSQUELCH_EXPIRE_DEFAULT);
+        peersWithSquelchedValidators_,
+        reduce_relay::MAX_UNSQUELCH_EXPIRE_DEFAULT);
 
-    return peersWithValidators_.find(validatorKey) !=
-        peersWithValidators_.end();
+    return peersWithSquelchedValidators_.find(validatorKey) !=
+        peersWithSquelchedValidators_.end();
 }
 
 bool
@@ -350,12 +347,13 @@ Slots::expireAndIsPeerSquelched(
     Peer::id_t peerID)
 {
     beast::expire(
-        peersWithValidators_, reduce_relay::MAX_UNSQUELCH_EXPIRE_DEFAULT);
+        peersWithSquelchedValidators_,
+        reduce_relay::MAX_UNSQUELCH_EXPIRE_DEFAULT);
 
-    auto const it = peersWithValidators_.find(validatorKey);
+    auto const it = peersWithSquelchedValidators_.find(validatorKey);
 
     // if validator was not squelched, the peer was also not squelched
-    if (it == peersWithValidators_.end())
+    if (it == peersWithSquelchedValidators_.end())
         return false;
 
     // if a peer is found the squelch for it has not expired
@@ -438,7 +436,7 @@ Slots::updateSlotAndSquelch(
 }
 
 void
-Slots::updateValidatorSlot(
+Slots::updateUntrustedValidatorSlot(
     uint256 const& key,
     PublicKey const& validator,
     Peer::id_t id,
@@ -462,7 +460,7 @@ Slots::updateValidatorSlot(
     {
         if (!expireAndIsPeerSquelched(validator, id))
         {
-            squelchValidator(validator, id);
+            registerSquelchedValidator(validator, id);
             handler_.squelch(
                 validator, id, MAX_UNSQUELCH_EXPIRE_DEFAULT.count());
         }

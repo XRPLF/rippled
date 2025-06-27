@@ -1422,7 +1422,7 @@ OverlayImpl::squelchAll(PublicKey const& validator, uint32_t squelchDuration)
 {
     for_each([&](std::shared_ptr<PeerImp>&& p) {
         p->send(makeSquelchMessage(validator, true, squelchDuration));
-        slots_.squelchValidator(validator, p->id());
+        slots_.registerSquelchedValidator(validator, p->id());
     });
 }
 
@@ -1494,7 +1494,7 @@ OverlayImpl::updateValidatorSlot(
             updateValidatorSlot(key, validator, peer);
         });
 
-    slots_.updateValidatorSlot(key, validator, peer, [&]() {
+    slots_.updateUntrustedValidatorSlot(key, validator, peer, [&]() {
         reportInboundTraffic(TrafficCount::squelch_ignored, 0);
     });
 }
