@@ -122,7 +122,7 @@ private:
     std::atomic<uint64_t> peerDisconnects_{0};
     std::atomic<uint64_t> peerDisconnectsCharges_{0};
 
-    reduce_relay::Slots<UptimeClock> slots_;
+    reduce_relay::Slots slots_;
 
     // Transaction reduce-relay metrics
     metrics::TxMetrics txMetrics_;
@@ -399,14 +399,14 @@ public:
      * @param key Unique message's key
      * @param validator Validator's public key
      * @param peers Peers' id to update the slots for
-     * @param type Received protocol message type
+     * @param isTrusted Indicate if the validator is trusted
      */
     void
     updateSlotAndSquelch(
         uint256 const& key,
         PublicKey const& validator,
         std::set<Peer::id_t>&& peers,
-        protocol::MessageType type);
+        bool isTrusted);
 
     /** Overload to reduce allocation in case of single peer
      */
@@ -415,7 +415,22 @@ public:
         uint256 const& key,
         PublicKey const& validator,
         Peer::id_t peer,
-        protocol::MessageType type);
+        bool isTrusted);
+
+    /** Updates the slot information for an untrusted validator. If the
+     * untrusted validator was previously squelched, sends TMSquelch message to
+     * the sender of the message. If there are no untrusted slots available
+     * sends TMSquelch message to all peers to squelch messages from the
+     * validator.
+     * @param key Unique message's key
+     * @param validator Validator's public key
+     * @param peer Peer's id to update the slot for
+     */
+    void
+    updateValidatorSlot(
+        uint256 const& key,
+        PublicKey const& validator,
+        Peer::id_t peer);
 
     /** Called when the peer is deleted. If the peer was selected to be the
      * source of messages from the validator then squelched peers have to be
@@ -450,6 +465,10 @@ private:
         PublicKey const& validator,
         Peer::id_t const id,
         std::uint32_t squelchDuration) const override;
+
+    void
+    squelchAll(PublicKey const& validator, std::uint32_t squelchDuration)
+        override;
 
     void
     unsquelch(PublicKey const& validator, Peer::id_t id) const override;

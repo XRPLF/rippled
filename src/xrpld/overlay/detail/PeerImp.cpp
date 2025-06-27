@@ -29,6 +29,7 @@
 #include <xrpld/app/misc/ValidatorList.h>
 #include <xrpld/app/tx/apply.h>
 #include <xrpld/overlay/Cluster.h>
+#include <xrpld/overlay/ReduceRelayCommon.h>
 #include <xrpld/overlay/detail/PeerImp.h>
 #include <xrpld/overlay/detail/Tuning.h>
 #include <xrpld/perflog/PerfLog.h>
@@ -95,7 +96,7 @@ PeerImp::PeerImp(
     , publicKey_(publicKey)
     , lastPingTime_(clock_type::now())
     , creationTime_(clock_type::now())
-    , squelch_(app_.journal("Squelch"))
+    , squelch_(app_.journal("Squelch"), stopwatch())
     , usage_(consumer)
     , fee_{Resource::feeTrivialPeer, ""}
     , slot_(slot)
@@ -1699,21 +1700,6 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
     // suppression for 30 seconds to avoid doing a relatively expensive lookup
     // every time a spam packet is received
     PublicKey const publicKey{makeSlice(set.nodepubkey())};
-    auto const isTrusted = app_.validators().trusted(publicKey);
-
-    // If the operator has specified that untrusted proposals be dropped then
-    // this happens here I.e. before further wasting CPU verifying the signature
-    // of an untrusted key
-    if (!isTrusted)
-    {
-        // report untrusted proposal messages
-        overlay_.reportInboundTraffic(
-            TrafficCount::category::proposal_untrusted,
-            Message::messageSize(*m));
-
-        if (app_.config().RELAY_UNTRUSTED_PROPOSALS == -1)
-            return;
-    }
 
     uint256 const proposeHash{set.currenttxhash()};
     uint256 const prevLedger{set.previousledger()};
@@ -1728,7 +1714,9 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
         publicKey.slice(),
         sig);
 
-    if (auto [added, relayed] =
+    auto const isTrusted = app_.validators().trusted(publicKey);
+
+    if (auto const& [added, relayed] =
             app_.getHashRouter().addSuppressionPeerWithStatus(suppression, id_);
         !added)
     {
@@ -1736,7 +1724,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
         // receives within IDLED seconds since the message has been relayed.
         if (relayed && (stopwatch().now() - *relayed) < reduce_relay::IDLED)
             overlay_.updateSlotAndSquelch(
-                suppression, publicKey, id_, protocol::mtPROPOSE_LEDGER);
+                suppression, publicKey, id_, isTrusted);
 
         // report duplicate proposal messages
         overlay_.reportInboundTraffic(
@@ -1750,6 +1738,16 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMProposeSet> const& m)
 
     if (!isTrusted)
     {
+        overlay_.reportInboundTraffic(
+            TrafficCount::category::proposal_untrusted,
+            Message::messageSize(*m));
+
+        // If the operator has specified that untrusted proposals be dropped
+        // then this happens here I.e. before further wasting CPU verifying the
+        // signature of an untrusted key
+        if (app_.config().RELAY_UNTRUSTED_PROPOSALS == -1)
+            return;
+
         if (tracking_.load() == Tracking::diverged)
         {
             JLOG(p_journal_.debug())
@@ -2358,20 +2356,6 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
         auto const isTrusted =
             app_.validators().trusted(val->getSignerPublic());
 
-        // If the operator has specified that untrusted validations be
-        // dropped then this happens here I.e. before further wasting CPU
-        // verifying the signature of an untrusted key
-        if (!isTrusted)
-        {
-            // increase untrusted validations received
-            overlay_.reportInboundTraffic(
-                TrafficCount::category::validation_untrusted,
-                Message::messageSize(*m));
-
-            if (app_.config().RELAY_UNTRUSTED_VALIDATIONS == -1)
-                return;
-        }
-
         auto key = sha512Half(makeSlice(m->validation()));
 
         auto [added, relayed] =
@@ -2384,7 +2368,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
             // relayed.
             if (relayed && (stopwatch().now() - *relayed) < reduce_relay::IDLED)
                 overlay_.updateSlotAndSquelch(
-                    key, val->getSignerPublic(), id_, protocol::mtVALIDATION);
+                    key, val->getSignerPublic(), id_, isTrusted);
 
             // increase duplicate validations received
             overlay_.reportInboundTraffic(
@@ -2393,6 +2377,22 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMValidation> const& m)
 
             JLOG(p_journal_.trace()) << "Validation: duplicate";
             return;
+        }
+
+        // at this point the message is guaranteed to be unique
+        if (!isTrusted)
+        {
+            overlay_.reportInboundTraffic(
+                TrafficCount::category::validation_untrusted,
+                Message::messageSize(*m));
+
+            overlay_.updateValidatorSlot(key, val->getSignerPublic(), id_);
+
+            // If the operator has specified that untrusted validations be
+            // dropped then this happens here I.e. before further wasting CPU
+            // verifying the signature of an untrusted key
+            if (app_.config().RELAY_UNTRUSTED_VALIDATIONS == -1)
+                return;
         }
 
         if (!isTrusted && (tracking_.load() == Tracking::diverged))
@@ -2704,6 +2704,7 @@ PeerImp::onMessage(std::shared_ptr<protocol::TMSquelch> const& m)
         fee_.update(Resource::feeInvalidData, "squelch no pubkey");
         return;
     }
+
     auto validator = m->validatorpubkey();
     auto const slice{makeSlice(validator)};
     if (!publicKeyType(slice))
@@ -3008,7 +3009,7 @@ PeerImp::checkPropose(
                 peerPos.suppressionID(),
                 peerPos.publicKey(),
                 std::move(haveMessage),
-                protocol::mtPROPOSE_LEDGER);
+                isTrusted);
     }
 }
 
@@ -3044,7 +3045,7 @@ PeerImp::checkValidation(
                     key,
                     val->getSignerPublic(),
                     std::move(haveMessage),
-                    protocol::mtVALIDATION);
+                    val->isTrusted());
             }
         }
     }

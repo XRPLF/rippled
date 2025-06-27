@@ -142,7 +142,7 @@ OverlayImpl::OverlayImpl(
     , m_resolver(resolver)
     , next_id_(1)
     , timer_count_(0)
-    , slots_(app.logs(), *this, app.config())
+    , slots_(app.logs(), *this, app.config(), stopwatch())
     , m_stats(
           std::bind(&OverlayImpl::collect_metrics, this),
           collector,
@@ -578,16 +578,23 @@ OverlayImpl::stop()
 void
 OverlayImpl::onWrite(beast::PropertyStream::Map& stream)
 {
-    beast::PropertyStream::Set set("traffic", stream);
-    auto const stats = m_traffic.getCounts();
-    for (auto const& pair : stats)
     {
-        beast::PropertyStream::Map item(set);
-        item["category"] = pair.second.name;
-        item["bytes_in"] = std::to_string(pair.second.bytesIn.load());
-        item["messages_in"] = std::to_string(pair.second.messagesIn.load());
-        item["bytes_out"] = std::to_string(pair.second.bytesOut.load());
-        item["messages_out"] = std::to_string(pair.second.messagesOut.load());
+        beast::PropertyStream::Set set("traffic", stream);
+        auto const stats = m_traffic.getCounts();
+        for (auto const& pair : stats)
+        {
+            beast::PropertyStream::Map item(set);
+            item["category"] = pair.second.name;
+            item["bytes_in"] = std::to_string(pair.second.bytesIn.load());
+            item["messages_in"] = std::to_string(pair.second.messagesIn.load());
+            item["bytes_out"] = std::to_string(pair.second.bytesOut.load());
+            item["messages_out"] =
+                std::to_string(pair.second.messagesOut.load());
+        }
+    }
+
+    {
+        slots_.onWrite(stream);
     }
 }
 
@@ -1411,11 +1418,20 @@ OverlayImpl::squelch(
 }
 
 void
+OverlayImpl::squelchAll(PublicKey const& validator, uint32_t squelchDuration)
+{
+    for_each([&](std::shared_ptr<PeerImp>&& p) {
+        p->send(makeSquelchMessage(validator, true, squelchDuration));
+        slots_.registerSquelchedValidator(validator, p->id());
+    });
+}
+
+void
 OverlayImpl::updateSlotAndSquelch(
     uint256 const& key,
     PublicKey const& validator,
     std::set<Peer::id_t>&& peers,
-    protocol::MessageType type)
+    bool isTrusted)
 {
     if (!slots_.baseSquelchReady())
         return;
@@ -1423,14 +1439,22 @@ OverlayImpl::updateSlotAndSquelch(
     if (!strand_.running_in_this_thread())
         return post(
             strand_,
-            [this, key, validator, peers = std::move(peers), type]() mutable {
-                updateSlotAndSquelch(key, validator, std::move(peers), type);
+            [this,
+             key,
+             validator,
+             peers = std::move(peers),
+             isTrusted]() mutable {
+                updateSlotAndSquelch(
+                    key, validator, std::move(peers), isTrusted);
             });
 
     for (auto id : peers)
-        slots_.updateSlotAndSquelch(key, validator, id, type, [&]() {
-            reportInboundTraffic(TrafficCount::squelch_ignored, 0);
-        });
+        slots_.updateSlotAndSquelch(
+            key,
+            validator,
+            id,
+            [&]() { reportInboundTraffic(TrafficCount::squelch_ignored, 0); },
+            isTrusted);
 }
 
 void
@@ -1438,17 +1462,39 @@ OverlayImpl::updateSlotAndSquelch(
     uint256 const& key,
     PublicKey const& validator,
     Peer::id_t peer,
-    protocol::MessageType type)
+    bool isTrusted)
 {
     if (!slots_.baseSquelchReady())
         return;
 
     if (!strand_.running_in_this_thread())
-        return post(strand_, [this, key, validator, peer, type]() {
-            updateSlotAndSquelch(key, validator, peer, type);
+        return post(strand_, [this, key, validator, peer, isTrusted]() {
+            updateSlotAndSquelch(key, validator, peer, isTrusted);
         });
 
-    slots_.updateSlotAndSquelch(key, validator, peer, type, [&]() {
+    slots_.updateSlotAndSquelch(
+        key,
+        validator,
+        peer,
+        [&]() { reportInboundTraffic(TrafficCount::squelch_ignored, 0); },
+        isTrusted);
+}
+
+void
+OverlayImpl::updateValidatorSlot(
+    uint256 const& key,
+    PublicKey const& validator,
+    Peer::id_t peer)
+{
+    if (!slots_.enhancedSquelchReady())
+        return;
+
+    if (!strand_.running_in_this_thread())
+        return post(strand_, [this, key, validator, peer]() {
+            updateValidatorSlot(key, validator, peer);
+        });
+
+    slots_.updateUntrustedValidatorSlot(key, validator, peer, [&]() {
         reportInboundTraffic(TrafficCount::squelch_ignored, 0);
     });
 }
