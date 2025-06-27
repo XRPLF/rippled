@@ -25,6 +25,9 @@
 #include <xrpld/app/main/Application.h>
 #include <xrpld/core/JobQueue.h>
 #include <xrpld/overlay/PeerSet.h>
+#include <xrpld/perflog/PerfLog.h>
+
+using namespace std::chrono_literals;
 
 namespace ripple {
 
@@ -244,22 +247,31 @@ LedgerDeltaAcquire::onLedgerBuilt(
     app_.getJobQueue().addJob(
         jtREPLAY_TASK,
         "onLedgerBuilt",
-        [=, ledger = this->fullLedger_, &app = this->app_]() {
-            for (auto reason : reasons)
-            {
-                switch (reason)
-                {
-                    case InboundLedger::Reason::GENERIC:
-                        app.getLedgerMaster().storeLedger(ledger);
-                        break;
-                    default:
-                        // TODO for other use cases
-                        break;
-                }
-            }
+        [=,
+         ledger = this->fullLedger_,
+         &app = this->app_,
+         journal = journal_]() {
+            perf::measureDurationAndLog(
+                [&]() {
+                    for (auto reason : reasons)
+                    {
+                        switch (reason)
+                        {
+                            case InboundLedger::Reason::GENERIC:
+                                app.getLedgerMaster().storeLedger(ledger);
+                                break;
+                            default:
+                                // TODO for other use cases
+                                break;
+                        }
+                    }
 
-            if (firstTime)
-                app.getLedgerMaster().tryAdvance();
+                    if (firstTime)
+                        app.getLedgerMaster().tryAdvance();
+                },
+                "onLedgerBuilt",
+                1s,
+                journal);
         });
 }
 

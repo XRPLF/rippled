@@ -37,6 +37,7 @@
 #include <xrpld/core/TimeKeeper.h>
 #include <xrpld/overlay/Overlay.h>
 #include <xrpld/overlay/Peer.h>
+#include <xrpld/perflog/PerfLog.h>
 
 #include <xrpl/basics/Log.h>
 #include <xrpl/basics/MathUtilities.h>
@@ -55,6 +56,8 @@
 #include <cstdlib>
 #include <memory>
 #include <vector>
+
+using namespace std::chrono_literals;
 
 namespace ripple {
 
@@ -1361,27 +1364,36 @@ LedgerMaster::tryAdvance()
     if (!mAdvanceThread && !mValidLedger.empty())
     {
         mAdvanceThread = true;
-        app_.getJobQueue().addJob(jtADVANCE, "advanceLedger", [this]() {
-            std::unique_lock sl(m_mutex);
+        app_.getJobQueue().addJob(
+            jtADVANCE, "advanceLedger", [this, journal = m_journal]() {
+                perf::measureDurationAndLog(
+                    [&]() {
+                        std::unique_lock sl(m_mutex);
 
-            XRPL_ASSERT(
-                !mValidLedger.empty() && mAdvanceThread,
-                "ripple::LedgerMaster::tryAdvance : has valid ledger");
+                        XRPL_ASSERT(
+                            !mValidLedger.empty() && mAdvanceThread,
+                            "ripple::LedgerMaster::tryAdvance : has valid "
+                            "ledger");
 
-            JLOG(m_journal.trace()) << "advanceThread<";
+                        JLOG(m_journal.trace()) << "advanceThread<";
 
-            try
-            {
-                doAdvance(sl);
-            }
-            catch (std::exception const& ex)
-            {
-                JLOG(m_journal.fatal()) << "doAdvance throws: " << ex.what();
-            }
+                        try
+                        {
+                            doAdvance(sl);
+                        }
+                        catch (std::exception const& ex)
+                        {
+                            JLOG(m_journal.fatal())
+                                << "doAdvance throws: " << ex.what();
+                        }
 
-            mAdvanceThread = false;
-            JLOG(m_journal.trace()) << "advanceThread>";
-        });
+                        mAdvanceThread = false;
+                        JLOG(m_journal.trace()) << "advanceThread>";
+                    },
+                    "advanceLedger",
+                    1s,
+                    journal);
+            });
     }
 }
 
@@ -1536,7 +1548,13 @@ LedgerMaster::newPFWork(
             << "newPFWork: Creating job. path find threads: "
             << mPathFindThread;
         if (app_.getJobQueue().addJob(
-                jtUPDATE_PF, name, [this]() { updatePaths(); }))
+                jtUPDATE_PF, name, [this, journal = m_journal]() {
+                    perf::measureDurationAndLog(
+                        [&]() { updatePaths(); },
+                        "newPFWork: Creating job. path find threads:",
+                        1s,
+                        journal);
+                }))
         {
             ++mPathFindThread;
         }
@@ -1857,8 +1875,11 @@ LedgerMaster::fetchForHistory(
                     mFillInProgress = seq;
                 }
                 app_.getJobQueue().addJob(
-                    jtADVANCE, "tryFill", [this, ledger]() {
-                        tryFill(ledger);
+                    jtADVANCE,
+                    "tryFill",
+                    [this, ledger, journal = m_journal]() {
+                        perf::measureDurationAndLog(
+                            [&]() { tryFill(ledger); }, "tryFill", 1s, journal);
                     });
             }
             progress = true;
@@ -2027,10 +2048,17 @@ LedgerMaster::gotFetchPack(bool progress, std::uint32_t seq)
 {
     if (!mGotFetchPackThread.test_and_set(std::memory_order_acquire))
     {
-        app_.getJobQueue().addJob(jtLEDGER_DATA, "gotFetchPack", [&]() {
-            app_.getInboundLedgers().gotFetchPack();
-            mGotFetchPackThread.clear(std::memory_order_release);
-        });
+        app_.getJobQueue().addJob(
+            jtLEDGER_DATA, "gotFetchPack", [this, journal = m_journal]() {
+                perf::measureDurationAndLog(
+                    [&]() {
+                        app_.getInboundLedgers().gotFetchPack();
+                        mGotFetchPackThread.clear(std::memory_order_release);
+                    },
+                    "gotFetchPack",
+                    1s,
+                    journal);
+            });
     }
 }
 
