@@ -21,7 +21,7 @@
 #define RIPPLE_NET_RPCSUB_H_INCLUDED
 
 #include <xrpld/core/JobQueue.h>
-#include <xrpld/net/InfoSub.h>
+#include <xrpld/rpc/InfoSub.h>
 
 #include <boost/asio/io_service.hpp>
 
