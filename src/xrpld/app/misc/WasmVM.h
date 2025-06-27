@@ -65,6 +65,14 @@ public:
         int64_t gasLimit = -1,
         beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
 
+    NotTEC
+    check(
+        Bytes const& wasmCode,
+        std::string_view funcName,
+        std::vector<WasmParam> const& params = {},
+        std::vector<WasmImportFunc> const& imports = {},
+        beast::Journal j = beast::Journal{beast::Journal::getNullSink()});
+
     std::int32_t
     initMaxPages(std::int32_t def);
 
@@ -85,6 +93,14 @@ runEscrowWasm(
     std::vector<WasmParam> const& params = {},
     HostFunctions* hfs = nullptr,
     int64_t gasLimit = -1,
+    beast::Journal j = beast::Journal(beast::Journal::getNullSink()));
+
+NotTEC
+preflightEscrowWasm(
+    Bytes const& wasmCode,
+    std::string_view funcName,
+    std::vector<WasmParam> const& params = {},
+    HostFunctions* hfs = nullptr,
     beast::Journal j = beast::Journal(beast::Journal::getNullSink()));
 
 }  // namespace ripple
